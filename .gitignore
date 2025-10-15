@@ -33,9 +33,6 @@ yarn-error.*
 .env*.local
 .env
 
-# typescript
-*.tsbuildinfo
-
 app-example
 
 **/tempobook/dynamic/
@@ -44,9 +41,10 @@ app-example
 # Local Netlify folder
 .netlify
 .env
+.env.local
 
 #amplify-do-not-edit-begin
-amplify/\#current-cloud-backend
+amplify/#current-cloud-backend
 amplify/.config/local-*
 amplify/logs
 amplify/mock-data

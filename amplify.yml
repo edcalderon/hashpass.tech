@@ -1,0 +1,83 @@
+version: 1.0
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm install 22.18.0
+        - npm install --quiet --global @expo/cli
+        - >
+          if [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+    build:
+      commands:
+        # Clean previous builds
+        - rm -rf dist
+        # Build Expo web app with service worker
+        - npm run build:web
+        # Create necessary directories
+        - mkdir -p dist/client
+        # Copy built files to dist/client directory if needed
+        - cp -r dist/* dist/client/ || true
+        # Copy service worker to client directory for root access
+        - cp dist/sw.js dist/client/
+        # Copy index.html from server to client as SPA entry point
+        - cp dist/server/index.html dist/client/index.html
+  artifacts:
+    baseDirectory: dist/client
+    files:
+      - '**/*'
+    customHeaders:
+      - pattern: '_expo/static/**/*'
+        headers:
+          - key: Cache-Control
+            value: 'public, max-age=31536000, immutable'
+      - pattern: 'index.html'
+        headers:
+          - key: Cache-Control
+            value: 'public, max-age=0, must-revalidate'
+      - pattern: '**/*.html'
+        headers:
+          - key: Cache-Control
+            value: 'public, max-age=0, must-revalidate'
+      - pattern: '**/*.js'
+        headers:
+          - key: Cache-Control
+            value: 'public, max-age=31536000, immutable'
+
+  cache:
+    paths:
+      - node_modules/**/*
+      - $(npm root --global)/**/*
+
+# Client-side routing
+redirects:
+  - source: '/<*>'
+    status: 200
+    target: '/index.html'
+  - source: '/sw.js'
+    status: 200
+    target: '/sw.js'
+  - source: '/_expo/*'
+    status: 200
+    target: '/_expo/'
+  - source: '/api/*'
+    status: 200
+    target: '/api/'
+  - source: '/dashboard/*'
+    status: 200
+    target: '/'
+  - source: '/auth/*'
+    status: 200
+    target: '/'
+
+# Error page for 404s
+customErrorResponses:
+  - errorCode: 404
+    responsePagePath: '/index.html'
+    responseCode: 200
+    errorCachingMinTTL: 0

@@ -1,17 +1,18 @@
 {
-  "providers": [
-    "awscloudformation"
-  ],
-  "projectName": "hashpasstechbsl",
+  "whyContinueWithGen1": "I am a current Gen 1 user",
+  "projectName": "hashpasstech",
   "version": "3.1",
   "frontend": "javascript",
   "javascript": {
     "framework": "react-native",
     "config": {
-      "SourceDir": "",
-      "DistributionDir": "dist",
+      "SourceDir": "/",
+      "DistributionDir": "/dist/client",
       "BuildCommand": "npm run build:web",
       "StartCommand": "npm run-script start"
     }
-  }
+  },
+  "providers": [
+    "awscloudformation"
+  ]
 }

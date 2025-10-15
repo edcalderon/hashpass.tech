@@ -11,7 +11,7 @@
     "test": "jest --watchAll",
     "dev": "expo start --web --clear",
     "build:web": "npm run prebuild && expo export -p web && npx workbox-cli generateSW workbox-config.js",
-    "prebuild": "rm -rf dist ",
+    "prebuild": "rm -rf dist",
     "lint": "expo lint",
     "deploy": "npm run build:web && netlify deploy --prod",
     "seed:bslatam": "node ./scripts/seed-bslatam.mjs ./speakers.json",
