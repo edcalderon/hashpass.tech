@@ -9,7 +9,7 @@
       "SourceDir": "/",
       "DistributionDir": "/dist/client",
       "BuildCommand": "npm run build:web",
-      "StartCommand": "npm run-script start"
+      "StartCommand": "npm run start"
     }
   },
   "providers": [
