@@ -28,7 +28,7 @@
     "deploy:amplify": "npm run build:web && npm run amplify:deploy",
     "i18n:extract": "lingui extract",
     "i18n:compile": "lingui compile",
-    "prepare": "node -e \"if (!process.env.CI) { try { const husky = require('husky'); husky.install(); } catch (e) { if (e.code !== 'MODULE_NOT_FOUND') { console.error('Husky error:', e.message); process.exit(1); } } }\""
+    "prepare": "node -e \"if (process.env.CI || process.env.NPM_CONFIG_PRODUCTION || process.env.NODE_ENV === 'production') { process.exit(0); } try { require.resolve('husky'); } catch (e) { if (e.code === 'MODULE_NOT_FOUND') process.exit(0); throw e; }\""
   },
   "expo": {
     "extra": {
