@@ -1,12 +1,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated, Easing, Text, Modal, TouchableWithoutFeedback, Dimensions, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated, Easing, Text, Dimensions, Platform } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLanguage } from '../providers/LanguageProvider';
 import { getAvailableLocales } from '../i18n/i18n';
-import { useTranslation } from '../i18n/i18n';
 import { useRouter, usePathname } from 'expo-router';
 
 const ThemeAndLanguageSwitcher = () => {
@@ -14,16 +13,20 @@ const ThemeAndLanguageSwitcher = () => {
   const { locale, setLocale } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const languageScaleAnim = useRef(new Animated.Value(1)).current;
   const loginScaleAnim = useRef(new Animated.Value(1)).current;
-  const availableLocales = getAvailableLocales();
-  const { t } = useTranslation('profile');
+  const allAvailableLocales = getAvailableLocales();
 
   // Check if we're on the auth page
   const isOnAuthPage = pathname?.includes('/auth') || pathname === '/(shared)/auth';
+  
+  // Check if we're on the LUKAS page - only show en, es, pt
+  const isOnLukasPage = pathname?.includes('/lukas') || pathname === '/lukas';
+  const availableLocales = isOnLukasPage
+    ? allAvailableLocales.filter(lang => ['en', 'es', 'pt'].includes(lang.code))
+    : allAvailableLocales;
   
   // Check if mobile view
   const [isMobile, setIsMobile] = useState(false);
@@ -43,6 +46,13 @@ const ThemeAndLanguageSwitcher = () => {
       }
     };
   }, []);
+
+  // If on LUKAS page and current locale is not in allowed list, switch to English
+  useEffect(() => {
+    if (isOnLukasPage && !['en', 'es', 'pt'].includes(locale)) {
+      setLocale('en');
+    }
+  }, [isOnLukasPage, locale, setLocale]);
 
   const currentLanguage = availableLocales.find(lang => lang.code === locale) || availableLocales[0];
 
@@ -78,30 +88,31 @@ const ThemeAndLanguageSwitcher = () => {
     toggleTheme();
   };
 
-  const toggleLanguageMenu = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (showLanguageMenu) {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => setShowLanguageMenu(false));
-    } else {
-      setShowLanguageMenu(true);
-      slideAnim.setValue(0);
-      Animated.spring(slideAnim, {
-        toValue: 1,
-        friction: 5,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
-  const handleLanguageSelect = (langCode: string) => {
+  const handleLanguageSwitch = () => {
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setLocale(langCode);
-      setShowLanguageMenu(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      // Find current index and cycle to next
+      const currentIndex = availableLocales.findIndex(lang => lang.code === locale);
+      const nextIndex = (currentIndex + 1) % availableLocales.length;
+      const nextLocale = availableLocales[nextIndex].code;
+      
+      // Animate the switch
+      Animated.sequence([
+        Animated.timing(languageScaleAnim, {
+          toValue: 0.8,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(languageScaleAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+          easing: Easing.bounce,
+        }),
+      ]).start();
+      
+      setLocale(nextLocale);
     } catch (error) {
       console.error('Failed to change language:', error);
     }
@@ -143,61 +154,31 @@ const ThemeAndLanguageSwitcher = () => {
     transform: [{ scale: loginScaleAnim }],
   };
 
-  const menuTranslateY = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-20, 0],
-  });
-
-  const menuOpacity = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
+  const languageAnimatedStyle = {
+    transform: [{ scale: languageScaleAnim }],
+  };
 
   return (
     <View style={[
       styles.container,
       isOnAuthPage && isMobile && styles.containerMobile
     ]}>
-      <View style={styles.languageContainer}>
+      <Animated.View style={[styles.button, languageAnimatedStyle, { backgroundColor: colors.surface }]}>
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.surface }]}
-          onPress={toggleLanguageMenu}
+          style={{
+            width: '100%',
+            height: '100%',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={handleLanguageSwitch}
           activeOpacity={0.8}
         >
           <Text style={[styles.languageText, { color: colors.text.primary }]}>
             {currentLanguage.code.toUpperCase()}
           </Text>
         </TouchableOpacity>
-
-        {showLanguageMenu && (
-          <Animated.View
-            style={[
-              styles.languageMenu,
-              {
-                backgroundColor: colors.surface,
-                transform: [{ translateY: menuTranslateY }],
-                opacity: menuOpacity,
-                shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)',
-              }
-            ]}
-          >
-            {availableLocales.map((lang) => (
-              <TouchableOpacity
-                key={lang.code}
-                style={[
-                  styles.languageItem,
-                  lang.code === locale && { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
-                ]}
-                onPress={() => handleLanguageSelect(lang.code)}
-              >
-                <Text style={[styles.languageText, { color: colors.text.primary }]}>
-                  {t(`languages.${lang.name}`)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </Animated.View>
-        )}
-      </View>
+      </Animated.View>
 
       <Animated.View style={[styles.button, animatedStyle, { marginLeft: 10 }]}>
         <TouchableOpacity
@@ -252,15 +233,6 @@ const ThemeAndLanguageSwitcher = () => {
           </TouchableOpacity>
         </Animated.View>
       )}
-
-      {showLanguageMenu && (
-        <TouchableWithoutFeedback onPress={toggleLanguageMenu}>
-          <View style={[
-            styles.overlay,
-
-          ]} />
-        </TouchableWithoutFeedback>
-      )}
     </View>
   );
 };
@@ -278,9 +250,6 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'web' ? 10 : 60,
     right: 10,
   },
-  languageContainer: {
-    position: 'relative',
-  },
   button: {
     width: 50,
     height: 50,
@@ -293,36 +262,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  languageMenu: {
-    position: 'absolute',
-    top: 60,
-    right: 0,
-    minWidth: 140,
-    maxWidth: 180,
-    borderRadius: 12,
-    paddingVertical: 8,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 1001,
-    maxHeight: 400,
-  },
-  languageItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
   languageText: {
     fontSize: 16,
     fontWeight: '500',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000,
   },
 });
 
