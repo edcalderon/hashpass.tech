@@ -28,6 +28,7 @@ export default function SpeakerAvatar({
   
   // Track failed URLs to prevent infinite retry loops
   const failedUrlsRef = useRef<Set<string>>(new Set());
+  const retryCountRef = useRef<Map<string, number>>(new Map()); // Track retry attempts
   const currentUrlRef = useRef<string | null>(null);
   const isProcessingRef = useRef<boolean>(false); // Prevent concurrent processing
   const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -93,6 +94,7 @@ export default function SpeakerAvatar({
     setImageError(false);
     setImageTimeout(false);
     setImageLoaded(false);
+    retryCountRef.current.clear(); // Clear retry counts for new URLs
     
     if (localOptimizedUrl) {
       // Try local optimized first - set loading state and URL
@@ -101,6 +103,7 @@ export default function SpeakerAvatar({
       setCurrentAvatarUrl(localOptimizedUrl);
       setUrlSource('local');
       currentUrlRef.current = localOptimizedUrl;
+      console.log(`🎯 Trying local optimized avatar: ${localOptimizedUrl}`);
     } else if (s3Url) {
       // Fallback to S3 - set loading state and URL
       isProcessingRef.current = false; // Reset processing flag before starting new load
@@ -108,6 +111,7 @@ export default function SpeakerAvatar({
       setCurrentAvatarUrl(s3Url);
       setUrlSource('s3');
       currentUrlRef.current = s3Url;
+      console.log(`🌐 Trying S3 avatar: ${s3Url}`);
     } else {
       // No URLs available - show initials immediately (no loader needed)
       setCurrentAvatarUrl(null);
@@ -117,6 +121,7 @@ export default function SpeakerAvatar({
       setImageError(true);
       setImageTimeout(true);
       setImageLoaded(false);
+      console.log(`❌ No avatar URLs available for: ${name}`);
     }
   }, [localOptimizedUrl, s3Url, name, imageUrl]); // Added name and imageUrl for debugging
   
@@ -152,8 +157,10 @@ export default function SpeakerAvatar({
       return;
     }
     
-    // Set up timeout for this URL
-    const timeoutDuration = urlSource === 'local' ? 2000 : 15000;
+    // Set up timeout for this URL - size-based optimization
+    const timeoutDuration = urlSource === 'local' 
+      ? (size < 60 ? 3000 : 5000)  // Smaller avatars in lists get 3s, larger get 5s
+      : 15000;
     
     timeoutIdRef.current = setTimeout(() => {
       // Check if URL is still the same
@@ -161,7 +168,25 @@ export default function SpeakerAvatar({
         return; // URL changed, ignore this timeout
       }
       
-      // Mark URL as failed
+      // Get current retry count
+      const currentRetries = retryCountRef.current.get(avatarUrl) || 0;
+      const maxRetries = urlSource === 'local' ? 2 : 0; // Allow 2 retries for local, none for S3
+      
+      if (currentRetries < maxRetries) {
+        // Retry the same URL
+        retryCountRef.current.set(avatarUrl, currentRetries + 1);
+        console.log(`🔄 Retrying avatar load (${currentRetries + 1}/${maxRetries}):`, avatarUrl);
+        
+        // Reset loading state and try again
+        setImageError(false);
+        setImageLoading(true);
+        setImageTimeout(false);
+        setImageLoaded(false);
+        fadeAnim.setValue(0);
+        return;
+      }
+      
+      // Mark URL as failed after max retries
       failedUrlsRef.current.add(avatarUrl);
       
       // If local optimized failed, try S3 fallback
@@ -198,6 +223,8 @@ export default function SpeakerAvatar({
     
     const errorMessage = error.nativeEvent?.error || error.message || 'Unknown error';
     const statusCode = error.nativeEvent?.statusCode || error.statusCode || 'unknown';
+    
+    console.log(`❌ Avatar load failed: ${avatarUrl} (${urlSource}) - ${errorMessage} (${statusCode})`);
     
     // Mark as not successfully loaded
     setImageLoaded(false);
@@ -236,6 +263,8 @@ export default function SpeakerAvatar({
 
   // Memoized load handler
   const handleLoad = useCallback(() => {
+    console.log(`✅ Avatar loaded successfully: ${avatarUrl} (${urlSource})`);
+    
     // Mark as successfully loaded - don't block on isProcessingRef
     setImageLoaded(true);
     
@@ -247,6 +276,7 @@ export default function SpeakerAvatar({
     // Clear from failed URLs since it loaded successfully
     if (avatarUrl) {
       failedUrlsRef.current.delete(avatarUrl);
+      retryCountRef.current.delete(avatarUrl); // Clear retry count on success
     }
     
     // Fade in the image smoothly

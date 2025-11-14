@@ -180,33 +180,35 @@ const ThemeAndLanguageSwitcher = () => {
         </TouchableOpacity>
       </Animated.View>
 
-      <Animated.View style={[styles.button, animatedStyle, { marginLeft: 10 }]}>
-        <TouchableOpacity
-          style={{
-            width: '100%',
-            height: '100%',
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: colors.primary,
-            borderRadius: 25,
-            shadowColor: colors.primary,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
-          }}
-          onPress={handleThemeToggle}
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name={isDark ? 'sunny' : 'moon'}
-            size={24}
-            color={colors.primaryContrastText}
-          />
-        </TouchableOpacity>
-      </Animated.View>
+      {!isOnLukasPage && (
+        <Animated.View style={[styles.button, animatedStyle, { marginLeft: 10 }]}>
+          <TouchableOpacity
+            style={{
+              width: '100%',
+              height: '100%',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: colors.primary,
+              borderRadius: 25,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+            }}
+            onPress={handleThemeToggle}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={isDark ? 'sunny' : 'moon'}
+              size={24}
+              color={colors.primaryContrastText}
+            />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
 
-      {!isOnAuthPage && (
+      {!isOnAuthPage && !isOnLukasPage && (
         <Animated.View style={[styles.button, loginAnimatedStyle, { marginLeft: 10 }]}>
           <TouchableOpacity
             style={{

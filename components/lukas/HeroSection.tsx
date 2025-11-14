@@ -195,26 +195,29 @@ const getStyles = (
   container: {
     minHeight: isSmallMobile ? 500 : isMobile ? 600 : isTablet ? 700 : 800,
     width: '100%',
-    paddingVertical: isSmallMobile ? 40 : isMobile ? 60 : isTablet ? 80 : 100,
+    paddingVertical: isSmallMobile ? 32 : isMobile ? 48 : isTablet ? 80 : 100,
     paddingHorizontal: isSmallMobile ? 16 : isMobile ? 20 : isTablet ? 32 : 40,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   content: {
     width: '100%',
     maxWidth: 1200,
     flexDirection: isMobile ? 'column' : 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: isSmallMobile ? 24 : isMobile ? 32 : isTablet ? 48 : 60,
+    justifyContent: isMobile ? 'center' : 'space-between',
+    gap: isSmallMobile ? 20 : isMobile ? 24 : isTablet ? 48 : 60,
     flexWrap: 'wrap',
   },
   coinContainer: {
     flex: isMobile ? 0 : 1,
     alignItems: 'center',
     justifyContent: 'center',
+    width: isMobile ? '100%' : 'auto',
     minWidth: isSmallMobile ? 140 : isMobile ? 160 : isTablet ? 200 : 220,
     maxWidth: isMobile ? '100%' : 300,
+    paddingHorizontal: isMobile ? 0 : 0,
   },
   coin: {
     width: isSmallMobile ? 140 : isMobile ? 160 : isTablet ? 200 : 220,
@@ -222,6 +225,7 @@ const getStyles = (
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
   },
   coinPeg: {
     color: isDark ? '#A7F3D0' : '#022C22',
@@ -247,7 +251,10 @@ const getStyles = (
     gap: isSmallMobile ? 12 : isMobile ? 14 : 16,
     maxWidth: isMobile ? '100%' : isTablet ? 500 : 600,
     minWidth: isMobile ? '100%' : 280,
+    width: isMobile ? '100%' : 'auto',
+    alignItems: isMobile ? 'center' : 'flex-start',
     flexShrink: 1,
+    paddingHorizontal: isMobile ? 0 : 0,
   },
   badge: {
     color: isDark ? '#9CA3AF' : '#6B7280',
@@ -255,6 +262,8 @@ const getStyles = (
     textTransform: 'uppercase',
     letterSpacing: isSmallMobile ? 1.2 : 1.8,
     fontWeight: '600',
+    textAlign: isMobile ? 'center' : 'left',
+    width: '100%',
   },
   title: {
     color: isDark ? '#F9FAFB' : '#111827',
@@ -263,6 +272,8 @@ const getStyles = (
     lineHeight: isSmallMobile ? 28 : isMobile ? 36 : isTablet ? 44 : 56,
     letterSpacing: -0.5,
     flexShrink: 1,
+    textAlign: isMobile ? 'center' : 'left',
+    width: '100%',
   },
   titleHighlight: {
     color: isDark ? '#22C55E' : '#059669',
@@ -276,6 +287,8 @@ const getStyles = (
     lineHeight: isSmallMobile ? 20 : isMobile ? 22 : isTablet ? 26 : 28,
     marginTop: 4,
     flexShrink: 1,
+    textAlign: isMobile ? 'center' : 'left',
+    width: '100%',
   },
   buttonContainer: {
     flexDirection: isMobile ? 'column' : 'row',
@@ -283,6 +296,8 @@ const getStyles = (
     marginTop: isSmallMobile ? 8 : 12,
     width: '100%',
     flexWrap: 'wrap',
+    alignItems: isMobile ? 'stretch' : 'flex-start',
+    justifyContent: isMobile ? 'center' : 'flex-start',
   },
   primaryButton: {
     paddingHorizontal: isSmallMobile ? 20 : isMobile ? 24 : 28,
@@ -326,6 +341,8 @@ const getStyles = (
     gap: isSmallMobile ? 6 : 8,
     marginTop: isSmallMobile ? 8 : 10,
     width: '100%',
+    justifyContent: isMobile ? 'center' : 'flex-start',
+    alignItems: 'center',
   },
   badgeItem: {
     paddingHorizontal: isSmallMobile ? 10 : 12,
