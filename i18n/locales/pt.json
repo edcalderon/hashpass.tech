@@ -664,6 +664,129 @@
         "messageMeeting": "Nova mensagem em {meetingTitle}"
       }
     }
+  },
+  "lukas": {
+    "hero": {
+      "badge": "Apoiado por comerciantes HashPass",
+      "title": "O primeiro",
+      "titleHighlight": "stable meme coin",
+      "titleSuffix": "vinculado 1:1 com a",
+      "titleGreen": "\"luka\" colombiana",
+      "subtitle": "Apoiado por comerciantes HashPass e garantia cripto omni-chain. Projetado para pagamentos reais na LatAm, não apenas para screenshots de traders.",
+      "getLukas": "Obter $LUKAS",
+      "forMerchants": "Sou comerciante",
+      "peg": "1 LUKAS = 1 COP",
+      "badges": {
+        "peg": "Vinculação 1:1 COP",
+        "merchants": "Apoiado por comerciantes",
+        "collateral": "Garantia cripto omni-chain"
+      }
+    },
+    "why": {
+      "title": "Por que um stable meme coin?",
+      "bullet1": {
+        "title": "Estável como seu café da manhã",
+        "description": "1 LUKAS está vinculado 1:1 com o peso colombiano (\"la luca\")."
+      },
+      "bullet2": {
+        "title": "Gastável onde você realmente vive",
+        "description": "Resgate e use LUKAS com comerciantes HashPass (eventos, cafeterias, coworkings, etc.)."
+      },
+      "bullet3": {
+        "title": "Apoiado por garantia cripto real",
+        "description": "Cofres omni-chain que mantêm ativos blue-chip (USDC, BTC, etc.)."
+      }
+    },
+    "howItWorks": {
+      "title": "Como funciona $LUKAS",
+      "step1": {
+        "title": "Cofres de Garantia",
+        "description": "Usuários e parceiros depositam cripto em cofres omni-chain."
+      },
+      "step2": {
+        "title": "Cunhar $LUKAS",
+        "description": "O protocolo cunha $LUKAS vinculado 1:1 a COP, baseado em garantia."
+      },
+      "step3": {
+        "title": "Gastar com Comerciantes",
+        "description": "Use $LUKAS para pagar comerciantes HashPass, resgatar benefícios ou trocar de volta."
+      }
+    },
+    "merchants": {
+      "title": "Apoiado por comerciantes do mundo real, não apenas vibes.",
+      "category1": {
+        "title": "Eventos e Conferências",
+        "subtitle": "powered by HashPass"
+      },
+      "category2": {
+        "title": "Café e Comida",
+        "subtitle": "Favoritos locais"
+      },
+      "category3": {
+        "title": "Coworking e Startups",
+        "subtitle": "Hubs de inovação"
+      },
+      "category4": {
+        "title": "Vida Noturna e Experiências",
+        "subtitle": "Locais de entretenimento"
+      }
+    },
+    "omnichain": {
+      "title": "Garantia Omni-chain",
+      "vaultLabel": "Reserva LUKAS",
+      "feature1": "Cofres multi-cadeia",
+      "feature2": "Transparência on-chain",
+      "feature3": "Prova de garantia em tempo real (em breve)"
+    },
+    "getLukas": {
+      "title": "Obtenha seus primeiros $LUKAS",
+      "step1": {
+        "title": "Conectar carteira",
+        "description": "Vincule sua carteira cripto para começar"
+      },
+      "step2": {
+        "title": "Escolher quantidade",
+        "description": "Selecione quanto COP ou cripto converter"
+      },
+      "step3": {
+        "title": "Confirmar e cunhar",
+        "description": "Revise e complete sua compra de $LUKAS"
+      },
+      "connectWallet": "Conectar Carteira",
+      "connecting": "Conectando...",
+      "joinWaitlist": "Junte-se à Lista de Espera",
+      "comingSoon": "🚧 Integração de carteira em breve",
+      "comingSoonDesc": "Estamos construindo a infraestrutura para tornar $LUKAS acessível para todos. Junte-se à lista de espera para ser notificado quando estiver pronto!"
+    },
+    "faq": {
+      "title": "FAQ",
+      "subtitle": "Respostas meme + sérias para suas perguntas",
+      "q1": {
+        "question": "$LUKAS é realmente estável ou apenas um meme?",
+        "answer": "$LUKAS é ambos! É uma moeda estável vinculada 1:1 ao peso colombiano (\"la luca\"), apoiada por garantia cripto real em cofres omni-chain. A parte \"meme\" é sobre tornar o cripto acessível e divertido para uso diário na LatAm, não apenas para traders."
+      },
+      "q2": {
+        "question": "Como a vinculação 1:1 com o peso colombiano é mantida?",
+        "answer": "A vinculação é mantida através de uma combinação de: (1) Cofres de garantia cripto omni-chain que mantêm ativos blue-chip (USDC, BTC, etc.), (2) Mecanismos algorítmicos que ajustam a oferta com base na demanda, e (3) Integração com comerciantes HashPass que aceitam $LUKAS pelo valor nominal."
+      },
+      "q3": {
+        "question": "O que significa \"garantia omni-chain\"?",
+        "answer": "Omni-chain significa que a garantia que respalda $LUKAS é armazenada em múltiplas redes blockchain (Ethereum, Polygon, Solana, Base, etc.). Isso fornece diversificação, reduz o risco de cadeia única e garante que a garantia seja acessível independentemente da rede que você está usando."
+      },
+      "q4": {
+        "question": "Onde posso realmente gastar $LUKAS?",
+        "answer": "Você pode gastar $LUKAS com qualquer parceiro comerciante HashPass, incluindo eventos e conferências, cafeterias e restaurantes, espaços de coworking e startups, e vida noturna e locais de entretenimento. A rede completa de comerciantes estará disponível quando $LUKAS for lançado."
+      },
+      "q5": {
+        "question": "Quem está por trás disso?",
+        "answer": "$LUKAS é construído pela equipe HashPass e parceiros do ecossistema. HashPass é uma plataforma de identidade digital e carteira focada em tornar o cripto acessível para uso no mundo real na América Latina. Saiba mais em hashpass.tech"
+      }
+    },
+    "footer": {
+      "text": "$LUKAS — O primeiro stable meme coin vinculado 1:1 ao \"lukas\" colombiano",
+      "subtext": "Apoiado por comerciantes HashPass e garantia cripto omni-chain",
+      "link": "Saiba mais sobre HashPass"
+    }
   }
 }
 
