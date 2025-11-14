@@ -9,6 +9,7 @@ import koMessages from './locales/ko.json';
 import frMessages from './locales/fr.json';
 import ptMessages from './locales/pt.json';
 import deMessages from './locales/de.json';
+import lukasMessages from './locales/lukas.json';
 
 // If your messages are nested under keys, map them here, otherwise export as-is
 function transformMessages(nested: any): Record<string, string> {
@@ -33,12 +34,12 @@ function transformMessages(nested: any): Record<string, string> {
 }
 
 const messagesByLocale: Record<string, Record<string, string>> = {
-  en: transformMessages(enMessages as any),
-  es: transformMessages(esMessages as any),
-  ko: transformMessages(koMessages as any),
-  fr: transformMessages(frMessages as any),
-  pt: transformMessages(ptMessages as any),
-  de: transformMessages(deMessages as any),
+  en: { ...transformMessages(enMessages as any), ...transformMessages(lukasMessages as any) },
+  es: { ...transformMessages(esMessages as any), ...transformMessages(lukasMessages as any) },
+  ko: { ...transformMessages(koMessages as any), ...transformMessages(lukasMessages as any) },
+  fr: { ...transformMessages(frMessages as any), ...transformMessages(lukasMessages as any) },
+  pt: { ...transformMessages(ptMessages as any), ...transformMessages(lukasMessages as any) },
+  de: { ...transformMessages(deMessages as any), ...transformMessages(lukasMessages as any) },
 };
 
 // Use the global singleton so @lingui/macro can see current locale

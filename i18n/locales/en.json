@@ -955,5 +955,128 @@
         "messageMeeting": "New message in {meetingTitle}"
       }
     }
+  },
+  "lukas": {
+    "hero": {
+      "badge": "Backed by HashPass merchants",
+      "title": "The first",
+      "titleHighlight": "stable meme coin",
+      "titleSuffix": "peg 1:1 with the",
+      "titleGreen": "Colombian \"luka\"",
+      "subtitle": "Backed by HashPass merchants and omni-chain crypto collateral. Designed for real payments in LatAm, not just trader screenshots.",
+      "getLukas": "Get $LUKAS",
+      "forMerchants": "I'm a merchant",
+      "peg": "1 LUKAS = 1 COP",
+      "badges": {
+        "peg": "Peg 1:1 COP",
+        "merchants": "Backed by merchants",
+        "collateral": "Omni-chain crypto collateral"
+      }
+    },
+    "why": {
+      "title": "Why a stable meme coin?",
+      "bullet1": {
+        "title": "Stable like your morning tinto",
+        "description": "1 LUKAS is pegged 1:1 with the Colombian peso (\"la luca\")."
+      },
+      "bullet2": {
+        "title": "Spendable where you actually live",
+        "description": "Redeem and use LUKAS with HashPass merchants (events, coffee shops, coworkings, etc.)."
+      },
+      "bullet3": {
+        "title": "Backed by real crypto collateral",
+        "description": "Omni-chain vaults holding blue-chip assets (USDC, BTC, etc.)."
+      }
+    },
+    "howItWorks": {
+      "title": "How $LUKAS works",
+      "step1": {
+        "title": "Collateral Vaults",
+        "description": "Users and partners deposit crypto into omni-chain vaults."
+      },
+      "step2": {
+        "title": "Mint $LUKAS",
+        "description": "Protocol mints $LUKAS pegged 1:1 to COP, based on collateral."
+      },
+      "step3": {
+        "title": "Spend with Merchants",
+        "description": "Use $LUKAS to pay HashPass merchants, redeem perks, or swap back."
+      }
+    },
+    "merchants": {
+      "title": "Backed by real-world merchants, not just vibes.",
+      "category1": {
+        "title": "Events & Conferences",
+        "subtitle": "powered by HashPass"
+      },
+      "category2": {
+        "title": "Coffee & Food",
+        "subtitle": "Local favorites"
+      },
+      "category3": {
+        "title": "Coworking & Startups",
+        "subtitle": "Innovation hubs"
+      },
+      "category4": {
+        "title": "Nightlife & Experiences",
+        "subtitle": "Entertainment venues"
+      }
+    },
+    "omnichain": {
+      "title": "Omni-chain Collateral",
+      "vaultLabel": "LUKAS Reserve",
+      "feature1": "Multi-chain vaults",
+      "feature2": "On-chain transparency",
+      "feature3": "Real-time proof-of-collateral (coming soon)"
+    },
+    "getLukas": {
+      "title": "Get your first $LUKAS",
+      "step1": {
+        "title": "Connect wallet",
+        "description": "Link your crypto wallet to get started"
+      },
+      "step2": {
+        "title": "Choose amount",
+        "description": "Select how much COP or crypto to convert"
+      },
+      "step3": {
+        "title": "Confirm and mint",
+        "description": "Review and complete your $LUKAS purchase"
+      },
+      "connectWallet": "Connect Wallet",
+      "connecting": "Connecting...",
+      "joinWaitlist": "Join the Waitlist",
+      "comingSoon": "🚧 Wallet integration coming soon",
+      "comingSoonDesc": "We're building the infrastructure to make $LUKAS accessible to everyone. Join the waitlist to be notified when it's ready!"
+    },
+    "faq": {
+      "title": "FAQ",
+      "subtitle": "Meme + serious answers to your questions",
+      "q1": {
+        "question": "Is $LUKAS really stable or just a meme?",
+        "answer": "$LUKAS is both! It's a stable coin pegged 1:1 to the Colombian peso (\"la luca\"), backed by real crypto collateral in omni-chain vaults. The \"meme\" part is about making crypto accessible and fun for everyday use in LatAm, not just for traders."
+      },
+      "q2": {
+        "question": "How is the peg 1:1 with the Colombian peso maintained?",
+        "answer": "The peg is maintained through a combination of: (1) Omni-chain crypto collateral vaults holding blue-chip assets (USDC, BTC, etc.), (2) Algorithmic mechanisms that adjust supply based on demand, and (3) Integration with HashPass merchants that accept $LUKAS at face value."
+      },
+      "q3": {
+        "question": "What does \"omni-chain collateral\" even mean?",
+        "answer": "Omni-chain means the collateral backing $LUKAS is stored across multiple blockchain networks (Ethereum, Polygon, Solana, Base, etc.). This provides diversification, reduces single-chain risk, and ensures the collateral is accessible regardless of which network you're using."
+      },
+      "q4": {
+        "question": "Where can I actually spend $LUKAS?",
+        "answer": "You can spend $LUKAS with any HashPass merchant partner, including events & conferences, coffee shops & restaurants, coworking spaces & startups, and nightlife & entertainment venues. The full merchant network will be available when $LUKAS launches."
+      },
+      "q5": {
+        "question": "Who is behind this?",
+        "answer": "$LUKAS is built by the HashPass team and ecosystem partners. HashPass is a digital identity and wallet platform focused on making crypto accessible for real-world use in Latin America. Learn more at hashpass.tech"
+      }
+    },
+    "footer": {
+      "text": "$LUKAS — The first stable meme coin pegged 1:1 to the Colombian \"lukas\"",
+      "subtext": "Backed by HashPass merchants and omni-chain crypto collateral",
+      "link": "Learn more about HashPass"
+    }
   }
 }

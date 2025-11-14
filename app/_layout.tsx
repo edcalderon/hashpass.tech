@@ -113,7 +113,8 @@ function ThemedContent() {
     pathname === '/(shared)/privacy' ||
     pathname === '/terms' || 
     pathname === '/(shared)/terms' ||
-    pathname === '/status';
+    pathname === '/status' ||
+    pathname === '/lukas';
 
   // Handle loading state and splash screen
   useEffect(() => {
@@ -262,6 +263,8 @@ function ThemedContent() {
         <Stack.Screen name="events/bsl2025/speakers/calendar" options={{ headerShown: false }} />
         <Stack.Screen name="events/bsl2025/my-bookings" options={{ headerShown: false }} />
         <Stack.Screen name="events/bsl2025/speaker-dashboard" options={{ headerShown: false }} />
+        {/* LUKAS landing page */}
+        <Stack.Screen name="lukas" options={{ headerShown: false }} />
       </Stack>
       <PWAPrompt />
       {versionUpdate && (
