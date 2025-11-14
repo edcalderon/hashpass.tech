@@ -24,11 +24,18 @@ import { GetLukasSection } from '../components/lukas/GetLukasSection';
 import { FAQSection } from '../components/lukas/FAQSection';
 
 export default function LukasLanding() {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, setTheme } = useTheme();
   const isMobile = useIsMobile();
   const { t } = useTranslation('lukas');
   const scrollY = useSharedValue(0);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Set default theme to dark for LUKAS landing page
+  useEffect(() => {
+    if (!isDark) {
+      setTheme('dark');
+    }
+  }, []); // Only run once on mount
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
