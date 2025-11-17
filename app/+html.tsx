@@ -37,12 +37,12 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
           dangerouslySetInnerHTML={{
             __html: `
               // Set API base URL for version check (used by inline service worker script)
-              // Defaults to hashpass.co/api for production (cross-origin)
+              // Defaults to api.hashpass.tech/api for production (API Gateway)
               // Can be overridden via environment variable EXPO_PUBLIC_API_BASE_URL
               window.__API_BASE_URL__ = ${JSON.stringify(
                 typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_BASE_URL
                   ? process.env.EXPO_PUBLIC_API_BASE_URL
-                  : 'https://hashpass.co/api'
+                  : 'https://api.hashpass.tech/api'
               )};
             `,
           }}
@@ -252,7 +252,7 @@ if ('serviceWorker' in navigator) {
                     // Also check version via API directly (client-side check)
                     // Note: Using fetch directly here because this inline script runs before React/imports are available
                     // The API client is used in lib/version-checker.ts for other version checks
-                    // Detect API base URL: use hashpass.co/api for production, or relative /api for same-origin
+                    // Detect API base URL: use api.hashpass.tech/api for production, or relative /api for same-origin
                     var apiBaseUrl = '/api';
                     try {
                         // Check if EXPO_PUBLIC_API_BASE_URL is set in window or meta tag
@@ -266,15 +266,15 @@ if ('serviceWorker' in navigator) {
                                 if (metaTag && metaTag.getAttribute('content')) {
                                     apiBaseUrl = metaTag.getAttribute('content');
                                 } else {
-                                    // Default to hashpass.co/api for production (cross-origin)
-                                    // This handles the case where app is on bsl2025.hashpass.tech but API is on hashpass.co
-                                    apiBaseUrl = 'https://hashpass.co/api';
+                                    // Default to api.hashpass.tech/api for production (API Gateway)
+                                    // This handles the case where app is on hashpass.tech but API is on api.hashpass.tech
+                                    apiBaseUrl = 'https://api.hashpass.tech/api';
                                 }
                             }
                         }
                     } catch (e) {
-                        // Fallback to hashpass.co/api if detection fails
-                        apiBaseUrl = 'https://hashpass.co/api';
+                        // Fallback to api.hashpass.tech/api if detection fails
+                        apiBaseUrl = 'https://api.hashpass.tech/api';
                     }
                     
                     // Remove trailing slash and build version check URL

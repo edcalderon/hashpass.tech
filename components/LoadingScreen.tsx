@@ -80,14 +80,14 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
   const finalIconColor = iconColor || colors.primary;
   
   // Build display message with translations
-  const defaultMessage = t({ id: 'loading.default', message: 'Loading...' });
+  const defaultMessage = t('loading.default') || 'Loading...';
   const finalMessage = message || defaultMessage;
   
   const displayMessage = retryCount !== undefined && retryCount > 0
-    ? t({ id: 'loading.retrying', message: 'Retrying... ({retryCount}/3)' }, { retryCount })
+    ? (t('loading.retrying', { retryCount }) || `Retrying... (${retryCount}/3)`)
     : finalMessage;
   
-  const retryHintText = t({ id: 'loading.retryHint', message: 'Taking longer than expected, please wait...' });
+  const retryHintText = t('loading.retryHint') || 'Taking longer than expected, please wait...';
 
   return (
     <View style={styles.container}>

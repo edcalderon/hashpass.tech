@@ -14,6 +14,7 @@ import {
   getCurrentEvent, 
   shouldShowEventSelector,
   getEventQuickAccessItems,
+  isMainBranch,
   type EventInfo 
 } from '../../../lib/event-detector';
 import { t } from '@lingui/macro';
@@ -50,7 +51,16 @@ export default function ExploreScreen() {
       : availableEvents[0] || null;
   
   // Initialize all state hooks at the top
-  const [selectedEvent, setSelectedEvent] = useState<EventInfo>(currentEventInfo || availableEvents[0]);
+  // Determine explorer mode based on branch:
+  // - main branch (hashpass.tech): Global explorer showing ALL events
+  // - event branches (bsl2025.hashpass.tech): Event-specific explorer with quick access
+  const isGlobalExplorer = isMainBranch;
+  
+  // For global explorer: no selected event needed (shows all events)
+  // For event-specific explorer: need selectedEvent for banner and quick access
+  const [selectedEvent, setSelectedEvent] = useState<EventInfo | null>(
+    isGlobalExplorer ? null : (currentEventInfo || availableEvents[0] || null)
+  );
   const [showEventSelector, setShowEventSelector] = useState(shouldShowEventSelector());
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -355,11 +365,18 @@ export default function ExploreScreen() {
 
 
   const handleEventSelect = (eventData: EventInfo) => {
-    setSelectedEvent(eventData);
-    // Navigate to the event's home page - ensure id is valid and route is properly formatted
-    if (eventData?.id) {
-      const route = `/events/${eventData.id}/home`.replace(/\/+/g, '/'); // Remove any double slashes
-      router.push(route as any);
+    if (isGlobalExplorer) {
+      // In global explorer, navigate to the event's home page
+      if (eventData?.id && eventData?.routes?.home) {
+        const route = eventData.routes.home.replace(/\/+/g, '/');
+        router.push(route as any);
+      } else if (eventData?.id) {
+        const route = `/events/${eventData.id}/home`.replace(/\/+/g, '/');
+        router.push(route as any);
+      }
+    } else {
+      // In event-specific explorer, just update selection
+      setSelectedEvent(eventData);
     }
   };
 
@@ -369,14 +386,18 @@ export default function ExploreScreen() {
       style={[
         styles.eventCard,
         { 
-          marginLeft: index === 0 ? 0 : 12,
+          marginLeft: isGlobalExplorer ? 0 : (index === 0 ? 0 : 12),
+          marginBottom: isGlobalExplorer ? 20 : 0,
+          width: isGlobalExplorer ? '100%' : 200,
+          height: isGlobalExplorer ? 200 : 120,
           borderColor: selectedEvent?.id === eventData.id ? eventData.color : colors.divider,
-          borderWidth: selectedEvent.id === eventData.id ? 2 : 1,
+          borderWidth: selectedEvent?.id === eventData.id ? 2 : 1,
         }
       ]}
       onPress={() => handleEventSelect(eventData)}
+      activeOpacity={0.8}
     >
-      <Image source={{ uri: eventData.image }} style={styles.eventImage} />
+      <Image source={{ uri: eventData.image || 'https://via.placeholder.com/400x200' }} style={styles.eventImage} />
       <View style={styles.eventOverlay}>
         <View style={[styles.eventBadge, { backgroundColor: eventData.color }]}>
           <Text style={styles.eventBadgeText}>{eventData.id.toUpperCase()}</Text>
@@ -384,6 +405,9 @@ export default function ExploreScreen() {
         <View style={styles.eventInfo}>
           <Text style={styles.eventTitle}>{eventData.title}</Text>
           <Text style={styles.eventSubtitle}>{eventData.subtitle}</Text>
+          {isGlobalExplorer && eventData.eventDateString && (
+            <Text style={styles.eventDate}>{eventData.eventDateString}</Text>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -463,91 +487,129 @@ export default function ExploreScreen() {
       >
         {/* Event Banner (now scrolls with content) */}
         {/* Banner starts from top, nav bar floats on top with blur */}
-        <EventBanner 
-          title={selectedEvent?.title || t({ id: 'explore.banner.title', message: 'Blockchain Summit Latam 2025' })}
-          subtitle={selectedEvent?.subtitle || t({ id: 'explore.banner.subtitle', message: 'November 12-14, 2025 • Universidad EAFIT, Medellín' })}
-          date={selectedEvent?.eventDateString || selectedEvent?.subtitle || t({ id: 'explore.banner.date', message: 'November 12-14, 2025' })}
-          showCountdown={true}
-          showLiveIndicator={true}
-          eventStartDate={selectedEvent?.eventStartDate || '2025-11-12T09:00:00-05:00'}
-          eventId={selectedEvent?.id}
-        />
+        {isGlobalExplorer ? (
+          /* GLOBAL EXPLORER MODE (main branch - hashpass.tech) */
+          /* Shows banner for HashPass platform with all events */
+          <EventBanner 
+            title="HashPass Events"
+            subtitle="Discover and explore all available events"
+            date="Global Event Explorer"
+            backgroundColor="#6366f1"
+            showCountdown={false}
+            showLiveIndicator={false}
+            eventId="default"
+          />
+        ) : (
+          /* EVENT-SPECIFIC EXPLORER MODE (event branches - bsl2025.hashpass.tech) */
+          /* Shows banner for the specific event (BSL2025) with countdown/live indicator */
+          <EventBanner 
+            title={selectedEvent?.title || t({ id: 'explore.banner.title', message: 'Blockchain Summit Latam 2025' })}
+            subtitle={selectedEvent?.subtitle || t({ id: 'explore.banner.subtitle', message: 'November 12-14, 2025 • Universidad EAFIT, Medellín' })}
+            date={selectedEvent?.eventDateString || selectedEvent?.subtitle || t({ id: 'explore.banner.date', message: 'November 12-14, 2025' })}
+            showCountdown={true}
+            showLiveIndicator={true}
+            eventStartDate={selectedEvent?.eventStartDate || '2025-11-12T09:00:00-05:00'}
+            eventId={selectedEvent?.id}
+          />
+        )}
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
-            {/* Event Selector - Only show if multiple events available */}
-            {showEventSelector && (
-              <View style={styles.eventSelectorContainer}>
-                <Text style={styles.eventSelectorTitle}>{t({ id: 'explore.selectEvent', message: 'Select Event' })}</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.eventSelector}
-                >
+            {isGlobalExplorer ? (
+              /* GLOBAL EXPLORER: Show all events in a vertical grid */
+              /* Users can click any event card to navigate to that event's home page */
+              <View style={styles.eventsSection}>
+                <Text style={styles.sectionTitle}>
+                  {t({ id: 'explore.banner.exploreAllEvents', message: 'Explore All Events' })}
+                </Text>
+                <Text style={styles.sectionDescription}>
+                  Select an event to view details, speakers, agenda, and more
+                </Text>
+                <View style={styles.eventsGrid}>
                   {availableEvents.map((eventData, index) => renderEventCard(eventData, index))}
-                </ScrollView>
+                </View>
               </View>
+            ) : (
+              /* EVENT-SPECIFIC EXPLORER: Show event selector if multiple events available */
+              /* In bsl2025 branch, typically only one event is available, so this may not show */
+              showEventSelector && (
+                <View style={styles.eventSelectorContainer}>
+                  <Text style={styles.eventSelectorTitle}>{t({ id: 'explore.selectEvent', message: 'Select Event' })}</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.eventSelector}
+                  >
+                    {availableEvents.map((eventData, index) => renderEventCard(eventData, index))}
+                  </ScrollView>
+                </View>
+              )
             )}
           </View>
         </View>
 
-        {/* User Passes */}
-        <CopilotStep text="This is where you can view your event passes. Your passes show your ticket type and access level for the event." order={8} name="yourPasses">
-          <CopilotView style={{ paddingHorizontal: 20, paddingTop: 20 }}>
-            <Text style={styles.sectionTitle}>{t({ id: 'explore.yourPasses', message: 'Your Passes' })}</Text>
-            <PassesDisplay 
-              mode="dashboard"
-              showTitle={false}
-              showPassComparison={false}
-            />
-          </CopilotView>
-        </CopilotStep>
+        {/* User Passes - Show if logged in */}
+        {isLoggedIn && (
+          <CopilotStep text="This is where you can view your event passes. Your passes show your ticket type and access level for the event." order={8} name="yourPasses">
+            <CopilotView style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+              <Text style={styles.sectionTitle}>{t({ id: 'explore.yourPasses', message: 'Your Passes' })}</Text>
+              <PassesDisplay 
+                mode="dashboard"
+                showTitle={false}
+                showPassComparison={false}
+              />
+            </CopilotView>
+          </CopilotStep>
+        )}
 
-        {/* Quick Access Section */}
-        <CopilotStep text="Quick Access cards let you quickly navigate to important sections like Speakers, Agenda, Networking Center, and Event Information. Swipe horizontally to see all options." order={9} name="quickAccess">
-          <CopilotView style={styles.section}>
-            <Text style={styles.sectionTitle}>{t({ id: 'explore.quickAccess', message: 'Quick Access' })}</Text>
-          <View style={styles.quickAccessContainer}>
-            {showLeftArrow && (
-              <TouchableOpacity 
-                style={styles.scrollArrowLeft} 
-                onPress={() => scrollQuickAccess('left')}
+        {/* Quick Access Section - Only show for EVENT-SPECIFIC explorer (bsl2025 branch) */}
+        {/* In global explorer (main branch), users navigate via event cards instead */}
+        {!isGlobalExplorer && (
+          <CopilotStep text="Quick Access cards let you quickly navigate to important sections like Speakers, Agenda, Networking Center, and Event Information. Swipe horizontally to see all options." order={9} name="quickAccess">
+            <CopilotView style={styles.section}>
+              <Text style={styles.sectionTitle}>{t({ id: 'explore.quickAccess', message: 'Quick Access' })}</Text>
+            <View style={styles.quickAccessContainer}>
+              {showLeftArrow && (
+                <TouchableOpacity 
+                  style={styles.scrollArrowLeft} 
+                  onPress={() => scrollQuickAccess('left')}
+                >
+                  <MaterialIcons name="chevron-left" size={24} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+              <ScrollView
+                ref={quickAccessScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+                onScroll={handleQuickAccessScroll}
+                onScrollBeginDrag={handleQuickAccessScrollBeginDrag}
+                onScrollEndDrag={handleQuickAccessScrollEndDrag}
+                onMomentumScrollEnd={handleQuickAccessMomentumScrollEnd}
+                scrollEventThrottle={Platform.OS === 'web' ? 0 : 16}
+                decelerationRate="fast"
+                snapToInterval={cardWidth + cardSpacing}
+                snapToAlignment="start"
+                disableIntervalMomentum
+                onLayout={handleQuickAccessLayout}
+                onContentSizeChange={handleQuickAccessContentSizeChange}
+                // @ts-ignore - onWheel supported in RN Web
+                onWheel={handleQuickAccessWheel}
               >
-                <MaterialIcons name="chevron-left" size={24} color={colors.primary} />
-              </TouchableOpacity>
-            )}
-            <ScrollView
-              ref={quickAccessScrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-              onScroll={handleQuickAccessScroll}
-              onScrollBeginDrag={handleQuickAccessScrollBeginDrag}
-              onScrollEndDrag={handleQuickAccessScrollEndDrag}
-              onMomentumScrollEnd={handleQuickAccessMomentumScrollEnd}
-              scrollEventThrottle={Platform.OS === 'web' ? 0 : 16}
-              decelerationRate="fast"
-              snapToInterval={cardWidth + cardSpacing}
-              snapToAlignment="start"
-              disableIntervalMomentum
-              onLayout={handleQuickAccessLayout}
-              onContentSizeChange={handleQuickAccessContentSizeChange}
-              // @ts-ignore - onWheel supported in RN Web
-              onWheel={handleQuickAccessWheel}
-            >
-              {getQuickAccessItems().map((item, index) => renderQuickAccessItem(item, index))}
-            </ScrollView>
-            {showRightArrow && (
-              <TouchableOpacity 
-                style={styles.scrollArrowRight} 
-                onPress={() => scrollQuickAccess('right')}
-              >
-                <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
-              </TouchableOpacity>
-            )}
-          </View>
-          </CopilotView>
-        </CopilotStep>
+                {getQuickAccessItems().map((item, index) => renderQuickAccessItem(item, index))}
+              </ScrollView>
+              {showRightArrow && (
+                <TouchableOpacity 
+                  style={styles.scrollArrowRight} 
+                  onPress={() => scrollQuickAccess('right')}
+                >
+                  <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </View>
+            </CopilotView>
+          </CopilotStep>
+        )}
 
         {/* Bottom Spacing handled via contentContainerStyle paddingBottom */}
       </Animated.ScrollView>
@@ -582,12 +644,27 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   eventSelector: {
     paddingRight: 20,
   },
+  eventsSection: {
+    paddingTop: 10,
+  },
+  sectionDescription: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  eventsGrid: {
+    gap: 20,
+  },
   eventCard: {
-    width: 200,
-    height: 120,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: colors.background.paper,
+    shadowColor: colors.text.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
   eventImage: {
     width: '100%',
@@ -629,6 +706,12 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: 'white',
     fontSize: 11,
     opacity: 0.9,
+  },
+  eventDate: {
+    color: 'white',
+    fontSize: 12,
+    opacity: 0.85,
+    marginTop: 4,
   },
   section: {
     padding: 20,

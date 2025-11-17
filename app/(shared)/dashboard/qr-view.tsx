@@ -149,7 +149,7 @@ export default function QRViewScreen() {
             • Keep this QR code visible when entering the event{'\n'}
             • The QR code refreshes every 30 seconds for security{'\n'}
             • Make sure your device has internet connection{'\n'}
-            • If the QR code expires, tap "Refresh QR" to generate a new one
+            • If the QR code expires, tap &quot;Refresh QR&quot; to generate a new one
           </Text>
         </View>
       </View>

@@ -67,6 +67,11 @@ const AvatarImage = ({ address, alt }: { address: string; alt: string }) => {
       alt={alt}
       className="h-10 w-10 rounded-full flex-shrink-0"
       onError={handleError}
+      style={{
+        willChange: 'auto', // Don't animate images
+        transform: 'translateZ(0)', // Force hardware acceleration
+      }}
+      loading="lazy"
     />
   );
 };
@@ -76,10 +81,13 @@ const TestimonialsColumn = (props: {
   testimonials: any;
   duration?: number;
 }) => {
+  // Use reduced motion if user prefers it
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  
   return (
     <div className={props.className}>
       <motion.div
-        animate={{
+        animate={prefersReducedMotion ? {} : {
           translateY: "-50%",
         }}
         transition={{
@@ -87,6 +95,10 @@ const TestimonialsColumn = (props: {
           repeat: Infinity,
           ease: "linear",
           repeatType: "loop",
+        }}
+        style={{
+          willChange: 'transform',
+          transform: 'translateZ(0)', // Force hardware acceleration
         }}
         className="flex flex-col gap-6 pb-6 bg-background"
       >
@@ -97,7 +109,13 @@ const TestimonialsColumn = (props: {
               {props.testimonials.map(({ text, wallet, role }: any, i: any) => {
                 const walletAddress = wallet || "0x0000000000000000000000000000000000000000";
                 return (
-                  <div className="p-10 rounded-3xl border shadow-lg shadow-primary/10 max-w-xs w-full" key={i}>
+                  <div 
+                    className="p-10 rounded-3xl border shadow-lg shadow-primary/10 max-w-xs w-full" 
+                    key={i}
+                    style={{
+                      willChange: 'auto', // Static content, no animation needed
+                    }}
+                  >
                     <div>{text}</div>
                     <div className="flex items-center gap-2 mt-5">
                       <AvatarImage 

@@ -8,7 +8,7 @@ export async function OPTIONS() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
       'Access-Control-Max-Age': '86400',
     },
   });
@@ -87,7 +87,7 @@ export async function GET(request: Request) {
         // Ensure CORS headers for cross-origin requests (if needed)
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma, X-Client-Version',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
       },
     });
   } catch (error: any) {
@@ -125,7 +125,7 @@ export async function GET(request: Request) {
             'X-Version-Source': 'package.json-fallback',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma, X-Client-Version',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
           },
         }
       );
@@ -151,7 +151,7 @@ export async function GET(request: Request) {
             'X-Version-Source': 'hardcoded-fallback',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Cache-Control, Pragma, X-Client-Version',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
           },
         }
       );
@@ -181,3 +181,4 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 
+// Test Lambda deployment with Amplify - Sun Nov 16 07:13:40 PM -05 2025

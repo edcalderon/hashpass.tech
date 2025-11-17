@@ -31,6 +31,7 @@ import { InteractiveHoverButton } from '../components/InteractiveHoverButton';
 import FlipWords from '../components/FlipWords';
 import Newsletter from '../components/Newsletter';
 import EventBannerCarousel from '../components/EventBannerCarousel';
+import VersionStatusIndicator from '../components/VersionStatusIndicator';
 
 // Import git info to check branch
 let gitInfo: { gitBranch?: string } = {};
@@ -480,9 +481,12 @@ export default function HomeScreen() {
 
           {/* Bottom Bar */}
           <View style={styles.footerBottom}>
-            <Text style={styles.footerCopyright}>
-              {t('copyright')} • v{require('../package.json').version}
-            </Text>
+            <View style={styles.footerBottomContent}>
+              <Text style={styles.footerCopyright}>
+                {t('copyright')}
+              </Text>
+              <VersionStatusIndicator compact={true} showVersion={true} size="small" />
+            </View>
           </View>
         </View>
       </Animated.ScrollView>
@@ -630,12 +634,15 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     lineHeight: isMobile ? 20 : 22,
   },
   footerBottom: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingTop: isMobile ? 20 : 30,
     borderTopWidth: 1,
     borderTopColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+  },
+  footerBottomContent: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
   },
   footerCopyright: {
     fontSize: isMobile ? 12 : 14,

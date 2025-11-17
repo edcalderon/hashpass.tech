@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import LoadingScreen from '../components/LoadingScreen';
 import { apiClient } from '@/lib/api-client';
+import { useTranslation } from '../i18n/i18n';
 
 interface HealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -60,6 +61,7 @@ interface HealthCheck {
 
 export default function StatusPage() {
   const { isDark, colors } = useTheme();
+  const { t } = useTranslation('status');
   const router = useRouter();
   const [healthCheck, setHealthCheck] = useState<HealthCheck | null>(null);
   const [loading, setLoading] = useState(true);
@@ -158,10 +160,11 @@ export default function StatusPage() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
+          activeOpacity={0.7}
         >
-          <MaterialIcons name="arrow-back" size={24} color={typeof colors.text === 'string' ? colors.text : colors.text?.primary || '#000000'} />
+          <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.title}>System Status</Text>
+        <Text style={styles.title}>{t('title') || 'System Status'}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -169,6 +172,13 @@ export default function StatusPage() {
         <View style={styles.errorContainer}>
           <MaterialIcons name="error-outline" size={24} color="#FF3B30" />
           <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {!healthCheck && !error && !loading && (
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="info-outline" size={24} color={colors.text.secondary} />
+          <Text style={styles.errorText}>{t('noData') || 'No status data available'}</Text>
         </View>
       )}
 
@@ -193,14 +203,14 @@ export default function StatusPage() {
                 </Text>
               </View>
               <Text style={styles.timestamp}>
-                Last updated: {formatTimestamp(healthCheck.timestamp)}
+                {t('lastUpdated') || 'Last updated'}: {formatTimestamp(healthCheck.timestamp)}
               </Text>
             </View>
           </View>
 
           {/* Database Status */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Database</Text>
+            <Text style={styles.sectionTitle}>{t('database') || 'Database'}</Text>
             <View
               style={[
                 styles.serviceCard,
@@ -261,7 +271,7 @@ export default function StatusPage() {
 
           {/* Email Service */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Email Service</Text>
+            <Text style={styles.sectionTitle}>{t('emailService') || 'Email Service'}</Text>
             <View
               style={[
                 styles.serviceCard,
@@ -285,14 +295,14 @@ export default function StatusPage() {
                 </Text>
               </View>
               <Text style={styles.serviceDetail}>
-                Configured: {healthCheck.services.email.configured ? 'Yes' : 'No'}
+                {t('configured') || 'Configured'}: {healthCheck.services.email.configured ? (t('yes') || 'Yes') : (t('no') || 'No')}
               </Text>
             </View>
           </View>
 
           {/* API Endpoints */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>API Endpoints</Text>
+            <Text style={styles.sectionTitle}>{t('apiEndpoints') || 'API Endpoints'}</Text>
             <View
               style={[
                 styles.serviceCard,
@@ -340,50 +350,50 @@ export default function StatusPage() {
 
           {/* System Checks */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>System Checks</Text>
+            <Text style={styles.sectionTitle}>{t('systemChecks') || 'System Checks'}</Text>
             <View style={styles.checksContainer}>
               <View style={styles.checkCard}>
-                <Text style={styles.checkTitle}>Agenda</Text>
+                <Text style={styles.checkTitle}>{t('agenda') || 'Agenda'}</Text>
                 <Text style={styles.checkDetail}>
-                  {healthCheck.checks.agenda.hasData ? 'Has Data' : 'No Data'}
+                  {healthCheck.checks.agenda.hasData ? (t('hasData') || 'Has Data') : (t('noData') || 'No Data')}
                 </Text>
                 <Text style={styles.checkDetail}>
-                  Items: {healthCheck.checks.agenda.itemCount}
+                  {t('items') || 'Items'}: {healthCheck.checks.agenda.itemCount}
                 </Text>
                 {healthCheck.checks.agenda.lastUpdated && (
                   <Text style={styles.checkDetail}>
-                    Updated: {formatTimestamp(healthCheck.checks.agenda.lastUpdated)}
+                    {t('updated') || 'Updated'}: {formatTimestamp(healthCheck.checks.agenda.lastUpdated)}
                   </Text>
                 )}
               </View>
 
               <View style={styles.checkCard}>
-                <Text style={styles.checkTitle}>Speakers</Text>
+                <Text style={styles.checkTitle}>{t('speakers') || 'Speakers'}</Text>
                 <Text style={styles.checkDetail}>
-                  {healthCheck.checks.speakers.accessible ? 'Accessible' : 'Not Accessible'}
+                  {healthCheck.checks.speakers.accessible ? (t('accessible') || 'Accessible') : (t('notAccessible') || 'Not Accessible')}
                 </Text>
                 <Text style={styles.checkDetail}>
-                  Count: {healthCheck.checks.speakers.count}
-                </Text>
-              </View>
-
-              <View style={styles.checkCard}>
-                <Text style={styles.checkTitle}>Bookings</Text>
-                <Text style={styles.checkDetail}>
-                  {healthCheck.checks.bookings.accessible ? 'Accessible' : 'Not Accessible'}
-                </Text>
-                <Text style={styles.checkDetail}>
-                  Count: {healthCheck.checks.bookings.count}
+                  {t('count') || 'Count'}: {healthCheck.checks.speakers.count}
                 </Text>
               </View>
 
               <View style={styles.checkCard}>
-                <Text style={styles.checkTitle}>Passes</Text>
+                <Text style={styles.checkTitle}>{t('bookings') || 'Bookings'}</Text>
                 <Text style={styles.checkDetail}>
-                  {healthCheck.checks.passes.accessible ? 'Accessible' : 'Not Accessible'}
+                  {healthCheck.checks.bookings.accessible ? (t('accessible') || 'Accessible') : (t('notAccessible') || 'Not Accessible')}
                 </Text>
                 <Text style={styles.checkDetail}>
-                  Count: {healthCheck.checks.passes.count}
+                  {t('count') || 'Count'}: {healthCheck.checks.bookings.count}
+                </Text>
+              </View>
+
+              <View style={styles.checkCard}>
+                <Text style={styles.checkTitle}>{t('passes') || 'Passes'}</Text>
+                <Text style={styles.checkDetail}>
+                  {healthCheck.checks.passes.accessible ? (t('accessible') || 'Accessible') : (t('notAccessible') || 'Not Accessible')}
+                </Text>
+                <Text style={styles.checkDetail}>
+                  {t('count') || 'Count'}: {healthCheck.checks.passes.count}
                 </Text>
               </View>
             </View>
@@ -392,10 +402,10 @@ export default function StatusPage() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Status page auto-refreshes every 30 seconds
+              {t('autoRefresh') || 'Status page auto-refreshes every 30 seconds'}
             </Text>
             <Text style={styles.footerText}>
-              Pull down to refresh manually
+              {t('pullToRefresh') || 'Pull down to refresh manually'}
             </Text>
           </View>
         </>
@@ -408,7 +418,7 @@ const getStyles = (isDark: boolean, colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#000000' : '#F2F2F7',
+      backgroundColor: colors.background.default,
     },
     header: {
       flexDirection: 'row',
@@ -416,159 +426,217 @@ const getStyles = (isDark: boolean, colors: any) =>
       justifyContent: 'space-between',
       padding: 20,
       paddingTop: Platform.OS === 'web' ? 20 : 60,
-      backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+      backgroundColor: colors.background.paper,
       borderBottomWidth: 1,
-      borderBottomColor: isDark ? '#38383A' : '#E5E5EA',
+      borderBottomColor: colors.divider,
+      shadowColor: isDark ? '#000' : '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.3 : 0.1,
+      shadowRadius: 4,
+      elevation: 3,
     },
     backButton: {
       padding: 8,
+      borderRadius: 8,
+      backgroundColor: 'transparent',
     },
     placeholder: {
       width: 40,
     },
     title: {
-      fontSize: 20,
+      fontSize: 24,
       fontWeight: '700',
-      color: colors.text,
+      color: colors.text.primary,
     },
     errorContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       padding: 16,
       margin: 16,
-      backgroundColor: '#FFEBEE',
-      borderRadius: 8,
+      backgroundColor: isDark ? 'rgba(255, 59, 48, 0.15)' : '#FFEBEE',
+      borderRadius: 12,
       gap: 8,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 59, 48, 0.3)' : 'rgba(255, 59, 48, 0.2)',
     },
     errorText: {
-      color: '#FF3B30',
+      color: colors.error.main,
       fontSize: 14,
+      fontWeight: '500',
     },
     section: {
-      padding: 16,
+      padding: 20,
+      paddingTop: 16,
     },
     statusHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 16,
+      marginBottom: 20,
+      flexWrap: 'wrap',
+      gap: 12,
     },
     statusBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
       borderRadius: 20,
-      gap: 6,
+      gap: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 3,
     },
     statusBadgeText: {
       color: '#FFFFFF',
       fontSize: 14,
       fontWeight: '700',
+      letterSpacing: 0.5,
     },
     timestamp: {
       fontSize: 12,
-      color: colors.textSecondary,
+      color: colors.text.secondary,
+      fontWeight: '500',
     },
     sectionTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: 12,
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.text.primary,
+      marginBottom: 16,
     },
     serviceCard: {
-      backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 12,
-      padding: 16,
+      backgroundColor: colors.background.paper,
+      borderRadius: 16,
+      padding: 20,
       borderLeftWidth: 4,
-      marginBottom: 12,
+      marginBottom: 16,
+      shadowColor: isDark ? '#000' : '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.3 : 0.1,
+      shadowRadius: 8,
+      elevation: 2,
     },
     serviceHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      marginBottom: 12,
+      gap: 12,
+      marginBottom: 16,
     },
     serviceStatus: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: '600',
-      color: colors.text,
+      color: colors.text.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
     },
     responseTime: {
       fontSize: 12,
-      color: colors.textSecondary,
+      color: colors.text.secondary,
       marginLeft: 'auto',
+      fontWeight: '500',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
     },
     serviceDetail: {
       fontSize: 14,
-      color: colors.textSecondary,
-      marginTop: 4,
+      color: colors.text.secondary,
+      marginTop: 8,
+      lineHeight: 20,
     },
     tablesContainer: {
-      gap: 8,
+      gap: 12,
+      marginTop: 8,
     },
     tableRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingVertical: 4,
+      gap: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
     },
     tableName: {
       fontSize: 14,
-      color: colors.text,
+      color: colors.text.primary,
       flex: 1,
+      fontWeight: '500',
+      fontFamily: Platform.OS === 'web' ? 'monospace' : 'monospace',
     },
     tableCount: {
       fontSize: 12,
-      color: colors.textSecondary,
+      color: colors.text.secondary,
+      fontWeight: '600',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
     },
     tableError: {
       fontSize: 12,
-      color: '#FF3B30',
+      color: colors.error.main,
+      fontWeight: '500',
     },
     endpointsContainer: {
-      gap: 8,
+      gap: 12,
+      marginTop: 8,
     },
     endpointRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingVertical: 4,
+      gap: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
     },
     endpointName: {
-      fontSize: 14,
-      color: colors.text,
+      fontSize: 13,
+      color: colors.text.primary,
       fontFamily: Platform.OS === 'web' ? 'monospace' : 'monospace',
+      fontWeight: '500',
     },
     checksContainer: {
-      gap: 12,
+      gap: 16,
     },
     checkCard: {
-      backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
-      borderRadius: 12,
-      padding: 16,
+      backgroundColor: colors.background.paper,
+      borderRadius: 16,
+      padding: 20,
       borderLeftWidth: 4,
-      borderLeftColor: '#007AFF',
+      borderLeftColor: colors.primary,
+      shadowColor: isDark ? '#000' : '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.3 : 0.1,
+      shadowRadius: 8,
+      elevation: 2,
     },
     checkTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: 8,
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text.primary,
+      marginBottom: 12,
     },
     checkDetail: {
       fontSize: 14,
-      color: colors.textSecondary,
-      marginTop: 4,
+      color: colors.text.secondary,
+      marginTop: 6,
+      lineHeight: 20,
     },
     footer: {
-      padding: 20,
+      padding: 24,
       alignItems: 'center',
+      paddingBottom: 40,
     },
     footerText: {
       fontSize: 12,
-      color: colors.textSecondary,
+      color: colors.text.secondary,
       marginTop: 4,
+      fontWeight: '500',
     },
   });
 

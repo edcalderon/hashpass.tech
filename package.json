@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "expo-router/entry",
-  "version": "1.6.102",
+  "version": "1.6.105",
   "scripts": {
     "start": "NODE_OPTIONS='--max-old-space-size=4096' expo start",
     "start:reset": "NODE_OPTIONS='--max-old-space-size=4096' expo start --clear",
@@ -46,7 +46,7 @@
   },
   "expo": {
     "extra": {
-      "EXPO_PUBLIC_API_BASE_URL": "https://hashpass.co/api"
+      "EXPO_PUBLIC_API_BASE_URL": "https://api.hashpass.tech/api"
     }
   },
   "jest": {

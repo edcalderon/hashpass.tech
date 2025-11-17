@@ -396,7 +396,9 @@
     "banner": {
       "title": "Blockchain Summit Latam 2025",
       "subtitle": "12-14 de Noviembre de 2025 • Universidad EAFIT, Medellín",
-      "date": "12-14 de Noviembre de 2025"
+      "date": "12-14 de Noviembre de 2025",
+      "exploreAllEvents": "Explorar Todos los Eventos",
+      "exploreMoreEvents": "Explorar Más Eventos"
     },
     "selectEvent": "Seleccionar Evento",
     "yourPasses": "Tus Pases",
@@ -955,5 +957,43 @@
         "messageMeeting": "Nuevo mensaje en {meetingTitle}"
       }
     }
+  },
+  "status": {
+    "title": "Estado del Sistema",
+    "lastUpdated": "Última actualización",
+    "database": "Base de Datos",
+    "emailService": "Servicio de Correo",
+    "apiEndpoints": "Endpoints de API",
+    "systemChecks": "Verificaciones del Sistema",
+    "configured": "Configurado",
+    "yes": "Sí",
+    "no": "No",
+    "agenda": "Agenda",
+    "speakers": "Ponentes",
+    "bookings": "Reservas",
+    "passes": "Pases",
+    "hasData": "Tiene Datos",
+    "noData": "Sin Datos",
+    "accessible": "Accesible",
+    "notAccessible": "No Accesible",
+    "items": "Elementos",
+    "count": "Cantidad",
+    "updated": "Actualizado",
+    "autoRefresh": "La página de estado se actualiza automáticamente cada 30 segundos",
+    "pullToRefresh": "Desliza hacia abajo para actualizar manualmente"
+  },
+  "version": {
+    "title": "Información de Versión",
+    "current": "Versión Actual",
+    "released": "Publicado:",
+    "buildInfo": "Información de Compilación:",
+    "buildId": "ID de Compilación:",
+    "buildTime": "Tiempo de Compilación:",
+    "gitCommit": "Commit de Git:",
+    "branch": "Rama:",
+    "features": "Nuevas Funcionalidades",
+    "bugfixes": "Correcciones de Errores",
+    "breakingChanges": "Cambios Importantes",
+    "history": "Historial de Versiones"
   }
 }

@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/i18n';
+import { translateNotification } from '../lib/notification-translations';
 
 interface MiniNotificationDropdownProps {
   onNotificationPress?: () => void;
@@ -43,74 +44,15 @@ export default function MiniNotificationDropdown({ onNotificationPress }: MiniNo
       onNotificationPress();
     }
     
-    // Navigate based on notification type
-    if (notification.type === 'chat_message' && notification.meeting_id) {
-      // Navigate to meeting chat
-      router.push({
-        pathname: '/events/bsl2025/networking/meeting-detail' as any,
-        params: {
-          meetingId: notification.meeting_id,
-          openChat: 'true'
-        }
-      });
-    } else if (notification.meeting_request_id) {
-      try {
-        // Fetch meeting request details
-        const { data: meetingRequest, error } = await supabase
-          .from('meeting_requests')
-          .select(`
-            id,
-            speaker_id,
-            speaker_name,
-            requester_id,
-            requester_name,
-            requester_company,
-            status,
-            message,
-            meeting_scheduled_at,
-            meeting_location,
-            duration_minutes,
-            note
-          `)
-          .eq('id', notification.meeting_request_id)
-          .single();
-
-        if (error || !meetingRequest) {
-          // Fallback: navigate to my-requests page
-          router.push('/events/bsl2025/networking/my-requests' as any);
-          return;
-        }
-
-        // Fetch speaker details
-        // Note: speaker_id in meeting_requests is UUID (user_id from bsl_speakers)
-        const { data: speaker } = await supabase
-          .from('bsl_speakers')
-          .select('imageurl, company, id, user_id')
-          .eq('user_id', meetingRequest.speaker_id)
-          .single();
-
-        // Navigate to meeting detail page
-        // Navigate to my-requests page instead of meeting-detail
-        // This allows users to see the request in context and take actions
-        router.push({
-          pathname: '/events/bsl2025/networking/my-requests' as any,
-          params: {
-            requestId: meetingRequest.id,
-            highlightRequest: 'true'
-          }
-        });
-      } catch (error) {
-        console.error('Error navigating to meeting detail:', error);
-        // Fallback: navigate to my-requests page
-        router.push('/events/bsl2025/networking/my-requests' as any);
+    // Always navigate to notification center first
+    // The notification center will handle marking as read and navigation to the actual action
+    router.push({
+      pathname: '/dashboard/notifications' as any,
+      params: {
+        notificationId: notification.id,
+        highlightNotification: 'true'
       }
-    } else if (notification.speaker_id) {
-      // Navigate to speaker details
-      router.push(`/events/bsl2025/speakers/${notification.speaker_id}` as any);
-    } else {
-      // Default: navigate to notifications screen
-      router.push('/dashboard/notifications');
-    }
+    });
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -122,13 +64,23 @@ export default function MiniNotificationDropdown({ onNotificationPress }: MiniNo
       return t('center.justNow');
     } else if (diffInSeconds < 3600) {
       const minutes = Math.floor(diffInSeconds / 60);
-      return t('center.minutesAgo', { minutes });
+      const translated = t('center.minutesAgo', { minutes });
+      // Fallback if translation returns the key itself
+      return translated && translated !== 'center.minutesAgo' ? translated : `${minutes}m ago`;
     } else if (diffInSeconds < 86400) {
       const hours = Math.floor(diffInSeconds / 3600);
-      return t('center.hoursAgo', { hours });
+      const translated = t('center.hoursAgo', { hours });
+      // Fallback if translation returns the key itself
+      return translated && translated !== 'center.hoursAgo' ? translated : `${hours}h ago`;
     } else {
       const days = Math.floor(diffInSeconds / 86400);
-      return t('center.daysAgo', { days });
+      const translated = t('center.daysAgo', { days });
+      // Fallback if translation returns the key itself or doesn't interpolate correctly
+      if (translated && translated !== 'center.daysAgo' && translated.includes(String(days))) {
+        return translated;
+      }
+      // Fallback to ensure days is always shown
+      return `${days}d ago`;
     }
   };
 
@@ -214,36 +166,41 @@ export default function MiniNotificationDropdown({ onNotificationPress }: MiniNo
                   <Text style={styles.emptyText}>{t('center.noNewNotifications')}</Text>
                 </View>
               ) : (
-                recentNotifications.map((notification) => (
-                  <TouchableOpacity
-                    key={notification.id}
-                    style={styles.notificationItem}
-                    onPress={() => handleNotificationClick(notification)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.notificationIcon}>
-                      <MaterialIcons 
-                        name={getNotificationIcon(notification.type) as any} 
-                        size={20} 
-                        color={colors.primary} 
-                      />
-                    </View>
-                    <View style={styles.notificationContent}>
-                      <Text style={styles.notificationTitle} numberOfLines={1}>
-                        {notification.title}
-                      </Text>
-                      <Text style={styles.notificationMessage} numberOfLines={2}>
-                        {notification.message}
-                      </Text>
-                      <Text style={styles.notificationTime}>
-                        {formatTimeAgo(notification.created_at)}
-                      </Text>
-                    </View>
-                    {notification.is_urgent && (
-                      <View style={styles.urgentDot} />
-                    )}
-                  </TouchableOpacity>
-                ))
+                recentNotifications.map((notification) => {
+                  // Translate notification to interpolate {requesterName} and other parameters
+                  const translatedNotification = translateNotification(notification, t);
+                  
+                  return (
+                    <TouchableOpacity
+                      key={notification.id}
+                      style={styles.notificationItem}
+                      onPress={() => handleNotificationClick(notification)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.notificationIcon}>
+                        <MaterialIcons 
+                          name={getNotificationIcon(notification.type) as any} 
+                          size={20} 
+                          color={colors.primary} 
+                        />
+                      </View>
+                      <View style={styles.notificationContent}>
+                        <Text style={styles.notificationTitle} numberOfLines={1}>
+                          {translatedNotification.title}
+                        </Text>
+                        <Text style={styles.notificationMessage} numberOfLines={2}>
+                          {translatedNotification.message}
+                        </Text>
+                        <Text style={styles.notificationTime}>
+                          {formatTimeAgo(notification.created_at)}
+                        </Text>
+                      </View>
+                      {notification.is_urgent && (
+                        <View style={styles.urgentDot} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
               )}
             </ScrollView>
 

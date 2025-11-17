@@ -229,6 +229,12 @@
       "routeKeys": {}
     },
     {
+      "file": "./(shared)/support.tsx",
+      "page": "/(shared)/support",
+      "namedRegex": "^(?:/\\(shared\\))?/support(?:/)?$",
+      "routeKeys": {}
+    },
+    {
       "file": "./(shared)/privacy.tsx",
       "page": "/(shared)/privacy",
       "namedRegex": "^(?:/\\(shared\\))?/privacy(?:/)?$",

@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity, StatusBar, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { useRouter } from 'expo-router';
+import { useTranslation } from '../i18n/i18n';
+import { isMainBranch } from '../lib/event-detector';
 import AgendaTracker from './AgendaTracker';
 
 interface EventBannerProps {
@@ -41,6 +44,8 @@ export default function EventBanner({
   isEventFinished = false
 }: EventBannerProps) {
   const { isDark, colors } = useTheme();
+  const router = useRouter();
+  const { t } = useTranslation('explore');
   
   // Check if this is BSL2025 event to show logo instead of title
   const isBSL2025 = eventId === 'bsl2025' || title === 'Blockchain Summit Latam 2025';
@@ -172,6 +177,16 @@ export default function EventBanner({
               Special thanks to Rodrigo, the BSL team (Juli, Julian, Laura), EAFIT University and everyone who contributed.
             </Text>
           </View>
+          <TouchableOpacity
+            style={styles.viewMoreEventsButton}
+            onPress={() => router.push('/(shared)/dashboard/explore' as any)}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="explore" size={20} color="#FFFFFF" />
+            <Text style={styles.viewMoreEventsText}>
+              {isMainBranch ? t('banner.exploreAllEvents') : t('banner.exploreMoreEvents')}
+            </Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <>
@@ -430,5 +445,25 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
     lineHeight: 18,
     opacity: 0.85,
     fontStyle: 'italic',
+  },
+  // View More Events Button
+  viewMoreEventsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  viewMoreEventsText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 8,
+    letterSpacing: 0.5,
   },
 });

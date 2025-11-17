@@ -68,7 +68,7 @@ export default function SupportScreen() {
         <MaterialIcons name="help-outline" size={48} color={colors.primary} style={styles.icon} />
         <Text style={styles.sectionTitle}>Need Help?</Text>
         <Text style={styles.sectionDescription}>
-          We're here to help! Report bugs, ask questions, or share feedback.
+          We&apos;re here to help! Report bugs, ask questions, or share feedback.
         </Text>
       </View>
 

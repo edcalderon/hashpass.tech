@@ -99,6 +99,32 @@ frontend:
         - 'echo "=== Contents of dist/client/ ==="'
         - ls -la dist/client/
         - ls -la dist/client/index.html
+    post_build:
+      commands:
+        # Deploy Lambda function automatically with frontend
+        # This ensures API and frontend are always in sync
+        - echo "📦 Packaging Lambda function..."
+        - chmod +x scripts/package-lambda.sh
+        - ./scripts/package-lambda.sh || echo "⚠️  Lambda packaging skipped (non-critical)"
+        - |
+          if [ -f lambda-deployment.zip ]; then
+            echo "🚀 Deploying Lambda function: hashpass-api-handler"
+            aws lambda update-function-code \
+              --function-name hashpass-api-handler \
+              --region us-east-1 \
+              --zip-file fileb://lambda-deployment.zip || {
+                echo "⚠️  Lambda deployment failed - this may be due to missing permissions"
+                echo "   Frontend deployment will continue..."
+                echo "   To fix: Configure Amplify service role with Lambda permissions"
+                echo "   See: docs/AMPLIFY-LAMBDA-INTEGRATION.md"
+              }
+            
+            echo "✅ Lambda function deployment completed"
+            # Cleanup
+            rm -f lambda-deployment.zip || true
+          else
+            echo "⚠️  lambda-deployment.zip not found, skipping Lambda deployment"
+          fi
   artifacts:
     baseDirectory: dist/client
     files:

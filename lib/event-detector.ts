@@ -14,7 +14,7 @@ export interface EventInfo extends Omit<EventConfig, 'name' | 'domain'> {
 // In main repo, all events will be available
 
 // Detect deployment context from environment variables
-const isMainBranch = typeof process !== 'undefined' && (
+export const isMainBranch = typeof process !== 'undefined' && (
   process.env.AMPLIFY_SHOW_ALL_EVENTS === 'true' ||
   process.env.NEXT_PUBLIC_SHOW_ALL_EVENTS === 'true' ||
   (typeof window !== 'undefined' && (window as any).__AMPLIFY_SHOW_ALL_EVENTS__ === true)

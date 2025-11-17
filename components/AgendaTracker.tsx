@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useRouter } from 'expo-router';
+import { useTranslation } from '../i18n/i18n';
+import { isMainBranch } from '../lib/event-detector';
 import { apiClient } from '../lib/api-client';
 import { AgendaItem, parseEventISO, formatTimeRange } from '../types/agenda';
 
@@ -23,6 +25,7 @@ export default function AgendaTracker({
 }: AgendaTrackerProps) {
   const { isDark, colors } = useTheme();
   const router = useRouter();
+  const { t } = useTranslation('explore');
   const styles = getStyles(isDark, colors, backgroundColor);
   
   const [currentEvent, setCurrentEvent] = useState<any | null>(null);
@@ -385,6 +388,16 @@ export default function AgendaTracker({
         <View style={styles.thankYouContainer}>
           <MaterialIcons name="celebration" size={32} color="#FFFFFF" />
           <Text style={styles.thankYouText}>Thanks and see you next time!</Text>
+          <TouchableOpacity
+            style={styles.viewMoreEventsButton}
+            onPress={() => router.push('/(shared)/dashboard/explore' as any)}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="explore" size={18} color="#FFFFFF" />
+            <Text style={styles.viewMoreEventsText}>
+              {isMainBranch ? t('banner.exploreAllEvents') : t('banner.exploreMoreEvents')}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -736,7 +749,7 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
     marginLeft: 4,
   },
   thankYouContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -749,6 +762,25 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  viewMoreEventsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  viewMoreEventsText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
+    letterSpacing: 0.5,
   },
 });
 

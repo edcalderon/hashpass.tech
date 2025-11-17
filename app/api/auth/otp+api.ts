@@ -1,5 +1,5 @@
 import { supabaseServer as supabase } from '@/lib/supabase-server';
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

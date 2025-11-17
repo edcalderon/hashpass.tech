@@ -107,7 +107,7 @@ export class EventApiClient {
       if (options.skipEventSegment) {
         baseUrl = envBase.endsWith('/') ? envBase.slice(0, -1) : envBase;
       } else {
-        // If we have an env base URL (e.g., https://hashpass.co/api/), append event-specific segment
+        // If we have an env base URL (e.g., https://api.hashpass.tech/api/), append event-specific segment
         const eventSegment = this.getEventApiSegment(event);
         const cleanEnvBase = envBase.endsWith('/') ? envBase : `${envBase}/`;
         baseUrl = `${cleanEnvBase}${eventSegment}`;

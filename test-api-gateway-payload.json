@@ -1,0 +1,1 @@
+{"httpMethod":"GET","path":"/api/config/versions","requestContext":{"domainName":"nqt8xep20g.execute-api.us-east-1.amazonaws.com","path":"/prod/api/config/versions","stage":"prod","requestId":"test-123"},"headers":{},"isBase64Encoded":false}

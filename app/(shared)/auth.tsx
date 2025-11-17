@@ -20,6 +20,7 @@ import { throttle } from '../../lib/performance-utils';
 import { clearAuthCache } from '../../lib/version-checker';
 import { apiClient } from '../../lib/api-client';
 import { CURRENT_VERSION } from '../../config/version';
+import VersionStatusIndicator from '../../components/VersionStatusIndicator';
 
 type AuthMethod = 'magiclink' | 'otp';
 
@@ -48,7 +49,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [authMethod, setAuthMethod] = useState<AuthMethod>('otp'); // Default to OTP since magic link is under maintenance
+  const [authMethod, setAuthMethod] = useState<AuthMethod>('magiclink'); // Default to magic link
   const [emailError, setEmailError] = useState('');
   const [ethereumAvailable, setEthereumAvailable] = useState(false);
   const [solanaAvailable, setSolanaAvailable] = useState(false);
@@ -93,8 +94,15 @@ export default function AuthScreen() {
   }, [rateLimitCooldown]);
 
   // Check for existing session on mount (handles page reload)
+  // Skip this check if we're on the callback route to prevent loops
   useEffect(() => {
     const checkExistingSession = async () => {
+      // Don't check session if we're on callback route - let callback handle it
+      if (typeof window !== 'undefined' && window.location.pathname.includes('/auth/callback')) {
+        console.log('⏭️ Skipping session check on callback route');
+        return;
+      }
+      
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user && !hasNavigatedRef.current) {
@@ -123,6 +131,12 @@ export default function AuthScreen() {
   useEffect(() => {
     // Throttled auth change handler (reduced throttle for faster response)
     const throttledHandleAuthChange = throttle(async (event: AuthChangeEvent, session: Session | null) => {
+      // Don't handle auth changes if we're on callback route - let callback handle it
+      if (typeof window !== 'undefined' && window.location.pathname.includes('/auth/callback')) {
+        console.log('⏭️ Skipping auth change handler on callback route');
+        return;
+      }
+      
       // Prevent duplicate processing
       if (isProcessingRef.current || hasNavigatedRef.current) {
         console.log('⏭️ Auth change already processing or navigated, skipping');
@@ -944,6 +958,31 @@ export default function AuthScreen() {
       console.log('✅ Final redirect URL (base only for Supabase validation):', finalRedirectUrl);
       console.log('💡 Query parameters (apikey, returnTo) will be handled separately');
       
+      // Verify the redirect URL matches allowed patterns
+      const allowedPatterns = [
+        'https://bsl2025.hashpass.tech/auth/callback',
+        'http://localhost:8081/auth/callback',
+        'https://bsl2025.hashpass.tech/**',
+        'http://localhost:8081/**',
+      ];
+      const matchesAllowed = allowedPatterns.some(pattern => {
+        if (pattern.endsWith('/**')) {
+          const base = pattern.replace('/**', '');
+          return finalRedirectUrl.startsWith(base);
+        }
+        return finalRedirectUrl === pattern;
+      });
+      console.log('🔍 Redirect URL validation:', {
+        url: finalRedirectUrl,
+        matchesAllowed,
+        allowedPatterns,
+      });
+      
+      if (!matchesAllowed) {
+        console.warn('⚠️ Redirect URL may not match Supabase allowed URLs:', finalRedirectUrl);
+        console.warn('⚠️ Please verify this URL is in Supabase Dashboard → Authentication → Redirect URLs');
+      }
+      
       // Store the origin in localStorage so the callback handler can use it if Supabase redirects incorrectly
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         try {
@@ -955,16 +994,42 @@ export default function AuthScreen() {
       }
       
       // Use Supabase's built-in redirect handling to avoid URI mismatches
+      // CRITICAL: Use finalRedirectUrl (base only) instead of redirectUrl to ensure validation passes
+      console.log('🚀 Calling Supabase signInWithOAuth with redirectTo:', finalRedirectUrl);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: redirectUrl,
+          redirectTo: finalRedirectUrl, // Use finalRedirectUrl (base only) for validation
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
           },
         },
       });
+      
+      if (data?.url) {
+        // Log the OAuth URL to verify redirect_to is included
+        const oauthUrl = new URL(data.url);
+        const redirectToParam = oauthUrl.searchParams.get('redirect_to');
+        console.log('📋 OAuth URL from Supabase:', {
+          base: oauthUrl.origin + oauthUrl.pathname,
+          hasRedirectTo: !!redirectToParam,
+          redirectTo: redirectToParam ? redirectToParam.substring(0, 100) : 'NOT FOUND',
+          fullUrl: data.url.substring(0, 200),
+        });
+        
+        if (!redirectToParam) {
+          console.error('❌ CRITICAL: redirect_to parameter is missing from OAuth URL!');
+          console.error('❌ Supabase will use site_url as fallback, which may cause incorrect redirects');
+        } else if (redirectToParam !== finalRedirectUrl) {
+          console.warn('⚠️ redirect_to in OAuth URL does not match what we sent:', {
+            sent: finalRedirectUrl,
+            received: redirectToParam,
+          });
+        } else {
+          console.log('✅ redirect_to parameter correctly included in OAuth URL');
+        }
+      }
 
       if (error) {
         console.error(`❌ ${provider} OAuth error:`, error);
@@ -1310,10 +1375,10 @@ export default function AuthScreen() {
                   style={[
                     styles.methodToggle, 
                     authMethod === 'magiclink' && styles.methodToggleActive,
-                    (loading || true) && styles.methodToggleDisabled // Disabled for maintenance
+                    loading && styles.methodToggleDisabled
                   ]}
                   onPress={() => {
-                    if (!loading && false) { // Disabled for maintenance
+                    if (!loading) {
                       setAuthMethod('magiclink');
                       // Clear any email errors when switching
                       if (emailError) {
@@ -1321,14 +1386,14 @@ export default function AuthScreen() {
                       }
                     }
                   }}
-                  disabled={loading || true} // Disabled for maintenance
+                  disabled={loading}
                   activeOpacity={0.7}
                 >
                   <Ionicons 
                     name="link" 
                     size={16} 
                     color={
-                      loading || true // Disabled for maintenance
+                      loading
                         ? (isDark ? '#666' : '#999')
                         : authMethod === 'magiclink' 
                           ? (isDark ? '#fff' : '#000') 
@@ -1338,9 +1403,9 @@ export default function AuthScreen() {
                   <Text style={[
                     styles.methodToggleText, 
                     authMethod === 'magiclink' && styles.methodToggleTextActive,
-                    (loading || true) && styles.methodToggleTextDisabled // Disabled for maintenance
+                    loading && styles.methodToggleTextDisabled
                   ]}>
-                    {t('magicLink')} (Maintenance)
+                    {t('magicLink')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1470,21 +1535,33 @@ export default function AuthScreen() {
 
         {/* Optional Auth Methods - Circular Buttons */}
         <View style={styles.optionalAuthContainer}>
-          {/* Google OAuth - Under Maintenance */}
-          <View style={styles.disabledButtonContainer}>
-            <View style={[styles.circularButton, styles.googleButton, styles.disabledButton]}>
-              <Ionicons name="logo-google" size={24} color="#666" />
-            </View>
-            <Text style={styles.maintenanceText}>Maintenance</Text>
-          </View>
+          {/* Google OAuth */}
+          <TouchableOpacity
+            style={[styles.circularButton, styles.googleButton]}
+            onPress={() => signInWithOAuth('google')}
+            disabled={loading}
+            accessibilityLabel="Sign in with Google"
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Ionicons name="logo-google" size={24} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
 
-          {/* Discord OAuth - Under Maintenance */}
-          <View style={styles.disabledButtonContainer}>
-            <View style={[styles.circularButton, styles.discordButton, styles.disabledButton]}>
-              <Ionicons name="logo-discord" size={24} color="#666" />
-            </View>
-            <Text style={styles.maintenanceText}>Maintenance</Text>
-          </View>
+          {/* Discord OAuth */}
+          <TouchableOpacity
+            style={[styles.circularButton, styles.discordButton]}
+            onPress={() => signInWithOAuth('discord')}
+            disabled={loading}
+            accessibilityLabel="Sign in with Discord"
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Ionicons name="logo-discord" size={24} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
 
           {Platform.OS === 'web' && ethereumAvailable && (
             <TouchableOpacity
@@ -1546,7 +1623,7 @@ export default function AuthScreen() {
         </View>
         
         <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>v{CURRENT_VERSION.version}</Text>
+          <VersionStatusIndicator compact={false} showVersion={true} size="small" />
         </View>
       </View>
       </ScrollView>

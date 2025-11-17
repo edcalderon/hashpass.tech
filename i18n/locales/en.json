@@ -396,7 +396,9 @@
     "banner": {
       "title": "Blockchain Summit Latam 2025",
       "subtitle": "November 12-14, 2025 • Universidad EAFIT, Medellín",
-      "date": "November 12-14, 2025"
+      "date": "November 12-14, 2025",
+      "exploreAllEvents": "Explore All Events",
+      "exploreMoreEvents": "Explore More Events"
     },
     "selectEvent": "Select Event",
     "yourPasses": "Your Passes",
@@ -956,5 +958,43 @@
         "messageMeeting": "New message in {meetingTitle}"
       }
     }
+  },
+  "status": {
+    "title": "System Status",
+    "lastUpdated": "Last updated",
+    "database": "Database",
+    "emailService": "Email Service",
+    "apiEndpoints": "API Endpoints",
+    "systemChecks": "System Checks",
+    "configured": "Configured",
+    "yes": "Yes",
+    "no": "No",
+    "agenda": "Agenda",
+    "speakers": "Speakers",
+    "bookings": "Bookings",
+    "passes": "Passes",
+    "hasData": "Has Data",
+    "noData": "No Data",
+    "accessible": "Accessible",
+    "notAccessible": "Not Accessible",
+    "items": "Items",
+    "count": "Count",
+    "updated": "Updated",
+    "autoRefresh": "Status page auto-refreshes every 30 seconds",
+    "pullToRefresh": "Pull down to refresh manually"
+  },
+  "version": {
+    "title": "Version Information",
+    "current": "Current Version",
+    "released": "Released:",
+    "buildInfo": "Build Information:",
+    "buildId": "Build ID:",
+    "buildTime": "Build Time:",
+    "gitCommit": "Git Commit:",
+    "branch": "Branch:",
+    "features": "New Features",
+    "bugfixes": "Bug Fixes",
+    "breakingChanges": "Breaking Changes",
+    "history": "Version History"
   }
 }
