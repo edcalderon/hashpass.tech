@@ -1,16 +1,13 @@
 {
-  "name": "hashpass-api-lambda",
+  "name": "hashpass-api-handler",
   "version": "1.0.0",
-  "description": "Lambda function handler for HashPass API routes using Expo Server",
+  "description": "HashPass API handler using Expo Server",
   "main": "index.js",
-  "scripts": {
-    "deploy": "echo 'Use AWS CLI or Serverless Framework to deploy'"
-  },
+  "type": "commonjs",
   "dependencies": {
-    "@expo/server": "^0.5.3"
+    "@expo/server": "^0.4.4"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "22.18.0"
   }
 }
-

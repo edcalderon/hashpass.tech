@@ -35,9 +35,8 @@ mkdir -p $PACKAGE_DIR/config
 if [ -f "config/versions.json" ]; then
   cp config/versions.json $PACKAGE_DIR/config/
 fi
-if [ -f "package.json" ]; then
-  cp package.json $PACKAGE_DIR/
-fi
+# Note: We do NOT copy the root package.json as it has incompatible dependencies
+# The lambda/package.json already has the minimal dependencies needed
 
 # Install dependencies
 echo "4. Installing dependencies..."
