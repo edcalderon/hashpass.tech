@@ -142,7 +142,7 @@ function updateChangelog(version, releaseType, notes = '') {
   }
 
   let content = fs.readFileSync(changelogPath, 'utf8');
-  
+
   // Check if the changelog already has this version
   if (content.includes(`## [${version}]`)) {
     console.log(`ℹ️ Version ${version} already exists in CHANGELOG.md, skipping update`);
@@ -152,7 +152,7 @@ function updateChangelog(version, releaseType, notes = '') {
   // Add the new version at the top of the changelog
   const today = new Date().toISOString().split('T')[0];
   const newEntry = `## [${version}] - ${today}\n\n### ${releaseType === 'stable' ? 'Released' : releaseType.charAt(0).toUpperCase() + releaseType.slice(1)}\n- ${notes || `Version ${version} release`}\n\n### Technical Details\n- Version: ${version}\n- Release Type: ${releaseType}\n- Build Number: ${buildNumber}\n- Release Date: ${new Date().toISOString()}\n\n`;
-  
+
   // Insert the new version after the changelog header
   const headerEnd = content.indexOf('\n## [');
   if (headerEnd !== -1) {
@@ -160,7 +160,7 @@ function updateChangelog(version, releaseType, notes = '') {
   } else {
     content = newEntry + '\n' + content;
   }
-  
+
   fs.writeFileSync(changelogPath, content);
   console.log(`✅ Updated CHANGELOG.md with version ${version}`);
 }
@@ -169,6 +169,15 @@ function updateChangelog(version, releaseType, notes = '') {
 const filesToUpdate = [
   {
     path: 'package.json',
+    updates: [
+      {
+        key: 'version',
+        value: newVersion
+      }
+    ]
+  },
+  {
+    path: 'lambda/package.json',
     updates: [
       {
         key: 'version',
@@ -217,7 +226,7 @@ let allUpdated = true;
 
 for (const file of filesToUpdate) {
   const filePath = path.join(projectRoot, file.path);
-  
+
   try {
     if (!fs.existsSync(filePath)) {
       console.warn(`⚠️  Warning: File ${file.path} not found, skipping...`);
@@ -287,16 +296,16 @@ function extractFeaturesAndBugfixes(content) {
   const features = [];
   const bugfixes = [];
   const breakingChanges = [];
-  
+
   // Extract CURRENT_VERSION block
   const currentVersionMatch = content.match(/export const CURRENT_VERSION: VersionInfo = \{([\s\S]*?)\};/);
   if (!currentVersionMatch) {
     console.warn('⚠️  Could not find CURRENT_VERSION block, using empty arrays');
     return { features, bugfixes, breakingChanges };
   }
-  
+
   const currentVersionContent = currentVersionMatch[1];
-  
+
   // Extract features array from CURRENT_VERSION only
   const featuresMatch = currentVersionContent.match(/features:\s*\[([\s\S]*?)\],/);
   if (featuresMatch) {
@@ -310,7 +319,7 @@ function extractFeaturesAndBugfixes(content) {
       return match ? match[1] : '';
     }).filter(f => f));
   }
-  
+
   // Extract bugfixes array from CURRENT_VERSION only
   const bugfixesMatch = currentVersionContent.match(/bugfixes:\s*\[([\s\S]*?)\],/);
   if (bugfixesMatch) {
@@ -324,7 +333,7 @@ function extractFeaturesAndBugfixes(content) {
       return match ? match[1] : '';
     }).filter(f => f));
   }
-  
+
   // Extract breakingChanges array from CURRENT_VERSION only
   const breakingMatch = currentVersionContent.match(/breakingChanges:\s*\[([\s\S]*?)\],/);
   if (breakingMatch) {
@@ -338,7 +347,7 @@ function extractFeaturesAndBugfixes(content) {
       return match ? match[1] : '';
     }).filter(f => f));
   }
-  
+
   return { features, bugfixes, breakingChanges };
 }
 
@@ -347,12 +356,12 @@ try {
   const versionTsPath = path.join(projectRoot, 'config/version.ts');
   if (fs.existsSync(versionTsPath)) {
     let content = fs.readFileSync(versionTsPath, 'utf8');
-    
+
     // Extract features and bugfixes from CURRENT_VERSION
     const { features, bugfixes, breakingChanges } = extractFeaturesAndBugfixes(content);
-    
+
     // Format arrays as strings for the entry
-    const featuresStr = features.length > 0 
+    const featuresStr = features.length > 0
       ? features.map(f => `      '${f.replace(/'/g, "\\'")}'`).join(',\n')
       : '      // No new features';
     const bugfixesStr = bugfixes.length > 0
@@ -361,7 +370,7 @@ try {
     const breakingStr = breakingChanges.length > 0
       ? breakingChanges.map(f => `      '${f.replace(/'/g, "\\'")}'`).join(',\n')
       : '';
-    
+
     // Add new version to VERSION_HISTORY
     const newVersionEntry = `  '${newVersion}': {
     version: '${newVersion}',
@@ -405,46 +414,46 @@ ${bugfixesStr}
 try {
   const versionsJsonPath = path.join(projectRoot, 'config/versions.json');
   const versionTsPath = path.join(projectRoot, 'config/version.ts');
-  
+
   if (fs.existsSync(versionTsPath)) {
     const versionTsContent = fs.readFileSync(versionTsPath, 'utf8');
-    
+
     // Extract all versions from VERSION_HISTORY in version.ts
     const versionHistoryRegex = /export const VERSION_HISTORY: VersionHistory = \{([\s\S]*?)\};/;
     const historyMatch = versionTsContent.match(versionHistoryRegex);
-    
+
     if (historyMatch) {
       const historyContent = historyMatch[1];
-      
+
       // Extract CURRENT_VERSION to get current version
       const currentVersionMatch = versionTsContent.match(/version:\s*packageJson\.version/);
       const currentVersionFromPackage = getCurrentVersion(); // Use package.json as source
-      
+
       // Parse all version entries from VERSION_HISTORY
       // Use a simpler, more reliable approach: find all version entries
       const versions = [];
       const entries = [];
-      
+
       // Find all version entries using a pattern that matches the structure
       // Pattern: 'version': { ... } where ... can contain nested objects
       const versionEntryPattern = /'(\d+\.\d+\.\d+)':\s*\{/g;
       const versionMatches = [];
       let match;
-      
+
       while ((match = versionEntryPattern.exec(historyContent)) !== null) {
         versionMatches.push({
           version: match[1],
           startIndex: match.index
         });
       }
-      
+
       // Extract content for each version entry
       for (let i = 0; i < versionMatches.length; i++) {
         const startIndex = versionMatches[i].startIndex;
-        const endIndex = i < versionMatches.length - 1 
-          ? versionMatches[i + 1].startIndex 
+        const endIndex = i < versionMatches.length - 1
+          ? versionMatches[i + 1].startIndex
           : historyContent.length;
-        
+
         // Find the matching closing brace for this entry
         let braceCount = 0;
         let entryEnd = startIndex;
@@ -458,28 +467,28 @@ try {
             }
           }
         }
-        
+
         entries.push({
           version: versionMatches[i].version,
           content: historyContent.substring(startIndex, entryEnd)
         });
       }
-      
+
       // Parse each entry
       for (const entry of entries) {
         const entryContent = entry.content;
-        
+
         // Extract fields from the entry
         const buildNumberMatch = entryContent.match(/buildNumber:\s*(\d+)/);
         const releaseDateMatch = entryContent.match(/releaseDate:\s*'([^']+)'/);
         const releaseTypeMatch = entryContent.match(/releaseType:\s*'([^']+)'/);
         const notesMatch = entryContent.match(/notes:\s*'([^']+)'/);
-        
+
         // Extract arrays - handle multiline arrays
         const featuresMatch = entryContent.match(/features:\s*\[([\s\S]*?)\]/);
         const bugfixesMatch = entryContent.match(/bugfixes:\s*\[([\s\S]*?)\]/);
         const breakingMatch = entryContent.match(/breakingChanges:\s*\[([\s\S]*?)\]/);
-        
+
         const extractArrayItems = (match) => {
           if (!match) return [];
           const content = match[1].trim();
@@ -502,7 +511,7 @@ try {
             })
             .filter(item => item && item.length > 0);
         };
-        
+
         versions.push({
           version: entry.version,
           buildNumber: buildNumberMatch ? parseInt(buildNumberMatch[1]) : 0,
@@ -515,7 +524,7 @@ try {
           notes: notesMatch ? notesMatch[1].replace(/\\'/g, "'") : `Version ${entry.version} release`
         });
       }
-      
+
       // Remove duplicates (keep first occurrence)
       const seenVersions = new Set();
       const uniqueVersions = versions.filter(v => {
@@ -526,7 +535,7 @@ try {
         seenVersions.add(v.version);
         return true;
       });
-      
+
       // Sort versions by version number (newest first)
       uniqueVersions.sort((a, b) => {
         const aParts = a.version.split('.').map(Number);
@@ -536,7 +545,7 @@ try {
         }
         return 0;
       });
-      
+
       // Create versions.json structure from version.ts
       const versionsData = {
         _comment: "⚠️ AUTO-GENERATED FILE - DO NOT EDIT MANUALLY ⚠️",
@@ -545,7 +554,7 @@ try {
         currentVersion: currentVersionFromPackage,
         versions: uniqueVersions
       };
-      
+
       // Write generated JSON file
       fs.writeFileSync(versionsJsonPath, JSON.stringify(versionsData, null, 2) + '\n', 'utf8');
       console.log(`✅ Generated config/versions.json from version.ts (source of truth)`);
@@ -562,19 +571,19 @@ try {
 // Update config/git-info.json with current git information
 try {
   const gitInfoPath = path.join(projectRoot, 'config/git-info.json');
-  
+
   // Get current git information
   let gitCommit = 'unknown';
   let gitCommitFull = 'unknown';
   let gitBranch = 'main';
   let gitRepoUrl = 'https://github.com/lstech-solutions/bsl2025.hashpass.tech';
-  
+
   try {
     gitCommit = execSync('git rev-parse --short HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
     gitCommitFull = execSync('git rev-parse HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
     gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
     const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8', cwd: projectRoot }).trim();
-    
+
     // Convert SSH URL to HTTPS if needed
     if (remoteUrl.startsWith('git@')) {
       gitRepoUrl = remoteUrl.replace('git@github.com:', 'https://github.com/').replace('.git', '');
@@ -584,14 +593,14 @@ try {
   } catch (gitError) {
     console.warn('⚠️  Could not get git information, using defaults');
   }
-  
+
   const gitInfo = {
     gitCommit: gitCommit,
     gitCommitFull: gitCommitFull,
     gitBranch: gitBranch,
     gitRepoUrl: gitRepoUrl
   };
-  
+
   fs.writeFileSync(gitInfoPath, JSON.stringify(gitInfo, null, 2) + '\n', 'utf8');
   console.log(`✅ Updated config/git-info.json: commit = ${gitCommit}, branch = ${gitBranch}`);
 } catch (error) {
@@ -607,37 +616,37 @@ const performGitOperations = async () => {
 
   try {
     const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
-    
+
     // Commit changes
     if (autoGit || shouldCommit) {
       console.log('\n📝 Creating commit for version ' + newVersion + '...');
       execSync('git add .', { cwd: projectRoot, stdio: 'inherit' });
-      execSync(`git commit -m "chore: bump version to ${newVersion} (build ${buildNumber})"`, { 
-        cwd: projectRoot, 
-        stdio: 'inherit' 
+      execSync(`git commit -m "chore: bump version to ${newVersion} (build ${buildNumber})"`, {
+        cwd: projectRoot,
+        stdio: 'inherit'
       });
     }
 
     // Create tag
     if (autoGit || shouldTag) {
       console.log('🏷️  Creating tag v' + newVersion + '...');
-      execSync(`git tag -a "v${newVersion}" -m "Version ${newVersion}"`, { 
-        cwd: projectRoot, 
-        stdio: 'inherit' 
+      execSync(`git tag -a "v${newVersion}" -m "Version ${newVersion}"`, {
+        cwd: projectRoot,
+        stdio: 'inherit'
       });
     }
 
     // Push changes
     if (autoGit || shouldPush) {
       console.log('🚀 Pushing changes to ' + currentBranch + '...');
-      execSync(`git push origin "${currentBranch}"`, { 
-        cwd: projectRoot, 
-        stdio: 'inherit' 
+      execSync(`git push origin "${currentBranch}"`, {
+        cwd: projectRoot,
+        stdio: 'inherit'
       });
       if (autoGit || shouldTag) {
-        execSync('git push --tags', { 
-          cwd: projectRoot, 
-          stdio: 'inherit' 
+        execSync('git push --tags', {
+          cwd: projectRoot,
+          stdio: 'inherit'
         });
       }
       console.log(`\n🎉 Version ${newVersion} (build ${buildNumber}) has been successfully released!`);
@@ -681,10 +690,10 @@ try {
     console.log('   - config/git-info.json');
     console.log('   - CHANGELOG.md');
     console.log('   - public/sw.js');
-    
+
     // Perform git operations if requested
     await performGitOperations();
-    
+
     if (!shouldCommit && !shouldTag && !shouldPush && !autoGit) {
       console.log('\n🚀 Next steps:');
       console.log('   1. Review the changes: git diff');

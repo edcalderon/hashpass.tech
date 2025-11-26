@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.113] - 2025-11-26
+
+### Beta
+- Version 1.6.113 release
+
+### Technical Details
+- Version: 1.6.113
+- Release Type: beta
+- Build Number: 202511261143
+- Release Date: 2025-11-26T11:43:42.099Z
+
+
 ## [1.6.112] - 2025-11-26
 
 ### Beta
