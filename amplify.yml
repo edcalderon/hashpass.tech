@@ -109,16 +109,38 @@ frontend:
         - |
           if [ -f lambda-deployment.zip ]; then
             echo "🚀 Deploying Lambda function: hashpass-api-handler"
-            aws lambda update-function-code \
+            echo "Current branch: $AWS_BRANCH"
+            
+            # Deploy Lambda and capture result
+            if aws lambda update-function-code \
               --function-name hashpass-api-handler \
               --region us-east-1 \
-              --zip-file fileb://lambda-deployment.zip
-            
-            echo "✅ Lambda function deployment completed"
-            # Cleanup
-            rm -f lambda-deployment.zip || true
+              --zip-file fileb://lambda-deployment.zip; then
+              echo "✅ Lambda function deployment completed successfully"
+              # Cleanup
+              rm -f lambda-deployment.zip || true
+            else
+              LAMBDA_EXIT_CODE=$?
+              echo "❌ Lambda deployment failed with exit code: $LAMBDA_EXIT_CODE"
+              rm -f lambda-deployment.zip || true
+              
+              # CRITICAL: Fail the build on main branch if Lambda deployment fails
+              if [ "$AWS_BRANCH" = "main" ]; then
+                echo "🚨 FATAL: Lambda deployment failed on main branch - failing build"
+                exit 1
+              else
+                echo "⚠️  Lambda deployment failed on non-main branch - continuing build"
+              fi
+            fi
           else
-            echo "⚠️  lambda-deployment.zip not found, skipping Lambda deployment"
+            echo "⚠️  lambda-deployment.zip not found"
+            # CRITICAL: Fail the build on main branch if packaging failed
+            if [ "$AWS_BRANCH" = "main" ]; then
+              echo "🚨 FATAL: Lambda packaging failed on main branch - failing build"
+              exit 1
+            else
+              echo "⚠️  Lambda packaging failed on non-main branch - continuing build"
+            fi
           fi
   artifacts:
     baseDirectory: dist/client
