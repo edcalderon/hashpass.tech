@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "expo-router/entry",
-  "version": "1.6.109",
+  "version": "1.6.110",
   "scripts": {
     "start": "NODE_OPTIONS='--max-old-space-size=4096' expo start",
     "start:reset": "NODE_OPTIONS='--max-old-space-size=4096' expo start --clear",
