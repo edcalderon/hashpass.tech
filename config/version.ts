@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202511261035, // Updated to current timestamp
+  buildNumber: 202511261059, // Updated to current timestamp
   releaseDate: '2025-11-26',
   releaseType: 'beta',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -34,11 +34,29 @@ export const CURRENT_VERSION: VersionInfo = {
     'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
   ],
   breakingChanges: [],
-  notes: 'Version 1.6.110 release'
+  notes: 'Version 1.6.111 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.6.111': {
+    version: '1.6.111',
+    buildNumber: 202511261059,
+    releaseDate: '2025-11-26',
+    releaseType: 'beta',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Added missing translations for version.status and version.statusSummary to all locales',
+      'Added status section translations to ko, fr, pt, de locales',
+      'Compiled i18n catalogs to fix uncompiled message warnings for notification types',
+      'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.6.111 release'
+  },
   '1.6.110': {
     version: '1.6.110',
     buildNumber: 202511261035,

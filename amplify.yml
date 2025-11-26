@@ -105,7 +105,7 @@ frontend:
         # This ensures API and frontend are always in sync
         - echo "📦 Packaging Lambda function..."
         - chmod +x scripts/package-lambda.sh
-        - ./scripts/package-lambda.sh || echo "⚠️  Lambda packaging skipped (non-critical)"
+        - ./scripts/package-lambda.sh
         - |
           if [ -f lambda-deployment.zip ]; then
             echo "🚀 Deploying Lambda function: hashpass-api-handler"
