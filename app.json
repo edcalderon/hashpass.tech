@@ -8,7 +8,7 @@
     "scheme": "hashpass",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./public/assets/splash.gif",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -55,6 +55,8 @@
         "display": "standalone",
         "background_color": "#ffffff",
         "theme_color": "#000000",
+        "splash_image": "/assets/splash.gif",
+        "splash_color": "#ffffff",
         "orientation": "portrait",
         "permissions": [
           "camera"
