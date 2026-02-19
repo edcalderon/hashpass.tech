@@ -34,13 +34,13 @@ export const CURRENT_VERSION: VersionInfo = {
     'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
   ],
   breakingChanges: [],
-  notes: 'Version 1.6.113 release'
+  notes: 'Version 1.6.114 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
-  '1.6.113': {
-    version: '1.6.113',
+  '1.6.114': {
+    version: '1.6.114',
     buildNumber: 202511261143,
     releaseDate: '2025-11-26',
     releaseType: 'beta',
@@ -55,7 +55,7 @@ export const VERSION_HISTORY: VersionHistory = {
       'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
     ],
     breakingChanges: [],
-    notes: 'Version 1.6.113 release'
+    notes: 'Version 1.6.114 release'
   },
   '1.6.112': {
     version: '1.6.112',
