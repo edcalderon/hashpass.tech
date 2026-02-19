@@ -45,7 +45,7 @@ frontend:
         - 'echo "Show all events: $AMPLIFY_SHOW_ALL_EVENTS"'
     build:
       commands:
-        - rm -rf dist
+        - rm -rf dist apps/web-app/dist
         - mkdir -p dist/client/_expo/functions/api/bslatam
         # Increase Node.js memory limit for webpack bundler (expo export uses webpack)
         - export NODE_OPTIONS="--max-old-space-size=6144"
@@ -56,8 +56,9 @@ frontend:
         - export WEBPACK_MEMORY_LIMIT=6144
         # Reduce webpack optimization passes to save memory
         - export WEBPACK_OPTIMIZE_MINIMIZE=true
-        # Run build (Amplify has built-in 60min timeout). Use pnpm if lockfile present.
-        - '[ -f pnpm-lock.yaml ] && pnpm run build:web || npm run build:web'
+        # Build the Expo web app from the monorepo package and copy artifacts to root dist/
+        - '[ -f pnpm-lock.yaml ] && pnpm --dir apps/web-app run build || npm --prefix apps/web-app run build'
+        - cp -r apps/web-app/dist ./dist
         - cp -r dist/server/* dist/client/
         - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
         - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
