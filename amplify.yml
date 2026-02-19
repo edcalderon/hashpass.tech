@@ -87,8 +87,14 @@ frontend:
             echo "Created API handler at dist/client/api/bslatam/$base/index.js"
           done
         - 'echo "<!-- Build timestamp: $(date) -->" >> dist/client/index.html'
-        - 'echo "=== Building Storybook static site ==="'
-        - npm run build:storybook || echo "Storybook build failed, continuing..."
+        - |
+          if [ "$AWS_BRANCH" = "main" ] || [ "${AMPLIFY_BUILD_STORYBOOK:-false}" = "true" ]; then
+            echo "=== Building Storybook static site ==="
+            npm run build:storybook || echo "Storybook build failed, continuing..."
+          else
+            echo "=== Skipping Storybook build for branch: $AWS_BRANCH ==="
+            rm -rf storybook-static || true
+          fi
         - |
           if [ -d storybook-static ]; then
             mkdir -p dist/client/storybook
