@@ -73,8 +73,8 @@
     let apikey = '';
     try {
       // Try multiple sources for apikey
-      apikey = (window as any).__SUPABASE_ANON_KEY__ || 
-               (window as any).__EXPO_PUBLIC_SUPABASE_KEY__ ||
+      apikey = window.__SUPABASE_ANON_KEY__ || 
+               window.__EXPO_PUBLIC_SUPABASE_KEY__ ||
                (typeof localStorage !== 'undefined' && localStorage.getItem('supabase_anon_key')) ||
                (typeof localStorage !== 'undefined' && localStorage.getItem('EXPO_PUBLIC_SUPABASE_KEY')) ||
                '';
