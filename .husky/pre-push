@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -e
+
+echo "🔍 Running pre-push validation..."
+node scripts/validate-version-change.js

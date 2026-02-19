@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -e
+
+echo "🔐 Running secret scan..."
+if pnpm -s exec versioning --help >/dev/null 2>&1; then
+  pnpm -s exec versioning check-secrets
+elif command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --staged --redact --no-banner
+else
+  echo "❌ Secret scan tool not found. Install 'versioning' or 'gitleaks' and retry."
+  exit 1
+fi
+
+echo "🧪 Running test suite..."
+npm test -- --watchAll=false

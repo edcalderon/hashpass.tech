@@ -76,7 +76,7 @@ const HeroCard: React.FC<HeroCardProps> = ({
   React.useEffect(() => {
     initialLoadOpacity.value = withDelay(delay, withTiming(1, { duration: 800 }));
     initialLoadTranslateY.value = withDelay(delay, withSpring(0, { damping: 10, stiffness: 100 }));
-  }, []);
+  }, [delay, initialLoadOpacity, initialLoadTranslateY]);
 
   const initialLoadStyle = useAnimatedStyle(() => {
     return {

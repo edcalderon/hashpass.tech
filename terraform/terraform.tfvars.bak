@@ -1,0 +1,16 @@
+# Get your subscription ID: az account show --query id -o tsv
+azure_subscription_id = ""  # FILL: your subscription ID from 'az account show --query id'
+
+azure_region               = "brazilsouth"
+resource_group_name        = "hashpass-health-rg"
+app_service_plan_name      = "hashpass-health-plan"
+app_service_name           = "hashpass-health-app"
+app_insights_name          = "hashpass-health-insights"
+
+tags = {
+  Project     = "hashpass"
+  Environment = "production"
+  ManagedBy   = "terraform"
+  Budget      = "100-usd-12months"
+  Region      = "Brazil"
+}

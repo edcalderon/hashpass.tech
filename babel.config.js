@@ -7,14 +7,20 @@ module.exports = function (api) {
       "nativewind/babel",
     ],
     plugins: [
+      'macros',
       [
         'module-resolver',
         {
           root: ['.'],
           alias: {
             '@': '.',
+            '@components': './components',
+            '@hooks': './hooks',
+            '@lib': './lib',
             '@providers': './providers',
-            '@/lib': './lib',
+            '@contexts': './contexts',
+            '@screens': './app/screens',
+            '@navigation': './navigation'
           },
         },
       ],

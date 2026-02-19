@@ -5,8 +5,13 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@providers/*": ["providers/*"],
-      "@/lib/*": ["lib/*"],
+      "@components/*": ["./components/*"],
+      "@hooks/*": ["./hooks/*"],
+      "@lib/*": ["./lib/*"],
+      "@providers/*": ["./providers/*"],
+      "@contexts/*": ["./contexts/*"],
+      "@screens/*": ["./app/screens/*"],
+      "@navigation/*": ["./navigation/*"]
     },
     "typeRoots": [
       "./node_modules/@types",

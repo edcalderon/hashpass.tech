@@ -7,6 +7,11 @@
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "orientation": "portrait",
+  "permissions": [
+    "camera"
+  ],
+  "splash_image": "/assets/splash.gif",
+  "splash_color": "#ffffff",
   "icons": [
     {
       "src": "/assets/android-chrome-192x192.png",

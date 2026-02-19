@@ -1,0 +1,95 @@
+# Amplify Gen2 Configuration for HashPass (Expo)
+# This file configures your Amplify project with serverless API routing for Expo
+
+# Project settings
+project:
+  name: hashpass-tech
+  type: fullstack
+  version: 2.0
+  environment: dev
+
+# Build settings for Expo
+build:
+  commands:
+    - npm ci
+    - npx expo install
+    - npx expo prebuild
+    - npx expo export:web
+  baseDirectory: web-build
+  buildPath: web-build
+
+# App configuration
+app:
+  framework: react-native
+  buildCommand: npx expo export:web
+  startCommand: npx expo start
+  environmentVariables:
+    EXPO_PUBLIC_API_URL: ${api.url}
+    EXPO_PUBLIC_REGION: ${env:REGION}
+
+# Authentication configuration
+auth:
+  identityPoolId: ${env:IDENTITY_POOL_ID}
+  region: ${env:REGION}
+  userPoolId: ${env:USER_POOL_ID}
+  userPoolWebClientId: ${env:USER_POOL_WEB_CLIENT_ID}
+  oauth: {}
+
+# API configuration
+api:
+  name: hashpassApi
+  type: REST
+  configure:
+    endpointType: REGIONAL
+    path: /api
+    stage: dev
+  routes:
+    - path: /api/*
+      target: 
+        kind: Lambda
+        handler: src/api
+      access:
+        - private
+
+# Storage configuration
+storage:
+  resources:
+    - name: hashpassStorage
+      type: s3
+      access: private
+
+# Environment variables
+environmentVariables:
+  - name: EXPO_PUBLIC_API_URL
+    value: ${api.url}
+  - name: EXPO_PUBLIC_REGION
+    value: ${env:REGION}
+  - name: EXPO_PUBLIC_USER_POOL_ID
+    value: ${env:USER_POOL_ID}
+  - name: EXPO_PUBLIC_USER_POOL_WEB_CLIENT_ID
+    value: ${env:USER_POOL_WEB_CLIENT_ID}
+  - name: EXPO_PUBLIC_IDENTITY_POOL_ID
+    value: ${env:IDENTITY_POOL_ID}
+
+# Custom domains (uncomment and configure as needed)
+# customDomains:
+#   - domainName: yourdomain.com
+#     subDomain: api
+#     enableAutoSubdomain: true
+
+# Redirects for SPA routing
+redirects:
+  - source: /<*>
+    target: /index.html
+    status: 200
+
+# CORS configuration for API
+cors:
+  allowOrigins:
+    - exp://*
+    - http://localhost:19006
+    - https://*.amazonaws.com
+  allowHeaders:
+    - "*"
+  allowMethods:
+    - "*"

@@ -1,98 +1,108 @@
+import { i18n as coreI18n } from '@lingui/core';
 import * as Localization from 'expo-localization';
-import { I18n } from 'i18n-js';
-import { useCallback, useState, useEffect } from 'react';
-import { EventEmitter } from 'events';
-import en from './locales/en.json';
-import es from './locales/es.json';
-import ko from './locales/ko.json';
+import { useEffect, useState, useCallback } from 'react';
 
-// Create an event emitter for locale changes
-const eventEmitter = new EventEmitter();
+// Statically import existing locale files (flat JSON under i18n/locales)
+import enMessages from './locales/en.json';
+import esMessages from './locales/es.json';
+import koMessages from './locales/ko.json';
+import frMessages from './locales/fr.json';
+import ptMessages from './locales/pt.json';
+import deMessages from './locales/de.json';
 
-// Initialize i18n
-const i18n = new I18n({
-  en,
-  es,
-  ko,
-});
+// If your messages are nested under keys, map them here, otherwise export as-is
+function transformMessages(nested: any): Record<string, string> {
+  const flat: Record<string, string> = {};
+  const walk = (obj: any, prefix = '') => {
+    Object.keys(obj || {}).forEach((k) => {
+      const v = (obj as any)[k];
+      const key = prefix ? `${prefix}.${k}` : k;
+      if (v && typeof v === 'object') {
+        if ('translation' in v && typeof v.translation === 'string') {
+          flat[key] = v.translation as string;
+        } else {
+          walk(v, key);
+        }
+      } else if (typeof v === 'string') {
+        flat[key] = v;
+      }
+    });
+  };
+  walk(nested);
+  return flat;
+}
 
-// Add event emitter to i18n instance
-(i18n as any).eventEmitter = eventEmitter;
-
-// Set default locale to English
-i18n.defaultLocale = 'en';
-
-// When a value is missing from a language it'll fallback to another language with the key present
-i18n.enableFallback = true;
-
-// Helper function to get device locale
-const getDeviceLocaleCode = (): string => {
-  const locales = Localization.getLocales();
-  if (locales.length > 0) {
-    const languageCode = locales[0].languageCode || '';
-    if (['en', 'es', 'ko'].includes(languageCode)) {
-      return languageCode;
-    }
-  }
-  return 'en';
+const messagesByLocale: Record<string, Record<string, string>> = {
+  en: transformMessages(enMessages as any),
+  es: transformMessages(esMessages as any),
+  ko: transformMessages(koMessages as any),
+  fr: transformMessages(frMessages as any),
+  pt: transformMessages(ptMessages as any),
+  de: transformMessages(deMessages as any),
 };
 
-// Initialize with device locale
-i18n.locale = getDeviceLocaleCode();
+// Use the global singleton so @lingui/macro can see current locale
+export const i18n = coreI18n;
 
-export const translate = (key: string, params = {}) => {
-  return i18n.t(key, params);
-};
+// Synchronously set a safe default locale to avoid race conditions with t()/Trans
+if (!(i18n as any).locale) {
+  i18n.load('en', messagesByLocale.en);
+  i18n.activate('en');
+}
 
-export const setLocale = (locale: string) => {
-  if (['en', 'es', 'ko'].includes(locale) && i18n.locale !== locale) {
-    i18n.locale = locale;
-    // Emit event to notify listeners about the locale change
-    eventEmitter.emit('localeChange', locale);
-    return true;
-  }
-  return false;
-};
-
-export const getCurrentLocale = (): string => {
-  return i18n.locale;
-};
-
-export const getDeviceLocale = (): string => {
-  return getDeviceLocaleCode();
-};
-
-export const getAvailableLocales = () => {
+export function getAvailableLocales() {
   return [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' },
-    { code: 'ko', name: '한국어' },
+    { code: 'en', name: 'english' },
+    { code: 'es', name: 'spanish' },
+    { code: 'ko', name: 'korean' },
+    { code: 'fr', name: 'french' },
+    { code: 'pt', name: 'portuguese' },
+    { code: 'de', name: 'german' },
   ];
-};
+}
 
-// Hook to use translations with namespace
-export const useTranslation = (namespace: string) => {
-  const [_, setLocale] = useState(i18n.locale);
+export function getCurrentLocale(): string {
+  return ((i18n as any).locale as string) || 'en';
+}
+
+export async function initI18n() {
+  const device = (Localization.getLocales?.()[0]?.languageCode || 'en').toLowerCase();
+  const locale = messagesByLocale[device] ? device : 'en';
+  i18n.load(locale, messagesByLocale[locale]);
+  i18n.activate(locale);
+}
+
+export async function loadMessages(locale: string) {
+  const lc = locale.toLowerCase();
+  const chosen = messagesByLocale[lc] ? lc : 'en';
+  i18n.load(chosen, messagesByLocale[chosen]);
+  i18n.activate(chosen);
+}
+
+export async function setLocale(locale: string) {
+  await loadMessages(locale);
+}
+
+// Initialize on import (will adjust from default 'en' to device language)
+initI18n().catch(() => {});
+
+export const useTranslation = (ns?: string) => {
+  const [currentLocale, setCurrentLocaleState] = useState((i18n as any).locale);
 
   useEffect(() => {
-    const onLocaleChange = () => {
-      setLocale(i18n.locale);
-    };
-
-    eventEmitter.on('localeChange', onLocaleChange);
-    return () => {
-      eventEmitter.off('localeChange', onLocaleChange);
-    };
-  }, []);
+    const id = setInterval(() => {
+      if ((i18n as any).locale !== currentLocale) setCurrentLocaleState((i18n as any).locale);
+    }, 100);
+    return () => clearInterval(id);
+  }, [currentLocale]);
 
   const t = useCallback(
-    (key: string, params = {}) => {
-      return i18n.t(`${namespace}.${key}`, params);
+    (key: string, params: Record<string, any> = {}) => {
+      const fullKey = ns ? `${ns}.${key}` : key;
+      return (i18n as any)._(fullKey, params as any) as unknown as string;
     },
-    [namespace, _]
+    [ns, currentLocale]
   );
 
   return { t };
 };
-
-export default i18n;

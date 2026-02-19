@@ -55,6 +55,49 @@ We believe the future of events should be shaped by the community. By making Has
    ```
 4. **Start building!**
 
+### BSLatam 2025 Matchmaking Sandbox
+
+Routes (web):
+- `/bslatam/home` — listado de speakers y búsqueda
+- `/bslatam/speakers/[id]` — perfil de speaker y disponibilidad
+- `/bslatam/speakers/calendar?speakerId=...&day=YYYY-MM-DD` — selector de slots
+- `/bslatam/my-bookings` — reservas del asistente
+- `/bslatam/speaker-dashboard` — panel de solicitudes del speaker
+
+API endpoints:
+- `GET /api/bslatam/speakers`
+- `GET /api/bslatam/speakers/:id`
+- `POST /api/bslatam/bookings` { speakerId, attendeeId, start, end }
+- `PATCH /api/bslatam/bookings/:id` { status }
+- `GET /api/bslatam/bookings?user=:id`
+- `POST /api/bslatam/verify-ticket` { ticketId, userId }
+
+Database (Supabase/Postgres): see migration `supabase/migrations/20251014090000_bslatam_matchmaking.sql`.
+
+Seeding speakers:
+```bash
+export EXPO_PUBLIC_SUPABASE_URL=...
+export SUPABASE_SERVICE_ROLE_KEY=...
+npm run seed:bslatam
+```
+
+Env vars (email via SES / Nodemailer):
+- `NODEMAILER_HOST` - SMTP server hostname
+- `NODEMAILER_PORT` - SMTP server port (usually 587)
+- `NODEMAILER_USER` - SMTP authentication username
+- `NODEMAILER_PASS` - SMTP authentication password
+- `NODEMAILER_FROM` - Email address to send from (e.g., no-reply@hashpass.tech)
+- `NODEMAILER_FROM_SUPPORT` - Support email address shown in email footers (defaults to support@hashpass.tech if not set)
+
+For a complete list of all environment variables, see [docs/environment-variables.md](docs/environment-variables.md).
+
+Deploy:
+```bash
+chmod +x ./deploy-bslatam.sh
+./deploy-bslatam.sh
+```
+For Amplify: configure AWS credentials and run `amplify publish`.
+
 ---
 
 ## 🤝 Contributing

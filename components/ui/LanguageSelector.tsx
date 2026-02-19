@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Modal, Image } from "react-native";
-import { useRouter } from "expo-router";
 import { Check } from "lucide-react-native";
 
 interface LanguageSelectorProps {
   isVisible?: boolean;
-  onSelectLanguage?: (language: 'en' | 'es' | 'ko') => void;
+  onSelectLanguage?: (language: 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de') => void;
   onClose?: () => void;
 }
 
-const languages: { code: 'en' | 'es' | 'ko'; name: string; nativeName: string; flag: string }[] = [
+const languages: { code: 'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de'; name: string; nativeName: string; flag: string }[] = [
   {
     code: "en",
     name: "English",
@@ -28,6 +27,24 @@ const languages: { code: 'en' | 'es' | 'ko'; name: string; nativeName: string; f
     nativeName: "한국어",
     flag: "https://api.dicebear.com/7.x/avataaars/svg?seed=korea-flag",
   },
+  {
+    code: "fr",
+    name: "French",
+    nativeName: "Français",
+    flag: "https://api.dicebear.com/7.x/avataaars/svg?seed=france-flag",
+  },
+  {
+    code: "pt",
+    name: "Portuguese",
+    nativeName: "Português",
+    flag: "https://api.dicebear.com/7.x/avataaars/svg?seed=portugal-flag",
+  },
+  {
+    code: "de",
+    name: "German",
+    nativeName: "Deutsch",
+    flag: "https://api.dicebear.com/7.x/avataaars/svg?seed=germany-flag",
+  },
 ];
 
 export default function LanguageSelector({
@@ -35,8 +52,7 @@ export default function LanguageSelector({
   onSelectLanguage = () => {},
   onClose = () => {},
 }: LanguageSelectorProps) {
-  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'es' | 'ko'>("en");
-  const router = useRouter();
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'es' | 'ko' | 'fr' | 'pt' | 'de'>("en");
 
   const handleConfirm = () => {
     onSelectLanguage(selectedLanguage);
@@ -51,6 +67,12 @@ export default function LanguageSelector({
         return "Bienvenido a HashPass";
       case "ko":
         return "해시패스에 오신 것을 환영합니다";
+      case "fr":
+        return "Bienvenue sur HashPass";
+      case "pt":
+        return "Bem-vindo ao HashPass";
+      case "de":
+        return "Willkommen bei HashPass";
       default:
         return "Welcome to HashPass";
     }

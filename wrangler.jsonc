@@ -1,0 +1,14 @@
+{
+  // Cloudflare Workers configuration
+  // This file is used by Wrangler for Cloudflare deployments
+  // It does not affect Netlify or Amplify builds (they use their own config files)
+  //
+  // IMPORTANT: This config is for Cloudflare Workers
+  // To deploy: npx wrangler deploy
+  //
+  "name": "hashpass",
+  "compatibility_date": "2025-11-16",
+  "main": "./cloudflare/worker.js",
+  "compatibility_flags": ["nodejs_compat"]
+}
+

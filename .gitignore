@@ -30,10 +30,27 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
 .env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.test
 .env.gcloud
 config/private-gcloud.json
+
+# Cloudflare secrets - NEVER commit these!
+wrangler.toml.local
+wrangler.secrets.toml
+*.secrets.toml
+
+# Amplify - use amplify-backend-config/ instead
+amplify/
+amplify-backend-config/
+
+# Storybook
+storybook-static
+.storybook-static
 
 # typescript
 *.tsbuildinfo
@@ -45,4 +62,3 @@ app-example
 
 # Local Netlify folder
 .netlify
-.env

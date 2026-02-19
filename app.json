@@ -2,13 +2,13 @@
   "expo": {
     "name": "hashpass.tech",
     "slug": "hashpass-tech",
-    "version": "1.1.3",
+    "version": "1.6.113",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "hashpass",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./public/assets/splash.gif",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -28,7 +28,7 @@
       "permissions": [
         "android.permission.CAMERA"
       ]
-    }, 
+    },
     "web": {
       "bundler": "metro",
       "output": "server",
@@ -55,7 +55,12 @@
         "display": "standalone",
         "background_color": "#ffffff",
         "theme_color": "#000000",
+        "splash_image": "/assets/splash.gif",
+        "splash_color": "#ffffff",
         "orientation": "portrait",
+        "permissions": [
+          "camera"
+        ],
         "icons": [
           {
             "src": "/assets/android-chrome-192x192.png",
@@ -73,13 +78,14 @@
         "og:type": "website",
         "og:title": "HashPass",
         "og:description": "YOUR EVENT - YOUR COMMUNITY - YOUR BENEFITS",
-        "og:image": "./assets/images/og-image.png",
+        "og:image": "./assets/images/icon.png",
         "apple-mobile-web-app-capable": "yes",
         "apple-mobile-web-app-status-bar-style": "default",
         "apple-mobile-web-app-title": "HashPass",
         "mobile-web-app-capable": "yes",
         "msapplication-TileColor": "#1D9BF0",
-        "msapplication-tap-highlight": "no"
+        "msapplication-tap-highlight": "no",
+        "viewport": "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
       },
       "build": {
         "babel": {
@@ -100,6 +106,8 @@
       "eas": {
         "projectId": "YOUR_EAS_PROJECT_ID"
       }
-    }
+    },
+    "versionCode": 202510150933,
+    "buildNumber": 2
   }
 }

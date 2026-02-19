@@ -1,0 +1,35 @@
+# Cloudflare Pages/Workers configuration
+# This file is used by Wrangler for Cloudflare deployments
+# It does not affect Netlify or Amplify builds (they use their own config files)
+#
+# Copy this file to wrangler.toml and configure with your actual values
+# DO NOT commit wrangler.toml with real secrets!
+
+name = "hashpass"
+compatibility_date = "2025-11-16"
+
+# IMPORTANT: Choose ONE of the following deployment methods:
+
+# Option 1: Cloudflare Pages (RECOMMENDED for static sites with API routes)
+# Use this for deploying static assets with Pages Functions for API routes
+# Deploy with: npx wrangler pages deploy ./dist/client
+[site]
+bucket = "./dist/client"
+
+# Option 2: Cloudflare Workers (for custom worker logic)
+# Uncomment ONLY if you want to use Workers instead of Pages
+# Deploy with: npx wrangler deploy
+# main = "./cloudflare/worker.js"
+# compatibility_flags = ["nodejs_compat"]
+
+# Environment variables can be set via Cloudflare dashboard or wrangler.toml
+# [vars]
+# ENVIRONMENT = "production"
+# CORS_ALLOW_ORIGIN = "https://bsl2025.hashpass.tech"
+#
+# Cloudflare Access JWT validation (required if using Cloudflare Access)
+# ⚠️ SECURITY: Set these via Cloudflare Dashboard (RECOMMENDED) or use wrangler.toml.local
+# DO NOT commit real secrets to git!
+# POLICY_AUD = "your-policy-audience-hash-here"
+# TEAM_DOMAIN = "https://your-team-domain.cloudflareaccess.com"
+

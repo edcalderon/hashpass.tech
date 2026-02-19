@@ -126,7 +126,12 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-    console.error('Subscription error:', error);
+    // Log stack trace for server-side debugging, don't expose to client
+    if (error instanceof Error && error.stack) {
+      console.error('Subscription error:', error.stack);
+    } else {
+      console.error('Subscription error:', error);
+    }
     
     // Determine appropriate status code
     const statusCode = error instanceof Error && 'statusCode' in error 
@@ -148,10 +153,7 @@ export async function POST(request: Request) {
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
-        code: statusCode,
-        details: process.env.NODE_ENV === 'development' && error instanceof Error 
-          ? error.stack 
-          : undefined
+        code: statusCode
       }),
       { 
         status: statusCode,

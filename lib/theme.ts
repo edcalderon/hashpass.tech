@@ -1,4 +1,5 @@
 import { DefaultTheme, DarkTheme } from '@react-navigation/native';
+import { Platform } from 'react-native';
 
 // Define the theme colors interface
 export interface ThemeColors {
@@ -53,7 +54,7 @@ const baseColors = {
   secondary: {
     main: '#FF80AB', // Softer pink
     light: '#FFA8C5',
-    dark: '#F50057',
+    dark: '#af0d01',
     contrastText: '#000000',
   },
   background: {
@@ -131,11 +132,11 @@ export const darkColors: ThemeColors = {
   },
   text: {
     primary: '#FFFFFF',
-    secondary: 'rgba(255, 255, 255, 0.7)',
-    textSecondary: 'rgba(255, 255, 255, 0.7)',
-    disabled: 'rgba(255, 255, 255, 0.5)',
+    secondary: '#F0F0F0',
+    textSecondary: '#F0F0F0', // Alias for secondary
+    disabled: 'rgba(255, 255, 255, 0.7)',
     onSurface: '#FFFFFF',
-    onSurfaceVariant: 'rgba(255, 255, 255, 0.7)'
+    onSurfaceVariant: '#F0F0F0'
   },
   error: {
     main: baseColors.error.light,
@@ -152,32 +153,49 @@ export const darkColors: ThemeColors = {
     light: baseColors.warning.main,
     dark: baseColors.warning.dark,
   },
-  divider: 'rgba(255, 255, 255, 0.12)',
+  divider: 'rgba(255, 255, 255, 0.2)',
   surface: '#1E1E1E', // Add surface color for dark theme
 };
 
+// Helper to create shadow styles with web compatibility
+const createShadow = (
+  shadowColor: string,
+  shadowOffset: { width: number; height: number },
+  shadowOpacity: number,
+  shadowRadius: number,
+  elevation: number
+) => {
+  if (Platform.OS === 'web') {
+    const offsetX = shadowOffset.width || 0;
+    const offsetY = shadowOffset.height || 0;
+    const blur = shadowRadius || 0;
+    const opacity = shadowOpacity || 0;
+    
+    // Convert hex to rgba
+    const hex = shadowColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const rgbaColor = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    
+    return {
+      boxShadow: `${offsetX}px ${offsetY}px ${blur}px ${rgbaColor}`,
+    } as any;
+  }
+  
+  return {
+    shadowColor,
+    shadowOffset,
+    shadowOpacity,
+    shadowRadius,
+    elevation,
+  };
+};
+
 export const themeShadows = {
-  small: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  medium: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  large: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
-  },
+  small: createShadow('#000', { width: 0, height: 2 }, 0.1, 4, 2),
+  medium: createShadow('#000', { width: 0, height: 4 }, 0.15, 8, 5),
+  large: createShadow('#000', { width: 0, height: 8 }, 0.2, 16, 10),
 };
 
 export const themeSpacing = {

@@ -1,0 +1,120 @@
+-- Fix meeting request functions with proper type casting
+
+-- Drop existing functions to avoid conflicts
+DROP FUNCTION IF EXISTS public.cancel_meeting_request(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.get_meeting_request_status(TEXT, TEXT);
+
+-- Create function to get meeting request status with proper type casting
+CREATE OR REPLACE FUNCTION public.get_meeting_request_status(
+    p_user_id TEXT,
+    p_speaker_id TEXT
+) RETURNS TABLE(
+    id TEXT,
+    requester_id TEXT,
+    speaker_id TEXT,
+    speaker_name TEXT,
+    requester_name TEXT,
+    requester_company TEXT,
+    requester_title TEXT,
+    requester_ticket_type TEXT,
+    meeting_type TEXT,
+    message TEXT,
+    note TEXT,
+    boost_amount DECIMAL(10,2),
+    duration_minutes INTEGER,
+    status TEXT,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ
+) AS $$
+DECLARE
+    request_record RECORD;
+BEGIN
+    -- Find the meeting request with flexible type casting
+    BEGIN
+        -- Try UUID comparison first
+        SELECT * INTO request_record
+        FROM public.meeting_requests mr
+        WHERE mr.requester_id = p_user_id::uuid
+          AND mr.speaker_id = p_speaker_id::uuid
+          AND mr.status IN ('pending', 'approved', 'declined', 'cancelled')
+        ORDER BY mr.created_at DESC
+        LIMIT 1;
+    EXCEPTION
+        WHEN invalid_text_representation THEN
+            -- If UUID casting fails, try TEXT comparison
+            SELECT * INTO request_record
+            FROM public.meeting_requests mr
+            WHERE mr.requester_id::text = p_user_id::text
+              AND mr.speaker_id::text = p_speaker_id::text
+              AND mr.status IN ('pending', 'approved', 'declined', 'cancelled')
+            ORDER BY mr.created_at DESC
+            LIMIT 1;
+    END;
+
+    -- If no request found, return empty result
+    IF request_record IS NULL THEN
+        RETURN;
+    END IF;
+
+    -- Return the request data
+    RETURN QUERY SELECT
+        request_record.id::text,
+        request_record.requester_id::text,
+        request_record.speaker_id::text,
+        request_record.speaker_name,
+        request_record.requester_name,
+        request_record.requester_company,
+        request_record.requester_title,
+        request_record.requester_ticket_type,
+        request_record.meeting_type,
+        request_record.message,
+        request_record.note,
+        request_record.boost_amount,
+        request_record.duration_minutes,
+        request_record.status,
+        request_record.created_at,
+        request_record.updated_at,
+        request_record.expires_at;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create function to cancel a meeting request
+CREATE OR REPLACE FUNCTION public.cancel_meeting_request(
+    p_user_id TEXT,
+    p_request_id TEXT
+) RETURNS BOOLEAN AS $$
+DECLARE
+    request_record RECORD;
+BEGIN
+    -- Find the meeting request with flexible type casting
+    BEGIN
+        -- Try UUID comparison first
+        SELECT * INTO request_record
+        FROM public.meeting_requests mr
+        WHERE mr.id = p_request_id::uuid
+          AND mr.requester_id = p_user_id::uuid
+          AND mr.status = 'pending';
+    EXCEPTION
+        WHEN invalid_text_representation THEN
+            -- If UUID casting fails, try TEXT comparison
+            SELECT * INTO request_record
+            FROM public.meeting_requests mr
+            WHERE mr.id::text = p_request_id::text
+              AND mr.requester_id::text = p_user_id::text
+              AND mr.status = 'pending';
+    END;
+
+    -- If no pending request found
+    IF request_record IS NULL THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Update the request status to 'cancelled'
+    UPDATE public.meeting_requests 
+    SET status = 'cancelled', updated_at = NOW()
+    WHERE id = request_record.id;
+
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;

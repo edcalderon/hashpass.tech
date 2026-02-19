@@ -1,115 +1,299 @@
 { 
   "newsletter": {
     "title": "뉴스레터 구독",
-    "description": "뉴스레터 구독을 통해 최신 정보를 받아보세요!",
-    "emailPlaceholder": "이메일 주소",
+    "subtitle": "최신 소식을 받기 위해 뉴스레터에 가입하세요",
+    "subscribers": "구독자",
+    "privacy": "우리는 귀하의 개인정보를 존중합니다. 언제든지 구독을 취소할 수 있습니다.",
+    "description": "뉴스레터를 구독하고 최신 소식과 기사, 독점 혜택을 이메일로 받아보세요!",
+    "emailPlaceholder": "이메일 입력",
     "subscribe": "구독하기",
     "processing": "처리 중...",
-    "successTitle": "이메일이 성공적으로 전송되었습니다!",
-    "successMessage": "{{email}}로 구독 확인 이메일이 전송되었습니다. 확인 후 구독이 완료됩니다.",
-    "sendAnother": "다른 이메일로 구독"
+    "successTitle": "이메일이 전송되었습니다!",
+    "successMessage": "로 확인 이메일을 보냈습니다.",
+    "successMessageEmail": "받은 편지함을 확인해주세요.",
+    "sendAnother": "다시 보내기",
+    "backToForm": "폼으로 돌아가기"
   },
   "wallet": {
-    "walletDesc": "블록체인으로 검증된 티켓에 접근하세요",
-    "loyaltyDesc": "포인트와 토큰 보상을 추적하세요",
+    "digitalWalletTitle": "디지털 티켓 지갑",
+    "walletDesc": "블록체인 검증된 티켓, 토큰 및 포인트에 안전하게 접근하세요",
     "events": "이벤트 탐색",
-    "eventsDesc": "다가오는 이벤트를 찾고 토큰을 획득하세요",
-    "exchangeDesc": "포인트를 암호화폐로 전환하세요",
+    "eventsDesc": "다가오는 이벤트를 찾고 토큰을 적립하세요",
+    "exchangeDesc": "포인트를 암호화폐로 교환",
     "tabs": {
-      "tickets": "나의 티켓",
-      "loyalty": "로열티 보상",
-      "exchange": "토큰 교환"
+      "tokens": "토큰",
+      "points": "포인트",
+      "tickets": "티켓",
+      "loyalty": "리워드",
+      "exchange": "교환"
+    },
+    "tokens": {
+      "title": "블록체인 토큰",
+      "description": "$LUKAS, $COP, $VOI 토큰 관리",
+      "swap": "교환",
+      "totalPortfolio": "총 포트폴리오 가치",
+      "portfolioDesc": "모든 토큰의 합산 가치",
+      "withdrawalDisclaimer": "💡 잔액이 5 LUKAS를 초과할 때 출금 가능",
+      "swapAvailable": {
+        "title": "교환 가능",
+        "message": "Hash 상인에서 직접 교환이 가능합니다"
+      },
+      "lukasInfo": {
+        "title": "LUKAS란 무엇인가요?",
+        "description": "LUKAS는 사용자 상호작용과 참여를 보상하기 위해 설계된 HashPass 생태계의 디지털 통화입니다.",
+        "features": "• 미팅 수락 및 일정 잡기로 LUKAS 획득\n• HashHouse에서 수익화 예정\n• 다른 암호화폐 토큰으로 교환 가능",
+        "withdrawalDisclaimer": "잔액이 5 LUKAS를 초과할 때 LUKAS 토큰을 출금할 수 있습니다."
+      }
+    },
+    "points": {
+      "title": "Hash POINTS",
+      "description": "이벤트에서 획득한 교환 가능한 리워드 포인트",
+      "balance": "잔액",
+      "swappable": "포인트를 다양한 토큰으로 교환할 수 있습니다",
+      "swapOptions": "교환 옵션",
+      "swapNow": "지금 교환",
+      "recentActivity": "최근 활동",
+      "noActivity": "아직 활동이 없습니다",
+      "activityDesc": "교환 내역이 여기에 표시됩니다"
     },
     "tickets": {
-      "title": "나의 티켓",
-      "description": ""
+      "title": "블록체인 티켓",
+      "description": "블록체인에서 검증된 NFT 티켓",
+      "noBlockchainTickets": "블록체인 티켓 없음",
+      "noBlockchainTicketsDesc": "BSL2025와 같은 이벤트의 블록체인 검증된 NFT 티켓이 여기에 표시됩니다",
+      "viewEvents": "이벤트 보기",
+      "blockchainVerified": "블록체인 검증됨",
+      "blockchainInfo": "블록체인 정보",
+      "network": "네트워크",
+      "nftId": "NFT ID",
+      "viewOnExplorer": "익스플로러에서 보기",
+      "tapToEnlarge": "탭하여 QR 코드 확대",
+      "tapToMinimize": "탭하여 축소",
+      "of": "/"
     },
     "loyalty": {
-      "title": "로열티 보상",
-      "description": "포인트와 토큰 보상을 추적하세요"
+      "title": "리워드",
+      "description": "포인트와 토큰 리워드를 추적하세요."
     },
     "exchange": {
-      "title": "토큰 교환",
-      "description": "포인트를 암호화폐로 전환하세요"
+      "title": "교환",
+      "description": "포인트를 암호화폐로 교환하세요."
     }
   },
   "digitalWallet": {
-    "tokensEarned": "획득된 토큰",
-    "noTickets": "티켓이 없습니다",
-    "noTicketsDesc": "구매한 티켓이 여기에 표시됩니다. 이벤트 탐색으로 시작하세요!",
+    "tokensEarned": "적립된 토큰",
+    "noTickets": "티켓 없음",
+    "noTicketsDesc": "구매한 티켓이 여기에 표시됩니다. 이벤트를 탐색해보세요!",
     "discoverEvents": "이벤트 탐색",
-    "of": "~의" ,
-    "presentQR": "이벤트 입구에서 티켓을 확인하기 위해 QR 코드를 보여주세요",
-    "tapToEnlarge": "확대하기",
-    "tapToMinimize": "축소하기"
+    "of": "/",
+    "presentQR": "입장 시 QR 코드를 제시하세요",
+    "tapToEnlarge": "탭하여 확대",
+    "tapToMinimize": "탭하여 축소"
   },
   "tabs": {
     "explore": "탐색",
     "wallet": "지갑",
     "profile": "프로필"
   },
+  "common": {
+    "back": "뒤로",
+    "loading": {
+      "default": "로딩 중...",
+      "retrying": "재시도 중... ({retryCount}/3)",
+      "retryHint": "예상보다 시간이 더 걸리고 있습니다. 잠시만 기다려주세요...",
+      "loadingRequests": "요청 로딩 중...",
+      "loadingSlots": "시간대 로딩 중...",
+      "loadingData": "데이터 로딩 중...",
+      "pleaseWait": "잠시만 기다려주세요..."
+    }
+  },
   "auth": {
     "title": "환영합니다",
-    "subtitle": "디지털 라이프를 잠금 해제하기 위해 로그인하세요.",
+    "subtitle": "로그인하여 디지털 라이프를 시작하세요.",
     "signInWithGoogle": "Google로 로그인",
+    "emailPlaceholder": "이메일을 입력하세요",
+    "magicLink": "매직 링크",
+    "otpCode": "OTP 코드",
+    "sendMagicLink": "매직 링크 보내기",
+    "sendCode": "코드 보내기",
     "privacy": {
-      "text": "로그인하면",
-      "terms": "서비스 이용약관",
-      "privacy": "개인정보보호정책"
+      "text": "로그인함으로써 다음에 동의합니다",
+      "terms": "서비스 약관",
+      "privacy": "개인정보 처리방침"
+    }
+  },
+  "privacy": {
+    "title": "개인정보 처리방침",
+    "lastUpdated": "최종 업데이트: 2025년 11월 4일",
+    "introduction": {
+      "title": "1. 소개",
+      "text": "HashPass(\"우리\", \"저희\", \"회사\")는 귀하의 개인정보 보호에 최선을 다하고 있습니다. 이 개인정보 처리방침은 디지털 이벤트 플랫폼 및 서비스(\"서비스\")를 사용할 때 귀하의 정보를 수집, 사용, 공개 및 보호하는 방법을 설명합니다. 이 개인정보 처리방침을 주의 깊게 읽어주시기 바랍니다. 이 개인정보 처리방침의 약관에 동의하지 않으시면 서비스에 액세스하지 마십시오."
+    },
+    "collection": {
+      "title": "2. 수집하는 정보",
+      "text": "귀하가 직접 제공하는 정보를 수집하며, 다음을 포함합니다:\n\n• 계정 정보: Google로 로그인할 때 이름, 이메일 주소 및 프로필 사진을 수집합니다.\n• 이벤트 데이터: 참석하는 이벤트, 보유한 패스 및 플랫폼 내 상호작용에 대한 정보.\n• 사용 데이터: 액세스한 기능 및 수행한 작업을 포함하여 서비스 사용 방법에 대한 정보.\n• 기기 정보: 기기, 브라우저 및 운영 체제에 대한 기술 정보."
+    },
+    "use": {
+      "title": "3. 정보 사용 방법",
+      "text": "수집한 정보를 다음 용도로 사용합니다:\n\n• 서비스 제공 및 유지\n• 이벤트 등록 처리 및 패스 관리\n• 이벤트 및 서비스에 대한 중요한 업데이트 전송\n• 경험 개선 및 개인화\n• 사기 또는 남용 탐지 및 방지\n• 법적 의무 준수"
+    },
+    "sharing": {
+      "title": "4. 정보 공유 및 공개",
+      "text": "귀하의 개인정보를 판매하지 않습니다. 다음 상황에서만 귀하의 정보를 공유할 수 있습니다:\n\n• 등록한 이벤트의 이벤트 주최자와\n• 플랫폼 운영을 지원하는 서비스 제공업체와\n• 법률에 의해 요구되거나 권리를 보호하기 위해\n• 합병, 인수 또는 자산 판매와 관련하여"
+    },
+    "security": {
+      "title": "5. 데이터 보안",
+      "text": "개인정보를 보호하기 위해 적절한 기술적 및 조직적 보안 조치를 구현합니다. 그러나 인터넷을 통한 전송이나 전자 저장의 어떤 방법도 100% 안전하지 않으며 절대적인 보안을 보장할 수 없습니다."
+    },
+    "rights": {
+      "title": "6. 귀하의 권리",
+      "text": "귀하는 다음의 권리가 있습니다:\n\n• 개인정보에 액세스\n• 부정확한 정보 수정\n• 정보 삭제 요청\n• 정보 처리에 대한 이의 제기\n• 데이터 이식성\n• 언제든지 동의 철회"
+    },
+    "cookies": {
+      "title": "7. 쿠키 및 추적",
+      "text": "서비스의 활동을 추적하고 특정 정보를 보유하기 위해 쿠키 및 유사한 추적 기술을 사용합니다. 브라우저에 모든 쿠키를 거부하거나 쿠키가 전송될 때 표시하도록 지시할 수 있습니다."
+    },
+    "changes": {
+      "title": "8. 개인정보 처리방침 변경",
+      "text": "개인정보 처리방침을 수시로 업데이트할 수 있습니다. 이 페이지에 새로운 개인정보 처리방침을 게시하고 \"최종 업데이트\" 날짜를 업데이트하여 변경 사항을 알려드립니다."
+    },
+    "contact": {
+      "title": "9. 문의하기",
+      "text": "이 개인정보 처리방침에 대해 질문이 있으시면 다음으로 문의하세요:\n\n이메일: privacy@hashpass.tech\n웹사이트: https://hashpass.tech"
+    }
+  },
+  "terms": {
+    "title": "서비스 약관",
+    "lastUpdated": "최종 업데이트: 2025년 11월 4일",
+    "acceptance": {
+      "title": "1. 약관 동의",
+      "text": "HashPass(\"서비스\")에 액세스하고 사용함으로써 귀하는 이 계약의 약관 및 조항에 구속되는 것에 동의합니다. 위 사항을 준수하지 않으려면 이 서비스를 사용하지 마십시오."
+    },
+    "description": {
+      "title": "2. 서비스 설명",
+      "text": "HashPass는 이벤트 관리, 패스 관리, 네트워킹 기능 및 관련 서비스를 제공하는 디지털 이벤트 플랫폼입니다. 언제든지 서비스의 일부를 수정, 중단 또는 중단할 권리를 보유합니다."
+    },
+    "accounts": {
+      "title": "3. 사용자 계정",
+      "text": "계정 자격 증명의 기밀성을 유지할 책임이 있습니다. 귀하는 다음에 동의합니다:\n\n• 정확하고 완전한 정보 제공\n• 계정 정보 업데이트 유지\n• 다른 사람과 계정 공유하지 않기\n• 무단 사용 즉시 알림\n• 계정의 모든 활동에 대한 책임 수락"
+    },
+    "conduct": {
+      "title": "4. 사용자 행동",
+      "text": "다음 행위를 하지 않기로 동의합니다:\n\n• 법률 또는 규정 위반\n• 지적 재산권 침해\n• 유해한 코드 또는 맬웨어 전송\n• 다른 사용자 괴롭히기, 학대 또는 해치기\n• 허가 없이 사용자 데이터 수집\n• 다른 사람을 사칭하거나 거짓 정보 제공\n• 서비스 운영 방해"
+    },
+    "content": {
+      "title": "5. 사용자 콘텐츠",
+      "text": "서비스에 제출한 콘텐츠의 소유권을 유지합니다. 콘텐츠를 제출함으로써 서비스를 제공하고 개선하기 위한 목적으로 전 세계적으로 비독점적이고 로열티가 없는 라이선스를 부여합니다."
+    },
+    "intellectual": {
+      "title": "6. 지적 재산권",
+      "text": "서비스 및 원본 콘텐츠, 기능은 HashPass의 소유이며 국제 저작권, 상표, 특허, 영업 비밀 및 기타 지적 재산권 법률로 보호됩니다."
+    },
+    "termination": {
+      "title": "7. 종료",
+      "text": "약관을 위반하는 경우를 포함하여 어떤 이유로든 사전 통지 없이 계정 및 서비스 액세스를 즉시 종료하거나 중단할 수 있습니다. 종료 시 서비스 사용 권리는 즉시 중단됩니다."
+    },
+    "disclaimer": {
+      "title": "8. 보증 면제",
+      "text": "서비스는 명시적 또는 묵시적 보증 없이 \"있는 그대로\" 및 \"이용 가능한 대로\" 제공됩니다. 서비스가 중단되지 않고 안전하며 오류가 없을 것이라고 보증하지 않습니다."
+    },
+    "limitation": {
+      "title": "9. 책임 제한",
+      "text": "HashPass는 계약 또는 불법 행위에 대한 소송에서 귀하 또는 제3자가 발생한 간접적, 부수적, 특별, 결과적 또는 징벌적 손해를 포함하여 어떤 경우에도 책임을 지지 않습니다."
+    },
+    "changes": {
+      "title": "10. 약관 변경",
+      "text": "언제든지 이러한 약관을 수정할 권리를 보유합니다. 이 페이지에 새로운 약관을 게시하고 \"최종 업데이트\" 날짜를 업데이트하여 중요한 변경 사항을 사용자에게 알려드립니다. 이러한 수정 후 서비스를 계속 사용하면 업데이트된 약관에 동의하는 것입니다."
+    },
+    "contact": {
+      "title": "11. 연락처 정보",
+      "text": "이 서비스 약관에 대해 질문이 있으시면 다음으로 문의하세요:\n\n이메일: legal@hashpass.tech\n웹사이트: https://hashpass.tech"
+    }
+  },
+  "settings": {
+    "languages": {
+      "en": "영어",
+      "es": "스페인어",
+      "ko": "한국어",
+      "fr": "프랑스어",
+      "pt": "포르투갈어",
+      "de": "독일어"
+    },
+    "terms": {
+      "subtitle": "서비스 약관을 읽어보세요"
+    },
+    "privacy": {
+      "subtitle": "데이터 보호 방법 알아보기"
     }
   },
   "index": {
     "tagline": "당신의 이벤트 - 당신의 커뮤니티 - 당신의 혜택",
     "taglineFlipText": "당신의",
-    "taglineFlipList": "당신의 이벤트, 당신의 커뮤니티, 당신의 혜택",
-    "unlockPotential": "당신의 잠재력을 발휘하세요",
+    "learnMore": "자세히 알아보기",
+    "taglineFlipList": "- 당신의 이벤트 -,- 당신의 커뮤니티 -,- 당신의 혜택 -",
+    "unlockPotential": "잠재력을 발휘하세요",
     "features": {
       "secure": {
-        "title": "안전하고 프라이빗한",
-        "description": "귀하의 데이터는 업계 최고 수준의 보안 프로토콜로 암호화되어 보호됩니다. 우리는 무엇보다도 귀하의 개인정보 보호를 최우선으로 합니다."
+        "title": "안전하고 개인적",
+        "description": "업계 최고 수준의 보안으로 데이터를 보호합니다."
       },
       "management": {
-        "title": "쉬운 관리",
-        "description": "디지털 자격 증명, 멤버십 카드, 중요한 커뮤니티를 직관적인 한 곳에서 관리하세요."
+        "title": "손쉬운 관리",
+        "description": "디지털 자격증, 멤버십, 커뮤니티를 한 곳에서 관리하세요."
       },
       "sync": {
         "title": "크로스 플랫폼 동기화",
-        "description": "안전한 클라우드 동기화로 모든 기기에서 데이터에 접근하세요. 어디서나 항상 최신 정보를 유지할 수 있습니다."
+        "description": "모든 기기에서 안전하게 접근하세요."
       }
     },
     "welcomeBack": "다시 오신 것을 환영합니다!",
     "goToApp": "앱으로 이동",
-    "readyToSimplify": "디지털 라이프를 간편하게 만들어보시겠어요?",
-    "getStartedNow": "지금 시작하기",
-    "trustedByThousands": "수천 명이 신뢰하는 서비스",
+    "readyToSimplify": "디지털 라이프를 단순화할 준비가 되셨나요?",
+    "getStartedNow": "지금 시작",
+    "trustedByThousands": "수천 명이 신뢰합니다",
     "testimonials":{
-      "title": "고객 후기",
-      "subtitle": "고객들이 말하는 것",
-      "description": "고객들이 말하는 것"
+      "title": "사용자 후기",
+      "subtitle": "사용자들의 이야기",
+      "description": "고객들의 후기를 확인하세요."
     },
-    "copyright": " 2025 HASHPASS™ 모든 권리 보유.",
+    "copyright": " 2025 HASHPASS™ 무단 복제 금지.",
+    "footer": {
+      "tagline": "전 세계 이벤트, 연사 및 참석자를 연결합니다.",
+      "resources": "리소스",
+      "legal": "법적 고지",
+      "docs": "문서",
+      "guides": "가이드",
+      "support": "지원",
+      "privacy": "개인정보 보호정책",
+      "terms": "서비스 약관",
+      "bsl2025": "BSL 2025"
+    },
     "cta": {
-      "title": "시작하기",
-      "subtitle": "당신의 디지털 생명을 HASHPASS와 함께하세요.",
-      "startNow": "시작하기"
+      "title": "지금 시작할까요?",
+      "subtitle": "수천 명의 사용자가 HASHPASS를 신뢰합니다.",
+      "startNow": "지금 시작"
     }
   },
-  "loyalty": "로열티 대시보드",
-  "loyaltyDesc": "포인트와 토큰 보상을 추적하세요",
+  "walletDesc": "블록체인 검증된 티켓에 접근",
+  "loyalty": "리워드 대시보드",
+  "loyaltyDesc": "포인트와 리워드 추적",
   "events": "이벤트 탐색",
-  "eventsDesc": "다가오는 이벤트를 찾고 토큰을 획득하세요",
-  "exchange": "토큰 교환",
-  "exchangeDesc": "포인트를 암호화폐로 전환하세요",
+  "eventsDesc": "이벤트를 찾고 토큰을 적립",
+  "exchange": "교환",
+  "exchangeDesc": "포인트를 암호화폐로 교환",
   "getStarted": "시작하기",
   "profile": {
     "languages": {
       "english": "영어",
       "spanish": "스페인어",
-      "korean": "한국어"
+      "korean": "한국어",
+      "french": "프랑스어",
+      "portuguese": "포르투갈어",
+      "german": "독일어"
     },
     "biometric": {
       "title": "생체 인증",
-      "description": "생체 인증을 사용하여 로그인"
+      "description": "지문 또는 얼굴 인식을 사용하세요"
     },
     "settings": {
       "title": "설정",
@@ -124,5 +308,623 @@
     "account": "계정",
     "signOut": "로그아웃",
     "version": "HashPass v{version}"
+  },
+  "nav": {
+    "explore": "탐색",
+    "wallet": "지갑",
+    "notifications": "알림",
+    "profile": "프로필",
+    "settings": "설정",
+    "admin": "관리자 패널",
+    "brandSubtitle": "디지털 이벤트 플랫폼",
+    "light": "밝게",
+    "dark": "어둡게",
+    "logout": "로그아웃"
+  },
+  "explore": {
+    "noEvent": "사용 가능한 이벤트가 없습니다",
+    "noSelection": "선택된 이벤트가 없습니다",
+    "banner": {
+      "title": "블록체인 서밋 라탐 2025",
+      "subtitle": "2025년 11월 12-14일 • Universidad EAFIT, 메데진",
+      "date": "2025년 11월 12-14일"
+    },
+    "selectEvent": "이벤트 선택",
+    "yourPasses": "나의 패스",
+    "quickAccess": "빠른 접근",
+    "quick": {
+      "speakers": {
+        "title": "연사",
+        "subtitle": "전문가들을 만나보세요"
+      },
+      "agenda": {
+        "title": "일정",
+        "subtitle": "이벤트 일정"
+      },
+      "info": {
+        "title": "이벤트 정보",
+        "subtitle": "세부사항 및 안내"
+      },
+      "networking": {
+        "title": "네트워킹 센터",
+        "subtitle": "찾고 연결하기"
+      },
+      "information": {
+        "title": "이벤트 정보",
+        "subtitle": "세부사항 및 안내"
+      },
+      "event-info": {
+        "title": "이벤트 정보",
+        "subtitle": "세부사항 및 안내"
+      }
+    }
+  },
+  "passes": {
+    "title": "나의 이벤트 패스",
+    "loading": "패스 정보를 불러오는 중...",
+    "showFullDetails": "전체 상세보기",
+    "alert": {
+      "createdTitle": "패스가 생성되었습니다! 🎉",
+      "ok": "확인",
+      "errorTitle": "오류",
+      "createFail": "패스를 생성할 수 없습니다. 다시 시도해주세요.",
+      "paymentTitle": "결제 연동",
+      "paymentMessage": "여기에 결제 시스템이 구현될 예정입니다"
+    },
+    "button": {
+      "passRequired": "패스 필요",
+      "limitReached": "한도 도달",
+      "requestMeeting": "미팅 요청"
+    },
+    "copiedTitle": "패스 정보가 복사되었습니다",
+    "copiedMessage": "패스 정보가 클립보드에 복사되었습니다. 공유하려면 어디든지 붙여넣기 하세요.",
+    "copyError": "패스를 공유할 수 없습니다. 다시 시도해주세요.",
+    "type": {
+      "business": "비즈니스",
+      "vip": "VIP",
+      "general": "일반",
+      "event": "이벤트"
+    },
+    "access": {
+      "business": "B2B + 클로징 파티",
+      "vip": "모든 VIP 혜택",
+      "general": "일반 입장",
+      "event": "이벤트 입장"
+    },
+    "meetingRequests": "미팅 요청",
+    "voiBoost": "VOI 부스트",
+    "passSummary": "패스 요약",
+    "quickOverview": "빠른 개요",
+    "requestsLeft": "남은 요청",
+    "boostLeft": "남은 부스트",
+    "accessIncluded": "포함된 액세스",
+    "used": "사용됨",
+    "passNumber": "패스 #{pass_number}",
+    "noPassFound": "패스를 찾을 수 없습니다",
+    "contactSupport": "이벤트 패스를 받으려면 지원팀에 문의하세요",
+    "noPassMessage": {
+      "demo": "연사와의 미팅을 요청하려면 패스가 필요합니다. 패스 없이는 미팅 요청을 보낼 수 없습니다. 패스 유형을 선택하세요:",
+      "production": "연사와의 미팅을 요청하려면 유효한 이벤트 패스가 필요합니다. 계속하려면 패스를 구매해주세요."
+    },
+    "passTypes": {
+      "all": "모든 패스 유형 및 가격"
+    },
+    "passComparison": {
+      "compare": "기능을 비교하고 필요에 맞는 패스를 선택하세요"
+    },
+    "passPerks": {
+      "general": {
+        "conferences": "컨퍼런스만"
+      },
+      "business": {
+        "networking": "+ 네트워킹 및 B2B 세션"
+      },
+      "vip": {
+        "networking": "+ 연사와의 VIP 네트워킹"
+      }
+    },
+    "purchasePass": "이벤트 패스 구매",
+    "purchasePass.description": "연사 미팅 및 네트워킹 기회에 액세스하려면 사용 가능한 패스 유형 중에서 선택하세요.",
+    "currentPass": "현재 패스",
+    "canRequestMeeting": "✅ 미팅 요청 가능",
+    "cannotRequestMeeting": "❌ 미팅 요청 불가",
+    "qrCode": "QR 코드",
+    "details": "세부 정보",
+    "share": "공유",
+    "bslDate": "BSL 2025 • 2025년 11월 12-14일",
+    "date": "2025년 11월 12-14일",
+    "pass": "패스",
+    "viewFullDetails": "전체 세부 정보 보기",
+    "flipBack": "뒤로",
+    "qrCodeModalTitle": "패스 QR 코드"
+  },
+  "networking": {
+    "title": "네트워킹 센터",
+    "subtitle": "연사 및 참석자와 연결",
+    "tutorialResetMessage": "네트워킹 센터를 방문하면 네트워킹 튜토리얼이 자동으로 시작됩니다.",
+    "stats": {
+      "title": "네트워킹 통계",
+      "totalRequests": "총 요청",
+      "pending": "대기 중",
+      "accepted": "수락됨",
+      "declined": "거절됨",
+      "cancelled": "취소됨",
+      "scheduled": "예약됨",
+      "blocked": "차단됨"
+    },
+    "quickAccess": "빠른 액세스",
+    "quickAccessItems": {
+      "findSpeakers": {
+        "title": "연사 찾기",
+        "subtitle": "모든 연사 둘러보기"
+      },
+      "yourRequest": {
+        "title": "요청 내역",
+        "subtitle": "보낸 및 받은 요청 보기"
+      },
+      "myMeetings": {
+        "title": "내 미팅",
+        "subtitle": "수락/생성된 미팅"
+      },
+      "mySchedule": {
+        "title": "내 일정",
+        "subtitle": "일정 보기 및 관리"
+      },
+      "blockedUsers": {
+        "title": "차단된 사용자",
+        "subtitle": "차단된 사용자 관리"
+      },
+      "analytics": {
+        "title": "분석",
+        "subtitle": "네트워킹 통계 보기"
+      }
+    },
+    "mySchedule": {
+      "title": "내 일정",
+      "subtitle": "일정 보기 및 관리",
+      "scheduledSlots": "예약된 시간대",
+      "dayPlanRoute": "일일 계획 경로",
+      "totalScheduledSlots": "총 예약된 시간대",
+      "freeSlot": {
+        "markFreeSlot": "빈 시간대 표시",
+        "unblockSlot": "시간대 차단 해제",
+        "removeInterest": "관심 제거",
+        "freeSlotAvailable": "사용 가능한 빈 시간대",
+        "blockedMessage": "이 시간대는 차단되었습니다. 다시 사용 가능하게 하려면 차단을 해제하시겠습니까?",
+        "interestedMessage": "이 시간대는 관심으로 표시되었습니다. 다시 사용 가능하게 하려면 제거하시겠습니까?",
+        "availableMessage": "가용성을 추적하기 위해 이 시간대를 관심 또는 차단으로 표시하세요. 이 정보는 공개 일정을 보는 모든 사람에게 표시되어, 언제 차단되었거나 사람들과 만나고 싶은지 이해하는 데 도움이 됩니다.",
+        "block": "차단",
+        "interested": "관심",
+        "unblocking": "차단 해제 중...",
+        "removing": "제거 중...",
+        "unblock": "차단 해제",
+        "remove": "제거"
+      },
+      "errors": {
+        "title": "오류",
+        "failedToLoadMeetings": "미팅 로드 실패",
+        "failedToMarkInterested": "관심으로 표시 실패",
+        "failedToClearStatus": "상태 지우기 실패",
+        "failedToConfirm": "이벤트 확인 실패",
+        "failedToUnconfirm": "이벤트 확인 취소 실패",
+        "failedToBlock": "시간대 차단 실패",
+        "failedToUnblock": "시간대 차단 해제 실패",
+        "failedToAddToFavorites": "즐겨찾기에 추가 실패",
+        "failedToRemoveFromFavorites": "즐겨찾기에서 제거 실패"
+      },
+      "messages": {
+        "addedToFavorites": "즐겨찾기에 추가됨",
+        "removedFromFavorites": "즐겨찾기에서 제거됨",
+        "confirmedAttendance": "출석 확인됨",
+        "tapToConfirmAttendance": "출석 확인하려면 탭하세요",
+        "meetingWith": "{name}와(과)의 미팅",
+        "user": "사용자",
+        "tbd": "미정",
+        "available": "사용 가능"
+      },
+      "status": {
+        "interested": "관심",
+        "blocked": "차단됨",
+        "tentative": "임시",
+        "confirmed": "확인됨",
+        "interestedShort": "INT",
+        "blockedShort": "BLK",
+        "tentativeShort": "TEN"
+      },
+      "scheduleOverview": "일정 개요",
+      "scheduleSummary": "일정 요약",
+      "confirmAttendance": "출석 확인",
+      "unconfirmAttendance": "출석 확인 취소",
+      "confirming": "확인 중...",
+      "unconfirming": "확인 취소 중...",
+      "confirm": "확인",
+      "unconfirm": "확인 취소",
+      "confirmMessage": "출석을 확인하면 이 이벤트가 일정에 추가됩니다.",
+      "unconfirmMessage": "출석 확인을 취소하시겠습니까? 이렇게 하면 확인된 일정에서 이 이벤트가 제거됩니다."
+    },
+    "tips": {
+      "title": "네트워킹 팁",
+      "beSpecific": {
+        "title": "구체적으로 작성",
+        "description": "미팅 요청에 명확한 의도를 포함하세요"
+      },
+      "followUp": {
+        "title": "후속 조치",
+        "description": "대기 중인 요청에 후속 메시지를 보내세요"
+      },
+      "networkSmart": {
+        "title": "스마트 네트워킹",
+        "description": "양보다 질에 집중하세요"
+      },
+      "beProfessional": {
+        "title": "전문적으로",
+        "description": "메시지에서 항상 전문적인 톤을 유지하세요"
+      },
+      "bePatient": {
+        "title": "인내심 갖기",
+        "description": "연사가 요청에 응답할 시간을 주세요"
+      },
+      "summary": "더 나은 네트워킹을 위한 5가지 유용한 팁"
+    },
+    "recentActivity": {
+      "title": "최근 활동",
+      "journey": "네트워킹 여정",
+      "description": "{totalRequests}개의 미팅 요청을 보냈고 {pendingRequests}개의 응답이 대기 중입니다."
+    },
+    "meetingRequestModal": {
+      "title": "{speakerName}와 미팅 요청",
+      "messageLabel": "메시지 (선택사항)",
+      "messageHint": "💡 메시지를 포함하면 승인 확률이 3배 증가합니다",
+      "messagePlaceholder": "연사에게 왜 만나고 싶은지 알려주세요 (선택사항이지만 권장)...",
+      "intentionLabel": "미팅 의도 (선택사항)",
+      "intentionHint": "💡 미팅에 대해 최대 3개의 의도를 선택하세요 (또는 \"특정 의도 없음\" 선택)",
+      "intentions": {
+        "coffee": "커피를 마시며 대화하기",
+        "pitch": "스타트업 아이디어를 제안하고 싶습니다",
+        "consultation": "5분 빠른 상담",
+        "networking": "일반적인 네트워킹 및 연결",
+        "collaboration": "잠재적 협업 탐색",
+        "advice": "내 경력/프로젝트에 대한 조언 구하기",
+        "fun": "재미있고 흥미로운 대화를 위해",
+        "learning": "당신의 경험에서 배우기",
+        "none": "특정 의도 없음"
+      },
+      "cancel": "취소",
+      "sending": "전송 중...",
+      "sendRequest": "요청 보내기",
+      "cancelTitle": "미팅 요청을 취소하시겠습니까?",
+      "cancelMessage": "이 미팅 요청을 취소하시겠습니까?",
+      "cancelWarning": "취소 후 요청 할당량은 복원되지 않습니다.",
+      "cancelling": "요청 취소 중...",
+      "confirmCancel": "예, 요청 취소"
+    },
+    "requestView": {
+      "title": "요청 세부정보",
+      "yourRequest": "내 요청",
+      "yourMeetingDetails": "내 미팅 세부정보",
+      "meetingDetails": "미팅 세부정보",
+      "yourMessage": "내 메시지",
+      "message": "메시지",
+      "speaker": "연사",
+      "requester": "요청자",
+      "expiresIn": "만료까지",
+      "hours": "시간",
+      "minutes": "분",
+      "seconds": "초",
+      "status": "상태",
+      "intentions": "의도",
+      "meetingDetailsLabel": "미팅 세부정보",
+      "duration": "소요 시간:",
+      "type": "유형:",
+      "boost": "부스트:",
+      "expires": "만료:",
+      "timeline": "타임라인",
+      "requestSent": "요청 전송됨",
+      "expiresLabel": "만료",
+      "statusUpdated": "상태 업데이트됨",
+      "response": "응답",
+      "meeting": "미팅",
+      "viewMeetingDetails": "미팅 세부정보 보기",
+      "cancelRequest": "요청 취소",
+      "accept": "수락",
+      "decline": "거절",
+      "holdRequest": "요청 보류",
+      "blockUser": "사용자 차단",
+      "minutesLabel": "분",
+      "requestCancelled": "요청 취소됨",
+      "requestCancelledMessage": "미팅 요청이 취소되었습니다. 요청 한도는 복원되었지만 부스트 포인트는 환불되지 않습니다.",
+      "yourMeetingRequestApproved": "내 미팅 요청 승인됨",
+      "meetingRequestApproved": "미팅 요청 승인됨",
+      "yourMeetingRequestDeclined": "내 미팅 요청 거절됨",
+      "meetingRequestDeclined": "미팅 요청 거절됨",
+      "yourMeetingRequestPending": "내 미팅 요청 대기 중",
+      "meetingRequestPending": "미팅 요청 대기 중",
+      "requestInformation": "요청 정보",
+      "requestId": "요청 ID:",
+      "meetingType": "미팅 유형:",
+      "sent": "전송됨:",
+      "holdModalTitle": "요청 보류",
+      "holdModalDescription": "부스트 포인트를 사용하여 이 요청의 만료 시간을 연장하세요.",
+      "holdDuration": "보류 기간:",
+      "hour": "시간",
+      "hours": "시간",
+      "cost": "비용:",
+      "boostPoints": "부스트 포인트",
+      "confirmHold": "보류 확인",
+      "requestHeld": "요청 보류됨",
+      "requestHeldMessage": "요청이 {hours}시간 동안 보류되었습니다",
+      "pending": "대기 중"
+    },
+    "speakerView": {
+      "connect": "연결",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter",
+      "matchmakingNetworking": "매칭 및 네트워킹",
+      "matchmakingDescription": "매칭 기능으로 비즈니스 기회를 놓치지 마세요: 연사나 다른 참가자와 미팅을 조직하고 일대일 미팅 캘린더를 관리하세요",
+      "yourRequestStatus": "요청 상태",
+      "ticketType": "티켓 유형:",
+      "requestsUsed": "사용된 요청:",
+      "remaining": "남은 요청:",
+      "nextRequest": "다음 요청:",
+      "requestLimitReached": "요청 한도에 도달했습니다. 추가 요청을 위해 $VOI 부스트를 사용하세요.",
+      "pleaseWaitNextRequest": "다음 요청을 보내기 전에 잠시 기다려주세요.",
+      "loadingSpeakerDetails": "연사 세부정보 로딩 중...",
+      "online": "온라인",
+      "active": "활성",
+      "inactive": "비활성",
+      "speakerDashboard": "연사 대시보드",
+      "manageMeetingRequests": "미팅 요청 관리",
+      "about": "소개",
+      "yourMeetingRequests": "내 미팅 요청",
+      "yourMeetingRequestsPlural": "내 미팅 요청들",
+      "scrollToSeeAll": "모든 요청을 보려면 스크롤하세요",
+      "approved": "✅ 승인됨",
+      "declined": "❌ 거절됨",
+      "pendingStatus": "⏳ 대기 중",
+      "requestHistory": "요청 기록",
+      "cancelled": "취소됨",
+      "whatsNext": "다음은 무엇인가요?",
+      "waitingForResponse": "미팅 요청이 {speakerName}의 응답을 기다리고 있습니다. 응답이 오면 알림을 받게 됩니다. 언제든지 이 요청을 취소할 수 있습니다.",
+      "greatNews": "좋은 소식입니다! 🎉",
+      "requestApproved": "{speakerName}이(가) 미팅 요청을 승인했습니다! 미팅 세부정보와 다음 단계는 알림을 확인하세요.",
+      "requestDeclinedTitle": "요청 거절됨",
+      "requestDeclinedMessage": "{speakerName}이(가) 이 미팅 요청을 거절했습니다. 다른 연사에게 미팅을 요청해 볼 수 있습니다.",
+      "cancelRequest": "요청 취소",
+      "openingLinkedIn": "{speakerName}의 LinkedIn 프로필 열기 중...",
+      "speakerDashboardOnly": "이 기능은 연사 본인만 사용할 수 있습니다."
+    },
+    "meetings": {
+      "title": "내 미팅",
+      "loading": "미팅 로딩 중...",
+      "all": "전체",
+      "incoming": "예정",
+      "passed": "지난",
+      "notScheduled": "예정되지 않음",
+      "meetingWith": "미팅",
+      "tbd": "미정",
+      "noMeetings": "아직 미팅이 없습니다",
+      "error": "오류",
+      "failedToLoad": "미팅을 불러오지 못했습니다",
+      "detail": {
+        "title": "미팅 세부정보",
+        "loading": "미팅 세부정보 로딩 중...",
+        "notFound": "미팅을 찾을 수 없습니다",
+        "failedToLoad": "미팅 세부정보를 불러오지 못했습니다",
+        "speaker": "연사",
+        "requester": "요청자",
+        "status": "상태",
+        "message": "메시지",
+        "noMessage": "메시지가 제공되지 않았습니다",
+        "intentions": "의도",
+        "meetingDetails": "미팅 세부정보",
+        "scheduled": "예정:",
+        "duration": "소요 시간:",
+        "location": "위치:",
+        "minutes": "분",
+        "timeline": "타임라인",
+        "meetingScheduled": "미팅 예정됨",
+        "joinMeeting": "미팅 참가",
+        "messageButton": "메시지",
+        "chatWith": "채팅"
+      }
+    }
+  },
+  "agenda": {
+    "title": "이벤트 일정",
+    "subtitle_one": "컨퍼런스 일정 • 1개 세션",
+    "subtitle_other": "컨퍼런스 일정 • {count}개 세션",
+    "date": "2025년 11월 12-14일 • 메데인, 콜롬비아",
+    "loading": "일정 불러오는 중...",
+    "filter": {
+      "type": "유형",
+      "speakers": "연사",
+      "keynote": "기조 연설",
+      "panel": "패널",
+      "break": "휴식",
+      "meal": "식사",
+      "registration": "등록"
+    },
+    "search": {
+      "placeholder": "세션, 연사 또는 키워드 검색..."
+    },
+    "tabs": {
+      "sessions": "세션"
+    },
+    "noResults": {
+      "title": "필터와 일치하는 세션이 없습니다",
+      "subtitle": "검색 또는 필터를 조정해보세요"
+    },
+    "empty": {
+      "title": "일정을 사용할 수 없습니다",
+      "subtitle": "이벤트 일정은 나중에 다시 확인해주세요",
+      "noLiveData": "라이브 일정 데이터 없음"
+    },
+    "badges": {
+      "past": "지난"
+    },
+    "locations": {
+      "mainStage": "메인 스테이지",
+      "registrationArea": "등록 구역"
+    },
+    "messages": {
+      "untitledEvent": "제목 없는 이벤트",
+      "eventConfirmed": "이벤트 확인됨",
+      "eventConfirmedMessage": "이 이벤트가 일정에 추가되었습니다",
+      "eventUnconfirmed": "이벤트 미확인",
+      "eventUnconfirmedMessage": "이 이벤트가 확인된 일정에서 제거되었습니다",
+      "error": "오류",
+      "confirmError": "이벤트 확인 실패",
+      "unconfirmError": "이벤트 미확인 처리 실패",
+      "addedToFavorites": "즐겨찾기에 추가됨",
+      "removedFromFavorites": "즐겨찾기에서 제거됨",
+      "addToFavoritesError": "즐겨찾기에 추가 실패",
+      "removeFromFavoritesError": "즐겨찾기에서 제거 실패"
+    }
+  },
+  "notifications": {
+    "center": {
+      "title": "알림",
+      "all": "전체",
+      "archive": "보관함",
+      "markAllRead": "모두 읽음으로 표시",
+      "markRead": "읽음으로 표시",
+      "markUnread": "읽지 않음으로 표시",
+      "delete": "삭제",
+      "deleteTitle": "알림 삭제",
+      "deleteMessage": "이 알림을 삭제하시겠습니까?",
+      "cancel": "취소",
+      "noNotifications": "알림 없음",
+      "noNotificationsMessage": "모든 알림을 확인했습니다! 새로운 알림이 여기에 표시됩니다.",
+      "noArchivedNotifications": "보관된 알림 없음",
+      "noArchivedNotificationsMessage": "보관된 알림이 여기에 표시됩니다.",
+      "loading": "알림 로딩 중...",
+      "searchPlaceholder": "알림 검색...",
+      "viewAll": "모든 알림 보기",
+      "goToCenter": "알림 센터로 이동",
+      "noNewNotifications": "새로운 알림 없음",
+      "justNow": "방금 전",
+      "minutesAgo": "{minutes}분 전",
+      "hoursAgo": "{hours}시간 전",
+      "daysAgo": "{days}일 전",
+      "urgent": "긴급",
+      "filters": {
+        "readStatus": "읽음 상태",
+        "all": "전체",
+        "unread": "읽지 않음",
+        "read": "읽음",
+        "type": "유형",
+        "allTypes": "모든 유형",
+        "meetingRequest": "미팅 요청",
+        "meetingAccepted": "미팅 수락됨",
+        "meetingDeclined": "미팅 거절됨",
+        "meetingExpired": "미팅 만료됨",
+        "reminder": "알림",
+        "boostReceived": "부스트 받음",
+        "systemAlert": "시스템 알림",
+        "chatMessage": "채팅 메시지",
+        "priority": "우선순위",
+        "urgentOnly": "긴급만"
+      }
+    },
+    "types": {
+      "meeting_request": {
+        "title": "요청 전송됨 ✓",
+        "message": "{speakerName}님에게 미팅 요청이 성공적으로 전송되었습니다.",
+        "messageWithExpiry": "{speakerName}님에게 미팅 요청이 성공적으로 전송되었습니다. {hours}시간 후 만료됩니다.",
+        "speakerTitle": "📋 미팅 요청",
+        "speakerMessage": "{requesterName}님이 미팅을 요청했습니다",
+        "speakerVipTitle": "🔥 VIP 미팅 요청",
+        "speakerVipMessage": "{requesterName}님(VIP)이 미팅을 요청했습니다",
+        "speakerBusinessTitle": "💼 비즈니스 미팅 요청",
+        "speakerBusinessMessage": "{requesterName}님(비즈니스)이 미팅을 요청했습니다",
+        "boostedMessage": " (${boostAmount} VOI로 부스트됨)"
+      },
+      "meeting_accepted": {
+        "title": "미팅 요청 수락됨! 🎉",
+        "message": "{speakerName}님이 미팅 요청을 수락했습니다",
+        "messageWithSchedule": "미팅 요청이 수락되었습니다. {scheduleTime}에 미팅이 예약되었습니다. 1 LUKAS를 획득했습니다! 💎",
+        "speakerTitle": "요청 수락됨",
+        "speakerMessage": "{requesterName}님의 미팅 요청을 수락했습니다",
+        "speakerScheduledTitle": "미팅 예약됨! 🎉",
+        "speakerScheduledMessage": "{requesterName}님과의 미팅이 예약되었습니다",
+        "speakerScheduledWithReward": "미팅 요청을 수락했습니다. {scheduleTime}에 미팅이 예약되었습니다. 1 LUKAS를 획득했습니다! 💎"
+      },
+      "meeting_declined": {
+        "title": "미팅 요청 거절됨",
+        "message": "{speakerName}님이 미팅 요청을 거절했습니다",
+        "speakerTitle": "요청 거절됨",
+        "speakerMessage": "{requesterName}님의 미팅 요청을 거절했습니다"
+      },
+      "meeting_expired": {
+        "title": "미팅 요청 만료됨",
+        "message": "{speakerName}님에게 보낸 미팅 요청이 만료되었습니다"
+      },
+      "meeting_cancelled": {
+        "title": "미팅 요청 취소됨",
+        "message": "미팅 요청이 취소되었습니다",
+        "speakerTitle": "미팅 요청 취소됨",
+        "speakerMessage": "{requesterName}님의 미팅 요청이 취소되었습니다"
+      },
+      "meeting_reminder": {
+        "title": "미팅 알림",
+        "message": "{name}님과 곧 예정된 미팅이 있습니다"
+      },
+      "boost_received": {
+        "title": "부스트 받음",
+        "message": "${amount} VOI 부스트를 받았습니다"
+      },
+      "system_alert": {
+        "title": "시스템 알림",
+        "message": "{message}"
+      },
+      "chat_message": {
+        "title": "새 채팅 메시지",
+        "message": "{senderName}님이 메시지를 보냈습니다",
+        "titleFrom": "{senderName}님의 새 메시지",
+        "messageFrom": "{senderName}님으로부터 새 메시지가 있습니다",
+        "titleMeeting": "{meetingTitle}",
+        "messageMeeting": "{meetingTitle}에 새 메시지가 있습니다"
+      }
+    }
+  },
+  "status": {
+    "title": "시스템 상태",
+    "lastUpdated": "마지막 업데이트",
+    "database": "데이터베이스",
+    "emailService": "이메일 서비스",
+    "apiEndpoints": "API 엔드포인트",
+    "systemChecks": "시스템 확인",
+    "configured": "구성됨",
+    "yes": "예",
+    "no": "아니오",
+    "agenda": "일정",
+    "speakers": "연사",
+    "bookings": "예약",
+    "passes": "패스",
+    "hasData": "데이터 있음",
+    "noData": "데이터 없음",
+    "accessible": "액세스 가능",
+    "notAccessible": "액세스 불가능",
+    "items": "항목",
+    "count": "개수",
+    "updated": "업데이트됨",
+    "autoRefresh": "상태 페이지가 30초마다 자동으로 새로고침됩니다",
+    "pullToRefresh": "아래로 당겨서 수동으로 새로고침"
+  },
+  "version": {
+    "title": "버전 정보",
+    "current": "현재 버전",
+    "released": "출시일:",
+    "buildInfo": "빌드 정보:",
+    "buildId": "빌드 ID:",
+    "buildTime": "빌드 시간:",
+    "gitCommit": "Git 커밋:",
+    "branch": "브랜치:",
+    "features": "새로운 기능",
+    "bugfixes": "버그 수정",
+    "breakingChanges": "주요 변경 사항",
+    "history": "버전 기록",
+    "status": "시스템 상태",
+    "statusSummary": "자세한 시스템 상태 및 서비스 상태 정보를 보려면 클릭하세요."
   }
 }

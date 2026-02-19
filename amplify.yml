@@ -1,0 +1,243 @@
+version: 1.0
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # Note: amplify/ folder has been permanently renamed to amplify-backend-config/
+        # to prevent Amplify CLI from auto-detecting and initializing it
+        - 'echo "Using amplify-backend-config/ folder (renamed from amplify/ to prevent auto-init)"'
+        # Disable Amplify CLI backend initialization (we only use Amplify for static hosting)
+        - export AMPLIFY_SKIP_BACKEND_BUILD=true
+        - export AMPLIFY_DISABLE_TS=true
+        - 'echo "Skipping Amplify CLI backend initialization for static hosting"'
+        - nvm install 22.18.0
+        - npm install --quiet --global @expo/cli
+        - >
+          if [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+            # Install all dependencies including devDependencies (needed for autoprefixer, postcss, etc.)
+            npm ci --include=dev
+          else
+            npm install
+          fi
+        - pip install awscli --upgrade --user
+        - 'export PATH=~/.local/bin:$PATH'
+        # Detect branch and set environment variables (defaults can be overridden in Amplify Console)
+        - |
+          if [ "$AWS_BRANCH" = "main" ]; then
+            if [ -z "$AMPLIFY_SHOW_ALL_EVENTS" ]; then export AMPLIFY_SHOW_ALL_EVENTS="true"; fi
+            if [ -z "$AMPLIFY_EVENT_ID" ]; then export AMPLIFY_EVENT_ID="default"; fi
+            if [ -z "$AMPLIFY_EVENT_DOMAIN" ]; then export AMPLIFY_EVENT_DOMAIN="hashpass.tech"; fi
+          elif [ "$AWS_BRANCH" = "bsl2025" ]; then
+            if [ -z "$AMPLIFY_SHOW_ALL_EVENTS" ]; then export AMPLIFY_SHOW_ALL_EVENTS="false"; fi
+            if [ -z "$AMPLIFY_EVENT_ID" ]; then export AMPLIFY_EVENT_ID="bsl2025"; fi
+            if [ -z "$AMPLIFY_EVENT_DOMAIN" ]; then export AMPLIFY_EVENT_DOMAIN="bsl2025.hashpass.tech"; fi
+          else
+            if [ -z "$AMPLIFY_SHOW_ALL_EVENTS" ]; then export AMPLIFY_SHOW_ALL_EVENTS="false"; fi
+            if [ -z "$AMPLIFY_EVENT_ID" ]; then export AMPLIFY_EVENT_ID="bsl2025"; fi
+            if [ -z "$AMPLIFY_EVENT_DOMAIN" ]; then export AMPLIFY_EVENT_DOMAIN="bsl2025.hashpass.tech"; fi
+          fi
+        - 'echo "Building for branch: $AWS_BRANCH"'
+        - 'echo "Event ID: $AMPLIFY_EVENT_ID"'
+        - 'echo "Show all events: $AMPLIFY_SHOW_ALL_EVENTS"'
+    build:
+      commands:
+        - rm -rf dist
+        - mkdir -p dist/client/_expo/functions/api/bslatam
+        # Increase Node.js memory limit for webpack bundler (expo export uses webpack)
+        - export NODE_OPTIONS="--max-old-space-size=6144"
+        # Set production environment for Expo export
+        - export NODE_ENV=production
+        - export EXPO_PUBLIC_ENABLE_STATIC_EXPORT=true
+        # Set webpack memory optimizations
+        - export WEBPACK_MEMORY_LIMIT=6144
+        # Reduce webpack optimization passes to save memory
+        - export WEBPACK_OPTIMIZE_MINIMIZE=true
+        # Run build (Amplify has built-in 60min timeout)
+        - npm run build:web
+        - cp -r dist/server/* dist/client/
+        - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
+        - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
+        - cp -r dist/server/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/
+        - mkdir -p dist/client/api/bslatam
+        - 'echo "{\"type\": \"module\"}" > dist/client/api/package.json'
+        - |
+          for file in app/api/bslatam/*+api.ts; do
+            base=$(basename "$file" "+api.ts")
+            mkdir -p "dist/client/api/bslatam/$base"
+            cat > "dist/client/api/bslatam/$base/index.js" << 'ENDOFFILE'
+          import { handler } from '../../../../../app/api/bslatam/PLACEHOLDER+api';
+          export default async (req, res) => {
+            try {
+              const result = await handler(req, res);
+              if (result) {
+                res.status(200).json(result);
+              }
+            } catch (error) {
+              console.error('API Error' + ' ' + error);
+              res.status(500).json({ error: 'Internal Server Error' });
+            }
+          };
+          ENDOFFILE
+            sed -i "s/PLACEHOLDER/$base/g" "dist/client/api/bslatam/$base/index.js"
+            echo "Created API handler at dist/client/api/bslatam/$base/index.js"
+          done
+        - 'echo "<!-- Build timestamp: $(date) -->" >> dist/client/index.html'
+        - 'echo "=== Building Storybook static site ==="'
+        - npm run build:storybook || echo "Storybook build failed, continuing..."
+        - |
+          if [ -d storybook-static ]; then
+            mkdir -p dist/client/storybook
+            cp -r storybook-static/* dist/client/storybook/
+            echo "Storybook files copied to dist/client/storybook/"
+          else
+            echo "Storybook static directory not found, skipping..."
+          fi
+        - 'echo "=== API files in dist/client/_expo/functions/api/bslatam/ ==="'
+        - ls -la dist/client/_expo/functions/api/bslatam/ || echo "No API files found"
+        - 'echo "=== Contents of dist/client/ ==="'
+        - ls -la dist/client/
+        - ls -la dist/client/index.html
+    post_build:
+      commands:
+        # Deploy Lambda function automatically with frontend
+        # This ensures API and frontend are always in sync
+        - echo "📦 Packaging Lambda function..."
+        - chmod +x scripts/package-lambda.sh
+        - ./scripts/package-lambda.sh
+        - |
+          if [ -f lambda-deployment.zip ]; then
+            echo "🚀 Deploying Lambda function: hashpass-api-handler"
+            echo "Current branch: $AWS_BRANCH"
+            
+            # Deploy Lambda and capture result
+            if aws lambda update-function-code \
+              --function-name hashpass-api-handler \
+              --region us-east-1 \
+              --zip-file fileb://lambda-deployment.zip; then
+              echo "✅ Lambda function deployment completed successfully"
+              # Cleanup
+              rm -f lambda-deployment.zip || true
+            else
+              LAMBDA_EXIT_CODE=$?
+              echo "❌ Lambda deployment failed with exit code: $LAMBDA_EXIT_CODE"
+              rm -f lambda-deployment.zip || true
+              
+              # CRITICAL: Fail the build on main branch if Lambda deployment fails
+              if [ "$AWS_BRANCH" = "main" ]; then
+                echo "🚨 FATAL: Lambda deployment failed on main branch - failing build"
+                exit 1
+              else
+                echo "⚠️  Lambda deployment failed on non-main branch - continuing build"
+              fi
+            fi
+          else
+            echo "⚠️  lambda-deployment.zip not found"
+            # CRITICAL: Fail the build on main branch if packaging failed
+            if [ "$AWS_BRANCH" = "main" ]; then
+              echo "🚨 FATAL: Lambda packaging failed on main branch - failing build"
+              exit 1
+            else
+              echo "⚠️  Lambda packaging failed on non-main branch - continuing build"
+            fi
+          fi
+  artifacts:
+    baseDirectory: dist/client
+    files:
+      - '**/*'
+    customHeaders:
+      - pattern: '_expo/static/**/*'
+        headers:
+          - key: Cache-Control
+            value: 'public, max-age=31536000, immutable'
+      - pattern: 'index.html'
+        headers:
+          - key: Cache-Control
+            value: 'no-cache, no-store, must-revalidate'
+          - key: Pragma
+            value: 'no-cache'
+          - key: Expires
+            value: '0'
+      - pattern: '**/*.html'
+        headers:
+          - key: Cache-Control
+            value: 'no-cache, no-store, must-revalidate'
+          - key: Pragma
+            value: 'no-cache'
+          - key: Expires
+            value: '0'
+      - pattern: '**/*.js'
+        headers:
+          - key: Cache-Control
+            value: 'public, max-age=31536000, immutable'
+      - pattern: 'storybook/**/*'
+        headers:
+          - key: Cache-Control
+            value: 'public, max-age=31536000, immutable'
+      - pattern: 'storybook/index.html'
+        headers:
+          - key: Cache-Control
+            value: 'no-cache, no-store, must-revalidate'
+          - key: Pragma
+            value: 'no-cache'
+          - key: Expires
+            value: '0'
+  cache:
+    paths:
+      - node_modules/**/*
+      - $(npm root --global)/**/*
+redirects:
+  # API routes are handled by API Gateway (api.hashpass.tech)
+  # Do NOT add redirects for /api/* routes here - they should go to API Gateway
+  # If you need to serve API routes from Amplify Hosting, use Amplify Functions (Lambda@Edge)
+  # See docs/AMPLIFY-API-ROUTES.md for configuration options
+  - source: '/sw.js'
+    status: 200
+    target: '/sw.js'
+  - source: '/_expo/*'
+    status: 200
+    target: '/_expo/'
+  - source: '/events/bsl2025/*'
+    status: 200
+    target: '/index.html'
+  - source: '/events/*'
+    status: 200
+    target: '/index.html'
+  - source: '/auth'
+    status: 200
+    target: '/index.html'
+  - source: '/auth/'
+    status: 200
+    target: '/index.html'
+  - source: '/auth/*'
+    status: 200
+    target: '/index.html'
+  - source: '/dashboard/*'
+    status: 200
+    target: '/index.html'
+  - source: '/status'
+    status: 200
+    target: '/index.html'
+  - source: '/status/*'
+    status: 200
+    target: '/index.html'
+  - source: '/'
+    status: 200
+    target: '/index.html'
+  - source: '/<*>'
+    status: 200
+    target: '/index.html'
+  - source: '/storybook'
+    status: 200
+    target: '/storybook/index.html'
+  - source: '/storybook/*'
+    status: 200
+    target: '/storybook/index.html'
+customErrorResponses:
+  # Exclude API routes from custom error responses (they should go to API Gateway)
+  - errorCode: 404
+    responsePagePath: '/index.html'
+    responseCode: 200
+    errorCachingMinTTL: 0
+    # Note: API routes (/api/*) should not trigger this - they should be handled by API Gateway

@@ -1,15 +1,23 @@
 // This file ensures Reanimated is loaded before the app starts
-import 'react-native-reanimated';
-
-// Configure Reanimated to use the native driver when possible
-// This helps with performance
+// Only import react-native-reanimated in browser/native environments (not SSR)
 if (typeof window !== 'undefined') {
-  // @ts-ignore
-  window._frameTimestamp = null;
+  try {
+    require('react-native-reanimated');
+    
+    // Configure Reanimated to use the native driver when possible
+    // This helps with performance
+    // @ts-ignore
+    window._frameTimestamp = null;
+    
+    // Enable Layout Animations (only in browser)
+    try {
+      const { enableLayoutAnimations } = require('react-native-reanimated');
+      enableLayoutAnimations(true);
+    } catch (e) {
+      // Reanimated not available, skip
+    }
+  } catch (e) {
+    // Reanimated not available (SSR context), polyfill will handle it via Metro resolver
+    console.warn('react-native-reanimated not available, using polyfill');
+  }
 }
-
-// Enable Layout Animations
-import { enableLayoutAnimations } from 'react-native-reanimated';
-
-// Enable layout animations
-enableLayoutAnimations(true);
