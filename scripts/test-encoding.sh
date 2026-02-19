@@ -35,11 +35,10 @@ else:
 PYTHON_SCRIPT
 }
 
-# Test with actual connection string
-SOURCE_DB_URL="postgresql://postgres:zH_%@x5cAPcHX}G@db.tgbdilebadmzqwubsijr.supabase.co:5432/postgres"
+# Test with sample connection string (placeholder password with special chars)
+SOURCE_DB_URL="postgresql://postgres:sample%40password%21@db.example.supabase.co:5432/postgres"
 
 echo "Original: $SOURCE_DB_URL"
 ENCODED=$(encode_db_url "$SOURCE_DB_URL")
 echo "Encoded: $ENCODED"
-
 

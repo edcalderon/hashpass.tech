@@ -6,7 +6,7 @@
 **Severity:** CRITICAL  
 **Status:** URGENT ACTION REQUIRED
 
-The AWS access key `AKIAQ3EGSFHR7DFLD3XS` belonging to IAM user `s3` was publicly exposed in a GitHub repository commit.
+The AWS access key `AKIA****************` belonging to IAM user `s3` was publicly exposed in a GitHub repository commit.
 
 **Exposed Location:**  
 https://github.com/lstech-solutions/bsl2025.hashpass.tech/blob/468338ca88015e5a10c6a157e893fc4b63ac9e7f/.env
@@ -26,7 +26,7 @@ https://github.com/lstech-solutions/bsl2025.hashpass.tech/blob/468338ca88015e5a1
 
 2. **Deactivate the exposed access key:**
    - Go to "Security credentials" tab
-   - Find access key `AKIAQ3EGSFHR7DFLD3XS`
+   - Find access key `AKIA****************`
    - Click "Deactivate" (DO NOT DELETE YET - wait 24-48 hours)
 
 3. **Create a new access key:**
@@ -42,7 +42,7 @@ https://github.com/lstech-solutions/bsl2025.hashpass.tech/blob/468338ca88015e5a1
 
 5. **After 24-48 hours, delete the old key:**
    - Verify new key is working everywhere
-   - Delete the old access key `AKIAQ3EGSFHR7DFLD3XS`
+   - Delete the old access key `AKIA****************`
 
 ### 3. ⚠️ URGENT: Review AWS CloudTrail Logs
 
@@ -149,4 +149,3 @@ git push origin --force --all
 ## Contact
 
 If you suspect unauthorized access, contact AWS Support immediately and consider filing a security incident report.
-
