@@ -183,10 +183,7 @@ frontend:
             value: '0'
   cache:
     paths:
-      - node_modules/**/*
-      - .pnpm-store/**/*
       - apps/web-app/.expo/**/*
-      - $(npm root --global)/**/*
 redirects:
   # API routes are handled by API Gateway (api.hashpass.tech)
   # Amplify Hosting API routes are first-class for Next.js, but this app uses Expo Router.
