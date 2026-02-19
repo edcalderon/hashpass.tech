@@ -47,8 +47,8 @@ frontend:
       commands:
         - rm -rf dist apps/web-app/dist
         - mkdir -p dist/client/_expo/functions/api/bslatam
-        # Increase Node.js memory limit for webpack bundler (expo export uses webpack)
-        - export NODE_OPTIONS="--max-old-space-size=6144"
+        # Limit Node.js heap to avoid exhausting Amplify build container memory
+        - export NODE_OPTIONS="--max-old-space-size=4096"
         # Set production environment for Expo export
         - export NODE_ENV=production
         - export EXPO_PUBLIC_ENABLE_STATIC_EXPORT=true
