@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerEnv, supabaseServer as supabase } from '@/lib/supabase-server';
 import * as nodemailer from 'nodemailer';
 
 const corsHeaders = {
@@ -22,15 +22,29 @@ export async function OPTIONS() {
 export async function POST(request: Request) {
   try {
     // Check Supabase configuration before proceeding
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv();
     
     if (!supabaseUrl || !supabaseServiceKey) {
       const missingVars = [];
-      if (!supabaseUrl) missingVars.push('EXPO_PUBLIC_SUPABASE_URL');
-      if (!supabaseServiceKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+      if (!supabaseUrl) {
+        missingVars.push(
+          'EXPO_PUBLIC_SUPABASE_URL (fallback: EXPO_PUBLIC_SUPABASE_URL_DEV)'
+        );
+      }
+      if (!supabaseServiceKey) {
+        missingVars.push(
+          'SUPABASE_SERVICE_ROLE_KEY (fallback: SUPABASE_SERVICE_ROLE_KEY_DEV)'
+        );
+      }
       
-      console.error('❌ OTP API: Missing environment variables:', missingVars.join(', '));
+      console.error(
+        '❌ OTP API: Missing environment variables:',
+        missingVars.join(', '),
+        '| selectedProfile=',
+        selectedProfile,
+        '| usingDevFallback=',
+        usingDevFallback
+      );
       return new Response(
         JSON.stringify({ 
           error: 'Server configuration error',
@@ -39,6 +53,16 @@ export async function POST(request: Request) {
         }),
         { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      let supabaseHost = supabaseUrl;
+      try {
+        supabaseHost = new URL(supabaseUrl).hostname;
+      } catch {
+        // Keep raw value if URL parsing fails.
+      }
+      console.log('ℹ️ OTP API Supabase target:', supabaseHost, '| selectedProfile=', selectedProfile);
     }
     
     // Handle JSON parsing errors
@@ -57,7 +81,8 @@ export async function POST(request: Request) {
       );
     }
     
-    const { email } = body || {};
+    const { email, delivery: requestedDelivery, phone } = body || {};
+    const delivery = requestedDelivery === 'sms' ? 'sms' : 'email';
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
@@ -147,25 +172,38 @@ export async function POST(request: Request) {
       );
     }
 
-    // Extract token_hash from the generated link
-    if (!linkData.properties?.action_link) {
-      console.error('Could not extract action_link from generated link');
-      return new Response(
-        JSON.stringify({ error: 'Failed to extract OTP token' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
+    // Extract token hash and verification type from generated link payload.
+    const verificationTypeRaw = linkData.properties?.verification_type;
+    const verificationType =
+      typeof verificationTypeRaw === 'string' && verificationTypeRaw.trim()
+        ? verificationTypeRaw.trim()
+        : 'magiclink';
+
+    let tokenHash =
+      typeof linkData.properties?.hashed_token === 'string'
+        ? linkData.properties.hashed_token.trim()
+        : '';
+
+    // Backward-compatible fallback: parse from action_link if hashed_token is absent.
+    if (!tokenHash && linkData.properties?.action_link) {
+      const linkUrl = new URL(linkData.properties.action_link);
+      tokenHash =
+        linkUrl.searchParams.get('token_hash') ||
+        linkUrl.searchParams.get('token') ||
+        '';
     }
-    
-    const linkUrl = new URL(linkData.properties.action_link);
-    const tokenHash = linkUrl.searchParams.get('token_hash') || linkUrl.searchParams.get('token');
-    
+
     if (!tokenHash) {
-      console.error('Could not extract token from link');
+      console.error('Could not extract token hash from generated link');
       return new Response(
         JSON.stringify({ error: 'Failed to extract OTP token' }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
+
+    // Encode verification type with token hash to support multiple GoTrue OTP types
+    // without requiring an immediate schema migration.
+    const encodedTokenHash = `${verificationType}::${tokenHash}`;
 
     // Generate a 6-digit OTP code
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -180,23 +218,53 @@ export async function POST(request: Request) {
       .insert({
         email: normalizedEmail,
         code: otpCode,
-        token_hash: tokenHash,
+        token_hash: encodedTokenHash,
         expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
       } as any);
 
     if (storeError) {
       console.error('Error storing OTP code:', storeError);
-      // Continue anyway - we'll try to verify using the token_hash directly
+      if (storeError.code === 'PGRST205') {
+        return new Response(
+          JSON.stringify({
+            error: 'OTP storage table is not available in the current Supabase project.',
+            code: 'otp_storage_missing_table',
+            message: 'The otp_codes table is missing from the active Supabase database. Please contact support.',
+          }),
+          { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: 'Could not store OTP code',
+          code: storeError.code || 'otp_storage_failed',
+          message: storeError.message || 'Failed to persist OTP code. Please try again.',
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
     }
 
-    // Send custom email with OTP code using nodemailer
-    const emailEnabled = process.env.NODEMAILER_HOST && 
-                         process.env.NODEMAILER_PORT && 
-                         process.env.NODEMAILER_USER && 
-                         process.env.NODEMAILER_PASS && 
-                         process.env.NODEMAILER_FROM;
+    // Delivery channel:
+    // - email (default): send via configured SMTP
+    // - sms: send via Brevo transactional SMS API
+    if (delivery === 'email') {
+      const emailEnabled = process.env.NODEMAILER_HOST && 
+                           process.env.NODEMAILER_PORT && 
+                           process.env.NODEMAILER_USER && 
+                           process.env.NODEMAILER_PASS && 
+                           process.env.NODEMAILER_FROM;
 
-    if (emailEnabled) {
+      if (!emailEnabled) {
+        return new Response(
+          JSON.stringify({
+            error: 'Email service not configured. Please configure NODEMAILER settings.',
+            code: 'email_not_configured',
+          }),
+          { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
       const smtpHost = process.env.NODEMAILER_HOST || '';
       const isBrevo = smtpHost.includes('brevo.com') || smtpHost.includes('sendinblue.com');
       
@@ -271,18 +339,96 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      // If email is not configured, fall back to Supabase's email
-      // But this will send a magic link, not an OTP code
-      return new Response(
-        JSON.stringify({ error: 'Email service not configured. Please configure NODEMAILER settings.' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
+      const brevoApiKey = process.env.BREVO_API_KEY?.trim();
+      const sender = (process.env.BREVO_SMS_SENDER || 'HASHPASS').trim().slice(0, 11);
+      const normalizedPhone = typeof phone === 'string' ? phone.trim() : '';
+      const isValidPhone = /^\+[1-9]\d{7,14}$/.test(normalizedPhone);
+      const brevoRecipient = normalizedPhone.replace(/^\+/, '');
+
+      if (!isValidPhone) {
+        return new Response(
+          JSON.stringify({
+            error: 'Valid phone is required in E.164 format (example: +573001112233).',
+            code: 'invalid_phone',
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
+      if (!brevoApiKey) {
+        return new Response(
+          JSON.stringify({
+            error: 'SMS service is not configured.',
+            code: 'sms_not_configured',
+            message: 'BREVO_API_KEY is missing on the server.',
+          }),
+          { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+
+      const smsPayload = {
+        sender,
+        recipient: brevoRecipient,
+        content: `HashPass login code: ${otpCode}. It expires in 1 hour.`,
+        type: 'transactional',
+      };
+
+      try {
+        // eslint-disable-next-line no-restricted-syntax
+        const brevoResponse = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'api-key': brevoApiKey,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(smsPayload),
+        });
+
+        if (!brevoResponse.ok) {
+          const errorBody = await brevoResponse.text().catch(() => '');
+          const compact = errorBody.replace(/\s+/g, ' ').slice(0, 300);
+          const isRateLimited = brevoResponse.status === 429 || /rate|quota|limit/i.test(compact);
+
+          if (isRateLimited) {
+            return new Response(
+              JSON.stringify({
+                error: 'SMS rate limit exceeded',
+                code: 'sms_rate_limited',
+                message: 'Too many SMS requests. Please try again in a few minutes.',
+              }),
+              { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+            );
+          }
+
+          return new Response(
+            JSON.stringify({
+              error: 'Failed to send OTP SMS',
+              code: 'sms_send_failed',
+              message: compact || `Brevo API returned ${brevoResponse.status}`,
+            }),
+            { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
+
+        console.log('OTP SMS sent successfully to:', normalizedPhone);
+      } catch (smsError: any) {
+        return new Response(
+          JSON.stringify({
+            error: 'Failed to send OTP SMS',
+            code: 'sms_send_failed',
+            message: smsError?.message || 'Could not send SMS. Please try again later.',
+          }),
+          { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'OTP code sent to email',
+        delivery,
+        message: delivery === 'sms' ? 'OTP code sent by SMS' : 'OTP code sent to email',
       }),
       { 
         status: 200, 

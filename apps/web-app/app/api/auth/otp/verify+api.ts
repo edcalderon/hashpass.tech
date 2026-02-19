@@ -94,14 +94,34 @@ export async function POST(request: Request) {
       .eq('email', email.trim().toLowerCase())
       .eq('code', code.toString().trim());
 
-    // Return the token_hash to the client so it can verify using the client-side Supabase client
-    // The client-side client has the proper permissions to verify OTP tokens
+    // Decode persisted OTP metadata.
+    const rawStoredTokenHash = String(otpData.token_hash || '');
+    let verificationType:
+      | 'signup'
+      | 'invite'
+      | 'magiclink'
+      | 'recovery'
+      | 'email_change'
+      | 'email' = 'magiclink';
+    let tokenHash = rawStoredTokenHash;
+
+    const encodedMatch = rawStoredTokenHash.match(
+      /^(signup|invite|magiclink|recovery|email_change|email)::(.+)$/
+    );
+
+    if (encodedMatch) {
+      verificationType = encodedMatch[1] as typeof verificationType;
+      tokenHash = encodedMatch[2];
+    }
+
+    // Return token hash + exact verification type for client-side Supabase verification.
     console.log('OTP code verified, returning token_hash for client-side verification');
     
     return new Response(
       JSON.stringify({ 
         success: true,
-        token_hash: otpData.token_hash,
+        token_hash: tokenHash,
+        type: verificationType,
         email: email.trim().toLowerCase(),
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -114,4 +134,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

@@ -97,11 +97,28 @@ export const useTranslation = (ns?: string) => {
   }, [currentLocale]);
 
   const t = useCallback(
-    (key: string, params: Record<string, any> = {}) => {
+    (
+      key: string,
+      fallbackOrParams?: string | Record<string, any>,
+      maybeParams: Record<string, any> = {}
+    ) => {
       const fullKey = ns ? `${ns}.${key}` : key;
-      return (i18n as any)._(fullKey, params as any) as unknown as string;
+      const fallback = typeof fallbackOrParams === 'string' ? fallbackOrParams : undefined;
+      const params =
+        fallbackOrParams && typeof fallbackOrParams === 'object'
+          ? fallbackOrParams
+          : maybeParams;
+
+      const translated = (i18n as any)._(fullKey, params as any) as unknown as string;
+
+      // Lingui returns the key when translation is missing; use explicit fallback when provided.
+      if (translated === fullKey && fallback) {
+        return fallback;
+      }
+
+      return translated || fallback || fullKey;
     },
-    [ns, currentLocale]
+    [ns]
   );
 
   return { t };

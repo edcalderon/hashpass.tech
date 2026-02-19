@@ -51,8 +51,10 @@ Use **pnpm** and **Turborepo** at the repo root:
 
 ```bash
 pnpm install
-pnpm run dev          # run app from root (current default)
-pnpm run dev:web-app  # run app from apps/web-app
+pnpm run dev          # run web app from root (delegates to apps/web-app)
+pnpm run dev:web-app  # run web app directly from apps/web-app
+pnpm run dev:directus # run Directus Docker stack from apps/directus
+pnpm run dev:all      # run web app + Directus (single Ctrl+C stops both)
 pnpm run build:all    # turbo build all packages
 ```
 

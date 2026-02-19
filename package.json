@@ -1,20 +1,24 @@
 {
   "name": "hashpass.tech",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "version": "1.6.113",
   "scripts": {
-    "start": "NODE_OPTIONS='--max-old-space-size=4096' expo start",
-    "start:reset": "NODE_OPTIONS='--max-old-space-size=4096' expo start --clear",
-    "android": "NODE_OPTIONS='--max-old-space-size=4096' expo start --android",
-    "ios": "NODE_OPTIONS='--max-old-space-size=4096' expo start --ios",
-    "web": "NODE_OPTIONS='--max-old-space-size=4096' expo start --web --clear",
+    "start": "pnpm --filter hashpass-web-app start",
+    "start:reset": "pnpm --filter hashpass-web-app start:reset",
+    "android": "pnpm --filter hashpass-web-app android",
+    "ios": "pnpm --filter hashpass-web-app ios",
+    "web": "pnpm --filter hashpass-web-app web",
     "test": "jest --watchAll",
-    "dev": "NODE_OPTIONS='--max-old-space-size=4096' expo start --web --clear",
-    "build:web": "npm run prebuild && node tools/scripts/update-sw-version.mjs && expo export -p web && npm run postbuild:web && (npm run build:storybook || echo 'Storybook build skipped') && (npx workbox-cli generateSW workbox-config.js || echo 'Workbox generation failed, continuing without service worker')",
+    "dev": "pnpm --filter hashpass-web-app dev",
+    "dev:web-app": "pnpm --filter hashpass-web-app dev",
+    "dev:directus": "pnpm --filter hashpass-directus dev",
+    "dev:all": "bash ./tools/scripts/dev-all.sh",
+    "build:web": "pnpm --filter hashpass-web-app build",
     "build:storybook": "storybook build -o storybook-static || echo 'Storybook not available, skipping build'",
+    "build:all": "turbo run build",
     "postbuild:web": "if [ -d dist/server/_expo ]; then mkdir -p dist/client/_expo && cp -r dist/server/_expo/* dist/client/_expo/; fi && if [ -d dist/server/static ]; then mkdir -p dist/client/static && cp -r dist/server/static/* dist/client/static/; fi && if [ -d storybook-static ]; then mkdir -p dist/client/storybook && cp -r storybook-static/* dist/client/storybook/; else echo 'Storybook static directory not found, skipping copy'; fi && mkdir -p dist/client/config && cp config/versions.json dist/client/config/versions.json && cp public/sw.js dist/client/sw.js",
     "prebuild": "rm -rf dist",
-    "lint": "expo lint",
+    "lint": "pnpm --filter hashpass-web-app lint",
     "deploy": "npm run build:web && netlify deploy --prod",
     "deploy:cloudflare": "npm run build:web && npx wrangler pages deploy ./dist/client --project-name=hashpass",
     "seed:bslatam": "node ./scripts/seed-bslatam.mjs ./speakers.json",
@@ -141,7 +145,7 @@
     "workbox-cli": "^7.1.0"
   },
   "engines": {
-    "node": "22.18.0"
+    "node": "22.22.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

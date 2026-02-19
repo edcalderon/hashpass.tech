@@ -1,9 +1,34 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { authService, AuthSession, AuthUser } from '@hashpass/auth';
+import { supabase } from '../lib/supabase';
 
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
 let oauthHashProcessingPromise: Promise<void> | null = null;
 let oauthHashProcessed = false;
+
+const mapSupabaseUserToAuthUser = (candidate: any): AuthUser | null => {
+  if (!candidate) return null;
+
+  const email = typeof candidate.email === 'string' ? candidate.email : '';
+  const fullName = typeof candidate.user_metadata?.full_name === 'string'
+    ? candidate.user_metadata.full_name
+    : '';
+  const firstNameFromFullName = fullName.split(' ')[0] || '';
+  const lastNameFromFullName = fullName.split(' ').slice(1).join(' ');
+
+  return {
+    id: candidate.id || '',
+    email,
+    first_name: candidate.user_metadata?.first_name || firstNameFromFullName || undefined,
+    last_name: candidate.user_metadata?.last_name || lastNameFromFullName || undefined,
+    role: candidate.user_metadata?.role || candidate.role || 'user',
+    status: candidate.user_metadata?.status || 'active',
+    last_access: candidate.last_sign_in_at || undefined,
+    app_metadata: candidate.app_metadata,
+    user_metadata: candidate.user_metadata,
+    provider: 'supabase',
+  };
+};
 
 export const useAuth = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -11,11 +36,32 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true);
   const isInitializedRef = useRef(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const supabaseSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
+  const directusSessionRef = useRef<AuthSession | null>(null);
+  const supabaseSessionRef = useRef<any | null>(null);
+  const isMountedRef = useRef(false);
+  const bootstrapCompletedRef = useRef(false);
+
+  const syncAuthState = useCallback((completeLoading = false) => {
+    const directusSession = directusSessionRef.current;
+    const directusAuthenticated = !!directusSession?.user && authService.isAuthenticated();
+    const supabaseUser = mapSupabaseUserToAuthUser(supabaseSessionRef.current?.user);
+
+    // Prefer Directus user data when both sessions are present.
+    const activeUser = directusAuthenticated ? (directusSession?.user ?? null) : supabaseUser;
+
+    setUser(activeUser);
+    setIsLoggedIn(Boolean(directusAuthenticated || supabaseUser));
+    if (completeLoading || bootstrapCompletedRef.current) {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     // Prevent duplicate initialization
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
+    isMountedRef.current = true;
 
     // Check for OAuth tokens in URL fragment on page load (for direct redirects from OAuth).
     // Process this once globally to avoid duplicate callback handling from many mounted components.
@@ -55,36 +101,112 @@ export const useAuth = () => {
 
     // Subscribe to auth state changes
     unsubscribeRef.current = authService.onAuthStateChange((session: AuthSession | null) => {
-      setUser(session?.user ?? null);
-      setIsLoggedIn(!!session?.user && authService.isAuthenticated());
-      setIsLoading(false);
+      directusSessionRef.current = session;
+      if (isMountedRef.current) {
+        syncAuthState();
+      }
     });
 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      supabaseSessionRef.current = session ?? null;
+      if (isMountedRef.current) {
+        syncAuthState();
+      }
+    });
+    supabaseSubscriptionRef.current = subscription;
+
     // Initialize session once globally to avoid repeated /users/me probes.
-    if (!sessionBootstrapPromise) {
-      sessionBootstrapPromise = authService.getSession();
-    }
-    sessionBootstrapPromise.catch((error) => {
-      console.error('[useAuth] Session bootstrap failed:', error);
+    const initializeSessions = async () => {
+      let directusSession: AuthSession | null = null;
+      let supabaseSession: any = null;
+
+      try {
+        if (!sessionBootstrapPromise) {
+          sessionBootstrapPromise = authService.getSession();
+        }
+
+        [directusSession, supabaseSession] = await Promise.all([
+          sessionBootstrapPromise.catch((error) => {
+            console.error('[useAuth] Session bootstrap failed:', error);
+            return null;
+          }),
+          supabase.auth.getSession()
+            .then(({ data, error }) => {
+              if (error) {
+                console.error('[useAuth] Supabase session bootstrap failed:', error);
+                return null;
+              }
+              return data.session ?? null;
+            })
+            .catch((error) => {
+              console.error('[useAuth] Supabase session bootstrap failed:', error);
+              return null;
+            }),
+        ]);
+      } finally {
+        directusSessionRef.current = directusSession;
+        supabaseSessionRef.current = supabaseSession;
+        bootstrapCompletedRef.current = true;
+        if (isMountedRef.current) {
+          syncAuthState(true);
+        }
+      }
+    };
+
+    initializeSessions().catch((error) => {
+      console.error('[useAuth] Initialization failed:', error);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     });
 
     return () => {
+      isMountedRef.current = false;
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
+      if (supabaseSubscriptionRef.current) {
+        supabaseSubscriptionRef.current.unsubscribe();
+        supabaseSubscriptionRef.current = null;
+      }
       isInitializedRef.current = false;
     };
-  }, []);
+  }, [syncAuthState]);
 
   const signOut = useCallback(async () => {
+    const errors: string[] = [];
+
     try {
-      await authService.signOut();
+      const [directusSignOutResult, supabaseSignOutResult] = await Promise.allSettled([
+        authService.signOut(),
+        supabase.auth.signOut(),
+      ]);
+
+      if (directusSignOutResult.status === 'rejected') {
+        errors.push(`Directus sign-out failed: ${String(directusSignOutResult.reason)}`);
+      }
+
+      if (supabaseSignOutResult.status === 'rejected') {
+        errors.push(`Supabase sign-out failed: ${String(supabaseSignOutResult.reason)}`);
+      } else if (supabaseSignOutResult.value?.error) {
+        errors.push(`Supabase sign-out failed: ${supabaseSignOutResult.value.error.message}`);
+      }
     } catch (error) {
       console.error('Error signing out:', error);
-      throw error;
+      errors.push(error instanceof Error ? error.message : String(error));
+    } finally {
+      directusSessionRef.current = null;
+      supabaseSessionRef.current = null;
+      if (isMountedRef.current) {
+        syncAuthState();
+      }
     }
-  }, []);
+
+    if (errors.length > 0) {
+      throw new Error(errors.join(' | '));
+    }
+  }, [syncAuthState]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {

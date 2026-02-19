@@ -4,14 +4,30 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@components/*": ["./components/*"],
-      "@hooks/*": ["./hooks/*"],
-      "@lib/*": ["./lib/*"],
-      "@providers/*": ["./providers/*"],
-      "@contexts/*": ["./contexts/*"],
-      "@screens/*": ["./app/screens/*"],
-      "@navigation/*": ["./navigation/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@components/*": [
+        "./components/*"
+      ],
+      "@hooks/*": [
+        "./hooks/*"
+      ],
+      "@lib/*": [
+        "./lib/*"
+      ],
+      "@providers/*": [
+        "./providers/*"
+      ],
+      "@contexts/*": [
+        "./contexts/*"
+      ],
+      "@screens/*": [
+        "./app/screens/*"
+      ],
+      "@navigation/*": [
+        "./navigation/*"
+      ]
     },
     "typeRoots": [
       "./node_modules/@types",
@@ -21,8 +37,6 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts",
     "nativewind-env.d.ts",
     "types/**/*.d.ts"
   ]

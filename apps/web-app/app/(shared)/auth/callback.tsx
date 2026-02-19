@@ -2,13 +2,23 @@ import { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../hooks/useAuth';
-import { useTheme } from '../../../hooks/useTheme';
 import { useToastHelpers } from '../../../contexts/ToastContext';
 import { useTranslation } from '../../../i18n/i18n';
+import { createSessionFromUrl, supabase } from '../../../lib/supabase';
 import { Check, AlertCircle } from 'lucide-react-native';
 
+type CallbackFlow = 'oauth' | 'magic_link';
+
+const MAGIC_LINK_TYPES = new Set([
+    'magiclink',
+    'signup',
+    'recovery',
+    'invite',
+    'email_change',
+    'email_change_new',
+]);
+
 export default function AuthCallback() {
-    const { colors } = useTheme();
     const { t } = useTranslation('auth');
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -51,7 +61,7 @@ export default function AuthCallback() {
         );
     };
 
-    const getToastErrorContent = (rawError: string) => {
+    const getToastErrorContent = (rawError: string, flow: CallbackFlow) => {
         const normalized = rawError.toLowerCase();
 
         if (
@@ -60,9 +70,16 @@ export default function AuthCallback() {
             normalized.includes('no active directus session') ||
             normalized.includes('did not establish a valid session')
         ) {
+            if (flow === 'magic_link') {
+                return {
+                    title: 'Magic Link Session Not Established',
+                    message: 'Magic Link opened, but no valid session was created. Please request a new link and try again.'
+                };
+            }
+
             return {
                 title: 'Session Not Established',
-                message: 'Google sign-in completed, but Directus did not create a valid session. Please sign in again.'
+                message: 'OAuth sign-in completed, but Directus did not create a valid session. Please sign in again.'
             };
         }
 
@@ -72,6 +89,13 @@ export default function AuthCallback() {
             normalized.includes('networkerror') ||
             normalized.includes('failed to fetch')
         ) {
+            if (flow === 'magic_link') {
+                return {
+                    title: 'Magic Link Server Unreachable',
+                    message: 'Your browser could not reach the email authentication server. Please try opening the Magic Link again.'
+                };
+            }
+
             return {
                 title: 'Auth Server Unreachable',
                 message: 'Your browser could not reach the Directus auth server. Check CORS and Directus URL settings, then try again.'
@@ -137,6 +161,37 @@ export default function AuthCallback() {
         const defaultPath = '/dashboard/explore';
         console.log('📍 Using default redirect path:', defaultPath);
         return defaultPath;
+    };
+
+    const detectCallbackFlow = (): CallbackFlow => {
+        if (Platform.OS !== 'web' || typeof window === 'undefined') {
+            const rawType = params.type;
+            const typeValue = Array.isArray(rawType) ? rawType[0] : rawType;
+            if (typeof typeValue === 'string' && MAGIC_LINK_TYPES.has(typeValue.toLowerCase())) {
+                return 'magic_link';
+            }
+
+            const tokenHash = params.token_hash;
+            if ((Array.isArray(tokenHash) ? tokenHash[0] : tokenHash)) {
+                return 'magic_link';
+            }
+
+            return 'oauth';
+        }
+
+        const url = new URL(window.location.href);
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const searchType = url.searchParams.get('type');
+        const hashType = hashParams.get('type');
+        const callbackType = (searchType || hashType || '').toLowerCase();
+        const hasTokenHash = Boolean(url.searchParams.get('token_hash') || hashParams.get('token_hash'));
+        const methodHint = window.localStorage.getItem('auth_signin_method');
+
+        if (hasTokenHash || MAGIC_LINK_TYPES.has(callbackType) || methodHint === 'magic_link') {
+            return 'magic_link';
+        }
+
+        return 'oauth';
     };
     
     // Safe navigation function - use router instead of window.location to prevent full page reload
@@ -226,14 +281,76 @@ export default function AuthCallback() {
             executed = true;
             isProcessingRef.current = true;
             
+            let callbackFlow: CallbackFlow = 'oauth';
             try {
+                callbackFlow = detectCallbackFlow();
+                const redirectPath = getRedirectPath();
+
                 setStatus('processing');
-                setMessage(t('processingAuthentication', 'Processing authentication...'));
+                setMessage(
+                    callbackFlow === 'magic_link'
+                        ? 'Processing Magic Link authentication...'
+                        : t('processingAuthentication', 'Processing authentication...')
+                );
                 
-                console.log('🔄 OAuth callback started');
+                console.log(`🔄 ${callbackFlow === 'magic_link' ? 'Magic Link' : 'OAuth'} callback started`);
                 console.log('📋 Callback params:', params);
+                console.log('📋 Detected callback flow:', callbackFlow);
+
+                if (callbackFlow === 'magic_link') {
+                    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+                        throw new Error('Magic Link callback is only supported in web browsers.');
+                    }
+
+                    const sessionFromUrl = await createSessionFromUrl(window.location.href);
+                    if (sessionFromUrl.error) {
+                        throw sessionFromUrl.error;
+                    }
+
+                    let activeSession = sessionFromUrl.session;
+                    if (!activeSession) {
+                        // Allow session propagation a moment before failing.
+                        for (let attempt = 0; attempt < 4; attempt++) {
+                            await new Promise(resolve => setTimeout(resolve, 250 * (attempt + 1)));
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (session) {
+                                activeSession = session;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!activeSession?.user) {
+                        throw new Error('Magic Link authentication completed, but no active session was created. Please request a new link.');
+                    }
+
+                    console.log('✅ Magic Link callback successful:', activeSession.user.email);
+                    setStatus('success');
+                    setMessage('Magic Link authentication successful.');
+
+                    if (!hasShownSuccessToastRef.current) {
+                        hasShownSuccessToastRef.current = true;
+                        showSuccess(
+                            'Magic Link verified',
+                            'Redirecting to your dashboard...'
+                        );
+                    }
+
+                    if (typeof window !== 'undefined') {
+                        const cleanUrl = window.location.origin + window.location.pathname;
+                        window.history.replaceState({}, '', cleanUrl);
+                        window.localStorage.removeItem('oauth_in_progress');
+                        window.localStorage.removeItem('auth_signin_method');
+                    }
+
+                    hasNavigatedRef.current = true;
+                    setHasNavigated(true);
+                    isProcessingRef.current = false;
+                    safeNavigate(redirectPath);
+                    return;
+                }
                 
-                // Check if URL has auth tokens/code before processing
+                // Check if URL has auth tokens/code before processing OAuth
                 let hasAuthData = false;
                 if (Platform.OS === 'web' && typeof window !== 'undefined') {
                     const url = window.location.href;
@@ -269,65 +386,59 @@ export default function AuthCallback() {
                     throw new Error(result.error);
                 }
                 
-                if (result.user) {
-                    console.log('✅ OAuth callback successful:', result.user);
-                    setStatus('success');
-                    setMessage(t('authenticationSuccessful', '✅ Authentication successful!'));
-                    if (!hasShownSuccessToastRef.current) {
-                        hasShownSuccessToastRef.current = true;
-                        showSuccess(
-                            t('authenticationSuccessful', 'Authentication successful!'),
-                            'Redirecting to your dashboard...'
-                        );
-                    }
-                    
-                    console.log('🚀 Starting navigation to dashboard...');
-                    const redirectPath = getRedirectPath();
-                    console.log('📍 Redirect path determined:', redirectPath);
-
-                    // Clean callback URL only after OAuth payload has been processed.
-                    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                        const cleanUrl = window.location.origin + window.location.pathname;
-                        window.history.replaceState({}, '', cleanUrl);
-                        window.localStorage.removeItem('oauth_in_progress');
-                        console.log('🧹 Cleaned URL after successful OAuth processing');
-                    }
-                    
-                    hasNavigatedRef.current = true;
-                    setHasNavigated(true);
-                    isProcessingRef.current = false;
-                    
-                    // Wait for auth state to update before navigating
-                    let attempts = 0;
-                    const waitForAuthState = () => {
-                        console.log('🔍 Checking auth state for navigation...');
-                        attempts++;
-                        
-                        // Try navigation after a reasonable wait or max attempts
-                        if (attempts >= 5) {
-                            console.log('🚀 Max attempts reached, proceeding with navigation');
-                            safeNavigate(redirectPath);
-                            return;
-                        }
-                        
-                        setTimeout(() => {
-                            console.log('🚀 Attempting navigation (attempt', attempts + 1, ')');
-                            safeNavigate(redirectPath);
-                        }, attempts * 200); // Incremental delay
-                    };
-                    
-                    // Start the auth state check
-                    waitForAuthState();
-                } else {
+                if (!result.user) {
                     console.error('❌ No user data in result:', result);
                     throw new Error('Authentication completed but no user data received');
                 }
+
+                console.log('✅ OAuth callback successful:', result.user);
+                setStatus('success');
+                setMessage(t('authenticationSuccessful', '✅ Authentication successful!'));
+                if (!hasShownSuccessToastRef.current) {
+                    hasShownSuccessToastRef.current = true;
+                    showSuccess(
+                        t('authenticationSuccessful', 'Authentication successful!'),
+                        'Redirecting to your dashboard...'
+                    );
+                }
+
+                // Clean callback URL only after OAuth payload has been processed.
+                if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.history.replaceState({}, '', cleanUrl);
+                    window.localStorage.removeItem('oauth_in_progress');
+                    window.localStorage.removeItem('auth_signin_method');
+                    console.log('🧹 Cleaned URL after successful OAuth processing');
+                }
+                
+                hasNavigatedRef.current = true;
+                setHasNavigated(true);
+                isProcessingRef.current = false;
+                
+                // Wait for auth state to update before navigating
+                let attempts = 0;
+                const waitForAuthState = () => {
+                    attempts++;
+                    
+                    // Try navigation after a reasonable wait or max attempts
+                    if (attempts >= 5) {
+                        safeNavigate(redirectPath);
+                        return;
+                    }
+                    
+                    setTimeout(() => {
+                        safeNavigate(redirectPath);
+                    }, attempts * 200); // Incremental delay
+                };
+                
+                // Start the auth state check
+                waitForAuthState();
                 
             } catch (error: any) {
                 console.error('❌ Auth callback error:', error);
                 setStatus('error');
                 const rawMessage = error?.message || t('authenticationFailed', 'Authentication failed. Please try again.');
-                const toastError = getToastErrorContent(rawMessage);
+                const toastError = getToastErrorContent(rawMessage, callbackFlow);
                 setMessage(toastError.message);
 
                 if (!hasShownErrorToastRef.current && !hasNavigatedRef.current) {
@@ -337,6 +448,7 @@ export default function AuthCallback() {
 
                 if (Platform.OS === 'web' && typeof window !== 'undefined') {
                     window.localStorage.removeItem('oauth_in_progress');
+                    window.localStorage.removeItem('auth_signin_method');
                 }
                 
                 // After error, redirect back to auth page after a delay
