@@ -1,0 +1,28 @@
+{
+  "name": "@hashpass/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hashpass/types": "workspace:*",
+    "@hashpass/utils": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "@radix-ui/react-avatar": "^1.1.10",
+    "@radix-ui/react-slot": "^1.2.3"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.70.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  }
+}

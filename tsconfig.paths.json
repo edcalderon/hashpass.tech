@@ -2,12 +2,11 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@types/*": ["types/*"],
-      "@components/*": ["components/*"],
-      "@contexts/*": ["contexts/*"],
-      "@hooks/*": ["hooks/*"],
-      "@lib/*": ["lib/*"],
-      "@config/*": ["config/*"]
+      "@components/*": ["apps/web-app/components/*"],
+      "@contexts/*": ["apps/web-app/contexts/*"],
+      "@hooks/*": ["apps/web-app/hooks/*"],
+      "@lib/*": ["apps/web-app/lib/*"],
+      "@config/*": ["apps/web-app/config/*"]
     }
   }
 }

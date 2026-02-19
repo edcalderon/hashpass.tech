@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "jsx": "react-jsx",
+    "declaration": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*", "nativewind-env.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

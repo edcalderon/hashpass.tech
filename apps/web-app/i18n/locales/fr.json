@@ -1,0 +1,709 @@
+{
+  "newsletter": {
+    "title": "Abonnez-vous à notre newsletter",
+    "subtitle": "Rejoignez notre newsletter pour les dernières mises à jour",
+    "subscribers": "Abonnés",
+    "privacy": "Nous respectons votre vie privée. Désabonnez-vous à tout moment.",
+    "description": "Abonnez-vous à notre newsletter et ne manquez jamais une mise à jour. Recevez les dernières nouvelles, articles et offres exclusives directement dans votre boîte de réception !",
+    "emailPlaceholder": "Entrez votre email",
+    "subscribe": "S'abonner",
+    "processing": "Traitement en cours...",
+    "successTitle": "Email envoyé !",
+    "successMessage": "Nous avons envoyé un email de confirmation à",
+    "successMessageEmail": "Vérifiez votre boîte de réception pour plus de détails.",
+    "sendAnother": "Envoyer un autre",
+    "backToForm": "Retour au formulaire"
+  },
+  "wallet": {
+    "digitalWalletTitle": "Portefeuille de billets numériques",
+    "walletDesc": "Accédez à vos billets vérifiés par blockchain, tokens et points",
+    "events": "Découverte d'événements",
+    "eventsDesc": "Trouvez des événements à venir et gagnez des tokens",
+    "exchangeDesc": "Convertir des points en cryptomonnaie",
+    "tabs": {
+      "tokens": "Tokens",
+      "points": "Points",
+      "tickets": "Billets",
+      "loyalty": "Récompenses de fidélité",
+      "exchange": "Échange de tokens"
+    },
+    "tokens": {
+      "title": "Tokens Blockchain",
+      "description": "Gérez vos tokens $LUKAS, $COP et $VOI",
+      "swap": "Échanger",
+      "totalPortfolio": "Valeur totale du portefeuille",
+      "portfolioDesc": "Valeur combinée de tous vos tokens",
+      "withdrawalDisclaimer": "💡 Retrait disponible lorsque le solde dépasse 5 LUKAS",
+      "swapAvailable": {
+        "title": "Échanges disponibles",
+        "message": "Les échanges sont disponibles en personne chez les commerçants Hash"
+      },
+      "lukasInfo": {
+        "title": "Qu'est-ce que LUKAS ?",
+        "description": "LUKAS est la monnaie numérique de l'écosystème HashPass conçue pour récompenser les interactions et l'engagement des utilisateurs.",
+        "features": "• Gagnez des LUKAS en acceptant et en planifiant des réunions\n• Sera monétisé dans HashHouse\n• Échangeable contre d'autres tokens crypto",
+        "withdrawalDisclaimer": "Vous pouvez retirer des tokens LUKAS lorsque votre solde dépasse 5 LUKAS."
+      }
+    },
+    "points": {
+      "title": "Hash POINTS",
+      "description": "Points de fidélité échangeables gagnés lors d'événements",
+      "balance": "Votre solde",
+      "swappable": "Les points peuvent être échangés contre différents tokens",
+      "swapOptions": "Options d'échange",
+      "swapNow": "Échanger maintenant",
+      "recentActivity": "Activité récente",
+      "noActivity": "Aucune activité pour le moment",
+      "activityDesc": "Votre historique d'échanges apparaîtra ici"
+    },
+    "tickets": {
+      "title": "Billets Blockchain",
+      "description": "Vos billets NFT vérifiés sur la blockchain",
+      "noBlockchainTickets": "Aucun billet blockchain",
+      "noBlockchainTicketsDesc": "Les billets NFT vérifiés par blockchain d'événements comme BSL2025 apparaîtront ici",
+      "viewEvents": "Voir les événements",
+      "blockchainVerified": "Vérifié par blockchain",
+      "blockchainInfo": "Informations blockchain",
+      "network": "Réseau",
+      "nftId": "ID NFT",
+      "viewOnExplorer": "Voir sur l'explorateur",
+      "tapToEnlarge": "Appuyez pour agrandir le code QR",
+      "tapToMinimize": "Appuyez pour réduire",
+      "of": "de"
+    },
+    "loyalty": {
+      "title": "Récompenses de fidélité",
+      "description": "Suivez vos points et récompenses en tokens."
+    },
+    "exchange": {
+      "title": "Échange de tokens",
+      "description": "Convertir des points en cryptomonnaie."
+    }
+  },
+  "digitalWallet": {
+    "tokensEarned": "Tokens gagnés",
+    "noTickets": "Pas encore de billets",
+    "noTicketsDesc": "Vos billets achetés apparaîtront ici. Explorez les événements pour commencer !",
+    "discoverEvents": "Découvrir les événements",
+    "of": "de",
+    "presentQR": "Présentez ce code QR à l'entrée de l'événement pour vérification",
+    "tapToEnlarge": "Appuyez pour agrandir",
+    "tapToMinimize": "Appuyez pour réduire"
+  },
+  "tabs": {
+    "explore": "Explorer",
+    "wallet": "Portefeuille",
+    "profile": "Profil"
+  },
+  "common": {
+    "back": "Retour"
+  },
+  "auth": {
+    "title": "Bienvenue sur",
+    "subtitle": "Connectez-vous pour débloquer votre vie numérique.",
+    "signInWithGoogle": "Se connecter avec Google",
+    "emailPlaceholder": "Entrez votre email",
+    "magicLink": "Lien Magique",
+    "otpCode": "Code OTP",
+    "sendMagicLink": "Envoyer le Lien Magique",
+    "sendCode": "Envoyer le Code",
+    "privacy": {
+      "text": "En vous connectant, vous acceptez nos",
+      "terms": "Conditions d'utilisation",
+      "privacy": "Politique de confidentialité"
+    }
+  },
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "lastUpdated": "Dernière mise à jour : 4 novembre 2025",
+    "introduction": {
+      "title": "1. Introduction",
+      "text": "HashPass (\"nous\", \"notre\" ou \"nos\") s'engage à protéger votre vie privée. Cette politique de confidentialité explique comment nous collectons, utilisons, divulguons et protégeons vos informations lorsque vous utilisez notre plateforme d'événements numériques et nos services (le \"Service\"). Veuillez lire attentivement cette politique de confidentialité. Si vous n'êtes pas d'accord avec les termes de cette politique de confidentialité, veuillez ne pas accéder au Service."
+    },
+    "collection": {
+      "title": "2. Informations que nous collectons",
+      "text": "Nous collectons les informations que vous nous fournissez directement, notamment :\n\n• Informations de compte : Lorsque vous vous connectez avec Google, nous collectons votre nom, votre adresse e-mail et votre photo de profil.\n• Données d'événements : Informations sur les événements auxquels vous assistez, les passes que vous détenez et les interactions au sein de notre plateforme.\n• Données d'utilisation : Informations sur la façon dont vous utilisez notre Service, y compris les fonctionnalités consultées et les actions effectuées.\n• Informations sur l'appareil : Informations techniques sur votre appareil, navigateur et système d'exploitation."
+    },
+    "use": {
+      "title": "3. Comment nous utilisons vos informations",
+      "text": "Nous utilisons les informations que nous collectons pour :\n\n• Fournir et maintenir notre Service\n• Traiter vos inscriptions aux événements et gérer vos passes\n• Vous envoyer des mises à jour importantes sur les événements et les services\n• Améliorer et personnaliser votre expérience\n• Détecter et prévenir la fraude ou l'abus\n• Respecter les obligations légales"
+    },
+    "sharing": {
+      "title": "4. Partage et divulgation d'informations",
+      "text": "Nous ne vendons pas vos informations personnelles. Nous ne pouvons partager vos informations que dans les circonstances suivantes :\n\n• Avec les organisateurs d'événements pour les événements auxquels vous vous inscrivez\n• Avec les prestataires de services qui nous aident à exploiter notre plateforme\n• Lorsque la loi l'exige ou pour protéger nos droits\n• Dans le cadre d'une fusion, acquisition ou vente d'actifs"
+    },
+    "security": {
+      "title": "5. Sécurité des données",
+      "text": "Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos informations personnelles. Cependant, aucune méthode de transmission sur Internet ou de stockage électronique n'est sécurisée à 100%, et nous ne pouvons garantir une sécurité absolue."
+    },
+    "rights": {
+      "title": "6. Vos droits",
+      "text": "Vous avez le droit de :\n\n• Accéder à vos informations personnelles\n• Corriger les informations inexactes\n• Demander la suppression de vos informations\n• Vous opposer au traitement de vos informations\n• Portabilité des données\n• Retirer votre consentement à tout moment"
+    },
+    "cookies": {
+      "title": "7. Cookies et suivi",
+      "text": "Nous utilisons des cookies et des technologies de suivi similaires pour suivre l'activité sur notre Service et conserver certaines informations. Vous pouvez demander à votre navigateur de refuser tous les cookies ou d'indiquer quand un cookie est envoyé."
+    },
+    "changes": {
+      "title": "8. Modifications de cette politique de confidentialité",
+      "text": "Nous pouvons mettre à jour notre politique de confidentialité de temps à autre. Nous vous informerons de tout changement en publiant la nouvelle politique de confidentialité sur cette page et en mettant à jour la date de \"Dernière mise à jour\"."
+    },
+    "contact": {
+      "title": "9. Contactez-nous",
+      "text": "Si vous avez des questions concernant cette politique de confidentialité, veuillez nous contacter à :\n\nEmail : privacy@hashpass.tech\nSite web : https://hashpass.tech"
+    }
+  },
+  "terms": {
+    "title": "Conditions d'utilisation",
+    "lastUpdated": "Dernière mise à jour : 4 novembre 2025",
+    "acceptance": {
+      "title": "1. Acceptation des conditions",
+      "text": "En accédant et en utilisant HashPass (\"le Service\"), vous acceptez et convenez d'être lié par les termes et dispositions de cet accord. Si vous n'acceptez pas de respecter ce qui précède, veuillez ne pas utiliser ce service."
+    },
+    "description": {
+      "title": "2. Description du service",
+      "text": "HashPass est une plateforme d'événements numériques qui fournit la gestion d'événements, la gestion de passes, des fonctionnalités de réseautage et des services connexes. Nous nous réservons le droit de modifier, suspendre ou interrompre toute partie du Service à tout moment."
+    },
+    "accounts": {
+      "title": "3. Comptes utilisateur",
+      "text": "Vous êtes responsable de maintenir la confidentialité de vos identifiants de compte. Vous acceptez de :\n\n• Fournir des informations exactes et complètes\n• Maintenir vos informations de compte à jour\n• Ne pas partager votre compte avec d'autres\n• Nous notifier immédiatement de toute utilisation non autorisée\n• Accepter la responsabilité de toutes les activités sous votre compte"
+    },
+    "conduct": {
+      "title": "4. Conduite de l'utilisateur",
+      "text": "Vous acceptez de ne pas :\n\n• Violer les lois ou réglementations\n• Porter atteinte aux droits de propriété intellectuelle\n• Transmettre du code nuisible ou des logiciels malveillants\n• Harceler, abuser ou nuire à d'autres utilisateurs\n• Collecter des données utilisateur sans autorisation\n• Imiter d'autres personnes ou fournir de fausses informations\n• Interférer avec le fonctionnement du Service"
+    },
+    "content": {
+      "title": "5. Contenu utilisateur",
+      "text": "Vous conservez la propriété du contenu que vous soumettez au Service. En soumettant du contenu, vous nous accordez une licence mondiale, non exclusive et gratuite pour utiliser, reproduire, modifier et distribuer votre contenu dans le but de fournir et d'améliorer le Service."
+    },
+    "intellectual": {
+      "title": "6. Propriété intellectuelle",
+      "text": "Le Service et son contenu original, ses fonctionnalités et sa fonctionnalité sont la propriété de HashPass et sont protégés par les lois internationales sur le droit d'auteur, les marques de commerce, les brevets, les secrets commerciaux et autres lois sur la propriété intellectuelle."
+    },
+    "termination": {
+      "title": "7. Résiliation",
+      "text": "Nous pouvons résilier ou suspendre votre compte et l'accès au Service immédiatement, sans préavis, pour quelque raison que ce soit, y compris si vous violez les Conditions. Lors de la résiliation, votre droit d'utiliser le Service cessera immédiatement."
+    },
+    "disclaimer": {
+      "title": "8. Avertissement concernant les garanties",
+      "text": "Le Service est fourni \"tel quel\" et \"tel que disponible\" sans garanties d'aucune sorte, expresses ou implicites. Nous ne garantissons pas que le Service sera ininterrompu, sécurisé ou sans erreur."
+    },
+    "limitation": {
+      "title": "9. Limitation de responsabilité",
+      "text": "En aucun cas HashPass ne sera responsable des dommages indirects, accessoires, spéciaux, consécutifs ou punitifs, y compris la perte de profits, de données ou d'utilisation, subis par vous ou tout tiers, que ce soit dans une action en contrat ou en délit."
+    },
+    "changes": {
+      "title": "10. Modifications des conditions",
+      "text": "Nous nous réservons le droit de modifier ces Conditions à tout moment. Nous informerons les utilisateurs de tout changement important en publiant les nouvelles Conditions sur cette page et en mettant à jour la date de \"Dernière mise à jour\". Votre utilisation continue du Service après de telles modifications constitue une acceptation des Conditions mises à jour."
+    },
+    "contact": {
+      "title": "11. Informations de contact",
+      "text": "Si vous avez des questions concernant ces Conditions d'utilisation, veuillez nous contacter à :\n\nEmail : legal@hashpass.tech\nSite web : https://hashpass.tech"
+    }
+  },
+  "settings": {
+    "languages": {
+      "en": "Anglais",
+      "es": "Espagnol",
+      "ko": "Coréen",
+      "fr": "Français",
+      "pt": "Portugais",
+      "de": "Allemand"
+    },
+    "terms": {
+      "subtitle": "Lisez nos conditions générales"
+    },
+    "privacy": {
+      "subtitle": "Découvrez comment nous protégeons vos données"
+    }
+  },
+  "index": {
+    "tagline": "VOTRE ÉVÉNEMENT - VOTRE COMMUNAUTÉ - VOS AVANTAGES",
+    "taglineFlipText": "VOTRE",
+    "learnMore": "En savoir plus",
+    "taglineFlipList": "- VOTRE ÉVÉNEMENT -,- VOTRE COMMUNAUTÉ -,- VOS AVANTAGES -",
+    "unlockPotential": "Libérez votre potentiel",
+    "features": {
+      "secure": {
+        "title": "Sécurisé et privé",
+        "description": "Vos données sont cryptées et protégées par des protocoles de sécurité de pointe. Nous accordons la priorité à votre vie privée avant tout."
+      },
+      "management": {
+        "title": "Gestion sans effort",
+        "description": "Organisez toutes vos identifications numériques, cartes de fidélité et communautés en un seul endroit intuitif."
+      },
+      "sync": {
+        "title": "Synchronisation multiplateforme",
+        "description": "Accédez à vos données sur tous vos appareils avec notre synchronisation cloud sécurisée."
+      }
+    },
+    "welcomeBack": "Bon retour !",
+    "goToApp": "Aller à l'application",
+    "readyToSimplify": "Prêt à simplifier votre vie numérique ?",
+    "getStartedNow": "Commencer maintenant",
+    "trustedByThousands": "Fait confiance par des milliers",
+    "testimonials": {
+      "title": "Témoignages",
+      "subtitle": "Ce que disent nos utilisateurs",
+      "description": "Découvrez ce que nos clients disent de nous."
+    },
+    "copyright": " 2025 HASHPASS™ Tous droits réservés.",
+    "footer": {
+      "tagline": "Connecter les événements, les conférenciers et les participants dans le monde entier.",
+      "resources": "Ressources",
+      "legal": "Légal",
+      "docs": "Documentation",
+      "guides": "Guides",
+      "support": "Support",
+      "privacy": "Politique de Confidentialité",
+      "terms": "Conditions d'Utilisation",
+      "bsl2025": "BSL 2025"
+    },
+    "cta": {
+      "title": "Prêt à commencer ?",
+      "subtitle": "Rejoignez des milliers d'utilisateurs qui font confiance à HASHPASS pour leur vie numérique.",
+      "startNow": "Commencer maintenant"
+    }
+  },
+  "walletDesc": "Accédez à vos billets vérifiés par blockchain",
+  "loyalty": "Tableau de bord de fidélité",
+  "loyaltyDesc": "Suivez vos points et récompenses en tokens",
+  "events": "Découverte d'événements",
+  "eventsDesc": "Trouvez des événements à venir et gagnez des tokens",
+  "exchange": "Échange de tokens",
+  "exchangeDesc": "Convertir des points en cryptomonnaie",
+  "getStarted": "Commencer",
+  "profile": {
+    "languages": {
+      "english": "Anglais",
+      "spanish": "Espagnol",
+      "korean": "Coréen",
+      "french": "Français",
+      "portuguese": "Portugais",
+      "german": "Allemand"
+    },
+    "biometric": {
+      "title": "Authentification biométrique",
+      "description": "Utilisez l'empreinte digitale ou la reconnaissance faciale pour vous authentifier"
+    },
+    "settings": {
+      "title": "PARAMÈTRES DE L'APPLICATION",
+      "account": "COMPTE",
+      "language": "Langue",
+      "changePassword": "Changer le mot de passe",
+      "darkMode": "Mode sombre",
+      "notifications": "Notifications",
+      "biometricAuthentication": "Authentification biométrique",
+      "animations": "Animations"
+    },
+    "account": "Compte",
+    "signOut": "Se déconnecter",
+    "version": "HashPass v{version}"
+  },
+  "nav": {
+    "explore": "Explorer",
+    "wallet": "Portefeuille",
+    "notifications": "Notifications",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "admin": "Panneau d'Administration",
+    "brandSubtitle": "Plateforme d'événements numériques",
+    "light": "Clair",
+    "dark": "Sombre",
+    "logout": "Déconnexion"
+  },
+  "explore": {
+    "noEvent": "Aucun événement disponible",
+    "noSelection": "Aucun événement sélectionné",
+    "banner": {
+      "title": "Blockchain Summit Latam 2025",
+      "subtitle": "12-14 novembre 2025 • Universidad EAFIT, Medellín",
+      "date": "12-14 novembre 2025"
+    },
+    "selectEvent": "Sélectionner un événement",
+    "yourPasses": "Vos passes",
+    "quickAccess": "Accès rapide",
+    "quick": {
+      "speakers": {
+        "title": "Conférenciers",
+        "subtitle": "Rencontrez les experts"
+      },
+      "agenda": {
+        "title": "Programme",
+        "subtitle": "Calendrier de l'événement"
+      },
+      "info": {
+        "title": "Informations sur l'événement",
+        "subtitle": "Détails et logistique"
+      },
+      "networking": {
+        "title": "Centre de réseautage",
+        "subtitle": "Trouver et se connecter"
+      },
+      "information": {
+        "title": "Informations sur l'événement",
+        "subtitle": "Détails et logistique"
+      },
+      "event-info": {
+        "title": "Informations sur l'événement",
+        "subtitle": "Détails et logistique"
+      }
+    }
+  },
+  "passes": {
+    "title": "Vos passes d'événement",
+    "loading": "Chargement des informations de votre passe...",
+    "showFullDetails": "Afficher tous les détails",
+    "alert": {
+      "createdTitle": "Passe créé ! 🎉",
+      "ok": "OK",
+      "errorTitle": "Erreur",
+      "createFail": "Échec de la création du passe. Veuillez réessayer.",
+      "paymentTitle": "Intégration de paiement",
+      "paymentMessage": "Le système de paiement sera implémenté ici"
+    },
+    "button": {
+      "passRequired": "Passe requis",
+      "limitReached": "Limite atteinte",
+      "requestMeeting": "Demander une réunion"
+    },
+    "copiedTitle": "Informations du passe copiées",
+    "copiedMessage": "Les informations du passe ont été copiées dans votre presse-papiers. Vous pouvez les coller n'importe où pour partager.",
+    "copyError": "Impossible de partager le passe. Veuillez réessayer.",
+    "type": {
+      "business": "Business",
+      "vip": "VIP",
+      "general": "Général",
+      "event": "Événement"
+    },
+    "access": {
+      "business": "B2B + Soirée de clôture",
+      "vip": "Tous les avantages VIP",
+      "general": "Accès général",
+      "event": "Accès à l'événement"
+    },
+    "meetingRequests": "Demandes de réunion",
+    "voiBoost": "Boost VOI",
+    "passSummary": "Résumé du passe",
+    "quickOverview": "Aperçu rapide",
+    "requestsLeft": "Demandes restantes",
+    "boostLeft": "Boost restant",
+    "accessIncluded": "Accès inclus",
+    "used": "utilisé",
+    "passNumber": "Passe #{pass_number}",
+    "noPassFound": "Aucun passe trouvé",
+    "contactSupport": "Contactez le support pour obtenir vos passes d'événement",
+    "noPassMessage": {
+      "demo": "Vous avez besoin d'un passe pour demander des réunions avec les conférenciers. Sans passe, vous ne pouvez pas envoyer de demandes de réunion. Choisissez votre type de passe :",
+      "production": "Vous avez besoin d'un passe d'événement valide pour demander des réunions avec les conférenciers. Veuillez acheter un passe pour continuer."
+    },
+    "passTypes": {
+      "all": "Tous les types de passes et tarifs"
+    },
+    "passComparison": {
+      "compare": "Comparez les fonctionnalités et choisissez le passe adapté à vos besoins"
+    },
+    "passPerks": {
+      "general": {
+        "conferences": "Conférences uniquement"
+      },
+      "business": {
+        "networking": "+ Réseautage et sessions B2B"
+      },
+      "vip": {
+        "networking": "+ Réseautage VIP avec les conférenciers"
+      }
+    },
+    "purchasePass": "Acheter un passe d'événement",
+    "purchasePass.description": "Choisissez parmi nos types de passes disponibles pour accéder aux réunions avec les conférenciers et aux opportunités de réseautage.",
+    "currentPass": "Votre passe actuel",
+    "canRequestMeeting": "✅ Peut demander une réunion",
+    "cannotRequestMeeting": "❌ Ne peut pas demander de réunion",
+    "qrCode": "Code QR",
+    "details": "Détails",
+    "share": "Partager",
+    "bslDate": "BSL 2025 • 12-14 nov. 2025",
+    "date": "12-14 nov. 2025",
+    "pass": "Passe",
+    "viewFullDetails": "Voir tous les détails",
+    "flipBack": "Retourner",
+    "qrCodeModalTitle": "Votre code QR du passe"
+  },
+  "networking": {
+    "title": "Centre de Réseautage",
+    "subtitle": "Connectez-vous avec les conférenciers et les participants",
+    "tutorialResetMessage": "Le tutoriel de réseautage démarrera automatiquement lorsque vous visiterez le centre de réseautage.",
+    "stats": {
+      "title": "Vos Statistiques de Réseautage",
+      "totalRequests": "Demandes Totales",
+      "pending": "En Attente",
+      "accepted": "Acceptées",
+      "declined": "Refusées",
+      "cancelled": "Annulées",
+      "scheduled": "Planifiées",
+      "blocked": "Bloqués"
+    },
+    "quickAccess": "Accès Rapide",
+    "quickAccessItems": {
+      "findSpeakers": {
+        "title": "Trouver des Conférenciers",
+        "subtitle": "Parcourir tous les conférenciers"
+      },
+      "yourRequest": {
+        "title": "Vos Demandes",
+        "subtitle": "Voir les demandes envoyées et reçues"
+      },
+      "myMeetings": {
+        "title": "Mes Réunions",
+        "subtitle": "Vos réunions acceptées/créées"
+      },
+      "mySchedule": {
+        "title": "Mon Planning",
+        "subtitle": "Voir et gérer votre planning",
+        "scheduledSlots": "Créneaux Programmés",
+        "dayPlanRoute": "Itinéraire du Plan du Jour",
+        "totalScheduledSlots": "Total des Créneaux Programmés",
+        "freeSlot": {
+          "markFreeSlot": "Marquer un Créneau Libre",
+          "unblockSlot": "Débloquer le Créneau",
+          "removeInterest": "Retirer l'Intérêt",
+          "freeSlotAvailable": "Créneau Libre Disponible",
+          "blockedMessage": "Ce créneau est bloqué. Le débloquer pour le rendre à nouveau disponible ?",
+          "interestedMessage": "Ce créneau est marqué comme intéressant. Le retirer pour le rendre à nouveau disponible ?",
+          "availableMessage": "Marquez ce créneau comme intéressant ou bloqué pour suivre votre disponibilité. Ces informations seront visibles par quiconque consulte votre planning public, les aidant à comprendre quand vous êtes bloqué ou intéressé à rencontrer des gens.",
+          "block": "Bloquer",
+          "interested": "Intéressé",
+          "unblocking": "Déblocage...",
+          "removing": "Retrait...",
+          "unblock": "Débloquer",
+          "remove": "Retirer"
+        },
+        "errors": {
+          "title": "Erreur",
+          "failedToLoadMeetings": "Échec du chargement des réunions",
+          "failedToMarkInterested": "Échec du marquage comme intéressé",
+          "failedToClearStatus": "Échec de la suppression du statut",
+          "failedToConfirm": "Échec de la confirmation de l'événement",
+          "failedToUnconfirm": "Échec de la déconfirmation de l'événement",
+          "failedToBlock": "Échec du blocage du créneau",
+          "failedToUnblock": "Échec du déblocage du créneau",
+          "failedToAddToFavorites": "Échec de l'ajout aux favoris",
+          "failedToRemoveFromFavorites": "Échec de la suppression des favoris"
+        },
+        "messages": {
+          "addedToFavorites": "Ajouté aux favoris",
+          "removedFromFavorites": "Retiré des favoris",
+          "confirmedAttendance": "Présence confirmée",
+          "tapToConfirmAttendance": "Appuyez pour confirmer la présence",
+          "meetingWith": "Réunion avec {name}",
+          "user": "Utilisateur",
+          "tbd": "À déterminer",
+          "available": "Disponible"
+        },
+        "status": {
+          "interested": "Intéressé",
+          "blocked": "Bloqué",
+          "tentative": "Tentatif",
+          "confirmed": "Confirmé",
+          "interestedShort": "INT",
+          "blockedShort": "BLK",
+          "tentativeShort": "TEN"
+        },
+        "scheduleOverview": "Aperçu du Planning",
+        "scheduleSummary": "Résumé du Planning",
+        "confirmAttendance": "Confirmer la Présence",
+        "unconfirmAttendance": "Déconfirmer la Présence",
+        "confirming": "Confirmation...",
+        "unconfirming": "Déconfirmation...",
+        "confirm": "Confirmer",
+        "unconfirm": "Déconfirmer",
+        "confirmMessage": "Confirmer votre présence ajoutera cet événement à votre planning.",
+        "unconfirmMessage": "Êtes-vous sûr de vouloir déconfirmer votre présence ? Cela supprimera cet événement de votre planning confirmé."
+      },
+      "blockedUsers": {
+        "title": "Utilisateurs Bloqués",
+        "subtitle": "Gérer les utilisateurs bloqués"
+      },
+      "analytics": {
+        "title": "Analyses",
+        "subtitle": "Voir les statistiques de réseautage"
+      }
+    },
+    "tips": {
+      "title": "Conseils de Réseautage",
+      "beSpecific": {
+        "title": "Soyez Spécifique",
+        "description": "Incluez des intentions claires dans vos demandes de réunion"
+      },
+      "followUp": {
+        "title": "Faire un Suivi",
+        "description": "Envoyez des messages de suivi pour les demandes en attente"
+      },
+      "networkSmart": {
+        "title": "Réseautage Intelligent",
+        "description": "Concentrez-vous sur la qualité des connexions plutôt que sur la quantité"
+      },
+      "beProfessional": {
+        "title": "Soyez Professionnel",
+        "description": "Maintenez toujours un ton professionnel dans vos messages"
+      },
+      "bePatient": {
+        "title": "Soyez Patient",
+        "description": "Donnez aux conférenciers le temps de répondre à vos demandes"
+      },
+      "summary": "5 conseils utiles pour un meilleur réseautage"
+    },
+    "recentActivity": {
+      "title": "Activité Récente",
+      "journey": "Votre Parcours de Réseautage",
+      "description": "Vous avez envoyé {totalRequests} demandes de réunion et avez {pendingRequests} réponses en attente."
+    }
+  },
+  "notifications": {
+    "center": {
+      "title": "Notifications",
+      "all": "Toutes",
+      "archive": "Archives",
+      "markAllRead": "Tout marquer comme lu",
+      "markRead": "Marquer comme lu",
+      "markUnread": "Marquer comme non lu",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer la notification",
+      "deleteMessage": "Êtes-vous sûr de vouloir supprimer cette notification ?",
+      "cancel": "Annuler",
+      "noNotifications": "Aucune notification",
+      "noNotificationsMessage": "Vous êtes à jour ! Les nouvelles notifications apparaîtront ici.",
+      "noArchivedNotifications": "Aucune notification archivée",
+      "noArchivedNotificationsMessage": "Les notifications archivées apparaîtront ici.",
+      "loading": "Chargement des notifications...",
+      "searchPlaceholder": "Rechercher des notifications...",
+      "viewAll": "Voir toutes les notifications",
+      "goToCenter": "Aller au centre de notifications",
+      "noNewNotifications": "Aucune nouvelle notification",
+      "justNow": "À l'instant",
+      "minutesAgo": "il y a {minutes}min",
+      "hoursAgo": "il y a {hours}h",
+      "daysAgo": "il y a {days}j",
+      "urgent": "URGENT",
+      "filters": {
+        "readStatus": "Statut de lecture",
+        "all": "Toutes",
+        "unread": "Non lues",
+        "read": "Lues",
+        "type": "Type",
+        "allTypes": "Tous les types",
+        "meetingRequest": "Demande de réunion",
+        "meetingAccepted": "Réunion acceptée",
+        "meetingDeclined": "Réunion refusée",
+        "meetingExpired": "Réunion expirée",
+        "reminder": "Rappel",
+        "boostReceived": "Boost reçu",
+        "systemAlert": "Alerte système",
+        "chatMessage": "Message de chat",
+        "priority": "Priorité",
+        "urgentOnly": "Urgentes uniquement"
+      }
+    },
+    "types": {
+      "meeting_request": {
+        "title": "Demande envoyée ✓",
+        "message": "Votre demande de réunion avec {speakerName} a été envoyée avec succès.",
+        "messageWithExpiry": "Votre demande de réunion avec {speakerName} a été envoyée avec succès. Expire dans {hours} heures.",
+        "speakerTitle": "📋 Demande de réunion",
+        "speakerMessage": "{requesterName} souhaite vous rencontrer",
+        "speakerVipTitle": "🔥 Demande de réunion VIP",
+        "speakerVipMessage": "{requesterName} (VIP) souhaite vous rencontrer",
+        "speakerBusinessTitle": "💼 Demande de réunion professionnelle",
+        "speakerBusinessMessage": "{requesterName} (Professionnel) souhaite vous rencontrer",
+        "boostedMessage": " (Boosté avec ${boostAmount} VOI)"
+      },
+      "meeting_accepted": {
+        "title": "Demande de réunion acceptée ! 🎉",
+        "message": "{speakerName} a accepté votre demande de réunion",
+        "messageWithSchedule": "Votre demande de réunion a été acceptée. Réunion programmée pour {scheduleTime}. Vous avez gagné 1 LUKAS ! 💎",
+        "speakerTitle": "Demande acceptée",
+        "speakerMessage": "Vous avez accepté la demande de réunion de {requesterName}",
+        "speakerScheduledTitle": "Réunion programmée ! 🎉",
+        "speakerScheduledMessage": "Votre réunion avec {requesterName} a été programmée",
+        "speakerScheduledWithReward": "Vous avez accepté une demande de réunion. Réunion programmée pour {scheduleTime}. Vous avez gagné 1 LUKAS ! 💎"
+      },
+      "meeting_declined": {
+        "title": "Demande de réunion refusée",
+        "message": "{speakerName} a refusé votre demande de réunion",
+        "speakerTitle": "Demande refusée",
+        "speakerMessage": "Vous avez refusé la demande de réunion de {requesterName}"
+      },
+      "meeting_expired": {
+        "title": "Demande de réunion expirée",
+        "message": "Votre demande de réunion avec {speakerName} a expiré"
+      },
+      "meeting_cancelled": {
+        "title": "Demande de réunion annulée",
+        "message": "Votre demande de réunion a été annulée",
+        "speakerTitle": "Demande de réunion annulée",
+        "speakerMessage": "La demande de réunion de {requesterName} a été annulée"
+      },
+      "meeting_reminder": {
+        "title": "Rappel de réunion",
+        "message": "Vous avez une réunion avec {name} programmée bientôt"
+      },
+      "boost_received": {
+        "title": "Boost reçu",
+        "message": "Vous avez reçu un boost de ${amount} VOI"
+      },
+      "system_alert": {
+        "title": "Alerte système",
+        "message": "{message}"
+      },
+      "chat_message": {
+        "title": "Nouveau message de chat",
+        "message": "{senderName} vous a envoyé un message",
+        "titleFrom": "Nouveau message de {senderName}",
+        "messageFrom": "Vous avez un nouveau message de {senderName}",
+        "titleMeeting": "{meetingTitle}",
+        "messageMeeting": "Nouveau message dans {meetingTitle}"
+      }
+    }
+  },
+  "status": {
+    "title": "État du Système",
+    "lastUpdated": "Dernière mise à jour",
+    "database": "Base de Données",
+    "emailService": "Service de Courriel",
+    "apiEndpoints": "Points de Terminaison API",
+    "systemChecks": "Vérifications du Système",
+    "configured": "Configuré",
+    "yes": "Oui",
+    "no": "Non",
+    "agenda": "Agenda",
+    "speakers": "Conférenciers",
+    "bookings": "Réservations",
+    "passes": "Laissez-passer",
+    "hasData": "A des Données",
+    "noData": "Pas de Données",
+    "accessible": "Accessible",
+    "notAccessible": "Non Accessible",
+    "items": "Éléments",
+    "count": "Nombre",
+    "updated": "Mis à jour",
+    "autoRefresh": "La page d'état se met à jour automatiquement toutes les 30 secondes",
+    "pullToRefresh": "Tirez vers le bas pour actualiser manuellement"
+  },
+  "version": {
+    "title": "Informations sur la Version",
+    "current": "Version Actuelle",
+    "released": "Publié:",
+    "buildInfo": "Informations de Build:",
+    "buildId": "ID de Build:",
+    "buildTime": "Heure de Build:",
+    "gitCommit": "Commit Git:",
+    "branch": "Branche:",
+    "features": "Nouvelles Fonctionnalités",
+    "bugfixes": "Corrections de Bugs",
+    "breakingChanges": "Changements Importants",
+    "history": "Historique des Versions",
+    "status": "État du Système",
+    "statusSummary": "Cliquez pour voir l'état détaillé du système et les informations de santé des services."
+  }
+}
+

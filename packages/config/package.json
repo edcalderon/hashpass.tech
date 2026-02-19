@@ -1,0 +1,20 @@
+{
+  "name": "@hashpass/config",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hashpass/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  }
+}
