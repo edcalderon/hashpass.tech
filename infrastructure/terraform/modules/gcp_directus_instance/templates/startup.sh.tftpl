@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec > >(tee -a /var/log/hashpass-startup.log)
+exec 2>&1
+
+echo "[startup] bootstrapping started at $(date --iso-8601=seconds)"
+
+apt-get update
+apt-get install -y git curl jq nginx
+
+if apt-cache show docker-compose-plugin >/dev/null 2>&1; then
+  apt-get install -y docker.io docker-compose-plugin
+elif apt-cache show docker-compose >/dev/null 2>&1; then
+  apt-get install -y docker.io docker-compose
+else
+  apt-get install -y docker.io
+fi
+
+if docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker compose)
+elif command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker-compose)
+else
+  echo "[startup] docker compose is unavailable after package installation"
+  exit 1
+fi
+
+systemctl enable --now docker
+systemctl enable --now nginx
+
+mkdir -p /opt/hashpass
+%{ if !use_inline_compose ~}
+if [ ! -d /opt/hashpass/.git ]; then
+  git clone --depth 1 --branch ${repository_ref} ${repository_url} /opt/hashpass
+fi
+
+cd /opt/hashpass
+git fetch --depth 1 origin ${repository_ref}
+git checkout -B ${repository_ref} FETCH_HEAD
+%{ endif ~}
+
+mkdir -p "$(dirname ${env_file_path})"
+
+%{ if use_inline_env ~}
+cat > ${env_file_path} <<'ENVEOF'
+${directus_env_inline}
+ENVEOF
+chmod 600 ${env_file_path}
+%{ else ~}
+TOKEN_RESPONSE=$(curl -s -H "Metadata-Flavor: Google" \
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token")
+ACCESS_TOKEN=$(echo "$${TOKEN_RESPONSE}" | jq -r '.access_token')
+
+if [ -z "$${ACCESS_TOKEN}" ] || [ "$${ACCESS_TOKEN}" = "null" ]; then
+  echo "[startup] failed to acquire metadata access token"
+  exit 1
+fi
+
+SECRET_RESPONSE=$(curl -s -H "Authorization: Bearer $${ACCESS_TOKEN}" \
+  "https://secretmanager.googleapis.com/v1/projects/${project_id}/secrets/${directus_env_secret_id}/versions/latest:access")
+
+SECRET_DATA=$(echo "$${SECRET_RESPONSE}" | jq -r '.payload.data')
+if [ -z "$${SECRET_DATA}" ] || [ "$${SECRET_DATA}" = "null" ]; then
+  echo "[startup] failed to fetch secret ${directus_env_secret_id}"
+  echo "[startup] response: $${SECRET_RESPONSE}"
+  exit 1
+fi
+
+echo "$${SECRET_DATA}" | tr '_-' '/+' | base64 -d > ${env_file_path}
+chmod 600 ${env_file_path}
+%{ endif ~}
+
+COMPOSE_FILE=/opt/hashpass/${compose_path}
+mkdir -p "$(dirname "$${COMPOSE_FILE}")"
+
+%{ if use_inline_compose ~}
+cat > "$${COMPOSE_FILE}" <<'COMPOSEEOF'
+${directus_compose_inline}
+COMPOSEEOF
+chmod 644 "$${COMPOSE_FILE}"
+%{ endif ~}
+
+if [ ! -f "$${COMPOSE_FILE}" ]; then
+  echo "[startup] compose file not found at $${COMPOSE_FILE}"
+  exit 1
+fi
+
+cat > /etc/nginx/sites-available/hashpass-directus <<NGINX
+server {
+    listen 80;
+    server_name ${domain_name};
+
+    location / {
+        proxy_pass http://127.0.0.1:8055;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+NGINX
+
+ln -sf /etc/nginx/sites-available/hashpass-directus /etc/nginx/sites-enabled/hashpass-directus
+rm -f /etc/nginx/sites-enabled/default
+nginx -t
+systemctl restart nginx
+
+"$${COMPOSE_CMD[@]}" --env-file ${env_file_path} -f "$${COMPOSE_FILE}" pull
+"$${COMPOSE_CMD[@]}" --env-file ${env_file_path} -f "$${COMPOSE_FILE}" up -d
+
+echo "[startup] bootstrap finished at $(date --iso-8601=seconds)"

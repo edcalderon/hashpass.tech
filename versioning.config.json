@@ -1,0 +1,68 @@
+{
+  "rootPackageJson": "package.json",
+  "packages": ["apps/*", "packages/*"],
+  "changelogFile": "CHANGELOG.md",
+  "conventionalCommits": true,
+  "syncDependencies": true,
+  "ignorePackages": [],
+  "extensionConfig": {
+    "cleanup-repo": {
+      "enabled": true,
+      "defaultDestination": "docs",
+      "allowlist": [
+        ".gitignore",
+        ".npmrc",
+        "CHANGELOG.md",
+        "LICENSE",
+        "README.md",
+        "SECURITY.md",
+        "amplify-hashpass-tech.yml",
+        "amplify.yml",
+        "amplifyconfiguration.json",
+        "app.json",
+        "aws-exports.js",
+        "babel.config.js",
+        "docker-compose.yml",
+        "eslint.config.js",
+        "expo-env.d.ts",
+        "lingui.config.cjs",
+        "metro.config.js",
+        "nativewind-env.d.ts",
+        "netlify.toml",
+        "package-lock.json",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "postcss.config.js",
+        "tailwind.config.js",
+        "tsconfig.json",
+        "tsconfig.paths.json",
+        "turbo.json",
+        "versioning.config.json",
+        "workbox-config.js",
+        "wrangler.jsonc",
+        "wrangler.toml",
+        "wrangler.toml.example"
+      ],
+      "routes": {
+        ".js": "tools/scripts",
+        ".sh": "tools/scripts",
+        ".md": "docs",
+        ".json": "config",
+        ".yml": "config",
+        ".yaml": "config",
+        ".toml": "config",
+        ".jsonc": "config"
+      }
+    },
+    "secrets-check": {
+      "enabled": true,
+      "allowlist": [
+        "AWS_ACCESS_KEY_ID=YOUR_KEY",
+        "AWS_SECRET_ACCESS_KEY=YOUR_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY=YOUR_KEY",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_KEY"
+      ]
+    }
+  }
+}

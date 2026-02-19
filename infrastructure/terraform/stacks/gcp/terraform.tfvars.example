@@ -1,0 +1,72 @@
+# GCP stack example configuration
+
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+zone       = "us-central1-a"
+
+name_prefix = "hashpass"
+
+environments = ["dev", "prod"]
+
+domain_names = {
+  dev  = "sso-dev.hashpass.co"
+  prod = "sso.hashpass.co"
+}
+
+# Choose ONE env source strategy per environment:
+# 1) Secret Manager IDs:
+# directus_env_secret_ids = {
+#   dev  = "directus-env-dev"
+#   prod = "directus-env-prod"
+# }
+#
+# 2) File paths (recommended when Secret Manager permissions are limited):
+# Copy `directus.dev.env.example` -> `directus.dev.env` and
+# `directus.prod.env.example` -> `directus.prod.env` locally first.
+directus_env_file_paths = {
+  dev  = "directus.dev.env"
+  prod = "directus.prod.env"
+}
+
+# 3) Inline map (avoid in VCS for security):
+# directus_env_inline = {
+#   dev = <<-EOT
+#     DIRECTUS_KEY=...
+#   EOT
+# }
+
+machine_types = {
+  dev  = "e2-micro"
+  prod = "e2-micro"
+}
+
+# Keep true to let Terraform create service accounts per environment.
+create_service_accounts = true
+
+# Set false + provide map if you want to reuse existing service accounts.
+existing_service_account_emails = {}
+
+startup_repository_url = "https://github.com/edcalderon/hashpass.tech.git"
+startup_repository_ref = "main"
+directus_compose_path  = "apps/directus/docker-compose.yml"
+
+# Optional: provide compose file by path/inline when repository doesn't contain the compose path.
+# directus_compose_file_paths = {
+#   dev  = "../../../../apps/directus/docker-compose.yml"
+#   prod = "../../../../apps/directus/docker-compose.yml"
+# }
+
+# Set false if your account cannot enable project services.
+manage_project_services = false
+
+enable_dns_records    = false
+dns_managed_zone_name = null
+
+firewall_source_ranges = ["0.0.0.0/0"]
+
+tags = ["hashpass-directus"]
+
+labels = {
+  project = "hashpass"
+  owner   = "platform"
+}

@@ -1,0 +1,87 @@
+# AWS stack example configuration
+
+aws_region = "us-east-1"
+amplify_region = "sa-east-1"
+
+name_prefix = "hashpass"
+
+route53_zone_tech_name = "hashpass.tech"
+route53_zone_lat_name  = "hashpass.lat"
+
+# Build lambda-deployment.zip before apply.
+# Example: ./tools/scripts/package-lambda.sh
+lambda_zip_path         = "../../../../lambda-deployment.zip"
+lambda_source_code_hash = null
+
+# Keep /api mapping to match EXPO_PUBLIC_API_BASE_URL values
+api_mapping_key = "api"
+
+# Directus endpoints by environment
+# dev -> sso-dev.hashpass.co
+# prod -> sso.hashpass.co
+directus_urls = {
+  dev  = "https://sso-dev.hashpass.co"
+  prod = "https://sso.hashpass.co"
+}
+
+# Optional extra env vars injected into Lambda by environment
+lambda_environment_overrides = {
+  dev = {
+    EXPO_PUBLIC_API_BASE_URL = "https://api-dev.hashpass.tech/api"
+  }
+  prod = {
+    EXPO_PUBLIC_API_BASE_URL = "https://api.hashpass.tech/api"
+  }
+}
+
+# CORS origins for API Gateway by environment
+api_cors_origins = {
+  dev = [
+    "http://localhost:8081",
+    "https://blockchainsummit-dev.hashpass.lat",
+    "https://blockchainsummit.hashpass.lat"
+  ]
+  prod = [
+    "https://blockchainsummit.hashpass.lat",
+    "https://blockchainsummit-dev.hashpass.lat"
+  ]
+}
+
+# Set true and provide existing Amplify App ID if you want Terraform
+# to bind blockchainsummit(.dev).hashpass.lat to branches automatically.
+create_amplify_domain_association = false
+amplify_app_id                    = null
+amplify_dev_branch                = "develop"
+amplify_prod_branch               = "main"
+amplify_wait_for_verification     = false
+manage_amplify_branches           = false
+
+amplify_branch_environment_variables = {
+  develop = {
+    AUTH_PROVIDER            = "directus"
+    DIRECTUS_URL             = "https://sso-dev.hashpass.co"
+    EXPO_PUBLIC_DIRECTUS_URL = "https://sso-dev.hashpass.co"
+    EXPO_PUBLIC_API_BASE_URL = "https://api-dev.hashpass.tech/api"
+    EXPO_PUBLIC_SUPABASE_URL = "https://your-dev-project.supabase.co"
+    EXPO_PUBLIC_SUPABASE_KEY = "sb_publishable_your_dev_key"
+    EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_your_dev_key"
+    NEXT_PUBLIC_SUPABASE_URL = "https://your-dev-project.supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_your_dev_key"
+  }
+  main = {
+    AUTH_PROVIDER            = "directus"
+    DIRECTUS_URL             = "https://sso.hashpass.co"
+    EXPO_PUBLIC_DIRECTUS_URL = "https://sso.hashpass.co"
+    EXPO_PUBLIC_API_BASE_URL = "https://api.hashpass.tech/api"
+    EXPO_PUBLIC_SUPABASE_URL = "https://your-prod-project.supabase.co"
+    EXPO_PUBLIC_SUPABASE_KEY = "sb_publishable_your_prod_key"
+    EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_your_prod_key"
+    NEXT_PUBLIC_SUPABASE_URL = "https://your-prod-project.supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_your_prod_key"
+  }
+}
+
+tags = {
+  Project = "hashpass"
+  Owner   = "platform"
+}

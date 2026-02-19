@@ -40,6 +40,22 @@ We believe the future of events should be shaped by the community. By making Has
 
 ## 🛠️ Getting Started
 
+### Monorepo layout
+
+- **`apps/web-app`** — Main Expo Router web application (uses `@hashpass/*` packages).
+- **`apps/directus`** — Directus SSO Docker setup for local auth testing.
+- **`packages/`** — Shared packages: `@hashpass/auth`, `@hashpass/config`, `@hashpass/types`, `@hashpass/backend`, `@hashpass/utils`, `@hashpass/ui`.
+- **`infrastructure/terraform`** — Terraform IaC (GCP, etc.).
+
+Use **pnpm** and **Turborepo** at the repo root:
+
+```bash
+pnpm install
+pnpm run dev          # run app from root (current default)
+pnpm run dev:web-app  # run app from apps/web-app
+pnpm run build:all    # turbo build all packages
+```
+
 1. **Clone the repo:**
    ```bash
    git clone https://github.com/edcalderon/hashpass.tech.git
@@ -47,11 +63,11 @@ We believe the future of events should be shaped by the community. By making Has
    ```
 2. **Install dependencies:**
    ```bash
-   npm install
+   pnpm install
    ```
 3. **Run the development server:**
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 4. **Start building!**
 
@@ -72,7 +88,7 @@ API endpoints:
 - `GET /api/bslatam/bookings?user=:id`
 - `POST /api/bslatam/verify-ticket` { ticketId, userId }
 
-Database (Supabase/Postgres): see migration `supabase/migrations/20251014090000_bslatam_matchmaking.sql`.
+Database (Supabase/Postgres): see migration `archive/legacy-root/supabase/migrations/20251014090000_bslatam_matchmaking.sql`.
 
 Seeding speakers:
 ```bash
@@ -93,8 +109,8 @@ For a complete list of all environment variables, see [docs/environment-variable
 
 Deploy:
 ```bash
-chmod +x ./deploy-bslatam.sh
-./deploy-bslatam.sh
+chmod +x ./tools/scripts/deploy-bslatam.sh
+./tools/scripts/deploy-bslatam.sh
 ```
 For Amplify: configure AWS credentials and run `amplify publish`.
 

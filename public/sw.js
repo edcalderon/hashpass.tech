@@ -14,8 +14,6 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('[SW] Cache opened:', CACHE_NAME);
         return cache.addAll([
-          '/',
-          '/index.html',
           '/manifest.json'
         ]).catch((err) => {
           console.warn('[SW] Some resources failed to cache:', err);
@@ -162,6 +160,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Never cache HTML/navigations. This prevents stale auth and route screens after deploys.
+  const isDocumentRequest = request.mode === 'navigate' ||
+                            request.destination === 'document' ||
+                            url.pathname === '/' ||
+                            url.pathname.endsWith('.html');
+
+  if (isDocumentRequest) {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' }).catch(() => {
+        return new Response('Offline', {
+          status: 503,
+          statusText: 'Service Unavailable'
+        });
+      })
+    );
+    return;
+  }
+
   // NEVER cache authentication-related URLs - always fetch fresh
   // This prevents PWA from getting stuck on auth callback pages
   const isAuthUrl = url.pathname.includes('/auth/') || 
@@ -229,10 +245,12 @@ self.addEventListener('fetch', (event) => {
         if (response && response.status === 200) {
           // Check content-length header if available
           const contentLength = response.headers.get('content-length');
+          const contentType = response.headers.get('content-type') || '';
+          const isHtmlResponse = contentType.includes('text/html');
           const size = contentLength ? parseInt(contentLength, 10) : 0;
           
-          // Don't cache large files or images (they should use browser cache)
-          if (!isLargeFile && (size === 0 || size < maxCacheSize)) {
+          // Don't cache large files, images, or HTML documents (HTML must always be fresh).
+          if (!isLargeFile && !isHtmlResponse && (size === 0 || size < maxCacheSize)) {
             const responseToCache = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(request, responseToCache).catch((err) => {
@@ -396,4 +414,3 @@ self.addEventListener('message', (event) => {
     checkForVersionUpdate();
   }
 });
-

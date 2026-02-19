@@ -1,64 +1,70 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Dependencies and build output
 node_modules/
+dist/
+apps/*/dist/
+.pnpm-store/
+lambda-deployment.zip
 
 # Expo
 .expo/
-dist/
 web-build/
 expo-env.d.ts
 
-# Native
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+# Terraform and IaC local state
+*.tfvars
+!terraform.tfvars.example
+*.tfstate
+*.tfstate.*
+.terraform/
 
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
+# Environment and credentials
 .env
 .env.local
 .env.*.local
 .env.production
 .env.development
 .env.test
+.env.backup
 .env.gcloud
 config/private-gcloud.json
+infrastructure/terraform/gcp/gcp-credentials.json
+infrastructure/terraform/stacks/gcp/directus.*.env
+!infrastructure/terraform/stacks/gcp/directus.*.env.example
+keys/
+*.pem
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.jks
 
-# Cloudflare secrets - NEVER commit these!
+# Cloudflare secrets
 wrangler.toml.local
 wrangler.secrets.toml
 *.secrets.toml
 
-# Amplify - use amplify-backend-config/ instead
+# Amplify backend config folder should not be tracked
 amplify/
 amplify-backend-config/
 
-# Storybook
-storybook-static
-.storybook-static
+# Storybook build artifacts
+storybook-static/
+.storybook-static/
 
-# typescript
-*.tsbuildinfo
+# Local tool caches and noise
+.agents/
+.turbo/
+**/.turbo/
+.versioning/
+google-cloud-sdk/
+.netlify/
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+*.supabase-backup
+.DS_Store
 
-app-example
-
-**/tempobook/dynamic/
-**/tempobook/storyboards/
-
-# Local Netlify folder
-.netlify
+# Project-specific local envs
+apps/web-app/.env.staging

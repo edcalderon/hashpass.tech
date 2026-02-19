@@ -1,0 +1,81 @@
+version: "3.8"
+
+services:
+  directus:
+    image: directus/directus:11.14.0
+    container_name: hashpass-directus-sso
+    restart: unless-stopped
+    
+    env_file:
+      - .env
+    
+    ports:
+      - "${DIRECTUS_HOST:-127.0.0.1}:${DIRECTUS_PORT:-8055}:8055"
+    
+    environment:
+      KEY: "${DIRECTUS_KEY}"
+      SECRET: "${DIRECTUS_SECRET}"
+      NODE_ENV: "${NODE_ENV:-production}"
+      
+      DB_CLIENT: pg
+      DB_HOST: "${DB_HOST}"
+      DB_PORT: "${DB_PORT}"
+      DB_DATABASE: "${DB_NAME}"
+      DB_USER: "${DB_USER}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_SSL: "${DB_SSL}"
+      DB_SSL__REJECT_UNAUTHORIZED: "false"
+      
+      ADMIN_EMAIL: "${ADMIN_EMAIL}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
+      
+      PUBLIC_URL: "${PUBLIC_URL:-http://localhost:8055}"
+      
+      AUTH_PROVIDERS: "${AUTH_PROVIDERS:-local,google}"
+      AUTH_LOCAL_DRIVER: "${AUTH_LOCAL_DRIVER:-local}"
+      
+      AUTH_GOOGLE_DRIVER: "${AUTH_GOOGLE_DRIVER:-openid}"
+      AUTH_GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      AUTH_GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      AUTH_GOOGLE_ISSUER_URL: "${AUTH_GOOGLE_ISSUER_URL:-https://accounts.google.com}"
+      AUTH_GOOGLE_IDENTIFIER_KEY: "${AUTH_GOOGLE_IDENTIFIER_KEY:-email}"
+      AUTH_GOOGLE_AUTHORIZE_URL: "${AUTH_GOOGLE_AUTHORIZE_URL:-https://accounts.google.com/o/oauth2/v2/auth}"
+      AUTH_GOOGLE_ACCESS_URL: "${AUTH_GOOGLE_ACCESS_URL:-https://oauth2.googleapis.com/token}"
+      AUTH_GOOGLE_PROFILE_URL: "${AUTH_GOOGLE_PROFILE_URL:-https://www.googleapis.com/oauth2/v3/userinfo}"
+      AUTH_GOOGLE_SCOPE: "${AUTH_GOOGLE_SCOPE:-openid profile email}"
+      AUTH_GOOGLE_MODE: "${AUTH_GOOGLE_MODE:-session}"
+      AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION: "${AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION:-true}"
+      AUTH_GOOGLE_DEFAULT_ROLE_ID: "${DEFAULT_ROLE_ID}"
+      AUTH_GOOGLE_REDIRECT_ALLOW_LIST: "${AUTH_GOOGLE_REDIRECT_ALLOW_LIST:-http://localhost:8081/auth/callback,https://sso.hashpass.co/auth/callback,https://sso.hashpass.co/admin,https://sso-dev.hashpass.co/auth/callback,https://sso-dev.hashpass.co/admin,https://blockchainsummit.hashpass.lat/auth/callback,https://blockchainsummit-dev.hashpass.lat/auth/callback}"
+      
+      CORS_ENABLED: "true"
+      CORS_ORIGIN: "${CORS_ORIGIN:-https://hashpass.co,https://www.hashpass.co,https://sso.hashpass.co,https://sso-dev.hashpass.co,https://hashpass.tech,https://blockchainsummit.hashpass.lat,https://blockchainsummit-dev.hashpass.lat,http://localhost:8081}"
+      CORS_CREDENTIALS: "true"
+      CORS_ALLOWED_HEADERS: "${CORS_ALLOWED_HEADERS:-Content-Type,Authorization,Cache-Control,Pragma,Expires}"
+      
+      WEBSOCKETS_ENABLED: "true"
+      
+      # Serve static files from /directus/public
+      SERVE_APP: "true"
+    
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    
+    volumes:
+      - directus_uploads:/directus/uploads
+      - directus_extensions:/directus/extensions
+      - ./public:/directus/public:ro
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  directus_uploads:
+  directus_extensions:

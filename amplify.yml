@@ -10,13 +10,15 @@ frontend:
         - export AMPLIFY_SKIP_BACKEND_BUILD=true
         - export AMPLIFY_DISABLE_TS=true
         - 'echo "Skipping Amplify CLI backend initialization for static hosting"'
-        - nvm install 22.18.0
+        - nvm install 22.22.0
         - npm install --quiet --global @expo/cli
+        - corepack enable pnpm || true
         - >
-          if [ -f yarn.lock ]; then
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          elif [ -f yarn.lock ]; then
             yarn install --frozen-lockfile
           elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
-            # Install all dependencies including devDependencies (needed for autoprefixer, postcss, etc.)
             npm ci --include=dev
           else
             npm install
@@ -54,8 +56,8 @@ frontend:
         - export WEBPACK_MEMORY_LIMIT=6144
         # Reduce webpack optimization passes to save memory
         - export WEBPACK_OPTIMIZE_MINIMIZE=true
-        # Run build (Amplify has built-in 60min timeout)
-        - npm run build:web
+        # Run build (Amplify has built-in 60min timeout). Use pnpm if lockfile present.
+        - '[ -f pnpm-lock.yaml ] && pnpm run build:web || npm run build:web'
         - cp -r dist/server/* dist/client/
         - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
         - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
@@ -63,11 +65,11 @@ frontend:
         - mkdir -p dist/client/api/bslatam
         - 'echo "{\"type\": \"module\"}" > dist/client/api/package.json'
         - |
-          for file in app/api/bslatam/*+api.ts; do
+          for file in apps/web-app/app/api/bslatam/*+api.ts; do
             base=$(basename "$file" "+api.ts")
             mkdir -p "dist/client/api/bslatam/$base"
             cat > "dist/client/api/bslatam/$base/index.js" << 'ENDOFFILE'
-          import { handler } from '../../../../../app/api/bslatam/PLACEHOLDER+api';
+          import { handler } from '../../../../../apps/web-app/app/api/bslatam/PLACEHOLDER+api';
           export default async (req, res) => {
             try {
               const result = await handler(req, res);
@@ -104,8 +106,8 @@ frontend:
         # Deploy Lambda function automatically with frontend
         # This ensures API and frontend are always in sync
         - echo "📦 Packaging Lambda function..."
-        - chmod +x scripts/package-lambda.sh
-        - ./scripts/package-lambda.sh
+        - chmod +x tools/scripts/package-lambda.sh
+        - ./tools/scripts/package-lambda.sh
         - |
           if [ -f lambda-deployment.zip ]; then
             echo "🚀 Deploying Lambda function: hashpass-api-handler"

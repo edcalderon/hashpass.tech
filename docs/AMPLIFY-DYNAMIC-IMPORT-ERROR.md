@@ -89,7 +89,7 @@ Since this is a static Expo web build, we use **Option 3** (permanently renaming
 
 1. **Folder renamed:** `amplify/` → `amplify-backend-config/`
 2. **Updated `amplify.yml`:** All references updated to use `amplify-backend-config/`
-3. **Updated scripts:** `deploy-bslatam.sh` updated with new folder name
+3. **Updated scripts:** `tools/scripts/deploy-bslatam.sh` updated with new folder name
 
 ### Why This Works:
 

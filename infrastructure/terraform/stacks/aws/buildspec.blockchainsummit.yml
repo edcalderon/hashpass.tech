@@ -1,0 +1,20 @@
+version: 1.0
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm install 22.22.0
+        - corepack enable pnpm || true
+        - pnpm install --frozen-lockfile
+    build:
+      commands:
+        - pnpm --filter hashpass-web-app build
+        - cp -r apps/web-app/dist/server/. apps/web-app/dist/client/
+  artifacts:
+    baseDirectory: apps/web-app/dist/client
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .pnpm-store/**/*
