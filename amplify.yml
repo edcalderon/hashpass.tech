@@ -53,6 +53,8 @@ frontend:
         - export EXPO_EXPORT_MAX_WORKERS=1
         # Set production environment for Expo export
         - export NODE_ENV=production
+        # Skip package-level postbuild in CI; equivalent copy steps run below in amplify.yml
+        - export SKIP_WEB_POSTBUILD=1
         - export EXPO_PUBLIC_ENABLE_STATIC_EXPORT=true
         # Set webpack memory optimizations
         - export WEBPACK_MEMORY_LIMIT=6144
@@ -62,6 +64,9 @@ frontend:
         - '[ -f pnpm-lock.yaml ] && pnpm --dir apps/web-app run build || npm --prefix apps/web-app run build'
         - cp -r apps/web-app/dist/* ./dist/
         - cp -r dist/server/* dist/client/
+        - mkdir -p dist/client/config
+        - cp config/versions.json dist/client/config/versions.json 2>/dev/null || cp apps/web-app/config/versions.json dist/client/config/versions.json 2>/dev/null || true
+        - cp apps/web-app/public/sw.js dist/client/sw.js 2>/dev/null || cp public/sw.js dist/client/sw.js 2>/dev/null || true
         - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
         - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
         - cp -r dist/server/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/
