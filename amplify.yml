@@ -11,11 +11,11 @@ frontend:
         - export AMPLIFY_DISABLE_TS=true
         - 'echo "Skipping Amplify CLI backend initialization for static hosting"'
         - nvm install 22.22.0
-        - npm install --quiet --global @expo/cli
         - corepack enable pnpm || true
         - >
           if [ -f pnpm-lock.yaml ]; then
-            pnpm install --frozen-lockfile
+            pnpm config set store-dir .pnpm-store
+            pnpm install --frozen-lockfile --prefer-offline
           elif [ -f yarn.lock ]; then
             yarn install --frozen-lockfile
           elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
@@ -48,7 +48,9 @@ frontend:
         - rm -rf dist apps/web-app/dist
         - mkdir -p dist/client/_expo/functions/api/bslatam
         # Limit Node.js heap to avoid exhausting Amplify build container memory
-        - export NODE_OPTIONS="--max-old-space-size=4096"
+        - export NODE_OPTIONS="--max-old-space-size=6144"
+        # Reduce Expo export parallelism in Amplify to lower peak memory
+        - export EXPO_EXPORT_MAX_WORKERS=1
         # Set production environment for Expo export
         - export NODE_ENV=production
         - export EXPO_PUBLIC_ENABLE_STATIC_EXPORT=true
@@ -195,12 +197,14 @@ frontend:
   cache:
     paths:
       - node_modules/**/*
+      - .pnpm-store/**/*
+      - apps/web-app/.expo/**/*
       - $(npm root --global)/**/*
 redirects:
   # API routes are handled by API Gateway (api.hashpass.tech)
-  # Do NOT add redirects for /api/* routes here - they should go to API Gateway
-  # If you need to serve API routes from Amplify Hosting, use Amplify Functions (Lambda@Edge)
-  # See docs/AMPLIFY-API-ROUTES.md for configuration options
+  # Amplify Hosting API routes are first-class for Next.js, but this app uses Expo Router.
+  # Keep /api/* on API Gateway + Lambda unless you explicitly migrate runtimes.
+  # See docs/AMPLIFY-API-ROUTES.md for the current architecture decision.
   - source: '/sw.js'
     status: 200
     target: '/sw.js'
