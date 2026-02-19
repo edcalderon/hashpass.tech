@@ -47,8 +47,9 @@ frontend:
       commands:
         - rm -rf dist apps/web-app/dist
         - mkdir -p dist/client/_expo/functions/api/bslatam
-        # Limit Node.js heap to avoid exhausting Amplify build container memory
-        - export NODE_OPTIONS="--max-old-space-size=6144"
+        # Keep heap conservative to reduce total container RSS during export
+        - export NODE_OPTIONS="--max-old-space-size=4096"
+        - export NODE_MAX_OLD_SPACE_SIZE=4096
         # Reduce Expo export parallelism in Amplify to lower peak memory
         - export EXPO_EXPORT_MAX_WORKERS=1
         # Set production environment for Expo export
@@ -57,11 +58,14 @@ frontend:
         - export SKIP_WEB_POSTBUILD=1
         - export EXPO_PUBLIC_ENABLE_STATIC_EXPORT=true
         # Set webpack memory optimizations
-        - export WEBPACK_MEMORY_LIMIT=6144
+        - export WEBPACK_MEMORY_LIMIT=4096
         # Reduce webpack optimization passes to save memory
         - export WEBPACK_OPTIMIZE_MINIMIZE=true
         # Build the Expo web app from the monorepo package and copy artifacts to root dist/
         - '[ -f pnpm-lock.yaml ] && pnpm --dir apps/web-app run build || npm --prefix apps/web-app run build'
+        # Ensure no lingering Node workers keep memory pinned before copy steps
+        - pkill -9 -x node || true
+        - sleep 3
         - cp -r apps/web-app/dist/* ./dist/
         - cp -r dist/server/* dist/client/
         - mkdir -p dist/client/config
