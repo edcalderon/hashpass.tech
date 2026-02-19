@@ -97,7 +97,7 @@ curl -X POST https://sso.hashpass.co/auth/login \
 ```bash
 # Test the auth test endpoint
 curl -X GET https://hashpass.co/api/auth/test \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+  -H "<AUTH_HEADER>"
 ```
 
 ### 3. Test Frontend Authentication

@@ -3,6 +3,7 @@ node_modules/
 dist/
 apps/*/dist/
 .pnpm-store/
+aws/dist/
 lambda-deployment.zip
 
 # Expo

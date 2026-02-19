@@ -253,13 +253,13 @@ if (result.valid) {
 ### Admin: List QR Codes
 ```bash
 curl -X GET "https://api.example.com/api/qr/admin?status=active&page=1" \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+  -H "<AUTH_HEADER>"
 ```
 
 ### Admin: Revoke QR Code
 ```bash
 curl -X POST "https://api.example.com/api/qr/admin" \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "<AUTH_HEADER>" \
   -H "Content-Type: application/json" \
   -d '{"token": "QR-1234-5678", "reason": "Lost device"}'
 ```
@@ -279,4 +279,3 @@ For issues or questions:
 - Review scan logs for validation issues
 - Verify RLS policies are correctly configured
 - Test with different user roles
-
