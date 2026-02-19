@@ -10,7 +10,7 @@
     "web": "NODE_OPTIONS='--max-old-space-size=4096' expo start --web --clear",
     "test": "jest --watchAll",
     "dev": "NODE_OPTIONS='--max-old-space-size=4096' expo start --web --clear",
-    "build:web": "npm run prebuild && node scripts/update-sw-version.mjs && expo export -p web && npm run postbuild:web && (npm run build:storybook || echo 'Storybook build skipped') && (npx workbox-cli generateSW workbox-config.js || echo 'Workbox generation failed, continuing without service worker')",
+    "build:web": "npm run prebuild && node tools/scripts/update-sw-version.mjs && expo export -p web && npm run postbuild:web && (npm run build:storybook || echo 'Storybook build skipped') && (npx workbox-cli generateSW workbox-config.js || echo 'Workbox generation failed, continuing without service worker')",
     "build:storybook": "storybook build -o storybook-static || echo 'Storybook not available, skipping build'",
     "postbuild:web": "if [ -d dist/server/_expo ]; then mkdir -p dist/client/_expo && cp -r dist/server/_expo/* dist/client/_expo/; fi && if [ -d dist/server/static ]; then mkdir -p dist/client/static && cp -r dist/server/static/* dist/client/static/; fi && if [ -d storybook-static ]; then mkdir -p dist/client/storybook && cp -r storybook-static/* dist/client/storybook/; else echo 'Storybook static directory not found, skipping copy'; fi && mkdir -p dist/client/config && cp config/versions.json dist/client/config/versions.json && cp public/sw.js dist/client/sw.js",
     "prebuild": "rm -rf dist",
