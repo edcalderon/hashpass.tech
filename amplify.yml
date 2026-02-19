@@ -68,6 +68,8 @@ frontend:
         - sleep 3
         - cp -r apps/web-app/dist/* ./dist/
         - cp -r dist/server/* dist/client/
+        # Amplify artifact upload skips hidden directories; normalize Expo asset paths off ".pnpm"
+        - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/client
         - mkdir -p dist/client/config
         - cp config/versions.json dist/client/config/versions.json 2>/dev/null || cp apps/web-app/config/versions.json dist/client/config/versions.json 2>/dev/null || true
         - cp apps/web-app/public/sw.js dist/client/sw.js 2>/dev/null || cp public/sw.js dist/client/sw.js 2>/dev/null || true
