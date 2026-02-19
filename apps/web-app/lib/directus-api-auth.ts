@@ -3,7 +3,7 @@
  */
 
 import { DirectusUser } from './directus-auth';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { DirectusApiClient } from './auth/providers/directus-api-client';
 
 const DIRECTUS_URL =

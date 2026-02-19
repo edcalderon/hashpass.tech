@@ -79,6 +79,7 @@
     "expo-symbols": "~0.4.4",
     "expo-system-ui": "~5.0.7",
     "expo-web-browser": "~14.1.6",
+    "framer-motion": "12.34.0",
     "html5-qrcode": "^2.3.8",
     "i18n-js": "^4.5.1",
     "jose": "^5.9.6",
