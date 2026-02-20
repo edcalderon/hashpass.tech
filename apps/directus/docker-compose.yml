@@ -90,7 +90,7 @@ services:
       AUTH_GOOGLE_MODE: "${AUTH_GOOGLE_MODE:-session}"
       AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION: "${AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION:-true}"
       AUTH_GOOGLE_DEFAULT_ROLE_ID: ${DEFAULT_ROLE_ID:-}
-      AUTH_GOOGLE_REDIRECT_ALLOW_LIST: "${AUTH_GOOGLE_REDIRECT_ALLOW_LIST:-http://localhost:8081/auth/callback,https://sso.hashpass.co/auth/callback,https://sso-dev.hashpass.co/auth/callback,https://blockchainsummit.hashpass.lat/auth/callback,https://blockchainsummit-dev.hashpass.lat/auth/callback}"
+      AUTH_GOOGLE_REDIRECT_ALLOW_LIST: "${AUTH_GOOGLE_REDIRECT_ALLOW_LIST:-http://localhost:8081/auth/callback,https://sso.hashpass.co/auth/callback,https://sso-dev.hashpass.co/auth/callback,https://blockchainsummit.hashpass.lat/auth/callback,https://blockchainsummit-dev.hashpass.lat/auth/callback,https://api-dev.hashpass.tech/auth/callback,https://api.hashpass.tech/auth/callback}"
       
       # Discord OAuth
       AUTH_DISCORD_DRIVER: oauth2
@@ -138,7 +138,7 @@ services:
       # CORS (Allow your frontend domains)
       # ===========================================
       CORS_ENABLED: "true"
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://hashpass.co,https://www.hashpass.co,https://sso.hashpass.co,https://sso-dev.hashpass.co,https://blockchainsummit.hashpass.lat,https://blockchainsummit-dev.hashpass.lat,http://localhost:8081}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://hashpass.co,https://www.hashpass.co,https://sso.hashpass.co,https://sso-dev.hashpass.co,https://blockchainsummit.hashpass.lat,https://blockchainsummit-dev.hashpass.lat,https://api-dev.hashpass.tech,https://api.hashpass.tech,http://localhost:8081}
       CORS_CREDENTIALS: "true"
       CORS_ALLOWED_HEADERS: "${CORS_ALLOWED_HEADERS:-Content-Type,Authorization,Cache-Control,Pragma,Expires}"
 
