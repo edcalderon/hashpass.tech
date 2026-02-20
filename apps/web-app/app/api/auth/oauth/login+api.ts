@@ -1,5 +1,4 @@
 
-
 const DIRECTUS_URL =
   process.env.DIRECTUS_URL ||
   process.env.EXPO_PUBLIC_DIRECTUS_URL ||
@@ -31,79 +30,65 @@ function normalizeReturnToPath(path: string): string {
 
 /**
  * OAuth Login Proxy
- * Redirects to Directus OAuth provider
- * Directus handles the full OAuth flow with Google/Discord/etc and redirects back to /auth/callback
- * Route: /api/auth/oauth/login?provider=google&returnTo=...
+ * 
+ * This redirect-based approach works as follows:
+ * 1. Browser hits this endpoint
+ * 2. We redirect to Directus /auth/login/{provider}?redirect={callback_on_our_domain}
+ * 3. Directus redirects to Google
+ * 4. Google redirects back to Directus
+ * 5. Directus processes OAuth, sets refresh_token cookie on ITS domain, redirects to our callback
+ * 6. Our callback endpoint receives the redirect but CANNOT read Directus cookies (cross-domain)
+ * 
+ * CRITICAL INSIGHT: Directus v11 NEVER puts tokens in the URL when redirect is used.
+ * It always uses cookies. Since we're cross-domain, cookies are invisible.
+ * 
+ * SOLUTION: Encode feOrigin and returnTo in the redirect URL itself so the callback
+ * knows where to redirect on failure/success. And have the callback do a server-side
+ * call to Directus to try to get the session.
  */
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const provider = url.searchParams.get('provider') || 'google';
   const returnTo = normalizeReturnToPath(url.searchParams.get('returnTo') || DEFAULT_RETURN_TO);
-  const feOrigin = url.searchParams.get('feOrigin');
+  const feOrigin = url.searchParams.get('feOrigin') || '';
 
   console.log('[OAuth Login] Starting OAuth flow via Directus');
   console.log('[OAuth Login] Provider:', provider);
   console.log('[OAuth Login] Return to:', returnTo);
+  console.log('[OAuth Login] Frontend origin:', feOrigin);
 
-  // Validate provider - only use Directus-configured providers
+  // Validate provider
   const validProviders = ['google', 'discord', 'github'];
   if (!validProviders.includes(provider)) {
     console.error('[OAuth Login] Invalid provider:', provider);
-    const errorUrl = new URL('/auth', url.origin);
+    const errorTarget = feOrigin || url.origin;
+    const errorUrl = new URL('/auth', errorTarget);
     errorUrl.searchParams.set('error', 'invalid_provider');
     errorUrl.searchParams.set('message', `Provider '${provider}' is not supported`);
-
-    return new Response(null, {
-      status: 302,
-      headers: { 'Location': errorUrl.toString() }
-    });
+    return new Response(null, { status: 302, headers: { 'Location': errorUrl.toString() } });
   }
 
-  const isHttps = url.protocol === 'https:';
-  const secureFlag = isHttps ? '; Secure' : '';
-
-  // Store return URL in cookie for callback fallback flows.
-  const cookieValue = encodeURIComponent(returnTo);
-  const setCookieHeader = `oauth_return_to=${cookieValue}; Path=/; SameSite=Lax; Max-Age=3600${secureFlag}`;
-  const feOriginCookie = feOrigin ? `oauth_fe_origin=${encodeURIComponent(feOrigin)}; Path=/; SameSite=Lax; Max-Age=3600${secureFlag}` : null;
-
-  // Redirect to Directus OAuth endpoint
-  // Directus will:
-  // 1. Redirect to the OAuth provider (Google, Discord, etc.)
-  // 2. User authenticates
-  // 3. Provider redirects back to Directus with auth code
-  // 4. Directus exchanges code for tokens
-  // 5. Directus redirects to /auth/callback with tokens in URL or cookies
-  // Directus v11 OAuth endpoint format: /auth/login/{provider}?redirect={url}
-  // CRITICAL: Directus ALWAYS puts tokens in cookies (never URL query params) when
-  // a redirect is specified. For cross-domain, we must route through our API proxy
-  // which can intercept the Set-Cookie from Directus and exchange it for tokens.
+  // Build callback URL with feOrigin and returnTo encoded as query params
+  // (cookies don't survive cross-domain redirect chains through Directus)
   const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
+  callbackUrl.searchParams.set('fe', feOrigin);
+  callbackUrl.searchParams.set('rt', returnTo);
+
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
-  // Force JSON token mode so cross-site frontends don't depend on Directus cookies.
   directusOAuthUrl.searchParams.set('mode', 'json');
   directusOAuthUrl.searchParams.set('redirect', callbackUrl.toString());
   if (provider === 'google') {
-    // Force a fresh provider consent flow to avoid reusing stale Directus admin/browser sessions.
     directusOAuthUrl.searchParams.set('prompt', 'consent');
   }
 
-  console.log('[OAuth Login] Redirecting to Directus OAuth:', directusOAuthUrl.toString());
-
-  const headers = new Headers();
-  headers.set('Location', directusOAuthUrl.toString());
-  headers.set('Cache-Control', 'no-store');
-  headers.append('Set-Cookie', setCookieHeader);
-  if (feOriginCookie) {
-    headers.append('Set-Cookie', feOriginCookie);
-  }
-  // Clear stale Directus host cookies before starting a new OAuth session.
-  headers.append('Set-Cookie', `directus_session_token=; Path=/; SameSite=Lax; Max-Age=0${secureFlag}`);
-  headers.append('Set-Cookie', `directus_refresh_token=; Path=/; SameSite=Lax; Max-Age=0${secureFlag}`);
-  headers.append('Set-Cookie', `directus_refresh_token=; Path=/auth/refresh; SameSite=Lax; Max-Age=0${secureFlag}`);
+  console.log('[OAuth Login] Callback URL:', callbackUrl.toString());
+  console.log('[OAuth Login] Directus OAuth URL:', directusOAuthUrl.toString());
 
   return new Response(null, {
     status: 302,
-    headers
+    headers: {
+      'Location': directusOAuthUrl.toString(),
+      'Cache-Control': 'no-store'
+    }
   });
 }

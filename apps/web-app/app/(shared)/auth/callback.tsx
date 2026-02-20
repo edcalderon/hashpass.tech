@@ -24,10 +24,10 @@ export default function AuthCallback() {
     const params = useLocalSearchParams();
     const { handleOAuthCallback } = useAuth();
     const { showError, showSuccess } = useToastHelpers();
-    
+
     const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
     const [message, setMessage] = useState('Processing authentication...');
-    
+
     // Track if we've already navigated to prevent duplicate navigation
     const getHasNavigated = () => {
         if (Platform.OS === 'web' && typeof window !== 'undefined' && window.sessionStorage) {
@@ -35,7 +35,7 @@ export default function AuthCallback() {
         }
         return false;
     };
-    
+
     const setHasNavigated = (value: boolean) => {
         if (Platform.OS === 'web' && typeof window !== 'undefined' && window.sessionStorage) {
             if (value) {
@@ -45,7 +45,7 @@ export default function AuthCallback() {
             }
         }
     };
-    
+
     const hasNavigatedRef = useRef(getHasNavigated());
     const hasShownErrorToastRef = useRef(false);
     const hasShownSuccessToastRef = useRef(false);
@@ -144,7 +144,7 @@ export default function AuthCallback() {
 
         return normalized;
     };
-    
+
     // Get redirect path from URL params
     const getRedirectPath = () => {
         const returnTo = params.returnTo as string | undefined;
@@ -193,32 +193,32 @@ export default function AuthCallback() {
 
         return 'oauth';
     };
-    
+
     // Safe navigation function - use router instead of window.location to prevent full page reload
     const safeNavigate = (path: string) => {
         console.log('🚀 safeNavigate called with path:', path);
-        
+
         if (path.includes('/auth/callback')) {
             console.warn('⚠️ Attempted to redirect to callback route, redirecting to dashboard instead');
             path = '/dashboard/explore';
         }
-        
+
         console.log('🚀 Final navigation path:', path);
-        console.log('📊 Router state:', { 
-            canGoBack: router.canGoBack(), 
-            segments: router.segments 
+        console.log('📊 Router state:', {
+            canGoBack: router.canGoBack(),
+            segments: router.segments
         });
-        
+
         // Mark as navigated BEFORE navigation to prevent re-processing
         hasNavigatedRef.current = true;
         setHasNavigated(true);
-        
+
         try {
             // Use router.replace instead of window.location to avoid full page reload
             console.log('🚀 Calling router.replace...');
             router.replace(path as any);
             console.log('✅ Router.replace called successfully');
-            
+
             // Additional fallback after a delay if navigation doesn't work
             setTimeout(() => {
                 if (typeof window !== 'undefined' && window.location.pathname.includes('/auth/callback')) {
@@ -226,17 +226,17 @@ export default function AuthCallback() {
                     window.location.href = path;
                 }
             }, 1000);
-            
+
         } catch (navError) {
             console.error('❌ Navigation error:', navError);
-            
+
             // Immediate fallback to window.location if router fails
             if (typeof window !== 'undefined') {
                 console.log('🔄 Falling back to window.location...');
                 window.location.href = path;
             }
         }
-        
+
         // Clear sessionStorage after a short delay to allow navigation to complete
         setTimeout(() => {
             if (Platform.OS === 'web' && typeof window !== 'undefined' && window.sessionStorage) {
@@ -248,10 +248,10 @@ export default function AuthCallback() {
             }
         }, 2000);
     };
-    
+
     // Track processing state to prevent multiple simultaneous executions
     const isProcessingRef = useRef(false);
-    
+
     // Provider-agnostic OAuth callback handler
     useEffect(() => {
         // CRITICAL: Check sessionStorage first to prevent re-processing after navigation
@@ -261,26 +261,26 @@ export default function AuthCallback() {
             router.replace(getRedirectPath() as any);
             return;
         }
-        
+
         // CRITICAL: Prevent useEffect from running multiple times
         if (hasNavigatedRef.current || isProcessingRef.current) {
             console.log('⏭️ Already processing or navigated, skipping useEffect');
             return;
         }
-        
+
         // CRITICAL: Store a flag to prevent re-execution even if params change
         let executed = false;
-        
+
         const handleAuthCallback = async () => {
             // Triple-check guard (in case of race condition or re-render)
             if (hasNavigatedRef.current || isProcessingRef.current || executed || getHasNavigated()) {
                 console.log('⏭️ Already processing or navigated, skipping handler');
                 return;
             }
-            
+
             executed = true;
             isProcessingRef.current = true;
-            
+
             let callbackFlow: CallbackFlow = 'oauth';
             try {
                 callbackFlow = detectCallbackFlow();
@@ -292,7 +292,7 @@ export default function AuthCallback() {
                         ? 'Processing Magic Link authentication...'
                         : t('processingAuthentication', 'Processing authentication...')
                 );
-                
+
                 console.log(`🔄 ${callbackFlow === 'magic_link' ? 'Magic Link' : 'OAuth'} callback started`);
                 console.log('📋 Callback params:', params);
                 console.log('📋 Detected callback flow:', callbackFlow);
@@ -349,27 +349,28 @@ export default function AuthCallback() {
                     safeNavigate(redirectPath);
                     return;
                 }
-                
+
                 // Check if URL has auth tokens/code before processing OAuth
                 let hasAuthData = false;
                 if (Platform.OS === 'web' && typeof window !== 'undefined') {
                     const url = window.location.href;
-                    hasAuthData = url.includes('#access_token=') || 
-                                  url.includes('#oauth_success=') ||
-                                  url.includes('#code=') || 
-                                  url.includes('?code=') ||
-                                  url.includes('&code=') ||
-                                  url.includes('access_token=') ||
-                                  url.includes('oauth_success=');
+                    hasAuthData = url.includes('#access_token=') ||
+                        url.includes('#oauth_success=') ||
+                        url.includes('#code=') ||
+                        url.includes('?code=') ||
+                        url.includes('&code=') ||
+                        url.includes('access_token=') ||
+                        url.includes('oauth_success=') ||
+                        url.includes('oauth_complete=');
                 } else {
                     // For mobile, check params
                     hasAuthData = !!(params.code || params.access_token || params.oauth_success);
                 }
-                
+
                 if (!hasAuthData) {
                     console.log('ℹ️ No OAuth params in URL, attempting cookie-based session completion...');
                 }
-                
+
                 // Use provider-agnostic OAuth callback handler
                 console.log('🔄 Processing OAuth callback with provider-agnostic handler...');
                 let result = await handleOAuthCallback(params as Record<string, string>);
@@ -380,12 +381,12 @@ export default function AuthCallback() {
                     await new Promise(resolve => setTimeout(resolve, 700));
                     result = await handleOAuthCallback(params as Record<string, string>);
                 }
-                
+
                 if (result.error) {
                     console.error('❌ OAuth callback error:', result.error);
                     throw new Error(result.error);
                 }
-                
+
                 if (!result.user) {
                     console.error('❌ No user data in result:', result);
                     throw new Error('Authentication completed but no user data received');
@@ -410,30 +411,30 @@ export default function AuthCallback() {
                     window.localStorage.removeItem('auth_signin_method');
                     console.log('🧹 Cleaned URL after successful OAuth processing');
                 }
-                
+
                 hasNavigatedRef.current = true;
                 setHasNavigated(true);
                 isProcessingRef.current = false;
-                
+
                 // Wait for auth state to update before navigating
                 let attempts = 0;
                 const waitForAuthState = () => {
                     attempts++;
-                    
+
                     // Try navigation after a reasonable wait or max attempts
                     if (attempts >= 5) {
                         safeNavigate(redirectPath);
                         return;
                     }
-                    
+
                     setTimeout(() => {
                         safeNavigate(redirectPath);
                     }, attempts * 200); // Incremental delay
                 };
-                
+
                 // Start the auth state check
                 waitForAuthState();
-                
+
             } catch (error: any) {
                 console.error('❌ Auth callback error:', error);
                 setStatus('error');
@@ -450,7 +451,7 @@ export default function AuthCallback() {
                     window.localStorage.removeItem('oauth_in_progress');
                     window.localStorage.removeItem('auth_signin_method');
                 }
-                
+
                 // After error, redirect back to auth page after a delay
                 setTimeout(() => {
                     if (!hasNavigatedRef.current && !getHasNavigated()) {
@@ -464,9 +465,9 @@ export default function AuthCallback() {
                 isProcessingRef.current = false;
             }
         };
-        
+
         handleAuthCallback();
-        
+
         // Cleanup function to reset processing state if component unmounts
         return () => {
             // Don't reset hasNavigatedRef - we want to keep that across re-renders
@@ -478,9 +479,9 @@ export default function AuthCallback() {
         // Intentionally run once on mount to prevent callback retry loops on re-render.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    
 
-    
+
+
     return (
         <View style={styles.container}>
             <View style={styles.content}>
@@ -490,14 +491,14 @@ export default function AuthCallback() {
                         <Text style={styles.message}>{message}</Text>
                     </>
                 )}
-                
+
                 {status === 'success' && (
                     <>
                         <Check size={48} color="#10B981" />
                         <Text style={styles.successMessage}>{message}</Text>
                     </>
                 )}
-                
+
                 {status === 'error' && (
                     <>
                         <AlertCircle size={48} color="#EF4444" />
