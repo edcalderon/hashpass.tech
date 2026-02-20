@@ -8,7 +8,13 @@ echo "🚀 Deploying Lambda Function from Amplify Build"
 echo "================================================"
 echo ""
 
-LAMBDA_FUNCTION_NAME="hashpass-api-handler"
+if [ "$AWS_BRANCH" = "develop" ]; then
+    LAMBDA_FUNCTION_NAME="hashpass-dev-expo-router-api"
+else
+    # Default to production if not develop
+    LAMBDA_FUNCTION_NAME="hashpass-api-handler"
+fi
+
 REGION="us-east-1"
 
 # Check if we're in an Amplify build environment

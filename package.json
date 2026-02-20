@@ -46,6 +46,7 @@
     "docs:build": "npm run build-storybook",
     "docs:serve": "npx serve storybook-static",
     "docs:deploy:netlify": "npm run build-storybook && netlify deploy --prod --dir=storybook-static",
+    "release:unified": "npx @edcalderon/versioning release",
     "prepare": "node -e \"if (process.env.CI || process.env.NPM_CONFIG_PRODUCTION || process.env.NODE_ENV === 'production') { process.exit(0); }\" && husky"
   },
   "expo": {
@@ -150,6 +151,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/preset-typescript": "^7.28.5",
+    "@edcalderon/versioning": "^1.4.5",
     "@expo/metro-config": "^0.20.17",
     "@lingui/cli": "^5.5.2",
     "@storybook/addon-essentials": "^8.6.14",

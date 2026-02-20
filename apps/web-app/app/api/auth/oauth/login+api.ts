@@ -68,19 +68,51 @@ export async function GET(request: Request): Promise<Response> {
     return new Response(null, { status: 302, headers: { 'Location': errorUrl.toString() } });
   }
 
-  // Build relay URL with feOrigin and returnTo encoded as query params
-  const relayUrl = new URL('/auth-relay/', DIRECTUS_URL);
-  relayUrl.searchParams.set('fe', feOrigin);
+  // Intercept Google provider before parsing generic fallback logic
+  const callbackOrigin = feOrigin || url.origin || 'https://blockchainsummit-dev.hashpass.lat';
+
+  // If provider is Google, intercept and redirect directly to Google OAuth
+  if (provider === 'google') {
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    if (googleClientId) {
+      console.log('[OAuth Login] Initiating direct Google OAuth flow');
+      const redirectUri = `${url.origin}/api/auth/oauth/google`;
+      const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      googleAuthUrl.searchParams.set('client_id', googleClientId);
+      googleAuthUrl.searchParams.set('redirect_uri', redirectUri);
+      googleAuthUrl.searchParams.set('response_type', 'code');
+      googleAuthUrl.searchParams.set('scope', 'openid profile email');
+      googleAuthUrl.searchParams.set('access_type', 'offline');
+      googleAuthUrl.searchParams.set('prompt', 'consent');
+
+      const isSecure = url.protocol === 'https:';
+      const cookieOptions = isSecure ? 'Secure; SameSite=Lax' : 'SameSite=Lax';
+
+      // Save absolute URL to redirect back to the correct domain instead of api-dev
+      const absoluteReturnUrl = new URL(returnTo, callbackOrigin).toString();
+
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': googleAuthUrl.toString(),
+          'Cache-Control': 'no-store',
+          'Set-Cookie': `oauth_return_to=${encodeURIComponent(absoluteReturnUrl)}; Path=/; HttpOnly; Max-Age=3600; ${cookieOptions}`
+        }
+      });
+    } else {
+      console.warn('[OAuth Login] GOOGLE_CLIENT_ID is not set! Falling back to Directus Google OAuth.');
+    }
+  }
+
+  // Build callback URL on the frontend for fallback Directus flow
+  const relayUrl = new URL('/auth/callback', callbackOrigin);
   relayUrl.searchParams.set('rt', returnTo);
 
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   directusOAuthUrl.searchParams.set('mode', 'json');
   directusOAuthUrl.searchParams.set('redirect', relayUrl.toString());
-  if (provider === 'google') {
-    directusOAuthUrl.searchParams.set('prompt', 'consent');
-  }
 
-  console.log('[OAuth Login] Relay URL:', relayUrl.toString());
+  console.log('[OAuth Login] Relay URL (Callback):', relayUrl.toString());
   console.log('[OAuth Login] Directus OAuth URL:', directusOAuthUrl.toString());
 
   return new Response(null, {
