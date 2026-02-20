@@ -1,32 +1,23 @@
 
-// Support both local and production Directus URLs
 const DIRECTUS_URL =
   process.env.DIRECTUS_URL ||
   process.env.EXPO_PUBLIC_DIRECTUS_URL ||
   'https://sso.hashpass.co';
 
-// OAuth callback handler
-// 
-// CRITICAL DESIGN NOTES:
-// 1. Directus v11 NEVER puts tokens in URL query params when `redirect` is set.
-//    With AUTH_GOOGLE_MODE=json, it puts refresh_token in an httpOnly cookie on
-//    the Directus domain (sso-dev.hashpass.co).
-// 2. Since this callback runs on api-dev.hashpass.tech, we CANNOT read Directus cookies.
-// 3. Browser cookies set during the login step (oauth_fe_origin, oauth_return_to)
-//    also don't arrive because the redirect chain goes through sso-dev.hashpass.co
-//    which is a cross-site navigation.
-// 4. SOLUTION: feOrigin and returnTo are passed as query params in the callback URL.
+// OAuth Callback Handler
 //
-// The remaining challenge: getting the actual auth tokens. Since Directus only puts
-// them in cookies on its own domain, we need the FRONTEND to handle the final
-// token exchange. This callback redirects to the frontend, which then does:
-//   - Call sso-dev.hashpass.co/auth/refresh with credentials:include
-//   - Or call sso-dev.hashpass.co/users/me with credentials:include
+// After Directus processes the Google OAuth, it redirects here with auth cookies
+// on the Directus domain (sso-dev.hashpass.co). Cross-domain cookies don't work
+// in modern browsers, so we redirect to a TOKEN RELAY PAGE hosted on the Directus
+// domain itself. This relay page:
+//   1. Runs on sso-dev.hashpass.co (same domain as cookies = first-party)
+//   2. Calls /auth/refresh with credentials:include (cookie IS sent)
+//   3. Gets access_token + refresh_token from JSON response
+//   4. Redirects to frontend /auth/callback#access_token=xxx&refresh_token=xxx
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
-  // Read feOrigin and returnTo from query params (set by login endpoint)
   const feOrigin = url.searchParams.get('fe') || url.origin;
   const returnTo = url.searchParams.get('rt') || '/dashboard/explore';
   const reason = url.searchParams.get('reason');
@@ -34,12 +25,7 @@ export async function GET(request: Request): Promise<Response> {
   console.log('[OAuth Callback] Processing callback from Directus');
   console.log('[OAuth Callback] Frontend origin:', feOrigin);
   console.log('[OAuth Callback] Return to:', returnTo);
-  console.log('[OAuth Callback] URL:', url.toString());
-  console.log('[OAuth Callback] All query params:', Object.fromEntries(url.searchParams.entries()));
-
-  // Log cookies for debugging
-  const cookies = request.headers.get('Cookie') || '';
-  console.log('[OAuth Callback] Cookies received:', cookies ? cookies.replace(/=[^;]+/g, '=***') : '(none)');
+  console.log('[OAuth Callback] Directus URL:', DIRECTUS_URL);
 
   // Check for Directus error
   if (reason) {
@@ -53,16 +39,14 @@ export async function GET(request: Request): Promise<Response> {
     });
   }
 
-  // Check for tokens in URL (they won't be there with redirect, but check anyway)
+  // Check URL params for tokens
   const accessToken = url.searchParams.get('access_token');
-  const refreshToken = url.searchParams.get('refresh_token');
-
   if (accessToken) {
-    console.log('[OAuth Callback] ✅ Found access_token in URL params');
+    console.log('[OAuth Callback] ✅ Found access_token in URL');
     const redirectUrl = new URL('/auth/callback', feOrigin);
     const fragment = new URLSearchParams({
       access_token: accessToken,
-      ...(refreshToken && { refresh_token: refreshToken })
+      ...(url.searchParams.get('refresh_token') && { refresh_token: url.searchParams.get('refresh_token')! })
     });
     return new Response(null, {
       status: 302,
@@ -70,19 +54,19 @@ export async function GET(request: Request): Promise<Response> {
     });
   }
 
-  // Since Directus puts tokens in cookies on its OWN domain, we cannot read them here.
-  // Redirect to the frontend's /auth/callback page. The frontend runs on a different
-  // domain but can make credentialed requests to Directus to exchange the session.
-  // Pass a flag so the frontend knows this is a Directus OAuth completion.
-  console.log('[OAuth Callback] ↩️ Redirecting to frontend for session exchange');
-  const frontendCallback = new URL('/auth/callback', feOrigin);
-  frontendCallback.searchParams.set('oauth_complete', 'true');
-  frontendCallback.searchParams.set('provider', 'google');
+  // Redirect to the TOKEN RELAY page on the Directus domain.
+  // This page runs same-origin JS that can read the httpOnly refresh_token cookie,
+  // exchanges it for an access_token, and redirects to the frontend with tokens.
+  const relayUrl = new URL('/auth-relay', DIRECTUS_URL);
+  relayUrl.searchParams.set('fe', feOrigin);
+  relayUrl.searchParams.set('rt', returnTo);
+
+  console.log('[OAuth Callback] ↩️ Redirecting to token relay:', relayUrl.toString());
 
   return new Response(null, {
     status: 302,
     headers: {
-      'Location': frontendCallback.toString(),
+      'Location': relayUrl.toString(),
       'Cache-Control': 'no-store'
     }
   });
