@@ -61,8 +61,8 @@ frontend:
         - export WEBPACK_MEMORY_LIMIT=4096
         # Reduce webpack optimization passes to save memory
         - export WEBPACK_OPTIMIZE_MINIMIZE=true
-        # Build the Expo web app using Turborepo to leverage caching
-        - pnpm exec turbo run build --filter=hashpass-web-app
+        # Build the Expo web app from the monorepo package and copy artifacts to root dist/
+        - '[ -f pnpm-lock.yaml ] && pnpm --dir apps/web-app run build || npm --prefix apps/web-app run build'
         # Ensure no lingering Node workers keep memory pinned before copy steps
         - pkill -9 -x node || true
         - sleep 3
