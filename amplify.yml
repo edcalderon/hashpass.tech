@@ -47,11 +47,11 @@ frontend:
       commands:
         - rm -rf dist apps/web-app/dist
         - mkdir -p dist/client/_expo/functions/api/bslatam
-        # Keep heap conservative to reduce total container RSS during export
-        - export NODE_OPTIONS="--max-old-space-size=4096"
-        - export NODE_MAX_OLD_SPACE_SIZE=4096
-        # Reduce Expo export parallelism in Amplify to lower peak memory
-        - export EXPO_EXPORT_MAX_WORKERS=1
+        # Use higher memory allowance to support more workers safely
+        - export NODE_OPTIONS="--max-old-space-size=6144"
+        - export NODE_MAX_OLD_SPACE_SIZE=6144
+        # Restore parallel building to reduce bundling time for API routes
+        - export EXPO_EXPORT_MAX_WORKERS=4
         # Set production environment for Expo export
         - export NODE_ENV=production
         # Skip package-level postbuild in CI; equivalent copy steps run below in amplify.yml
@@ -61,8 +61,8 @@ frontend:
         - export WEBPACK_MEMORY_LIMIT=4096
         # Reduce webpack optimization passes to save memory
         - export WEBPACK_OPTIMIZE_MINIMIZE=true
-        # Build the Expo web app from the monorepo package and copy artifacts to root dist/
-        - '[ -f pnpm-lock.yaml ] && pnpm --dir apps/web-app run build || npm --prefix apps/web-app run build'
+        # Build the Expo web app using Turborepo to leverage caching
+        - pnpm exec turbo run build --filter=hashpass-web-app
         # Ensure no lingering Node workers keep memory pinned before copy steps
         - pkill -9 -x node || true
         - sleep 3
@@ -185,6 +185,7 @@ frontend:
             value: '0'
   cache:
     paths:
+      - .turbo/**/*
       - apps/web-app/.expo/**/*
 redirects:
   # API routes are handled by API Gateway (api.hashpass.tech)
