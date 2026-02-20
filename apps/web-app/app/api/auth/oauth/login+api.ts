@@ -75,7 +75,19 @@ export async function GET(request: Request): Promise<Response> {
   // 4. Directus exchanges code for tokens
   // 5. Directus redirects to /auth/callback with tokens in URL or cookies
   // Directus v11 OAuth endpoint format: /auth/login/{provider}?redirect={url}
-  const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
+  // IMPORTANT: AUTH_GOOGLE_MODE=session means tokens go into httpOnly cookies on the
+  // Directus domain, NOT as URL params. The callback must go to the frontend where
+  // client-side JS can call Directus /users/me with credentials:include to retrieve the session.
+  let callbackOrigin = url.origin;
+  if (feOrigin) {
+    try {
+      callbackOrigin = new URL(feOrigin).origin;
+    } catch {
+      // Ignore invalid feOrigin and fallback to API origin
+    }
+  }
+
+  const callbackUrl = new URL('/auth/callback', callbackOrigin);
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   // Force JSON token mode so cross-site frontends don't depend on Directus cookies.
   directusOAuthUrl.searchParams.set('mode', 'json');
