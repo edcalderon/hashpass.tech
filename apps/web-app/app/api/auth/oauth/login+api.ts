@@ -1,4 +1,4 @@
-import { ExpoRequest, ExpoResponse } from 'expo-router/server';
+
 
 const DIRECTUS_URL =
   process.env.DIRECTUS_URL ||
@@ -35,7 +35,7 @@ function normalizeReturnToPath(path: string): string {
  * Directus handles the full OAuth flow with Google/Discord/etc and redirects back to /auth/callback
  * Route: /api/auth/oauth/login?provider=google&returnTo=...
  */
-export async function GET(request: ExpoRequest): Promise<ExpoResponse> {
+export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const provider = url.searchParams.get('provider') || 'google';
   const returnTo = normalizeReturnToPath(url.searchParams.get('returnTo') || DEFAULT_RETURN_TO);
@@ -53,7 +53,7 @@ export async function GET(request: ExpoRequest): Promise<ExpoResponse> {
     errorUrl.searchParams.set('error', 'invalid_provider');
     errorUrl.searchParams.set('message', `Provider '${provider}' is not supported`);
 
-    return new ExpoResponse(null, {
+    return new Response(null, {
       status: 302,
       headers: { 'Location': errorUrl.toString() }
     });
@@ -65,6 +65,7 @@ export async function GET(request: ExpoRequest): Promise<ExpoResponse> {
   // Store return URL in cookie for callback fallback flows.
   const cookieValue = encodeURIComponent(returnTo);
   const setCookieHeader = `oauth_return_to=${cookieValue}; Path=/; SameSite=Lax; Max-Age=3600${secureFlag}`;
+  const feOriginCookie = feOrigin ? `oauth_fe_origin=${encodeURIComponent(feOrigin)}; Path=/; SameSite=Lax; Max-Age=3600${secureFlag}` : null;
 
   // Redirect to Directus OAuth endpoint
   // Directus will:
@@ -74,16 +75,7 @@ export async function GET(request: ExpoRequest): Promise<ExpoResponse> {
   // 4. Directus exchanges code for tokens
   // 5. Directus redirects to /auth/callback with tokens in URL or cookies
   // Directus v11 OAuth endpoint format: /auth/login/{provider}?redirect={url}
-  let callbackOrigin = url.origin;
-  if (feOrigin) {
-    try {
-      callbackOrigin = new URL(feOrigin).origin;
-    } catch {
-      // Ignore invalid feOrigin and fallback to API origin
-    }
-  }
-
-  const callbackUrl = new URL('/auth/callback', callbackOrigin);
+  const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   // Force JSON token mode so cross-site frontends don't depend on Directus cookies.
   directusOAuthUrl.searchParams.set('mode', 'json');
@@ -99,12 +91,15 @@ export async function GET(request: ExpoRequest): Promise<ExpoResponse> {
   headers.set('Location', directusOAuthUrl.toString());
   headers.set('Cache-Control', 'no-store');
   headers.append('Set-Cookie', setCookieHeader);
+  if (feOriginCookie) {
+    headers.append('Set-Cookie', feOriginCookie);
+  }
   // Clear stale Directus host cookies before starting a new OAuth session.
   headers.append('Set-Cookie', `directus_session_token=; Path=/; SameSite=Lax; Max-Age=0${secureFlag}`);
   headers.append('Set-Cookie', `directus_refresh_token=; Path=/; SameSite=Lax; Max-Age=0${secureFlag}`);
   headers.append('Set-Cookie', `directus_refresh_token=; Path=/auth/refresh; SameSite=Lax; Max-Age=0${secureFlag}`);
 
-  return new ExpoResponse(null, {
+  return new Response(null, {
     status: 302,
     headers
   });
