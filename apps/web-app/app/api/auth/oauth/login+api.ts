@@ -39,6 +39,7 @@ export async function GET(request: ExpoRequest): Promise<ExpoResponse> {
   const url = new URL(request.url);
   const provider = url.searchParams.get('provider') || 'google';
   const returnTo = normalizeReturnToPath(url.searchParams.get('returnTo') || DEFAULT_RETURN_TO);
+  const feOrigin = url.searchParams.get('feOrigin');
 
   console.log('[OAuth Login] Starting OAuth flow via Directus');
   console.log('[OAuth Login] Provider:', provider);
@@ -73,7 +74,16 @@ export async function GET(request: ExpoRequest): Promise<ExpoResponse> {
   // 4. Directus exchanges code for tokens
   // 5. Directus redirects to /auth/callback with tokens in URL or cookies
   // Directus v11 OAuth endpoint format: /auth/login/{provider}?redirect={url}
-  const callbackUrl = new URL('/auth/callback', url.origin);
+  let callbackOrigin = url.origin;
+  if (feOrigin) {
+    try {
+      callbackOrigin = new URL(feOrigin).origin;
+    } catch {
+      // Ignore invalid feOrigin and fallback to API origin
+    }
+  }
+
+  const callbackUrl = new URL('/auth/callback', callbackOrigin);
   callbackUrl.searchParams.set('returnTo', returnTo);
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   // Force JSON token mode so cross-site frontends don't depend on Directus cookies.

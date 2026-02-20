@@ -301,7 +301,7 @@ export class DirectusAuthProvider implements IAuthProvider {
         const returnTo = storedReturnTo.replace(/\/\([^/]+\)/g, '') || '/dashboard/explore';
 
         const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || `${currentOrigin}/api`;
-        const oauthUrl = `${apiBaseUrl}/auth/oauth/login?provider=${provider}&returnTo=${encodeURIComponent(returnTo)}`;
+        const oauthUrl = `${apiBaseUrl}/auth/oauth/login?provider=${provider}&returnTo=${encodeURIComponent(returnTo)}&feOrigin=${encodeURIComponent(currentOrigin)}`;
 
         console.log('🔐 Starting OAuth via proxy...');
         console.log('📍 OAuth URL:', oauthUrl);

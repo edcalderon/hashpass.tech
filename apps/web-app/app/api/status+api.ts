@@ -98,7 +98,7 @@ export async function getSystemHealthCheck(eventId: string = 'bsl2025'): Promise
   try {
     // Check database connectivity and key tables
     const dbStartTime = Date.now();
-    
+
     // 1. Check event_agenda table
     try {
       const { data: latestUpdate, error: agendaError } = await supabase
@@ -350,12 +350,17 @@ export async function getSystemHealthCheck(eventId: string = 'bsl2025'): Promise
 
     // Determine overall status
     if (healthCheck.services.database.status === 'unhealthy') {
-      healthCheck.status = 'unhealthy';
+      const anyTablesAccessible = Object.values(healthCheck.services.database.tables).some(
+        (table) => table.accessible
+      );
+      healthCheck.status = anyTablesAccessible ? 'degraded' : 'unhealthy';
     } else if (
       healthCheck.services.database.status === 'healthy' &&
       healthCheck.services.email.status === 'healthy'
     ) {
       healthCheck.status = 'healthy';
+    } else {
+      healthCheck.status = 'degraded';
     }
 
     return healthCheck;
@@ -393,7 +398,7 @@ export async function GET(request: Request) {
 
   try {
     const healthCheck = await getSystemHealthCheck(eventId);
-    
+
     // Set HTTP status code based on health
     const httpStatus =
       healthCheck.status === 'healthy' ? 200 : healthCheck.status === 'degraded' ? 200 : 503;
