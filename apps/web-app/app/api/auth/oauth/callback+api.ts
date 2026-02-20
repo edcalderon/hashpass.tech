@@ -6,14 +6,11 @@ const DIRECTUS_URL =
 
 // OAuth Callback Handler
 //
-// After Directus processes the Google OAuth, it redirects here with auth cookies
-// on the Directus domain (sso-dev.hashpass.co). Cross-domain cookies don't work
-// in modern browsers, so we redirect to a TOKEN RELAY PAGE hosted on the Directus
-// domain itself. This relay page:
-//   1. Runs on sso-dev.hashpass.co (same domain as cookies = first-party)
-//   2. Calls /auth/refresh with credentials:include (cookie IS sent)
-//   3. Gets access_token + refresh_token from JSON response
-//   4. Redirects to frontend /auth/callback#access_token=xxx&refresh_token=xxx
+// DESIGN: Since AUTH_GOOGLE_MODE=json is set on the Directus server,
+// Directus will append access_token and refresh_token to this redirect
+// URL as query parameters. This allows us to capture them server-side
+// and relay them to the frontend via the URL fragment, bypassing all
+// cross-domain cookie restrictions.
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -25,7 +22,6 @@ export async function GET(request: Request): Promise<Response> {
   console.log('[OAuth Callback] Processing callback from Directus');
   console.log('[OAuth Callback] Frontend origin:', feOrigin);
   console.log('[OAuth Callback] Return to:', returnTo);
-  console.log('[OAuth Callback] Directus URL:', DIRECTUS_URL);
 
   // Check for Directus error
   if (reason) {
@@ -39,35 +35,39 @@ export async function GET(request: Request): Promise<Response> {
     });
   }
 
-  // Check URL params for tokens
+  // Capture tokens from URL parameters (mode=json)
   const accessToken = url.searchParams.get('access_token');
+  const refreshToken = url.searchParams.get('refresh_token');
+
   if (accessToken) {
-    console.log('[OAuth Callback] ✅ Found access_token in URL');
+    console.log('[OAuth Callback] ✅ Success! Received tokens from Directus.');
     const redirectUrl = new URL('/auth/callback', feOrigin);
+    // Use fragment for tokens to keep them out of server logs on the final jump
     const fragment = new URLSearchParams({
       access_token: accessToken,
-      ...(url.searchParams.get('refresh_token') && { refresh_token: url.searchParams.get('refresh_token')! })
+      ...(refreshToken && { refresh_token: refreshToken })
     });
+
     return new Response(null, {
       status: 302,
-      headers: { 'Location': `${redirectUrl.toString()}#${fragment.toString()}`, 'Cache-Control': 'no-store' }
+      headers: {
+        'Location': `${redirectUrl.toString()}#${fragment.toString()}`,
+        'Cache-Control': 'no-store'
+      }
     });
   }
 
-  // Redirect to the TOKEN RELAY page on the Directus domain.
-  // This page runs same-origin JS that can read the httpOnly refresh_token cookie,
-  // exchanges it for an access_token, and redirects to the frontend with tokens.
-  const relayUrl = new URL('/auth-relay', DIRECTUS_URL);
-  relayUrl.searchParams.set('fe', feOrigin);
-  relayUrl.searchParams.set('rt', returnTo);
+  // If we reach here, Directus completed without tokens or error.
+  // This happens if the session mode is still somehow being forced or the payload is missing.
+  console.error('[OAuth Callback] ❌ Failed! No tokens found in URL.');
+  console.log('[OAuth Callback] Params received:', Array.from(url.searchParams.keys()));
 
-  console.log('[OAuth Callback] ↩️ Redirecting to token relay:', relayUrl.toString());
+  const errorUrl = new URL('/auth', feOrigin);
+  errorUrl.searchParams.set('error', 'no_tokens');
+  errorUrl.searchParams.set('message', 'Directus completed OAuth but did not return tokens in the URL.');
 
   return new Response(null, {
     status: 302,
-    headers: {
-      'Location': relayUrl.toString(),
-      'Cache-Control': 'no-store'
-    }
+    headers: { 'Location': errorUrl.toString(), 'Cache-Control': 'no-store' }
   });
 }

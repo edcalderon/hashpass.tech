@@ -68,20 +68,19 @@ export async function GET(request: Request): Promise<Response> {
     return new Response(null, { status: 302, headers: { 'Location': errorUrl.toString() } });
   }
 
-  // Build callback URL with feOrigin and returnTo encoded as query params
-  // (cookies don't survive cross-domain redirect chains through Directus)
-  const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
-  callbackUrl.searchParams.set('fe', feOrigin);
-  callbackUrl.searchParams.set('rt', returnTo);
+  // Build relay URL with feOrigin and returnTo encoded as query params
+  const relayUrl = new URL('/auth-relay', DIRECTUS_URL);
+  relayUrl.searchParams.set('fe', feOrigin);
+  relayUrl.searchParams.set('rt', returnTo);
 
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   directusOAuthUrl.searchParams.set('mode', 'json');
-  directusOAuthUrl.searchParams.set('redirect', callbackUrl.toString());
+  directusOAuthUrl.searchParams.set('redirect', relayUrl.toString());
   if (provider === 'google') {
     directusOAuthUrl.searchParams.set('prompt', 'consent');
   }
 
-  console.log('[OAuth Login] Callback URL:', callbackUrl.toString());
+  console.log('[OAuth Login] Relay URL:', relayUrl.toString());
   console.log('[OAuth Login] Directus OAuth URL:', directusOAuthUrl.toString());
 
   return new Response(null, {
