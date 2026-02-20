@@ -145,6 +145,11 @@ services:
       # OAuth session cookies for localhost
       SESSION_COOKIE_SAME_SITE: "${SESSION_COOKIE_SAME_SITE:-lax}"
       
+      # Cross-domain refresh token cookies
+      REFRESH_TOKEN_COOKIE_SAME_SITE: "${REFRESH_TOKEN_COOKIE_SAME_SITE:-none}"
+      REFRESH_TOKEN_COOKIE_SECURE: "${REFRESH_TOKEN_COOKIE_SECURE:-true}"
+      REFRESH_TOKEN_COOKIE_DOMAIN: "${REFRESH_TOKEN_COOKIE_DOMAIN:-}"
+      
       # ===========================================
       # Caching (Disabled for e2-micro)
       # ===========================================
