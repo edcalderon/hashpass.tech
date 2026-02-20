@@ -133,12 +133,18 @@ frontend:
         - ./tools/scripts/package-lambda.sh
         - |
           if [ -f lambda-deployment.zip ]; then
-            echo "🚀 Deploying Lambda function: hashpass-api-handler"
+            # Branch-aware Lambda function target
+            if [ "$AWS_BRANCH" = "develop" ]; then
+              LAMBDA_FUNCTION_NAME="hashpass-dev-expo-router-api"
+            else
+              LAMBDA_FUNCTION_NAME="hashpass-api-handler"
+            fi
+            echo "🚀 Deploying Lambda function: $LAMBDA_FUNCTION_NAME"
             echo "Current branch: $AWS_BRANCH"
             
             # Deploy Lambda and capture result
             if aws lambda update-function-code \
-              --function-name hashpass-api-handler \
+              --function-name $LAMBDA_FUNCTION_NAME \
               --region us-east-1 \
               --zip-file fileb://lambda-deployment.zip; then
               echo "✅ Lambda function deployment completed successfully"
