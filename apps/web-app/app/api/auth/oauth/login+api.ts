@@ -69,7 +69,7 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   // Build relay URL with feOrigin and returnTo encoded as query params
-  const relayUrl = new URL('/auth-relay', DIRECTUS_URL);
+  const relayUrl = new URL('/auth-relay/', DIRECTUS_URL);
   relayUrl.searchParams.set('fe', feOrigin);
   relayUrl.searchParams.set('rt', returnTo);
 
