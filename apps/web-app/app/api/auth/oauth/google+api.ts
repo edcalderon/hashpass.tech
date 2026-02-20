@@ -156,6 +156,7 @@ export async function GET(request: Request): Promise<Response> {
             email: userEmail,
             first_name: userName,
             role: process.env.DEFAULT_ROLE_ID,
+            provider: 'default',
             status: 'active'
           })
         });
@@ -180,6 +181,10 @@ export async function GET(request: Request): Promise<Response> {
       const tempPassword = Buffer.from(Math.random().toString()).toString('base64').substring(0, 16);
 
       // Update user with temporary password using admin token
+      // IMPORTANT: Also reset provider to 'default' and clear auth_data
+      // so that Directus allows password-based login for this user.
+      // Without this, users created via SSO have provider='google' which
+      // blocks password authentication entirely.
       const updateUserResponse = await fetch(`${DIRECTUS_URL}/users/${userId}`, {
         method: 'PATCH',
         headers: {
@@ -187,7 +192,9 @@ export async function GET(request: Request): Promise<Response> {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          password: tempPassword
+          password: tempPassword,
+          provider: 'default',
+          auth_data: null
         })
       });
 
@@ -222,15 +229,17 @@ export async function GET(request: Request): Promise<Response> {
           console.log('[Google OAuth] Access token:', tokens.access_token.substring(0, 20) + '...');
           console.log('[Google OAuth] Redirecting to:', returnTo);
 
-          // Build full redirect URL with tokens in fragment
-          const redirectUrl = new URL(returnTo, feOrigin);
+          // Build redirect URL to the auth callback page (which has token extraction logic)
+          // The callback page will extract tokens from the hash fragment and establish session
+          const callbackUrl = new URL('/(shared)/auth/callback', feOrigin);
+          callbackUrl.searchParams.set('rt', typeof returnTo === 'string' && returnTo.startsWith('http') ? new URL(returnTo).pathname : (returnTo || '/dashboard/explore'));
           const fragment = new URLSearchParams({
             access_token: tokens.access_token,
             ...(tokens.refresh_token && { refresh_token: tokens.refresh_token }),
             email: userEmail
           });
 
-          const finalUrl = `${redirectUrl.toString().split('#')[0]}#${fragment.toString()}`;
+          const finalUrl = `${callbackUrl.toString().split('#')[0]}#${fragment.toString()}`;
           console.log('[Google OAuth] Final redirect URL:', finalUrl.substring(0, 100) + '...');
 
           return new ExpoResponse(null, {
