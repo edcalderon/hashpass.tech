@@ -31,14 +31,23 @@ frontend:
             if [ -z "$AMPLIFY_SHOW_ALL_EVENTS" ]; then export AMPLIFY_SHOW_ALL_EVENTS="true"; fi
             if [ -z "$AMPLIFY_EVENT_ID" ]; then export AMPLIFY_EVENT_ID="default"; fi
             if [ -z "$AMPLIFY_EVENT_DOMAIN" ]; then export AMPLIFY_EVENT_DOMAIN="hashpass.tech"; fi
+            if [ -z "$DIRECTUS_URL" ]; then export DIRECTUS_URL="https://sso.hashpass.co"; fi
+            if [ -z "$EXPO_PUBLIC_DIRECTUS_URL" ]; then export EXPO_PUBLIC_DIRECTUS_URL="https://sso.hashpass.co"; fi
+            if [ -z "$EXPO_PUBLIC_API_BASE_URL" ]; then export EXPO_PUBLIC_API_BASE_URL="https://api.hashpass.tech/api"; fi
           elif [ "$AWS_BRANCH" = "bsl2025" ]; then
             if [ -z "$AMPLIFY_SHOW_ALL_EVENTS" ]; then export AMPLIFY_SHOW_ALL_EVENTS="false"; fi
             if [ -z "$AMPLIFY_EVENT_ID" ]; then export AMPLIFY_EVENT_ID="bsl2025"; fi
             if [ -z "$AMPLIFY_EVENT_DOMAIN" ]; then export AMPLIFY_EVENT_DOMAIN="bsl2025.hashpass.tech"; fi
+            if [ -z "$DIRECTUS_URL" ]; then export DIRECTUS_URL="https://sso.hashpass.co"; fi
+            if [ -z "$EXPO_PUBLIC_DIRECTUS_URL" ]; then export EXPO_PUBLIC_DIRECTUS_URL="https://sso.hashpass.co"; fi
+            if [ -z "$EXPO_PUBLIC_API_BASE_URL" ]; then export EXPO_PUBLIC_API_BASE_URL="https://api.hashpass.tech/api"; fi
           else
             if [ -z "$AMPLIFY_SHOW_ALL_EVENTS" ]; then export AMPLIFY_SHOW_ALL_EVENTS="false"; fi
             if [ -z "$AMPLIFY_EVENT_ID" ]; then export AMPLIFY_EVENT_ID="bsl2025"; fi
             if [ -z "$AMPLIFY_EVENT_DOMAIN" ]; then export AMPLIFY_EVENT_DOMAIN="bsl2025.hashpass.tech"; fi
+            if [ -z "$DIRECTUS_URL" ]; then export DIRECTUS_URL="https://sso-dev.hashpass.co"; fi
+            if [ -z "$EXPO_PUBLIC_DIRECTUS_URL" ]; then export EXPO_PUBLIC_DIRECTUS_URL="https://sso-dev.hashpass.co"; fi
+            if [ -z "$EXPO_PUBLIC_API_BASE_URL" ]; then export EXPO_PUBLIC_API_BASE_URL="https://api-dev.hashpass.tech/api"; fi
           fi
         - 'echo "Building for branch: $AWS_BRANCH"'
         - 'echo "Event ID: $AMPLIFY_EVENT_ID"'
