@@ -70,6 +70,16 @@ frontend:
         - export WEBPACK_MEMORY_LIMIT=4096
         # Reduce webpack optimization passes to save memory
         - export WEBPACK_OPTIMIZE_MINIMIZE=true
+        # CRITICAL: Expo's @expo/env loads .env.production which OVERRIDES shell env vars.
+        # For non-production branches, patch .env.production to point to dev services.
+        - |
+          if [ "$AWS_BRANCH" != "main" ] && [ "$AWS_BRANCH" != "bsl2025" ]; then
+            echo "🔧 Patching .env.production for dev branch ($AWS_BRANCH)..."
+            sed -i 's|DIRECTUS_URL=https://sso.hashpass.co|DIRECTUS_URL=https://sso-dev.hashpass.co|g' apps/web-app/.env.production
+            sed -i 's|EXPO_PUBLIC_DIRECTUS_URL=https://sso.hashpass.co|EXPO_PUBLIC_DIRECTUS_URL=https://sso-dev.hashpass.co|g' apps/web-app/.env.production
+            echo "✅ Patched .env.production: DIRECTUS_URL → sso-dev.hashpass.co"
+            cat apps/web-app/.env.production | grep DIRECTUS
+          fi
         # Build the Expo web app from the monorepo package and copy artifacts to root dist/
         - '[ -f pnpm-lock.yaml ] && pnpm --dir apps/web-app run build || npm --prefix apps/web-app run build'
         # Ensure no lingering Node workers keep memory pinned before copy steps
