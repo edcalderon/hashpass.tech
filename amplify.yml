@@ -70,16 +70,22 @@ frontend:
         - export WEBPACK_MEMORY_LIMIT=4096
         # Reduce webpack optimization passes to save memory
         - export WEBPACK_OPTIMIZE_MINIMIZE=true
-        # CRITICAL: Expo's @expo/env loads .env.production which OVERRIDES shell env vars.
-        # For non-production branches, patch .env.production to point to dev services.
+        # CRITICAL: .env.production is gitignored, so we CREATE it at build time.
+        # Expo's @expo/env loads .env.production when NODE_ENV=production and uses
+        # it for EXPO_PUBLIC_ variables baked into the JS bundle.
         - |
-          if [ "$AWS_BRANCH" != "main" ] && [ "$AWS_BRANCH" != "bsl2025" ]; then
-            echo "🔧 Patching .env.production for dev branch ($AWS_BRANCH)..."
-            sed -i 's|DIRECTUS_URL=https://sso.hashpass.co|DIRECTUS_URL=https://sso-dev.hashpass.co|g' apps/web-app/.env.production
-            sed -i 's|EXPO_PUBLIC_DIRECTUS_URL=https://sso.hashpass.co|EXPO_PUBLIC_DIRECTUS_URL=https://sso-dev.hashpass.co|g' apps/web-app/.env.production
-            echo "✅ Patched .env.production: DIRECTUS_URL → sso-dev.hashpass.co"
-            cat apps/web-app/.env.production | grep DIRECTUS
+          if [ "$AWS_BRANCH" = "main" ] || [ "$AWS_BRANCH" = "bsl2025" ]; then
+            DIRECTUS_HOST="https://sso.hashpass.co"
+          else
+            DIRECTUS_HOST="https://sso-dev.hashpass.co"
           fi
+          echo "EXPO_PUBLIC_BACKEND_PROVIDER=supabase" > apps/web-app/.env.production
+          echo "EXPO_PUBLIC_SUPABASE_URL=https://fxgftanraszjjyeidvia.supabase.co" >> apps/web-app/.env.production
+          echo "EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_iJeMRvvMCTiJJzo75egwog_BgQCUykM" >> apps/web-app/.env.production
+          echo "DIRECTUS_URL=${DIRECTUS_HOST}" >> apps/web-app/.env.production
+          echo "EXPO_PUBLIC_DIRECTUS_URL=${DIRECTUS_HOST}" >> apps/web-app/.env.production
+          echo "✅ Created .env.production with DIRECTUS_URL=${DIRECTUS_HOST}"
+          cat apps/web-app/.env.production
         # Build the Expo web app from the monorepo package and copy artifacts to root dist/
         - '[ -f pnpm-lock.yaml ] && pnpm --dir apps/web-app run build || npm --prefix apps/web-app run build'
         # Ensure no lingering Node workers keep memory pinned before copy steps
