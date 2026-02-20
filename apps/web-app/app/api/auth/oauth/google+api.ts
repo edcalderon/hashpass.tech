@@ -20,7 +20,13 @@ export async function GET(request: Request): Promise<Response> {
   // Try to get returnTo from cookie (set by login endpoint)
   const cookies = request.headers.get('Cookie') || '';
   const returnToCookie = cookies.split(';').find(c => c.trim().startsWith('oauth_return_to='));
-  let returnTo = returnToCookie ? decodeURIComponent(returnToCookie.split('=')[1]) : '/(shared)/dashboard/explore';
+  let returnTo = '/dashboard/explore';
+  if (returnToCookie) {
+    const eqIdx = returnToCookie.indexOf('=');
+    if (eqIdx !== -1) {
+      try { returnTo = decodeURIComponent(returnToCookie.substring(eqIdx + 1).trim()); } catch { }
+    }
+  }
 
   // Extract frontend origin if returnTo is an absolute URL
   let feOrigin = url.origin;
@@ -39,7 +45,7 @@ export async function GET(request: Request): Promise<Response> {
   if (!code) {
     const error = url.searchParams.get('error');
     console.error('[Google OAuth] Google returned error:', error);
-    const errorUrl = new URL('/(shared)/auth', feOrigin);
+    const errorUrl = new URL('/auth', feOrigin);
     errorUrl.searchParams.set('error', error || 'access_denied');
     errorUrl.searchParams.set('message', 'Google authentication was denied or failed');
 
@@ -231,7 +237,7 @@ export async function GET(request: Request): Promise<Response> {
 
           // Build redirect URL to the auth callback page (which has token extraction logic)
           // The callback page will extract tokens from the hash fragment and establish session
-          const callbackUrl = new URL('/(shared)/auth/callback', feOrigin);
+          const callbackUrl = new URL('/auth/callback', feOrigin);
           callbackUrl.searchParams.set('rt', typeof returnTo === 'string' && returnTo.startsWith('http') ? new URL(returnTo).pathname : (returnTo || '/dashboard/explore'));
           const fragment = new URLSearchParams({
             access_token: tokens.access_token,
@@ -265,7 +271,7 @@ export async function GET(request: Request): Promise<Response> {
   } catch (error) {
     console.error('[Google OAuth] ❌ Error:', error instanceof Error ? error.message : String(error));
 
-    const errorUrl = new URL('/(shared)/auth', feOrigin);
+    const errorUrl = new URL('/auth', feOrigin);
     errorUrl.searchParams.set('error', 'oauth_failed');
     errorUrl.searchParams.set('message', error instanceof Error ? error.message : 'OAuth authentication failed');
 
