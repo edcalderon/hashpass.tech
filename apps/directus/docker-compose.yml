@@ -20,12 +20,12 @@ services:
     image: directus/directus:11.14.0
     container_name: hashpass-directus
     restart: unless-stopped
-    
+
     # Expose to localhost only in production
     # For local development, use 0.0.0.0 to allow network access
     ports:
       - "${DIRECTUS_HOST:-0.0.0.0}:${DIRECTUS_PORT:-8055}:8055"
-    
+
     environment:
       # ===========================================
       # Core Configuration
@@ -33,10 +33,10 @@ services:
       KEY: ${DIRECTUS_KEY}
       SECRET: ${DIRECTUS_SECRET}
       NODE_ENV: production
-      
+
       # Disable telemetry
       TELEMETRY: "false"
-      
+
       # ===========================================
       # Database (External PostgreSQL)
       # ===========================================
@@ -47,36 +47,36 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_SSL: "false"
-      
+
       # Connection pooling (optimized for small instance)
       DB_POOL__MIN: 0
       DB_POOL__MAX: 5
       DB_POOL__IDLE_TIMEOUT_MILLIS: 30000
-      
+
       # ===========================================
       # Admin User (Bootstrap)
       # ===========================================
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      
+
       # ===========================================
       # Public URL
       # ===========================================
       PUBLIC_URL: ${PUBLIC_URL:-https://sso.hashpass.co}
-      
+
       # ===========================================
       # Authentication
       # ===========================================
       AUTH_PROVIDERS: "${AUTH_PROVIDERS:-local,google}"
       AUTH_LOCAL_DRIVER: "${AUTH_LOCAL_DRIVER:-local}"
-      
+
       # JWT Configuration
       ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
       REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-7d}
-      
+
       # Password policy
       AUTH_PASSWORD_POLICY: ${AUTH_PASSWORD_POLICY:-/^.{8,}$$/}
-      
+
       # ===========================================
       # OAuth Providers (optional)
       # ===========================================
@@ -90,8 +90,8 @@ services:
       AUTH_GOOGLE_MODE: "${AUTH_GOOGLE_MODE:-session}"
       AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION: "${AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION:-true}"
       AUTH_GOOGLE_DEFAULT_ROLE_ID: ${DEFAULT_ROLE_ID:-}
-      AUTH_GOOGLE_REDIRECT_ALLOW_LIST: "${AUTH_GOOGLE_REDIRECT_ALLOW_LIST:-http://localhost:8081/auth/callback,https://sso.hashpass.co/auth/callback,https://sso-dev.hashpass.co/auth/callback,https://blockchainsummit.hashpass.lat/auth/callback,https://blockchainsummit-dev.hashpass.lat/auth/callback,https://api-dev.hashpass.tech/auth/callback,https://api.hashpass.tech/auth/callback}"
-      
+      AUTH_GOOGLE_REDIRECT_ALLOW_LIST: "${AUTH_GOOGLE_REDIRECT_ALLOW_LIST:-http://localhost:8081/auth/callback,https://sso.hashpass.co/auth/callback,https://sso-dev.hashpass.co/auth/callback,https://blockchainsummit.hashpass.lat/auth/callback,https://blockchainsummit-dev.hashpass.lat/auth/callback,https://api-dev.hashpass.tech/auth/callback,https://api.hashpass.tech/auth/callback,https://api-dev.hashpass.tech/api/auth/oauth/callback,https://api.hashpass.tech/api/auth/oauth/callback}"
+
       # Discord OAuth
       AUTH_DISCORD_DRIVER: oauth2
       AUTH_DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
@@ -101,7 +101,7 @@ services:
       AUTH_DISCORD_PROFILE_URL: https://discord.com/api/users/@me
       AUTH_DISCORD_ALLOW_PUBLIC_REGISTRATION: "true"
       AUTH_DISCORD_DEFAULT_ROLE_ID: ${DEFAULT_ROLE_ID:-}
-      
+
       # ===========================================
       # Storage (Cloud)
       # ===========================================
@@ -114,7 +114,7 @@ services:
       STORAGE_CLOUD_KEY: ${STORAGE_KEY}
       STORAGE_CLOUD_SECRET: ${STORAGE_SECRET}
       STORAGE_CLOUD_ENDPOINT: ${STORAGE_ENDPOINT:-}
-      
+
       # ===========================================
       # Email (SMTP)
       # ===========================================
@@ -125,7 +125,7 @@ services:
       EMAIL_SMTP_USER: ${SMTP_USER:-}
       EMAIL_SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       EMAIL_SMTP_SECURE: ${SMTP_SECURE:-false}
-      
+
       # ===========================================
       # Rate Limiting
       # ===========================================
@@ -133,7 +133,7 @@ services:
       RATE_LIMITER_STORE: memory
       RATE_LIMITER_POINTS: 100
       RATE_LIMITER_DURATION: 60
-      
+
       # ===========================================
       # CORS (Allow your frontend domains)
       # ===========================================
@@ -144,30 +144,30 @@ services:
 
       # OAuth session cookies for localhost
       SESSION_COOKIE_SAME_SITE: "${SESSION_COOKIE_SAME_SITE:-lax}"
-      
+
       # Cross-domain refresh token cookies
       REFRESH_TOKEN_COOKIE_SAME_SITE: "${REFRESH_TOKEN_COOKIE_SAME_SITE:-none}"
       REFRESH_TOKEN_COOKIE_SECURE: "${REFRESH_TOKEN_COOKIE_SECURE:-true}"
       REFRESH_TOKEN_COOKIE_DOMAIN: "${REFRESH_TOKEN_COOKIE_DOMAIN:-}"
-      
+
       # ===========================================
       # Caching (Disabled for e2-micro)
       # ===========================================
       CACHE_ENABLED: "false"
-      
+
       # ===========================================
       # Logging
       # ===========================================
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_STYLE: pretty
-      
+
       # ===========================================
       # WebSockets (Realtime)
       # ===========================================
       WEBSOCKETS_ENABLED: "true"
       WEBSOCKETS_REST_ENABLED: "true"
       WEBSOCKETS_GRAPHQL_ENABLED: "false"
-      
+
     # Memory limits for e2-micro
     deploy:
       resources:
@@ -175,20 +175,20 @@ services:
           memory: 512M
         reservations:
           memory: 256M
-    
+
     # Health check
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8055/server/ping"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8055/server/ping" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-    
+
     # Persist uploads and extensions (if using local storage)
     volumes:
       - directus_uploads:/directus/uploads
       - directus_extensions:/directus/extensions
-    
+
     # Logging configuration
     logging:
       driver: "json-file"
@@ -199,6 +199,7 @@ services:
 volumes:
   directus_uploads:
   directus_extensions:
+
 
 networks:
   default:
