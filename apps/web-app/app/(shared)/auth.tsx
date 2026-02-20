@@ -21,6 +21,7 @@ import { OptimizedSplashCursor } from '../../components/OptimizedSplashCursor';
 import { useTheme } from '../../hooks/useTheme';
 import { useToastHelpers } from '../../contexts/ToastContext';
 import PrivacyTermsModal from '../../components/PrivacyTermsModal';
+import VersionDisplay from '../../components/VersionDisplay';
 import { useAuth } from '../../hooks/useAuth';
 import { getCurrentLocale, useTranslation } from '../../i18n/i18n';
 import { apiClient } from '../../lib/api-client';
@@ -358,7 +359,7 @@ export default function AuthScreen() {
       );
       const message =
         /email link is invalid or has expired/i.test(rawMessage) ||
-        /otp has expired or is invalid/i.test(rawMessage)
+          /otp has expired or is invalid/i.test(rawMessage)
           ? t('otpInvalid', 'Invalid or expired code.')
           : rawMessage;
 
@@ -743,6 +744,10 @@ export default function AuthScreen() {
                 .
               </Text>
             </View>
+
+            <View style={{ alignItems: 'center', marginTop: 12 }}>
+              <VersionDisplay compact={true} />
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -908,12 +913,12 @@ const getStyles = (isDark: boolean, colors: any) =>
       ...(Platform.OS === 'web'
         ? { boxShadow: isDark ? '0 14px 36px rgba(0,0,0,0.45)' : '0 12px 34px rgba(0,0,0,0.12)' }
         : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.18,
-            shadowRadius: 20,
-            elevation: 6,
-          }),
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.18,
+          shadowRadius: 20,
+          elevation: 6,
+        }),
     },
     title: {
       fontSize: 46,
@@ -1078,12 +1083,12 @@ const getStyles = (isDark: boolean, colors: any) =>
       ...(Platform.OS === 'web'
         ? { boxShadow: '0 -10px 30px rgba(0,0,0,0.25)' }
         : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -6 },
-            shadowOpacity: 0.2,
-            shadowRadius: 12,
-            elevation: 14,
-          }),
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -6 },
+          shadowOpacity: 0.2,
+          shadowRadius: 12,
+          elevation: 14,
+        }),
     },
     countryPickerSheetHandle: {
       alignSelf: 'center',
@@ -1188,12 +1193,12 @@ const getStyles = (isDark: boolean, colors: any) =>
       ...(Platform.OS === 'web'
         ? { boxShadow: '0 4px 14px rgba(200, 16, 0, 0.35)' }
         : {
-            shadowColor: '#c81000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.32,
-            shadowRadius: 8,
-            elevation: 4,
-          }),
+          shadowColor: '#c81000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.32,
+          shadowRadius: 8,
+          elevation: 4,
+        }),
     },
     primaryButtonDisabled: {
       opacity: 0.6,
@@ -1252,12 +1257,12 @@ const getStyles = (isDark: boolean, colors: any) =>
       ...(Platform.OS === 'web'
         ? { boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }
         : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            elevation: 3,
-          }),
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          elevation: 3,
+        }),
     },
     footer: {
       marginTop: 2,
