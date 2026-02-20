@@ -84,7 +84,6 @@ export async function GET(request: ExpoRequest): Promise<ExpoResponse> {
   }
 
   const callbackUrl = new URL('/auth/callback', callbackOrigin);
-  callbackUrl.searchParams.set('returnTo', returnTo);
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   // Force JSON token mode so cross-site frontends don't depend on Directus cookies.
   directusOAuthUrl.searchParams.set('mode', 'json');
