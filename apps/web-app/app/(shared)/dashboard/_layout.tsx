@@ -13,6 +13,7 @@ import type { RootStackParamList } from '@hashpass/types';
 import { useTheme } from '../../../hooks/useTheme';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useAuth } from '../../../hooks/useAuth';
+import { authService } from '@hashpass/auth';
 import { supabase } from '../../../lib/supabase';
 import { useLanguage } from '../../../providers/LanguageProvider';
 import { isAdmin } from '../../../lib/admin-utils';
@@ -55,10 +56,10 @@ function CustomDrawerContent() {
   const gradientAnimation2 = useSharedValue(0);
   const gradientAnimation3 = useSharedValue(0);
   const gradientAnimation4 = useSharedValue(0);
-  
+
   // Logo zoom animation
   const logoScale = useSharedValue(1);
-  
+
   useEffect(() => {
     // Only start animations if animations are enabled
     if (animationsEnabled) {
@@ -179,7 +180,7 @@ function CustomDrawerContent() {
   ] as const;
 
   // Add admin menu item if user is admin
-  const adminMenuItem = isUserAdmin 
+  const adminMenuItem = isUserAdmin
     ? [{ id: 'nav.admin', message: 'Admin Panel', icon: 'shield-checkmark-outline', route: './admin' as const }]
     : [];
 
@@ -216,10 +217,10 @@ function CustomDrawerContent() {
 
     // Only navigate if we're not already on this screen
     const currentPath = pathname || '';
-    const isActive = route.startsWith('./') 
+    const isActive = route.startsWith('./')
       ? currentPath === route || currentPath.endsWith(route.replace('./', ''))
       : currentPath.startsWith(route);
-    
+
     if (!isActive) {
       // Navigate to the route - all routes are relative now
       router.push(route);
@@ -298,7 +299,7 @@ function CustomDrawerContent() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background.default, flex: 1 }]}>
       {/* Drawer Header */}
-      <View style={[styles.drawerHeader, { 
+      <View style={[styles.drawerHeader, {
         backgroundColor: isDark ? colors.primaryLight : colors.primaryDark, // Red in dark mode, blue in light mode
         borderBottomWidth: 2,
         borderBottomColor: colors.primaryContrastText + '33', // 20% opacity white
@@ -311,44 +312,44 @@ function CustomDrawerContent() {
         {/* Animated Fluid Gradient Background Layers - only render when animations enabled */}
         {animationsEnabled ? (
           <>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.fluidGradientLayer,
                 {
-                  backgroundColor: isDark 
+                  backgroundColor: isDark
                     ? 'rgba(175, 13, 1, 0.6)' // Red with high opacity
                     : 'rgba(30, 58, 138, 0.5)', // Blue with high opacity
                 },
                 animatedGradientStyle1
               ]}
             />
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.fluidGradientLayer,
                 {
-                  backgroundColor: isDark 
+                  backgroundColor: isDark
                     ? 'rgba(161, 209, 214, 0.5)' // Cyan with high opacity
                     : 'rgba(0, 122, 255, 0.4)', // Blue with high opacity
                 },
                 animatedGradientStyle2
               ]}
             />
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.fluidGradientLayer,
                 {
-                  backgroundColor: isDark 
+                  backgroundColor: isDark
                     ? 'rgba(255, 215, 0, 0.45)' // Gold with high opacity
                     : 'rgba(100, 181, 246, 0.35)', // Light blue with high opacity
                 },
                 animatedGradientStyle3
               ]}
             />
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.fluidGradientLayer,
                 {
-                  backgroundColor: isDark 
+                  backgroundColor: isDark
                     ? 'rgba(255, 87, 34, 0.45)' // Orange with high opacity
                     : 'rgba(63, 81, 181, 0.35)', // Indigo with high opacity
                 },
@@ -377,11 +378,11 @@ function CustomDrawerContent() {
                 },
                 logoAnimatedStyle
               ]}>
-                <Image 
-                  source={isDark 
+                <Image
+                  source={isDark
                     ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
                     : require('../../../assets/logos/hashpass/logo-full-hashpass-white.svg')
-                  } 
+                  }
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
@@ -413,8 +414,8 @@ function CustomDrawerContent() {
           }
 
           // Check if current path matches the route (handle both relative and absolute routes)
-          const isActive = item.route.startsWith('./') 
-            ? pathname === item.route 
+          const isActive = item.route.startsWith('./')
+            ? pathname === item.route
             : pathname.startsWith(item.route);
           const stepOrder = index + 2; // Start from 2 (after menu button)
           const stepNames: Record<string, string> = {
@@ -434,7 +435,7 @@ function CustomDrawerContent() {
             './admin': 'Admin Panel: Manage passes, scan QR codes, and create meeting matches. Admin access only.',
           };
           return (
-            <CopilotStep 
+            <CopilotStep
               key={item.route as string}
               text={stepTexts[item.route] || `Navigate to ${getLabel(item.id)}`}
               order={stepOrder}
@@ -444,23 +445,23 @@ function CustomDrawerContent() {
                 style={[
                   styles.menuItem,
                   {
-                    backgroundColor: isActive 
-                      ? (isDark 
-                          ? `rgba(175, 13, 1, 0.15)` // Red with transparency
-                          : `rgba(175, 13, 1, 0.1)`) // Red with transparency
-                      : (isDark 
-                          ? 'rgba(255, 255, 255, 0.05)' 
-                          : 'rgba(0, 0, 0, 0.03)'), // Subtle background
+                    backgroundColor: isActive
+                      ? (isDark
+                        ? `rgba(175, 13, 1, 0.15)` // Red with transparency
+                        : `rgba(175, 13, 1, 0.1)`) // Red with transparency
+                      : (isDark
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'rgba(0, 0, 0, 0.03)'), // Subtle background
                     borderLeftWidth: isActive ? 4 : 0,
                     borderLeftColor: isActive ? colors.primaryLight : 'transparent',
                   }
                 ]}
                 onPress={() => {
                   console.log(`Sidebar item clicked: ${item.route}, stepOrder: ${stepOrder}`);
-                  
+
                   // Navigate to the actual view first
                   handleNavigation(item.route);
-                  
+
                   // Continue to next tutorial step after a short delay
                   const nextStep = stepOrder + 1;
                   setTimeout(() => {
@@ -469,7 +470,7 @@ function CustomDrawerContent() {
                     } else if (copilotHook?.handleNth && typeof copilotHook.handleNth === 'function') {
                       copilotHook.handleNth(nextStep);
                     }
-                    
+
                     // If this is the last sidebar item (Settings), close drawer after tutorial moves
                     // This ensures main content steps (Your Passes, Quick Access, etc.) are visible
                     if (index === menuItems.length - 1) {
@@ -481,46 +482,46 @@ function CustomDrawerContent() {
                 }}
                 activeOpacity={0.6}
               >
-              <View style={[
-                styles.menuIconContainer,
-                {
-                  backgroundColor: isActive 
-                    ? (isDark 
-                        ? `rgba(175, 13, 1, 0.2)` 
-                        : `rgba(175, 13, 1, 0.15)`)
-                    : (isDark 
-                        ? 'rgba(255, 255, 255, 0.08)' 
-                        : 'rgba(0, 0, 0, 0.05)'),
-                }
-              ]}>
-                <Ionicons
-                  name={item.icon as any}
-                  size={22}
-                  color={isActive ? colors.primaryLight : colors.text.secondary}
-                />
-              </View>
-              <Text
-                style={[
-                  styles.menuText,
+                <View style={[
+                  styles.menuIconContainer,
                   {
-                    color: isActive ? colors.text.primary : colors.text.secondary,
-                    fontWeight: isActive ? '700' : '500',
-                    fontSize: 15,
+                    backgroundColor: isActive
+                      ? (isDark
+                        ? `rgba(175, 13, 1, 0.2)`
+                        : `rgba(175, 13, 1, 0.15)`)
+                      : (isDark
+                        ? 'rgba(255, 255, 255, 0.08)'
+                        : 'rgba(0, 0, 0, 0.05)'),
                   }
-                ]}
-              >
-                {getLabel(item.id)}
-              </Text>
-              {item.route === './notifications' && unreadCount > 0 && (
-                <View style={styles.menuBadge}>
-                  <Text style={styles.menuBadgeText}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Text>
+                ]}>
+                  <Ionicons
+                    name={item.icon as any}
+                    size={22}
+                    color={isActive ? colors.primaryLight : colors.text.secondary}
+                  />
                 </View>
-              )}
-              {isActive && (
-                <View style={styles.activeIndicator} />
-              )}
+                <Text
+                  style={[
+                    styles.menuText,
+                    {
+                      color: isActive ? colors.text.primary : colors.text.secondary,
+                      fontWeight: isActive ? '700' : '500',
+                      fontSize: 15,
+                    }
+                  ]}
+                >
+                  {getLabel(item.id)}
+                </Text>
+                {item.route === './notifications' && unreadCount > 0 && (
+                  <View style={styles.menuBadge}>
+                    <Text style={styles.menuBadgeText}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+                {isActive && (
+                  <View style={styles.activeIndicator} />
+                )}
               </CopilotTouchableOpacity>
             </CopilotStep>
           );
@@ -551,11 +552,11 @@ function CustomDrawerContent() {
             activeOpacity={0.7}
           >
             <View style={[styles.quickToggleIcon, { backgroundColor: isDark ? '#FFD700' : '#6C63FF' }]}>
-            <Ionicons 
-              name={isDark ? 'sunny' : 'moon'} 
-                size={24} 
-                color="white" 
-            />
+              <Ionicons
+                name={isDark ? 'sunny' : 'moon'}
+                size={24}
+                color="white"
+              />
             </View>
             <Text style={styles.quickToggleLabel}>
               {isDark ? t({ id: 'nav.light', message: 'Light' }) : t({ id: 'nav.dark', message: 'Dark' })}
@@ -569,11 +570,11 @@ function CustomDrawerContent() {
             activeOpacity={0.7}
           >
             <View style={[styles.quickToggleIcon, { backgroundColor: colors.error.main }]}>
-            <Ionicons 
-              name="log-out-outline" 
-                size={24} 
-                color="white" 
-            />
+              <Ionicons
+                name="log-out-outline"
+                size={24}
+                color="white"
+              />
             </View>
             <Text style={[styles.quickToggleLabel, { color: colors.error.main }]}>
               {t({ id: 'nav.logout', message: 'Logout' })}
@@ -598,8 +599,11 @@ export default function DashboardLayout() {
 
   // Verify user is logged in before allowing dashboard access (provider-agnostic)
   React.useEffect(() => {
-    if (!authLoading && !isLoggedIn) {
-      console.warn('⚠️ Not authenticated in dashboard, redirecting to auth');
+    // Check synchronous service state in case React state is falling behind
+    const actuallyAuthenticated = isLoggedIn || authService.isAuthenticated();
+
+    if (!authLoading && !actuallyAuthenticated) {
+      console.warn('⚠️ Not authenticated in dashboard inner layout, redirecting to auth');
       router.replace('/(shared)/auth' as any);
     }
   }, [authLoading, isLoggedIn, router]);
@@ -627,12 +631,12 @@ export default function DashboardLayout() {
       } : { r: 18, g: 18, b: 18 }; // Fallback to dark color
     };
     const bgRgb = hexToRgb(colors.background.default);
-    
+
     // Banner colors - typically blue (#007AFF) or event-specific colors
     // When banner is visible, blend with banner color
     const bannerColor = '#007AFF'; // Default banner color
     const bannerRgb = hexToRgb(bannerColor);
-    
+
     // Interpolate RGB values based on scroll to blend theme color with banner color
     // Only interpolate when animations are enabled
     const blendedR = animationsEnabled ? scrollY.interpolate({
@@ -640,62 +644,62 @@ export default function DashboardLayout() {
       outputRange: [bgRgb.r, Math.round((bgRgb.r + bannerRgb.r) / 2), bannerRgb.r],
       extrapolate: 'clamp',
     }) : bgRgb.r;
-    
+
     const blendedG = animationsEnabled ? scrollY.interpolate({
       inputRange: [0, HEADER_SCROLL_DISTANCE * 0.5, HEADER_SCROLL_DISTANCE],
       outputRange: [bgRgb.g, Math.round((bgRgb.g + bannerRgb.g) / 2), bannerRgb.g],
       extrapolate: 'clamp',
     }) : bgRgb.g;
-    
+
     const blendedB = animationsEnabled ? scrollY.interpolate({
       inputRange: [0, HEADER_SCROLL_DISTANCE * 0.5, HEADER_SCROLL_DISTANCE],
       outputRange: [bgRgb.b, Math.round((bgRgb.b + bannerRgb.b) / 2), bannerRgb.b],
       extrapolate: 'clamp',
     }) : bgRgb.b;
-    
+
     // Build rgba string dynamically with smooth gradient transitions
     // More interpolation points for smoother color transitions
     // At the beginning (scrollY = 0), use full app background color (no transparency)
     // If animations disabled, use solid color like sidebar
     const adjustedHeaderBackground = animationsEnabled
       ? scrollY.interpolate({
-          inputRange: [
-            0, 
-            HEADER_SCROLL_DISTANCE * 0.15, 
-            HEADER_SCROLL_DISTANCE * 0.3, 
-            HEADER_SCROLL_DISTANCE * 0.5, 
-            HEADER_SCROLL_DISTANCE * 0.7, 
-            HEADER_SCROLL_DISTANCE * 0.85,
-            HEADER_SCROLL_DISTANCE
-          ],
-          outputRange: [
-            `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, 1)`,   // Start with full app background color (100% opaque, 100% theme)
-            `rgba(${Math.round(bgRgb.r * 0.9 + bannerRgb.r * 0.1)}, ${Math.round(bgRgb.g * 0.9 + bannerRgb.g * 0.1)}, ${Math.round(bgRgb.b * 0.9 + bannerRgb.b * 0.1)}, 0.9)`,   // 90% theme, 10% banner, slightly transparent
-            `rgba(${Math.round(bgRgb.r * 0.7 + bannerRgb.r * 0.3)}, ${Math.round(bgRgb.g * 0.7 + bannerRgb.g * 0.3)}, ${Math.round(bgRgb.b * 0.7 + bannerRgb.b * 0.3)}, 0.7)`,   // 70% theme, 30% banner
-            `rgba(${Math.round(bgRgb.r * 0.5 + bannerRgb.r * 0.5)}, ${Math.round(bgRgb.g * 0.5 + bannerRgb.g * 0.5)}, ${Math.round(bgRgb.b * 0.5 + bannerRgb.b * 0.5)}, 0.5)`,   // 50% theme, 50% banner
-            `rgba(${Math.round(bgRgb.r * 0.3 + bannerRgb.r * 0.7)}, ${Math.round(bgRgb.g * 0.3 + bannerRgb.g * 0.7)}, ${Math.round(bgRgb.b * 0.3 + bannerRgb.b * 0.7)}, 0.3)`,   // 30% theme, 70% banner
-            `rgba(${Math.round(bgRgb.r * 0.15 + bannerRgb.r * 0.85)}, ${Math.round(bgRgb.g * 0.15 + bannerRgb.g * 0.85)}, ${Math.round(bgRgb.b * 0.15 + bannerRgb.b * 0.85)}, 0.2)`,   // 15% theme, 85% banner
-            `rgba(${bannerRgb.r}, ${bannerRgb.g}, ${bannerRgb.b}, 0.15)`   // 100% banner color when scrolled
-          ],
-          extrapolate: 'clamp',
-        })
+        inputRange: [
+          0,
+          HEADER_SCROLL_DISTANCE * 0.15,
+          HEADER_SCROLL_DISTANCE * 0.3,
+          HEADER_SCROLL_DISTANCE * 0.5,
+          HEADER_SCROLL_DISTANCE * 0.7,
+          HEADER_SCROLL_DISTANCE * 0.85,
+          HEADER_SCROLL_DISTANCE
+        ],
+        outputRange: [
+          `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, 1)`,   // Start with full app background color (100% opaque, 100% theme)
+          `rgba(${Math.round(bgRgb.r * 0.9 + bannerRgb.r * 0.1)}, ${Math.round(bgRgb.g * 0.9 + bannerRgb.g * 0.1)}, ${Math.round(bgRgb.b * 0.9 + bannerRgb.b * 0.1)}, 0.9)`,   // 90% theme, 10% banner, slightly transparent
+          `rgba(${Math.round(bgRgb.r * 0.7 + bannerRgb.r * 0.3)}, ${Math.round(bgRgb.g * 0.7 + bannerRgb.g * 0.3)}, ${Math.round(bgRgb.b * 0.7 + bannerRgb.b * 0.3)}, 0.7)`,   // 70% theme, 30% banner
+          `rgba(${Math.round(bgRgb.r * 0.5 + bannerRgb.r * 0.5)}, ${Math.round(bgRgb.g * 0.5 + bannerRgb.g * 0.5)}, ${Math.round(bgRgb.b * 0.5 + bannerRgb.b * 0.5)}, 0.5)`,   // 50% theme, 50% banner
+          `rgba(${Math.round(bgRgb.r * 0.3 + bannerRgb.r * 0.7)}, ${Math.round(bgRgb.g * 0.3 + bannerRgb.g * 0.7)}, ${Math.round(bgRgb.b * 0.3 + bannerRgb.b * 0.7)}, 0.3)`,   // 30% theme, 70% banner
+          `rgba(${Math.round(bgRgb.r * 0.15 + bannerRgb.r * 0.85)}, ${Math.round(bgRgb.g * 0.15 + bannerRgb.g * 0.85)}, ${Math.round(bgRgb.b * 0.15 + bannerRgb.b * 0.85)}, 0.2)`,   // 15% theme, 85% banner
+          `rgba(${bannerRgb.r}, ${bannerRgb.g}, ${bannerRgb.b}, 0.15)`   // 100% banner color when scrolled
+        ],
+        extrapolate: 'clamp',
+      })
       : colors.background.default; // Solid color when animations disabled
 
     // Gloss effect animation based on scroll - disabled when animations off
     const glossOpacity = animationsEnabled
       ? scrollY.interpolate({
-          inputRange: [0, HEADER_SCROLL_DISTANCE * 0.5, HEADER_SCROLL_DISTANCE],
-          outputRange: [0, 0.4, 0.6], // More visible when scrolled
-          extrapolate: 'clamp',
-        })
+        inputRange: [0, HEADER_SCROLL_DISTANCE * 0.5, HEADER_SCROLL_DISTANCE],
+        outputRange: [0, 0.4, 0.6], // More visible when scrolled
+        extrapolate: 'clamp',
+      })
       : 0; // No gloss when animations disabled
 
     const glossPosition = animationsEnabled
       ? scrollY.interpolate({
-          inputRange: [0, HEADER_SCROLL_DISTANCE],
-          outputRange: [-200, 200], // Moves from left to right as you scroll
-          extrapolate: 'clamp',
-        })
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [-200, 200], // Moves from left to right as you scroll
+        extrapolate: 'clamp',
+      })
       : 0; // No movement when animations disabled
 
     // Blur intensity based on scroll - use headerBlur from context
@@ -763,7 +767,7 @@ export default function DashboardLayout() {
               ]}
             />
           )}
-          
+
           {/* Gloss effect overlay - only when animations enabled */}
           {animationsEnabled && (
             <RNAnimated.View
@@ -816,9 +820,9 @@ export default function DashboardLayout() {
             }
           ]}
         >
-          <CopilotStep 
-            text="Welcome! Tap the menu button (☰) to open the sidebar. You'll see navigation options like Explore, Wallet, Notifications, Profile, and Settings." 
-            order={1} 
+          <CopilotStep
+            text="Welcome! Tap the menu button (☰) to open the sidebar. You'll see navigation options like Explore, Wallet, Notifications, Profile, and Settings."
+            order={1}
             name="menuButton"
           >
             <View style={{ position: 'relative' }}>
@@ -831,7 +835,7 @@ export default function DashboardLayout() {
                   } catch (e) {
                     console.error('Error opening drawer:', e);
                   }
-                  
+
                   // Wait for drawer animation, then continue tutorial
                   setTimeout(() => {
                     console.log('Continuing tutorial to step 2');
@@ -851,9 +855,9 @@ export default function DashboardLayout() {
                 // Make sure this is clickable even during tutorial
                 pointerEvents="auto"
               >
-                <Ionicons 
-                  name="menu" 
-                  size={26} 
+                <Ionicons
+                  name="menu"
+                  size={26}
                   color={isDark ? '#FFFFFF' : '#000000'}
                 />
               </CopilotTouchableOpacity>
@@ -865,11 +869,11 @@ export default function DashboardLayout() {
             style={styles.headerLogoContainer}
             activeOpacity={0.8}
           >
-            <Image 
-              source={isDark 
+            <Image
+              source={isDark
                 ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
                 : require('../../../assets/logos/hashpass/logo-full-hashpass-white.svg')
-              } 
+              }
               style={styles.headerLogoImage}
               resizeMode="contain"
             />
@@ -887,16 +891,16 @@ export default function DashboardLayout() {
                 style={styles.headerIconButton}
                 activeOpacity={0.8}
               >
-                <Ionicons 
-                  name="qr-code-outline" 
-                  size={26} 
+                <Ionicons
+                  name="qr-code-outline"
+                  size={26}
                   color={isDark ? '#FFFFFF' : '#000000'}
                 />
               </CopilotTouchableOpacity>
             </CopilotStep>
           </View>
         </Animated.View>
-        
+
         {/* Regular QR Scanner Modal */}
         <QRScanner
           visible={qrScannerVisible}
@@ -911,7 +915,7 @@ export default function DashboardLayout() {
             // Error is already shown in the scanner component
           }}
         />
-        
+
       </View>
     );
   };
@@ -919,14 +923,14 @@ export default function DashboardLayout() {
   // Screen component with header
   const ScreenWithHeader = () => {
     const { headerHeight } = useScroll();
-    
+
     // Header should overlay content without taking space
     // Only reserve space for StatusBar
     const statusBarHeight = StatusBar.currentHeight || 0;
-    
+
     return (
-      <View style={[styles.headerContainer, { 
-        height: statusBarHeight, 
+      <View style={[styles.headerContainer, {
+        height: statusBarHeight,
         backgroundColor: 'transparent',
         position: 'absolute',
         top: 0,
@@ -934,7 +938,7 @@ export default function DashboardLayout() {
         right: 0,
         zIndex: 1000,
       }]}>
-        <StatusBar 
+        <StatusBar
           barStyle={colors.background.default === '#FFFFFF' ? 'dark-content' : 'light-content'}
           backgroundColor="transparent"
           translucent={true}
@@ -950,61 +954,61 @@ export default function DashboardLayout() {
       <NotificationProvider>
         <ScrollProvider>
           <View style={{ flex: 1 }}>
-          <Drawer
-            drawerContent={CustomDrawerContent}
-            screenOptions={{
-              header: () => <ScreenWithHeader />,
-              drawerType: 'front',
-              drawerStyle: {
-                width: '80%',
-              },
-              overlayColor: 'rgba(0,0,0,0.5)',
-              drawerPosition: 'left',
-            }}
-          >
-            <Drawer.Screen
-              name="explore"
-              options={{
-                headerShown: true,
+            <Drawer
+              drawerContent={CustomDrawerContent}
+              screenOptions={{
                 header: () => <ScreenWithHeader />,
+                drawerType: 'front',
+                drawerStyle: {
+                  width: '80%',
+                },
+                overlayColor: 'rgba(0,0,0,0.5)',
+                drawerPosition: 'left',
               }}
-            />
-            <Drawer.Screen
-              name="notifications"
-              options={{
-                headerShown: true,
-                header: () => <ScreenWithHeader />,
-              }}
-            />
-            <Drawer.Screen
-              name="wallet"
-              options={{
-                headerShown: true,
-                header: () => <ScreenWithHeader />,
-              }}
-            />
-            <Drawer.Screen
-              name="profile"
-              options={{
-                headerShown: true,
-                header: () => <ScreenWithHeader />,
-              }}
-            />
-            <Drawer.Screen
-              name="settings"
-              options={{
-                headerShown: true,
-                header: () => <ScreenWithHeader />,
-              }}
-            />
-            <Drawer.Screen
-              name="admin"
-              options={{
-                headerShown: true,
-                header: () => <ScreenWithHeader />,
-              }}
-            />
-          </Drawer>
+            >
+              <Drawer.Screen
+                name="explore"
+                options={{
+                  headerShown: true,
+                  header: () => <ScreenWithHeader />,
+                }}
+              />
+              <Drawer.Screen
+                name="notifications"
+                options={{
+                  headerShown: true,
+                  header: () => <ScreenWithHeader />,
+                }}
+              />
+              <Drawer.Screen
+                name="wallet"
+                options={{
+                  headerShown: true,
+                  header: () => <ScreenWithHeader />,
+                }}
+              />
+              <Drawer.Screen
+                name="profile"
+                options={{
+                  headerShown: true,
+                  header: () => <ScreenWithHeader />,
+                }}
+              />
+              <Drawer.Screen
+                name="settings"
+                options={{
+                  headerShown: true,
+                  header: () => <ScreenWithHeader />,
+                }}
+              />
+              <Drawer.Screen
+                name="admin"
+                options={{
+                  headerShown: true,
+                  header: () => <ScreenWithHeader />,
+                }}
+              />
+            </Drawer>
           </View>
         </ScrollProvider>
       </NotificationProvider>
@@ -1267,8 +1271,8 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     marginTop: 16,
     marginBottom: 8,
     borderRadius: 16,
-    backgroundColor: isDark 
-      ? 'rgba(255, 255, 255, 0.05)' 
+    backgroundColor: isDark
+      ? 'rgba(255, 255, 255, 0.05)'
       : 'rgba(0, 0, 0, 0.02)',
   },
   quickSettingsTitle: {
