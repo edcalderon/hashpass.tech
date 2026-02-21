@@ -1,7 +1,10 @@
 # AWS stack example configuration
 
 aws_region = "us-east-1"
+<<<<<<< Updated upstream
 amplify_region = "sa-east-1"
+=======
+>>>>>>> Stashed changes
 
 name_prefix = "hashpass"
 
@@ -54,6 +57,7 @@ amplify_app_id                    = null
 amplify_dev_branch                = "develop"
 amplify_prod_branch               = "main"
 amplify_wait_for_verification     = false
+<<<<<<< Updated upstream
 manage_amplify_branches           = false
 
 amplify_branch_environment_variables = {
@@ -80,6 +84,8 @@ amplify_branch_environment_variables = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_your_prod_key"
   }
 }
+=======
+>>>>>>> Stashed changes
 
 tags = {
   Project = "hashpass"

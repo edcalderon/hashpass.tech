@@ -599,11 +599,16 @@ export default function DashboardLayout() {
 
   // Verify user is logged in before allowing dashboard access (provider-agnostic)
   React.useEffect(() => {
+<<<<<<< Updated upstream
     // Check synchronous service state in case React state is falling behind
     const actuallyAuthenticated = isLoggedIn || authService.isAuthenticated();
 
     if (!authLoading && !actuallyAuthenticated) {
       console.warn('⚠️ Not authenticated in dashboard inner layout, redirecting to auth');
+=======
+    if (!authLoading && !isLoggedIn) {
+      console.warn('⚠️ Not authenticated in dashboard, redirecting to auth');
+>>>>>>> Stashed changes
       router.replace('/(shared)/auth' as any);
     }
   }, [authLoading, isLoggedIn, router]);

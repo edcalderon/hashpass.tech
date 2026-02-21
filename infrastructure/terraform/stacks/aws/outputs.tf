@@ -31,6 +31,7 @@ output "frontend_certificate_verification_dns_record" {
   description = "DNS record for Amplify SSL verification"
   value       = var.create_amplify_domain_association ? module.frontend_domain_association[0].certificate_verification_dns_record : null
 }
+<<<<<<< Updated upstream
 
 output "frontend_branches" {
   description = "Amplify frontend branches managed by Terraform"
@@ -42,3 +43,5 @@ output "frontend_branches" {
     }
   }
 }
+=======
+>>>>>>> Stashed changes

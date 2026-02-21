@@ -2,7 +2,10 @@ locals {
   lambda_function_name = "${var.name_prefix}-${var.environment}-expo-router-api"
   api_name             = "${var.name_prefix}-${var.environment}-http-api"
   mapping_key          = trimspace(var.mapping_key) == "" ? null : trimspace(var.mapping_key)
+<<<<<<< Updated upstream
   cert_validation      = one(aws_acm_certificate.api_domain.domain_validation_options)
+=======
+>>>>>>> Stashed changes
   tags = merge(var.tags, {
     Environment = var.environment
     ManagedBy   = "terraform"
@@ -132,17 +135,36 @@ resource "aws_acm_certificate" "api_domain" {
 }
 
 resource "aws_route53_record" "cert_validation" {
+<<<<<<< Updated upstream
   allow_overwrite = true
   zone_id = var.route53_zone_id
   name    = local.cert_validation.resource_record_name
   type    = local.cert_validation.resource_record_type
   records = [local.cert_validation.resource_record_value]
+=======
+  for_each = {
+    for dvo in aws_acm_certificate.api_domain.domain_validation_options : dvo.domain_name => {
+      name  = dvo.resource_record_name
+      type  = dvo.resource_record_type
+      value = dvo.resource_record_value
+    }
+  }
+
+  zone_id = var.route53_zone_id
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.value]
+>>>>>>> Stashed changes
   ttl     = 60
 }
 
 resource "aws_acm_certificate_validation" "api_domain" {
   certificate_arn         = aws_acm_certificate.api_domain.arn
+<<<<<<< Updated upstream
   validation_record_fqdns = [aws_route53_record.cert_validation.fqdn]
+=======
+  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+>>>>>>> Stashed changes
 }
 
 resource "aws_apigatewayv2_domain_name" "api" {

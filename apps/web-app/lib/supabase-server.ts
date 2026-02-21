@@ -1,12 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
+<<<<<<< Updated upstream
 import { config as loadDotenv } from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+=======
+>>>>>>> Stashed changes
 
 // This client is specifically for server-side operations
 // Only use this in API routes/server-side code
 // DO NOT import this in client-side components - use lib/supabase.ts instead
 
+<<<<<<< Updated upstream
 let envLoaded = false;
 
 function loadServerEnvFiles() {
@@ -80,6 +84,11 @@ export function getSupabaseServerEnv() {
     selectedProfile: selectedProfile?.name ?? 'none',
   };
 }
+=======
+// Get environment variables (only available at runtime)
+const supabaseUrl = typeof process !== 'undefined' ? (process.env.EXPO_PUBLIC_SUPABASE_URL as string) : undefined;
+const supabaseServiceKey = typeof process !== 'undefined' ? (process.env.SUPABASE_SERVICE_ROLE_KEY as string) : undefined;
+>>>>>>> Stashed changes
 
 // Lazy initialization - only create client when actually used
 let _supabaseServer: ReturnType<typeof createClient> | null = null;
@@ -96,6 +105,7 @@ function getSupabaseServer() {
     throw new Error('supabase-server.ts should only be used in server-side API routes. For client-side code, use lib/supabase.ts instead.');
   }
 
+<<<<<<< Updated upstream
   const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv();
 
   // Check for missing environment variables - but don't crash, return a mock client
@@ -116,6 +126,16 @@ function getSupabaseServer() {
       `API routes will return graceful error responses. ` +
       `Selected profile: ${selectedProfile}. ` +
       `Using DEV fallback: ${usingDevFallback ? 'YES' : 'NO'}. ` +
+=======
+  // Check for missing environment variables - but don't crash, return a mock client
+  if (!supabaseUrl || !supabaseServiceKey) {
+    const missingVars = [];
+    if (!supabaseUrl) missingVars.push('EXPO_PUBLIC_SUPABASE_URL');
+    if (!supabaseServiceKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+
+    const errorMsg = `Missing Supabase environment variables: ${missingVars.join(', ')}. ` +
+      `API routes will return graceful error responses. ` +
+>>>>>>> Stashed changes
       `Current values: EXPO_PUBLIC_SUPABASE_URL=${supabaseUrl ? 'SET' : 'MISSING'}, ` +
       `SUPABASE_SERVICE_ROLE_KEY=${supabaseServiceKey ? 'SET' : 'MISSING'}`;
 
@@ -212,7 +232,10 @@ function getSupabaseServer() {
       });
 
       try {
+<<<<<<< Updated upstream
         // eslint-disable-next-line no-restricted-syntax
+=======
+>>>>>>> Stashed changes
         const response = await fetch(urlString, {
           ...options,
           headers: headersPlain,

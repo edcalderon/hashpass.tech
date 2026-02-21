@@ -1,5 +1,6 @@
 {
   "name": "hashpass-web-app",
+<<<<<<< Updated upstream
   "version": "1.6.114",
   "private": true,
   "main": "expo-router/entry",
@@ -11,6 +12,19 @@
     "web": "NODE_OPTIONS='--max-old-space-size=6144' expo start --web --clear",
     "dev": "NODE_OPTIONS='--max-old-space-size=6144' expo start --web --clear",
     "build": "npm run prebuild && node ../../tools/scripts/update-sw-version.mjs && node ../../tools/scripts/patch-expo-api-route-sourcemaps.mjs && NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-6144}\" expo export -p web --max-workers ${EXPO_EXPORT_MAX_WORKERS:-2} && if [ \"${SKIP_WEB_POSTBUILD:-0}\" != \"1\" ]; then npm run postbuild:web; fi",
+=======
+  "version": "1.6.113",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "NODE_OPTIONS='--max-old-space-size=4096' expo start",
+    "start:reset": "NODE_OPTIONS='--max-old-space-size=4096' expo start --clear",
+    "android": "NODE_OPTIONS='--max-old-space-size=4096' expo start --android",
+    "ios": "NODE_OPTIONS='--max-old-space-size=4096' expo start --ios",
+    "web": "NODE_OPTIONS='--max-old-space-size=4096' expo start --web --clear",
+    "dev": "NODE_OPTIONS='--max-old-space-size=4096' expo start --web --clear",
+    "build": "npm run prebuild && node ../../tools/scripts/update-sw-version.mjs && expo export -p web && npm run postbuild:web",
+>>>>>>> Stashed changes
     "prebuild": "rm -rf dist",
     "postbuild:web": "if [ -d dist/server/_expo ]; then mkdir -p dist/client/_expo && cp -r dist/server/_expo/* dist/client/_expo/; fi && if [ -d dist/server/static ]; then mkdir -p dist/client/static && cp -r dist/server/static/* dist/client/static/; fi && mkdir -p dist/client/config && cp config/versions.json dist/client/config/versions.json 2>/dev/null || true && cp public/sw.js dist/client/sw.js 2>/dev/null || true",
     "lint": "expo lint",
@@ -22,12 +36,15 @@
     "@aws-sdk/s3-request-presigner": "^3.927.0",
     "@expo/vector-icons": "^14.1.0",
     "@expo/webpack-config": "^19.0.1",
+<<<<<<< Updated upstream
     "@hashpass/auth": "workspace:*",
     "@hashpass/backend": "workspace:*",
     "@hashpass/config": "workspace:*",
     "@hashpass/types": "workspace:*",
     "@hashpass/ui": "workspace:*",
     "@hashpass/utils": "workspace:*",
+=======
+>>>>>>> Stashed changes
     "@lingui/babel-plugin-lingui-macro": "^5.5.2",
     "@lingui/core": "^5.5.2",
     "@lingui/format-json": "^5.5.2",
@@ -41,15 +58,21 @@
     "@react-navigation/drawer": "^7.6.0",
     "@react-navigation/native": "^7.1.18",
     "@react-navigation/native-stack": "^7.5.1",
+<<<<<<< Updated upstream
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
+=======
+>>>>>>> Stashed changes
     "@solana/web3.js": "^1.98.4",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.81.1",
     "@tailwindcss/typography": "^0.5.13",
     "@types/nodemailer": "^6.4.17",
+<<<<<<< Updated upstream
     "@types/three": "^0.183.1",
+=======
+>>>>>>> Stashed changes
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
     "ajv": "^8.12.0",
@@ -82,11 +105,17 @@
     "expo-symbols": "~0.4.4",
     "expo-system-ui": "~5.0.7",
     "expo-web-browser": "~14.1.6",
+<<<<<<< Updated upstream
     "framer-motion": "12.34.0",
     "html5-qrcode": "^2.3.8",
     "i18n-js": "^4.5.1",
     "jose": "^5.9.6",
     "libphonenumber-js": "^1.12.37",
+=======
+    "html5-qrcode": "^2.3.8",
+    "i18n-js": "^4.5.1",
+    "jose": "^5.9.6",
+>>>>>>> Stashed changes
     "lightningcss": "^1.29.2",
     "lucide-react": "^0.548.0",
     "lucide-react-native": "^0.479.0",
@@ -100,7 +129,10 @@
     "react-dom": "19.0.0",
     "react-native": "0.79.2",
     "react-native-copilot": "^3.3.3",
+<<<<<<< Updated upstream
     "react-native-css-interop": "0.2.1",
+=======
+>>>>>>> Stashed changes
     "react-native-gesture-handler": "~2.24.0",
     "react-native-qrcode-svg": "^6.3.20",
     "react-native-reanimated": "~3.17.4",
@@ -113,9 +145,20 @@
     "react-native-worklets": "^0.6.0",
     "siwe": "^3.0.0",
     "tailwindcss": "^3.4.17",
+<<<<<<< Updated upstream
     "three": "^0.183.1",
     "twrnc": "^4.9.1",
     "workbox-cli": "^7.1.0"
+=======
+    "twrnc": "^4.9.1",
+    "workbox-cli": "^7.1.0",
+    "@hashpass/auth": "workspace:*",
+    "@hashpass/backend": "workspace:*",
+    "@hashpass/config": "workspace:*",
+    "@hashpass/types": "workspace:*",
+    "@hashpass/ui": "workspace:*",
+    "@hashpass/utils": "workspace:*"
+>>>>>>> Stashed changes
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -140,7 +183,10 @@
     "@types/react-navigation": "^3.0.8",
     "@types/react-test-renderer": "^18.3.0",
     "argon2": "^0.44.0",
+<<<<<<< Updated upstream
     "babel-plugin-transform-import-meta": "^2.3.3",
+=======
+>>>>>>> Stashed changes
     "chromedriver": "^142.0.1",
     "css-loader": "^7.1.2",
     "dotenv": "^17.2.3",
@@ -163,4 +209,8 @@
     "typescript": "~5.8.3",
     "webpack": "^5.102.1"
   }
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes

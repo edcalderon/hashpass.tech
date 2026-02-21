@@ -11,6 +11,7 @@ locals {
     ManagedBy = "terraform"
     Project   = "hashpass"
   })
+<<<<<<< Updated upstream
 
   amplify_branch_settings = {
     (var.amplify_prod_branch) = {
@@ -22,15 +23,22 @@ locals {
       framework = "Expo-Web"
     }
   }
+=======
+>>>>>>> Stashed changes
 }
 
 check "amplify_app_id_required" {
   assert {
+<<<<<<< Updated upstream
     condition = (
       (!var.create_amplify_domain_association && !var.manage_amplify_branches) ||
       (var.amplify_app_id != null && trimspace(var.amplify_app_id) != "")
     )
     error_message = "amplify_app_id must be set when create_amplify_domain_association or manage_amplify_branches is true."
+=======
+    condition     = !var.create_amplify_domain_association || (var.amplify_app_id != null && trimspace(var.amplify_app_id) != "")
+    error_message = "amplify_app_id must be set when create_amplify_domain_association is true."
+>>>>>>> Stashed changes
   }
 }
 
@@ -109,9 +117,12 @@ module "api_prod" {
 module "frontend_domain_association" {
   count  = var.create_amplify_domain_association ? 1 : 0
   source = "../../modules/aws_amplify_domain"
+<<<<<<< Updated upstream
   providers = {
     aws = aws.amplify
   }
+=======
+>>>>>>> Stashed changes
 
   app_id                = var.amplify_app_id
   domain_name           = trim(var.route53_zone_lat_name, ".")
@@ -128,6 +139,7 @@ module "frontend_domain_association" {
     }
   ]
 }
+<<<<<<< Updated upstream
 
 resource "aws_amplify_branch" "frontend" {
   for_each = var.manage_amplify_branches ? local.amplify_branch_settings : {}
@@ -140,3 +152,5 @@ resource "aws_amplify_branch" "frontend" {
   enable_auto_build     = true
   environment_variables = lookup(var.amplify_branch_environment_variables, each.key, {})
 }
+=======
+>>>>>>> Stashed changes

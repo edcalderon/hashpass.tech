@@ -97,6 +97,7 @@ export const useTranslation = (ns?: string) => {
   }, [currentLocale]);
 
   const t = useCallback(
+<<<<<<< Updated upstream
     (
       key: string,
       fallbackOrParams?: string | Record<string, any>,
@@ -119,6 +120,13 @@ export const useTranslation = (ns?: string) => {
       return translated || fallback || fullKey;
     },
     [ns]
+=======
+    (key: string, params: Record<string, any> = {}) => {
+      const fullKey = ns ? `${ns}.${key}` : key;
+      return (i18n as any)._(fullKey, params as any) as unknown as string;
+    },
+    [ns, currentLocale]
+>>>>>>> Stashed changes
   );
 
   return { t };

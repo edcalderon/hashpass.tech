@@ -21,8 +21,11 @@ domain_names = {
 # }
 #
 # 2) File paths (recommended when Secret Manager permissions are limited):
+<<<<<<< Updated upstream
 # Copy `directus.dev.env.example` -> `directus.dev.env` and
 # `directus.prod.env.example` -> `directus.prod.env` locally first.
+=======
+>>>>>>> Stashed changes
 directus_env_file_paths = {
   dev  = "directus.dev.env"
   prod = "directus.prod.env"

@@ -11,11 +11,19 @@ frontend:
         - export AMPLIFY_DISABLE_TS=true
         - 'echo "Skipping Amplify CLI backend initialization for static hosting"'
         - nvm install 22.22.0
+<<<<<<< Updated upstream
         - corepack enable pnpm || true
         - >
           if [ -f pnpm-lock.yaml ]; then
             pnpm config set store-dir .pnpm-store
             pnpm install --frozen-lockfile --prefer-offline
+=======
+        - npm install --quiet --global @expo/cli
+        - corepack enable pnpm || true
+        - >
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+>>>>>>> Stashed changes
           elif [ -f yarn.lock ]; then
             yarn install --frozen-lockfile
           elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
@@ -70,6 +78,7 @@ frontend:
         - export WEBPACK_MEMORY_LIMIT=4096
         # Reduce webpack optimization passes to save memory
         - export WEBPACK_OPTIMIZE_MINIMIZE=true
+<<<<<<< Updated upstream
         # CRITICAL: .env.production is gitignored, so we CREATE it at build time.
         # Expo's @expo/env loads .env.production when NODE_ENV=production and uses
         # it for EXPO_PUBLIC_ variables baked into the JS bundle.
@@ -99,6 +108,10 @@ frontend:
         - pkill -9 -x node || true
         - sleep 3
         - cp -r apps/web-app/dist/* ./dist/
+=======
+        # Run build (Amplify has built-in 60min timeout). Use pnpm if lockfile present.
+        - '[ -f pnpm-lock.yaml ] && pnpm run build:web || npm run build:web'
+>>>>>>> Stashed changes
         - cp -r dist/server/* dist/client/
         # Amplify artifact upload skips hidden directories; normalize Expo asset paths off ".pnpm"
         - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/client
@@ -108,7 +121,33 @@ frontend:
         - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
         - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
         - cp -r dist/server/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/
+<<<<<<< Updated upstream
         # No Amplify-hosted API wrappers needed: /api is served by API Gateway + Lambda
+=======
+        - mkdir -p dist/client/api/bslatam
+        - 'echo "{\"type\": \"module\"}" > dist/client/api/package.json'
+        - |
+          for file in apps/web-app/app/api/bslatam/*+api.ts; do
+            base=$(basename "$file" "+api.ts")
+            mkdir -p "dist/client/api/bslatam/$base"
+            cat > "dist/client/api/bslatam/$base/index.js" << 'ENDOFFILE'
+          import { handler } from '../../../../../apps/web-app/app/api/bslatam/PLACEHOLDER+api';
+          export default async (req, res) => {
+            try {
+              const result = await handler(req, res);
+              if (result) {
+                res.status(200).json(result);
+              }
+            } catch (error) {
+              console.error('API Error' + ' ' + error);
+              res.status(500).json({ error: 'Internal Server Error' });
+            }
+          };
+          ENDOFFILE
+            sed -i "s/PLACEHOLDER/$base/g" "dist/client/api/bslatam/$base/index.js"
+            echo "Created API handler at dist/client/api/bslatam/$base/index.js"
+          done
+>>>>>>> Stashed changes
         - 'echo "<!-- Build timestamp: $(date) -->" >> dist/client/index.html'
         - |
           if [ "$AWS_BRANCH" = "main" ] || [ "${AMPLIFY_BUILD_STORYBOOK:-false}" = "true" ]; then
