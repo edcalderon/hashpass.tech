@@ -15,7 +15,7 @@
     "dev:all": "bash ./tools/scripts/dev-all.sh",
     "build:web": "pnpm --filter hashpass-web-app build",
     "build:storybook": "storybook build -o storybook-static || echo 'Storybook not available, skipping build'",
-    "build:all": "turbo run build",
+    "build:all": "pnpm --filter hashpass-web-app build",
     "postbuild:web": "if [ -d dist/server/_expo ]; then mkdir -p dist/client/_expo && cp -r dist/server/_expo/* dist/client/_expo/; fi && if [ -d dist/server/static ]; then mkdir -p dist/client/static && cp -r dist/server/static/* dist/client/static/; fi && if [ -d storybook-static ]; then mkdir -p dist/client/storybook && cp -r storybook-static/* dist/client/storybook/; else echo 'Storybook static directory not found, skipping copy'; fi && mkdir -p dist/client/config && cp config/versions.json dist/client/config/versions.json && cp public/sw.js dist/client/sw.js",
     "prebuild": "rm -rf dist",
     "lint": "pnpm --filter hashpass-web-app lint",
