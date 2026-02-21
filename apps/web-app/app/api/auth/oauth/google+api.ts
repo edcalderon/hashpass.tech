@@ -33,23 +33,22 @@ export async function GET(request: Request): Promise<Response> {
   try {
     if (returnTo.startsWith('http')) {
       feOrigin = new URL(returnTo).origin;
-    } else {
-      // If we lost the cookie and returnTo is relative, we MUST not use the API origin
-      // as our frontend URL, because it doesn't serve the frontend properly.
-      const envFrontendUrl = process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL;
-
-      if (envFrontendUrl) {
-        feOrigin = envFrontendUrl;
-      } else if (feOrigin.includes('api-dev.hashpass.tech') || feOrigin.includes('sso-dev.hashpass.co')) {
-        feOrigin = 'https://blockchainsummit-dev.hashpass.lat';
-      } else if (feOrigin.includes('api.hashpass.tech') || feOrigin.includes('sso.hashpass.co')) {
-        feOrigin = 'https://blockchainsummit.hashpass.lat';
-      } else if (feOrigin.includes('localhost') || feOrigin.includes('127.0.0.1')) {
-        // Assume local frontend is running on standard port since API is on 8081
-        feOrigin = 'http://localhost:8081';
-      }
     }
   } catch (e) { }
+
+  // Safety block: NEVER redirect a frontend callback to an API domain
+  // whether the returnTo cookie was relative OR absolute
+  const envFrontendUrl = process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL;
+  if (envFrontendUrl && (feOrigin.includes('api-dev') || feOrigin.includes('api.hashpass'))) {
+    feOrigin = envFrontendUrl;
+  } else if (feOrigin.includes('api-dev.hashpass.tech') || feOrigin.includes('sso-dev.hashpass.co')) {
+    feOrigin = 'https://blockchainsummit-dev.hashpass.lat';
+  } else if (feOrigin.includes('api.hashpass.tech') || feOrigin.includes('sso.hashpass.co')) {
+    feOrigin = 'https://blockchainsummit.hashpass.lat';
+  } else if (feOrigin.includes('localhost') || feOrigin.includes('127.0.0.1')) {
+    // Assume local frontend is running on standard port since API is on 8081
+    if (url.port === '8081') feOrigin = 'http://localhost:8081';
+  }
 
   console.log('[Google OAuth] Received callback from Google');
   console.log('[Google OAuth] Code:', code ? code.substring(0, 20) + '...' : 'MISSING');

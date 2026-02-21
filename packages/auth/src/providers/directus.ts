@@ -141,6 +141,17 @@ export class DirectusAuthProvider implements IAuthProvider {
       return 'Authentication could not be completed. No active Directus session was found after OAuth. Redirecting to login.';
     }
 
+    const hasForbidden = failures.some(
+      ({ code, status, message }) =>
+        code === 'FORBIDDEN' ||
+        status === 403 ||
+        /forbidden|permission denied/i.test(message)
+    );
+
+    if (hasForbidden) {
+      return 'Session created successfully, but your Directus User Role lacks Read/Update permissions for `directus_users`. Please contact an administrator to fix role permissions (Error 403).';
+    }
+
     const hasInvalidCredentials = failures.some(
       ({ code, status, message }) =>
         code === 'INVALID_CREDENTIALS' ||
@@ -158,17 +169,6 @@ export class DirectusAuthProvider implements IAuthProvider {
 
     if (hasNetworkFailure) {
       return 'Authentication could not be completed because the browser could not reach Directus. Check CORS and Directus URL settings, then try again.';
-    }
-
-    const hasForbidden = failures.some(
-      ({ code, status, message }) =>
-        code === 'FORBIDDEN' ||
-        status === 403 ||
-        /forbidden|permission denied/i.test(message)
-    );
-
-    if (hasForbidden) {
-      return 'Session created successfully, but your Directus User Role lacks Read/Update permissions for `directus_users`. Please contact an administrator to fix role permissions (Error 403).';
     }
 
     const firstFailure = failures[0];
