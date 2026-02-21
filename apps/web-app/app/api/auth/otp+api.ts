@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   try {
     // Check Supabase configuration before proceeding
     const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv();
-    
+
     if (!supabaseUrl || !supabaseServiceKey) {
       const missingVars = [];
       if (!supabaseUrl) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
           'SUPABASE_SERVICE_ROLE_KEY (fallback: SUPABASE_SERVICE_ROLE_KEY_DEV)'
         );
       }
-      
+
       console.error(
         '❌ OTP API: Missing environment variables:',
         missingVars.join(', '),
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         usingDevFallback
       );
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Server configuration error',
           code: 'server_config_error',
           message: 'Authentication service is not properly configured. Please contact support.'
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       }
       console.log('ℹ️ OTP API Supabase target:', supabaseHost, '| selectedProfile=', selectedProfile);
     }
-    
+
     // Handle JSON parsing errors
     let body;
     try {
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     } catch (parseError: any) {
       console.error('Error parsing request body:', parseError);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Invalid JSON in request body',
           code: 'invalid_json',
           message: 'Please ensure the request body contains valid JSON with an email field.'
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
-    
+
     const { email, delivery: requestedDelivery, phone } = body || {};
     const delivery = requestedDelivery === 'sms' ? 'sms' : 'email';
 
@@ -102,12 +102,12 @@ export async function POST(request: Request) {
       linkError = result.error;
     } catch (supabaseError: any) {
       console.error('❌ Supabase connection error:', supabaseError);
-      
+
       // Check if it's a configuration error
       if (supabaseError?.message?.includes('Missing Supabase environment variables') ||
-          supabaseError?.message?.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+        supabaseError?.message?.includes('SUPABASE_SERVICE_ROLE_KEY')) {
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Server configuration error',
             code: 'server_config_error',
             message: 'Authentication service is not properly configured. Please contact support.'
@@ -115,13 +115,13 @@ export async function POST(request: Request) {
           { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
         );
       }
-      
+
       // Check if it's a network error
-      if (supabaseError?.message?.includes('network') || 
-          supabaseError?.message?.includes('fetch') ||
-          supabaseError?.message?.includes('connection')) {
+      if (supabaseError?.message?.includes('network') ||
+        supabaseError?.message?.includes('fetch') ||
+        supabaseError?.message?.includes('connection')) {
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Network connection error',
             code: 'network_error',
             message: 'Authentication requires network connection. Please check your internet connection and try again.'
@@ -129,28 +129,28 @@ export async function POST(request: Request) {
           { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
         );
       }
-      
+
       // Re-throw to be handled by the error handling below
       linkError = supabaseError;
     }
 
     if (linkError || !linkData) {
       console.error('Error generating OTP link:', JSON.stringify(linkError, null, 2));
-      
+
       // Check for rate limit errors specifically - check multiple possible formats
       const errorMessage = linkError?.message || '';
       const errorCode = linkError?.code || '';
       const errorStatus = linkError?.status || 0;
-      
-      if (errorMessage.includes('rate limit') || 
-          errorMessage.includes('over_email_send_rate_limit') ||
-          errorMessage.includes('email rate limit') ||
-          errorCode === 'over_email_send_rate_limit' ||
-          errorCode === 'rate_limit_exceeded' ||
-          errorStatus === 429) {
+
+      if (errorMessage.includes('rate limit') ||
+        errorMessage.includes('over_email_send_rate_limit') ||
+        errorMessage.includes('email rate limit') ||
+        errorCode === 'over_email_send_rate_limit' ||
+        errorCode === 'rate_limit_exceeded' ||
+        errorStatus === 429) {
         console.log('Rate limit detected, returning 429');
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Email rate limit exceeded',
             code: 'over_email_send_rate_limit',
             message: 'Too many emails sent. Please wait a few minutes before requesting another code.'
@@ -158,12 +158,12 @@ export async function POST(request: Request) {
           { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
         );
       }
-      
+
       // Return appropriate status code based on error
       const statusCode = errorStatus === 429 ? 429 : (errorStatus >= 400 && errorStatus < 500 ? errorStatus : 500);
-      
+
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: errorMessage || 'Failed to generate OTP code',
           code: errorCode || 'unknown_error',
           details: process.env.NODE_ENV === 'development' ? linkError : undefined
@@ -207,10 +207,10 @@ export async function POST(request: Request) {
 
     // Generate a 6-digit OTP code
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
+
     // Clean up expired OTP codes
     await supabase.rpc('cleanup_expired_otp_codes');
-    
+
     // Store the mapping in the database (normalize email to lowercase)
     const normalizedEmail = email.trim().toLowerCase();
     const { error: storeError } = await supabase
@@ -249,11 +249,11 @@ export async function POST(request: Request) {
     // - email (default): send via configured SMTP
     // - sms: send via Brevo transactional SMS API
     if (delivery === 'email') {
-      const emailEnabled = process.env.NODEMAILER_HOST && 
-                           process.env.NODEMAILER_PORT && 
-                           process.env.NODEMAILER_USER && 
-                           process.env.NODEMAILER_PASS && 
-                           process.env.NODEMAILER_FROM;
+      const emailEnabled = process.env.NODEMAILER_HOST &&
+        process.env.NODEMAILER_PORT &&
+        process.env.NODEMAILER_USER &&
+        process.env.NODEMAILER_PASS &&
+        process.env.NODEMAILER_FROM;
 
       if (!emailEnabled) {
         return new Response(
@@ -267,7 +267,7 @@ export async function POST(request: Request) {
 
       const smtpHost = process.env.NODEMAILER_HOST || '';
       const isBrevo = smtpHost.includes('brevo.com') || smtpHost.includes('sendinblue.com');
-      
+
       const transporter = nodemailer.createTransport({
         host: smtpHost,
         port: parseInt(process.env.NODEMAILER_PORT || '587'),
@@ -312,15 +312,15 @@ export async function POST(request: Request) {
         console.log('OTP email sent successfully to:', email);
       } catch (emailError: any) {
         console.error('Error sending OTP email:', emailError);
-        
+
         // Check for rate limit errors from SMTP provider
-        if (emailError?.code === 'EENVELOPE' || 
-            emailError?.responseCode === 550 ||
-            emailError?.message?.includes('rate limit') ||
-            emailError?.message?.includes('quota') ||
-            emailError?.message?.includes('too many')) {
+        if (emailError?.code === 'EENVELOPE' ||
+          emailError?.responseCode === 550 ||
+          emailError?.message?.includes('rate limit') ||
+          emailError?.message?.includes('quota') ||
+          emailError?.message?.includes('too many')) {
           return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
               error: 'Email rate limit exceeded',
               code: 'over_email_send_rate_limit',
               message: 'Too many emails sent. Please wait a few minutes before requesting another code.'
@@ -328,9 +328,9 @@ export async function POST(request: Request) {
             { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
           );
         }
-        
+
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             error: 'Failed to send OTP email',
             code: 'email_send_failed',
             message: emailError?.message || 'Could not send email. Please try again later.'
@@ -425,29 +425,29 @@ export async function POST(request: Request) {
     }
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         delivery,
         message: delivery === 'sms' ? 'OTP code sent by SMS' : 'OTP code sent to email',
       }),
-      { 
-        status: 200, 
-        headers: { 
+      {
+        status: 200,
+        headers: {
           'Content-Type': 'application/json',
           ...corsHeaders
-        } 
+        }
       }
     );
   } catch (error: any) {
     console.error('OTP generation error:', error);
-    
+
     // Check for rate limit errors in the catch block as well
-    if (error?.message?.includes('rate limit') || 
-        error?.message?.includes('over_email_send_rate_limit') ||
-        error?.code === 'over_email_send_rate_limit' ||
-        error?.status === 429) {
+    if (error?.message?.includes('rate limit') ||
+      error?.message?.includes('over_email_send_rate_limit') ||
+      error?.code === 'over_email_send_rate_limit' ||
+      error?.status === 429) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Email rate limit exceeded',
           code: 'over_email_send_rate_limit',
           message: 'Too many emails sent. Please wait a few minutes before requesting another code.'
@@ -455,9 +455,9 @@ export async function POST(request: Request) {
         { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
-    
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message || 'Failed to send OTP',
         code: error.code || 'unknown_error'
       }),

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { authService, AuthSession, AuthUser } from '@hashpass/auth';
+<<<<<<< Updated upstream
 import { supabase } from '../lib/supabase';
 
 let oauthHashProcessingPromise: Promise<void> | null = null;
@@ -29,12 +30,20 @@ const mapSupabaseUserToAuthUser = (candidate: any): AuthUser | null => {
   };
 };
 
+=======
+
+let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
+let oauthHashProcessingPromise: Promise<void> | null = null;
+let oauthHashProcessed = false;
+
+>>>>>>> Stashed changes
 export const useAuth = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const isInitializedRef = useRef(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+<<<<<<< Updated upstream
   const supabaseSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
   const directusSessionRef = useRef<AuthSession | null>(null);
   const supabaseSessionRef = useRef<any | null>(null);
@@ -55,11 +64,14 @@ export const useAuth = () => {
       setIsLoading(false);
     }
   }, []);
+=======
+>>>>>>> Stashed changes
 
   useEffect(() => {
     // Prevent duplicate initialization
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
+<<<<<<< Updated upstream
     isMountedRef.current = true;
 
     // Check for OAuth tokens in URL fragment on page load (for direct redirects from OAuth).
@@ -70,6 +82,12 @@ export const useAuth = () => {
       window.location.pathname.includes('/auth/callback');
 
     if (typeof window !== 'undefined' && window.location.hash && !oauthHashProcessed && !oauthHashProcessingPromise && !isCallbackPage) {
+=======
+
+    // Check for OAuth tokens in URL fragment on page load (for direct redirects from OAuth).
+    // Process this once globally to avoid duplicate callback handling from many mounted components.
+    if (typeof window !== 'undefined' && window.location.hash && !oauthHashProcessed && !oauthHashProcessingPromise) {
+>>>>>>> Stashed changes
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const access_token = hashParams.get('access_token');
       const refresh_token = hashParams.get('refresh_token');
@@ -105,6 +123,7 @@ export const useAuth = () => {
 
     // Subscribe to auth state changes
     unsubscribeRef.current = authService.onAuthStateChange((session: AuthSession | null) => {
+<<<<<<< Updated upstream
       directusSessionRef.current = session;
       if (isMountedRef.current) {
         syncAuthState();
@@ -162,10 +181,27 @@ export const useAuth = () => {
 
     return () => {
       isMountedRef.current = false;
+=======
+      setUser(session?.user ?? null);
+      setIsLoggedIn(!!session?.user && authService.isAuthenticated());
+      setIsLoading(false);
+    });
+
+    // Initialize session once globally to avoid repeated /users/me probes.
+    if (!sessionBootstrapPromise) {
+      sessionBootstrapPromise = authService.getSession();
+    }
+    sessionBootstrapPromise.catch((error) => {
+      console.error('[useAuth] Session bootstrap failed:', error);
+    });
+
+    return () => {
+>>>>>>> Stashed changes
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
+<<<<<<< Updated upstream
       if (supabaseSubscriptionRef.current) {
         supabaseSubscriptionRef.current.unsubscribe();
         supabaseSubscriptionRef.current = null;
@@ -207,6 +243,20 @@ export const useAuth = () => {
       throw new Error(errors.join(' | '));
     }
   }, [syncAuthState]);
+=======
+      isInitializedRef.current = false;
+    };
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      await authService.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
+  }, []);
+>>>>>>> Stashed changes
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
@@ -222,9 +272,15 @@ export const useAuth = () => {
       if (!authService.signInWithOAuth) {
         throw new Error('OAuth not supported by current auth provider');
       }
+<<<<<<< Updated upstream
 
       const result = await authService.signInWithOAuth(provider);
 
+=======
+      
+      const result = await authService.signInWithOAuth(provider);
+      
+>>>>>>> Stashed changes
       if (result.error) {
         throw new Error(result.error);
       }
@@ -242,9 +298,15 @@ export const useAuth = () => {
       if (!authService.handleOAuthCallback) {
         throw new Error('OAuth callback not supported by current auth provider');
       }
+<<<<<<< Updated upstream
 
       const result = await authService.handleOAuthCallback(codeOrParams, state);
 
+=======
+      
+      const result = await authService.handleOAuthCallback(codeOrParams, state);
+      
+>>>>>>> Stashed changes
       if (result.error) {
         throw new Error(result.error);
       }

@@ -127,7 +127,7 @@ export async function getSystemHealthCheck(eventId: string = 'bsl2025'): Promise
           recordCount: agendaCount || 0,
         };
         healthCheck.checks.agenda.hasData = (agendaCount || 0) > 0;
-        healthCheck.checks.agenda.lastUpdated = latestUpdate?.updated_at || null;
+        healthCheck.checks.agenda.lastUpdated = (latestUpdate as any)?.updated_at || null;
         healthCheck.checks.agenda.itemCount = agendaCount || 0;
       }
     } catch (error: any) {
