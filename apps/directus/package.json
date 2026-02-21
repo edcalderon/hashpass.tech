@@ -4,7 +4,6 @@
   "private": true,
   "description": "Directus SSO setup for HashPass local development and testing",
   "scripts": {
-<<<<<<< Updated upstream
     "dev": "bash ./scripts/compose.sh dev",
     "up": "bash ./scripts/compose.sh up",
     "down": "bash ./scripts/compose.sh down",
@@ -12,12 +11,5 @@
     "restart": "bash ./scripts/compose.sh restart",
     "reset": "bash ./scripts/compose.sh reset",
     "doctor": "bash ./scripts/compose.sh doctor"
-=======
-    "dev": "sh -c 'if docker compose version >/dev/null 2>&1; then docker compose up; elif command -v docker-compose >/dev/null 2>&1; then docker-compose up; else echo \"No Compose CLI found (need docker compose plugin or docker-compose binary)\"; exit 1; fi'",
-    "up": "sh -c 'if docker compose version >/dev/null 2>&1; then docker compose up -d; elif command -v docker-compose >/dev/null 2>&1; then docker-compose up -d; else echo \"No Compose CLI found (need docker compose plugin or docker-compose binary)\"; exit 1; fi'",
-    "down": "sh -c 'if docker compose version >/dev/null 2>&1; then docker compose down; elif command -v docker-compose >/dev/null 2>&1; then docker-compose down; else echo \"No Compose CLI found (need docker compose plugin or docker-compose binary)\"; exit 1; fi'",
-    "logs": "sh -c 'if docker compose version >/dev/null 2>&1; then docker compose logs -f; elif command -v docker-compose >/dev/null 2>&1; then docker-compose logs -f; else echo \"No Compose CLI found (need docker compose plugin or docker-compose binary)\"; exit 1; fi'",
-    "restart": "sh -c 'if docker compose version >/dev/null 2>&1; then docker compose restart; elif command -v docker-compose >/dev/null 2>&1; then docker-compose restart; else echo \"No Compose CLI found (need docker compose plugin or docker-compose binary)\"; exit 1; fi'"
->>>>>>> Stashed changes
   }
 }
