@@ -51,15 +51,10 @@ Use **pnpm** and **Turborepo** at the repo root:
 
 ```bash
 pnpm install
-<<<<<<< Updated upstream
 pnpm run dev          # run web app from root (delegates to apps/web-app)
 pnpm run dev:web-app  # run web app directly from apps/web-app
 pnpm run dev:directus # run Directus Docker stack from apps/directus
 pnpm run dev:all      # run web app + Directus (single Ctrl+C stops both)
-=======
-pnpm run dev          # run app from root (current default)
-pnpm run dev:web-app  # run app from apps/web-app
->>>>>>> Stashed changes
 pnpm run build:all    # turbo build all packages
 ```
 
@@ -112,7 +107,7 @@ Env vars (email via SES / Nodemailer):
 - `NODEMAILER_FROM` - Email address to send from (e.g., no-reply@hashpass.tech)
 - `NODEMAILER_FROM_SUPPORT` - Support email address shown in email footers (defaults to support@hashpass.tech if not set)
 
-For a complete list of all environment variables, see [docs/environment-variables.md](docs/environment-variables.md).
+For a complete guide on our environment management strategy, see [docs/ENVIRONMENT_STRATEGY.md](docs/ENVIRONMENT_STRATEGY.md).
 
 Deploy:
 ```bash

@@ -111,7 +111,13 @@
       "text": "Durch die Anmeldung stimmen Sie unseren zu",
       "terms": "Nutzungsbedingungen",
       "privacy": "Datenschutzrichtlinie"
-    }
+    },
+    "orContinueWith": "Oder weiter mit",
+    "processing": "Wird verarbeitet...",
+    "processingAuthentication": "Authentifizierung wird verarbeitet...",
+    "authenticationSuccessful": "Authentifizierung erfolgreich!",
+    "authenticationError": "Authentifizierungsfehler",
+    "authenticationFailed": "Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut."
   },
   "privacy": {
     "title": "Datenschutzrichtlinie",
@@ -706,4 +712,3 @@
     "statusSummary": "Klicken Sie, um detaillierte Systemstatus- und Service-Health-Informationen anzuzeigen."
   }
 }
-

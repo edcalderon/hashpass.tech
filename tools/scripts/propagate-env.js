@@ -4,10 +4,10 @@
  * HashPass Unified Environment Manager
  * 
  * Sources variables from the root .env based on the target environment profile.
- * Profiles are defined by suffixes like _DEV, _STAGING, or _PROD.
+ * Profiles are defined by suffixes like _DEV or _PROD.
  * 
  * Usage:
- *   node tools/scripts/propagate-env.js [local|staging|production]
+ *   node tools/scripts/propagate-env.js [local|dev|production]
  */
 
 const fs = require('fs');
@@ -44,12 +44,11 @@ if (fs.existsSync(rootEnvPath)) {
 
 // 2. Define Mapping/Suffixes
 const SUFFIX_MAP = {
-    'local': '_DEV',
-    'staging': '_STAGING',
+    'dev': '_DEV',
     'production': '_PROD'
 };
 
-const suffix = SUFFIX_MAP[envArg] || '_DEV';
+const suffix = SUFFIX_MAP[envArg] || null;
 
 // 3. Extract and sanitize variables
 const targetConfig = {};
@@ -71,13 +70,15 @@ keys.forEach(key => {
 });
 
 // Second pass: Overrides
-keys.forEach(key => {
-    if (key.endsWith(suffix)) {
-        const baseKey = key.slice(0, -suffix.length);
-        targetConfig[baseKey] = rootConfig[key];
-        console.log(`   ✨ Override found for: ${baseKey}`);
-    }
-});
+if (suffix) {
+    keys.forEach(key => {
+        if (key.endsWith(suffix)) {
+            const baseKey = key.slice(0, -suffix.length);
+            targetConfig[baseKey] = rootConfig[key];
+            console.log(`   ✨ Override found for: ${baseKey}`);
+        }
+    });
+}
 
 // Final pass: Ensure NODE_ENV and target flags are correct
 targetConfig['NODE_ENV'] = (envArg === 'production') ? 'production' : 'development';

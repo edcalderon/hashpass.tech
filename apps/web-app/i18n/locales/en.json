@@ -120,7 +120,13 @@
       "text": "By signing in, you agree to our",
       "terms": "Terms of Service",
       "privacy": "Privacy Policy"
-    }
+    },
+    "orContinueWith": "Or continue with",
+    "processing": "Processing...",
+    "processingAuthentication": "Processing authentication...",
+    "authenticationSuccessful": "Authentication successful!",
+    "authenticationError": "Authentication Error",
+    "authenticationFailed": "Authentication failed. Please try again."
   },
   "privacy": {
     "title": "Privacy Policy",
@@ -251,7 +257,7 @@
     "readyToSimplify": "Ready to Simplify Your Digital Life?",
     "getStartedNow": "Start Now",
     "trustedByThousands": "Trusted by Thousands",
-    "testimonials":{
+    "testimonials": {
       "title": "Testimonials",
       "subtitle": "What our users say",
       "description": "See what our customers have to say about us."
@@ -505,7 +511,6 @@
     "bslDate": "BSL 2025 • Nov 12-14, 2025",
     "date": "Nov 12-14, 2025",
     "pass": "Pass",
-    "showFullDetails": "Show Full Details",
     "viewFullDetails": "View Full Details",
     "flipBack": "Flip Back",
     "qrCodeModalTitle": "Your Pass QR Code"
@@ -680,7 +685,7 @@
       "speaker": "Speaker",
       "requester": "Requester",
       "expiresIn": "Expires In",
-      "hours": "HRS",
+      "hoursAbbr": "HRS",
       "minutes": "MIN",
       "seconds": "SEC",
       "status": "Status",

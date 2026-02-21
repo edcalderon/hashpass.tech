@@ -2,13 +2,13 @@
  * Directus authentication provider implementation
  */
 
-import { 
-  IAuthProvider, 
-  AuthUser, 
-  AuthSession, 
-  AuthResponse, 
+import {
+  IAuthProvider,
+  AuthUser,
+  AuthSession,
+  AuthResponse,
   AuthStateChangeCallback,
-  AuthProvider 
+  AuthProvider
 } from '../types';
 import { Platform } from 'react-native';
 import { DirectusApiClient, DirectusApiError } from './directus-api-client';
@@ -188,6 +188,15 @@ export class DirectusAuthProvider implements IAuthProvider {
     return error.status === 429 || error.code === 'TOO_MANY_REQUESTS';
   }
 
+  private isInvalidCredentials(error?: DirectusApiError | null): boolean {
+    if (!error) return false;
+    return (
+      error.code === 'INVALID_CREDENTIALS' ||
+      error.status === 401 ||
+      /invalid user credentials/i.test(error.message)
+    );
+  }
+
   getProviderName(): AuthProvider {
     return 'directus';
   }
@@ -198,7 +207,7 @@ export class DirectusAuthProvider implements IAuthProvider {
       if (typeof window === 'undefined') {
         return;
       }
-      
+
       const storedSession = await this.getStoredSession();
       if (storedSession) {
         if (this.isCookieBackedSession(storedSession)) {
@@ -249,345 +258,435 @@ export class DirectusAuthProvider implements IAuthProvider {
     }
   }
 
-async signInWithOAuth(provider: 'google' | 'github' | 'facebook' | 'twitter'): Promise<AuthResponse> {
-  try {
-    if (Platform.OS === 'web') {
-      // Clear local auth state before OAuth to avoid stale user sessions.
-      this.session = null;
-      await this.clearStoredSession();
-      this.clearRefreshTimer();
-      this.notifyStateChange(null);
+  async signInWithOAuth(provider: 'google' | 'github' | 'facebook' | 'twitter'): Promise<AuthResponse> {
+    try {
+      if (Platform.OS === 'web') {
+        // Clear local auth state before OAuth to avoid stale user sessions.
+        this.session = null;
+        await this.clearStoredSession();
+        this.clearRefreshTimer();
+        this.notifyStateChange(null);
 
-      // Best-effort cleanup of any existing Directus cookie session.
-      // Avoid custom headers so this remains a simple CORS request.
-      try {
-        await this.apiClient.logoutSession();
-      } catch (logoutError) {
-        console.debug('No existing Directus cookie session to clear before OAuth:', logoutError);
-      }
+        // Best-effort cleanup of any existing Directus cookie session.
+        // Avoid custom headers so this remains a simple CORS request.
+        try {
+          await this.apiClient.logoutSession();
+        } catch (logoutError) {
+          console.debug('No existing Directus cookie session to clear before OAuth:', logoutError);
+        }
 
-      // First check if OAuth is available on the server
-      try {
-        let providersResult = await this.apiClient.listAuthProviders();
-        const isRetryableProviderLookupError = (message?: string) => {
-          if (!message) return false;
-          return /networkerror|failed to fetch|network request failed|connection reset/i.test(message);
+        // First check if OAuth is available on the server
+        try {
+          let providersResult = await this.apiClient.listAuthProviders();
+          const isRetryableProviderLookupError = (message?: string) => {
+            if (!message) return false;
+            return /networkerror|failed to fetch|network request failed|connection reset/i.test(message);
+          };
+
+          // Directus may still be warming up right after restart; retry once for transient network failures.
+          if (providersResult.error && isRetryableProviderLookupError(providersResult.error.message)) {
+            await new Promise(resolve => setTimeout(resolve, 600));
+            providersResult = await this.apiClient.listAuthProviders();
+          }
+
+          if (providersResult.error) {
+            throw new Error(providersResult.error.message || 'OAuth not configured on server.');
+          }
+          const hasGoogleProvider = providersResult.data?.some((p: any) => p?.name === provider);
+          if (!hasGoogleProvider) {
+            throw new Error(`${provider} provider not configured.`);
+          }
+        } catch (fetchError) {
+          console.error('OAuth availability check failed:', fetchError);
+          return {
+            error: `Google OAuth is not available on this server. Please contact the administrator to configure Google OAuth or use email/password authentication.`
+          };
+        }
+
+        // For web, use our own API proxy to handle OAuth
+        // This avoids cross-origin cookie issues by keeping everything server-side
+        const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081';
+        const storedReturnTo = window.localStorage?.getItem('oauth_return_url') || '/dashboard/explore';
+        const returnTo = storedReturnTo.replace(/\/\([^/]+\)/g, '') || '/dashboard/explore';
+
+        // Use our proxy API to start OAuth
+        const oauthUrl = `${currentOrigin}/api/auth/oauth/login?provider=${provider}&returnTo=${encodeURIComponent(returnTo)}`;
+
+        console.log('🔐 Starting OAuth via proxy...');
+        console.log('📍 OAuth URL:', oauthUrl);
+
+        // Store return URL and redirect
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('oauth_return_url', window.location.pathname);
+          window.localStorage.setItem('oauth_in_progress', 'true');
+          window.location.href = oauthUrl;
+        }
+
+        // Return pending state since this is a redirect
+        return { pending: true };
+      } else {
+        // For mobile, we'd need to implement deep linking or web view
+        // For now, return error asking user to use web
+        return {
+          error: 'OAuth authentication is currently only supported in web browsers. Please use the web app or email/password authentication.'
         };
-
-        // Directus may still be warming up right after restart; retry once for transient network failures.
-        if (providersResult.error && isRetryableProviderLookupError(providersResult.error.message)) {
-          await new Promise(resolve => setTimeout(resolve, 600));
-          providersResult = await this.apiClient.listAuthProviders();
-        }
-
-        if (providersResult.error) {
-          throw new Error(providersResult.error.message || 'OAuth not configured on server.');
-        }
-        const hasGoogleProvider = providersResult.data?.some((p: any) => p?.name === provider);
-        if (!hasGoogleProvider) {
-          throw new Error(`${provider} provider not configured.`);
-        }
-      } catch (fetchError) {
-        console.error('OAuth availability check failed:', fetchError);
-        return { 
-          error: `Google OAuth is not available on this server. Please contact the administrator to configure Google OAuth or use email/password authentication.`
-        };
       }
-
-      // For web, use our own API proxy to handle OAuth
-      // This avoids cross-origin cookie issues by keeping everything server-side
-      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081';
-      const storedReturnTo = window.localStorage?.getItem('oauth_return_url') || '/dashboard/explore';
-      const returnTo = storedReturnTo.replace(/\/\([^/]+\)/g, '') || '/dashboard/explore';
-      
-      // Use our proxy API to start OAuth
-      const oauthUrl = `${currentOrigin}/api/auth/oauth/login?provider=${provider}&returnTo=${encodeURIComponent(returnTo)}`;
-      
-      console.log('🔐 Starting OAuth via proxy...');
-      console.log('📍 OAuth URL:', oauthUrl);
-      
-      // Store return URL and redirect
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('oauth_return_url', window.location.pathname);
-        window.localStorage.setItem('oauth_in_progress', 'true');
-        window.location.href = oauthUrl;
-      }
-      
-      // Return pending state since this is a redirect
-      return { pending: true };
-    } else {
-      // For mobile, we'd need to implement deep linking or web view
-      // For now, return error asking user to use web
-      return { 
-        error: 'OAuth authentication is currently only supported in web browsers. Please use the web app or email/password authentication.' 
-      };
+    } catch (error) {
+      console.error('OAuth sign in error:', error);
+      return { error: error instanceof Error ? error.message : 'OAuth sign in failed' };
     }
-  } catch (error) {
-    console.error('OAuth sign in error:', error);
-    return { error: error instanceof Error ? error.message : 'OAuth sign in failed' };
   }
-}
 
-async handleOAuthCallback(codeOrParams: string | Record<string, string>, state?: string): Promise<AuthResponse> {
-  try {
-    const authFailures: Array<{ stage: string; message: string; status?: number; code?: string }> = [];
+  async handleOAuthCallback(codeOrParams: string | Record<string, string>, state?: string): Promise<AuthResponse> {
+    try {
+      const authFailures: Array<{ stage: string; message: string; status?: number; code?: string }> = [];
 
-    const params: Record<string, string> = typeof codeOrParams === 'string'
-      ? {
+      const params: Record<string, string> = typeof codeOrParams === 'string'
+        ? {
           code: codeOrParams,
           ...(state ? { state } : {}),
         }
-      : codeOrParams;
+        : codeOrParams;
 
-    console.log('🔄 Processing Directus OAuth callback with params:', params);
-    
-    // First, let's try to see if there are any tokens or session info we can extract
-    let authData: any = {};
-    
-    if (typeof window !== 'undefined') {
-      // Check URL parameters and hash for any OAuth data
-      const urlParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      
-      authData = {
-        // Standard OAuth params
-        access_token: params.access_token || urlParams.get('access_token') || hashParams.get('access_token'),
-        token_type: params.token_type || urlParams.get('token_type') || hashParams.get('token_type'),
-        expires_in: params.expires_in || urlParams.get('expires_in') || hashParams.get('expires_in'),
-        expires: params.expires || urlParams.get('expires') || hashParams.get('expires'),
-        scope: params.scope || urlParams.get('scope') || hashParams.get('scope'),
-        state: params.state || urlParams.get('state') || hashParams.get('state'),
-        // Additional possible params (Directus specific)
-        code: params.code || urlParams.get('code'),
-        session_token: params.session_token || urlParams.get('session_token'),
-        user: params.user || urlParams.get('user'),
-        // Check for Directus JSON mode tokens
-        token: params.token || urlParams.get('token'), // Directus might pass token differently
-        refresh_token: params.refresh_token || urlParams.get('refresh_token') || hashParams.get('refresh_token'),
-        // Our OAuth proxy success flag
-        oauth_success: params.oauth_success || urlParams.get('oauth_success') || hashParams.get('oauth_success'),
-        user_id: params.user_id || urlParams.get('user_id') || hashParams.get('user_id'),
-        email: params.email || urlParams.get('email') || hashParams.get('email'),
-        reason: params.reason || urlParams.get('reason')
-      };
-      
-      console.log('📋 Extracted auth data:', authData);
-      
-      // Clear the hash to prevent re-processing
-      if (window.location.hash) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      }
-    }
+      console.log('🔄 Processing Directus OAuth callback with params:', params);
 
-    if (authData.reason) {
-      console.error('❌ Directus OAuth callback returned explicit failure reason:', authData.reason);
-      return { error: this.mapDirectusOAuthReason(String(authData.reason)) };
-    }
+      // First, let's try to see if there are any tokens or session info we can extract
+      let authData: any = {};
 
-    // Try using access token if available (either access_token or token)
-    const token = authData.access_token || authData.token;
-    if (token) {
-      console.log('🔄 Found access token, attempting authentication...');
-      console.log('🔍 Token details:', { 
-        type: authData.access_token ? 'access_token' : 'token',
-        length: token.length,
-        prefix: token.substring(0, 20) + '...'
-      });
-      
-      try {
-        const userResult = await this.apiClient.getCurrentUserWithToken(token);
-        console.log('📡 Token auth result:', {
-          success: !userResult.error,
-          error: userResult.error?.message,
-        });
+      if (typeof window !== 'undefined') {
+        // Check URL parameters and hash for any OAuth data
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
 
-        if (userResult.data) {
-          console.log('✅ Token authentication successful:', userResult.data.email);
-
-          const normalizedUserData = {
-            ...userResult.data,
-            email: userResult.data.email || authData.email || this.session?.user?.email,
-          };
-
-          const session: AuthSession = {
-            user: this.mapDirectusUser(normalizedUserData),
-            access_token: token,
-            refresh_token: authData.refresh_token || undefined,
-            expires_at: authData.expires_in ? Date.now() + (parseInt(authData.expires_in, 10) * 1000) : undefined
-          };
-
-          this.session = session;
-          await this.storeSession(session);
-        
-          console.log('🔔 Notifying auth state change (token-based)...');
-          this.notifyStateChange(session);
-          console.log('✅ Auth state change notification sent (token-based)');
-
-          return { user: session.user, session: session };
-        }
-
-        if (userResult.error) {
-          console.error('❌ Token authentication failed:', userResult.error);
-          this.pushOAuthFailure(authFailures, 'token_user_lookup', userResult.error);
-        }
-      } catch (tokenError) {
-        console.error('❌ Access token authentication failed:', tokenError);
-        this.pushOAuthFailure(
-          authFailures,
-          'token_user_lookup',
-          undefined,
-          tokenError instanceof Error ? tokenError.message : 'Access token authentication request failed'
-        );
-      }
-    }
-
-    // First attempt session-cookie auth.
-    // This is the expected path when AUTH_*_MODE=session.
-    try {
-      console.log('🔄 Attempting cookie-based authentication...');
-
-      // Add a small delay to ensure any cookies are properly set
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const userResult = await this.apiClient.getCurrentUserWithSession();
-      console.log('📡 Cookie auth result:', {
-        success: !userResult.error,
-        error: userResult.error?.message,
-      });
-
-      if (userResult.data) {
-        console.log('✅ Cookie authentication successful:', userResult.data.email);
-
-        const session: AuthSession = {
-          user: this.mapDirectusUser(userResult.data),
-          access_token: 'session_based',
-          refresh_token: undefined,
-          expires_at: undefined
+        authData = {
+          // Standard OAuth params
+          access_token: params.access_token || urlParams.get('access_token') || hashParams.get('access_token'),
+          token_type: params.token_type || urlParams.get('token_type') || hashParams.get('token_type'),
+          expires_in: params.expires_in || urlParams.get('expires_in') || hashParams.get('expires_in'),
+          expires: params.expires || urlParams.get('expires') || hashParams.get('expires'),
+          scope: params.scope || urlParams.get('scope') || hashParams.get('scope'),
+          state: params.state || urlParams.get('state') || hashParams.get('state'),
+          // Additional possible params (Directus specific)
+          code: params.code || urlParams.get('code'),
+          session_token: params.session_token || urlParams.get('session_token'),
+          user: params.user || urlParams.get('user'),
+          // Check for Directus JSON mode tokens
+          token: params.token || urlParams.get('token'), // Directus might pass token differently
+          refresh_token: params.refresh_token || urlParams.get('refresh_token') || hashParams.get('refresh_token'),
+          // Our OAuth proxy success flag
+          oauth_success: params.oauth_success || urlParams.get('oauth_success') || hashParams.get('oauth_success'),
+          user_id: params.user_id || urlParams.get('user_id') || hashParams.get('user_id'),
+          email: params.email || urlParams.get('email') || hashParams.get('email'),
+          reason: params.reason || urlParams.get('reason')
         };
 
-        this.session = session;
-        await this.storeSession(session);
+        console.log('📋 Extracted auth data:', authData);
+        console.log('🔍 URL info:', {
+          search: window.location.search,
+          hash: window.location.hash.substring(0, 30) + (window.location.hash.length > 30 ? '...' : ''),
+          paramsKeys: Object.keys(params)
+        });
 
-        console.log('🔔 Notifying auth state change...');
-        this.notifyStateChange(session);
-        console.log('✅ Auth state change notification sent');
-
-        return { user: session.user, session: session };
-      }
-
-      if (userResult.error) {
-        if (this.isRateLimited(userResult.error)) {
-          this.nextSessionProbeAt = Date.now() + 15000;
-          return {
-            error: 'Authentication service is temporarily rate-limited. Please wait a few seconds and try again.'
-          };
+        // Clear the hash to prevent re-processing
+        if (window.location.hash) {
+          // window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          console.log('⏳ Hash observed, not clearing immediately for debug');
         }
-
-        console.error('❌ Session check failed:', userResult.error);
-        this.pushOAuthFailure(authFailures, 'session_user_lookup', userResult.error);
       }
-    } catch (sessionError) {
-      console.error('❌ Session check error:', sessionError);
-      this.pushOAuthFailure(
-        authFailures,
-        'session_user_lookup',
-        undefined,
-        sessionError instanceof Error ? sessionError.message : 'Session validation request failed'
-      );
-    }
 
-    // Fallback for AUTH_*_MODE=json: exchange refresh cookie for access token.
-    try {
-      console.log('🔄 Attempting cookie-based refresh authentication...');
-      const refreshResult = await this.apiClient.refreshSessionWithCookies();
-      if (refreshResult.data?.access_token) {
-        const refreshedUser = await this.apiClient.getCurrentUserWithToken(refreshResult.data.access_token);
-        if (refreshedUser.data) {
-          const session = this.buildSessionFromToken(
-            refreshedUser.data,
-            refreshResult.data.access_token,
-            refreshResult.data.refresh_token,
-            refreshResult.data.expires
+      if (authData.reason) {
+        console.error('❌ Directus OAuth callback returned explicit failure reason:', authData.reason);
+        return { error: this.mapDirectusOAuthReason(String(authData.reason)) };
+      }
+
+      // Try using access token if available (either access_token or token)
+      const token = authData.access_token || authData.token;
+      if (token) {
+        console.log('🔄 Found access token, attempting authentication...');
+        console.log('🔍 Token details:', {
+          type: authData.access_token ? 'access_token' : 'token',
+          length: token.length,
+          prefix: token.substring(0, 20) + '...'
+        });
+
+        try {
+          const userResult = await this.apiClient.getCurrentUserWithToken(token);
+          console.log('📡 Token auth result:', {
+            success: !userResult.error,
+            error: userResult.error?.message,
+          });
+
+          if (userResult.data) {
+            console.log('✅ Token authentication successful:', userResult.data.email);
+
+            const normalizedUserData = {
+              ...userResult.data,
+              email: userResult.data.email || authData.email || this.session?.user?.email,
+            };
+
+            const session: AuthSession = {
+              user: this.mapDirectusUser(normalizedUserData),
+              access_token: token,
+              refresh_token: authData.refresh_token || undefined,
+              expires_at: authData.expires_in ? Date.now() + (parseInt(authData.expires_in, 10) * 1000) : undefined
+            };
+
+            this.session = session;
+            await this.storeSession(session);
+
+            console.log('🔔 Notifying auth state change (token-based)...');
+            this.notifyStateChange(session);
+            console.log('✅ Auth state change notification sent (token-based)');
+
+            return { user: session.user, session: session };
+          }
+
+          if (userResult.error) {
+            console.error('❌ Token authentication failed:', userResult.error);
+            this.pushOAuthFailure(authFailures, 'token_user_lookup', userResult.error);
+          }
+        } catch (tokenError) {
+          console.error('❌ Access token authentication failed:', tokenError);
+          this.pushOAuthFailure(
+            authFailures,
+            'token_user_lookup',
+            undefined,
+            tokenError instanceof Error ? tokenError.message : 'Access token authentication request failed'
           );
-          this.session = session;
-          await this.storeSession(session);
-          this.notifyStateChange(session);
-          return { user: session.user, session };
-        }
-
-        if (refreshedUser.error) {
-          console.error('❌ Refreshed token user lookup failed:', refreshedUser.error);
-          this.pushOAuthFailure(authFailures, 'refresh_user_lookup', refreshedUser.error);
         }
       }
 
-      if (refreshResult.error) {
-        if (this.isRateLimited(refreshResult.error)) {
-          this.nextSessionProbeAt = Date.now() + 15000;
-          return {
-            error: 'Authentication service is temporarily rate-limited. Please wait a few seconds and try again.'
-          };
+      // First attempt session-cookie auth.
+      // This is the expected path when AUTH_*_MODE=session.
+      let lastSessionLookupError: DirectusApiError | null = null;
+      try {
+        console.log('🔄 Attempting cookie-based authentication...');
+
+        const sessionProbeDelaysMs = [1000, 700];
+
+        for (let attempt = 0; attempt < sessionProbeDelaysMs.length; attempt += 1) {
+          await new Promise(resolve => setTimeout(resolve, sessionProbeDelaysMs[attempt]));
+
+          const userResult = await this.apiClient.getCurrentUserWithSession();
+          console.log(`📡 Cookie auth result (attempt ${attempt + 1}/${sessionProbeDelaysMs.length}):`, {
+            success: !userResult.error,
+            error: userResult.error?.message,
+          });
+
+          if (userResult.data) {
+            console.log('✅ Cookie authentication successful:', userResult.data.email);
+
+            const session: AuthSession = {
+              user: this.mapDirectusUser(userResult.data),
+              access_token: 'session_based',
+              refresh_token: undefined,
+              expires_at: undefined
+            };
+
+            this.session = session;
+            await this.storeSession(session);
+
+            console.log('🔔 Notifying auth state change...');
+            this.notifyStateChange(session);
+            console.log('✅ Auth state change notification sent');
+
+            return { user: session.user, session: session };
+          }
+
+          if (!userResult.error) {
+            break;
+          }
+
+          if (this.isRateLimited(userResult.error)) {
+            this.nextSessionProbeAt = Date.now() + 15000;
+            return {
+              error: 'Authentication service is temporarily rate-limited. Please wait a few seconds and try again.'
+            };
+          }
+
+          lastSessionLookupError = userResult.error;
+
+          const shouldRetryInvalidCredentials =
+            this.isInvalidCredentials(userResult.error) && attempt < sessionProbeDelaysMs.length - 1;
+
+          if (shouldRetryInvalidCredentials) {
+            console.warn('⚠️ Session lookup returned INVALID_CREDENTIALS. Retrying once after a short delay...');
+            continue;
+          }
+
+          console.error('❌ Session check failed:', userResult.error);
+          break;
         }
 
-        const isExpectedNoRefreshCookie =
-          refreshResult.error.code === 'INVALID_PAYLOAD' &&
-          /refresh token is required/i.test(refreshResult.error.message);
+        if (lastSessionLookupError) {
+          this.pushOAuthFailure(authFailures, 'session_user_lookup', lastSessionLookupError);
+        }
+      } catch (sessionError) {
+        console.error('❌ Session check error:', sessionError);
+        this.pushOAuthFailure(
+          authFailures,
+          'session_user_lookup',
+          undefined,
+          sessionError instanceof Error ? sessionError.message : 'Session validation request failed'
+        );
+      }
 
-        if (isExpectedNoRefreshCookie) {
-          console.log('ℹ️ No refresh-token cookie available after OAuth callback.');
-        } else {
-          console.error('❌ Cookie refresh authentication failed:', refreshResult.error);
-          this.pushOAuthFailure(authFailures, 'session_refresh', refreshResult.error);
+      // Additional fallback for session-mode deployments:
+      // try refreshing the session cookie first, then probe /users/me again.
+      if (lastSessionLookupError && this.isInvalidCredentials(lastSessionLookupError)) {
+        try {
+          console.log('🔄 Attempting session-cookie refresh authentication...');
+          const sessionRefreshResult = await this.apiClient.refreshSessionWithSessionCookies();
+
+          if (sessionRefreshResult.error) {
+            if (this.isRateLimited(sessionRefreshResult.error)) {
+              this.nextSessionProbeAt = Date.now() + 15000;
+              return {
+                error: 'Authentication service is temporarily rate-limited. Please wait a few seconds and try again.'
+              };
+            }
+
+            const isExpectedMissingSessionCookie =
+              sessionRefreshResult.error.code === 'INVALID_PAYLOAD' &&
+              /refresh token is required/i.test(sessionRefreshResult.error.message);
+
+            if (isExpectedMissingSessionCookie) {
+              console.log('ℹ️ No session cookie available for session-mode refresh after OAuth callback.');
+            } else {
+              console.error('❌ Session-mode refresh failed:', sessionRefreshResult.error);
+              this.pushOAuthFailure(authFailures, 'session_refresh_mode', sessionRefreshResult.error);
+            }
+          } else {
+            const userResult = await this.apiClient.getCurrentUserWithSession();
+            if (userResult.data) {
+              const session: AuthSession = {
+                user: this.mapDirectusUser(userResult.data),
+                access_token: 'session_based',
+                refresh_token: undefined,
+                expires_at: undefined
+              };
+
+              this.session = session;
+              await this.storeSession(session);
+              this.notifyStateChange(session);
+              return { user: session.user, session };
+            }
+
+            if (userResult.error) {
+              if (this.isRateLimited(userResult.error)) {
+                this.nextSessionProbeAt = Date.now() + 15000;
+                return {
+                  error: 'Authentication service is temporarily rate-limited. Please wait a few seconds and try again.'
+                };
+              }
+
+              this.pushOAuthFailure(authFailures, 'session_refresh_user_lookup', userResult.error);
+            }
+          }
+        } catch (sessionRefreshError) {
+          this.pushOAuthFailure(
+            authFailures,
+            'session_refresh_mode',
+            undefined,
+            sessionRefreshError instanceof Error
+              ? sessionRefreshError.message
+              : 'Session-mode refresh request failed'
+          );
         }
       }
-    } catch (refreshError) {
-      console.error('❌ Cookie refresh error:', refreshError);
-      this.pushOAuthFailure(
-        authFailures,
-        'session_refresh',
-        undefined,
-        refreshError instanceof Error ? refreshError.message : 'Session refresh request failed'
-      );
-    }
 
-    // All authentication attempts failed
-    console.error('❌ OAuth callback failed after all authentication strategies:', authFailures);
-    return {
-      error: this.buildOAuthFailureMessage(authFailures),
-    };
-    
-  } catch (error) {
-    console.error('❌ OAuth callback error:', error);
-    return { error: error instanceof Error ? error.message : 'OAuth callback failed' };
-  }
-}
+      // Fallback for AUTH_*_MODE=json: exchange refresh cookie for access token.
+      try {
+        console.log('🔄 Attempting cookie-based refresh authentication...');
+        const refreshResult = await this.apiClient.refreshSessionWithCookies();
+        if (refreshResult.data?.access_token) {
+          const refreshedUser = await this.apiClient.getCurrentUserWithToken(refreshResult.data.access_token);
+          if (refreshedUser.data) {
+            const session = this.buildSessionFromToken(
+              refreshedUser.data,
+              refreshResult.data.access_token,
+              refreshResult.data.refresh_token,
+              refreshResult.data.expires
+            );
+            this.session = session;
+            await this.storeSession(session);
+            this.notifyStateChange(session);
+            return { user: session.user, session };
+          }
 
-async signOut(): Promise<{ error?: string }> {
-  const sessionToClear = this.session;
+          if (refreshedUser.error) {
+            console.error('❌ Refreshed token user lookup failed:', refreshedUser.error);
+            this.pushOAuthFailure(authFailures, 'refresh_user_lookup', refreshedUser.error);
+          }
+        }
 
-  // If we have a session, try to logout from server.
-  if (sessionToClear?.access_token) {
-    try {
-      if (this.isCookieBackedSession(sessionToClear)) {
-        await this.apiClient.logoutSession();
-      } else {
-        await this.apiClient.logoutWithToken(sessionToClear.access_token);
+        if (refreshResult.error) {
+          if (this.isRateLimited(refreshResult.error)) {
+            this.nextSessionProbeAt = Date.now() + 15000;
+            return {
+              error: 'Authentication service is temporarily rate-limited. Please wait a few seconds and try again.'
+            };
+          }
+
+          const isExpectedNoRefreshCookie =
+            refreshResult.error.code === 'INVALID_PAYLOAD' &&
+            /refresh token is required/i.test(refreshResult.error.message);
+
+          if (isExpectedNoRefreshCookie) {
+            console.log('ℹ️ No refresh-token cookie available after OAuth callback.');
+          } else {
+            console.error('❌ Cookie refresh authentication failed:', refreshResult.error);
+            this.pushOAuthFailure(authFailures, 'session_refresh', refreshResult.error);
+          }
+        }
+      } catch (refreshError) {
+        console.error('❌ Cookie refresh error:', refreshError);
+        this.pushOAuthFailure(
+          authFailures,
+          'session_refresh',
+          undefined,
+          refreshError instanceof Error ? refreshError.message : 'Session refresh request failed'
+        );
       }
+
+      // All authentication attempts failed
+      console.error('❌ OAuth callback failed after all authentication strategies:', authFailures);
+      return {
+        error: this.buildOAuthFailureMessage(authFailures),
+      };
+
     } catch (error) {
-      // Local sign-out should still succeed even if server-side logout fails.
-      console.debug('Sign out request failed:', error);
+      console.error('❌ OAuth callback error:', error);
+      return { error: error instanceof Error ? error.message : 'OAuth callback failed' };
     }
   }
 
-  this.session = null;
-  this.sessionLookupInFlight = null;
-  this.nextSessionProbeAt = 0;
-  await this.clearStoredSession();
-  this.clearRefreshTimer();
-  this.notifyStateChange(null);
+  async signOut(): Promise<{ error?: string }> {
+    const sessionToClear = this.session;
 
-  return {};
-}
+    // If we have a session, try to logout from server.
+    if (sessionToClear?.access_token) {
+      try {
+        if (this.isCookieBackedSession(sessionToClear)) {
+          await this.apiClient.logoutSession();
+        } else {
+          await this.apiClient.logoutWithToken(sessionToClear.access_token);
+        }
+      } catch (error) {
+        // Local sign-out should still succeed even if server-side logout fails.
+        console.debug('Sign out request failed:', error);
+      }
+    }
+
+    this.session = null;
+    this.sessionLookupInFlight = null;
+    this.nextSessionProbeAt = 0;
+    await this.clearStoredSession();
+    this.clearRefreshTimer();
+    this.notifyStateChange(null);
+
+    return {};
+  }
 
   async getSession(): Promise<AuthSession | null> {
     // Return cached session when valid, unless cookie-backed profile is incomplete.
@@ -727,10 +826,10 @@ async signOut(): Promise<{ error?: string }> {
 
   onAuthStateChange(callback: AuthStateChangeCallback): () => void {
     this.stateChangeCallbacks.push(callback);
-    
+
     // Immediately call with current state
     callback(this.session);
-    
+
     return () => {
       const index = this.stateChangeCallbacks.indexOf(callback);
       if (index > -1) {
@@ -757,7 +856,7 @@ async signOut(): Promise<{ error?: string }> {
 
   private setupRefreshTimer(): void {
     this.clearRefreshTimer();
-    
+
     if (this.session?.expires_at) {
       const refreshTime = this.session.expires_at - Date.now() - 60000; // Refresh 1 minute before expiry
       if (refreshTime > 0) {

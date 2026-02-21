@@ -1,4 +1,4 @@
-{ 
+{
   "newsletter": {
     "title": "뉴스레터 구독",
     "subtitle": "최신 소식을 받기 위해 뉴스레터에 가입하세요",
@@ -120,7 +120,13 @@
       "text": "로그인함으로써 다음에 동의합니다",
       "terms": "서비스 약관",
       "privacy": "개인정보 처리방침"
-    }
+    },
+    "orContinueWith": "또는 다음으로 계속",
+    "processing": "처리 중...",
+    "processingAuthentication": "인증 처리 중...",
+    "authenticationSuccessful": "인증 성공!",
+    "authenticationError": "인증 오류",
+    "authenticationFailed": "인증에 실패했습니다. 다시 시도해 주세요."
   },
   "privacy": {
     "title": "개인정보 처리방침",
@@ -251,7 +257,7 @@
     "readyToSimplify": "디지털 라이프를 단순화할 준비가 되셨나요?",
     "getStartedNow": "지금 시작",
     "trustedByThousands": "수천 명이 신뢰합니다",
-    "testimonials":{
+    "testimonials": {
       "title": "사용자 후기",
       "subtitle": "사용자들의 이야기",
       "description": "고객들의 후기를 확인하세요."
@@ -608,7 +614,7 @@
       "speaker": "연사",
       "requester": "요청자",
       "expiresIn": "만료까지",
-      "hours": "시간",
+      "hoursAbbr": "시간",
       "minutes": "분",
       "seconds": "초",
       "status": "상태",

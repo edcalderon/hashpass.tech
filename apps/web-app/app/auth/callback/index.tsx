@@ -39,17 +39,9 @@ export default function AuthCallbackRedirect() {
       
       if (currentPath === '/auth/callback/') {
         hasRedirectedRef.current = true;
-        // Use router.replace instead of window.location.replace to avoid full page reload
-        // Build the full path with params and hash
-        let targetPath = '/auth/callback';
-        if (searchParams || hash) {
-          // For web, we need to preserve the hash and query params
-          // Since router.replace doesn't handle hash well, we'll let the callback handler process it
-          // Just redirect to the base path and let the callback handler read from window.location
-          targetPath = '/auth/callback';
-        }
+        const targetPath = `/auth/callback${searchParams}${hash}`;
         console.log('🔄 Redirecting from /auth/callback/ to /auth/callback');
-        router.replace(targetPath as any);
+        window.location.replace(targetPath);
         return;
       }
     }
@@ -67,4 +59,3 @@ export default function AuthCallbackRedirect() {
     </View>
   );
 }
-

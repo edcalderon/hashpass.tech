@@ -27,6 +27,8 @@ expo-env.d.ts
 .env.test
 .env.backup
 .env.gcloud
+**/.env*
+!**/.env.example
 config/private-gcloud.json
 infrastructure/terraform/gcp/gcp-credentials.json
 infrastructure/terraform/stacks/gcp/directus.*.env

@@ -30,6 +30,15 @@ case "$BRANCH_NAME" in
       exit 1
     fi
     ;;
+  "blockchainsummit")
+    if [ -f "amplify-blockchainsummit.yml" ]; then
+      cp amplify-blockchainsummit.yml amplify.yml
+      echo "✅ Linked amplify-blockchainsummit.yml → amplify.yml"
+      echo "📋 Configuration for blockchainsummit branch"
+    else
+      echo "⚠️  amplify-blockchainsummit.yml not found, using default amplify.yml"
+    fi
+    ;;
   *)
     echo "⚠️  Unknown branch: $BRANCH_NAME"
     echo "📋 Using default amplify.yml (if exists)"

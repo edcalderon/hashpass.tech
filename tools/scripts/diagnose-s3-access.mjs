@@ -11,7 +11,7 @@ dotenv.config();
 
 // Speaker avatars bucket - uses EXPO_PUBLIC_AWS_S3_BUCKET (hashpass-assets)
 const BUCKET_NAME = process.env.EXPO_PUBLIC_AWS_S3_BUCKET || process.env.AWS_S3_BUCKET || process.env.AWS_S3_BUCKET_NAME || 'hashpass-assets';
-const REGION = process.env.AWS_REGION || 'us-east-2';
+const REGION = process.env.AWS_REGION || 'us-east-1';
 
 const s3Client = new S3Client({
   region: REGION,
@@ -25,7 +25,7 @@ async function testPublicAccess(s3Key) {
   const url = `https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${s3Key}`;
   console.log(`\n🔍 Testing public access to: ${s3Key}`);
   console.log(`   URL: ${url}`);
-  
+
   try {
     const response = await fetch(url, { method: 'HEAD' });
     console.log(`   Status: ${response.status} ${response.statusText}`);
@@ -77,17 +77,17 @@ async function main() {
     });
     const publicAccessBlock = await s3Client.send(publicAccessBlockCommand);
     const config = publicAccessBlock.PublicAccessBlockConfiguration || {};
-    
+
     console.log(`   BlockPublicAcls: ${config.BlockPublicAcls}`);
     console.log(`   IgnorePublicAcls: ${config.IgnorePublicAcls}`);
     console.log(`   BlockPublicPolicy: ${config.BlockPublicPolicy}`);
     console.log(`   RestrictPublicBuckets: ${config.RestrictPublicBuckets}`);
-    
+
     const isBlocked = config.BlockPublicAcls === true ||
-                     config.IgnorePublicAcls === true ||
-                     config.BlockPublicPolicy === true ||
-                     config.RestrictPublicBuckets === true;
-    
+      config.IgnorePublicAcls === true ||
+      config.BlockPublicPolicy === true ||
+      config.RestrictPublicBuckets === true;
+
     if (isBlocked) {
       console.log(`   ⚠️  Block Public Access is ENABLED - this will prevent public access!`);
     } else {
@@ -105,18 +105,18 @@ async function main() {
     });
     const currentPolicy = await s3Client.send(getPolicyCommand);
     const currentPolicyJson = JSON.parse(currentPolicy.Policy || '{}');
-    
+
     console.log(`   ✅ Bucket policy exists:`);
     console.log(JSON.stringify(currentPolicyJson, null, 2));
-    
+
     // Check if policy allows public access to speakers/avatars/*
     const hasPublicAccess = currentPolicyJson.Statement?.some((stmt) => {
       return stmt.Effect === 'Allow' &&
-             stmt.Principal === '*' &&
-             (stmt.Action?.includes('s3:GetObject') || (Array.isArray(stmt.Action) && stmt.Action.includes('s3:GetObject'))) &&
-             stmt.Resource?.includes('speakers/avatars');
+        stmt.Principal === '*' &&
+        (stmt.Action?.includes('s3:GetObject') || (Array.isArray(stmt.Action) && stmt.Action.includes('s3:GetObject'))) &&
+        stmt.Resource?.includes('speakers/avatars');
     });
-    
+
     if (hasPublicAccess) {
       console.log(`   ✅ Policy allows public access to speakers/avatars/*`);
     } else {

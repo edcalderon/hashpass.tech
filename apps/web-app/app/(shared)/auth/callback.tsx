@@ -2,13 +2,11 @@ import { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../../hooks/useAuth';
-import { useTheme } from '../../../hooks/useTheme';
 import { useToastHelpers } from '../../../contexts/ToastContext';
 import { useTranslation } from '../../../i18n/i18n';
 import { Check, AlertCircle } from 'lucide-react-native';
 
 export default function AuthCallback() {
-    const { colors } = useTheme();
     const { t } = useTranslation('auth');
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -46,6 +44,9 @@ export default function AuthCallback() {
             value.includes('cross-origin restrictions') ||
             value.includes('browser could not reach directus') ||
             value.includes('session could not be established') ||
+            value.includes('did not establish a valid session') ||
+            value.includes('invalid_credentials') ||
+            value.includes('invalid user credentials') ||
             value.includes('networkerror') ||
             value.includes('failed to fetch')
         );
