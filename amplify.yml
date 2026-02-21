@@ -11,19 +11,10 @@ frontend:
         - export AMPLIFY_DISABLE_TS=true
         - 'echo "Skipping Amplify CLI backend initialization for static hosting"'
         - nvm install 22.22.0
-<<<<<<< Updated upstream
         - corepack enable pnpm || true
-        - >
-          if [ -f pnpm-lock.yaml ]; then
-            pnpm config set store-dir .pnpm-store
-            pnpm install --frozen-lockfile --prefer-offline
-=======
-        - npm install --quiet --global @expo/cli
-        - corepack enable pnpm || true
-        - >
+        - |
           if [ -f pnpm-lock.yaml ]; then
             pnpm install --frozen-lockfile
->>>>>>> Stashed changes
           elif [ -f yarn.lock ]; then
             yarn install --frozen-lockfile
           elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
@@ -33,33 +24,18 @@ frontend:
           fi
         - pip install awscli --upgrade --user
         - 'export PATH=~/.local/bin:$PATH'
-        # Detect branch and set environment variables (defaults can be overridden in Amplify Console)
+        # Detect branch and set profile for environment propagation
         - |
           if [ "$AWS_BRANCH" = "main" ]; then
-            if [ -z "$AMPLIFY_SHOW_ALL_EVENTS" ]; then export AMPLIFY_SHOW_ALL_EVENTS="true"; fi
-            if [ -z "$AMPLIFY_EVENT_ID" ]; then export AMPLIFY_EVENT_ID="default"; fi
-            if [ -z "$AMPLIFY_EVENT_DOMAIN" ]; then export AMPLIFY_EVENT_DOMAIN="hashpass.tech"; fi
-            if [ -z "$DIRECTUS_URL" ]; then export DIRECTUS_URL="https://sso.hashpass.co"; fi
-            if [ -z "$EXPO_PUBLIC_DIRECTUS_URL" ]; then export EXPO_PUBLIC_DIRECTUS_URL="https://sso.hashpass.co"; fi
-            if [ -z "$EXPO_PUBLIC_API_BASE_URL" ]; then export EXPO_PUBLIC_API_BASE_URL="https://api.hashpass.tech/api"; fi
-          elif [ "$AWS_BRANCH" = "bsl2025" ]; then
-            if [ -z "$AMPLIFY_SHOW_ALL_EVENTS" ]; then export AMPLIFY_SHOW_ALL_EVENTS="false"; fi
-            if [ -z "$AMPLIFY_EVENT_ID" ]; then export AMPLIFY_EVENT_ID="bsl2025"; fi
-            if [ -z "$AMPLIFY_EVENT_DOMAIN" ]; then export AMPLIFY_EVENT_DOMAIN="bsl2025.hashpass.tech"; fi
-            if [ -z "$DIRECTUS_URL" ]; then export DIRECTUS_URL="https://sso.hashpass.co"; fi
-            if [ -z "$EXPO_PUBLIC_DIRECTUS_URL" ]; then export EXPO_PUBLIC_DIRECTUS_URL="https://sso.hashpass.co"; fi
-            if [ -z "$EXPO_PUBLIC_API_BASE_URL" ]; then export EXPO_PUBLIC_API_BASE_URL="https://api.hashpass.tech/api"; fi
+            PROFILE="production"
+          elif [ "$AWS_BRANCH" = "develop" ]; then
+            PROFILE="staging"
           else
-            if [ -z "$AMPLIFY_SHOW_ALL_EVENTS" ]; then export AMPLIFY_SHOW_ALL_EVENTS="false"; fi
-            if [ -z "$AMPLIFY_EVENT_ID" ]; then export AMPLIFY_EVENT_ID="bsl2025"; fi
-            if [ -z "$AMPLIFY_EVENT_DOMAIN" ]; then export AMPLIFY_EVENT_DOMAIN="bsl2025.hashpass.tech"; fi
-            if [ -z "$DIRECTUS_URL" ]; then export DIRECTUS_URL="https://sso-dev.hashpass.co"; fi
-            if [ -z "$EXPO_PUBLIC_DIRECTUS_URL" ]; then export EXPO_PUBLIC_DIRECTUS_URL="https://sso-dev.hashpass.co"; fi
-            if [ -z "$EXPO_PUBLIC_API_BASE_URL" ]; then export EXPO_PUBLIC_API_BASE_URL="https://api-dev.hashpass.tech/api"; fi
+            PROFILE="staging"
           fi
+          echo "📡 Propagating environment for profile: $PROFILE"
+          npm run env:propagate $PROFILE
         - 'echo "Building for branch: $AWS_BRANCH"'
-        - 'echo "Event ID: $AMPLIFY_EVENT_ID"'
-        - 'echo "Show all events: $AMPLIFY_SHOW_ALL_EVENTS"'
     build:
       commands:
         - rm -rf dist apps/web-app/dist
@@ -74,44 +50,12 @@ frontend:
         # Skip package-level postbuild in CI; equivalent copy steps run below in amplify.yml
         - export SKIP_WEB_POSTBUILD=1
         - export EXPO_PUBLIC_ENABLE_STATIC_EXPORT=true
-        # Set webpack memory optimizations
-        - export WEBPACK_MEMORY_LIMIT=4096
-        # Reduce webpack optimization passes to save memory
-        - export WEBPACK_OPTIMIZE_MINIMIZE=true
-<<<<<<< Updated upstream
-        # CRITICAL: .env.production is gitignored, so we CREATE it at build time.
-        # Expo's @expo/env loads .env.production when NODE_ENV=production and uses
-        # it for EXPO_PUBLIC_ variables baked into the JS bundle.
-        - |
-          if [ "$AWS_BRANCH" = "main" ] || [ "$AWS_BRANCH" = "bsl2025" ]; then
-            DIRECTUS_HOST="https://sso.hashpass.co"
-            API_BASE_URL="https://api.hashpass.tech/api"
-            FRONTEND_URL="https://blockchainsummit.hashpass.lat"
-          else
-            DIRECTUS_HOST="https://sso-dev.hashpass.co"
-            API_BASE_URL="https://api-dev.hashpass.tech/api"
-            FRONTEND_URL="https://blockchainsummit-dev.hashpass.lat"
-          fi
-          echo "EXPO_PUBLIC_BACKEND_PROVIDER=directus" > apps/web-app/.env.production
-          echo "EXPO_PUBLIC_SUPABASE_URL=https://fxgftanraszjjyeidvia.supabase.co" >> apps/web-app/.env.production
-          echo "EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_iJeMRvvMCTiJJzo75egwog_BgQCUykM" >> apps/web-app/.env.production
-          echo "DIRECTUS_URL=${DIRECTUS_HOST}" >> apps/web-app/.env.production
-          echo "EXPO_PUBLIC_DIRECTUS_URL=${DIRECTUS_HOST}" >> apps/web-app/.env.production
-          echo "EXPO_PUBLIC_API_BASE_URL=${API_BASE_URL}" >> apps/web-app/.env.production
-          echo "FRONTEND_URL=${FRONTEND_URL}" >> apps/web-app/.env.production
-          echo "EXPO_PUBLIC_FRONTEND_URL=${FRONTEND_URL}" >> apps/web-app/.env.production
-          echo "✅ Created .env.production with DIRECTUS_URL=${DIRECTUS_HOST} API_BASE_URL=${API_BASE_URL} FRONTEND_URL=${FRONTEND_URL}"
-          cat apps/web-app/.env.production
-        # Build the Expo web app from the monorepo package and copy artifacts to root dist/
-        - '[ -f pnpm-lock.yaml ] && pnpm --dir apps/web-app run build || npm --prefix apps/web-app run build'
+        # Run build using the unified command (pnpm if lockfile present)
+        - '[ -f pnpm-lock.yaml ] && pnpm run build:web || npm run build:web'
         # Ensure no lingering Node workers keep memory pinned before copy steps
         - pkill -9 -x node || true
         - sleep 3
         - cp -r apps/web-app/dist/* ./dist/
-=======
-        # Run build (Amplify has built-in 60min timeout). Use pnpm if lockfile present.
-        - '[ -f pnpm-lock.yaml ] && pnpm run build:web || npm run build:web'
->>>>>>> Stashed changes
         - cp -r dist/server/* dist/client/
         # Amplify artifact upload skips hidden directories; normalize Expo asset paths off ".pnpm"
         - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/client
@@ -121,33 +65,6 @@ frontend:
         - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
         - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
         - cp -r dist/server/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/
-<<<<<<< Updated upstream
-        # No Amplify-hosted API wrappers needed: /api is served by API Gateway + Lambda
-=======
-        - mkdir -p dist/client/api/bslatam
-        - 'echo "{\"type\": \"module\"}" > dist/client/api/package.json'
-        - |
-          for file in apps/web-app/app/api/bslatam/*+api.ts; do
-            base=$(basename "$file" "+api.ts")
-            mkdir -p "dist/client/api/bslatam/$base"
-            cat > "dist/client/api/bslatam/$base/index.js" << 'ENDOFFILE'
-          import { handler } from '../../../../../apps/web-app/app/api/bslatam/PLACEHOLDER+api';
-          export default async (req, res) => {
-            try {
-              const result = await handler(req, res);
-              if (result) {
-                res.status(200).json(result);
-              }
-            } catch (error) {
-              console.error('API Error' + ' ' + error);
-              res.status(500).json({ error: 'Internal Server Error' });
-            }
-          };
-          ENDOFFILE
-            sed -i "s/PLACEHOLDER/$base/g" "dist/client/api/bslatam/$base/index.js"
-            echo "Created API handler at dist/client/api/bslatam/$base/index.js"
-          done
->>>>>>> Stashed changes
         - 'echo "<!-- Build timestamp: $(date) -->" >> dist/client/index.html'
         - |
           if [ "$AWS_BRANCH" = "main" ] || [ "${AMPLIFY_BUILD_STORYBOOK:-false}" = "true" ]; then
@@ -265,10 +182,6 @@ frontend:
       - .turbo/**/*
       - apps/web-app/.expo/**/*
 redirects:
-  # API routes are handled by API Gateway (api.hashpass.tech)
-  # Amplify Hosting API routes are first-class for Next.js, but this app uses Expo Router.
-  # Keep /api/* on API Gateway + Lambda unless you explicitly migrate runtimes.
-  # See docs/AMPLIFY-API-ROUTES.md for the current architecture decision.
   - source: '/sw.js'
     status: 200
     target: '/sw.js'
@@ -312,9 +225,7 @@ redirects:
     status: 200
     target: '/storybook/index.html'
 customErrorResponses:
-  # Exclude API routes from custom error responses (they should go to API Gateway)
   - errorCode: 404
     responsePagePath: '/index.html'
     responseCode: 200
     errorCachingMinTTL: 0
-    # Note: API routes (/api/*) should not trigger this - they should be handled by API Gateway

@@ -17,6 +17,7 @@ const dotenv = require('dotenv');
 const ROOT_DIR = path.resolve(__dirname, '../../');
 const APPS_DIR = path.join(ROOT_DIR, 'apps');
 const WEB_APP_DIR = path.join(APPS_DIR, 'web-app');
+const DIRECTUS_DIR = path.join(APPS_DIR, 'directus');
 
 // Target environment from CLI or NODE_ENV
 const envArg = process.argv[2] || process.env.NODE_ENV || 'local';
@@ -97,5 +98,9 @@ fs.writeFileSync(webAppEnvPath, envContent);
 
 console.log(`📝 Writing to ${webAppEnvLocalPath}...`);
 fs.writeFileSync(webAppEnvLocalPath, envContent);
+
+const directusEnvPath = path.join(DIRECTUS_DIR, '.env');
+console.log(`📝 Writing to ${directusEnvPath}...`);
+fs.writeFileSync(directusEnvPath, envContent);
 
 console.log('✅ Environment propagation complete!');

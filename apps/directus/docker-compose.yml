@@ -2,38 +2,14 @@ version: "3.8"
 
 # HashPass Self-Hosted Infrastructure
 # Optimized for GCP e2-micro (1 vCPU, 1GB RAM)
-#
-# Components:
-# - Directus: API, Auth, Admin UI
-#
-# External Dependencies:
-# - PostgreSQL: Supabase Free Tier (or other)
-# - Storage: GCS / S3 (configured in Directus)
-# - Nginx: Installed directly on host
-#
-# Usage:
-#   docker compose up -d
-#   docker compose logs -f directus
 
 services:
   directus:
     image: directus/directus:11.14.0
-    container_name: hashpass-directus
+    container_name: hashpass-directus-sso
     restart: unless-stopped
-<<<<<<< Updated upstream
-
-=======
-    
->>>>>>> Stashed changes
-    # Expose to localhost only in production
-    # For local development, use 0.0.0.0 to allow network access
     ports:
       - "${DIRECTUS_HOST:-0.0.0.0}:${DIRECTUS_PORT:-8055}:8055"
-<<<<<<< Updated upstream
-
-=======
-    
->>>>>>> Stashed changes
     environment:
       # ===========================================
       # Core Configuration
@@ -41,17 +17,10 @@ services:
       KEY: ${DIRECTUS_KEY}
       SECRET: ${DIRECTUS_SECRET}
       NODE_ENV: production
-<<<<<<< Updated upstream
-
-      # Disable telemetry
-      TELEMETRY: "false"
-
-=======
       
       # Disable telemetry
       TELEMETRY: "false"
-      
->>>>>>> Stashed changes
+
       # ===========================================
       # Database (External PostgreSQL)
       # ===========================================
@@ -62,54 +31,28 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_SSL: "false"
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # Connection pooling (optimized for small instance)
       DB_POOL__MIN: 0
       DB_POOL__MAX: 5
       DB_POOL__IDLE_TIMEOUT_MILLIS: 30000
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # ===========================================
       # Admin User (Bootstrap)
       # ===========================================
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # ===========================================
       # Public URL
       # ===========================================
       PUBLIC_URL: ${PUBLIC_URL:-https://sso.hashpass.co}
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # ===========================================
       # Authentication
       # ===========================================
       AUTH_PROVIDERS: "${AUTH_PROVIDERS:-local,google}"
       AUTH_LOCAL_DRIVER: "${AUTH_LOCAL_DRIVER:-local}"
-<<<<<<< Updated upstream
-
-      # JWT Configuration
-      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
-      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-7d}
-
-      # Password policy
-      AUTH_PASSWORD_POLICY: ${AUTH_PASSWORD_POLICY:-/^.{8,}$$/}
-
-=======
       
       # JWT Configuration
       ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
@@ -118,7 +61,6 @@ services:
       # Password policy
       AUTH_PASSWORD_POLICY: ${AUTH_PASSWORD_POLICY:-/^.{8,}$$/}
       
->>>>>>> Stashed changes
       # ===========================================
       # OAuth Providers (optional)
       # ===========================================
@@ -132,13 +74,8 @@ services:
       AUTH_GOOGLE_MODE: "${AUTH_GOOGLE_MODE:-session}"
       AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION: "${AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION:-true}"
       AUTH_GOOGLE_DEFAULT_ROLE_ID: ${DEFAULT_ROLE_ID:-}
-<<<<<<< Updated upstream
       AUTH_GOOGLE_REDIRECT_ALLOW_LIST: "${AUTH_GOOGLE_REDIRECT_ALLOW_LIST:-http://localhost:8081/auth/callback,https://sso.hashpass.co/auth/callback,https://sso-dev.hashpass.co/auth/callback,https://blockchainsummit.hashpass.lat/auth/callback,https://blockchainsummit-dev.hashpass.lat/auth/callback,https://api-dev.hashpass.tech/auth/callback,https://api.hashpass.tech/auth/callback,https://api-dev.hashpass.tech/api/auth/oauth/callback,https://api.hashpass.tech/api/auth/oauth/callback}"
 
-=======
-      AUTH_GOOGLE_REDIRECT_ALLOW_LIST: "${AUTH_GOOGLE_REDIRECT_ALLOW_LIST:-http://localhost:8081/auth/callback,https://sso.hashpass.co/auth/callback,https://sso-dev.hashpass.co/auth/callback,https://blockchainsummit.hashpass.lat/auth/callback,https://blockchainsummit-dev.hashpass.lat/auth/callback}"
-      
->>>>>>> Stashed changes
       # Discord OAuth
       AUTH_DISCORD_DRIVER: oauth2
       AUTH_DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
@@ -148,11 +85,7 @@ services:
       AUTH_DISCORD_PROFILE_URL: https://discord.com/api/users/@me
       AUTH_DISCORD_ALLOW_PUBLIC_REGISTRATION: "true"
       AUTH_DISCORD_DEFAULT_ROLE_ID: ${DEFAULT_ROLE_ID:-}
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # ===========================================
       # Storage (Cloud)
       # ===========================================
@@ -165,11 +98,7 @@ services:
       STORAGE_CLOUD_KEY: ${STORAGE_KEY}
       STORAGE_CLOUD_SECRET: ${STORAGE_SECRET}
       STORAGE_CLOUD_ENDPOINT: ${STORAGE_ENDPOINT:-}
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # ===========================================
       # Email (SMTP)
       # ===========================================
@@ -180,11 +109,7 @@ services:
       EMAIL_SMTP_USER: ${SMTP_USER:-}
       EMAIL_SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       EMAIL_SMTP_SECURE: ${SMTP_SECURE:-false}
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # ===========================================
       # Rate Limiting
       # ===========================================
@@ -192,65 +117,41 @@ services:
       RATE_LIMITER_STORE: memory
       RATE_LIMITER_POINTS: 100
       RATE_LIMITER_DURATION: 60
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # ===========================================
       # CORS (Allow your frontend domains)
       # ===========================================
       CORS_ENABLED: "true"
-<<<<<<< Updated upstream
       CORS_ORIGIN: ${CORS_ORIGIN:-https://hashpass.co,https://www.hashpass.co,https://sso.hashpass.co,https://sso-dev.hashpass.co,https://blockchainsummit.hashpass.lat,https://blockchainsummit-dev.hashpass.lat,https://api-dev.hashpass.tech,https://api.hashpass.tech,http://localhost:8081}
-=======
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://hashpass.co,https://www.hashpass.co,https://sso.hashpass.co,https://sso-dev.hashpass.co,https://blockchainsummit.hashpass.lat,https://blockchainsummit-dev.hashpass.lat,http://localhost:8081}
->>>>>>> Stashed changes
       CORS_CREDENTIALS: "true"
       CORS_ALLOWED_HEADERS: "${CORS_ALLOWED_HEADERS:-Content-Type,Authorization,Cache-Control,Pragma,Expires}"
 
       # OAuth session cookies for localhost
       SESSION_COOKIE_SAME_SITE: "${SESSION_COOKIE_SAME_SITE:-lax}"
-<<<<<<< Updated upstream
 
       # Cross-domain refresh token cookies
       REFRESH_TOKEN_COOKIE_SAME_SITE: "${REFRESH_TOKEN_COOKIE_SAME_SITE:-none}"
       REFRESH_TOKEN_COOKIE_SECURE: "${REFRESH_TOKEN_COOKIE_SECURE:-true}"
       REFRESH_TOKEN_COOKIE_DOMAIN: "${REFRESH_TOKEN_COOKIE_DOMAIN:-}"
 
-=======
-      
->>>>>>> Stashed changes
       # ===========================================
       # Caching (Disabled for e2-micro)
       # ===========================================
       CACHE_ENABLED: "false"
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # ===========================================
       # Logging
       # ===========================================
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_STYLE: pretty
-<<<<<<< Updated upstream
-
-=======
       
->>>>>>> Stashed changes
       # ===========================================
       # WebSockets (Realtime)
       # ===========================================
       WEBSOCKETS_ENABLED: "true"
       WEBSOCKETS_REST_ENABLED: "true"
       WEBSOCKETS_GRAPHQL_ENABLED: "false"
-<<<<<<< Updated upstream
 
-=======
-      
->>>>>>> Stashed changes
     # Memory limits for e2-micro
     deploy:
       resources:
@@ -258,35 +159,20 @@ services:
           memory: 512M
         reservations:
           memory: 256M
-<<<<<<< Updated upstream
-
-    # Health check
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8055/server/ping" ]
-=======
     
     # Health check
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8055/server/ping"]
->>>>>>> Stashed changes
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-<<<<<<< Updated upstream
-
-=======
     
->>>>>>> Stashed changes
     # Persist uploads and extensions (if using local storage)
     volumes:
       - directus_uploads:/directus/uploads
       - directus_extensions:/directus/extensions
-<<<<<<< Updated upstream
-
-=======
     
->>>>>>> Stashed changes
     # Logging configuration
     logging:
       driver: "json-file"
@@ -298,10 +184,6 @@ volumes:
   directus_uploads:
   directus_extensions:
 
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
 networks:
   default:
     name: hashpass-network
