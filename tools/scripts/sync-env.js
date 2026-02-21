@@ -20,12 +20,21 @@ const envArg = process.argv[2] || 'staging';
 
 // 1. Load root .env
 const rootEnvPath = path.join(ROOT_DIR, '.env');
-if (!fs.existsSync(rootEnvPath)) {
-    console.error('❌ Root .env not found!');
-    process.exit(1);
-}
+let rootConfig = {};
 
-const rootConfig = dotenv.parse(fs.readFileSync(rootEnvPath));
+if (fs.existsSync(rootEnvPath)) {
+    console.log('📄 Loading root .env file...');
+    rootConfig = dotenv.parse(fs.readFileSync(rootEnvPath));
+} else {
+    console.warn(`⚠️ Root .env not found at ${rootEnvPath}`);
+    if (process.env.CI || process.env.AWS_BRANCH) {
+        console.log('☁️ CI environment detected. Falling back to process.env...');
+        rootConfig = { ...process.env };
+    } else {
+        console.error('❌ Root .env not found and no CI environment detected. Cannot sync environments.');
+        process.exit(1);
+    }
+}
 
 // 2. Define Mapping/Suffixes (Matches propagate-env.js)
 const SUFFIX_MAP = {
@@ -61,16 +70,21 @@ try {
     const configRaw = execSync(`aws lambda get-function-configuration --function-name ${LAMBDA_NAME} --region us-east-1`).toString();
     const currentVars = JSON.parse(configRaw).Environment?.Variables || {};
 
-    // Merge with local Truth, prioritizing local .env values for key fields
-    const newVars = {
-        ...currentVars,
-        EXPO_PUBLIC_SUPABASE_URL: targetConfig.EXPO_PUBLIC_SUPABASE_URL,
-        EXPO_PUBLIC_SUPABASE_KEY: targetConfig.EXPO_PUBLIC_SUPABASE_KEY,
-        SUPABASE_SERVICE_ROLE_KEY: targetConfig.SUPABASE_SERVICE_ROLE_KEY,
-        DIRECTUS_URL: targetConfig.DIRECTUS_URL,
-        EXPO_PUBLIC_DIRECTUS_URL: targetConfig.EXPO_PUBLIC_DIRECTUS_URL,
-        NODE_ENV: (envArg === 'production' ? 'production' : 'development')
-    };
+    const KEYS_TO_SYNC = [
+        'EXPO_PUBLIC_SUPABASE_URL',
+        'EXPO_PUBLIC_SUPABASE_KEY',
+        'SUPABASE_SERVICE_ROLE_KEY',
+        'DIRECTUS_URL',
+        'EXPO_PUBLIC_DIRECTUS_URL'
+    ];
+
+    const newVars = { ...currentVars };
+    KEYS_TO_SYNC.forEach(k => {
+        if (targetConfig[k] !== undefined) {
+            newVars[k] = targetConfig[k];
+        }
+    });
+    newVars['NODE_ENV'] = envArg === 'production' ? 'production' : 'development';
 
     // Filter out any undefineds
     Object.keys(newVars).forEach(key => newVars[key] === undefined && delete newVars[key]);

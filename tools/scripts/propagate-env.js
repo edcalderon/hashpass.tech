@@ -26,12 +26,21 @@ console.log(`🔍 Propagation target: ${envArg}`);
 
 // 1. Load root .env
 const rootEnvPath = path.join(ROOT_DIR, '.env');
-if (!fs.existsSync(rootEnvPath)) {
-    console.error('❌ Root .env not found!');
-    process.exit(1);
-}
+let rootConfig = {};
 
-const rootConfig = dotenv.parse(fs.readFileSync(rootEnvPath));
+if (fs.existsSync(rootEnvPath)) {
+    console.log('📄 Loading root .env file...');
+    rootConfig = dotenv.parse(fs.readFileSync(rootEnvPath));
+} else {
+    console.warn(`⚠️ Root .env not found at ${rootEnvPath}`);
+    if (process.env.CI || process.env.AWS_BRANCH) {
+        console.log('☁️ CI environment detected. Falling back to process.env...');
+        rootConfig = { ...process.env };
+    } else {
+        console.error('❌ Root .env not found and no CI environment detected. Cannot propagate environments.');
+        process.exit(1);
+    }
+}
 
 // 2. Define Mapping/Suffixes
 const SUFFIX_MAP = {
