@@ -1,9 +1,18 @@
 {
   "rootPackageJson": "package.json",
   "packages": [
+    ".",
     "apps/*",
     "packages/*",
-    "tools/*"
+    "tools/*",
+    "scripts/*",
+    "infrastructure/*",
+    "lambda/*",
+    "aws/*",
+    "cloudflare/*",
+    "db/*",
+    "config/*",
+    "tests/*"
   ],
   "changelogFile": "CHANGELOG.md",
   "conventionalCommits": true,
@@ -63,12 +72,15 @@
     "secrets-check": {
       "enabled": true,
       "patterns": [
-        "CUSTOM_API_KEY=[0-9a-f]{32}",
-        "(SUPABASE|DIRECTUS|GOOGLE|AWS|BREVO|NODEMAILER)_(KEY|SECRET|PASSWORD|PASS|ROLE)[^=]*=[^\\s]{20,}",
-        "eyJ[A-Za-z0-9_-]{10,}\\.eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}",
+        "CUSTOM_API_KEY[=:][0-9a-f]{32}",
+        "(SUPABASE|DIRECTUS|GOOGLE|AWS|BREVO|NODEMAILER|DB)_(KEY|SECRET|PASSWORD|PASS|ROLE|URL|USER)[^=:\"']*[:=][\\s\"']*[A-Za-z0-9._/-]{10,}",
+        "eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}",
         "sb_publishable_[A-Za-z0-9_-]{20,}",
         "xkeysib-[a-zA-Z0-9]{32,}",
-        "xsmtpsib-[a-zA-Z0-9]{32,}"
+        "xsmtpsib-[a-zA-Z0-9]{32,}",
+        "AIza[0-9A-Za-z-_]{35}",
+        "aws_access_key_id[\\s\"']*[:=][\\s\"']*[A-Z0-9]{20}",
+        "aws_secret_access_key[\\s\"']*[:=][\\s\"']*[A-Za-z0-9/+=]{40}"
       ],
       "allowlist": []
     }
