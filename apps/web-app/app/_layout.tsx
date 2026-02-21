@@ -14,6 +14,7 @@ import { NotificationProvider } from '../contexts/NotificationContext';
 import { BalanceProvider } from '../contexts/BalanceContext';
 import { useTheme, useThemeProvider } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
+import { authService } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { passSystemService } from '../lib/pass-system';
 import "./global.css";
@@ -186,7 +187,10 @@ function ThemedContent() {
         return;
       }
 
-      if (isDashboardRoute && !isLoggedIn) {
+      // Check synchronous service state in case React state is falling behind
+      const actuallyAuthenticated = isLoggedIn || authService.isAuthenticated();
+
+      if (isDashboardRoute && !actuallyAuthenticated) {
         // For dashboard routes, check if user is logged in via provider-agnostic auth
         // Throttle redirects to prevent redirect loops
         const now = Date.now();
@@ -198,7 +202,7 @@ function ThemedContent() {
         console.warn('⚠️ Not authenticated on dashboard route, redirecting to auth');
         setLastRedirectTime(now);
         router.replace('/(shared)/auth' as any);
-      } else if (!isLoggedIn && !isAuthFlow && !isBSLPublic && !isHomePage && !isPublicPage) {
+      } else if (!actuallyAuthenticated && !isAuthFlow && !isBSLPublic && !isHomePage && !isPublicPage) {
         // Throttle redirects to prevent redirect loops
         const now = Date.now();
         if (now - lastRedirectTime < 5000) {
