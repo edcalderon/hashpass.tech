@@ -22,11 +22,7 @@ importers:
         version: 14.1.0(expo-font@13.3.2(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       '@expo/webpack-config':
         specifier: ^19.0.1
-<<<<<<< Updated upstream
         version: 19.0.1(bufferutil@4.1.0)(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
-=======
-        version: 19.0.1(bufferutil@4.1.0)(esbuild@0.25.12)(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)
->>>>>>> Stashed changes
       '@lingui/babel-plugin-lingui-macro':
         specifier: ^5.5.2
         version: 5.9.1(babel-plugin-macros@3.1.0)(typescript@5.8.3)
@@ -164,11 +160,7 @@ importers:
         version: 16.1.6(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       expo-router:
         specifier: ~5.0.5
-<<<<<<< Updated upstream
         version: 5.0.7(aabba00d1cd2e90638a0e6bdd5118222)
-=======
-        version: 5.0.7(lflsx2h5djh2sfju2m3xbqonxa)
->>>>>>> Stashed changes
       expo-secure-store:
         specifier: ^14.2.3
         version: 14.2.4(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))
@@ -282,13 +274,8 @@ importers:
         specifier: ^7.28.5
         version: 7.28.5(@babel/core@7.29.0)
       '@edcalderon/versioning':
-<<<<<<< Updated upstream
         specifier: ^1.4.5
         version: 1.4.5
-=======
-        specifier: ^1.3.1
-        version: 1.3.1
->>>>>>> Stashed changes
       '@expo/metro-config':
         specifier: ^0.20.17
         version: 0.20.18
@@ -312,11 +299,7 @@ importers:
         version: 8.6.14(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))
       '@storybook/react-webpack5':
         specifier: ^8.6.14
-<<<<<<< Updated upstream
         version: 8.6.15(@storybook/test@8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10)))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))(typescript@5.8.3)
-=======
-        version: 8.6.15(@storybook/test@8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10)))(esbuild@0.25.12)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))(typescript@5.8.3)
->>>>>>> Stashed changes
       '@storybook/test':
         specifier: ^8.6.14
         version: 8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))
@@ -350,28 +333,17 @@ importers:
       '@types/react-test-renderer':
         specifier: ^18.3.0
         version: 18.3.1
-<<<<<<< Updated upstream
-=======
-      argon2:
-        specifier: ^0.44.0
-        version: 0.44.0
->>>>>>> Stashed changes
       chromedriver:
         specifier: ^142.0.1
         version: 142.0.3
       css-loader:
         specifier: ^7.1.2
-<<<<<<< Updated upstream
         version: 7.1.3(webpack@5.105.2)
-=======
-        version: 7.1.3(webpack@5.105.2(esbuild@0.25.12))
->>>>>>> Stashed changes
       dotenv:
         specifier: ^17.2.3
         version: 17.3.1
       eslint:
         specifier: ^9.0.0
-<<<<<<< Updated upstream
         version: 9.39.2(jiti@2.6.1)
       eslint-config-expo:
         specifier: ~9.2.0
@@ -379,15 +351,6 @@ importers:
       expo-module-scripts:
         specifier: ^4.1.9
         version: 4.1.10(@babel/core@7.29.0)(@jest/types@29.6.3)(@types/eslint@9.6.1)(babel-jest@29.7.0(@babel/core@7.29.0))(bufferutil@4.1.0)(eslint@9.39.2(jiti@2.6.1))(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(jest@29.7.0(@types/node@24.10.13)(babel-plugin-macros@3.1.0))(prettier@2.8.8)(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react-test-renderer@18.3.1(react@19.0.0))(react@19.0.0)(utf-8-validate@5.0.10)
-=======
-        version: 9.39.2(jiti@1.21.7)
-      eslint-config-expo:
-        specifier: ~9.2.0
-        version: 9.2.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3)
-      expo-module-scripts:
-        specifier: ^4.1.9
-        version: 4.1.10(@babel/core@7.29.0)(@jest/types@29.6.3)(@types/eslint@9.6.1)(babel-jest@29.7.0(@babel/core@7.29.0))(bufferutil@4.1.0)(esbuild@0.25.12)(eslint@9.39.2(jiti@1.21.7))(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(jest@29.7.0(@types/node@24.10.13)(babel-plugin-macros@3.1.0))(prettier@2.8.8)(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react-test-renderer@18.3.1(react@19.0.0))(react@19.0.0)(utf-8-validate@5.0.10)
->>>>>>> Stashed changes
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -397,18 +360,9 @@ importers:
       jest-expo:
         specifier: ~53.0.4
         version: 53.0.14(@babel/core@7.29.0)(bufferutil@4.1.0)(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(jest@29.7.0(@types/node@24.10.13)(babel-plugin-macros@3.1.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10)
-<<<<<<< Updated upstream
       postcss-loader:
         specifier: ^8.2.0
         version: 8.2.0(postcss@8.5.6)(typescript@5.8.3)(webpack@5.105.2)
-=======
-      pg:
-        specifier: ^8.16.3
-        version: 8.18.0
-      postcss-loader:
-        specifier: ^8.2.0
-        version: 8.2.0(postcss@8.5.6)(typescript@5.8.3)(webpack@5.105.2(esbuild@0.25.12))
->>>>>>> Stashed changes
       react-test-renderer:
         specifier: 18.3.1
         version: 18.3.1(react@19.0.0)
@@ -423,7 +377,6 @@ importers:
         version: 8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10)
       style-loader:
         specifier: ^4.0.0
-<<<<<<< Updated upstream
         version: 4.0.0(webpack@5.105.2)
       ts-loader:
         specifier: ^9.5.4
@@ -431,28 +384,12 @@ importers:
       tsx:
         specifier: ^4.20.6
         version: 4.21.0
-=======
-        version: 4.0.0(webpack@5.105.2(esbuild@0.25.12))
-      ts-loader:
-        specifier: ^9.5.4
-        version: 9.5.4(typescript@5.8.3)(webpack@5.105.2(esbuild@0.25.12))
-      tsx:
-        specifier: ^4.20.6
-        version: 4.21.0
-      turbo:
-        specifier: ^2.3.0
-        version: 2.8.7
->>>>>>> Stashed changes
       typescript:
         specifier: ~5.8.3
         version: 5.8.3
       webpack:
         specifier: ^5.102.1
-<<<<<<< Updated upstream
         version: 5.105.2
-=======
-        version: 5.105.2(esbuild@0.25.12)
->>>>>>> Stashed changes
 
   apps/directus: {}
 
@@ -530,15 +467,12 @@ importers:
       '@react-navigation/native-stack':
         specifier: ^7.5.1
         version: 7.12.0(@react-navigation/native@7.1.28(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-screens@4.11.1(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
-<<<<<<< Updated upstream
       '@react-three/drei':
         specifier: ^10.7.7
         version: 10.7.7(@react-three/fiber@9.5.0(e0795044b9a47179c3977ab92dc6c6af))(@types/react@19.0.14)(@types/three@0.183.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(three@0.183.1)
       '@react-three/fiber':
         specifier: ^9.5.0
         version: 9.5.0(e0795044b9a47179c3977ab92dc6c6af)
-=======
->>>>>>> Stashed changes
       '@solana/web3.js':
         specifier: ^1.98.4
         version: 1.98.4(bufferutil@4.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)
@@ -557,12 +491,9 @@ importers:
       '@types/nodemailer':
         specifier: ^6.4.17
         version: 6.4.22
-<<<<<<< Updated upstream
       '@types/three':
         specifier: ^0.183.1
         version: 0.183.1
-=======
->>>>>>> Stashed changes
       '@zxing/browser':
         specifier: ^0.1.5
         version: 0.1.5(@zxing/library@0.21.3)
@@ -643,11 +574,7 @@ importers:
         version: 16.1.6(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       expo-router:
         specifier: ~5.0.5
-<<<<<<< Updated upstream
         version: 5.0.7(aabba00d1cd2e90638a0e6bdd5118222)
-=======
-        version: 5.0.7(lflsx2h5djh2sfju2m3xbqonxa)
->>>>>>> Stashed changes
       expo-secure-store:
         specifier: ^14.2.3
         version: 14.2.4(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))
@@ -663,12 +590,9 @@ importers:
       expo-web-browser:
         specifier: ~14.1.6
         version: 14.1.6(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))
-<<<<<<< Updated upstream
       framer-motion:
         specifier: 12.34.0
         version: 12.34.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
-=======
->>>>>>> Stashed changes
       html5-qrcode:
         specifier: ^2.3.8
         version: 2.3.8
@@ -678,12 +602,9 @@ importers:
       jose:
         specifier: ^5.9.6
         version: 5.10.0
-<<<<<<< Updated upstream
       libphonenumber-js:
         specifier: ^1.12.37
         version: 1.12.37
-=======
->>>>>>> Stashed changes
       lightningcss:
         specifier: ^1.29.2
         version: 1.31.1
@@ -723,12 +644,9 @@ importers:
       react-native-copilot:
         specifier: ^3.3.3
         version: 3.3.3(@types/node@24.10.13)(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
-<<<<<<< Updated upstream
       react-native-css-interop:
         specifier: 0.2.1
         version: 0.2.1(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
-=======
->>>>>>> Stashed changes
       react-native-gesture-handler:
         specifier: ~2.24.0
         version: 2.24.0(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -765,12 +683,9 @@ importers:
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.19(tsx@4.21.0)
-<<<<<<< Updated upstream
       three:
         specifier: ^0.183.1
         version: 0.183.1
-=======
->>>>>>> Stashed changes
       twrnc:
         specifier: ^4.9.1
         version: 4.16.0(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(tsx@4.21.0)
@@ -844,12 +759,9 @@ importers:
       argon2:
         specifier: ^0.44.0
         version: 0.44.0
-<<<<<<< Updated upstream
       babel-plugin-transform-import-meta:
         specifier: ^2.3.3
         version: 2.3.3(@babel/core@7.29.0)
-=======
->>>>>>> Stashed changes
       chromedriver:
         specifier: ^142.0.1
         version: 142.0.3
@@ -861,7 +773,6 @@ importers:
         version: 17.3.1
       eslint:
         specifier: ^9.0.0
-<<<<<<< Updated upstream
         version: 9.39.2(jiti@1.21.7)
       eslint-config-expo:
         specifier: ~9.2.0
@@ -869,15 +780,6 @@ importers:
       expo-module-scripts:
         specifier: ^4.1.9
         version: 4.1.10(@babel/core@7.29.0)(@jest/types@29.6.3)(@types/eslint@9.6.1)(babel-jest@29.7.0(@babel/core@7.29.0))(bufferutil@4.1.0)(esbuild@0.25.12)(eslint@9.39.2(jiti@1.21.7))(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(jest@29.7.0(@types/node@24.10.13)(babel-plugin-macros@3.1.0))(prettier@2.8.8)(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react-test-renderer@18.3.1(react@19.0.0))(react@19.0.0)(utf-8-validate@5.0.10)
-=======
-        version: 9.39.2(jiti@2.6.1)
-      eslint-config-expo:
-        specifier: ~9.2.0
-        version: 9.2.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
-      expo-module-scripts:
-        specifier: ^4.1.9
-        version: 4.1.10(@babel/core@7.29.0)(@jest/types@29.6.3)(@types/eslint@9.6.1)(babel-jest@29.7.0(@babel/core@7.29.0))(bufferutil@4.1.0)(esbuild@0.25.12)(eslint@9.39.2(jiti@2.6.1))(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(jest@29.7.0(@types/node@24.10.13)(babel-plugin-macros@3.1.0))(prettier@2.8.8)(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react-test-renderer@18.3.1(react@19.0.0))(react@19.0.0)(utf-8-validate@5.0.10)
->>>>>>> Stashed changes
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -2005,16 +1907,11 @@ packages:
   '@changesets/write@0.4.0':
     resolution: {integrity: sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q==}
 
-<<<<<<< Updated upstream
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
 
   '@edcalderon/versioning@1.4.5':
     resolution: {integrity: sha512-4Z+BdWSZoLJsTYGEadPRYXUzEfRbsJ3wEaLs5FHzQLuMgUSFzuCMVXQb05cOKXdHd8PQHEzYLil7fIAqk6XrGg==}
-=======
-  '@edcalderon/versioning@1.3.1':
-    resolution: {integrity: sha512-jMihSYj3wVw7WTMLxYHH0LzusnECnqModRIdCgKJ1Ey/yR6Cqiz0j3w6iMctk/x8seIeqdYHxe4W0yIHCJdS4g==}
->>>>>>> Stashed changes
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -2540,153 +2437,105 @@ packages:
     resolution: {integrity: sha512-excjX8DfsIcJ10x1Kzr4RcWe1edC9PquDRRPx3YVCvQv+U5p7Yin2s32ftzikXojb1PIFc/9Mt28/y+iRklkrw==}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-libvips-linux-arm@1.2.4':
     resolution: {integrity: sha512-bFI7xcKFELdiNCVov8e44Ia4u2byA+l3XtsAj+Q8tfCwO6BQ8iDojYdvoPMqsKDkuoOo+X6HZA0s0q11ANMQ8A==}
     cpu: [arm]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-libvips-linux-ppc64@1.2.4':
     resolution: {integrity: sha512-FMuvGijLDYG6lW+b/UvyilUWu5Ayu+3r2d1S8notiGCIyYU/76eig1UfMmkZ7vwgOrzKzlQbFSuQfgm7GYUPpA==}
     cpu: [ppc64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-libvips-linux-riscv64@1.2.4':
     resolution: {integrity: sha512-oVDbcR4zUC0ce82teubSm+x6ETixtKZBh/qbREIOcI3cULzDyb18Sr/Wcyx7NRQeQzOiHTNbZFF1UwPS2scyGA==}
     cpu: [riscv64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-libvips-linux-s390x@1.2.4':
     resolution: {integrity: sha512-qmp9VrzgPgMoGZyPvrQHqk02uyjA0/QrTO26Tqk6l4ZV0MPWIW6LTkqOIov+J1yEu7MbFQaDpwdwJKhbJvuRxQ==}
     cpu: [s390x]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-libvips-linux-x64@1.2.4':
     resolution: {integrity: sha512-tJxiiLsmHc9Ax1bz3oaOYBURTXGIRDODBqhveVHonrHJ9/+k89qbLl0bcJns+e4t4rvaNBxaEZsFtSfAdquPrw==}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-libvips-linuxmusl-arm64@1.2.4':
     resolution: {integrity: sha512-FVQHuwx1IIuNow9QAbYUzJ+En8KcVm9Lk5+uGUQJHaZmMECZmOlix9HnH7n1TRkXMS0pGxIJokIVB9SuqZGGXw==}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-libvips-linuxmusl-x64@1.2.4':
     resolution: {integrity: sha512-+LpyBk7L44ZIXwz/VYfglaX/okxezESc6UxDSoyo2Ks6Jxc4Y7sGjpgU9s4PMgqgjj1gZCylTieNamqA1MF7Dg==}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-linux-arm64@0.34.5':
     resolution: {integrity: sha512-bKQzaJRY/bkPOXyKx5EVup7qkaojECG6NLYswgktOZjaXecSAeCWiZwwiFf3/Y+O1HrauiE3FVsGxFg8c24rZg==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-linux-arm@0.34.5':
     resolution: {integrity: sha512-9dLqsvwtg1uuXBGZKsxem9595+ujv0sJ6Vi8wcTANSFpwV/GONat5eCkzQo/1O6zRIkh0m/8+5BjrRr7jDUSZw==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [arm]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-linux-ppc64@0.34.5':
     resolution: {integrity: sha512-7zznwNaqW6YtsfrGGDA6BRkISKAAE1Jo0QdpNYXNMHu2+0dTrPflTLNkpc8l7MUP5M16ZJcUvysVWWrMefZquA==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [ppc64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-linux-riscv64@0.34.5':
     resolution: {integrity: sha512-51gJuLPTKa7piYPaVs8GmByo7/U7/7TZOq+cnXJIHZKavIRHAP77e3N2HEl3dgiqdD/w0yUfiJnII77PuDDFdw==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [riscv64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-linux-s390x@0.34.5':
     resolution: {integrity: sha512-nQtCk0PdKfho3eC5MrbQoigJ2gd1CgddUMkabUj+rBevs8tZ2cULOx46E7oyX+04WGfABgIwmMC0VqieTiR4jg==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [s390x]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-linux-x64@0.34.5':
     resolution: {integrity: sha512-MEzd8HPKxVxVenwAa+JRPwEC7QFjoPWuS5NZnBt6B3pu7EG2Ge0id1oLHZpPJdn3OQK+BQDiw9zStiHBTJQQQQ==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-linuxmusl-arm64@0.34.5':
     resolution: {integrity: sha512-fprJR6GtRsMt6Kyfq44IsChVZeGN97gTD331weR1ex1c1rypDEABN6Tm2xa1wE6lYb5DdEnk03NZPqA7Id21yg==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-linuxmusl-x64@0.34.5':
     resolution: {integrity: sha512-Jg8wNT1MUzIvhBFxViqrEhWDGzqymo3sV7z7ZsaWbZNDLXRJZoRGrjulp60YYtV4wfY8VIKcWidjojlLcWrd8Q==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   '@img/sharp-wasm32@0.34.5':
     resolution: {integrity: sha512-OdWTEiVkY2PHwqkbBI8frFxQQFekHaSSkUIJkwzclWZe64O1X4UlUjqqqLaPbUpMOQk6FBu/HtlGXNblIs0huw==}
@@ -2937,7 +2786,6 @@ packages:
       '@types/react': '>=16'
       react: '>=16'
 
-<<<<<<< Updated upstream
   '@mediapipe/tasks-vision@0.10.17':
     resolution: {integrity: sha512-CZWV/q6TTe8ta61cZXjfnnHsfWIdFhms03M9T7Cnd5y2mdpylJM0rF1qRq+wsQVRMLz1OYPVEBU9ph2Bx8cxrg==}
 
@@ -2949,11 +2797,6 @@ packages:
     peerDependencies:
       three: '>= 0.159.0'
 
-=======
-  '@messageformat/parser@5.1.1':
-    resolution: {integrity: sha512-3p0YRGCcTUCYvBKLIxtDDyrJ0YijGIwrTRu1DT8gIviIDZru8H23+FkY6MJBzM1n9n20CiM4VeDYuBsrrwnLjg==}
-
->>>>>>> Stashed changes
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
 
@@ -3256,7 +3099,6 @@ packages:
   '@react-navigation/routers@7.5.3':
     resolution: {integrity: sha512-1tJHg4KKRJuQ1/EvJxatrMef3NZXEPzwUIUZ3n1yJ2t7Q97siwRtbynRpQG9/69ebbtiZ8W3ScOZF/OmhvM4Rg==}
 
-<<<<<<< Updated upstream
   '@react-three/drei@10.7.7':
     resolution: {integrity: sha512-ff+J5iloR0k4tC++QtD/j9u3w5fzfgFAWDtAGQah9pF2B1YgOq/5JxqY0/aVoQG5r3xSZz0cv5tk2YuBob4xEQ==}
     peerDependencies:
@@ -3293,8 +3135,6 @@ packages:
       react-native:
         optional: true
 
-=======
->>>>>>> Stashed changes
   '@rollup/plugin-babel@5.3.1':
     resolution: {integrity: sha512-WFfdLWU/xVWKeRQnKmIAQULUI7Il0gZnBIH/ZFO069wYIfPu+8zrfp/KMW0atmELoRDq8FbiP3VCss9MhCut7Q==}
     engines: {node: '>= 10.0.0'}
@@ -3933,12 +3773,9 @@ packages:
   '@tsconfig/node18@18.2.6':
     resolution: {integrity: sha512-eAWQzAjPj18tKnDzmWstz4OyWewLUNBm9tdoN9LayzoboRktYx3Enk1ZXPmThj55L7c4VWYq/Bzq0A51znZfhw==}
 
-<<<<<<< Updated upstream
   '@tweenjs/tween.js@23.1.3':
     resolution: {integrity: sha512-vJmvvwFxYuGnF2axRtPYocag6Clbb5YS7kLL+SO/TeVFzHqDIWrNKYtcsPMibjDx9O+bu+psAy9NKfWklassUA==}
 
-=======
->>>>>>> Stashed changes
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
 
@@ -3972,12 +3809,9 @@ packages:
   '@types/doctrine@0.0.9':
     resolution: {integrity: sha512-eOIHzCUSH7SMfonMG1LsC2f8vxBFtho6NGBznK41R84YzPuvSBzrhEps33IsQiOW9+VL6NQ9DbjQJznk/S4uRA==}
 
-<<<<<<< Updated upstream
   '@types/draco3d@1.4.10':
     resolution: {integrity: sha512-AX22jp8Y7wwaBgAixaSvkoG4M/+PlAcm3Qs4OW8yT9DM4xUpWKeFhLueTAyZF39pviAdcDdeJoACapiAceqNcw==}
 
-=======
->>>>>>> Stashed changes
   '@types/eslint-scope@3.7.7':
     resolution: {integrity: sha512-MzMFlSLBqNF2gcHWO0G1vP/YQyfvrxZ0bF+u7mzUdZ1/xK4A4sru+nraZz5i3iEIk1l1uyicaDVTB4QbbEkAYg==}
 
@@ -4082,12 +3916,9 @@ packages:
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
 
-<<<<<<< Updated upstream
   '@types/offscreencanvas@2019.7.3':
     resolution: {integrity: sha512-ieXiYmgSRXUDeOntE1InxjWyvEelZGP63M+cGuquuRLuIKKT1osnkXjxev9B7d1nXSug5vpunx+gNlbVxMlC9A==}
 
-=======
->>>>>>> Stashed changes
   '@types/parse-json@4.0.2':
     resolution: {integrity: sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==}
 
@@ -4115,14 +3946,11 @@ packages:
     resolution: {integrity: sha512-Y7F5zU8BTBK8tEOvUqgvwvPZ7+9vnc2UI1vHwJ/9ZJG98TntNv04GWa6lrn4MA4149pqw6cyNw/V49Yd2osAFQ==}
     deprecated: This is a stub types definition. react-navigation provides its own type definitions, so you do not need this installed.
 
-<<<<<<< Updated upstream
   '@types/react-reconciler@0.28.9':
     resolution: {integrity: sha512-HHM3nxyUZ3zAylX8ZEyrDNd2XZOnQ0D5XfunJF5FLQnZbHHYq4UWvW1QfelQNXv1ICNkwYhfxjwfnqivYB6bFg==}
     peerDependencies:
       '@types/react': '*'
 
-=======
->>>>>>> Stashed changes
   '@types/react-test-renderer@18.3.1':
     resolution: {integrity: sha512-vAhnk0tG2eGa37lkU9+s5SoroCsRI08xnsWFiAXOuPH2jqzMbcXvKExXViPi1P5fIklDeCvXqyrdmipFaSkZrA==}
 
@@ -4162,15 +3990,12 @@ packages:
   '@types/stack-utils@2.0.3':
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
 
-<<<<<<< Updated upstream
   '@types/stats.js@0.17.4':
     resolution: {integrity: sha512-jIBvWWShCvlBqBNIZt0KAshWpvSjhkwkEu4ZUcASoAvhmrgAUI2t1dXrjSL4xXVLB4FznPrIsX3nKXFl/Dt4vA==}
 
   '@types/three@0.183.1':
     resolution: {integrity: sha512-f2Pu5Hrepfgavttdye3PsH5RWyY/AvdZQwIVhrc4uNtvF7nOWJacQKcoVJn0S4f0yYbmAE6AR+ve7xDcuYtMGw==}
 
-=======
->>>>>>> Stashed changes
   '@types/tough-cookie@4.0.5':
     resolution: {integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==}
 
@@ -4183,12 +4008,9 @@ packages:
   '@types/uuid@9.0.8':
     resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
 
-<<<<<<< Updated upstream
   '@types/webxr@0.5.24':
     resolution: {integrity: sha512-h8fgEd/DpoS9CBrjEQXR+dIDraopAEfu4wYVNY2tEPwk60stPWhvZMf4Foo5FakuQ7HFZoa8WceaWFervK2Ovg==}
 
-=======
->>>>>>> Stashed changes
   '@types/ws@7.4.7':
     resolution: {integrity: sha512-JQbbmxZTZehdc2iszGKs5oC3NFnjeay7mtAWrdt7qNtAVK0g19muApzAy4bm9byz79xa2ZnO/BOBC2R8RC5Lww==}
 
@@ -4302,73 +4124,49 @@ packages:
     resolution: {integrity: sha512-34gw7PjDGB9JgePJEmhEqBhWvCiiWCuXsL9hYphDF7crW7UgI05gyBAi6MF58uGcMOiOqSJ2ybEeCvHcq0BCmQ==}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@unrs/resolver-binding-linux-arm64-musl@1.11.1':
     resolution: {integrity: sha512-RyMIx6Uf53hhOtJDIamSbTskA99sPHS96wxVE/bJtePJJtpdKGXO1wY90oRdXuYOGOTuqjT8ACccMc4K6QmT3w==}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   '@unrs/resolver-binding-linux-ppc64-gnu@1.11.1':
     resolution: {integrity: sha512-D8Vae74A4/a+mZH0FbOkFJL9DSK2R6TFPC9M+jCWYia/q2einCubX10pecpDiTmkJVUH+y8K3BZClycD8nCShA==}
     cpu: [ppc64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@unrs/resolver-binding-linux-riscv64-gnu@1.11.1':
     resolution: {integrity: sha512-frxL4OrzOWVVsOc96+V3aqTIQl1O2TjgExV4EKgRY09AJ9leZpEg8Ak9phadbuX0BA4k8U5qtvMSQQGGmaJqcQ==}
     cpu: [riscv64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@unrs/resolver-binding-linux-riscv64-musl@1.11.1':
     resolution: {integrity: sha512-mJ5vuDaIZ+l/acv01sHoXfpnyrNKOk/3aDoEdLO/Xtn9HuZlDD6jKxHlkN8ZhWyLJsRBxfv9GYM2utQ1SChKew==}
     cpu: [riscv64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   '@unrs/resolver-binding-linux-s390x-gnu@1.11.1':
     resolution: {integrity: sha512-kELo8ebBVtb9sA7rMe1Cph4QHreByhaZ2QEADd9NzIQsYNQpt9UkM9iqr2lhGr5afh885d/cB5QeTXSbZHTYPg==}
     cpu: [s390x]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@unrs/resolver-binding-linux-x64-gnu@1.11.1':
     resolution: {integrity: sha512-C3ZAHugKgovV5YvAMsxhq0gtXuwESUKc5MhEtjBpLoHPLYM+iuwSj3lflFwK3DPm68660rZ7G8BMcwSro7hD5w==}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   '@unrs/resolver-binding-linux-x64-musl@1.11.1':
     resolution: {integrity: sha512-rV0YSoyhK2nZ4vEswT/QwqzqQXw5I6CjoaYMOX0TqBlWhojUf8P94mvI7nuJTeaCkkds3QE4+zS8Ko+GdXuZtA==}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   '@unrs/resolver-binding-wasm32-wasi@1.11.1':
     resolution: {integrity: sha512-5u4RkfxJm+Ng7IWgkzi3qrFOvLvQYnPBmjmZQ8+szTK/b31fQCnleNl1GgEt7nIsZRIf5PLhPwT0WM+q45x/UQ==}
@@ -4398,7 +4196,6 @@ packages:
     peerDependencies:
       '@urql/core': ^5.0.0
 
-<<<<<<< Updated upstream
   '@use-gesture/core@10.3.1':
     resolution: {integrity: sha512-WcINiDt8WjqBdUXye25anHiNxPc0VOrlT8F6LLkU6cycrOGUDyY/yyFmsg3k8i5OLvv25llc0QC45GhR/C8llw==}
 
@@ -4407,8 +4204,6 @@ packages:
     peerDependencies:
       react: '>= 16.8.0'
 
-=======
->>>>>>> Stashed changes
   '@vitest/expect@2.0.5':
     resolution: {integrity: sha512-yHZtwuP7JZivj65Gxoi8upUN2OzHTi3zVfjwdpu2WrvCZPLwsJ2Ey5ILIPccoW23dd/zQBlJ4/dhi7DWNyXCpA==}
 
@@ -4472,12 +4267,9 @@ packages:
   '@webassemblyjs/wast-printer@1.14.1':
     resolution: {integrity: sha512-kPSSXE6De1XOR820C90RIo2ogvZG+c3KiHzqUoO/F34Y2shGzesfqv7o57xrxovZJH/MetF5UjroJ/R/3isoiw==}
 
-<<<<<<< Updated upstream
   '@webgpu/types@0.1.69':
     resolution: {integrity: sha512-RPmm6kgRbI8e98zSD3RVACvnuktIja5+yLgDAkTmxLr90BEwdTXRQWNLF3ETTTyH/8mKhznZuN5AveXYFEsMGQ==}
 
-=======
->>>>>>> Stashed changes
   '@xmldom/xmldom@0.8.11':
     resolution: {integrity: sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw==}
     engines: {node: '>=10.0.0'}
@@ -4848,14 +4640,11 @@ packages:
   babel-plugin-transform-flow-enums@0.0.2:
     resolution: {integrity: sha512-g4aaCrDDOsWjbm0PUUeVnkcVd6AKJsVc/MbnPhEotEpkeJQP6b8nzewohQi7+QS8UyPehOhGWn0nOwjvWpmMvQ==}
 
-<<<<<<< Updated upstream
   babel-plugin-transform-import-meta@2.3.3:
     resolution: {integrity: sha512-bbh30qz1m6ZU1ybJoNOhA2zaDvmeXMnGNBMVMDOJ1Fni4+wMBoy/j7MTRVmqAUCIcy54/rEnr9VEBsfcgbpm3Q==}
     peerDependencies:
       '@babel/core': ^7.10.0
 
-=======
->>>>>>> Stashed changes
   babel-preset-current-node-syntax@1.2.0:
     resolution: {integrity: sha512-E/VlAEzRrsLEb2+dv8yp3bo4scof3l9nR4lrld+Iy5NyVqgVYUJnDAmunkhPMisRI32Qc4iRiz425d8vM++2fg==}
     peerDependencies:
@@ -4958,12 +4747,9 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
-<<<<<<< Updated upstream
   bidi-js@1.0.3:
     resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
 
-=======
->>>>>>> Stashed changes
   big-integer@1.6.52:
     resolution: {integrity: sha512-QxD8cf2eVqJOOz63z6JIN9BzvVs/dlySa5HGSBH5xtR8dPteIRQnBxxKqkNTiT6jbDTF6jAfrd4oMcND9RGbQg==}
     engines: {node: '>=0.6'}
@@ -5129,15 +4915,12 @@ packages:
     resolution: {integrity: sha512-8WB3Jcas3swSvjIeA2yvCJ+Miyz5l1ZmB6HFb9R1317dt9LCQoswg/BGrmAmkWVEszSrrg4RwmO46qIm2OEnSA==}
     engines: {node: '>=16'}
 
-<<<<<<< Updated upstream
   camera-controls@3.1.2:
     resolution: {integrity: sha512-xkxfpG2ECZ6Ww5/9+kf4mfg1VEYAoe9aDSY+IwF0UEs7qEzwy0aVRfs2grImIECs/PoBtWFrh7RXsQkwG922JA==}
     engines: {node: '>=22.0.0', npm: '>=10.5.1'}
     peerDependencies:
       three: '>=0.126.1'
 
-=======
->>>>>>> Stashed changes
   caniuse-api@3.0.0:
     resolution: {integrity: sha512-bsTwuIg/BZZK/vreVTYYbSWoe2F+71P7K5QGEX+pT250DZbfU1MQ5prOKpPR+LL6uWKK3KMwMCAS74QB3Um1uw==}
 
@@ -5561,14 +5344,11 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-<<<<<<< Updated upstream
   cross-env@7.0.3:
     resolution: {integrity: sha512-+/HKd6EgcQCJGh2PSjZuUitQBQynKor4wrFbRg4DtAgS1aWO+gU52xpH7M9ScGgXSYmAVS9bIJ8EzuaGw0oNAw==}
     engines: {node: '>=10.14', npm: '>=6', yarn: '>=1'}
     hasBin: true
 
-=======
->>>>>>> Stashed changes
   cross-fetch@3.2.0:
     resolution: {integrity: sha512-Q+xVJLoGOeIMXZmbUK4HYk+69cQH6LudR0Vu/pRm2YlU/hDV9CiS0gKUMaWY5f2NeUH9C1nV3bsTlCo0FsTV1Q==}
 
@@ -5866,12 +5646,9 @@ packages:
     resolution: {integrity: sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
 
-<<<<<<< Updated upstream
   detect-gpu@5.0.70:
     resolution: {integrity: sha512-bqerEP1Ese6nt3rFkwPnGbsUF9a4q+gMmpTVVOEzoCyeCc+y7/RvJnQZJx1JwhgQI5Ntg0Kgat8Uu7XpBqnz1w==}
 
-=======
->>>>>>> Stashed changes
   detect-indent@6.1.0:
     resolution: {integrity: sha512-reYkTUJAZb9gUuZ2RvVCNhVHdg62RHnJ7WJl8ftMi4diZ6NWlciOzQN88pUhSELEwflJht4oQDv0F0BMlwaYtA==}
     engines: {node: '>=8'}
@@ -5988,12 +5765,9 @@ packages:
     resolution: {integrity: sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==}
     engines: {node: '>=10'}
 
-<<<<<<< Updated upstream
   draco3d@1.5.7:
     resolution: {integrity: sha512-m6WCKt/erDXcw+70IJXnG7M3awwQPAsZvJGX5zY7beBqpELw6RDGkYVU0W43AFxye4pDZ5i2Lbyc/NNGqwjUVQ==}
 
-=======
->>>>>>> Stashed changes
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
@@ -6712,15 +6486,12 @@ packages:
     resolution: {integrity: sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==}
     engines: {node: ^12.20 || >= 14.13}
 
-<<<<<<< Updated upstream
   fflate@0.6.10:
     resolution: {integrity: sha512-IQrh3lEPM93wVCEczc9SaAOvkmcoQn/G8Bo1e8ZPlY3X3bnAxWaBdvTdvM1hP62iZp0BXWDy4vTAy4fF0+Dlpg==}
 
   fflate@0.8.2:
     resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
 
-=======
->>>>>>> Stashed changes
   figures@3.2.0:
     resolution: {integrity: sha512-yaduQFRKLXYOGgEn6AZau90j3ggSOyiqXU0F9JZfeXYhNa+Jk4X+s45A2zg5jns87GAFa34BBm2kXw4XpNcbdg==}
     engines: {node: '>=8'}
@@ -7038,12 +6809,9 @@ packages:
   globrex@0.1.2:
     resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
 
-<<<<<<< Updated upstream
   glsl-noise@0.0.0:
     resolution: {integrity: sha512-b/ZCF6amfAUb7dJM/MxRs7AetQEahYzJ8PtgfrmEdtw6uyGOr+ZSGtgjFm6mfsBkxJ4d2W7kg+Nlqzqvn3Bc0w==}
 
-=======
->>>>>>> Stashed changes
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
@@ -7113,12 +6881,9 @@ packages:
   hermes-parser@0.29.1:
     resolution: {integrity: sha512-xBHWmUtRC5e/UL0tI7Ivt2riA/YBq9+SiYFU7C1oBa/j2jYGlIF9043oak1F47ihuDIxQ5nbsKueYJDRY02UgA==}
 
-<<<<<<< Updated upstream
   hls.js@1.6.15:
     resolution: {integrity: sha512-E3a5VwgXimGHwpRGV+WxRTKeSp2DW5DI5MWv34ulL3t5UNmyJWCQ1KmLEHbYzcfThfXG8amBL+fCYPneGHC4VA==}
 
-=======
->>>>>>> Stashed changes
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
 
@@ -7511,12 +7276,9 @@ packages:
   is-potential-custom-element-name@1.0.1:
     resolution: {integrity: sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==}
 
-<<<<<<< Updated upstream
   is-promise@2.2.2:
     resolution: {integrity: sha512-+lP4/6lKUBfQjZ2pdxThZvLUAafmZb8OAxFb8XXtiQmS35INgr85hdOGoEs124ez1FCnZJt6jau/T+alh58QFQ==}
 
-=======
->>>>>>> Stashed changes
   is-regex@1.2.1:
     resolution: {integrity: sha512-MjYsKHO5O7mCsmRGxWcLWheFqN9DJ/2TmngvjKXihe6efViPqc274+Fx/4fYj/r03+ESvBdTXK0V6tA3rgez1g==}
     engines: {node: '>= 0.4'}
@@ -7630,14 +7392,11 @@ packages:
     resolution: {integrity: sha512-H0dkQoCa3b2VEeKQBOxFph+JAbcrQdE7KC0UkqwpLmv2EC4P41QXP+rqo9wYodACiG5/WM5s9oDApTU8utwj9g==}
     engines: {node: '>= 0.4'}
 
-<<<<<<< Updated upstream
   its-fine@2.0.0:
     resolution: {integrity: sha512-KLViCmWx94zOvpLwSlsx6yOCeMhZYaxrJV87Po5k/FoZzcPSahvK5qJ7fYhS61sZi5ikmh2S3Hz55A2l3U69ng==}
     peerDependencies:
       react: ^19.0.0
 
-=======
->>>>>>> Stashed changes
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
 
@@ -7969,12 +7728,9 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
-<<<<<<< Updated upstream
   libphonenumber-js@1.12.37:
     resolution: {integrity: sha512-rDU6bkpuMs8YRt/UpkuYEAsYSoNuDEbrE41I3KNvmXREGH6DGBJ8Wbak4by29wNOQ27zk4g4HL82zf0OGhwRuw==}
 
-=======
->>>>>>> Stashed changes
   lie@3.3.0:
     resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
 
@@ -8040,80 +7796,56 @@ packages:
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   lightningcss-linux-arm64-gnu@1.31.1:
     resolution: {integrity: sha512-WKyLWztD71rTnou4xAD5kQT+982wvca7E6QoLpoawZ1gP9JM0GJj4Tp5jMUh9B3AitHbRZ2/H3W5xQmdEOUlLg==}
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   lightningcss-linux-arm64-musl@1.27.0:
     resolution: {integrity: sha512-rCGBm2ax7kQ9pBSeITfCW9XSVF69VX+fm5DIpvDZQl4NnQoMQyRwhZQm9pd59m8leZ1IesRqWk2v/DntMo26lg==}
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   lightningcss-linux-arm64-musl@1.31.1:
     resolution: {integrity: sha512-mVZ7Pg2zIbe3XlNbZJdjs86YViQFoJSpc41CbVmKBPiGmC4YrfeOyz65ms2qpAobVd7WQsbW4PdsSJEMymyIMg==}
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   lightningcss-linux-x64-gnu@1.27.0:
     resolution: {integrity: sha512-Dk/jovSI7qqhJDiUibvaikNKI2x6kWPN79AQiD/E/KeQWMjdGe9kw51RAgoWFDi0coP4jinaH14Nrt/J8z3U4A==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   lightningcss-linux-x64-gnu@1.31.1:
     resolution: {integrity: sha512-xGlFWRMl+0KvUhgySdIaReQdB4FNudfUTARn7q0hh/V67PVGCs3ADFjw+6++kG1RNd0zdGRlEKa+T13/tQjPMA==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [glibc]
-=======
->>>>>>> Stashed changes
 
   lightningcss-linux-x64-musl@1.27.0:
     resolution: {integrity: sha512-QKjTxXm8A9s6v9Tg3Fk0gscCQA1t/HMoF7Woy1u68wCk5kS4fR+q3vXa1p3++REW784cRAtkYKrPy6JKibrEZA==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   lightningcss-linux-x64-musl@1.31.1:
     resolution: {integrity: sha512-eowF8PrKHw9LpoZii5tdZwnBcYDxRw2rRCyvAXLi34iyeYfqCQNA9rmUM0ce62NlPhCvof1+9ivRaTY6pSKDaA==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
-<<<<<<< Updated upstream
     libc: [musl]
-=======
->>>>>>> Stashed changes
 
   lightningcss-win32-arm64-msvc@1.27.0:
     resolution: {integrity: sha512-/wXegPS1hnhkeG4OXQKEMQeJd48RDC3qdh+OA8pCuOPCyvnm/yEayrJdJVqzBsqpy1aJklRCVxscpFur80o6iQ==}
@@ -8266,15 +7998,12 @@ packages:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
     hasBin: true
 
-<<<<<<< Updated upstream
   maath@0.10.8:
     resolution: {integrity: sha512-tRvbDF0Pgqz+9XUa4jjfgAQ8/aPKmQdWXilFu2tMy4GWj4NOsx99HlULO4IeREfbO3a0sA145DZYyvXPkybm0g==}
     peerDependencies:
       '@types/three': '>=0.134.0'
       three: '>=0.134.0'
 
-=======
->>>>>>> Stashed changes
   magic-string@0.25.9:
     resolution: {integrity: sha512-RmF0AsMzgt25qzqqLc1+MbHmhdx0ojF2Fvs4XnOqz2ZOBXzzkEwc/dJQZCYHAn7v1jbVOjAZfK8msRn4BxO4VQ==}
 
@@ -8362,7 +8091,6 @@ packages:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
     engines: {node: '>= 8'}
 
-<<<<<<< Updated upstream
   meshline@3.3.1:
     resolution: {integrity: sha512-/TQj+JdZkeSUOl5Mk2J7eLcYTLiQm2IDzmlSvYm7ov15anEcDJ92GHqqazxTSreeNgfnYu24kiEvvv0WlbCdFQ==}
     peerDependencies:
@@ -8371,8 +8099,6 @@ packages:
   meshoptimizer@1.0.1:
     resolution: {integrity: sha512-Vix+QlA1YYT3FwmBBZ+49cE5y/b+pRrcXKqGpS5ouh33d3lSp2PoTpCw19E0cKDFWalembrHnIaZetf27a+W2g==}
 
-=======
->>>>>>> Stashed changes
   methods@1.1.2:
     resolution: {integrity: sha512-iclAHeNqNm68zFtnZ0e+1L2yUIdvzNoauKU4WBA3VvH/vPFieF7qfRlwUZU+DA9P9bPXIS90ulxoUoCH23sV2w==}
     engines: {node: '>= 0.6'}
@@ -9355,12 +9081,9 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-<<<<<<< Updated upstream
   potpack@1.0.2:
     resolution: {integrity: sha512-choctRBIV9EMT9WGAZHn3V7t0Z2pMQyl0EZE6pFc/6ml3ssw7Dlf/oAOvFwjm1HVsqfQN8GfeFyJ+d8tRzqueQ==}
 
-=======
->>>>>>> Stashed changes
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
@@ -9408,12 +9131,9 @@ packages:
     resolution: {integrity: sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==}
     engines: {node: '>=0.4.0'}
 
-<<<<<<< Updated upstream
   promise-worker-transferable@1.0.4:
     resolution: {integrity: sha512-bN+0ehEnrXfxV2ZQvU2PetO0n4gqBD4ulq3MI1WOPLgr7/Mg9yRQkX5+0v1vagr74ZTsl7XtzlaYDo2EuCeYJw==}
 
-=======
->>>>>>> Stashed changes
   promise@7.3.1:
     resolution: {integrity: sha512-nolQXZ/4L+bP/UGlkfaIujX9BKxGwmQ9OT4mOt5yvy8iK1h3wqTEJCijzGANTCCl9nWjY41juyAn2K3Q1hLLTg==}
 
@@ -9724,7 +9444,6 @@ packages:
     peerDependencies:
       react: ^19.0.0
 
-<<<<<<< Updated upstream
   react-use-measure@2.1.7:
     resolution: {integrity: sha512-KrvcAo13I/60HpwGO5jpW7E9DfusKyLPLvuHlUyP5zqnmAPhNc6qTRjUQrdTADl0lpPpDVU2/Gg51UlOGHXbdg==}
     peerDependencies:
@@ -9734,8 +9453,6 @@ packages:
       react-dom:
         optional: true
 
-=======
->>>>>>> Stashed changes
   react@19.0.0:
     resolution: {integrity: sha512-V8AVnmPIICiWpGfm6GLzCR/W5FXLchHop40W4nXBmdlEceh16rCN8O8LNWm5bh5XUX91fh7KpA+W0TgMKmgTpQ==}
     engines: {node: '>=0.10.0'}
@@ -9990,12 +9707,9 @@ packages:
   scheduler@0.25.0:
     resolution: {integrity: sha512-xFVuu11jh+xcO7JOAGJNOXld8/TcEHK/4CituBUeUb5hqxJLj9YuemAEuvm9gQ/+pgXYfbQuqAkiYu+u7YEsNA==}
 
-<<<<<<< Updated upstream
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
-=======
->>>>>>> Stashed changes
   schema-utils@2.7.1:
     resolution: {integrity: sha512-SHiNtMOUGWBQJwzISiVYKu82GiV4QYGePp3odlY1tuKO7gPtphAT5R/py0fA6xtbgLL/RvtJZnU9b8s0F1q0Xg==}
     engines: {node: '>= 8.9.0'}
@@ -10159,13 +9873,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-<<<<<<< Updated upstream
   simple-git@3.31.1:
     resolution: {integrity: sha512-oiWP4Q9+kO8q9hHqkX35uuHmxiEbZNTrZ5IPxgMGrJwN76pzjm/jabkZO0ItEcqxAincqGAzL3QHSaHt4+knBg==}
-=======
-  simple-git@3.30.0:
-    resolution: {integrity: sha512-q6lxyDsCmEal/MEGhP1aVyQ3oxnagGlBDOVSIB4XUVLl1iZh0Pah6ebC9V4xBap/RfgP2WlI8EKs0WS0rMEJHg==}
->>>>>>> Stashed changes
 
   simple-plist@1.3.1:
     resolution: {integrity: sha512-iMSw5i0XseMnrhtIzRb7XpQEXepa9xhWxGUojHBL43SIpQuDQkh3Wpy67ZbDzZVr6EKxvwVChnVpdl8hEVLDiw==}
@@ -10336,7 +10045,6 @@ packages:
     resolution: {integrity: sha512-WjlahMgHmCJpqzU8bIBy4qtsZdU9lRlcZE3Lvyej6t4tuOuv1vk57OW3MBrj6hXBFx/nNoC9MPMTcr5YA7NQbg==}
     engines: {node: '>=6'}
 
-<<<<<<< Updated upstream
   stats-gl@2.4.2:
     resolution: {integrity: sha512-g5O9B0hm9CvnM36+v7SFl39T7hmAlv541tU81ME8YeSb3i1CIP5/QdDeSB3A0la0bKNHpxpwxOVRo2wFTYEosQ==}
     peerDependencies:
@@ -10346,8 +10054,6 @@ packages:
   stats.js@0.17.0:
     resolution: {integrity: sha512-hNKz8phvYLPEcRkeG1rsGmV5ChMjKDAWU7/OJJdDErPBNChQXxCo3WZurGpnWc6gZhAzEPFad1aVgyOANH1sMw==}
 
-=======
->>>>>>> Stashed changes
   statuses@1.5.0:
     resolution: {integrity: sha512-OpZ3zP+jT1PI7I8nemJX4AKmAX070ZkYPVWV/AaKTJl+tXCTGyVdC1a4SL8RUQYEwk/f34ZX8UTykN68FwrqAA==}
     engines: {node: '>= 0.6'}
@@ -10562,14 +10268,11 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
-<<<<<<< Updated upstream
   suspend-react@0.1.3:
     resolution: {integrity: sha512-aqldKgX9aZqpoDp3e8/BZ8Dm7x1pJl+qI3ZKxDN0i/IQTWUwBx/ManmlVJ3wowqbno6c2bmiIfs+Um6LbsjJyQ==}
     peerDependencies:
       react: '>=17.0'
 
-=======
->>>>>>> Stashed changes
   svgo@2.8.0:
     resolution: {integrity: sha512-+N/Q9kV1+F+UeWYoSiULYo4xYSDQlTgb+ayMobAXPwMnLvop7oxKMo9OzIrX5x3eS4L4f2UHhc9axXwY8DpChg==}
     engines: {node: '>=10.13.0'}
@@ -10677,7 +10380,6 @@ packages:
   threads@1.7.0:
     resolution: {integrity: sha512-Mx5NBSHX3sQYR6iI9VYbgHKBLisyB+xROCBGjjWm1O9wb9vfLxdaGtmT/KCjUqMsSNW6nERzCW3T6H43LqjDZQ==}
 
-<<<<<<< Updated upstream
   three-mesh-bvh@0.8.3:
     resolution: {integrity: sha512-4G5lBaF+g2auKX3P0yqx+MJC6oVt6sB5k+CchS6Ob0qvH0YIhuUk1eYr7ktsIpY+albCqE80/FVQGV190PmiAg==}
     peerDependencies:
@@ -10691,8 +10393,6 @@ packages:
   three@0.183.1:
     resolution: {integrity: sha512-Psv6bbd3d/M/01MT2zZ+VmD0Vj2dbWTNhfe4CuSg7w5TuW96M3NOyCVuh9SZQ05CpGmD7NEcJhZw4GVjhCYxfQ==}
 
-=======
->>>>>>> Stashed changes
   throat@5.0.0:
     resolution: {integrity: sha512-fcwX4mndzpLQKBS1DVYhGAcYaYt7vsHNIvQV+WXMvnow5cgjPphq5CaayLaGsjRdSCKZFNGt7/GYAuXaNOiYCA==}
 
@@ -10765,7 +10465,6 @@ packages:
     resolution: {integrity: sha512-c1PTsA3tYrIsLGkJkzHF+w9F2EyxfXGo4UyJc4pFL++FMjnq0HJS69T3M7d//gKrFKwy429bouPescbjecU+Zw==}
     engines: {node: '>=8'}
 
-<<<<<<< Updated upstream
   troika-three-text@0.52.4:
     resolution: {integrity: sha512-V50EwcYGruV5rUZ9F4aNsrytGdKcXKALjEtQXIOBfhVoZU9VAqZNIoGQ3TMiooVqFAbR1w15T+f+8gkzoFzawg==}
     peerDependencies:
@@ -10779,8 +10478,6 @@ packages:
   troika-worker-utils@0.52.0:
     resolution: {integrity: sha512-W1CpvTHykaPH5brv5VHLfQo9D1OYuo0cSBEUQFFT/nBUzM8iD6Lq2/tgG/f1OelbAS1WtaTPQzE5uM49egnngw==}
 
-=======
->>>>>>> Stashed changes
   ts-api-utils@2.4.0:
     resolution: {integrity: sha512-3TaVTaAv2gTiMB35i3FiGJaRfwb3Pyn/j3m/bfAvGe8FB7CF6u+LMYqYlDh7reQf7UNvoTvdfAqHGmPGOSsPmA==}
     engines: {node: '>=18.12'}
@@ -10852,12 +10549,9 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-<<<<<<< Updated upstream
   tunnel-rat@0.1.2:
     resolution: {integrity: sha512-lR5VHmkPhzdhrM092lI2nACsLO4QubF0/yoOhzX7c+wIpbN1GjHNzCc91QlpxBi+cnx8vVJ+Ur6vL5cEoQPFpQ==}
 
-=======
->>>>>>> Stashed changes
   turbo-darwin-64@2.8.7:
     resolution: {integrity: sha512-Xr4TO/oDDwoozbDtBvunb66g//WK8uHRygl72vUthuwzmiw48pil4IuoG/QbMHd9RE8aBnVmzC0WZEWk/WWt3A==}
     cpu: [x64]
@@ -11104,13 +10798,10 @@ packages:
   utila@0.4.0:
     resolution: {integrity: sha512-Z0DbgELS9/L/75wZbro8xAnT50pBVFQZ+hUEueGDU5FN51YSCYM+jdxsfCiHjwNP/4LCDD0i/graKpeBnOXKRA==}
 
-<<<<<<< Updated upstream
   utility-types@3.11.0:
     resolution: {integrity: sha512-6Z7Ma2aVEWisaL6TvBCy7P8rm2LQoPv6dJ7ecIaIixHcwfbJ0x7mWdbcwlIM5IGQxPZSFYeqRCqlOOeKoJYMkw==}
     engines: {node: '>= 4'}
 
-=======
->>>>>>> Stashed changes
   utils-merge@1.0.1:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
@@ -11172,15 +10863,12 @@ packages:
   webdriver-bidi-protocol@0.4.0:
     resolution: {integrity: sha512-U9VIlNRrq94d1xxR9JrCEAx5Gv/2W7ERSv8oWRoNe/QYbfccS0V3h/H6qeNeCRJxXGMhhnkqvwNrvPAYeuP9VA==}
 
-<<<<<<< Updated upstream
   webgl-constants@1.1.1:
     resolution: {integrity: sha512-LkBXKjU5r9vAW7Gcu3T5u+5cvSvh5WwINdr0C+9jpzVB41cjQAP5ePArDtk/WHYdVj0GefCgM73BA7FlIiNtdg==}
 
   webgl-sdf-generator@1.1.1:
     resolution: {integrity: sha512-9Z0JcMTFxeE+b2x1LJTdnaT8rT8aEp7MVxkNwoycNmJWwPdzoXzMh0BjJSh/AEFP+KPYZUli814h8bJZFIZ2jA==}
 
-=======
->>>>>>> Stashed changes
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
 
@@ -11538,7 +11226,6 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
-<<<<<<< Updated upstream
   zustand@4.5.7:
     resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
     engines: {node: '>=12.7.0'}
@@ -11572,8 +11259,6 @@ packages:
       use-sync-external-store:
         optional: true
 
-=======
->>>>>>> Stashed changes
 snapshots:
 
   '@0no-co/graphql.web@1.2.0': {}
@@ -13159,23 +12844,15 @@ snapshots:
       human-id: 4.1.3
       prettier: 2.8.8
 
-<<<<<<< Updated upstream
   '@dimforge/rapier3d-compat@0.12.0': {}
 
   '@edcalderon/versioning@1.4.5':
-=======
-  '@edcalderon/versioning@1.3.1':
->>>>>>> Stashed changes
     dependencies:
       commander: 12.1.0
       conventional-changelog: 5.1.0
       fs-extra: 11.3.3
       semver: 7.7.4
-<<<<<<< Updated upstream
       simple-git: 3.31.1
-=======
-      simple-git: 3.30.0
->>>>>>> Stashed changes
     transitivePeerDependencies:
       - supports-color
 
@@ -13739,7 +13416,6 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-<<<<<<< Updated upstream
   '@expo/webpack-config@19.0.1(bufferutil@4.1.0)(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(utf-8-validate@5.0.10)':
     dependencies:
       '@babel/core': 7.29.0
@@ -13781,8 +13457,6 @@ snapshots:
       - utf-8-validate
       - webpack-cli
 
-=======
->>>>>>> Stashed changes
   '@expo/ws-tunnel@1.0.6': {}
 
   '@expo/xcpretty@4.4.0':
@@ -14271,23 +13945,17 @@ snapshots:
       '@types/react': 19.0.14
       react: 19.0.0
 
-<<<<<<< Updated upstream
   '@mediapipe/tasks-vision@0.10.17': {}
 
-=======
->>>>>>> Stashed changes
   '@messageformat/parser@5.1.1':
     dependencies:
       moo: 0.5.2
 
-<<<<<<< Updated upstream
   '@monogrid/gainmap-js@3.4.0(three@0.183.1)':
     dependencies:
       promise-worker-transferable: 1.0.4
       three: 0.183.1
 
-=======
->>>>>>> Stashed changes
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
       '@emnapi/core': 1.8.1
@@ -14670,7 +14338,6 @@ snapshots:
     dependencies:
       nanoid: 3.3.11
 
-<<<<<<< Updated upstream
   '@react-three/drei@10.7.7(@react-three/fiber@9.5.0(e0795044b9a47179c3977ab92dc6c6af))(@types/react@19.0.14)(@types/three@0.183.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(three@0.183.1)':
     dependencies:
       '@babel/runtime': 7.28.6
@@ -14728,8 +14395,6 @@ snapshots:
       - '@types/react'
       - immer
 
-=======
->>>>>>> Stashed changes
   '@rollup/plugin-babel@5.3.1(@babel/core@7.29.0)(@types/babel__core@7.20.5)(rollup@2.79.2)':
     dependencies:
       '@babel/core': 7.29.0
@@ -15334,7 +14999,6 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-<<<<<<< Updated upstream
   '@storybook/builder-webpack5@8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))(typescript@5.8.3)':
     dependencies:
       '@storybook/core-webpack': 8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))
@@ -15371,8 +15035,6 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-=======
->>>>>>> Stashed changes
   '@storybook/components@8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))':
     dependencies:
       storybook: 8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10)
@@ -15461,7 +15123,6 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-<<<<<<< Updated upstream
   '@storybook/preset-react-webpack@8.6.15(@storybook/test@8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10)))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))(typescript@5.8.3)':
     dependencies:
       '@storybook/core-webpack': 8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))
@@ -15488,8 +15149,6 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-=======
->>>>>>> Stashed changes
   '@storybook/preview-api@8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))':
     dependencies:
       storybook: 8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10)
@@ -15508,7 +15167,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-<<<<<<< Updated upstream
   '@storybook/react-docgen-typescript-plugin@1.0.6--canary.9.0c3f3b7.0(typescript@5.8.3)(webpack@5.105.2)':
     dependencies:
       debug: 4.4.3
@@ -15523,8 +15181,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-=======
->>>>>>> Stashed changes
   '@storybook/react-dom-shim@8.6.14(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))':
     dependencies:
       react: 19.0.0
@@ -15556,7 +15212,6 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-<<<<<<< Updated upstream
   '@storybook/react-webpack5@8.6.15(@storybook/test@8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10)))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))(typescript@5.8.3)':
     dependencies:
       '@storybook/builder-webpack5': 8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))(typescript@5.8.3)
@@ -15576,8 +15231,6 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-=======
->>>>>>> Stashed changes
   '@storybook/react@8.6.15(@storybook/test@8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10)))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))(typescript@5.8.3)':
     dependencies:
       '@storybook/components': 8.6.15(storybook@8.6.15(bufferutil@4.1.0)(prettier@2.8.8)(utf-8-validate@5.0.10))
@@ -15740,11 +15393,8 @@ snapshots:
 
   '@tsconfig/node18@18.2.6': {}
 
-<<<<<<< Updated upstream
   '@tweenjs/tween.js@23.1.3': {}
 
-=======
->>>>>>> Stashed changes
   '@tybys/wasm-util@0.10.1':
     dependencies:
       tslib: 2.8.1
@@ -15793,11 +15443,8 @@ snapshots:
 
   '@types/doctrine@0.0.9': {}
 
-<<<<<<< Updated upstream
   '@types/draco3d@1.4.10': {}
 
-=======
->>>>>>> Stashed changes
   '@types/eslint-scope@3.7.7':
     dependencies:
       '@types/eslint': 9.6.1
@@ -15937,11 +15584,8 @@ snapshots:
 
   '@types/normalize-package-data@2.4.4': {}
 
-<<<<<<< Updated upstream
   '@types/offscreencanvas@2019.7.3': {}
 
-=======
->>>>>>> Stashed changes
   '@types/parse-json@4.0.2': {}
 
   '@types/phoenix@1.6.7': {}
@@ -15967,13 +15611,10 @@ snapshots:
     dependencies:
       react-navigation: 5.0.0
 
-<<<<<<< Updated upstream
   '@types/react-reconciler@0.28.9(@types/react@19.0.14)':
     dependencies:
       '@types/react': 19.0.14
 
-=======
->>>>>>> Stashed changes
   '@types/react-test-renderer@18.3.1':
     dependencies:
       '@types/react': 18.3.28
@@ -16020,7 +15661,6 @@ snapshots:
 
   '@types/stack-utils@2.0.3': {}
 
-<<<<<<< Updated upstream
   '@types/stats.js@0.17.4': {}
 
   '@types/three@0.183.1':
@@ -16033,8 +15673,6 @@ snapshots:
       fflate: 0.8.2
       meshoptimizer: 1.0.1
 
-=======
->>>>>>> Stashed changes
   '@types/tough-cookie@4.0.5': {}
 
   '@types/trusted-types@2.0.7': {}
@@ -16043,11 +15681,8 @@ snapshots:
 
   '@types/uuid@9.0.8': {}
 
-<<<<<<< Updated upstream
   '@types/webxr@0.5.24': {}
 
-=======
->>>>>>> Stashed changes
   '@types/ws@7.4.7':
     dependencies:
       '@types/node': 24.10.13
@@ -16083,17 +15718,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-<<<<<<< Updated upstream
   '@typescript-eslint/eslint-plugin@8.55.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)':
     dependencies:
       '@eslint-community/regexpp': 4.12.2
       '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
-=======
-  '@typescript-eslint/eslint-plugin@8.55.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)':
-    dependencies:
-      '@eslint-community/regexpp': 4.12.2
-      '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3)
->>>>>>> Stashed changes
       '@typescript-eslint/scope-manager': 8.55.0
       '@typescript-eslint/type-utils': 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
       '@typescript-eslint/utils': 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
@@ -16287,7 +15915,6 @@ snapshots:
       '@urql/core': 5.2.0
       wonka: 6.3.5
 
-<<<<<<< Updated upstream
   '@use-gesture/core@10.3.1': {}
 
   '@use-gesture/react@10.3.1(react@19.0.0)':
@@ -16295,8 +15922,6 @@ snapshots:
       '@use-gesture/core': 10.3.1
       react: 19.0.0
 
-=======
->>>>>>> Stashed changes
   '@vitest/expect@2.0.5':
     dependencies:
       '@vitest/spy': 2.0.5
@@ -16405,11 +16030,8 @@ snapshots:
       '@webassemblyjs/ast': 1.14.1
       '@xtuc/long': 4.2.2
 
-<<<<<<< Updated upstream
   '@webgpu/types@0.1.69': {}
 
-=======
->>>>>>> Stashed changes
   '@xmldom/xmldom@0.8.11': {}
 
   '@xtuc/ieee754@1.2.0': {}
@@ -16732,7 +16354,6 @@ snapshots:
       schema-utils: 2.7.1
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   babel-loader@8.4.1(@babel/core@7.29.0)(webpack@5.105.2):
     dependencies:
       '@babel/core': 7.29.0
@@ -16742,8 +16363,6 @@ snapshots:
       schema-utils: 2.7.1
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   babel-plugin-dynamic-import-node@2.3.3:
     dependencies:
       object.assign: 4.1.7
@@ -16825,15 +16444,12 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
 
-<<<<<<< Updated upstream
   babel-plugin-transform-import-meta@2.3.3(@babel/core@7.29.0):
     dependencies:
       '@babel/core': 7.29.0
       '@babel/template': 7.28.6
       tslib: 2.8.1
 
-=======
->>>>>>> Stashed changes
   babel-preset-current-node-syntax@1.2.0(@babel/core@7.29.0):
     dependencies:
       '@babel/core': 7.29.0
@@ -16967,13 +16583,10 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
-<<<<<<< Updated upstream
   bidi-js@1.0.3:
     dependencies:
       require-from-string: 2.0.2
 
-=======
->>>>>>> Stashed changes
   big-integer@1.6.52: {}
 
   big.js@5.2.2: {}
@@ -17161,13 +16774,10 @@ snapshots:
 
   camelcase@8.0.0: {}
 
-<<<<<<< Updated upstream
   camera-controls@3.1.2(three@0.183.1):
     dependencies:
       three: 0.183.1
 
-=======
->>>>>>> Stashed changes
   caniuse-api@3.0.0:
     dependencies:
       browserslist: 4.28.1
@@ -17301,14 +16911,11 @@ snapshots:
       del: 4.1.1
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   clean-webpack-plugin@4.0.0(webpack@5.105.2):
     dependencies:
       del: 4.1.1
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   cli-boxes@3.0.0: {}
 
   cli-cursor@2.1.0:
@@ -17578,7 +17185,6 @@ snapshots:
       serialize-javascript: 6.0.2
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   copy-webpack-plugin@10.2.4(webpack@5.105.2):
     dependencies:
       fast-glob: 3.3.3
@@ -17589,8 +17195,6 @@ snapshots:
       serialize-javascript: 6.0.2
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   core-js-compat@3.48.0:
     dependencies:
       browserslist: 4.28.1
@@ -17652,13 +17256,10 @@ snapshots:
       '@epic-web/invariant': 1.0.0
       cross-spawn: 7.0.6
 
-<<<<<<< Updated upstream
   cross-env@7.0.3:
     dependencies:
       cross-spawn: 7.0.6
 
-=======
->>>>>>> Stashed changes
   cross-fetch@3.2.0:
     dependencies:
       node-fetch: 2.7.0
@@ -17704,7 +17305,6 @@ snapshots:
     optionalDependencies:
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   css-loader@6.11.0(webpack@5.105.2):
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.6)
@@ -17718,8 +17318,6 @@ snapshots:
     optionalDependencies:
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   css-loader@7.1.3(webpack@5.105.2(esbuild@0.25.12)):
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.6)
@@ -17733,7 +17331,6 @@ snapshots:
     optionalDependencies:
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   css-loader@7.1.3(webpack@5.105.2):
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.6)
@@ -17747,8 +17344,6 @@ snapshots:
     optionalDependencies:
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   css-minimizer-webpack-plugin@3.4.1(esbuild@0.25.12)(webpack@5.105.2(esbuild@0.25.12)):
     dependencies:
       cssnano: 5.1.15(postcss@8.5.6)
@@ -17761,7 +17356,6 @@ snapshots:
     optionalDependencies:
       esbuild: 0.25.12
 
-<<<<<<< Updated upstream
   css-minimizer-webpack-plugin@3.4.1(webpack@5.105.2):
     dependencies:
       cssnano: 5.1.15(postcss@8.5.6)
@@ -17772,8 +17366,6 @@ snapshots:
       source-map: 0.6.1
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   css-select@4.3.0:
     dependencies:
       boolbase: 1.0.0
@@ -17995,13 +17587,10 @@ snapshots:
 
   destroy@1.2.0: {}
 
-<<<<<<< Updated upstream
   detect-gpu@5.0.70:
     dependencies:
       webgl-constants: 1.1.1
 
-=======
->>>>>>> Stashed changes
   detect-indent@6.1.0: {}
 
   detect-libc@1.0.3: {}
@@ -18107,11 +17696,8 @@ snapshots:
 
   dotenv@8.6.0: {}
 
-<<<<<<< Updated upstream
   draco3d@1.5.7: {}
 
-=======
->>>>>>> Stashed changes
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -18407,21 +17993,12 @@ snapshots:
 
   eslint-config-expo@9.2.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3):
     dependencies:
-<<<<<<< Updated upstream
       '@typescript-eslint/eslint-plugin': 8.55.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
       '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
       eslint: 9.39.2(jiti@2.6.1)
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-expo: 0.1.4(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
       eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
-=======
-      '@typescript-eslint/eslint-plugin': 8.55.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
-      '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
-      eslint: 9.39.2(jiti@2.6.1)
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@2.6.1))
-      eslint-plugin-expo: 0.1.4(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
->>>>>>> Stashed changes
       eslint-plugin-react: 7.37.5(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-react-hooks: 5.2.0(eslint@9.39.2(jiti@2.6.1))
       globals: 16.5.0
@@ -18463,7 +18040,6 @@ snapshots:
 
   eslint-config-universe@15.0.3(@types/eslint@9.6.1)(eslint@9.39.2(jiti@2.6.1))(prettier@2.8.8)(typescript@5.8.3):
     dependencies:
-<<<<<<< Updated upstream
       '@typescript-eslint/eslint-plugin': 8.55.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
       '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
       eslint: 9.39.2(jiti@2.6.1)
@@ -18472,16 +18048,6 @@ snapshots:
       eslint-plugin-n: 17.23.2(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
       eslint-plugin-node: 11.1.0(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-prettier: 5.5.5(@types/eslint@9.6.1)(eslint-config-prettier@9.1.2(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))(prettier@2.8.8)
-=======
-      '@typescript-eslint/eslint-plugin': 8.55.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
-      '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
-      eslint: 9.39.2(jiti@2.6.1)
-      eslint-config-prettier: 9.1.2(eslint@9.39.2(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
-      eslint-plugin-n: 17.23.2(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
-      eslint-plugin-node: 11.1.0(eslint@9.39.2(jiti@2.6.1))
-      eslint-plugin-prettier: 5.5.5(@types/eslint@9.6.1)(eslint-config-prettier@9.1.2(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@2.6.1))(prettier@2.8.8)
->>>>>>> Stashed changes
       eslint-plugin-react: 7.37.5(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-react-hooks: 5.2.0(eslint@9.39.2(jiti@2.6.1))
       globals: 16.5.0
@@ -18502,24 +18068,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-<<<<<<< Updated upstream
-=======
-  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@2.6.1)):
-    dependencies:
-      '@nolyfill/is-core-module': 1.0.39
-      debug: 4.4.3
-      eslint: 9.39.2(jiti@2.6.1)
-      get-tsconfig: 4.13.6
-      is-bun-module: 2.0.0
-      stable-hash: 0.0.5
-      tinyglobby: 0.2.15
-      unrs-resolver: 1.11.1
-    optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@1.21.7))
-    transitivePeerDependencies:
-      - supports-color
-
->>>>>>> Stashed changes
   eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2(jiti@1.21.7)):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
@@ -18535,7 +18083,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-<<<<<<< Updated upstream
   eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2(jiti@2.6.1)):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
@@ -18548,16 +18095,6 @@ snapshots:
       unrs-resolver: 1.11.1
     optionalDependencies:
       eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
-=======
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)):
-    dependencies:
-      debug: 3.2.7
-    optionalDependencies:
-      '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3)
-      eslint: 9.39.2(jiti@2.6.1)
-      eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@2.6.1))
->>>>>>> Stashed changes
     transitivePeerDependencies:
       - supports-color
 
@@ -18572,7 +18109,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-<<<<<<< Updated upstream
   eslint-module-utils@2.12.1(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1)):
     dependencies:
       debug: 3.2.7
@@ -18584,8 +18120,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-=======
->>>>>>> Stashed changes
   eslint-plugin-es-x@7.8.0(eslint@9.39.2(jiti@1.21.7)):
     dependencies:
       '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.2(jiti@1.21.7))
@@ -18659,11 +18193,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-<<<<<<< Updated upstream
   eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1)):
-=======
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1)):
->>>>>>> Stashed changes
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -18674,11 +18204,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.39.2(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.9
-<<<<<<< Updated upstream
       eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
-=======
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3))(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
->>>>>>> Stashed changes
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -18690,11 +18216,7 @@ snapshots:
       string.prototype.trimend: 1.0.9
       tsconfig-paths: 3.15.0
     optionalDependencies:
-<<<<<<< Updated upstream
       '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.8.3)
-=======
-      '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.8.3)
->>>>>>> Stashed changes
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
@@ -18760,11 +18282,7 @@ snapshots:
       '@types/eslint': 9.6.1
       eslint-config-prettier: 9.1.2(eslint@9.39.2(jiti@1.21.7))
 
-<<<<<<< Updated upstream
   eslint-plugin-prettier@5.5.5(@types/eslint@9.6.1)(eslint-config-prettier@9.1.2(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))(prettier@2.8.8):
-=======
-  eslint-plugin-prettier@5.5.5(@types/eslint@9.6.1)(eslint-config-prettier@9.1.2(eslint@9.39.2(jiti@1.21.7)))(eslint@9.39.2(jiti@2.6.1))(prettier@2.8.8):
->>>>>>> Stashed changes
     dependencies:
       eslint: 9.39.2(jiti@2.6.1)
       prettier: 2.8.8
@@ -18772,11 +18290,7 @@ snapshots:
       synckit: 0.11.12
     optionalDependencies:
       '@types/eslint': 9.6.1
-<<<<<<< Updated upstream
       eslint-config-prettier: 9.1.2(eslint@9.39.2(jiti@2.6.1))
-=======
-      eslint-config-prettier: 9.1.2(eslint@9.39.2(jiti@1.21.7))
->>>>>>> Stashed changes
 
   eslint-plugin-react-hooks@5.2.0(eslint@9.39.2(jiti@1.21.7)):
     dependencies:
@@ -19201,11 +18715,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-<<<<<<< Updated upstream
   expo-module-scripts@4.1.10(@babel/core@7.29.0)(@jest/types@29.6.3)(@types/eslint@9.6.1)(babel-jest@29.7.0(@babel/core@7.29.0))(bufferutil@4.1.0)(eslint@9.39.2(jiti@2.6.1))(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(jest@29.7.0(@types/node@24.10.13)(babel-plugin-macros@3.1.0))(prettier@2.8.8)(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react-test-renderer@18.3.1(react@19.0.0))(react@19.0.0)(utf-8-validate@5.0.10):
-=======
-  expo-module-scripts@4.1.10(@babel/core@7.29.0)(@jest/types@29.6.3)(@types/eslint@9.6.1)(babel-jest@29.7.0(@babel/core@7.29.0))(bufferutil@4.1.0)(esbuild@0.25.12)(eslint@9.39.2(jiti@2.6.1))(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(jest@29.7.0(@types/node@24.10.13)(babel-plugin-macros@3.1.0))(prettier@2.8.8)(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react-test-renderer@18.3.1(react@19.0.0))(react@19.0.0)(utf-8-validate@5.0.10):
->>>>>>> Stashed changes
     dependencies:
       '@babel/cli': 7.28.6(@babel/core@7.29.0)
       '@babel/plugin-transform-export-namespace-from': 7.27.1(@babel/core@7.29.0)
@@ -19272,11 +18782,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-<<<<<<< Updated upstream
   expo-router@5.0.7(aabba00d1cd2e90638a0e6bdd5118222):
-=======
-  expo-router@5.0.7(lflsx2h5djh2sfju2m3xbqonxa):
->>>>>>> Stashed changes
     dependencies:
       '@expo/metro-runtime': 5.0.4(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))
       '@expo/server': 0.6.3
@@ -19502,13 +19008,10 @@ snapshots:
       node-domexception: 1.0.0
       web-streams-polyfill: 3.3.3
 
-<<<<<<< Updated upstream
   fflate@0.6.10: {}
 
   fflate@0.8.2: {}
 
-=======
->>>>>>> Stashed changes
   figures@3.2.0:
     dependencies:
       escape-string-regexp: 1.0.5
@@ -19633,7 +19136,6 @@ snapshots:
       typescript: 5.8.3
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   fork-ts-checker-webpack-plugin@8.0.0(typescript@5.8.3)(webpack@5.105.2):
     dependencies:
       '@babel/code-frame': 7.29.0
@@ -19651,8 +19153,6 @@ snapshots:
       typescript: 5.8.3
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   form-data@4.0.5:
     dependencies:
       asynckit: 0.4.0
@@ -19898,11 +19398,8 @@ snapshots:
 
   globrex@0.1.2: {}
 
-<<<<<<< Updated upstream
   glsl-noise@0.0.0: {}
 
-=======
->>>>>>> Stashed changes
   gopd@1.2.0: {}
 
   graceful-fs@4.2.10: {}
@@ -19960,11 +19457,8 @@ snapshots:
     dependencies:
       hermes-estree: 0.29.1
 
-<<<<<<< Updated upstream
   hls.js@1.6.15: {}
 
-=======
->>>>>>> Stashed changes
   hoist-non-react-statics@3.3.2:
     dependencies:
       react-is: 16.13.1
@@ -20010,7 +19504,6 @@ snapshots:
     optionalDependencies:
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   html-webpack-plugin@5.6.6(webpack@5.105.2):
     dependencies:
       '@types/html-minifier-terser': 6.1.0
@@ -20021,8 +19514,6 @@ snapshots:
     optionalDependencies:
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   html5-qrcode@2.3.8: {}
 
   htmlparser2@6.1.0:
@@ -20370,11 +19861,8 @@ snapshots:
 
   is-potential-custom-element-name@1.0.1: {}
 
-<<<<<<< Updated upstream
   is-promise@2.2.2: {}
 
-=======
->>>>>>> Stashed changes
   is-regex@1.2.1:
     dependencies:
       call-bound: 1.0.4
@@ -20502,7 +19990,6 @@ snapshots:
       has-symbols: 1.1.0
       set-function-name: 2.0.2
 
-<<<<<<< Updated upstream
   its-fine@2.0.0(@types/react@19.0.14)(react@19.0.0):
     dependencies:
       '@types/react-reconciler': 0.28.9(@types/react@19.0.14)
@@ -20510,8 +19997,6 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-=======
->>>>>>> Stashed changes
   jackspeak@3.4.3:
     dependencies:
       '@isaacs/cliui': 8.0.2
@@ -21076,11 +20561,8 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
-<<<<<<< Updated upstream
   libphonenumber-js@1.12.37: {}
 
-=======
->>>>>>> Stashed changes
   lie@3.3.0:
     dependencies:
       immediate: 3.0.6
@@ -21286,14 +20768,11 @@ snapshots:
 
   lz-string@1.5.0: {}
 
-<<<<<<< Updated upstream
   maath@0.10.8(@types/three@0.183.1)(three@0.183.1):
     dependencies:
       '@types/three': 0.183.1
       three: 0.183.1
 
-=======
->>>>>>> Stashed changes
   magic-string@0.25.9:
     dependencies:
       sourcemap-codec: 1.4.8
@@ -21375,15 +20854,12 @@ snapshots:
 
   merge2@1.4.1: {}
 
-<<<<<<< Updated upstream
   meshline@3.3.1(three@0.183.1):
     dependencies:
       three: 0.183.1
 
   meshoptimizer@1.0.1: {}
 
-=======
->>>>>>> Stashed changes
   methods@1.1.2: {}
 
   metro-babel-transformer@0.82.5:
@@ -21590,15 +21066,12 @@ snapshots:
       tapable: 2.3.0
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   mini-css-extract-plugin@2.10.0(webpack@5.105.2):
     dependencies:
       schema-utils: 4.3.3
       tapable: 2.3.0
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   minimalistic-assert@1.0.1: {}
 
   minimatch@10.2.0:
@@ -22258,7 +21731,6 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-<<<<<<< Updated upstream
   postcss-loader@8.2.0(postcss@8.5.6)(typescript@5.8.3)(webpack@5.105.2):
     dependencies:
       cosmiconfig: 9.0.0(typescript@5.8.3)
@@ -22270,8 +21742,6 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-=======
->>>>>>> Stashed changes
   postcss-merge-longhand@5.1.7(postcss@8.5.6):
     dependencies:
       postcss: 8.5.6
@@ -22449,11 +21919,8 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-<<<<<<< Updated upstream
   potpack@1.0.2: {}
 
-=======
->>>>>>> Stashed changes
   prelude-ls@1.2.1: {}
 
   prettier-linter-helpers@1.0.1:
@@ -22495,14 +21962,11 @@ snapshots:
 
   progress@2.0.3: {}
 
-<<<<<<< Updated upstream
   promise-worker-transferable@1.0.4:
     dependencies:
       is-promise: 2.2.2
       lie: 3.3.0
 
-=======
->>>>>>> Stashed changes
   promise@7.3.1:
     dependencies:
       asap: 2.0.6
@@ -22946,15 +22410,12 @@ snapshots:
       react-is: 19.2.4
       scheduler: 0.25.0
 
-<<<<<<< Updated upstream
   react-use-measure@2.1.7(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
     dependencies:
       react: 19.0.0
     optionalDependencies:
       react-dom: 19.0.0(react@19.0.0)
 
-=======
->>>>>>> Stashed changes
   react@19.0.0: {}
 
   read-cache@1.0.0:
@@ -23243,11 +22704,8 @@ snapshots:
 
   scheduler@0.25.0: {}
 
-<<<<<<< Updated upstream
   scheduler@0.27.0: {}
 
-=======
->>>>>>> Stashed changes
   schema-utils@2.7.1:
     dependencies:
       '@types/json-schema': 7.0.15
@@ -23478,11 +22936,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-<<<<<<< Updated upstream
   simple-git@3.31.1:
-=======
-  simple-git@3.30.0:
->>>>>>> Stashed changes
     dependencies:
       '@kwsites/file-exists': 1.1.1
       '@kwsites/promise-deferred': 1.1.1
@@ -23552,7 +23006,6 @@ snapshots:
       source-map-js: 1.2.1
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   source-map-loader@3.0.2(webpack@5.105.2):
     dependencies:
       abab: 2.0.6
@@ -23560,8 +23013,6 @@ snapshots:
       source-map-js: 1.2.1
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   source-map-resolve@0.5.3:
     dependencies:
       atob: 2.1.2
@@ -23673,7 +23124,6 @@ snapshots:
     dependencies:
       type-fest: 0.7.1
 
-<<<<<<< Updated upstream
   stats-gl@2.4.2(@types/three@0.183.1)(three@0.183.1):
     dependencies:
       '@types/three': 0.183.1
@@ -23681,8 +23131,6 @@ snapshots:
 
   stats.js@0.17.0: {}
 
-=======
->>>>>>> Stashed changes
   statuses@1.5.0: {}
 
   statuses@2.0.2: {}
@@ -23853,24 +23301,18 @@ snapshots:
     dependencies:
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   style-loader@3.3.4(webpack@5.105.2):
     dependencies:
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   style-loader@4.0.0(webpack@5.105.2(esbuild@0.25.12)):
     dependencies:
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   style-loader@4.0.0(webpack@5.105.2):
     dependencies:
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   styled-jsx@3.2.1(react@19.0.0):
     dependencies:
       babel-plugin-syntax-jsx: 6.18.0
@@ -23938,13 +23380,10 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-<<<<<<< Updated upstream
   suspend-react@0.1.3(react@19.0.0):
     dependencies:
       react: 19.0.0
 
-=======
->>>>>>> Stashed changes
   svgo@2.8.0:
     dependencies:
       '@trysound/sax': 0.2.0
@@ -24062,7 +23501,6 @@ snapshots:
     optionalDependencies:
       esbuild: 0.25.12
 
-<<<<<<< Updated upstream
   terser-webpack-plugin@5.3.16(webpack@5.105.2):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
@@ -24072,8 +23510,6 @@ snapshots:
       terser: 5.46.0
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   terser@5.46.0:
     dependencies:
       '@jridgewell/source-map': 0.3.11
@@ -24118,7 +23554,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-<<<<<<< Updated upstream
   three-mesh-bvh@0.8.3(three@0.183.1):
     dependencies:
       three: 0.183.1
@@ -24135,8 +23570,6 @@ snapshots:
 
   three@0.183.1: {}
 
-=======
->>>>>>> Stashed changes
   throat@5.0.0: {}
 
   through@2.3.8: {}
@@ -24196,7 +23629,6 @@ snapshots:
 
   trim-newlines@3.0.1: {}
 
-<<<<<<< Updated upstream
   troika-three-text@0.52.4(three@0.183.1):
     dependencies:
       bidi-js: 1.0.3
@@ -24211,8 +23643,6 @@ snapshots:
 
   troika-worker-utils@0.52.0: {}
 
-=======
->>>>>>> Stashed changes
   ts-api-utils@2.4.0(typescript@5.8.3):
     dependencies:
       typescript: 5.8.3
@@ -24256,7 +23686,6 @@ snapshots:
       typescript: 5.8.3
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   ts-loader@9.5.4(typescript@5.8.3)(webpack@5.105.2):
     dependencies:
       chalk: 4.1.2
@@ -24267,8 +23696,6 @@ snapshots:
       typescript: 5.8.3
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   tsconfig-paths@3.15.0:
     dependencies:
       '@types/json5': 0.0.29
@@ -24295,7 +23722,6 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-<<<<<<< Updated upstream
   tunnel-rat@0.1.2(@types/react@19.0.14)(react@19.0.0):
     dependencies:
       zustand: 4.5.7(@types/react@19.0.14)(react@19.0.0)
@@ -24304,8 +23730,6 @@ snapshots:
       - immer
       - react
 
-=======
->>>>>>> Stashed changes
   turbo-darwin-64@2.8.7:
     optional: true
 
@@ -24557,11 +23981,8 @@ snapshots:
 
   utila@0.4.0: {}
 
-<<<<<<< Updated upstream
   utility-types@3.11.0: {}
 
-=======
->>>>>>> Stashed changes
   utils-merge@1.0.1: {}
 
   uuid@7.0.3: {}
@@ -24614,13 +24035,10 @@ snapshots:
 
   webdriver-bidi-protocol@0.4.0: {}
 
-<<<<<<< Updated upstream
   webgl-constants@1.1.1: {}
 
   webgl-sdf-generator@1.1.1: {}
 
-=======
->>>>>>> Stashed changes
   webidl-conversions@3.0.1: {}
 
   webidl-conversions@4.0.2: {}
@@ -24638,7 +24056,6 @@ snapshots:
       schema-utils: 4.3.3
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   webpack-dev-middleware@5.3.4(webpack@5.105.2):
     dependencies:
       colorette: 2.0.20
@@ -24648,8 +24065,6 @@ snapshots:
       schema-utils: 4.3.3
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   webpack-dev-middleware@6.1.3(webpack@5.105.2(esbuild@0.25.12)):
     dependencies:
       colorette: 2.0.20
@@ -24660,7 +24075,6 @@ snapshots:
     optionalDependencies:
       webpack: 5.105.2(esbuild@0.25.12)
 
-<<<<<<< Updated upstream
   webpack-dev-middleware@6.1.3(webpack@5.105.2):
     dependencies:
       colorette: 2.0.20
@@ -24671,8 +24085,6 @@ snapshots:
     optionalDependencies:
       webpack: 5.105.2
 
-=======
->>>>>>> Stashed changes
   webpack-dev-server@4.15.2(bufferutil@4.1.0)(utf-8-validate@5.0.10)(webpack@5.105.2(esbuild@0.25.12)):
     dependencies:
       '@types/bonjour': 3.5.13
@@ -24713,7 +24125,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-<<<<<<< Updated upstream
   webpack-dev-server@4.15.2(bufferutil@4.1.0)(utf-8-validate@5.0.10)(webpack@5.105.2):
     dependencies:
       '@types/bonjour': 3.5.13
@@ -24754,8 +24165,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-=======
->>>>>>> Stashed changes
   webpack-hot-middleware@2.26.1:
     dependencies:
       ansi-html-community: 0.0.8
@@ -24768,15 +24177,12 @@ snapshots:
       webpack: 5.105.2(esbuild@0.25.12)
       webpack-sources: 2.3.1
 
-<<<<<<< Updated upstream
   webpack-manifest-plugin@4.1.1(webpack@5.105.2):
     dependencies:
       tapable: 2.3.0
       webpack: 5.105.2
       webpack-sources: 2.3.1
 
-=======
->>>>>>> Stashed changes
   webpack-sources@2.3.1:
     dependencies:
       source-list-map: 2.0.1
@@ -24786,7 +24192,6 @@ snapshots:
 
   webpack-virtual-modules@0.6.2: {}
 
-<<<<<<< Updated upstream
   webpack@5.105.2:
     dependencies:
       '@types/eslint-scope': 3.7.7
@@ -24819,8 +24224,6 @@ snapshots:
       - esbuild
       - uglify-js
 
-=======
->>>>>>> Stashed changes
   webpack@5.105.2(esbuild@0.25.12):
     dependencies:
       '@types/eslint-scope': 3.7.7
@@ -25214,7 +24617,6 @@ snapshots:
   yocto-queue@1.2.2: {}
 
   zod@3.25.76: {}
-<<<<<<< Updated upstream
 
   zustand@4.5.7(@types/react@19.0.14)(react@19.0.0):
     dependencies:
@@ -25228,5 +24630,3 @@ snapshots:
       '@types/react': 19.0.14
       react: 19.0.0
       use-sync-external-store: 1.6.0(react@19.0.0)
-=======
->>>>>>> Stashed changes

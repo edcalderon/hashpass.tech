@@ -74,7 +74,16 @@ targetConfig['NODE_ENV'] = (envArg === 'production') ? 'production' : 'developme
 targetConfig['EXPO_PUBLIC_ENV'] = envArg;
 
 // 4. Generate .env file content
-const envContent = Object.entries(targetConfig)
+const DISCLAIMER = `# ==============================================================================
+# ⚠️ AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
+# This file was generated from the root .env using tools/scripts/propagate-env.js
+# Profile: ${envArg}
+# Generated at: ${new Date().toISOString()}
+# ==============================================================================
+
+`;
+
+const envContent = DISCLAIMER + Object.entries(targetConfig)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${k}=${v}`)
     .join('\n');
