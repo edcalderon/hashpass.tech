@@ -25,6 +25,7 @@ module.exports = function (api) {
         },
       ],
       'react-native-reanimated/plugin',
+      'babel-plugin-transform-import-meta',
     ],
   };
 };

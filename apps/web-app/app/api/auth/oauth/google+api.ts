@@ -250,11 +250,18 @@ export async function GET(request: Request): Promise<Response> {
       try { rtPath = new URL(rtPath).pathname + new URL(rtPath).search; } catch (e) { }
     }
 
-    // Set routing data in search params
+    // Set routing and token data in search params (bulletproof delivery through routers)
     callbackUrl.searchParams.set('rt', rtPath);
     callbackUrl.searchParams.set('provider', 'google');
+    callbackUrl.searchParams.set('access_token', tokens.access_token);
+    if (tokens.refresh_token) {
+      callbackUrl.searchParams.set('refresh_token', tokens.refresh_token);
+    }
+    callbackUrl.searchParams.set('email', userEmail);
+    callbackUrl.searchParams.set('oauth_complete', 'true');
+    callbackUrl.searchParams.set('oauth_success', 'true');
 
-    // Put tokens in the hash fragment for security & to avoid URL length issues or Next.js state truncation
+    // Put tokens in the hash fragment as well for security/Directus parsing compatibility
     const hashFragment = new URLSearchParams();
     hashFragment.set('access_token', tokens.access_token);
     if (tokens.refresh_token) {

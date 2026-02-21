@@ -1,6 +1,6 @@
 "use client";
 
-import { FC, useMemo, useRef, useState, useEffect, Suspense } from 'react'
+import React, { FC, useMemo, useRef, useState, useEffect, Suspense, Component, ErrorInfo } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Plane } from '@react-three/drei'
 import * as THREE from 'three'
@@ -363,6 +363,25 @@ const AuthBackgroundSceneInner: FC<{ amount: number, isMobile: boolean }> = ({ a
   )
 }
 
+class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("AuthBackgroundScene Error:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return null;
+    }
+    return this.props.children;
+  }
+}
+
 export const AuthBackgroundScene: FC = () => {
   const [mounted, setMounted] = useState(false);
 
@@ -378,8 +397,10 @@ export const AuthBackgroundScene: FC = () => {
   }
 
   return (
-    <Suspense fallback={null}>
-      <AuthBackgroundSceneInner key={amount} amount={amount} isMobile={isMobile} />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={null}>
+        <AuthBackgroundSceneInner key={amount} amount={amount} isMobile={isMobile} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
