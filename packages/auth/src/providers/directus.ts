@@ -160,6 +160,17 @@ export class DirectusAuthProvider implements IAuthProvider {
       return 'Authentication could not be completed because the browser could not reach Directus. Check CORS and Directus URL settings, then try again.';
     }
 
+    const hasForbidden = failures.some(
+      ({ code, status, message }) =>
+        code === 'FORBIDDEN' ||
+        status === 403 ||
+        /forbidden|permission denied/i.test(message)
+    );
+
+    if (hasForbidden) {
+      return 'Session created successfully, but your Directus User Role lacks Read/Update permissions for `directus_users`. Please contact an administrator to fix role permissions (Error 403).';
+    }
+
     const firstFailure = failures[0];
     const statusSuffix = firstFailure.status ? ` [${firstFailure.status}]` : '';
     const codeSuffix = firstFailure.code ? ` (${firstFailure.code})` : '';

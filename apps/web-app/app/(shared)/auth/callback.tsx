@@ -97,6 +97,18 @@ export default function AuthCallback() {
         }
 
         if (
+            normalized.includes('role lacks read/update permissions') ||
+            normalized.includes('forbidden') ||
+            normalized.includes('permission denied') ||
+            normalized.includes('error 403')
+        ) {
+            return {
+                title: 'Permission Denied',
+                message: 'Your account was authenticated, but it does not have permission to read its own profile data from Directus. An administrator must grant Read/Update permissions for directus_users to your Role.'
+            };
+        }
+
+        if (
             normalized.includes('cross-origin restrictions') ||
             normalized.includes('browser could not reach directus') ||
             normalized.includes('networkerror') ||
