@@ -320,7 +320,11 @@ export default function AuthCallback() {
                 );
 
                 console.log(`🔄 ${callbackFlow === 'magic_link' ? 'Magic Link' : 'OAuth'} callback started`);
-                console.log('📋 Callback params:', params);
+                console.log('📋 Expo Router params:', params);
+                if (typeof window !== 'undefined') {
+                    console.log('📋 window.location.search:', window.location.search);
+                    console.log('📋 window.location.hash length:', window.location.hash.length);
+                }
                 console.log('📋 Detected callback flow:', callbackFlow);
 
                 if (callbackFlow === 'magic_link') {
