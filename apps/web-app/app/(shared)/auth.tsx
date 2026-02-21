@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ThemeAndLanguageSwitcher from '../../components/ThemeAndLanguageSwitcher';
-import { AuthBackgroundScene } from '../../components/auth/AuthBackgroundScene';
+import { SplashCursor } from '../../components/SplashBackground';
 import { useTheme } from '../../hooks/useTheme';
 import { useToastHelpers } from '../../contexts/ToastContext';
 import PrivacyTermsModal from '../../components/PrivacyTermsModal';
@@ -430,7 +430,7 @@ export default function AuthScreen() {
   if (authLoading) {
     return (
       <SafeAreaView style={[styles.container, styles.centered]}>
-        {/* <AuthBackgroundScene /> */}
+        <SplashCursor />
         <Text style={styles.loadingText}>{t('checkingAuth', 'Checking authentication...')}</Text>
       </SafeAreaView>
     );
@@ -438,7 +438,7 @@ export default function AuthScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* <AuthBackgroundScene /> */}
+      <SplashCursor />
 
       <ThemeAndLanguageSwitcher />
 

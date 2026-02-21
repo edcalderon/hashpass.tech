@@ -371,7 +371,12 @@ export class DirectusAuthProvider implements IAuthProvider {
           reason: params.reason || urlParams.get('reason')
         };
 
-        console.log('📋 Extracted auth data:', authData);
+        console.log('📋 Extracted auth data from URL (params/url/hash):', {
+          hasToken: !!authData.token,
+          hasAccessToken: !!authData.access_token,
+          tokenLength: authData.token?.length || 0,
+          accessTokenLength: authData.access_token?.length || 0
+        });
 
         // Clear the hash to prevent re-processing
         if (window.location.hash) {
@@ -427,7 +432,8 @@ export class DirectusAuthProvider implements IAuthProvider {
           }
 
           if (userResult.error) {
-            console.error('❌ Token authentication failed:', userResult.error);
+            console.error('❌ Token authentication failed. Is DIRECTUS_URL configured correctly? Using API url:', this.apiClient['baseUrl']);
+            console.error('❌ Directus Token Error details:', userResult.error);
             this.pushOAuthFailure(authFailures, 'token_user_lookup', userResult.error);
           }
         } catch (tokenError) {

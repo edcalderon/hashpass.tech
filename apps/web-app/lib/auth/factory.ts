@@ -40,7 +40,7 @@ export function createAuthProviderFromEnv(): IAuthProvider {
     process.env.EXPO_PUBLIC_DIRECTUS_URL ||
     process.env.DIRECTUS_URL ||
     'https://sso.hashpass.co';
-  
+
   const config: AuthProviderConfig = {
     provider,
     directus: {
@@ -53,5 +53,6 @@ export function createAuthProviderFromEnv(): IAuthProvider {
     }
   };
 
+  console.log('🏗️ createAuthProviderFromEnv initializing with Directus URL:', directusUrl);
   return createAuthProvider(config);
 }

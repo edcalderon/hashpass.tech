@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { authService, AuthSession, AuthUser } from '@hashpass/auth';
 import { supabase } from '../lib/supabase';
 
-let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
 let oauthHashProcessingPromise: Promise<void> | null = null;
 let oauthHashProcessed = false;
 
@@ -126,12 +125,8 @@ export const useAuth = () => {
       let supabaseSession: any = null;
 
       try {
-        if (!sessionBootstrapPromise) {
-          sessionBootstrapPromise = authService.getSession();
-        }
-
         [directusSession, supabaseSession] = await Promise.all([
-          sessionBootstrapPromise.catch((error) => {
+          authService.getSession().catch((error) => {
             console.error('[useAuth] Session bootstrap failed:', error);
             return null;
           }),

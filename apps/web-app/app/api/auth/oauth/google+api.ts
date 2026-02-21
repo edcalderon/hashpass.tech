@@ -26,12 +26,20 @@ export async function GET(request: Request): Promise<Response> {
   const cookies = request.headers.get('Cookie') || '';
   const returnToCookie = cookies.split(';').find(c => c.trim().startsWith('oauth_return_to='));
   let returnTo = '/dashboard/explore';
+  let cookieOrigin = '';
   if (returnToCookie) {
     const eqIdx = returnToCookie.indexOf('=');
     if (eqIdx !== -1) {
       try {
-        returnTo = decodeURIComponent(returnToCookie.substring(eqIdx + 1).trim());
-        console.log('[Google OAuth] Found returnTo from cookie:', returnTo);
+        const decoded = decodeURIComponent(returnToCookie.substring(eqIdx + 1).trim());
+        if (decoded.startsWith('http')) {
+          const parsedUrl = new URL(decoded);
+          cookieOrigin = parsedUrl.origin;
+          returnTo = parsedUrl.pathname + parsedUrl.search;
+        } else {
+          returnTo = decoded;
+        }
+        console.log('[Google OAuth] Found returnTo from cookie:', returnTo, 'cookieOrigin:', cookieOrigin);
       } catch (e) {
         console.warn('[Google OAuth] Failed to decode returnTo cookie');
       }
@@ -40,7 +48,7 @@ export async function GET(request: Request): Promise<Response> {
 
   // Robust frontend origin resolution
   const envFrontendUrl = process.env.FRONTEND_URL || process.env.EXPO_PUBLIC_FRONTEND_URL;
-  let feOrigin = feOriginSearch || envFrontendUrl || url.origin;
+  let feOrigin = feOriginSearch || cookieOrigin || envFrontendUrl || url.origin;
 
   // Ensure feOrigin is a valid absolute URL and not an API domain
   if (feOrigin.includes('api-dev.') || feOrigin.includes('api.')) {
@@ -242,19 +250,22 @@ export async function GET(request: Request): Promise<Response> {
       try { rtPath = new URL(rtPath).pathname + new URL(rtPath).search; } catch (e) { }
     }
 
-    // Set all auth data in search params for maximum visibility during the callback
+    // Set routing data in search params
     callbackUrl.searchParams.set('rt', rtPath);
-    callbackUrl.searchParams.set('token', tokens.access_token);
-    if (tokens.refresh_token) {
-      callbackUrl.searchParams.set('refresh_token', tokens.refresh_token);
-    }
-    callbackUrl.searchParams.set('email', userEmail);
-    // Standard OAuth param names as fallback
-    callbackUrl.searchParams.set('access_token', tokens.access_token);
-    callbackUrl.searchParams.set('oauth_complete', 'true');
-    callbackUrl.searchParams.set('oauth_success', 'true');
+    callbackUrl.searchParams.set('provider', 'google');
 
-    const finalUrl = callbackUrl.toString();
+    // Put tokens in the hash fragment for security & to avoid URL length issues or Next.js state truncation
+    const hashFragment = new URLSearchParams();
+    hashFragment.set('access_token', tokens.access_token);
+    if (tokens.refresh_token) {
+      hashFragment.set('refresh_token', tokens.refresh_token);
+    }
+    hashFragment.set('email', userEmail);
+    hashFragment.set('oauth_complete', 'true');
+    hashFragment.set('oauth_success', 'true');
+
+    // Combine them safely
+    const finalUrl = `${callbackUrl.toString()}#${hashFragment.toString()}`;
     console.log('[Google OAuth] Redirecting to:', finalUrl.substring(0, 100) + '...');
 
     return new Response(null, {
