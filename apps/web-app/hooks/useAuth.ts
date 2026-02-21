@@ -65,7 +65,12 @@ export const useAuth = () => {
 
     // Check for OAuth tokens in URL fragment on page load (for direct redirects from OAuth).
     // Process this once globally to avoid duplicate callback handling from many mounted components.
-    if (typeof window !== 'undefined' && window.location.hash && !oauthHashProcessed && !oauthHashProcessingPromise) {
+    // IMPORTANT: Skip on /auth/callback — the callback component has its own dedicated
+    // token extraction logic and needs the hash to still be present when its useEffect fires.
+    const isCallbackPage = typeof window !== 'undefined' &&
+      window.location.pathname.includes('/auth/callback');
+
+    if (typeof window !== 'undefined' && window.location.hash && !oauthHashProcessed && !oauthHashProcessingPromise && !isCallbackPage) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const access_token = hashParams.get('access_token');
       const refresh_token = hashParams.get('refresh_token');
@@ -222,9 +227,9 @@ export const useAuth = () => {
       if (!authService.signInWithOAuth) {
         throw new Error('OAuth not supported by current auth provider');
       }
-      
+
       const result = await authService.signInWithOAuth(provider);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
@@ -242,9 +247,9 @@ export const useAuth = () => {
       if (!authService.handleOAuthCallback) {
         throw new Error('OAuth callback not supported by current auth provider');
       }
-      
+
       const result = await authService.handleOAuthCallback(codeOrParams, state);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }

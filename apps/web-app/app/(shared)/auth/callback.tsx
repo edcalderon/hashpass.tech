@@ -7,6 +7,19 @@ import { useTranslation } from '../../../i18n/i18n';
 import { createSessionFromUrl, supabase } from '../../../lib/supabase';
 import { Check, AlertCircle } from 'lucide-react-native';
 
+// ──────────────────────────────────────────────────────────────────────────────
+// CRITICAL: Eagerly capture hash fragment tokens at MODULE LOAD time.
+// The useAuth hook (mounted by a parent layout) reads window.location.hash and
+// clears it via replaceState BEFORE this component's useEffect fires.  By
+// capturing the hash here — at import / module-evaluation time — we guarantee
+// the tokens are persisted before any React lifecycle can clear them.
+// ──────────────────────────────────────────────────────────────────────────────
+let _capturedHashParams: Record<string, string> = {};
+if (typeof window !== 'undefined' && window.location.hash) {
+    const hp = new URLSearchParams(window.location.hash.substring(1));
+    hp.forEach((v, k) => { if (v) _capturedHashParams[k] = v; });
+}
+
 type CallbackFlow = 'oauth' | 'magic_link';
 
 const MAGIC_LINK_TYPES = new Set([
@@ -352,16 +365,25 @@ export default function AuthCallback() {
 
                 // Check if URL has auth tokens/code before processing OAuth
                 let hasAuthData = false;
+                // CRITICAL: Use the eagerly-captured hash params from module-level.
+                // The useAuth hook clears the hash fragment from the URL before this
+                // useEffect fires, so window.location.hash will be empty by now.
+                let mergedParams: Record<string, string> = {
+                    ...(params as Record<string, string>),
+                    ..._capturedHashParams,  // Module-level capture takes priority
+                };
+
                 if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                    const url = window.location.href;
-                    hasAuthData = url.includes('#access_token=') ||
-                        url.includes('#oauth_success=') ||
-                        url.includes('#code=') ||
-                        url.includes('?code=') ||
-                        url.includes('&code=') ||
-                        url.includes('access_token=') ||
-                        url.includes('oauth_success=') ||
-                        url.includes('oauth_complete=');
+                    // Also try current hash in case it's still available
+                    const currentHash = window.location.hash;
+                    if (currentHash && currentHash.length > 1) {
+                        const hashParams = new URLSearchParams(currentHash.substring(1));
+                        hashParams.forEach((value, key) => {
+                            if (value && !mergedParams[key]) mergedParams[key] = value;
+                        });
+                    }
+
+                    hasAuthData = !!(mergedParams.access_token || mergedParams.code || mergedParams.oauth_success || mergedParams.oauth_complete);
                 } else {
                     // For mobile, check params
                     hasAuthData = !!(params.code || params.access_token || params.oauth_success);
@@ -373,7 +395,8 @@ export default function AuthCallback() {
 
                 // Use provider-agnostic OAuth callback handler
                 console.log('🔄 Processing OAuth callback with provider-agnostic handler...');
-                let result = await handleOAuthCallback(params as Record<string, string>);
+                console.log('📋 Merged params for callback:', Object.keys(mergedParams).filter(k => mergedParams[k]).join(', '));
+                let result = await handleOAuthCallback(mergedParams);
 
                 // Retry once for transient cookie/session propagation delays.
                 if (result.error && isTransientSessionError(result.error)) {

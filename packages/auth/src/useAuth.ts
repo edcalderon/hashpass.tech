@@ -16,17 +16,23 @@ export const useAuth = () => {
     isInitializedRef.current = true;
 
     // Check for OAuth tokens in URL fragment on page load (for direct redirects from OAuth)
-    if (typeof window !== 'undefined' && window.location.hash) {
+    // IMPORTANT: Skip this on the /auth/callback page — the callback component has its own
+    // dedicated token extraction logic, and processing tokens here would clear the hash
+    // before the callback's useEffect can read them (race condition).
+    const isCallbackPage = typeof window !== 'undefined' &&
+      window.location.pathname.includes('/auth/callback');
+
+    if (typeof window !== 'undefined' && window.location.hash && !isCallbackPage) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const access_token = hashParams.get('access_token');
       const refresh_token = hashParams.get('refresh_token');
       const email = hashParams.get('email');
-      
+
       if (access_token) {
         console.log('[useAuth] 🔑 Found OAuth tokens in URL fragment, processing...');
         console.log('[useAuth] Email:', email);
         console.log('[useAuth] Token prefix:', access_token.substring(0, 20) + '...');
-        
+
         // Call the OAuth callback handler to process tokens
         authService.handleOAuthCallback?.({
           access_token,
@@ -89,9 +95,9 @@ export const useAuth = () => {
       if (!authService.signInWithOAuth) {
         throw new Error('OAuth not supported by current auth provider');
       }
-      
+
       const result = await authService.signInWithOAuth(provider);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
@@ -109,9 +115,9 @@ export const useAuth = () => {
       if (!authService.handleOAuthCallback) {
         throw new Error('OAuth callback not supported by current auth provider');
       }
-      
+
       const result = await authService.handleOAuthCallback(codeOrParams, state);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
