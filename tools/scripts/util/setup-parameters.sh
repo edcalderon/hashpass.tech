@@ -21,34 +21,29 @@ if [ -f .env ]; then
 fi
 
 # Configuration - now using environment variables
-SUPABASE_URL="${EXPO_PUBLIC_SUPABASE_URL}"
-SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY}"
-
-# Validate that environment variables are set
-if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-    echo -e "${RED}❌ Missing required environment variables${NC}"
-    echo "Please ensure .env file exists with:"
-    echo "  EXPO_PUBLIC_SUPABASE_URL=your_supabase_url"
-    echo "  SUPABASE_SERVICE_ROLE_KEY=your_service_role_key"
-    exit 1
-fi
-
-# Parameter Store paths
-URL_PARAMETER="/hashpass/bsl2025/supabase/url"
-KEY_PARAMETER="/hashpass/bsl2025/supabase/service-role-key"
+# Define parameters: ENV_VAR_NAME|SSM_PATH|TYPE|DESCRIPTION
+PARAMETERS=(
+    "EXPO_PUBLIC_SUPABASE_URL|/hashpass/bsl2025/supabase/url|String|Supabase project URL"
+    "EXPO_PUBLIC_SUPABASE_KEY|/hashpass/bsl2025/supabase/anon-key|String|Supabase anon key"
+    "SUPABASE_SERVICE_ROLE_KEY|/hashpass/bsl2025/supabase/service-role-key|SecureString|Supabase service role key"
+    "DIRECTUS_URL|/hashpass/bsl2025/directus/url|String|Directus URL"
+    "EXPO_PUBLIC_DIRECTUS_URL|/hashpass/bsl2025/directus/public-url|String|Directus Public URL"
+    "ADMIN_EMAIL|/hashpass/bsl2025/admin/email|String|Directus Admin Email"
+    "ADMIN_PASSWORD|/hashpass/bsl2025/admin/password|SecureString|Directus Admin Password"
+    "GOOGLE_CLIENT_ID|/hashpass/bsl2025/google/client-id|String|Google OAuth Client ID"
+    "GOOGLE_CLIENT_SECRET|/hashpass/bsl2025/google/client-secret|SecureString|Google OAuth Client Secret"
+)
 
 # Check prerequisites
 check_prerequisites() {
     echo -e "${BLUE}🔍 Checking prerequisites...${NC}"
     
-    # Check if AWS CLI is installed
     if ! command -v aws &> /dev/null; then
         echo -e "${RED}❌ AWS CLI is not installed.${NC}"
         echo "Install with: pip install awscli"
         exit 1
     fi
     
-    # Check if AWS credentials are configured
     if ! aws sts get-caller-identity &> /dev/null; then
         echo -e "${RED}❌ AWS credentials not configured.${NC}"
         echo "Run: aws configure"
@@ -62,23 +57,25 @@ check_prerequisites() {
 create_parameters() {
     echo -e "${BLUE}🔐 Creating parameters in AWS Parameter Store...${NC}"
     
-    # Create Supabase URL parameter
-    echo -e "${BLUE}  Creating Supabase URL parameter...${NC}"
-    aws ssm put-parameter \
-        --name "$URL_PARAMETER" \
-        --value "$SUPABASE_URL" \
-        --type "String" \
-        --description "Supabase project URL for BSL2025 HashPass" \
-        --overwrite
-    
-    # Create Supabase service role key parameter (encrypted)
-    echo -e "${BLUE}  Creating Supabase service role key parameter...${NC}"
-    aws ssm put-parameter \
-        --name "$KEY_PARAMETER" \
-        --value "$SUPABASE_SERVICE_ROLE_KEY" \
-        --type "SecureString" \
-        --description "Supabase service role key for BSL2025 HashPass" \
-        --overwrite
+    for param in "${PARAMETERS[@]}"; do
+        IFS='|' read -r env_var ssm_path type desc <<< "$param"
+        
+        # Get value from environment
+        value="${!env_var}"
+        
+        if [ -z "$value" ]; then
+            echo -e "${YELLOW}⚠️ Skipping $env_var - not found in environment${NC}"
+            continue
+        fi
+        
+        echo -e "${BLUE}  Creating parameter: ${ssm_path} ...${NC}"
+        aws ssm put-parameter \
+            --name "$ssm_path" \
+            --value "$value" \
+            --type "$type" \
+            --description "$desc" \
+            --overwrite > /dev/null
+    done
     
     echo -e "${GREEN}✅ Parameters created successfully${NC}"
 }
@@ -86,21 +83,35 @@ create_parameters() {
 # Verify parameters
 verify_parameters() {
     echo -e "${BLUE}🔍 Verifying parameters...${NC}"
+    local all_passed=true
     
-    # Check URL parameter
-    local url_value=$(aws ssm get-parameter --name "$URL_PARAMETER" --query 'Parameter.Value' --output text 2>/dev/null || echo "")
-    if [ "$url_value" = "$SUPABASE_URL" ]; then
-        echo -e "${GREEN}✅ URL parameter verified${NC}"
-    else
-        echo -e "${RED}❌ URL parameter verification failed${NC}"
-        return 1
-    fi
+    for param in "${PARAMETERS[@]}"; do
+        IFS='|' read -r env_var ssm_path type desc <<< "$param"
+        
+        value="${!env_var}"
+        if [ -z "$value" ]; then
+            continue
+        fi
+        
+        # Check parameter
+        local cmd="aws ssm get-parameter --name \"$ssm_path\""
+        if [ "$type" == "SecureString" ]; then
+            cmd="$cmd --with-decryption"
+        fi
+        
+        local ssm_value=$(eval "$cmd --query 'Parameter.Value' --output text 2>/dev/null" || echo "")
+        
+        if [ "$ssm_value" = "$value" ]; then
+            echo -e "${GREEN}✅ Verified: $ssm_path${NC}"
+        else
+            echo -e "${RED}❌ Verification failed for: $ssm_path${NC}"
+            all_passed=false
+        fi
+    done
     
-    # Check key parameter (without showing the value)
-    if aws ssm get-parameter --name "$KEY_PARAMETER" --with-decryption --query 'Parameter.Value' --output text &> /dev/null; then
-        echo -e "${GREEN}✅ Service role key parameter verified${NC}"
+    if [ "$all_passed" = true ]; then
+        return 0
     else
-        echo -e "${RED}❌ Service role key parameter verification failed${NC}"
         return 1
     fi
 }
@@ -120,20 +131,16 @@ list_parameters() {
 delete_parameters() {
     echo -e "${YELLOW}🗑️  Deleting parameters...${NC}"
     
-    # Delete URL parameter
-    aws ssm delete-parameter --name "$URL_PARAMETER" 2>/dev/null || true
-    echo -e "${GREEN}✅ Deleted URL parameter${NC}"
-    
-    # Delete key parameter
-    aws ssm delete-parameter --name "$KEY_PARAMETER" 2>/dev/null || true
-    echo -e "${GREEN}✅ Deleted service role key parameter${NC}"
+    for param in "${PARAMETERS[@]}"; do
+        IFS='|' read -r env_var ssm_path type desc <<< "$param"
+        aws ssm delete-parameter --name "$ssm_path" 2>/dev/null || true
+        echo -e "${GREEN}✅ Deleted parameter: $ssm_path${NC}"
+    done
 }
 
 # Test Lambda function access
 test_lambda_access() {
     echo -e "${BLUE}🧪 Testing Lambda function access to parameters...${NC}"
-    
-    # This would require the Lambda function to be deployed first
     echo -e "${YELLOW}⚠️  Lambda function must be deployed first to test parameter access${NC}"
     echo "Run: amplify push"
     echo "Then: npm run lambda:test"
