@@ -83,7 +83,7 @@ frontend:
             API_BASE_URL="https://api-dev.hashpass.tech/api"
             FRONTEND_URL="https://blockchainsummit-dev.hashpass.lat"
           fi
-          echo "EXPO_PUBLIC_BACKEND_PROVIDER=supabase" > apps/web-app/.env.production
+          echo "EXPO_PUBLIC_BACKEND_PROVIDER=directus" > apps/web-app/.env.production
           echo "EXPO_PUBLIC_SUPABASE_URL=https://fxgftanraszjjyeidvia.supabase.co" >> apps/web-app/.env.production
           echo "EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_iJeMRvvMCTiJJzo75egwog_BgQCUykM" >> apps/web-app/.env.production
           echo "DIRECTUS_URL=${DIRECTUS_HOST}" >> apps/web-app/.env.production
