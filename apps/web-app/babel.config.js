@@ -25,10 +25,7 @@ module.exports = function (api) {
         },
       ],
       'react-native-reanimated/plugin',
-<<<<<<< Updated upstream
       'babel-plugin-transform-import-meta',
-=======
->>>>>>> Stashed changes
     ],
   };
 };
