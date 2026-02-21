@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ThemeAndLanguageSwitcher from '../../components/ThemeAndLanguageSwitcher';
-import { OptimizedSplashCursor } from '../../components/OptimizedSplashCursor';
+import { AuthBackgroundScene } from '../../components/auth/AuthBackgroundScene';
 import { useTheme } from '../../hooks/useTheme';
 import { useToastHelpers } from '../../contexts/ToastContext';
 import PrivacyTermsModal from '../../components/PrivacyTermsModal';
@@ -430,7 +430,7 @@ export default function AuthScreen() {
   if (authLoading) {
     return (
       <SafeAreaView style={[styles.container, styles.centered]}>
-        <OptimizedSplashCursor />
+        <AuthBackgroundScene />
         <Text style={styles.loadingText}>{t('checkingAuth', 'Checking authentication...')}</Text>
       </SafeAreaView>
     );
@@ -438,21 +438,7 @@ export default function AuthScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <OptimizedSplashCursor
-        style={styles.cursorBackground}
-        SIM_RESOLUTION={32}
-        DYE_RESOLUTION={256}
-        CAPTURE_RESOLUTION={128}
-        DENSITY_DISSIPATION={5.0}
-        VELOCITY_DISSIPATION={3.0}
-        PRESSURE={0.1}
-        PRESSURE_ITERATIONS={5}
-        CURL={1}
-        SPLAT_RADIUS={0.1}
-        SPLAT_FORCE={2000}
-        SHADING={false}
-        COLOR_UPDATE_SPEED={3}
-      />
+      <AuthBackgroundScene />
 
       <ThemeAndLanguageSwitcher />
 
@@ -501,7 +487,7 @@ export default function AuthScreen() {
                 <Ionicons
                   name="mail-outline"
                   size={18}
-                  color={emailError ? '#F44336' : colors.textSecondary}
+                  color={emailError ? '#F44336' : colors.text.secondary}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -512,7 +498,7 @@ export default function AuthScreen() {
                     if (emailError) setEmailError('');
                   }}
                   placeholder={t('emailPlaceholder', 'Enter your email')}
-                  placeholderTextColor={colors.textSecondary}
+                  placeholderTextColor={colors.text.secondary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -537,7 +523,7 @@ export default function AuthScreen() {
                   <Ionicons
                     name="link-outline"
                     size={16}
-                    color={emailAuthMethod === 'magic-link' ? colors.text : colors.textSecondary}
+                    color={emailAuthMethod === 'magic-link' ? colors.text.primary : colors.text.secondary}
                   />
                   <Text
                     style={[
@@ -564,7 +550,7 @@ export default function AuthScreen() {
                   <Ionicons
                     name="keypad-outline"
                     size={16}
-                    color={emailAuthMethod === 'otp-code' ? colors.text : colors.textSecondary}
+                    color={emailAuthMethod === 'otp-code' ? colors.text.primary : colors.text.secondary}
                   />
                   <Text
                     style={[
@@ -615,7 +601,7 @@ export default function AuthScreen() {
                           <Ionicons
                             name="chevron-down"
                             size={16}
-                            color={colors.textSecondary}
+                            color={colors.text.secondary}
                           />
                         </TouchableOpacity>
 
@@ -629,7 +615,7 @@ export default function AuthScreen() {
                           <Ionicons
                             name="call-outline"
                             size={18}
-                            color={phoneError ? '#F44336' : colors.textSecondary}
+                            color={phoneError ? '#F44336' : colors.text.secondary}
                             style={styles.inputIcon}
                           />
                           <TextInput
@@ -640,7 +626,7 @@ export default function AuthScreen() {
                               if (phoneError) setPhoneError('');
                             }}
                             placeholder={t('phonePlaceholder', 'Enter your phone number')}
-                            placeholderTextColor={colors.textSecondary}
+                            placeholderTextColor={colors.text.secondary}
                             keyboardType="phone-pad"
                             autoCapitalize="none"
                             autoCorrect={false}
@@ -674,7 +660,7 @@ export default function AuthScreen() {
                       if (otpError) setOtpError('');
                     }}
                     placeholder={t('enterOtpCode', 'Enter 6-digit code')}
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={colors.text.secondary}
                     keyboardType="number-pad"
                     maxLength={OTP_CODE_LENGTH}
                     editable={!isBusy}
@@ -723,9 +709,9 @@ export default function AuthScreen() {
                 disabled={isBusy}
               >
                 {busyAction === 'oauth' ? (
-                  <ActivityIndicator size="small" color={colors.text} />
+                  <ActivityIndicator size="small" color={colors.text.primary} />
                 ) : (
-                  <Ionicons name="logo-google" size={28} color={colors.text} />
+                  <Ionicons name="logo-google" size={28} color={colors.text.primary} />
                 )}
               </TouchableOpacity>
             </View>
@@ -797,7 +783,7 @@ export default function AuthScreen() {
               <Ionicons
                 name="search-outline"
                 size={18}
-                color={colors.textSecondary}
+                color={colors.text.secondary}
                 style={styles.inputIcon}
               />
               <TextInput
@@ -805,7 +791,7 @@ export default function AuthScreen() {
                 value={countrySearchQuery}
                 onChangeText={setCountrySearchQuery}
                 placeholder={t('countrySearchPlaceholder', 'Search by country, ISO, or dial code')}
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.text.secondary}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
