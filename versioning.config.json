@@ -2,7 +2,8 @@
   "rootPackageJson": "package.json",
   "packages": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tools/*"
   ],
   "changelogFile": "CHANGELOG.md",
   "conventionalCommits": true,
@@ -62,14 +63,14 @@
     "secrets-check": {
       "enabled": true,
       "patterns": [
-        "CUSTOM_API_KEY=[0-9a-f]{32}"
+        "CUSTOM_API_KEY=[0-9a-f]{32}",
+        "(SUPABASE|DIRECTUS|GOOGLE|AWS|BREVO|NODEMAILER)_(KEY|SECRET|PASSWORD|PASS|ROLE)[^=]*=[^\\s]{20,}",
+        "eyJ[A-Za-z0-9_-]{10,}\\.eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}",
+        "sb_publishable_[A-Za-z0-9_-]{20,}",
+        "xkeysib-[a-zA-Z0-9]{32,}",
+        "xsmtpsib-[a-zA-Z0-9]{32,}"
       ],
-      "allowlist": [
-        "AWS_ACCESS_KEY_ID=YOUR_KEY",
-        "AWS_SECRET_ACCESS_KEY=YOUR_KEY",
-        "SUPABASE_SERVICE_ROLE_KEY=YOUR_KEY",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_KEY"
-      ]
+      "allowlist": []
     }
   },
   "branchAwareness": {
