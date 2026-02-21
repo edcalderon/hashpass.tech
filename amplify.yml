@@ -141,10 +141,10 @@ frontend:
         - |
           if [ -f lambda-deployment.zip ]; then
             # Branch-aware Lambda function target
-            if [ "$AWS_BRANCH" = "develop" ]; then
-              LAMBDA_FUNCTION_NAME="hashpass-dev-expo-router-api"
+            if [ "$AWS_BRANCH" = "develop" ] || [ "$AWS_BRANCH" = "dev" ]; then
+              LAMBDA_FUNCTION_NAME="hashpass-dev-api"
             else
-              LAMBDA_FUNCTION_NAME="hashpass-api-handler"
+              LAMBDA_FUNCTION_NAME="hashpass-prod-api"
             fi
             echo "🚀 Deploying Lambda function: $LAMBDA_FUNCTION_NAME"
             echo "Current branch: $AWS_BRANCH"
