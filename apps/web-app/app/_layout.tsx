@@ -2,9 +2,9 @@ import '../config/reanimated'; // CRITICAL: Ensure Reanimated is imported and co
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Stack, useRouter , usePathname, useSegments } from "expo-router";
+import { Stack, useRouter, usePathname, useSegments } from "expo-router";
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator , StatusBar , Platform } from 'react-native';
+import { View, ActivityIndicator, StatusBar, Platform } from 'react-native';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { LanguageProvider } from '../providers/LanguageProvider';
 import { EventProvider } from '../contexts/EventContext';
@@ -79,7 +79,7 @@ function ThemedContent() {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       // Initialize console welcome message
       showConsoleWelcome();
-      
+
       // Check version immediately
       checkVersionOnStart().catch((error) => {
         console.error('Version check failed:', error);
@@ -126,21 +126,21 @@ function ThemedContent() {
         }
       }
     };
-    
+
     ensureUserPass();
   }, [user, isLoggedIn, isLoading]);
 
   // Check if we're in the auth flow
-  const isAuthFlow = (segments[0] === '(shared)' && segments[1] === 'auth') || pathname.startsWith('/(shared)/auth');
+  const isAuthFlow = (segments[0] === '(shared)' && segments[1] === 'auth') || pathname.startsWith('/(shared)/auth') || pathname.startsWith('/auth');
   const isBSLPublic = pathname.startsWith('/events/bsl2025');
   const isHomePage = pathname === '/home' || pathname === '/' || pathname === '/index';
   // Public pages that don't require authentication
-  const isPublicPage = 
-    pathname === '/docs' || 
+  const isPublicPage =
+    pathname === '/docs' ||
     pathname === '/(shared)/docs' ||
-    pathname === '/privacy' || 
+    pathname === '/privacy' ||
     pathname === '/(shared)/privacy' ||
-    pathname === '/terms' || 
+    pathname === '/terms' ||
     pathname === '/(shared)/terms' ||
     pathname === '/status';
 
@@ -171,19 +171,21 @@ function ThemedContent() {
         console.log('⏸️ In auth callback, skipping redirect check');
         return;
       }
-      
+
       // Check if we're on the callback route - don't redirect during OAuth processing
       const isCallbackRoute = pathname.includes('/auth/callback');
-      
+
       // Check if accessing protected dashboard routes
-      const isDashboardRoute = pathname.startsWith('/(shared)/dashboard');
-      
+      // Note: Expo Router strips group segments from usePathname(), so pathname
+      // is typically /dashboard/... not /(shared)/dashboard/...
+      const isDashboardRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/(shared)/dashboard');
+
       if (isCallbackRoute) {
         // Don't redirect during callback processing - let the callback handler manage navigation
         console.log('🔄 On callback route, skipping session check to allow OAuth processing');
         return;
       }
-      
+
       if (isDashboardRoute && !isLoggedIn) {
         // For dashboard routes, check if user is logged in via provider-agnostic auth
         // Throttle redirects to prevent redirect loops
@@ -192,7 +194,7 @@ function ThemedContent() {
           console.warn('⚠️ Redirect throttled - last redirect was less than 5 seconds ago');
           return;
         }
-        
+
         console.warn('⚠️ Not authenticated on dashboard route, redirecting to auth');
         setLastRedirectTime(now);
         router.replace('/(shared)/auth' as any);
@@ -203,7 +205,7 @@ function ThemedContent() {
           console.warn('⚠️ Redirect throttled - last redirect was less than 5 seconds ago');
           return;
         }
-        
+
         console.log('🔄 Redirecting to auth - user not logged in');
         setLastRedirectTime(now);
         router.replace('/(shared)/auth' as any);
@@ -253,21 +255,21 @@ function ThemedContent() {
         <Stack.Screen name="status" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ headerShown: false }} />
         <Stack.Screen name="terms" options={{ headerShown: false }} />
-        <Stack.Screen 
-          name="(shared)/dashboard" 
-          options={{ 
+        <Stack.Screen
+          name="(shared)/dashboard"
+          options={{
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="(shared)/dashboard/qr-view" 
-          options={{ 
+        <Stack.Screen
+          name="(shared)/dashboard/qr-view"
+          options={{
             headerShown: false
           }}
         />
-        <Stack.Screen 
-          name="(shared)/dashboard/pass-details" 
-          options={{ 
+        <Stack.Screen
+          name="(shared)/dashboard/pass-details"
+          options={{
             headerShown: false
           }}
         />

@@ -76,15 +76,18 @@ frontend:
         - |
           if [ "$AWS_BRANCH" = "main" ] || [ "$AWS_BRANCH" = "bsl2025" ]; then
             DIRECTUS_HOST="https://sso.hashpass.co"
+            API_BASE_URL="https://api.hashpass.tech/api"
           else
             DIRECTUS_HOST="https://sso-dev.hashpass.co"
+            API_BASE_URL="https://api-dev.hashpass.tech/api"
           fi
           echo "EXPO_PUBLIC_BACKEND_PROVIDER=supabase" > apps/web-app/.env.production
           echo "EXPO_PUBLIC_SUPABASE_URL=https://fxgftanraszjjyeidvia.supabase.co" >> apps/web-app/.env.production
           echo "EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_iJeMRvvMCTiJJzo75egwog_BgQCUykM" >> apps/web-app/.env.production
           echo "DIRECTUS_URL=${DIRECTUS_HOST}" >> apps/web-app/.env.production
           echo "EXPO_PUBLIC_DIRECTUS_URL=${DIRECTUS_HOST}" >> apps/web-app/.env.production
-          echo "✅ Created .env.production with DIRECTUS_URL=${DIRECTUS_HOST}"
+          echo "EXPO_PUBLIC_API_BASE_URL=${API_BASE_URL}" >> apps/web-app/.env.production
+          echo "✅ Created .env.production with DIRECTUS_URL=${DIRECTUS_HOST} API_BASE_URL=${API_BASE_URL}"
           cat apps/web-app/.env.production
         # Build the Expo web app from the monorepo package and copy artifacts to root dist/
         - '[ -f pnpm-lock.yaml ] && pnpm --dir apps/web-app run build || npm --prefix apps/web-app run build'
