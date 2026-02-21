@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 APP_ID="${1:-d951nuj7hrqeg}"
-REGION="${2:-sa-east-1}"
+REGION="${2:-us-east-1}"
 HEADERS_FILE="${3:-${ROOT_DIR}/infrastructure/terraform/stacks/aws/custom-headers.blockchainsummit.yml}"
 
 if ! command -v aws >/dev/null 2>&1; then

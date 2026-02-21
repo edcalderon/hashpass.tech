@@ -72,11 +72,13 @@ export async function GET(request: ExpoRequest): Promise<ExpoResponse> {
   // 3. Provider redirects back to Directus with auth code
   // 4. Directus exchanges code for tokens
   // 5. Directus redirects to /auth/callback with tokens in URL or cookies
-  // Directus v11 OAuth endpoint format: /auth/login/{provider}?redirect={url}
-  const callbackUrl = new URL('/auth/callback', url.origin);
-  callbackUrl.searchParams.set('returnTo', returnTo);
+  // Redirect to Directus OAuth endpoint
+  // Directus will process OAuth and redirect to /auth/callback
+  // We specify only the path, as returnTo is stored in the oauth_return_to cookie
+  const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   directusOAuthUrl.searchParams.set('redirect', callbackUrl.toString());
+  directusOAuthUrl.searchParams.set('mode', 'json');
   if (provider === 'google') {
     // Force a fresh provider consent flow to avoid reusing stale Directus admin/browser sessions.
     directusOAuthUrl.searchParams.set('prompt', 'consent');

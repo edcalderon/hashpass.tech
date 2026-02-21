@@ -1,6 +1,6 @@
 {
   "newsletter": {
-   "title": "Suscríbete a nuestro boletín",
+    "title": "Suscríbete a nuestro boletín",
     "subtitle": "Únete a nuestro boletín para las últimas novedades",
     "subscribers": "Suscriptores",
     "privacy": "Respetamos tu privacidad. Puedes darte de baja en cualquier momento.",
@@ -120,7 +120,13 @@
       "text": "Al iniciar sesión, aceptas nuestros",
       "terms": "Términos de Servicio",
       "privacy": "Política de Privacidad"
-    }
+    },
+    "orContinueWith": "O continúa con",
+    "processing": "Procesando...",
+    "processingAuthentication": "Procesando autenticación...",
+    "authenticationSuccessful": "¡Autenticación exitosa!",
+    "authenticationError": "Error de autenticación",
+    "authenticationFailed": "Autenticación fallida. Inténtalo de nuevo."
   },
   "privacy": {
     "title": "Política de Privacidad",
@@ -251,7 +257,7 @@
     "readyToSimplify": "¿Listo para simplificar tu vida digital?",
     "getStartedNow": "Comenzar ahora",
     "trustedByThousands": "Confiado por miles",
-    "testimonials":{
+    "testimonials": {
       "title": "Testimonios",
       "subtitle": "Lo que dicen nuestros usuarios",
       "description": "Descubre qué opinan nuestros clientes."
@@ -679,7 +685,7 @@
       "speaker": "Ponente",
       "requester": "Solicitante",
       "expiresIn": "Expira En",
-      "hours": "HRS",
+      "hoursAbbr": "HRS",
       "minutes": "MIN",
       "seconds": "SEG",
       "status": "Estado",

@@ -7,7 +7,7 @@
  * NO HARDCODED SECRETS ALLOWED.
  * 
  * Usage:
- *   node tools/scripts/sync-env.js [local|staging|production]
+ *   node tools/scripts/sync-env.js [dev|production]
  */
 
 const { execSync } = require('child_process');
@@ -16,7 +16,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 const ROOT_DIR = path.resolve(__dirname, '../../');
-const envArg = process.argv[2] || 'staging';
+const envArg = process.argv[2] || 'dev';
 
 // 1. Load root .env
 const rootEnvPath = path.join(ROOT_DIR, '.env');
@@ -36,12 +36,15 @@ if (fs.existsSync(rootEnvPath)) {
     }
 }
 
-// 2. Define Mapping/Suffixes (Matches propagate-env.js)
 const SUFFIX_MAP = {
-    'local': '_DEV',
-    'staging': '_STAGING',
+    'dev': '_DEV',
     'production': '_PROD'
 };
+
+if (envArg === 'local') {
+    console.error('❌ Syncing [local] to AWS is not allowed. Local environments should only use root .env variables on your machine.');
+    process.exit(1);
+}
 
 const suffix = SUFFIX_MAP[envArg] || '_DEV';
 const targetConfig = {};
@@ -61,7 +64,7 @@ keys.forEach(key => {
 });
 
 // 4. Lambda Mapping
-const LAMBDA_NAME = envArg === 'production' ? 'hashpass-prod-api' : 'hashpass-dev-api';
+const LAMBDA_NAME = envArg === 'production' ? 'hashpass-api-prod' : 'hashpass-api-dev';
 
 console.log(`🚀 Syncing environment [${envArg}] to Lambda [${LAMBDA_NAME}]...`);
 
@@ -75,7 +78,12 @@ try {
         'EXPO_PUBLIC_SUPABASE_KEY',
         'SUPABASE_SERVICE_ROLE_KEY',
         'DIRECTUS_URL',
-        'EXPO_PUBLIC_DIRECTUS_URL'
+        'EXPO_PUBLIC_DIRECTUS_URL',
+        'GOOGLE_CLIENT_ID',
+        'GOOGLE_CLIENT_SECRET',
+        'ADMIN_EMAIL',
+        'ADMIN_PASSWORD',
+        'AUTH_PROVIDER'
     ];
 
     const newVars = { ...currentVars };

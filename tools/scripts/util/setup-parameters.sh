@@ -20,19 +20,26 @@ if [ -f .env ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
 
-# Configuration - now using environment variables
-# Define parameters: ENV_VAR_NAME|SSM_PATH|TYPE|DESCRIPTION
-PARAMETERS=(
-    "EXPO_PUBLIC_SUPABASE_URL|/hashpass/bsl2025/supabase/url|String|Supabase project URL"
-    "EXPO_PUBLIC_SUPABASE_KEY|/hashpass/bsl2025/supabase/anon-key|String|Supabase anon key"
-    "SUPABASE_SERVICE_ROLE_KEY|/hashpass/bsl2025/supabase/service-role-key|SecureString|Supabase service role key"
-    "DIRECTUS_URL|/hashpass/bsl2025/directus/url|String|Directus URL"
-    "EXPO_PUBLIC_DIRECTUS_URL|/hashpass/bsl2025/directus/public-url|String|Directus Public URL"
-    "ADMIN_EMAIL|/hashpass/bsl2025/admin/email|String|Directus Admin Email"
-    "ADMIN_PASSWORD|/hashpass/bsl2025/admin/password|SecureString|Directus Admin Password"
-    "GOOGLE_CLIENT_ID|/hashpass/bsl2025/google/client-id|String|Google OAuth Client ID"
-    "GOOGLE_CLIENT_SECRET|/hashpass/bsl2025/google/client-secret|SecureString|Google OAuth Client Secret"
-)
+# 2. Define Mapping/Suffixes (Matches propagate-env/sync-env)
+case "$ENV_NAME" in
+    "production") SUFFIX="_PROD" ;;
+    "staging") SUFFIX="_STAGING" ;;
+    "local") SUFFIX="_DEV" ;;
+    *) SUFFIX="_DEV" ;;
+esac
+
+# Function to get value with override logic
+get_config_value() {
+    local key=$1
+    local override_key="${key}${SUFFIX}"
+    
+    # If override exists, return it, otherwise return base key value
+    if [ ! -z "${!override_key}" ]; then
+        echo "${!override_key}"
+    else
+        echo "${!key}"
+    fi
+}
 
 # Check prerequisites
 check_prerequisites() {
@@ -61,7 +68,7 @@ create_parameters() {
         IFS='|' read -r env_var ssm_path type desc <<< "$param"
         
         # Get value from environment
-        value="${!env_var}"
+        value=$(get_config_value "$env_var")
         
         if [ -z "$value" ]; then
             echo -e "${YELLOW}⚠️ Skipping $env_var - not found in environment${NC}"
@@ -70,6 +77,7 @@ create_parameters() {
         
         echo -e "${BLUE}  Creating parameter: ${ssm_path} ...${NC}"
         aws ssm put-parameter \
+            --region us-east-1 \
             --name "$ssm_path" \
             --value "$value" \
             --type "$type" \
@@ -88,13 +96,13 @@ verify_parameters() {
     for param in "${PARAMETERS[@]}"; do
         IFS='|' read -r env_var ssm_path type desc <<< "$param"
         
-        value="${!env_var}"
+        value=$(get_config_value "$env_var")
         if [ -z "$value" ]; then
             continue
         fi
         
         # Check parameter
-        local cmd="aws ssm get-parameter --name \"$ssm_path\""
+        local cmd="aws ssm get-parameter --region us-east-1 --name \"$ssm_path\""
         if [ "$type" == "SecureString" ]; then
             cmd="$cmd --with-decryption"
         fi
@@ -122,20 +130,50 @@ list_parameters() {
     echo "====================="
     
     aws ssm describe-parameters \
-        --parameter-filters "Key=Name,Option=BeginsWith,Values=/hashpass/bsl2025/" \
+        --region us-east-1 \
+        --parameter-filters "Key=Name,Option=BeginsWith,Values=/hashpass/$ENV_NAME/" \
         --query 'Parameters[*].[Name,Type,Description]' \
         --output table
 }
 
 # Delete parameters
 delete_parameters() {
-    echo -e "${YELLOW}🗑️  Deleting parameters...${NC}"
+    echo -e "${YELLOW}🗑️  Deleting parameters for $ENV_NAME...${NC}"
     
     for param in "${PARAMETERS[@]}"; do
         IFS='|' read -r env_var ssm_path type desc <<< "$param"
-        aws ssm delete-parameter --name "$ssm_path" 2>/dev/null || true
+        aws ssm delete-parameter --region us-east-1 --name "$ssm_path" 2>/dev/null || true
         echo -e "${GREEN}✅ Deleted parameter: $ssm_path${NC}"
     done
+}
+
+# Clean stale parameters (surgical delete)
+clean_stale_parameters() {
+    echo -e "${BLUE}🧹 Cleaning stale parameters in namespace: /hashpass/$ENV_NAME/ ...${NC}"
+    
+    # Get all parameters in this namespace
+    local existing_params=$(aws ssm describe-parameters \
+        --region us-east-1 \
+        --parameter-filters "Key=Name,Option=BeginsWith,Values=/hashpass/$ENV_NAME/" \
+        --query 'Parameters[*].Name' --output text)
+    
+    for existing in $existing_params; do
+        local found=false
+        for param in "${PARAMETERS[@]}"; do
+            IFS='|' read -r env_var ssm_path type desc <<< "$param"
+            if [ "$existing" == "$ssm_path" ]; then
+                found=true
+                break
+            fi
+        done
+        
+        if [ "$found" = false ]; then
+            echo -e "${YELLOW}🗑️  Removing stale parameter: $existing ...${NC}"
+            aws ssm delete-parameter --region us-east-1 --name "$existing" 2>/dev/null || true
+        fi
+    done
+    
+    echo -e "${GREEN}✅ Clean completed${NC}"
 }
 
 # Test Lambda function access
@@ -153,18 +191,20 @@ show_help() {
     echo "Usage: $0 [COMMAND]"
     echo ""
     echo "Commands:"
-    echo "  create      Create parameters in Parameter Store (default)"
+    echo "  create      Create/Update parameters in Parameter Store (default)"
+    echo "  sync        Surgically sync parameters (create/update + delete stale)"
     echo "  verify      Verify parameters exist and are correct"
     echo "  list        List all HashPass parameters"
-    echo "  delete      Delete all HashPass parameters"
+    echo "  delete      Delete all HashPass parameters in current env"
+    echo "  clean       Only delete stale parameters (not in list)"
     echo "  test        Test Lambda function access to parameters"
     echo "  help        Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 create"
-    echo "  $0 verify"
-    echo "  $0 list"
-    echo "  $0 delete"
+    echo "  $0 create dev"
+    echo "  $0 sync dev"
+    echo "  $0 sync production"
+    echo "  $0 delete dev"
     echo ""
     echo "Environment Variables:"
     echo "  EXPO_PUBLIC_SUPABASE_URL    Supabase project URL"
@@ -177,12 +217,44 @@ show_help() {
     echo ""
     echo "Security Notes:"
     echo "  - Service role key is stored as SecureString (encrypted)"
-    echo "  - Parameters are scoped to /hashpass/bsl2025/ namespace"
+    echo "  - Parameters are scoped to /hashpass/\$ENV/ namespace"
     echo "  - Only Lambda functions with proper IAM roles can access these parameters"
 }
 
 # Main script logic
-case "${1:-create}" in
+COMMAND="${1:-create}"
+ENV_NAME="${2:-staging}"
+
+# Profile mapping repeated for correct lookup in sub-commands if needed
+case "$ENV_NAME" in
+    "production") SUFFIX="_PROD" ;;
+    "dev") SUFFIX="_DEV" ;;
+    "local") 
+        echo -e "${RED}❌ Targeting [local] environment on AWS is not allowed.${NC}"
+        echo "Local environment should only exist on your machine."
+        exit 1
+        ;;
+    *) SUFFIX="_DEV" ;;
+esac
+
+echo "🔍 Targeting AWS environment: $ENV_NAME"
+
+# Configuration - now using environment variables
+# Define parameters: ENV_VAR_NAME|SSM_PATH|TYPE|DESCRIPTION
+# Path pattern: /hashpass/${ENV_NAME}/${PATH}
+PARAMETERS=(
+    "EXPO_PUBLIC_SUPABASE_URL|/hashpass/$ENV_NAME/supabase/url|String|Supabase project URL"
+    "EXPO_PUBLIC_SUPABASE_KEY|/hashpass/$ENV_NAME/supabase/anon-key|String|Supabase anon key"
+    "SUPABASE_SERVICE_ROLE_KEY|/hashpass/$ENV_NAME/supabase/service-role-key|SecureString|Supabase service role key"
+    "DIRECTUS_URL|/hashpass/$ENV_NAME/directus/url|String|Directus URL"
+    "EXPO_PUBLIC_DIRECTUS_URL|/hashpass/$ENV_NAME/directus/public-url|String|Directus Public URL"
+    "ADMIN_EMAIL|/hashpass/$ENV_NAME/admin/email|String|Directus Admin Email"
+    "ADMIN_PASSWORD|/hashpass/$ENV_NAME/admin/password|SecureString|Directus Admin Password"
+    "GOOGLE_CLIENT_ID|/hashpass/$ENV_NAME/google/client-id|String|Google OAuth Client ID"
+    "GOOGLE_CLIENT_SECRET|/hashpass/$ENV_NAME/google/client-secret|SecureString|Google OAuth Client Secret"
+)
+
+case "$COMMAND" in
     "create")
         check_prerequisites
         create_parameters
@@ -190,6 +262,18 @@ case "${1:-create}" in
         list_parameters
         echo -e "\n${GREEN}🎉 Parameter Store setup completed successfully!${NC}"
         echo -e "${YELLOW}💡 You can now deploy the Lambda function with: amplify push${NC}"
+        ;;
+    "sync")
+        check_prerequisites
+        clean_stale_parameters
+        create_parameters
+        verify_parameters
+        list_parameters
+        echo -e "\n${GREEN}🎉 Parameter Store sync completed successfully!${NC}"
+        ;;
+    "clean")
+        check_prerequisites
+        clean_stale_parameters
         ;;
     "verify")
         check_prerequisites
@@ -213,7 +297,7 @@ case "${1:-create}" in
         show_help
         ;;
     *)
-        echo -e "${RED}❌ Unknown command: $1${NC}"
+        echo -e "${RED}❌ Unknown command: $COMMAND${NC}"
         show_help
         exit 1
         ;;

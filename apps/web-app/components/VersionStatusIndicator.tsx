@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
+import { apiClient } from '../lib/api-client';
 import VersionDetailsModal from './VersionDetailsModal';
 
 interface VersionStatusIndicatorProps {
@@ -12,8 +13,8 @@ interface VersionStatusIndicatorProps {
 
 type StatusState = 'healthy' | 'degraded' | 'unhealthy' | 'checking' | 'unknown';
 
-export default function VersionStatusIndicator({ 
-  compact = false, 
+export default function VersionStatusIndicator({
+  compact = false,
   showVersion = true,
   size = 'medium'
 }: VersionStatusIndicatorProps) {
@@ -35,16 +36,10 @@ export default function VersionStatusIndicator({
   const checkStatus = async () => {
     try {
       setStatus('checking');
-      const response = await fetch('https://api.hashpass.tech/api/status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiClient.get('/status', { skipEventSegment: true });
 
-      if (response.ok) {
-        const data = await response.json();
-        setStatus(data.status || 'unknown');
+      if (response.success) {
+        setStatus(response.data.status || 'unknown');
       } else {
         setStatus('unhealthy');
       }
@@ -103,7 +98,7 @@ export default function VersionStatusIndicator({
             <Text style={styles.compactVersionText}>v{versionInfo.version}</Text>
           )}
         </TouchableOpacity>
-        <VersionDetailsModal 
+        <VersionDetailsModal
           visible={showModal}
           onClose={() => setShowModal(false)}
           status={status}
@@ -133,7 +128,7 @@ export default function VersionStatusIndicator({
           </View>
         </View>
       </TouchableOpacity>
-      <VersionDetailsModal 
+      <VersionDetailsModal
         visible={showModal}
         onClose={() => setShowModal(false)}
         status={status}

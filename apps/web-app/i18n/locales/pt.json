@@ -111,7 +111,13 @@
       "text": "Ao fazer login, você concorda com nossos",
       "terms": "Termos de Serviço",
       "privacy": "Política de Privacidade"
-    }
+    },
+    "orContinueWith": "Ou continue com",
+    "processing": "Processando...",
+    "processingAuthentication": "Processando autenticação...",
+    "authenticationSuccessful": "Autenticação bem-sucedida!",
+    "authenticationError": "Erro de Autenticação",
+    "authenticationFailed": "A autenticação falhou. Por favor, tente novamente."
   },
   "privacy": {
     "title": "Política de Privacidade",
@@ -706,4 +712,3 @@
     "statusSummary": "Clique para ver o status detalhado do sistema e informações de saúde dos serviços."
   }
 }
-

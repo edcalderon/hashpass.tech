@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
+import { apiClient } from '../lib/api-client';
 import VersionDetailsModal from './VersionDetailsModal';
 
 interface VersionDisplayProps {
@@ -31,16 +32,10 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
   const checkStatus = async () => {
     try {
       setStatus('checking');
-      const response = await fetch('https://api.hashpass.tech/api/status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiClient.get('/status', { skipEventSegment: true });
 
-      if (response.ok) {
-        const data = await response.json();
-        setStatus(data.status || 'unknown');
+      if (response.success) {
+        setStatus(response.data.status || 'unknown');
       } else {
         setStatus('unhealthy');
       }
@@ -66,7 +61,7 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
           <Text style={styles.compactText}>v{versionInfo.version}</Text>
           <VersionBadge />
         </TouchableOpacity>
-        <VersionDetailsModal 
+        <VersionDetailsModal
           visible={showDetails}
           onClose={() => setShowDetails(false)}
           status={status}
@@ -91,7 +86,7 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
             <MaterialIcons name="info-outline" size={16} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
-        <VersionDetailsModal 
+        <VersionDetailsModal
           visible={showDetails}
           onClose={() => setShowDetails(false)}
           status={status}
@@ -115,7 +110,7 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
           <MaterialIcons name="info-outline" size={20} color={colors.text.secondary} />
         </TouchableOpacity>
       </View>
-      <VersionDetailsModal 
+      <VersionDetailsModal
         visible={showDetails}
         onClose={() => setShowDetails(false)}
         showStatusIndicator={false}

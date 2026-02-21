@@ -9,10 +9,10 @@ echo "================================================"
 echo ""
 
 if [ "$AWS_BRANCH" = "develop" ]; then
-    LAMBDA_FUNCTION_NAME="hashpass-dev-expo-router-api"
+    LAMBDA_FUNCTION_NAME="hashpass-api-dev"
 else
     # Default to production if not develop
-    LAMBDA_FUNCTION_NAME="hashpass-api-handler"
+    LAMBDA_FUNCTION_NAME="hashpass-api-prod"
 fi
 
 REGION="us-east-1"

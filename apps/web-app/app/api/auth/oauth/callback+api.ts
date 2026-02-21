@@ -20,23 +20,33 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const returnTo = url.searchParams.get('returnTo') || '/dashboard/explore';
   let failureReason = 'No Directus session was returned after OAuth callback.';
-  
+
   // Get returnTo from cookie if not in URL (set by login endpoint)
   const cookies = request.headers.get('Cookie') || '';
   const returnToCookie = cookies.split(';').find(c => c.trim().startsWith('oauth_return_to='));
-  const finalReturnTo = returnToCookie 
+  const finalReturnTo = returnToCookie
     ? decodeURIComponent(returnToCookie.split('=')[1])
     : returnTo;
-  
+
   console.log('[OAuth Callback] Processing callback from Directus');
   console.log('[OAuth Callback] Return to:', finalReturnTo);
   console.log('[OAuth Callback] Directus URL:', DIRECTUS_URL);
-  
+
   // Check if we received tokens directly in URL from Directus
   // Some OAuth flows pass tokens in the URL fragment
   const urlAccessToken = url.searchParams.get('access_token');
   const urlRefreshToken = url.searchParams.get('refresh_token');
-  
+  const error = url.searchParams.get('error');
+  const message = url.searchParams.get('message');
+
+  console.log('[OAuth Callback] Received from Directus:', {
+    hasAccessToken: !!urlAccessToken,
+    hasRefreshToken: !!urlRefreshToken,
+    error,
+    message,
+    fullUrl: url.toString().substring(0, 100) + '...'
+  });
+
   if (urlAccessToken) {
     console.log('[OAuth Callback] ✅ Found tokens in URL');
     // Redirect with tokens in URL fragment so client can store them
@@ -45,7 +55,7 @@ export async function GET(request: Request): Promise<Response> {
       access_token: urlAccessToken,
       ...(urlRefreshToken && { refresh_token: urlRefreshToken })
     });
-    
+
     return new ExpoResponse(null, {
       status: 302,
       headers: {
@@ -54,7 +64,7 @@ export async function GET(request: Request): Promise<Response> {
       }
     });
   }
-  
+
   // Check if we have session cookies from Directus
   // After successful OAuth, Directus sets authentication cookies
   if (cookies) {
@@ -70,11 +80,11 @@ export async function GET(request: Request): Promise<Response> {
         },
         body: JSON.stringify({ mode: 'json' })
       });
-      
+
       if (refreshResponse.ok) {
         const refreshData = await refreshResponse.json();
         const tokens = refreshData.data || refreshData;
-        
+
         if (tokens.access_token) {
           console.log('[OAuth Callback] ✅ Got tokens from refresh endpoint');
           const redirectUrl = new URL(finalReturnTo, url.origin);
@@ -82,7 +92,7 @@ export async function GET(request: Request): Promise<Response> {
             access_token: tokens.access_token,
             ...(tokens.refresh_token && { refresh_token: tokens.refresh_token })
           });
-          
+
           return new ExpoResponse(null, {
             status: 302,
             headers: {
@@ -104,13 +114,13 @@ export async function GET(request: Request): Promise<Response> {
       console.error('[OAuth Callback] Error during refresh:', error instanceof Error ? error.message : String(error));
     }
   }
-  
+
   // Failed - redirect to auth page with error  
   console.error('[OAuth Callback] ❌ Failed to obtain tokens from Directus');
   const errorUrl = new URL('/auth', url.origin);
   errorUrl.searchParams.set('error', 'oauth_failed');
   errorUrl.searchParams.set('message', `Authentication could not be completed. ${failureReason} Redirecting to login.`);
-  
+
   return new ExpoResponse(null, {
     status: 302,
     headers: {

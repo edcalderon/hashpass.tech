@@ -21,12 +21,12 @@ export const useAuth = () => {
       const access_token = hashParams.get('access_token');
       const refresh_token = hashParams.get('refresh_token');
       const email = hashParams.get('email');
-      
+
       if (access_token) {
         console.log('[useAuth] 🔑 Found OAuth tokens in URL fragment, processing...');
         console.log('[useAuth] Email:', email);
         console.log('[useAuth] Token prefix:', access_token.substring(0, 20) + '...');
-        
+
         // Call the OAuth callback handler to process tokens
         authService.handleOAuthCallback?.({
           access_token,
@@ -38,8 +38,8 @@ export const useAuth = () => {
             console.error('[useAuth] ❌ Failed to process OAuth tokens:', result.error);
           } else {
             console.log('[useAuth] ✅ OAuth tokens processed successfully');
-            // Clear the hash after processing
-            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            // Clear the hash after processing - disabled for debug
+            // window.history.replaceState(null, '', window.location.pathname + window.location.search);
           }
         }).catch((error) => {
           console.error('[useAuth] ❌ Error processing OAuth tokens:', error);
@@ -89,9 +89,9 @@ export const useAuth = () => {
       if (!authService.signInWithOAuth) {
         throw new Error('OAuth not supported by current auth provider');
       }
-      
+
       const result = await authService.signInWithOAuth(provider);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
@@ -109,9 +109,9 @@ export const useAuth = () => {
       if (!authService.handleOAuthCallback) {
         throw new Error('OAuth callback not supported by current auth provider');
       }
-      
+
       const result = await authService.handleOAuthCallback(codeOrParams, state);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }

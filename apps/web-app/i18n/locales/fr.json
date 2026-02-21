@@ -111,7 +111,13 @@
       "text": "En vous connectant, vous acceptez nos",
       "terms": "Conditions d'utilisation",
       "privacy": "Politique de confidentialité"
-    }
+    },
+    "orContinueWith": "Ou continuer avec",
+    "processing": "Traitement en cours...",
+    "processingAuthentication": "Traitement de l'authentification...",
+    "authenticationSuccessful": "Authentification réussie !",
+    "authenticationError": "Erreur d'authentification",
+    "authenticationFailed": "L'authentification a échoué. Veuillez réessayer."
   },
   "privacy": {
     "title": "Politique de confidentialité",
@@ -706,4 +712,3 @@
     "statusSummary": "Cliquez pour voir l'état détaillé du système et les informations de santé des services."
   }
 }
-
