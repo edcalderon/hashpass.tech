@@ -127,7 +127,7 @@ function ThemedContent() {
         }
       }
     };
-    
+
     ensureUserPass();
   }, [user, isLoggedIn, isLoading]);
 
@@ -186,7 +186,7 @@ function ThemedContent() {
         console.log('🔄 On callback route, skipping session check to allow OAuth processing');
         return;
       }
-      
+
       if (isDashboardRoute && !isLoggedIn) {
         // For dashboard routes, check if user is logged in via provider-agnostic auth
         // Throttle redirects to prevent redirect loops
@@ -195,7 +195,7 @@ function ThemedContent() {
           console.warn('⚠️ Redirect throttled - last redirect was less than 5 seconds ago');
           return;
         }
-        
+
         console.warn('⚠️ Not authenticated on dashboard route, redirecting to auth');
         setLastRedirectTime(now);
         router.replace('/(shared)/auth' as any);
@@ -207,18 +207,7 @@ function ThemedContent() {
           return;
         }
 
-        console.warn('⚠️ Not authenticated on dashboard route, redirecting to auth');
-        setLastRedirectTime(now);
-        router.replace('/(shared)/auth' as any);
-      } else if (!actuallyAuthenticated && !isAuthFlow && !isBSLPublic && !isHomePage && !isPublicPage) {
-        // Throttle redirects to prevent redirect loops
-        const now = Date.now();
-        if (now - lastRedirectTime < 5000) {
-          console.warn('⚠️ Redirect throttled - last redirect was less than 5 seconds ago');
-          return;
-        }
-
-        console.log('🔄 Redirecting to auth - user not logged in');
+        console.warn('⚠️ Not authenticated on general route, redirecting to auth');
         setLastRedirectTime(now);
         router.replace('/(shared)/auth' as any);
       }
