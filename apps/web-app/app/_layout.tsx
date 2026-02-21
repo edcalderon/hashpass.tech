@@ -127,11 +127,7 @@ function ThemedContent() {
         }
       }
     };
-<<<<<<< Updated upstream
-
-=======
     
->>>>>>> Stashed changes
     ensureUserPass();
   }, [user, isLoggedIn, isLoading]);
 
@@ -190,14 +186,6 @@ function ThemedContent() {
         console.log('🔄 On callback route, skipping session check to allow OAuth processing');
         return;
       }
-<<<<<<< Updated upstream
-
-      // Check synchronous service state in case React state is falling behind
-      const actuallyAuthenticated = isLoggedIn || authService.isAuthenticated();
-
-      if (isDashboardRoute && !actuallyAuthenticated) {
-        // For dashboard routes, check if user is logged in via provider-agnostic auth
-=======
       
       if (isDashboardRoute && !isLoggedIn) {
         // For dashboard routes, check if user is logged in via provider-agnostic auth
@@ -212,7 +200,6 @@ function ThemedContent() {
         setLastRedirectTime(now);
         router.replace('/(shared)/auth' as any);
       } else if (!isLoggedIn && !isAuthFlow && !isBSLPublic && !isHomePage && !isPublicPage) {
->>>>>>> Stashed changes
         // Throttle redirects to prevent redirect loops
         const now = Date.now();
         if (now - lastRedirectTime < 5000) {

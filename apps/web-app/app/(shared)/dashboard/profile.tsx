@@ -48,11 +48,6 @@ export default function ProfileScreen() {
   const [retryingProfile, setRetryingProfile] = useState(false);
 
   const hasProfileContent = useCallback((candidate?: AuthUser | null): boolean => {
-<<<<<<< Updated upstream
-    if (!candidate) return false;
-
-=======
->>>>>>> Stashed changes
     const hasName = Boolean(
       candidate.first_name?.trim() ||
       candidate.last_name?.trim() ||

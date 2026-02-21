@@ -3,11 +3,7 @@
  */
 
 import { DirectusUser } from './directus-auth';
-<<<<<<< Updated upstream
-import type { Request } from 'express';
-=======
 import { Request } from 'express';
->>>>>>> Stashed changes
 import { DirectusApiClient } from './auth/providers/directus-api-client';
 
 const DIRECTUS_URL =

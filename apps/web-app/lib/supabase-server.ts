@@ -1,94 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
-<<<<<<< Updated upstream
-import { config as loadDotenv } from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-=======
->>>>>>> Stashed changes
 
 // This client is specifically for server-side operations
 // Only use this in API routes/server-side code
 // DO NOT import this in client-side components - use lib/supabase.ts instead
 
-<<<<<<< Updated upstream
-let envLoaded = false;
-
-function loadServerEnvFiles() {
-  if (envLoaded || typeof process === 'undefined' || typeof window !== 'undefined') return;
-
-  const cwd = process.cwd();
-  const candidates = [
-    path.resolve(cwd, '.env.local'),
-    path.resolve(cwd, '.env'),
-    path.resolve(cwd, '..', '.env.local'),
-    path.resolve(cwd, '..', '.env'),
-    path.resolve(cwd, '..', '..', '.env.local'),
-    path.resolve(cwd, '..', '..', '.env'),
-    path.resolve(cwd, '..', '..', '..', '.env.local'),
-    path.resolve(cwd, '..', '..', '..', '.env'),
-  ];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      loadDotenv({ path: candidate, override: false, quiet: true });
-    }
-  }
-
-  envLoaded = true;
-}
-
-function normalizeEnvValue(value: string | undefined): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-type SupabaseEnvProfile = {
-  name: 'main' | 'dev';
-  supabaseUrl?: string;
-  supabaseServiceKey?: string;
-  usingDevFallback: boolean;
-};
-
-export function getSupabaseServerEnv() {
-  loadServerEnvFiles();
-  const supabaseUrlMain = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL);
-  const supabaseUrlDev = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL_DEV);
-  const supabaseServiceKeyMain = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const supabaseServiceKeyDev = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY_DEV);
-
-  // Pick URL and service key from the same profile to prevent cross-project mixups.
-  const profiles: SupabaseEnvProfile[] = [
-    {
-      name: 'main',
-      supabaseUrl: supabaseUrlMain,
-      supabaseServiceKey: supabaseServiceKeyMain,
-      usingDevFallback: false,
-    },
-    {
-      name: 'dev',
-      supabaseUrl: supabaseUrlDev,
-      supabaseServiceKey: supabaseServiceKeyDev,
-      usingDevFallback: true,
-    },
-  ];
-
-  const selectedProfile =
-    profiles.find((profile) => profile.supabaseUrl && profile.supabaseServiceKey) ??
-    profiles.find((profile) => profile.supabaseUrl || profile.supabaseServiceKey);
-
-  return {
-    supabaseUrl: selectedProfile?.supabaseUrl,
-    supabaseServiceKey: selectedProfile?.supabaseServiceKey,
-    usingDevFallback: selectedProfile?.usingDevFallback ?? false,
-    selectedProfile: selectedProfile?.name ?? 'none',
-  };
-}
-=======
 // Get environment variables (only available at runtime)
 const supabaseUrl = typeof process !== 'undefined' ? (process.env.EXPO_PUBLIC_SUPABASE_URL as string) : undefined;
 const supabaseServiceKey = typeof process !== 'undefined' ? (process.env.SUPABASE_SERVICE_ROLE_KEY as string) : undefined;
->>>>>>> Stashed changes
 
 // Lazy initialization - only create client when actually used
 let _supabaseServer: ReturnType<typeof createClient> | null = null;
@@ -105,28 +23,6 @@ function getSupabaseServer() {
     throw new Error('supabase-server.ts should only be used in server-side API routes. For client-side code, use lib/supabase.ts instead.');
   }
 
-<<<<<<< Updated upstream
-  const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv();
-
-  // Check for missing environment variables - but don't crash, return a mock client
-  if (!supabaseUrl || !supabaseServiceKey) {
-    const missingVars = [];
-    if (!supabaseUrl) {
-      missingVars.push(
-        'EXPO_PUBLIC_SUPABASE_URL (fallback: EXPO_PUBLIC_SUPABASE_URL_DEV)'
-      );
-    }
-    if (!supabaseServiceKey) {
-      missingVars.push(
-        'SUPABASE_SERVICE_ROLE_KEY (fallback: SUPABASE_SERVICE_ROLE_KEY_DEV)'
-      );
-    }
-
-    const errorMsg = `Missing Supabase environment variables: ${missingVars.join(', ')}. ` +
-      `API routes will return graceful error responses. ` +
-      `Selected profile: ${selectedProfile}. ` +
-      `Using DEV fallback: ${usingDevFallback ? 'YES' : 'NO'}. ` +
-=======
   // Check for missing environment variables - but don't crash, return a mock client
   if (!supabaseUrl || !supabaseServiceKey) {
     const missingVars = [];
@@ -135,7 +31,6 @@ function getSupabaseServer() {
 
     const errorMsg = `Missing Supabase environment variables: ${missingVars.join(', ')}. ` +
       `API routes will return graceful error responses. ` +
->>>>>>> Stashed changes
       `Current values: EXPO_PUBLIC_SUPABASE_URL=${supabaseUrl ? 'SET' : 'MISSING'}, ` +
       `SUPABASE_SERVICE_ROLE_KEY=${supabaseServiceKey ? 'SET' : 'MISSING'}`;
 
@@ -232,10 +127,6 @@ function getSupabaseServer() {
       });
 
       try {
-<<<<<<< Updated upstream
-        // eslint-disable-next-line no-restricted-syntax
-=======
->>>>>>> Stashed changes
         const response = await fetch(urlString, {
           ...options,
           headers: headersPlain,
