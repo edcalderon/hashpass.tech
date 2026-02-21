@@ -241,16 +241,20 @@ export async function GET(request: Request): Promise<Response> {
     if (rtPath.startsWith('http')) {
       try { rtPath = new URL(rtPath).pathname + new URL(rtPath).search; } catch (e) { }
     }
+
+    // Set all auth data in search params for maximum visibility during the callback
     callbackUrl.searchParams.set('rt', rtPath);
+    callbackUrl.searchParams.set('token', tokens.access_token);
+    if (tokens.refresh_token) {
+      callbackUrl.searchParams.set('refresh_token', tokens.refresh_token);
+    }
+    callbackUrl.searchParams.set('email', userEmail);
+    // Standard OAuth param names as fallback
+    callbackUrl.searchParams.set('access_token', tokens.access_token);
+    callbackUrl.searchParams.set('oauth_complete', 'true');
+    callbackUrl.searchParams.set('oauth_success', 'true');
 
-    const fragment = new URLSearchParams({
-      access_token: tokens.access_token,
-      ...(tokens.refresh_token && { refresh_token: tokens.refresh_token }),
-      email: userEmail,
-      oauth_success: 'true'
-    });
-
-    const finalUrl = `${callbackUrl.toString().split('#')[0]}#${fragment.toString()}`;
+    const finalUrl = callbackUrl.toString();
     console.log('[Google OAuth] Redirecting to:', finalUrl.substring(0, 100) + '...');
 
     return new Response(null, {
