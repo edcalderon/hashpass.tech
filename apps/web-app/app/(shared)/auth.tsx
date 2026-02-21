@@ -430,7 +430,7 @@ export default function AuthScreen() {
   if (authLoading) {
     return (
       <SafeAreaView style={[styles.container, styles.centered]}>
-        <AuthBackgroundScene />
+        {/* <AuthBackgroundScene /> */}
         <Text style={styles.loadingText}>{t('checkingAuth', 'Checking authentication...')}</Text>
       </SafeAreaView>
     );
@@ -438,7 +438,7 @@ export default function AuthScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <AuthBackgroundScene />
+      {/* <AuthBackgroundScene /> */}
 
       <ThemeAndLanguageSwitcher />
 
