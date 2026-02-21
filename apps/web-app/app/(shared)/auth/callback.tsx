@@ -69,6 +69,7 @@ export default function AuthCallback() {
             value.includes('cross-origin restrictions') ||
             value.includes('browser could not reach directus') ||
             value.includes('session could not be established') ||
+            value.includes('valid session') ||
             value.includes('networkerror') ||
             value.includes('failed to fetch')
         );
@@ -414,7 +415,7 @@ export default function AuthCallback() {
                 if (result.error && isTransientSessionError(result.error)) {
                     console.warn('⚠️ Transient OAuth session error detected. Retrying once...');
                     await new Promise(resolve => setTimeout(resolve, 700));
-                    result = await handleOAuthCallback(params as Record<string, string>);
+                    result = await handleOAuthCallback(mergedParams);
                 }
 
                 if (result.error) {
