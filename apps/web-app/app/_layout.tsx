@@ -14,7 +14,7 @@ import { NotificationProvider } from '../contexts/NotificationContext';
 import { BalanceProvider } from '../contexts/BalanceContext';
 import { useTheme, useThemeProvider } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
-import { authService } from '../lib/auth';
+import { authService } from '@hashpass/auth';
 import { supabase } from '../lib/supabase';
 import { passSystemService } from '../lib/pass-system';
 import "./global.css";
