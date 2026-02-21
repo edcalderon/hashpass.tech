@@ -1,4 +1,15 @@
 const path = require('path');
+const { execSync } = require('child_process');
+
+// 🔄 Auto-propagate environment from root Source of Truth
+try {
+  const profile = process.env.NODE_ENV === 'production' ? 'production' : 'local';
+  console.log(`📡 [Metro] Auto-propagating environment: ${profile}`);
+  execSync(`node ${path.resolve(__dirname, '../../tools/scripts/propagate-env.js')} ${profile}`, { stdio: 'inherit' });
+} catch (error) {
+  console.error('⚠️ [Metro] Environment propagation failed:', error.message);
+}
+
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
 const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');

@@ -83,6 +83,15 @@
         "aws_secret_access_key[\\s\"']*[:=][\\s\"']*[A-Za-z0-9/+=]{40}"
       ],
       "allowlist": []
+    },
+    "lifecycle-hooks": {
+      "enabled": true,
+      "hooks": {
+        "postRelease": {
+          "main": "npm run deploy:prod",
+          "develop": "npm run deploy:staging"
+        }
+      }
     }
   },
   "branchAwareness": {
