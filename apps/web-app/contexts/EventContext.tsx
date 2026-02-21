@@ -1,9 +1,11 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { EventConfig, EVENTS } from '../config/events';
 import { getCurrentEvent } from '../lib/event-detector';
+import { ENV_CONFIG, TenantConfig } from '@hashpass/config';
 
 interface EventContextType {
   event: EventConfig | null;
+  tenant: TenantConfig;
   hasFeature: (feature: string) => boolean;
   getApiEndpoint: (endpoint: string) => string | null;
   getRoute: (route: keyof EventConfig['routes']) => string;
@@ -19,9 +21,12 @@ interface EventProviderProps {
 export function EventProvider({ children }: EventProviderProps) {
   // Get EventInfo from event-detector
   const eventInfo = getCurrentEvent();
-  
+
+  // Get current tenant from configuration
+  const tenant = ENV_CONFIG.getTenant();
+
   // Convert EventInfo to EventConfig by looking up the full config
-  const event: EventConfig | null = eventInfo 
+  const event: EventConfig | null = eventInfo
     ? (EVENTS[eventInfo.id as keyof typeof EVENTS] || null)
     : null;
 
@@ -39,11 +44,20 @@ export function EventProvider({ children }: EventProviderProps) {
   };
 
   const getBranding = () => {
+    // Priority 1: Tenant-specific theme overrides from sso-config
+    if (tenant?.theme) {
+      return {
+        ...event?.branding,
+        ...tenant.theme,
+      } as EventConfig['branding'];
+    }
+    // Priority 2: Event-specific branding from config/events
     return event?.branding ?? null;
   };
 
   const value: EventContextType = {
     event,
+    tenant,
     hasFeature,
     getApiEndpoint,
     getRoute,

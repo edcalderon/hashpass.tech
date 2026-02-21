@@ -45,7 +45,38 @@ export const SSO_CONFIG = {
       'http://localhost:3000',
     ],
   },
+
+  // Tenant Configuration Mappings
+  tenants: {
+    'bsl-2025': {
+      id: 'bsl-2025',
+      name: 'Blockchain Summit Latam 2025',
+      domain: 'blockchainsummit.hashpass.lat',
+      slug: 'bsl2025',
+      theme: {
+        primary: '#FFD700', // Example gold
+        secondary: '#000000',
+      },
+    } as TenantConfig,
+    'core': {
+      id: 'core',
+      name: 'HashPass',
+      domain: 'hashpass.tech',
+      slug: 'main',
+    } as TenantConfig
+  }
 };
+
+export interface TenantConfig {
+  id: string;
+  name: string;
+  domain: string;
+  slug: string;
+  theme?: {
+    primary: string;
+    secondary: string;
+  };
+}
 
 // ===========================================
 // Legacy Supabase Configuration (DEPRECATED)
@@ -95,6 +126,23 @@ export const ENV_CONFIG = {
 
   // SSO URL (always points to production SSO)
   getSSOUrl: () => SSO_CONFIG.SSO_URL,
+
+  /**
+   * Identifies the current tenant based on host
+   */
+  getTenant: (hostname?: string) => {
+    const host = hostname || (typeof window !== 'undefined' ? window.location.hostname : '');
+
+    // Find tenant by domain mapping
+    const tenant = Object.values(SSO_CONFIG.tenants).find(t => t.domain === host);
+
+    // Fallback to core if not found or if on localhost
+    if (!tenant || host.includes('localhost')) {
+      return SSO_CONFIG.tenants['core'];
+    }
+
+    return tenant;
+  },
 };
 
 // ===========================================

@@ -26,14 +26,11 @@ frontend:
         - 'export PATH=~/.local/bin:$PATH'
         # Detect branch and set profile for environment propagation
         - |
-          if [ "$AWS_BRANCH" = "main" ] || [ "$AWS_BRANCH" = "blockchainsummit" ]; then
-            PROFILE="production"
-          elif [ "$AWS_BRANCH" = "develop" ]; then
-            PROFILE="staging"
-          else
-            PROFILE="staging"
-          fi
-          echo "📡 Propagating environment for profile: $PROFILE"
+          case "$AWS_BRANCH" in
+            "main"|"blockchainsummit") PROFILE="production" ;;
+            *) PROFILE="staging" ;;
+          esac
+          echo "📡 Propagating environment for profile: $PROFILE ($AWS_BRANCH)"
           npm run env:propagate $PROFILE
         - 'echo "Building for branch: $AWS_BRANCH"'
     build:
@@ -188,9 +185,6 @@ redirects:
   - source: '/_expo/*'
     status: 200
     target: '/_expo/'
-  - source: '/events/bsl2025/*'
-    status: 200
-    target: '/index.html'
   - source: '/events/*'
     status: 200
     target: '/index.html'

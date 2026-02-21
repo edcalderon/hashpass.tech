@@ -133,7 +133,7 @@ function ThemedContent() {
 
   // Check if we're in the auth flow
   const isAuthFlow = (segments[0] === '(shared)' && segments[1] === 'auth') || pathname.startsWith('/(shared)/auth') || pathname.startsWith('/auth');
-  const isBSLPublic = pathname.startsWith('/events/bsl2025');
+  const isEventPublic = pathname.startsWith('/events/');
   const isHomePage = pathname === '/home' || pathname === '/' || pathname === '/index';
   // Public pages that don't require authentication
   const isPublicPage =
@@ -199,7 +199,7 @@ function ThemedContent() {
         console.warn('⚠️ Not authenticated on dashboard route, redirecting to auth');
         setLastRedirectTime(now);
         router.replace('/(shared)/auth' as any);
-      } else if (!isLoggedIn && !isAuthFlow && !isBSLPublic && !isHomePage && !isPublicPage) {
+      } else if (!isLoggedIn && !isAuthFlow && !isEventPublic && !isHomePage && !isPublicPage) {
         // Throttle redirects to prevent redirect loops
         const now = Date.now();
         if (now - lastRedirectTime < 5000) {
@@ -212,7 +212,7 @@ function ThemedContent() {
         router.replace('/(shared)/auth' as any);
       }
     }
-  }, [isLoggedIn, isAuthFlow, isBSLPublic, isHomePage, isPublicPage, isReady, isLoading, router, pathname, lastRedirectTime]);
+  }, [isLoggedIn, isAuthFlow, isEventPublic, isHomePage, isPublicPage, isReady, isLoading, router, pathname, lastRedirectTime]);
 
   // Show loading state
   if (isLoading || !isReady || showSplash) {
@@ -274,12 +274,12 @@ function ThemedContent() {
             headerShown: false
           }}
         />
-        {/* Public BSL routes */}
-        <Stack.Screen name="events/bsl2025/home" options={{ headerShown: false }} />
-        <Stack.Screen name="events/bsl2025/speakers/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="events/bsl2025/speakers/calendar" options={{ headerShown: false }} />
-        <Stack.Screen name="events/bsl2025/my-bookings" options={{ headerShown: false }} />
-        <Stack.Screen name="events/bsl2025/speaker-dashboard" options={{ headerShown: false }} />
+        {/* Dynamic Event routes */}
+        <Stack.Screen name="events/[eventSlug]/home" options={{ headerShown: false }} />
+        <Stack.Screen name="events/[eventSlug]/speakers/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="events/[eventSlug]/speakers/calendar" options={{ headerShown: false }} />
+        <Stack.Screen name="events/[eventSlug]/my-bookings" options={{ headerShown: false }} />
+        <Stack.Screen name="events/[eventSlug]/speaker-dashboard" options={{ headerShown: false }} />
       </Stack>
       <PWAPrompt />
       {versionUpdate && (

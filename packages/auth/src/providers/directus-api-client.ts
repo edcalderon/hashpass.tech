@@ -35,6 +35,10 @@ interface DirectusTokenPayload {
   expires_at?: string;
 }
 
+interface DirectusSessionRefreshPayload {
+  expires?: number;
+}
+
 export class DirectusApiClient {
   private baseUrl: string;
 
@@ -136,6 +140,21 @@ export class DirectusApiClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ mode: 'json' }),
+      },
+      'Session refresh failed'
+    );
+  }
+
+  async refreshSessionWithSessionCookies(): Promise<DirectusApiResult<DirectusSessionRefreshPayload>> {
+    return this.request<DirectusSessionRefreshPayload>(
+      '/auth/refresh',
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mode: 'session' }),
       },
       'Session refresh failed'
     );

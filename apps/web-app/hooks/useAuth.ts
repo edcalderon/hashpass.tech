@@ -25,31 +25,28 @@ export const useAuth = () => {
       const refresh_token = hashParams.get('refresh_token');
       const email = hashParams.get('email');
 
-      if (access_token) {
-        const callbackHandler = authService.handleOAuthCallback;
-        if (callbackHandler) {
-          oauthHashProcessed = true;
-          oauthHashProcessingPromise = callbackHandler({
-            access_token,
-            refresh_token: refresh_token || '',
-            email: email || '',
-            oauth_success: 'true'
-          })
-            .then((result) => {
-              if (result?.error) {
-                console.error('[useAuth] ❌ Failed to process OAuth tokens:', result.error);
-                return;
-              }
+      if (access_token && authService.handleOAuthCallback) {
+        oauthHashProcessed = true;
+        oauthHashProcessingPromise = authService.handleOAuthCallback({
+          access_token,
+          refresh_token: refresh_token || '',
+          email: email || '',
+          oauth_success: 'true'
+        })
+          .then((result) => {
+            if (result?.error) {
+              console.error('[useAuth] ❌ Failed to process OAuth tokens:', result.error);
+              return;
+            }
 
-              window.history.replaceState(null, '', window.location.pathname + window.location.search);
-            })
-            .catch((error) => {
-              console.error('[useAuth] ❌ Error processing OAuth tokens:', error);
-            })
-            .finally(() => {
-              oauthHashProcessingPromise = null;
-            });
-        }
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          })
+          .catch((error) => {
+            console.error('[useAuth] ❌ Error processing OAuth tokens:', error);
+          })
+          .finally(() => {
+            oauthHashProcessingPromise = null;
+          });
       }
     }
 

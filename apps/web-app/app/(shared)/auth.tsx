@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ThemeAndLanguageSwitcher from '../../components/ThemeAndLanguageSwitcher';
-import { AuthBackgroundScene } from '../../components/auth/AuthBackgroundScene';
 import { useTheme } from '../../hooks/useTheme';
 import { useToastHelpers } from '../../contexts/ToastContext';
 import PrivacyTermsModal from '../../components/PrivacyTermsModal';
@@ -86,6 +85,36 @@ const extractApiError = (payload: unknown, fallback: string): string => {
   return fallback;
 };
 
+const resolveOAuthErrorMessage = (
+  errorCode: string | undefined,
+  rawMessage: string | undefined,
+  fallback: string
+): string => {
+  const message = rawMessage?.trim();
+  const normalized = `${errorCode || ''} ${message || ''}`.toLowerCase();
+
+  if (message) {
+    return message;
+  }
+
+  if (
+    normalized.includes('invalid_credentials') ||
+    normalized.includes('invalid user credentials')
+  ) {
+    return 'Google sign-in completed, but Directus did not establish a valid session. Please try again.';
+  }
+
+  if (
+    normalized.includes('networkerror') ||
+    normalized.includes('failed to fetch') ||
+    normalized.includes('cors')
+  ) {
+    return 'Your browser could not reach the Directus auth server. Please verify local CORS and Directus URL settings.';
+  }
+
+  return fallback;
+};
+
 export default function AuthScreen() {
   const { colors, isDark } = useTheme();
   const { t } = useTranslation('auth');
@@ -95,6 +124,8 @@ export default function AuthScreen() {
   const { user, isLoggedIn, isLoading: authLoading, signInWithOAuth } = useAuth();
 
   const rawReturnTo = Array.isArray(params.returnTo) ? params.returnTo[0] : params.returnTo;
+  const rawAuthError = Array.isArray(params.error) ? params.error[0] : params.error;
+  const rawAuthMessage = Array.isArray(params.message) ? params.message[0] : params.message;
 
   const redirectPath =
     typeof rawReturnTo === 'string' && rawReturnTo.trim()
@@ -126,6 +157,7 @@ export default function AuthScreen() {
   const [modalType, setModalType] = useState<'privacy' | 'terms'>('privacy');
 
   const hasNavigatedRef = useRef(false);
+  const hasShownOAuthErrorRef = useRef(false);
 
   const styles = getStyles(isDark, colors);
   const isBusy = busyAction !== null;
@@ -153,6 +185,31 @@ export default function AuthScreen() {
 
     setSelectedCountryISO2(resolveDefaultCountryISO2(countryDialOptions, currentLocale));
   }, [countryDialOptions, currentLocale, selectedCountryISO2]);
+
+  useEffect(() => {
+    if (hasShownOAuthErrorRef.current) return;
+    if (typeof rawAuthError !== 'string' && typeof rawAuthMessage !== 'string') return;
+
+    const message = resolveOAuthErrorMessage(
+      typeof rawAuthError === 'string' ? rawAuthError : undefined,
+      typeof rawAuthMessage === 'string' ? rawAuthMessage : undefined,
+      t('oauthError', 'Google sign-in failed. Please try again.')
+    );
+
+    hasShownOAuthErrorRef.current = true;
+    console.error('[Auth] OAuth callback failed', {
+      error: rawAuthError,
+      message,
+    });
+    showError(t('authenticationError', 'Authentication Error'), message);
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('error');
+      cleanUrl.searchParams.delete('message');
+      window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+    }
+  }, [rawAuthError, rawAuthMessage, showError, t]);
 
   const validateEmailOrShowError = (): string | null => {
     const normalized = email.trim().toLowerCase();
