@@ -260,6 +260,14 @@ async function auditTenant(tenantName, environment, configPath) {
       ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
     ].filter((pair) => Boolean(pair[1]));
 
+    const requiredLambdaPresence = [
+      'NODEMAILER_HOST',
+      'NODEMAILER_PORT',
+      'NODEMAILER_USER',
+      'NODEMAILER_PASS',
+      'NODEMAILER_FROM',
+    ];
+
     const lambdaMismatches = [];
     for (const [key, expected] of requiredLambdaChecks) {
       const actual = lambdaEnv[key] || '';
@@ -269,6 +277,13 @@ async function auditTenant(tenantName, environment, configPath) {
         console.log(`    Expected: ${expected}`);
         issues += 1;
         lambdaMismatches.push([key, expected]);
+      }
+    }
+
+    for (const key of requiredLambdaPresence) {
+      if (!String(lambdaEnv[key] || '').trim()) {
+        log(`Missing lambda variable: ${key}`, 'error');
+        issues += 1;
       }
     }
 

@@ -114,14 +114,14 @@ function mergeBySuffix(rootConfig, environment) {
 }
 
 function applyCanonicalTenantOverrides(targetConfig, runtime) {
-  const canonical = {
-    EXPO_PUBLIC_SUPABASE_URL: runtime.supabaseUrl,
-    DIRECTUS_URL: runtime.directusUrl,
-    EXPO_PUBLIC_DIRECTUS_URL: runtime.directusUrl,
-    EXPO_PUBLIC_API_BASE_URL: runtime.apiBaseUrl,
-  };
+  const canonicalEntries = [
+    ['EXPO_PUBLIC_SUPABASE_URL', runtime.supabaseUrl],
+    ['DIRECTUS_URL', runtime.directusUrl],
+    ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
+    ['EXPO_PUBLIC_API_BASE_URL', runtime.apiBaseUrl],
+  ];
 
-  Object.entries(canonical).forEach(([key, value]) => {
+  canonicalEntries.forEach(([key, value]) => {
     if (!value) return;
     targetConfig[key] = value;
   });
@@ -167,6 +167,27 @@ function validateSupabaseServiceRoleKey(targetConfig, runtime) {
   }
 }
 
+function validateAuthDeliveryConfig(targetConfig, runtime) {
+  const requiredMailVars = [
+    'NODEMAILER_HOST',
+    'NODEMAILER_PORT',
+    'NODEMAILER_USER',
+    'NODEMAILER_PASS',
+    'NODEMAILER_FROM',
+  ];
+
+  const missingMailVars = requiredMailVars.filter(
+    (key) => !String(targetConfig[key] || '').trim()
+  );
+
+  if (missingMailVars.length > 0) {
+    throw new Error(
+      `Missing required mail vars for ${runtime.tenant}/${runtime.environment}: ${missingMailVars.join(', ')}. ` +
+      'Set them in root .env (or *_DEV/*_PROD overrides) before syncing.'
+    );
+  }
+}
+
 const options = parseArgs(process.argv.slice(2));
 
 if (String(options.envArg).toLowerCase() === 'local') {
@@ -179,6 +200,7 @@ const rootConfig = loadRootEnv();
 const targetConfig = mergeBySuffix(rootConfig, options.environment);
 applyCanonicalTenantOverrides(targetConfig, runtime);
 validateSupabaseServiceRoleKey(targetConfig, runtime);
+validateAuthDeliveryConfig(targetConfig, runtime);
 
 const lambdaName = runtime.lambda.functionName;
 const lambdaRegion = runtime.lambda.region;
@@ -204,6 +226,15 @@ try {
     'AUTH_PROVIDER',
     'DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED',
     'DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED',
+    // OTP / transactional email + SMS delivery configuration
+    'NODEMAILER_HOST',
+    'NODEMAILER_PORT',
+    'NODEMAILER_USER',
+    'NODEMAILER_PASS',
+    'NODEMAILER_FROM',
+    'NODEMAILER_FROM_SUPPORT',
+    'BREVO_API_KEY',
+    'BREVO_SMS_SENDER',
   ];
 
   const newVars = { ...currentVars };
