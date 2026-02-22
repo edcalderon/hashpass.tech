@@ -17,7 +17,7 @@ import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.join(__dirname, '..');
+const projectRoot = path.join(__dirname, '..', '..');
 
 // Function to get current version from package.json
 function getCurrentVersion() {
