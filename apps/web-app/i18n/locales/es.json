@@ -112,6 +112,7 @@
     "subtitle": "Inicia sesión para desbloquear tu vida digital.",
     "signInWithGoogle": "Iniciar sesión con Google",
     "emailPlaceholder": "Ingresa tu correo electrónico",
+    "emailRequired": "El correo electrónico es obligatorio",
     "magicLink": "Magic Link",
     "otpCode": "Código OTP",
     "sendMagicLink": "Enviar Enlace Mágico",

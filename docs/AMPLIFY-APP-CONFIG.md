@@ -2,15 +2,16 @@
 
 ## App Information
 
-**App ID**: `d31bu1ot0gd14y`
+**App ID**: `d951nuj7hrqeg`  
+**Region**: `sa-east-1`
 
 ## Current Setup
 
 ### Frontend Hosting (Amplify)
 - **Purpose**: Serve static frontend files only
 - **Domains**:
-  - `hashpass.tech` → Amplify Hosting
-  - `bsl2025.hashpass.tech` → Amplify Hosting
+  - `blockchainsummit.hashpass.lat` → Amplify Hosting
+  - `blockchainsummit-dev.hashpass.lat` → Amplify Hosting
 - **Build**: `amplify.yml` → Builds and deploys static files
 
 ### API Routes (API Gateway + Lambda)
@@ -107,7 +108,7 @@ aws lambda update-function-configuration \
 
 ### Check Amplify App
 ```bash
-aws amplify get-app --app-id d31bu1ot0gd14y
+aws amplify get-app --app-id d951nuj7hrqeg --region sa-east-1
 ```
 
 ### Check DNS
@@ -120,4 +121,3 @@ dig api.hashpass.tech
 ```bash
 curl https://api.hashpass.tech/api/config/versions
 ```
-

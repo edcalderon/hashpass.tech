@@ -112,6 +112,7 @@
     "subtitle": "Sign in to unlock your digital life.",
     "signInWithGoogle": "Sign in with Google",
     "emailPlaceholder": "Enter your email",
+    "emailRequired": "Email is required",
     "magicLink": "Magic Link",
     "otpCode": "OTP Code",
     "sendMagicLink": "Send Magic Link",

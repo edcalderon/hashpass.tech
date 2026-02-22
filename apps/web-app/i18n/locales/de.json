@@ -103,6 +103,7 @@
     "subtitle": "Melden Sie sich an, um Ihr digitales Leben freizuschalten.",
     "signInWithGoogle": "Mit Google anmelden",
     "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
+    "emailRequired": "E-Mail ist erforderlich",
     "magicLink": "Magic Link",
     "otpCode": "OTP-Code",
     "sendMagicLink": "Magic Link senden",

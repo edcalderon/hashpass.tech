@@ -20,20 +20,22 @@ const PROJECTS = {
         supabase_ref: 'fxgftanraszjjyeidvia',
         directus_url: 'https://sso-dev.hashpass.co',
         frontend_url: 'https://blockchainsummit-dev.hashpass.lat',
+        api_domain: 'api-dev.hashpass.tech',
         lambdas: [
-            { name: 'hashpass-dev-api', region: 'us-east-1' }
+            { name: 'hashpass-api-dev', region: 'us-east-1' }
         ],
-        amplify: { appId: 'dy8duury54wam', region: 'us-east-2', branch: 'dev' }
+        amplify: { appId: 'd951nuj7hrqeg', region: 'sa-east-1', branch: 'develop' }
     },
     PROD: {
         name: 'Production',
         supabase_ref: 'tgbdilebadmzqwubsijr',
         directus_url: 'https://sso.hashpass.co',
         frontend_url: 'https://blockchainsummit.hashpass.lat',
+        api_domain: 'api.hashpass.tech',
         lambdas: [
-            { name: 'hashpass-prod-api', region: 'us-east-1' }
+            { name: 'hashpass-api-prod', region: 'us-east-1' }
         ],
-        amplify: { appId: 'dy8duury54wam', region: 'us-east-2', branch: 'main' }
+        amplify: { appId: 'd951nuj7hrqeg', region: 'sa-east-1', branch: 'main' }
     }
 };
 
@@ -90,6 +92,41 @@ function getAmplifyEnv(appId, region) {
     }
 }
 
+function getApiDomainMapping(domain, region) {
+    try {
+        const output = execSync(`aws apigatewayv2 get-api-mappings --domain-name ${domain} --region ${region} --output json`, { stdio: 'pipe' });
+        const payload = JSON.parse(output.toString());
+        return (payload.Items && payload.Items[0]) || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function getApiProxyIntegration(apiId, region) {
+    try {
+        const output = execSync(`aws apigatewayv2 get-integrations --api-id ${apiId} --region ${region} --output json`, { stdio: 'pipe' });
+        const payload = JSON.parse(output.toString());
+        const integrations = payload.Items || [];
+        return integrations.find(i => i.IntegrationType === 'AWS_PROXY') || integrations[0] || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function lambdaPolicyAllowsApi(functionName, region, apiId) {
+    try {
+        const output = execSync(`aws lambda get-policy --function-name ${functionName} --region ${region} --output json`, { stdio: 'pipe' });
+        const payload = JSON.parse(output.toString());
+        const statements = JSON.parse(payload.Policy || '{}').Statement || [];
+        return statements.some(statement => {
+            const sourceArn = statement?.Condition?.ArnLike?.['AWS:SourceArn'] || statement?.Condition?.ArnLike?.['aws:SourceArn'] || '';
+            return typeof sourceArn === 'string' && sourceArn.includes(`:${apiId}/`);
+        });
+    } catch (e) {
+        return false;
+    }
+}
+
 // --- Audit Logic ---
 
 async function audit(target) {
@@ -100,12 +137,12 @@ async function audit(target) {
     let totalIssues = 0;
     let suggestions = [];
 
-    const expectedUrls = {
-        EXPO_PUBLIC_SUPABASE_URL: `https://${config.supabase_ref}.supabase.co`,
-        DIRECTUS_URL: config.directus_url,
-        EXPO_PUBLIC_DIRECTUS_URL: config.directus_url,
-        FRONTEND_URL: config.frontend_url
-    };
+    const expectedUrlChecks = [
+        ['EXPO_PUBLIC_SUPABASE_URL', `https://${config.supabase_ref}.supabase.co`],
+        ['DIRECTUS_URL', config.directus_url],
+        ['EXPO_PUBLIC_DIRECTUS_URL', config.directus_url],
+        ['FRONTEND_URL', config.frontend_url]
+    ];
 
     // 1. Audit Lambdas
     for (const lambda of config.lambdas) {
@@ -121,7 +158,7 @@ async function audit(target) {
         let lambdaMismatches = {};
 
         // Check URLs
-        for (const [key, expected] of Object.entries(expectedUrls)) {
+        for (const [key, expected] of expectedUrlChecks) {
             const actual = (env[key] || '').replace(/\/$/, '');
             const targetUrl = expected.replace(/\/$/, '');
 
@@ -165,13 +202,48 @@ async function audit(target) {
         console.log('');
     }
 
-    // 2. Audit Amplify (App-level fallbacks)
+    // 2. Audit API Gateway domain mapping -> Lambda integration
+    const apiRegion = config.lambdas[0]?.region || 'us-east-1';
+    const expectedLambda = config.lambdas[0]?.name;
+    log(`Auditing API domain mapping: ${config.api_domain}`, 'info');
+
+    const mapping = getApiDomainMapping(config.api_domain, apiRegion);
+    if (!mapping || !mapping.ApiId) {
+        log(`No API mapping found for domain ${config.api_domain}`, 'error');
+        totalIssues++;
+    } else {
+        const integration = getApiProxyIntegration(mapping.ApiId, apiRegion);
+        if (!integration || !integration.IntegrationUri) {
+            log(`No API integration found for API ${mapping.ApiId}`, 'error');
+            totalIssues++;
+        } else if (expectedLambda && !integration.IntegrationUri.includes(`function:${expectedLambda}`)) {
+            log(`API integration mismatch for ${config.api_domain}:`, 'error');
+            console.log(`    API ID:         ${mapping.ApiId}`);
+            console.log(`    Integration ID: ${integration.IntegrationId}`);
+            console.log(`    Actual URI:     ${integration.IntegrationUri}`);
+            console.log(`    Expected func:  ${expectedLambda}`);
+            totalIssues++;
+            suggestions.push(`aws apigatewayv2 update-integration --region ${apiRegion} --api-id ${mapping.ApiId} --integration-id ${integration.IntegrationId} --integration-uri \"arn:aws:apigateway:${apiRegion}:lambda:path/2015-03-31/functions/$(aws lambda get-function --function-name ${expectedLambda} --region ${apiRegion} --query 'Configuration.FunctionArn' --output text)/invocations\"`);
+        } else {
+            log(`API integration points to expected Lambda (${expectedLambda})`, 'success');
+        }
+
+        if (expectedLambda && !lambdaPolicyAllowsApi(expectedLambda, apiRegion, mapping.ApiId)) {
+            log(`Lambda permission missing for API Gateway -> ${expectedLambda}`, 'error');
+            console.log(`    API ID: ${mapping.ApiId}`);
+            totalIssues++;
+            suggestions.push(`aws lambda add-permission --region ${apiRegion} --function-name ${expectedLambda} --statement-id AllowExecutionFromApiGateway-${mapping.ApiId} --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn arn:aws:execute-api:${apiRegion}:$(aws sts get-caller-identity --query 'Account' --output text):${mapping.ApiId}/*`);
+        }
+    }
+    console.log('');
+
+    // 3. Audit Amplify (App-level fallbacks)
     log(`Auditing Amplify App: ${config.amplify.appId}`, 'info');
     const ampEnv = getAmplifyEnv(config.amplify.appId, config.amplify.region);
     if (ampEnv) {
         if (ampEnv.EXPO_PUBLIC_SUPABASE_URL) {
             const actual = ampEnv.EXPO_PUBLIC_SUPABASE_URL.split(' ')[0].replace(/\/$/, '');
-            const expected = expectedUrls.EXPO_PUBLIC_SUPABASE_URL.replace(/\/$/, '');
+            const expected = expectedUrlChecks.find(([key]) => key === 'EXPO_PUBLIC_SUPABASE_URL')[1].replace(/\/$/, '');
             if (actual !== expected) {
                 log(`Amplify App-level Mismatch: EXPO_PUBLIC_SUPABASE_URL`, 'warn');
                 console.log(`    Actual:   ${actual}`);

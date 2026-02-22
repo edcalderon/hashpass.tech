@@ -2,23 +2,31 @@
 
 ## Apps Actuales
 
-### Frontend Apps (MANTENER)
+### Frontend App Activa (Blockchain Summit)
 
-1. **hashpass.tech**
+1. **blockchainsummit.hashpass.lat**
+   - **App ID**: `d951nuj7hrqeg`
+   - **Región**: `sa-east-1`
+   - **Propósito**: Frontend principal (branches `main` y `develop`)
+   - **Estado**: ✅ Activa
+
+### Frontend Apps Legacy (Opcionales)
+
+2. **hashpass.tech**
    - **App ID**: `dy8duury54wam`
    - **Región**: `us-east-2`
-   - **Propósito**: Frontend principal
-   - **Estado**: ✅ Activa
+   - **Propósito**: Legacy / histórico
+   - **Estado**: ⚠️ Legacy
 
-2. **bsl2025.hashpass.tech**
+3. **bsl2025.hashpass.tech**
    - **App ID**: `d3ja863334bedw`
    - **Región**: `us-east-2`
-   - **Propósito**: Frontend para evento BSL2025
-   - **Estado**: ✅ Activa
+   - **Propósito**: Legacy / evento anterior
+   - **Estado**: ⚠️ Legacy
 
 ### API App (ELIMINADA)
 
-3. **api.hashpass.tech** ❌
+4. **api.hashpass.tech** ❌
    - **App ID**: `d31bu1ot0gd14y` (ELIMINADA)
    - **Región**: `us-east-2`
    - **Propósito**: Ya no se necesita (usamos API Gateway + Lambda)
@@ -28,8 +36,7 @@
 
 ```
 Frontend:
-├── hashpass.tech → Amplify App (dy8duury54wam)
-└── bsl2025.hashpass.tech → Amplify App (d3ja863334bedw)
+└── blockchainsummit.hashpass.lat / blockchainsummit-dev.hashpass.lat → Amplify App (d951nuj7hrqeg, sa-east-1)
 
 API:
 └── api.hashpass.tech → API Gateway + Lambda (NO Amplify)
@@ -51,3 +58,9 @@ aws amplify get-app --app-id d31bu1ot0gd14y --region us-east-2
 # Debe retornar error: ResourceNotFoundException
 ```
 
+Para verificar la app activa:
+
+```bash
+aws amplify get-app --app-id d951nuj7hrqeg --region sa-east-1
+aws amplify list-branches --app-id d951nuj7hrqeg --region sa-east-1
+```

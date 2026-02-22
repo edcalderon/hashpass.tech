@@ -103,6 +103,7 @@
     "subtitle": "Faça login para desbloquear sua vida digital.",
     "signInWithGoogle": "Entrar com Google",
     "emailPlaceholder": "Digite seu email",
+    "emailRequired": "O e-mail é obrigatório",
     "magicLink": "Link Mágico",
     "otpCode": "Código OTP",
     "sendMagicLink": "Enviar Link Mágico",

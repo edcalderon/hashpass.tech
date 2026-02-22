@@ -36,8 +36,7 @@ Toda la configuración para migrar de Amplify API a API Gateway + Lambda ha sido
 
 ```
 Frontend (Amplify):
-├── hashpass.tech → App ID: dy8duury54wam
-└── bsl2025.hashpass.tech → App ID: d3ja863334bedw
+└── blockchainsummit.hashpass.lat / blockchainsummit-dev.hashpass.lat → App ID: d951nuj7hrqeg (sa-east-1)
 
 API (API Gateway + Lambda):
 └── api.hashpass.tech → API Gateway (nqt8xep20g) → Lambda (hashpass-api-handler)
@@ -68,15 +67,12 @@ curl https://api.hashpass.tech/api/config/versions
 
 ### Amplify (Frontend Apps)
 
-**Para `hashpass.tech` (dy8duury54wam):**
+**Para `blockchainsummit.hashpass.lat` y `blockchainsummit-dev.hashpass.lat` (`d951nuj7hrqeg`, `sa-east-1`):**
 ```
 EXPO_PUBLIC_API_BASE_URL=https://api.hashpass.tech/api
 ```
 
-**Para `bsl2025.hashpass.tech` (d3ja863334bedw):**
-```
-EXPO_PUBLIC_API_BASE_URL=https://api.hashpass.tech/api
-```
+**Nota:** Apps legacy en `us-east-2` (como `dy8duury54wam` y `d3ja863334bedw`) pueden seguir existiendo, pero la configuración activa de blockchain summit está en `d951nuj7hrqeg`.
 
 ### Lambda Function
 
@@ -123,4 +119,3 @@ Si después de 15 minutos el dominio personalizado no funciona:
 - `docs/AMPLIFY-LAMBDA-INTEGRATION.md` - Integración Amplify + Lambda
 - `docs/DNS-UPDATE-COMPLETE.md` - Detalles de actualización DNS
 - `docs/API-GATEWAY-SETUP.md` - Configuración completa de API Gateway
-

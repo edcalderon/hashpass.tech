@@ -112,6 +112,7 @@
     "subtitle": "로그인하여 디지털 라이프를 시작하세요.",
     "signInWithGoogle": "Google로 로그인",
     "emailPlaceholder": "이메일을 입력하세요",
+    "emailRequired": "이메일은 필수입니다",
     "magicLink": "매직 링크",
     "otpCode": "OTP 코드",
     "sendMagicLink": "매직 링크 보내기",

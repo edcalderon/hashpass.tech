@@ -148,7 +148,7 @@ jobs:
 ## Summary
 
 ### What to Keep
-- ✅ Amplify App (`d31bu1ot0gd14y`) - for frontend hosting
+- ✅ Amplify App (`d951nuj7hrqeg`, `sa-east-1`) - for frontend hosting
 - ✅ Domain `api.hashpass.tech` - update DNS to point to API Gateway
 
 ### What to Update
@@ -167,5 +167,4 @@ jobs:
 3. **Setup custom domain**: `./scripts/setup-custom-domain.sh`
 4. **Update DNS**: `./scripts/update-api-dns.sh`
 5. **Test**: `curl https://api.hashpass.tech/api/config/versions`
-6. **Update frontend**: Set `EXPO_PUBLIC_API_BASE_URL` in Amplify environment variables (app `d31bu1ot0gd14y`)
-
+6. **Update frontend**: Set `EXPO_PUBLIC_API_BASE_URL` in Amplify environment variables (app `d951nuj7hrqeg` in `sa-east-1`)
