@@ -17,8 +17,20 @@ const DEFAULT_FRONTEND_ORIGIN =
   process.env.EXPO_PUBLIC_FRONTEND_URL ||
   process.env.FRONTEND_URL ||
   '';
-const TRUSTED_FRONTEND_HOSTS = new Set(['localhost', '127.0.0.1', 'hashpass.tech', 'hashpass.lat']);
-const TRUSTED_FRONTEND_SUFFIXES = ['.hashpass.tech', '.hashpass.lat'];
+const TRUSTED_FRONTEND_HOSTS = new Set([
+  'localhost',
+  '127.0.0.1',
+  'hashpass.tech',
+  'hashpass.co',
+  'hashpass.lat',
+]);
+const TRUSTED_FRONTEND_SUFFIXES = [
+  '.hashpass.tech',
+  '.hashpass.co',
+  '.hashpass.lat',
+  '.dy8duury54wam.amplifyapp.com',
+  '.d951nuj7hrqeg.amplifyapp.com',
+];
 const supabaseUrl =
   process.env['EXPO_PUBLIC_SUPABASE_URL'] ||
   '';

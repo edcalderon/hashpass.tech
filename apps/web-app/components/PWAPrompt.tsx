@@ -1,162 +1,163 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { useColorScheme } from 'nativewind';
+import { PwaInstallPromptCard } from '@hashpass/ui';
 import { getInstallationStatus } from '../lib/pwa-utils';
 
+const DISMISS_KEY = 'hashpass:pwa-install-dismissed';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+}
+
 const PWAPrompt = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isStandaloneMode, setIsStandaloneMode] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
   const { colorScheme } = useColorScheme();
 
   useEffect(() => {
-    // Check installation status
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      return;
+    }
+
+    const isStoredDismissed = window.localStorage.getItem(DISMISS_KEY) === 'true';
+    setIsDismissed(isStoredDismissed);
+
     const checkStatus = () => {
       const status = getInstallationStatus();
       setIsInstalled(status.installed);
       setIsStandaloneMode(status.isStandaloneMode);
-      
-      // Show prompt if:
-      // 1. Not installed and install prompt is available, OR
-      // 2. Installed but not in standalone mode (viewing in browser) - show "Open App"
-      if (!status.installed && status.canInstall) {
+
+      const shouldShowInstall = !status.installed && status.canInstall;
+      const shouldShowOpenApp = status.installed && !status.isStandaloneMode;
+      setShowPrompt((shouldShowInstall || shouldShowOpenApp) && !isStoredDismissed);
+    };
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      const installEvent = event as BeforeInstallPromptEvent;
+      installEvent.preventDefault();
+      setDeferredPrompt(installEvent);
+      if (!isStoredDismissed) {
         setShowPrompt(true);
-      } else if (status.installed && !status.isStandaloneMode) {
-        // App is installed but user is viewing in browser - show "Open App"
-        setShowPrompt(true);
-      } else if (status.installed) {
-        // App is installed - don't show install button
-        setShowPrompt(false);
       }
     };
 
     checkStatus();
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
 
-    // Listen for install prompt
-    const handleBeforeInstallPrompt = (event: any) => {
-      event.preventDefault();
-      setDeferredPrompt(event);
-      setShowPrompt(true); // Show prompt when install is available
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkStatus();
+      }
     };
 
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      
-      // Also check periodically in case status changes
-      const interval = setInterval(checkStatus, 2000);
+    window.addEventListener('focus', checkStatus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const interval = window.setInterval(checkStatus, 4000);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        clearInterval(interval);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+      window.removeEventListener('focus', checkStatus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.clearInterval(interval);
     };
-    }
   }, []);
 
-  const installPWA = () => {
-    if (deferredPrompt) {
-      // Use browser's install prompt if available
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult: any) => {
-      if (choiceResult.outcome === 'accepted') {
-          console.log('✅ User accepted the install prompt');
-          // Set installation flag in localStorage
-          try {
-            localStorage.setItem('pwa-installed', 'true');
-          } catch {
-            // localStorage might not be available
-          }
-      }
-      setDeferredPrompt(null);
-    });
-    } else {
-      // Fallback: Show manual installation instructions
-      // For iOS Safari
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isAndroid = /Android/.test(navigator.userAgent);
+  const dismissPrompt = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.localStorage.setItem(DISMISS_KEY, 'true');
+    }
+    setIsDismissed(true);
+    setShowPrompt(false);
+  };
 
-        if (isIOS) {
-          alert('To install: Tap the Share button, then "Add to Home Screen"');
-        } else if (isAndroid) {
-          alert('To install: Tap the menu (⋮) and select "Install app" or "Add to Home screen"');
-        } else {
-          alert('To install: Look for the install icon in your browser\'s address bar');
+  const installPWA = async () => {
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+
+      if (choiceResult.outcome === 'accepted') {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.localStorage.setItem('pwa-installed', 'true');
         }
+        setShowPrompt(false);
+      }
+
+      setDeferredPrompt(null);
+      return;
+    }
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isAndroid = /Android/.test(navigator.userAgent);
+
+      if (isIOS) {
+        alert('To install: tap Share, then "Add to Home Screen".');
+      } else if (isAndroid) {
+        alert('To install: open the browser menu and tap "Install app".');
+      } else {
+        alert('To install: use the install icon in your browser address bar.');
       }
     }
   };
 
   const openApp = () => {
-    // If app is installed, try to open it in standalone mode
-    // This will reload the page, which should open in standalone mode if installed
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      // Try to open the app URL - this should open in standalone mode if installed
       window.location.href = window.location.origin + window.location.pathname;
     }
   };
 
-  // If installed AND in standalone mode, don't show button (already in app)
+  if (Platform.OS !== 'web') {
+    return null;
+  }
+
   if (isInstalled && isStandaloneMode) {
     return null;
   }
 
-  // Show "Open App" if installed but viewing in browser
-  if (isInstalled && !isStandaloneMode) {
-    return (
-      <View style={styles.container}>
-        <TouchableOpacity 
-          style={[styles.button, { backgroundColor: colorScheme === 'dark' ? '#10B981' : '#059669' }]} 
-          onPress={openApp}
-        >
-          <Text style={[styles.text, { color: colorScheme === 'dark' ? '#000000' : '#FFFFFF' }]}>Open App</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // Don't show if no install option available
   if (!showPrompt && !deferredPrompt) {
     return null;
   }
 
-  const buttonText = 'Install HashPass';
+  if (isDismissed) {
+    return null;
+  }
+
+  const isOpenAppMode = isInstalled && !isStandaloneMode;
+  const logoSrc =
+    colorScheme === 'dark'
+      ? '/assets/logos/hashpass/logo-full-hashpass-white.svg'
+      : '/assets/logos/hashpass/logo-full-hashpass-black.svg';
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity 
-        style={[styles.button, { backgroundColor: colorScheme === 'dark' ? '#1D9BF0' : '#007AFF' }]} 
-        onPress={installPWA}
-      >
-        <Text style={[styles.text, { color: colorScheme === 'dark' ? '#000000' : '#FFFFFF' }]}>{buttonText}</Text>
-      </TouchableOpacity>
-    </View>
+    <PwaInstallPromptCard
+      className="hp-pwa-floating"
+      appName="HashPass"
+      logoSrc={logoSrc}
+      primaryLabel={isOpenAppMode ? 'Open HashPass App' : 'Install HashPass'}
+      title={isOpenAppMode ? 'Open your installed app' : 'Install HashPass'}
+      description={
+        isOpenAppMode
+          ? 'HashPass is already installed. Open it in app mode for the best mobile experience.'
+          : 'Install HashPass as a PWA to launch it like an app from your home screen.'
+      }
+      details={[
+        'PWA means Progressive Web App: app-like behavior from your browser install.',
+        'No app-store download required, but you still get quick home-screen access.',
+        'Great for event check-in flows, wallets, and notifications with less friction.',
+      ]}
+      showInfoToggle={!isOpenAppMode}
+      onPrimaryAction={isOpenAppMode ? openApp : installPWA}
+      onClose={dismissPrompt}
+    />
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'fixed',
-    bottom: 20,
-    right: 20,
-    zIndex: 1000,
-  },
-  button: {
-    padding: 12,
-    borderRadius: 100,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
 
 export default PWAPrompt;
