@@ -464,6 +464,22 @@ const buildHashPreservingRedirectHtml = (targetUrl: string): string => {
 </html>`;
 };
 
+const buildClientCallbackBridgeResponse = (
+  frontendOrigin: string,
+  returnTo: string
+): ExpoResponse => {
+  const appCallbackUrl = buildAppCallbackUrl(frontendOrigin, returnTo);
+  const htmlBridge = buildHashPreservingRedirectHtml(appCallbackUrl);
+
+  return new ExpoResponse(htmlBridge, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  });
+};
+
 const exchangeSessionCookieForJsonTokens = async (
   cookieHeader: string
 ): Promise<{ access_token?: string; refresh_token?: string } | null> => {
@@ -655,15 +671,9 @@ export async function GET(request: Request): Promise<Response> {
             /refresh token is required/i.test(errorBody)
           ) {
             console.warn(
-              '[OAuth Callback] Refresh cookie is scoped away from callback route; handing off to client callback for cookie-based completion.'
+              '[OAuth Callback] Refresh cookie is scoped away from callback route; using hash-preserving client callback handoff.'
             );
-            return new ExpoResponse(null, {
-              status: 302,
-              headers: {
-                'Location': buildAppCallbackUrl(frontendOrigin, finalReturnTo),
-                'Cache-Control': 'no-store',
-              },
-            });
+            return buildClientCallbackBridgeResponse(frontendOrigin, finalReturnTo);
           } else {
             failureReason = compactBody
               ? `Directus /auth/refresh returned ${refreshResponse.status}: ${compactBody}`
@@ -698,25 +708,13 @@ export async function GET(request: Request): Promise<Response> {
       }
 
       // Fallback to client-side session completion when token exchange is unavailable.
-      console.log('[OAuth Callback] Session cookie detected; handing off to /auth/callback for client completion.');
-      return new ExpoResponse(null, {
-        status: 302,
-        headers: {
-          'Location': buildAppCallbackUrl(frontendOrigin, finalReturnTo),
-          'Cache-Control': 'no-store',
-        },
-      });
+      console.log('[OAuth Callback] Session cookie detected; using hash-preserving client callback handoff.');
+      return buildClientCallbackBridgeResponse(frontendOrigin, finalReturnTo);
     } else {
       // On localhost, refresh cookie can be scoped to /auth/refresh and won't be visible here.
       // Continue client-side so browser can call Directus directly with credentials.
-      console.log('[OAuth Callback] No auth cookies visible on callback route, handing off to /auth/callback for client completion.');
-      return new ExpoResponse(null, {
-        status: 302,
-        headers: {
-          'Location': buildAppCallbackUrl(frontendOrigin, finalReturnTo),
-          'Cache-Control': 'no-store',
-        },
-      });
+      console.log('[OAuth Callback] No auth cookies visible on callback route; using hash-preserving client callback handoff.');
+      return buildClientCallbackBridgeResponse(frontendOrigin, finalReturnTo);
     }
   }
 
@@ -724,16 +722,7 @@ export async function GET(request: Request): Promise<Response> {
   // Hand off to the frontend callback so client-side auth can finalize the session.
   if (!reason && !error) {
     console.warn('[OAuth Callback] No server-visible tokens/session. Handing off to frontend callback with hash-preserving bridge.');
-    const appCallbackUrl = buildAppCallbackUrl(frontendOrigin, finalReturnTo);
-    const htmlBridge = buildHashPreservingRedirectHtml(appCallbackUrl);
-
-    return new ExpoResponse(htmlBridge, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-store',
-      },
-    });
+    return buildClientCallbackBridgeResponse(frontendOrigin, finalReturnTo);
   }
 
   // Failed - redirect to auth page with error  
