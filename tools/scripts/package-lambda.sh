@@ -8,11 +8,19 @@ echo "📦 Packaging Lambda Function for Deployment"
 echo "==========================================="
 echo ""
 
-# Check if build exists
-if [ ! -d "dist/server" ]; then
-    echo "❌ dist/server not found. Please run 'npm run build:web' first."
+# Resolve build directory (prefer fresh app build output)
+BUILD_DIR=""
+if [ -d "apps/web-app/dist/server" ]; then
+    BUILD_DIR="apps/web-app/dist"
+elif [ -d "dist/server" ]; then
+    BUILD_DIR="dist"
+else
+    echo "❌ Build output not found. Expected apps/web-app/dist/server or dist/server."
+    echo "   Run: pnpm --filter hashpass-web-app build"
     exit 1
 fi
+
+echo "0. Using build output from: ${BUILD_DIR}"
 
 # Create temporary directory for packaging
 PACKAGE_DIR="lambda-package"
@@ -27,13 +35,15 @@ cp lambda/package.json $PACKAGE_DIR/
 
 # Copy server build
 echo "3. Copying server build..."
-cp -r dist/server $PACKAGE_DIR/server
+cp -r "${BUILD_DIR}/server" "$PACKAGE_DIR/server"
 
 # Copy config files needed by API routes
 echo "3a. Copying config files..."
 mkdir -p $PACKAGE_DIR/config
-if [ -f "config/versions.json" ]; then
-  cp config/versions.json $PACKAGE_DIR/config/
+if [ -f "${BUILD_DIR}/config/versions.json" ]; then
+  cp "${BUILD_DIR}/config/versions.json" "$PACKAGE_DIR/config/"
+elif [ -f "config/versions.json" ]; then
+  cp "config/versions.json" "$PACKAGE_DIR/config/"
 fi
 # Note: We do NOT copy the root package.json as it has incompatible dependencies
 # The lambda/package.json already has the minimal dependencies needed
@@ -63,4 +73,3 @@ echo "   1. Create Lambda function (see docs/API-GATEWAY-SETUP.md)"
 echo "   2. Upload lambda-deployment.zip to Lambda"
 echo "   3. Configure API Gateway"
 echo ""
-

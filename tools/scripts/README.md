@@ -24,6 +24,9 @@ Shared branch cadence:
 
 - `tools/scripts/check-consistency.js`
 - `tools/scripts/apply-amplify-custom-headers.sh`
+- `tools/scripts/release-pipeline.js`
+- `tools/scripts/propagate-env.js` (for `dev`/`production`)
+- `tools/scripts/sync-env.js`
 
 Examples:
 
@@ -32,4 +35,24 @@ node tools/scripts/check-consistency.js --all-tenants --env development
 node tools/scripts/check-consistency.js --tenant core --prod
 tools/scripts/apply-amplify-custom-headers.sh --tenant core
 tools/scripts/apply-amplify-custom-headers.sh --tenant blockchainsummit
+node tools/scripts/release-pipeline.js --env development
+node tools/scripts/release-pipeline.js --env production --bump minor
+node tools/scripts/propagate-env.js dev --tenant blockchainsummit
+node tools/scripts/sync-env.js production --tenant core
 ```
+
+### Environment safety guards
+
+For non-local `dev`/`production` propagation and AWS sync:
+
+- Canonical URLs are enforced from `tools/scripts/config/tenants.json`:
+  - `EXPO_PUBLIC_SUPABASE_URL`
+  - `DIRECTUS_URL`
+  - `EXPO_PUBLIC_DIRECTUS_URL`
+  - `EXPO_PUBLIC_API_BASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` must decode to the expected Supabase project ref for the target environment, otherwise scripts fail fast.
+
+When using different Supabase projects per environment, provide both key variants in root `.env`:
+
+- `SUPABASE_SERVICE_ROLE_KEY_DEV` / `SUPABASE_SERVICE_ROLE_KEY_PROD`
+- `EXPO_PUBLIC_SUPABASE_KEY_DEV` / `EXPO_PUBLIC_SUPABASE_KEY_PROD`

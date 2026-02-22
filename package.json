@@ -51,6 +51,9 @@
     "docs:build": "npm run build-storybook",
     "docs:serve": "npx serve storybook-static",
     "docs:deploy:netlify": "npm run build-storybook && netlify deploy --prod --dir=storybook-static",
+    "release:pipeline": "node tools/scripts/release-pipeline.js",
+    "release:dev": "node tools/scripts/release-pipeline.js --env development",
+    "release:prod": "node tools/scripts/release-pipeline.js --env production",
     "release:unified": "npx @edcalderon/versioning release",
     "prepare": "node -e \"if (process.env.CI || process.env.NPM_CONFIG_PRODUCTION || process.env.NODE_ENV === 'production') { process.exit(0); }\" && husky"
   },
