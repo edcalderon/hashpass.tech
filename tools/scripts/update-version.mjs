@@ -18,6 +18,28 @@ import { execSync } from 'child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, '..', '..');
+const webAppRoot = path.join(projectRoot, 'apps', 'web-app');
+
+const VERSION_TS_PATHS = [
+  path.join(projectRoot, 'config', 'version.ts'),
+  path.join(webAppRoot, 'config', 'version.ts'),
+];
+
+const VERSIONS_JSON_TARGETS = [
+  {
+    versionTsPath: path.join(projectRoot, 'config', 'version.ts'),
+    versionsJsonPath: path.join(projectRoot, 'config', 'versions.json'),
+  },
+  {
+    versionTsPath: path.join(webAppRoot, 'config', 'version.ts'),
+    versionsJsonPath: path.join(webAppRoot, 'config', 'versions.json'),
+  },
+];
+
+const GIT_INFO_PATHS = [
+  path.join(projectRoot, 'config', 'git-info.json'),
+  path.join(webAppRoot, 'config', 'git-info.json'),
+];
 
 // Function to get current version from package.json
 function getCurrentVersion() {
@@ -177,6 +199,15 @@ const filesToUpdate = [
     ]
   },
   {
+    path: 'apps/web-app/package.json',
+    updates: [
+      {
+        key: 'version',
+        value: newVersion
+      }
+    ]
+  },
+  {
     path: 'lambda/package.json',
     updates: [
       {
@@ -194,8 +225,8 @@ const filesToUpdate = [
       }
     ]
   },
-  {
-    path: 'config/version.ts',
+  ...['config/version.ts', 'apps/web-app/config/version.ts'].map((targetPath) => ({
+    path: targetPath,
     updates: [
       {
         key: 'buildNumber',
@@ -218,7 +249,7 @@ const filesToUpdate = [
         pattern: /notes:\s*'[^']*'/
       }
     ]
-  }
+  }))
 ];
 
 // Update files
@@ -351,10 +382,13 @@ function extractFeaturesAndBugfixes(content) {
   return { features, bugfixes, breakingChanges };
 }
 
-// Update version history in version.ts
+// Update version history in each version.ts file
 try {
-  const versionTsPath = path.join(projectRoot, 'config/version.ts');
-  if (fs.existsSync(versionTsPath)) {
+  for (const versionTsPath of VERSION_TS_PATHS) {
+    if (!fs.existsSync(versionTsPath)) {
+      continue;
+    }
+
     let content = fs.readFileSync(versionTsPath, 'utf8');
 
     // Extract features and bugfixes from CURRENT_VERSION
@@ -398,7 +432,7 @@ ${bugfixesStr}
       if (historyRegex.test(content)) {
         content = content.replace(historyRegex, `$1\n${newVersionEntry}`);
         fs.writeFileSync(versionTsPath, content, 'utf8');
-        console.log(`✅ Added ${newVersion} to version history`);
+        console.log(`✅ Added ${newVersion} to version history (${path.relative(projectRoot, versionTsPath)})`);
       }
     }
   }
@@ -407,15 +441,17 @@ ${bugfixesStr}
   allUpdated = false;
 }
 
-// Generate config/versions.json from version.ts
+// Generate versions.json from each version.ts file
 // SINGLE SOURCE OF TRUTH: version.ts is the master file
 // versions.json is auto-generated from version.ts and should never be edited manually
 // This ensures consistency and prevents version mismatches
 try {
-  const versionsJsonPath = path.join(projectRoot, 'config/versions.json');
-  const versionTsPath = path.join(projectRoot, 'config/version.ts');
+  for (const target of VERSIONS_JSON_TARGETS) {
+    const { versionTsPath, versionsJsonPath } = target;
+    if (!fs.existsSync(versionTsPath)) {
+      continue;
+    }
 
-  if (fs.existsSync(versionTsPath)) {
     const versionTsContent = fs.readFileSync(versionTsPath, 'utf8');
 
     // Extract all versions from VERSION_HISTORY in version.ts
@@ -557,21 +593,20 @@ try {
 
       // Write generated JSON file
       fs.writeFileSync(versionsJsonPath, JSON.stringify(versionsData, null, 2) + '\n', 'utf8');
-      console.log(`✅ Generated config/versions.json from version.ts (source of truth)`);
-      console.log(`✅ Updated config/versions.json: currentVersion = ${currentVersionFromPackage}`);
+      const relativeVersionsPath = path.relative(projectRoot, versionsJsonPath);
+      console.log(`✅ Generated ${relativeVersionsPath} from ${path.relative(projectRoot, versionTsPath)} (source of truth)`);
+      console.log(`✅ Updated ${relativeVersionsPath}: currentVersion = ${currentVersionFromPackage}`);
     } else {
-      console.warn('⚠️ Could not parse VERSION_HISTORY from version.ts');
+      console.warn(`⚠️ Could not parse VERSION_HISTORY from ${path.relative(projectRoot, versionTsPath)}`);
     }
   }
 } catch (error) {
-  console.error('❌ Error generating config/versions.json from version.ts:', error.message);
+  console.error('❌ Error generating versions.json from version.ts:', error.message);
   allUpdated = false;
 }
 
-// Update config/git-info.json with current git information
+// Update git-info.json files with current git information
 try {
-  const gitInfoPath = path.join(projectRoot, 'config/git-info.json');
-
   // Get current git information
   let gitCommit = 'unknown';
   let gitCommitFull = 'unknown';
@@ -601,8 +636,14 @@ try {
     gitRepoUrl: gitRepoUrl
   };
 
-  fs.writeFileSync(gitInfoPath, JSON.stringify(gitInfo, null, 2) + '\n', 'utf8');
-  console.log(`✅ Updated config/git-info.json: commit = ${gitCommit}, branch = ${gitBranch}`);
+  for (const gitInfoPath of GIT_INFO_PATHS) {
+    if (!fs.existsSync(path.dirname(gitInfoPath))) {
+      continue;
+    }
+
+    fs.writeFileSync(gitInfoPath, JSON.stringify(gitInfo, null, 2) + '\n', 'utf8');
+    console.log(`✅ Updated ${path.relative(projectRoot, gitInfoPath)}: commit = ${gitCommit}, branch = ${gitBranch}`);
+  }
 } catch (error) {
   console.error('❌ Error updating config/git-info.json:', error.message);
   // Don't fail the whole process if git info update fails
