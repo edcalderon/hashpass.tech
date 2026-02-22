@@ -167,6 +167,29 @@ export class DirectusAuthProvider implements IAuthProvider {
     return `Authentication could not be completed${statusSuffix}${codeSuffix}: ${firstFailure.message}. Redirecting to login.`;
   }
 
+  private resolveOAuthApiBaseUrl(): string {
+    const envApiBase = (
+      (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_BASE_URL) ||
+      (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL) ||
+      ''
+    ).trim();
+
+    if (envApiBase) {
+      return envApiBase.replace(/\/$/, '');
+    }
+
+    if (typeof window !== 'undefined') {
+      const runtimeApiBase = (window as unknown as { __API_BASE_URL__?: string }).__API_BASE_URL__;
+      if (typeof runtimeApiBase === 'string' && runtimeApiBase.trim().length > 0) {
+        return runtimeApiBase.trim().replace(/\/$/, '');
+      }
+
+      return `${window.location.origin}/api`;
+    }
+
+    return 'http://localhost:8081/api';
+  }
+
   private mapDirectusOAuthReason(reason: string): string {
     const normalized = reason.toUpperCase();
 
@@ -294,14 +317,14 @@ async signInWithOAuth(provider: 'google' | 'github' | 'facebook' | 'twitter'): P
         };
       }
 
-      // For web, use our own API proxy to handle OAuth
-      // This avoids cross-origin cookie issues by keeping everything server-side
-      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081';
+      // For web, use our API base URL to start OAuth on the backend host.
+      // In staging/prod this is cross-origin (api-*.hashpass.tech) and cannot use window.location.origin.
+      const apiBaseUrl = this.resolveOAuthApiBaseUrl();
       const storedReturnTo = window.localStorage?.getItem('oauth_return_url') || '/dashboard/explore';
       const returnTo = storedReturnTo.replace(/\/\([^/]+\)/g, '') || '/dashboard/explore';
       
       // Use our proxy API to start OAuth
-      const oauthUrl = `${currentOrigin}/api/auth/oauth/login?provider=${provider}&returnTo=${encodeURIComponent(returnTo)}`;
+      const oauthUrl = `${apiBaseUrl}/auth/oauth/login?provider=${encodeURIComponent(provider)}&returnTo=${encodeURIComponent(returnTo)}`;
       
       console.log('🔐 Starting OAuth via proxy...');
       console.log('📍 OAuth URL:', oauthUrl);
