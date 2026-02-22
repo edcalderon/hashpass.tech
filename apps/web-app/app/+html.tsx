@@ -39,11 +39,23 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
               // Set API base URL for version check (used by inline service worker script)
               // Defaults to api.hashpass.tech/api for production (API Gateway)
               // Can be overridden via environment variable EXPO_PUBLIC_API_BASE_URL
-              window.__API_BASE_URL__ = ${JSON.stringify(
-                typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_BASE_URL
-                  ? process.env.EXPO_PUBLIC_API_BASE_URL
-                  : 'https://api.hashpass.tech/api'
-              )};
+              window.__API_BASE_URL__ = (function () {
+                var envApiBase = ${JSON.stringify(
+                  typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_BASE_URL || '' : ''
+                )};
+                if (envApiBase) {
+                  return envApiBase;
+                }
+
+                if (typeof window !== 'undefined') {
+                  var host = (window.location.hostname || '').toLowerCase();
+                  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) {
+                    return window.location.origin + '/api';
+                  }
+                }
+
+                return 'https://api.hashpass.tech/api';
+              })();
             `,
           }}
         />
@@ -266,15 +278,28 @@ if ('serviceWorker' in navigator) {
                                 if (metaTag && metaTag.getAttribute('content')) {
                                     apiBaseUrl = metaTag.getAttribute('content');
                                 } else {
-                                    // Default to api.hashpass.tech/api for production (API Gateway)
-                                    // This handles the case where app is on hashpass.tech but API is on api.hashpass.tech
-                                    apiBaseUrl = 'https://api.hashpass.tech/api';
+                                    // Localhost should use same-origin /api; production falls back to API Gateway.
+                                    var host = (window.location.hostname || '').toLowerCase();
+                                    if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) {
+                                        apiBaseUrl = window.location.origin + '/api';
+                                    } else {
+                                        apiBaseUrl = 'https://api.hashpass.tech/api';
+                                    }
                                 }
                             }
                         }
                     } catch (e) {
-                        // Fallback to api.hashpass.tech/api if detection fails
-                        apiBaseUrl = 'https://api.hashpass.tech/api';
+                        // If runtime detection fails, prefer same-origin /api on localhost.
+                        if (typeof window !== 'undefined') {
+                            var host = (window.location.hostname || '').toLowerCase();
+                            if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) {
+                                apiBaseUrl = window.location.origin + '/api';
+                            } else {
+                                apiBaseUrl = 'https://api.hashpass.tech/api';
+                            }
+                        } else {
+                            apiBaseUrl = 'https://api.hashpass.tech/api';
+                        }
                     }
                     
                     // Remove trailing slash and build version check URL

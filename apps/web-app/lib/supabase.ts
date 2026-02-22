@@ -60,15 +60,21 @@ export const createSessionFromUrl = async (url: string): Promise<{
   console.log('🔍 URL contains #access_token=', url.includes('#access_token='));
   
   try {
-    // First, check if we already have a session (Supabase might have auto-processed)
-    const { data: { session: existingSession } } = await supabase.auth.getSession();
-    if (existingSession && existingSession.user) {
-      console.log('✅ Session already exists, returning it');
-      return { session: existingSession, user: null, error: null };
-    }
-    
     // Parse URL parameters (QueryParams.getQueryParams handles both query string and hash)
     const { params, errorCode } = QueryParams.getQueryParams(url);
+    const hasAuthParams = Boolean(params.access_token || params.code || params.refresh_token || errorCode);
+
+    // If callback URL does not include auth payload, return existing session if available.
+    // When tokens/code exist, we must process them explicitly to avoid stale auth state.
+    if (!hasAuthParams) {
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      if (existingSession && existingSession.user) {
+        console.log('✅ Session already exists, returning it');
+        return { session: existingSession, user: null, error: null };
+      }
+    } else {
+      console.log('ℹ️ Auth payload detected in callback URL, forcing explicit session processing.');
+    }
     
     console.log('📋 URL params parsed:', {
       hasAccessToken: !!params.access_token,

@@ -28,12 +28,12 @@ export async function POST(request: Request) {
       const missingVars = [];
       if (!supabaseUrl) {
         missingVars.push(
-          'EXPO_PUBLIC_SUPABASE_URL (fallback: EXPO_PUBLIC_SUPABASE_URL_DEV)'
+          'Supabase public URL missing (dev fallback available)'
         );
       }
       if (!supabaseServiceKey) {
         missingVars.push(
-          'SUPABASE_SERVICE_ROLE_KEY (fallback: SUPABASE_SERVICE_ROLE_KEY_DEV)'
+          'Supabase service role key missing (dev fallback available)'
         );
       }
 
@@ -220,6 +220,7 @@ export async function POST(request: Request) {
         code: otpCode,
         token_hash: encodedTokenHash,
         expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+        used: false,
       } as any);
 
     if (storeError) {
@@ -286,12 +287,13 @@ export async function POST(request: Request) {
       });
 
       const mailOptions = {
-        from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+        from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
         to: email.trim(),
-        subject: 'Your Login Code',
+        subject: `HASHPASS login code: ${otpCode}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #4f46e5;">One-Time Login Code</h2>
+            <p><strong>${otpCode}</strong> is your HASHPASS login code.</p>
             <p>Please enter this code to sign in:</p>
             <div style="background-color: #f3f4f6; border: 2px solid #4f46e5; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
               <h1 style="color: #4f46e5; font-size: 32px; letter-spacing: 8px; margin: 0;">${otpCode}</h1>
@@ -300,11 +302,11 @@ export async function POST(request: Request) {
             <p style="color: #6b7280; font-size: 14px;">If you didn't request this code, you can safely ignore this email.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
             <p style="font-size: 12px; color: #6b7280;">
-              © ${new Date().getFullYear()} HashPass. All rights reserved.
+              © ${new Date().getFullYear()} HASHPASS. All rights reserved.
             </p>
           </div>
         `,
-        text: `One-Time Login Code\n\nPlease enter this code to sign in: ${otpCode}\n\nThis code will expire in 1 hour.\n\nIf you didn't request this code, you can safely ignore this email.`,
+        text: `${otpCode} is your HASHPASS login code.\n\nPlease enter this code to sign in.\n\nThis code will expire in 1 hour.\n\nIf you didn't request this code, you can safely ignore this email.`,
       };
 
       try {
@@ -369,7 +371,7 @@ export async function POST(request: Request) {
       const smsPayload = {
         sender,
         recipient: brevoRecipient,
-        content: `HashPass login code: ${otpCode}. It expires in 1 hour.`,
+        content: `HASHPASS login code: ${otpCode}. It expires in 1 hour.`,
         type: 'transactional',
       };
 

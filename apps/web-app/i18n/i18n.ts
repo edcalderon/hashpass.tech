@@ -1,4 +1,5 @@
 import { i18n as coreI18n } from '@lingui/core';
+import { compileMessage } from '@lingui/message-utils/compileMessage';
 import * as Localization from 'expo-localization';
 import { useEffect, useState, useCallback } from 'react';
 
@@ -43,6 +44,7 @@ const messagesByLocale: Record<string, Record<string, string>> = {
 
 // Use the global singleton so @lingui/macro can see current locale
 export const i18n = coreI18n;
+i18n.setMessagesCompiler(compileMessage);
 
 // Synchronously set a safe default locale to avoid race conditions with t()/Trans
 if (!(i18n as any).locale) {
@@ -97,11 +99,26 @@ export const useTranslation = (ns?: string) => {
   }, [currentLocale]);
 
   const t = useCallback(
-    (key: string, params: Record<string, any> = {}) => {
+    (
+      key: string,
+      fallbackOrParams?: string | Record<string, any>,
+      maybeParams?: Record<string, any>
+    ) => {
       const fullKey = ns ? `${ns}.${key}` : key;
+
+      if (typeof fallbackOrParams === 'string') {
+        const params = (maybeParams && typeof maybeParams === 'object') ? maybeParams : {};
+        return (i18n as any)._({ id: fullKey, message: fallbackOrParams }, params as any) as unknown as string;
+      }
+
+      const params =
+        fallbackOrParams && typeof fallbackOrParams === 'object'
+          ? fallbackOrParams
+          : {};
+
       return (i18n as any)._(fullKey, params as any) as unknown as string;
     },
-    [ns, currentLocale]
+    [ns]
   );
 
   return { t };

@@ -83,7 +83,9 @@ try {
         'GOOGLE_CLIENT_SECRET',
         'ADMIN_EMAIL',
         'ADMIN_PASSWORD',
-        'AUTH_PROVIDER'
+        'AUTH_PROVIDER',
+        'DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED',
+        'DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED'
     ];
 
     const newVars = { ...currentVars };

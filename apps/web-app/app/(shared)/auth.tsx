@@ -6,6 +6,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   TextInput,
+  type NativeSyntheticEvent,
+  type TextInputKeyPressEventData,
   Platform,
   Image,
   ScrollView,
@@ -24,6 +26,8 @@ import VersionDisplay from '../../components/VersionDisplay';
 import { useAuth } from '../../hooks/useAuth';
 import { getCurrentLocale, useTranslation } from '../../i18n/i18n';
 import { apiClient } from '../../lib/api-client';
+import { authService } from '@hashpass/auth';
+import { getEmailAutocompleteSuggestions } from '../../lib/email-autocomplete';
 import {
   buildCountryDialOptions,
   filterCountryDialOptions,
@@ -34,8 +38,12 @@ import { supabase } from '../../lib/supabase';
 type EmailAuthMethod = 'magic-link' | 'otp-code';
 type BusyAction = 'magic-link' | 'otp-send' | 'otp-verify' | 'oauth' | null;
 type OtpDeliveryMethod = 'email' | 'sms';
+type ActiveSubmitField = 'email' | 'phone' | 'otp' | null;
 
 const OTP_CODE_LENGTH = 6;
+const MAGIC_LINK_RESEND_COOLDOWN_SECONDS = 45;
+const OTP_RESEND_COOLDOWN_SECONDS = 45;
+const OTP_DIGIT_KEYS = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'] as const;
 
 const normalizeReturnToPath = (rawPath: string): string => {
   let normalized = rawPath;
@@ -98,6 +106,13 @@ const resolveOAuthErrorMessage = (
   }
 
   if (
+    normalized.includes('otp_expired') ||
+    normalized.includes('email link is invalid or has expired')
+  ) {
+    return 'Your magic link is invalid or has expired. Request a new link and try again.';
+  }
+
+  if (
     normalized.includes('invalid_credentials') ||
     normalized.includes('invalid user credentials')
   ) {
@@ -150,17 +165,64 @@ export default function AuthScreen() {
   );
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [otpCodeSentAt, setOtpCodeSentAt] = useState<number | null>(null);
+  const [magicLinkSentAt, setMagicLinkSentAt] = useState<number | null>(null);
+  const [magicLinkTimerNow, setMagicLinkTimerNow] = useState<number>(() => Date.now());
   const [emailError, setEmailError] = useState('');
+  const [emailSuggestionsDismissed, setEmailSuggestionsDismissed] = useState(false);
+  const [activeEmailSuggestionIndex, setActiveEmailSuggestionIndex] = useState(0);
   const [otpError, setOtpError] = useState('');
+  const [isOtpInputFocused, setIsOtpInputFocused] = useState(false);
   const [phoneError, setPhoneError] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'privacy' | 'terms'>('privacy');
+  const emailInputRef = useRef<TextInput>(null);
+  const otpInputRef = useRef<TextInput>(null);
+  const lastSubmitTriggerRef = useRef(0);
+  const shouldShowEmailSuggestionsRef = useRef(false);
+  const activeEmailSuggestionRef = useRef<string | null>(null);
+  const skipNextEmailSubmitRef = useRef(false);
+  const acceptActiveEmailSuggestionRef = useRef<() => boolean>(() => false);
+  const activeSubmitFieldRef = useRef<ActiveSubmitField>(null);
+  const submitActionsRef = useRef<{
+    primary: () => void;
+    email: () => void;
+    phone: () => void;
+    otp: () => void;
+  }>({
+    primary: () => {},
+    email: () => {},
+    phone: () => {},
+    otp: () => {},
+  });
 
   const hasNavigatedRef = useRef(false);
   const hasShownOAuthErrorRef = useRef(false);
+  const authProviderName = authService.getProviderName();
+  const hasSupabasePasswordlessConfig = Boolean(
+    process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_KEY
+  );
+  const isPasswordlessSupported = authProviderName === 'supabase' || hasSupabasePasswordlessConfig;
+  const passwordlessUnavailableMessage = t(
+    'passwordlessUnavailableMessage',
+    'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.'
+  );
 
   const styles = getStyles(isDark, colors);
   const isBusy = busyAction !== null;
+  const magicLinkResendRemainingSeconds = magicLinkSentAt === null
+    ? 0
+    : Math.max(
+      0,
+      Math.ceil((magicLinkSentAt + (MAGIC_LINK_RESEND_COOLDOWN_SECONDS * 1000) - magicLinkTimerNow) / 1000)
+    );
+  const otpResendRemainingSeconds = otpCodeSentAt === null
+    ? 0
+    : Math.max(
+      0,
+      Math.ceil((otpCodeSentAt + (OTP_RESEND_COOLDOWN_SECONDS * 1000) - magicLinkTimerNow) / 1000)
+    );
+  const isMagicLinkConfirmationVisible = emailAuthMethod === 'magic-link' && magicLinkSentAt !== null;
   const selectedCountry = useMemo(
     () =>
       countryDialOptions.find((country) => country.iso2 === selectedCountryISO2) ||
@@ -171,6 +233,26 @@ export default function AuthScreen() {
     () => filterCountryDialOptions(countryDialOptions, countrySearchQuery),
     [countryDialOptions, countrySearchQuery]
   );
+  const otpCodeDigits = useMemo(
+    () => OTP_DIGIT_KEYS.map((_, index) => otpCode[index] || ''),
+    [otpCode]
+  );
+  const activeOtpDigitIndex = Math.min(otpCode.length, OTP_CODE_LENGTH - 1);
+  const emailSuggestions = useMemo(
+    () => getEmailAutocompleteSuggestions(email, { limit: 12 }),
+    [email]
+  );
+  const normalizedEmailInput = email.trim().toLowerCase();
+  const shouldShowEmailSuggestions =
+    !isBusy &&
+    !emailSuggestionsDismissed &&
+    normalizedEmailInput.length > 0 &&
+    emailSuggestions.length > 0 &&
+    !isValidEmail(normalizedEmailInput);
+  const activeEmailSuggestion =
+    emailSuggestions[activeEmailSuggestionIndex] || emailSuggestions[0] || null;
+  shouldShowEmailSuggestionsRef.current = shouldShowEmailSuggestions;
+  activeEmailSuggestionRef.current = activeEmailSuggestion;
 
   useEffect(() => {
     if (isLoggedIn && user && !hasNavigatedRef.current && !authLoading) {
@@ -187,14 +269,70 @@ export default function AuthScreen() {
   }, [countryDialOptions, currentLocale, selectedCountryISO2]);
 
   useEffect(() => {
+    if (!shouldShowEmailSuggestions) {
+      setActiveEmailSuggestionIndex(0);
+      return;
+    }
+
+    setActiveEmailSuggestionIndex((previousIndex) => {
+      if (!emailSuggestions.length) return 0;
+      return Math.min(previousIndex, emailSuggestions.length - 1);
+    });
+  }, [emailSuggestions, shouldShowEmailSuggestions]);
+
+  useEffect(() => {
+    if (magicLinkSentAt === null && otpCodeSentAt === null) return;
+
+    setMagicLinkTimerNow(Date.now());
+    const interval = setInterval(() => {
+      setMagicLinkTimerNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [magicLinkSentAt, otpCodeSentAt]);
+
+  useEffect(() => {
+    if (!otpSent) {
+      setIsOtpInputFocused(false);
+      if (activeSubmitFieldRef.current === 'otp') {
+        activeSubmitFieldRef.current = null;
+      }
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      otpInputRef.current?.focus();
+      activeSubmitFieldRef.current = 'otp';
+      setIsOtpInputFocused(true);
+      try {
+        otpInputRef.current?.setNativeProps?.({ selection: { start: 0, end: 0 } });
+      } catch {
+        // Ignore selection assignment failures on unsupported targets.
+      }
+    }, 40);
+
+    return () => clearTimeout(timer);
+  }, [otpSent]);
+
+  useEffect(() => {
     if (hasShownOAuthErrorRef.current) return;
     if (typeof rawAuthError !== 'string' && typeof rawAuthMessage !== 'string') return;
 
-    const message = resolveOAuthErrorMessage(
+    const signInMethod =
+      Platform.OS === 'web' && typeof window !== 'undefined'
+        ? window.localStorage.getItem('auth_signin_method')
+        : null;
+    const isPasswordlessMethod = signInMethod === 'magic_link' || signInMethod === 'otp_code';
+
+    let message = resolveOAuthErrorMessage(
       typeof rawAuthError === 'string' ? rawAuthError : undefined,
       typeof rawAuthMessage === 'string' ? rawAuthMessage : undefined,
       t('oauthError', 'Google sign-in failed. Please try again.')
     );
+
+    if (isPasswordlessMethod && !isPasswordlessSupported) {
+      message = passwordlessUnavailableMessage;
+    }
 
     hasShownOAuthErrorRef.current = true;
     console.error('[Auth] OAuth callback failed', {
@@ -208,8 +346,9 @@ export default function AuthScreen() {
       cleanUrl.searchParams.delete('error');
       cleanUrl.searchParams.delete('message');
       window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+      window.localStorage.removeItem('auth_signin_method');
     }
-  }, [rawAuthError, rawAuthMessage, showError, t]);
+  }, [isPasswordlessSupported, passwordlessUnavailableMessage, rawAuthError, rawAuthMessage, showError, t]);
 
   const validateEmailOrShowError = (): string | null => {
     const normalized = email.trim().toLowerCase();
@@ -228,8 +367,20 @@ export default function AuthScreen() {
     return normalized;
   };
 
+  const resetMagicLinkConfirmation = () => {
+    setMagicLinkSentAt(null);
+    setMagicLinkTimerNow(Date.now());
+    setOtpError('');
+  };
+
   const handleSendMagicLink = async () => {
     if (isBusy) return;
+    if (magicLinkSentAt !== null && magicLinkResendRemainingSeconds > 0) return;
+
+    if (!isPasswordlessSupported) {
+      showError(t('authenticationError', 'Authentication Error'), passwordlessUnavailableMessage);
+      return;
+    }
 
     const normalizedEmail = validateEmailOrShowError();
     if (!normalizedEmail) return;
@@ -261,10 +412,12 @@ export default function AuthScreen() {
 
       setOtpSent(false);
       setOtpCode('');
+      setMagicLinkSentAt(Date.now());
+      setMagicLinkTimerNow(Date.now());
 
       showSuccess(
-        t('magicLinkSent', 'Magic link sent'),
-        t('magicLinkSentMessage', 'Check your inbox and open the secure sign-in link.')
+        t('magicLinkSentTitle', 'Link sent'),
+        t('magicLinkSentMessage', 'Please check your email to login.')
       );
     } catch (error: any) {
       const message = extractApiError(
@@ -284,6 +437,12 @@ export default function AuthScreen() {
 
   const handleSendOtpCode = async () => {
     if (isBusy) return;
+    if (otpCodeSentAt !== null && otpResendRemainingSeconds > 0) return;
+
+    if (!isPasswordlessSupported) {
+      showError(t('authenticationError', 'Authentication Error'), passwordlessUnavailableMessage);
+      return;
+    }
 
     const normalizedEmail = validateEmailOrShowError();
     if (!normalizedEmail) return;
@@ -335,6 +494,9 @@ export default function AuthScreen() {
 
       setOtpSent(true);
       setOtpCode('');
+      setOtpCodeSentAt(Date.now());
+      setMagicLinkTimerNow(Date.now());
+      focusOtpInput(0);
 
       showSuccess(
         t('otpCodeSent', 'Verification code sent'),
@@ -360,6 +522,11 @@ export default function AuthScreen() {
 
   const handleVerifyOtpCode = async () => {
     if (isBusy) return;
+
+    if (!isPasswordlessSupported) {
+      showError(t('authenticationError', 'Authentication Error'), passwordlessUnavailableMessage);
+      return;
+    }
 
     const normalizedEmail = validateEmailOrShowError();
     if (!normalizedEmail) return;
@@ -396,10 +563,33 @@ export default function AuthScreen() {
         throw new Error(extractApiError(verifyResponse.data, t('otpInvalid', 'Invalid or expired code.')));
       }
 
-      const { error: otpVerifyError } = await supabase.auth.verifyOtp({
-        token_hash: verifyResponse.data.token_hash,
-        type: verifyResponse.data.type || 'magiclink',
-      } as any);
+      const initialType = verifyResponse.data.type || 'magiclink';
+      const verificationTypes = Array.from(
+        new Set([initialType, 'signup', 'magiclink', 'email'])
+      ) as ('signup' | 'magiclink' | 'email' | 'invite' | 'recovery' | 'email_change')[];
+
+      let otpVerifyError: any = null;
+      for (const type of verificationTypes) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: verifyResponse.data.token_hash,
+          type,
+        } as any);
+
+        if (!error) {
+          otpVerifyError = null;
+          break;
+        }
+
+        otpVerifyError = error;
+        const message = typeof error.message === 'string' ? error.message : '';
+        const canRetryWithAnotherType =
+          /email link is invalid or has expired/i.test(message) ||
+          /otp has expired or is invalid/i.test(message);
+
+        if (!canRetryWithAnotherType) {
+          break;
+        }
+      }
 
       if (otpVerifyError) {
         throw otpVerifyError;
@@ -425,6 +615,12 @@ export default function AuthScreen() {
     } finally {
       setBusyAction(null);
     }
+  };
+
+  const handleOtpCodeChange = (text: string) => {
+    const normalizedDigits = text.replace(/[^0-9]/g, '').slice(0, OTP_CODE_LENGTH);
+    setOtpCode(normalizedDigits);
+    if (otpError) setOtpError('');
   };
 
   const handleGoogleSignIn = async () => {
@@ -470,7 +666,73 @@ export default function AuthScreen() {
     setModalVisible(true);
   };
 
+  const applyEmailSuggestion = (suggestedEmail: string) => {
+    setEmail(suggestedEmail);
+    setEmailSuggestionsDismissed(false);
+    if (emailError) setEmailError('');
+
+    const focusInput = () => {
+      emailInputRef.current?.focus();
+      activeSubmitFieldRef.current = 'email';
+      try {
+        emailInputRef.current?.setNativeProps?.({
+          selection: { start: suggestedEmail.length, end: suggestedEmail.length },
+        });
+      } catch {
+        // Ignore selection assignment failures on unsupported targets.
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      setTimeout(focusInput, 0);
+      return;
+    }
+
+    focusInput();
+  };
+
+  const handleEmailInputChange = (text: string) => {
+    const previousNormalizedEmail = email.trim().toLowerCase();
+    const nextNormalizedEmail = text.trim().toLowerCase();
+
+    if (emailSuggestionsDismissed && previousNormalizedEmail !== nextNormalizedEmail) {
+      setEmailSuggestionsDismissed(false);
+    }
+
+    setEmail(text);
+    setActiveEmailSuggestionIndex(0);
+    if (emailError) setEmailError('');
+  };
+
+  const dismissEmailSuggestions = () => {
+    setEmailSuggestionsDismissed(true);
+    setActiveEmailSuggestionIndex(0);
+  };
+
+  const tryApplyTopEmailSuggestion = (): boolean => {
+    if (emailSuggestionsDismissed) return false;
+    const normalizedEmail = normalizedEmailInput;
+    if (!normalizedEmail || isValidEmail(normalizedEmail)) return false;
+    if (!activeEmailSuggestion) return false;
+
+    applyEmailSuggestion(activeEmailSuggestion);
+    return true;
+  };
+
+  const acceptActiveEmailSuggestion = (): boolean => {
+    if (!shouldShowEmailSuggestionsRef.current) return false;
+    const suggestion = activeEmailSuggestionRef.current;
+    if (!suggestion) return false;
+
+    skipNextEmailSubmitRef.current = true;
+    applyEmailSuggestion(suggestion);
+    return true;
+  };
+  acceptActiveEmailSuggestionRef.current = acceptActiveEmailSuggestion;
+
   const handlePrimaryEmailAction = () => {
+    if (tryApplyTopEmailSuggestion()) return;
+
     if (emailAuthMethod === 'magic-link') {
       void handleSendMagicLink();
       return;
@@ -483,6 +745,157 @@ export default function AuthScreen() {
 
     void handleVerifyOtpCode();
   };
+
+  const runSubmitAction = (action: () => void) => {
+    const now = Date.now();
+    if (now - lastSubmitTriggerRef.current < 250) return;
+    lastSubmitTriggerRef.current = now;
+    action();
+  };
+
+  const handleEnterKeyPress = (
+    event: NativeSyntheticEvent<TextInputKeyPressEventData>,
+    action: () => void
+  ) => {
+    if (Platform.OS !== 'web') return;
+    if (event.nativeEvent.key !== 'Enter') return;
+    runSubmitAction(action);
+  };
+
+  const handleEmailInputKeyPress = (
+    event: NativeSyntheticEvent<TextInputKeyPressEventData>
+  ) => {
+    if (Platform.OS !== 'web') return;
+
+    const key = event.nativeEvent.key;
+    if (key === 'Tab') {
+      if (shouldShowEmailSuggestions && emailSuggestions.length > 0) {
+        const isShiftPressed = Boolean((event.nativeEvent as any).shiftKey);
+        setActiveEmailSuggestionIndex((previousIndex) => {
+          const total = emailSuggestions.length;
+          if (!total) return 0;
+          const delta = isShiftPressed ? -1 : 1;
+          return (previousIndex + delta + total) % total;
+        });
+        (event as any).preventDefault?.();
+      }
+      return;
+    }
+
+    if (key === 'Enter') {
+      if (acceptActiveEmailSuggestion()) {
+        (event as any).preventDefault?.();
+        return;
+      }
+      handleEnterKeyPress(event, handleEmailInputSubmit);
+    }
+  };
+
+  const focusOtpInput = (selectionIndex = otpCode.length) => {
+    const boundedIndex = Math.max(0, Math.min(OTP_CODE_LENGTH, selectionIndex));
+
+    const applyFocus = () => {
+      otpInputRef.current?.focus();
+      activeSubmitFieldRef.current = 'otp';
+      setIsOtpInputFocused(true);
+      try {
+        otpInputRef.current?.setNativeProps?.({ selection: { start: boundedIndex, end: boundedIndex } });
+      } catch {
+        // Ignore selection assignment failures on unsupported targets.
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      setTimeout(applyFocus, 0);
+      return;
+    }
+
+    applyFocus();
+  };
+
+  const handleEmailInputSubmit = () => {
+    if (isBusy) return;
+    if (tryApplyTopEmailSuggestion()) return;
+
+    // If OTP was already sent, move focus to the code input instead of submitting empty code.
+    if (emailAuthMethod === 'otp-code' && otpSent) {
+      focusOtpInput();
+      return;
+    }
+
+    handlePrimaryEmailAction();
+  };
+
+  const handleEmailSubmitEditing = () => {
+    if (skipNextEmailSubmitRef.current) {
+      skipNextEmailSubmitRef.current = false;
+      return;
+    }
+
+    runSubmitAction(handleEmailInputSubmit);
+  };
+
+  const focusEmailInput = () => {
+    if (Platform.OS !== 'web') return;
+    setTimeout(() => {
+      emailInputRef.current?.focus();
+    }, 0);
+  };
+
+  const handlePhoneInputSubmit = () => {
+    if (isBusy) return;
+    if (emailAuthMethod === 'otp-code' && !otpSent) {
+      handlePrimaryEmailAction();
+    }
+  };
+
+  const handleOtpInputSubmit = () => {
+    if (isBusy) return;
+
+    if (otpCode.trim().length !== OTP_CODE_LENGTH) {
+      setOtpError(
+        t('otpLengthError', `Please enter the ${OTP_CODE_LENGTH}-digit verification code.`)
+      );
+      return;
+    }
+
+    void handleVerifyOtpCode();
+  };
+
+  submitActionsRef.current.primary = () => runSubmitAction(handlePrimaryEmailAction);
+  submitActionsRef.current.email = () => runSubmitAction(handleEmailInputSubmit);
+  submitActionsRef.current.phone = () => runSubmitAction(handlePhoneInputSubmit);
+  submitActionsRef.current.otp = () => runSubmitAction(handleOtpInputSubmit);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const handleWindowEnter = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' && event.key !== 'NumpadEnter') return;
+      if (event.defaultPrevented) return;
+
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (!target.closest('[data-auth-enter-submit="true"]')) return;
+      if (target.closest('[data-auth-enter-ignore="true"]')) return;
+
+      event.preventDefault();
+
+      const activeField = activeSubmitFieldRef.current;
+      if (activeField) {
+        if (activeField === 'email' && acceptActiveEmailSuggestionRef.current()) {
+          return;
+        }
+        submitActionsRef.current[activeField]();
+        return;
+      }
+
+      submitActionsRef.current.primary();
+    };
+
+    window.addEventListener('keydown', handleWindowEnter);
+    return () => window.removeEventListener('keydown', handleWindowEnter);
+  }, []);
 
   if (authLoading) {
     return (
@@ -534,223 +947,411 @@ export default function AuthScreen() {
 
             <Text style={styles.tagline}>{t('subtitle', 'Sign in to unlock your digital life.')}</Text>
 
-            <View style={styles.primaryAuthContainer}>
-              <View
-                style={[
-                  styles.emailInputContainer,
-                  emailError ? styles.emailInputContainerError : null,
-                ]}
-              >
-                <Ionicons
-                  name="mail-outline"
-                  size={18}
-                  color={emailError ? '#F44336' : colors.text.secondary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.emailInput}
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    if (emailError) setEmailError('');
-                  }}
-                  placeholder={t('emailPlaceholder', 'Enter your email')}
-                  placeholderTextColor={colors.text.secondary}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isBusy}
-                />
-              </View>
-              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-
-              <View style={styles.methodTabs}>
-                <TouchableOpacity
-                  style={[
-                    styles.methodTab,
-                    emailAuthMethod === 'magic-link' ? styles.methodTabActive : null,
-                  ]}
-                  onPress={() => {
-                    setEmailAuthMethod('magic-link');
-                    setOtpError('');
-                    setPhoneError('');
-                  }}
-                  disabled={isBusy}
-                >
+            <View style={styles.primaryAuthContainer} dataSet={{ authEnterSubmit: 'true' }}>
+              {!isPasswordlessSupported ? (
+                <View style={styles.passwordlessInfoCard}>
                   <Ionicons
-                    name="link-outline"
-                    size={16}
-                    color={emailAuthMethod === 'magic-link' ? colors.text.primary : colors.text.secondary}
+                    name="information-circle-outline"
+                    size={28}
+                    color={isDark ? '#f5f5f5' : '#1f2125'}
                   />
-                  <Text
-                    style={[
-                      styles.methodTabText,
-                      emailAuthMethod === 'magic-link' ? styles.methodTabTextActive : null,
-                    ]}
-                  >
-                    {t('magicLink', 'Magic Link')}
+                  <Text style={styles.passwordlessInfoTitle}>
+                    {t('passwordlessUnavailableTitle', 'Email Link and OTP Unavailable')}
                   </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.methodTab,
-                    emailAuthMethod === 'otp-code' ? styles.methodTabActive : null,
-                  ]}
-                  onPress={() => {
-                    setEmailAuthMethod('otp-code');
-                    setOtpError('');
-                    setPhoneError('');
-                  }}
-                  disabled={isBusy}
-                >
+                  <Text style={styles.passwordlessInfoMessage}>{passwordlessUnavailableMessage}</Text>
+                </View>
+              ) : isMagicLinkConfirmationVisible ? (
+                <View style={styles.magicLinkConfirmationCard}>
                   <Ionicons
-                    name="keypad-outline"
-                    size={16}
-                    color={emailAuthMethod === 'otp-code' ? colors.text.primary : colors.text.secondary}
+                    name="mail-open-outline"
+                    size={30}
+                    color={isDark ? '#f5f5f5' : '#1f2125'}
                   />
-                  <Text
-                    style={[
-                      styles.methodTabText,
-                      emailAuthMethod === 'otp-code' ? styles.methodTabTextActive : null,
-                    ]}
-                  >
-                    {t('otpCode', 'OTP Code')}
+                  <Text style={styles.magicLinkConfirmationTitle}>
+                    {t('magicLinkSentTitle', 'Link sent')}
                   </Text>
-                </TouchableOpacity>
-              </View>
-
-              {emailAuthMethod === 'otp-code' ? (
-                <View style={styles.otpDeliveryContainer}>
-                  <TouchableOpacity
-                    style={styles.deliverySwitchButton}
-                    onPress={() => {
-                      setOtpDeliveryMethod((prev) => (prev === 'email' ? 'sms' : 'email'));
-                      setPhoneError('');
-                      setCountryPickerVisible(false);
-                      setCountrySearchQuery('');
-                    }}
-                    disabled={isBusy}
-                  >
-                    <Text style={styles.deliverySwitchText}>
-                      {otpDeliveryMethod === 'email'
-                        ? t('cantAccessEmailUseSms', "Can't access email? Send OTP by SMS")
-                        : t('useEmailOtpInstead', 'Use email OTP instead')}
+                  <Text style={styles.magicLinkConfirmationMessage}>
+                    {t('magicLinkSentMessage', 'Please check your email to login.')}
+                  </Text>
+                  <Text style={styles.magicLinkConfirmationEmail}>{email.trim().toLowerCase()}</Text>
+                  {magicLinkResendRemainingSeconds > 0 ? (
+                    <Text style={styles.magicLinkCountdownText}>
+                      {t('magicLinkResendCountdown', { seconds: magicLinkResendRemainingSeconds })}
                     </Text>
-                  </TouchableOpacity>
-
-                  {otpDeliveryMethod === 'sms' ? (
-                    <>
-                      <View style={styles.phoneRow}>
-                        <TouchableOpacity
-                          style={styles.countryPickerButton}
-                          onPress={() => setCountryPickerVisible(true)}
-                          disabled={isBusy}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('selectCountryCode', 'Select country code')}
-                        >
-                          <Text style={styles.countryPickerDialCode}>
-                            +{selectedCountry?.dialCode || '1'}
-                          </Text>
-                          <Text style={styles.countryPickerISO2}>
-                            {selectedCountry?.iso2 || 'US'}
-                          </Text>
-                          <Ionicons
-                            name="chevron-down"
-                            size={16}
-                            color={colors.text.secondary}
-                          />
-                        </TouchableOpacity>
-
-                        <View
-                          style={[
-                            styles.emailInputContainer,
-                            styles.phoneInputContainer,
-                            phoneError ? styles.emailInputContainerError : null,
-                          ]}
-                        >
-                          <Ionicons
-                            name="call-outline"
-                            size={18}
-                            color={phoneError ? '#F44336' : colors.text.secondary}
-                            style={styles.inputIcon}
-                          />
-                          <TextInput
-                            style={styles.emailInput}
-                            value={phone}
-                            onChangeText={(text) => {
-                              setPhone(text.replace(/[^\d]/g, ''));
-                              if (phoneError) setPhoneError('');
-                            }}
-                            placeholder={t('phonePlaceholder', 'Enter your phone number')}
-                            placeholderTextColor={colors.text.secondary}
-                            keyboardType="phone-pad"
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            editable={!isBusy}
-                          />
-                        </View>
-                      </View>
-
-                      <Text style={styles.selectedCountryText}>
-                        {selectedCountry?.name || 'United States'}
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.secondaryActionButton}
+                      onPress={() => void handleSendMagicLink()}
+                      disabled={isBusy}
+                      dataSet={{ authEnterIgnore: 'true' }}
+                    >
+                      <Text style={styles.secondaryActionText}>
+                        {t('magicLinkSendAnother', 'Send another link')}
                       </Text>
-                      {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
-                      <Text style={styles.deliveryHint}>
-                        {t(
-                          'otpSmsHint',
-                          'We will send the login code by SMS using the selected country code.'
-                        )}
-                      </Text>
-                    </>
-                  ) : null}
-                </View>
-              ) : null}
+                    </TouchableOpacity>
+                  )}
 
-              {emailAuthMethod === 'otp-code' && otpSent ? (
-                <View style={styles.otpSection}>
-                  <TextInput
-                    style={[styles.codeInput, otpError ? styles.emailInputContainerError : null]}
-                    value={otpCode}
-                    onChangeText={(text) => {
-                      setOtpCode(text.replace(/[^0-9]/g, ''));
-                      if (otpError) setOtpError('');
-                    }}
-                    placeholder={t('enterOtpCode', 'Enter 6-digit code')}
-                    placeholderTextColor={colors.text.secondary}
-                    keyboardType="number-pad"
-                    maxLength={OTP_CODE_LENGTH}
-                    editable={!isBusy}
-                    textAlign="center"
-                  />
-                  {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
                   <TouchableOpacity
-                    style={styles.secondaryActionButton}
-                    onPress={() => void handleSendOtpCode()}
+                    style={styles.magicLinkCloseButton}
+                    onPress={resetMagicLinkConfirmation}
+                    disabled={isBusy}
+                    dataSet={{ authEnterIgnore: 'true' }}
+                  >
+                    <Text style={styles.magicLinkCloseText}>{t('magicLinkClose', 'Close')}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <View
+                    style={[
+                      styles.emailInputContainer,
+                      emailError ? styles.emailInputContainerError : null,
+                    ]}
+                  >
+                    <Ionicons
+                      name="mail-outline"
+                      size={18}
+                      color={emailError ? '#F44336' : colors.text.secondary}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      ref={emailInputRef}
+                      style={styles.emailInput}
+                      value={email}
+                      onChangeText={handleEmailInputChange}
+                      placeholder={t('emailPlaceholder', 'Enter your email')}
+                      placeholderTextColor={colors.text.secondary}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!isBusy}
+                      onFocus={() => {
+                        activeSubmitFieldRef.current = 'email';
+                      }}
+                      onBlur={() => {
+                        if (activeSubmitFieldRef.current === 'email') {
+                          activeSubmitFieldRef.current = null;
+                        }
+                      }}
+                      returnKeyType="send"
+                      onSubmitEditing={handleEmailSubmitEditing}
+                      onKeyPress={handleEmailInputKeyPress}
+                    />
+                  </View>
+                  {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+                  {shouldShowEmailSuggestions ? (
+                    <View style={styles.emailSuggestionsContainer}>
+                      <View style={styles.emailSuggestionsHeader}>
+                        <Text style={styles.emailSuggestionsTitle}>
+                          {t('emailAutocompleteTitle', 'Suggestions')}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.emailSuggestionsCloseButton}
+                          onPress={dismissEmailSuggestions}
+                          disabled={isBusy}
+                          dataSet={{ authEnterIgnore: 'true' }}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('closeSuggestions', 'Close suggestions')}
+                        >
+                          <Ionicons name="close" size={16} color={isDark ? '#cfd3de' : '#5f6678'} />
+                        </TouchableOpacity>
+                      </View>
+                      <ScrollView
+                        style={styles.emailSuggestionsList}
+                        nestedScrollEnabled
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator
+                        dataSet={{ authEnterIgnore: 'true' }}
+                      >
+                        {emailSuggestions.map((suggestion, index) => (
+                          <TouchableOpacity
+                            key={suggestion}
+                            style={[
+                              styles.emailSuggestionItem,
+                              index === 0 ? styles.emailSuggestionItemFirst : null,
+                              index === activeEmailSuggestionIndex ? styles.emailSuggestionItemActive : null,
+                            ]}
+                            onPress={() => applyEmailSuggestion(suggestion)}
+                            disabled={isBusy}
+                            dataSet={{ authEnterIgnore: 'true' }}
+                          >
+                            <Text style={styles.emailSuggestionText} numberOfLines={1}>
+                              {suggestion}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  ) : null}
+
+                  <View style={styles.methodTabs}>
+                    <TouchableOpacity
+                      style={[
+                        styles.methodTab,
+                        emailAuthMethod === 'magic-link' ? styles.methodTabActive : null,
+                      ]}
+                      onPress={() => {
+                        setEmailAuthMethod('magic-link');
+                        resetMagicLinkConfirmation();
+                        setOtpError('');
+                        setPhoneError('');
+                        focusEmailInput();
+                      }}
+                      disabled={isBusy}
+                    >
+                      <Ionicons
+                        name="link-outline"
+                        size={16}
+                        color={emailAuthMethod === 'magic-link' ? colors.text.primary : colors.text.secondary}
+                      />
+                      <Text
+                        style={[
+                          styles.methodTabText,
+                          emailAuthMethod === 'magic-link' ? styles.methodTabTextActive : null,
+                        ]}
+                      >
+                        {t('magicLink', 'Magic Link')}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.methodTab,
+                        emailAuthMethod === 'otp-code' ? styles.methodTabActive : null,
+                      ]}
+                      onPress={() => {
+                        setEmailAuthMethod('otp-code');
+                        resetMagicLinkConfirmation();
+                        setOtpError('');
+                        setPhoneError('');
+                        focusEmailInput();
+                      }}
+                      disabled={isBusy}
+                    >
+                      <Ionicons
+                        name="keypad-outline"
+                        size={16}
+                        color={emailAuthMethod === 'otp-code' ? colors.text.primary : colors.text.secondary}
+                      />
+                      <Text
+                        style={[
+                          styles.methodTabText,
+                          emailAuthMethod === 'otp-code' ? styles.methodTabTextActive : null,
+                        ]}
+                      >
+                        {t('otpCode', 'OTP Code')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {emailAuthMethod === 'otp-code' ? (
+                    <View style={styles.otpDeliveryContainer}>
+                      <TouchableOpacity
+                        style={styles.deliverySwitchButton}
+                        onPress={() => {
+                          setOtpDeliveryMethod((prev) => (prev === 'email' ? 'sms' : 'email'));
+                          setPhoneError('');
+                          setCountryPickerVisible(false);
+                          setCountrySearchQuery('');
+                        }}
+                        disabled={isBusy}
+                        dataSet={{ authEnterIgnore: 'true' }}
+                      >
+                        <Text style={styles.deliverySwitchText}>
+                          {otpDeliveryMethod === 'email'
+                            ? t('cantAccessEmailUseSms', "Can't access email? Send OTP by SMS")
+                            : t('useEmailOtpInstead', 'Use email OTP instead')}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {otpDeliveryMethod === 'sms' ? (
+                        <>
+                          <View style={styles.phoneRow}>
+                            <TouchableOpacity
+                              style={styles.countryPickerButton}
+                              onPress={() => setCountryPickerVisible(true)}
+                              disabled={isBusy}
+                              accessibilityRole="button"
+                              accessibilityLabel={t('selectCountryCode', 'Select country code')}
+                              dataSet={{ authEnterIgnore: 'true' }}
+                            >
+                              <Text style={styles.countryPickerDialCode}>
+                                +{selectedCountry?.dialCode || '1'}
+                              </Text>
+                              <Text style={styles.countryPickerISO2}>
+                                {selectedCountry?.iso2 || 'US'}
+                              </Text>
+                              <Ionicons
+                                name="chevron-down"
+                                size={16}
+                                color={colors.text.secondary}
+                              />
+                            </TouchableOpacity>
+
+                            <View
+                              style={[
+                                styles.emailInputContainer,
+                                styles.phoneInputContainer,
+                                phoneError ? styles.emailInputContainerError : null,
+                              ]}
+                            >
+                              <Ionicons
+                                name="call-outline"
+                                size={18}
+                                color={phoneError ? '#F44336' : colors.text.secondary}
+                                style={styles.inputIcon}
+                              />
+                              <TextInput
+                                style={styles.emailInput}
+                                value={phone}
+                                onChangeText={(text) => {
+                                  setPhone(text.replace(/[^\d]/g, ''));
+                                  if (phoneError) setPhoneError('');
+                                }}
+                                placeholder={t('phonePlaceholder', 'Enter your phone number')}
+                                placeholderTextColor={colors.text.secondary}
+                                keyboardType="phone-pad"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                editable={!isBusy}
+                                onFocus={() => {
+                                  activeSubmitFieldRef.current = 'phone';
+                                }}
+                                onBlur={() => {
+                                  if (activeSubmitFieldRef.current === 'phone') {
+                                    activeSubmitFieldRef.current = null;
+                                  }
+                                }}
+                                returnKeyType="send"
+                                onSubmitEditing={() => runSubmitAction(handlePhoneInputSubmit)}
+                                onKeyPress={(event) => handleEnterKeyPress(event, handlePhoneInputSubmit)}
+                              />
+                            </View>
+                          </View>
+
+                          <Text style={styles.selectedCountryText}>
+                            {selectedCountry?.name || 'United States'}
+                          </Text>
+                          {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
+                          <Text style={styles.deliveryHint}>
+                            {t(
+                              'otpSmsHint',
+                              'We will send the login code by SMS using the selected country code.'
+                            )}
+                          </Text>
+                        </>
+                      ) : null}
+                    </View>
+                  ) : null}
+
+                  {emailAuthMethod === 'otp-code' && otpSent ? (
+                    <View style={styles.otpSection}>
+                      <Text style={styles.otpInputPrompt}>
+                        {t('enterOtpCode', 'Enter 6-digit code')}
+                      </Text>
+
+                      <TouchableOpacity
+                        activeOpacity={0.92}
+                        onPress={() => focusOtpInput()}
+                        style={styles.otpDigitsWrapper}
+                        disabled={isBusy}
+                        dataSet={{ authEnterIgnore: 'true' }}
+                      >
+                        {otpCodeDigits.map((digit, index) => {
+                          const isActive =
+                            !isBusy &&
+                            otpCode.length < OTP_CODE_LENGTH &&
+                            index === activeOtpDigitIndex;
+                          const isTargetActive = isActive && isOtpInputFocused;
+
+                          return (
+                            <View
+                              key={OTP_DIGIT_KEYS[index]}
+                              style={[
+                                styles.otpDigitCell,
+                                digit ? styles.otpDigitCellFilled : null,
+                                isTargetActive ? styles.otpDigitCellActive : null,
+                                otpError ? styles.otpDigitCellError : null,
+                              ]}
+                            >
+                              <Text style={styles.otpDigitText}>{digit || ' '}</Text>
+                              <View
+                                style={[
+                                  styles.otpDigitUnderline,
+                                  isTargetActive ? styles.otpDigitUnderlineActive : null,
+                                  otpError ? styles.otpDigitUnderlineError : null,
+                                ]}
+                              />
+                            </View>
+                          );
+                        })}
+                      </TouchableOpacity>
+
+                      <TextInput
+                        ref={otpInputRef}
+                        style={styles.otpHiddenInput}
+                        value={otpCode}
+                        onChangeText={handleOtpCodeChange}
+                        keyboardType="number-pad"
+                        maxLength={OTP_CODE_LENGTH}
+                        editable={!isBusy}
+                        onFocus={() => {
+                          activeSubmitFieldRef.current = 'otp';
+                          setIsOtpInputFocused(true);
+                        }}
+                        onBlur={() => {
+                          if (activeSubmitFieldRef.current === 'otp') {
+                            activeSubmitFieldRef.current = null;
+                          }
+                          setIsOtpInputFocused(false);
+                        }}
+                        textContentType="oneTimeCode"
+                        autoComplete="one-time-code"
+                        returnKeyType="done"
+                        onSubmitEditing={() => runSubmitAction(handleOtpInputSubmit)}
+                        onKeyPress={(event) => handleEnterKeyPress(event, handleOtpInputSubmit)}
+                      />
+
+                      {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
+                      <Text style={styles.otpResendPrompt}>
+                        {t('otpResendPrompt', "Didn't receive the OTP code?")}
+                      </Text>
+                      {otpResendRemainingSeconds > 0 ? (
+                        <Text style={styles.otpResendCountdownText}>
+                          {t('otpResendCountdown', { seconds: otpResendRemainingSeconds })}
+                        </Text>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.secondaryActionButton}
+                          onPress={() => void handleSendOtpCode()}
+                          disabled={isBusy}
+                          dataSet={{ authEnterIgnore: 'true' }}
+                        >
+                          <Text style={styles.secondaryActionText}>{t('otpSendAnother', 'Send again')}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ) : null}
+
+                  <TouchableOpacity
+                    style={[styles.primaryButton, isBusy ? styles.primaryButtonDisabled : null]}
+                    onPress={handlePrimaryEmailAction}
                     disabled={isBusy}
                   >
-                    <Text style={styles.secondaryActionText}>{t('resendCode', 'Resend Code')}</Text>
+                    {isBusy && busyAction !== 'oauth' ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>
+                        {emailAuthMethod === 'magic-link'
+                          ? t('sendMagicLink', 'Send Magic Link')
+                          : otpSent
+                            ? t('verifyCode', 'Verify Code')
+                            : t('sendCode', 'Send Code')}
+                      </Text>
+                    )}
                   </TouchableOpacity>
-                </View>
-              ) : null}
-
-              <TouchableOpacity
-                style={[styles.primaryButton, isBusy ? styles.primaryButtonDisabled : null]}
-                onPress={handlePrimaryEmailAction}
-                disabled={isBusy}
-              >
-                {isBusy && busyAction !== 'oauth' ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>
-                    {emailAuthMethod === 'magic-link'
-                      ? t('sendMagicLink', 'Send Magic Link')
-                      : otpSent
-                        ? t('verifyCode', 'Verify Code')
-                        : t('sendCode', 'Send Code')}
-                  </Text>
-                )}
-              </TouchableOpacity>
+                </>
+              )}
             </View>
 
             <View style={styles.dividerContainer}>
@@ -989,6 +1590,79 @@ const getStyles = (isDark: boolean, colors: any) =>
       width: '100%',
       gap: 12,
     },
+    passwordlessInfoCard: {
+      width: '100%',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#d9d9de',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f6f9',
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+      gap: 8,
+    },
+    passwordlessInfoTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: isDark ? '#fff' : '#131418',
+      textAlign: 'center',
+    },
+    passwordlessInfoMessage: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: isDark ? '#d5d6db' : '#4c4e55',
+      textAlign: 'center',
+    },
+    magicLinkConfirmationCard: {
+      width: '100%',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#d9d9de',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f6f9',
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+      gap: 8,
+    },
+    magicLinkConfirmationTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: isDark ? '#fff' : '#131418',
+      textAlign: 'center',
+    },
+    magicLinkConfirmationMessage: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: isDark ? '#d5d6db' : '#4c4e55',
+      textAlign: 'center',
+    },
+    magicLinkConfirmationEmail: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: isDark ? '#ffffff' : '#17181b',
+      textAlign: 'center',
+    },
+    magicLinkCountdownText: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: isDark ? '#bec0c6' : '#61636a',
+      textAlign: 'center',
+      marginTop: 2,
+    },
+    magicLinkCloseButton: {
+      marginTop: 6,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#d1d2d8',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#eceef4',
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    magicLinkCloseText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: isDark ? '#ffffff' : '#24262b',
+    },
     emailInputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1010,6 +1684,59 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontSize: 18,
       color: isDark ? '#fff' : '#121212',
       paddingVertical: 0,
+    },
+    emailSuggestionsContainer: {
+      width: '100%',
+      marginTop: 2,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#d9dbe2',
+      backgroundColor: isDark ? '#111521' : '#f8f9fc',
+      overflow: 'hidden',
+    },
+    emailSuggestionsHeader: {
+      minHeight: 38,
+      paddingLeft: 14,
+      paddingRight: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : '#e4e7f0',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f1f3f8',
+    },
+    emailSuggestionsTitle: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: isDark ? '#aeb4c4' : '#5a6276',
+    },
+    emailSuggestionsCloseButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emailSuggestionsList: {
+      maxHeight: 220,
+    },
+    emailSuggestionItem: {
+      minHeight: 42,
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+      borderTopWidth: 1,
+      borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : '#e4e7f0',
+    },
+    emailSuggestionItemFirst: {
+      borderTopWidth: 0,
+    },
+    emailSuggestionItemActive: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#eef2fc',
+    },
+    emailSuggestionText: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: isDark ? '#e9ecf2' : '#2d3240',
     },
     methodTabs: {
       flexDirection: 'row',
@@ -1044,6 +1771,89 @@ const getStyles = (isDark: boolean, colors: any) =>
     otpSection: {
       width: '100%',
       gap: 8,
+    },
+    otpInputPrompt: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: isDark ? '#d0d1d6' : '#54565d',
+      marginLeft: 4,
+      marginBottom: 2,
+      fontWeight: '500',
+    },
+    otpDigitsWrapper: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    otpDigitCell: {
+      flex: 1,
+      height: 52,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.16)' : '#d8d9dd',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f1f1f4',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    otpDigitCellFilled: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#ececf1',
+      borderColor: isDark ? 'rgba(255,255,255,0.28)' : '#c8c9ce',
+    },
+    otpDigitCellActive: {
+      borderColor: '#c81000',
+      backgroundColor: isDark ? 'rgba(200,16,0,0.18)' : '#fff2f1',
+    },
+    otpDigitCellError: {
+      borderColor: '#F44336',
+    },
+    otpDigitText: {
+      fontSize: 24,
+      fontWeight: '700',
+      letterSpacing: 1.4,
+      color: isDark ? '#fff' : '#121212',
+      textAlign: 'center',
+      minWidth: 12,
+    },
+    otpDigitUnderline: {
+      position: 'absolute',
+      left: 10,
+      right: 10,
+      bottom: 8,
+      height: 2,
+      borderRadius: 999,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.24)' : 'rgba(18,18,18,0.14)',
+    },
+    otpDigitUnderlineActive: {
+      height: 3,
+      backgroundColor: '#c81000',
+    },
+    otpDigitUnderlineError: {
+      backgroundColor: '#F44336',
+    },
+    otpHiddenInput: {
+      position: 'absolute',
+      width: 1,
+      height: 1,
+      opacity: 0,
+      padding: 0,
+      margin: 0,
+    },
+    otpResendPrompt: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: isDark ? '#c7c9ce' : '#5d5f66',
+      textAlign: 'center',
+      marginTop: 2,
+    },
+    otpResendCountdownText: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: isDark ? '#bec0c6' : '#61636a',
+      textAlign: 'center',
     },
     otpDeliveryContainer: {
       width: '100%',
@@ -1215,17 +2025,6 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontWeight: '700',
       color: isDark ? '#ffffff' : '#141518',
       letterSpacing: 0.2,
-    },
-    codeInput: {
-      height: 52,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#dddddf',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f1f1f4',
-      fontSize: 22,
-      letterSpacing: 6,
-      color: isDark ? '#fff' : '#121212',
-      paddingHorizontal: 14,
     },
     primaryButton: {
       height: 52,

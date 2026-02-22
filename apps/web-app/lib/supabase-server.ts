@@ -1,12 +1,86 @@
 import { createClient } from '@supabase/supabase-js';
+import { config as loadDotenv } from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // This client is specifically for server-side operations
 // Only use this in API routes/server-side code
 // DO NOT import this in client-side components - use lib/supabase.ts instead
 
-// Get environment variables (only available at runtime)
-const supabaseUrl = typeof process !== 'undefined' ? (process.env.EXPO_PUBLIC_SUPABASE_URL as string) : undefined;
-const supabaseServiceKey = typeof process !== 'undefined' ? (process.env.SUPABASE_SERVICE_ROLE_KEY as string) : undefined;
+let envLoaded = false;
+
+function loadServerEnvFiles() {
+  if (envLoaded || typeof process === 'undefined' || typeof window !== 'undefined') return;
+
+  const cwd = process.cwd();
+  const candidates = [
+    path.resolve(cwd, '.env.local'),
+    path.resolve(cwd, '.env'),
+    path.resolve(cwd, '..', '.env.local'),
+    path.resolve(cwd, '..', '.env'),
+    path.resolve(cwd, '..', '..', '.env.local'),
+    path.resolve(cwd, '..', '..', '.env'),
+    path.resolve(cwd, '..', '..', '..', '.env.local'),
+    path.resolve(cwd, '..', '..', '..', '.env'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      loadDotenv({ path: candidate, override: false, quiet: true });
+    }
+  }
+
+  envLoaded = true;
+}
+
+function normalizeEnvValue(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+type SupabaseEnvProfile = {
+  name: 'main' | 'dev';
+  supabaseUrl?: string;
+  supabaseServiceKey?: string;
+  usingDevFallback: boolean;
+};
+
+export function getSupabaseServerEnv() {
+  loadServerEnvFiles();
+
+  const supabaseUrlMain = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL);
+  const supabaseUrlDev = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL_DEV);
+  const supabaseServiceKeyMain = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const supabaseServiceKeyDev = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY_DEV);
+
+  // Pick URL + service key from the same profile to avoid cross-project credential mixups.
+  const profiles: SupabaseEnvProfile[] = [
+    {
+      name: 'main',
+      supabaseUrl: supabaseUrlMain,
+      supabaseServiceKey: supabaseServiceKeyMain,
+      usingDevFallback: false,
+    },
+    {
+      name: 'dev',
+      supabaseUrl: supabaseUrlDev,
+      supabaseServiceKey: supabaseServiceKeyDev,
+      usingDevFallback: true,
+    },
+  ];
+
+  const selectedProfile =
+    profiles.find((profile) => profile.supabaseUrl && profile.supabaseServiceKey) ??
+    profiles.find((profile) => profile.supabaseUrl || profile.supabaseServiceKey);
+
+  return {
+    supabaseUrl: selectedProfile?.supabaseUrl,
+    supabaseServiceKey: selectedProfile?.supabaseServiceKey,
+    usingDevFallback: selectedProfile?.usingDevFallback ?? false,
+    selectedProfile: selectedProfile?.name ?? 'none',
+  };
+}
 
 // Lazy initialization - only create client when actually used
 let _supabaseServer: ReturnType<typeof createClient> | null = null;
@@ -23,14 +97,22 @@ function getSupabaseServer() {
     throw new Error('supabase-server.ts should only be used in server-side API routes. For client-side code, use lib/supabase.ts instead.');
   }
 
+  const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv();
+
   // Check for missing environment variables - but don't crash, return a mock client
   if (!supabaseUrl || !supabaseServiceKey) {
     const missingVars = [];
-    if (!supabaseUrl) missingVars.push('EXPO_PUBLIC_SUPABASE_URL');
-    if (!supabaseServiceKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl) {
+      missingVars.push('Supabase public URL missing (dev fallback available)');
+    }
+    if (!supabaseServiceKey) {
+      missingVars.push('Supabase service role key missing (dev fallback available)');
+    }
 
     const errorMsg = `Missing Supabase environment variables: ${missingVars.join(', ')}. ` +
       `API routes will return graceful error responses. ` +
+      `Selected profile: ${selectedProfile}. ` +
+      `Using DEV fallback: ${usingDevFallback ? 'YES' : 'NO'}. ` +
       `Current values: EXPO_PUBLIC_SUPABASE_URL=${supabaseUrl ? 'SET' : 'MISSING'}, ` +
       `SUPABASE_SERVICE_ROLE_KEY=${supabaseServiceKey ? 'SET' : 'MISSING'}`;
 
@@ -127,6 +209,7 @@ function getSupabaseServer() {
       });
 
       try {
+        // eslint-disable-next-line no-restricted-syntax
         const response = await fetch(urlString, {
           ...options,
           headers: headersPlain,

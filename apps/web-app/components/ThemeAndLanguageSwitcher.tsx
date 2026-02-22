@@ -155,7 +155,7 @@ const ThemeAndLanguageSwitcher = () => {
   return (
     <View style={[
       styles.container,
-      isOnAuthPage && isMobile && styles.containerMobile
+      isMobile && styles.containerMobile
     ]}>
       <View style={styles.languageContainer}>
         <TouchableOpacity
@@ -198,7 +198,7 @@ const ThemeAndLanguageSwitcher = () => {
         )}
       </View>
 
-      <Animated.View style={[styles.button, animatedStyle, { marginLeft: 10 }]}>
+      <Animated.View style={[styles.button, styles.buttonSpacing, animatedStyle]}>
         <TouchableOpacity
           style={{
             width: '100%',
@@ -225,7 +225,7 @@ const ThemeAndLanguageSwitcher = () => {
       </Animated.View>
 
       {!isOnAuthPage && (
-        <Animated.View style={[styles.button, loginAnimatedStyle, { marginLeft: 10 }]}>
+        <Animated.View style={[styles.button, styles.buttonSpacing, loginAnimatedStyle]}>
           <TouchableOpacity
             style={{
               width: '100%',
@@ -271,11 +271,11 @@ const styles = StyleSheet.create({
     top: 50,
     right: 20,
     zIndex: 1000,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   containerMobile: {
-    top: Platform.OS === 'web' ? 10 : 60,
-    right: 10,
+    top: Platform.OS === 'web' ? 16 : 56,
+    right: 12,
   },
   languageContainer: {
     position: 'relative',
@@ -291,6 +291,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  buttonSpacing: {
+    marginLeft: 10,
   },
   languageMenu: {
     position: 'absolute',

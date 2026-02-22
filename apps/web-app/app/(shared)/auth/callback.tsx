@@ -5,13 +5,74 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useToastHelpers } from '../../../contexts/ToastContext';
 import { useTranslation } from '../../../i18n/i18n';
 import { Check, AlertCircle } from 'lucide-react-native';
+import { authService } from '@hashpass/auth';
+import { createSessionFromUrl } from '../../../lib/supabase';
+
+type CallbackHashError = {
+    code: string;
+    message: string;
+};
+
+const normalizeCallbackHashError = (rawCode: string | null, rawMessage: string | null): CallbackHashError => {
+    const code = (rawCode || 'oauth_failed').toLowerCase();
+    const message = (rawMessage || '').trim();
+    const normalized = `${code} ${message}`.toLowerCase();
+
+    if (
+        normalized.includes('otp_expired') ||
+        normalized.includes('invalid or has expired') ||
+        normalized.includes('otp has expired')
+    ) {
+        return {
+            code: 'otp_expired',
+            message: 'Your magic link is invalid or has expired. Request a new link and try again.',
+        };
+    }
+
+    if (normalized.includes('access_denied')) {
+        return {
+            code: 'access_denied',
+            message: 'Sign-in was canceled or denied. Please try again.',
+        };
+    }
+
+    return {
+        code: code || 'oauth_failed',
+        message: message || 'Authentication failed. Please try again.',
+    };
+};
+
+const getHashAuthError = (): CallbackHashError | null => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.location.hash) {
+        return null;
+    }
+
+    const hashRaw = window.location.hash.startsWith('#')
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+
+    const hashParams = new URLSearchParams(hashRaw);
+    const rawError = hashParams.get('error');
+    const rawCode = hashParams.get('error_code');
+    const rawDescription = hashParams.get('error_description');
+
+    if (!rawError && !rawCode && !rawDescription) {
+        return null;
+    }
+
+    const sanitizedDescription = rawDescription
+        ? rawDescription.split('?returnTo=')[0].trim()
+        : '';
+
+    return normalizeCallbackHashError(rawCode || rawError, sanitizedDescription);
+};
 
 export default function AuthCallback() {
     const { t } = useTranslation('auth');
     const router = useRouter();
     const params = useLocalSearchParams();
     const { handleOAuthCallback } = useAuth();
-    const { showError, showSuccess } = useToastHelpers();
+    const { showSuccess } = useToastHelpers();
     
     const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
     const [message, setMessage] = useState('Processing authentication...');
@@ -35,8 +96,14 @@ export default function AuthCallback() {
     };
     
     const hasNavigatedRef = useRef(getHasNavigated());
-    const hasShownErrorToastRef = useRef(false);
     const hasShownSuccessToastRef = useRef(false);
+    const authProviderName = authService.getProviderName();
+    const hasSupabasePasswordlessConfig = Boolean(
+        process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_KEY
+    );
+    const isPasswordlessSupported = authProviderName === 'supabase' || hasSupabasePasswordlessConfig;
+    const passwordlessUnavailableMessage =
+      'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.';
 
     const isTransientSessionError = (message: string) => {
         const value = message.toLowerCase();
@@ -121,13 +188,57 @@ export default function AuthCallback() {
 
         return normalized;
     };
+
+    const mapToRouterPath = (path: string) => {
+        if (path.startsWith('/dashboard') && !path.startsWith('/(shared)/dashboard')) {
+            return `/(shared)${path}`;
+        }
+        return path;
+    };
+
+    const extractReturnToFromHash = () => {
+        if (Platform.OS !== 'web' || typeof window === 'undefined') {
+            return null;
+        }
+
+        const hashRaw = window.location.hash.startsWith('#')
+            ? window.location.hash.slice(1)
+            : window.location.hash;
+
+        if (!hashRaw) {
+            return null;
+        }
+
+        const returnToMatch = hashRaw.match(/[?&]returnTo=([^&]+)/i);
+        return returnToMatch?.[1] || null;
+    };
+
+    const hasOAuthPayloadInUrl = () => {
+        if (Platform.OS !== 'web' || typeof window === 'undefined') {
+            return Boolean(params.code || params.access_token || params.oauth_success);
+        }
+
+        const url = window.location.href;
+        return (
+            url.includes('#access_token=') ||
+            url.includes('#oauth_success=') ||
+            url.includes('#code=') ||
+            url.includes('?code=') ||
+            url.includes('&code=') ||
+            url.includes('access_token=') ||
+            url.includes('oauth_success=')
+        );
+    };
     
     // Get redirect path from URL params
     const getRedirectPath = () => {
         const returnTo = params.returnTo as string | undefined;
-        if (returnTo) {
+        const hashReturnTo = extractReturnToFromHash();
+        const rawReturnTo = returnTo || hashReturnTo;
+
+        if (rawReturnTo) {
             try {
-                const normalizedPath = normalizeRedirectPath(returnTo);
+                const normalizedPath = normalizeRedirectPath(rawReturnTo);
                 console.log('📍 Using returnTo path:', normalizedPath);
                 return normalizedPath;
             } catch (e) {
@@ -142,44 +253,40 @@ export default function AuthCallback() {
     
     // Safe navigation function - use router instead of window.location to prevent full page reload
     const safeNavigate = (path: string) => {
-        console.log('🚀 safeNavigate called with path:', path);
-        
-        if (path.includes('/auth/callback')) {
+        const normalizedPublicPath = normalizeRedirectPath(path);
+        let targetPublicPath = normalizedPublicPath;
+
+        if (targetPublicPath.includes('/auth/callback')) {
             console.warn('⚠️ Attempted to redirect to callback route, redirecting to dashboard instead');
-            path = '/dashboard/explore';
+            targetPublicPath = '/dashboard/explore';
         }
-        
-        console.log('🚀 Final navigation path:', path);
-        console.log('📊 Router state:', { 
-            canGoBack: router.canGoBack(), 
-            segments: router.segments 
-        });
+
+        const targetRouterPath = mapToRouterPath(targetPublicPath);
+        console.log('🚀 safeNavigate called with path:', targetPublicPath, 'routerPath:', targetRouterPath);
         
         // Mark as navigated BEFORE navigation to prevent re-processing
         hasNavigatedRef.current = true;
         setHasNavigated(true);
         
         try {
-            // Use router.replace instead of window.location to avoid full page reload
-            console.log('🚀 Calling router.replace...');
-            router.replace(path as any);
-            console.log('✅ Router.replace called successfully');
-            
-            // Additional fallback after a delay if navigation doesn't work
-            setTimeout(() => {
-                if (typeof window !== 'undefined' && window.location.pathname.includes('/auth/callback')) {
-                    console.log('⚠️ Still on callback page, forcing navigation...');
-                    window.location.href = path;
-                }
-            }, 1000);
-            
+            router.replace(targetRouterPath as any);
+
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                // Router replace can no-op in callback race conditions. Force location fallback quickly.
+                setTimeout(() => {
+                    if (window.location.pathname.includes('/auth/callback')) {
+                        console.warn('⚠️ Router navigation did not leave callback route, forcing location replace');
+                        window.location.replace(targetPublicPath);
+                    }
+                }, 200);
+            }
         } catch (navError) {
             console.error('❌ Navigation error:', navError);
             
             // Immediate fallback to window.location if router fails
-            if (typeof window !== 'undefined') {
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
                 console.log('🔄 Falling back to window.location...');
-                window.location.href = path;
+                window.location.replace(targetPublicPath);
             }
         }
         
@@ -202,10 +309,17 @@ export default function AuthCallback() {
     useEffect(() => {
         // CRITICAL: Check sessionStorage first to prevent re-processing after navigation
         if (getHasNavigated()) {
-            console.log('⏭️ Callback already processed (sessionStorage), redirecting...');
-            hasNavigatedRef.current = true;
-            router.replace(getRedirectPath() as any);
-            return;
+            if (hasOAuthPayloadInUrl()) {
+                // New OAuth payload with stale callback flag: reset and process normally.
+                console.warn('⚠️ Stale auth_callback_processed flag detected; resetting for new OAuth payload.');
+                setHasNavigated(false);
+                hasNavigatedRef.current = false;
+            } else {
+                console.log('⏭️ Callback already processed (sessionStorage), redirecting...');
+                hasNavigatedRef.current = true;
+                safeNavigate(getRedirectPath());
+                return;
+            }
         }
         
         // CRITICAL: Prevent useEffect from running multiple times
@@ -233,22 +347,105 @@ export default function AuthCallback() {
                 
                 console.log('🔄 OAuth callback started');
                 console.log('📋 Callback params:', params);
+
+                const hashAuthError = getHashAuthError();
+                if (hashAuthError) {
+                    console.warn('⚠️ OAuth callback hash returned an error:', hashAuthError);
+                    setStatus('error');
+                    setMessage(hashAuthError.message);
+
+                    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                        window.localStorage.removeItem('oauth_in_progress');
+                    }
+
+                    if (!hasNavigatedRef.current && !getHasNavigated()) {
+                        hasNavigatedRef.current = true;
+                        setHasNavigated(false);
+                        isProcessingRef.current = false;
+
+                        const authErrorPath = `/(shared)/auth?error=${encodeURIComponent(hashAuthError.code)}&message=${encodeURIComponent(hashAuthError.message)}`;
+                        router.replace(authErrorPath as any);
+                    }
+                    return;
+                }
+
+                const signInMethod =
+                    Platform.OS === 'web' && typeof window !== 'undefined'
+                        ? window.localStorage.getItem('auth_signin_method')
+                        : null;
+                const isPasswordlessMethod = signInMethod === 'magic_link' || signInMethod === 'otp_code';
+
+                if (isPasswordlessMethod && !isPasswordlessSupported) {
+                    console.warn('⚠️ Passwordless callback blocked due to provider mismatch:', {
+                        authProviderName,
+                        signInMethod,
+                        hasSupabasePasswordlessConfig,
+                    });
+                    setStatus('error');
+                    setMessage(passwordlessUnavailableMessage);
+
+                    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                        window.localStorage.removeItem('oauth_in_progress');
+                        window.localStorage.removeItem('auth_signin_method');
+                    }
+
+                    if (!hasNavigatedRef.current && !getHasNavigated()) {
+                        hasNavigatedRef.current = true;
+                        setHasNavigated(false);
+                        isProcessingRef.current = false;
+                        const authErrorPath = `/(shared)/auth?error=passwordless_not_supported&message=${encodeURIComponent(passwordlessUnavailableMessage)}`;
+                        router.replace(authErrorPath as any);
+                    }
+                    return;
+                }
+
+                if (isPasswordlessMethod && isPasswordlessSupported) {
+                    console.log('🔄 Processing Supabase passwordless callback...');
+
+                    const currentUrl =
+                        Platform.OS === 'web' && typeof window !== 'undefined'
+                            ? window.location.href
+                            : '';
+
+                    const sessionResult = await createSessionFromUrl(currentUrl);
+
+                    if (sessionResult.error || !sessionResult.session?.user) {
+                        throw new Error(
+                            sessionResult.error?.message ||
+                            'Authentication completed but no Supabase session was established.'
+                        );
+                    }
+
+                    console.log('✅ Supabase passwordless callback successful:', sessionResult.session.user.email);
+                    setStatus('success');
+                    setMessage(t('authenticationSuccessful', '✅ Authentication successful!'));
+
+                    if (!hasShownSuccessToastRef.current) {
+                        hasShownSuccessToastRef.current = true;
+                        showSuccess(
+                            t('authenticationSuccessful', 'Authentication successful!'),
+                            'Redirecting to your dashboard...'
+                        );
+                    }
+
+                    const redirectPath = getRedirectPath();
+
+                    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                        const cleanUrl = window.location.origin + window.location.pathname;
+                        window.history.replaceState({}, '', cleanUrl);
+                        window.localStorage.removeItem('oauth_in_progress');
+                        window.localStorage.removeItem('auth_signin_method');
+                    }
+
+                    hasNavigatedRef.current = true;
+                    setHasNavigated(true);
+                    isProcessingRef.current = false;
+                    safeNavigate(redirectPath);
+                    return;
+                }
                 
                 // Check if URL has auth tokens/code before processing
-                let hasAuthData = false;
-                if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                    const url = window.location.href;
-                    hasAuthData = url.includes('#access_token=') || 
-                                  url.includes('#oauth_success=') ||
-                                  url.includes('#code=') || 
-                                  url.includes('?code=') ||
-                                  url.includes('&code=') ||
-                                  url.includes('access_token=') ||
-                                  url.includes('oauth_success=');
-                } else {
-                    // For mobile, check params
-                    hasAuthData = !!(params.code || params.access_token || params.oauth_success);
-                }
+                const hasAuthData = hasOAuthPayloadInUrl();
                 
                 if (!hasAuthData) {
                     console.log('ℹ️ No OAuth params in URL, attempting cookie-based session completion...');
@@ -291,6 +488,7 @@ export default function AuthCallback() {
                         const cleanUrl = window.location.origin + window.location.pathname;
                         window.history.replaceState({}, '', cleanUrl);
                         window.localStorage.removeItem('oauth_in_progress');
+                        window.localStorage.removeItem('auth_signin_method');
                         console.log('🧹 Cleaned URL after successful OAuth processing');
                     }
                     
@@ -331,13 +529,9 @@ export default function AuthCallback() {
                 const toastError = getToastErrorContent(rawMessage);
                 setMessage(toastError.message);
 
-                if (!hasShownErrorToastRef.current && !hasNavigatedRef.current) {
-                    hasShownErrorToastRef.current = true;
-                    showError(toastError.title, toastError.message);
-                }
-
                 if (Platform.OS === 'web' && typeof window !== 'undefined') {
                     window.localStorage.removeItem('oauth_in_progress');
+                    window.localStorage.removeItem('auth_signin_method');
                 }
                 
                 // After error, redirect back to auth page after a delay
@@ -346,9 +540,10 @@ export default function AuthCallback() {
                         hasNavigatedRef.current = true;
                         setHasNavigated(false); // Clear flag on error
                         isProcessingRef.current = false;
-                        router.replace('/auth' as any);
+                        const authErrorPath = `/(shared)/auth?error=oauth_failed&message=${encodeURIComponent(toastError.message)}`;
+                        router.replace(authErrorPath as any);
                     }
-                }, 2000);
+                }, 800);
             } finally {
                 isProcessingRef.current = false;
             }

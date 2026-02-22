@@ -69,13 +69,13 @@ export async function POST(request: Request) {
       });
 
       const mailOptions = {
-        from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+        from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
         to: email.trim(),
         subject: 'Account Deletion Verification Code',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #F44336;">Account Deletion Verification</h2>
-            <p>You have requested to delete your HashPass account. Please enter this verification code to confirm:</p>
+            <p>You have requested to delete your HASHPASS account. Please enter this verification code to confirm:</p>
             <div style="background-color: #f3f4f6; border: 2px solid #F44336; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
               <h1 style="color: #F44336; font-size: 32px; letter-spacing: 8px; margin: 0;">${otpCode}</h1>
             </div>
@@ -84,11 +84,11 @@ export async function POST(request: Request) {
             <p style="color: #6b7280; font-size: 14px;">If you didn't request this code, please ignore this email and secure your account.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
             <p style="font-size: 12px; color: #6b7280;">
-              © ${new Date().getFullYear()} HashPass. All rights reserved.
+              © ${new Date().getFullYear()} HASHPASS. All rights reserved.
             </p>
           </div>
         `,
-        text: `Account Deletion Verification\n\nYou have requested to delete your HashPass account. Please enter this verification code to confirm: ${otpCode}\n\nWarning: This action cannot be undone. All your data will be permanently deleted.\n\nThis code will expire in 1 hour.\n\nIf you didn't request this code, please ignore this email and secure your account.`,
+        text: `Account Deletion Verification\n\nYou have requested to delete your HASHPASS account. Please enter this verification code to confirm: ${otpCode}\n\nWarning: This action cannot be undone. All your data will be permanently deleted.\n\nThis code will expire in 1 hour.\n\nIf you didn't request this code, please ignore this email and secure your account.`,
       };
 
       try {
@@ -124,4 +124,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

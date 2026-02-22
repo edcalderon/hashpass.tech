@@ -271,6 +271,7 @@ export default function HomeScreen() {
     <Animated.View style={[styles.container, animatedBackground]}>
 
       <BackToTop scrollY={scrollY} scrollRef={scrollRef} colors={colors} />
+      <ThemeAndLanguageSwitcher />
 
       <Animated.ScrollView
         ref={scrollRef}
@@ -279,8 +280,6 @@ export default function HomeScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <ThemeAndLanguageSwitcher />
-
         <View style={styles.hero}>
           <Animated.View style={[styles.heroTextContainer, headerAnimatedStyle]}>
             <Image

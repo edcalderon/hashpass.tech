@@ -60,7 +60,28 @@ export async function GET(request: Request) {
 AUTH_PROVIDER=directus
 DIRECTUS_URL=https://sso.hashpass.co
 DIRECTUS_ADMIN_EMAIL=admin@hashpass.tech
+# Optional: mirror Directus OAuth users into Supabase Auth by email
+DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED=true
+# Optional: also establish a Supabase session after Directus OAuth (dual-session bridge)
+DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED=true
 ```
+
+### Hybrid: Directus OAuth + Supabase OTP/Magic Link + Supabase Data
+
+If you use `AUTH_PROVIDER=directus` for Google OAuth but still use Supabase for OTP/magic-link and core tables, enable:
+
+```bash
+DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED=true
+DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED=true
+SUPABASE_SERVICE_ROLE_KEY=...
+EXPO_PUBLIC_SUPABASE_URL=...
+```
+
+During successful Directus OAuth callback, the backend will:
+1. Resolve the Directus user from the OAuth access token.
+2. Create (or update) the matching Supabase Auth user by email.
+3. Attach metadata such as `directus_user_id` for cross-system mapping.
+4. Issue a one-time Supabase bridge token hash so the client can establish a Supabase session (dual-session).
 
 ### Supabase
 ```bash
