@@ -10,7 +10,7 @@
  *   node tools/scripts/sync-env.js [dev|production]
  */
 
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
@@ -208,9 +208,11 @@ const lambdaRegion = runtime.lambda.region;
 console.log(`🚀 Syncing environment [${options.environment}] for tenant [${runtime.tenant}] to Lambda [${lambdaName}] (${lambdaRegion})...`);
 
 try {
-  const configRaw = execSync(
-    `aws lambda get-function-configuration --function-name ${lambdaName} --region ${lambdaRegion}`
-  ).toString();
+  const configRaw = execFileSync(
+    'aws',
+    ['lambda', 'get-function-configuration', '--function-name', lambdaName, '--region', lambdaRegion],
+    { encoding: 'utf8' }
+  );
   const currentVars = JSON.parse(configRaw).Environment?.Variables || {};
 
   const KEYS_TO_SYNC = [
@@ -257,13 +259,21 @@ try {
     if (newVars[key] === undefined) delete newVars[key];
   });
 
-  const varsStr = Object.entries(newVars)
-    .map(([key, value]) => `${key}="${value}"`)
-    .join(',');
+  const environmentPayload = JSON.stringify({ Variables: newVars });
 
   console.log(`📡 Updating ${lambdaName} in AWS ${lambdaRegion}...`);
-  execSync(
-    `aws lambda update-function-configuration --function-name ${lambdaName} --region ${lambdaRegion} --environment "Variables={${varsStr}}"`,
+  execFileSync(
+    'aws',
+    [
+      'lambda',
+      'update-function-configuration',
+      '--function-name',
+      lambdaName,
+      '--region',
+      lambdaRegion,
+      '--environment',
+      environmentPayload,
+    ],
     { stdio: 'inherit' }
   );
 
