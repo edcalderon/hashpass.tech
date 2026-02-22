@@ -33,6 +33,7 @@
         "@lingui/core": "^5.5.2",
         "@lingui/format-json": "^5.5.2",
         "@lingui/macro": "^5.5.2",
+        "@lingui/message-utils": "^5.9.1",
         "@lingui/react": "^5.5.2",
         "@noble/ed25519": "^3.0.0",
         "@radix-ui/react-avatar": "^1.1.10",
