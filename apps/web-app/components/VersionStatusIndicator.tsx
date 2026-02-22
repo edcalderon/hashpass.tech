@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
-import VersionDetailsModal from './VersionDetailsModal';
+import VersionInfoDrawer, { VersionStatusState } from './VersionInfoDrawer';
 
 interface VersionStatusIndicatorProps {
   compact?: boolean;
@@ -11,17 +11,13 @@ interface VersionStatusIndicatorProps {
   size?: 'small' | 'medium' | 'large';
 }
 
-type StatusState = 'healthy' | 'degraded' | 'unhealthy' | 'checking' | 'unknown';
-
 export default function VersionStatusIndicator({
   compact = false,
   showVersion = true,
   size = 'medium'
 }: VersionStatusIndicatorProps) {
   const { isDark, colors } = useTheme();
-  const [status, setStatus] = useState<StatusState>('checking');
-  const [lastCheck, setLastCheck] = useState<Date | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [status, setStatus] = useState<VersionStatusState>('checking');
   const styles = getStyles(isDark, colors, size);
 
   const versionInfo = versionService.getCurrentVersion();
@@ -43,11 +39,9 @@ export default function VersionStatusIndicator({
       } else {
         setStatus('unhealthy');
       }
-      setLastCheck(new Date());
     } catch (error) {
       console.error('Status check failed:', error);
       setStatus('unhealthy');
-      setLastCheck(new Date());
     }
   };
 
@@ -66,75 +60,48 @@ export default function VersionStatusIndicator({
     }
   };
 
-  const getStatusIcon = () => {
-    switch (status) {
-      case 'healthy':
-        return 'check-circle';
-      case 'degraded':
-        return 'warning';
-      case 'unhealthy':
-        return 'error';
-      case 'checking':
-        return 'sync';
-      default:
-        return 'help-outline';
-    }
-  };
-
-  const handlePress = () => {
-    setShowModal(true);
-  };
-
   if (compact) {
     return (
-      <>
-        <TouchableOpacity
-          style={styles.compactContainer}
-          onPress={handlePress}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.statusLight, { backgroundColor: getStatusColor() }]} />
-          {showVersion && (
-            <Text style={styles.compactVersionText}>v{versionInfo.version}</Text>
-          )}
-        </TouchableOpacity>
-        <VersionDetailsModal
-          visible={showModal}
-          onClose={() => setShowModal(false)}
-          status={status}
-          showStatusIndicator={true}
-        />
-      </>
+      <VersionInfoDrawer status={status} showStatusIndicator={true}>
+        {(openDrawer) => (
+          <TouchableOpacity
+            style={styles.compactContainer}
+            onPress={openDrawer}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.statusLight, { backgroundColor: getStatusColor() }]} />
+            {showVersion && (
+              <Text style={styles.compactVersionText}>v{versionInfo.version}</Text>
+            )}
+          </TouchableOpacity>
+        )}
+      </VersionInfoDrawer>
     );
   }
 
   return (
-    <>
-      <TouchableOpacity
-        style={styles.container}
-        onPress={handlePress}
-        activeOpacity={0.7}
-      >
-        <View style={styles.content}>
-          {showVersion && (
-            <Text style={styles.versionText}>v{versionInfo.version}</Text>
-          )}
-          <View style={styles.statusContainer}>
-            {status === 'checking' ? (
-              <ActivityIndicator size="small" color={getStatusColor()} />
-            ) : (
-              <View style={[styles.statusLight, { backgroundColor: getStatusColor() }]} />
+    <VersionInfoDrawer status={status} showStatusIndicator={true}>
+      {(openDrawer) => (
+        <TouchableOpacity
+          style={styles.container}
+          onPress={openDrawer}
+          activeOpacity={0.7}
+        >
+          <View style={styles.content}>
+            {showVersion && (
+              <Text style={styles.versionText}>v{versionInfo.version}</Text>
             )}
+            <View style={styles.statusContainer}>
+              {status === 'checking' ? (
+                <ActivityIndicator size="small" color={getStatusColor()} />
+              ) : (
+                <View style={[styles.statusLight, { backgroundColor: getStatusColor() }]} />
+              )}
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
-      <VersionDetailsModal
-        visible={showModal}
-        onClose={() => setShowModal(false)}
-        status={status}
-        showStatusIndicator={true}
-      />
-    </>
+        </TouchableOpacity>
+      )}
+    </VersionInfoDrawer>
   );
 }
 
@@ -181,4 +148,3 @@ const getStyles = (isDark: boolean, colors: any, size: 'small' | 'medium' | 'lar
     elevation: 3,
   },
 });
-

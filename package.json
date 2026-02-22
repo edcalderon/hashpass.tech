@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.6.120",
+  "version": "1.6.121",
   "scripts": {
     "start": "pnpm --filter hashpass-web-app start",
     "start:reset": "pnpm --filter hashpass-web-app start:reset",

@@ -4,21 +4,16 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
-import VersionDetailsModal from './VersionDetailsModal';
-import VersionQuickSheet from './VersionQuickSheet';
+import VersionInfoDrawer, { VersionStatusState } from './VersionInfoDrawer';
 
 interface VersionDisplayProps {
   showInSidebar?: boolean;
   compact?: boolean;
 }
 
-type StatusState = 'healthy' | 'degraded' | 'unhealthy' | 'checking' | 'unknown';
-
 export default function VersionDisplay({ showInSidebar = false, compact = false }: VersionDisplayProps) {
   const { isDark, colors } = useTheme();
-  const [showQuickDetails, setShowQuickDetails] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-  const [status, setStatus] = useState<StatusState>('checking');
+  const [status, setStatus] = useState<VersionStatusState>('checking');
   const styles = getStyles(isDark, colors);
 
   const versionInfo = versionService.getCurrentVersion();
@@ -53,98 +48,60 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
     </View>
   );
 
-  const openQuickDetails = () => setShowQuickDetails(true);
-  const closeQuickDetails = () => setShowQuickDetails(false);
-  const expandToFullDetails = () => {
-    setShowQuickDetails(false);
-    setShowDetails(true);
-  };
-
   if (compact) {
     return (
-      <>
-        <TouchableOpacity
-          style={styles.compactContainer}
-          onPress={openQuickDetails}
-        >
-          <Text style={styles.compactText}>v{versionInfo.version}</Text>
-          <VersionBadge />
-        </TouchableOpacity>
-        <VersionQuickSheet
-          visible={showQuickDetails}
-          onClose={closeQuickDetails}
-          onExpand={expandToFullDetails}
-          status={status}
-          showStatusIndicator={true}
-        />
-        <VersionDetailsModal
-          visible={showDetails}
-          onClose={() => setShowDetails(false)}
-          status={status}
-          showStatusIndicator={true}
-        />
-      </>
+      <VersionInfoDrawer status={status} showStatusIndicator={true}>
+        {(openDrawer) => (
+          <TouchableOpacity
+            style={styles.compactContainer}
+            onPress={openDrawer}
+          >
+            <Text style={styles.compactText}>v{versionInfo.version}</Text>
+            <VersionBadge />
+          </TouchableOpacity>
+        )}
+      </VersionInfoDrawer>
     );
   }
 
   if (showInSidebar) {
     return (
-      <>
-        <View style={styles.sidebarContainer}>
-          <TouchableOpacity
-            style={styles.sidebarVersionContainer}
-            onPress={openQuickDetails}
-          >
-            <View style={styles.sidebarVersionInfo}>
-              <Text style={styles.sidebarVersionText}>v{versionInfo.version}</Text>
-              <VersionBadge />
-            </View>
-            <MaterialIcons name="info-outline" size={16} color={colors.text.secondary} />
-          </TouchableOpacity>
-        </View>
-        <VersionQuickSheet
-          visible={showQuickDetails}
-          onClose={closeQuickDetails}
-          onExpand={expandToFullDetails}
-          status={status}
-          showStatusIndicator={true}
-        />
-        <VersionDetailsModal
-          visible={showDetails}
-          onClose={() => setShowDetails(false)}
-          status={status}
-          showStatusIndicator={true}
-        />
-      </>
+      <VersionInfoDrawer status={status} showStatusIndicator={true}>
+        {(openDrawer) => (
+          <View style={styles.sidebarContainer}>
+            <TouchableOpacity
+              style={styles.sidebarVersionContainer}
+              onPress={openDrawer}
+            >
+              <View style={styles.sidebarVersionInfo}>
+                <Text style={styles.sidebarVersionText}>v{versionInfo.version}</Text>
+                <VersionBadge />
+              </View>
+              <MaterialIcons name="info-outline" size={16} color={colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </VersionInfoDrawer>
     );
   }
 
   return (
-    <>
-      <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.versionContainer}
-          onPress={openQuickDetails}
-        >
-          <View style={styles.versionInfo}>
-            <Text style={styles.versionText}>v{versionInfo.version}</Text>
-            <VersionBadge />
-          </View>
-          <MaterialIcons name="info-outline" size={20} color={colors.text.secondary} />
-        </TouchableOpacity>
-      </View>
-      <VersionQuickSheet
-        visible={showQuickDetails}
-        onClose={closeQuickDetails}
-        onExpand={expandToFullDetails}
-        showStatusIndicator={false}
-      />
-      <VersionDetailsModal
-        visible={showDetails}
-        onClose={() => setShowDetails(false)}
-        showStatusIndicator={false}
-      />
-    </>
+    <VersionInfoDrawer showStatusIndicator={false}>
+      {(openDrawer) => (
+        <View style={styles.container}>
+          <TouchableOpacity
+            style={styles.versionContainer}
+            onPress={openDrawer}
+          >
+            <View style={styles.versionInfo}>
+              <Text style={styles.versionText}>v{versionInfo.version}</Text>
+              <VersionBadge />
+            </View>
+            <MaterialIcons name="info-outline" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
+        </View>
+      )}
+    </VersionInfoDrawer>
   );
 }
 
