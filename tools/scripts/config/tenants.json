@@ -10,7 +10,7 @@
     },
     "supabaseRefs": {
       "development": "fxgftanraszjjyeidvia",
-      "production": "tgbdilebadmzqwubsijr"
+      "production": "fxgftanraszjjyeidvia"
     },
     "apiDomains": {
       "development": "api-dev.hashpass.tech",

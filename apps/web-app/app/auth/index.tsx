@@ -1,11 +1,11 @@
 /**
  * Redirect handler for /auth/ (with trailing slash)
- * Redirects to /auth (without trailing slash) to match Expo Router routing
+ * Forwards to the shared auth screen while preserving query params.
  */
 
 import { useEffect, useMemo } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { View, ActivityIndicator, Platform } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function AuthIndexRedirect() {
@@ -36,15 +36,8 @@ export default function AuthIndexRedirect() {
   }, [params]);
 
   useEffect(() => {
-    // Redirect to /auth (without trailing slash)
-    // On web, handle trailing slash redirect immediately
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const currentPath = window.location.pathname;
-      if (currentPath === '/auth/') {
-        window.location.replace(`/auth${window.location.search}${window.location.hash}`);
-        return;
-      }
-    }
+    // Use client-side navigation only. Some hosts (Amplify/S3) enforce /auth -> /auth/
+    // and a hard replace to /auth can create an infinite slash redirect loop.
     router.replace(redirectTarget as any);
   }, [redirectTarget, router]);
 
