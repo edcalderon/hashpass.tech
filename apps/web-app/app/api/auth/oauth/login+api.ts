@@ -113,17 +113,11 @@ export async function GET(request: Request): Promise<Response> {
     `${OAUTH_FRONTEND_ORIGIN_COOKIE_NAME}=${encodeURIComponent(frontendOrigin)}; ` +
     `Path=/; SameSite=Lax; Max-Age=3600${secureFlag}`;
 
-  // Redirect to Directus OAuth endpoint
-  // Directus will:
-  // 1. Redirect to the OAuth provider (Google, Discord, etc.)
-  // 2. User authenticates
-  // 3. Provider redirects back to Directus with auth code
-  // 4. Directus exchanges code for tokens
-  // 5. Directus redirects to /auth/callback with tokens in URL or cookies
-  // Redirect to Directus OAuth endpoint
-  // Directus will process OAuth and redirect to /auth/callback
-  // We specify only the path, as returnTo is stored in the oauth_return_to cookie
+  // Directus callback must carry returnTo/frontendOrigin in the query because some
+  // API gateway paths do not forward request cookies consistently.
   const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
+  callbackUrl.searchParams.set('returnTo', returnTo);
+  callbackUrl.searchParams.set('frontendOrigin', frontendOrigin);
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   directusOAuthUrl.searchParams.set('redirect', callbackUrl.toString());
   const isLocalHttp =

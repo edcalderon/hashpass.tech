@@ -17,6 +17,8 @@ const DEFAULT_FRONTEND_ORIGIN =
   process.env.EXPO_PUBLIC_FRONTEND_URL ||
   process.env.FRONTEND_URL ||
   '';
+const TRUSTED_FRONTEND_HOSTS = new Set(['localhost', '127.0.0.1', 'hashpass.tech', 'hashpass.lat']);
+const TRUSTED_FRONTEND_SUFFIXES = ['.hashpass.tech', '.hashpass.lat'];
 const supabaseUrl =
   process.env['EXPO_PUBLIC_SUPABASE_URL'] ||
   '';
@@ -373,26 +375,40 @@ const extractOrigin = (rawValue: string | null): string | null => {
   }
 };
 
+const isTrustedFrontendOrigin = (origin: string): boolean => {
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    if (TRUSTED_FRONTEND_HOSTS.has(hostname)) return true;
+    return TRUSTED_FRONTEND_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
+  } catch {
+    return false;
+  }
+};
+
 const resolveFrontendOrigin = (
   request: Request,
   cookieHeader: string,
+  queryFrontendOrigin: string | null,
   returnCookieFrontendOrigin: string | undefined,
   fallbackOrigin: string
 ): string => {
+  const queryOrigin = extractOrigin(queryFrontendOrigin);
+  if (queryOrigin && isTrustedFrontendOrigin(queryOrigin)) return queryOrigin;
+
   const cookiePayloadOrigin = extractOrigin(returnCookieFrontendOrigin || null);
-  if (cookiePayloadOrigin) return cookiePayloadOrigin;
+  if (cookiePayloadOrigin && isTrustedFrontendOrigin(cookiePayloadOrigin)) return cookiePayloadOrigin;
 
   const cookieOrigin = extractOrigin(getCookieValue(cookieHeader, OAUTH_FRONTEND_ORIGIN_COOKIE_NAME));
-  if (cookieOrigin) return cookieOrigin;
+  if (cookieOrigin && isTrustedFrontendOrigin(cookieOrigin)) return cookieOrigin;
 
   const configuredOrigin = extractOrigin(DEFAULT_FRONTEND_ORIGIN);
-  if (configuredOrigin) return configuredOrigin;
+  if (configuredOrigin && isTrustedFrontendOrigin(configuredOrigin)) return configuredOrigin;
 
   const refererOrigin = extractOrigin(request.headers.get('referer'));
-  if (refererOrigin) return refererOrigin;
+  if (refererOrigin && isTrustedFrontendOrigin(refererOrigin)) return refererOrigin;
 
   const originHeader = extractOrigin(request.headers.get('origin'));
-  if (originHeader) return originHeader;
+  if (originHeader && isTrustedFrontendOrigin(originHeader)) return originHeader;
 
   return fallbackOrigin;
 };
@@ -494,15 +510,17 @@ const exchangeSessionCookieForJsonTokens = async (
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const returnTo = normalizeReturnToPath(url.searchParams.get('returnTo') || DEFAULT_RETURN_TO);
+  const frontendOriginQuery = url.searchParams.get('frontendOrigin');
   let failureReason = 'No Directus session was returned after OAuth callback.';
 
   // Get returnTo from cookie if not in URL (set by login endpoint)
-  const cookies = request.headers.get('Cookie') || '';
+  const cookies = request.headers.get('Cookie') || request.headers.get('cookie') || '';
   const returnToCookie = parseOAuthReturnCookie(getCookieValue(cookies, 'oauth_return_to'));
   const finalReturnTo = normalizeReturnToPath(returnToCookie.returnTo || returnTo);
   const frontendOrigin = resolveFrontendOrigin(
     request,
     cookies,
+    frontendOriginQuery,
     returnToCookie.frontendOrigin,
     url.origin
   );
