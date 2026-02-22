@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.117] - 2026-02-22
+
+### Beta
+- Version 1.6.117 release
+
+### Technical Details
+- Version: 1.6.117
+- Release Type: beta
+- Build Number: 202602220533
+- Release Date: 2026-02-22T05:33:39.753Z
+
+
 ## [1.6.116] - 2026-02-22
 
 ### Beta
