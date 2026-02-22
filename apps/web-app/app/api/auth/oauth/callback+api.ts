@@ -432,6 +432,38 @@ const buildAppCallbackUrl = (frontendOrigin: string, returnTo: string): string =
   return appCallbackUrl.toString();
 };
 
+const buildHashPreservingRedirectHtml = (targetUrl: string): string => {
+  const escapedTarget = JSON.stringify(targetUrl);
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Redirecting...</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var target = ${escapedTarget};
+        try {
+          var hash = (window.location && window.location.hash) ? window.location.hash : '';
+          // Preserve OAuth fragments (access_token/refresh_token) that are never sent to the server.
+          if (hash && target.indexOf('#') === -1) {
+            target += hash;
+          }
+        } catch (error) {
+          // Ignore and fallback to the target URL without hash.
+        }
+        window.location.replace(target);
+      })();
+    </script>
+  </body>
+</html>`;
+};
+
 const exchangeSessionCookieForJsonTokens = async (
   cookieHeader: string
 ): Promise<{ access_token?: string; refresh_token?: string } | null> => {
@@ -691,11 +723,14 @@ export async function GET(request: Request): Promise<Response> {
   // When Directus returns with hash-based tokens, the server callback cannot read the fragment.
   // Hand off to the frontend callback so client-side auth can finalize the session.
   if (!reason && !error) {
-    console.warn('[OAuth Callback] No server-visible tokens/session. Handing off to frontend callback for client-side completion.');
-    return new ExpoResponse(null, {
-      status: 302,
+    console.warn('[OAuth Callback] No server-visible tokens/session. Handing off to frontend callback with hash-preserving bridge.');
+    const appCallbackUrl = buildAppCallbackUrl(frontendOrigin, finalReturnTo);
+    const htmlBridge = buildHashPreservingRedirectHtml(appCallbackUrl);
+
+    return new ExpoResponse(htmlBridge, {
+      status: 200,
       headers: {
-        'Location': buildAppCallbackUrl(frontendOrigin, finalReturnTo),
+        'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-store',
       },
     });
