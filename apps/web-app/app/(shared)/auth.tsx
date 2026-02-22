@@ -6,6 +6,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   TextInput,
+  Animated,
+  Easing,
   type NativeSyntheticEvent,
   type TextInputKeyPressEventData,
   Platform,
@@ -14,8 +16,10 @@ import {
   Modal,
   FlatList,
   Pressable,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ThemeAndLanguageSwitcher from '../../components/ThemeAndLanguageSwitcher';
@@ -130,13 +134,229 @@ const resolveOAuthErrorMessage = (
   return fallback;
 };
 
+const DESKTOP_AUTH_BREAKPOINT = 1100;
+
+type HeroSlide = {
+  id: string;
+  icon: string;
+  title: string;
+  description: string;
+};
+
+type DesktopHeroPanelProps = {
+  slides: HeroSlide[];
+  isDark: boolean;
+  styles: any;
+};
+
+const createFloatingLoop = (
+  value: Animated.Value,
+  duration: number,
+  useNativeDriver: boolean
+) =>
+  Animated.loop(
+    Animated.sequence([
+      Animated.timing(value, {
+        toValue: 1,
+        duration,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver,
+      }),
+      Animated.timing(value, {
+        toValue: 0,
+        duration,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver,
+      }),
+    ])
+  );
+
+const DesktopHeroPanel = ({ slides, isDark, styles }: DesktopHeroPanelProps) => {
+  const useNativeDriver = Platform.OS !== 'web';
+  const blobOne = useRef(new Animated.Value(0)).current;
+  const blobTwo = useRef(new Animated.Value(0)).current;
+  const blobThree = useRef(new Animated.Value(0)).current;
+  const contentEntrance = useRef(new Animated.Value(0)).current;
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const heroGradientColors = isDark
+    ? ['#080b20', '#232560', '#0c1230']
+    : ['#5550a8', '#6762bf', '#43479e'];
+
+  useEffect(() => {
+    const blobAnimations = [
+      createFloatingLoop(blobOne, 6200, useNativeDriver),
+      createFloatingLoop(blobTwo, 7600, useNativeDriver),
+      createFloatingLoop(blobThree, 9400, useNativeDriver),
+    ];
+
+    const blobTimers = blobAnimations.map((animation, index) =>
+      setTimeout(() => animation.start(), index * 420)
+    );
+
+    contentEntrance.setValue(0);
+    const revealAnimation = Animated.timing(contentEntrance, {
+      toValue: 1,
+      duration: 820,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver,
+    });
+    const revealTimer = setTimeout(() => revealAnimation.start(), 120);
+
+    return () => {
+      blobTimers.forEach(clearTimeout);
+      clearTimeout(revealTimer);
+      blobAnimations.forEach((animation) => animation.stop());
+      revealAnimation.stop();
+    };
+  }, [blobOne, blobThree, blobTwo, contentEntrance, useNativeDriver]);
+
+  const blobOneTranslateX = blobOne.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-24, 18],
+  });
+  const blobOneTranslateY = blobOne.interpolate({
+    inputRange: [0, 1],
+    outputRange: [18, -28],
+  });
+  const blobTwoTranslateX = blobTwo.interpolate({
+    inputRange: [0, 1],
+    outputRange: [26, -16],
+  });
+  const blobTwoTranslateY = blobTwo.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-12, 22],
+  });
+  const blobThreeTranslateX = blobThree.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-18, 22],
+  });
+  const blobThreeTranslateY = blobThree.interpolate({
+    inputRange: [0, 1],
+    outputRange: [24, -16],
+  });
+  const contentOpacity = contentEntrance.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+  const contentTranslateY = contentEntrance.interpolate({
+    inputRange: [0, 1],
+    outputRange: [22, 0],
+  });
+  const safeSlideIndex = slides.length ? activeSlideIndex % slides.length : 0;
+  const currentSlide = slides[safeSlideIndex] || {
+    id: 'secure',
+    icon: 'shield-checkmark-outline',
+    title: 'Secure & Private',
+    description: 'Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.',
+  };
+
+  useEffect(() => {
+    if (!slides.length) {
+      setActiveSlideIndex(0);
+      return;
+    }
+    setActiveSlideIndex((previousIndex) => previousIndex % slides.length);
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const rotationInterval = setInterval(() => {
+      setActiveSlideIndex((previousIndex) => (previousIndex + 1) % slides.length);
+    }, 4200);
+    return () => clearInterval(rotationInterval);
+  }, [slides.length]);
+
+  return (
+    <View style={styles.desktopHeroPane}>
+      <LinearGradient
+        colors={heroGradientColors}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      <Animated.View
+        style={[
+          styles.desktopHeroBlob,
+          styles.desktopHeroBlobOne,
+          {
+            transform: [{ translateX: blobOneTranslateX }, { translateY: blobOneTranslateY }],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.desktopHeroBlob,
+          styles.desktopHeroBlobTwo,
+          {
+            transform: [{ translateX: blobTwoTranslateX }, { translateY: blobTwoTranslateY }],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.desktopHeroBlob,
+          styles.desktopHeroBlobThree,
+          {
+            transform: [{ translateX: blobThreeTranslateX }, { translateY: blobThreeTranslateY }],
+          },
+        ]}
+      />
+
+      <View style={styles.desktopHeroWaveTop} />
+      <View style={styles.desktopHeroWaveBottom} />
+
+      <Animated.View
+        style={[
+          styles.desktopHeroBody,
+          {
+            opacity: contentOpacity,
+            transform: [{ translateY: contentTranslateY }],
+          },
+        ]}
+      >
+        <View style={styles.desktopHeroBadge}>
+          <Ionicons name={currentSlide.icon as any} size={32} color="#ffffff" />
+        </View>
+        <Text style={styles.desktopHeroTitle}>{currentSlide.title}</Text>
+        <Text style={styles.desktopHeroDescription}>{currentSlide.description}</Text>
+
+        <View style={styles.desktopHeroProgress}>
+          {slides.map((slide, index) => (
+            <TouchableOpacity
+              key={slide.id}
+              style={styles.desktopHeroProgressDotButton}
+              onPress={() => setActiveSlideIndex(index)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={`Show ${slide.title}`}
+            >
+              <View
+                style={[
+                  styles.desktopHeroProgressDot,
+                  index === safeSlideIndex ? styles.desktopHeroProgressDotActive : null,
+                ]}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Animated.View>
+    </View>
+  );
+};
+
 export default function AuthScreen() {
+  const { width: windowWidth } = useWindowDimensions();
   const { colors, isDark } = useTheme();
   const { t } = useTranslation('auth');
+  const { t: tIndex } = useTranslation('index');
   const router = useRouter();
   const params = useLocalSearchParams();
   const { showError, showSuccess } = useToastHelpers();
   const { user, isLoggedIn, isLoading: authLoading, signInWithOAuth } = useAuth();
+  const isDesktopLayout = Platform.OS === 'web' && windowWidth >= DESKTOP_AUTH_BREAKPOINT;
+  const useNativeDriver = Platform.OS !== 'web';
+  const formEntrance = useRef(new Animated.Value(0)).current;
 
   const rawReturnTo = Array.isArray(params.returnTo) ? params.returnTo[0] : params.returnTo;
   const rawAuthError = Array.isArray(params.error) ? params.error[0] : params.error;
@@ -148,6 +368,35 @@ export default function AuthScreen() {
       : '/dashboard/explore';
 
   const currentLocale = getCurrentLocale();
+  const heroSlides: HeroSlide[] = [
+    {
+      id: 'secure',
+      icon: 'shield-checkmark-outline',
+      title: tIndex('features.secure.title', 'Secure & Private'),
+      description: tIndex(
+        'features.secure.description',
+        'Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.'
+      ),
+    },
+    {
+      id: 'management',
+      icon: 'key-outline',
+      title: tIndex('features.management.title', 'Effortless Management'),
+      description: tIndex(
+        'features.management.description',
+        'Organize all your digital credentials, loyalty cards, and communities in one intuitive place.'
+      ),
+    },
+    {
+      id: 'sync',
+      icon: 'sync-outline',
+      title: tIndex('features.sync.title', 'Cross-Platform Sync'),
+      description: tIndex(
+        'features.sync.description',
+        'Access your data across all your devices with our secure cloud sync.'
+      ),
+    },
+  ];
   const countryDialOptions = useMemo(
     () => buildCountryDialOptions(currentLocale),
     [currentLocale]
@@ -254,6 +503,15 @@ export default function AuthScreen() {
   shouldShowEmailSuggestionsRef.current = shouldShowEmailSuggestions;
   activeEmailSuggestionRef.current = activeEmailSuggestion;
 
+  const formCardOpacity = formEntrance.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.78, 1],
+  });
+  const formCardTranslateY = formEntrance.interpolate({
+    inputRange: [0, 1],
+    outputRange: [18, 0],
+  });
+
   useEffect(() => {
     if (isLoggedIn && user && !hasNavigatedRef.current && !authLoading) {
       hasNavigatedRef.current = true;
@@ -349,6 +607,19 @@ export default function AuthScreen() {
       window.localStorage.removeItem('auth_signin_method');
     }
   }, [isPasswordlessSupported, passwordlessUnavailableMessage, rawAuthError, rawAuthMessage, showError, t]);
+
+  useEffect(() => {
+    formEntrance.setValue(0);
+    const formReveal = Animated.timing(formEntrance, {
+      toValue: 1,
+      duration: 560,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver,
+    });
+
+    formReveal.start();
+    return () => formReveal.stop();
+  }, [formEntrance, isDesktopLayout, useNativeDriver]);
 
   const validateEmailOrShowError = (): string | null => {
     const normalized = email.trim().toLowerCase();
@@ -908,31 +1179,49 @@ export default function AuthScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* <AuthBackgroundScene /> */}
+      <View style={[styles.layoutShell, isDesktopLayout ? styles.layoutShellDesktop : null]}>
+        <View style={[styles.formPane, isDesktopLayout ? styles.formPaneDesktop : null]}>
+          <ThemeAndLanguageSwitcher />
 
-      <ThemeAndLanguageSwitcher />
+          <TouchableOpacity
+            style={[styles.backButton, isDesktopLayout ? styles.backButtonDesktop : null]}
+            onPress={() => router.push('/home')}
+            accessibilityLabel={t('back', 'Go Back')}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="arrow-back" size={28} color={isDark ? '#fff' : '#000'} />
+          </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.push('/home')}
-        accessibilityLabel={t('back', 'Go Back')}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-      >
-        <Ionicons name="arrow-back" size={28} color={isDark ? '#fff' : '#000'} />
-      </TouchableOpacity>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[
+              styles.scrollContent,
+              isDesktopLayout ? styles.scrollContentDesktop : null,
+            ]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            bounces={false}
+          >
+            <View style={[styles.content, isDesktopLayout ? styles.contentDesktop : null]}>
+              <View style={[styles.authHeaderBlock, isDesktopLayout ? styles.authHeaderBlockDesktop : null]}>
+                <Text style={styles.authHeaderTitle}>{t('welcomeHeading', 'Welcome')}</Text>
+                <Text style={styles.authHeaderSubtitle}>
+                  {t('subtitle', 'Sign in to unlock your digital life.')}
+                </Text>
+              </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        bounces={false}
-      >
-        <View style={styles.content}>
-          <View style={styles.authCard}>
-            <Text style={styles.title}>{t('title', 'Welcome to')}</Text>
-
+              <Animated.View
+                style={
+                  isDesktopLayout
+                    ? {
+                      opacity: formCardOpacity,
+                      transform: [{ translateY: formCardTranslateY }],
+                    }
+                    : null
+                }
+              >
+                <View style={[styles.authCard, isDesktopLayout ? styles.authCardDesktop : null]}>
             <View style={styles.logoContainer}>
               <Image
                 source={
@@ -944,8 +1233,6 @@ export default function AuthScreen() {
                 resizeMode="contain"
               />
             </View>
-
-            <Text style={styles.tagline}>{t('subtitle', 'Sign in to unlock your digital life.')}</Text>
 
             <View style={styles.primaryAuthContainer} dataSet={{ authEnterSubmit: 'true' }}>
               {!isPasswordlessSupported ? (
@@ -1392,9 +1679,20 @@ export default function AuthScreen() {
             <View style={{ alignItems: 'center', marginTop: 12 }}>
               <VersionDisplay compact={true} />
             </View>
-          </View>
+                </View>
+              </Animated.View>
+            </View>
+          </ScrollView>
         </View>
-      </ScrollView>
+
+        {isDesktopLayout ? (
+          <DesktopHeroPanel
+            slides={heroSlides}
+            isDark={isDark}
+            styles={styles}
+          />
+        ) : null}
+      </View>
 
       <Modal
         visible={countryPickerVisible}
@@ -1508,7 +1806,26 @@ const getStyles = (isDark: boolean, colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#000' : '#f4f4f6',
+      backgroundColor: isDark ? '#050507' : '#f3f4f8',
+    },
+    layoutShell: {
+      flex: 1,
+      flexDirection: 'column',
+    },
+    layoutShellDesktop: {
+      flexDirection: 'row',
+    },
+    formPane: {
+      flex: 1,
+      position: 'relative',
+    },
+    formPaneDesktop: {
+      flex: 1.34,
+      minWidth: 620,
+      maxWidth: 920,
+      borderRightWidth: 1,
+      borderRightColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(12,13,18,0.08)',
+      backgroundColor: isDark ? '#070709' : '#eef0f5',
     },
     centered: {
       justifyContent: 'center',
@@ -1528,6 +1845,10 @@ const getStyles = (isDark: boolean, colors: any) =>
       left: 20,
       zIndex: 1001,
     },
+    backButtonDesktop: {
+      top: 26,
+      left: 26,
+    },
     scrollView: {
       flex: 1,
     },
@@ -1537,12 +1858,21 @@ const getStyles = (isDark: boolean, colors: any) =>
       paddingHorizontal: 20,
       paddingBottom: 40,
     },
+    scrollContentDesktop: {
+      paddingTop: 82,
+      paddingHorizontal: 40,
+      paddingBottom: 48,
+    },
     content: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
       zIndex: 1,
+    },
+    contentDesktop: {
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     authCard: {
       width: '100%',
@@ -1564,27 +1894,42 @@ const getStyles = (isDark: boolean, colors: any) =>
           elevation: 6,
         }),
     },
-    title: {
-      fontSize: 46,
-      fontWeight: '700',
-      color: isDark ? '#fff' : '#121212',
-      textAlign: 'center',
-      marginBottom: 6,
-      letterSpacing: -0.8,
+    authCardDesktop: {
+      maxWidth: 520,
     },
     logoContainer: {
       alignItems: 'center',
-      marginVertical: 12,
+      marginBottom: 18,
     },
     logo: {
-      width: 200,
-      height: 58,
+      width: 302,
+      height: 86,
     },
-    tagline: {
-      fontSize: 18,
-      color: isDark ? 'rgba(255,255,255,0.86)' : 'rgba(0,0,0,0.62)',
+    authHeaderBlock: {
+      width: '100%',
+      maxWidth: 520,
+      marginBottom: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+    },
+    authHeaderBlockDesktop: {
+      marginBottom: 22,
+      paddingHorizontal: 12,
+    },
+    authHeaderTitle: {
+      fontSize: 44,
+      fontWeight: '800',
+      color: isDark ? '#f8f8fb' : '#0f1220',
       textAlign: 'center',
-      marginBottom: 20,
+      letterSpacing: -0.8,
+    },
+    authHeaderSubtitle: {
+      marginTop: 8,
+      fontSize: 24,
+      lineHeight: 30,
+      color: isDark ? 'rgba(238,239,247,0.78)' : 'rgba(25,34,56,0.64)',
+      textAlign: 'center',
     },
     primaryAuthContainer: {
       width: '100%',
@@ -2121,6 +2466,119 @@ const getStyles = (isDark: boolean, colors: any) =>
       color: isDark ? '#ffffff' : '#5a4ac9',
       fontWeight: '700',
       textDecorationLine: 'underline',
+    },
+    desktopHeroPane: {
+      flex: 0.74,
+      minWidth: 320,
+      position: 'relative',
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+      paddingVertical: 34,
+    },
+    desktopHeroBlob: {
+      position: 'absolute',
+      borderRadius: 999,
+      opacity: 0.58,
+    },
+    desktopHeroBlobOne: {
+      width: 270,
+      height: 270,
+      top: -60,
+      left: -90,
+      backgroundColor: isDark ? 'rgba(114,95,236,0.5)' : 'rgba(173,160,255,0.42)',
+    },
+    desktopHeroBlobTwo: {
+      width: 240,
+      height: 240,
+      top: 92,
+      right: -96,
+      backgroundColor: isDark ? 'rgba(38,145,223,0.38)' : 'rgba(118,216,255,0.34)',
+    },
+    desktopHeroBlobThree: {
+      width: 252,
+      height: 252,
+      bottom: -104,
+      left: 52,
+      backgroundColor: isDark ? 'rgba(95,104,223,0.42)' : 'rgba(150,158,255,0.34)',
+    },
+    desktopHeroWaveTop: {
+      position: 'absolute',
+      top: -92,
+      left: -150,
+      right: -150,
+      height: 220,
+      borderRadius: 180,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(233,237,255,0.34)',
+      transform: [{ rotate: '-8deg' }],
+    },
+    desktopHeroWaveBottom: {
+      position: 'absolute',
+      bottom: -118,
+      left: -126,
+      right: -126,
+      height: 246,
+      borderRadius: 210,
+      backgroundColor: isDark ? 'rgba(3,7,31,0.5)' : 'rgba(58,66,142,0.4)',
+      transform: [{ rotate: '6deg' }],
+    },
+    desktopHeroBody: {
+      width: '100%',
+      maxWidth: 320,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 4,
+      zIndex: 2,
+    },
+    desktopHeroBadge: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.26)' : 'rgba(237,241,255,0.4)',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(237,241,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 14,
+    },
+    desktopHeroTitle: {
+      fontSize: 34,
+      lineHeight: 38,
+      fontWeight: '800',
+      color: isDark ? '#f5f7ff' : '#f8f9ff',
+      textAlign: 'center',
+      letterSpacing: -0.8,
+    },
+    desktopHeroDescription: {
+      marginTop: 12,
+      fontSize: 15,
+      lineHeight: 22,
+      color: isDark ? 'rgba(238,242,255,0.84)' : 'rgba(238,242,255,0.86)',
+      textAlign: 'center',
+      maxWidth: 320,
+    },
+    desktopHeroProgress: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 18,
+      gap: 8,
+    },
+    desktopHeroProgressDotButton: {
+      width: 20,
+      height: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    desktopHeroProgressDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 999,
+      backgroundColor: isDark ? 'rgba(243,246,255,0.36)' : 'rgba(243,246,255,0.46)',
+    },
+    desktopHeroProgressDotActive: {
+      backgroundColor: '#ffffff',
     },
     loadingText: {
       marginTop: 16,
