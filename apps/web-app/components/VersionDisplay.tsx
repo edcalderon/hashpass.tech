@@ -5,6 +5,7 @@ import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
 import VersionDetailsModal from './VersionDetailsModal';
+import VersionQuickSheet from './VersionQuickSheet';
 
 interface VersionDisplayProps {
   showInSidebar?: boolean;
@@ -15,6 +16,7 @@ type StatusState = 'healthy' | 'degraded' | 'unhealthy' | 'checking' | 'unknown'
 
 export default function VersionDisplay({ showInSidebar = false, compact = false }: VersionDisplayProps) {
   const { isDark, colors } = useTheme();
+  const [showQuickDetails, setShowQuickDetails] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [status, setStatus] = useState<StatusState>('checking');
   const styles = getStyles(isDark, colors);
@@ -51,16 +53,30 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
     </View>
   );
 
+  const openQuickDetails = () => setShowQuickDetails(true);
+  const closeQuickDetails = () => setShowQuickDetails(false);
+  const expandToFullDetails = () => {
+    setShowQuickDetails(false);
+    setShowDetails(true);
+  };
+
   if (compact) {
     return (
       <>
         <TouchableOpacity
           style={styles.compactContainer}
-          onPress={() => setShowDetails(true)}
+          onPress={openQuickDetails}
         >
           <Text style={styles.compactText}>v{versionInfo.version}</Text>
           <VersionBadge />
         </TouchableOpacity>
+        <VersionQuickSheet
+          visible={showQuickDetails}
+          onClose={closeQuickDetails}
+          onExpand={expandToFullDetails}
+          status={status}
+          showStatusIndicator={true}
+        />
         <VersionDetailsModal
           visible={showDetails}
           onClose={() => setShowDetails(false)}
@@ -77,7 +93,7 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
         <View style={styles.sidebarContainer}>
           <TouchableOpacity
             style={styles.sidebarVersionContainer}
-            onPress={() => setShowDetails(true)}
+            onPress={openQuickDetails}
           >
             <View style={styles.sidebarVersionInfo}>
               <Text style={styles.sidebarVersionText}>v{versionInfo.version}</Text>
@@ -86,6 +102,13 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
             <MaterialIcons name="info-outline" size={16} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
+        <VersionQuickSheet
+          visible={showQuickDetails}
+          onClose={closeQuickDetails}
+          onExpand={expandToFullDetails}
+          status={status}
+          showStatusIndicator={true}
+        />
         <VersionDetailsModal
           visible={showDetails}
           onClose={() => setShowDetails(false)}
@@ -101,7 +124,7 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
       <View style={styles.container}>
         <TouchableOpacity
           style={styles.versionContainer}
-          onPress={() => setShowDetails(true)}
+          onPress={openQuickDetails}
         >
           <View style={styles.versionInfo}>
             <Text style={styles.versionText}>v{versionInfo.version}</Text>
@@ -110,6 +133,12 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
           <MaterialIcons name="info-outline" size={20} color={colors.text.secondary} />
         </TouchableOpacity>
       </View>
+      <VersionQuickSheet
+        visible={showQuickDetails}
+        onClose={closeQuickDetails}
+        onExpand={expandToFullDetails}
+        showStatusIndicator={false}
+      />
       <VersionDetailsModal
         visible={showDetails}
         onClose={() => setShowDetails(false)}

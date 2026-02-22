@@ -13,16 +13,33 @@ const packageJsonPath = path.join(projectRoot, 'package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const version = packageJson.version;
 
-// Update service worker file
-const swPath = path.join(projectRoot, 'public/sw.js');
-let swContent = fs.readFileSync(swPath, 'utf8');
+const candidateSwPaths = [
+  path.join(projectRoot, 'public/sw.js'),
+  path.join(projectRoot, 'apps/web-app/public/sw.js'),
+];
 
-// Replace version in service worker
-swContent = swContent.replace(
-  /const APP_VERSION = ['"][^'"]+['"];/,
-  `const APP_VERSION = '${version}';`
-);
+let updatedCount = 0;
 
-fs.writeFileSync(swPath, swContent, 'utf8');
-console.log(`✅ Updated service worker version to ${version}`);
+for (const swPath of candidateSwPaths) {
+  if (!fs.existsSync(swPath)) {
+    continue;
+  }
 
+  let swContent = fs.readFileSync(swPath, 'utf8');
+  const nextContent = swContent.replace(
+    /const APP_VERSION = ['"][^'"]+['"];/,
+    `const APP_VERSION = '${version}';`
+  );
+
+  if (nextContent !== swContent) {
+    fs.writeFileSync(swPath, nextContent, 'utf8');
+    updatedCount += 1;
+    console.log(`✅ Updated service worker version in ${path.relative(projectRoot, swPath) || 'public/sw.js'}`);
+  }
+}
+
+if (updatedCount === 0) {
+  console.warn('⚠️  No service worker file was updated.');
+} else {
+  console.log(`✅ Updated service worker version to ${version} (${updatedCount} file${updatedCount === 1 ? '' : 's'})`);
+}

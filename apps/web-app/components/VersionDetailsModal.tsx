@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Linking, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
 import { t } from '@lingui/macro';
+
+const HISTORY_ITEMS_PER_PAGE = 9;
 
 interface VersionDetailsModalProps {
   visible: boolean;
@@ -22,11 +24,27 @@ export default function VersionDetailsModal({
   const { isDark, colors } = useTheme();
   const router = useRouter();
   const styles = getStyles(isDark, colors);
+  const [historyPage, setHistoryPage] = useState(1);
 
   const versionInfo = versionService.getCurrentVersion();
   const buildInfo = versionService.getBuildInfo();
   const versionHistory = versionService.getVersionHistory();
   const badgeInfo = versionService.getVersionBadgeInfo(versionInfo.releaseType);
+  const totalHistoryPages = Math.max(1, Math.ceil(versionHistory.length / HISTORY_ITEMS_PER_PAGE));
+  const safeHistoryPage = Math.min(historyPage, totalHistoryPages);
+
+  const paginatedVersionHistory = useMemo(() => {
+    const start = (safeHistoryPage - 1) * HISTORY_ITEMS_PER_PAGE;
+    return versionHistory.slice(start, start + HISTORY_ITEMS_PER_PAGE);
+  }, [safeHistoryPage, versionHistory]);
+
+  const historyStartIndex = (safeHistoryPage - 1) * HISTORY_ITEMS_PER_PAGE + 1;
+  const historyEndIndex = Math.min(safeHistoryPage * HISTORY_ITEMS_PER_PAGE, versionHistory.length);
+
+  const handleClose = () => {
+    setHistoryPage(1);
+    onClose();
+  };
 
   const getStatusColor = (): string => {
     if (!status) return '#9E9E9E';
@@ -61,7 +79,7 @@ export default function VersionDetailsModal({
   };
 
   const handleStatusClick = () => {
-    onClose();
+    handleClose();
     router.push('/status' as any);
   };
 
@@ -70,14 +88,14 @@ export default function VersionDetailsModal({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>{t({ id: 'version.title', message: 'Version Information' })}</Text>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={onClose}
+            onPress={handleClose}
           >
             <MaterialIcons name="close" size={24} color={colors.text.primary} />
           </TouchableOpacity>
@@ -164,7 +182,7 @@ export default function VersionDetailsModal({
           {/* Version History */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t({ id: 'version.history', message: 'Version History' })}</Text>
-            {versionHistory.slice(0, 5).map((version) => {
+            {paginatedVersionHistory.map((version) => {
               const tagUrl = buildInfo?.gitRepoUrl 
                 ? `${buildInfo.gitRepoUrl}/releases/tag/v${version.version}`
                 : null;
@@ -191,6 +209,65 @@ export default function VersionDetailsModal({
                 </View>
               );
             })}
+
+            {versionHistory.length > HISTORY_ITEMS_PER_PAGE && (
+              <View style={styles.paginationContainer}>
+                <Text style={styles.paginationSummary}>
+                  {`Showing ${historyStartIndex}-${historyEndIndex} of ${versionHistory.length}`}
+                </Text>
+                <View style={styles.paginationControls}>
+                  <TouchableOpacity
+                    style={[
+                      styles.paginationButton,
+                      safeHistoryPage === 1 && styles.paginationButtonDisabled,
+                    ]}
+                    onPress={() => setHistoryPage(Math.max(1, safeHistoryPage - 1))}
+                    disabled={safeHistoryPage === 1}
+                  >
+                    <MaterialIcons
+                      name="chevron-left"
+                      size={16}
+                      color={safeHistoryPage === 1 ? colors.text.secondary : colors.primary}
+                    />
+                    <Text
+                      style={[
+                        styles.paginationButtonText,
+                        safeHistoryPage === 1 && styles.paginationButtonTextDisabled,
+                      ]}
+                    >
+                      Previous
+                    </Text>
+                  </TouchableOpacity>
+
+                  <Text style={styles.paginationPageText}>
+                    {`Page ${safeHistoryPage} of ${totalHistoryPages}`}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.paginationButton,
+                      safeHistoryPage === totalHistoryPages && styles.paginationButtonDisabled,
+                    ]}
+                    onPress={() => setHistoryPage(Math.min(totalHistoryPages, safeHistoryPage + 1))}
+                    disabled={safeHistoryPage === totalHistoryPages}
+                  >
+                    <Text
+                      style={[
+                        styles.paginationButtonText,
+                        safeHistoryPage === totalHistoryPages && styles.paginationButtonTextDisabled,
+                      ]}
+                    >
+                      Next
+                    </Text>
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={16}
+                      color={safeHistoryPage === totalHistoryPages ? colors.text.secondary : colors.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* System Status */}
@@ -391,6 +468,53 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.text.secondary,
     lineHeight: 18,
   },
+  paginationContainer: {
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+  paginationSummary: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginBottom: 10,
+  },
+  paginationControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  paginationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: colors.background.default,
+  },
+  paginationButtonDisabled: {
+    borderColor: colors.divider,
+    backgroundColor: colors.background.paper,
+  },
+  paginationButtonText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  paginationButtonTextDisabled: {
+    color: colors.text.secondary,
+  },
+  paginationPageText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 12,
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
   statusCard: {
     backgroundColor: colors.background.paper,
     borderRadius: 12,
@@ -432,4 +556,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     lineHeight: 20,
   },
 });
-
