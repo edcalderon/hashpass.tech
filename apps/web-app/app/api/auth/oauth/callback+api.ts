@@ -12,6 +12,11 @@ const directusSecret =
   '';
 const DIRECTUS_SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'directus_session_token';
 const DIRECTUS_REFRESH_COOKIE_NAME = process.env.REFRESH_TOKEN_COOKIE_NAME || 'directus_refresh_token';
+const OAUTH_FRONTEND_ORIGIN_COOKIE_NAME = 'oauth_frontend_origin';
+const DEFAULT_FRONTEND_ORIGIN =
+  process.env.EXPO_PUBLIC_FRONTEND_URL ||
+  process.env.FRONTEND_URL ||
+  '';
 const supabaseUrl =
   process.env['EXPO_PUBLIC_SUPABASE_URL'] ||
   '';
@@ -44,6 +49,29 @@ type DirectusSupabaseSyncResult = {
 let supabaseAdminClient: SupabaseClient | null = null;
 
 const normalizeEmail = (value: string | null | undefined): string => value?.trim().toLowerCase() || '';
+const DEFAULT_RETURN_TO = '/dashboard/explore';
+
+const normalizeReturnToPath = (value: string | null | undefined): string => {
+  let normalized = value || DEFAULT_RETURN_TO;
+
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    // Keep original value if decoding fails.
+  }
+
+  if (!normalized.startsWith('/')) {
+    return DEFAULT_RETURN_TO;
+  }
+
+  normalized = normalized.replace(/\/\([^/]+\)/g, '');
+
+  if (!normalized || normalized === '/auth' || normalized.includes('/auth/callback')) {
+    return DEFAULT_RETURN_TO;
+  }
+
+  return normalized;
+};
 
 const getSupabaseAdminClient = (): SupabaseClient | null => {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -306,20 +334,55 @@ const getCookieValue = (cookieHeader: string, cookieName: string): string | null
   }
 };
 
+const extractOrigin = (rawValue: string | null): string | null => {
+  if (!rawValue) return null;
+
+  try {
+    const parsed = new URL(rawValue);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+};
+
+const resolveFrontendOrigin = (
+  request: Request,
+  cookieHeader: string,
+  fallbackOrigin: string
+): string => {
+  const cookieOrigin = extractOrigin(getCookieValue(cookieHeader, OAUTH_FRONTEND_ORIGIN_COOKIE_NAME));
+  if (cookieOrigin) return cookieOrigin;
+
+  const configuredOrigin = extractOrigin(DEFAULT_FRONTEND_ORIGIN);
+  if (configuredOrigin) return configuredOrigin;
+
+  const refererOrigin = extractOrigin(request.headers.get('referer'));
+  if (refererOrigin) return refererOrigin;
+
+  const originHeader = extractOrigin(request.headers.get('origin'));
+  if (originHeader) return originHeader;
+
+  return fallbackOrigin;
+};
+
 const hasCookie = (cookieHeader: string, cookieName: string): boolean =>
   getCookieValue(cookieHeader, cookieName) !== null;
 
 const buildRedirectWithFragment = (
-  origin: string,
+  frontendOrigin: string,
   returnTo: string,
   fragmentParams: URLSearchParams
 ): string => {
-  const redirectUrl = new URL(returnTo, origin);
-  return `${redirectUrl.pathname}${redirectUrl.search}#${fragmentParams.toString()}`;
+  const redirectUrl = new URL(returnTo, frontendOrigin);
+  redirectUrl.hash = fragmentParams.toString();
+  return redirectUrl.toString();
 };
 
-const buildAppCallbackUrl = (origin: string, returnTo: string): string => {
-  const appCallbackUrl = new URL('/auth/callback', origin);
+const buildAppCallbackUrl = (frontendOrigin: string, returnTo: string): string => {
+  const appCallbackUrl = new URL('/auth/callback', frontendOrigin);
   appCallbackUrl.searchParams.set('returnTo', returnTo);
   return appCallbackUrl.toString();
 };
@@ -354,6 +417,7 @@ const exchangeSessionCookieForJsonTokens = async (
   }
 
   try {
+    // eslint-disable-next-line no-restricted-syntax
     const refreshResponse = await fetch(`${DIRECTUS_URL}/auth/refresh`, {
       method: 'POST',
       headers: {
@@ -400,20 +464,20 @@ const exchangeSessionCookieForJsonTokens = async (
 // 8. This endpoint retrieves the tokens and redirects user to dashboard
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  const returnTo = url.searchParams.get('returnTo') || '/dashboard/explore';
+  const returnTo = normalizeReturnToPath(url.searchParams.get('returnTo') || DEFAULT_RETURN_TO);
   let failureReason = 'No Directus session was returned after OAuth callback.';
 
   // Get returnTo from cookie if not in URL (set by login endpoint)
   const cookies = request.headers.get('Cookie') || '';
-  const returnToCookie = cookies.split(';').find(c => c.trim().startsWith('oauth_return_to='));
-  const finalReturnTo = returnToCookie
-    ? decodeURIComponent(returnToCookie.split('=')[1])
-    : returnTo;
+  const returnToCookie = getCookieValue(cookies, 'oauth_return_to');
+  const finalReturnTo = normalizeReturnToPath(returnToCookie || returnTo);
+  const frontendOrigin = resolveFrontendOrigin(request, cookies, url.origin);
   const hasRefreshTokenCookie = hasCookie(cookies, DIRECTUS_REFRESH_COOKIE_NAME);
   const hasSessionTokenCookie = hasCookie(cookies, DIRECTUS_SESSION_COOKIE_NAME);
 
   console.log('[OAuth Callback] Processing callback from Directus');
   console.log('[OAuth Callback] Return to:', finalReturnTo);
+  console.log('[OAuth Callback] Frontend origin:', frontendOrigin);
   console.log('[OAuth Callback] Directus URL:', DIRECTUS_URL);
 
   // Check if we received tokens directly in URL from Directus
@@ -451,7 +515,7 @@ export async function GET(request: Request): Promise<Response> {
     return new ExpoResponse(null, {
       status: 302,
       headers: {
-        'Location': buildRedirectWithFragment(url.origin, finalReturnTo, fragment),
+        'Location': buildRedirectWithFragment(frontendOrigin, finalReturnTo, fragment),
         'Cache-Control': 'no-store'
       }
     });
@@ -467,6 +531,7 @@ export async function GET(request: Request): Promise<Response> {
       try {
         // Try to refresh the session using cookies
         // This validates the OAuth cookie session and returns short-lived tokens.
+        // eslint-disable-next-line no-restricted-syntax
         const refreshResponse = await fetch(`${DIRECTUS_URL}/auth/refresh`, {
           method: 'POST',
           headers: {
@@ -492,7 +557,7 @@ export async function GET(request: Request): Promise<Response> {
             return new ExpoResponse(null, {
               status: 302,
               headers: {
-                'Location': buildRedirectWithFragment(url.origin, finalReturnTo, fragment),
+                'Location': buildRedirectWithFragment(frontendOrigin, finalReturnTo, fragment),
                 'Cache-Control': 'no-store'
               }
             });
@@ -511,7 +576,7 @@ export async function GET(request: Request): Promise<Response> {
             return new ExpoResponse(null, {
               status: 302,
               headers: {
-                'Location': buildAppCallbackUrl(url.origin, finalReturnTo),
+                'Location': buildAppCallbackUrl(frontendOrigin, finalReturnTo),
                 'Cache-Control': 'no-store',
               },
             });
@@ -542,7 +607,7 @@ export async function GET(request: Request): Promise<Response> {
         return new ExpoResponse(null, {
           status: 302,
           headers: {
-            'Location': buildRedirectWithFragment(url.origin, finalReturnTo, fragment),
+            'Location': buildRedirectWithFragment(frontendOrigin, finalReturnTo, fragment),
             'Cache-Control': 'no-store',
           },
         });
@@ -553,7 +618,7 @@ export async function GET(request: Request): Promise<Response> {
       return new ExpoResponse(null, {
         status: 302,
         headers: {
-          'Location': buildAppCallbackUrl(url.origin, finalReturnTo),
+          'Location': buildAppCallbackUrl(frontendOrigin, finalReturnTo),
           'Cache-Control': 'no-store',
         },
       });
@@ -564,16 +629,29 @@ export async function GET(request: Request): Promise<Response> {
       return new ExpoResponse(null, {
         status: 302,
         headers: {
-          'Location': buildAppCallbackUrl(url.origin, finalReturnTo),
+          'Location': buildAppCallbackUrl(frontendOrigin, finalReturnTo),
           'Cache-Control': 'no-store',
         },
       });
     }
   }
 
+  // When Directus returns with hash-based tokens, the server callback cannot read the fragment.
+  // Hand off to the frontend callback so client-side auth can finalize the session.
+  if (!reason && !error) {
+    console.warn('[OAuth Callback] No server-visible tokens/session. Handing off to frontend callback for client-side completion.');
+    return new ExpoResponse(null, {
+      status: 302,
+      headers: {
+        'Location': buildAppCallbackUrl(frontendOrigin, finalReturnTo),
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
+
   // Failed - redirect to auth page with error  
   console.error('[OAuth Callback] ❌ Failed to obtain tokens from Directus');
-  const errorUrl = new URL('/auth', url.origin);
+  const errorUrl = new URL('/auth', frontendOrigin);
   errorUrl.searchParams.set('error', 'oauth_failed');
   errorUrl.searchParams.set('message', `Authentication could not be completed. ${failureReason} Redirecting to login.`);
 
