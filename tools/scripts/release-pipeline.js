@@ -359,7 +359,11 @@ function runLambdaStage(options, runtime) {
     ['tools/scripts/propagate-env.js', syncEnv, '--tenant', runtime.tenant, '--config', options.configPath],
     options
   );
-  runCommand('pnpm', ['--filter', 'hashpass-web-app', 'build'], options);
+  runCommand(
+    'bash',
+    ['-lc', `SKIP_ENV_PROPAGATE=1 BUILD_ENV=${syncEnv} pnpm --filter hashpass-web-app build`],
+    options
+  );
   runCommand('bash', ['tools/scripts/package-lambda.sh'], options);
   runCommand(
     'aws',
