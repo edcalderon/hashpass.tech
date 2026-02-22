@@ -1,0 +1,56 @@
+{
+  "defaults": {
+    "releaseBranches": {
+      "development": "develop",
+      "production": "main"
+    },
+    "directusUrls": {
+      "development": "https://sso-dev.hashpass.co",
+      "production": "https://sso.hashpass.co"
+    },
+    "supabaseRefs": {
+      "development": "fxgftanraszjjyeidvia",
+      "production": "tgbdilebadmzqwubsijr"
+    },
+    "apiDomains": {
+      "development": "api-dev.hashpass.tech",
+      "production": "api.hashpass.tech"
+    },
+    "apiBaseUrls": {
+      "development": "https://api-dev.hashpass.tech/api",
+      "production": "https://api.hashpass.tech/api"
+    },
+    "lambda": {
+      "region": "us-east-1",
+      "functions": {
+        "development": "hashpass-api-dev",
+        "production": "hashpass-api-prod"
+      }
+    },
+    "headersFile": "infrastructure/terraform/stacks/aws/custom-headers.blockchainsummit.yml"
+  },
+  "tenants": {
+    "core": {
+      "label": "hashpass.tech",
+      "amplify": {
+        "appId": "dy8duury54wam",
+        "region": "us-east-2"
+      },
+      "frontendUrls": {
+        "development": "https://develop.dy8duury54wam.amplifyapp.com",
+        "production": "https://hashpass.tech"
+      }
+    },
+    "blockchainsummit": {
+      "label": "blockchainsummit.hashpass.lat",
+      "amplify": {
+        "appId": "d951nuj7hrqeg",
+        "region": "sa-east-1"
+      },
+      "frontendUrls": {
+        "development": "https://blockchainsummit-dev.hashpass.lat",
+        "production": "https://blockchainsummit.hashpass.lat"
+      }
+    }
+  }
+}

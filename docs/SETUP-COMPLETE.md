@@ -36,6 +36,7 @@ Toda la configuración para migrar de Amplify API a API Gateway + Lambda ha sido
 
 ```
 Frontend (Amplify):
+├── hashpass.tech / develop.dy8duury54wam.amplifyapp.com → App ID: dy8duury54wam (us-east-2)
 └── blockchainsummit.hashpass.lat / blockchainsummit-dev.hashpass.lat → App ID: d951nuj7hrqeg (sa-east-1)
 
 API (API Gateway + Lambda):
@@ -67,12 +68,17 @@ curl https://api.hashpass.tech/api/config/versions
 
 ### Amplify (Frontend Apps)
 
-**Para `blockchainsummit.hashpass.lat` y `blockchainsummit-dev.hashpass.lat` (`d951nuj7hrqeg`, `sa-east-1`):**
+**Para tenant core (`hashpass.tech`, `dy8duury54wam`, `us-east-2`):**
 ```
 EXPO_PUBLIC_API_BASE_URL=https://api.hashpass.tech/api
 ```
 
-**Nota:** Apps legacy en `us-east-2` (como `dy8duury54wam` y `d3ja863334bedw`) pueden seguir existiendo, pero la configuración activa de blockchain summit está en `d951nuj7hrqeg`.
+**Para tenant blockchainsummit (`blockchainsummit.hashpass.lat`, `d951nuj7hrqeg`, `sa-east-1`):**
+```
+EXPO_PUBLIC_API_BASE_URL=https://api.hashpass.tech/api
+```
+
+**Nota:** Ambos tenants usan el mismo release cadence (`develop`/`main`) con variables de entorno separadas por app Amplify.
 
 ### Lambda Function
 

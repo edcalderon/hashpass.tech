@@ -5,6 +5,9 @@
 **App ID**: `d951nuj7hrqeg`  
 **Region**: `sa-east-1`
 
+> This file documents the `blockchainsummit` tenant app.  
+> Core tenant app: `dy8duury54wam` (`us-east-2`, `hashpass.tech`).
+
 ## Current Setup
 
 ### Frontend Hosting (Amplify)

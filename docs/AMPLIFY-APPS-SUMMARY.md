@@ -2,21 +2,21 @@
 
 ## Apps Actuales
 
-### Frontend App Activa (Blockchain Summit)
+### Frontend Apps Activas (Multi-tenant)
 
-1. **blockchainsummit.hashpass.lat**
+1. **hashpass.tech (core/global brand)**
+   - **App ID**: `dy8duury54wam`
+   - **Región**: `us-east-2`
+   - **Propósito**: Tenant core/global (branches `main` y `develop`)
+   - **Estado**: ✅ Activa
+
+2. **blockchainsummit.hashpass.lat (event tenant)**
    - **App ID**: `d951nuj7hrqeg`
    - **Región**: `sa-east-1`
-   - **Propósito**: Frontend principal (branches `main` y `develop`)
+   - **Propósito**: Tenant de evento (branches `main` y `develop`)
    - **Estado**: ✅ Activa
 
 ### Frontend Apps Legacy (Opcionales)
-
-2. **hashpass.tech**
-   - **App ID**: `dy8duury54wam`
-   - **Región**: `us-east-2`
-   - **Propósito**: Legacy / histórico
-   - **Estado**: ⚠️ Legacy
 
 3. **bsl2025.hashpass.tech**
    - **App ID**: `d3ja863334bedw`
@@ -36,6 +36,7 @@
 
 ```
 Frontend:
+├── hashpass.tech / develop.dy8duury54wam.amplifyapp.com → Amplify App (dy8duury54wam, us-east-2)
 └── blockchainsummit.hashpass.lat / blockchainsummit-dev.hashpass.lat → Amplify App (d951nuj7hrqeg, sa-east-1)
 
 API:
@@ -58,9 +59,11 @@ aws amplify get-app --app-id d31bu1ot0gd14y --region us-east-2
 # Debe retornar error: ResourceNotFoundException
 ```
 
-Para verificar la app activa:
+Para verificar las apps activas:
 
 ```bash
+aws amplify get-app --app-id dy8duury54wam --region us-east-2
+aws amplify list-branches --app-id dy8duury54wam --region us-east-2
 aws amplify get-app --app-id d951nuj7hrqeg --region sa-east-1
 aws amplify list-branches --app-id d951nuj7hrqeg --region sa-east-1
 ```
