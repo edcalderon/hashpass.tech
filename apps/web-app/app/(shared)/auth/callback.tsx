@@ -13,6 +13,15 @@ type CallbackHashError = {
     message: string;
 };
 
+const AUTH_RECENT_SUCCESS_KEY = 'auth_recent_success_at';
+
+const markRecentAuthSuccess = () => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.sessionStorage) {
+        return;
+    }
+    window.sessionStorage.setItem(AUTH_RECENT_SUCCESS_KEY, Date.now().toString());
+};
+
 const normalizeCallbackHashError = (rawCode: string | null, rawMessage: string | null): CallbackHashError => {
     const code = (rawCode || 'oauth_failed').toLowerCase();
     const message = (rawMessage || '').trim();
@@ -437,6 +446,7 @@ export default function AuthCallback() {
                         window.localStorage.removeItem('auth_signin_method');
                     }
 
+                    markRecentAuthSuccess();
                     hasNavigatedRef.current = true;
                     setHasNavigated(true);
                     isProcessingRef.current = false;
@@ -492,6 +502,7 @@ export default function AuthCallback() {
                         console.log('🧹 Cleaned URL after successful OAuth processing');
                     }
                     
+                    markRecentAuthSuccess();
                     hasNavigatedRef.current = true;
                     setHasNavigated(true);
                     isProcessingRef.current = false;

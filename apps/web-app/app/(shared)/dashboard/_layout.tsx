@@ -596,14 +596,47 @@ export default function DashboardLayout() {
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const styles = getStyles(isDark, colors, isMobile);
+  const AUTH_RECENT_SUCCESS_KEY = 'auth_recent_success_at';
+  const AUTH_REDIRECT_GRACE_MS = 12000;
 
   // Verify user is logged in before allowing dashboard access (provider-agnostic)
   React.useEffect(() => {
+    const shouldDelayRedirectForRecentAuth = () => {
+      if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.sessionStorage) {
+        return false;
+      }
+
+      const rawTimestamp = window.sessionStorage.getItem(AUTH_RECENT_SUCCESS_KEY);
+      if (!rawTimestamp) return false;
+
+      const timestamp = Number(rawTimestamp);
+      if (!Number.isFinite(timestamp)) {
+        window.sessionStorage.removeItem(AUTH_RECENT_SUCCESS_KEY);
+        return false;
+      }
+
+      const age = Date.now() - timestamp;
+      if (age > AUTH_REDIRECT_GRACE_MS) {
+        window.sessionStorage.removeItem(AUTH_RECENT_SUCCESS_KEY);
+        return false;
+      }
+
+      return true;
+    };
+
     if (!authLoading && !isLoggedIn) {
+      if (shouldDelayRedirectForRecentAuth()) {
+        console.log('⏳ Recent auth success detected in dashboard; delaying redirect and rechecking session.');
+        authService.getSession().catch((error) => {
+          console.debug('Dashboard auth recheck during redirect grace failed:', error);
+        });
+        return;
+      }
+
       console.warn('⚠️ Not authenticated in dashboard, redirecting to auth');
       router.replace('/(shared)/auth' as any);
     }
-  }, [authLoading, isLoggedIn, router]);
+  }, [authLoading, isLoggedIn, router, AUTH_RECENT_SUCCESS_KEY, AUTH_REDIRECT_GRACE_MS]);
 
   // Header component for the drawer screens
   const Header = () => {

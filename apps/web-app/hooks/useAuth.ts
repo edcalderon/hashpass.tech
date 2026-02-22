@@ -139,10 +139,22 @@ export const useAuth = () => {
 
     let directusReady = false;
     let supabaseReady = false;
+    let directusBootstrapFinished = false;
+    let supabaseBootstrapFinished = false;
     let directusUser: AuthUser | null = null;
     let supabaseUser: AuthUser | null = null;
     let isDirectusLoggedIn = false;
     let isSupabaseLoggedIn = false;
+
+    const syncDirectusStateFromProvider = (sessionFallback?: AuthSession | null) => {
+      const providerUser = authService.getUser?.() ?? null;
+      const fallbackUser = sessionFallback?.user ?? null;
+      const resolvedUser = providerUser || fallbackUser;
+      const isAuthenticated = authService.isAuthenticated();
+
+      directusUser = isAuthenticated ? resolvedUser : null;
+      isDirectusLoggedIn = isAuthenticated && !!resolvedUser;
+    };
 
     const applyCombinedAuthState = () => {
       const ready = directusReady && supabaseReady;
@@ -156,8 +168,19 @@ export const useAuth = () => {
 
     // Subscribe to Directus/provider state changes
     unsubscribeRef.current = authService.onAuthStateChange((session: AuthSession | null) => {
-      directusUser = session?.user ?? null;
-      isDirectusLoggedIn = !!session?.user && authService.isAuthenticated();
+      syncDirectusStateFromProvider(session);
+
+      // Keep global bootstrap result aligned with the latest auth transition for newly mounted hooks.
+      if (isDirectusLoggedIn && session) {
+        sessionBootstrapPromise = Promise.resolve(session);
+      } else if (directusBootstrapFinished && !isDirectusLoggedIn) {
+        sessionBootstrapPromise = Promise.resolve(null);
+      }
+
+      // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
+      if (!directusBootstrapFinished && !isDirectusLoggedIn) {
+        return;
+      }
       directusReady = true;
       applyCombinedAuthState();
     });
@@ -166,6 +189,10 @@ export const useAuth = () => {
     const { data: supabaseSub } = supabase.auth.onAuthStateChange((_event, session) => {
       supabaseUser = session?.user ? mapSupabaseUserToAuthUser(session.user) : null;
       isSupabaseLoggedIn = !!session?.user;
+      // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
+      if (!supabaseBootstrapFinished && !session?.user) {
+        return;
+      }
       supabaseReady = true;
       applyCombinedAuthState();
     });
@@ -177,13 +204,14 @@ export const useAuth = () => {
     }
     sessionBootstrapPromise
       .then((session) => {
-        directusUser = session?.user ?? null;
-        isDirectusLoggedIn = !!session?.user && authService.isAuthenticated();
+        syncDirectusStateFromProvider(session);
       })
       .catch((error) => {
         console.error('[useAuth] Session bootstrap failed:', error);
+        syncDirectusStateFromProvider(null);
       })
       .finally(() => {
+        directusBootstrapFinished = true;
         directusReady = true;
         applyCombinedAuthState();
       });
@@ -198,6 +226,7 @@ export const useAuth = () => {
         console.error('[useAuth] Supabase session bootstrap failed:', error);
       })
       .finally(() => {
+        supabaseBootstrapFinished = true;
         supabaseReady = true;
         applyCombinedAuthState();
       });
@@ -229,6 +258,8 @@ export const useAuth = () => {
       console.error('Error signing out:', firstRejected.reason);
       throw firstRejected.reason;
     }
+
+    sessionBootstrapPromise = Promise.resolve(null);
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
