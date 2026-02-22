@@ -157,6 +157,13 @@ function decodeJwtPayload(token) {
 }
 
 function validateSupabaseServiceRoleKey(targetConfig, runtime) {
+  const isCiEnvironment = Boolean(process.env.CI || process.env.AWS_BRANCH);
+  if (isCiEnvironment) {
+    // Amplify/CI builds often do not expose service-role secrets.
+    // Keep strict checks for local release tooling, but avoid blocking CI frontend builds.
+    return;
+  }
+
   const serviceRoleKey = targetConfig.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!serviceRoleKey) {
