@@ -334,6 +334,31 @@ const getCookieValue = (cookieHeader: string, cookieName: string): string | null
   }
 };
 
+type OAuthReturnCookiePayload = {
+  returnTo?: string;
+  frontendOrigin?: string;
+};
+
+const parseOAuthReturnCookie = (rawCookieValue: string | null): OAuthReturnCookiePayload => {
+  if (!rawCookieValue) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(rawCookieValue);
+    if (parsed && typeof parsed === 'object') {
+      const payload: OAuthReturnCookiePayload = {};
+      if (typeof parsed.returnTo === 'string') payload.returnTo = parsed.returnTo;
+      if (typeof parsed.frontendOrigin === 'string') payload.frontendOrigin = parsed.frontendOrigin;
+      return payload;
+    }
+  } catch {
+    // Backward compatibility: old cookie value was just returnTo path.
+  }
+
+  return { returnTo: rawCookieValue };
+};
+
 const extractOrigin = (rawValue: string | null): string | null => {
   if (!rawValue) return null;
 
@@ -351,8 +376,12 @@ const extractOrigin = (rawValue: string | null): string | null => {
 const resolveFrontendOrigin = (
   request: Request,
   cookieHeader: string,
+  returnCookieFrontendOrigin: string | undefined,
   fallbackOrigin: string
 ): string => {
+  const cookiePayloadOrigin = extractOrigin(returnCookieFrontendOrigin || null);
+  if (cookiePayloadOrigin) return cookiePayloadOrigin;
+
   const cookieOrigin = extractOrigin(getCookieValue(cookieHeader, OAUTH_FRONTEND_ORIGIN_COOKIE_NAME));
   if (cookieOrigin) return cookieOrigin;
 
@@ -469,9 +498,14 @@ export async function GET(request: Request): Promise<Response> {
 
   // Get returnTo from cookie if not in URL (set by login endpoint)
   const cookies = request.headers.get('Cookie') || '';
-  const returnToCookie = getCookieValue(cookies, 'oauth_return_to');
-  const finalReturnTo = normalizeReturnToPath(returnToCookie || returnTo);
-  const frontendOrigin = resolveFrontendOrigin(request, cookies, url.origin);
+  const returnToCookie = parseOAuthReturnCookie(getCookieValue(cookies, 'oauth_return_to'));
+  const finalReturnTo = normalizeReturnToPath(returnToCookie.returnTo || returnTo);
+  const frontendOrigin = resolveFrontendOrigin(
+    request,
+    cookies,
+    returnToCookie.frontendOrigin,
+    url.origin
+  );
   const hasRefreshTokenCookie = hasCookie(cookies, DIRECTUS_REFRESH_COOKIE_NAME);
   const hasSessionTokenCookie = hasCookie(cookies, DIRECTUS_SESSION_COOKIE_NAME);
 

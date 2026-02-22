@@ -11,6 +11,11 @@ const DEFAULT_FRONTEND_ORIGIN =
   '';
 const OAUTH_FRONTEND_ORIGIN_COOKIE_NAME = 'oauth_frontend_origin';
 
+type OAuthReturnCookiePayload = {
+  returnTo: string;
+  frontendOrigin: string;
+};
+
 function extractOrigin(rawValue: string | null): string | null {
   if (!rawValue) return null;
 
@@ -96,8 +101,13 @@ export async function GET(request: Request): Promise<Response> {
   const isHttps = url.protocol === 'https:';
   const secureFlag = isHttps ? '; Secure' : '';
 
-  // Store return URL in cookie for callback fallback flows.
-  const cookieValue = encodeURIComponent(returnTo);
+  // Store return URL + frontend origin together in one cookie.
+  // Some deployments only preserve a single Set-Cookie header.
+  const returnCookiePayload: OAuthReturnCookiePayload = {
+    returnTo,
+    frontendOrigin,
+  };
+  const cookieValue = encodeURIComponent(JSON.stringify(returnCookiePayload));
   const setCookieHeader = `oauth_return_to=${cookieValue}; Path=/; SameSite=Lax; Max-Age=3600${secureFlag}`;
   const setFrontendOriginCookieHeader =
     `${OAUTH_FRONTEND_ORIGIN_COOKIE_NAME}=${encodeURIComponent(frontendOrigin)}; ` +
