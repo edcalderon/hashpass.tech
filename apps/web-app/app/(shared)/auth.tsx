@@ -179,8 +179,8 @@ const DesktopHeroPanel = ({ slides, isDark, styles }: DesktopHeroPanelProps) => 
   const contentEntrance = useRef(new Animated.Value(0)).current;
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const heroGradientColors = isDark
-    ? ['#080b20', '#232560', '#0c1230']
-    : ['#5550a8', '#6762bf', '#43479e'];
+    ? ['#030a12', '#0a1f31', '#13415e']
+    : ['#ffffff', '#fff9f8', '#fff1ee'];
 
   useEffect(() => {
     const blobAnimations = [
@@ -316,7 +316,7 @@ const DesktopHeroPanel = ({ slides, isDark, styles }: DesktopHeroPanelProps) => 
         ]}
       >
         <View style={styles.desktopHeroBadge}>
-          <Ionicons name={currentSlide.icon as any} size={32} color="#ffffff" />
+          <Ionicons name={currentSlide.icon as any} size={32} color={isDark ? '#ddf7fb' : '#af0d01'} />
         </View>
         <Text style={styles.desktopHeroTitle}>{currentSlide.title}</Text>
         <Text style={styles.desktopHeroDescription}>{currentSlide.description}</Text>
@@ -2472,6 +2472,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       minWidth: 320,
       position: 'relative',
       overflow: 'hidden',
+      backgroundColor: isDark ? '#030910' : '#ffffff',
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 24,
@@ -2487,21 +2488,21 @@ const getStyles = (isDark: boolean, colors: any) =>
       height: 270,
       top: -60,
       left: -90,
-      backgroundColor: isDark ? 'rgba(114,95,236,0.5)' : 'rgba(173,160,255,0.42)',
+      backgroundColor: isDark ? 'rgba(161,209,214,0.34)' : 'rgba(175,13,1,0.24)',
     },
     desktopHeroBlobTwo: {
       width: 240,
       height: 240,
       top: 92,
       right: -96,
-      backgroundColor: isDark ? 'rgba(38,145,223,0.38)' : 'rgba(118,216,255,0.34)',
+      backgroundColor: isDark ? 'rgba(42,146,196,0.3)' : 'rgba(175,13,1,0.14)',
     },
     desktopHeroBlobThree: {
       width: 252,
       height: 252,
       bottom: -104,
       left: 52,
-      backgroundColor: isDark ? 'rgba(95,104,223,0.42)' : 'rgba(150,158,255,0.34)',
+      backgroundColor: isDark ? 'rgba(28,112,160,0.28)' : 'rgba(210,36,23,0.2)',
     },
     desktopHeroWaveTop: {
       position: 'absolute',
@@ -2510,7 +2511,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       right: -150,
       height: 220,
       borderRadius: 180,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(233,237,255,0.34)',
+      backgroundColor: isDark ? 'rgba(161,209,214,0.18)' : 'rgba(255,255,255,0.94)',
       transform: [{ rotate: '-8deg' }],
     },
     desktopHeroWaveBottom: {
@@ -2520,7 +2521,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       right: -126,
       height: 246,
       borderRadius: 210,
-      backgroundColor: isDark ? 'rgba(3,7,31,0.5)' : 'rgba(58,66,142,0.4)',
+      backgroundColor: isDark ? 'rgba(2,11,20,0.74)' : 'rgba(175,13,1,0.12)',
       transform: [{ rotate: '6deg' }],
     },
     desktopHeroBody: {
@@ -2536,8 +2537,8 @@ const getStyles = (isDark: boolean, colors: any) =>
       height: 72,
       borderRadius: 36,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.26)' : 'rgba(237,241,255,0.4)',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(237,241,255,0.2)',
+      borderColor: isDark ? 'rgba(161,209,214,0.42)' : 'rgba(175,13,1,0.32)',
+      backgroundColor: isDark ? 'rgba(161,209,214,0.2)' : 'rgba(175,13,1,0.1)',
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 14,
@@ -2546,7 +2547,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontSize: 34,
       lineHeight: 38,
       fontWeight: '800',
-      color: isDark ? '#f5f7ff' : '#f8f9ff',
+      color: isDark ? '#f3f9ff' : '#111214',
       textAlign: 'center',
       letterSpacing: -0.8,
     },
@@ -2554,7 +2555,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       marginTop: 12,
       fontSize: 15,
       lineHeight: 22,
-      color: isDark ? 'rgba(238,242,255,0.84)' : 'rgba(238,242,255,0.86)',
+      color: isDark ? 'rgba(220,240,248,0.88)' : 'rgba(17,18,20,0.86)',
       textAlign: 'center',
       maxWidth: 320,
     },
@@ -2575,10 +2576,10 @@ const getStyles = (isDark: boolean, colors: any) =>
       width: 10,
       height: 10,
       borderRadius: 999,
-      backgroundColor: isDark ? 'rgba(243,246,255,0.36)' : 'rgba(243,246,255,0.46)',
+      backgroundColor: isDark ? 'rgba(161,209,214,0.42)' : 'rgba(175,13,1,0.24)',
     },
     desktopHeroProgressDotActive: {
-      backgroundColor: '#ffffff',
+      backgroundColor: isDark ? '#a1d1d6' : '#af0d01',
     },
     loadingText: {
       marginTop: 16,
