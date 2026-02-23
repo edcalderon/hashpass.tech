@@ -50,8 +50,10 @@
       "manifest": {
         "name": "HashPass",
         "short_name": "HashPass",
+        "id": "/",
         "description": "Secure password management and sharing",
         "start_url": "/",
+        "scope": "/",
         "display": "standalone",
         "background_color": "#ffffff",
         "theme_color": "#000000",

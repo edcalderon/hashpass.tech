@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Platform } from 'react-native';
 import { PwaInstallPromptCard } from '@hashpass/ui';
-import { getInstallationStatus } from '../lib/pwa-utils';
+import { buildAndroidIntentUrl, getInstallationStatus, resolvePwaLaunchUrl } from '../lib/pwa-utils';
 import { useTranslation } from '../i18n/i18n';
 
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
@@ -125,7 +125,24 @@ const PWAPrompt = () => {
 
   const openApp = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.location.href = window.location.origin + window.location.pathname;
+      const startUrl = resolvePwaLaunchUrl();
+      const targetUrl = new URL(startUrl);
+      targetUrl.searchParams.set('source', 'pwa_open_button');
+      const targetHref = targetUrl.toString();
+
+      const isAndroid = /Android/i.test(window.navigator.userAgent);
+      if (isAndroid) {
+        const intentUrl = buildAndroidIntentUrl(targetHref);
+        if (intentUrl) {
+          window.location.assign(intentUrl);
+          return;
+        }
+      }
+
+      const openedWindow = window.open(targetHref, '_blank', 'noopener,noreferrer');
+      if (!openedWindow) {
+        window.location.assign(targetHref);
+      }
     }
   };
 

@@ -146,6 +146,50 @@ export const isPWAInstalled = (): boolean => {
 };
 
 /**
+ * Resolve the canonical launch URL from the active web manifest.
+ * Falls back to the site root when manifest detection fails.
+ */
+export const resolvePwaLaunchUrl = (): string => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return '/';
+  }
+
+  const fallbackUrl = new URL('/', window.location.origin).toString();
+
+  try {
+    const manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    const manifestHref = manifestLink?.getAttribute('href');
+    if (!manifestHref) {
+      return fallbackUrl;
+    }
+
+    const manifestUrl = new URL(manifestHref, window.location.origin);
+    const manifestDir = manifestUrl.pathname.replace(/[^/]*$/, '') || '/';
+    return new URL(manifestDir, manifestUrl.origin).toString();
+  } catch (error) {
+    console.warn('[PWA Utils] Failed to resolve launch URL:', error);
+  }
+
+  return fallbackUrl;
+};
+
+/**
+ * Build an Android intent URL to encourage handoff to the installed WebAPK/PWA.
+ */
+export const buildAndroidIntentUrl = (targetUrl: string): string | null => {
+  try {
+    const parsed = new URL(targetUrl);
+    const pathAndQuery = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    const scheme = parsed.protocol.replace(':', '');
+    const fallback = encodeURIComponent(parsed.toString());
+    return `intent://${parsed.host}${pathAndQuery}#Intent;scheme=${scheme};action=android.intent.action.VIEW;S.browser_fallback_url=${fallback};end`;
+  } catch (error) {
+    console.warn('[PWA Utils] Failed to build Android intent URL:', error);
+    return null;
+  }
+};
+
+/**
  * Get installation status with more details
  */
 export const getInstallationStatus = () => {
@@ -161,4 +205,3 @@ export const getInstallationStatus = () => {
     allowReinstall: true, // Always allow reinstall option
   };
 };
-

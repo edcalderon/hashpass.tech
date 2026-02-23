@@ -355,6 +355,8 @@ export default function AuthScreen() {
   const { showError, showSuccess } = useToastHelpers();
   const { user, isLoggedIn, isLoading: authLoading, signInWithOAuth } = useAuth();
   const isDesktopLayout = Platform.OS === 'web' && windowWidth >= DESKTOP_AUTH_BREAKPOINT;
+  const isCompactMobile = !isDesktopLayout && windowWidth <= 420;
+  const isVeryCompactMobile = !isDesktopLayout && windowWidth <= 360;
   const useNativeDriver = Platform.OS !== 'web';
   const formEntrance = useRef(new Animated.Value(0)).current;
 
@@ -457,7 +459,7 @@ export default function AuthScreen() {
     'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.'
   );
 
-  const styles = getStyles(isDark, colors);
+  const styles = getStyles(isDark, colors, isCompactMobile, isVeryCompactMobile);
   const isBusy = busyAction !== null;
   const magicLinkResendRemainingSeconds = magicLinkSentAt === null
     ? 0
@@ -1392,6 +1394,8 @@ export default function AuthScreen() {
                         color={emailAuthMethod === 'magic-link' ? colors.text.primary : colors.text.secondary}
                       />
                       <Text
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
                         style={[
                           styles.methodTabText,
                           emailAuthMethod === 'magic-link' ? styles.methodTabTextActive : null,
@@ -1421,6 +1425,8 @@ export default function AuthScreen() {
                         color={emailAuthMethod === 'otp-code' ? colors.text.primary : colors.text.secondary}
                       />
                       <Text
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
                         style={[
                           styles.methodTabText,
                           emailAuthMethod === 'otp-code' ? styles.methodTabTextActive : null,
@@ -1802,7 +1808,12 @@ export default function AuthScreen() {
   );
 }
 
-const getStyles = (isDark: boolean, colors: any) =>
+const getStyles = (
+  isDark: boolean,
+  colors: any,
+  isCompactMobile: boolean,
+  isVeryCompactMobile: boolean
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -1855,7 +1866,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     scrollContent: {
       flexGrow: 1,
       paddingTop: 70,
-      paddingHorizontal: 20,
+      paddingHorizontal: isCompactMobile ? 14 : 20,
       paddingBottom: 40,
     },
     scrollContentDesktop: {
@@ -1878,8 +1889,8 @@ const getStyles = (isDark: boolean, colors: any) =>
       width: '100%',
       maxWidth: 420,
       borderRadius: 18,
-      paddingHorizontal: 20,
-      paddingVertical: 24,
+      paddingHorizontal: isCompactMobile ? 14 : 20,
+      paddingVertical: isCompactMobile ? 20 : 24,
       backgroundColor: isDark ? '#151515' : '#ffffff',
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
@@ -1902,8 +1913,8 @@ const getStyles = (isDark: boolean, colors: any) =>
       marginBottom: 18,
     },
     logo: {
-      width: 302,
-      height: 86,
+      width: isCompactMobile ? 272 : 302,
+      height: isCompactMobile ? 78 : 86,
     },
     authHeaderBlock: {
       width: '100%',
@@ -2017,6 +2028,9 @@ const getStyles = (isDark: boolean, colors: any) =>
       borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#dddddf',
       paddingHorizontal: 14,
       height: 52,
+      width: '100%',
+      minWidth: 0,
+      overflow: 'hidden',
     },
     emailInputContainerError: {
       borderColor: '#F44336',
@@ -2026,7 +2040,10 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     emailInput: {
       flex: 1,
-      fontSize: 18,
+      width: 0,
+      minWidth: 0,
+      flexShrink: 1,
+      fontSize: isCompactMobile ? 16 : 18,
       color: isDark ? '#fff' : '#121212',
       paddingVertical: 0,
     },
@@ -2091,6 +2108,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#eeeeef',
       padding: 4,
       gap: 6,
+      width: '100%',
     },
     methodTab: {
       flex: 1,
@@ -2106,9 +2124,10 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: isDark ? 'rgba(255,255,255,0.16)' : '#d8d8dc',
     },
     methodTabText: {
-      fontSize: 16,
+      fontSize: isCompactMobile ? 15 : 16,
       color: colors.textSecondary,
       fontWeight: '600',
+      flexShrink: 1,
     },
     methodTabTextActive: {
       color: isDark ? '#fff' : '#121212',
@@ -2205,7 +2224,8 @@ const getStyles = (isDark: boolean, colors: any) =>
       gap: 8,
     },
     deliverySwitchButton: {
-      alignSelf: 'flex-start',
+      alignSelf: 'stretch',
+      width: '100%',
       paddingVertical: 2,
       paddingHorizontal: 2,
     },
@@ -2214,6 +2234,8 @@ const getStyles = (isDark: boolean, colors: any) =>
       color: isDark ? '#cfcfd3' : '#55565b',
       textDecorationLine: 'underline',
       fontWeight: '600',
+      flexShrink: 1,
+      lineHeight: 18,
     },
     deliveryHint: {
       fontSize: 12,
@@ -2222,13 +2244,16 @@ const getStyles = (isDark: boolean, colors: any) =>
       lineHeight: 16,
     },
     phoneRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
+      width: '100%',
+      flexDirection: isVeryCompactMobile ? 'column' : 'row',
+      alignItems: isVeryCompactMobile ? 'stretch' : 'center',
+      gap: isCompactMobile ? 6 : 8,
+      flexWrap: 'nowrap',
     },
     countryPickerButton: {
-      height: 52,
-      minWidth: 98,
+      height: isCompactMobile ? 50 : 52,
+      minWidth: isVeryCompactMobile ? 0 : 98,
+      width: isVeryCompactMobile ? '100%' : undefined,
       borderRadius: 12,
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#dddddf',
@@ -2238,6 +2263,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 6,
+      flexShrink: 0,
     },
     countryPickerDialCode: {
       fontSize: 16,
@@ -2253,6 +2279,8 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     phoneInputContainer: {
       flex: 1,
+      minWidth: 0,
+      width: isVeryCompactMobile ? '100%' : undefined,
     },
     selectedCountryText: {
       fontSize: 12,
