@@ -6,6 +6,7 @@ export interface PwaInstallPromptCardProps {
   appName?: string;
   logoSrc?: string;
   logoAlt?: string;
+  logoLayout?: "icon" | "full";
   title?: string;
   description?: string;
   details?: string[];
@@ -30,6 +31,7 @@ export default function PwaInstallPromptCard({
   appName = "HashPass",
   logoSrc,
   logoAlt = "HashPass logo",
+  logoLayout = "icon",
   title,
   description,
   details = DEFAULT_DETAILS,
@@ -44,6 +46,7 @@ export default function PwaInstallPromptCard({
   const [expanded, setExpanded] = useState(false);
   const scopeId = useId();
   const scopeClass = useMemo(() => `hp-pwa-${sanitizeScope(scopeId)}`, [scopeId]);
+  const isFullLogo = Boolean(logoSrc && logoLayout === "full");
 
   const cardTitle = title || `Install ${appName}`;
   const cardDescription =
@@ -345,11 +348,11 @@ export default function PwaInstallPromptCard({
         <div className="hp-pwa-top">
           <div className="hp-pwa-brand">
             <div
-              className={`hp-pwa-logo-wrap ${logoSrc ? "hp-pwa-logo-wrap-full" : ""}`}
+              className={`hp-pwa-logo-wrap ${isFullLogo ? "hp-pwa-logo-wrap-full" : ""}`}
               aria-hidden={logoSrc ? undefined : true}
             >
               {logoSrc ? (
-                <img src={logoSrc} alt={logoAlt} className={`hp-pwa-logo ${logoSrc ? "hp-pwa-logo-full" : ""}`} />
+                <img src={logoSrc} alt={logoAlt} className={`hp-pwa-logo ${isFullLogo ? "hp-pwa-logo-full" : ""}`} />
               ) : (
                 <span>{appName.slice(0, 2).toUpperCase()}</span>
               )}

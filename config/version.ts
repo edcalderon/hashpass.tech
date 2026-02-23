@@ -22,8 +22,8 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202602222150, // Updated to current timestamp
-  releaseDate: '2026-02-22',
+  buildNumber: 202602230002, // Updated to current timestamp
+  releaseDate: '2026-02-23',
   releaseType: 'beta',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
@@ -34,11 +34,29 @@ export const CURRENT_VERSION: VersionInfo = {
     'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
   ],
   breakingChanges: [],
-  notes: 'Version 1.6.124 release'
+  notes: 'Landing UI polish: footer animated gradient, feature cards dark-mode/CTA consistency, and hover behavior fixes'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.6.125': {
+    version: '1.6.125',
+    buildNumber: 202602230002,
+    releaseDate: '2026-02-23',
+    releaseType: 'beta',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Added missing translations for version.status and version.statusSummary to all locales',
+      'Added status section translations to ko, fr, pt, de locales',
+      'Compiled i18n catalogs to fix uncompiled message warnings for notification types',
+      'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
+    ],
+    breakingChanges: [],
+    notes: 'Landing UI polish: footer animated gradient, feature cards dark-mode/CTA consistency, and hover behavior fixes'
+  },
   '1.6.124': {
     version: '1.6.124',
     buildNumber: 202602222150,

@@ -1,11 +1,12 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n/i18n';
 import { GlowingEffect } from './GlowingEffect';
 import FlipCard from './FlipCard';
+import FeatureFlipCard from './FeatureFlipCard';
 
 const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   feature: {
@@ -52,6 +53,12 @@ const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     width: '100%',
     color: isDark ? colors.primaryContrastText : colors.textSecondary,
   },
+  webCardItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 30,
+    width: 'min(320px, 92vw)',
+  },
 });
 
 interface FeaturesProps {
@@ -86,29 +93,67 @@ const Features: React.FC<FeaturesProps> = ({
       icon: 'shield-checkmark',
       title: t('features.secure.title'),
       description: t('features.secure.description'),
-      moreInfo: t('features.secure.moreInfo')
+      moreInfo: t('features.secure.moreInfo', t('features.secure.description')),
+      color: '#06b6d4',
     },
     {
       id: 'management',
       icon: 'key',
       title: t('features.management.title'),
       description: t('features.management.description'),
-      moreInfo: t('features.management.moreInfo')
+      moreInfo: t('features.management.moreInfo', t('features.management.description')),
+      color: '#ef4444',
     },
     {
       id: 'sync',
       icon: 'sync',
       title: t('features.sync.title'),
       description: t('features.sync.description'),
-      moreInfo: t('features.sync.moreInfo')
+      moreInfo: t('features.sync.moreInfo', t('features.sync.description')),
+      color: '#22c55e',
     }
   ];
+
+  if (Platform.OS === 'web') {
+    return (
+      <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
+        <View style={containerStyles?.featuresGrid}>
+          {features.map((feature, index) => (
+            <Animated.View key={feature.id} style={[featureStyles.webCardItem, [feature1Style, feature2Style, feature3Style][index]]}>
+              <FeatureFlipCard
+                title={feature.title}
+                description={feature.moreInfo}
+                icon={feature.icon}
+                color={feature.color}
+                hintText={t('learnMore', 'Learn More')}
+                actionText={t('getStartedNow', 'Start Now')}
+                isDark={isDark}
+                actionHref="/(shared)/auth"
+              />
+            </Animated.View>
+          ))}
+        </View>
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View style={[containerStyles?.featuresContainer, featuresAnimatedStyle]}>
       <View style={containerStyles?.featuresGrid}>
         {features.map((feature, index) => (
-          <View key={feature.id} style={[featureStyles.feature, [feature1Style, feature2Style, feature3Style][index], { backgroundColor: isDark ? 'black' : colors.background.default }]}>
+          <Pressable
+            key={feature.id}
+            onPress={() => {
+              flipValues[index].value = !flipValues[index].value;
+            }}
+            onHoverIn={() => {
+              flipValues[index].value = true;
+            }}
+            onHoverOut={() => {
+              flipValues[index].value = false;
+            }}
+            style={[featureStyles.feature, [feature1Style, feature2Style, feature3Style][index], { backgroundColor: isDark ? 'black' : colors.background.default }]}
+          >
             <GlowingEffect
               spread={40}
               glow={true}
@@ -132,7 +177,7 @@ const Features: React.FC<FeaturesProps> = ({
                       <Ionicons name={feature.icon as any} size={45} color={colors.primary} />
                     </View>
                     <Text style={[featureStyles.featureTitle, { color: colors.text.primary }]}>{feature.title}</Text>
-                    <Text style={[featureStyles.featureDescription, { color: colors.text.secondary, textAlign: 'center' }]}>{feature.description}</Text>
+                    <Text style={[featureStyles.featureDescription, { color: colors.text.secondary, textAlign: 'center' }]}>{t('learnMore', 'Learn More')}</Text>
                   </View>
                 }
                 FlippedContent={
@@ -142,12 +187,12 @@ const Features: React.FC<FeaturesProps> = ({
                     alignItems: 'center',
                     padding: 20,
                   }}>
-                    <Text style={[featureStyles.featureDescription, { color: colors.text.primary, textAlign: 'center' }]}>{feature.moreInfo}</Text>
+                    <Text style={[featureStyles.featureDescription, { color: colors.text.primary, textAlign: 'center' }]}>{feature.description}</Text>
                   </View>
                 }
               />
             </View>
-          </View>
+          </Pressable>
         ))}
       </View>
     </Animated.View>

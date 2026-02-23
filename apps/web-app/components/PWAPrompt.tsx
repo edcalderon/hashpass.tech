@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
-import { useColorScheme } from 'nativewind';
+import { Image, Platform } from 'react-native';
 import { PwaInstallPromptCard } from '@hashpass/ui';
 import { getInstallationStatus } from '../lib/pwa-utils';
 
@@ -20,7 +19,6 @@ const PWAPrompt = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isStandaloneMode, setIsStandaloneMode] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
-  const { colorScheme } = useColorScheme();
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -131,16 +129,20 @@ const PWAPrompt = () => {
   }
 
   const isOpenAppMode = isInstalled && !isStandaloneMode;
-  const logoSrc =
-    colorScheme === 'dark'
-      ? '/assets/logos/hashpass/logo-full-hashpass-white.svg'
-      : '/assets/logos/hashpass/logo-full-hashpass-black.svg';
+  const logoSrc = (() => {
+    try {
+      return Image.resolveAssetSource(require('../assets/android-chrome-192x192.png')).uri;
+    } catch {
+      return '/favicon.ico';
+    }
+  })();
 
   return (
     <PwaInstallPromptCard
       className="hp-pwa-floating"
       appName="HashPass"
       logoSrc={logoSrc}
+      logoLayout="icon"
       primaryLabel={isOpenAppMode ? 'Open HashPass App' : 'Install HashPass'}
       title={isOpenAppMode ? 'Open your installed app' : 'Install HashPass'}
       description={

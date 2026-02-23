@@ -1,6 +1,6 @@
 {
     "name": "hashpass-web-app",
-    "version": "1.6.124",
+    "version": "1.6.125",
     "private": true,
     "main": "expo-router/entry",
     "scripts": {

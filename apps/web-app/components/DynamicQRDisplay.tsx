@@ -296,27 +296,17 @@ export default function DynamicQRDisplay({
   const qrPayload = getQRPayload(qrCode.token);
   console.log('✅ QR payload ready for display, length:', qrPayload.length);
   
-  // Get logo for embedding in QR code center - use higher resolution android-chrome-192x192.png
-  // Use URI for both platforms to avoid require() issues
-  const getLogoUri = () => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const origin = window.location.origin;
-      // For localhost development, Metro bundler doesn't serve public folder
-      // Use the assets folder which Metro can bundle, or try public folder path
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        // Try public folder first (for webpack), then fallback
-        // In development, Metro may not serve public folder, so we'll use production URL as fallback
-        return `${origin}/assets/android-chrome-192x192.png`;
+  const logoSource = (() => {
+    try {
+      return { uri: Image.resolveAssetSource(require('../assets/android-chrome-192x192.png')).uri };
+    } catch {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        return { uri: `${window.location.origin}/favicon.ico` };
       }
-      // Production: use public folder path
-      return `${origin}/assets/android-chrome-192x192.png`;
+      const baseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace('/rest/v1', '') || 'https://hashpass.co';
+      return { uri: `${baseUrl}/favicon.ico` };
     }
-    // For native platforms, use the production URL or localhost for development
-    const baseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace('/rest/v1', '') || 'https://hashpass.co';
-    return `${baseUrl}/assets/android-chrome-192x192.png`;
-  };
-  
-  const logoSource = { uri: getLogoUri() };
+  })();
 
   return (
     <View style={styles.container}>
@@ -514,4 +504,3 @@ const getStyles = (isDark: boolean, colors: any, size: number) =>
       textAlign: 'center',
     },
   });
-

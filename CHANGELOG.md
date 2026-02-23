@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.125] - 2026-02-23
+
+### Beta
+- Landing UI polish: footer animated gradient, feature cards dark-mode/CTA consistency, and hover behavior fixes
+
+### Technical Details
+- Version: 1.6.125
+- Release Type: beta
+- Build Number: 202602230002
+- Release Date: 2026-02-23T00:02:50.476Z
+
+
 ## [1.6.124] - 2026-02-22
 
 ### Beta

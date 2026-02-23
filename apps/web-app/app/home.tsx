@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation, getCurrentLocale } from '../i18n/i18n';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -32,6 +32,8 @@ import FlipWords from '../components/FlipWords';
 import Newsletter from '../components/Newsletter';
 import EventBannerCarousel from '../components/EventBannerCarousel';
 import VersionStatusIndicator from '../components/VersionStatusIndicator';
+import CrystalForgeBackground from '../components/CrystalForgeBackground';
+import AnimatedGradientBackground from '../components/AnimatedGradientBackground';
 
 // Import git info to check branch
 let gitInfo: { gitBranch?: string } = {};
@@ -89,9 +91,15 @@ export default function HomeScreen() {
 
   const arrowAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: interpolate(bounceAnim.value, [0, 1], [0, 10]) },
+      { translateY: interpolate(bounceAnim.value, [0, 1], [0, 6]) },
     ],
-    opacity: interpolate(bounceAnim.value, [0, 0.5, 1], [0.6, 1, 0.6]),
+    opacity: interpolate(bounceAnim.value, [0, 0.5, 1], [0.45, 1, 0.45]),
+  }));
+  const wheelAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: interpolate(bounceAnim.value, [0, 1], [0, 8]) },
+    ],
+    opacity: interpolate(bounceAnim.value, [0, 0.5, 1], [0.95, 0.25, 0.95]),
   }));
   const styles = getStyles(isDark, colors, isMobile);
   const bgAnimation = useSharedValue(0);
@@ -281,17 +289,22 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
+          <CrystalForgeBackground
+            isDarkMode={isDark}
+            enableClickSpawn={!isMobile}
+            maxCrystals={isMobile ? 24 : 52}
+          />
           <Animated.View style={[styles.heroTextContainer, headerAnimatedStyle]}>
             <Image
               source={isDark
                 ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
-                : require('../assets/logos/hashpass/logo-full-hashpass-white.svg')
+                : require('../assets/logos/hashpass/logo-full-hashpass-black.svg')
               }
               style={[styles.logo, headerAnimatedStyle]}
               resizeMode="contain"
             />
-            <Text style={[styles.tagline, { color: colors.text.primary }]}>
-              <FlipWords words={words} />
+            <Text style={[styles.tagline, { color: '#FFFFFF' }]}>
+              <FlipWords words={words} className="text-white" />
             </Text>
           </Animated.View>
           <View style={{ flex: 1 }} /> 
@@ -303,13 +316,15 @@ export default function HomeScreen() {
               hitSlop={{top: 30, bottom: 0, left: 40, right: 40}} // increased hitSlop
             >
               <View style={styles.scrollDownContent} pointerEvents="box-none">
-                <View style={styles.arrowContainer} pointerEvents="box-none">
-                  <Animated.View style={[styles.arrowDown, arrowAnimatedStyle]}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M7 10L12 15L17 10" stroke={isDark ? '#FFFFFF' : '#121212'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </Animated.View>
+                <Text style={styles.scrollDownText}>{t('scroll', 'Scroll')}</Text>
+                <View style={styles.scrollIndicatorMouse}>
+                  <Animated.View style={[styles.scrollWheel, wheelAnimatedStyle]} />
                 </View>
+                <Animated.View style={[styles.arrowDown, arrowAnimatedStyle]}>
+                  <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 2L10 10L18 2" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </Animated.View>
               </View>
             </TouchableOpacity>
           </Animated.View>
@@ -403,88 +418,113 @@ export default function HomeScreen() {
 
 
         <View style={styles.footer}>
-          <View style={styles.footerContent}>
-            {/* Brand Section */}
-            <View style={styles.footerBrand}>
-              <Image
-                source={
+          {Platform.OS === 'web' && (
+            <>
+              <AnimatedGradientBackground
+                startingGap={isDark ? 94 : 88}
+                Breathing
+                animationSpeed={0.08}
+                breathingRange={10}
+                driftSpeed={0.012}
+                driftStrengthX={3.8}
+                driftStrengthY={2.6}
+                topOffset={isDark ? 8 : 2}
+                gradientColors={
                   isDark
-                    ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
-                    : require('../assets/logos/hashpass/logo-full-hashpass-white.svg')
+                    ? ['#020617', '#04213f', '#0a3b66', '#0e5a8a', '#0c436f', '#052a4e', '#020617']
+                    : ['#f8fafc', '#e2e8f0', '#dbeafe', '#bfdbfe', '#dbeafe', '#e2e8f0', '#f8fafc']
                 }
-                style={styles.footerLogo}
-                resizeMode="contain"
+                gradientStops={[20, 38, 52, 66, 79, 90, 100]}
+                containerClassName={isDark ? 'opacity-95' : 'opacity-88'}
               />
-              <Text style={styles.footerBrandTagline}>{t('footer.tagline')}</Text>
-            </View>
+              <View style={styles.footerOverlay} />
+            </>
+          )}
 
-            {/* Links Section */}
-            <View style={styles.footerLinks}>
-              <View style={styles.footerLinksColumn}>
-                <Text style={styles.footerLinksTitle}>{t('footer.resources')}</Text>
-                <TouchableOpacity
-                  onPress={() => router.push('/(shared)/docs')}
-                  style={styles.footerLink}
-                >
-                  <Text style={styles.footerLinkText}>{t('footer.docs')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    const storybookUrl = typeof window !== 'undefined' && (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost')
-                      ? '/storybook'
-                      : process.env.EXPO_PUBLIC_STORYBOOK_URL || 'http://localhost:6006';
-                    if (typeof window !== 'undefined') {
-                      window.open(storybookUrl, '_blank');
-                    }
-                  }}
-                  style={styles.footerLink}
-                >
-                  <Text style={styles.footerLinkText}>{t('footer.guides')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
-                    Linking.openURL(`mailto:${supportEmail}`);
-                  }}
-                  style={styles.footerLink}
-                >
-                  <Text style={styles.footerLinkText}>{t('footer.support')}</Text>
-                </TouchableOpacity>
+          <View style={styles.footerForeground}>
+            <View style={styles.footerContent}>
+              {/* Brand Section */}
+              <View style={styles.footerBrand}>
+                <Image
+                  source={
+                    isDark
+                      ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
+                      : require('../assets/logos/hashpass/logo-full-hashpass-white.svg')
+                  }
+                  style={styles.footerLogo}
+                  resizeMode="contain"
+                />
+                <Text style={styles.footerBrandTagline}>{t('footer.tagline')}</Text>
               </View>
 
-              <View style={[styles.footerLinksColumn, isMobile && styles.footerLinksColumnMobile]}>
-                <Text style={styles.footerLinksTitle}>{t('footer.legal')}</Text>
-                <TouchableOpacity
-                  onPress={() => router.push('/(shared)/privacy')}
-                  style={styles.footerLink}
-                >
-                  <Text style={styles.footerLinkText}>{t('footer.privacy')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => router.push('/(shared)/terms')}
-                  style={styles.footerLink}
-                >
-                  <Text style={styles.footerLinkText}>{t('footer.terms')}</Text>
-                </TouchableOpacity>
-                {shouldShowFooterLink && footerLinkUrl && footerLinkName && (
+              {/* Links Section */}
+              <View style={styles.footerLinks}>
+                <View style={styles.footerLinksColumn}>
+                  <Text style={styles.footerLinksTitle}>{t('footer.resources')}</Text>
                   <TouchableOpacity
-                    onPress={() => Linking.openURL(footerLinkUrl)}
+                    onPress={() => router.push('/(shared)/docs')}
                     style={styles.footerLink}
                   >
-                    <Text style={styles.footerLinkText}>{footerLinkName}</Text>
+                    <Text style={styles.footerLinkText}>{t('footer.docs')}</Text>
                   </TouchableOpacity>
-                )}
+                  <TouchableOpacity
+                    onPress={() => {
+                      const storybookUrl = typeof window !== 'undefined' && (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost')
+                        ? '/storybook'
+                        : process.env.EXPO_PUBLIC_STORYBOOK_URL || 'http://localhost:6006';
+                      if (typeof window !== 'undefined') {
+                        window.open(storybookUrl, '_blank');
+                      }
+                    }}
+                    style={styles.footerLink}
+                  >
+                    <Text style={styles.footerLinkText}>{t('footer.guides')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
+                      Linking.openURL(`mailto:${supportEmail}`);
+                    }}
+                    style={styles.footerLink}
+                  >
+                    <Text style={styles.footerLinkText}>{t('footer.support')}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={[styles.footerLinksColumn, isMobile && styles.footerLinksColumnMobile]}>
+                  <Text style={styles.footerLinksTitle}>{t('footer.legal')}</Text>
+                  <TouchableOpacity
+                    onPress={() => router.push('/(shared)/privacy')}
+                    style={styles.footerLink}
+                  >
+                    <Text style={styles.footerLinkText}>{t('footer.privacy')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => router.push('/(shared)/terms')}
+                    style={styles.footerLink}
+                  >
+                    <Text style={styles.footerLinkText}>{t('footer.terms')}</Text>
+                  </TouchableOpacity>
+                  {shouldShowFooterLink && footerLinkUrl && footerLinkName && (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(footerLinkUrl)}
+                      style={styles.footerLink}
+                    >
+                      <Text style={styles.footerLinkText}>{footerLinkName}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Bottom Bar */}
-          <View style={styles.footerBottom}>
-            <View style={styles.footerBottomContent}>
-              <Text style={styles.footerCopyright}>
-                {t('copyright')}
-              </Text>
-              <VersionStatusIndicator compact={true} showVersion={true} size="small" />
+            {/* Bottom Bar */}
+            <View style={styles.footerBottom}>
+              <View style={styles.footerBottomContent}>
+                <Text style={styles.footerCopyright}>
+                  {t('copyright')}
+                </Text>
+                <VersionStatusIndicator compact={true} showVersion={true} size="small" />
+              </View>
             </View>
           </View>
         </View>
@@ -525,6 +565,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     bottom: 0,
     left: 0,
     right: 0,
+    zIndex: 2,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -571,6 +612,15 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     paddingHorizontal: isMobile ? 20 : 40,
     position: 'relative',
     bottom: 0,
+  },
+  footerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: isDark ? 'rgba(2, 6, 23, 0.30)' : 'rgba(248, 250, 252, 0.42)',
+    pointerEvents: 'none',
+  },
+  footerForeground: {
+    position: 'relative',
+    zIndex: 1,
   },
   footerContent: {
     flexDirection: isMobile ? 'column' : 'row',
@@ -754,19 +804,33 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   scrollDownContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    elevation: 4,
+    padding: 12,
+    gap: 8,
+    elevation: 3,
   },
   scrollDownText: {
-    color: isDark ? '#FFFFFF' : '#121212',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    opacity: 0.8,
+    color: 'rgba(255, 255, 255, 0.78)',
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 2.2,
     textAlign: 'center',
+  },
+  scrollIndicatorMouse: {
+    width: 30,
+    height: 46,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.78)',
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  scrollWheel: {
+    width: 4,
+    height: 8,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
   },
   arrowContainer: {
     width: 40,
@@ -788,12 +852,12 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     transform: [{ scale: 1 }],
   },
   arrowDown: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 0,
-    opacity: 0.8,
+    opacity: 0.88,
     position: 'relative',
     bottom: 0,
   },

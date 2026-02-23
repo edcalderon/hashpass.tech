@@ -1,18 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Linking } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Platform } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withRepeat,
-  withSequence,
-  Easing,
-  interpolate,
-} from 'react-native-reanimated';
 import EventBanner from './EventBanner';
+import LampBrandBanner from './LampBrandBanner';
 import { getAvailableEvents, EventInfo } from '../lib/event-detector';
 
 interface CarouselSlide {
@@ -25,13 +16,51 @@ interface EventBannerCarouselProps {
   autoPlay?: boolean;
   autoPlayInterval?: number;
   onEventPress?: (event: EventInfo) => void;
+  lampBrandingOverrides?: Record<string, LampBrandingConfig>;
 }
+
+export interface LampBrandingConfig {
+  logoSrcDark?: string;
+  logoSrcLight?: string;
+  logoFallbackSrc?: string;
+  logoAlt: string;
+}
+
+const BSL_DARK_LOGO = require('../assets/logos/bsl/bsl-light.png');
+const BSL_LIGHT_LOGO = require('../assets/logos/bsl/bsl-dark.png');
+
+const extractUri = (value: unknown): string | undefined => {
+  if (!value) return undefined;
+  if (typeof value === 'string') return value;
+
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    if (typeof record.uri === 'string') return record.uri;
+    if (typeof record.default === 'string') return record.default;
+    if (typeof record.src === 'string') return record.src;
+  }
+
+  return undefined;
+};
+
+const resolveAssetUri = (assetModule: unknown): string | undefined => {
+  try {
+    const directUri = extractUri(assetModule);
+    if (directUri) return directUri;
+
+    const resolved = Image.resolveAssetSource(assetModule);
+    return extractUri(resolved);
+  } catch {
+    return undefined;
+  }
+};
 
 export default function EventBannerCarousel({
   showDotIndicators = true,
   autoPlay = true,
   autoPlayInterval = 5000,
   onEventPress,
+  lampBrandingOverrides,
 }: EventBannerCarouselProps) {
   const { isDark, colors } = useTheme();
   const isMobile = useIsMobile();
@@ -42,12 +71,47 @@ export default function EventBannerCarousel({
 
   // Get available events
   const availableEvents = getAvailableEvents();
+  const bslLampBranding = useMemo<LampBrandingConfig>(() => {
+    const darkLogo = resolveAssetUri(BSL_DARK_LOGO);
+    const lightLogo = resolveAssetUri(BSL_LIGHT_LOGO);
+
+    return {
+      logoSrcDark: darkLogo,
+      logoSrcLight: lightLogo,
+      logoFallbackSrc: darkLogo || lightLogo,
+      logoAlt: 'Blockchain Summit Latam 2025',
+    };
+  }, []);
+
+  const defaultLampBrandingByEvent = useMemo<Record<string, LampBrandingConfig>>(
+    () => ({
+      bsl2025: bslLampBranding,
+    }),
+    [bslLampBranding]
+  );
+
+  const lampBrandingByEvent = useMemo<Record<string, LampBrandingConfig>>(
+    () => ({
+      ...defaultLampBrandingByEvent,
+      ...(lampBrandingOverrides || {}),
+    }),
+    [defaultLampBrandingByEvent, lampBrandingOverrides]
+  );
 
   // Build slides: event banners only (download slide temporarily hidden)
   const slides: CarouselSlide[] = [
     // { type: 'download' }, // Temporarily hidden
     ...availableEvents.map(event => ({ type: 'event' as const, event })),
   ];
+
+  const scrollToSlide = useCallback((index: number) => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({
+        x: index * screenWidth,
+        animated: true,
+      });
+    }
+  }, [screenWidth]);
 
   // Auto-play functionality
   useEffect(() => {
@@ -62,16 +126,7 @@ export default function EventBannerCarousel({
     }, autoPlayInterval);
 
     return () => clearInterval(interval);
-  }, [autoPlay, autoPlayInterval, slides.length]);
-
-  const scrollToSlide = (index: number) => {
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({
-        x: index * screenWidth,
-        animated: true,
-      });
-    }
-  };
+  }, [autoPlay, autoPlayInterval, slides.length, scrollToSlide]);
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -158,9 +213,11 @@ export default function EventBannerCarousel({
         {/* Event Banner Slides */}
         {slides
           .filter(slide => slide.type === 'event')
-          .map((slide, index) => {
+          .map((slide) => {
             if (!slide.event) return null;
             const event = slide.event;
+            const lampBranding = lampBrandingByEvent[event.id];
+            const shouldUseLampBanner = Platform.OS === 'web' && Boolean(lampBranding);
             return (
               <View key={event.id} style={styles.slide}>
                 <TouchableOpacity
@@ -168,16 +225,26 @@ export default function EventBannerCarousel({
                   onPress={() => handleEventPress(event)}
                   style={styles.eventBannerWrapper}
                 >
-                  <EventBanner
-                    title={event.title}
-                    subtitle={event.subtitle}
-                    date={getEventDate(event)}
-                    backgroundColor={event.color}
-                    showCountdown={true}
-                    showLiveIndicator={true}
-                    eventStartDate={getEventStartDate(event)}
-                    isLive={false}
-                  />
+                  {shouldUseLampBanner ? (
+                    <LampBrandBanner
+                      isDarkMode={isDark}
+                      logoSrcDark={lampBranding?.logoSrcDark}
+                      logoSrcLight={lampBranding?.logoSrcLight}
+                      logoFallbackSrc={lampBranding?.logoFallbackSrc}
+                      logoAlt={lampBranding?.logoAlt}
+                    />
+                  ) : (
+                    <EventBanner
+                      title={event.title}
+                      subtitle={event.subtitle}
+                      date={getEventDate(event)}
+                      backgroundColor={event.color}
+                      showCountdown={true}
+                      showLiveIndicator={true}
+                      eventStartDate={getEventStartDate(event)}
+                      isLive={false}
+                    />
+                  )}
                 </TouchableOpacity>
               </View>
             );
@@ -346,4 +413,3 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     backgroundColor: isDark ? '#FFFFFF' : '#000000',
   },
 });
-
