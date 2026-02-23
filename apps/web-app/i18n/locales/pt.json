@@ -159,6 +159,29 @@
     "passwordlessUnavailableTitle": "Link por e-mail e OTP indisponíveis",
     "passwordlessUnavailableMessage": "O login por link mágico e OTP não está disponível porque o passwordless do Supabase não está configurado para este ambiente."
   },
+  "pwaPrompt": {
+    "installAction": "Instalar HashPass",
+    "openAction": "Abrir app HashPass",
+    "installTitle": "Instalar HashPass",
+    "openTitle": "Abrir seu app instalado",
+    "installDescription": "Instale o HashPass como PWA para abrir como app na tela inicial.",
+    "openDescription": "O HashPass já está instalado. Abra no modo app para a melhor experiência mobile.",
+    "whatIsThis": "O que é isso?",
+    "close": "Fechar aviso de instalação",
+    "dialogLabel": "Aviso de instalação do HashPass",
+    "expandCollapsed": "Abrir opções de instalação",
+    "infoIntro": "Um PWA (Progressive Web App) permite que o HashPass se comporte como um app nativo no seu dispositivo.",
+    "details": {
+      "one": "PWA significa Progressive Web App: comportamento de app direto do navegador.",
+      "two": "Não precisa baixar da loja, mas você mantém acesso rápido pela tela inicial.",
+      "three": "Ótimo para check-in de eventos, carteira e notificações com menos fricção."
+    },
+    "instructions": {
+      "ios": "Para instalar: toque em Compartilhar e depois em \"Adicionar à Tela de Início\".",
+      "android": "Para instalar: abra o menu do navegador e toque em \"Instalar app\".",
+      "default": "Para instalar: use o ícone de instalação na barra de endereço do navegador."
+    }
+  },
   "privacy": {
     "title": "Política de Privacidade",
     "lastUpdated": "Última atualização: 4 de novembro de 2025",

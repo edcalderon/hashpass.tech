@@ -159,6 +159,29 @@
     "passwordlessUnavailableTitle": "Lien e-mail et OTP indisponibles",
     "passwordlessUnavailableMessage": "La connexion par lien magique et OTP n'est pas disponible car le mode sans mot de passe de Supabase n'est pas configuré pour cet environnement."
   },
+  "pwaPrompt": {
+    "installAction": "Installer HashPass",
+    "openAction": "Ouvrir l'app HashPass",
+    "installTitle": "Installer HashPass",
+    "openTitle": "Ouvrir votre app installée",
+    "installDescription": "Installez HashPass en PWA pour la lancer comme une app depuis votre écran d'accueil.",
+    "openDescription": "HashPass est déjà installée. Ouvrez-la en mode app pour la meilleure expérience mobile.",
+    "whatIsThis": "Qu'est-ce que c'est ?",
+    "close": "Fermer l'invite d'installation",
+    "dialogLabel": "Invite d'installation HashPass",
+    "expandCollapsed": "Ouvrir les options d'installation",
+    "infoIntro": "Une PWA (Progressive Web App) permet à HashPass de se comporter comme une application native sur votre appareil.",
+    "details": {
+      "one": "PWA signifie Progressive Web App : un comportement d'app depuis votre navigateur.",
+      "two": "Aucun téléchargement depuis un store n'est requis, tout en gardant un accès rapide depuis l'écran d'accueil.",
+      "three": "Idéal pour le check-in d'événements, le wallet et les notifications avec moins de friction."
+    },
+    "instructions": {
+      "ios": "Pour installer : appuyez sur Partager, puis sur \"Sur l'écran d'accueil\".",
+      "android": "Pour installer : ouvrez le menu du navigateur puis appuyez sur \"Installer l'application\".",
+      "default": "Pour installer : utilisez l'icône d'installation dans la barre d'adresse."
+    }
+  },
   "privacy": {
     "title": "Politique de confidentialité",
     "lastUpdated": "Dernière mise à jour : 4 novembre 2025",

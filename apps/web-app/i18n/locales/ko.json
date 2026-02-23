@@ -168,6 +168,29 @@
     "passwordlessUnavailableTitle": "이메일 링크 및 OTP 사용 불가",
     "passwordlessUnavailableMessage": "이 환경에 Supabase 비밀번호 없는 로그인이 설정되어 있지 않아 매직 링크 및 OTP 로그인을 사용할 수 없습니다."
   },
+  "pwaPrompt": {
+    "installAction": "HashPass 설치",
+    "openAction": "HashPass 앱 열기",
+    "installTitle": "HashPass 설치",
+    "openTitle": "설치된 앱 열기",
+    "installDescription": "HashPass를 PWA로 설치하면 홈 화면에서 앱처럼 바로 실행할 수 있습니다.",
+    "openDescription": "HashPass가 이미 설치되어 있습니다. 최적의 모바일 경험을 위해 앱 모드로 열어 주세요.",
+    "whatIsThis": "이게 무엇인가요?",
+    "close": "설치 안내 닫기",
+    "dialogLabel": "HashPass 설치 안내",
+    "expandCollapsed": "설치 옵션 열기",
+    "infoIntro": "PWA(프로그레시브 웹 앱)는 HashPass를 기기에서 네이티브 앱처럼 동작하게 합니다.",
+    "details": {
+      "one": "PWA는 브라우저 기반이지만 앱처럼 동작하는 Progressive Web App입니다.",
+      "two": "앱 스토어 다운로드 없이도 홈 화면에서 빠르게 실행할 수 있습니다.",
+      "three": "이벤트 체크인, 지갑, 알림을 더 적은 마찰로 사용할 수 있습니다."
+    },
+    "instructions": {
+      "ios": "설치 방법: 공유 버튼을 누른 다음 \"홈 화면에 추가\"를 선택하세요.",
+      "android": "설치 방법: 브라우저 메뉴를 열고 \"앱 설치\"를 선택하세요.",
+      "default": "설치 방법: 브라우저 주소창의 설치 아이콘을 사용하세요."
+    }
+  },
   "privacy": {
     "title": "개인정보 처리방침",
     "lastUpdated": "최종 업데이트: 2025년 11월 4일",

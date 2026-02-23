@@ -7,8 +7,14 @@ import * as Haptics from 'expo-haptics';
 import { useLanguage } from '../providers/LanguageProvider';
 import { getAvailableLocales, useTranslation } from '../i18n/i18n';
 import { useRouter, usePathname } from 'expo-router';
+import Reanimated, { SharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
-const ThemeAndLanguageSwitcher = () => {
+interface ThemeAndLanguageSwitcherProps {
+  scrollY?: SharedValue<number>;
+  hideAfterScrollY?: number;
+}
+
+const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLanguageSwitcherProps) => {
   const { toggleTheme, colors, isDark } = useTheme();
   const { locale, setLocale } = useLanguage();
   const router = useRouter();
@@ -152,11 +158,29 @@ const ThemeAndLanguageSwitcher = () => {
     outputRange: [0, 1],
   });
 
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    if (!scrollY) {
+      return {
+        opacity: 1,
+        pointerEvents: 'auto',
+      } as const;
+    }
+
+    const shouldShow = scrollY.value <= hideAfterScrollY;
+    return {
+      opacity: withTiming(shouldShow ? 1 : 0, { duration: 160 }),
+      pointerEvents: shouldShow ? 'auto' : 'none',
+    } as const;
+  }, [scrollY, hideAfterScrollY]);
+
   return (
-    <View style={[
-      styles.container,
-      isMobile && styles.containerMobile
-    ]}>
+    <Reanimated.View
+      style={[
+        styles.container,
+        isMobile && styles.containerMobile,
+        containerAnimatedStyle,
+      ]}
+    >
       <View style={styles.languageContainer}>
         <TouchableOpacity
           style={[styles.button, { backgroundColor: colors.surface }]}
@@ -260,7 +284,7 @@ const ThemeAndLanguageSwitcher = () => {
           ]} />
         </TouchableWithoutFeedback>
       )}
-    </View>
+    </Reanimated.View>
   );
 };
 

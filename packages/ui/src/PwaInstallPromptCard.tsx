@@ -10,13 +10,18 @@ export interface PwaInstallPromptCardProps {
   title?: string;
   description?: string;
   details?: string[];
+  infoIntro?: string;
   primaryLabel?: string;
   infoLabel?: string;
   closeLabel?: string;
+  dialogLabel?: string;
+  collapsed?: boolean;
+  collapsedLabel?: string;
   className?: string;
   showInfoToggle?: boolean;
   onPrimaryAction: () => void;
   onClose?: () => void;
+  onExpand?: () => void;
 }
 
 const DEFAULT_DETAILS = [
@@ -35,13 +40,18 @@ export default function PwaInstallPromptCard({
   title,
   description,
   details = DEFAULT_DETAILS,
+  infoIntro = "A PWA (Progressive Web App) lets HashPass behave like a native app on your device.",
   primaryLabel = "Install HashPass",
   infoLabel = "What is this?",
   closeLabel = "Close install prompt",
+  dialogLabel,
+  collapsed = false,
+  collapsedLabel = "Expand install prompt",
   className = "",
   showInfoToggle = true,
   onPrimaryAction,
   onClose,
+  onExpand,
 }: PwaInstallPromptCardProps) {
   const [expanded, setExpanded] = useState(false);
   const scopeId = useId();
@@ -52,6 +62,8 @@ export default function PwaInstallPromptCard({
   const cardDescription =
     description ||
     "Add HashPass to your phone for a faster, app-like experience.";
+  const dialogAriaLabel = dialogLabel || `${appName} install prompt`;
+  const collapseAriaLabel = collapsedLabel || dialogAriaLabel;
 
   return (
     <div className={`${scopeClass} ${className}`.trim()}>
@@ -66,6 +78,40 @@ export default function PwaInstallPromptCard({
           right: 16px;
           bottom: max(16px, env(safe-area-inset-bottom));
           z-index: 1000;
+        }
+
+        .${scopeClass}.hp-pwa-collapsed-state {
+          width: auto;
+        }
+
+        .${scopeClass} .hp-pwa-collapsed {
+          width: 52px;
+          height: 52px;
+          border-radius: 999px;
+          border: 1px solid rgba(147, 197, 253, 0.58);
+          background: linear-gradient(160deg, rgba(23, 47, 126, 0.94), rgba(6, 10, 30, 0.96));
+          box-shadow: 0 12px 24px rgba(10, 18, 50, 0.45);
+          color: #ffffff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+
+        .${scopeClass} .hp-pwa-collapsed:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 14px 28px rgba(24, 46, 118, 0.52);
+        }
+
+        .${scopeClass} .hp-pwa-collapsed:active {
+          transform: translateY(1px);
+        }
+
+        .${scopeClass} .hp-pwa-collapsed-icon {
+          width: 20px;
+          height: 20px;
+          display: block;
         }
 
         .${scopeClass} .hp-pwa-card {
@@ -333,6 +379,12 @@ export default function PwaInstallPromptCard({
             bottom: max(12px, env(safe-area-inset-bottom));
           }
 
+          .${scopeClass}.hp-pwa-floating.hp-pwa-collapsed-state {
+            left: auto;
+            right: 12px;
+            transform: none;
+          }
+
           .${scopeClass} .hp-pwa-card {
             width: min(94vw, 460px);
             border-radius: 16px;
@@ -344,7 +396,22 @@ export default function PwaInstallPromptCard({
         }
       `}</style>
 
-      <div className="hp-pwa-card" role="dialog" aria-label={`${appName} install prompt`}>
+      {collapsed ? (
+        <button
+          type="button"
+          className="hp-pwa-collapsed"
+          onClick={onExpand || onPrimaryAction}
+          aria-label={collapseAriaLabel}
+          title={collapseAriaLabel}
+        >
+          <svg className="hp-pwa-collapsed-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 4V15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M7 11L12 16L17 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M5 20H19" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+        </button>
+      ) : (
+      <div className="hp-pwa-card" role="dialog" aria-label={dialogAriaLabel}>
         <div className="hp-pwa-top">
           <div className="hp-pwa-brand">
             <div
@@ -393,9 +460,7 @@ export default function PwaInstallPromptCard({
 
             {expanded && (
               <div className="hp-pwa-info-panel">
-                <p className="hp-pwa-info-intro">
-                  A PWA (Progressive Web App) lets HashPass behave like a native app on your device.
-                </p>
+                <p className="hp-pwa-info-intro">{infoIntro}</p>
                 <ul className="hp-pwa-info-list">
                   {details.map((item, index) => (
                     <li key={`${item}-${index}`}>{item}</li>
@@ -406,6 +471,7 @@ export default function PwaInstallPromptCard({
           </>
         )}
       </div>
+      )}
     </div>
   );
 }

@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Image, Platform } from 'react-native';
 import { PwaInstallPromptCard } from '@hashpass/ui';
 import { getInstallationStatus } from '../lib/pwa-utils';
+import { useTranslation } from '../i18n/i18n';
 
-const DISMISS_KEY = 'hashpass:pwa-install-dismissed';
+const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,19 +15,20 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const PWAPrompt = () => {
+  const { t } = useTranslation('pwaPrompt');
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isStandaloneMode, setIsStandaloneMode] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
       return;
     }
 
-    const isStoredDismissed = window.localStorage.getItem(DISMISS_KEY) === 'true';
-    setIsDismissed(isStoredDismissed);
+    const isStoredCollapsed = window.localStorage.getItem(COLLAPSE_KEY) === 'true';
+    setIsCollapsed(isStoredCollapsed);
 
     const checkStatus = () => {
       const status = getInstallationStatus();
@@ -35,14 +37,19 @@ const PWAPrompt = () => {
 
       const shouldShowInstall = !status.installed && status.canInstall;
       const shouldShowOpenApp = status.installed && !status.isStandaloneMode;
-      setShowPrompt((shouldShowInstall || shouldShowOpenApp) && !isStoredDismissed);
+      setShowPrompt(shouldShowInstall || shouldShowOpenApp);
+
+      if (status.installed && status.isStandaloneMode) {
+        window.localStorage.removeItem(COLLAPSE_KEY);
+        setIsCollapsed(false);
+      }
     };
 
     const handleBeforeInstallPrompt = (event: Event) => {
       const installEvent = event as BeforeInstallPromptEvent;
       installEvent.preventDefault();
       setDeferredPrompt(installEvent);
-      if (!isStoredDismissed) {
+      if (!isStoredCollapsed) {
         setShowPrompt(true);
       }
     };
@@ -68,12 +75,20 @@ const PWAPrompt = () => {
     };
   }, []);
 
-  const dismissPrompt = () => {
+  const collapsePrompt = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.localStorage.setItem(DISMISS_KEY, 'true');
+      window.localStorage.setItem(COLLAPSE_KEY, 'true');
     }
-    setIsDismissed(true);
+    setIsCollapsed(true);
     setShowPrompt(false);
+  };
+
+  const expandPrompt = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.localStorage.removeItem(COLLAPSE_KEY);
+    }
+    setIsCollapsed(false);
+    setShowPrompt(true);
   };
 
   const installPWA = async () => {
@@ -84,8 +99,10 @@ const PWAPrompt = () => {
       if (choiceResult.outcome === 'accepted') {
         if (Platform.OS === 'web' && typeof window !== 'undefined') {
           window.localStorage.setItem('pwa-installed', 'true');
+          window.localStorage.removeItem(COLLAPSE_KEY);
         }
         setShowPrompt(false);
+        setIsCollapsed(false);
       }
 
       setDeferredPrompt(null);
@@ -97,11 +114,11 @@ const PWAPrompt = () => {
       const isAndroid = /Android/.test(navigator.userAgent);
 
       if (isIOS) {
-        alert('To install: tap Share, then "Add to Home Screen".');
+        alert(t('instructions.ios', 'To install: tap Share, then "Add to Home Screen".'));
       } else if (isAndroid) {
-        alert('To install: open the browser menu and tap "Install app".');
+        alert(t('instructions.android', 'To install: open the browser menu and tap "Install app".'));
       } else {
-        alert('To install: use the install icon in your browser address bar.');
+        alert(t('instructions.default', 'To install: use the install icon in your browser address bar.'));
       }
     }
   };
@@ -120,11 +137,7 @@ const PWAPrompt = () => {
     return null;
   }
 
-  if (!showPrompt && !deferredPrompt) {
-    return null;
-  }
-
-  if (isDismissed) {
+  if (!showPrompt && !deferredPrompt && !isCollapsed) {
     return null;
   }
 
@@ -139,25 +152,32 @@ const PWAPrompt = () => {
 
   return (
     <PwaInstallPromptCard
-      className="hp-pwa-floating"
+      className={`hp-pwa-floating${isCollapsed ? ' hp-pwa-collapsed-state' : ''}`}
       appName="HashPass"
       logoSrc={logoSrc}
       logoLayout="icon"
-      primaryLabel={isOpenAppMode ? 'Open HashPass App' : 'Install HashPass'}
-      title={isOpenAppMode ? 'Open your installed app' : 'Install HashPass'}
+      primaryLabel={isOpenAppMode ? t('openAction', 'Open HashPass App') : t('installAction', 'Install HashPass')}
+      title={isOpenAppMode ? t('openTitle', 'Open your installed app') : t('installTitle', 'Install HashPass')}
       description={
         isOpenAppMode
-          ? 'HashPass is already installed. Open it in app mode for the best mobile experience.'
-          : 'Install HashPass as a PWA to launch it like an app from your home screen.'
+          ? t('openDescription', 'HashPass is already installed. Open it in app mode for the best mobile experience.')
+          : t('installDescription', 'Install HashPass as a PWA to launch it like an app from your home screen.')
       }
+      dialogLabel={t('dialogLabel', 'HashPass install prompt')}
+      closeLabel={t('close', 'Close install prompt')}
+      infoLabel={t('whatIsThis', 'What is this?')}
+      infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HashPass behave like a native app on your device.')}
       details={[
-        'PWA means Progressive Web App: app-like behavior from your browser install.',
-        'No app-store download required, but you still get quick home-screen access.',
-        'Great for event check-in flows, wallets, and notifications with less friction.',
+        t('details.one', 'PWA means Progressive Web App: app-like behavior from your browser install.'),
+        t('details.two', 'No app-store download required, but you still get quick home-screen access.'),
+        t('details.three', 'Great for event check-in flows, wallets, and notifications with less friction.'),
       ]}
       showInfoToggle={!isOpenAppMode}
+      collapsed={isCollapsed}
+      collapsedLabel={t('expandCollapsed', 'Open install options')}
+      onExpand={expandPrompt}
       onPrimaryAction={isOpenAppMode ? openApp : installPWA}
-      onClose={dismissPrompt}
+      onClose={collapsePrompt}
     />
   );
 };

@@ -279,7 +279,7 @@ export default function HomeScreen() {
     <Animated.View style={[styles.container, animatedBackground]}>
 
       <BackToTop scrollY={scrollY} scrollRef={scrollRef} colors={colors} />
-      <ThemeAndLanguageSwitcher />
+      <ThemeAndLanguageSwitcher scrollY={scrollY} />
 
       <Animated.ScrollView
         ref={scrollRef}
@@ -313,16 +313,28 @@ export default function HomeScreen() {
               activeOpacity={0.7}
               onPress={handleScrollToFeatures}
               style={styles.scrollDownButton}
-              hitSlop={{top: 30, bottom: 0, left: 40, right: 40}} // increased hitSlop
+              hitSlop={isMobile ? { top: 12, bottom: 0, left: 24, right: 24 } : { top: 30, bottom: 0, left: 40, right: 40 }}
             >
-              <View style={styles.scrollDownContent} pointerEvents="box-none">
-                <Text style={styles.scrollDownText}>{t('scroll', 'Scroll')}</Text>
-                <View style={styles.scrollIndicatorMouse}>
-                  <Animated.View style={[styles.scrollWheel, wheelAnimatedStyle]} />
+              <View style={[styles.scrollDownContent, isMobile && styles.scrollDownContentMobile]} pointerEvents="box-none">
+                <Text style={[styles.scrollDownText, isMobile && styles.scrollDownTextMobile]}>{t('scroll', 'Scroll')}</Text>
+                <View style={[styles.scrollIndicatorMouse, isMobile && styles.scrollIndicatorMouseMobile]}>
+                  <Animated.View style={[styles.scrollWheel, isMobile && styles.scrollWheelMobile, wheelAnimatedStyle]} />
                 </View>
-                <Animated.View style={[styles.arrowDown, arrowAnimatedStyle]}>
-                  <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 2L10 10L18 2" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <Animated.View style={[styles.arrowDown, isMobile && styles.arrowDownMobile, arrowAnimatedStyle]}>
+                  <svg
+                    width={isMobile ? '16' : '20'}
+                    height={isMobile ? '10' : '12'}
+                    viewBox="0 0 20 12"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M2 2L10 10L18 2"
+                      stroke="#FFFFFF"
+                      strokeWidth={isMobile ? '1.7' : '2'}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </Animated.View>
               </View>
@@ -787,7 +799,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     alignItems: 'center',
     justifyContent: 'flex-end',
     backgroundColor: 'transparent',
-    paddingBottom: isMobile ? 20 : 40,
+    paddingBottom: isMobile ? 8 : 40,
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -808,6 +820,11 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     gap: 8,
     elevation: 3,
   },
+  scrollDownContentMobile: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    gap: 5,
+  },
   scrollDownText: {
     color: 'rgba(255, 255, 255, 0.78)',
     fontSize: 11,
@@ -815,6 +832,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     textTransform: 'uppercase',
     letterSpacing: 2.2,
     textAlign: 'center',
+  },
+  scrollDownTextMobile: {
+    fontSize: 9,
+    letterSpacing: 1.2,
   },
   scrollIndicatorMouse: {
     width: 30,
@@ -826,11 +847,23 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     alignItems: 'center',
     paddingTop: 8,
   },
+  scrollIndicatorMouseMobile: {
+    width: 24,
+    height: 34,
+    borderRadius: 14,
+    borderWidth: 1.2,
+    paddingTop: 6,
+  },
   scrollWheel: {
     width: 4,
     height: 8,
     borderRadius: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  scrollWheelMobile: {
+    width: 3,
+    height: 6,
+    borderRadius: 1.5,
   },
   arrowContainer: {
     width: 40,
@@ -860,6 +893,11 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     opacity: 0.88,
     position: 'relative',
     bottom: 0,
+  },
+  arrowDownMobile: {
+    width: 16,
+    height: 10,
+    opacity: 0.82,
   },
   carouselSection: {
     marginBottom: 32,

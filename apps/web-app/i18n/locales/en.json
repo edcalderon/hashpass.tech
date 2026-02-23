@@ -168,6 +168,29 @@
     "passwordlessUnavailableTitle": "Email Link and OTP Unavailable",
     "passwordlessUnavailableMessage": "Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment."
   },
+  "pwaPrompt": {
+    "installAction": "Install HashPass",
+    "openAction": "Open HashPass App",
+    "installTitle": "Install HashPass",
+    "openTitle": "Open your installed app",
+    "installDescription": "Install HashPass as a PWA to launch it like an app from your home screen.",
+    "openDescription": "HashPass is already installed. Open it in app mode for the best mobile experience.",
+    "whatIsThis": "What is this?",
+    "close": "Close install prompt",
+    "dialogLabel": "HashPass install prompt",
+    "expandCollapsed": "Open install options",
+    "infoIntro": "A PWA (Progressive Web App) lets HashPass behave like a native app on your device.",
+    "details": {
+      "one": "PWA means Progressive Web App: app-like behavior from your browser install.",
+      "two": "No app-store download required, but you still get quick home-screen access.",
+      "three": "Great for event check-in flows, wallets, and notifications with less friction."
+    },
+    "instructions": {
+      "ios": "To install: tap Share, then \"Add to Home Screen\".",
+      "android": "To install: open the browser menu and tap \"Install app\".",
+      "default": "To install: use the install icon in your browser address bar."
+    }
+  },
   "privacy": {
     "title": "Privacy Policy",
     "lastUpdated": "Last Updated: November 4, 2025",
