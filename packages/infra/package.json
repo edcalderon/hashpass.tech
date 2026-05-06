@@ -1,0 +1,27 @@
+{
+  "name": "@hashpass/infra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "sst dev",
+    "deploy:dev": "sst deploy --stage dev",
+    "deploy:prod": "sst deploy --stage production",
+    "doctor": "infra doctor --target .",
+    "clean": "rm -rf .sst dist"
+  },
+  "dependencies": {
+    "@lsts_tech/infra": "^1.0.3",
+    "sst": "^3.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "typescript": "~5.8.3"
+  }
+}
