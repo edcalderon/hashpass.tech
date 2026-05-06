@@ -1,0 +1,24 @@
+version: 0.2
+
+env:
+  shell: bash
+  variables:
+    PNPM_VERSION: "10.14.0"
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - corepack enable
+      - corepack prepare pnpm@${PNPM_VERSION} --activate
+      - pnpm --version
+  pre_build:
+    commands:
+      - export ROUTE53_ZONE_ID="$(bash tools/scripts/check-infra-dns.sh --print-zone-id)"
+      - bash tools/scripts/check-infra-dns.sh
+      - pnpm install --no-frozen-lockfile
+  build:
+    commands:
+      - echo "Deploying infra stage ${TARGET_STAGE}"
+      - pnpm --filter @hashpass/infra run deploy:${TARGET_STAGE}

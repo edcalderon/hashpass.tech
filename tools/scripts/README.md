@@ -25,6 +25,10 @@ Shared branch cadence:
 - `tools/scripts/check-consistency.js`
 - `tools/scripts/apply-amplify-custom-headers.sh`
 - `tools/scripts/release-pipeline.js`
+- `tools/scripts/release-infra-pipeline.js`
+- `tools/scripts/provision-infra-connection.sh`
+- `tools/scripts/provision-infra-pipelines.sh`
+- `tools/scripts/test-release-infra-flow.sh`
 - `tools/scripts/propagate-env.js` (for `dev`/`production`)
 - `tools/scripts/sync-env.js`
 
@@ -37,9 +41,16 @@ tools/scripts/apply-amplify-custom-headers.sh --tenant core
 tools/scripts/apply-amplify-custom-headers.sh --tenant blockchainsummit
 node tools/scripts/release-pipeline.js --env development
 node tools/scripts/release-pipeline.js --env production --bump minor
+node tools/scripts/release-infra-pipeline.js --env production --bump patch
+tools/scripts/provision-infra-connection.sh owner/repo
+tools/scripts/provision-infra-pipelines.sh owner/repo
+tools/scripts/test-release-infra-flow.sh production patch
 node tools/scripts/propagate-env.js dev --tenant blockchainsummit
 node tools/scripts/sync-env.js production --tenant core
 ```
+
+Infra helpers derive the AWS account from active credentials unless `AWS_ACCOUNT_ID` or `EXPECTED_AWS_ACCOUNT_ID` is set in the environment or repository variables.
+See `docs/INFRA_NAMING_GUIDE.md` for the naming convention used by the new BSL infra resources.
 
 ### Environment safety guards
 

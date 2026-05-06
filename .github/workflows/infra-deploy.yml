@@ -1,0 +1,64 @@
+name: Deploy Infra
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "apps/web-app/**"
+      - "packages/infra/**"
+      - "packages/auth/**"
+      - "packages/backend/**"
+      - "packages/config/**"
+      - "packages/types/**"
+      - "packages/ui/**"
+      - "packages/utils/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig*.json"
+      - ".github/workflows/infra-deploy.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.0"
+          cache: "pnpm"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.14.0"
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-2
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: hashpass-infra
+
+      - name: Deploy production
+        if: github.ref_name == 'main'
+        run: pnpm --filter @hashpass/infra run deploy:prod
+
+      - name: Deploy development
+        if: github.ref_name == 'develop'
+        run: pnpm --filter @hashpass/infra run deploy:dev

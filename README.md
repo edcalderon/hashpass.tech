@@ -44,7 +44,7 @@ We believe the future of events should be shaped by the community. By making Has
 
 - **`apps/web-app`** — Main Expo Router web application (uses `@hashpass/*` packages).
 - **`apps/directus`** — Directus SSO Docker setup for local auth testing.
-- **`packages/`** — Shared packages: `@hashpass/auth`, `@hashpass/config`, `@hashpass/types`, `@hashpass/backend`, `@hashpass/utils`, `@hashpass/ui`.
+- **`packages/`** — Shared packages: `@hashpass/auth`, `@hashpass/config`, `@hashpass/types`, `@hashpass/backend`, `@hashpass/utils`, `@hashpass/ui`, `@hashpass/infra`.
 - **`infrastructure/terraform`** — Terraform IaC (GCP, etc.).
 
 Use **pnpm** and **Turborepo** at the repo root:
@@ -55,8 +55,17 @@ pnpm run dev          # run web app from root (delegates to apps/web-app)
 pnpm run dev:web-app  # run web app directly from apps/web-app
 pnpm run dev:directus # run Directus Docker stack from apps/directus
 pnpm run dev:all      # run web app + Directus (single Ctrl+C stops both)
+pnpm run infra:deploy:dev  # deploy the BSL dev site to bsl-dev.hashpass.tech
+pnpm run infra:deploy:prod # deploy the BSL production site to bsl.hashpass.tech
+pnpm run infra:provision-connection # create the GitHub CodeConnections connection
+pnpm run infra:provision-pipelines # create the AWS CodePipeline/CodeBuild pipelines
+pnpm run release:infra:patch # bump patch and release through the infra pipeline
+pnpm run release:infra:test # dry-run the infra release flow
 pnpm run build:all    # turbo build all packages
 ```
+
+Set `AWS_ACCOUNT_ID` or `EXPECTED_AWS_ACCOUNT_ID` in your local shell or GitHub repository variables when you want the infra helpers to verify the target AWS account without hardcoding it in the repo.
+See [docs/INFRA_NAMING_GUIDE.md](docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the new infra track.
 
 1. **Clone the repo:**
    ```bash

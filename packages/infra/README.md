@@ -1,0 +1,37 @@
+# HashPass Infra
+
+This workspace package is the first SST-based replacement layer for Amplify.
+
+It wraps the upstream `@lsts_tech/infra` package, which provides the `infra`
+CLI, and keeps the BSL web app deployment config in one place.
+
+## What it deploys
+
+- `bsl.hashpass.tech` for production
+- `bsl-dev.hashpass.tech` for development
+- `apps/web-app` as an SST `StaticSite`
+
+## Commands
+
+```bash
+pnpm --filter @hashpass/infra run dev
+pnpm --filter @hashpass/infra run deploy:dev
+pnpm --filter @hashpass/infra run deploy:prod
+pnpm --filter @hashpass/infra run doctor
+```
+
+## CI/CD
+
+GitHub Actions can deploy the package with AWS OIDC. The workflow in
+`.github/workflows/infra-deploy.yml` targets:
+
+- `develop` -> `dev`
+- `main` -> `production`
+
+Before the first run, bootstrap a role with:
+
+```bash
+REPO=<org>/<repo> ./tools/scripts/setup-infra-role.sh
+```
+
+See [docs/INFRA_NAMING_GUIDE.md](/home/ed/Documents/HASH/hashpass.tech/docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the BSL infra track.
