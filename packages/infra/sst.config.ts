@@ -18,6 +18,27 @@ const BSL_SITE_ENV = {
   },
 } as const;
 
+function getPublicSupabaseEnv() {
+  const supabaseUrl =
+    process.env.EXPO_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    "";
+
+  const supabaseAnonKey =
+    process.env.EXPO_PUBLIC_SUPABASE_KEY ||
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "";
+
+  return {
+    EXPO_PUBLIC_SUPABASE_URL: supabaseUrl,
+    EXPO_PUBLIC_SUPABASE_KEY: supabaseAnonKey,
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
+    NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
+  };
+}
+
 function resolveBslSiteConfig(stage?: string) {
   const resolvedStage = stage === "production" ? "production" : "dev";
 
@@ -69,14 +90,17 @@ export default $config({
         dns: zone ? sst.aws.dns(zone) : sst.aws.dns(),
       },
       build: {
-        command: "CI=1 SKIP_ENV_PROPAGATE=1 npm run build",
+        command: "CI=1 SKIP_ENV_PROPAGATE=1 npm run build:static",
         output: "dist/client",
       },
       dev: {
         command: "npm run dev",
         directory: "../../apps/web-app",
       },
-      environment: site.environment,
+      environment: {
+        ...site.environment,
+        ...getPublicSupabaseEnv(),
+      },
     });
 
     return {

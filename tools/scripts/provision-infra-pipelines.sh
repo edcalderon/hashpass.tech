@@ -9,6 +9,7 @@ CONNECTION_NAME="${CONNECTION_NAME:-${RESOURCE_PREFIX}-github-${REGION}}"
 PIPELINE_ROLE_NAME="${PIPELINE_ROLE_NAME:-BslHashpassPipelineRole}"
 CODEBUILD_ROLE_NAME="${CODEBUILD_ROLE_NAME:-BslHashpassCodeBuildRole}"
 BUILDSPEC_FILE="${BUILDSPEC_FILE:-tools/buildspecs/infra-deploy.yml}"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 if [[ -n "${1:-}" && "${1:-}" != "--dry-run" ]]; then
   REPO="$1"
@@ -51,6 +52,42 @@ fi
 
 pipeline_role_arn=""
 codebuild_role_arn=""
+
+read_env_value() {
+  local key="$1"
+  local value=""
+
+  if [[ -f "${ROOT_DIR}/.env" ]]; then
+    value="$(awk -F= -v key="$key" '
+      $1 == key {
+        sub(/^[^=]*=/, "", $0);
+        print;
+        exit
+      }
+    ' "${ROOT_DIR}/.env" 2>/dev/null || true)"
+  fi
+
+  if [[ -z "${value}" ]]; then
+    value="${!key:-}"
+  fi
+
+  printf '%s' "${value}"
+}
+
+append_env_var() {
+  local name="$1"
+  local value="$2"
+
+  if [[ -z "${value}" ]]; then
+    return
+  fi
+
+  if [[ "${env_vars}" == "[" ]]; then
+    env_vars+="{name=${name},value=${value},type=PLAINTEXT}"
+  else
+    env_vars+=",{name=${name},value=${value},type=PLAINTEXT}"
+  fi
+}
 
 ensure_role() {
   local role_name="$1"
@@ -109,14 +146,73 @@ create_or_update_codebuild() {
   local stage_name="$1"
   local project_name="$2"
   local build_role_arn="$3"
+  local stage_suffix=""
 
   if [[ "${DRY_RUN}" == true ]]; then
     echo "Would create/update CodeBuild project ${project_name} (${stage_name})"
     return
   fi
 
+  case "${stage_name}" in
+    dev|development)
+      stage_suffix="_DEV"
+      ;;
+    prod|production)
+      stage_suffix="_PROD"
+      ;;
+  esac
+
+  local supabase_url=""
+  local supabase_anon_key=""
+  local stage_supabase_url_key=""
+  local stage_supabase_key_key=""
+
+  stage_supabase_url_key="EXPO_PUBLIC_SUPABASE_URL${stage_suffix}"
+  stage_supabase_key_key="EXPO_PUBLIC_SUPABASE_KEY${stage_suffix}"
+
+  supabase_url="$(read_env_value "${stage_supabase_url_key}")"
+  if [[ -z "${supabase_url}" ]]; then
+    supabase_url="$(read_env_value EXPO_PUBLIC_SUPABASE_URL)"
+  fi
+  if [[ -z "${supabase_url}" ]]; then
+    supabase_url="$(read_env_value NEXT_PUBLIC_SUPABASE_URL)"
+  fi
+
+  supabase_anon_key="$(read_env_value "${stage_supabase_key_key}")"
+  if [[ -z "${supabase_anon_key}" ]]; then
+    supabase_anon_key="$(read_env_value EXPO_PUBLIC_SUPABASE_ANON_KEY)"
+  fi
+  if [[ -z "${supabase_anon_key}" ]]; then
+    supabase_anon_key="$(read_env_value NEXT_PUBLIC_SUPABASE_ANON_KEY)"
+  fi
+  if [[ -z "${supabase_anon_key}" ]]; then
+    supabase_anon_key="$(read_env_value EXPO_PUBLIC_SUPABASE_KEY)"
+  fi
+
+  if [[ -z "${supabase_url}" || -z "${supabase_anon_key}" ]]; then
+    echo "ERROR: missing Supabase public env for ${stage_name}."
+    echo "Expected one of:"
+    echo "  - ${stage_supabase_url_key}"
+    echo "  - EXPO_PUBLIC_SUPABASE_URL"
+    echo "  - NEXT_PUBLIC_SUPABASE_URL"
+    echo "  - ${stage_supabase_key_key}"
+    echo "  - EXPO_PUBLIC_SUPABASE_KEY"
+    echo "  - EXPO_PUBLIC_SUPABASE_ANON_KEY"
+    echo "  - NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    exit 1
+  fi
+
   local env_vars
-  env_vars="[{name=TARGET_STAGE,value=${stage_name},type=PLAINTEXT},{name=AWS_REGION,value=${REGION},type=PLAINTEXT},{name=AWS_DEFAULT_REGION,value=${REGION},type=PLAINTEXT}]"
+  env_vars="["
+  append_env_var "TARGET_STAGE" "${stage_name}"
+  append_env_var "AWS_REGION" "${REGION}"
+  append_env_var "AWS_DEFAULT_REGION" "${REGION}"
+  append_env_var "EXPO_PUBLIC_SUPABASE_URL" "${supabase_url}"
+  append_env_var "NEXT_PUBLIC_SUPABASE_URL" "${supabase_url}"
+  append_env_var "EXPO_PUBLIC_SUPABASE_KEY" "${supabase_anon_key}"
+  append_env_var "EXPO_PUBLIC_SUPABASE_ANON_KEY" "${supabase_anon_key}"
+  append_env_var "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${supabase_anon_key}"
+  env_vars+="]"
 
   if aws codebuild create-project \
     --region "${REGION}" \

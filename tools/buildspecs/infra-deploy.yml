@@ -4,6 +4,11 @@ env:
   shell: bash
   variables:
     PNPM_VERSION: "10.14.0"
+    PNPM_STORE_DIR: /root/.local/share/pnpm/store/v3
+
+cache:
+  paths:
+    - /root/.local/share/pnpm/store/v3/**/*
 
 phases:
   install:
@@ -12,12 +17,13 @@ phases:
     commands:
       - corepack enable
       - corepack prepare pnpm@${PNPM_VERSION} --activate
+      - pnpm config set store-dir ${PNPM_STORE_DIR}
       - pnpm --version
   pre_build:
     commands:
       - export ROUTE53_ZONE_ID="$(bash tools/scripts/check-infra-dns.sh --print-zone-id)"
       - bash tools/scripts/check-infra-dns.sh
-      - pnpm install --no-frozen-lockfile
+      - pnpm install --frozen-lockfile --prefer-offline
   build:
     commands:
       - echo "Deploying infra stage ${TARGET_STAGE}"

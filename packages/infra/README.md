@@ -37,4 +37,12 @@ Before the first run, bootstrap a role with:
 REPO=<org>/<repo> ./tools/scripts/setup-infra-role.sh
 ```
 
+The site build uses `expo export -p web --no-ssg`, which still bundles the app
+for the browser, but does not pre-render routes or start a runtime server in AWS.
+The CodeBuild projects are seeded with the public Supabase variables from the
+root `.env` so the export can bundle the client correctly:
+
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_KEY`
+
 See [docs/INFRA_NAMING_GUIDE.md](/home/ed/Documents/HASH/hashpass.tech/docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the BSL infra track.
