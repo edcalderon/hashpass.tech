@@ -10,6 +10,7 @@ lambda-deployment.zip
 .expo/
 web-build/
 expo-env.d.ts
+sst-env.d.ts
 
 # Terraform and IaC local state
 *.tfvars
@@ -58,6 +59,7 @@ storybook-static/
 .agents/
 .turbo/
 **/.turbo/
+**/.sst/
 .versioning/
 google-cloud-sdk/
 .netlify/
@@ -71,4 +73,3 @@ yarn-error.*
 
 # Project-specific local envs
 apps/web-app/.env.staging
-

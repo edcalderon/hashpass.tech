@@ -11,8 +11,8 @@
   "scripts": {
     "build": "tsc --noEmit",
     "dev": "sst dev",
-    "deploy:dev": "sst deploy --stage dev",
-    "deploy:prod": "sst deploy --stage production",
+    "deploy:dev": "bash ../../tools/scripts/deploy-sst-with-unlock.sh dev",
+    "deploy:prod": "bash ../../tools/scripts/deploy-sst-with-unlock.sh production",
     "doctor": "infra doctor --target .",
     "clean": "rm -rf .sst dist"
   },
