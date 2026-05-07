@@ -15,7 +15,7 @@ frontend:
         - |
           PNPM_ALLOW_BUILD_ARGS="--allow-build=argon2 --allow-build=aws-sdk --allow-build=bufferutil --allow-build=chromedriver --allow-build=core-js --allow-build=esbuild --allow-build=protobufjs --allow-build=puppeteer --allow-build=sharp --allow-build=unrs-resolver --allow-build=utf-8-validate"
           if [ -f pnpm-lock.yaml ]; then
-            pnpm install --frozen-lockfile $PNPM_ALLOW_BUILD_ARGS
+            pnpm $PNPM_ALLOW_BUILD_ARGS install --frozen-lockfile
           elif [ -f yarn.lock ]; then
             yarn install --frozen-lockfile
           elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
