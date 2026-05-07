@@ -13,9 +13,8 @@ frontend:
         - nvm install 22.22.0
         - corepack enable pnpm || true
         - |
-          PNPM_ALLOW_BUILD_ARGS="--allow-build=argon2 --allow-build=aws-sdk --allow-build=bufferutil --allow-build=chromedriver --allow-build=core-js --allow-build=esbuild --allow-build=protobufjs --allow-build=puppeteer --allow-build=sharp --allow-build=unrs-resolver --allow-build=utf-8-validate"
           if [ -f pnpm-lock.yaml ]; then
-            pnpm $PNPM_ALLOW_BUILD_ARGS install --frozen-lockfile
+            pnpm install --frozen-lockfile
           elif [ -f yarn.lock ]; then
             yarn install --frozen-lockfile
           elif [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then

@@ -2,6 +2,7 @@
   "name": "hashpass.tech",
   "main": "index.js",
   "version": "1.6.127",
+  "packageManager": "pnpm@10.28.2",
   "scripts": {
     "start": "pnpm --filter hashpass-web-app start",
     "start:reset": "pnpm --filter hashpass-web-app start:reset",
@@ -67,21 +68,6 @@
     "release:prod": "node tools/scripts/release-pipeline.js --env production",
     "release:unified": "npx @edcalderon/versioning release",
     "prepare": "node -e \"if (process.env.CI || process.env.NPM_CONFIG_PRODUCTION || process.env.NODE_ENV === 'production') { process.exit(0); }\" && husky"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "argon2",
-      "aws-sdk",
-      "bufferutil",
-      "chromedriver",
-      "core-js",
-      "esbuild",
-      "protobufjs",
-      "puppeteer",
-      "sharp",
-      "unrs-resolver",
-      "utf-8-validate"
-    ]
   },
   "expo": {
     "extra": {
