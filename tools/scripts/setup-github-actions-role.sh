@@ -4,7 +4,7 @@
 set -e
 
 ROLE_NAME="GitHubActions-LambdaDeploy"
-ACCOUNT_ID="058264267235"
+EXPECTED_ACCOUNT_ID="${EXPECTED_AWS_ACCOUNT_ID:-${AWS_ACCOUNT_ID:-}}"
 REGION="us-east-1"
 REPO="lstech-solutions/bsl2025.hashpass.tech"
 
@@ -15,6 +15,17 @@ echo ""
 # Check if OIDC provider exists
 echo "🔍 Checking for OIDC provider..."
 OIDC_PROVIDER=$(aws iam list-open-id-connect-providers --query "OpenIDConnectProviderList[?contains(Arn, 'token.actions.githubusercontent.com')].Arn" --output text 2>/dev/null || echo "")
+
+CURRENT_ACCOUNT=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
+if [ -z "$CURRENT_ACCOUNT" ]; then
+    echo "ERROR: unable to determine AWS account. Configure AWS credentials first."
+    exit 1
+fi
+
+if [ -n "$EXPECTED_ACCOUNT_ID" ] && [ "$CURRENT_ACCOUNT" != "$EXPECTED_ACCOUNT_ID" ]; then
+    echo "ERROR: AWS caller identity is $CURRENT_ACCOUNT, expected $EXPECTED_ACCOUNT_ID."
+    exit 1
+fi
 
 if [ -z "$OIDC_PROVIDER" ]; then
     echo "📝 Creating OIDC provider for GitHub Actions..."
@@ -71,7 +82,7 @@ TRUST_POLICY=$(cat <<EOF
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::${ACCOUNT_ID}:oidc-provider/token.actions.githubusercontent.com"
+        "Federated": "arn:aws:iam::${CURRENT_ACCOUNT}:oidc-provider/token.actions.githubusercontent.com"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
@@ -120,4 +131,3 @@ echo "      Value: $ROLE_ARN"
 echo ""
 echo "   3. The workflow will automatically deploy Lambda on pushes to main/bsl2025"
 echo ""
-

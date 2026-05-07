@@ -4,7 +4,7 @@
 
 Amplify builds are failing with:
 ```
-User: arn:aws:iam::058264267235:user/s3 is not authorized to perform: 
+User: arn:aws:iam::<AWS_ACCOUNT_ID>:user/s3 is not authorized to perform: 
 s3:GetObject on resource: "arn:aws:s3:::amplify-hashpasstech-dev-96465-deployment/#current-cloud-backend.zip"
 ```
 
@@ -18,7 +18,7 @@ From `amplify-meta.json`, we have:
 - **App ID:** `d3ja863334bedw`
 - **App Name:** `bsl2025.hashpass.tech`
 - **Region:** `us-east-2`
-- **Service Role ARN:** `arn:aws:iam::058264267235:role/amplify-hashpasstech-dev-96465-authRole`
+- **Service Role ARN:** `arn:aws:iam::<AWS_ACCOUNT_ID>:role/amplify-hashpasstech-dev-96465-authRole`
 - **Deployment Bucket:** `amplify-hashpasstech-dev-96465-deployment`
 
 ### Step 2: Configure Service Role in Amplify Console
@@ -214,4 +214,3 @@ If you're using Amplify CLI locally, ensure it uses the correct profile:
 - [AWS Amplify Service Role](https://docs.aws.amazon.com/amplify/latest/userguide/how-to-service-role-amplify-console.html)
 - [Amplify IAM Permissions](https://docs.aws.amazon.com/amplify/latest/userguide/security-iam.html)
 - [IAM Roles vs Users](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_compare-resources.html)
-

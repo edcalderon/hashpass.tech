@@ -22,9 +22,9 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202605061948, // Updated to current timestamp
-  releaseDate: '2026-05-06',
-  releaseType: 'stable',
+  buildNumber: 202602230129, // Updated to current timestamp
+  releaseDate: '2026-02-23',
+  releaseType: 'beta',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
@@ -34,65 +34,11 @@ export const CURRENT_VERSION: VersionInfo = {
     'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
   ],
   breakingChanges: [],
-  notes: 'Version 1.6.130 release'
+  notes: 'Version 1.6.127 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
-  '1.6.130': {
-    version: '1.6.130',
-    buildNumber: 202605061948,
-    releaseDate: '2026-05-06',
-    releaseType: 'stable',
-    environment: 'development',
-    features: [
-      // No new features
-    ],
-    bugfixes: [
-      'Added missing translations for version.status and version.statusSummary to all locales',
-      'Added status section translations to ko, fr, pt, de locales',
-      'Compiled i18n catalogs to fix uncompiled message warnings for notification types',
-      'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
-    ],
-    breakingChanges: [],
-    notes: 'Version 1.6.130 release'
-  },
-  '1.6.129': {
-    version: '1.6.129',
-    buildNumber: 202605061904,
-    releaseDate: '2026-05-06',
-    releaseType: 'stable',
-    environment: 'development',
-    features: [
-      // No new features
-    ],
-    bugfixes: [
-      'Added missing translations for version.status and version.statusSummary to all locales',
-      'Added status section translations to ko, fr, pt, de locales',
-      'Compiled i18n catalogs to fix uncompiled message warnings for notification types',
-      'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
-    ],
-    breakingChanges: [],
-    notes: 'Version 1.6.129 release'
-  },
-  '1.6.128': {
-    version: '1.6.128',
-    buildNumber: 202605061831,
-    releaseDate: '2026-05-06',
-    releaseType: 'stable',
-    environment: 'development',
-    features: [
-      // No new features
-    ],
-    bugfixes: [
-      'Added missing translations for version.status and version.statusSummary to all locales',
-      'Added status section translations to ko, fr, pt, de locales',
-      'Compiled i18n catalogs to fix uncompiled message warnings for notification types',
-      'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
-    ],
-    breakingChanges: [],
-    notes: 'Version 1.6.128 release'
-  },
   '1.6.127': {
     version: '1.6.127',
     buildNumber: 202602230129,

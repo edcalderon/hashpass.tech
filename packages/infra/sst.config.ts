@@ -1,22 +1,6 @@
-const BSL_DOMAINS = {
-  dev: "bsl-dev.hashpass.tech",
-  production: "bsl.hashpass.tech",
-} as const;
-
-const BSL_SITE_ENV = {
-  dev: {
-    BUILD_ENV: "dev",
-    EXPO_PUBLIC_API_BASE_URL: "https://api-dev.hashpass.tech/api",
-    EXPO_PUBLIC_DIRECTUS_URL: "https://sso-dev.hashpass.co",
-    EXPO_PUBLIC_SITE_URL: "https://bsl-dev.hashpass.tech",
-  },
-  production: {
-    BUILD_ENV: "production",
-    EXPO_PUBLIC_API_BASE_URL: "https://api.hashpass.tech/api",
-    EXPO_PUBLIC_DIRECTUS_URL: "https://sso.hashpass.co",
-    EXPO_PUBLIC_SITE_URL: "https://bsl.hashpass.tech",
-  },
-} as const;
+import * as sst from "sst";
+import { $config } from "sst";
+import { getBslSiteConfig } from "./src/domains.js";
 
 function getPublicSupabaseEnv() {
   const supabaseUrl =
@@ -39,18 +23,8 @@ function getPublicSupabaseEnv() {
   };
 }
 
-function resolveBslSiteConfig(stage?: string) {
-  const resolvedStage = stage === "production" ? "production" : "dev";
-
-  return {
-    stage: resolvedStage,
-    domain: BSL_DOMAINS[resolvedStage],
-    environment: BSL_SITE_ENV[resolvedStage],
-  };
-}
-
 export default $config({
-  app(input) {
+  app(input: { stage: string }) {
     return {
       name: "hashpass-bsl",
       home: "aws",
@@ -64,7 +38,7 @@ export default $config({
   },
   console: {
     autodeploy: {
-      target(event) {
+      target(event: { type?: string; action?: string; branch?: string }) {
         if (event.type === "branch" && event.action === "pushed" && event.branch === "main") {
           return { stage: "production" };
         }
@@ -80,7 +54,7 @@ export default $config({
     },
   },
   async run() {
-    const site = resolveBslSiteConfig($app.stage);
+    const site = getBslSiteConfig(process.env.SST_STAGE);
     const zone = process.env.ROUTE53_ZONE_ID ? { zone: process.env.ROUTE53_ZONE_ID } : undefined;
 
     new sst.aws.StaticSite("bsl-web", {
@@ -90,6 +64,8 @@ export default $config({
         dns: zone ? sst.aws.dns(zone) : sst.aws.dns(),
       },
       build: {
+        // Use the static export path so SST uploads to S3/CloudFront without
+        // spending time on Expo route pre-rendering.
         command: "CI=1 SKIP_ENV_PROPAGATE=1 npm run build:static",
         output: "dist/client",
       },

@@ -8,7 +8,6 @@ export * from './factory';
 import { IAuthProvider, ApiAuthResponse, AuthenticatedRequest, AuthUser, AuthSession } from './types';
 import { createAuthProviderFromEnv } from './factory';
 import { DirectusApiClient } from './providers/directus-api-client';
-import { createClient } from '@supabase/supabase-js';
 
 // Create the singleton auth service instance
 let authInstance: IAuthProvider | null = null;
@@ -92,6 +91,7 @@ export async function verifyUserToken(token: string): Promise<ApiAuthResponse> {
 
     } else if (providerName === 'supabase') {
       // For Supabase, import and use the client
+      const { createClient } = await import('@supabase/supabase-js');
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || '',
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''

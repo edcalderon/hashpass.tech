@@ -12,7 +12,6 @@ import {
 } from '../types';
 import { Platform } from 'react-native';
 import { DirectusApiClient, DirectusApiError } from './directus-api-client';
-import * as SecureStore from 'expo-secure-store';
 
 export class DirectusAuthProvider implements IAuthProvider {
   private baseUrl: string;
@@ -808,6 +807,7 @@ async signOut(): Promise<{ error?: string }> {
         stored = localStorage.getItem(key);
       } else if (Platform.OS !== 'web') {
         // React Native
+        const SecureStore = await import('expo-secure-store');
         stored = await SecureStore.getItemAsync(key);
       }
 
@@ -826,6 +826,7 @@ async signOut(): Promise<{ error?: string }> {
         if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
           localStorage.removeItem(key);
         } else if (Platform.OS !== 'web') {
+          const SecureStore = await import('expo-secure-store');
           await SecureStore.deleteItemAsync(key);
         }
         return;
@@ -836,6 +837,7 @@ async signOut(): Promise<{ error?: string }> {
         localStorage.setItem(key, value);
       } else if (Platform.OS !== 'web') {
         // React Native
+        const SecureStore = await import('expo-secure-store');
         await SecureStore.setItemAsync(key, value);
       }
     } catch (error) {
@@ -851,6 +853,7 @@ async signOut(): Promise<{ error?: string }> {
         localStorage.removeItem(key);
       } else if (Platform.OS !== 'web') {
         // React Native
+        const SecureStore = await import('expo-secure-store');
         await SecureStore.deleteItemAsync(key);
       }
     } catch (error) {

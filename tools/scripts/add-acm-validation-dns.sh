@@ -3,13 +3,21 @@
 
 set -e
 
-CERT_ARN="arn:aws:acm:us-east-1:058264267235:certificate/6ab63538-aa75-4df0-9d4f-79d163878d76"
+CERT_ARN="${AWS_CERT_ARN:-}"
 REGION="us-east-1"
 HOSTED_ZONE_NAME="hashpass.tech"
 
 echo "🔐 Adding ACM Certificate Validation DNS Records"
 echo "=================================================="
 echo ""
+if [ -z "$CERT_ARN" ]; then
+    CERT_ARN=$(aws acm list-certificates --region "$REGION" --query "CertificateSummaryList[?DomainName=='*.hashpass.tech' || DomainName=='hashpass.tech'].CertificateArn | [0]" --output text 2>/dev/null || echo "")
+fi
+
+if [ -z "$CERT_ARN" ] || [ "$CERT_ARN" = "None" ]; then
+    echo "ERROR: no ACM certificate ARN available. Set AWS_CERT_ARN or create a certificate."
+    exit 1
+fi
 
 # Get hosted zone ID
 echo "🔍 Finding Route 53 hosted zone for $HOSTED_ZONE_NAME..."
@@ -98,4 +106,3 @@ else
     echo "❌ Failed to create DNS records"
     exit 1
 fi
-

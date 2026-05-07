@@ -15,7 +15,7 @@ Access Points are designed for controlled access, not public access. For email a
 1. **Update your `.env` file:**
    ```bash
    # Comment out or remove the Access Point URL
-   # AWS_S3_CDN_URL=s3://arn:aws:s3:us-east-2:058264267235:accesspoint/hashpass-s3-emails
+   # AWS_S3_CDN_URL=s3://arn:aws:s3:us-east-2:<AWS_ACCOUNT_ID>:accesspoint/hashpass-s3-emails
    
    # The system will automatically use the bucket URL
    ```
@@ -68,7 +68,7 @@ If you need to use the Access Point, you need these IAM permissions:
         "s3:ListAccessPoint",
         "s3:GetAccessPoint"
       ],
-      "Resource": "arn:aws:s3:us-east-2:058264267235:accesspoint/hashpass-s3-emails"
+      "Resource": "arn:aws:s3:us-east-2:<AWS_ACCOUNT_ID>:accesspoint/hashpass-s3-emails"
     },
     {
       "Effect": "Allow",
@@ -76,7 +76,7 @@ If you need to use the Access Point, you need these IAM permissions:
         "s3:PutObject",
         "s3:GetObject"
       ],
-      "Resource": "arn:aws:s3:us-east-2:058264267235:accesspoint/hashpass-s3-emails/object/*"
+      "Resource": "arn:aws:s3:us-east-2:<AWS_ACCOUNT_ID>:accesspoint/hashpass-s3-emails/object/*"
     }
   ]
 }
@@ -105,4 +105,3 @@ Your assets will be accessible at:
 - `https://hashpass-email-assets.s3.us-east-2.amazonaws.com/emails/assets/videos/BSL_2025_환영_ES_en.mp4`
 
 The email service will automatically use these URLs.
-

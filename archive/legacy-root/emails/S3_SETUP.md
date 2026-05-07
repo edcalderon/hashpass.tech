@@ -59,7 +59,7 @@ Create an IAM user with the following policy:
         "s3:GetObject",
         "s3:HeadObject"
       ],
-      "Resource": "arn:aws:s3:us-east-2:058264267235:accesspoint/hashpass-s3-emails/object/*"
+      "Resource": "arn:aws:s3:us-east-2:<AWS_ACCOUNT_ID>:accesspoint/hashpass-s3-emails/object/*"
     }
   ]
 }
@@ -176,4 +176,3 @@ If S3 is not configured, the email service will:
 - S3 requests: ~$0.0004 per 1,000 PUT requests
 - CloudFront: ~$0.085 per GB data transfer (first 10TB)
 - Email assets are typically small, so costs should be minimal
-

@@ -5,7 +5,6 @@
 import type { IAuthProvider, ApiAuthResponse, AuthUser, AuthSession } from './types';
 import { createAuthProviderFromEnv } from './factory';
 import { DirectusApiClient } from './providers/directus-api-client';
-import { createClient } from '@supabase/supabase-js';
 
 let authInstance: IAuthProvider | null = null;
 
@@ -58,6 +57,7 @@ export async function verifyUserToken(token: string): Promise<ApiAuthResponse> {
       return { user, error: null };
     }
     if (providerName === 'supabase') {
+      const { createClient } = await import('@supabase/supabase-js');
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || '',
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''

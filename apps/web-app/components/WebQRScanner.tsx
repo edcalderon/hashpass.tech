@@ -8,7 +8,6 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Platform } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { Ionicons } from '@expo/vector-icons';
-import { Html5Qrcode } from 'html5-qrcode';
 
 // Only load on web
 if (Platform.OS !== 'web') {
@@ -181,6 +180,9 @@ export default function WebQRScanner({
 
       // Always proceed with initialization - html5-qrcode will handle permission request
       // Don't return early - let html5-qrcode show proper error messages if permission is denied
+
+      // Load html5-qrcode library
+      const { Html5Qrcode } = await import('html5-qrcode');
 
       // Wait for DOM element to be ready and verify it's actually in the DOM
       // Use a retry mechanism with exponential backoff
@@ -468,7 +470,9 @@ export default function WebQRScanner({
             throw new Error('Scanner element no longer available');
           }
           
-          const simpleCameras = await Html5Qrcode.getCameras();
+          // Re-import Html5Qrcode for retry
+          const { Html5Qrcode: Html5QrcodeRetry } = await import('html5-qrcode');
+          const simpleCameras = await Html5QrcodeRetry.getCameras();
           if (simpleCameras.length > 0) {
             const simpleCameraId = simpleCameras[0].id;
             const scannerIdSimple = scannerRef.current?.id || `qr-scanner-simple-${Date.now()}`;
@@ -476,7 +480,7 @@ export default function WebQRScanner({
               scannerRef.current.id = scannerIdSimple;
             }
             
-            const html5QrcodeSimple = new Html5Qrcode(scannerIdSimple);
+            const html5QrcodeSimple = new Html5QrcodeRetry(scannerIdSimple);
             scannerInstanceRef.current = html5QrcodeSimple;
             
             await html5QrcodeSimple.start(

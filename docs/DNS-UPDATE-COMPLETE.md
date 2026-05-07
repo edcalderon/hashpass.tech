@@ -27,7 +27,7 @@ TTL: 300
 - **API ID**: `nqt8xep20g`
 - **Stage**: `prod`
 - **Endpoint Type**: `REGIONAL`
-- **Certificate**: `arn:aws:acm:us-east-1:058264267235:certificate/6ab63538-aa75-4df0-9d4f-79d163878d76`
+- **Certificate**: `arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/<CERTIFICATE_ID>`
 
 ## Testing
 
@@ -91,4 +91,3 @@ aws apigatewayv2 get-api-mappings \
 - Verify ACM certificate is `ISSUED`
 - Check certificate covers `*.hashpass.tech` or `api.hashpass.tech`
 - Wait for certificate propagation (can take up to 40 minutes)
-

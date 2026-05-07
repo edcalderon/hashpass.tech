@@ -63,7 +63,7 @@ Check for any unauthorized access:
 
 **Current Error:**
 ```
-User: arn:aws:iam::058264267235:user/s3 is not authorized to perform: 
+User: arn:aws:iam::<AWS_ACCOUNT_ID>:user/s3 is not authorized to perform: 
 s3:GetObject on resource: "arn:aws:s3:::amplify-hashpasstech-dev-96465-deployment/#current-cloud-backend.zip"
 ```
 

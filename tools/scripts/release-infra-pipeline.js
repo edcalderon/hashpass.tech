@@ -182,29 +182,8 @@ function runVersionBump(options) {
   if (options.bump === 'none') return;
 
   const args = [options.bump, `--type=${options.releaseType}`, '--commit', '--tag'];
+  if (options.push) args.push('--push');
   runCommand('node', [VERSION_UPDATE_SCRIPT, ...args], options);
-}
-
-function pushReleaseCommit(options) {
-  if (!options.push || options.dryRun) return;
-
-  const currentBranch = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
-    cwd: ROOT_DIR,
-    env: process.env,
-    encoding: 'utf8',
-    stdio: 'pipe',
-  });
-
-  if (currentBranch.status !== 0) {
-    throw new Error('Unable to determine the current git branch.');
-  }
-
-  const branchName = (currentBranch.stdout || '').trim();
-  const targetBranch = branchName === 'HEAD' ? 'main' : branchName;
-  const pushRef = `${branchName}:${targetBranch}`;
-
-  runCommand('git', ['push', 'origin', pushRef], options);
-  runCommand('git', ['push', 'origin', '--tags'], options);
 }
 
 function deployInfra(options) {
@@ -234,7 +213,6 @@ function main() {
     console.log('');
 
     runVersionBump(options);
-    pushReleaseCommit(options);
     deployInfra(options);
 
     console.log('Infra release pipeline completed successfully.');

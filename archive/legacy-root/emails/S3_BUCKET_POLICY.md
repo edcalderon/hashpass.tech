@@ -38,7 +38,7 @@ Use this policy format:
       "Effect": "Allow",
       "Principal": "*",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:us-east-2:058264267235:accesspoint/hashpass-s3-emails/object/emails/assets/*"
+      "Resource": "arn:aws:s3:us-east-2:<AWS_ACCOUNT_ID>:accesspoint/hashpass-s3-emails/object/emails/assets/*"
     }
   ]
 }
@@ -125,4 +125,3 @@ Should return: `HTTP/1.1 200 OK`
 2. Verify the policy was saved successfully
 3. Wait a few minutes for changes to propagate
 4. Check CloudTrail logs for denied requests
-

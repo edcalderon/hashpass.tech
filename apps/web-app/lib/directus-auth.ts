@@ -1,6 +1,5 @@
 import { Platform } from 'react-native';
 import { DirectusApiClient } from './auth/providers/directus-api-client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Directus SSO Configuration
 const DIRECTUS_URL =
@@ -20,10 +19,38 @@ if (Platform.OS === 'web') {
   };
 } else {
   // For native (iOS, Android), use AsyncStorage
+  let asyncStorage: any = null;
+  const loadAsyncStorage = async () => {
+    if (!asyncStorage) {
+      try {
+        const AsyncStorage = await import('@react-native-async-storage/async-storage');
+        asyncStorage = AsyncStorage.default;
+      } catch (error) {
+        console.error('Failed to load AsyncStorage:', error);
+        // Fallback to dummy storage
+        asyncStorage = {
+          getItem: async () => null,
+          setItem: async () => {},
+          removeItem: async () => {},
+        };
+      }
+    }
+    return asyncStorage;
+  };
+  
   storage = {
-    getItem: async (key: string) => AsyncStorage.getItem(key),
-    setItem: async (key: string, value: string) => AsyncStorage.setItem(key, value),
-    removeItem: async (key: string) => AsyncStorage.removeItem(key),
+    getItem: async (key: string) => {
+      const AsyncStorage = await loadAsyncStorage();
+      return await AsyncStorage.getItem(key);
+    },
+    setItem: async (key: string, value: string) => {
+      const AsyncStorage = await loadAsyncStorage();
+      return await AsyncStorage.setItem(key, value);
+    },
+    removeItem: async (key: string) => {
+      const AsyncStorage = await loadAsyncStorage();
+      return await AsyncStorage.removeItem(key);
+    }
   };
 }
 

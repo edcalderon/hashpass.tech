@@ -32,12 +32,11 @@ fi
 # Check for ACM certificate
 echo "🔍 Checking for ACM certificate..."
 # Try to find certificate, or use the one we just created
-CERT_ARN=$(aws acm list-certificates --region $REGION --query "CertificateSummaryList[?DomainName=='*.hashpass.tech' || DomainName=='hashpass.tech'].CertificateArn" --output text 2>/dev/null || echo "")
+CERT_ARN="${AWS_CERT_ARN:-$(aws acm list-certificates --region $REGION --query "CertificateSummaryList[?DomainName=='*.hashpass.tech' || DomainName=='hashpass.tech'].CertificateArn | [0]" --output text 2>/dev/null || echo "")}"
 
-# If not found, try the specific ARN we created
 if [ -z "$CERT_ARN" ]; then
-    CERT_ARN="arn:aws:acm:us-east-1:058264267235:certificate/6ab63538-aa75-4df0-9d4f-79d163878d76"
-    echo "   Using certificate: $CERT_ARN"
+    echo "❌ No ACM certificate found. Set AWS_CERT_ARN or issue a certificate for hashpass.tech."
+    exit 1
 fi
 
 # Verify certificate exists and is valid
@@ -118,4 +117,3 @@ echo ""
 echo "📚 After DNS propagation (5-15 minutes), test:"
 echo "   curl https://$DOMAIN_NAME/api/config/versions"
 echo ""
-

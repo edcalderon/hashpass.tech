@@ -29,7 +29,7 @@ Este documento explica cómo configurar el despliegue automático de Lambda cuan
          {
            "Effect": "Allow",
            "Principal": {
-             "Federated": "arn:aws:iam::058264267235:oidc-provider/token.actions.githubusercontent.com"
+             "Federated": "arn:aws:iam::<AWS_ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com"
            },
            "Action": "sts:AssumeRoleWithWebIdentity",
            "Condition": {
@@ -53,7 +53,7 @@ Este documento explica cómo configurar el despliegue automático de Lambda cuan
 2. **Configurar GitHub Secrets**
 
    En GitHub → Settings → Secrets and variables → Actions:
-   - Agregar `AWS_ROLE_ARN`: `arn:aws:iam::058264267235:role/GitHubActions-LambdaDeploy`
+   - Agregar `AWS_ROLE_ARN`: `arn:aws:iam::<AWS_ACCOUNT_ID>:role/GitHubActions-LambdaDeploy`
 
 3. **El workflow ya está configurado**
 
@@ -194,4 +194,3 @@ aws logs tail /aws/lambda/hashpass-api-handler --follow --region us-east-1
 - [GitHub Actions OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
 - [AWS Lambda Deployment](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-deploy.html)
 - [Amplify Build Settings](https://docs.aws.amazon.com/amplify/latest/userguide/build-settings.html)
-

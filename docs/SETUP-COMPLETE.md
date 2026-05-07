@@ -11,7 +11,7 @@ Toda la configuración para migrar de Amplify API a API Gateway + Lambda ha sido
 - ✅ Solo quedan apps de Amplify para frontend
 
 ### 2. Certificado ACM
-- ✅ Certificado creado: `arn:aws:acm:us-east-1:058264267235:certificate/6ab63538-aa75-4df0-9d4f-79d163878d76`
+- ✅ Certificado creado: `arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/<CERTIFICATE_ID>`
 - ✅ Dominios: `*.hashpass.tech` y `hashpass.tech`
 - ✅ Estado: `ISSUED` (validado)
 

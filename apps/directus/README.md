@@ -15,7 +15,6 @@ This app runs **Directus** for local auth/SSO testing. It does not contain appli
    pnpm run up
    ```
 
-<<<<<<< Updated upstream
    If you see `KeyError: 'ContainerConfig'`, you are likely on legacy
    `docker-compose` v1. The scripts now run a compatibility cleanup
    automatically, but you should still install Docker Compose v2 (`docker compose`).
@@ -23,9 +22,6 @@ This app runs **Directus** for local auth/SSO testing. It does not contain appli
    ```bash
    pnpm run reset
    ```
-
-=======
->>>>>>> Stashed changes
 3. **Use in app**
    - Set `EXPO_PUBLIC_DIRECTUS_URL=http://localhost:8055` (or your tunnel URL) in the web-app `.env`.
    - Directus admin: http://localhost:8055/admin (when running).
@@ -41,11 +37,8 @@ This app runs **Directus** for local auth/SSO testing. It does not contain appli
 pnpm --filter hashpass-directus run up
 pnpm --filter hashpass-directus run logs
 pnpm --filter hashpass-directus run down
-<<<<<<< Updated upstream
 pnpm --filter hashpass-directus run doctor
 pnpm --filter hashpass-directus run reset
-=======
->>>>>>> Stashed changes
 ```
 
 ## Health check

@@ -34,6 +34,14 @@ run_compose() {
   "${COMPOSE_CMD[@]}" "$@"
 }
 
+ensure_network() {
+  if docker network inspect hashpass-network >/dev/null 2>&1; then
+    return 0
+  fi
+
+  docker network create hashpass-network >/dev/null
+}
+
 legacy_v1_cleanup() {
   if [[ "${COMPOSE_MODE:-}" != "v1" ]]; then
     return 0
@@ -48,6 +56,7 @@ cmd="${1:-dev}"
 shift || true
 
 detect_compose
+ensure_network
 
 case "$cmd" in
   dev)

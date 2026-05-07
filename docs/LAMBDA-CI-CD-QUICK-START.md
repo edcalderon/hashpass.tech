@@ -66,7 +66,7 @@ Este script:
 2. Click **New repository secret**
 3. Agregar:
    - **Name**: `AWS_ROLE_ARN`
-   - **Value**: El ARN que te dio el script (ej: `arn:aws:iam::058264267235:role/GitHubActions-LambdaDeploy`)
+   - **Value**: El ARN que te dio el script (ej: `arn:aws:iam::<AWS_ACCOUNT_ID>:role/GitHubActions-LambdaDeploy`)
 4. Click **Add secret**
 
 ### Paso 3: Probar
@@ -175,4 +175,3 @@ aws logs tail /aws/lambda/hashpass-api-handler --follow --region us-east-1
 ## Documentación Completa
 
 Para más detalles, ver: `docs/LAMBDA-CI-CD-SETUP.md`
-

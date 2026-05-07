@@ -41,7 +41,7 @@ Amplify necesita permisos para actualizar Lambda. Hay dos opciones:
         "lambda:GetFunction",
         "lambda:WaitFunctionUpdated"
       ],
-      "Resource": "arn:aws:lambda:us-east-1:058264267235:function:hashpass-api-handler"
+      "Resource": "arn:aws:lambda:us-east-1:<AWS_ACCOUNT_ID>:function:hashpass-api-handler"
     }
   ]
 }
@@ -212,4 +212,3 @@ En Amplify Console → Build → Ver logs:
 2. ✅ **Verificar amplify.yml** (ya está configurado)
 3. ✅ **Hacer push de prueba** y verificar en Amplify Console
 4. ✅ **Monitorear primeros builds** para asegurar que funciona
-

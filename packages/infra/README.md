@@ -20,9 +20,6 @@ pnpm --filter @hashpass/infra run deploy:prod
 pnpm --filter @hashpass/infra run doctor
 ```
 
-`dev` and `deploy:*` wrap the SST CLI directly. `doctor` wraps the
-`@lsts_tech/infra` readiness checks for AWS, DNS, and pipeline setup.
-
 ## CI/CD
 
 GitHub Actions can deploy the package with AWS OIDC. The workflow in

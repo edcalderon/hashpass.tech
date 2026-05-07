@@ -1,5 +1,4 @@
 import { supabaseServer as supabase } from '@/lib/supabase-server';
-import { verify } from '@noble/ed25519';
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 
@@ -89,6 +88,7 @@ export async function POST(request: Request) {
       const signatureBytes = bs58.decode(signature);
 
       // Verify using nacl (noble-ed25519 compatible)
+      const { verify } = await import('@noble/ed25519');
       const publicKeyBytes = publicKey.toBytes();
       const isValid = await verify(signatureBytes, messageBytes, publicKeyBytes);
 
@@ -189,3 +189,4 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Internal server error: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
+
