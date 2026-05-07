@@ -68,6 +68,21 @@
     "release:unified": "npx @edcalderon/versioning release",
     "prepare": "node -e \"if (process.env.CI || process.env.NPM_CONFIG_PRODUCTION || process.env.NODE_ENV === 'production') { process.exit(0); }\" && husky"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "argon2",
+      "aws-sdk",
+      "bufferutil",
+      "chromedriver",
+      "core-js",
+      "esbuild",
+      "protobufjs",
+      "puppeteer",
+      "sharp",
+      "unrs-resolver",
+      "utf-8-validate"
+    ]
+  },
   "expo": {
     "extra": {
       "EXPO_PUBLIC_API_BASE_URL": "https://api.hashpass.tech/api"
