@@ -2,8 +2,9 @@
 
 This workspace package is the first SST-based replacement layer for Amplify.
 
-It wraps the upstream `@lsts_tech/infra` package, which provides the `infra`
-CLI, and keeps the BSL web app deployment config in one place.
+It keeps the BSL web app deployment config in one place. The dev and deploy
+scripts call the SST CLI directly, while `doctor` wraps the upstream
+`@lsts_tech/infra` readiness checks.
 
 ## What it deploys
 

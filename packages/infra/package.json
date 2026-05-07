@@ -10,9 +10,9 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
-    "dev": "infra dev",
-    "deploy:dev": "infra deploy --stage dev",
-    "deploy:prod": "infra deploy --stage production",
+    "dev": "sst dev",
+    "deploy:dev": "sst deploy --stage dev",
+    "deploy:prod": "sst deploy --stage production",
     "doctor": "infra doctor --target .",
     "clean": "rm -rf .sst dist"
   },
