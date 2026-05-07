@@ -1,4 +1,5 @@
 import { createClient, type Session, type User } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import { Platform } from 'react-native';
 
@@ -13,32 +14,10 @@ if (Platform.OS === 'web') {
     removeItem: async (_key: string) => {},
   };
 } else {
-  // For native (iOS, Android), use lazy initialization with dynamic import
-  // This prevents AsyncStorage from being evaluated in Node.js environments
-  // if it has top-level dependencies on browser globals.
-  // Initialize with a proxy that loads AsyncStorage on first access
-  let asyncStorage: any = null;
-  const loadAsyncStorage = async () => {
-    if (!asyncStorage) {
-      const AsyncStorageModule = await import('@react-native-async-storage/async-storage');
-      asyncStorage = AsyncStorageModule.default;
-    }
-    return asyncStorage;
-  };
-  
   storage = {
-    getItem: async (key: string) => {
-      const AsyncStorage = await loadAsyncStorage();
-      return AsyncStorage.getItem(key);
-    },
-    setItem: async (key: string, value: string) => {
-      const AsyncStorage = await loadAsyncStorage();
-      return AsyncStorage.setItem(key, value);
-    },
-    removeItem: async (key: string) => {
-      const AsyncStorage = await loadAsyncStorage();
-      return AsyncStorage.removeItem(key);
-    },
+    getItem: async (key: string) => AsyncStorage.getItem(key),
+    setItem: async (key: string, value: string) => AsyncStorage.setItem(key, value),
+    removeItem: async (key: string) => AsyncStorage.removeItem(key),
   };
 }
 
@@ -202,10 +181,18 @@ export const createSessionFromUrl = async (url: string): Promise<{
   }
 };
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_KEY as string;
+const supabaseUrl =
+  process.env.EXPO_PUBLIC_SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  '';
+const supabaseAnonKey =
+  process.env.EXPO_PUBLIC_SUPABASE_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  '';
+const hasSupabaseConfig = !!supabaseUrl && !!supabaseAnonKey;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!hasSupabaseConfig) {
   console.error('Supabase URL or Anon Key is missing. Please check your .env file.');
 }
 
@@ -215,8 +202,46 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // This gives us full control over redirect URLs and prevents incorrect redirects
 let supabaseClient: ReturnType<typeof createClient> | null = null;
 
+const createNoopSupabaseClient = () => {
+  const noopQuery = {
+    select: () => noopQuery,
+    update: () => noopQuery,
+    insert: () => noopQuery,
+    upsert: () => noopQuery,
+    delete: () => noopQuery,
+    eq: () => noopQuery,
+    neq: () => noopQuery,
+    in: () => noopQuery,
+    order: () => noopQuery,
+    limit: () => noopQuery,
+    single: async () => ({ data: null, error: new Error('Supabase not configured') }),
+    maybeSingle: async () => ({ data: null, error: new Error('Supabase not configured') }),
+  };
+
+  return {
+    auth: {
+      getSession: async () => ({ data: { session: null } }),
+      getUser: async () => ({ data: { user: null }, error: new Error('Supabase not configured') }),
+      setSession: async () => ({ data: { session: null, user: null }, error: new Error('Supabase not configured') }),
+      exchangeCodeForSession: async () => ({ data: { session: null }, error: new Error('Supabase not configured') }),
+      signInWithPassword: async () => ({ data: { session: null, user: null }, error: new Error('Supabase not configured') }),
+      signInWithOAuth: async () => ({ data: null, error: new Error('Supabase not configured') }),
+      signOut: async () => ({ error: null }),
+      refreshSession: async () => ({ data: { session: null }, error: new Error('Supabase not configured') }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+    },
+    from: () => noopQuery,
+    rpc: async () => ({ data: null, error: new Error('Supabase not configured') }),
+  } as unknown as ReturnType<typeof createClient>;
+};
+
 const initializeSupabase = () => {
   if (!supabaseClient) {
+    if (!hasSupabaseConfig) {
+      supabaseClient = createNoopSupabaseClient();
+      return supabaseClient;
+    }
+
     // Allow detectSessionInUrl to enable automatic session detection from URL
     // This can help with OAuth callbacks and deep linking
     // However, we need to be careful - it can cause errors if navigation state isn't ready
@@ -526,6 +551,15 @@ const initializeSupabase = () => {
         });
       } catch (retryError) {
         console.error('Error creating Supabase client:', retryError);
+        const retryMessage = retryError instanceof Error ? retryError.message : String(retryError);
+        if (
+          retryMessage.includes('supabaseUrl is required') ||
+          retryMessage.includes('supabase key') ||
+          retryMessage.includes('URL or Anon Key')
+        ) {
+          supabaseClient = createNoopSupabaseClient();
+          return supabaseClient;
+        }
         throw retryError;
       }
     }

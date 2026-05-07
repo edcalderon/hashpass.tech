@@ -4,6 +4,7 @@
  */
 
 import { Platform } from 'react-native';
+import { BrowserMultiFormatReader } from '@zxing/browser';
 
 export interface WebQRScanOptions {
   /** Video element ID or element */
@@ -37,16 +38,10 @@ class WebQRScannerFallback {
       throw new Error('ZXing is only available on web');
     }
 
-    try {
-      const zxingBrowser = await import('@zxing/browser');
-      this.zxingModule = {
-        BrowserMultiFormatReader: zxingBrowser.BrowserMultiFormatReader,
-      };
-      return this.zxingModule;
-    } catch (error) {
-      console.error('Failed to load ZXing:', error);
-      throw new Error('ZXing library not available');
-    }
+    this.zxingModule = {
+      BrowserMultiFormatReader,
+    };
+    return this.zxingModule;
   }
 
   private async initializeReader() {

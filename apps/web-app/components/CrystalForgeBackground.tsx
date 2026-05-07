@@ -3,6 +3,9 @@
 import React, { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 export interface CrystalForgeBackgroundProps {
   isDarkMode?: boolean;
@@ -44,13 +47,7 @@ export default function CrystalForgeBackground({
     let frameId = 0;
     let cleanup = () => {};
 
-    const init = async () => {
-      const [{ EffectComposer }, { RenderPass }, { UnrealBloomPass }] = await Promise.all([
-        import('three/examples/jsm/postprocessing/EffectComposer.js'),
-        import('three/examples/jsm/postprocessing/RenderPass.js'),
-        import('three/examples/jsm/postprocessing/UnrealBloomPass.js'),
-      ]);
-
+    const init = () => {
       if (isDisposed || !mountRef.current) return;
 
       const width = mountNode.clientWidth || window.innerWidth;
@@ -266,7 +263,7 @@ export default function CrystalForgeBackground({
       };
     };
 
-    void init();
+    init();
 
     return () => {
       isDisposed = true;

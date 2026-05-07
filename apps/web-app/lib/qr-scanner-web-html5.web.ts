@@ -4,6 +4,7 @@
  */
 
 import { Platform } from 'react-native';
+import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode';
 
 // Only load on web
 if (Platform.OS !== 'web') {
@@ -12,26 +13,6 @@ if (Platform.OS !== 'web') {
 
 // Note: We don't use a global error handler here because it interferes with Metro bundler
 // Instead, we handle errors locally in try-catch blocks
-
-// Dynamic import to avoid bundling on native
-let Html5Qrcode: any = null;
-let Html5QrcodeScanner: any = null;
-
-const loadHtml5Qrcode = async () => {
-  if (Html5Qrcode && Html5QrcodeScanner) {
-    return { Html5Qrcode, Html5QrcodeScanner };
-  }
-
-  try {
-    const html5QrcodeModule = await import('html5-qrcode');
-    Html5Qrcode = html5QrcodeModule.Html5Qrcode;
-    Html5QrcodeScanner = html5QrcodeModule.Html5QrcodeScanner;
-    return { Html5Qrcode, Html5QrcodeScanner };
-  } catch (error) {
-    console.error('Failed to load html5-qrcode:', error);
-    throw error;
-  }
-};
 
 export interface Html5QRScanOptions {
   fps?: number; // Frames per second (default: 10)
@@ -62,7 +43,6 @@ class Html5QRScannerService {
    */
   async isAvailable(): Promise<boolean> {
     try {
-      await loadHtml5Qrcode();
       return typeof window !== 'undefined' && 'navigator' in window && 'mediaDevices' in navigator;
     } catch {
       return false;
@@ -368,4 +348,3 @@ class Html5QRScannerService {
 }
 
 export const html5QRScanner = new Html5QRScannerService();
-
