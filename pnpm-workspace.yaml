@@ -13,3 +13,15 @@ onlyBuiltDependencies:
   - sharp
   - unrs-resolver
   - utf-8-validate
+allowBuilds:
+  argon2: true
+  aws-sdk: true
+  bufferutil: true
+  chromedriver: true
+  core-js: true
+  esbuild: true
+  protobufjs: true
+  puppeteer: true
+  sharp: true
+  unrs-resolver: true
+  utf-8-validate: true
