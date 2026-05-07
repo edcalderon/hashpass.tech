@@ -8,14 +8,16 @@ echo "📦 Packaging Lambda Function for Deployment"
 echo "==========================================="
 echo ""
 
-# Resolve build directory (prefer fresh app build output)
+# Resolve build directory (prefer the normalized Amplify output)
 BUILD_DIR=""
-if [ -d "apps/web-app/dist/server" ]; then
+if [ -d "dist/client" ]; then
+    BUILD_DIR="dist/client"
+elif [ -d "apps/web-app/dist" ]; then
     BUILD_DIR="apps/web-app/dist"
-elif [ -d "dist/server" ]; then
+elif [ -d "dist" ]; then
     BUILD_DIR="dist"
 else
-    echo "❌ Build output not found. Expected apps/web-app/dist/server or dist/server."
+    echo "❌ Build output not found. Expected dist/client, apps/web-app/dist, or dist."
     echo "   Run: pnpm --filter hashpass-web-app build"
     exit 1
 fi
@@ -33,9 +35,11 @@ echo "2. Copying Lambda handler..."
 cp lambda/index.js $PACKAGE_DIR/
 cp lambda/package.json $PACKAGE_DIR/
 
-# Copy server build
-echo "3. Copying server build..."
-cp -r "${BUILD_DIR}/server" "$PACKAGE_DIR/server"
+# Copy web export/build output into the Lambda server root.
+# Expo now emits the web build directly into dist/client (or apps/web-app/dist)
+# and the Lambda handler expects that content to live under ./server.
+echo "3. Copying build output into Lambda server root..."
+cp -r "$BUILD_DIR" "$PACKAGE_DIR/server"
 
 # Copy config files needed by API routes
 echo "3a. Copying config files..."
