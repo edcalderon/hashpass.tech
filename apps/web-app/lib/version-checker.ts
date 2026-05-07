@@ -32,11 +32,8 @@ async function getCurrentVersion(): Promise<string> {
       const timestamp = Date.now();
       const response = await apiClient.get('/config/versions', {
         skipEventSegment: true,
+        skipAuth: true,
         params: { t: timestamp.toString() },
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          'Pragma': 'no-cache',
-        }
       });
       if (response.success && response.data?.currentVersion) {
         return response.data.currentVersion;
@@ -61,16 +58,11 @@ async function fetchLatestVersion(): Promise<{ version: string | null; needsUpda
     
     const response = await apiClient.get('/config/versions', {
       skipEventSegment: true,
+      skipAuth: true,
       params: { 
         t: timestamp.toString(),
         clientVersion: currentVersion, // Send client version to backend
       },
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'X-Client-Version': currentVersion, // Also send in header
-      }
     });
 
     if (!response.success) {
@@ -347,4 +339,3 @@ export async function clearAuthCache(): Promise<void> {
     console.error('[VersionChecker] Error clearing auth cache:', error);
   }
 }
-

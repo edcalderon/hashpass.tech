@@ -75,6 +75,7 @@ export default function StatusPage() {
       // Use apiClient with skipEventSegment to access global /api/status endpoint
       const result = await apiClient.request<HealthCheck>('status', {
         skipEventSegment: true,
+        skipAuth: true,
       });
 
       if (!result.success) {
@@ -639,4 +640,3 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontWeight: '500',
     },
   });
-

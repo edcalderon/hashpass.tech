@@ -313,11 +313,6 @@ if ('serviceWorker' in navigator) {
                         method: 'GET',
                         cache: 'no-store',
                         credentials: isCrossOrigin ? 'omit' : 'same-origin',
-                        headers: {
-                            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-                            'Pragma': 'no-cache',
-                            'Expires': '0',
-                        },
                         // Use cors mode for cross-origin requests (hashpass.co), same-origin for relative paths
                         mode: isCrossOrigin ? 'cors' : 'same-origin',
                     })
