@@ -1,6 +1,5 @@
-import * as sst from "sst";
-import { $config } from "sst";
-import { getBslSiteConfig } from "./src/domains.js";
+declare const $config: any;
+declare const sst: any;
 
 function getPublicSupabaseEnv() {
   const supabaseUrl =
@@ -54,6 +53,7 @@ export default $config({
     },
   },
   async run() {
+    const { getBslSiteConfig } = await import("./src/domains.js");
     const site = getBslSiteConfig(process.env.SST_STAGE);
     const zone = process.env.ROUTE53_ZONE_ID ? { zone: process.env.ROUTE53_ZONE_ID } : undefined;
 
