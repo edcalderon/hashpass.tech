@@ -287,6 +287,29 @@ async function auditTenant(tenantName, environment, configPath) {
       }
     }
 
+    const lambdaFrontendOrigin = lambdaEnv.EXPO_PUBLIC_FRONTEND_URL || lambdaEnv.FRONTEND_URL || '';
+    if (!compareValue(lambdaFrontendOrigin, runtime.frontendUrl)) {
+      log('Lambda mismatch in frontend origin variables:', 'error');
+      console.log(`    Actual:   ${lambdaFrontendOrigin || '(unset)'}`);
+      console.log(`    Expected: ${runtime.frontendUrl}`);
+      issues += 1;
+    }
+
+    const oauthAllowList = String(
+      lambdaEnv.AUTH_GOOGLE_REDIRECT_ALLOW_LIST || lambdaEnv.AUTH_REDIRECT_ALLOW_LIST || ''
+    );
+    const requiredRedirects = [
+      `${runtime.frontendUrl.replace(/\/$/, '')}/auth/callback`,
+      `${runtime.apiBaseUrl.replace(/\/$/, '')}/auth/oauth/callback`,
+    ];
+
+    for (const redirectUrl of requiredRedirects) {
+      if (!oauthAllowList.includes(redirectUrl)) {
+        log(`Missing OAuth redirect allow-list entry: ${redirectUrl}`, 'error');
+        issues += 1;
+      }
+    }
+
     const jwtKeys = ['SUPABASE_SERVICE_ROLE_KEY', 'EXPO_PUBLIC_SUPABASE_KEY'];
     for (const key of jwtKeys) {
       const token = lambdaEnv[key];

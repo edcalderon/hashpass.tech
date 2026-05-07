@@ -46,7 +46,7 @@ services:
       # ===========================================
       # Public URL
       # ===========================================
-      PUBLIC_URL: ${PUBLIC_URL:-https://sso.hashpass.co}
+      PUBLIC_URL: ${DIRECTUS_URL:-https://sso.hashpass.co}
 
       # ===========================================
       # Authentication
@@ -75,7 +75,7 @@ services:
       AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION: "${AUTH_GOOGLE_ALLOW_PUBLIC_REGISTRATION:-true}"
       AUTH_GOOGLE_DEFAULT_ROLE_ID: ${DEFAULT_ROLE_ID:-}
       # New BSL domains for the SST migration.
-      AUTH_GOOGLE_REDIRECT_ALLOW_LIST: "${AUTH_GOOGLE_REDIRECT_ALLOW_LIST:-http://localhost:8081/auth/callback,https://sso.hashpass.co/auth/callback,https://sso-dev.hashpass.co/auth/callback,https://bsl.hashpass.tech/auth/callback,https://bsl-dev.hashpass.tech/auth/callback,https://blockchainsummit.hashpass.lat/auth/callback,https://blockchainsummit-dev.hashpass.lat/auth/callback,https://api-dev.hashpass.tech/auth/callback,https://api.hashpass.tech/auth/callback,https://api-dev.hashpass.tech/api/auth/oauth/callback,https://api.hashpass.tech/api/auth/oauth/callback}"
+      AUTH_GOOGLE_REDIRECT_ALLOW_LIST: "${AUTH_GOOGLE_REDIRECT_ALLOW_LIST:-http://localhost:8081/auth/callback,https://hashpass.tech/auth/callback,https://sso.hashpass.co/auth/callback,https://sso-dev.hashpass.co/auth/callback,https://bsl.hashpass.tech/auth/callback,https://bsl-dev.hashpass.tech/auth/callback,https://blockchainsummit.hashpass.lat/auth/callback,https://blockchainsummit-dev.hashpass.lat/auth/callback,https://api-dev.hashpass.tech/auth/callback,https://api.hashpass.tech/auth/callback,https://api-dev.hashpass.tech/api/auth/oauth/callback,https://api.hashpass.tech/api/auth/oauth/callback}"
 
       # Discord OAuth
       AUTH_DISCORD_DRIVER: oauth2

@@ -133,12 +133,43 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     DIRECTUS_URL: runtime.directusUrl,
     EXPO_PUBLIC_DIRECTUS_URL: runtime.directusUrl,
     EXPO_PUBLIC_API_BASE_URL: runtime.apiBaseUrl,
+    EXPO_PUBLIC_FRONTEND_URL: runtime.frontendUrl,
+    FRONTEND_URL: runtime.frontendUrl,
+    PUBLIC_URL: runtime.directusUrl,
   };
 
   Object.entries(canonical).forEach(([key, value]) => {
     if (!value) return;
     targetConfig[key] = value;
   });
+
+  const trimTrailingSlash = (value) => String(value || '').trim().replace(/\/$/, '');
+  const splitCsv = (value) =>
+    String(value || '')
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+
+  const mergeRedirectAllowList = (value) => {
+    const allowList = new Set(splitCsv(value));
+    const derivedCallbacks = [
+      runtime.frontendUrl ? `${trimTrailingSlash(runtime.frontendUrl)}/auth/callback` : '',
+      runtime.apiBaseUrl ? `${trimTrailingSlash(runtime.apiBaseUrl)}/auth/oauth/callback` : '',
+    ].filter(Boolean);
+
+    for (const entry of derivedCallbacks) {
+      allowList.add(entry);
+    }
+
+    return Array.from(allowList).join(',');
+  };
+
+  targetConfig.AUTH_GOOGLE_REDIRECT_ALLOW_LIST = mergeRedirectAllowList(
+    targetConfig.AUTH_GOOGLE_REDIRECT_ALLOW_LIST
+  );
+  targetConfig.AUTH_REDIRECT_ALLOW_LIST = mergeRedirectAllowList(
+    targetConfig.AUTH_REDIRECT_ALLOW_LIST
+  );
 }
 
 function decodeJwtPayload(token) {
