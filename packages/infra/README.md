@@ -34,10 +34,11 @@ Before the first run, bootstrap a role with:
 REPO=<org>/<repo> ./tools/scripts/setup-infra-role.sh
 ```
 
-The site build uses `expo export -p web --no-ssg`, which still bundles the app
-for the browser, but does not pre-render routes or start a runtime server in AWS.
-The CodeBuild projects are seeded with the public Supabase variables from the
-root `.env` so the export can bundle the client correctly:
+The site build uses `expo export -p web` with the Expo web output set to
+`static`, so SST only uploads the client bundle and does not spend time
+building the API route server tree. The CodeBuild projects are seeded with the
+public Supabase variables from the root `.env` so the export can bundle the
+client correctly:
 
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_KEY`

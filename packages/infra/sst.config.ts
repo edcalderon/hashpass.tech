@@ -67,7 +67,7 @@ export default $config({
         // Use the static export path so SST uploads to S3/CloudFront without
         // spending time on Expo route pre-rendering.
         command: "CI=1 SKIP_ENV_PROPAGATE=1 npm run build:static",
-        output: "dist/client",
+        output: "dist",
       },
       dev: {
         command: "npm run dev",
