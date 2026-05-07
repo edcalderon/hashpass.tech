@@ -20,16 +20,6 @@ function normalizeHostname(rawValue: string): string {
   return rawValue.trim().toLowerCase();
 }
 
-function getSiteKey(rawHostname: string): string {
-  const hostname = normalizeHostname(rawHostname);
-  if (!hostname) return '';
-  if (hostname === 'localhost' || hostname === '127.0.0.1') return hostname;
-
-  const parts = hostname.split('.').filter(Boolean);
-  if (parts.length < 2) return hostname;
-  return parts.slice(-2).join('.');
-}
-
 function getDirectusHostname(rawUrl: string): string {
   try {
     return normalizeHostname(new URL(rawUrl).hostname);
@@ -98,17 +88,9 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const provider = url.searchParams.get('provider') || 'google';
   const returnTo = normalizeReturnToPath(url.searchParams.get('returnTo') || DEFAULT_RETURN_TO);
-  const configuredGoogleMode = (process.env.AUTH_GOOGLE_MODE || '').toLowerCase();
   const frontendOrigin = resolveFrontendOrigin(request, url.origin);
   const frontendHostname = normalizeHostname(url.hostname);
   const directusHostname = getDirectusHostname(DIRECTUS_URL);
-  const frontendSiteKey = getSiteKey(frontendHostname);
-  const directusSiteKey = getSiteKey(directusHostname);
-  const isCrossSiteDirectus = Boolean(
-    frontendSiteKey &&
-    directusSiteKey &&
-    frontendSiteKey !== directusSiteKey
-  );
 
   console.log('[OAuth Login] Starting OAuth flow via Directus');
   console.log('[OAuth Login] Provider:', provider);
@@ -154,40 +136,19 @@ export async function GET(request: Request): Promise<Response> {
   const isLocalHttp =
     url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
 
-  const oauthMode =
-    provider === 'google'
-      ? (
-          isLocalHttp
-            ? 'session'
-            : isCrossSiteDirectus
-              ? 'json'
-              : configuredGoogleMode === 'session' || configuredGoogleMode === 'json'
-                ? configuredGoogleMode
-                : 'json'
-        )
-      : 'json';
-
-  if (provider === 'google' && configuredGoogleMode === 'session' && isCrossSiteDirectus) {
-    console.warn(
-      '[OAuth Login] Forcing mode=json because frontend and Directus are cross-site',
-      {
-        frontendHostname,
-        directusHostname,
-      }
-    );
-  }
-
-  // For localhost over HTTP, force session mode to avoid secure refresh-cookie issues.
-  directusOAuthUrl.searchParams.set('mode', oauthMode);
+  // Directus SSO docs recommend session-based redirects for browser OAuth flows.
+  // The callback route can handle the resulting session cookie or no-cookie fallback.
+  directusOAuthUrl.searchParams.set('mode', 'session');
   /* if (provider === 'google') {
     // Force a fresh provider consent flow to avoid reusing stale Directus admin/browser sessions.
     directusOAuthUrl.searchParams.set('prompt', 'consent');
   } */
 
   console.log('[OAuth Login] Redirecting to Directus OAuth:', directusOAuthUrl.toString());
-  console.log('[OAuth Login] Selected mode:', oauthMode, {
-    configuredGoogleMode,
-    isCrossSiteDirectus,
+  console.log('[OAuth Login] Selected mode: session', {
+    frontendHostname,
+    directusHostname,
+    isLocalHttp,
   });
 
   const headers = new Headers();
