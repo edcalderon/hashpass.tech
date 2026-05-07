@@ -55,8 +55,6 @@ frontend:
         # Ensure no lingering Node workers keep memory pinned before copy steps
         - pkill -9 -x node || true
         - sleep 3
-        - cp -r apps/web-app/dist/* ./dist/
-        - cp -r dist/server/* dist/client/
         # Amplify artifact upload skips hidden directories; normalize Expo asset paths off ".pnpm"
         - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/client
         - mkdir -p dist/client/config
@@ -64,7 +62,7 @@ frontend:
         - cp apps/web-app/public/sw.js dist/client/sw.js 2>/dev/null || cp public/sw.js dist/client/sw.js 2>/dev/null || true
         - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
         - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
-        - cp -r dist/server/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/
+        - cp -r dist/client/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/
         - 'echo "<!-- Build timestamp: $(date) -->" >> dist/client/index.html'
         - |
           if [ "$AWS_BRANCH" = "main" ] || [ "${AMPLIFY_BUILD_STORYBOOK:-false}" = "true" ]; then
