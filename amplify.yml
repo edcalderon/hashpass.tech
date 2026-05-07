@@ -44,9 +44,6 @@ frontend:
         - export EXPO_EXPORT_MAX_WORKERS=4
         # Set production environment for Expo export
         - export NODE_ENV=production
-        # Skip package-level postbuild in CI; equivalent copy steps run below in amplify.yml
-        - export SKIP_WEB_POSTBUILD=1
-        - export EXPO_PUBLIC_ENABLE_STATIC_EXPORT=true
         # Run build using the unified command (pnpm if lockfile present)
         - '[ -f pnpm-lock.yaml ] && pnpm run build:web || npm run build:web'
         # Ensure no lingering Node workers keep memory pinned before copy steps
@@ -54,12 +51,13 @@ frontend:
         - sleep 3
         # Amplify artifact upload skips hidden directories; normalize Expo asset paths off ".pnpm"
         - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/client
+        - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/server
         - mkdir -p dist/client/config
         - cp config/versions.json dist/client/config/versions.json 2>/dev/null || cp apps/web-app/config/versions.json dist/client/config/versions.json 2>/dev/null || true
         - cp apps/web-app/public/sw.js dist/client/sw.js 2>/dev/null || cp public/sw.js dist/client/sw.js 2>/dev/null || true
         - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
         - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
-        - cp -r dist/client/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/
+        - cp -r dist/server/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/
         - 'echo "<!-- Build timestamp: $(date) -->" >> dist/client/index.html'
         - |
           if [ "$AWS_BRANCH" = "main" ] || [ "${AMPLIFY_BUILD_STORYBOOK:-false}" = "true" ]; then
@@ -77,10 +75,12 @@ frontend:
           else
             echo "Storybook static directory not found, skipping..."
           fi
-        - 'echo "=== API files in dist/client/_expo/functions/api/bslatam/ ==="'
-        - ls -la dist/client/_expo/functions/api/bslatam/ || echo "No API files found"
+        - 'echo "=== API files in dist/server/_expo/functions/api/bslatam/ ==="'
+        - ls -la dist/server/_expo/functions/api/bslatam/ || echo "No API files found"
         - 'echo "=== Contents of dist/client/ ==="'
         - ls -la dist/client/
+        - 'echo "=== Contents of dist/server/ ==="'
+        - ls -la dist/server/
         - ls -la dist/client/index.html
     post_build:
       commands:
