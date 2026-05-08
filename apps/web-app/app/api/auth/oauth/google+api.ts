@@ -1,4 +1,6 @@
-import { ExpoRequest, ExpoResponse } from 'expo-router/server';
+import { ExpoResponse } from 'expo-router/server';
+
+/* eslint-disable no-restricted-syntax -- Server-side OAuth callback must call Google and Directus directly. */
 
 const DIRECTUS_URL =
   process.env.DIRECTUS_URL ||
@@ -6,6 +8,145 @@ const DIRECTUS_URL =
   'https://sso.hashpass.co';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const DEFAULT_RETURN_TO = '/dashboard/explore';
+const DEFAULT_FRONTEND_ORIGIN =
+  process.env.EXPO_PUBLIC_FRONTEND_URL ||
+  process.env.FRONTEND_URL ||
+  '';
+const OAUTH_STATE_COOKIE_NAME = 'oauth_google_state';
+const TRUSTED_FRONTEND_HOSTS = new Set([
+  'localhost',
+  '127.0.0.1',
+  'hashpass.tech',
+  'hashpass.co',
+  'hashpass.lat',
+]);
+const TRUSTED_FRONTEND_SUFFIXES = [
+  '.hashpass.tech',
+  '.hashpass.co',
+  '.hashpass.lat',
+  '.dy8duury54wam.amplifyapp.com',
+  '.d951nuj7hrqeg.amplifyapp.com',
+];
+
+type OAuthReturnCookiePayload = {
+  returnTo?: string;
+  frontendOrigin?: string;
+};
+
+const normalizeReturnToPath = (value: string | null | undefined): string => {
+  let normalized = value || DEFAULT_RETURN_TO;
+
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    // Keep original value if decoding fails.
+  }
+
+  if (!normalized.startsWith('/')) {
+    return DEFAULT_RETURN_TO;
+  }
+
+  normalized = normalized.replace(/\/\([^/]+\)/g, '');
+
+  if (!normalized || normalized === '/auth' || normalized.includes('/auth/callback')) {
+    return DEFAULT_RETURN_TO;
+  }
+
+  return normalized;
+};
+
+const getCookieValue = (cookieHeader: string, cookieName: string): string | null => {
+  const prefix = `${cookieName}=`;
+  const match = cookieHeader
+    .split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(prefix));
+
+  if (!match) return null;
+
+  const rawValue = match.substring(prefix.length);
+
+  try {
+    return decodeURIComponent(rawValue);
+  } catch {
+    return rawValue;
+  }
+};
+
+const parseOAuthReturnCookie = (rawCookieValue: string | null): OAuthReturnCookiePayload => {
+  if (!rawCookieValue) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(rawCookieValue);
+    if (parsed && typeof parsed === 'object') {
+      const payload: OAuthReturnCookiePayload = {};
+      if (typeof parsed.returnTo === 'string') payload.returnTo = parsed.returnTo;
+      if (typeof parsed.frontendOrigin === 'string') payload.frontendOrigin = parsed.frontendOrigin;
+      return payload;
+    }
+  } catch {
+    // Backward compatibility: old cookie value was just returnTo path.
+  }
+
+  return { returnTo: rawCookieValue };
+};
+
+const extractOrigin = (rawValue: string | null): string | null => {
+  if (!rawValue) return null;
+
+  try {
+    const parsed = new URL(rawValue);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+};
+
+const isTrustedFrontendOrigin = (origin: string): boolean => {
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    if (TRUSTED_FRONTEND_HOSTS.has(hostname)) return true;
+    return TRUSTED_FRONTEND_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
+  } catch {
+    return false;
+  }
+};
+
+const resolveFrontendOrigin = (
+  request: Request,
+  returnCookieFrontendOrigin: string | undefined,
+  fallbackOrigin: string
+): string => {
+  const cookiePayloadOrigin = extractOrigin(returnCookieFrontendOrigin || null);
+  if (cookiePayloadOrigin && isTrustedFrontendOrigin(cookiePayloadOrigin)) return cookiePayloadOrigin;
+
+  const configuredOrigin = extractOrigin(DEFAULT_FRONTEND_ORIGIN);
+  if (configuredOrigin && isTrustedFrontendOrigin(configuredOrigin)) return configuredOrigin;
+
+  const refererOrigin = extractOrigin(request.headers.get('referer'));
+  if (refererOrigin && isTrustedFrontendOrigin(refererOrigin)) return refererOrigin;
+
+  const originHeader = extractOrigin(request.headers.get('origin'));
+  if (originHeader && isTrustedFrontendOrigin(originHeader)) return originHeader;
+
+  return fallbackOrigin;
+};
+
+const createRandomPassword = (): string => {
+  if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+};
 
 /**
  * Direct Google OAuth handler
@@ -16,21 +157,43 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
-  
-  // Try to get returnTo from cookie (set by login endpoint)
-  const cookies = request.headers.get('Cookie') || '';
-  const returnToCookie = cookies.split(';').find(c => c.trim().startsWith('oauth_return_to='));
-  let returnTo = returnToCookie ? decodeURIComponent(returnToCookie.split('=')[1]) : '/(shared)/dashboard/explore';
+  const cookies = request.headers.get('Cookie') || request.headers.get('cookie') || '';
+  const returnCookie = parseOAuthReturnCookie(getCookieValue(cookies, 'oauth_return_to'));
+  const returnTo = normalizeReturnToPath(returnCookie.returnTo);
+  const frontendOrigin = resolveFrontendOrigin(request, returnCookie.frontendOrigin, url.origin);
+  const expectedState = getCookieValue(cookies, OAUTH_STATE_COOKIE_NAME);
   
   console.log('[Google OAuth] Received callback from Google');
   console.log('[Google OAuth] Code:', code ? code.substring(0, 20) + '...' : 'MISSING');
   console.log('[Google OAuth] State:', state ? state.substring(0, 20) + '...' : 'MISSING');
   console.log('[Google OAuth] Return to:', returnTo);
+  console.log('[Google OAuth] Frontend origin:', frontendOrigin);
+
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    const errorUrl = new URL(returnTo, frontendOrigin);
+    errorUrl.searchParams.set('error', 'oauth_failed');
+    errorUrl.searchParams.set('message', 'Google OAuth client credentials are not configured.');
+    return new ExpoResponse(null, {
+      status: 302,
+      headers: { 'Location': errorUrl.toString(), 'Cache-Control': 'no-store' }
+    });
+  }
+
+  if (expectedState && state !== expectedState) {
+    console.error('[Google OAuth] State mismatch.');
+    const errorUrl = new URL(returnTo, frontendOrigin);
+    errorUrl.searchParams.set('error', 'oauth_failed');
+    errorUrl.searchParams.set('message', 'OAuth state validation failed');
+    return new ExpoResponse(null, {
+      status: 302,
+      headers: { 'Location': errorUrl.toString(), 'Cache-Control': 'no-store' }
+    });
+  }
   
   if (!code) {
     const error = url.searchParams.get('error');
     console.error('[Google OAuth] Google returned error:', error);
-    const errorUrl = new URL('/(shared)/auth', url.origin);
+    const errorUrl = new URL(returnTo, frontendOrigin);
     errorUrl.searchParams.set('error', error || 'access_denied');
     errorUrl.searchParams.set('message', 'Google authentication was denied or failed');
     
@@ -147,7 +310,9 @@ export async function GET(request: Request): Promise<Response> {
             email: userEmail,
             first_name: userName,
             role: process.env.DEFAULT_ROLE_ID,
-            status: 'active'
+            status: 'active',
+            provider: 'default',
+            external_identifier: userProfile.sub || userEmail
           })
         });
         
@@ -163,12 +328,31 @@ export async function GET(request: Request): Promise<Response> {
           throw new Error('Failed to create user');
         }
       }
+
+      if (userId) {
+        console.log('[Google OAuth] Ensuring Directus user can receive API-issued tokens...');
+        const normalizeUserResponse = await fetch(`${DIRECTUS_URL}/users/${userId}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            provider: 'default',
+            external_identifier: userProfile.sub || userEmail,
+            status: 'active',
+            ...(process.env.DEFAULT_ROLE_ID && { role: process.env.DEFAULT_ROLE_ID })
+          })
+        });
+
+        console.log('[Google OAuth] User normalization response:', normalizeUserResponse.status);
+      }
       
       // Now get a token for this user by setting a temporary password and authenticating
       console.log('[Google OAuth] Generating temporary password for OAuth user...');
       
       // Generate a random temporary password
-      const tempPassword = Buffer.from(Math.random().toString()).toString('base64').substring(0, 16);
+      const tempPassword = createRandomPassword();
       
       // Update user with temporary password using admin token
       const updateUserResponse = await fetch(`${DIRECTUS_URL}/users/${userId}`, {
@@ -213,8 +397,9 @@ export async function GET(request: Request): Promise<Response> {
           console.log('[Google OAuth] Access token:', tokens.access_token.substring(0, 20) + '...');
           console.log('[Google OAuth] Redirecting to:', returnTo);
           
-          // Build full redirect URL with tokens in fragment
-          const redirectUrl = new URL(returnTo, url.origin);
+          // Build frontend callback URL with tokens in fragment.
+          // This avoids relying on third-party Directus cookies from sso.hashpass.co.
+          const redirectUrl = new URL(returnTo, frontendOrigin);
           const fragment = new URLSearchParams({
             access_token: tokens.access_token,
             ...(tokens.refresh_token && { refresh_token: tokens.refresh_token }),
@@ -224,13 +409,15 @@ export async function GET(request: Request): Promise<Response> {
           const finalUrl = `${redirectUrl.toString().split('#')[0]}#${fragment.toString()}`;
           console.log('[Google OAuth] Final redirect URL:', finalUrl.substring(0, 100) + '...');
           
+          const headers = new Headers();
+          headers.set('Location', finalUrl);
+          headers.set('Cache-Control', 'no-store');
+          headers.append('Set-Cookie', 'oauth_return_to=; Path=/; Max-Age=0');
+          headers.append('Set-Cookie', `${OAUTH_STATE_COOKIE_NAME}=; Path=/; Max-Age=0`);
+
           return new ExpoResponse(null, {
             status: 302,
-            headers: {
-              'Location': finalUrl,
-              'Cache-Control': 'no-store',
-              'Set-Cookie': 'oauth_return_to=; Path=/; Max-Age=0' // Clear the cookie
-            }
+            headers
           });
         }
       } else {
@@ -247,7 +434,7 @@ export async function GET(request: Request): Promise<Response> {
   } catch (error) {
     console.error('[Google OAuth] ❌ Error:', error instanceof Error ? error.message : String(error));
     
-    const errorUrl = new URL('/(shared)/auth', url.origin);
+    const errorUrl = new URL(returnTo, frontendOrigin);
     errorUrl.searchParams.set('error', 'oauth_failed');
     errorUrl.searchParams.set('message', error instanceof Error ? error.message : 'OAuth authentication failed');
     
