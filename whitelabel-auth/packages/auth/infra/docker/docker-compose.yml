@@ -84,8 +84,8 @@ services:
     image: directus/directus:11.3.5
     container_name: whitelabel-auth-directus
     environment:
-      KEY: ${DIRECTUS_KEY:-replace-with-random-key}
-      SECRET: ${DIRECTUS_SECRET:-replace-with-random-secret}
+      KEY: ${DIRECTUS_KEY:-changeme}
+      SECRET: ${DIRECTUS_SECRET:-changeme}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       DB_CLIENT: "pg"

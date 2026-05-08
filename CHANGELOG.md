@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.6.129] - 2026-05-08
+
+### Released
+- Version 1.6.129 release
+
+### Technical Details
+- Version: 1.6.129
+- Release Type: stable
+- Build Number: 202605081554
+- Release Date: 2026-05-08T15:54:33.840Z
+
+
+## [1.6.128] - 2026-05-08
+
+### Released
+- Version 1.6.128 release
+
+### Technical Details
+- Version: 1.6.128
+- Release Type: stable
+- Build Number: 202605081547
+- Release Date: 2026-05-08T15:47:42.564Z
+
+
 ## [1.6.127] - 2026-02-23
 
 ### Beta

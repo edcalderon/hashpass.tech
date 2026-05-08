@@ -113,7 +113,7 @@ pnpm run dev
 
 **Solution**:
 - Check Google OAuth callback URL is configured to allow `http://localhost:8055` or `https://sso.hashpass.co`
-- Verify Directus `AUTH_GOOGLE_REDIRECT_ALLOW_LIST` includes `http://localhost:8081/auth/callback`
+- Verify Directus `AUTH_GOOGLE_REDIRECT_ALLOW_LIST` includes `http://localhost:8081/api/auth/oauth/callback`
 
 ### Cannot connect to Directus
 
@@ -132,7 +132,7 @@ pnpm run dev
 - Check browser console for errors
 - Check Directus logs: `docker-compose logs -f directus`
 - Check web app logs: `pnpm run dev` terminal output
-- Verify `/auth/callback` endpoint is reachable: `curl http://localhost:8081/api/auth/oauth/callback`
+- Verify `/api/auth/oauth/callback` endpoint is reachable: `curl http://localhost:8081/api/auth/oauth/callback`
 
 ## Local Network Testing
 
