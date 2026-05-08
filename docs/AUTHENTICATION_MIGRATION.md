@@ -1,5 +1,7 @@
 # HashPass Authentication Migration Guide
 
+> Historical note: the current production Google sign-in flow uses the API-owned bridge documented in [AUTH_FLOW.md](AUTH_FLOW.md). This document describes the earlier migration from Supabase Auth to Directus-based auth.
+
 ## Overview
 This document outlines the migration from Supabase authentication to Directus SSO for the HashPass platform.
 

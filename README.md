@@ -47,6 +47,10 @@ We believe the future of events should be shaped by the community. By making Has
 - **`packages/`** — Shared packages: `@hashpass/auth`, `@hashpass/config`, `@hashpass/types`, `@hashpass/backend`, `@hashpass/utils`, `@hashpass/ui`, `@hashpass/infra`.
 - **`infrastructure/terraform`** — Terraform IaC (GCP, etc.).
 
+### Authentication
+
+Production Google sign-in now uses the API-owned OAuth bridge documented in [docs/AUTH_FLOW.md](docs/AUTH_FLOW.md). Directus is still used as the identity backend, but browser login no longer depends on Directus session cookies across domains.
+
 Use **pnpm** and **Turborepo** at the repo root:
 
 ```bash

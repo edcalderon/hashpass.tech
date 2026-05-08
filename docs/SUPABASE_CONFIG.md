@@ -1,5 +1,7 @@
 # Supabase Authentication Configuration
 
+> Historical note: this document covers the older Supabase redirect configuration path. Current production sign-in uses the API-owned OAuth bridge documented in [AUTH_FLOW.md](AUTH_FLOW.md).
+
 ## Problem
 Supabase is redirecting to `auth.hashpass.co/bsl2025.hashpass.tech` instead of the correct callback URL. This happens when:
 1. Site URL is not configured or is incorrect
@@ -131,4 +133,3 @@ Even with correct Redirect URLs, Supabase might still use `site_url` as fallback
    - Start OAuth login
    - Look for logs showing the `redirect_to` parameter
    - After OAuth redirect, check if you land on the correct URL or `auth.hashpass.co/bsl2025.hashpass.tech`
-

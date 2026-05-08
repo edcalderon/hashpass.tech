@@ -1,5 +1,7 @@
 # 🎉 Provider-Agnostic Authentication System - COMPLETED
 
+> Historical note: the current production Google sign-in flow uses the API-owned bridge documented in [AUTH_FLOW.md](AUTH_FLOW.md). This page describes the auth abstraction in code, not the production OAuth handshake.
+
 ## ✅ Successfully Implemented
 
 HashPass now has a **provider-agnostic authentication system** that supports multiple auth providers with seamless switching via environment variables only!
