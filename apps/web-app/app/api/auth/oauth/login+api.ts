@@ -126,11 +126,7 @@ export async function GET(request: Request): Promise<Response> {
     `${OAUTH_FRONTEND_ORIGIN_COOKIE_NAME}=${encodeURIComponent(frontendOrigin)}; ` +
     `Path=/; SameSite=Lax; Max-Age=3600${secureFlag}`;
 
-  // Directus callback must carry returnTo/frontendOrigin in the query because some
-  // API gateway paths do not forward request cookies consistently.
   const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
-  callbackUrl.searchParams.set('returnTo', returnTo);
-  callbackUrl.searchParams.set('frontendOrigin', frontendOrigin);
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   directusOAuthUrl.searchParams.set('redirect', callbackUrl.toString());
   const isLocalHttp =
