@@ -1,7 +1,8 @@
 {
   "name": "@whitelabel/auth",
+  "private": true,
   "version": "1.0.0",
-  "description": "Infrastructure-agnostic authentication with Supabase, Directus, and wallet support",
+  "description": "Archived legacy authentication package with Supabase, Directus, and wallet support",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -74,12 +75,5 @@
     "siwe",
     "white-label"
   ],
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourorg/whitelabel-auth"
-  },
-  "publishConfig": {
-    "access": "public"
-  }
+  "license": "MIT"
 }
