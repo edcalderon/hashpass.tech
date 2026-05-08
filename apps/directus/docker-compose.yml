@@ -127,12 +127,13 @@ services:
       CORS_CREDENTIALS: "true"
       CORS_ALLOWED_HEADERS: "${CORS_ALLOWED_HEADERS:-Content-Type,Authorization,Cache-Control,Pragma,Expires}"
 
-      # OAuth session cookies for localhost
+      # OAuth session cookies default to localhost-friendly values.
+      # Production must override these to SameSite=None + Secure=true for cross-site OAuth.
       SESSION_COOKIE_SAME_SITE: "${SESSION_COOKIE_SAME_SITE:-lax}"
       SESSION_COOKIE_SECURE: "${SESSION_COOKIE_SECURE:-}"
 
       # Refresh token cookie defaults are localhost-safe.
-      # For HTTPS production, set REFRESH_TOKEN_COOKIE_SAME_SITE=none and REFRESH_TOKEN_COOKIE_SECURE=true explicitly.
+      # Production must set REFRESH_TOKEN_COOKIE_SAME_SITE=none and REFRESH_TOKEN_COOKIE_SECURE=true explicitly.
       REFRESH_TOKEN_COOKIE_SAME_SITE: "${REFRESH_TOKEN_COOKIE_SAME_SITE:-lax}"
       REFRESH_TOKEN_COOKIE_SECURE: "${REFRESH_TOKEN_COOKIE_SECURE:-}"
       REFRESH_TOKEN_COOKIE_DOMAIN: "${REFRESH_TOKEN_COOKIE_DOMAIN:-}"
