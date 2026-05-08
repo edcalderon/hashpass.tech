@@ -107,7 +107,13 @@ module "api_prod" {
     lookup(var.lambda_environment_overrides, "prod", {})
   )
 
-  cors_allow_origins = lookup(var.api_cors_origins, "prod", ["https://blockchainsummit.hashpass.lat"])
+  cors_allow_origins = lookup(var.api_cors_origins, "prod", [
+    "https://hashpass.tech",
+    "https://www.hashpass.tech",
+    "https://bsl2025.hashpass.tech",
+    "https://blockchainsummit.hashpass.lat",
+    "https://blockchainsummit-dev.hashpass.lat",
+  ])
 
   tags = merge(local.common_tags, {
     Environment = "prod"

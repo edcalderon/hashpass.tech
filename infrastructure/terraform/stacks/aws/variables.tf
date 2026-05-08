@@ -98,6 +98,9 @@ variable "api_cors_origins" {
       "https://blockchainsummit.hashpass.lat"
     ]
     prod = [
+      "https://hashpass.tech",
+      "https://www.hashpass.tech",
+      "https://bsl2025.hashpass.tech",
       "https://blockchainsummit.hashpass.lat",
       "https://blockchainsummit-dev.hashpass.lat"
     ]
