@@ -34,10 +34,7 @@ This Terraform setup deploys the production naming convention discussed for Hash
 
 If your GCP account cannot manage Secret Manager, use `directus_env_file_paths` in `stacks/gcp/terraform.tfvars` instead.
 If your startup Git ref does not contain the compose path, use `directus_compose_file_paths` to inject `docker-compose.yml` directly.
-<<<<<<< Updated upstream
 Never commit filled `.env` files to git; keep only `.example` templates in VCS.
-=======
->>>>>>> Stashed changes
 
 ## Quick Start
 
@@ -64,37 +61,13 @@ Outputs include:
 - Lambda names
 - domain association metadata if Amplify association is enabled
 
-<<<<<<< Updated upstream
-Apply strict Amplify cache headers (recommended to avoid stale `/auth` screens after deploys):
-
-```bash
-./tools/scripts/apply-amplify-custom-headers.sh d951nuj7hrqeg sa-east-1
-```
-
-Header source file:
-
-- `infrastructure/terraform/stacks/aws/custom-headers.blockchainsummit.yml`
-
-If an Amplify app/domain already exists, import it before apply:
-
-```bash
-terraform import -var-file=terraform.tfvars 'module.frontend_domain_association[0].aws_amplify_domain_association.this' '<AMPLIFY_APP_ID>/hashpass.lat'
-terraform import -var-file=terraform.tfvars 'aws_amplify_branch.frontend["develop"]' '<AMPLIFY_APP_ID>/develop'
-terraform import -var-file=terraform.tfvars 'aws_amplify_branch.frontend["main"]' '<AMPLIFY_APP_ID>/main'
-```
-
-=======
->>>>>>> Stashed changes
 ### GCP Stack
 
 ```bash
 cd infrastructure/terraform/stacks/gcp
 cp terraform.tfvars.example terraform.tfvars
-<<<<<<< Updated upstream
 cp directus.dev.env.example directus.dev.env
 # create directus.prod.env the same way if you deploy prod from this stack
-=======
->>>>>>> Stashed changes
 terraform init
 terraform plan -var-file=terraform.tfvars
 terraform apply -var-file=terraform.tfvars
