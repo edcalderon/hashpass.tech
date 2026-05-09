@@ -104,8 +104,8 @@ export default function BSL2025Layout() {
           headerBackTitle: 'Speaker Dashboard',
         }}
       />
-      <Stack.Screen 
-        name="networking/meeting-detail" 
+      <Stack.Screen
+        name="networking/meeting-detail"
         options={{
           title: 'Meeting Details',
           headerShown: false,
@@ -114,6 +114,27 @@ export default function BSL2025Layout() {
           headerBackVisible: false,
           gestureEnabled: true,
           gestureDirection: 'vertical',
+        }}
+      />
+      <Stack.Screen
+        name="speakers/index"
+        options={{
+          title: 'Featured Speakers',
+          headerBackTitle: 'Event',
+        }}
+      />
+      <Stack.Screen
+        name="speakers/[id]"
+        options={{
+          title: 'Speaker Details',
+          headerBackTitle: 'Speakers',
+        }}
+      />
+      <Stack.Screen
+        name="speakers/calendar"
+        options={{
+          title: 'All Speakers',
+          headerBackTitle: 'Speakers',
         }}
       />
       </Stack>

@@ -50,8 +50,8 @@ export default function SpeakersLayout() {
           headerBackTitleVisible: true,
         }}
       />
-      <Stack.Screen 
-        name="[id]" 
+      <Stack.Screen
+        name="[id]"
         options={({ route }) => ({
           title: 'Speaker Details',
           headerBackTitle: 'Speakers',
@@ -59,12 +59,6 @@ export default function SpeakersLayout() {
           // Dynamic title based on speaker name if available
           headerTitle: 'Speaker Details',
         })}
-      />
-      <Stack.Screen 
-        name="dashboard" 
-        options={{
-          headerShown: true, // Show native header for consistency
-        }}
       />
     </Stack>
   );
