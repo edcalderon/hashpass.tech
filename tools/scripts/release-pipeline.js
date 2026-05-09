@@ -8,7 +8,7 @@
  * 2) Optional push to remote branch/tags
  * 3) Lambda env sync (+ optional Lambda code deployment)
  * 4) Optional Directus deployment
- * 5) Amplify RELEASE jobs for one or all tenants
+ * 5) Amplify RELEASE jobs for one tenant by default, or all tenants when explicitly requested
  *
  * Usage examples:
  *   node tools/scripts/release-pipeline.js --env development
@@ -41,7 +41,8 @@ function printUsage() {
       '  --env <dev|prod>          Target environment (default: development)',
       '  --bump <none|patch|minor|major>',
       '                            Optional semantic bump (default: none)',
-      '  --tenant <name|all>       Tenant key or "all" (default: all)',
+      '  --tenant <name|all>       Tenant key or "all" (default: core)',
+      '  --all-tenants             Release every configured tenant explicitly',
       '  --config <path>           Tenant config path',
       '  --no-wait                 Do not wait for Amplify jobs to finish',
       '  --no-push                 Do not push branch/tags',
@@ -56,9 +57,9 @@ function printUsage() {
       '',
       'Examples:',
       '  npm run release:dev',
-      '  npm run release:dev -- patch',
-      '  npm run release:prod -- minor',
-      '  npm run release:pipeline -- --env development --tenant core --dry-run',
+      '  npm run release:bsl:prod',
+      '  npm run release:pipeline -- --env development --tenant blockchainsummit --dry-run',
+      '  npm run release:pipeline -- --env production --all-tenants --dry-run',
     ].join('\n')
   );
 }
@@ -119,7 +120,7 @@ function parseArgs(argv) {
   const options = {
     environment: 'development',
     bump: 'none',
-    tenant: 'all',
+    tenant: 'core',
     configPath: process.env.TENANT_CONFIG_PATH || DEFAULT_CONFIG_PATH,
     waitAmplify: true,
     push: true,

@@ -20,6 +20,12 @@ Shared branch cadence:
 - `develop` for development
 - `main` for production
 
+Release flow:
+
+- `release:dev` / `release:prod` target `core` by default
+- `release:bsl:dev` / `release:bsl:prod` target the BSL tenant explicitly
+- `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it
+
 ### Scripts using tenant config
 
 - `tools/scripts/check-consistency.js`
@@ -40,7 +46,9 @@ node tools/scripts/check-consistency.js --tenant core --prod
 tools/scripts/apply-amplify-custom-headers.sh --tenant core
 tools/scripts/apply-amplify-custom-headers.sh --tenant blockchainsummit
 node tools/scripts/release-pipeline.js --env development
-node tools/scripts/release-pipeline.js --env production --bump minor
+node tools/scripts/release-pipeline.js --env production --tenant core --bump minor
+node tools/scripts/release-pipeline.js --env production --tenant blockchainsummit --bump minor
+node tools/scripts/release-pipeline.js --env production --all-tenants --bump minor
 node tools/scripts/release-infra-pipeline.js --env production --bump patch
 tools/scripts/provision-infra-connection.sh owner/repo
 tools/scripts/provision-infra-pipelines.sh owner/repo
