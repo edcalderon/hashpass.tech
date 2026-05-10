@@ -17,17 +17,15 @@
   position: fixed !important;
   top: 70px !important;
   left: 24px !important;
-  right: 24px !important;
-  width: calc(100% - 48px) !important;
+  right: auto !important;
+  width: auto !important;
   max-width: 380px !important;
-  z-index: 40;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(0, 0, 0, 0.05) !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
+  z-index: 40 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
 /* Collapsed state - compact circular button with 3D effect */
@@ -62,8 +60,8 @@
   .hp-pwa-floating {
     top: 65px !important;
     left: 20px !important;
-    right: 20px !important;
-    width: calc(100% - 40px) !important;
+    right: auto !important;
+    width: auto !important;
     max-width: 360px !important;
   }
 
@@ -76,15 +74,21 @@
 /* Mobile responsive - adjust positioning for smaller screens */
 @media (max-width: 768px) {
   .hp-pwa-floating {
-    top: 55px !important;
+    top: 60px !important;
     left: 12px !important;
-    right: 12px !important;
-    width: calc(100% - 24px) !important;
+    right: auto !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .hp-pwa-floating .hp-pwa-card {
+    width: 100% !important;
     max-width: 340px !important;
+    padding: 12px !important;
   }
 
   .hp-pwa-floating.hp-pwa-collapsed-state {
-    top: 55px !important;
+    top: 60px !important;
     left: 12px !important;
   }
 }
@@ -92,16 +96,31 @@
 /* Small mobile phones */
 @media (max-width: 480px) {
   .hp-pwa-floating {
-    top: 50px !important;
+    top: 55px !important;
     left: 8px !important;
-    right: 8px !important;
-    width: calc(100% - 16px) !important;
+    right: auto !important;
+    width: auto !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  .hp-pwa-floating .hp-pwa-card {
+    width: 100% !important;
     max-width: 320px !important;
-    padding: 12px !important;
+    padding: 10px !important;
+  }
+
+  .hp-pwa-floating .hp-pwa-title {
+    font-size: 0.9rem !important;
+    max-width: 140px !important;
+  }
+
+  .hp-pwa-floating .hp-pwa-description {
+    font-size: 0.78rem !important;
+    margin: 8px 0 10px 0 !important;
   }
 
   .hp-pwa-floating.hp-pwa-collapsed-state {
-    top: 50px !important;
+    top: 55px !important;
     left: 8px !important;
   }
 }
