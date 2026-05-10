@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import EventBanner from './EventBanner';
@@ -7,8 +8,15 @@ import LampBrandBanner from './LampBrandBanner';
 import { getAvailableEvents, EventInfo } from '../lib/event-detector';
 
 interface CarouselSlide {
-  type: 'download' | 'event';
+  type: 'download' | 'event' | 'logo';
   event?: EventInfo;
+  logoId?: string;
+  logoSrc?: string;
+  logoSrcDark?: any;
+  logoSrcLight?: any;
+  backgroundColor?: string;
+  gradientStart?: string;
+  gradientEnd?: string;
 }
 
 interface EventBannerCarouselProps {
@@ -26,8 +34,57 @@ export interface LampBrandingConfig {
   logoAlt: string;
 }
 
+const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg');
+const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white.svg');
 const BSL_DARK_LOGO = require('../assets/logos/bsl/bsl-light.png');
 const BSL_LIGHT_LOGO = require('../assets/logos/bsl/bsl-dark.png');
+
+// Main BSL Logo
+const MAIN_BSL_LOGO = {
+  id: 'bsl-main',
+  name: 'Blockchain Summit Latam',
+  darkSrc: BSL_DARK_LOGO,
+  lightSrc: BSL_LIGHT_LOGO,
+  backgroundColor: '#00A3E0',
+  gradientStart: '#00A3E0',
+  gradientEnd: '#0071A8',
+};
+
+// BSL Event Logos with brand colors
+const BSL_LOGOS = [
+  {
+    id: 'bsl-on-tour',
+    name: 'Blockchain Summit Latam - On Tour',
+    src: require('../assets/logos/bsl/BSL-on-tour.svg'),
+    backgroundColor: '#9B59B6', // Purple
+    gradientStart: '#9B59B6',
+    gradientEnd: '#6C3A7C',
+  },
+  {
+    id: 'bsl-peru',
+    name: 'Blockchain Summit Latam - Peru',
+    src: require('../assets/logos/bsl/BSL-peru.svg'),
+    backgroundColor: '#E31C23', // Red
+    gradientStart: '#E31C23',
+    gradientEnd: '#B01520',
+  },
+  {
+    id: 'bsl-chile',
+    name: 'Blockchain Summit Latam - Chile',
+    src: require('../assets/logos/bsl/BSL-chile.svg'),
+    backgroundColor: '#E31C23', // Red
+    gradientStart: '#E31C23',
+    gradientEnd: '#B01520',
+  },
+  {
+    id: 'bsl-colombia',
+    name: 'Blockchain Summit Latam - Colombia',
+    src: require('../assets/logos/bsl/BSL-colombia.svg'),
+    backgroundColor: '#FFD700', // Yellow
+    gradientStart: '#FFD700',
+    gradientEnd: '#D4AF37',
+  },
+];
 
 const extractUri = (value: unknown): string | undefined => {
   if (!value) return undefined;
@@ -72,19 +129,20 @@ export default function EventBannerCarousel({
   // Get available events
   const availableEvents = getAvailableEvents();
   const bslLampBranding = useMemo<LampBrandingConfig>(() => {
-    const darkLogo = resolveAssetUri(BSL_DARK_LOGO);
-    const lightLogo = resolveAssetUri(BSL_LIGHT_LOGO);
+    const darkLogo = resolveAssetUri(HASHPASS_DARK_LOGO);
+    const lightLogo = resolveAssetUri(HASHPASS_LIGHT_LOGO);
 
     return {
       logoSrcDark: darkLogo,
       logoSrcLight: lightLogo,
       logoFallbackSrc: darkLogo || lightLogo,
-      logoAlt: 'Blockchain Summit Latam 2025',
+      logoAlt: 'Hashpass',
     };
   }, []);
 
   const defaultLampBrandingByEvent = useMemo<Record<string, LampBrandingConfig>>(
     () => ({
+      bsl: bslLampBranding,
       bsl2025: bslLampBranding,
     }),
     [bslLampBranding]
@@ -98,10 +156,29 @@ export default function EventBannerCarousel({
     [defaultLampBrandingByEvent, lampBrandingOverrides]
   );
 
-  // Build slides: event banners only (download slide temporarily hidden)
+  // Build slides: event banners + logo slides
   const slides: CarouselSlide[] = [
     // { type: 'download' }, // Temporarily hidden
     ...availableEvents.map(event => ({ type: 'event' as const, event })),
+    // Add main BSL logo
+    {
+      type: 'logo' as const,
+      logoId: MAIN_BSL_LOGO.id,
+      logoSrcDark: MAIN_BSL_LOGO.darkSrc,
+      logoSrcLight: MAIN_BSL_LOGO.lightSrc,
+      backgroundColor: MAIN_BSL_LOGO.backgroundColor,
+      gradientStart: MAIN_BSL_LOGO.gradientStart,
+      gradientEnd: MAIN_BSL_LOGO.gradientEnd,
+    },
+    // Add BSL event logos with brand colors
+    ...BSL_LOGOS.map(logo => ({
+      type: 'logo' as const,
+      logoId: logo.id,
+      logoSrc: logo.src,
+      backgroundColor: logo.backgroundColor,
+      gradientStart: logo.gradientStart,
+      gradientEnd: logo.gradientEnd,
+    })),
   ];
 
   const scrollToSlide = useCallback((index: number) => {
@@ -141,8 +218,8 @@ export default function EventBannerCarousel({
   };
 
   // Get event date for countdown from event data
-  const getEventStartDate = (event: EventInfo): string => {
-    return event.eventStartDate || '2025-11-12T09:00:00-05:00';
+  const getEventStartDate = (event: EventInfo): string | undefined => {
+    return event.eventStartDate;
   };
 
   const getEventDate = (event: EventInfo): string => {
@@ -239,8 +316,8 @@ export default function EventBannerCarousel({
                       subtitle={event.subtitle}
                       date={getEventDate(event)}
                       backgroundColor={event.color}
-                      showCountdown={true}
-                      showLiveIndicator={true}
+                      showCountdown={Boolean(event.eventStartDate)}
+                      showLiveIndicator={Boolean(event.eventStartDate)}
                       eventStartDate={getEventStartDate(event)}
                       isLive={false}
                     />
@@ -249,6 +326,31 @@ export default function EventBannerCarousel({
               </View>
             );
           })}
+
+        {/* Logo Slides */}
+        {slides
+          .filter(slide => slide.type === 'logo')
+          .map((slide) => (
+            <View key={slide.logoId} style={styles.slide}>
+              <LinearGradient
+                colors={[
+                  slide.gradientStart || slide.backgroundColor,
+                  slide.gradientEnd || slide.backgroundColor,
+                  isDark ? '#0a0a0a' : '#f5f5f5'
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                locations={[0, 0.6, 1]}
+                style={styles.logoSlideContainer}
+              >
+                <Image
+                  source={isDark && slide.logoSrcDark ? slide.logoSrcDark : (slide.logoSrcLight || slide.logoSrc)}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+              </LinearGradient>
+            </View>
+          ))}
       </ScrollView>
 
       {/* Dot Indicators */}
@@ -411,5 +513,18 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   dotActive: {
     width: 24,
     backgroundColor: isDark ? '#FFFFFF' : '#000000',
+  },
+  logoSlideContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    minHeight: 360,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: '100%',
+    height: 280,
   },
 });
