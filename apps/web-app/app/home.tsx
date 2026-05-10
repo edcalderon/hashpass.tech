@@ -70,7 +70,7 @@ export default function HomeScreen() {
   const shouldShowFooterLink = true; // Always show a link
   const footerLinkName = isMainBranch 
     ? 'HashPass' 
-    : (currentEvent?.title || '');
+    : 'Blockchain Summit Latam';
   const footerLinkUrl = isMainBranch 
     ? 'https://hashpass.tech'
     : (currentEvent?.website || (currentEvent?.id === 'bsl2025' ? 'https://blockchainsummit.la/' : null));

@@ -94,6 +94,7 @@ const Features: React.FC<FeaturesProps> = ({
       title: t('features.secure.title'),
       description: t('features.secure.description'),
       moreInfo: t('features.secure.moreInfo', t('features.secure.description')),
+      actionText: 'Secure data now',
       color: '#06b6d4',
     },
     {
@@ -102,6 +103,7 @@ const Features: React.FC<FeaturesProps> = ({
       title: t('features.management.title'),
       description: t('features.management.description'),
       moreInfo: t('features.management.moreInfo', t('features.management.description')),
+      actionText: 'Manage your keys',
       color: '#ef4444',
     },
     {
@@ -110,6 +112,7 @@ const Features: React.FC<FeaturesProps> = ({
       title: t('features.sync.title'),
       description: t('features.sync.description'),
       moreInfo: t('features.sync.moreInfo', t('features.sync.description')),
+      actionText: 'Start always sync',
       color: '#22c55e',
     }
   ];
@@ -126,7 +129,7 @@ const Features: React.FC<FeaturesProps> = ({
                 icon={feature.icon}
                 color={feature.color}
                 hintText={t('learnMore', 'Learn More')}
-                actionText={t('getStartedNow', 'Start Now')}
+                actionText={feature.actionText}
                 isDark={isDark}
                 actionHref="/(shared)/auth"
               />

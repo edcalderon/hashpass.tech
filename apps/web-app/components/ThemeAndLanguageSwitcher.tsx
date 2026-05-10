@@ -50,6 +50,7 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
   }, []);
 
   const currentLanguage = availableLocales.find(lang => lang.code === locale) || availableLocales[0];
+  const currentLanguageLabel = t(`languages.${currentLanguage.name}`);
 
   const handleThemeToggle = () => {
 
@@ -186,6 +187,7 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
           style={[styles.button, { backgroundColor: colors.surface }]}
           onPress={toggleLanguageMenu}
           activeOpacity={0.8}
+          accessibilityLabel={`${currentLanguage.code.toUpperCase()} ${currentLanguageLabel}`}
         >
           <Text style={[styles.languageText, { color: colors.text.primary }]}>
             {currentLanguage.code.toUpperCase()}
@@ -213,9 +215,33 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
                 ]}
                 onPress={() => handleLanguageSelect(lang.code)}
               >
-                <Text style={[styles.languageText, { color: colors.text.primary }]}>
-                  {t(`languages.${lang.name}`)}
-                </Text>
+                <View style={styles.languageItemRow}>
+                  <Text style={[styles.languageText, { color: colors.text.primary }]}>
+                    {t(`languages.${lang.name}`)}
+                  </Text>
+                  <View
+                    style={[
+                      styles.languageCodeBadge,
+                      {
+                        borderColor: isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.14)',
+                        backgroundColor: lang.code === locale
+                          ? (isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.08)')
+                          : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.85)'),
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.languageCodeText,
+                        {
+                          color: colors.text.secondary,
+                        },
+                      ]}
+                    >
+                      {lang.code.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
               </TouchableOpacity>
             ))}
           </Animated.View>
@@ -323,24 +349,45 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     right: 0,
-    minWidth: 140,
-    maxWidth: 180,
-    borderRadius: 12,
+    minWidth: 184,
+    maxWidth: 220,
+    borderRadius: 16,
     paddingVertical: 8,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
     zIndex: 1001,
-    maxHeight: 400,
+    maxHeight: 420,
   },
   languageItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
+  languageItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   languageText: {
     fontSize: 16,
     fontWeight: '500',
+    flexShrink: 1,
+  },
+  languageCodeBadge: {
+    minWidth: 42,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  languageCodeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
   },
   overlay: {
     position: 'absolute',

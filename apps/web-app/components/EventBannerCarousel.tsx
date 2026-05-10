@@ -15,8 +15,7 @@ interface CarouselSlide {
   logoSrcDark?: any;
   logoSrcLight?: any;
   backgroundColor?: string;
-  gradientStart?: string;
-  gradientEnd?: string;
+  accentColor?: string;
 }
 
 interface EventBannerCarouselProps {
@@ -35,19 +34,32 @@ export interface LampBrandingConfig {
 }
 
 const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg');
-const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white.svg');
-const BSL_DARK_LOGO = require('../assets/logos/bsl/bsl-light.png');
-const BSL_LIGHT_LOGO = require('../assets/logos/bsl/bsl-dark.png');
+const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.svg');
+const BSL_WHITE_BRAND_LOGO = require('../assets/logos/bsl/bsl-white.png');
+const BSL_ONTOUR_LOGO = require('../assets/logos/bsl/bsl-ontour-pro.svg');
+const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.svg');
+const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.svg');
+const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.svg');
 
-// Main BSL Logo
-const MAIN_BSL_LOGO = {
-  id: 'bsl-main',
+// Main HashPass Logo
+const LOGO_SLIDE_BACKGROUND = '#07111F';
+
+const MAIN_HASHPASS_LOGO = {
+  id: 'hashpass-main',
+  name: 'HashPass',
+  darkSrc: HASHPASS_DARK_LOGO,
+  lightSrc: HASHPASS_LIGHT_LOGO,
+  backgroundColor: LOGO_SLIDE_BACKGROUND,
+  accentColor: '#6FDDFD',
+};
+
+const BSL_PLAIN_LOGO = {
+  id: 'bsl-plain',
   name: 'Blockchain Summit Latam',
-  darkSrc: BSL_DARK_LOGO,
-  lightSrc: BSL_LIGHT_LOGO,
-  backgroundColor: '#00A3E0',
-  gradientStart: '#00A3E0',
-  gradientEnd: '#0071A8',
+  darkSrc: BSL_WHITE_BRAND_LOGO,
+  lightSrc: BSL_WHITE_BRAND_LOGO,
+  backgroundColor: LOGO_SLIDE_BACKGROUND,
+  accentColor: '#6FDDFD',
 };
 
 // BSL Event Logos with brand colors
@@ -55,34 +67,26 @@ const BSL_LOGOS = [
   {
     id: 'bsl-on-tour',
     name: 'Blockchain Summit Latam - On Tour',
-    logoSrc: BSL_DARK_LOGO,
-    backgroundColor: '#9B59B6', // Purple
-    gradientStart: '#9B59B6',
-    gradientEnd: '#6C3A7C',
+    logoSrc: BSL_ONTOUR_LOGO,
+    accentColor: '#34D399',
   },
   {
     id: 'bsl-peru',
     name: 'Blockchain Summit Latam - Peru',
-    logoSrc: BSL_DARK_LOGO,
-    backgroundColor: '#E31C23', // Red
-    gradientStart: '#E31C23',
-    gradientEnd: '#B01520',
+    logoSrc: BSL_PERU_LOGO,
+    accentColor: '#E31C23',
   },
   {
     id: 'bsl-chile',
     name: 'Blockchain Summit Latam - Chile',
-    logoSrc: BSL_DARK_LOGO,
-    backgroundColor: '#E31C23', // Red
-    gradientStart: '#E31C23',
-    gradientEnd: '#B01520',
+    logoSrc: BSL_CHILE_LOGO,
+    accentColor: '#FF5B5B',
   },
   {
     id: 'bsl-colombia',
     name: 'Blockchain Summit Latam - Colombia',
-    logoSrc: BSL_DARK_LOGO,
-    backgroundColor: '#FFD700', // Yellow
-    gradientStart: '#FFD700',
-    gradientEnd: '#D4AF37',
+    logoSrc: BSL_COLOMBIA_LOGO,
+    accentColor: '#FFD700',
   },
 ];
 
@@ -112,6 +116,25 @@ const resolveAssetUri = (assetModule: unknown): string | undefined => {
   }
 };
 
+const hexToRgba = (hex: string, alpha: number) => {
+  const normalized = hex.replace('#', '').trim();
+  if (normalized.length === 3) {
+    const r = normalized[0];
+    const g = normalized[1];
+    const b = normalized[2];
+    return `rgba(${parseInt(r + r, 16)}, ${parseInt(g + g, 16)}, ${parseInt(b + b, 16)}, ${alpha})`;
+  }
+
+  if (normalized.length === 6) {
+    const r = parseInt(normalized.slice(0, 2), 16);
+    const g = parseInt(normalized.slice(2, 4), 16);
+    const b = parseInt(normalized.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  return hex;
+};
+
 export default function EventBannerCarousel({
   showDotIndicators = true,
   autoPlay = true,
@@ -129,14 +152,14 @@ export default function EventBannerCarousel({
   // Get available events
   const availableEvents = getAvailableEvents();
   const bslLampBranding = useMemo<LampBrandingConfig>(() => {
-    const darkLogo = resolveAssetUri(HASHPASS_DARK_LOGO);
-    const lightLogo = resolveAssetUri(HASHPASS_LIGHT_LOGO);
+    const darkLogo = resolveAssetUri(BSL_WHITE_BRAND_LOGO);
+    const lightLogo = resolveAssetUri(BSL_WHITE_BRAND_LOGO);
 
     return {
       logoSrcDark: darkLogo,
       logoSrcLight: lightLogo,
       logoFallbackSrc: darkLogo || lightLogo,
-      logoAlt: 'Hashpass',
+      logoAlt: 'Blockchain Summit Latam',
     };
   }, []);
 
@@ -159,26 +182,33 @@ export default function EventBannerCarousel({
   // Build slides: event banners + logo slides
   const slides: CarouselSlide[] = [
     // { type: 'download' }, // Temporarily hidden
-    ...availableEvents.map(event => ({ type: 'event' as const, event })),
-    // Add main BSL logo
+    // Add main HashPass logo first
     {
       type: 'logo' as const,
-      logoId: MAIN_BSL_LOGO.id,
-      logoSrcDark: MAIN_BSL_LOGO.darkSrc,
-      logoSrcLight: MAIN_BSL_LOGO.lightSrc,
-      backgroundColor: MAIN_BSL_LOGO.backgroundColor,
-      gradientStart: MAIN_BSL_LOGO.gradientStart,
-      gradientEnd: MAIN_BSL_LOGO.gradientEnd,
+      logoId: MAIN_HASHPASS_LOGO.id,
+      logoSrcDark: MAIN_HASHPASS_LOGO.darkSrc,
+      logoSrcLight: MAIN_HASHPASS_LOGO.lightSrc,
+      backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
+      accentColor: MAIN_HASHPASS_LOGO.accentColor,
+    },
+    // Add BSL plain logo second
+    {
+      type: 'logo' as const,
+      logoId: BSL_PLAIN_LOGO.id,
+      logoSrcDark: BSL_PLAIN_LOGO.darkSrc,
+      logoSrcLight: BSL_PLAIN_LOGO.lightSrc,
+      backgroundColor: BSL_PLAIN_LOGO.backgroundColor,
+      accentColor: BSL_PLAIN_LOGO.accentColor,
     },
     // Add BSL event logos with brand colors
     ...BSL_LOGOS.map(logo => ({
       type: 'logo' as const,
       logoId: logo.id,
       logoSrc: logo.logoSrc,
-      backgroundColor: logo.backgroundColor,
-      gradientStart: logo.gradientStart,
-      gradientEnd: logo.gradientEnd,
+      backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
+      accentColor: logo.accentColor,
     })),
+    ...availableEvents.map(event => ({ type: 'event' as const, event })),
   ];
 
   const scrollToSlide = useCallback((index: number) => {
@@ -287,14 +317,14 @@ export default function EventBannerCarousel({
           </View>
         </View> */}
 
-        {/* Event Banner Slides */}
-        {slides
-          .filter(slide => slide.type === 'event')
-          .map((slide) => {
+        {slides.map((slide) => {
+          if (slide.type === 'event') {
             if (!slide.event) return null;
+
             const event = slide.event;
             const lampBranding = lampBrandingByEvent[event.id];
             const shouldUseLampBanner = Platform.OS === 'web' && Boolean(lampBranding);
+
             return (
               <View key={event.id} style={styles.slide}>
                 <TouchableOpacity
@@ -309,6 +339,8 @@ export default function EventBannerCarousel({
                       logoSrcLight={lampBranding?.logoSrcLight}
                       logoFallbackSrc={lampBranding?.logoFallbackSrc}
                       logoAlt={lampBranding?.logoAlt}
+                      backgroundColor={LOGO_SLIDE_BACKGROUND}
+                      accentColor={event.color}
                     />
                   ) : (
                     <EventBanner
@@ -325,36 +357,44 @@ export default function EventBannerCarousel({
                 </TouchableOpacity>
               </View>
             );
-          })}
+          }
 
-        {/* Logo Slides */}
-        {slides
-          .filter(slide => slide.type === 'logo')
-          .map((slide) => (
-            <View key={slide.logoId} style={styles.slide}>
-              <LinearGradient
-                colors={[
-                  slide.gradientStart || slide.backgroundColor,
-                  slide.gradientEnd || slide.backgroundColor,
-                  isDark ? '#1a1a1a' : '#ffffff'
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                locations={[0, 0.5, 1]}
-                style={styles.logoSlideContainer}
-              >
-                {/* Light beam effect at top */}
-                <View style={[styles.lightBeamOverlay, {
-                  backgroundColor: isDark ? 'rgba(0, 212, 255, 0.15)' : 'rgba(255, 107, 107, 0.15)'
-                }]} />
-                <Image
-                  source={isDark && slide.logoSrcDark ? slide.logoSrcDark : (slide.logoSrcLight || slide.logoSrc)}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
-              </LinearGradient>
-            </View>
-          ))}
+          if (slide.type === 'logo') {
+            return (
+              <View key={slide.logoId} style={styles.slide}>
+                <View
+                  style={[
+                    styles.logoSlideContainer,
+                    {
+                      backgroundColor: slide.backgroundColor || LOGO_SLIDE_BACKGROUND,
+                      shadowColor: '#000000',
+                    },
+                  ]}
+                >
+                  {/* Light beam effect at top */}
+                  <LinearGradient
+                    colors={[
+                      hexToRgba(slide.accentColor || '#6FDDFD', 0.48),
+                      hexToRgba(slide.accentColor || '#6FDDFD', 0.16),
+                      'transparent',
+                    ]}
+                    locations={[0, 0.34, 1]}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={styles.lightBeamOverlay}
+                  />
+                  <Image
+                    source={isDark && slide.logoSrcDark ? slide.logoSrcDark : (slide.logoSrcLight || slide.logoSrc)}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
+            );
+          }
+
+          return null;
+        })}
       </ScrollView>
 
       {/* Dot Indicators */}
@@ -527,7 +567,6 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     minHeight: 360,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: isDark ? '#00d4ff' : '#ff6b6b',
     shadowOffset: { width: 0, height: -20 },
     shadowOpacity: 0.3,
     shadowRadius: 40,
@@ -542,7 +581,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     top: 0,
     left: 0,
     right: 0,
-    height: 120,
+    height: 150,
     zIndex: 1,
     pointerEvents: 'none',
   },

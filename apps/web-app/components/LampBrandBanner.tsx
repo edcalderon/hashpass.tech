@@ -7,110 +7,91 @@ import { cn } from "../lib/utils";
 interface LampContainerProps {
   children: React.ReactNode;
   className?: string;
-  theme?: "dark" | "light";
+  backgroundColor?: string;
+  accentColor?: string;
 }
 
-const getThemeStyles = (theme: "dark" | "light") => {
-  if (theme === "light") {
-    return {
-      container: "bg-slate-100",
-      mask: "bg-slate-100",
-      glow: "bg-red-500/35",
-      glowSoft: "bg-red-400/45",
-      beam: "bg-red-500/70",
-      coneColor: "#ef4444",
-    };
+const hexToRgba = (hex: string, alpha: number) => {
+  const normalized = hex.replace("#", "").trim();
+  if (normalized.length === 3) {
+    const r = normalized[0];
+    const g = normalized[1];
+    const b = normalized[2];
+    return `rgba(${parseInt(r + r, 16)}, ${parseInt(g + g, 16)}, ${parseInt(b + b, 16)}, ${alpha})`;
   }
 
-  return {
-    container: "bg-slate-950",
-    mask: "bg-slate-950",
-    glow: "bg-cyan-500/60",
-    glowSoft: "bg-cyan-300/70",
-    beam: "bg-cyan-300/90",
-    coneColor: "#38bdf8",
-  };
+  if (normalized.length === 6) {
+    const r = parseInt(normalized.slice(0, 2), 16);
+    const g = parseInt(normalized.slice(2, 4), 16);
+    const b = parseInt(normalized.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  return hex;
 };
 
-export function LampContainer({ children, className, theme = "dark" }: LampContainerProps) {
-  const themeStyles = getThemeStyles(theme);
+export function LampContainer({
+  children,
+  className,
+  backgroundColor = "#07111F",
+  accentColor = "#6FDDFD",
+}: LampContainerProps) {
+  const softAccent = hexToRgba(accentColor, 0.28);
+  const beamAccent = hexToRgba(accentColor, 0.5);
 
   return (
     <div
       className={cn(
         "relative flex min-h-[360px] w-full flex-col items-center justify-center overflow-hidden rounded-2xl",
-        themeStyles.container,
         className
       )}
+      style={{ backgroundColor }}
     >
       <div className="relative flex w-full flex-1 scale-y-125 items-center justify-center isolate z-0">
         <motion.div
-          initial={{ opacity: 0.45, width: "14rem" }}
-          whileInView={{ opacity: 1, width: "28rem" }}
+          initial={{ opacity: 0.35, scaleX: 0.88, scaleY: 0.85 }}
+          whileInView={{ opacity: 1, scaleX: 1, scaleY: 1 }}
           viewport={{ once: false, amount: 0.5 }}
           transition={{ delay: 0.2, duration: 0.75, ease: "easeInOut" }}
           style={{
-            backgroundImage:
-              `conic-gradient(from 70deg at center top, ${themeStyles.coneColor}, transparent 42%)`,
+            backgroundImage: `radial-gradient(circle at 50% 0%, ${beamAccent} 0%, ${softAccent} 22%, transparent 68%)`,
           }}
-          className="absolute right-1/2 h-56 w-[28rem]"
+          className="absolute top-0 h-64 w-[34rem]"
         >
           <div
             className={cn(
-              "absolute bottom-0 left-0 z-20 h-40 w-full [mask-image:linear-gradient(to_top,white,transparent)]",
-              themeStyles.mask
+              "absolute inset-x-0 bottom-0 z-20 h-44 [mask-image:linear-gradient(to_top,white,transparent)]",
+              "bg-transparent"
             )}
           />
           <div
             className={cn(
-              "absolute bottom-0 left-0 z-20 h-full w-40 [mask-image:linear-gradient(to_right,white,transparent)]",
-              themeStyles.mask
+              "absolute left-1/2 top-0 z-20 h-56 w-20 -translate-x-1/2 rounded-full blur-3xl",
+              "bg-transparent"
             )}
           />
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0.45, width: "14rem" }}
-          whileInView={{ opacity: 1, width: "28rem" }}
+          initial={{ opacity: 0.32, scaleX: 0.88, scaleY: 0.85 }}
+          whileInView={{ opacity: 1, scaleX: 1, scaleY: 1 }}
           viewport={{ once: false, amount: 0.5 }}
           transition={{ delay: 0.2, duration: 0.75, ease: "easeInOut" }}
           style={{
-            backgroundImage:
-              `conic-gradient(from 290deg at center top, transparent 58%, ${themeStyles.coneColor})`,
+            backgroundImage: `radial-gradient(circle at 50% 0%, ${softAccent} 0%, transparent 66%)`,
           }}
-          className="absolute left-1/2 h-56 w-[28rem]"
-        >
-          <div
-            className={cn(
-              "absolute bottom-0 right-0 z-20 h-full w-40 [mask-image:linear-gradient(to_left,white,transparent)]",
-              themeStyles.mask
-            )}
-          />
-          <div
-            className={cn(
-              "absolute bottom-0 right-0 z-20 h-40 w-full [mask-image:linear-gradient(to_top,white,transparent)]",
-              themeStyles.mask
-            )}
-          />
-        </motion.div>
+          className="absolute top-0 h-64 w-[34rem]"
+        />
 
-        <div className={cn("absolute top-1/2 h-44 w-full translate-y-10 scale-x-150 blur-2xl", themeStyles.mask)} />
-        <div className={cn("absolute top-1/2 z-30 h-36 w-[28rem] -translate-y-1/2 rounded-full blur-3xl", themeStyles.glow)} />
         <motion.div
-          initial={{ width: "8rem" }}
-          whileInView={{ width: "16rem" }}
+          initial={{ opacity: 0.2, scaleX: 0.65 }}
+          whileInView={{ opacity: 1, scaleX: 1 }}
           viewport={{ once: false, amount: 0.5 }}
           transition={{ delay: 0.2, duration: 0.75, ease: "easeInOut" }}
-          className={cn("absolute z-40 h-36 w-64 -translate-y-[5.5rem] rounded-full blur-2xl", themeStyles.glowSoft)}
+          className="absolute top-0 z-40 h-1 w-[26rem] -translate-y-[5rem] rounded-full blur-sm"
+          style={{ backgroundColor: beamAccent }}
         />
-        <motion.div
-          initial={{ width: "14rem" }}
-          whileInView={{ width: "28rem" }}
-          viewport={{ once: false, amount: 0.5 }}
-          transition={{ delay: 0.2, duration: 0.75, ease: "easeInOut" }}
-          className={cn("absolute z-40 h-0.5 w-[28rem] -translate-y-[6.2rem]", themeStyles.beam)}
-        />
-        <div className={cn("absolute z-20 h-40 w-full -translate-y-[10rem]", themeStyles.mask)} />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(0,0,0,0.15)_100%)]" />
       </div>
 
       <div className="relative z-50 -translate-y-6 px-5">{children}</div>
@@ -126,6 +107,8 @@ export interface LampBrandBannerProps {
   isDarkMode?: boolean;
   logoAlt?: string;
   className?: string;
+  backgroundColor?: string;
+  accentColor?: string;
 }
 
 export default function LampBrandBanner({
@@ -136,16 +119,28 @@ export default function LampBrandBanner({
   isDarkMode = true,
   logoAlt = "Event brand",
   className,
+  backgroundColor,
+  accentColor,
 }: LampBrandBannerProps) {
   const resolvedLogoSrc =
     logoSrc ||
     (isDarkMode ? logoSrcDark : logoSrcLight) ||
     logoFallbackSrc ||
     "";
-  const animationKey = `${isDarkMode ? "dark" : "light"}-${resolvedLogoSrc || "fallback"}`;
+  const animationKey = [
+    isDarkMode ? "dark" : "light",
+    backgroundColor || "default-bg",
+    accentColor || "default-accent",
+    resolvedLogoSrc || "fallback",
+  ].join("-");
 
   return (
-    <LampContainer key={animationKey} className={className} theme={isDarkMode ? "dark" : "light"}>
+    <LampContainer
+      key={animationKey}
+      className={className}
+      backgroundColor={backgroundColor}
+      accentColor={accentColor}
+    >
       {resolvedLogoSrc ? (
         <motion.img
           src={resolvedLogoSrc}
