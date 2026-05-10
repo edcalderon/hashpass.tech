@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 import {
   Ionicons as NativeIonicons,
+  FontAwesome6 as NativeFontAwesome6,
   MaterialIcons as NativeMaterialIcons,
 } from '../node_modules/@expo/vector-icons';
 
@@ -35,6 +36,8 @@ const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   'mail-open-outline': 'drafts',
   'mail-outline': 'email',
   menu: 'menu',
+  moon: 'nights-stay',
+  'moon-outline': 'nightlight-round',
   'person-outline': 'person',
   'qr-code-outline': 'qr-code',
   refresh: 'refresh',
@@ -43,9 +46,18 @@ const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   star: 'star',
   'ticket-outline': 'confirmation-number',
   'warning-outline': 'warning',
+  sunny: 'wb-sunny',
 };
 
 function WebIonicons({ name, ...props }: IconProps) {
+  if (name === 'logo-google') {
+    return <NativeFontAwesome6 {...props} name={'google' as any} />;
+  }
+
+  if (name === 'logo-google-playstore') {
+    return <NativeFontAwesome6 {...props} name={'google-play' as any} />;
+  }
+
   const mappedName = WEB_IONICONS_TO_MATERIAL_ICONS[name] ?? 'help-outline';
   return <NativeMaterialIcons {...props} name={mappedName as any} />;
 }
