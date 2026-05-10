@@ -129,20 +129,11 @@ const PWAPrompt = () => {
       }
     }
 
-    // Fallback only if native prompt not available
-    console.log('[PWAPrompt] No native prompt available, showing fallback instructions');
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isAndroid = /Android/.test(navigator.userAgent);
-
-      if (isIOS) {
-        alert(t('instructions.ios', 'To install: tap Share, then "Add to Home Screen".'));
-      } else if (isAndroid) {
-        alert(t('instructions.android', 'To install: open the browser menu and tap "Install app".'));
-      } else {
-        alert(t('instructions.default', 'To install: use the install icon in your browser address bar.'));
-      }
-    }
+    // Fallback: show install modal info card instead of alert
+    console.log('[PWAPrompt] Native prompt not available, keeping modal open for user info');
+    // Keep the modal visible so user can see the installation details and close it manually
+    // The modal already contains the proper installation information
+    setShowPrompt(true);
   };
 
   const openApp = () => {
