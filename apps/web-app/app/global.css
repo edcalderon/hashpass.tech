@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Bounce animation for icon */
+@keyframes pwa-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
 /* PWA Install Prompt Positioning - Top Left */
 .hp-pwa-floating {
   position: fixed !important;
@@ -19,14 +29,31 @@
   border-radius: 12px !important;
 }
 
-/* Collapsed state - compact button in top-left corner */
+/* Collapsed state - compact circular button with 3D effect */
 .hp-pwa-floating.hp-pwa-collapsed-state {
   top: 70px !important;
   left: 24px !important;
-  max-width: 60px;
-  background: rgba(255, 255, 255, 0.9) !important;
+  max-width: 70px;
+  width: 70px !important;
+  height: 70px !important;
+  padding: 0 !important;
   border-radius: 50% !important;
-  padding: 12px !important;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(30, 41, 82, 0.95)) !important;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.1),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.3) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Icon bounce animation */
+.hp-pwa-floating.hp-pwa-collapsed-state svg,
+.hp-pwa-floating.hp-pwa-collapsed-state [class*="icon"] {
+  animation: pwa-bounce 2s ease-in-out infinite !important;
 }
 
 /* Tablet responsive */
