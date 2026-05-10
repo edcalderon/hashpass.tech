@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Platform } from 'react-native';
-import { getInstallationStatus, isPWAInstalled, canInstallPWA } from '../lib/pwa-utils';
+import { getInstallationStatus } from '../lib/pwa-utils';
 
 export interface PWAInstallStatus {
   installed: boolean;
@@ -22,37 +22,45 @@ export const usePWAInstall = () => {
   });
 
   useEffect(() => {
-    const updateStatus = () => {
+    let cancelled = false;
+
+    const updateStatus = async () => {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        const installStatus = getInstallationStatus();
+        const installStatus = await getInstallationStatus();
+        if (cancelled) {
+          return;
+        }
         setStatus(installStatus);
       }
     };
 
     // Initial check
-    updateStatus();
+    void updateStatus();
 
     // Listen for changes (e.g., when app is installed)
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       // Check on visibility change (user might have installed app)
       const handleVisibilityChange = () => {
         if (!document.hidden) {
-          updateStatus();
+          void updateStatus();
         }
       };
 
       // Check on focus (user might have installed app in another tab)
       const handleFocus = () => {
-        updateStatus();
+        void updateStatus();
       };
 
       document.addEventListener('visibilitychange', handleVisibilityChange);
       window.addEventListener('focus', handleFocus);
 
       // Periodic check (every 5 seconds) to catch installation
-      const interval = setInterval(updateStatus, 5000);
+      const interval = setInterval(() => {
+        void updateStatus();
+      }, 5000);
 
       return () => {
+        cancelled = true;
         document.removeEventListener('visibilitychange', handleVisibilityChange);
         window.removeEventListener('focus', handleFocus);
         clearInterval(interval);
@@ -62,4 +70,3 @@ export const usePWAInstall = () => {
 
   return status;
 };
-

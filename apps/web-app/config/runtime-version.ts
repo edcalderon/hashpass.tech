@@ -1,6 +1,6 @@
 import gitInfo from './git-info.json';
-import productionVersion from '../../../version.production.json';
-import developmentVersion from '../../../version.development.json';
+import productionVersion from './version.production.json';
+import developmentVersion from './version.development.json';
 import type { VersionInfo } from './version';
 
 type RuntimeBranch = 'production' | 'development';

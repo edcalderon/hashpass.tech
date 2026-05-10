@@ -4,6 +4,12 @@
 
 import { Platform } from 'react-native';
 
+type InstalledRelatedApp = {
+  platform?: string;
+  url?: string;
+  id?: string;
+};
+
 /**
  * Check if the app is running in standalone mode (installed as PWA)
  * This works for both iOS and Android PWAs
@@ -62,6 +68,45 @@ export const canInstallPWA = (): boolean => {
 };
 
 /**
+ * Check whether a related web app is already installed on the system.
+ * This is supported in Chromium-based browsers and helps distinguish
+ * "installed but opened in a browser tab" from a normal installable page.
+ */
+export const hasInstalledRelatedApp = async (): Promise<boolean> => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return false;
+  }
+
+  const navigatorWithRelatedApps = navigator as Navigator & {
+    getInstalledRelatedApps?: () => Promise<InstalledRelatedApp[]>;
+  };
+
+  if (typeof navigatorWithRelatedApps.getInstalledRelatedApps !== 'function') {
+    return false;
+  }
+
+  try {
+    const relatedApps = await navigatorWithRelatedApps.getInstalledRelatedApps();
+    const origin = window.location.origin;
+
+    return relatedApps.some((app) => {
+      if (!app || app.platform !== 'webapp') {
+        return false;
+      }
+
+      if (app.url) {
+        return app.url.startsWith(origin);
+      }
+
+      return true;
+    });
+  } catch (error) {
+    console.warn('[PWA Utils] Failed to query installed related apps:', error);
+    return false;
+  }
+};
+
+/**
  * Check if the app is already installed (more reliable check)
  * Combines multiple detection methods
  */
@@ -113,33 +158,15 @@ export const isPWAInstalled = (): boolean => {
   }
 
   // Check localStorage for installation flag (set after successful install)
-  // This is a fallback method - if flag exists, app was installed at some point
-  // Trust this flag even if not in standalone mode (user might be viewing in browser tab)
+  // This is a fallback method - if flag exists, app was installed at some point.
   try {
     const installFlag = localStorage.getItem('pwa-installed');
     if (installFlag === 'true') {
       console.log('✅ PWA installation detected via localStorage flag');
-      // If flag exists, app is installed - trust this even if not in standalone mode
       return true;
     }
-  } catch (e) {
+  } catch {
     // localStorage might not be available
-  }
-
-  // Additional check: If we're in a PWA context but not detected by other methods
-  // Check if service worker is active (indicates PWA setup)
-  if ('serviceWorker' in navigator) {
-    try {
-      // Check if there's an active service worker registration
-      const registration = navigator.serviceWorker.controller;
-      if (registration) {
-        // Service worker is controlling the page - likely a PWA
-        // But this alone isn't definitive, so we'll use it as a hint
-        // Combined with localStorage flag, this is more reliable
-      }
-    } catch (e) {
-      // Service worker check failed
-    }
   }
 
   return false;
@@ -166,8 +193,8 @@ export const resolvePwaLaunchUrl = (): string => {
     const manifestUrl = new URL(manifestHref, window.location.origin);
     const manifestDir = manifestUrl.pathname.replace(/[^/]*$/, '') || '/';
     return new URL(manifestDir, manifestUrl.origin).toString();
-  } catch (error) {
-    console.warn('[PWA Utils] Failed to resolve launch URL:', error);
+  } catch {
+    console.warn('[PWA Utils] Failed to resolve launch URL');
   }
 
   return fallbackUrl;
@@ -192,15 +219,16 @@ export const buildAndroidIntentUrl = (targetUrl: string): string | null => {
 /**
  * Get installation status with more details
  */
-export const getInstallationStatus = () => {
-  const installed = isPWAInstalled();
-  const canInstall = canInstallPWA();
-  const isStandaloneMode = isStandalone();
+export const getInstallationStatus = async () => {
+  const standalone = isStandalone();
+  const relatedAppInstalled = await hasInstalledRelatedApp();
+  const installed = standalone || relatedAppInstalled || isPWAInstalled();
+  const canInstall = canInstallPWA() && !installed;
 
   return {
     installed,
     canInstall,
-    isStandaloneMode,
+    isStandaloneMode: standalone,
     // Allow reinstall if user wants to update or reinstall
     allowReinstall: true, // Always allow reinstall option
   };

@@ -18,6 +18,8 @@ const VERSION_FILES = [
   'package.json',
   'version.production.json',
   'version.development.json',
+  'apps/web-app/config/version.production.json',
+  'apps/web-app/config/version.development.json',
   'app.json',
   'config/version.ts',
   'config/versions.json',
@@ -137,10 +139,24 @@ function validateVersionConsistency() {
   if (branchAwareEnabled && stagedVersionFiles.length > 0 && stagedVersionFiles.every(f => f === 'version.development.json')) {
     return { valid: true, errors: [], warnings: [] };
   }
+
+  if (
+    branchAwareEnabled &&
+    stagedVersionFiles.length > 0 &&
+    stagedVersionFiles.every(f => f === 'apps/web-app/config/version.development.json')
+  ) {
+    return { valid: true, errors: [], warnings: [] };
+  }
   
   // If version files are staged, check consistency
   const comparableVersions = branchAwareEnabled
-    ? Object.fromEntries(Object.entries(versions).filter(([file]) => file !== 'version.development.json'))
+    ? Object.fromEntries(
+        Object.entries(versions).filter(
+          ([file]) =>
+            file !== 'version.development.json' &&
+            file !== 'apps/web-app/config/version.development.json'
+        )
+      )
     : versions;
   const uniqueVersions = [...new Set(Object.values(comparableVersions))];
   
@@ -174,7 +190,9 @@ function validateVersionConsistency() {
   
   // Check if all required files are updated
   const relevantVersionFiles = branchAwareEnabled
-    ? VERSION_FILES.filter(f => f !== 'version.development.json')
+    ? VERSION_FILES.filter(
+        f => f !== 'version.development.json' && f !== 'apps/web-app/config/version.development.json'
+      )
     : VERSION_FILES;
 
   const missingFiles = relevantVersionFiles.filter(f => {

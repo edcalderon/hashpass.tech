@@ -30,8 +30,14 @@ const PWAPrompt = () => {
     const isStoredCollapsed = window.localStorage.getItem(COLLAPSE_KEY) === 'true';
     setIsCollapsed(isStoredCollapsed);
 
-    const checkStatus = () => {
-      const status = getInstallationStatus();
+    let cancelled = false;
+
+    const checkStatus = async () => {
+      const status = await getInstallationStatus();
+      if (cancelled) {
+        return;
+      }
+
       setIsInstalled(status.installed);
       setIsStandaloneMode(status.isStandaloneMode);
 
@@ -57,7 +63,7 @@ const PWAPrompt = () => {
       }
     };
 
-    checkStatus();
+    void checkStatus();
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
 
     // Log when we're ready to listen for install prompt
@@ -65,17 +71,24 @@ const PWAPrompt = () => {
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        checkStatus();
+        void checkStatus();
       }
     };
 
-    window.addEventListener('focus', checkStatus);
+    const handleFocus = () => {
+      void checkStatus();
+    };
+
+    window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    const interval = window.setInterval(checkStatus, 4000);
+    const interval = window.setInterval(() => {
+      void checkStatus();
+    }, 4000);
 
     return () => {
+      cancelled = true;
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
-      window.removeEventListener('focus', checkStatus);
+      window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.clearInterval(interval);
     };
@@ -95,6 +108,27 @@ const PWAPrompt = () => {
     }
     setIsCollapsed(false);
     setShowPrompt(true);
+  };
+
+  const showInstallFallbackAlert = () => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      return;
+    }
+
+    const userAgent = window.navigator.userAgent;
+    const installInstruction = /Android/i.test(userAgent)
+      ? t('instructions.android', 'To install: open the browser menu and tap "Install app".')
+      : /iPhone|iPad|iPod/i.test(userAgent)
+        ? t('instructions.ios', 'To install: tap Share, then "Add to Home Screen".')
+        : t('instructions.default', 'To install: use the install icon in your browser address bar.');
+
+    window.alert(
+      [
+        t('installTitle', 'Install HashPass'),
+        t('installDescription', 'Install HashPass as a PWA to launch it like an app from your home screen.'),
+        installInstruction,
+      ].join('\n\n')
+    );
   };
 
   const installPWA = async () => {
@@ -126,13 +160,13 @@ const PWAPrompt = () => {
         return;
       } catch (error) {
         console.error('[PWAPrompt] Error showing install prompt:', error);
+        setDeferredPrompt(null);
       }
     }
 
     // Fallback: show install modal info card instead of alert
-    console.log('[PWAPrompt] Native prompt not available, keeping modal open for user info');
-    // Keep the modal visible so user can see the installation details and close it manually
-    // The modal already contains the proper installation information
+    console.log('[PWAPrompt] Native prompt not available, showing installation instructions');
+    showInstallFallbackAlert();
     setShowPrompt(true);
   };
 
@@ -180,12 +214,21 @@ const PWAPrompt = () => {
     }
   })();
 
+  const primaryIconSrc = (() => {
+    try {
+      return Image.resolveAssetSource(require('../assets/android-chrome-512x512.png')).uri;
+    } catch {
+      return logoSrc;
+    }
+  })();
+
   return (
     <PwaInstallPromptCard
       className={`hp-pwa-floating${isCollapsed ? ' hp-pwa-collapsed-state' : ''}`}
       appName="HashPass"
       logoSrc={logoSrc}
       logoLayout="icon"
+      primaryIconSrc={primaryIconSrc}
       primaryLabel={isOpenAppMode ? t('openAction', 'Open HashPass App') : t('installAction', 'Install HashPass')}
       title={isOpenAppMode ? t('openTitle', 'Open your installed app') : t('installTitle', 'Install HashPass')}
       description={
@@ -193,7 +236,11 @@ const PWAPrompt = () => {
           ? t('openDescription', 'HashPass is already installed. Open it in app mode for the best mobile experience.')
           : t('installDescription', 'Install HashPass as a PWA to launch it like an app from your home screen.')
       }
-      dialogLabel={t('dialogLabel', 'HashPass install prompt')}
+      dialogLabel={
+        isOpenAppMode
+          ? t('openTitle', 'Open your installed app')
+          : t('dialogLabel', 'HashPass install prompt')
+      }
       closeLabel={t('close', 'Close install prompt')}
       infoLabel={t('whatIsThis', 'What is this?')}
       infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HashPass behave like a native app on your device.')}

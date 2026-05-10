@@ -7,6 +7,8 @@ export interface PwaInstallPromptCardProps {
   logoSrc?: string;
   logoAlt?: string;
   logoLayout?: "icon" | "full";
+  primaryIconSrc?: string;
+  primaryIconAlt?: string;
   title?: string;
   description?: string;
   details?: string[];
@@ -37,6 +39,8 @@ export default function PwaInstallPromptCard({
   logoSrc,
   logoAlt = "HashPass logo",
   logoLayout = "icon",
+  primaryIconSrc,
+  primaryIconAlt = "HashPass app icon",
   title,
   description,
   details = DEFAULT_DETAILS,
@@ -57,6 +61,7 @@ export default function PwaInstallPromptCard({
   const scopeId = useId();
   const scopeClass = useMemo(() => `hp-pwa-${sanitizeScope(scopeId)}`, [scopeId]);
   const isFullLogo = Boolean(logoSrc && logoLayout === "full");
+  const hasPrimaryIcon = Boolean(primaryIconSrc);
 
   const cardTitle = title || `Install ${appName}`;
   const cardDescription =
@@ -280,6 +285,28 @@ export default function PwaInstallPromptCard({
           box-shadow: inset 0 0 0 1px var(--shine-bg-subtle), 0 10px 24px rgba(40, 104, 255, 0.35);
           animation: hp-pwa-rotate 3.1s linear infinite;
           transition: transform 180ms ease, box-shadow 220ms ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+
+        .${scopeClass} .hp-pwa-action-icon-wrap {
+          width: 22px;
+          height: 22px;
+          border-radius: 7px;
+          background: rgba(255, 255, 255, 0.12);
+          display: inline-grid;
+          place-items: center;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .${scopeClass} .hp-pwa-action-icon {
+          width: 18px;
+          height: 18px;
+          object-fit: contain;
+          display: block;
         }
 
         .${scopeClass} .hp-pwa-shiny::before {
@@ -443,6 +470,15 @@ export default function PwaInstallPromptCard({
         <p className="hp-pwa-description">{cardDescription}</p>
 
         <button type="button" className="hp-pwa-shiny" onClick={onPrimaryAction}>
+          {hasPrimaryIcon && (
+            <span className="hp-pwa-action-icon-wrap" aria-hidden="true">
+              <img
+                src={primaryIconSrc}
+                alt={primaryIconAlt}
+                className="hp-pwa-action-icon"
+              />
+            </span>
+          )}
           <span>{primaryLabel}</span>
         </button>
 
