@@ -2,38 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-/* PWA Install Prompt Positioning */
+/* PWA Install Prompt Positioning - Top Left */
 .hp-pwa-floating {
   position: fixed !important;
-  bottom: 24px !important;
-  right: 24px !important;
-  left: auto !important;
-  top: auto !important;
+  top: 80px !important;
+  left: 24px !important;
+  right: auto !important;
+  bottom: auto !important;
   max-width: 380px;
   z-index: 40;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Collapsed state - compact button in corner */
+/* Collapsed state - compact button in top-left corner */
 .hp-pwa-floating.hp-pwa-collapsed-state {
-  bottom: 24px !important;
-  right: 24px !important;
+  top: 80px !important;
+  left: 24px !important;
   max-width: 60px;
+}
+
+/* Tablet responsive */
+@media (max-width: 1024px) {
+  .hp-pwa-floating {
+    top: 70px !important;
+    left: 20px !important;
+    max-width: calc(100vw - 40px);
+  }
+
+  .hp-pwa-floating.hp-pwa-collapsed-state {
+    top: 70px !important;
+    left: 20px !important;
+  }
 }
 
 /* Mobile responsive - adjust positioning for smaller screens */
 @media (max-width: 768px) {
   .hp-pwa-floating {
-    bottom: 16px !important;
-    right: 16px !important;
-    max-width: calc(100vw - 32px);
+    top: 60px !important;
     left: 16px !important;
+    max-width: calc(100vw - 32px);
   }
 
   .hp-pwa-floating.hp-pwa-collapsed-state {
-    bottom: 16px !important;
-    right: 16px !important;
-    left: auto !important;
+    top: 60px !important;
+    left: 16px !important;
+  }
+}
+
+/* Small mobile phones */
+@media (max-width: 480px) {
+  .hp-pwa-floating {
+    top: 50px !important;
+    left: 12px !important;
+    max-width: calc(100vw - 24px);
   }
 }
 
