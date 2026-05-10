@@ -1,3 +1,22 @@
+## [1.7.3](https://github.com/edcalderon/hashpass.tech/compare/v1.7.2...v1.7.3) (2026-05-10)
+
+
+### Bug Fixes
+
+* **pwa:** improve native install prompt handling with proper debugging ([b67b57a](https://github.com/edcalderon/hashpass.tech/commit/b67b57a9d89d73602aaa510e95543d72aa7c784e))
+* **pwa:** properly contain modal with width constraints and prevent overflow ([2156c20](https://github.com/edcalderon/hashpass.tech/commit/2156c2086e4e8f4d7e0beb0ab5bf6e13f757ade4))
+* **pwa:** remove alert fallback and show install modal instead ([1455422](https://github.com/edcalderon/hashpass.tech/commit/1455422375ea92536bbe067af7c7d7f850d5eebb))
+* **pwa:** remove white background and add proper mobile variants ([7c40406](https://github.com/edcalderon/hashpass.tech/commit/7c4040612ff4c4ac1859b7543659761c85fdf37d))
+
+
+### Features
+
+* **pwa:** redesign mobile modal as bottom sheet for better UX ([dcd09da](https://github.com/edcalderon/hashpass.tech/commit/dcd09dadb4234df052fc5beb6dedc39a6d0f7bd1))
+
+
+
+
+
 # Changelog
 
 ## [1.7.2] - 2026-05-10
