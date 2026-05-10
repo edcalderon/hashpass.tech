@@ -11,10 +11,6 @@
 
 * make version display branch aware ([db00892](https://github.com/edcalderon/hashpass.tech/commit/db0089282c7050754f3e2ada6e43609a921a07d3))
 
-
-
-
-
 ## [1.7.3](https://github.com/edcalderon/hashpass.tech/compare/v1.7.2...v1.7.3) (2026-05-10)
 
 
