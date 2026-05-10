@@ -55,7 +55,7 @@ const BSL_LOGOS = [
   {
     id: 'bsl-on-tour',
     name: 'Blockchain Summit Latam - On Tour',
-    src: require('../assets/logos/bsl/BSL-on-tour.svg'),
+    logoSrc: BSL_DARK_LOGO,
     backgroundColor: '#9B59B6', // Purple
     gradientStart: '#9B59B6',
     gradientEnd: '#6C3A7C',
@@ -63,7 +63,7 @@ const BSL_LOGOS = [
   {
     id: 'bsl-peru',
     name: 'Blockchain Summit Latam - Peru',
-    src: require('../assets/logos/bsl/BSL-peru.svg'),
+    logoSrc: BSL_DARK_LOGO,
     backgroundColor: '#E31C23', // Red
     gradientStart: '#E31C23',
     gradientEnd: '#B01520',
@@ -71,7 +71,7 @@ const BSL_LOGOS = [
   {
     id: 'bsl-chile',
     name: 'Blockchain Summit Latam - Chile',
-    src: require('../assets/logos/bsl/BSL-chile.svg'),
+    logoSrc: BSL_DARK_LOGO,
     backgroundColor: '#E31C23', // Red
     gradientStart: '#E31C23',
     gradientEnd: '#B01520',
@@ -79,7 +79,7 @@ const BSL_LOGOS = [
   {
     id: 'bsl-colombia',
     name: 'Blockchain Summit Latam - Colombia',
-    src: require('../assets/logos/bsl/BSL-colombia.svg'),
+    logoSrc: BSL_DARK_LOGO,
     backgroundColor: '#FFD700', // Yellow
     gradientStart: '#FFD700',
     gradientEnd: '#D4AF37',
@@ -174,7 +174,7 @@ export default function EventBannerCarousel({
     ...BSL_LOGOS.map(logo => ({
       type: 'logo' as const,
       logoId: logo.id,
-      logoSrc: logo.src,
+      logoSrc: logo.logoSrc,
       backgroundColor: logo.backgroundColor,
       gradientStart: logo.gradientStart,
       gradientEnd: logo.gradientEnd,
