@@ -125,6 +125,9 @@ export default function EventBanner({
 
   return (
     <View style={styles.headerSection}>
+      {/* Light beam effect at top */}
+      <View style={styles.lightBeamEffect} />
+
       {/* Main Event Info */}
       <View style={styles.mainInfo}>
         {isBSL2025 ? (
@@ -237,6 +240,17 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
     minHeight: 360,
     justifyContent: 'center',
     flex: 1,
+    position: 'relative',
+  },
+  lightBeamEffect: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+    backgroundColor: isDark ? 'rgba(0, 212, 255, 0.15)' : 'rgba(255, 107, 107, 0.15)',
+    zIndex: 1,
+    pointerEvents: 'none',
   },
   mainInfo: {
     alignItems: 'center',

@@ -336,13 +336,17 @@ export default function EventBannerCarousel({
                 colors={[
                   slide.gradientStart || slide.backgroundColor,
                   slide.gradientEnd || slide.backgroundColor,
-                  isDark ? '#0a0a0a' : '#f5f5f5'
+                  isDark ? '#1a1a1a' : '#ffffff'
                 ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                locations={[0, 0.6, 1]}
+                locations={[0, 0.5, 1]}
                 style={styles.logoSlideContainer}
               >
+                {/* Light beam effect at top */}
+                <View style={[styles.lightBeamOverlay, {
+                  backgroundColor: isDark ? 'rgba(0, 212, 255, 0.15)' : 'rgba(255, 107, 107, 0.15)'
+                }]} />
                 <Image
                   source={isDark && slide.logoSrcDark ? slide.logoSrcDark : (slide.logoSrcLight || slide.logoSrc)}
                   style={styles.logoImage}
@@ -522,9 +526,24 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     borderRadius: 16,
     minHeight: 360,
     overflow: 'hidden',
+    position: 'relative',
+    shadowColor: isDark ? '#00d4ff' : '#ff6b6b',
+    shadowOffset: { width: 0, height: -20 },
+    shadowOpacity: 0.3,
+    shadowRadius: 40,
+    elevation: 8,
   },
   logoImage: {
     width: '100%',
     height: 280,
+  },
+  lightBeamOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+    zIndex: 1,
+    pointerEvents: 'none',
   },
 });

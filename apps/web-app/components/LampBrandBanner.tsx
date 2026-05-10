@@ -113,7 +113,7 @@ export function LampContainer({ children, className, theme = "dark" }: LampConta
         <div className={cn("absolute z-20 h-40 w-full -translate-y-[10rem]", themeStyles.mask)} />
       </div>
 
-      <div className="relative z-50 -translate-y-10 px-5">{children}</div>
+      <div className="relative z-50 -translate-y-6 px-5">{children}</div>
     </div>
   );
 }

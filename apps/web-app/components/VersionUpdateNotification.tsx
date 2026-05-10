@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 // clearAllCaches is defined below
@@ -18,6 +18,9 @@ export default function VersionUpdateNotification({
   const { colors, isDark } = useTheme();
   const [isUpdating, setIsUpdating] = useState(false);
   const [countdown, setCountdown] = useState(2);
+  const screenWidth = Dimensions.get('window').width;
+  const isMobile = screenWidth < 480;
+  const isTablet = screenWidth < 768;
 
   // Auto-reload countdown
   useEffect(() => {
@@ -65,7 +68,7 @@ export default function VersionUpdateNotification({
     }
   };
 
-  const styles = getStyles(isDark, colors);
+  const styles = getStyles(isDark, colors, isMobile, isTablet);
 
   return (
     <View style={styles.container}>
@@ -142,20 +145,20 @@ async function clearAllCaches(): Promise<void> {
   }
 }
 
-const getStyles = (isDark: boolean, colors: any) =>
+const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isTablet: boolean) =>
   StyleSheet.create({
     container: {
       position: 'fixed',
-      top: 20,
-      left: 20,
-      right: 'auto',
-      width: 'auto',
-      maxWidth: 'calc(100% - 40px)',
-      minWidth: 320,
+      top: isMobile ? 50 : 20,
+      left: isMobile ? 8 : 20,
+      right: isMobile ? 8 : 'auto',
+      width: isMobile ? 'auto' : 'auto',
+      maxWidth: isMobile ? '100%' : 'calc(100% - 40px)',
+      minWidth: isMobile ? undefined : 320,
       zIndex: 10000,
       backgroundColor: colors.background.paper,
       borderRadius: 12,
-      padding: 16,
+      padding: isMobile ? 12 : 16,
       shadowColor: '#000',
       shadowOffset: {
         width: 0,
@@ -168,43 +171,48 @@ const getStyles = (isDark: boolean, colors: any) =>
       borderColor: colors.primary,
     },
     content: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
+      flexDirection: isMobile ? 'column' : 'row',
+      alignItems: isMobile ? 'stretch' : 'center',
+      gap: isMobile ? 8 : 12,
     },
     textContainer: {
       flex: 1,
+      alignItems: isMobile ? 'center' : 'flex-start',
     },
     title: {
-      fontSize: 16,
+      fontSize: isMobile ? 14 : 16,
       fontWeight: '600',
       color: colors.text.primary,
       marginBottom: 4,
+      textAlign: isMobile ? 'center' : 'left',
     },
     subtitle: {
-      fontSize: 12,
+      fontSize: isMobile ? 11 : 12,
       color: colors.text.secondary,
       marginBottom: 4,
+      textAlign: isMobile ? 'center' : 'left',
     },
     countdownText: {
-      fontSize: 11,
+      fontSize: isMobile ? 10 : 11,
       color: colors.primary,
       fontWeight: '600',
       marginTop: 4,
+      textAlign: isMobile ? 'center' : 'left',
     },
     button: {
       backgroundColor: colors.primary,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingHorizontal: isMobile ? 12 : 16,
+      paddingVertical: isMobile ? 6 : 8,
       borderRadius: 8,
-      minWidth: 120,
+      minWidth: isMobile ? undefined : 120,
+      width: isMobile ? '100%' : 'auto',
     },
     buttonDisabled: {
       opacity: 0.6,
     },
     buttonText: {
       color: colors.primaryContrastText || '#FFFFFF',
-      fontSize: 14,
+      fontSize: isMobile ? 12 : 14,
       fontWeight: '600',
       textAlign: 'center',
     },

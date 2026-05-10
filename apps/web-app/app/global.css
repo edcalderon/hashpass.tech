@@ -17,9 +17,8 @@
   position: fixed !important;
   top: 70px !important;
   left: 24px !important;
-  right: auto !important;
-  bottom: auto !important;
-  max-width: 380px;
+  right: 24px !important;
+  max-width: none;
   z-index: 40;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   background: rgba(255, 255, 255, 0.95) !important;
@@ -74,22 +73,30 @@
 @media (max-width: 768px) {
   .hp-pwa-floating {
     top: 55px !important;
-    left: 16px !important;
-    max-width: calc(100vw - 32px);
+    left: 12px !important;
+    right: 12px !important;
+    max-width: none;
   }
 
   .hp-pwa-floating.hp-pwa-collapsed-state {
     top: 55px !important;
-    left: 16px !important;
+    left: 12px !important;
   }
 }
 
 /* Small mobile phones */
 @media (max-width: 480px) {
   .hp-pwa-floating {
-    top: 45px !important;
-    left: 12px !important;
-    max-width: calc(100vw - 24px);
+    top: 50px !important;
+    left: 8px !important;
+    right: 8px !important;
+    max-width: none;
+    padding: 12px !important;
+  }
+
+  .hp-pwa-floating.hp-pwa-collapsed-state {
+    top: 50px !important;
+    left: 8px !important;
   }
 }
 
