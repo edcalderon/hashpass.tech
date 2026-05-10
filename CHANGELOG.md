@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.1] - 2026-05-10
+
+### Released
+- Version 1.7.1 release
+
+### Technical Details
+- Version: 1.7.1
+- Release Type: stable
+- Build Number: 202605100720
+- Release Date: 2026-05-10T07:20:24.278Z
+
+
 ## [1.7.0] - 2026-05-10
 
 ### Released
