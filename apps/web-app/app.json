@@ -41,7 +41,7 @@
       "scope": "/",
       "display": "standalone",
       "orientation": "portrait-primary",
-      "preferRelatedApplications": false,
+      "preferRelatedApplications": true,
       "dangerouslyAllowInsecureHttpRequests": false,
       "serviceWorker": {
         "source": "/sw.js",
@@ -55,6 +55,7 @@
         "start_url": "/",
         "scope": "/",
         "display": "standalone",
+        "prefer_related_applications": true,
         "background_color": "#ffffff",
         "theme_color": "#000000",
         "splash_image": "/assets/splash.gif",
@@ -62,6 +63,13 @@
         "orientation": "portrait",
         "permissions": [
           "camera"
+        ],
+        "related_applications": [
+          {
+            "platform": "webapp",
+            "url": "/manifest.json",
+            "id": "/"
+          }
         ],
         "icons": [
           {

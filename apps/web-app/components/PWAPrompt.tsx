@@ -21,6 +21,7 @@ const PWAPrompt = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isStandaloneMode, setIsStandaloneMode] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -110,25 +111,33 @@ const PWAPrompt = () => {
     setShowPrompt(true);
   };
 
-  const showInstallFallbackAlert = () => {
+  const closeInstallHelpModal = () => {
+    setShowInstallHelpModal(false);
+  };
+
+  const getInstallInstructions = () => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
-      return;
+      return [t('instructions.default', 'To install: use the install icon in your browser address bar.')];
     }
 
     const userAgent = window.navigator.userAgent;
-    const installInstruction = /Android/i.test(userAgent)
-      ? t('instructions.android', 'To install: open the browser menu and tap "Install app".')
-      : /iPhone|iPad|iPod/i.test(userAgent)
-        ? t('instructions.ios', 'To install: tap Share, then "Add to Home Screen".')
-        : t('instructions.default', 'To install: use the install icon in your browser address bar.');
+    if (/Android/i.test(userAgent)) {
+      return [
+        t('instructions.android', 'To install: open the browser menu and tap "Install app".'),
+        t('instructions.default', 'To install: use the install icon in your browser address bar.'),
+      ];
+    }
 
-    window.alert(
-      [
-        t('installTitle', 'Install HashPass'),
-        t('installDescription', 'Install HashPass as a PWA to launch it like an app from your home screen.'),
-        installInstruction,
-      ].join('\n\n')
-    );
+    if (/iPhone|iPad|iPod/i.test(userAgent)) {
+      return [
+        t('instructions.ios', 'To install: tap Share, then "Add to Home Screen".'),
+        t('instructions.default', 'To install: use the install icon in your browser address bar.'),
+      ];
+    }
+
+    return [
+      t('instructions.default', 'To install: use the install icon in your browser address bar.'),
+    ];
   };
 
   const installPWA = async () => {
@@ -166,8 +175,7 @@ const PWAPrompt = () => {
 
     // Fallback: show install modal info card instead of alert
     console.log('[PWAPrompt] Native prompt not available, showing installation instructions');
-    showInstallFallbackAlert();
-    setShowPrompt(true);
+    setShowInstallHelpModal(true);
   };
 
   const openApp = () => {
@@ -201,11 +209,6 @@ const PWAPrompt = () => {
     return null;
   }
 
-  if (!showPrompt && !deferredPrompt && !isCollapsed) {
-    return null;
-  }
-
-  const isOpenAppMode = isInstalled && !isStandaloneMode;
   const logoSrc = (() => {
     try {
       return Image.resolveAssetSource(require('../assets/android-chrome-192x192.png')).uri;
@@ -221,6 +224,70 @@ const PWAPrompt = () => {
       return logoSrc;
     }
   })();
+
+  if (showInstallHelpModal) {
+    const installInstructions = getInstallInstructions();
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('dialogLabel', 'HashPass install prompt')}
+        tabIndex={-1}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1100,
+          background: 'rgba(2, 6, 23, 0.58)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+        }}
+        onClick={closeInstallHelpModal}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            closeInstallHelpModal();
+          }
+        }}
+      >
+        <div onClick={(event) => event.stopPropagation()}>
+          <PwaInstallPromptCard
+            appName="HashPass"
+            logoSrc={logoSrc}
+            logoLayout="icon"
+            primaryIconSrc={primaryIconSrc}
+            primaryLabel={t('close', 'Close install prompt')}
+            title={t('installTitle', 'Install HashPass')}
+            description={t(
+              'installDescription',
+              'Install HashPass as a PWA to launch it like an app from your home screen.'
+            )}
+            bodyItems={installInstructions}
+            dialogLabel={t('dialogLabel', 'HashPass install prompt')}
+            closeLabel={t('close', 'Close install prompt')}
+            infoLabel={t('whatIsThis', 'What is this?')}
+            infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HashPass behave like a native app on your device.')}
+            showInfoToggle={false}
+            collapsed={false}
+            onPrimaryAction={closeInstallHelpModal}
+            onClose={closeInstallHelpModal}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!showPrompt && !deferredPrompt && !isCollapsed) {
+    return null;
+  }
+
+  const isOpenAppMode = isInstalled && !isStandaloneMode;
+  const collapsedLabel = isOpenAppMode
+    ? t('openAction', 'Open HashPass App')
+    : t('expandCollapsed', 'Open install options');
 
   return (
     <PwaInstallPromptCard
@@ -251,7 +318,8 @@ const PWAPrompt = () => {
       ]}
       showInfoToggle={!isOpenAppMode}
       collapsed={isCollapsed}
-      collapsedLabel={t('expandCollapsed', 'Open install options')}
+      collapsedLabel={collapsedLabel}
+      collapsedActionVariant={isOpenAppMode ? 'open' : 'install'}
       onExpand={expandPrompt}
       onPrimaryAction={isOpenAppMode ? openApp : installPWA}
       onClose={collapsePrompt}

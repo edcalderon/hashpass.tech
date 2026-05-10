@@ -6,11 +6,19 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "prefer_related_applications": true,
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "orientation": "portrait",
   "permissions": [
     "camera"
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "/manifest.json",
+      "id": "/"
+    }
   ],
   "splash_image": "/assets/splash.gif",
   "splash_color": "#ffffff",

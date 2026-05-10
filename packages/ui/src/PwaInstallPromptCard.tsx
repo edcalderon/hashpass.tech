@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useId, useMemo, useState } from "react";
+import React, { useId, useState } from "react";
 
 export interface PwaInstallPromptCardProps {
   appName?: string;
@@ -9,6 +9,7 @@ export interface PwaInstallPromptCardProps {
   logoLayout?: "icon" | "full";
   primaryIconSrc?: string;
   primaryIconAlt?: string;
+  bodyItems?: string[];
   title?: string;
   description?: string;
   details?: string[];
@@ -19,6 +20,7 @@ export interface PwaInstallPromptCardProps {
   dialogLabel?: string;
   collapsed?: boolean;
   collapsedLabel?: string;
+  collapsedActionVariant?: "install" | "open";
   className?: string;
   showInfoToggle?: boolean;
   onPrimaryAction: () => void;
@@ -32,6 +34,8 @@ const DEFAULT_DETAILS = [
   "Keeps key screens cached for faster loading and better reliability.",
 ];
 
+const EMPTY_BODY_ITEMS: string[] = [];
+
 const sanitizeScope = (raw: string) => raw.replace(/[^a-zA-Z0-9_-]/g, "");
 
 export default function PwaInstallPromptCard({
@@ -41,6 +45,7 @@ export default function PwaInstallPromptCard({
   logoLayout = "icon",
   primaryIconSrc,
   primaryIconAlt = "HashPass app icon",
+  bodyItems = EMPTY_BODY_ITEMS,
   title,
   description,
   details = DEFAULT_DETAILS,
@@ -51,6 +56,7 @@ export default function PwaInstallPromptCard({
   dialogLabel,
   collapsed = false,
   collapsedLabel = "Expand install prompt",
+  collapsedActionVariant = "install",
   className = "",
   showInfoToggle = true,
   onPrimaryAction,
@@ -59,9 +65,10 @@ export default function PwaInstallPromptCard({
 }: PwaInstallPromptCardProps) {
   const [expanded, setExpanded] = useState(false);
   const scopeId = useId();
-  const scopeClass = useMemo(() => `hp-pwa-${sanitizeScope(scopeId)}`, [scopeId]);
+  const scopeClass = `hp-pwa-${sanitizeScope(scopeId)}`;
   const isFullLogo = Boolean(logoSrc && logoLayout === "full");
   const hasPrimaryIcon = Boolean(primaryIconSrc);
+  const hasBodyItems = bodyItems.length > 0;
 
   const cardTitle = title || `Install ${appName}`;
   const cardDescription =
@@ -69,6 +76,7 @@ export default function PwaInstallPromptCard({
     "Add HashPass to your phone for a faster, app-like experience.";
   const dialogAriaLabel = dialogLabel || `${appName} install prompt`;
   const collapseAriaLabel = collapsedLabel || dialogAriaLabel;
+  const isOpenVariant = collapsedActionVariant === "open";
 
   return (
     <div className={`${scopeClass} ${className}`.trim()}>
@@ -243,6 +251,20 @@ export default function PwaInstallPromptCard({
           font-size: 0.86rem;
           line-height: 1.45;
           color: rgba(223, 234, 255, 0.9);
+        }
+
+        .${scopeClass} .hp-pwa-body-list {
+          margin: 0 0 12px 0;
+          padding-left: 18px;
+          color: rgba(233, 242, 255, 0.94);
+          display: grid;
+          row-gap: 6px;
+          font-size: 0.8rem;
+          line-height: 1.45;
+        }
+
+        .${scopeClass} .hp-pwa-body-list li::marker {
+          color: rgba(147, 197, 253, 0.95);
         }
 
         @property --gradient-angle {
@@ -427,15 +449,23 @@ export default function PwaInstallPromptCard({
         <button
           type="button"
           className="hp-pwa-collapsed"
-          onClick={onExpand || onPrimaryAction}
+          onClick={isOpenVariant ? onPrimaryAction : onExpand || onPrimaryAction}
           aria-label={collapseAriaLabel}
           title={collapseAriaLabel}
         >
-          <svg className="hp-pwa-collapsed-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 4V15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            <path d="M7 11L12 16L17 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M5 20H19" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
+          {isOpenVariant ? (
+            <svg className="hp-pwa-collapsed-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 7H6.5C5.67 7 5 7.67 5 8.5V17.5C5 18.33 5.67 19 6.5 19H15.5C16.33 19 17 18.33 17 17.5V16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M13 5H19V11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M19 5L11 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ) : (
+            <svg className="hp-pwa-collapsed-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 4V15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M7 11L12 16L17 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M5 20H19" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          )}
         </button>
       ) : (
       <div className="hp-pwa-card" role="dialog" aria-label={dialogAriaLabel}>
@@ -469,6 +499,14 @@ export default function PwaInstallPromptCard({
 
         <p className="hp-pwa-description">{cardDescription}</p>
 
+        {hasBodyItems && (
+          <ul className="hp-pwa-body-list">
+            {bodyItems.map((item, index) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        )}
+
         <button type="button" className="hp-pwa-shiny" onClick={onPrimaryAction}>
           {hasPrimaryIcon && (
             <span className="hp-pwa-action-icon-wrap" aria-hidden="true">
@@ -491,15 +529,25 @@ export default function PwaInstallPromptCard({
               aria-expanded={expanded}
             >
               <span>{infoLabel}</span>
-              <span className={`hp-pwa-chevron ${expanded ? "hp-pwa-open" : ""}`}>v</span>
+              <span className={`hp-pwa-chevron ${expanded ? "hp-pwa-open" : ""}`} aria-hidden="true">
+                <svg viewBox="0 0 12 12" width="10" height="10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M2.25 4.5L6 8.25L9.75 4.5"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
             </button>
 
             {expanded && (
               <div className="hp-pwa-info-panel">
                 <p className="hp-pwa-info-intro">{infoIntro}</p>
                 <ul className="hp-pwa-info-list">
-                  {details.map((item, index) => (
-                    <li key={`${item}-${index}`}>{item}</li>
+                  {details.map((item) => (
+                    <li key={item}>{item}</li>
                   ))}
                 </ul>
               </div>

@@ -90,12 +90,12 @@ export const hasInstalledRelatedApp = async (): Promise<boolean> => {
     const origin = window.location.origin;
 
     return relatedApps.some((app) => {
-      if (!app || app.platform !== 'webapp') {
+      if (!app) {
         return false;
       }
 
       if (app.url) {
-        return app.url.startsWith(origin);
+        return app.url.startsWith(origin) || app.url === '/manifest.json';
       }
 
       return true;

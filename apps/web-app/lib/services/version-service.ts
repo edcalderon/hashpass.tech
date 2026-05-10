@@ -1,5 +1,5 @@
 import { CURRENT_VERSION, VERSION_HISTORY, VersionInfo } from '../../config/version';
-import { getRuntimeVersionInfo } from '../../config/runtime-version';
+import { getRuntimeBranch, getRuntimeVersionInfo } from '../../config/runtime-version';
 import gitInfo from '../../config/git-info.json';
 
 // Re-export VersionInfo for backward compatibility
@@ -68,7 +68,7 @@ class VersionService {
   public getBuildInfo() {
     const gitCommit = (gitInfo as any).gitCommit || process.env.GIT_COMMIT || 'unknown';
     const gitCommitFull = (gitInfo as any).gitCommitFull || gitCommit;
-    const gitBranch = (gitInfo as any).gitBranch || process.env.GIT_BRANCH || 'main';
+    const gitBranch = getRuntimeBranch();
     const gitRepoUrl = (gitInfo as any).gitRepoUrl || 'https://github.com/lstech-solutions/bsl2025.hashpass.tech';
     
     return {

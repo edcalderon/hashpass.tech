@@ -6,6 +6,7 @@ import type { VersionInfo } from './version';
 type RuntimeBranch = 'production' | 'development';
 
 const PRODUCTION_BRANCHES = new Set(['main', 'master', 'production']);
+const PRODUCTION_HOSTNAMES = new Set(['hashpass.tech']);
 
 function normalizeBranch(branch?: string | null): string {
   return (branch || '')
@@ -15,7 +16,53 @@ function normalizeBranch(branch?: string | null): string {
     .replace(/^origin\//, '');
 }
 
+function isProductionHostname(hostname?: string | null): boolean {
+  const normalizedHostname = (hostname || '').trim().toLowerCase();
+  if (!normalizedHostname) {
+    return false;
+  }
+
+  if (PRODUCTION_HOSTNAMES.has(normalizedHostname)) {
+    return true;
+  }
+
+  return normalizedHostname.endsWith('.hashpass.tech');
+}
+
+function getConfiguredFrontendHostname(): string | null {
+  const configuredUrl =
+    (typeof process !== 'undefined' &&
+      (process.env.EXPO_PUBLIC_FRONTEND_URL ||
+        process.env.FRONTEND_URL ||
+        process.env.EXPO_PUBLIC_SITE_URL ||
+        process.env.SITE_URL)) ||
+    '';
+
+  if (!configuredUrl) {
+    return null;
+  }
+
+  try {
+    return new URL(configuredUrl).hostname;
+  } catch {
+    return configuredUrl.trim().toLowerCase() || null;
+  }
+}
+
+function getRuntimeHostname(): string | null {
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return window.location.hostname;
+  }
+
+  return getConfiguredFrontendHostname();
+}
+
 export function getRuntimeBranch(): string {
+  const runtimeHostname = getRuntimeHostname();
+  if (isProductionHostname(runtimeHostname)) {
+    return 'main';
+  }
+
   return (
     (typeof process !== 'undefined' && process.env.GIT_BRANCH) ||
     (gitInfo as { gitBranch?: string }).gitBranch ||
