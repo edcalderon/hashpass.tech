@@ -87,10 +87,10 @@
         "EXPO_PUBLIC_SUPABASE_KEY: supabaseAnonKey,",
         "AWS_SECRET_ACCESS_KEY=your-secret-access-key",
         "SUPABASE_SERVICE_ROLE_KEY=eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}",
-        "DIRECTUS_KEY=replace-with-random-key-min-32-chars",
-        "DIRECTUS_SECRET=replace-with-random-secret-min-32-chars",
-        "KEY: \\$\\{DIRECTUS_KEY:-replace-with-random-key\\}",
-        "SECRET: \\$\\{DIRECTUS_SECRET:-replace-with-random-secret\\}"
+        "directus_key=replace-with-random-key-min-32-chars",
+        "directus_secret=replace-with-random-secret-min-32-chars",
+        "key: \\$\\{directus_key:-replace-with-random-key\\}",
+        "secret: \\$\\{directus_secret:-replace-with-random-secret\\}"
       ]
     },
     "lifecycle-hooks": {
@@ -104,14 +104,15 @@
     }
   },
   "branchAwareness": {
-    "enabled": false,
+    "enabled": true,
     "defaultBranch": "main",
     "branches": {
       "main": {
         "versionFormat": "semantic",
         "tagFormat": "v{version}",
         "syncFiles": [
-          "package.json"
+          "package.json",
+          "version.production.json"
         ],
         "environment": "production",
         "bumpStrategy": "semantic"

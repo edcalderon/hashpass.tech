@@ -11,15 +11,31 @@ const fs = require('fs');
 const path = require('path');
 
 const projectRoot = path.join(__dirname, '..');
+const versioningConfigPath = path.join(projectRoot, 'versioning.config.json');
 
 // Files that should be updated when version changes
 const VERSION_FILES = [
   'package.json',
+  'version.production.json',
+  'version.development.json',
   'app.json',
   'config/version.ts',
   'config/versions.json',
   'CHANGELOG.md'
 ];
+
+function loadBranchAwareEnabled() {
+  try {
+    if (!fs.existsSync(versioningConfigPath)) {
+      return false;
+    }
+
+    const config = JSON.parse(fs.readFileSync(versioningConfigPath, 'utf8'));
+    return Boolean(config?.branchAwareness?.enabled);
+  } catch (_error) {
+    return false;
+  }
+}
 
 // Get current staged files
 function getStagedFiles() {
@@ -97,6 +113,7 @@ function validateVersionConsistency() {
   const versions = {};
   const errors = [];
   const warnings = [];
+  const branchAwareEnabled = loadBranchAwareEnabled();
   
   // Get versions from all files
   for (const file of VERSION_FILES) {
@@ -116,17 +133,26 @@ function validateVersionConsistency() {
     // No version files changed, that's fine
     return { valid: true, errors: [], warnings: [] };
   }
+
+  if (branchAwareEnabled && stagedVersionFiles.length > 0 && stagedVersionFiles.every(f => f === 'version.development.json')) {
+    return { valid: true, errors: [], warnings: [] };
+  }
   
   // If version files are staged, check consistency
-  const uniqueVersions = [...new Set(Object.values(versions))];
+  const comparableVersions = branchAwareEnabled
+    ? Object.fromEntries(Object.entries(versions).filter(([file]) => file !== 'version.development.json'))
+    : versions;
+  const uniqueVersions = [...new Set(Object.values(comparableVersions))];
   
   if (uniqueVersions.length > 1) {
     errors.push('❌ Version mismatch detected:');
-    for (const [file, version] of Object.entries(versions)) {
+    for (const [file, version] of Object.entries(comparableVersions)) {
       errors.push(`   ${file}: ${version}`);
     }
     errors.push('');
-    errors.push('💡 All version files must have the same version number.');
+    errors.push(branchAwareEnabled
+      ? '💡 Production version files must stay in sync with each other.'
+      : '💡 All version files must have the same version number.');
     errors.push('💡 Use the versioning script to update versions: npm run version:bump');
   }
   
@@ -147,7 +173,11 @@ function validateVersionConsistency() {
   }
   
   // Check if all required files are updated
-  const missingFiles = VERSION_FILES.filter(f => {
+  const relevantVersionFiles = branchAwareEnabled
+    ? VERSION_FILES.filter(f => f !== 'version.development.json')
+    : VERSION_FILES;
+
+  const missingFiles = relevantVersionFiles.filter(f => {
     const version = getVersionFromFile(f);
     return !version || !stagedFiles.includes(f);
   });
@@ -191,4 +221,3 @@ function main() {
 }
 
 main();
-

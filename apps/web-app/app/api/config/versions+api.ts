@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { compareAppVersions, getRuntimeEnvironment, getRuntimeVersion } from '../../../config/runtime-version';
 
 // Handle CORS preflight requests
 export async function OPTIONS() {
@@ -16,6 +17,9 @@ export async function OPTIONS() {
 
 export async function GET(request: Request) {
   try {
+    const runtimeVersion = getRuntimeVersion();
+    const runtimeEnvironment = getRuntimeEnvironment();
+
     // Get client version from query params or headers (if frontend sends it)
     const url = new URL(request.url);
     const clientVersion = url.searchParams.get('clientVersion') || 
@@ -38,7 +42,7 @@ export async function GET(request: Request) {
         versionsData = readFileSync(path, 'utf-8');
         versionsPath = path;
         break;
-      } catch (e) {
+      } catch {
         // Try next path
         continue;
       }
@@ -49,7 +53,9 @@ export async function GET(request: Request) {
     }
     
     const versions = JSON.parse(versionsData);
-    const backendVersion = versions.currentVersion || 'unknown';
+    const backendVersion = runtimeVersion;
+    versions.currentVersion = backendVersion;
+    versions.environment = runtimeEnvironment;
     
     // Log for debugging (include client version if provided)
     console.log(`[API] Serving versions.json from: ${versionsPath}`);
@@ -72,7 +78,7 @@ export async function GET(request: Request) {
         clientVersion: clientVersion || null,
         isMatch: clientVersion ? clientVersion === backendVersion : null,
         // Only suggest update if backend is newer (not if frontend is newer)
-        needsUpdate: clientVersion ? compareVersions(clientVersion, backendVersion) < 0 : null,
+        needsUpdate: clientVersion ? compareAppVersions(clientVersion, backendVersion) < 0 : null,
       },
     }), {
       status: 200,
@@ -92,13 +98,15 @@ export async function GET(request: Request) {
     });
   } catch (error: any) {
     console.error('[API] Error reading versions.json:', error);
-    // Try to read package.json as fallback
+    // Use the runtime branch-aware version as the fallback source of truth.
     try {
+      const runtimeVersion = getRuntimeVersion();
+      const runtimeEnvironment = getRuntimeEnvironment();
       const packageJsonPath = join(process.cwd(), 'package.json');
       const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-      const fallbackVersion = packageJson.version || '1.6.22';
+      const fallbackVersion = runtimeVersion || packageJson.version || '1.6.22';
       
-      console.log(`[API] Using fallback version from package.json: ${fallbackVersion}`);
+      console.log(`[API] Using fallback runtime version: ${fallbackVersion}`);
       
       // Get client version from request
       const url = new URL(request.url);
@@ -110,34 +118,38 @@ export async function GET(request: Request) {
         JSON.stringify({
           currentVersion: fallbackVersion,
           versions: [],
+          environment: runtimeEnvironment,
           versionInfo: {
             backendVersion: fallbackVersion,
             clientVersion: clientVersion || null,
             isMatch: clientVersion ? clientVersion === fallbackVersion : null,
-            needsUpdate: clientVersion ? compareVersions(clientVersion, fallbackVersion) < 0 : null,
+            needsUpdate: clientVersion ? compareAppVersions(clientVersion, fallbackVersion) < 0 : null,
           },
         }),
-        {
+          {
           status: 200, // Always return 200 - don't fail on version mismatches
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-store, no-cache, must-revalidate',
-            'X-Version-Source': 'package.json-fallback',
+            'X-Version-Source': 'runtime-version-fallback',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
           },
         }
       );
-    } catch (fallbackError) {
+    } catch {
       // Last resort: return hardcoded version (still return 200, never fail)
       console.error('[API] Fallback also failed, using hardcoded version');
+      const runtimeVersion = getRuntimeVersion();
+      const runtimeEnvironment = getRuntimeEnvironment();
       return new Response(
         JSON.stringify({
-          currentVersion: '1.6.22',
+          currentVersion: runtimeVersion || '1.6.22',
           versions: [],
+          environment: runtimeEnvironment,
           versionInfo: {
-            backendVersion: '1.6.22',
+            backendVersion: runtimeVersion || '1.6.22',
             clientVersion: null,
             isMatch: null,
             needsUpdate: null,
@@ -158,27 +170,3 @@ export async function GET(request: Request) {
     }
   }
 }
-
-/**
- * Compare two semantic versions
- * Returns: -1 if v1 < v2, 0 if v1 === v2, 1 if v1 > v2
- */
-function compareVersions(v1: string, v2: string): number {
-  const parts1 = v1.split('.').map(Number);
-  const parts2 = v2.split('.').map(Number);
-  
-  const maxLength = Math.max(parts1.length, parts2.length);
-  
-  for (let i = 0; i < maxLength; i++) {
-    const part1 = parts1[i] || 0;
-    const part2 = parts2[i] || 0;
-    
-    if (part1 < part2) return -1;
-    if (part1 > part2) return 1;
-  }
-  
-  return 0;
-}
-
-
-// Test Lambda deployment with Amplify - Sun Nov 16 07:13:40 PM -05 2025

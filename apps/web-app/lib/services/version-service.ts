@@ -1,5 +1,5 @@
 import { CURRENT_VERSION, VERSION_HISTORY, VersionInfo } from '../../config/version';
-import packageJson from '../../package.json';
+import { getRuntimeVersionInfo } from '../../config/runtime-version';
 import gitInfo from '../../config/git-info.json';
 
 // Re-export VersionInfo for backward compatibility
@@ -16,19 +16,19 @@ class VersionService {
   }
 
   public getCurrentVersion(): VersionInfo {
-    // Get current version from package.json (single source of truth)
-    const currentVersion = packageJson.version;
-    
-    // Try to get from VERSION_HISTORY first
-    const historyVersion = this.versionsMap.get(currentVersion);
+    const currentVersion = getRuntimeVersionInfo(CURRENT_VERSION);
+
+    const historyVersion = this.versionsMap.get(currentVersion.version);
     if (historyVersion) {
-      return historyVersion;
+      return {
+        ...historyVersion,
+        version: currentVersion.version,
+        environment: currentVersion.environment,
+      };
     }
-    
-    // Fallback to CURRENT_VERSION with updated version number
+
     return {
-      ...CURRENT_VERSION,
-      version: currentVersion,
+      ...currentVersion,
     };
   }
 

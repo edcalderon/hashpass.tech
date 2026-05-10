@@ -2,7 +2,7 @@
 // Tracks version changes, build information, and deployment status
 
 import { VersionInfo, VERSION_HISTORY, CURRENT_VERSION } from '../config/version';
-import packageJson from '../package.json';
+import { getRuntimeVersionInfo } from '../config/runtime-version';
 
 export interface BuildInfo {
   buildId: string;
@@ -85,21 +85,19 @@ class VersionTracker {
   }
 
   public getCurrentVersion(): VersionInfo {
-    // Get the current version from package.json
-    const currentVersion = packageJson.version;
-    
-    // If we have this version in history, return it
-    if (VERSION_HISTORY[currentVersion]) {
-      return VERSION_HISTORY[currentVersion];
+    const currentVersion = getRuntimeVersionInfo(CURRENT_VERSION);
+
+    if (VERSION_HISTORY[currentVersion.version]) {
+      return {
+        ...VERSION_HISTORY[currentVersion.version],
+        version: currentVersion.version,
+        environment: currentVersion.environment,
+      };
     }
-    
-    // Otherwise, return the CURRENT_VERSION with updated version number
+
     return {
-      ...CURRENT_VERSION,
-      version: currentVersion,
-      // Update the build number to current timestamp if not set
+      ...currentVersion,
       buildNumber: CURRENT_VERSION.buildNumber || Date.now(),
-      // Update the release date to today if not set
       releaseDate: CURRENT_VERSION.releaseDate || new Date().toISOString().split('T')[0]
     };
   }

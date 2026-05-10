@@ -5,46 +5,15 @@
 
 import { Platform } from 'react-native';
 import { apiClient } from './api-client';
+import { compareAppVersions, getRuntimeVersion } from '../config/runtime-version';
 const VERSION_STORAGE_KEY = '@hashpass:last_version_check';
 const VERSION_CHECK_COOLDOWN = 5 * 60 * 1000; // 5 minutes cooldown (increased from 1 minute)
 
-interface VersionCheckResult {
-  currentVersion: string;
-  latestVersion: string;
-  isMatch: boolean;
-  needsUpdate: boolean;
-}
-
 /**
- * Get current app version from package.json or config
- * Uses fetch to avoid module resolution issues
+ * Get current app version from the branch-aware runtime config.
  */
 async function getCurrentVersion(): Promise<string> {
-  // On web, fetch version from API endpoint to avoid module resolution issues
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    // Try to get from window.__APP_VERSION__ if set during build
-    if ((window as any).__APP_VERSION__) {
-      return (window as any).__APP_VERSION__;
-    }
-    
-    // Try to fetch from API endpoint (safer than importing modules)
-    try {
-      const timestamp = Date.now();
-      const response = await apiClient.get('/config/versions', {
-        skipEventSegment: true,
-        skipAuth: true,
-        params: { t: timestamp.toString() },
-      });
-      if (response.success && response.data?.currentVersion) {
-        return response.data.currentVersion;
-      }
-    } catch (e) {
-      // Ignore fetch errors - will use fallback
-    }
-  }
-  
-  // Hardcoded fallback - avoids any module resolution
-  return '1.6.28';
+  return getRuntimeVersion();
 }
 
 /**
@@ -79,7 +48,7 @@ async function fetchLatestVersion(): Promise<{ version: string | null; needsUpda
       needsUpdate = versionInfo.needsUpdate;
     } else if (backendVersion && currentVersion) {
       // Manual comparison if versionInfo not available
-      needsUpdate = compareVersions(currentVersion, backendVersion) < 0;
+      needsUpdate = compareAppVersions(currentVersion, backendVersion) < 0;
     }
 
     return { version: backendVersion, needsUpdate };
@@ -87,27 +56,6 @@ async function fetchLatestVersion(): Promise<{ version: string | null; needsUpda
     console.error('[VersionChecker] Error fetching version:', error);
     return { version: null, needsUpdate: false };
   }
-}
-
-/**
- * Compare two semantic versions
- * Returns: -1 if v1 < v2, 0 if v1 === v2, 1 if v1 > v2
- */
-function compareVersions(v1: string, v2: string): number {
-  const parts1 = v1.split('.').map(Number);
-  const parts2 = v2.split('.').map(Number);
-  
-  const maxLength = Math.max(parts1.length, parts2.length);
-  
-  for (let i = 0; i < maxLength; i++) {
-    const part1 = parts1[i] || 0;
-    const part2 = parts2[i] || 0;
-    
-    if (part1 < part2) return -1;
-    if (part1 > part2) return 1;
-  }
-  
-  return 0;
 }
 
 /**
@@ -322,7 +270,7 @@ export async function clearAuthCache(): Promise<void> {
             localStorage.removeItem(k);
           }
         });
-      } catch (e) {
+      } catch {
         // Ignore errors
       }
     });
@@ -330,7 +278,7 @@ export async function clearAuthCache(): Promise<void> {
     // Clear sessionStorage
     try {
       sessionStorage.clear();
-    } catch (e) {
+    } catch {
       // Ignore errors
     }
 
