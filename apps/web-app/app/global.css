@@ -18,7 +18,8 @@
   top: 70px !important;
   left: 24px !important;
   right: 24px !important;
-  max-width: none;
+  width: calc(100% - 48px) !important;
+  max-width: 380px !important;
   z-index: 40;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   background: rgba(255, 255, 255, 0.95) !important;
@@ -26,6 +27,7 @@
   -webkit-backdrop-filter: blur(10px) !important;
   border: 1px solid rgba(0, 0, 0, 0.05) !important;
   border-radius: 12px !important;
+  overflow: hidden !important;
 }
 
 /* Collapsed state - compact circular button with 3D effect */
@@ -60,7 +62,9 @@
   .hp-pwa-floating {
     top: 65px !important;
     left: 20px !important;
-    max-width: calc(100vw - 40px);
+    right: 20px !important;
+    width: calc(100% - 40px) !important;
+    max-width: 360px !important;
   }
 
   .hp-pwa-floating.hp-pwa-collapsed-state {
@@ -75,7 +79,8 @@
     top: 55px !important;
     left: 12px !important;
     right: 12px !important;
-    max-width: none;
+    width: calc(100% - 24px) !important;
+    max-width: 340px !important;
   }
 
   .hp-pwa-floating.hp-pwa-collapsed-state {
@@ -90,7 +95,8 @@
     top: 50px !important;
     left: 8px !important;
     right: 8px !important;
-    max-width: none;
+    width: calc(100% - 16px) !important;
+    max-width: 320px !important;
     padding: 12px !important;
   }
 
