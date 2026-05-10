@@ -11,6 +11,14 @@ type ParsedTokenHash = {
   verificationType: string;
 };
 
+type SessionPayload = {
+  access_token: string;
+  refresh_token: string;
+  expires_in?: number;
+  token_type?: string;
+  user?: Record<string, any> | null;
+};
+
 function parseStoredTokenHash(rawTokenHash: string | null | undefined): ParsedTokenHash {
   const fallback: ParsedTokenHash = {
     tokenHash: rawTokenHash?.trim() || '',
@@ -127,14 +135,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Mark the code as used
-    await supabase
-      .from('otp_codes')
-      .update({ used: true })
-      .eq('email', normalizedEmail)
-      .eq('code', normalizedCode)
-      .eq('token_hash', otpData.token_hash);
-
     const parsedToken = parseStoredTokenHash(otpData.token_hash);
     if (!parsedToken.tokenHash) {
       return new Response(
@@ -143,9 +143,63 @@ export async function POST(request: Request) {
       );
     }
 
-    // Return the token_hash to the client so it can verify using the client-side Supabase client
-    // The client-side client has the proper permissions to verify OTP tokens
-    console.log('OTP code verified, returning token_hash for client-side verification');
+    const verificationTypes = Array.from(
+      new Set([parsedToken.verificationType, 'magiclink', 'signup', 'email'])
+    );
+
+    let verificationResult: {
+      data: { session: SessionPayload | null; user: Record<string, any> | null } | null;
+      error: any;
+    } | null = null;
+
+    for (const type of verificationTypes) {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: parsedToken.tokenHash,
+        type: type as any,
+        email: normalizedEmail,
+      } as any);
+
+      if (!error) {
+        verificationResult = { data, error: null };
+        break;
+      }
+
+      const message = typeof error.message === 'string' ? error.message : '';
+      const canRetryWithAnotherType =
+        /email link is invalid or has expired/i.test(message) ||
+        /otp has expired or is invalid/i.test(message);
+
+      if (!canRetryWithAnotherType) {
+        verificationResult = { data: null, error };
+        break;
+      }
+
+      verificationResult = { data: null, error };
+    }
+
+    if (!verificationResult || verificationResult.error) {
+      const errorMessage = verificationResult?.error?.message || 'Failed to verify OTP';
+      return new Response(
+        JSON.stringify({
+          error: errorMessage,
+          code: verificationResult?.error?.code || 'otp_verify_failed',
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const session = verificationResult.data?.session || null;
+    const user = verificationResult.data?.user || null;
+
+    // Mark the code as used only after the Supabase session is created successfully.
+    await supabase
+      .from('otp_codes')
+      .update({ used: true })
+      .eq('email', normalizedEmail)
+      .eq('code', normalizedCode)
+      .eq('token_hash', otpData.token_hash);
+
+    console.log('OTP code verified on server, returning session payload to client');
     
     return new Response(
       JSON.stringify({ 
@@ -153,6 +207,8 @@ export async function POST(request: Request) {
         token_hash: parsedToken.tokenHash,
         type: parsedToken.verificationType,
         email: normalizedEmail,
+        session,
+        user,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );

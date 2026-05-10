@@ -1,3 +1,20 @@
+## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
+
+
+### Bug Fixes
+
+* branch-aware prod version and pwa open state ([f1feb09](https://github.com/edcalderon/hashpass.tech/commit/f1feb090c48b19858552aa1bdb791961a1dbe624))
+* bundle pwa version runtime files ([159f639](https://github.com/edcalderon/hashpass.tech/commit/159f639bf1d4f5d8c3304f9b1bc91d5bef869202))
+
+
+### Features
+
+* make version display branch aware ([db00892](https://github.com/edcalderon/hashpass.tech/commit/db0089282c7050754f3e2ada6e43609a921a07d3))
+
+
+
+
+
 ## [1.7.3](https://github.com/edcalderon/hashpass.tech/compare/v1.7.2...v1.7.3) (2026-05-10)
 
 

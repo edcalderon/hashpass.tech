@@ -169,15 +169,16 @@ function validateVersionConsistency() {
     errors.push(branchAwareEnabled
       ? '💡 Production version files must stay in sync with each other.'
       : '💡 All version files must have the same version number.');
-    errors.push('💡 Use the versioning script to update versions: npm run version:bump');
+    errors.push('💡 Use the release script to update versions: npm run release -- patch');
   }
   
   // Check if version script was used
   if (stagedVersionFiles.length > 0 && !checkVersionScriptUsage()) {
     errors.push('❌ Version files were modified manually!');
     errors.push('');
-    errors.push('💡 Always use the versioning script to update versions:');
-    errors.push('   npm run version:bump [patch|minor|major]');
+    errors.push('💡 Always use the release script to update versions:');
+    errors.push('   npm run release -- [patch|minor|major]');
+    errors.push('   npm run release:patch | release:minor | release:major');
     errors.push('   or');
     errors.push('   npm run version:update [version]');
     errors.push('');

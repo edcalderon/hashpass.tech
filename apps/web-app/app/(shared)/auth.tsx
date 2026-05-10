@@ -821,6 +821,12 @@ export default function AuthScreen() {
         token_hash?: string;
         type?: 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email';
         email?: string;
+        session?: {
+          access_token?: string;
+          refresh_token?: string;
+          expires_in?: number;
+          token_type?: string;
+        } | null;
         error?: string;
       }>(
         '/auth/otp/verify',
@@ -836,36 +842,18 @@ export default function AuthScreen() {
         throw new Error(extractApiError(verifyResponse.data, t('otpInvalid', 'Invalid or expired code.')));
       }
 
-      const initialType = verifyResponse.data.type || 'magiclink';
-      const verificationTypes = Array.from(
-        new Set([initialType, 'signup', 'magiclink', 'email'])
-      ) as ('signup' | 'magiclink' | 'email' | 'invite' | 'recovery' | 'email_change')[];
-
-      let otpVerifyError: any = null;
-      for (const type of verificationTypes) {
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: verifyResponse.data.token_hash,
-          type,
-        } as any);
-
-        if (!error) {
-          otpVerifyError = null;
-          break;
-        }
-
-        otpVerifyError = error;
-        const message = typeof error.message === 'string' ? error.message : '';
-        const canRetryWithAnotherType =
-          /email link is invalid or has expired/i.test(message) ||
-          /otp has expired or is invalid/i.test(message);
-
-        if (!canRetryWithAnotherType) {
-          break;
-        }
+      const sessionPayload = verifyResponse.data.session;
+      if (!sessionPayload?.access_token || !sessionPayload?.refresh_token) {
+        throw new Error(t('otpVerifyFailed', 'Could not verify the code. Please request a new one.'));
       }
 
-      if (otpVerifyError) {
-        throw otpVerifyError;
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: sessionPayload.access_token,
+        refresh_token: sessionPayload.refresh_token,
+      });
+
+      if (sessionError) {
+        throw sessionError;
       }
 
       showSuccess(t('loginSuccess', 'Login successful'), t('welcomeBack', 'Welcome back!'));

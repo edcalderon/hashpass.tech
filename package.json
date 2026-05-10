@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.7.3",
+  "version": "1.7.4",
   "packageManager": "pnpm@10.28.2",
   "scripts": {
     "start": "pnpm --filter hashpass-web-app start",
@@ -46,6 +46,12 @@
     "amplify:deploy": "amplify publish",
     "version:update": "node scripts/update-version.mjs",
     "version:bump": "node scripts/version-bump.js",
+    "release": "node tools/scripts/release.js",
+    "release:patch": "node tools/scripts/release.js patch",
+    "release:minor": "node tools/scripts/release.js minor",
+    "release:major": "node tools/scripts/release.js major",
+    "release:promote": "node tools/scripts/release.js patch --promote",
+    "release:unified": "node tools/scripts/release.js",
     "parameters:setup": "./scripts/setup-parameters.sh create",
     "parameters:verify": "./scripts/setup-parameters.sh verify",
     "parameters:list": "./scripts/setup-parameters.sh list",
@@ -72,7 +78,6 @@
     "release:bsl:prod": "node tools/scripts/release-pipeline.js --env production --tenant blockchainsummit",
     "release:all:dev": "node tools/scripts/release-pipeline.js --env development --all-tenants",
     "release:all:prod": "node tools/scripts/release-pipeline.js --env production --all-tenants",
-    "release:unified": "npx @edcalderon/versioning release",
     "prepare": "node -e \"if (process.env.CI || process.env.NPM_CONFIG_PRODUCTION || process.env.NODE_ENV === 'production') { process.exit(0); }\" && husky"
   },
   "expo": {

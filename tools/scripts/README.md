@@ -22,9 +22,20 @@ Shared branch cadence:
 
 Release flow:
 
+- `release` / `release:patch` / `release:minor` / `release:major` run the branch-aware version release flow
+- `release:promote` promotes a `develop` release onto `main`
+- `release:pipeline` remains the tenant/deploy pipeline for infra and Amplify work
 - `release:dev` / `release:prod` target `core` by default
 - `release:bsl:dev` / `release:bsl:prod` target the BSL tenant explicitly
 - `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it
+
+The branch-aware release flow:
+
+- Detects the current branch automatically
+- Runs `versioning check-secrets`, `versioning cleanup scan`, and `versioning validate`
+- Uses `@edcalderon/versioning` to create the changelog, version commit, and git tag
+- Pushes the current branch with `--follow-tags`
+- Can optionally promote a `develop` release to `main`
 
 ### Scripts using tenant config
 
@@ -45,6 +56,9 @@ node tools/scripts/check-consistency.js --all-tenants --env development
 node tools/scripts/check-consistency.js --tenant core --prod
 tools/scripts/apply-amplify-custom-headers.sh --tenant core
 tools/scripts/apply-amplify-custom-headers.sh --tenant blockchainsummit
+node tools/scripts/release.js patch
+node tools/scripts/release.js minor --promote
+node tools/scripts/release.js major --branch main
 node tools/scripts/release-pipeline.js --env development
 node tools/scripts/release-pipeline.js --env production --tenant core --bump minor
 node tools/scripts/release-pipeline.js --env production --tenant blockchainsummit --bump minor
