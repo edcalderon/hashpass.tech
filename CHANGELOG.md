@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.2] - 2026-05-10
+
+### Beta
+- Version 1.7.2 release
+
+### Technical Details
+- Version: 1.7.2
+- Release Type: beta
+- Build Number: 202605100823
+- Release Date: 2026-05-10T08:23:34.749Z
+
+
 ## [1.7.1] - 2026-05-10
 
 ### Released
