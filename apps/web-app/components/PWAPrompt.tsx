@@ -47,8 +47,11 @@ const PWAPrompt = () => {
 
     const handleBeforeInstallPrompt = (event: Event) => {
       const installEvent = event as BeforeInstallPromptEvent;
+      // Prevent the mini-infobar from appearing on mobile
       installEvent.preventDefault();
+      // Capture the event for later use
       setDeferredPrompt(installEvent);
+      console.log('[PWAPrompt] beforeinstallprompt event captured');
       if (!isStoredCollapsed) {
         setShowPrompt(true);
       }
@@ -56,6 +59,9 @@ const PWAPrompt = () => {
 
     checkStatus();
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+
+    // Log when we're ready to listen for install prompt
+    console.log('[PWAPrompt] Listening for beforeinstallprompt event');
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -92,23 +98,39 @@ const PWAPrompt = () => {
   };
 
   const installPWA = async () => {
+    console.log('[PWAPrompt] Install clicked, deferredPrompt:', !!deferredPrompt);
+
     if (deferredPrompt) {
-      await deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
+      try {
+        console.log('[PWAPrompt] Showing native install prompt...');
+        // Show the install prompt
+        await deferredPrompt.prompt();
 
-      if (choiceResult.outcome === 'accepted') {
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          window.localStorage.setItem('pwa-installed', 'true');
-          window.localStorage.removeItem(COLLAPSE_KEY);
+        // Wait for user choice
+        const choiceResult = await deferredPrompt.userChoice;
+        console.log('[PWAPrompt] User choice:', choiceResult.outcome);
+
+        if (choiceResult.outcome === 'accepted') {
+          console.log('[PWAPrompt] Installation accepted');
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.localStorage.setItem('pwa-installed', 'true');
+            window.localStorage.removeItem(COLLAPSE_KEY);
+          }
+          setShowPrompt(false);
+          setIsCollapsed(false);
+        } else {
+          console.log('[PWAPrompt] Installation dismissed');
         }
-        setShowPrompt(false);
-        setIsCollapsed(false);
-      }
 
-      setDeferredPrompt(null);
-      return;
+        setDeferredPrompt(null);
+        return;
+      } catch (error) {
+        console.error('[PWAPrompt] Error showing install prompt:', error);
+      }
     }
 
+    // Fallback only if native prompt not available
+    console.log('[PWAPrompt] No native prompt available, showing fallback instructions');
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isAndroid = /Android/.test(navigator.userAgent);
