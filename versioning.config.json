@@ -82,7 +82,16 @@
         "aws_access_key_id[\\s\"']*[:=][\\s\"']*[A-Z0-9]{20}",
         "aws_secret_access_key[\\s\"']*[:=][\\s\"']*[A-Za-z0-9/+=]{40}"
       ],
-      "allowlist": []
+      "allowlist": [
+        "EXPO_PUBLIC_SUPABASE_URL: supabaseUrl,",
+        "EXPO_PUBLIC_SUPABASE_KEY: supabaseAnonKey,",
+        "AWS_SECRET_ACCESS_KEY=your-secret-access-key",
+        "SUPABASE_SERVICE_ROLE_KEY=eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}",
+        "DIRECTUS_KEY=replace-with-random-key-min-32-chars",
+        "DIRECTUS_SECRET=replace-with-random-secret-min-32-chars",
+        "KEY: \\$\\{DIRECTUS_KEY:-replace-with-random-key\\}",
+        "SECRET: \\$\\{DIRECTUS_SECRET:-replace-with-random-secret\\}"
+      ]
     },
     "lifecycle-hooks": {
       "enabled": true,

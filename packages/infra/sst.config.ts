@@ -1,3 +1,4 @@
+declare const $app: any;
 declare const $config: any;
 declare const sst: any;
 
@@ -54,7 +55,7 @@ export default $config({
   },
   async run() {
     const { getBslSiteConfig } = await import("./src/domains.js");
-    const site = getBslSiteConfig(process.env.SST_STAGE);
+    const site = getBslSiteConfig($app.stage);
     const zone = process.env.ROUTE53_ZONE_ID ? { zone: process.env.ROUTE53_ZONE_ID } : undefined;
 
     new sst.aws.StaticSite("bsl-web", {

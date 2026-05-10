@@ -1,10 +1,12 @@
 # OAuth Redirect Fix - Quick Guide
 
+> Historical note: this guide was written for the older Supabase redirect issue. The current production Google sign-in flow is documented in [AUTH_FLOW.md](AUTH_FLOW.md).
+
 ## Problem
 
 You're stuck on: `https://auth.hashpass.co/bsl2025.hashpass.tech#access_token=...`
 
-This happens because Supabase is using the `site_url` as a relative path instead of an absolute URL.
+This happened because the older Supabase flow used the `site_url` as a relative path instead of an absolute URL.
 
 ## Immediate Fix (Run in Browser Console)
 
@@ -79,5 +81,4 @@ The code now automatically extracts the subdomain from the path, so it works wit
 - Any `*.hashpass.tech` subdomain
 
 No code changes needed for new subdomains!
-
 

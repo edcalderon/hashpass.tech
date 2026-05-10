@@ -27,6 +27,7 @@ export interface ApiRequestOptions {
   endpoint?: string;
   params?: Record<string, any>;
   skipEventSegment?: boolean; // Skip event-specific segment for global endpoints
+  skipAuth?: boolean; // Skip attaching Authorization for public endpoints
 }
 
 export class EventApiClient {
@@ -81,7 +82,6 @@ export class EventApiClient {
     }
     
     this.defaultHeaders = {
-      'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
     this.timeout = 10000; // 10 seconds
@@ -163,15 +163,29 @@ export class EventApiClient {
     
     const requestHeaders = { ...this.defaultHeaders, ...headers };
 
-    // Add authentication header if available
-    const session = await authService.getSession();
-    const isBearerUsableToken =
-      !!session?.access_token &&
-      session.access_token !== 'session_based' &&
-      session.access_token !== 'oauth_session';
+    // Avoid forcing a preflight on cross-origin GET requests.
+    // Only send Content-Type when we are actually sending a JSON body.
+    const hasBody = body !== undefined && body !== null;
+    const shouldSerializeJson =
+      hasBody &&
+      typeof body === 'object' &&
+      !(typeof FormData !== 'undefined' && body instanceof FormData);
 
-    if (isBearerUsableToken) {
-      requestHeaders['Authorization'] = `Bearer ${session.access_token}`;
+    if (shouldSerializeJson && !requestHeaders['Content-Type'] && method !== 'GET' && method !== 'HEAD') {
+      requestHeaders['Content-Type'] = 'application/json';
+    }
+
+    // Add authentication header if available
+    if (!options.skipAuth) {
+      const session = await authService.getSession();
+      const isBearerUsableToken =
+        !!session?.access_token &&
+        session.access_token !== 'session_based' &&
+        session.access_token !== 'oauth_session';
+
+      if (isBearerUsableToken) {
+        requestHeaders['Authorization'] = `Bearer ${session.access_token}`;
+      }
     }
 
     let lastError: Error | null = null;
@@ -184,7 +198,7 @@ export class EventApiClient {
         const response = await fetch(url, {
           method,
           headers: requestHeaders,
-          body: body ? JSON.stringify(body) : undefined,
+          body: shouldSerializeJson ? JSON.stringify(body) : hasBody ? body : undefined,
           signal: controller.signal,
         });
 

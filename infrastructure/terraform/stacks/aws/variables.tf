@@ -4,15 +4,11 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-<<<<<<< Updated upstream
 variable "amplify_region" {
   description = "AWS region for Amplify frontend app and domain association (defaults to aws_region)"
   type        = string
   default     = null
 }
-
-=======
->>>>>>> Stashed changes
 variable "name_prefix" {
   description = "Prefix used for resource names"
   type        = string
@@ -94,10 +90,16 @@ variable "api_cors_origins" {
   default = {
     dev = [
       "http://localhost:8081",
+      "https://bsl-dev.hashpass.tech",
+      "https://bsl.hashpass.tech",
       "https://blockchainsummit-dev.hashpass.lat",
       "https://blockchainsummit.hashpass.lat"
     ]
     prod = [
+      "https://hashpass.tech",
+      "https://www.hashpass.tech",
+      "https://bsl.hashpass.tech",
+      "https://bsl-dev.hashpass.tech",
       "https://blockchainsummit.hashpass.lat",
       "https://blockchainsummit-dev.hashpass.lat"
     ]
@@ -134,7 +136,6 @@ variable "amplify_wait_for_verification" {
   default     = false
 }
 
-<<<<<<< Updated upstream
 variable "manage_amplify_branches" {
   description = "Whether Terraform should manage Amplify branches for the frontend app"
   type        = bool
@@ -146,9 +147,6 @@ variable "amplify_branch_environment_variables" {
   type        = map(map(string))
   default     = {}
 }
-
-=======
->>>>>>> Stashed changes
 variable "tags" {
   description = "Tags applied to AWS resources"
   type        = map(string)

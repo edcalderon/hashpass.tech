@@ -8,16 +8,16 @@ echo "📦 Packaging Lambda Function for Deployment"
 echo "==========================================="
 echo ""
 
-# Resolve build directory (prefer the Expo server bundle for API routes)
+# Resolve build directory (prefer the app Expo server bundle for API routes)
 BUILD_DIR=""
-if [ -d "dist/server" ]; then
-    BUILD_DIR="dist/server"
-elif [ -d "apps/web-app/dist/server" ]; then
+if [ -d "apps/web-app/dist/server" ]; then
     BUILD_DIR="apps/web-app/dist/server"
-elif [ -d "dist/client" ]; then
-    BUILD_DIR="dist/client"
 elif [ -d "apps/web-app/dist/client" ]; then
     BUILD_DIR="apps/web-app/dist/client"
+elif [ -d "dist/server" ]; then
+    BUILD_DIR="dist/server"
+elif [ -d "dist/client" ]; then
+    BUILD_DIR="dist/client"
 elif [ -d "apps/web-app/dist" ]; then
     BUILD_DIR="apps/web-app/dist"
 elif [ -d "dist" ]; then

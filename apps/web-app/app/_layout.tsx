@@ -319,10 +319,7 @@ function ThemedContent() {
         />
         {/* Dynamic Event routes */}
         <Stack.Screen name="events/[eventSlug]/home" options={{ headerShown: false }} />
-        <Stack.Screen name="events/[eventSlug]/speakers/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="events/[eventSlug]/speakers/calendar" options={{ headerShown: false }} />
         <Stack.Screen name="events/[eventSlug]/my-bookings" options={{ headerShown: false }} />
-        <Stack.Screen name="events/[eventSlug]/speaker-dashboard" options={{ headerShown: false }} />
       </Stack>
       <PWAPrompt />
       {versionUpdate && (

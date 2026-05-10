@@ -12,11 +12,8 @@ terraform {
 provider "aws" {
   region = var.aws_region
 }
-<<<<<<< Updated upstream
 
 provider "aws" {
   alias  = "amplify"
   region = coalesce(var.amplify_region, var.aws_region)
 }
-=======
->>>>>>> Stashed changes

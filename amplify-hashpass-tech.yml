@@ -88,6 +88,9 @@ cors:
   allowOrigins:
     - exp://*
     - http://localhost:19006
+    - https://hashpass.tech
+    - https://www.hashpass.tech
+    - https://bsl2025.hashpass.tech
     - https://*.amazonaws.com
   allowHeaders:
     - "*"

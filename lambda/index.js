@@ -12,6 +12,20 @@ const handleRequest = createRequestHandler(
   path.join(__dirname, 'server')
 );
 
+function getSetCookieHeaders(headers) {
+  if (typeof headers.getSetCookie === 'function') {
+    return headers.getSetCookie();
+  }
+
+  const setCookie = headers.get('set-cookie');
+  if (!setCookie) return [];
+
+  return setCookie
+    .split(/,\s*(?=[^;,]+=)/)
+    .map((cookie) => cookie.trim())
+    .filter(Boolean);
+}
+
 // AWS Lambda handler for API Gateway
 exports.handler = async (event) => {
   try {
@@ -85,12 +99,17 @@ exports.handler = async (event) => {
     const body = await response.text();
     const headers = {};
     const headerKeys = new Set();
+    const setCookieHeaders = getSetCookieHeaders(response.headers);
 
     // Collect headers (normalize to lowercase keys to avoid duplicates)
     response.headers.forEach((value, key) => {
       const lowerKey = key.toLowerCase();
       // API Gateway doesn't support some headers, filter them out
-      if (lowerKey !== 'content-encoding' && lowerKey !== 'transfer-encoding') {
+      if (
+        lowerKey !== 'content-encoding' &&
+        lowerKey !== 'transfer-encoding' &&
+        lowerKey !== 'set-cookie'
+      ) {
         // Use lowercase key to avoid duplicates
         if (!headerKeys.has(lowerKey)) {
           headers[lowerKey] = value;
@@ -118,6 +137,7 @@ exports.handler = async (event) => {
       status: response.status,
       bodyLength: responseBody.length,
       headersCount: Object.keys(headers).length,
+      setCookieCount: setCookieHeaders.length,
       firstHeaders: Object.keys(headers).slice(0, 5)
     });
 
@@ -127,6 +147,16 @@ exports.handler = async (event) => {
       body: responseBody,
       isBase64Encoded: false,
     };
+
+    if (setCookieHeaders.length > 0) {
+      if (event.version === '2.0') {
+        apiGatewayResponse.cookies = setCookieHeaders;
+      } else {
+        apiGatewayResponse.multiValueHeaders = {
+          'set-cookie': setCookieHeaders,
+        };
+      }
+    }
 
     // Validate response format
     if (typeof apiGatewayResponse.statusCode !== 'number') {
@@ -161,4 +191,3 @@ exports.handler = async (event) => {
     };
   }
 };
-

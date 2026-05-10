@@ -1,8 +1,8 @@
 {
-  "name": "@whitelabel/auth-monorepo",
+  "name": "@hashpass/whitelabel-auth-archive",
   "private": true,
   "version": "1.0.0",
-  "description": "White-label authentication package monorepo",
+  "description": "Archived reference monorepo for the legacy white-label auth implementation",
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "build": "turbo run build",
@@ -10,12 +10,9 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "turbo run build && changeset publish"
+    "status": "node -e \"console.log('Archived snapshot. Use ../../packages/auth for the active auth implementation.')\""
   },
   "devDependencies": {
-    "@changesets/cli": "^2.27.0",
     "turbo": "^2.0.0",
     "typescript": "~5.8.3"
   },

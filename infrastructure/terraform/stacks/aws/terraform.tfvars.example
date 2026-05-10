@@ -1,10 +1,6 @@
 # AWS stack example configuration
 
 aws_region = "us-east-1"
-<<<<<<< Updated upstream
-amplify_region = "sa-east-1"
-=======
->>>>>>> Stashed changes
 
 name_prefix = "hashpass"
 
@@ -41,10 +37,16 @@ lambda_environment_overrides = {
 api_cors_origins = {
   dev = [
     "http://localhost:8081",
+    "https://bsl-dev.hashpass.tech",
+    "https://bsl.hashpass.tech",
     "https://blockchainsummit-dev.hashpass.lat",
     "https://blockchainsummit.hashpass.lat"
   ]
   prod = [
+    "https://hashpass.tech",
+    "https://www.hashpass.tech",
+    "https://bsl.hashpass.tech",
+    "https://bsl-dev.hashpass.tech",
     "https://blockchainsummit.hashpass.lat",
     "https://blockchainsummit-dev.hashpass.lat"
   ]
@@ -57,7 +59,6 @@ amplify_app_id                    = null
 amplify_dev_branch                = "develop"
 amplify_prod_branch               = "main"
 amplify_wait_for_verification     = false
-<<<<<<< Updated upstream
 manage_amplify_branches           = false
 
 amplify_branch_environment_variables = {
@@ -67,10 +68,10 @@ amplify_branch_environment_variables = {
     EXPO_PUBLIC_DIRECTUS_URL = "https://sso-dev.hashpass.co"
     EXPO_PUBLIC_API_BASE_URL = "https://api-dev.hashpass.tech/api"
     EXPO_PUBLIC_SUPABASE_URL = "https://your-dev-project.supabase.co"
-    EXPO_PUBLIC_SUPABASE_KEY = "sb_publishable_your_dev_key"
-    EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_your_dev_key"
+    EXPO_PUBLIC_SUPABASE_KEY = "<DEV_SUPABASE_KEY>"
+    EXPO_PUBLIC_SUPABASE_ANON_KEY = "<DEV_SUPABASE_KEY>"
     NEXT_PUBLIC_SUPABASE_URL = "https://your-dev-project.supabase.co"
-    NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_your_dev_key"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY = "<DEV_SUPABASE_KEY>"
   }
   main = {
     AUTH_PROVIDER            = "directus"
@@ -78,14 +79,12 @@ amplify_branch_environment_variables = {
     EXPO_PUBLIC_DIRECTUS_URL = "https://sso.hashpass.co"
     EXPO_PUBLIC_API_BASE_URL = "https://api.hashpass.tech/api"
     EXPO_PUBLIC_SUPABASE_URL = "https://your-prod-project.supabase.co"
-    EXPO_PUBLIC_SUPABASE_KEY = "sb_publishable_your_prod_key"
-    EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_your_prod_key"
+    EXPO_PUBLIC_SUPABASE_KEY = "<PROD_SUPABASE_KEY>"
+    EXPO_PUBLIC_SUPABASE_ANON_KEY = "<PROD_SUPABASE_KEY>"
     NEXT_PUBLIC_SUPABASE_URL = "https://your-prod-project.supabase.co"
-    NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_your_prod_key"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY = "<PROD_SUPABASE_KEY>"
   }
 }
-=======
->>>>>>> Stashed changes
 
 tags = {
   Project = "hashpass"

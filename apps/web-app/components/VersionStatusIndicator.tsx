@@ -32,7 +32,10 @@ export default function VersionStatusIndicator({
   const checkStatus = async () => {
     try {
       setStatus('checking');
-      const response = await apiClient.get('/status', { skipEventSegment: true });
+      const response = await apiClient.get('/status', {
+        skipEventSegment: true,
+        skipAuth: true,
+      });
 
       if (response.success) {
         setStatus(response.data.status || 'unknown');

@@ -9,6 +9,11 @@ CONNECTION_NAME="${CONNECTION_NAME:-${RESOURCE_PREFIX}-github-${REGION}}"
 PIPELINE_ROLE_NAME="${PIPELINE_ROLE_NAME:-BslHashpassPipelineRole}"
 CODEBUILD_ROLE_NAME="${CODEBUILD_ROLE_NAME:-BslHashpassCodeBuildRole}"
 BUILDSPEC_FILE="${BUILDSPEC_FILE:-tools/buildspecs/infra-deploy.yml}"
+CODEBUILD_CACHE_NAMESPACE="${CODEBUILD_CACHE_NAMESPACE:-${RESOURCE_PREFIX}}"
+CODEBUILD_COMPUTE_TYPE_DEV="${CODEBUILD_COMPUTE_TYPE_DEV:-BUILD_GENERAL1_MEDIUM}"
+CODEBUILD_COMPUTE_TYPE_PROD="${CODEBUILD_COMPUTE_TYPE_PROD:-BUILD_GENERAL1_LARGE}"
+EXPO_EXPORT_MAX_WORKERS_DEV="${EXPO_EXPORT_MAX_WORKERS_DEV:-4}"
+EXPO_EXPORT_MAX_WORKERS_PROD="${EXPO_EXPORT_MAX_WORKERS_PROD:-6}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 if [[ -n "${1:-}" && "${1:-}" != "--dry-run" ]]; then
@@ -33,6 +38,7 @@ fi
 
 ACCOUNT_ID="${AWS_ACCOUNT_ID:-${CURRENT_ACCOUNT}}"
 ARTIFACT_BUCKET="${ARTIFACT_BUCKET:-${RESOURCE_PREFIX}-pipelines-${ACCOUNT_ID}-${REGION}}"
+CODEBUILD_CACHE_LOCATION="${CODEBUILD_CACHE_LOCATION:-${ARTIFACT_BUCKET}/codebuild-cache}"
 
 if [[ -n "${EXPECTED_ACCOUNT_ID}" && "${CURRENT_ACCOUNT}" != "${EXPECTED_ACCOUNT_ID}" ]]; then
   echo "ERROR: AWS caller identity is ${CURRENT_ACCOUNT}, expected ${EXPECTED_ACCOUNT_ID}."
@@ -147,6 +153,8 @@ create_or_update_codebuild() {
   local project_name="$2"
   local build_role_arn="$3"
   local stage_suffix=""
+  local compute_type=""
+  local expo_export_max_workers=""
 
   if [[ "${DRY_RUN}" == true ]]; then
     echo "Would create/update CodeBuild project ${project_name} (${stage_name})"
@@ -156,9 +164,17 @@ create_or_update_codebuild() {
   case "${stage_name}" in
     dev|development)
       stage_suffix="_DEV"
+      compute_type="${CODEBUILD_COMPUTE_TYPE_DEV}"
+      expo_export_max_workers="${EXPO_EXPORT_MAX_WORKERS_DEV}"
       ;;
     prod|production)
       stage_suffix="_PROD"
+      compute_type="${CODEBUILD_COMPUTE_TYPE_PROD}"
+      expo_export_max_workers="${EXPO_EXPORT_MAX_WORKERS_PROD}"
+      ;;
+    *)
+      compute_type="${CODEBUILD_COMPUTE_TYPE_PROD}"
+      expo_export_max_workers="${EXPO_EXPORT_MAX_WORKERS_PROD}"
       ;;
   esac
 
@@ -212,6 +228,7 @@ create_or_update_codebuild() {
   append_env_var "EXPO_PUBLIC_SUPABASE_KEY" "${supabase_anon_key}"
   append_env_var "EXPO_PUBLIC_SUPABASE_ANON_KEY" "${supabase_anon_key}"
   append_env_var "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${supabase_anon_key}"
+  append_env_var "EXPO_EXPORT_MAX_WORKERS" "${expo_export_max_workers}"
   env_vars+="]"
 
   if aws codebuild create-project \
@@ -220,7 +237,8 @@ create_or_update_codebuild() {
     --service-role "${build_role_arn}" \
     --source "type=CODEPIPELINE,buildspec=${BUILDSPEC_FILE}" \
     --artifacts "type=CODEPIPELINE" \
-    --environment "type=LINUX_CONTAINER,image=aws/codebuild/standard:7.0,computeType=BUILD_GENERAL1_SMALL,privilegedMode=false,environmentVariables=${env_vars}" \
+    --environment "type=LINUX_CONTAINER,image=aws/codebuild/standard:7.0,computeType=${compute_type},privilegedMode=false,environmentVariables=${env_vars}" \
+    --cache "type=S3,location=${CODEBUILD_CACHE_LOCATION},cacheNamespace=${CODEBUILD_CACHE_NAMESPACE}" \
     >/dev/null 2>&1; then
     return
   fi
@@ -231,7 +249,8 @@ create_or_update_codebuild() {
     --service-role "${build_role_arn}" \
     --source "type=CODEPIPELINE,buildspec=${BUILDSPEC_FILE}" \
     --artifacts "type=CODEPIPELINE" \
-    --environment "type=LINUX_CONTAINER,image=aws/codebuild/standard:7.0,computeType=BUILD_GENERAL1_SMALL,privilegedMode=false,environmentVariables=${env_vars}" \
+    --environment "type=LINUX_CONTAINER,image=aws/codebuild/standard:7.0,computeType=${compute_type},privilegedMode=false,environmentVariables=${env_vars}" \
+    --cache "type=S3,location=${CODEBUILD_CACHE_LOCATION},cacheNamespace=${CODEBUILD_CACHE_NAMESPACE}" \
     >/dev/null
 }
 

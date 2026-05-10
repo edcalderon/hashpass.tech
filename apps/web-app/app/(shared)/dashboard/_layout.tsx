@@ -1038,6 +1038,20 @@ export default function DashboardLayout() {
                   header: () => <ScreenWithHeader />,
                 }}
               />
+              <Drawer.Screen
+                name="qr-view"
+                options={{
+                  headerShown: true,
+                  header: () => <ScreenWithHeader />,
+                }}
+              />
+              <Drawer.Screen
+                name="pass-details"
+                options={{
+                  headerShown: true,
+                  header: () => <ScreenWithHeader />,
+                }}
+              />
             </Drawer>
           </View>
         </ScrollProvider>

@@ -209,6 +209,179 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase URL or Anon Key is missing. Please check your .env file.');
 }
 
+function createNoopSupabaseClient(errorMessage: string): ReturnType<typeof createClient> {
+  const createNoopQuery = (result: { data: any; error: Error | null } = { data: null, error: null }) => {
+    let queryProxy: any;
+
+    const resolvedResult = Promise.resolve(result);
+
+    queryProxy = new Proxy(function noopQuery() {}, {
+      get(_target, prop) {
+        if (prop === 'then') {
+          return resolvedResult.then.bind(resolvedResult);
+        }
+
+        if (prop === 'catch') {
+          return resolvedResult.catch.bind(resolvedResult);
+        }
+
+        if (prop === 'finally') {
+          return resolvedResult.finally.bind(resolvedResult);
+        }
+
+        if (
+          prop === 'select' ||
+          prop === 'insert' ||
+          prop === 'update' ||
+          prop === 'upsert' ||
+          prop === 'delete' ||
+          prop === 'eq' ||
+          prop === 'neq' ||
+          prop === 'gt' ||
+          prop === 'gte' ||
+          prop === 'lt' ||
+          prop === 'lte' ||
+          prop === 'like' ||
+          prop === 'ilike' ||
+          prop === 'is' ||
+          prop === 'in' ||
+          prop === 'contains' ||
+          prop === 'containedBy' ||
+          prop === 'rangeLt' ||
+          prop === 'rangeGte' ||
+          prop === 'rangeLte' ||
+          prop === 'rangeAdjacent' ||
+          prop === 'overlaps' ||
+          prop === 'textSearch' ||
+          prop === 'match' ||
+          prop === 'not' ||
+          prop === 'or' ||
+          prop === 'filter' ||
+          prop === 'order' ||
+          prop === 'limit' ||
+          prop === 'offset' ||
+          prop === 'range' ||
+          prop === 'single' ||
+          prop === 'maybeSingle'
+        ) {
+          return () => queryProxy;
+        }
+
+        if (prop === 'subscribe') {
+          return (callback?: (status: string) => void) => {
+            callback?.('CLOSED');
+            return queryProxy;
+          };
+        }
+
+        if (prop === 'on') {
+          return () => queryProxy;
+        }
+
+        if (prop === 'send') {
+          return async () => ({ data: null, error: null });
+        }
+
+        if (prop === 'unsubscribe' || prop === 'remove') {
+          return () => {};
+        }
+
+        return queryProxy;
+      },
+      apply() {
+        return queryProxy;
+      },
+    });
+
+    return queryProxy;
+  };
+
+  const createNoopAuthResponse = () => Promise.resolve({ data: { session: null, user: null }, error: null });
+  const createNoopErrorResponse = () => Promise.resolve({ data: null, error: new Error(errorMessage) });
+
+  const authProxy = new Proxy(function noopAuth() {}, {
+    get(_target, prop) {
+      switch (prop) {
+        case 'getSession':
+        case 'getUser':
+        case 'refreshSession':
+          return createNoopAuthResponse;
+        case 'setSession':
+        case 'exchangeCodeForSession':
+        case 'verifyOtp':
+        case 'signInWithPassword':
+        case 'signInWithOAuth':
+        case 'updateUser':
+          return createNoopErrorResponse;
+        case 'signOut':
+          return async () => ({ error: null });
+        case 'onAuthStateChange':
+          return (callback?: (event: string, session: null) => void) => {
+            callback?.('INITIAL_SESSION', null);
+            return {
+              data: {
+                subscription: {
+                  unsubscribe: () => {},
+                },
+              },
+            };
+          };
+        default:
+          return createNoopErrorResponse;
+      }
+    },
+    apply() {
+      return authProxy;
+    },
+  });
+
+  const channelProxyFactory = () => {
+    let channelProxy: any;
+
+    channelProxy = new Proxy(function noopChannel() {}, {
+      get(_target, prop) {
+        if (
+          prop === 'on' ||
+          prop === 'join' ||
+          prop === 'leave' ||
+          prop === 'track' ||
+          prop === 'untrack' ||
+          prop === 'subscribe'
+        ) {
+          return () => channelProxy;
+        }
+
+        if (prop === 'send') {
+          return async () => ({ error: null });
+        }
+
+        if (prop === 'unsubscribe' || prop === 'remove') {
+          return () => {};
+        }
+
+        return channelProxy;
+      },
+      apply() {
+        return channelProxy;
+      },
+    });
+
+    return channelProxy;
+  };
+
+  return {
+    from: () => createNoopQuery(),
+    rpc: () => createNoopQuery(),
+    channel: () => channelProxyFactory(),
+    removeChannel: () => {},
+    removeAllChannels: () => [],
+    auth: authProxy,
+    storage: {
+      from: () => createNoopQuery(),
+    },
+  } as unknown as ReturnType<typeof createClient>;
+}
+
 // Initialize Supabase client
 // Use try-catch to handle rootState.routeNames error gracefully
 // CRITICAL: We handle all OAuth callbacks manually to avoid Supabase's site_url issues
@@ -217,6 +390,13 @@ let supabaseClient: ReturnType<typeof createClient> | null = null;
 
 const initializeSupabase = () => {
   if (!supabaseClient) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('⚠️ Supabase env is missing; using a no-op client so the app can build safely.');
+      return createNoopSupabaseClient(
+        'Supabase URL or Anon Key is missing. Please check your .env file.'
+      );
+    }
+
     // Allow detectSessionInUrl to enable automatic session detection from URL
     // This can help with OAuth callbacks and deep linking
     // However, we need to be careful - it can cause errors if navigation state isn't ready

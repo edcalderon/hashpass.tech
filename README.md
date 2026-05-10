@@ -45,7 +45,12 @@ We believe the future of events should be shaped by the community. By making Has
 - **`apps/web-app`** — Main Expo Router web application (uses `@hashpass/*` packages).
 - **`apps/directus`** — Directus SSO Docker setup for local auth testing.
 - **`packages/`** — Shared packages: `@hashpass/auth`, `@hashpass/config`, `@hashpass/types`, `@hashpass/backend`, `@hashpass/utils`, `@hashpass/ui`, `@hashpass/infra`.
+- **`archive/whitelabel-auth/`** — Archived legacy auth monorepo kept for reference only. The active auth package lives in `packages/auth` as `@hashpass/auth`.
 - **`infrastructure/terraform`** — Terraform IaC (GCP, etc.).
+
+### Authentication
+
+Production Google sign-in now uses the API-owned OAuth bridge documented in [docs/AUTH_FLOW.md](docs/AUTH_FLOW.md). Directus is still used as the identity backend, but browser login no longer depends on Directus session cookies across domains.
 
 Use **pnpm** and **Turborepo** at the repo root:
 

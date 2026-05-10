@@ -20,7 +20,9 @@ module.exports = function (api) {
             '@providers': './providers',
             '@contexts': './contexts',
             '@screens': './app/screens',
-            '@navigation': './navigation'
+            '@navigation': './navigation',
+            // Web shim avoids the Ionicons font download path on the BSL host.
+            '@expo/vector-icons': './lib/vector-icons'
           },
         },
       ],

@@ -1,5 +1,89 @@
 # Changelog
 
+## [1.6.134] - 2026-05-09
+
+### Released
+- Version 1.6.134 release
+
+### Technical Details
+- Version: 1.6.134
+- Release Type: stable
+- Build Number: 202605091949
+- Release Date: 2026-05-09T19:49:12.746Z
+
+
+## [1.6.133] - 2026-05-09
+
+### Released
+- Version 1.6.133 release
+
+### Technical Details
+- Version: 1.6.133
+- Release Type: stable
+- Build Number: 202605091909
+- Release Date: 2026-05-09T19:09:20.324Z
+
+
+## [1.6.132] - 2026-05-09
+
+### Released
+- Version 1.6.132 release
+
+### Technical Details
+- Version: 1.6.132
+- Release Type: stable
+- Build Number: 202605091717
+- Release Date: 2026-05-09T17:17:34.560Z
+
+
+## [1.6.131] - 2026-05-09
+
+### Released
+- Version 1.6.131 release
+
+### Technical Details
+- Version: 1.6.131
+- Release Type: stable
+- Build Number: 202605091631
+- Release Date: 2026-05-09T16:31:46.309Z
+
+
+## [1.6.130] - 2026-05-08
+
+### Released
+- Version 1.6.130 release
+
+### Technical Details
+- Version: 1.6.130
+- Release Type: stable
+- Build Number: 202605082041
+- Release Date: 2026-05-08T20:41:04.625Z
+
+
+## [1.6.129] - 2026-05-08
+
+### Released
+- Version 1.6.129 release
+
+### Technical Details
+- Version: 1.6.129
+- Release Type: stable
+- Build Number: 202605081554
+- Release Date: 2026-05-08T15:54:33.840Z
+
+
+## [1.6.128] - 2026-05-08
+
+### Released
+- Version 1.6.128 release
+
+### Technical Details
+- Version: 1.6.128
+- Release Type: stable
+- Build Number: 202605081547
+- Release Date: 2026-05-08T15:47:42.564Z
+
+
 ## [1.6.127] - 2026-02-23
 
 ### Beta

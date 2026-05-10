@@ -4,11 +4,12 @@ env:
   shell: bash
   variables:
     PNPM_VERSION: "10.14.0"
-    PNPM_STORE_DIR: /root/.local/share/pnpm/store/v3
+    PNPM_STORE_DIR: .pnpm-store
 
 cache:
+  key: pnpm-$(codebuild-hash-files pnpm-lock.yaml pnpm-workspace.yaml)
   paths:
-    - /root/.local/share/pnpm/store/v3/**/*
+    - .pnpm-store/**/*
 
 phases:
   install:
@@ -22,7 +23,6 @@ phases:
   pre_build:
     commands:
       - export ROUTE53_ZONE_ID="$(bash tools/scripts/check-infra-dns.sh --print-zone-id)"
-      - bash tools/scripts/check-infra-dns.sh
       - pnpm install --frozen-lockfile --prefer-offline
   build:
     commands:

@@ -10,6 +10,8 @@ const DEFAULT_FRONTEND_ORIGIN =
   process.env.FRONTEND_URL ||
   '';
 const OAUTH_FRONTEND_ORIGIN_COOKIE_NAME = 'oauth_frontend_origin';
+const OAUTH_STATE_COOKIE_NAME = 'oauth_google_state';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 
 type OAuthReturnCookiePayload = {
   returnTo: string;
@@ -78,6 +80,14 @@ function normalizeReturnToPath(path: string): string {
   return normalized;
 }
 
+function createOAuthState(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+}
+
 /**
  * OAuth Login Proxy
  * Redirects to Directus OAuth provider
@@ -126,11 +136,35 @@ export async function GET(request: Request): Promise<Response> {
     `${OAUTH_FRONTEND_ORIGIN_COOKIE_NAME}=${encodeURIComponent(frontendOrigin)}; ` +
     `Path=/; SameSite=Lax; Max-Age=3600${secureFlag}`;
 
-  // Directus callback must carry returnTo/frontendOrigin in the query because some
-  // API gateway paths do not forward request cookies consistently.
   const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
-  callbackUrl.searchParams.set('returnTo', returnTo);
-  callbackUrl.searchParams.set('frontendOrigin', frontendOrigin);
+
+  if (provider === 'google' && GOOGLE_CLIENT_ID) {
+    const state = createOAuthState();
+    const googleCallbackUrl = new URL('/api/auth/oauth/google', url.origin);
+    const googleOAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    googleOAuthUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
+    googleOAuthUrl.searchParams.set('redirect_uri', googleCallbackUrl.toString());
+    googleOAuthUrl.searchParams.set('response_type', 'code');
+    googleOAuthUrl.searchParams.set('scope', 'openid profile email');
+    googleOAuthUrl.searchParams.set('access_type', 'offline');
+    googleOAuthUrl.searchParams.set('prompt', 'select_account');
+    googleOAuthUrl.searchParams.set('state', state);
+
+    console.log('[OAuth Login] Redirecting to Google OAuth through API callback:', googleOAuthUrl.toString());
+
+    const headers = new Headers();
+    headers.set('Location', googleOAuthUrl.toString());
+    headers.set('Cache-Control', 'no-store');
+    headers.append('Set-Cookie', setCookieHeader);
+    headers.append('Set-Cookie', setFrontendOriginCookieHeader);
+    headers.append('Set-Cookie', `${OAUTH_STATE_COOKIE_NAME}=${encodeURIComponent(state)}; Path=/; SameSite=Lax; Max-Age=600${secureFlag}`);
+
+    return new ExpoResponse(null, {
+      status: 302,
+      headers,
+    });
+  }
+
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   directusOAuthUrl.searchParams.set('redirect', callbackUrl.toString());
   const isLocalHttp =
