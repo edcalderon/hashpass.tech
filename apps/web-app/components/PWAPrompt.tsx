@@ -4,6 +4,9 @@ import { PwaInstallPromptCard } from '@hashpass/ui';
 import { buildAndroidIntentUrl, getInstallationStatus, resolvePwaLaunchUrl } from '../lib/pwa-utils';
 import { useTranslation } from '../i18n/i18n';
 
+const ANDROID_CHROME_192 = require('../assets/android-chrome-192x192.png');
+const ANDROID_CHROME_512 = require('../assets/android-chrome-512x512.png');
+
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
 const DONT_SHOW_AGAIN_KEY = 'hashpass:pwa-dont-show-until-reload';
 
@@ -218,9 +221,18 @@ const PWAPrompt = () => {
     return null;
   }
 
+  const handleDontShowAgain = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DONT_SHOW_AGAIN_KEY, 'true');
+      setDontShowAgain(true);
+      setShowPrompt(false);
+      console.log('[PWAPrompt] "Don\'t show again" enabled until page reload');
+    }
+  };
+
   const logoSrc = (() => {
     try {
-      const resolved = Image.resolveAssetSource(require('../assets/android-chrome-192x192.png'));
+      const resolved = Image.resolveAssetSource(ANDROID_CHROME_192);
       if (resolved && typeof resolved === 'object' && 'uri' in resolved) {
         return resolved.uri;
       }
@@ -235,14 +247,14 @@ const PWAPrompt = () => {
 
   const primaryIconSrc = (() => {
     try {
-      const resolved = Image.resolveAssetSource(require('../assets/android-chrome-512x512.png'));
+      const resolved = Image.resolveAssetSource(ANDROID_CHROME_512);
       if (resolved && typeof resolved === 'object' && 'uri' in resolved) {
         return resolved.uri;
       }
       return resolved;
     } catch {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        return `${window.location.origin}/assets/android-chrome-192x192.png`;
+        return `${window.location.origin}/favicon.ico`;
       }
       return logoSrc;
     }
@@ -276,7 +288,7 @@ const PWAPrompt = () => {
           }
         }}
       >
-        <div onClick={(event) => event.stopPropagation()}>
+        <div onClick={(event) => event.stopPropagation()} style={{ maxWidth: '500px' }}>
           <PwaInstallPromptCard
             appName="HashPass"
             logoSrc={logoSrc}
@@ -298,6 +310,41 @@ const PWAPrompt = () => {
             onPrimaryAction={closeInstallHelpModal}
             onClose={closeInstallHelpModal}
           />
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '12px',
+              paddingTop: '12px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <input
+              type="checkbox"
+              id="dont-show-again-pwa"
+              checked={dontShowAgain}
+              onChange={handleDontShowAgain}
+              style={{
+                cursor: 'pointer',
+                width: '16px',
+                height: '16px',
+                marginTop: '2px',
+              }}
+            />
+            <label
+              htmlFor="dont-show-again-pwa"
+              style={{
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: 'rgba(255, 255, 255, 0.6)',
+                userSelect: 'none',
+                margin: 0,
+              }}
+            >
+              {t('dontShowAgain', "Don't show again until reload")}
+            </label>
+          </div>
         </div>
       </div>
     );
