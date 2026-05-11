@@ -24,7 +24,6 @@ const PWAPrompt = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -219,28 +218,21 @@ const PWAPrompt = () => {
     return null;
   }
 
-  const handleDontShowAgain = () => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.sessionStorage.setItem(DONT_SHOW_AGAIN_KEY, 'true');
-      setDontShowAgain(true);
-      setShowPrompt(false);
-      console.log('[PWAPrompt] "Don\'t show again" enabled until page reload');
-    }
-  };
-
   const logoSrc = (() => {
     try {
-      return Image.resolveAssetSource(require('../assets/android-chrome-192x192.png')).uri;
+      const resolved = Image.resolveAssetSource(require('../assets/android-chrome-192x192.png'));
+      return resolved?.uri || resolved;
     } catch {
-      return '/favicon.ico';
+      return require('../assets/android-chrome-192x192.png');
     }
   })();
 
   const primaryIconSrc = (() => {
     try {
-      return Image.resolveAssetSource(require('../assets/android-chrome-512x512.png')).uri;
+      const resolved = Image.resolveAssetSource(require('../assets/android-chrome-512x512.png'));
+      return resolved?.uri || resolved;
     } catch {
-      return logoSrc;
+      return require('../assets/android-chrome-512x512.png');
     }
   })();
 
@@ -289,44 +281,11 @@ const PWAPrompt = () => {
             closeLabel={t('close', 'Close install prompt')}
             infoLabel={t('whatIsThis', 'What is this?')}
             infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HashPass behave like a native app on your device.')}
-            showInfoToggle={true}
+            showInfoToggle={false}
             collapsed={false}
             onPrimaryAction={closeInstallHelpModal}
             onClose={closeInstallHelpModal}
           />
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginTop: '16px',
-              paddingTop: '12px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <input
-              type="checkbox"
-              id="dont-show-again"
-              checked={dontShowAgain}
-              onChange={handleDontShowAgain}
-              style={{
-                cursor: 'pointer',
-                width: '18px',
-                height: '18px',
-              }}
-            />
-            <label
-              htmlFor="dont-show-again"
-              style={{
-                cursor: 'pointer',
-                fontSize: '14px',
-                color: 'rgba(255, 255, 255, 0.7)',
-                userSelect: 'none',
-              }}
-            >
-              {t('dontShowAgain', "Don't show this again until reload")}
-            </label>
-          </div>
         </div>
       </div>
     );
