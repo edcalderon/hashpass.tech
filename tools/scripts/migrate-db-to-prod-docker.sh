@@ -55,7 +55,7 @@ SOURCE_SUPABASE_URL="${SOURCE_SUPABASE_URL:-https://tgbdilebadmzqwubsijr.supabas
 SOURCE_DB_URL="${SOURCE_DB_URL}"
 
 # Production database
-PROD_SUPABASE_URL="${PROD_SUPABASE_URL:-https://fxgftanraszjjyeidvia.supabase.co}"
+PROD_SUPABASE_URL="${PROD_SUPABASE_URL:-https://mnnqryrdlhddorqsrtbn.supabase.co}"
 PROD_DB_URL="${PROD_DB_URL}"
 
 echo -e "${BLUE}🔄 Starting database migration (using Docker)...${NC}\n"
@@ -80,7 +80,7 @@ if [ -z "$SOURCE_DB_URL" ]; then
     echo -e "  4. Replace [YOUR-PASSWORD] with your database password"
     echo -e "\n${YELLOW}Then run:${NC}"
     echo -e "  export SOURCE_DB_URL=\"postgresql://postgres:[PASSWORD]@db.tgbdilebadmzqwubsijr.supabase.co:5432/postgres\""
-    echo -e "  export PROD_DB_URL=\"postgresql://postgres:[PASSWORD]@db.fxgftanraszjjyeidvia.supabase.co:5432/postgres\""
+    echo -e "  export PROD_DB_URL=\"postgresql://postgres:[PASSWORD]@db.mnnqryrdlhddorqsrtbn.supabase.co:5432/postgres\""
     echo -e "  ./scripts/migrate-db-to-prod-docker.sh\n"
     exit 1
 fi
@@ -94,7 +94,7 @@ if [ -z "$PROD_DB_URL" ]; then
     echo -e "  4. Replace [YOUR-PASSWORD] with your database password"
     echo -e "\n${YELLOW}Then run:${NC}"
     echo -e "  export SOURCE_DB_URL=\"postgresql://postgres:[PASSWORD]@db.tgbdilebadmzqwubsijr.supabase.co:5432/postgres\""
-    echo -e "  export PROD_DB_URL=\"postgresql://postgres:[PASSWORD]@db.fxgftanraszjjyeidvia.supabase.co:5432/postgres\""
+    echo -e "  export PROD_DB_URL=\"postgresql://postgres:[PASSWORD]@db.mnnqryrdlhddorqsrtbn.supabase.co:5432/postgres\""
     echo -e "  ./scripts/migrate-db-to-prod-docker.sh\n"
     exit 1
 fi
@@ -237,4 +237,3 @@ echo -e "  1. Verify tables, functions, and triggers in production database"
 echo -e "  2. Check RLS policies are correctly applied"
 echo -e "  3. Test RPC functions"
 echo -e "  4. Update application environment variables to point to production\n"
-

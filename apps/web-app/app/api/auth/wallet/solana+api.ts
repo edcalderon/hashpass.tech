@@ -1,6 +1,7 @@
 import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
+import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 
 function badRequest(message: string) {
   return new Response(JSON.stringify({ error: message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
@@ -102,11 +103,12 @@ export async function POST(request: Request) {
 
     // Get or create user
     let userId = walletAuth.user_id;
+    const walletEmail = `${walletAddress}@wallet.solana`;
 
     if (!userId) {
       // Create new user with wallet address as identifier
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: `${walletAddress}@wallet.solana`,
+        email: walletEmail,
         email_confirm: true,
         user_metadata: {
           wallet_address: walletAddress,
@@ -121,7 +123,29 @@ export async function POST(request: Request) {
       }
 
       userId = newUser.user.id;
+    }
 
+    await syncPublicUserRegistry(request, {
+      provider: 'wallet.solana',
+      authUserId: userId,
+      email: walletEmail,
+      status: 'active',
+      authMetadata: {
+        auth_provider: 'solana',
+        wallet_address: walletAddress,
+        wallet_type: 'solana',
+      },
+      profileMetadata: {
+        wallet_address: walletAddress,
+        wallet_type: 'solana',
+      },
+      providerIds: {
+        supabase: userId,
+        wallet: walletAddress,
+      },
+    });
+
+    if (!walletAuth.user_id) {
       // Link wallet to user
       await supabase
         .from('wallet_auth')
@@ -138,8 +162,6 @@ export async function POST(request: Request) {
     }
 
     // Generate a session for the user using admin API
-    const walletEmail = `${walletAddress}@wallet.solana`;
-    
     // Get the callback URL for redirect
     const origin = new URL(request.url).origin;
     const callbackUrl = `${origin}/(shared)/auth/callback`;

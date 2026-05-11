@@ -12,6 +12,7 @@ export {
 } from './auth-service';
 export type { AuthUser as DirectusUser, AuthSession as DirectusSession } from './types';
 export * from './directus-auth';
+export * as edcalderonAuth from './vendor/edcalderon-auth';
 export {
   extractToken as directusExtractToken,
   verifyUserToken as directusVerifyUserToken,

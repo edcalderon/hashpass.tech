@@ -1,6 +1,7 @@
 import { ExpoResponse } from 'expo-router/server';
 import { jwtVerify } from 'jose';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 
 // Support both local and production Directus URLs
 const DIRECTUS_URL =
@@ -47,6 +48,13 @@ type DirectusOAuthUser = {
   email?: string;
   first_name?: string;
   last_name?: string;
+  avatar?: string;
+  role?: string;
+  status?: string;
+  last_access?: string;
+  created_at?: string;
+  updated_at?: string;
+  user_metadata?: Record<string, any>;
 };
 
 type SupabaseSessionBridge = {
@@ -211,6 +219,7 @@ const appendSupabaseBridgeToFragment = (
 };
 
 const syncDirectusUserToSupabase = async (
+  request: Request,
   accessToken: string
 ): Promise<DirectusSupabaseSyncResult | null> => {
   if (!DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED) {
@@ -263,6 +272,28 @@ const syncDirectusUserToSupabase = async (
     if (directusUser.first_name) desiredMetadata.first_name = directusUser.first_name;
     if (directusUser.last_name) desiredMetadata.last_name = directusUser.last_name;
     if (directusUser.id) desiredMetadata.directus_user_id = directusUser.id;
+
+    await syncPublicUserRegistry(request, {
+      provider: 'directus',
+      authUserId: directusUser.id,
+      email,
+      firstName: directusUser.first_name || null,
+      lastName: directusUser.last_name || null,
+      fullName: fullName || null,
+      avatarUrl: directusUser.avatar || null,
+      status: directusUser.status || 'active',
+      authMetadata: {
+        auth_provider: 'directus_google',
+        auth_bridge: 'directus_oauth_callback',
+        directus_user_id: directusUser.id,
+      },
+      profileMetadata: {
+        directus_user: directusUser,
+      },
+      providerIds: {
+        directus: directusUser.id,
+      },
+    });
 
     const createResult = await client.auth.admin.createUser({
       email,
@@ -479,7 +510,7 @@ const buildHashPreservingRedirectHtml = (targetUrl: string): string => {
 const buildClientCallbackBridgeResponse = (
   frontendOrigin: string,
   returnTo: string
-): ExpoResponse => {
+): Response => {
   const appCallbackUrl = buildAppCallbackUrl(frontendOrigin, returnTo);
   const htmlBridge = buildHashPreservingRedirectHtml(appCallbackUrl);
 
@@ -616,7 +647,7 @@ export async function GET(request: Request): Promise<Response> {
 
   if (urlAccessToken) {
     console.log('[OAuth Callback] ✅ Found tokens in URL');
-    const syncResult = await syncDirectusUserToSupabase(urlAccessToken);
+    const syncResult = await syncDirectusUserToSupabase(request, urlAccessToken);
     // Redirect with tokens in URL fragment so client can store them
     const fragment = new URLSearchParams({
       access_token: urlAccessToken,
@@ -659,7 +690,7 @@ export async function GET(request: Request): Promise<Response> {
 
           if (tokens.access_token) {
             console.log('[OAuth Callback] ✅ Got tokens from refresh endpoint');
-            const syncResult = await syncDirectusUserToSupabase(tokens.access_token);
+            const syncResult = await syncDirectusUserToSupabase(request, tokens.access_token);
             const fragment = new URLSearchParams({
               access_token: tokens.access_token,
               ...(tokens.refresh_token && { refresh_token: tokens.refresh_token })
@@ -703,7 +734,7 @@ export async function GET(request: Request): Promise<Response> {
       const exchangedTokens = await exchangeSessionCookieForJsonTokens(cookies);
       if (exchangedTokens?.access_token) {
         console.log('[OAuth Callback] ✅ Exchanged session cookie for JSON tokens.');
-        const syncResult = await syncDirectusUserToSupabase(exchangedTokens.access_token);
+        const syncResult = await syncDirectusUserToSupabase(request, exchangedTokens.access_token);
         const fragment = new URLSearchParams({
           access_token: exchangedTokens.access_token,
           ...(exchangedTokens.refresh_token && { refresh_token: exchangedTokens.refresh_token })

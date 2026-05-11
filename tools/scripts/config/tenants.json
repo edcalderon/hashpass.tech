@@ -39,6 +39,10 @@
       "frontendUrls": {
         "development": "https://develop.dy8duury54wam.amplifyapp.com",
         "production": "https://hashpass.tech"
+      },
+      "supabaseRefs": {
+        "development": "fxgftanraszjjyeidvia",
+        "production": "mnnqryrdlhddorqsrtbn"
       }
     },
     "bsl": {

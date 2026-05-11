@@ -12,6 +12,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@edcalderon/auth": "^1.4.2",
     "@hashpass/config": "workspace:*",
     "@hashpass/types": "workspace:*",
     "@hashpass/utils": "workspace:*",

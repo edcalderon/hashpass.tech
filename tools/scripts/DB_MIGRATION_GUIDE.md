@@ -6,7 +6,7 @@ This guide explains how to migrate the database schema from the development Supa
 
 The migration process copies the complete database structure (schema only, no data) from:
 - **Source (Dev)**: `https://tgbdilebadmzqwubsijr.supabase.co`
-- **Production**: `https://fxgftanraszjjyeidvia.supabase.co`
+- **Production**: `https://mnnqryrdlhddorqsrtbn.supabase.co`
 
 ### What Gets Migrated
 
@@ -62,15 +62,15 @@ The migration process copies the complete database structure (schema only, no da
    - Replace `[YOUR-PASSWORD]` with your database password
 
 2. **Production Database**:
-   - Go to: https://supabase.com/dashboard/project/fxgftanraszjjyeidvia/settings/database
+   - Go to: https://supabase.com/dashboard/project/mnnqryrdlhddorqsrtbn/settings/database
    - Copy the "URI" connection string
    - Replace `[YOUR-PASSWORD]` with your database password
 
 ### Step 2: Set Environment Variables
 
 ```bash
-export SOURCE_DB_URL="postgresql://postgres:[DEV-PASSWORD]@db.tgbdilebadmzqwubsijr.supabase.co:5432/postgres"
-export PROD_DB_URL="postgresql://postgres:[PROD-PASSWORD]@db.fxgftanraszjjyeidvia.supabase.co:5432/postgres"
+export SOURCE_DB_URL="<SRC_DB>"
+export PROD_DB_URL="<PRD_DB>"
 ```
 
 **⚠️ Security Note:** These connection strings contain passwords. Don't commit them to version control.
@@ -198,5 +198,3 @@ If you encounter issues:
 2. Verify connection strings and passwords
 3. Check Supabase dashboard for database status
 4. Review the migration logs for specific errors
-
-

@@ -13,6 +13,7 @@ Tenant deployment metadata is centralized in:
 Current tenants:
 
 - `core` (`hashpass.tech`, Amplify `dy8duury54wam` / `us-east-2`)
+- `bsl` (`bsl.hashpass.tech`, AWS pipeline + SSM sync, `bsl-dev.hashpass.tech` / `bsl.hashpass.tech`)
 - `blockchainsummit` (`blockchainsummit.hashpass.lat`, Amplify `d951nuj7hrqeg` / `sa-east-1`)
 
 Shared branch cadence:
@@ -26,8 +27,10 @@ Release flow:
 - `release:promote` promotes a `develop` release onto `main`
 - `release:pipeline` remains the tenant/deploy pipeline for infra and Amplify work
 - `release:dev` / `release:prod` target `core` by default
-- `release:bsl:dev` / `release:bsl:prod` target the BSL tenant explicitly
+- `release:bsl:dev` / `release:bsl:prod` target the BSL tenant explicitly and follow the AWS pipeline path
 - `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it
+
+BSL deployment and sync helpers use the `/hashpass/[env]/` SSM namespace. Keep those scripts separate from the Amplify-managed `core` track.
 
 The branch-aware release flow:
 

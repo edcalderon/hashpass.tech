@@ -1,6 +1,8 @@
 # HashPass Infra
 
-This workspace package is the first SST-based replacement layer for Amplify.
+This workspace package manages the BSL SST-based pipeline that replaces the legacy Amplify path for `bsl.hashpass.tech`.
+
+The main `hashpass.tech` app still follows the separate Amplify track documented in the repo root.
 
 It keeps the BSL web app deployment config in one place. The dev and deploy
 scripts call the SST CLI directly, while `doctor` wraps the upstream

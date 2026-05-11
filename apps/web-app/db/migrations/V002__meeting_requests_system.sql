@@ -39,18 +39,23 @@ CREATE TABLE IF NOT EXISTS bsl_speakers (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_bsl_speakers_user_id ON bsl_speakers(user_id);
-CREATE INDEX idx_bsl_speakers_slug ON bsl_speakers(slug);
-CREATE INDEX idx_bsl_speakers_day ON bsl_speakers(day);
-CREATE INDEX idx_bsl_speakers_active ON bsl_speakers(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_bsl_speakers_user_id ON bsl_speakers(user_id);
+CREATE INDEX IF NOT EXISTS idx_bsl_speakers_slug ON bsl_speakers(slug);
+CREATE INDEX IF NOT EXISTS idx_bsl_speakers_day ON bsl_speakers(day);
+CREATE INDEX IF NOT EXISTS idx_bsl_speakers_active ON bsl_speakers(is_active) WHERE is_active = true;
 
 -- ============================================================================
 -- Meeting Requests Table
 -- ============================================================================
 
-CREATE TYPE meeting_request_status AS ENUM (
-  'pending', 'accepted', 'declined', 'expired', 'cancelled', 'completed'
-);
+DO $$
+BEGIN
+  CREATE TYPE meeting_request_status AS ENUM (
+    'pending', 'accepted', 'declined', 'expired', 'cancelled', 'completed'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS meeting_requests (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -83,17 +88,18 @@ CREATE TABLE IF NOT EXISTS meeting_requests (
   
   -- Timestamps
   created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
   
-  -- Prevent duplicate requests
-  CONSTRAINT unique_pending_request UNIQUE (requester_id, speaker_id, status)
-    WHERE status = 'pending'
+  -- Prevent duplicate pending requests via a partial unique index below.
 );
 
-CREATE INDEX idx_meeting_requests_requester ON meeting_requests(requester_id);
-CREATE INDEX idx_meeting_requests_speaker ON meeting_requests(speaker_id);
-CREATE INDEX idx_meeting_requests_status ON meeting_requests(status);
-CREATE INDEX idx_meeting_requests_expires ON meeting_requests(expires_at) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_meeting_requests_requester ON meeting_requests(requester_id);
+CREATE INDEX IF NOT EXISTS idx_meeting_requests_speaker ON meeting_requests(speaker_id);
+CREATE INDEX IF NOT EXISTS idx_meeting_requests_status ON meeting_requests(status);
+CREATE INDEX IF NOT EXISTS idx_meeting_requests_expires ON meeting_requests(expires_at) WHERE status = 'pending';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_meeting_requests_unique_pending_request
+  ON meeting_requests(requester_id, speaker_id)
+  WHERE status = 'pending';
 
 -- ============================================================================
 -- User Blocks Table (for blocking users)
@@ -109,17 +115,22 @@ CREATE TABLE IF NOT EXISTS user_blocks (
   CONSTRAINT unique_block UNIQUE (blocker_id, blocked_id)
 );
 
-CREATE INDEX idx_user_blocks_blocker ON user_blocks(blocker_id);
-CREATE INDEX idx_user_blocks_blocked ON user_blocks(blocked_id);
+CREATE INDEX IF NOT EXISTS idx_user_blocks_blocker ON user_blocks(blocker_id);
+CREATE INDEX IF NOT EXISTS idx_user_blocks_blocked ON user_blocks(blocked_id);
 
 -- ============================================================================
 -- Meetings Table (confirmed meetings)
 -- ============================================================================
 
-CREATE TYPE meeting_status AS ENUM (
-  'scheduled', 'confirmed', 'tentative', 'in_progress', 
-  'completed', 'cancelled', 'no_show'
-);
+DO $$
+BEGIN
+  CREATE TYPE meeting_status AS ENUM (
+    'scheduled', 'confirmed', 'tentative', 'in_progress',
+    'completed', 'cancelled', 'no_show'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS meetings (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -153,10 +164,10 @@ CREATE TABLE IF NOT EXISTS meetings (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_meetings_speaker ON meetings(speaker_id);
-CREATE INDEX idx_meetings_requester ON meetings(requester_id);
-CREATE INDEX idx_meetings_scheduled ON meetings(scheduled_at);
-CREATE INDEX idx_meetings_status ON meetings(status);
+CREATE INDEX IF NOT EXISTS idx_meetings_speaker ON meetings(speaker_id);
+CREATE INDEX IF NOT EXISTS idx_meetings_requester ON meetings(requester_id);
+CREATE INDEX IF NOT EXISTS idx_meetings_scheduled ON meetings(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_meetings_status ON meetings(status);
 
 -- ============================================================================
 -- Chat Messages Table
@@ -171,9 +182,9 @@ CREATE TABLE IF NOT EXISTS meeting_chat_messages (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_chat_messages_request ON meeting_chat_messages(meeting_request_id);
-CREATE INDEX idx_chat_messages_sender ON meeting_chat_messages(sender_id);
-CREATE INDEX idx_chat_messages_created ON meeting_chat_messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_request ON meeting_chat_messages(meeting_request_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON meeting_chat_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created ON meeting_chat_messages(created_at);
 
 -- Chat last seen tracking
 CREATE TABLE IF NOT EXISTS chat_last_seen (
@@ -202,7 +213,7 @@ CREATE TABLE IF NOT EXISTS pass_request_limits (
   CONSTRAINT unique_user_limits UNIQUE (user_id)
 );
 
-CREATE INDEX idx_pass_limits_user ON pass_request_limits(user_id);
+CREATE INDEX IF NOT EXISTS idx_pass_limits_user ON pass_request_limits(user_id);
 
 -- ============================================================================
 -- Helper Functions
@@ -310,14 +321,17 @@ END;
 $$;
 
 -- Apply updated_at triggers
+DROP TRIGGER IF EXISTS trg_bsl_speakers_updated_at ON bsl_speakers;
 CREATE TRIGGER trg_bsl_speakers_updated_at
   BEFORE UPDATE ON bsl_speakers
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_meeting_requests_updated_at ON meeting_requests;
 CREATE TRIGGER trg_meeting_requests_updated_at
   BEFORE UPDATE ON meeting_requests
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_meetings_updated_at ON meetings;
 CREATE TRIGGER trg_meetings_updated_at
   BEFORE UPDATE ON meetings
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();

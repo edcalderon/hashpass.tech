@@ -1,4 +1,5 @@
 import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../../lib/supabase-server';
+import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -191,6 +192,26 @@ export async function POST(request: Request) {
 
     const session = verificationResult.data?.session || null;
     const user = verificationResult.data?.user || null;
+
+    if (user?.id && user?.email) {
+      await syncPublicUserRegistry(request, {
+        provider: 'supabase',
+        authUserId: user.id,
+        email: user.email,
+        firstName: user.user_metadata?.first_name || null,
+        lastName: user.user_metadata?.last_name || null,
+        fullName: user.user_metadata?.full_name || null,
+        avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        status: user.user_metadata?.status || 'active',
+        emailVerifiedAt: user.email_confirmed_at || user.confirmed_at || null,
+        lastSignInAt: user.last_sign_in_at || null,
+        authMetadata: user.app_metadata || {},
+        profileMetadata: user.user_metadata || {},
+        providerIds: {
+          supabase: user.id,
+        },
+      });
+    }
 
     // Mark the code as used only after the Supabase session is created successfully.
     await supabase

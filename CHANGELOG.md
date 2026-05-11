@@ -1,3 +1,47 @@
+## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3-dev.2...v1.7.4) (2026-05-11)
+
+
+### Bug Fixes
+
+* Improve PWA icon resolution with proper require fallback ([8a54c8f](https://github.com/edcalderon/hashpass.tech/commit/8a54c8f763a2bad3b0b7f1ef410dd2cd025b25cc))
+* Properly resolve PWA icon URIs with correct web fallbacks ([74a3a8e](https://github.com/edcalderon/hashpass.tech/commit/74a3a8e70c794a485f97936937e9fabd4c6ea524))
+
+
+### Features
+
+* Add "don't show again" checkbox to PWA install modal ([4174a2a](https://github.com/edcalderon/hashpass.tech/commit/4174a2a1d051b32cb902dd06af822d0c4568bcf8))
+* Add "don't show again" checkbox to PWA modal footer and fix icon loading ([934c0cb](https://github.com/edcalderon/hashpass.tech/commit/934c0cb017c439b54d92397e59fcb0bfa859971b))
+
+
+
+## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
+
+
+
+
+
+## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3-dev.2...v1.7.4) (2026-05-11)
+
+
+### Bug Fixes
+
+* Improve PWA icon resolution with proper require fallback ([8a54c8f](https://github.com/edcalderon/hashpass.tech/commit/8a54c8f763a2bad3b0b7f1ef410dd2cd025b25cc))
+* Properly resolve PWA icon URIs with correct web fallbacks ([74a3a8e](https://github.com/edcalderon/hashpass.tech/commit/74a3a8e70c794a485f97936937e9fabd4c6ea524))
+
+
+### Features
+
+* Add "don't show again" checkbox to PWA install modal ([4174a2a](https://github.com/edcalderon/hashpass.tech/commit/4174a2a1d051b32cb902dd06af822d0c4568bcf8))
+* Add "don't show again" checkbox to PWA modal footer and fix icon loading ([934c0cb](https://github.com/edcalderon/hashpass.tech/commit/934c0cb017c439b54d92397e59fcb0bfa859971b))
+
+
+
+## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
+
+
+
+
+
 ## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
 
 ## [1.7.3-dev.2](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3-dev.1...v1.7.3-dev.2) (2026-05-11)

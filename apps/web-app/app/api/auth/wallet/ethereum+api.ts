@@ -1,6 +1,7 @@
 import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 import { SiweMessage } from 'siwe';
 import { ethers } from 'ethers';
+import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 
 function badRequest(message: string) {
   return new Response(JSON.stringify({ error: message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
@@ -162,11 +163,12 @@ export async function POST(request: Request) {
 
     // Get or create user
     let userId = walletAuth.user_id;
+    const walletEmail = `${normalizedAddress}@wallet.ethereum`;
 
     if (!userId) {
       // Create new user with wallet address as identifier
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: `${normalizedAddress}@wallet.ethereum`,
+        email: walletEmail,
         email_confirm: true,
         user_metadata: {
           wallet_address: checksummedAddress, // Store checksummed address in metadata
@@ -182,7 +184,31 @@ export async function POST(request: Request) {
       }
 
       userId = newUser.user.id;
+    }
 
+    await syncPublicUserRegistry(request, {
+      provider: 'wallet.ethereum',
+      authUserId: userId,
+      email: walletEmail,
+      status: 'active',
+      authMetadata: {
+        auth_provider: 'ethereum',
+        wallet_address: checksummedAddress,
+        wallet_address_normalized: normalizedAddress,
+        wallet_type: 'ethereum',
+      },
+      profileMetadata: {
+        wallet_address: checksummedAddress,
+        wallet_address_normalized: normalizedAddress,
+        wallet_type: 'ethereum',
+      },
+      providerIds: {
+        supabase: userId,
+        wallet: normalizedAddress,
+      },
+    });
+
+    if (!walletAuth.user_id) {
       // Link wallet to user
       await supabase
         .from('wallet_auth')
@@ -199,8 +225,6 @@ export async function POST(request: Request) {
     }
 
     // Generate a session for the user using admin API
-    const walletEmail = `${normalizedAddress}@wallet.ethereum`;
-    
     // Get the callback URL for redirect
     const origin = new URL(request.url).origin;
     const callbackUrl = `${origin}/(shared)/auth/callback`;

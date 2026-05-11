@@ -10,9 +10,9 @@
  *   node scripts/migrate-db-schema-supabase.mjs
  * 
  * Environment Variables Required:
- *   SOURCE_SUPABASE_URL - Source Supabase project URL (https://xxx.supabase.co)
+ *   SOURCE_SUPABASE_URL - Source database URL
  *   SOURCE_SUPABASE_SERVICE_KEY - Source Supabase service role key
- *   PROD_SUPABASE_URL - Production Supabase project URL (https://xxx.supabase.co)
+ *   PROD_SUPABASE_URL - Production database URL
  *   PROD_SUPABASE_SERVICE_KEY - Production Supabase service role key
  */
 
@@ -26,12 +26,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Source database (dev)
-const SOURCE_SUPABASE_URL = process.env.SOURCE_SUPABASE_URL || 'https://tgbdilebadmzqwubsijr.supabase.co';
-const SOURCE_SUPABASE_SERVICE_KEY = process.env.SOURCE_SUPABASE_SERVICE_KEY;
+const sourceSupabaseUrl = process.env.SOURCE_SUPABASE_URL || '';
+const sourceSupabaseServiceKey = process.env.SOURCE_SUPABASE_SERVICE_KEY;
 
 // Production database
-const PROD_SUPABASE_URL = process.env.PROD_SUPABASE_URL || 'https://fxgftanraszjjyeidvia.supabase.co';
-const PROD_SUPABASE_SERVICE_KEY = process.env.PROD_SUPABASE_SERVICE_KEY;
+const prodSupabaseUrl = process.env.PROD_SUPABASE_URL || '';
+const prodSupabaseServiceKey = process.env.PROD_SUPABASE_SERVICE_KEY;
 
 /**
  * Extract schema SQL from source database
@@ -156,8 +156,8 @@ async function executeSQL(client, sql, description) {
  */
 async function migrateWithPgDump() {
   console.log('🔄 Starting database migration using pg_dump...\n');
-  console.log(`Source: ${SOURCE_SUPABASE_URL}`);
-  console.log(`Production: ${PROD_SUPABASE_URL}\n`);
+  console.log(`Source: ${sourceSupabaseUrl}`);
+  console.log(`Production: ${prodSupabaseUrl}\n`);
   
   // Check if pg_dump is available
   try {
@@ -188,8 +188,8 @@ async function migrateWithPgDump() {
   if (!process.env.SOURCE_DB_URL || !process.env.PROD_DB_URL) {
     console.error('❌ Database connection strings required:');
     console.error('\nPlease set environment variables:');
-    console.error('  export SOURCE_DB_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"');
-    console.error('  export PROD_DB_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"');
+    console.error('  export SOURCE_DB_URL="<SRC_DB>"');
+    console.error('  export PROD_DB_URL="<PROD_DB>"');
     console.error('\nOr run:');
     console.error('  SOURCE_DB_URL="..." PROD_DB_URL="..." node scripts/migrate-db-schema-supabase.mjs\n');
     process.exit(1);
@@ -230,5 +230,3 @@ migrateWithPgDump().catch((error) => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
-
-

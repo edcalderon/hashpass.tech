@@ -71,6 +71,7 @@ pnpm run build:all    # turbo build all packages
 
 Set `AWS_ACCOUNT_ID` or `EXPECTED_AWS_ACCOUNT_ID` in your local shell or GitHub repository variables when you want the infra helpers to verify the target AWS account without hardcoding it in the repo.
 See [docs/INFRA_NAMING_GUIDE.md](docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the new infra track.
+Main `hashpass.tech` hosting still uses the Amplify track. BSL `bsl.hashpass.tech` uses the dedicated AWS pipeline and SSM parameter sync helpers instead of `amplify publish`.
 
 1. **Clone the repo:**
    ```bash
@@ -128,7 +129,7 @@ Deploy:
 chmod +x ./tools/scripts/deploy-bslatam.sh
 ./tools/scripts/deploy-bslatam.sh
 ```
-For Amplify: configure AWS credentials and run `amplify publish`.
+For the main `hashpass.tech` Amplify track: configure AWS credentials and run `amplify publish`.
 
 ---
 

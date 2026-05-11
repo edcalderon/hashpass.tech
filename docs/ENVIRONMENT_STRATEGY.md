@@ -12,6 +12,10 @@ We use a strictly standardized set of environment profiles to ensure consistency
 | **`dev`** | Shared staging/development on AWS. | `/hashpass/dev/` / `*-dev` | `https://sso-dev.hashpass.co` |
 | **`production`**| Live production environment on AWS. | `/hashpass/production/` / `*-prod`| `https://sso.hashpass.co` |
 
+> Deployment split:
+> - `hashpass.tech` / `core` stays on the Amplify-managed track.
+> - `bsl.hashpass.tech` / `bsl` uses the dedicated AWS pipeline and the same `/hashpass/[env]/` SSM namespace with BSL-specific aliases.
+
 ---
 
 ## 2. The "Source of Truth" (`.env`)

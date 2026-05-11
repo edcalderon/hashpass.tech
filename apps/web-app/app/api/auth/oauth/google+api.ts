@@ -1,4 +1,5 @@
 import { ExpoResponse } from 'expo-router/server';
+import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 
 /* eslint-disable no-restricted-syntax -- Server-side OAuth callback must call Google and Directus directly. */
 
@@ -242,6 +243,15 @@ export async function GET(request: Request): Promise<Response> {
     const userProfile = await profileResponse.json();
     const userEmail = userProfile.email;
     const userName = userProfile.name || userProfile.email?.split('@')[0];
+    const userFirstName =
+      userProfile.given_name ||
+      userName?.split(' ')?.[0] ||
+      userName ||
+      null;
+    const userLastName =
+      userProfile.family_name ||
+      userName?.split(' ')?.slice(1).join(' ') ||
+      null;
     console.log('[Google OAuth] User email from Google:', userEmail);
     console.log('[Google OAuth] User name from Google:', userName);
     
@@ -330,6 +340,30 @@ export async function GET(request: Request): Promise<Response> {
       }
 
       if (userId) {
+        await syncPublicUserRegistry(request, {
+          provider: 'google',
+          authUserId: userId,
+          email: userEmail,
+          firstName: userFirstName,
+          lastName: userLastName,
+          fullName: userName || undefined,
+          avatarUrl: userProfile.picture || undefined,
+          status: 'active',
+          authMetadata: {
+            auth_provider: 'google',
+            directus_user_id: userId,
+            google_sub: userProfile.sub,
+          },
+          profileMetadata: {
+            google_profile: userProfile,
+            directus_user_id: userId,
+          },
+          providerIds: {
+            google: userProfile.sub,
+            directus: userId,
+          },
+        });
+
         console.log('[Google OAuth] Ensuring Directus user can receive API-issued tokens...');
         const normalizeUserResponse = await fetch(`${DIRECTUS_URL}/users/${userId}`, {
           method: 'PATCH',

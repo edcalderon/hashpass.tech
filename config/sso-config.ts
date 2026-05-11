@@ -57,9 +57,9 @@ export const SSO_CONFIG = {
 export const LEGACY_SUPABASE_CONFIG = {
   // Old target database (now connected to Directus)
   TARGET_DB: {
-    url: 'https://fxgftanraszjjyeidvia.supabase.co',
+    url: 'https://mnnqryrdlhddorqsrtbn.supabase.co',
     host: 'aws-0-us-east-2.pooler.supabase.com',
-    user: 'postgres.fxgftanraszjjyeidvia',
+    user: 'postgres.mnnqryrdlhddorqsrtbn',
     // Note: Database is now accessed via Directus SSO
   },
   
@@ -105,7 +105,7 @@ export const MIGRATION_STATUS = {
     completed: true,
     users_migrated: 72,
     functions_migrated: 43,
-    target_db: 'fxgftanraszjjyeidvia',
+    target_db: 'mnnqryrdlhddorqsrtbn',
     date: '2025-12-18',
   },
   
