@@ -221,18 +221,30 @@ const PWAPrompt = () => {
   const logoSrc = (() => {
     try {
       const resolved = Image.resolveAssetSource(require('../assets/android-chrome-192x192.png'));
-      return resolved?.uri || resolved;
+      if (resolved && typeof resolved === 'object' && 'uri' in resolved) {
+        return resolved.uri;
+      }
+      return resolved;
     } catch {
-      return require('../assets/android-chrome-192x192.png');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        return `${window.location.origin}/favicon.ico`;
+      }
+      return '/favicon.ico';
     }
   })();
 
   const primaryIconSrc = (() => {
     try {
       const resolved = Image.resolveAssetSource(require('../assets/android-chrome-512x512.png'));
-      return resolved?.uri || resolved;
+      if (resolved && typeof resolved === 'object' && 'uri' in resolved) {
+        return resolved.uri;
+      }
+      return resolved;
     } catch {
-      return require('../assets/android-chrome-512x512.png');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        return `${window.location.origin}/assets/android-chrome-192x192.png`;
+      }
+      return logoSrc;
     }
   })();
 
