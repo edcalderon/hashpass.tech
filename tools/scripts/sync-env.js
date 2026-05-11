@@ -22,6 +22,35 @@ const {
 } = require('./lib/tenant-config');
 
 const ROOT_DIR = path.resolve(__dirname, '../../');
+const PROCESS_ENV_OVERRIDE_KEYS = [
+  'BETTER_AUTH_SECRET',
+  'BETTER_AUTH_SECRET_DEV',
+  'BETTER_AUTH_SECRET_PROD',
+  'BETTER_AUTH_GOOGLE_CLIENT_ID',
+  'BETTER_AUTH_GOOGLE_CLIENT_SECRET',
+  'BETTER_AUTH_GOOGLE_CLIENT_ID_DEV',
+  'BETTER_AUTH_GOOGLE_CLIENT_ID_PROD',
+  'BETTER_AUTH_GOOGLE_CLIENT_SECRET_DEV',
+  'BETTER_AUTH_GOOGLE_CLIENT_SECRET_PROD',
+  'BETTER_AUTH_DATABASE_URL',
+  'BETTER_AUTH_DATABASE_URL_DEV',
+  'BETTER_AUTH_DATABASE_URL_PROD',
+  'BSL_BETTER_AUTH_DATABASE_URL',
+  'BSL_BETTER_AUTH_DATABASE_URL_DEV',
+  'BSL_BETTER_AUTH_DATABASE_URL_PROD',
+];
+
+function applyProcessEnvOverrides(config) {
+  const nextConfig = { ...config };
+
+  for (const key of PROCESS_ENV_OVERRIDE_KEYS) {
+    if (process.env[key]) {
+      nextConfig[key] = process.env[key];
+    }
+  }
+
+  return nextConfig;
+}
 
 function parseArgs(argv) {
   const options = {
@@ -81,7 +110,7 @@ function loadRootEnv() {
 
   if (fs.existsSync(rootEnvPath)) {
     console.log('📄 Loading root .env file...');
-    return dotenv.parse(fs.readFileSync(rootEnvPath));
+    return applyProcessEnvOverrides(dotenv.parse(fs.readFileSync(rootEnvPath)));
   }
 
   console.warn(`⚠️ Root .env not found at ${rootEnvPath}`);
@@ -169,6 +198,28 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     'DATABASE_URL_DEV',
     'DATABASE_URL_PROD',
   ]);
+  const betterAuthUrl = runtime.apiBaseUrl
+    ? `${String(runtime.apiBaseUrl).trim().replace(/\/$/, '')}/bsl-auth`
+    : '';
+  const betterAuthTrustedOrigins = [
+    'http://localhost:8081',
+    'http://localhost:19006',
+    'http://127.0.0.1:8081',
+    'https://api.hashpass.tech',
+    'https://api-dev.hashpass.tech',
+    'https://bsl.hashpass.tech',
+    'https://bsl-dev.hashpass.tech',
+  ].join(',');
+  const betterAuthGoogleClientId = resolveBoundValue('BETTER_AUTH_GOOGLE_CLIENT_ID', [
+    'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_ID_DEV',
+    'GOOGLE_CLIENT_ID_PROD',
+  ]);
+  const betterAuthGoogleClientSecret = resolveBoundValue('BETTER_AUTH_GOOGLE_CLIENT_SECRET', [
+    'GOOGLE_CLIENT_SECRET',
+    'GOOGLE_CLIENT_SECRET_DEV',
+    'GOOGLE_CLIENT_SECRET_PROD',
+  ]);
 
   const canonicalEntries = [
     ['EXPO_PUBLIC_SUPABASE_URL', supabaseUrl],
@@ -182,6 +233,15 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     ['DIRECTUS_URL', runtime.directusUrl],
     ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
     ['EXPO_PUBLIC_API_BASE_URL', runtime.apiBaseUrl],
+    ['EXPO_PUBLIC_BETTER_AUTH_URL', betterAuthUrl],
+    ['EXPO_PUBLIC_BETTER_AUTH_BASE_PATH', '/api/bsl-auth'],
+    ['BETTER_AUTH_URL', betterAuthUrl],
+    ['BETTER_AUTH_BASE_PATH', '/api/bsl-auth'],
+    ['BETTER_AUTH_DATABASE_URL', supabaseDatabaseUrl],
+    ['BSL_BETTER_AUTH_DATABASE_URL', supabaseDatabaseUrl],
+    ['BETTER_AUTH_TRUSTED_ORIGINS', betterAuthTrustedOrigins],
+    ['BETTER_AUTH_GOOGLE_CLIENT_ID', betterAuthGoogleClientId],
+    ['BETTER_AUTH_GOOGLE_CLIENT_SECRET', betterAuthGoogleClientSecret],
     ['EXPO_PUBLIC_FRONTEND_URL', runtime.frontendUrl],
     ['FRONTEND_URL', runtime.frontendUrl],
     ['PUBLIC_URL', runtime.directusUrl],
@@ -364,6 +424,19 @@ try {
     'EXPO_PUBLIC_FRONTEND_URL',
     'FRONTEND_URL',
     'AUTH_PROVIDER',
+    'EXPO_PUBLIC_BETTER_AUTH_URL',
+    'EXPO_PUBLIC_BETTER_AUTH_BASE_PATH',
+    'BETTER_AUTH_URL',
+    'BETTER_AUTH_BASE_PATH',
+    'BETTER_AUTH_SECRET',
+    'BETTER_AUTH_SECRETS',
+    'BETTER_AUTH_DATABASE_URL',
+    'BSL_BETTER_AUTH_DATABASE_URL',
+    'BETTER_AUTH_DATABASE_SSL',
+    'BETTER_AUTH_TRUSTED_ORIGINS',
+    'BETTER_AUTH_ALLOWED_HOSTS',
+    'BETTER_AUTH_GOOGLE_CLIENT_ID',
+    'BETTER_AUTH_GOOGLE_CLIENT_SECRET',
     'DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED',
     'DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED',
     // OTP / transactional email + SMS delivery configuration
@@ -387,6 +460,18 @@ try {
     }
   });
   newVars.NODE_ENV = options.environment === 'production' ? 'production' : 'development';
+
+  const keysToDrop = [
+    'BSL_BETTER_AUTH_DATABASE_URL',
+    'BETTER_AUTH_TRUSTED_ORIGINS',
+    'BETTER_AUTH_GOOGLE_CLIENT_ID',
+    'BETTER_AUTH_GOOGLE_CLIENT_SECRET',
+  ];
+  keysToDrop.forEach((key) => {
+    if (key in newVars) {
+      delete newVars[key];
+    }
+  });
 
   Object.keys(newVars).forEach((key) => {
     if (newVars[key] === undefined) delete newVars[key];

@@ -246,6 +246,16 @@ async function auditTenant(tenantName, environment, configPath) {
 
   const lambdaName = runtime.lambda.functionName;
   const lambdaRegion = runtime.lambda.region;
+  const betterAuthBaseUrl = runtime.apiBaseUrl ? `${runtime.apiBaseUrl.replace(/\/$/, '')}/bsl-auth` : '';
+  const betterAuthTrustedOrigins = [
+    'http://localhost:8081',
+    'http://localhost:19006',
+    'http://127.0.0.1:8081',
+    'https://api.hashpass.tech',
+    'https://api-dev.hashpass.tech',
+    'https://bsl.hashpass.tech',
+    'https://bsl-dev.hashpass.tech',
+  ].join(',');
 
   log(`Auditing Lambda: ${lambdaName} (${lambdaRegion})`, 'info');
   const lambdaEnv = getLambdaEnv(lambdaName, lambdaRegion);
@@ -258,6 +268,12 @@ async function auditTenant(tenantName, environment, configPath) {
       ['EXPO_PUBLIC_SUPABASE_URL', runtime.supabaseUrl],
       ['DIRECTUS_URL', runtime.directusUrl],
       ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
+      ['EXPO_PUBLIC_BETTER_AUTH_URL', betterAuthBaseUrl],
+      ['EXPO_PUBLIC_BETTER_AUTH_BASE_PATH', '/api/bsl-auth'],
+      ['BETTER_AUTH_URL', betterAuthBaseUrl],
+      ['BETTER_AUTH_BASE_PATH', '/api/bsl-auth'],
+      ['BETTER_AUTH_DATABASE_URL', runtime.supabaseEnv.databaseUrl || ''],
+      ['BSL_BETTER_AUTH_DATABASE_URL', runtime.supabaseEnv.databaseUrl || ''],
     ].filter((pair) => Boolean(pair[1]));
 
     const requiredLambdaPresence = [
@@ -266,6 +282,7 @@ async function auditTenant(tenantName, environment, configPath) {
       'NODEMAILER_USER',
       'NODEMAILER_PASS',
       'NODEMAILER_FROM',
+      'BETTER_AUTH_SECRET',
     ];
 
     const lambdaMismatches = [];

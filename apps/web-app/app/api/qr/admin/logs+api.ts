@@ -29,7 +29,7 @@ async function getAuthUserId(request: Request): Promise<string | null> {
   
   try {
     const token = authHeader.replace('Bearer ', '');
-    const { user, error } = await verifyUserToken(token);
+    const { user, error } = await verifyUserToken(token, request);
     
     if (error || !user) return null;
     return user.id;
@@ -100,4 +100,3 @@ export async function GET(request: Request) {
     return new Response(JSON.stringify({ error: 'Unexpected server error' }), { status: 500 });
   }
 }
-

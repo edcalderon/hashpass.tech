@@ -50,7 +50,7 @@ We believe the future of events should be shaped by the community. By making Has
 
 ### Authentication
 
-Production Google sign-in now uses the API-owned OAuth bridge documented in [docs/AUTH_FLOW.md](docs/AUTH_FLOW.md). Directus is still used as the identity backend, but browser login no longer depends on Directus session cookies across domains.
+Main `hashpass.tech` Google sign-in uses the API-owned Directus OAuth bridge documented in [docs/AUTH_FLOW.md](docs/AUTH_FLOW.md). BSL (`bsl.hashpass.tech`) uses a separate Better Auth social-login flow so event auth can evolve independently without changing the main Directus flow.
 
 Use **pnpm** and **Turborepo** at the repo root:
 

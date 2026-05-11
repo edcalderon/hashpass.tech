@@ -162,11 +162,11 @@ export default function ProfileScreen() {
 
       // Update user metadata - for now, just update locally
       // TODO: Implement provider-agnostic profile update API
-      // This will need to call the appropriate provider's API based on AUTH_PROVIDER
+      // This will need to call the active auth provider's API.
       console.log('Avatar update requested for:', avatarUrl);
       
-      // If using Supabase auth (backward compatibility), update there
-      if (process.env.EXPO_PUBLIC_AUTH_PROVIDER === 'supabase') {
+      // Update Supabase metadata when the active auth provider is Supabase.
+      if (authService.getProviderName() === 'supabase') {
         const { error } = await supabase.auth.updateUser({
           data: {
             ...activeUser.user_metadata,

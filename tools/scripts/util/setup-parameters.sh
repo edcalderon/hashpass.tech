@@ -15,10 +15,23 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Load environment variables
-if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
-fi
+# Load environment variables safely.
+# The root .env contains quoted secrets and URLs, so avoid xargs parsing.
+load_root_env() {
+    if [ ! -f .env ]; then
+        return
+    fi
+
+    while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            eval "export $line"
+        fi
+    done < <(
+        node -e 'const fs = require("fs"); const dotenv = require("dotenv"); const data = dotenv.parse(fs.readFileSync(".env")); Object.entries(data).forEach(([key, value]) => console.log(`${key}=${JSON.stringify(value)}`));'
+    )
+}
+
+load_root_env
 
 # 2. Define Mapping/Suffixes (Matches propagate-env/sync-env)
 case "$ENV_NAME" in
@@ -34,11 +47,50 @@ get_config_value() {
     local override_key="${key}${SUFFIX}"
     
     # If override exists, return it, otherwise return base key value
-    if [ ! -z "${!override_key}" ]; then
+    if [ -n "${!override_key}" ]; then
         echo "${!override_key}"
-    else
-        echo "${!key}"
+        return
     fi
+
+    if [ -n "${!key}" ]; then
+        echo "${!key}"
+        return
+    fi
+
+    case "$key" in
+        EXPO_PUBLIC_BETTER_AUTH_URL|BETTER_AUTH_URL)
+            local api_base
+            api_base="$(get_config_value EXPO_PUBLIC_API_BASE_URL)"
+            if [ -n "$api_base" ]; then
+                echo "${api_base%/}/bsl-auth"
+            fi
+            ;;
+        EXPO_PUBLIC_BETTER_AUTH_BASE_PATH|BETTER_AUTH_BASE_PATH)
+            echo "/api/bsl-auth"
+            ;;
+        BETTER_AUTH_DATABASE_URL|BSL_BETTER_AUTH_DATABASE_URL)
+            local db_url
+            db_url="$(get_config_value BSL_SUPABASE_DB_URL)"
+            if [ -z "$db_url" ]; then
+                db_url="$(get_config_value SUPABASE_DB_URL)"
+            fi
+            if [ -z "$db_url" ]; then
+                db_url="$(get_config_value DATABASE_URL)"
+            fi
+            if [ -n "$db_url" ]; then
+                echo "$db_url"
+            fi
+            ;;
+        BETTER_AUTH_GOOGLE_CLIENT_ID)
+            echo "$(get_config_value GOOGLE_CLIENT_ID)"
+            ;;
+        BETTER_AUTH_GOOGLE_CLIENT_SECRET)
+            echo "$(get_config_value GOOGLE_CLIENT_SECRET)"
+            ;;
+        BETTER_AUTH_TRUSTED_ORIGINS)
+            echo "http://localhost:8081,http://localhost:19006,http://127.0.0.1:8081,https://api.hashpass.tech,https://api-dev.hashpass.tech,https://bsl.hashpass.tech,https://bsl-dev.hashpass.tech"
+            ;;
+    esac
 }
 
 # Check prerequisites
@@ -250,6 +302,15 @@ PARAMETERS=(
     "EXPO_PUBLIC_BSL_SUPABASE_KEY|/hashpass/$ENV_NAME/bsl/supabase/anon-key|String|BSL Supabase anon key"
     "BSL_SUPABASE_SERVICE_ROLE_KEY|/hashpass/$ENV_NAME/bsl/supabase/service-role-key|SecureString|BSL Supabase service role key"
     "BSL_SUPABASE_DB_URL|/hashpass/$ENV_NAME/bsl/supabase/database-url|SecureString|BSL Supabase database URL"
+    "EXPO_PUBLIC_BETTER_AUTH_URL|/hashpass/$ENV_NAME/bsl/better-auth/public-url|String|BSL Better Auth public URL"
+    "EXPO_PUBLIC_BETTER_AUTH_BASE_PATH|/hashpass/$ENV_NAME/bsl/better-auth/public-base-path|String|BSL Better Auth public base path"
+    "BETTER_AUTH_URL|/hashpass/$ENV_NAME/bsl/better-auth/url|String|BSL Better Auth API URL"
+    "BETTER_AUTH_BASE_PATH|/hashpass/$ENV_NAME/bsl/better-auth/base-path|String|BSL Better Auth base path"
+    "BETTER_AUTH_DATABASE_URL|/hashpass/$ENV_NAME/bsl/better-auth/database-url|SecureString|BSL Better Auth database URL"
+    "BSL_BETTER_AUTH_DATABASE_URL|/hashpass/$ENV_NAME/bsl/better-auth/database-url|SecureString|BSL Better Auth database URL"
+    "BETTER_AUTH_TRUSTED_ORIGINS|/hashpass/$ENV_NAME/bsl/better-auth/trusted-origins|String|BSL Better Auth trusted origins"
+    "BETTER_AUTH_GOOGLE_CLIENT_ID|/hashpass/$ENV_NAME/bsl/better-auth/google-client-id|String|BSL Better Auth Google Client ID"
+    "BETTER_AUTH_GOOGLE_CLIENT_SECRET|/hashpass/$ENV_NAME/bsl/better-auth/google-client-secret|SecureString|BSL Better Auth Google Client Secret"
     "DIRECTUS_URL|/hashpass/$ENV_NAME/directus/url|String|Directus URL"
     "EXPO_PUBLIC_DIRECTUS_URL|/hashpass/$ENV_NAME/directus/public-url|String|Directus Public URL"
     "ADMIN_EMAIL|/hashpass/$ENV_NAME/admin/email|String|Directus Admin Email"

@@ -23,5 +23,6 @@ export {
 } from './directus-api-auth';
 export type { AuthenticatedRequest as DirectusAuthenticatedRequest } from './directus-api-auth';
 export { DirectusApiClient } from './providers/directus-api-client';
+export { BetterAuthProvider } from './providers/better-auth';
 export { useAuth } from './useAuth';
 export { useDirectusAuth } from './useDirectusAuth';

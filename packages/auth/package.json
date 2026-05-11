@@ -16,7 +16,8 @@
     "@hashpass/config": "workspace:*",
     "@hashpass/types": "workspace:*",
     "@hashpass/utils": "workspace:*",
-    "@supabase/supabase-js": "^2.81.1"
+    "@supabase/supabase-js": "^2.81.1",
+    "better-auth": "^1.6.10"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

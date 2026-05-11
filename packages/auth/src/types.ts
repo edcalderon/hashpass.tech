@@ -32,7 +32,7 @@ export interface AuthStateChangeCallback {
   (session: AuthSession | null): void;
 }
 
-export type AuthProvider = 'supabase' | 'directus' | 'keycloak';
+export type AuthProvider = 'supabase' | 'directus' | 'keycloak' | 'better-auth';
 
 /**
  * Abstract interface that all auth providers must implement
@@ -71,6 +71,10 @@ export interface AuthProviderConfig {
   directus?: {
     url: string;
     adminEmail?: string;
+  };
+  betterAuth?: {
+    baseURL?: string;
+    basePath: string;
   };
   keycloak?: {
     url: string;
