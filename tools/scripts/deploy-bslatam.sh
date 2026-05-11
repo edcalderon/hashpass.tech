@@ -10,9 +10,16 @@ MIGRATIONS_DIR="supabase/migrations"
 
 apply_with_psql() {
   echo "Applying migrations using psql..."
+  local database_url="${BSL_SUPABASE_DB_URL:-${SUPABASE_DB_URL:-${DATABASE_URL:-}}}"
+
+  if [[ -z "${database_url}" ]]; then
+    echo "Missing BSL Supabase database URL. Set BSL_SUPABASE_DB_URL or SUPABASE_DB_URL." 1>&2
+    exit 1
+  fi
+
   for f in $(ls -1 ${MIGRATIONS_DIR}/*.sql | sort); do
     echo " - Applying $f"
-    PGPASSWORD="${SUPABASE_DB_PASSWORD:-}" psql "${EXPO_PUBLIC_SUPABASE_URL}" -v ON_ERROR_STOP=1 -f "$f"
+    PGPASSWORD="${SUPABASE_DB_PASSWORD:-}" psql "${database_url}" -v ON_ERROR_STOP=1 -f "$f"
   done
 }
 
@@ -35,12 +42,12 @@ apply_with_supabase_cli() {
   }
 }
 
-if [[ -n "${SUPABASE_DB_URL:-}" ]] && command -v psql >/dev/null 2>&1; then
+if [[ -n "${BSL_SUPABASE_DB_URL:-${SUPABASE_DB_URL:-${DATABASE_URL:-}}}" ]] && command -v psql >/dev/null 2>&1; then
   apply_with_psql
 elif command -v supabase >/dev/null 2>&1; then
   apply_with_supabase_cli
 else
-  echo "No migration method available. Set SUPABASE_DB_URL and install psql, or install Supabase CLI and set SUPABASE_ACCESS_TOKEN/SUPABASE_PROJECT_REF." 1>&2
+  echo "No migration method available. Set BSL_SUPABASE_DB_URL (or SUPABASE_DB_URL) and install psql, or install Supabase CLI and set SUPABASE_ACCESS_TOKEN/SUPABASE_PROJECT_REF." 1>&2
   exit 1
 fi
 
@@ -132,5 +139,4 @@ else
 fi
 
 echo "Done."
-
 

@@ -2,6 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 import { config as loadDotenv } from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  hostnameFromRequest,
+  resolveServerSupabaseConfig,
+  type ServerSupabaseConfig,
+} from '../config/supabase-profiles';
 
 // This client is specifically for server-side operations
 // Only use this in API routes/server-side code
@@ -33,59 +38,87 @@ function loadServerEnvFiles() {
   envLoaded = true;
 }
 
-function normalizeEnvValue(value: string | undefined): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-type SupabaseEnvProfile = {
-  name: 'main' | 'dev';
-  supabaseUrl?: string;
-  supabaseServiceKey?: string;
+export function getSupabaseServerEnv(input?: Request | { hostname?: string; profileId?: string }): ServerSupabaseConfig & {
+  selectedProfile: string;
   usingDevFallback: boolean;
-};
-
-export function getSupabaseServerEnv() {
+} {
   loadServerEnvFiles();
 
-  const supabaseUrlMain = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL);
-  const supabaseUrlDev = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL_DEV);
-  const supabaseServiceKeyMain = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const supabaseServiceKeyDev = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY_DEV);
-
-  // Pick URL + service key from the same profile to avoid cross-project credential mixups.
-  const profiles: SupabaseEnvProfile[] = [
-    {
-      name: 'main',
-      supabaseUrl: supabaseUrlMain,
-      supabaseServiceKey: supabaseServiceKeyMain,
-      usingDevFallback: false,
-    },
-    {
-      name: 'dev',
-      supabaseUrl: supabaseUrlDev,
-      supabaseServiceKey: supabaseServiceKeyDev,
-      usingDevFallback: true,
-    },
-  ];
-
-  const selectedProfile =
-    profiles.find((profile) => profile.supabaseUrl && profile.supabaseServiceKey) ??
-    profiles.find((profile) => profile.supabaseUrl || profile.supabaseServiceKey);
+  const hostname = input instanceof Request ? hostnameFromRequest(input) : input?.hostname;
+  const resolved = resolveServerSupabaseConfig({
+    hostname,
+    profileId: input instanceof Request ? undefined : input?.profileId,
+  });
 
   return {
-    supabaseUrl: selectedProfile?.supabaseUrl,
-    supabaseServiceKey: selectedProfile?.supabaseServiceKey,
-    usingDevFallback: selectedProfile?.usingDevFallback ?? false,
-    selectedProfile: selectedProfile?.name ?? 'none',
+    ...resolved,
+    selectedProfile: resolved.profileId,
+    usingDevFallback: resolved.usingFallback,
   };
 }
 
-// Lazy initialization - only create client when actually used
-let _supabaseServer: ReturnType<typeof createClient> | null = null;
+// Lazy initialization - only create clients when actually used
+const supabaseServerClients = new Map<string, ReturnType<typeof createClient>>();
 
-function getSupabaseServer() {
+function createMockSupabaseClient(errorMsg: string): ReturnType<typeof createClient> {
+  // Create a mock chainable object that simulates Supabase query API.
+  const createMockQuery = (): any => {
+    return {
+      select: () => createMockQuery(),
+      insert: () => createMockQuery(),
+      update: () => createMockQuery(),
+      delete: () => createMockQuery(),
+      eq: () => createMockQuery(),
+      neq: () => createMockQuery(),
+      gt: () => createMockQuery(),
+      gte: () => createMockQuery(),
+      lt: () => createMockQuery(),
+      lte: () => createMockQuery(),
+      like: () => createMockQuery(),
+      ilike: () => createMockQuery(),
+      is: () => createMockQuery(),
+      in: () => createMockQuery(),
+      contains: () => createMockQuery(),
+      containedBy: () => createMockQuery(),
+      rangeLt: () => createMockQuery(),
+      rangeGte: () => createMockQuery(),
+      rangeLte: () => createMockQuery(),
+      rangeAdjacent: () => createMockQuery(),
+      overlaps: () => createMockQuery(),
+      textSearch: () => createMockQuery(),
+      match: () => createMockQuery(),
+      not: () => createMockQuery(),
+      or: () => createMockQuery(),
+      filter: () => createMockQuery(),
+      order: () => createMockQuery(),
+      limit: () => createMockQuery(),
+      offset: () => createMockQuery(),
+      range: () => createMockQuery(),
+      single: () => createMockQuery(),
+      maybeSingle: () => createMockQuery(),
+      then: (onFulfilled?: any, onRejected?: any) => {
+        const result = Promise.resolve({ data: null, error: new Error(errorMsg) });
+        return result.then(onFulfilled, onRejected);
+      },
+      catch: (onRejected?: any) => {
+        const result = Promise.resolve({ data: null, error: new Error(errorMsg) });
+        return result.catch(onRejected);
+      },
+      finally: (onFinally?: any) => {
+        const result = Promise.resolve({ data: null, error: new Error(errorMsg) });
+        return result.finally(onFinally);
+      },
+    };
+  };
+
+  return {
+    from: () => createMockQuery(),
+    rpc: () => createMockQuery(),
+    auth: { admin: {} },
+  } as unknown as ReturnType<typeof createClient>;
+}
+
+function getSupabaseServer(input?: Request | { hostname?: string; profileId?: string }) {
   // Check if we're in a browser/client environment
   const isClient = typeof window !== 'undefined';
 
@@ -97,7 +130,8 @@ function getSupabaseServer() {
     throw new Error('supabase-server.ts should only be used in server-side API routes. For client-side code, use lib/supabase.ts instead.');
   }
 
-  const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv();
+  const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile, profileId } =
+    getSupabaseServerEnv(input);
 
   // Check for missing environment variables - but don't crash, return a mock client
   if (!supabaseUrl || !supabaseServiceKey) {
@@ -118,68 +152,13 @@ function getSupabaseServer() {
 
     console.warn('⚠️ Supabase Server Configuration Warning:', errorMsg);
 
-    // Create a mock chainable object that simulates Supabase query API
-    // It needs to be both chainable AND thenable (Promise-like)
-    const createMockQuery = (): any => {
-      return {
-        // Chainable methods
-        select: () => createMockQuery(),
-        insert: () => createMockQuery(),
-        update: () => createMockQuery(),
-        delete: () => createMockQuery(),
-        eq: () => createMockQuery(),
-        neq: () => createMockQuery(),
-        gt: () => createMockQuery(),
-        gte: () => createMockQuery(),
-        lt: () => createMockQuery(),
-        lte: () => createMockQuery(),
-        like: () => createMockQuery(),
-        ilike: () => createMockQuery(),
-        is: () => createMockQuery(),
-        in: () => createMockQuery(),
-        contains: () => createMockQuery(),
-        containedBy: () => createMockQuery(),
-        rangeLt: () => createMockQuery(),
-        rangeGte: () => createMockQuery(),
-        rangeLte: () => createMockQuery(),
-        rangeAdjacent: () => createMockQuery(),
-        overlaps: () => createMockQuery(),
-        textSearch: () => createMockQuery(),
-        match: () => createMockQuery(),
-        not: () => createMockQuery(),
-        or: () => createMockQuery(),
-        filter: () => createMockQuery(),
-        order: () => createMockQuery(),
-        limit: () => createMockQuery(),
-        offset: () => createMockQuery(),
-        range: () => createMockQuery(),
-        single: () => createMockQuery(),
-        maybeSingle: () => createMockQuery(),
-        // Promise-like methods for await support
-        then: (onFulfilled?: any, onRejected?: any) => {
-          const result = Promise.resolve({ data: null, error: new Error(errorMsg) });
-          return result.then(onFulfilled, onRejected);
-        },
-        catch: (onRejected?: any) => {
-          const result = Promise.resolve({ data: null, error: new Error(errorMsg) });
-          return result.catch(onRejected);
-        },
-        finally: (onFinally?: any) => {
-          const result = Promise.resolve({ data: null, error: new Error(errorMsg) });
-          return result.finally(onFinally);
-        },
-      };
-    };
-
-    // Return a mock client
-    return {
-      from: () => createMockQuery(),
-      rpc: () => createMockQuery(),
-      auth: { admin: {} },
-    } as unknown as ReturnType<typeof createClient>;
+    return createMockSupabaseClient(errorMsg);
   }
 
-  if (!_supabaseServer) {
+  const cachedClient = supabaseServerClients.get(profileId);
+  if (cachedClient) return cachedClient;
+
+  {
     // Custom fetch function to ensure apikey header is always included
     // This is necessary when using custom domains like auth.hashpass.co
     const customFetch = async (url: RequestInfo | URL, options: RequestInit = {}) => {
@@ -237,7 +216,7 @@ function getSupabaseServer() {
       }
     };
 
-    _supabaseServer = createClient(supabaseUrl, supabaseServiceKey, {
+    const client = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
@@ -249,10 +228,14 @@ function getSupabaseServer() {
         fetch: customFetch
       }
     });
+
+    supabaseServerClients.set(profileId, client);
   }
 
-  return _supabaseServer;
+  return supabaseServerClients.get(profileId)!;
 }
+
+export const getSupabaseServerForRequest = (request: Request) => getSupabaseServer(request);
 
 // Check if we're in a browser/client environment BEFORE creating the Proxy
 const isBrowser = typeof window !== 'undefined';

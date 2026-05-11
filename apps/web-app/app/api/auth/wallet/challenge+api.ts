@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 
 function badRequest(message: string) {
   return new Response(JSON.stringify({ error: message }), { status: 400, headers: { 'Content-Type': 'application/json' } });
@@ -10,6 +10,7 @@ function badRequest(message: string) {
  */
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseServerForRequest(request);
     const body = await request.json();
     const { walletAddress, walletType, ipAddress } = body;
 
@@ -97,4 +98,3 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
-

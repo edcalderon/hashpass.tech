@@ -60,6 +60,39 @@ flyway validate
 flyway undo
 ```
 
+## Multi-database Tenant Migrations
+
+For hosted tenants that use separate Supabase projects, prefer the repository
+migration runner. It applies the same migration groups to a named database
+profile and records applied files in `public.hashpass_schema_migrations`.
+
+```bash
+# Preview the BSL production migration plan
+pnpm run db:migrate:bsl:prod:dry
+
+# Apply core, event, wallet, auth, and RLS migrations to BSL production
+pnpm run db:migrate:bsl:prod
+
+# Apply only selected groups
+pnpm run db:migrate -- --profile bsl-production --groups core,wallet,auth
+```
+
+Required database URL env vars:
+- `BSL_SUPABASE_DB_URL_PROD` for `bsl.hashpass.tech`
+- `BSL_SUPABASE_DB_URL_DEV` for `bsl-dev.hashpass.tech`
+- `SUPABASE_DB_URL_PROD` for `hashpass.tech`
+- `SUPABASE_DB_URL_DEV` for local/develop core
+
+For production release and infra sync, the matching BSL alias keys should also
+be present in root `.env`:
+- `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
+- `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
+- `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
+- `BSL_SUPABASE_DB_URL_PROD`
+
+The URL must be a PostgreSQL connection string with enough privileges to create
+tables, functions, policies, and extensions.
+
 ## Migration from Supabase Migrations
 
 The migrations in this folder are consolidated versions of the Supabase migrations.

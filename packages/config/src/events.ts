@@ -1,7 +1,58 @@
-export type { Speaker, AgendaItem, EventConfig, QuickAccessItem } from '@hashpass/types';
 import type { EventConfig } from '@hashpass/types';
 
+export type { Speaker, AgendaItem, EventConfig, QuickAccessItem } from '@hashpass/types';
+
 export const EVENTS: Record<string, EventConfig> = {
+  'bsl': {
+    id: 'bsl',
+    name: 'Blockchain Summit Latam',
+    domain: 'bsl.hashpass.tech',
+    website: 'https://blockchainsummit.la/',
+    title: 'Blockchain Summit Latam',
+    subtitle: 'Latam blockchain events and networking',
+    image: '/assets/images/hashpass-banner.jpg',
+    color: '#00A9E0',
+    features: ['matchmaking', 'speakers', 'bookings', 'admin', 'wallet'],
+    eventType: 'whitelabel',
+    branding: {
+      primaryColor: '#00A9E0',
+      secondaryColor: '#06111F',
+      logo: '/assets/logos/bsl-logo.png',
+      favicon: '/favicon.ico'
+    },
+    api: {
+      basePath: '/api/bslatam',
+      endpoints: {
+        speakers: 'speakers',
+        bookings: 'bookings',
+        'verify-ticket': 'verify-ticket',
+        'auto-match': 'auto-match',
+        agenda: 'agenda',
+        status: 'status'
+      }
+    },
+    routes: {
+      home: '/events/bsl/home',
+      speakers: '/events/bsl/speakers',
+      bookings: '/events/bsl/my-bookings',
+      admin: '/events/bsl/admin'
+    },
+    database: {
+      schema: 'public',
+      tables: {
+        speakers: 'bsl_speakers',
+        bookings: 'meeting_requests',
+        attendees: 'passes',
+        wallets: 'wallet_auth'
+      }
+    },
+    quickAccessItems: [
+      { id: 'agenda', title: 'Event Agenda', subtitle: 'Schedule', icon: 'event', color: '#34A853', route: '/events/bsl/agenda' },
+      { id: 'networking', title: 'Networking Center', subtitle: 'Connect & meet', icon: 'people-alt', color: '#4CAF50', route: '/events/bsl/networking' },
+      { id: 'speakers', title: 'Featured Speakers', subtitle: 'Meet the experts', icon: 'people', color: '#007AFF', route: '/events/bsl/speakers/calendar' },
+      { id: 'event-info', title: 'Event Information', subtitle: 'Details & Logistics', icon: 'info', color: '#FF9500', route: '/events/bsl/event-info' }
+    ]
+  },
   'bsl2025': {
     id: 'bsl2025',
     name: 'BSL 2025',

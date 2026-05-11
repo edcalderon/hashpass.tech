@@ -60,6 +60,26 @@ export const SSO_CONFIG = {
         secondary: '#000000',
       },
     } as TenantConfig,
+    'bsl': {
+      id: 'bsl',
+      name: 'Blockchain Summit Latam',
+      domain: 'bsl.hashpass.tech',
+      slug: 'bsl',
+      theme: {
+        primary: '#00A9E0',
+        secondary: '#06111F',
+      },
+    } as TenantConfig,
+    'bsl-dev': {
+      id: 'bsl-dev',
+      name: 'Blockchain Summit Latam Dev',
+      domain: 'bsl-dev.hashpass.tech',
+      slug: 'bsl',
+      theme: {
+        primary: '#00A9E0',
+        secondary: '#06111F',
+      },
+    } as TenantConfig,
     'core': {
       id: 'core',
       name: 'HashPass',

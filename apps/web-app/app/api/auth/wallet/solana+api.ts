@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 import { PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
 
@@ -12,6 +12,7 @@ function badRequest(message: string) {
  */
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseServerForRequest(request);
     const body = await request.json();
     const { message, signature, walletAddress } = body;
 
@@ -53,7 +54,6 @@ export async function POST(request: Request) {
     }
 
     // Parse message to extract nonce
-    const messageLines = message.split('\n');
     const nonceMatch = message.match(/nonce:\s*([^\n]+)/);
     const nonce = nonceMatch ? nonceMatch[1].trim() : null;
 
@@ -189,4 +189,3 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Internal server error: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
-

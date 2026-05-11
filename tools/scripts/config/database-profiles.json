@@ -1,0 +1,32 @@
+{
+  "profiles": {
+    "core-development": {
+      "tenant": "core",
+      "environment": "development",
+      "databaseUrlEnv": ["SUPABASE_DB_URL_DEV", "DATABASE_URL_DEV", "DEV_DB_URL"]
+    },
+    "core-production": {
+      "tenant": "core",
+      "environment": "production",
+      "databaseUrlEnv": ["SUPABASE_DB_URL_PROD", "DATABASE_URL_PROD", "PROD_DB_URL"]
+    },
+    "bsl-development": {
+      "tenant": "bsl",
+      "environment": "development",
+      "databaseUrlEnv": ["BSL_SUPABASE_DB_URL_DEV", "SUPABASE_DB_URL_BSL_DEV", "DATABASE_URL_BSL_DEV", "DEV_BSL_DB_URL"]
+    },
+    "bsl-production": {
+      "tenant": "bsl",
+      "environment": "production",
+      "databaseUrlEnv": ["BSL_SUPABASE_DB_URL_PROD", "SUPABASE_DB_URL_BSL_PROD", "DATABASE_URL_BSL_PROD", "PROD_BSL_DB_URL"]
+    }
+  },
+  "defaultGroups": ["core", "events", "wallet", "auth", "security"],
+  "groups": {
+    "core": ["apps/web-app/db/migrations/V001__init_core_schema.sql"],
+    "events": ["apps/web-app/db/migrations/V002__meeting_requests_system.sql"],
+    "security": ["apps/web-app/db/migrations/V003__row_level_security.sql"],
+    "wallet": ["apps/web-app/db/migrations/V004__wallet_auth.sql"],
+    "auth": ["apps/web-app/db/migrations/V005__otp_codes.sql"]
+  }
+}

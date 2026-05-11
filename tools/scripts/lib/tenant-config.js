@@ -1,3 +1,5 @@
+/* global __dirname */
+
 const fs = require('fs');
 const path = require('path');
 
@@ -55,7 +57,13 @@ function resolveTenant(tenantName, environment = 'development', configPath = DEF
   const branchName =
     (defaults.releaseBranches && defaults.releaseBranches[env]) || (env === 'production' ? 'main' : 'develop');
   const directusUrl = defaults.directusUrls ? defaults.directusUrls[env] : '';
-  const supabaseRef = defaults.supabaseRefs ? defaults.supabaseRefs[env] : '';
+  const supabaseRefs = tenant.supabaseRefs || defaults.supabaseRefs || {};
+  const supabaseRef = supabaseRefs ? supabaseRefs[env] : '';
+  const supabaseEnv = tenant.supabaseEnv || {};
+  const supabaseEnvForRuntime =
+    supabaseEnv && typeof supabaseEnv[env] === 'object' && supabaseEnv[env] !== null
+      ? supabaseEnv[env]
+      : supabaseEnv;
   const apiDomain = defaults.apiDomains ? defaults.apiDomains[env] : '';
   const apiBaseUrl = defaults.apiBaseUrls ? defaults.apiBaseUrls[env] : '';
   const frontendUrl = tenant.frontendUrls ? tenant.frontendUrls[env] : '';
@@ -78,6 +86,12 @@ function resolveTenant(tenantName, environment = 'development', configPath = DEF
     directusUrl,
     supabaseRef,
     supabaseUrl: supabaseRef ? `https://${supabaseRef}.supabase.co` : '',
+    supabaseEnv: {
+      publicUrl: supabaseEnvForRuntime.publicUrl || '',
+      publicKey: supabaseEnvForRuntime.publicKey || '',
+      serviceRoleKey: supabaseEnvForRuntime.serviceRoleKey || '',
+      databaseUrl: supabaseEnvForRuntime.databaseUrl || '',
+    },
     apiDomain,
     apiBaseUrl,
     frontendUrl,

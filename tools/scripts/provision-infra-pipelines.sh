@@ -166,25 +166,41 @@ create_or_update_codebuild() {
       stage_suffix="_DEV"
       compute_type="${CODEBUILD_COMPUTE_TYPE_DEV}"
       expo_export_max_workers="${EXPO_EXPORT_MAX_WORKERS_DEV}"
+      supabase_profile="bsl-development"
       ;;
     prod|production)
       stage_suffix="_PROD"
       compute_type="${CODEBUILD_COMPUTE_TYPE_PROD}"
       expo_export_max_workers="${EXPO_EXPORT_MAX_WORKERS_PROD}"
+      supabase_profile="bsl-production"
       ;;
     *)
       compute_type="${CODEBUILD_COMPUTE_TYPE_PROD}"
       expo_export_max_workers="${EXPO_EXPORT_MAX_WORKERS_PROD}"
+      supabase_profile="bsl-production"
       ;;
   esac
 
   local supabase_url=""
   local supabase_anon_key=""
+  local supabase_profile=""
+  local bsl_supabase_url=""
+  local bsl_supabase_anon_key=""
+  local bsl_supabase_service_role_key=""
+  local bsl_supabase_db_url=""
   local stage_supabase_url_key=""
   local stage_supabase_key_key=""
+  local stage_bsl_supabase_url_key=""
+  local stage_bsl_supabase_key_key=""
+  local stage_bsl_supabase_service_role_key=""
+  local stage_bsl_supabase_db_url_key=""
 
   stage_supabase_url_key="EXPO_PUBLIC_SUPABASE_URL${stage_suffix}"
   stage_supabase_key_key="EXPO_PUBLIC_SUPABASE_KEY${stage_suffix}"
+  stage_bsl_supabase_url_key="EXPO_PUBLIC_BSL_SUPABASE_URL${stage_suffix}"
+  stage_bsl_supabase_key_key="EXPO_PUBLIC_BSL_SUPABASE_KEY${stage_suffix}"
+  stage_bsl_supabase_service_role_key="BSL_SUPABASE_SERVICE_ROLE_KEY${stage_suffix}"
+  stage_bsl_supabase_db_url_key="BSL_SUPABASE_DB_URL${stage_suffix}"
 
   supabase_url="$(read_env_value "${stage_supabase_url_key}")"
   if [[ -z "${supabase_url}" ]]; then
@@ -205,6 +221,32 @@ create_or_update_codebuild() {
     supabase_anon_key="$(read_env_value EXPO_PUBLIC_SUPABASE_KEY)"
   fi
 
+  bsl_supabase_url="$(read_env_value "${stage_bsl_supabase_url_key}")"
+  if [[ -z "${bsl_supabase_url}" ]]; then
+    bsl_supabase_url="$(read_env_value EXPO_PUBLIC_BSL_SUPABASE_URL)"
+  fi
+  if [[ -z "${bsl_supabase_url}" ]]; then
+    bsl_supabase_url="${supabase_url}"
+  fi
+
+  bsl_supabase_anon_key="$(read_env_value "${stage_bsl_supabase_key_key}")"
+  if [[ -z "${bsl_supabase_anon_key}" ]]; then
+    bsl_supabase_anon_key="$(read_env_value EXPO_PUBLIC_BSL_SUPABASE_KEY)"
+  fi
+  if [[ -z "${bsl_supabase_anon_key}" ]]; then
+    bsl_supabase_anon_key="${supabase_anon_key}"
+  fi
+
+  bsl_supabase_service_role_key="$(read_env_value "${stage_bsl_supabase_service_role_key}")"
+  if [[ -z "${bsl_supabase_service_role_key}" ]]; then
+    bsl_supabase_service_role_key="$(read_env_value BSL_SUPABASE_SERVICE_ROLE_KEY)"
+  fi
+
+  bsl_supabase_db_url="$(read_env_value "${stage_bsl_supabase_db_url_key}")"
+  if [[ -z "${bsl_supabase_db_url}" ]]; then
+    bsl_supabase_db_url="$(read_env_value BSL_SUPABASE_DB_URL)"
+  fi
+
   if [[ -z "${supabase_url}" || -z "${supabase_anon_key}" ]]; then
     echo "ERROR: missing Supabase public env for ${stage_name}."
     echo "Expected one of:"
@@ -223,11 +265,21 @@ create_or_update_codebuild() {
   append_env_var "TARGET_STAGE" "${stage_name}"
   append_env_var "AWS_REGION" "${REGION}"
   append_env_var "AWS_DEFAULT_REGION" "${REGION}"
+  append_env_var "EXPO_PUBLIC_SUPABASE_PROFILE" "${supabase_profile}"
+  append_env_var "SUPABASE_PROFILE" "${supabase_profile}"
   append_env_var "EXPO_PUBLIC_SUPABASE_URL" "${supabase_url}"
   append_env_var "NEXT_PUBLIC_SUPABASE_URL" "${supabase_url}"
   append_env_var "EXPO_PUBLIC_SUPABASE_KEY" "${supabase_anon_key}"
   append_env_var "EXPO_PUBLIC_SUPABASE_ANON_KEY" "${supabase_anon_key}"
   append_env_var "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${supabase_anon_key}"
+  append_env_var "${stage_bsl_supabase_url_key}" "${bsl_supabase_url}"
+  append_env_var "${stage_bsl_supabase_key_key}" "${bsl_supabase_anon_key}"
+  append_env_var "${stage_bsl_supabase_service_role_key}" "${bsl_supabase_service_role_key}"
+  append_env_var "${stage_bsl_supabase_db_url_key}" "${bsl_supabase_db_url}"
+  append_env_var "EXPO_PUBLIC_BSL_SUPABASE_URL" "${bsl_supabase_url}"
+  append_env_var "EXPO_PUBLIC_BSL_SUPABASE_KEY" "${bsl_supabase_anon_key}"
+  append_env_var "BSL_SUPABASE_SERVICE_ROLE_KEY" "${bsl_supabase_service_role_key}"
+  append_env_var "BSL_SUPABASE_DB_URL" "${bsl_supabase_db_url}"
   append_env_var "EXPO_EXPORT_MAX_WORKERS" "${expo_export_max_workers}"
   env_vars+="]"
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global __dirname, Buffer */
 
 /**
  * HashPass Environment Sync Tool (Hardenened)
@@ -113,9 +114,71 @@ function mergeBySuffix(rootConfig, environment) {
   return targetConfig;
 }
 
+function stripEnvironmentSuffix(value) {
+  return String(value || '').replace(/_(DEV|PROD)$/, '');
+}
+
+function resolveTenantSupabaseBindings(runtime) {
+  const supabaseEnv = runtime.supabaseEnv || {};
+
+  return {
+    publicUrl: stripEnvironmentSuffix(supabaseEnv.publicUrl),
+    publicKey: stripEnvironmentSuffix(supabaseEnv.publicKey),
+    serviceRoleKey: stripEnvironmentSuffix(supabaseEnv.serviceRoleKey),
+    databaseUrl: stripEnvironmentSuffix(supabaseEnv.databaseUrl),
+  };
+}
+
 function applyCanonicalTenantOverrides(targetConfig, runtime) {
+  const supabaseBindings = resolveTenantSupabaseBindings(runtime);
+  const resolveBoundValue = (bindingKey, fallbackKeys = []) => {
+    if (bindingKey && targetConfig[bindingKey]) {
+      return targetConfig[bindingKey];
+    }
+
+    for (const fallbackKey of fallbackKeys) {
+      if (targetConfig[fallbackKey]) {
+        return targetConfig[fallbackKey];
+      }
+    }
+
+    return '';
+  };
+
+  const supabaseUrl = resolveBoundValue(supabaseBindings.publicUrl, [
+    'EXPO_PUBLIC_SUPABASE_URL',
+    'EXPO_PUBLIC_SUPABASE_URL_DEV',
+    'EXPO_PUBLIC_SUPABASE_URL_PROD',
+  ]) || runtime.supabaseUrl;
+  const supabaseKey = resolveBoundValue(supabaseBindings.publicKey, [
+    'EXPO_PUBLIC_SUPABASE_KEY',
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+    'EXPO_PUBLIC_SUPABASE_KEY_DEV',
+    'EXPO_PUBLIC_SUPABASE_KEY_PROD',
+  ]);
+  const supabaseServiceRoleKey = resolveBoundValue(supabaseBindings.serviceRoleKey, [
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY_DEV',
+    'SUPABASE_SERVICE_ROLE_KEY_PROD',
+  ]);
+  const supabaseDatabaseUrl = resolveBoundValue(supabaseBindings.databaseUrl, [
+    'SUPABASE_DB_URL',
+    'SUPABASE_DB_URL_DEV',
+    'SUPABASE_DB_URL_PROD',
+    'DATABASE_URL',
+    'DATABASE_URL_DEV',
+    'DATABASE_URL_PROD',
+  ]);
+
   const canonicalEntries = [
-    ['EXPO_PUBLIC_SUPABASE_URL', runtime.supabaseUrl],
+    ['EXPO_PUBLIC_SUPABASE_URL', supabaseUrl],
+    ['EXPO_PUBLIC_SUPABASE_KEY', supabaseKey],
+    ['EXPO_PUBLIC_SUPABASE_ANON_KEY', supabaseKey],
+    ['EXPO_PUBLIC_SUPABASE_PROFILE', `${runtime.tenant}-${runtime.environment}`],
+    ['SUPABASE_PROFILE', `${runtime.tenant}-${runtime.environment}`],
+    ['SUPABASE_SERVICE_ROLE_KEY', supabaseServiceRoleKey],
+    ['SUPABASE_DB_URL', supabaseDatabaseUrl],
+    ['DATABASE_URL', supabaseDatabaseUrl],
     ['DIRECTUS_URL', runtime.directusUrl],
     ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
     ['EXPO_PUBLIC_API_BASE_URL', runtime.apiBaseUrl],
@@ -156,6 +219,18 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
   targetConfig.AUTH_REDIRECT_ALLOW_LIST = mergeRedirectAllowList(
     targetConfig.AUTH_REDIRECT_ALLOW_LIST
   );
+
+  const tenantAliasEntries = [
+    [supabaseBindings.publicUrl, supabaseUrl],
+    [supabaseBindings.publicKey, supabaseKey],
+    [supabaseBindings.serviceRoleKey, supabaseServiceRoleKey],
+    [supabaseBindings.databaseUrl, supabaseDatabaseUrl],
+  ];
+
+  tenantAliasEntries.forEach(([bindingKey, value]) => {
+    if (!bindingKey || !value) return;
+    targetConfig[bindingKey] = value;
+  });
 }
 
 function decodeJwtPayload(token) {
@@ -178,7 +253,7 @@ function validateSupabaseServiceRoleKey(targetConfig, runtime) {
   if (!serviceRoleKey) {
     throw new Error(
       'SUPABASE_SERVICE_ROLE_KEY is missing for AWS sync. ' +
-      `Set SUPABASE_SERVICE_ROLE_KEY_${runtime.environment === 'production' ? 'PROD' : 'DEV'} in root .env.`
+      `Set the tenant-specific Supabase alias for ${runtime.tenant}/${runtime.environment} in root .env.`
     );
   }
 
@@ -193,6 +268,25 @@ function validateSupabaseServiceRoleKey(targetConfig, runtime) {
   if (runtime.supabaseRef && payload.ref !== runtime.supabaseRef) {
     throw new Error(
       `SUPABASE_SERVICE_ROLE_KEY ref mismatch: got "${payload.ref}", expected "${runtime.supabaseRef}" ` +
+      `for ${runtime.tenant}/${runtime.environment}.`
+    );
+  }
+}
+
+function validateSupabaseAnonKey(targetConfig, runtime) {
+  const anonKey = targetConfig.EXPO_PUBLIC_SUPABASE_KEY || targetConfig.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!anonKey) {
+    throw new Error(
+      'EXPO_PUBLIC_SUPABASE_KEY is missing for AWS sync. ' +
+      'Set the tenant-specific Supabase alias in root .env.'
+    );
+  }
+
+  const payload = decodeJwtPayload(anonKey);
+  if (payload && typeof payload.ref === 'string' && runtime.supabaseRef && payload.ref !== runtime.supabaseRef) {
+    throw new Error(
+      `EXPO_PUBLIC_SUPABASE_KEY ref mismatch: got "${payload.ref}", expected "${runtime.supabaseRef}" ` +
       `for ${runtime.tenant}/${runtime.environment}.`
     );
   }
@@ -230,6 +324,7 @@ const runtime = resolveTenant(options.tenant, options.environment, options.confi
 const rootConfig = loadRootEnv();
 const targetConfig = mergeBySuffix(rootConfig, options.environment);
 applyCanonicalTenantOverrides(targetConfig, runtime);
+validateSupabaseAnonKey(targetConfig, runtime);
 validateSupabaseServiceRoleKey(targetConfig, runtime);
 validateAuthDeliveryConfig(targetConfig, runtime);
 
@@ -249,7 +344,10 @@ try {
   const KEYS_TO_SYNC = [
     'EXPO_PUBLIC_SUPABASE_URL',
     'EXPO_PUBLIC_SUPABASE_KEY',
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     'SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_DB_URL',
+    'DATABASE_URL',
     'DIRECTUS_URL',
     'EXPO_PUBLIC_DIRECTUS_URL',
     'DIRECTUS_SECRET',
@@ -279,8 +377,11 @@ try {
     'BREVO_SMS_SENDER',
   ];
 
+  const tenantSupabaseKeys = Object.values(resolveTenantSupabaseBindings(runtime)).filter(Boolean);
+  const syncKeys = [...new Set([...KEYS_TO_SYNC, ...tenantSupabaseKeys])];
+
   const newVars = { ...currentVars };
-  KEYS_TO_SYNC.forEach((key) => {
+  syncKeys.forEach((key) => {
     if (targetConfig[key] !== undefined) {
       newVars[key] = targetConfig[key];
     }

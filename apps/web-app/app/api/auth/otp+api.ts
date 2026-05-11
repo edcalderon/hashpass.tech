@@ -1,4 +1,4 @@
-import { getSupabaseServerEnv, supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../lib/supabase-server';
 import * as nodemailer from 'nodemailer';
 
 const corsHeaders = {
@@ -21,8 +21,9 @@ export async function OPTIONS() {
  */
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseServerForRequest(request);
     // Check Supabase configuration before proceeding
-    const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv();
+    const { supabaseUrl, supabaseServiceKey, usingDevFallback, selectedProfile } = getSupabaseServerEnv(request);
 
     if (!supabaseUrl || !supabaseServiceKey) {
       const missingVars = [];

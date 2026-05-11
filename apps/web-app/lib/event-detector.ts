@@ -2,6 +2,7 @@
 // This utility detects available events based on the current deployment context
 
 import { EventConfig, EVENTS } from '../config/events';
+import { ENV_CONFIG } from '@hashpass/config';
 
 // EventInfo is the UI-focused view of EventConfig
 // It omits backend-specific fields (name, domain) and adds availability flag
@@ -12,8 +13,6 @@ export interface EventInfo extends Omit<EventConfig, 'name' | 'domain'> {
 // Available events configuration
 // In branch-based deployments, only the current event will be available
 // In main repo, all events will be available
-
-import { ENV_CONFIG } from '@hashpass/config';
 
 // Helper function to convert EventConfig to EventInfo
 const configToEventInfo = (config: EventConfig, available: boolean): EventInfo => {
@@ -57,8 +56,8 @@ export const getCurrentEvent = (eventId?: string): EventInfo | null => {
     if (event) return event;
   }
 
-  // Default to BSL2025 for now if no specific tenant detected or if main
-  return AVAILABLE_EVENTS.find(e => e.id === 'bsl2025') || null;
+  // Core HashPass domains should not inherit an event-specific tenant.
+  return EVENTS.default ? configToEventInfo(EVENTS.default, true) : null;
 };
 
 // Check if event selector should be shown

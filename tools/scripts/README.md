@@ -83,9 +83,18 @@ For non-local `dev`/`production` propagation and AWS sync:
   - `DIRECTUS_URL`
   - `EXPO_PUBLIC_DIRECTUS_URL`
   - `EXPO_PUBLIC_API_BASE_URL`
+- Tenant-specific Supabase aliases are also materialized when configured:
+  - `EXPO_PUBLIC_BSL_SUPABASE_URL_DEV` / `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
+  - `EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV` / `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
+  - `BSL_SUPABASE_SERVICE_ROLE_KEY_DEV` / `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
+  - `BSL_SUPABASE_DB_URL_DEV` / `BSL_SUPABASE_DB_URL_PROD`
 - `SUPABASE_SERVICE_ROLE_KEY` must decode to the expected Supabase project ref for the target environment, otherwise scripts fail fast.
 
-When using different Supabase projects per environment, provide both key variants in root `.env`:
+When using different Supabase projects per environment, provide the matching tenant aliases in root `.env`:
 
-- `SUPABASE_SERVICE_ROLE_KEY_DEV` / `SUPABASE_SERVICE_ROLE_KEY_PROD`
 - `EXPO_PUBLIC_SUPABASE_KEY_DEV` / `EXPO_PUBLIC_SUPABASE_KEY_PROD`
+- `SUPABASE_SERVICE_ROLE_KEY_DEV` / `SUPABASE_SERVICE_ROLE_KEY_PROD`
+- `EXPO_PUBLIC_BSL_SUPABASE_URL_DEV` / `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
+- `EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV` / `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
+- `BSL_SUPABASE_SERVICE_ROLE_KEY_DEV` / `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
+- `BSL_SUPABASE_DB_URL_DEV` / `BSL_SUPABASE_DB_URL_PROD`

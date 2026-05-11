@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 import { SiweMessage } from 'siwe';
 import { ethers } from 'ethers';
 
@@ -12,6 +12,7 @@ function badRequest(message: string) {
  */
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseServerForRequest(request);
     const body = await request.json();
     const { message, signature, walletAddress } = body;
 
@@ -249,4 +250,3 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Internal server error: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
-

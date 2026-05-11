@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global __dirname, Buffer */
 
 /**
  * HashPass Unified Environment Manager
@@ -127,20 +128,94 @@ function mergeBySuffix(rootConfig, environment) {
   return targetConfig;
 }
 
+function stripEnvironmentSuffix(value) {
+  return String(value || '').replace(/_(DEV|PROD)$/, '');
+}
+
+function resolveTenantSupabaseBindings(runtime) {
+  const supabaseEnv = runtime.supabaseEnv || {};
+
+  return {
+    publicUrl: stripEnvironmentSuffix(supabaseEnv.publicUrl),
+    publicKey: stripEnvironmentSuffix(supabaseEnv.publicKey),
+    serviceRoleKey: stripEnvironmentSuffix(supabaseEnv.serviceRoleKey),
+    databaseUrl: stripEnvironmentSuffix(supabaseEnv.databaseUrl),
+  };
+}
+
 function applyCanonicalTenantOverrides(targetConfig, runtime) {
-  const canonical = {
-    EXPO_PUBLIC_SUPABASE_URL: runtime.supabaseUrl,
-    DIRECTUS_URL: runtime.directusUrl,
-    EXPO_PUBLIC_DIRECTUS_URL: runtime.directusUrl,
-    EXPO_PUBLIC_API_BASE_URL: runtime.apiBaseUrl,
-    EXPO_PUBLIC_FRONTEND_URL: runtime.frontendUrl,
-    FRONTEND_URL: runtime.frontendUrl,
-    PUBLIC_URL: runtime.directusUrl,
+  const supabaseBindings = resolveTenantSupabaseBindings(runtime);
+  const resolveBoundValue = (bindingKey, fallbackKeys = []) => {
+    if (bindingKey && targetConfig[bindingKey]) {
+      return targetConfig[bindingKey];
+    }
+
+    for (const fallbackKey of fallbackKeys) {
+      if (targetConfig[fallbackKey]) {
+        return targetConfig[fallbackKey];
+      }
+    }
+
+    return '';
   };
 
-  Object.entries(canonical).forEach(([key, value]) => {
+  const supabaseUrl = resolveBoundValue(supabaseBindings.publicUrl, [
+    'EXPO_PUBLIC_SUPABASE_URL',
+    'EXPO_PUBLIC_SUPABASE_URL_DEV',
+    'EXPO_PUBLIC_SUPABASE_URL_PROD',
+  ]) || runtime.supabaseUrl;
+  const supabaseKey = resolveBoundValue(supabaseBindings.publicKey, [
+    'EXPO_PUBLIC_SUPABASE_KEY',
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+    'EXPO_PUBLIC_SUPABASE_KEY_DEV',
+    'EXPO_PUBLIC_SUPABASE_KEY_PROD',
+  ]);
+  const supabaseServiceRoleKey = resolveBoundValue(supabaseBindings.serviceRoleKey, [
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY_DEV',
+    'SUPABASE_SERVICE_ROLE_KEY_PROD',
+  ]);
+  const supabaseDatabaseUrl = resolveBoundValue(supabaseBindings.databaseUrl, [
+    'SUPABASE_DB_URL',
+    'SUPABASE_DB_URL_DEV',
+    'SUPABASE_DB_URL_PROD',
+    'DATABASE_URL',
+    'DATABASE_URL_DEV',
+    'DATABASE_URL_PROD',
+  ]);
+
+  const canonicalEntries = [
+    ['EXPO_PUBLIC_SUPABASE_URL', supabaseUrl],
+    ['EXPO_PUBLIC_SUPABASE_KEY', supabaseKey],
+    ['EXPO_PUBLIC_SUPABASE_ANON_KEY', supabaseKey],
+    ['EXPO_PUBLIC_SUPABASE_PROFILE', `${runtime.tenant}-${runtime.environment}`],
+    ['SUPABASE_PROFILE', `${runtime.tenant}-${runtime.environment}`],
+    ['SUPABASE_SERVICE_ROLE_KEY', supabaseServiceRoleKey],
+    ['SUPABASE_DB_URL', supabaseDatabaseUrl],
+    ['DATABASE_URL', supabaseDatabaseUrl],
+    ['DIRECTUS_URL', runtime.directusUrl],
+    ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
+    ['EXPO_PUBLIC_API_BASE_URL', runtime.apiBaseUrl],
+    ['EXPO_PUBLIC_FRONTEND_URL', runtime.frontendUrl],
+    ['FRONTEND_URL', runtime.frontendUrl],
+    ['PUBLIC_URL', runtime.directusUrl],
+  ];
+
+  canonicalEntries.forEach(([key, value]) => {
     if (!value) return;
     targetConfig[key] = value;
+  });
+
+  const tenantAliasEntries = [
+    [supabaseBindings.publicUrl, supabaseUrl],
+    [supabaseBindings.publicKey, supabaseKey],
+    [supabaseBindings.serviceRoleKey, supabaseServiceRoleKey],
+    [supabaseBindings.databaseUrl, supabaseDatabaseUrl],
+  ];
+
+  tenantAliasEntries.forEach(([bindingKey, value]) => {
+    if (!bindingKey || !value) return;
+    targetConfig[bindingKey] = value;
   });
 
   const trimTrailingSlash = (value) => String(value || '').trim().replace(/\/$/, '');
@@ -200,7 +275,7 @@ function validateSupabaseServiceRoleKey(targetConfig, runtime) {
   if (!serviceRoleKey) {
     throw new Error(
       'SUPABASE_SERVICE_ROLE_KEY is missing for non-local propagation. ' +
-      `Set SUPABASE_SERVICE_ROLE_KEY_${runtime.environment === 'production' ? 'PROD' : 'DEV'} in root .env.`
+      `Set the tenant-specific Supabase alias for ${runtime.tenant}/${runtime.environment} in root .env.`
     );
   }
 
@@ -215,7 +290,26 @@ function validateSupabaseServiceRoleKey(targetConfig, runtime) {
   if (runtime.supabaseRef && payload.ref !== runtime.supabaseRef) {
     throw new Error(
       `SUPABASE_SERVICE_ROLE_KEY ref mismatch: got "${payload.ref}", expected "${runtime.supabaseRef}" ` +
-      `for ${runtime.tenant}/${runtime.environment}. Add the correct SUPABASE_SERVICE_ROLE_KEY_${runtime.environment === 'production' ? 'PROD' : 'DEV'} to root .env.`
+      `for ${runtime.tenant}/${runtime.environment}. Add the correct tenant-specific Supabase alias to root .env.`
+    );
+  }
+}
+
+function validateSupabaseAnonKey(targetConfig, runtime) {
+  const anonKey = targetConfig.EXPO_PUBLIC_SUPABASE_KEY || targetConfig.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!anonKey) {
+    throw new Error(
+      'EXPO_PUBLIC_SUPABASE_KEY is missing for non-local propagation. ' +
+      'Set the tenant-specific Supabase alias in root .env.'
+    );
+  }
+
+  const payload = decodeJwtPayload(anonKey);
+  if (payload && typeof payload.ref === 'string' && runtime.supabaseRef && payload.ref !== runtime.supabaseRef) {
+    throw new Error(
+      `EXPO_PUBLIC_SUPABASE_KEY ref mismatch: got "${payload.ref}", expected "${runtime.supabaseRef}" ` +
+      `for ${runtime.tenant}/${runtime.environment}. Add the correct tenant-specific Supabase alias to root .env.`
     );
   }
 }
@@ -229,6 +323,7 @@ const targetConfig = mergeBySuffix(rootConfig, options.environment);
 if (!options.isLocal) {
   const runtime = resolveTenant(options.tenant, options.environment, options.configPath);
   applyCanonicalTenantOverrides(targetConfig, runtime);
+  validateSupabaseAnonKey(targetConfig, runtime);
   validateSupabaseServiceRoleKey(targetConfig, runtime);
 }
 

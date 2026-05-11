@@ -2,19 +2,65 @@ declare const $app: any;
 declare const $config: any;
 declare const sst: any;
 
-function getPublicSupabaseEnv() {
-  const supabaseUrl =
-    process.env.EXPO_PUBLIC_SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    "";
+function firstEnv(names: string[]) {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
 
-  const supabaseAnonKey =
-    process.env.EXPO_PUBLIC_SUPABASE_KEY ||
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    "";
+  return "";
+}
+
+function getPublicSupabaseEnv(stage: string) {
+  const isProduction = stage === "production";
+  const supabaseUrl = firstEnv(
+    isProduction
+      ? [
+          "EXPO_PUBLIC_BSL_SUPABASE_URL_PROD",
+          "EXPO_PUBLIC_SUPABASE_URL_BSL_PROD",
+          "EXPO_PUBLIC_BSL_SUPABASE_URL",
+          "EXPO_PUBLIC_SUPABASE_URL_PROD",
+          "EXPO_PUBLIC_SUPABASE_URL",
+          "NEXT_PUBLIC_SUPABASE_URL",
+        ]
+      : [
+          "EXPO_PUBLIC_BSL_SUPABASE_URL_DEV",
+          "EXPO_PUBLIC_SUPABASE_URL_BSL_DEV",
+          "EXPO_PUBLIC_BSL_SUPABASE_URL",
+          "EXPO_PUBLIC_SUPABASE_URL_DEV",
+          "EXPO_PUBLIC_SUPABASE_URL",
+          "NEXT_PUBLIC_SUPABASE_URL",
+        ]
+  );
+
+  const supabaseAnonKey = firstEnv(
+    isProduction
+      ? [
+          "EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD",
+          "EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD",
+          "EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD",
+          "EXPO_PUBLIC_BSL_SUPABASE_KEY",
+          "EXPO_PUBLIC_SUPABASE_KEY_PROD",
+          "EXPO_PUBLIC_SUPABASE_KEY",
+          "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        ]
+      : [
+          "EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV",
+          "EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV",
+          "EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV",
+          "EXPO_PUBLIC_BSL_SUPABASE_KEY",
+          "EXPO_PUBLIC_SUPABASE_KEY_DEV",
+          "EXPO_PUBLIC_SUPABASE_KEY",
+          "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        ]
+  );
+  const profile = isProduction ? "bsl-production" : "bsl-development";
 
   return {
+    EXPO_PUBLIC_SUPABASE_PROFILE: profile,
+    SUPABASE_PROFILE: profile,
     EXPO_PUBLIC_SUPABASE_URL: supabaseUrl,
     EXPO_PUBLIC_SUPABASE_KEY: supabaseAnonKey,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
@@ -76,7 +122,7 @@ export default $config({
       },
       environment: {
         ...site.environment,
-        ...getPublicSupabaseEnv(),
+        ...getPublicSupabaseEnv(site.stage),
       },
     });
 

@@ -288,7 +288,7 @@ const PWAPrompt = () => {
           }
         }}
       >
-        <div onClick={(event) => event.stopPropagation()} style={{ maxWidth: '500px' }}>
+        <div onClick={(event) => event.stopPropagation()}>
           <PwaInstallPromptCard
             appName="HashPass"
             logoSrc={logoSrc}
@@ -310,41 +310,6 @@ const PWAPrompt = () => {
             onPrimaryAction={closeInstallHelpModal}
             onClose={closeInstallHelpModal}
           />
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginTop: '12px',
-              paddingTop: '12px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <input
-              type="checkbox"
-              id="dont-show-again-pwa"
-              checked={dontShowAgain}
-              onChange={handleDontShowAgain}
-              style={{
-                cursor: 'pointer',
-                width: '16px',
-                height: '16px',
-                marginTop: '2px',
-              }}
-            />
-            <label
-              htmlFor="dont-show-again-pwa"
-              style={{
-                cursor: 'pointer',
-                fontSize: '13px',
-                color: 'rgba(255, 255, 255, 0.6)',
-                userSelect: 'none',
-                margin: 0,
-              }}
-            >
-              {t('dontShowAgain', "Don't show again until reload")}
-            </label>
-          </div>
         </div>
       </div>
     );
@@ -359,41 +324,58 @@ const PWAPrompt = () => {
     ? t('openAction', 'Open HashPass App')
     : t('expandCollapsed', 'Open install options');
 
-  return (
-    <PwaInstallPromptCard
-      className={`hp-pwa-floating${isCollapsed ? ' hp-pwa-collapsed-state' : ''}`}
-      appName="HashPass"
-      logoSrc={logoSrc}
-      logoLayout="icon"
-      primaryIconSrc={primaryIconSrc}
-      primaryLabel={isOpenAppMode ? t('openAction', 'Open HashPass App') : t('installAction', 'Install HashPass')}
-      title={isOpenAppMode ? t('openTitle', 'Open your installed app') : t('installTitle', 'Install HashPass')}
-      description={
-        isOpenAppMode
-          ? t('openDescription', 'HashPass is already installed. Open it in app mode for the best mobile experience.')
-          : t('installDescription', 'Install HashPass as a PWA to launch it like an app from your home screen.')
-      }
-      dialogLabel={
-        isOpenAppMode
-          ? t('openTitle', 'Open your installed app')
-          : t('dialogLabel', 'HashPass install prompt')
-      }
-      closeLabel={t('close', 'Close install prompt')}
-      infoLabel={t('whatIsThis', 'What is this?')}
-      infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HashPass behave like a native app on your device.')}
-      details={[
+  const detailsWithCheckbox = !isCollapsed && !isOpenAppMode
+    ? [
         t('details.one', 'PWA means Progressive Web App: app-like behavior from your browser install.'),
         t('details.two', 'No app-store download required, but you still get quick home-screen access.'),
         t('details.three', 'Great for event check-in flows, wallets, and notifications with less friction.'),
-      ]}
-      showInfoToggle={!isOpenAppMode}
-      collapsed={isCollapsed}
-      collapsedLabel={collapsedLabel}
-      collapsedActionVariant={isOpenAppMode ? 'open' : 'install'}
-      onExpand={expandPrompt}
-      onPrimaryAction={isOpenAppMode ? openApp : installPWA}
-      onClose={collapsePrompt}
-    />
+        '▢ ' + t('dontShowAgain', "Don't show again until reload (click here)"),
+      ]
+    : [
+        t('details.one', 'PWA means Progressive Web App: app-like behavior from your browser install.'),
+        t('details.two', 'No app-store download required, but you still get quick home-screen access.'),
+        t('details.three', 'Great for event check-in flows, wallets, and notifications with less friction.'),
+      ];
+
+  return (
+    <div className="hp-pwa-wrapper" onClick={(e) => {
+      const checkboxText = t('dontShowAgain', "Don't show again until reload");
+      if (e.target instanceof HTMLElement &&
+          e.target.textContent?.includes(checkboxText)) {
+        handleDontShowAgain();
+      }
+    }}>
+      <PwaInstallPromptCard
+        className={`hp-pwa-floating${isCollapsed ? ' hp-pwa-collapsed-state' : ''}`}
+        appName="HashPass"
+        logoSrc={logoSrc}
+        logoLayout="icon"
+        primaryIconSrc={primaryIconSrc}
+        primaryLabel={isOpenAppMode ? t('openAction', 'Open HashPass App') : t('installAction', 'Install HashPass')}
+        title={isOpenAppMode ? t('openTitle', 'Open your installed app') : t('installTitle', 'Install HashPass')}
+        description={
+          isOpenAppMode
+            ? t('openDescription', 'HashPass is already installed. Open it in app mode for the best mobile experience.')
+            : t('installDescription', 'Install HashPass as a PWA to launch it like an app from your home screen.')
+        }
+        dialogLabel={
+          isOpenAppMode
+            ? t('openTitle', 'Open your installed app')
+            : t('dialogLabel', 'HashPass install prompt')
+        }
+        closeLabel={t('close', 'Close install prompt')}
+        infoLabel={t('whatIsThis', 'What is this?')}
+        infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HashPass behave like a native app on your device.')}
+        details={detailsWithCheckbox}
+        showInfoToggle={!isOpenAppMode}
+        collapsed={isCollapsed}
+        collapsedLabel={collapsedLabel}
+        collapsedActionVariant={isOpenAppMode ? 'open' : 'install'}
+        onExpand={expandPrompt}
+        onPrimaryAction={isOpenAppMode ? openApp : installPWA}
+        onClose={collapsePrompt}
+      />
+    </div>
   );
 };
 

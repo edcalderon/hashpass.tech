@@ -39,9 +39,19 @@ The site build uses `expo export -p web` with the Expo web output set to
 `static`, so SST only uploads the client bundle and does not spend time
 building the API route server tree. The CodeBuild projects are seeded with the
 public Supabase variables from the root `.env` so the export can bundle the
-client correctly:
+client correctly. Production BSL should use the BSL-specific variables first:
 
-- `EXPO_PUBLIC_SUPABASE_URL`
-- `EXPO_PUBLIC_SUPABASE_KEY`
+- `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
+- `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
+- `EXPO_PUBLIC_BSL_SUPABASE_URL_DEV`
+- `EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV`
+- `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
+- `BSL_SUPABASE_SERVICE_ROLE_KEY_DEV`
+- `BSL_SUPABASE_DB_URL_PROD`
+- `BSL_SUPABASE_DB_URL_DEV`
+
+The generic `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` remain as
+fallbacks for local development and older CI jobs, but the BSL aliases are now
+preferred when they are present in the environment.
 
 See [docs/INFRA_NAMING_GUIDE.md](/home/ed/Documents/HASH/hashpass.tech/docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the BSL infra track.

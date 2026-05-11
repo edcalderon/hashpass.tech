@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Setup AWS Parameter Store for HashPass BSL2025
+# Setup AWS Parameter Store for HashPass tenants
 # This script securely stores Supabase credentials in AWS Parameter Store
 
 set -e
 
-echo "🔐 HashPass BSL2025 - Parameter Store Setup"
+echo "🔐 HashPass - Parameter Store Setup"
 echo "=========================================="
 
 # Colors for output
@@ -246,6 +246,10 @@ PARAMETERS=(
     "EXPO_PUBLIC_SUPABASE_URL|/hashpass/$ENV_NAME/supabase/url|String|Supabase project URL"
     "EXPO_PUBLIC_SUPABASE_KEY|/hashpass/$ENV_NAME/supabase/anon-key|String|Supabase anon key"
     "SUPABASE_SERVICE_ROLE_KEY|/hashpass/$ENV_NAME/supabase/service-role-key|SecureString|Supabase service role key"
+    "EXPO_PUBLIC_BSL_SUPABASE_URL|/hashpass/$ENV_NAME/bsl/supabase/url|String|BSL Supabase project URL"
+    "EXPO_PUBLIC_BSL_SUPABASE_KEY|/hashpass/$ENV_NAME/bsl/supabase/anon-key|String|BSL Supabase anon key"
+    "BSL_SUPABASE_SERVICE_ROLE_KEY|/hashpass/$ENV_NAME/bsl/supabase/service-role-key|SecureString|BSL Supabase service role key"
+    "BSL_SUPABASE_DB_URL|/hashpass/$ENV_NAME/bsl/supabase/database-url|SecureString|BSL Supabase database URL"
     "DIRECTUS_URL|/hashpass/$ENV_NAME/directus/url|String|Directus URL"
     "EXPO_PUBLIC_DIRECTUS_URL|/hashpass/$ENV_NAME/directus/public-url|String|Directus Public URL"
     "ADMIN_EMAIL|/hashpass/$ENV_NAME/admin/email|String|Directus Admin Email"

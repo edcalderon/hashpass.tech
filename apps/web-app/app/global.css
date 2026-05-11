@@ -55,6 +55,35 @@
   animation: pwa-bounce 2s ease-in-out infinite !important;
 }
 
+/* Details content with hover effects */
+.hp-pwa-floating .hp-pwa-info-section {
+  cursor: default;
+}
+
+.hp-pwa-floating .hp-pwa-info-section:hover {
+  background-color: transparent;
+}
+
+/* Checkbox line hover effect */
+.hp-pwa-wrapper {
+  position: relative;
+}
+
+.hp-pwa-wrapper .hp-pwa-floating {
+  cursor: default;
+}
+
+/* Make details section interactive for checkbox */
+.hp-pwa-floating .hp-pwa-details {
+  cursor: text;
+}
+
+.hp-pwa-floating .hp-pwa-details:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+
+
 /* Tablet responsive */
 @media (max-width: 1024px) {
   .hp-pwa-floating {

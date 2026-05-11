@@ -1,4 +1,4 @@
-import { getSupabaseServerEnv, supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -55,6 +55,7 @@ export async function OPTIONS() {
  */
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseServerForRequest(request);
     const body = await request.json();
     const { email, code } = body;
 
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
 
     // Clean up expired OTP codes
     await supabase.rpc('cleanup_expired_otp_codes');
-    const { selectedProfile, usingDevFallback } = getSupabaseServerEnv();
+    const { selectedProfile, usingDevFallback } = getSupabaseServerEnv(request);
 
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedCode = code.toString().trim();

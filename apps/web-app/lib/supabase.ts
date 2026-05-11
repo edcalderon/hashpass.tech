@@ -1,6 +1,7 @@
 import { createClient, type Session, type User } from '@supabase/supabase-js';
 import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import { Platform } from 'react-native';
+import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
 
 let storage: any;
 
@@ -202,11 +203,14 @@ export const createSessionFromUrl = async (url: string): Promise<{
   }
 };
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_KEY as string;
+const {
+  profileId: supabaseProfileId,
+  supabaseUrl,
+  supabaseAnonKey,
+} = resolvePublicSupabaseConfig();
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase URL or Anon Key is missing. Please check your .env file.');
+  console.error(`Supabase URL or Anon Key is missing for profile "${supabaseProfileId}". Please check your .env file.`);
 }
 
 function createNoopSupabaseClient(errorMessage: string): ReturnType<typeof createClient> {
@@ -393,7 +397,7 @@ const initializeSupabase = () => {
     if (!supabaseUrl || !supabaseAnonKey) {
       console.warn('⚠️ Supabase env is missing; using a no-op client so the app can build safely.');
       return createNoopSupabaseClient(
-        'Supabase URL or Anon Key is missing. Please check your .env file.'
+        `Supabase URL or Anon Key is missing for profile "${supabaseProfileId}". Please check your .env file.`
       );
     }
 
@@ -531,10 +535,12 @@ const initializeSupabase = () => {
         // When finalInput is a Request object, don't override its headers
         // The Request object already has the merged headers with apikey
         if (finalInput instanceof Request) {
+          // eslint-disable-next-line no-restricted-syntax
           return fetch(finalInput);
         }
         
         // For string/URL inputs, use the headers we've prepared
+        // eslint-disable-next-line no-restricted-syntax
         return fetch(finalInput, {
           ...init,
           headers
@@ -660,7 +666,7 @@ const initializeSupabase = () => {
                   finalInput = new Request(url, requestInit);
                 }
               }
-            } catch (e) {
+            } catch {
               // Ignore URL parsing errors
             }
           }
@@ -680,10 +686,12 @@ const initializeSupabase = () => {
           // When finalInput is a Request object, don't override its headers
           // The Request object already has the merged headers with apikey
           if (finalInput instanceof Request) {
+            // eslint-disable-next-line no-restricted-syntax
             return fetch(finalInput);
           }
           
           // For string/URL inputs, use the headers we've prepared
+          // eslint-disable-next-line no-restricted-syntax
           return fetch(finalInput, {
             ...init,
             headers
