@@ -5,6 +5,7 @@ import { buildAndroidIntentUrl, getInstallationStatus, resolvePwaLaunchUrl } fro
 import { useTranslation } from '../i18n/i18n';
 
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
+const DONT_SHOW_AGAIN_KEY = 'hashpass:pwa-dont-show-until-reload';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -21,12 +22,17 @@ const PWAPrompt = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isStandaloneMode, setIsStandaloneMode] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
       return;
     }
+
+    const isDontShowAgain = window.sessionStorage.getItem(DONT_SHOW_AGAIN_KEY) === 'true';
+    setDontShowAgain(isDontShowAgain);
 
     const isStoredCollapsed = window.localStorage.getItem(COLLAPSE_KEY) === 'true';
     setIsCollapsed(isStoredCollapsed);
@@ -209,6 +215,19 @@ const PWAPrompt = () => {
     return null;
   }
 
+  if (dontShowAgain && !showInstallHelpModal) {
+    return null;
+  }
+
+  const handleDontShowAgain = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DONT_SHOW_AGAIN_KEY, 'true');
+      setDontShowAgain(true);
+      setShowPrompt(false);
+      console.log('[PWAPrompt] "Don\'t show again" enabled until page reload');
+    }
+  };
+
   const logoSrc = (() => {
     try {
       return Image.resolveAssetSource(require('../assets/android-chrome-192x192.png')).uri;
@@ -270,11 +289,44 @@ const PWAPrompt = () => {
             closeLabel={t('close', 'Close install prompt')}
             infoLabel={t('whatIsThis', 'What is this?')}
             infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HashPass behave like a native app on your device.')}
-            showInfoToggle={false}
+            showInfoToggle={true}
             collapsed={false}
             onPrimaryAction={closeInstallHelpModal}
             onClose={closeInstallHelpModal}
           />
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '16px',
+              paddingTop: '12px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <input
+              type="checkbox"
+              id="dont-show-again"
+              checked={dontShowAgain}
+              onChange={handleDontShowAgain}
+              style={{
+                cursor: 'pointer',
+                width: '18px',
+                height: '18px',
+              }}
+            />
+            <label
+              htmlFor="dont-show-again"
+              style={{
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: 'rgba(255, 255, 255, 0.7)',
+                userSelect: 'none',
+              }}
+            >
+              {t('dontShowAgain', "Don't show this again until reload")}
+            </label>
+          </div>
         </div>
       </div>
     );
