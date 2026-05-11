@@ -1,5 +1,7 @@
 ## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
 
+## [1.7.3-dev.2](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3-dev.1...v1.7.3-dev.2) (2026-05-11)
+
 
 ### Bug Fixes
 
