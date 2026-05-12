@@ -11,6 +11,7 @@ import {
   AuthProvider 
 } from '../types';
 import { Platform } from 'react-native';
+import { ENV_CONFIG } from '@hashpass/config';
 import { DirectusApiClient, DirectusApiError } from './directus-api-client';
 
 export class DirectusAuthProvider implements IAuthProvider {
@@ -168,26 +169,7 @@ export class DirectusAuthProvider implements IAuthProvider {
   }
 
   private resolveOAuthApiBaseUrl(): string {
-    const envApiBase = (
-      (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_BASE_URL) ||
-      (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL) ||
-      ''
-    ).trim();
-
-    if (envApiBase) {
-      return envApiBase.replace(/\/$/, '');
-    }
-
-    if (typeof window !== 'undefined') {
-      const runtimeApiBase = (window as unknown as { __API_BASE_URL__?: string }).__API_BASE_URL__;
-      if (typeof runtimeApiBase === 'string' && runtimeApiBase.trim().length > 0) {
-        return runtimeApiBase.trim().replace(/\/$/, '');
-      }
-
-      return `${window.location.origin}/api`;
-    }
-
-    return 'http://localhost:8081/api';
+    return ENV_CONFIG.getApiUrl().replace(/\/$/, '');
   }
 
   private mapDirectusOAuthReason(reason: string): string {

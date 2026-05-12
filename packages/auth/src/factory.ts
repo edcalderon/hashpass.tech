@@ -39,16 +39,6 @@ const firstEnv = (names: string[]): string | undefined => {
   return undefined;
 };
 
-const readBrowserGlobal = (name: string): string | undefined => {
-  if (typeof window === 'undefined') return undefined;
-
-  const value = (window as unknown as Record<string, unknown>)[name];
-  if (typeof value !== 'string') return undefined;
-
-  const trimmed = value.trim();
-  return trimmed.length ? trimmed : undefined;
-};
-
 const LEGACY_BETTER_AUTH_SEGMENT = ['bsl', 'auth'].join('-');
 
 const normalizeBetterAuthBasePath = (value?: string | null): string => {
@@ -56,14 +46,6 @@ const normalizeBetterAuthBasePath = (value?: string | null): string => {
   if (!trimmed) return '/api/auth';
 
   const normalized = trimmed.startsWith('/') ? trimmed.replace(/\/$/, '') : `/${trimmed.replace(/\/$/, '')}`;
-  return normalized.replace(new RegExp(`/${LEGACY_BETTER_AUTH_SEGMENT}$`), '/auth');
-};
-
-const normalizeBetterAuthBaseURL = (value?: string | null): string | undefined => {
-  const trimmed = (value || '').trim();
-  if (!trimmed) return undefined;
-
-  const normalized = trimmed.replace(/\/$/, '');
   return normalized.replace(new RegExp(`/${LEGACY_BETTER_AUTH_SEGMENT}$`), '/auth');
 };
 
@@ -138,22 +120,9 @@ const resolveSupabaseCredentials = (hostname?: string | null) => {
   return { url: url || '', anonKey: anonKey || '' };
 };
 
-const resolveBetterAuthBaseURL = (): string | undefined => {
-  const explicit = firstEnv(['EXPO_PUBLIC_BETTER_AUTH_URL', 'BETTER_AUTH_URL']);
-  if (explicit) return normalizeBetterAuthBaseURL(explicit);
-
-  const runtimeBetterAuthURL = readBrowserGlobal('__BETTER_AUTH_URL__');
-  if (runtimeBetterAuthURL) return normalizeBetterAuthBaseURL(runtimeBetterAuthURL);
-
-  const runtimeApiBase = readBrowserGlobal('__API_BASE_URL__');
-  if (runtimeApiBase) {
-    return `${runtimeApiBase.replace(/\/$/, '')}/auth`;
-  }
-
-  const apiBaseURL = firstEnv(['EXPO_PUBLIC_API_BASE_URL', 'NEXT_PUBLIC_API_BASE_URL']);
-  if (!apiBaseURL) return undefined;
-
-  return `${apiBaseURL.replace(/\/$/, '')}/auth`;
+const resolveBetterAuthBaseURL = (hostname?: string | null): string => {
+  const apiBaseUrl = ENV_CONFIG.getApiUrl(hostname || undefined).replace(/\/$/, '');
+  return `${apiBaseUrl}/auth`;
 };
 
 export function resolveAuthProviderConfig(
@@ -171,7 +140,7 @@ export function resolveAuthProviderConfig(
     },
     supabase: resolveSupabaseCredentials(options.hostname),
     betterAuth: {
-      baseURL: resolveBetterAuthBaseURL(),
+      baseURL: resolveBetterAuthBaseURL(options.hostname),
       basePath: normalizeBetterAuthBasePath(
         firstEnv(['EXPO_PUBLIC_BETTER_AUTH_BASE_PATH', 'BETTER_AUTH_BASE_PATH'])
       ),

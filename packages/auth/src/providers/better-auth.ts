@@ -3,6 +3,7 @@
  */
 
 import { createAuthClient } from 'better-auth/client';
+import { ENV_CONFIG } from '@hashpass/config';
 import {
   AuthProvider,
   AuthResponse,
@@ -41,6 +42,7 @@ export class BetterAuthProvider implements IAuthProvider {
   private readonly basePath: string;
   private readonly explicitBaseURL?: string;
   private client: BetterAuthClient | null = null;
+  private clientBaseURL: string | null = null;
   private currentSession: AuthSession | null = null;
   private stateChangeCallbacks: AuthStateChangeCallback[] = [];
   private sessionLookupInFlight: Promise<AuthSession | null> | null = null;
@@ -62,27 +64,19 @@ export class BetterAuthProvider implements IAuthProvider {
 
   private resolveClientBaseURL(): string {
     if (this.explicitBaseURL) return this.explicitBaseURL;
-    if (typeof window !== 'undefined') {
-      const runtimeBetterAuthURL = (window as unknown as { __BETTER_AUTH_URL__?: string }).__BETTER_AUTH_URL__;
-      if (typeof runtimeBetterAuthURL === 'string' && runtimeBetterAuthURL.trim().length > 0) {
-        return normalizeBaseURL(runtimeBetterAuthURL) || runtimeBetterAuthURL.trim().replace(/\/$/, '');
-      }
 
-      const runtimeApiBase = (window as unknown as { __API_BASE_URL__?: string }).__API_BASE_URL__;
-      if (typeof runtimeApiBase === 'string' && runtimeApiBase.trim().length > 0) {
-        return `${runtimeApiBase.trim().replace(/\/$/, '')}/auth`;
-      }
-
-      return `${window.location.origin}${this.basePath}`;
-    }
-    return this.basePath;
+    const apiBaseUrl = ENV_CONFIG.getApiUrl();
+    return `${apiBaseUrl.replace(/\/$/, '')}/auth`;
   }
 
   private getClient(): BetterAuthClient {
-    if (!this.client) {
+    const baseURL = this.resolveClientBaseURL();
+
+    if (!this.client || this.clientBaseURL !== baseURL) {
       this.client = createAuthClient({
-        baseURL: this.resolveClientBaseURL(),
+        baseURL,
       });
+      this.clientBaseURL = baseURL;
     }
 
     return this.client;

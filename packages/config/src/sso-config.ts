@@ -64,6 +64,7 @@ export const SSO_CONFIG = {
       ],
       slug: 'bsl2025',
       authProvider: 'better-auth',
+      apiBaseUrl: 'https://api.hashpass.tech/api',
       theme: {
         primary: '#FFD700', // Example gold
         secondary: '#000000',
@@ -75,6 +76,7 @@ export const SSO_CONFIG = {
       domain: 'bsl.hashpass.tech',
       slug: 'bsl',
       authProvider: 'better-auth',
+      apiBaseUrl: 'https://api.hashpass.tech/api',
       theme: {
         primary: '#00A9E0',
         secondary: '#06111F',
@@ -86,6 +88,7 @@ export const SSO_CONFIG = {
       domain: 'bsl-dev.hashpass.tech',
       slug: 'bsl',
       authProvider: 'better-auth',
+      apiBaseUrl: 'https://api-dev.hashpass.tech/api',
       theme: {
         primary: '#00A9E0',
         secondary: '#06111F',
@@ -98,6 +101,7 @@ export const SSO_CONFIG = {
       hostnames: ['www.hashpass.tech', 'hashpass.co', 'www.hashpass.co'],
       slug: 'main',
       authProvider: 'directus',
+      apiBaseUrl: 'https://api.hashpass.tech/api',
     } as TenantConfig
   }
 };
@@ -111,6 +115,7 @@ export interface TenantConfig {
   slug: string;
   hostnames?: string[];
   authProvider?: TenantAuthProvider;
+  apiBaseUrl?: string;
   theme?: {
     primary: string;
     secondary: string;
@@ -187,6 +192,11 @@ export const resolveTenantByHostname = (hostname?: string): TenantConfig | null 
   );
 };
 
+export const resolveTenantApiBaseUrl = (hostname?: string): string | undefined => {
+  const apiBaseUrl = resolveTenantByHostname(hostname)?.apiBaseUrl?.trim();
+  return apiBaseUrl ? apiBaseUrl.replace(/\/$/, '') : undefined;
+};
+
 export const ENV_CONFIG = {
   isDevelopment: process.env.NODE_ENV === 'development',
   isProduction: process.env.NODE_ENV === 'production',
@@ -195,16 +205,33 @@ export const ENV_CONFIG = {
   REGION: process.env.AWS_REGION || 'us-east-1',
 
   // API URLs based on environment
-  getApiUrl: () => {
-    if (typeof window !== 'undefined') {
-      // Client-side: use current domain
-      return window.location.origin;
+  getApiUrl: (hostname?: string) => {
+    const explicitApiBase =
+      (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_BASE_URL) ||
+      (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_BASE_URL) ||
+      '';
+
+    if (typeof explicitApiBase === 'string' && explicitApiBase.trim().length > 0) {
+      return explicitApiBase.trim().replace(/\/$/, '');
     }
 
-    // Server-side or default
+    const resolvedHostname = hostname || (typeof window !== 'undefined' ? window.location.hostname : '');
+    const normalizedHostname = normalizeHostname(resolvedHostname);
+
+    if (normalizedHostname && isLocalHostname(normalizedHostname)) {
+      return typeof window !== 'undefined'
+        ? `${window.location.origin}/api`
+        : 'http://localhost:8081/api';
+    }
+
+    const tenantApiBaseUrl = resolveTenantApiBaseUrl(normalizedHostname);
+    if (tenantApiBaseUrl) {
+      return tenantApiBaseUrl;
+    }
+
     return process.env.NODE_ENV === 'production'
-      ? 'https://blockchainsummit.hashpass.lat'
-      : 'http://localhost:8081';
+      ? 'https://api.hashpass.tech/api'
+      : 'https://api-dev.hashpass.tech/api';
   },
 
   // SSO URL (always points to production SSO)

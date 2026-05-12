@@ -200,7 +200,7 @@ export class EventApiClient {
           headers: requestHeaders,
           body: shouldSerializeJson ? JSON.stringify(body) : hasBody ? body : undefined,
           signal: controller.signal,
-          credentials: 'include',
+          credentials: options.skipAuth ? 'omit' : 'include',
         });
 
         clearTimeout(timeoutId);
