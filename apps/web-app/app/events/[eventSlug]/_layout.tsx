@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { useTheme } from '../../../hooks/useTheme';
-import { ScrollProvider } from '../../../contexts/ScrollContext';
+import { ScrollProvider } from '@contexts/ScrollContext';
 
 export default function BSL2025Layout() {
   const { isDark, colors } = useTheme();

@@ -38,31 +38,32 @@ The Directus admin account used by the API callback must be a local Directus use
 
 ## Relevant Routes
 
+- [`apps/web-app/app/api/auth/[...auth]+api.ts`](../apps/web-app/app/api/auth/%5B...auth%5D+api.ts)
 - [`apps/web-app/app/api/auth/oauth/login+api.ts`](../apps/web-app/app/api/auth/oauth/login+api.ts)
 - [`apps/web-app/app/api/auth/oauth/google+api.ts`](../apps/web-app/app/api/auth/oauth/google+api.ts)
 - [`apps/web-app/app/api/auth/oauth/callback+api.ts`](../apps/web-app/app/api/auth/oauth/callback+api.ts)
 - [`apps/web-app/app/(shared)/auth/callback.tsx`](../apps/web-app/app/%28shared%29/auth/callback.tsx)
 
-## BSL Better Auth Flow
+## Event Better Auth Flow
 
-BSL (`https://bsl.hashpass.tech` and `https://bsl-dev.hashpass.tech`) uses Better Auth for Google social login. Main `hashpass.tech` remains on Directus.
+Event tenants (`https://bsl.hashpass.tech`, `https://bsl-dev.hashpass.tech`, and `https://bsl2025.hashpass.tech`) use Better Auth for Google social login. Main `hashpass.tech` remains on Directus.
 
-1. Domain-aware auth selection resolves BSL hosts to `better-auth`.
-2. The frontend calls Better Auth at `EXPO_PUBLIC_BETTER_AUTH_URL`, normally `https://api.hashpass.tech/api/bsl-auth` in production.
-3. Better Auth handles Google OAuth at `/api/bsl-auth/*`, stores its session in secure cookies, and redirects back to `/auth/callback`.
-4. The shared auth callback asks the active provider for the session, then routes the user to the requested BSL path.
-5. BSL API calls include credentials, and server-side `authenticateRequest()` validates the Better Auth cookie for BSL hosts.
+1. Domain-aware auth selection resolves event tenants to `better-auth`.
+2. The frontend calls Better Auth at `EXPO_PUBLIC_BETTER_AUTH_URL`, normally `https://api.hashpass.tech/api/auth` in production.
+3. Better Auth handles Google OAuth at `/api/auth/*`, stores its session in secure cookies, and redirects back to `/auth/callback`.
+4. The shared auth callback asks the active provider for the session, then routes the user to the requested event path.
+5. Event API calls include credentials, and server-side `authenticateRequest()` validates the Better Auth cookie for event hosts.
 
-BSL production requirements:
+Event production requirements:
 
 - `BETTER_AUTH_SECRET`
-- `BETTER_AUTH_URL=https://api.hashpass.tech/api/bsl-auth`
-- `EXPO_PUBLIC_BETTER_AUTH_URL=https://api.hashpass.tech/api/bsl-auth`
+- `BETTER_AUTH_URL=https://api.hashpass.tech/api/auth`
+- `EXPO_PUBLIC_BETTER_AUTH_URL=https://api.hashpass.tech/api/auth`
 - `BETTER_AUTH_DATABASE_URL` or `BSL_BETTER_AUTH_DATABASE_URL`
 - `BETTER_AUTH_GOOGLE_CLIENT_ID` / `BETTER_AUTH_GOOGLE_CLIENT_SECRET` (or the existing `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`)
-- Google OAuth redirect URI: `https://api.hashpass.tech/api/bsl-auth/callback/google`
+- Google OAuth redirect URI: `https://api.hashpass.tech/api/auth/callback/google`
 
-Run the Better Auth schema migration against the BSL database after changing Better Auth config:
+Run the Better Auth schema migration against the configured event database after changing Better Auth config:
 
 ```bash
 pnpm exec @better-auth/cli migrate --config apps/web-app/lib/server/better-auth.ts
@@ -74,4 +75,4 @@ pnpm exec @better-auth/cli migrate --config apps/web-app/lib/server/better-auth.
 - If Google returns an error, check the `state` cookie and the Google redirect URI registered in Google Cloud Console.
 - If the API callback fails with `Failed to authenticate as admin`, verify the Directus admin row is local and the password matches the production env.
 - If the browser lands on `/dashboard/explore?error=oauth_failed...`, check the API Lambda logs for the callback request ID.
-- For BSL Better Auth failures, check `/api/bsl-auth/ok`, `/api/bsl-auth/get-session`, Google redirect URI configuration, and whether cookies are being sent to `api.hashpass.tech`.
+- For Better Auth failures, check `/api/auth/ok`, `/api/auth/get-session`, Google redirect URI configuration, and whether cookies are being sent to `api.hashpass.tech`.

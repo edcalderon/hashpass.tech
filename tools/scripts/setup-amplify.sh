@@ -31,12 +31,12 @@ case "$BRANCH_NAME" in
     fi
     ;;
   "blockchainsummit")
-    if [ -f "amplify-blockchainsummit.yml" ]; then
-      cp amplify-blockchainsummit.yml amplify.yml
-      echo "✅ Linked amplify-blockchainsummit.yml → amplify.yml"
+    if [ -f "config/amplify-blockchainsummit.yml" ]; then
+      cp config/amplify-blockchainsummit.yml amplify.yml
+      echo "✅ Linked config/amplify-blockchainsummit.yml → amplify.yml"
       echo "📋 Configuration for blockchainsummit branch"
     else
-      echo "⚠️  amplify-blockchainsummit.yml not found, using default amplify.yml"
+      echo "⚠️  config/amplify-blockchainsummit.yml not found, using default amplify.yml"
     fi
     ;;
   *)
@@ -57,4 +57,3 @@ echo "   3. Push to trigger Amplify build"
 echo ""
 echo "💡 Note: In Amplify Console, you can also set branch-specific"
 echo "   build settings that override this file."
-

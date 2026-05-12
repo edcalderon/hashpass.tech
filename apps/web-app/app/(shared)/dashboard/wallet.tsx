@@ -5,7 +5,7 @@ import BlockchainTokensView from '../../../components/BlockchainTokensView';
 import HashPointsView from '../../../components/HashPointsView';
 import BlockchainTicketsView from '../../../components/BlockchainTicketsView';
 import { useTranslation } from '../../../i18n/i18n';
-import { useScroll } from '../../../contexts/ScrollContext';
+import { useScroll } from '@contexts/ScrollContext';
 
 type TabType = 'tokens' | 'points' | 'tickets';
 

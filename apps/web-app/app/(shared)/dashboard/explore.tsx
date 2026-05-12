@@ -1,7 +1,7 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Animated, NativeSyntheticEvent, NativeScrollEvent, StatusBar, Platform, InteractionManager } from 'react-native';
-import { useScroll } from '../../../contexts/ScrollContext';
-import { useEvent } from '../../../contexts/EventContext';
+import { useScroll } from '@contexts/ScrollContext';
+import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -50,10 +50,10 @@ export default function ExploreScreen() {
       ? availableEvents.find(e => e.id === currentEventFromContext.id) || null
       : availableEvents[0] || null;
   
-  // Initialize all state hooks at the top
-  // Determine explorer mode based on branch:
-  // - main branch (hashpass.tech): Global explorer showing ALL events
-  // - event branches (bsl2025.hashpass.tech): Event-specific explorer with quick access
+  // Initialize all state hooks at the top.
+  // Tenant mode is host/env based:
+  // - hashpass.tech or EXPO_PUBLIC_EVENT_TENANT=main: global explorer
+  // - bsl.hashpass.tech or EXPO_PUBLIC_EVENT_TENANT=bsl: BSL-scoped explorer
   const isGlobalExplorer = isMainBranch;
   
   // For global explorer: no selected event needed (shows all events)
@@ -470,6 +470,7 @@ export default function ExploreScreen() {
 
   // Get quick access items based on selected event
   const getQuickAccessItems = () => {
+    if (!selectedEvent) return [];
     return getEventQuickAccessItems(selectedEvent.id);
   };
 
@@ -488,7 +489,7 @@ export default function ExploreScreen() {
         {/* Event Banner (now scrolls with content) */}
         {/* Banner starts from top, nav bar floats on top with blur */}
         {isGlobalExplorer ? (
-          /* GLOBAL EXPLORER MODE (main branch - hashpass.tech) */
+          /* GLOBAL EXPLORER MODE (hashpass.tech / main tenant) */
           /* Shows banner for HashPass platform with all events */
           <EventBanner 
             title="HashPass Events"
@@ -500,8 +501,8 @@ export default function ExploreScreen() {
             eventId="default"
           />
         ) : (
-          /* EVENT-SPECIFIC EXPLORER MODE (event branches - bsl2025.hashpass.tech) */
-          /* Shows banner for the specific event (BSL2025) with countdown/live indicator */
+          /* EVENT-SPECIFIC EXPLORER MODE (tenant-scoped hosts like bsl.hashpass.tech) */
+          /* Shows banner for the selected tenant event with countdown/live indicator */
           <EventBanner 
             title={selectedEvent?.title || t({ id: 'explore.banner.title', message: 'Blockchain Summit Latam 2025' })}
             subtitle={selectedEvent?.subtitle || t({ id: 'explore.banner.subtitle', message: 'November 12-14, 2025 • Universidad EAFIT, Medellín' })}
@@ -531,7 +532,7 @@ export default function ExploreScreen() {
               </View>
             ) : (
               /* EVENT-SPECIFIC EXPLORER: Show event selector if multiple events available */
-              /* In bsl2025 branch, typically only one event is available, so this may not show */
+              /* Tenant scopes can expose one event or an event family. */
               showEventSelector && (
                 <View style={styles.eventSelectorContainer}>
                   <Text style={styles.eventSelectorTitle}>{t({ id: 'explore.selectEvent', message: 'Select Event' })}</Text>
@@ -562,8 +563,8 @@ export default function ExploreScreen() {
           </CopilotStep>
         )}
 
-        {/* Quick Access Section - Only show for EVENT-SPECIFIC explorer (bsl2025 branch) */}
-        {/* In global explorer (main branch), users navigate via event cards instead */}
+        {/* Quick Access Section - Only show for EVENT-SPECIFIC explorer */}
+        {/* In global explorer, users navigate via event cards instead */}
         {!isGlobalExplorer && (
           <CopilotStep text="Quick Access cards let you quickly navigate to important sections like Speakers, Agenda, Networking Center, and Event Information. Swipe horizontally to see all options." order={9} name="quickAccess">
             <CopilotView style={styles.section}>

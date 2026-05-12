@@ -62,11 +62,11 @@ get_config_value() {
             local api_base
             api_base="$(get_config_value EXPO_PUBLIC_API_BASE_URL)"
             if [ -n "$api_base" ]; then
-                echo "${api_base%/}/bsl-auth"
+                echo "${api_base%/}/auth"
             fi
             ;;
         EXPO_PUBLIC_BETTER_AUTH_BASE_PATH|BETTER_AUTH_BASE_PATH)
-            echo "/api/bsl-auth"
+            echo "/api/auth"
             ;;
         BETTER_AUTH_DATABASE_URL|BSL_BETTER_AUTH_DATABASE_URL)
             local db_url
@@ -302,15 +302,15 @@ PARAMETERS=(
     "EXPO_PUBLIC_BSL_SUPABASE_KEY|/hashpass/$ENV_NAME/bsl/supabase/anon-key|String|BSL Supabase anon key"
     "BSL_SUPABASE_SERVICE_ROLE_KEY|/hashpass/$ENV_NAME/bsl/supabase/service-role-key|SecureString|BSL Supabase service role key"
     "BSL_SUPABASE_DB_URL|/hashpass/$ENV_NAME/bsl/supabase/database-url|SecureString|BSL Supabase database URL"
-    "EXPO_PUBLIC_BETTER_AUTH_URL|/hashpass/$ENV_NAME/bsl/better-auth/public-url|String|BSL Better Auth public URL"
-    "EXPO_PUBLIC_BETTER_AUTH_BASE_PATH|/hashpass/$ENV_NAME/bsl/better-auth/public-base-path|String|BSL Better Auth public base path"
-    "BETTER_AUTH_URL|/hashpass/$ENV_NAME/bsl/better-auth/url|String|BSL Better Auth API URL"
-    "BETTER_AUTH_BASE_PATH|/hashpass/$ENV_NAME/bsl/better-auth/base-path|String|BSL Better Auth base path"
-    "BETTER_AUTH_DATABASE_URL|/hashpass/$ENV_NAME/bsl/better-auth/database-url|SecureString|BSL Better Auth database URL"
-    "BSL_BETTER_AUTH_DATABASE_URL|/hashpass/$ENV_NAME/bsl/better-auth/database-url|SecureString|BSL Better Auth database URL"
-    "BETTER_AUTH_TRUSTED_ORIGINS|/hashpass/$ENV_NAME/bsl/better-auth/trusted-origins|String|BSL Better Auth trusted origins"
-    "BETTER_AUTH_GOOGLE_CLIENT_ID|/hashpass/$ENV_NAME/bsl/better-auth/google-client-id|String|BSL Better Auth Google Client ID"
-    "BETTER_AUTH_GOOGLE_CLIENT_SECRET|/hashpass/$ENV_NAME/bsl/better-auth/google-client-secret|SecureString|BSL Better Auth Google Client Secret"
+    "EXPO_PUBLIC_BETTER_AUTH_URL|/hashpass/$ENV_NAME/auth/better-auth/public-url|String|Better Auth public URL"
+    "EXPO_PUBLIC_BETTER_AUTH_BASE_PATH|/hashpass/$ENV_NAME/auth/better-auth/public-base-path|String|Better Auth public base path"
+    "BETTER_AUTH_URL|/hashpass/$ENV_NAME/auth/better-auth/url|String|Better Auth API URL"
+    "BETTER_AUTH_BASE_PATH|/hashpass/$ENV_NAME/auth/better-auth/base-path|String|Better Auth base path"
+    "BETTER_AUTH_DATABASE_URL|/hashpass/$ENV_NAME/auth/better-auth/database-url|SecureString|Better Auth database URL"
+    "BSL_BETTER_AUTH_DATABASE_URL|/hashpass/$ENV_NAME/auth/better-auth/database-url|SecureString|Better Auth database URL"
+    "BETTER_AUTH_TRUSTED_ORIGINS|/hashpass/$ENV_NAME/auth/better-auth/trusted-origins|String|Better Auth trusted origins"
+    "BETTER_AUTH_GOOGLE_CLIENT_ID|/hashpass/$ENV_NAME/auth/better-auth/google-client-id|String|Better Auth Google Client ID"
+    "BETTER_AUTH_GOOGLE_CLIENT_SECRET|/hashpass/$ENV_NAME/auth/better-auth/google-client-secret|SecureString|Better Auth Google Client Secret"
     "DIRECTUS_URL|/hashpass/$ENV_NAME/directus/url|String|Directus URL"
     "EXPO_PUBLIC_DIRECTUS_URL|/hashpass/$ENV_NAME/directus/public-url|String|Directus Public URL"
     "ADMIN_EMAIL|/hashpass/$ENV_NAME/admin/email|String|Directus Admin Email"

@@ -13,17 +13,17 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { useAuth } from '../../../../hooks/useAuth';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
-import { useToastHelpers } from '../../../../contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { MeetingRequest } from '@/types/networking';
 import * as Haptics from 'expo-haptics';
 import { CopilotStep, walkthroughable } from 'react-native-copilot';
 import UnifiedSearchAndFilter from '../../../../components/UnifiedSearchAndFilter';
-import { useNotifications } from '../../../../contexts/NotificationContext';
+import { useNotifications } from '@contexts/NotificationContext';
 import { useRealtimeMeetingRequests, RequestWithDirection } from '../../../../hooks/useRealtimeMeetingRequests';
 import { lukasRewardService } from '../../../../lib/lukas-reward-service';
-import { useBalance } from '../../../../contexts/BalanceContext';
+import { useBalance } from '@contexts/BalanceContext';
 import { useTranslation } from '../../../../i18n/i18n';
 
 // Extended type for internal use with direction tracking - now imported from hook

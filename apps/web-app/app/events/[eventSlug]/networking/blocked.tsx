@@ -13,7 +13,7 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { useAuth } from '../../../../hooks/useAuth';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
-import { useToastHelpers } from '../../../../contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import LoadingScreen from '../../../../components/LoadingScreen';
 
 interface BlockedUser {

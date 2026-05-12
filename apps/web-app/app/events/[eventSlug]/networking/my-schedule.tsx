@@ -23,7 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../../hooks/useAuth';
 import { supabase } from '../../../../lib/supabase';
 import { apiClient } from '../../../../lib/api-client';
-import { useToastHelpers } from '../../../../contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import { useTranslation } from '../../../../i18n/i18n';
 import { Meeting, TimeSlot, DaySchedule } from '@/types/networking';
 import ScheduleConfirmationModal from '../../../../components/ScheduleConfirmationModal';

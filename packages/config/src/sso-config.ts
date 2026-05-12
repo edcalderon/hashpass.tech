@@ -36,6 +36,7 @@ export const SSO_CONFIG = {
       'https://hashpass.co',
       'https://www.hashpass.co',
       'https://bsl2025.hashpass.co',
+      'https://bsl2025.hashpass.tech',
       'https://bsl.hashpass.tech',
       'https://bsl-dev.hashpass.tech',
       'https://blockchainsummit.hashpass.lat',
@@ -43,6 +44,8 @@ export const SSO_CONFIG = {
       'https://api.hashpass.tech',
       'https://api-dev.hashpass.tech',
       'https://sso-dev.hashpass.co',
+      'http://localhost:19006',
+      'http://127.0.0.1:8081',
       'http://localhost:8081',
       'http://localhost:3000',
     ],
@@ -54,7 +57,13 @@ export const SSO_CONFIG = {
       id: 'bsl-2025',
       name: 'Blockchain Summit Latam 2025',
       domain: 'blockchainsummit.hashpass.lat',
+      hostnames: [
+        'bsl2025.hashpass.tech',
+        'bsl2025.hashpass.co',
+        'blockchainsummit-dev.hashpass.lat',
+      ],
       slug: 'bsl2025',
+      authProvider: 'better-auth',
       theme: {
         primary: '#FFD700', // Example gold
         secondary: '#000000',
@@ -65,6 +74,7 @@ export const SSO_CONFIG = {
       name: 'Blockchain Summit Latam',
       domain: 'bsl.hashpass.tech',
       slug: 'bsl',
+      authProvider: 'better-auth',
       theme: {
         primary: '#00A9E0',
         secondary: '#06111F',
@@ -75,6 +85,7 @@ export const SSO_CONFIG = {
       name: 'Blockchain Summit Latam Dev',
       domain: 'bsl-dev.hashpass.tech',
       slug: 'bsl',
+      authProvider: 'better-auth',
       theme: {
         primary: '#00A9E0',
         secondary: '#06111F',
@@ -84,16 +95,22 @@ export const SSO_CONFIG = {
       id: 'core',
       name: 'HashPass',
       domain: 'hashpass.tech',
+      hostnames: ['www.hashpass.tech', 'hashpass.co', 'www.hashpass.co'],
       slug: 'main',
+      authProvider: 'directus',
     } as TenantConfig
   }
 };
+
+export type TenantAuthProvider = 'directus' | 'better-auth';
 
 export interface TenantConfig {
   id: string;
   name: string;
   domain: string;
   slug: string;
+  hostnames?: string[];
+  authProvider?: TenantAuthProvider;
   theme?: {
     primary: string;
     secondary: string;
@@ -126,6 +143,50 @@ export const LEGACY_SUPABASE_CONFIG = {
 // ===========================================
 // Environment Detection
 // ===========================================
+const normalizeHostname = (value?: string): string => {
+  const raw = (value || '').trim().toLowerCase();
+  if (!raw) return '';
+
+  try {
+    if (raw.includes('://')) {
+      return new URL(raw).hostname.toLowerCase();
+    }
+  } catch {
+    // Fall through to path/port cleanup below.
+  }
+
+  return raw.split('/')[0].split(':')[0];
+};
+
+const isLocalHostname = (hostname: string): boolean => {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '0.0.0.0' ||
+    hostname.endsWith('.local')
+  );
+};
+
+const tenantMatchesHostname = (tenant: TenantConfig, hostname: string): boolean => {
+  const normalizedHostname = normalizeHostname(hostname);
+  if (!normalizedHostname) return false;
+
+  const knownHosts = [tenant.domain, ...(tenant.hostnames || [])];
+  return knownHosts.some((candidate) => normalizeHostname(candidate) === normalizedHostname);
+};
+
+export const resolveTenantByHostname = (hostname?: string): TenantConfig | null => {
+  const normalizedHostname = normalizeHostname(hostname);
+  if (!normalizedHostname || isLocalHostname(normalizedHostname)) {
+    return SSO_CONFIG.tenants.core;
+  }
+
+  return (
+    Object.values(SSO_CONFIG.tenants).find((tenant) => tenantMatchesHostname(tenant, normalizedHostname)) ||
+    SSO_CONFIG.tenants.core
+  );
+};
+
 export const ENV_CONFIG = {
   isDevelopment: process.env.NODE_ENV === 'development',
   isProduction: process.env.NODE_ENV === 'production',
@@ -154,16 +215,7 @@ export const ENV_CONFIG = {
    */
   getTenant: (hostname?: string) => {
     const host = hostname || (typeof window !== 'undefined' ? window.location.hostname : '');
-
-    // Find tenant by domain mapping
-    const tenant = Object.values(SSO_CONFIG.tenants).find(t => t.domain === host);
-
-    // Fallback to core if not found or if on localhost
-    if (!tenant || host.includes('localhost')) {
-      return SSO_CONFIG.tenants['core'];
-    }
-
-    return tenant;
+    return resolveTenantByHostname(host) || SSO_CONFIG.tenants.core;
   },
 };
 

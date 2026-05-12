@@ -14,12 +14,20 @@ import {
 
 type BetterAuthClient = ReturnType<typeof createAuthClient>;
 
-const DEFAULT_BASE_PATH = '/api/bsl-auth';
+const DEFAULT_BASE_PATH = '/api/auth';
+const LEGACY_BETTER_AUTH_SEGMENT = ['bsl', 'auth'].join('-');
 
 const normalizeBasePath = (value?: string | null): string => {
   const trimmed = (value || DEFAULT_BASE_PATH).trim();
   if (!trimmed) return DEFAULT_BASE_PATH;
-  return trimmed.startsWith('/') ? trimmed.replace(/\/$/, '') : `/${trimmed.replace(/\/$/, '')}`;
+  const normalized = trimmed.startsWith('/') ? trimmed.replace(/\/$/, '') : `/${trimmed.replace(/\/$/, '')}`;
+  return normalized.replace(new RegExp(`/${LEGACY_BETTER_AUTH_SEGMENT}$`), '/auth');
+};
+
+const normalizeBaseURL = (value?: string | null): string | undefined => {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return undefined;
+  return trimmed.replace(/\/$/, '').replace(new RegExp(`/${LEGACY_BETTER_AUTH_SEGMENT}$`), '/auth');
 };
 
 const splitName = (name?: string | null) => {
@@ -55,6 +63,16 @@ export class BetterAuthProvider implements IAuthProvider {
   private resolveClientBaseURL(): string {
     if (this.explicitBaseURL) return this.explicitBaseURL;
     if (typeof window !== 'undefined') {
+      const runtimeBetterAuthURL = (window as unknown as { __BETTER_AUTH_URL__?: string }).__BETTER_AUTH_URL__;
+      if (typeof runtimeBetterAuthURL === 'string' && runtimeBetterAuthURL.trim().length > 0) {
+        return normalizeBaseURL(runtimeBetterAuthURL) || runtimeBetterAuthURL.trim().replace(/\/$/, '');
+      }
+
+      const runtimeApiBase = (window as unknown as { __API_BASE_URL__?: string }).__API_BASE_URL__;
+      if (typeof runtimeApiBase === 'string' && runtimeApiBase.trim().length > 0) {
+        return `${runtimeApiBase.trim().replace(/\/$/, '')}/auth`;
+      }
+
       return `${window.location.origin}${this.basePath}`;
     }
     return this.basePath;

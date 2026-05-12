@@ -41,6 +41,8 @@ const PROCESS_ENV_OVERRIDE_KEYS = [
   'BSL_BETTER_AUTH_DATABASE_URL',
   'BSL_BETTER_AUTH_DATABASE_URL_DEV',
   'BSL_BETTER_AUTH_DATABASE_URL_PROD',
+  'EXPO_PUBLIC_EVENT_TENANT',
+  'EXPO_PUBLIC_EVENT_IDS',
 ];
 
 function applyProcessEnvOverrides(config) {
@@ -213,20 +215,39 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     'DATABASE_URL_PROD',
   ]);
   const betterAuthUrl = runtime.apiBaseUrl
-    ? `${String(runtime.apiBaseUrl).trim().replace(/\/$/, '')}/bsl-auth`
+    ? `${String(runtime.apiBaseUrl).trim().replace(/\/$/, '')}/auth`
     : '';
   const betterAuthTrustedOrigins = [
-    'http://localhost:8081',
     'http://localhost:19006',
+    'http://localhost:8081',
     'http://127.0.0.1:8081',
-    'https://api.hashpass.tech',
-    'https://api-dev.hashpass.tech',
+    'http://localhost:3000',
+    'https://hashpass.tech',
+    'https://www.hashpass.tech',
+    'https://hashpass.co',
+    'https://www.hashpass.co',
     'https://bsl.hashpass.tech',
     'https://bsl-dev.hashpass.tech',
+    'https://bsl2025.hashpass.tech',
+    'https://bsl2025.hashpass.co',
+    'https://blockchainsummit.hashpass.lat',
+    'https://blockchainsummit-dev.hashpass.lat',
+    'https://api.hashpass.tech',
+    'https://api-dev.hashpass.tech',
+    'https://sso-dev.hashpass.co',
   ].join(',');
   const betterAuthGoogleClientId = targetConfig.BETTER_AUTH_GOOGLE_CLIENT_ID || targetConfig.GOOGLE_CLIENT_ID || '';
   const betterAuthGoogleClientSecret =
     targetConfig.BETTER_AUTH_GOOGLE_CLIENT_SECRET || targetConfig.GOOGLE_CLIENT_SECRET || '';
+  const eventTenantByRuntimeTenant = {
+    core: 'main',
+    bsl: 'bsl',
+    blockchainsummit: 'bsl2025',
+  };
+  const eventTenant =
+    targetConfig.EXPO_PUBLIC_EVENT_TENANT ||
+    eventTenantByRuntimeTenant[runtime.tenant] ||
+    runtime.tenant;
 
   const canonicalEntries = [
     ['EXPO_PUBLIC_SUPABASE_URL', supabaseUrl],
@@ -241,15 +262,16 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
     ['EXPO_PUBLIC_API_BASE_URL', runtime.apiBaseUrl],
     ['EXPO_PUBLIC_BETTER_AUTH_URL', betterAuthUrl],
-    ['EXPO_PUBLIC_BETTER_AUTH_BASE_PATH', '/api/bsl-auth'],
+    ['EXPO_PUBLIC_BETTER_AUTH_BASE_PATH', '/api/auth'],
     ['BETTER_AUTH_URL', betterAuthUrl],
-    ['BETTER_AUTH_BASE_PATH', '/api/bsl-auth'],
+    ['BETTER_AUTH_BASE_PATH', '/api/auth'],
     ['BETTER_AUTH_DATABASE_URL', supabaseDatabaseUrl],
     ['BSL_BETTER_AUTH_DATABASE_URL', supabaseDatabaseUrl],
     ['BETTER_AUTH_TRUSTED_ORIGINS', betterAuthTrustedOrigins],
     ['BETTER_AUTH_GOOGLE_CLIENT_ID', betterAuthGoogleClientId],
     ['BETTER_AUTH_GOOGLE_CLIENT_SECRET', betterAuthGoogleClientSecret],
     ['EXPO_PUBLIC_FRONTEND_URL', runtime.frontendUrl],
+    ['EXPO_PUBLIC_EVENT_TENANT', eventTenant],
     ['FRONTEND_URL', runtime.frontendUrl],
     ['PUBLIC_URL', runtime.directusUrl],
   ];

@@ -16,8 +16,8 @@ const versioningConfigPath = path.join(projectRoot, 'versioning.config.json');
 // Files that should be updated when version changes
 const VERSION_FILES = [
   'package.json',
-  'version.production.json',
-  'version.development.json',
+  'config/version.production.json',
+  'config/version.development.json',
   'apps/web-app/config/version.production.json',
   'apps/web-app/config/version.development.json',
   'app.json',
@@ -136,14 +136,18 @@ function validateVersionConsistency() {
     return { valid: true, errors: [], warnings: [] };
   }
 
-  if (branchAwareEnabled && stagedVersionFiles.length > 0 && stagedVersionFiles.every(f => f === 'version.development.json')) {
+  if (
+    branchAwareEnabled &&
+    stagedVersionFiles.length > 0 &&
+    stagedVersionFiles.every((f) => f === 'config/version.development.json')
+  ) {
     return { valid: true, errors: [], warnings: [] };
   }
 
   if (
     branchAwareEnabled &&
     stagedVersionFiles.length > 0 &&
-    stagedVersionFiles.every(f => f === 'apps/web-app/config/version.development.json')
+    stagedVersionFiles.every((f) => f === 'apps/web-app/config/version.development.json')
   ) {
     return { valid: true, errors: [], warnings: [] };
   }
@@ -153,7 +157,7 @@ function validateVersionConsistency() {
     ? Object.fromEntries(
         Object.entries(versions).filter(
           ([file]) =>
-            file !== 'version.development.json' &&
+            file !== 'config/version.development.json' &&
             file !== 'apps/web-app/config/version.development.json'
         )
       )
@@ -192,7 +196,7 @@ function validateVersionConsistency() {
   // Check if all required files are updated
   const relevantVersionFiles = branchAwareEnabled
     ? VERSION_FILES.filter(
-        f => f !== 'version.development.json' && f !== 'apps/web-app/config/version.development.json'
+        (f) => f !== 'config/version.development.json' && f !== 'apps/web-app/config/version.development.json'
       )
     : VERSION_FILES;
 

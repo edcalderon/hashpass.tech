@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, InteractionManager } from 'react-native';
-import { useEvent } from '../../../contexts/EventContext';
+import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -17,7 +17,7 @@ import {
 import { EVENTS } from '../../../config/events';
 import { useAuth } from '../../../hooks/useAuth';
 import { supabase } from '../../../lib/supabase';
-import { useToastHelpers } from '../../../contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import ScheduleConfirmationModal from '../../../components/ScheduleConfirmationModal';
 import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';

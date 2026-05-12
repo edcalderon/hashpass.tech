@@ -3,11 +3,11 @@ import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, Alert, St
 import { useTheme } from '../../../hooks/useTheme';
 import { useLanguage } from '../../../providers/LanguageProvider';
 import { useAnimations } from '../../../providers/AnimationProvider';
-import { useToastHelpers } from '../../../contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../../../i18n/i18n';
 import { version } from '../../../package.json';
-import { useScroll } from '../../../contexts/ScrollContext';
+import { useScroll } from '@contexts/ScrollContext';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { t } from '@lingui/macro';

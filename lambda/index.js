@@ -12,6 +12,70 @@ const handleRequest = createRequestHandler(
   path.join(__dirname, 'server')
 );
 
+const DEFAULT_CORS_ALLOWED_ORIGINS = [
+  'http://localhost:8081',
+  'http://localhost:19006',
+  'http://127.0.0.1:8081',
+  'https://hashpass.tech',
+  'https://www.hashpass.tech',
+  'https://bsl.hashpass.tech',
+  'https://bsl-dev.hashpass.tech',
+  'https://blockchainsummit.hashpass.lat',
+  'https://blockchainsummit-dev.hashpass.lat',
+];
+
+function splitCsv(value) {
+  return String(value || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function getHeader(headers, name) {
+  const target = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers || {})) {
+    if (key.toLowerCase() === target) return value;
+  }
+  return undefined;
+}
+
+function resolveCorsOrigin(event) {
+  const origin = getHeader(event.headers, 'origin');
+  if (!origin) return '*';
+
+  const allowedOrigins = new Set([
+    ...DEFAULT_CORS_ALLOWED_ORIGINS,
+    ...splitCsv(process.env.CORS_ALLOW_ORIGINS),
+    ...splitCsv(process.env.API_CORS_ORIGINS),
+    ...splitCsv(process.env.BETTER_AUTH_TRUSTED_ORIGINS),
+  ]);
+
+  if (allowedOrigins.has('*') || allowedOrigins.has(origin)) {
+    return origin;
+  }
+
+  return '*';
+}
+
+function applyCorsHeaders(headers, event) {
+  const resolvedOrigin = resolveCorsOrigin(event);
+
+  if (!headers['access-control-allow-origin']) {
+    headers['access-control-allow-origin'] = resolvedOrigin;
+  }
+  if (!headers['access-control-allow-methods']) {
+    headers['access-control-allow-methods'] = 'GET, POST, PUT, DELETE, PATCH, OPTIONS';
+  }
+  if (!headers['access-control-allow-headers']) {
+    headers['access-control-allow-headers'] = 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version';
+  }
+  if (resolvedOrigin !== '*' && !headers['access-control-allow-credentials']) {
+    headers['access-control-allow-credentials'] = 'true';
+  }
+
+  return headers;
+}
+
 function getSetCookieHeaders(headers) {
   if (typeof headers.getSetCookie === 'function') {
     return headers.getSetCookie();
@@ -40,12 +104,9 @@ exports.handler = async (event) => {
       console.log('OPTIONS preflight request detected');
       return {
         statusCode: 204,
-        headers: {
-          'access-control-allow-origin': '*',
-          'access-control-allow-methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-          'access-control-allow-headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
+        headers: applyCorsHeaders({
           'access-control-max-age': '86400',
-        },
+        }, event),
         body: '',
       };
     }
@@ -118,16 +179,8 @@ exports.handler = async (event) => {
       }
     });
 
-    // Ensure CORS headers are present (use lowercase)
-    if (!headers['access-control-allow-origin']) {
-      headers['access-control-allow-origin'] = '*';
-    }
-    if (!headers['access-control-allow-methods']) {
-      headers['access-control-allow-methods'] = 'GET, POST, PUT, DELETE, PATCH, OPTIONS';
-    }
-    if (!headers['access-control-allow-headers']) {
-      headers['access-control-allow-headers'] = 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version';
-    }
+    // Ensure CORS headers are present and credentials-safe for Better Auth.
+    applyCorsHeaders(headers, event);
 
     // Ensure body is a string (not an object)
     const responseBody = typeof body === 'string' ? body : JSON.stringify(body);
@@ -176,12 +229,9 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 500,
-      headers: {
+      headers: applyCorsHeaders({
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Client-Version',
-      },
+      }, event),
       body: JSON.stringify({
         error: 'Internal Server Error',
         message: error.message,

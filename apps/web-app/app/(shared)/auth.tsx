@@ -24,7 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ThemeAndLanguageSwitcher from '../../components/ThemeAndLanguageSwitcher';
 import { useTheme } from '../../hooks/useTheme';
-import { useToastHelpers } from '../../contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import PrivacyTermsModal from '../../components/PrivacyTermsModal';
 import VersionDisplay from '../../components/VersionDisplay';
 import { useAuth } from '../../hooks/useAuth';

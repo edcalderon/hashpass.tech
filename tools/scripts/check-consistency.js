@@ -246,15 +246,25 @@ async function auditTenant(tenantName, environment, configPath) {
 
   const lambdaName = runtime.lambda.functionName;
   const lambdaRegion = runtime.lambda.region;
-  const betterAuthBaseUrl = runtime.apiBaseUrl ? `${runtime.apiBaseUrl.replace(/\/$/, '')}/bsl-auth` : '';
+  const betterAuthBaseUrl = runtime.apiBaseUrl ? `${runtime.apiBaseUrl.replace(/\/$/, '')}/auth` : '';
   const betterAuthTrustedOrigins = [
-    'http://localhost:8081',
     'http://localhost:19006',
+    'http://localhost:8081',
     'http://127.0.0.1:8081',
-    'https://api.hashpass.tech',
-    'https://api-dev.hashpass.tech',
+    'http://localhost:3000',
+    'https://hashpass.tech',
+    'https://www.hashpass.tech',
+    'https://hashpass.co',
+    'https://www.hashpass.co',
     'https://bsl.hashpass.tech',
     'https://bsl-dev.hashpass.tech',
+    'https://bsl2025.hashpass.tech',
+    'https://bsl2025.hashpass.co',
+    'https://blockchainsummit.hashpass.lat',
+    'https://blockchainsummit-dev.hashpass.lat',
+    'https://api.hashpass.tech',
+    'https://api-dev.hashpass.tech',
+    'https://sso-dev.hashpass.co',
   ].join(',');
 
   log(`Auditing Lambda: ${lambdaName} (${lambdaRegion})`, 'info');
@@ -269,9 +279,9 @@ async function auditTenant(tenantName, environment, configPath) {
       ['DIRECTUS_URL', runtime.directusUrl],
       ['EXPO_PUBLIC_DIRECTUS_URL', runtime.directusUrl],
       ['EXPO_PUBLIC_BETTER_AUTH_URL', betterAuthBaseUrl],
-      ['EXPO_PUBLIC_BETTER_AUTH_BASE_PATH', '/api/bsl-auth'],
+      ['EXPO_PUBLIC_BETTER_AUTH_BASE_PATH', '/api/auth'],
       ['BETTER_AUTH_URL', betterAuthBaseUrl],
-      ['BETTER_AUTH_BASE_PATH', '/api/bsl-auth'],
+      ['BETTER_AUTH_BASE_PATH', '/api/auth'],
       ['BETTER_AUTH_DATABASE_URL', runtime.supabaseEnv.databaseUrl || ''],
       ['BSL_BETTER_AUTH_DATABASE_URL', runtime.supabaseEnv.databaseUrl || ''],
     ].filter((pair) => Boolean(pair[1]));

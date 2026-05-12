@@ -56,6 +56,22 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
 
                 return 'https://api.hashpass.tech/api';
               })();
+
+              // Set the Better Auth base URL so client-side auth code does not have to infer it.
+              window.__BETTER_AUTH_URL__ = (function () {
+                var envBetterAuthUrl = ${JSON.stringify(
+                  typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_BETTER_AUTH_URL || '' : ''
+                )};
+                if (envBetterAuthUrl) {
+                  return envBetterAuthUrl;
+                }
+
+                if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
+                  return window.__API_BASE_URL__.replace(/\/$/, '') + '/auth';
+                }
+
+                return 'https://api.hashpass.tech/api/auth';
+              })();
             `,
           }}
         />

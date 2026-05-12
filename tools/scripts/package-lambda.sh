@@ -45,6 +45,15 @@ cp lambda/package.json $PACKAGE_DIR/
 echo "3. Copying build output into Lambda server root..."
 cp -r "$BUILD_DIR" "$PACKAGE_DIR/server"
 
+BETTER_AUTH_ROUTE="$PACKAGE_DIR/server/_expo/functions/api/auth/[...auth]+api.js"
+if [ ! -f "$BETTER_AUTH_ROUTE" ]; then
+  echo "❌ Better Auth API routes are missing from the Expo server export."
+  echo "   Expected:"
+  echo "   - $BETTER_AUTH_ROUTE"
+  echo "   Re-run the web build and verify app/api/auth/[...auth]+api.ts is included."
+  exit 1
+fi
+
 # Copy config files needed by API routes
 echo "3a. Copying config files..."
 mkdir -p $PACKAGE_DIR/config

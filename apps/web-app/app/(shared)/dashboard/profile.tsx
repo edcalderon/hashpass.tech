@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar, Modal, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
-import { useScroll } from '../../../contexts/ScrollContext';
+import { useScroll } from '@contexts/ScrollContext';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
-import { useToastHelpers } from '../../../contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import { authService, AuthUser } from '@hashpass/auth';
 
 // Generate avatar URL using UI-Avatars service (similar to landing page)

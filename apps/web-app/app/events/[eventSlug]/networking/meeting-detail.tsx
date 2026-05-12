@@ -5,7 +5,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
-import { useToastHelpers } from '@/contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import SpeakerAvatar from '@/components/SpeakerAvatar';
 import LoadingScreen from '@/components/LoadingScreen';
 import { supabase } from '@/lib/supabase';

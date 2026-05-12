@@ -137,7 +137,7 @@ export async function authenticateRequest(request: Request): Promise<ApiAuthResp
   const providerConfig = resolveAuthProviderConfig({ hostname });
 
   if (providerConfig.provider === 'better-auth') {
-    return verifyBetterAuthRequest(request, providerConfig.betterAuth?.basePath || '/api/bsl-auth');
+    return verifyBetterAuthRequest(request, providerConfig.betterAuth?.basePath || '/api/auth');
   }
 
   if (!token) return { user: null, error: 'No authorization token provided' };

@@ -9,7 +9,7 @@ import {
 import { useTheme } from '../../../../hooks/useTheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
-import { useToastHelpers } from '../../../../contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { SystemStats } from '@/types/networking';
 

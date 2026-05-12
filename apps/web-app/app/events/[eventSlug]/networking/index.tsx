@@ -14,7 +14,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
-import { useToastHelpers } from '@/contexts/ToastContext';
+import { useToastHelpers } from '@contexts/ToastContext';
 import QuickAccessGrid from '@/components/explorer/QuickAccessGrid';
 import LoadingScreen from '@/components/LoadingScreen';
 import { NetworkingStats, StatsState, QuickAccessItem } from '@/types/networking';

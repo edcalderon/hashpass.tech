@@ -102,7 +102,7 @@ frontend:
             fi
             echo "🚀 Deploying Lambda function: $LAMBDA_FUNCTION_NAME"
             echo "Current branch: $AWS_BRANCH"
-            
+
             # Deploy Lambda and capture result
             if aws lambda update-function-code \
               --function-name $LAMBDA_FUNCTION_NAME \
@@ -115,7 +115,7 @@ frontend:
               LAMBDA_EXIT_CODE=$?
               echo "❌ Lambda deployment failed with exit code: $LAMBDA_EXIT_CODE"
               rm -f lambda-deployment.zip || true
-              
+
               # CRITICAL: Fail the build on main branch if Lambda deployment fails
               if [ "$AWS_BRANCH" = "main" ] || [ "$AWS_BRANCH" = "blockchainsummit" ]; then
                 echo "🚨 FATAL: Lambda deployment failed on production branch - failing build"

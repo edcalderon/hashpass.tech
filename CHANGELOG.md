@@ -4,6 +4,18 @@
 
 
 
+## [1.7.6] - 2026-05-12
+
+### Beta
+- Generic /api/auth routing and tenant-aware auth flow
+
+### Technical Details
+- Version: 1.7.6
+- Release Type: beta
+- Build Number: 202605120032
+- Release Date: 2026-05-12T00:32:52.460Z
+
+
 ## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.4-dev.3...v1.7.4) (2026-05-11)
 
 

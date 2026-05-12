@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, StatusBar } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
-import { useNotifications } from '../../../contexts/NotificationContext';
+import { useNotifications } from '@contexts/NotificationContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
-import { useScroll } from '../../../contexts/ScrollContext';
+import { useScroll } from '@contexts/ScrollContext';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../i18n/i18n';

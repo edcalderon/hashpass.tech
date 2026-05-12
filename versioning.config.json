@@ -110,41 +110,41 @@
         "main": {
         "versionFormat": "semantic",
         "tagFormat": "v{version}",
-        "syncFiles": [
-          "package.json",
-          "version.production.json",
-          "apps/web-app/config/version.production.json"
-        ],
+      "syncFiles": [
+        "package.json",
+        "config/version.production.json",
+        "apps/web-app/config/version.production.json"
+      ],
         "environment": "production",
         "bumpStrategy": "semantic"
       },
       "develop": {
         "versionFormat": "dev",
         "tagFormat": "v{version}",
-        "syncFiles": [
-          "version.development.json",
-          "apps/web-app/config/version.development.json"
-        ],
+      "syncFiles": [
+        "config/version.development.json",
+        "apps/web-app/config/version.development.json"
+      ],
         "environment": "development",
         "bumpStrategy": "dev-build"
       },
       "feature/*": {
         "versionFormat": "feature",
         "tagFormat": "v{version}",
-        "syncFiles": [
-          "version.development.json",
-          "apps/web-app/config/version.development.json"
-        ],
+      "syncFiles": [
+        "config/version.development.json",
+        "apps/web-app/config/version.development.json"
+      ],
         "environment": "development",
         "bumpStrategy": "feature-branch"
       },
       "hotfix/*": {
         "versionFormat": "hotfix",
         "tagFormat": "v{version}",
-        "syncFiles": [
-          "version.development.json",
-          "apps/web-app/config/version.development.json"
-        ],
+      "syncFiles": [
+        "config/version.development.json",
+        "apps/web-app/config/version.development.json"
+      ],
         "environment": "development",
         "bumpStrategy": "hotfix"
       }

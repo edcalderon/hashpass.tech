@@ -22,23 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202605111848, // Updated to current timestamp
-  releaseDate: '2026-05-11',
+  buildNumber: 202605120032, // Updated to current timestamp
+  releaseDate: '2026-05-12',
   releaseType: 'beta',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
-    'Added missing translations for version.status and version.statusSummary to all locales',
-    'Added status section translations to ko, fr, pt, de locales',
-    'Compiled i18n catalogs to fix uncompiled message warnings for notification types',
-    'Fixed missing translations for status page (Estado del Sistema, Sin Datos)'
+    'Moved auth routing to generic /api/auth endpoints',
+    'Centralized tenant resolution for auth provider selection',
+    'Unified event auth detection through the shared tenant resolver',
+    'Added runtime fallback for Better Auth URL bootstrap in web clients'
   ],
   breakingChanges: [],
-  notes: 'Version 1.7.5 release'
+  notes: 'Generic /api/auth routing and tenant-aware auth flow'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.7.6': {
+    version: '1.7.6',
+    buildNumber: 202605120032,
+    releaseDate: '2026-05-12',
+    releaseType: 'beta',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Moved auth routing to generic /api/auth endpoints',
+      'Centralized tenant resolution for auth provider selection',
+      'Unified event auth detection through the shared tenant resolver',
+      'Added runtime fallback for Better Auth URL bootstrap in web clients'
+    ],
+    breakingChanges: [],
+    notes: 'Generic /api/auth routing and tenant-aware auth flow'
+  },
   '1.7.5': {
     version: '1.7.5',
     buildNumber: 202605111848,

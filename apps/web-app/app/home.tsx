@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { useEvent } from '../contexts/EventContext';
+import { useEvent } from '@contexts/EventContext';
 import { getCurrentEvent } from '../lib/event-detector';
 import Animated, {
   useAnimatedScrollHandler,
