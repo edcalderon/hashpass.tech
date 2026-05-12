@@ -77,10 +77,7 @@ export default function PwaInstallPromptCard({
   const dialogAriaLabel = dialogLabel || `${appName} install prompt`;
   const collapseAriaLabel = collapsedLabel || dialogAriaLabel;
   const isOpenVariant = collapsedActionVariant === "open";
-
-  return (
-    <div className={`${scopeClass} ${className}`.trim()}>
-      <style>{`
+  const styles = `
         .${scopeClass} {
           font-family: "Inter", "Avenir Next", "Segoe UI", sans-serif;
           color: #f4f7ff;
@@ -132,6 +129,8 @@ export default function PwaInstallPromptCard({
           --card-border: rgba(122, 162, 255, 0.4);
           --card-shadow: 0 18px 46px rgba(7, 10, 20, 0.55);
           width: min(360px, calc(100vw - 24px));
+          max-height: calc(100vh - 24px);
+          max-height: calc(100svh - 24px);
           border-radius: 18px;
           border: 1px solid var(--card-border);
           background: linear-gradient(160deg, rgba(34, 52, 126, 0.88), var(--card-bg));
@@ -140,6 +139,9 @@ export default function PwaInstallPromptCard({
           overflow: hidden;
           position: relative;
           padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
 
         .${scopeClass} .hp-pwa-card::before {
@@ -155,6 +157,7 @@ export default function PwaInstallPromptCard({
           align-items: flex-start;
           justify-content: space-between;
           gap: 10px;
+          flex-shrink: 0;
         }
 
         .${scopeClass} .hp-pwa-brand {
@@ -247,20 +250,36 @@ export default function PwaInstallPromptCard({
         }
 
         .${scopeClass} .hp-pwa-description {
-          margin: 11px 0 12px 0;
+          margin: 0;
           font-size: 0.86rem;
           line-height: 1.45;
           color: rgba(223, 234, 255, 0.9);
         }
 
         .${scopeClass} .hp-pwa-body-list {
-          margin: 0 0 12px 0;
+          margin: 0;
           padding-left: 18px;
           color: rgba(233, 242, 255, 0.94);
           display: grid;
           row-gap: 6px;
           font-size: 0.8rem;
           line-height: 1.45;
+        }
+
+        .${scopeClass} .hp-pwa-body-scroll {
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 11px;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-gutter: stable;
+          padding-right: 2px;
+        }
+
+        .${scopeClass} .hp-pwa-footer {
+          flex-shrink: 0;
         }
 
         .${scopeClass} .hp-pwa-body-list li::marker {
@@ -353,7 +372,7 @@ export default function PwaInstallPromptCard({
 
         .${scopeClass} .hp-pwa-info-toggle {
           width: 100%;
-          margin-top: 10px;
+          margin-top: 0;
           border: 1px solid rgba(147, 197, 253, 0.28);
           background: rgba(6, 12, 33, 0.48);
           color: rgba(220, 232, 255, 0.95);
@@ -375,7 +394,7 @@ export default function PwaInstallPromptCard({
         }
 
         .${scopeClass} .hp-pwa-info-panel {
-          margin-top: 9px;
+          margin-top: 0;
           padding: 10px 11px;
           border-radius: 10px;
           background: rgba(3, 8, 24, 0.54);
@@ -437,13 +456,19 @@ export default function PwaInstallPromptCard({
           .${scopeClass} .hp-pwa-card {
             width: min(94vw, 460px);
             border-radius: 16px;
+            max-height: calc(100vh - 20px);
+            max-height: calc(100svh - 20px);
           }
 
           .${scopeClass} .hp-pwa-title {
             max-width: 140px;
           }
         }
-      `}</style>
+      `;
+
+  return (
+    <div className={`${scopeClass} ${className}`.trim()}>
+      <style>{styles}</style>
 
       {collapsed ? (
         <button
@@ -497,63 +522,67 @@ export default function PwaInstallPromptCard({
           )}
         </div>
 
-        <p className="hp-pwa-description">{cardDescription}</p>
+        <div className="hp-pwa-body-scroll">
+          <p className="hp-pwa-description">{cardDescription}</p>
 
-        {hasBodyItems && (
-          <ul className="hp-pwa-body-list">
-            {bodyItems.map((item, index) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        )}
-
-        <button type="button" className="hp-pwa-shiny" onClick={onPrimaryAction}>
-          {hasPrimaryIcon && (
-            <span className="hp-pwa-action-icon-wrap" aria-hidden="true">
-              <img
-                src={primaryIconSrc}
-                alt={primaryIconAlt}
-                className="hp-pwa-action-icon"
-              />
-            </span>
+          {hasBodyItems && (
+            <ul className="hp-pwa-body-list">
+              {bodyItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
           )}
-          <span>{primaryLabel}</span>
-        </button>
 
-        {showInfoToggle && (
-          <>
-            <button
-              type="button"
-              className="hp-pwa-info-toggle"
-              onClick={() => setExpanded((prev) => !prev)}
-              aria-expanded={expanded}
-            >
-              <span>{infoLabel}</span>
-              <span className={`hp-pwa-chevron ${expanded ? "hp-pwa-open" : ""}`} aria-hidden="true">
-                <svg viewBox="0 0 12 12" width="10" height="10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M2.25 4.5L6 8.25L9.75 4.5"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+          {showInfoToggle && (
+            <>
+              <button
+                type="button"
+                className="hp-pwa-info-toggle"
+                onClick={() => setExpanded((prev) => !prev)}
+                aria-expanded={expanded}
+              >
+                <span>{infoLabel}</span>
+                <span className={`hp-pwa-chevron ${expanded ? "hp-pwa-open" : ""}`} aria-hidden="true">
+                  <svg viewBox="0 0 12 12" width="10" height="10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M2.25 4.5L6 8.25L9.75 4.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+
+              {expanded && (
+                <div className="hp-pwa-info-panel">
+                  <p className="hp-pwa-info-intro">{infoIntro}</p>
+                  <ul className="hp-pwa-info-list">
+                    {details.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="hp-pwa-footer">
+          <button type="button" className="hp-pwa-shiny" onClick={onPrimaryAction}>
+            {hasPrimaryIcon && (
+              <span className="hp-pwa-action-icon-wrap" aria-hidden="true">
+                <img
+                  src={primaryIconSrc}
+                  alt={primaryIconAlt}
+                  className="hp-pwa-action-icon"
+                />
               </span>
-            </button>
-
-            {expanded && (
-              <div className="hp-pwa-info-panel">
-                <p className="hp-pwa-info-intro">{infoIntro}</p>
-                <ul className="hp-pwa-info-list">
-                  {details.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
             )}
-          </>
-        )}
+            <span>{primaryLabel}</span>
+          </button>
+        </div>
       </div>
       )}
     </div>
