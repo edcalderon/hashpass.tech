@@ -10,8 +10,10 @@ describe('PWA install prompt layout', () => {
   it('keeps the shared card split into header, scroll body, and footer sections', () => {
     const source = readSource('../../../../packages/ui/src/PwaInstallPromptCard.tsx');
 
+    expect(source).toContain('className="hp-pwa-intro"');
     expect(source).toContain('className="hp-pwa-body-scroll"');
     expect(source).toContain('className="hp-pwa-footer"');
+    expect(source).toContain('flex: 1 1 auto;');
     expect(source).toContain('max-height: calc(100svh - 24px);');
     expect(source).toContain('overflow-y: auto;');
     expect(source).toContain('flex-direction: column;');

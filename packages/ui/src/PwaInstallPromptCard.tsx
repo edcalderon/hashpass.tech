@@ -249,11 +249,12 @@ export default function PwaInstallPromptCard({
           transform: translateY(-1px);
         }
 
-        .${scopeClass} .hp-pwa-description {
+        .${scopeClass} .hp-pwa-intro {
           margin: 0;
           font-size: 0.86rem;
           line-height: 1.45;
           color: rgba(223, 234, 255, 0.9);
+          flex-shrink: 0;
         }
 
         .${scopeClass} .hp-pwa-body-list {
@@ -267,6 +268,7 @@ export default function PwaInstallPromptCard({
         }
 
         .${scopeClass} .hp-pwa-body-scroll {
+          flex: 1 1 auto;
           min-height: 0;
           display: flex;
           flex-direction: column;
@@ -522,9 +524,9 @@ export default function PwaInstallPromptCard({
           )}
         </div>
 
-        <div className="hp-pwa-body-scroll">
-          <p className="hp-pwa-description">{cardDescription}</p>
+        <p className="hp-pwa-intro">{cardDescription}</p>
 
+        <div className="hp-pwa-body-scroll">
           {hasBodyItems && (
             <ul className="hp-pwa-body-list">
               {bodyItems.map((item) => (
