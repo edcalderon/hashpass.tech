@@ -6,6 +6,18 @@
 
 
 
+## [1.7.7] - 2026-05-13
+
+### Released
+- Version 1.7.7 release
+
+### Technical Details
+- Version: 1.7.7
+- Release Type: stable
+- Build Number: 202605131728
+- Release Date: 2026-05-13T17:28:24.240Z
+
+
 ## [1.7.5](https://github.com/edcalderon/hashpass.tech/compare/v1.7.4-dev.3...v1.7.5) (2026-05-11)
 
 

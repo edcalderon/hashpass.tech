@@ -22,9 +22,9 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202605120032, // Updated to current timestamp
-  releaseDate: '2026-05-12',
-  releaseType: 'beta',
+  buildNumber: 202605131728, // Updated to current timestamp
+  releaseDate: '2026-05-13',
+  releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
@@ -34,11 +34,29 @@ export const CURRENT_VERSION: VersionInfo = {
     'Added runtime fallback for Better Auth URL bootstrap in web clients'
   ],
   breakingChanges: [],
-  notes: 'Generic /api/auth routing and tenant-aware auth flow'
+  notes: 'Version 1.7.7 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.7.7': {
+    version: '1.7.7',
+    buildNumber: 202605131728,
+    releaseDate: '2026-05-13',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Moved auth routing to generic /api/auth endpoints',
+      'Centralized tenant resolution for auth provider selection',
+      'Unified event auth detection through the shared tenant resolver',
+      'Added runtime fallback for Better Auth URL bootstrap in web clients'
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.7.7 release'
+  },
   '1.7.6': {
     version: '1.7.6',
     buildNumber: 202605120032,
