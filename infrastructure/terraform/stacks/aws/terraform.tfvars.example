@@ -27,11 +27,11 @@ directus_urls = {
 lambda_environment_overrides = {
   dev = {
     EXPO_PUBLIC_API_BASE_URL = "https://api-dev.hashpass.tech/api"
-    EXPO_PUBLIC_BETTER_AUTH_URL = "https://api-dev.hashpass.tech/api/bsl-auth"
+    EXPO_PUBLIC_BETTER_AUTH_URL = "https://api-dev.hashpass.tech/api/auth"
   }
   prod = {
     EXPO_PUBLIC_API_BASE_URL = "https://api.hashpass.tech/api"
-    EXPO_PUBLIC_BETTER_AUTH_URL = "https://api.hashpass.tech/api/bsl-auth"
+    EXPO_PUBLIC_BETTER_AUTH_URL = "https://api.hashpass.tech/api/auth"
   }
 }
 
