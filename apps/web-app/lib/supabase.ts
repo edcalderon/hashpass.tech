@@ -401,19 +401,12 @@ const initializeSupabase = () => {
       );
     }
 
-    // Allow detectSessionInUrl to enable automatic session detection from URL
-    // This can help with OAuth callbacks and deep linking
-    // However, we need to be careful - it can cause errors if navigation state isn't ready
-    // 
-    // CRITICAL: On web, we normally disable detectSessionInUrl because:
-    // 1. We handle OAuth callbacks manually in the callback handler
-    // 2. detectSessionInUrl can try to access navigation state (rootState.routeNames) before it's ready
-    // 3. This causes "rootState.routeNames is undefined" errors on web
-    // 
-    // HOWEVER: For OTP to work properly on production, we need detectSessionInUrl enabled
-    // because OTP verification creates session tokens that need to be detected from URL
-    // We'll handle any navigation errors gracefully in the catch block
-    let shouldDetectSessionInUrl = true; // Enable for OTP to work on production
+    // Web handles auth callbacks explicitly in app/(shared)/auth/callback.tsx.
+    // Keeping detectSessionInUrl off on web prevents Supabase from touching Expo Router
+    // navigation state before the root navigator is ready.
+    //
+    // Native deep-link flows can still benefit from automatic session detection.
+    const shouldDetectSessionInUrl = Platform.OS !== 'web';
     
     try {
       // Custom fetch function to ensure apikey header is always included
@@ -552,9 +545,7 @@ const initializeSupabase = () => {
           storage: storage,
           autoRefreshToken: true,
           persistSession: true,
-          // Enable detectSessionInUrl to allow automatic session detection from URL
-          // Only enable if we're confident navigation state is ready
-          // This prevents "rootState.routeNames is undefined" errors
+          // Only auto-detect sessions on native. Web uses the explicit callback route.
           detectSessionInUrl: shouldDetectSessionInUrl,
         },
         global: {
@@ -565,15 +556,15 @@ const initializeSupabase = () => {
         }
       });
     } catch (error: any) {
-      // If initialization fails due to navigation state error, retry without detectSessionInUrl
+      // If initialization fails for any reason, retry with the same safe web/native setting.
       const isNavigationError = error?.message?.includes('routeNames') || 
                                  error?.message?.includes('rootState') ||
                                  error?.message?.includes('navigation');
       
       if (isNavigationError) {
-        console.warn('⚠️ Supabase init error (navigation state not ready), retrying without detectSessionInUrl:', error?.message);
+        console.warn('⚠️ Supabase init error (navigation state not ready), retrying with safe session detection settings:', error?.message);
       } else {
-        console.warn('⚠️ Supabase init error, retrying without detectSessionInUrl:', error);
+        console.warn('⚠️ Supabase init error, retrying with safe session detection settings:', error);
       }
       try {
         // Custom fetch function for fallback initialization
@@ -703,7 +694,7 @@ const initializeSupabase = () => {
             storage: storage,
             autoRefreshToken: true,
             persistSession: true,
-            detectSessionInUrl: true, // Enabled to allow automatic session detection
+            detectSessionInUrl: shouldDetectSessionInUrl,
           },
           global: {
             headers: {
