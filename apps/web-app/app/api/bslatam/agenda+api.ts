@@ -15,7 +15,7 @@ export async function OPTIONS() {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const eventId = searchParams.get('eventId') || 'bsl2025';
+  const eventId = searchParams.get('eventId') || 'bsl';
 
   try {
     const { data, error } = await supabase

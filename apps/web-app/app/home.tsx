@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { useEvent } from '@contexts/EventContext';
 import { getCurrentEvent } from '../lib/event-detector';
 import Animated, {
   useAnimatedScrollHandler,
@@ -50,7 +49,6 @@ export default function HomeScreen() {
   const [userName, setUserName] = useState<string | null>(null);
   const { t } = useTranslation('index');
   const isMobile = useIsMobile();
-  const { event } = useEvent();
   
   // Get current event info for dynamic footer
   const currentEvent = getCurrentEvent();
@@ -66,14 +64,14 @@ export default function HomeScreen() {
   
   // Determine footer link behavior based on branch
   // On main branch: show "HashPass" link to hashpass.tech
-  // On event branches (like bsl2025): show event link
+  // On event branches (like the BSL On Tour family): show the active event link
   const shouldShowFooterLink = true; // Always show a link
   const footerLinkName = isMainBranch 
     ? 'HashPass' 
-    : 'Blockchain Summit Latam';
+    : (currentEvent?.title || 'Blockchain Summit Latam');
   const footerLinkUrl = isMainBranch 
     ? 'https://hashpass.tech'
-    : (currentEvent?.website || (currentEvent?.id === 'bsl2025' ? 'https://blockchainsummit.la/' : null));
+    : (currentEvent?.website || null);
 
   // Animation for the scroll down arrow
   const bounceAnim = useSharedValue(0);

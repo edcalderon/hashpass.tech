@@ -10,6 +10,7 @@ import { qrSystemService, QRScanResult } from '../../../lib/qr-system';
 import AdminQRScanner from '../../../components/AdminQRScanner';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useRouter } from 'expo-router';
+import { resolveActiveEventId } from '../../../lib/event-path';
 
 type TabType = 'passes' | 'qr-scanner' | 'meetings';
 
@@ -56,6 +57,7 @@ export default function AdminPanel() {
   const { colors, isDark } = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const eventId = resolveActiveEventId();
   const [activeTab, setActiveTab] = useState<TabType>('passes');
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
@@ -155,7 +157,7 @@ export default function AdminPanel() {
       const { data, error } = await supabase
         .from('passes')
         .select('*')
-        .eq('event_id', 'bsl2025')
+        .eq('event_id', eventId)
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -175,7 +177,7 @@ export default function AdminPanel() {
       const { data: passesData, error: passesError } = await supabase
         .from('passes')
         .select('user_id')
-        .eq('event_id', 'bsl2025')
+        .eq('event_id', eventId)
         .limit(200);
 
       if (passesError) throw passesError;
@@ -1190,5 +1192,4 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     marginTop: 32,
   },
 });
-
 

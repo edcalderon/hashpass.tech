@@ -1,8 +1,11 @@
 import { Stack } from 'expo-router';
 import { useTheme } from '../../../../hooks/useTheme';
+import { useEvent } from '@contexts/EventContext';
 
 export default function SpeakersLayout() {
   const { isDark, colors } = useTheme();
+  const { event } = useEvent();
+  const eventTitle = event?.title || 'Explore';
 
   return (
     <Stack
@@ -38,7 +41,7 @@ export default function SpeakersLayout() {
         name="index" 
         options={{
           title: 'Featured Speakers',
-          headerBackTitle: 'Explore',
+          headerBackTitle: eventTitle,
           headerBackTitleVisible: true,
         }}
       />
@@ -46,7 +49,7 @@ export default function SpeakersLayout() {
         name="calendar" 
         options={{
           title: 'All Speakers',
-          headerBackTitle: 'Speakers',
+          headerBackTitle: eventTitle,
           headerBackTitleVisible: true,
         }}
       />
@@ -54,7 +57,7 @@ export default function SpeakersLayout() {
         name="[id]"
         options={({ route }) => ({
           title: 'Speaker Details',
-          headerBackTitle: 'Speakers',
+          headerBackTitle: eventTitle,
           headerBackTitleVisible: true,
           // Dynamic title based on speaker name if available
           headerTitle: 'Speaker Details',

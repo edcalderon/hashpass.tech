@@ -69,7 +69,7 @@ class VersionService {
     const gitCommit = (gitInfo as any).gitCommit || process.env.GIT_COMMIT || 'unknown';
     const gitCommitFull = (gitInfo as any).gitCommitFull || gitCommit;
     const gitBranch = getRuntimeBranch();
-    const gitRepoUrl = (gitInfo as any).gitRepoUrl || 'https://github.com/lstech-solutions/bsl2025.hashpass.tech';
+    const gitRepoUrl = (gitInfo as any).gitRepoUrl || 'https://github.com/edcalderon/hashpass.tech';
     
     return {
       buildId: `build-${this.getCurrentVersion().buildNumber}`,

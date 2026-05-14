@@ -50,6 +50,11 @@ export default function SpeakersCalendar() {
   const { isDark, colors } = useTheme();
   const router = useRouter();
   const styles = getStyles(isDark, colors);
+  const eventId = event?.id || 'bsl';
+  const eventDateLabel = event?.eventDateString || event?.subtitle || '2026 Tour';
+  const eventLocationLabel = event?.tour?.city && event?.tour?.country
+    ? `${event.tour.city}, ${event.tour.country}`
+    : event?.subtitle || 'Latin America';
 
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [filteredSpeakers, setFilteredSpeakers] = useState<Speaker[]>([]);
@@ -65,13 +70,13 @@ export default function SpeakersCalendar() {
   useEffect(() => {
     const checkEventFinished = () => {
       const now = new Date();
-      const end = new Date('2025-11-14T23:59:59-05:00');
-      setIsEventFinished(now > end);
+      const end = event?.eventEndDate ? new Date(event.eventEndDate) : null;
+      setIsEventFinished(Boolean(end && now > end));
     };
     checkEventFinished();
     const interval = setInterval(checkEventFinished, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [event?.eventEndDate]);
   
   // Calculate active speakers count
   const activeSpeakersCount = useMemo(() => {
@@ -193,7 +198,7 @@ export default function SpeakersCalendar() {
     return (
       <TouchableOpacity 
         style={styles.speakerCard}
-        onPress={() => router.push(`/events/bsl2025/speakers/${speaker.id}`)}
+        onPress={() => router.push(`/events/${eventId}/speakers/${speaker.id}`)}
       >
         <View style={styles.speakerImageContainer}>
           <SpeakerAvatar
@@ -265,11 +270,13 @@ export default function SpeakersCalendar() {
         <EventBanner
           title="All Speakers"
           subtitle={`Complete Directory • ${speakers.length} Speakers${activeSpeakersCount > 0 ? ` • ${activeSpeakersCount} Active` : ''}`}
-          date="November 12-14, 2025 • Medellín, Colombia"
-          showCountdown={!isEventFinished}
-          showLiveIndicator={!isEventFinished}
+          date={eventDateLabel}
+          showCountdown={!isEventFinished && Boolean(event?.eventStartDate)}
+          showLiveIndicator={!isEventFinished && Boolean(event?.eventStartDate)}
           isEventFinished={isEventFinished}
-          eventId="bsl2025"
+          eventStartDate={event?.eventStartDate}
+          eventId={eventId}
+          eventImage={event?.image}
         />
 
         {/* Search and Sort */}
@@ -336,11 +343,11 @@ export default function SpeakersCalendar() {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <MaterialIcons name="location-on" size={20} color="#007AFF" />
-              <Text style={styles.infoText}>Medellín, Colombia</Text>
+        <Text style={styles.infoText}>{eventLocationLabel}</Text>
             </View>
             <View style={styles.infoRow}>
               <MaterialIcons name="event" size={20} color="#007AFF" />
-              <Text style={styles.infoText}>November 12-14, 2025</Text>
+        <Text style={styles.infoText}>{eventDateLabel}</Text>
             </View>
             <View style={styles.infoRow}>
               <MaterialIcons name="people" size={20} color="#007AFF" />
@@ -572,5 +579,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     textAlign: 'center',
   },
 });
-
-

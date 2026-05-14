@@ -1,7 +1,8 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { EventConfig, EVENTS } from '../config/events';
-import { getCurrentEvent } from '../lib/event-detector';
+import { getCurrentEvent, getRouteEventIdFromPathname } from '../lib/event-detector';
 import { ENV_CONFIG, TenantConfig } from '@hashpass/config';
+import { usePathname } from 'expo-router';
 
 interface EventContextType {
   event: EventConfig | null;
@@ -19,8 +20,12 @@ interface EventProviderProps {
 }
 
 export function EventProvider({ children }: EventProviderProps) {
-  // Get EventInfo from event-detector
-  const eventInfo = getCurrentEvent();
+  const pathname = usePathname();
+  const routeEventId = getRouteEventIdFromPathname(pathname);
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : undefined;
+
+  // Get EventInfo from event-detector, preferring the route slug for event pages.
+  const eventInfo = getCurrentEvent(routeEventId || undefined, hostname);
 
   // Get current tenant from configuration
   const tenant = ENV_CONFIG.getTenant();

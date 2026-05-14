@@ -8,6 +8,7 @@ import {
   Ticket,
   Coins,
 } from "lucide-react-native";
+import { resolveEventImageSource } from '../lib/event-branding';
 
 interface Event {
   id: string;
@@ -151,7 +152,7 @@ const EventDiscovery = ({
               onPress={() => onEventSelect(event)}
             >
               <Image
-                source={{ uri: event.image }}
+                source={resolveEventImageSource(event.image) || { uri: event.image }}
                 className="w-full h-40"
                 resizeMode="cover"
               />

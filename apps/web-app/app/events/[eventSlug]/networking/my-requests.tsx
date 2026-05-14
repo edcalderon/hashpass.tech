@@ -11,6 +11,7 @@ import {
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../../hooks/useTheme';
 import { useAuth } from '../../../../hooks/useAuth';
+import { useEvent } from '@contexts/EventContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
@@ -43,6 +44,8 @@ const generateUserAvatarUrl = (name: string): string => {
 export default function MyRequestsView() {
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
+  const { event } = useEvent();
+  const eventId = event?.id || 'bsl';
   const router = useRouter();
   const params = useLocalSearchParams();
   const { showSuccess, showError } = useToastHelpers();
@@ -1344,7 +1347,7 @@ export default function MyRequestsView() {
                   style={[styles.meetingLinkButton, { backgroundColor: colors.primary }]}
                   onPress={() => {
                     router.push({
-                      pathname: "/events/bsl2025/networking/meeting-detail" as any,
+                      pathname: `/events/${eventId}/networking/meeting-detail` as any,
                       params: {
                         meetingId: selectedRequest.meeting_id,
                         speakerName: selectedRequest.speaker_name,
@@ -1611,7 +1614,7 @@ export default function MyRequestsView() {
             {activeTab === 'sent' && (
               <TouchableOpacity
                 style={styles.browseButton}
-                onPress={() => router.push('/events/bsl2025/speakers' as any)}
+                onPress={() => router.push(`/events/${eventId}/speakers` as any)}
               >
                 <MaterialIcons name="search" size={20} color="white" />
                 <Text style={styles.browseButtonText}>Browse Speakers</Text>
@@ -1991,7 +1994,7 @@ export default function MyRequestsView() {
                   setShowDetailModal(false);
                   setSelectedSlot(null);
                   router.push({
-                    pathname: '/events/bsl2025/networking/meeting-detail' as any,
+                    pathname: `/events/${eventId}/networking/meeting-detail` as any,
                     params: {
                       meetingId: confirmedMeetingId,
                       speakerName: selectedRequest?.speaker_name || '',

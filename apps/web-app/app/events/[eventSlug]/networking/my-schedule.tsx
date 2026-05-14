@@ -21,6 +21,7 @@ import { es } from 'date-fns/locale';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../../hooks/useAuth';
+import { useEvent } from '@contexts/EventContext';
 import { supabase } from '../../../../lib/supabase';
 import { apiClient } from '../../../../lib/api-client';
 import { useToastHelpers } from '@contexts/ToastContext';
@@ -36,7 +37,7 @@ const CopilotView = walkthroughable(View);
 // Constants
 const WORKING_HOURS = { start: 8, end: 19 }; // 8 AM to 7 PM (covers 08:00–18:30 sessions)
 const TIME_SLOT_MINUTES = 15; // 15-minute time slots
-const BSL_2025_DATES = {
+const DEFAULT_BSL_TOUR_DATES = {
   start: new Date(2025, 10, 12), // November 12, 2025 (months are 0-indexed)
   end: new Date(2025, 10, 14)    // November 14, 2025
 };
@@ -68,13 +69,20 @@ const addMinutes = (date: Date, minutes: number): Date => {
 const MySchedule = () => {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const { event } = useEvent();
+  const eventId = event?.id || 'bsl';
   const { showError, showSuccess, showWarning } = useToastHelpers();
   const { t } = useTranslation('networking');
   const navigation = useNavigation();
   useLayoutEffect(() => {
     navigation.setOptions({ title: t('mySchedule.title') } as any);
   }, [navigation, t]);
-  const [selectedDate, setSelectedDate] = useState<Date>(BSL_2025_DATES.start);
+  const eventDates = useMemo(() => {
+    const start = event?.eventStartDate ? new Date(event.eventStartDate) : DEFAULT_BSL_TOUR_DATES.start;
+    const end = event?.eventEndDate ? new Date(event.eventEndDate) : DEFAULT_BSL_TOUR_DATES.end;
+    return { start, end };
+  }, [event?.eventStartDate, event?.eventEndDate]);
+  const [selectedDate, setSelectedDate] = useState<Date>(eventDates.start);
   const [expandedHours, setExpandedHours] = useState<{[key: string]: boolean}>({});
   const [dbMeetings, setDbMeetings] = useState<Meeting[]>([]);
   const [loadingAgenda, setLoadingAgenda] = useState<boolean>(false);
@@ -103,6 +111,10 @@ const MySchedule = () => {
   const [refreshingMeetings, setRefreshingMeetings] = useState<boolean>(false);
   const [showMeetingsSection, setShowMeetingsSection] = useState<boolean>(false);
   const [meetingFilter, setMeetingFilter] = useState<'all' | 'incoming' | 'passed'>('all');
+
+  useEffect(() => {
+    setSelectedDate(eventDates.start);
+  }, [eventDates.start]);
 
   const meetingCounts = useMemo(() => {
     const now = new Date();
@@ -145,7 +157,8 @@ const MySchedule = () => {
         const { data, error } = await supabase
           .from('user_agenda_status')
           .select('agenda_id, meeting_id, slot_time, status, slot_status, is_favorite')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('event_id', eventId);
         
         if (error) {
           console.error('Error loading user schedule status:', error);
@@ -186,7 +199,7 @@ const MySchedule = () => {
       }
     };
     loadUserScheduleStatus();
-  }, [user]);
+  }, [user, eventId]);
 
   useEffect(() => {
     const fetchAgenda = async () => {
@@ -194,7 +207,7 @@ const MySchedule = () => {
       try {
         // Use apiClient to ensure correct base URL from env vars
         const response = await apiClient.request('agenda', {
-          params: { eventId: 'bsl2025' }
+          params: { eventId }
         });
         // apiClient returns { data, success, error }
         // Handle different response formats
@@ -239,7 +252,7 @@ const MySchedule = () => {
       }
     };
     fetchAgenda();
-  }, [userAgendaStatus]);
+  }, [userAgendaStatus, eventId]);
 
   // Load user meetings (requester or speaker)
   useEffect(() => {
@@ -455,12 +468,11 @@ const MySchedule = () => {
     return [...dbMeetings, ...personalMeetings];
   }, [dbMeetings, meetings, userMeetingStatus]);
 
-  // Generate schedule data for BSL 2025 (Nov 12-14)
   const schedule = useMemo(() => {
     const days: DaySchedule[] = [];
-    let currentDate = new Date(BSL_2025_DATES.start);
+    let currentDate = new Date(eventDates.start);
 
-    while (currentDate <= BSL_2025_DATES.end) {
+    while (currentDate <= eventDates.end) {
       const slots = generateTimeSlots(currentDate, allMeetings);
       days.push({
         date: new Date(currentDate),
@@ -574,6 +586,7 @@ const MySchedule = () => {
           .from('user_agenda_status')
           .select('id')
           .eq('user_id', user.id)
+          .eq('event_id', eventId)
           .eq('slot_time', slotStartTime.toISOString())
           .is('agenda_id', null)
           .is('meeting_id', null)
@@ -610,7 +623,7 @@ const MySchedule = () => {
             .insert({
               user_id: user.id,
               slot_time: slotStartTime.toISOString(),
-              event_id: 'bsl2025',
+              event_id: eventId,
               status: newStatus,
               slot_status: newStatus,
             });
@@ -644,6 +657,7 @@ const MySchedule = () => {
           .from('user_agenda_status')
           .select('id')
           .eq('user_id', user.id)
+          .eq('event_id', eventId)
           .eq('agenda_id', meeting.id)
           .maybeSingle();
 
@@ -664,7 +678,7 @@ const MySchedule = () => {
             .insert({
               user_id: user.id,
               agenda_id: meeting.id,
-              event_id: 'bsl2025',
+              event_id: eventId,
               status: newStatus,
               confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
             });
@@ -688,6 +702,7 @@ const MySchedule = () => {
           .from('user_agenda_status')
           .select('id')
           .eq('user_id', user.id)
+          .eq('event_id', eventId)
           .eq('meeting_id', meeting.id)
           .maybeSingle();
 
@@ -708,7 +723,7 @@ const MySchedule = () => {
             .insert({
               user_id: user.id,
               meeting_id: meeting.id,
-              event_id: 'bsl2025',
+              event_id: eventId,
               status: newStatus,
               confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
             });
@@ -742,13 +757,14 @@ const MySchedule = () => {
     const newStatus = currentStatus === 'blocked' ? 'available' : 'blocked';
     
     try {
-      const { data: existing } = await supabase
-        .from('user_agenda_status')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('slot_time', slotStartTime.toISOString())
-        .is('agenda_id', null)
-        .is('meeting_id', null)
+        const { data: existing } = await supabase
+          .from('user_agenda_status')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('event_id', eventId)
+          .eq('slot_time', slotStartTime.toISOString())
+          .is('agenda_id', null)
+          .is('meeting_id', null)
         .maybeSingle();
 
       if (existing) {
@@ -781,7 +797,7 @@ const MySchedule = () => {
           .insert({
             user_id: user.id,
             slot_time: slotStartTime.toISOString(),
-            event_id: 'bsl2025',
+            event_id: eventId,
             status: newStatus,
             slot_status: newStatus,
           });
@@ -816,12 +832,13 @@ const MySchedule = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
-      const { data: existing } = await supabase
-        .from('user_agenda_status')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('agenda_id', meeting.id)
-        .maybeSingle();
+        const { data: existing } = await supabase
+          .from('user_agenda_status')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('event_id', eventId)
+          .eq('agenda_id', meeting.id)
+          .maybeSingle();
 
       if (existing) {
         const { error } = await (supabase
@@ -840,7 +857,7 @@ const MySchedule = () => {
           .insert({
             user_id: user.id,
             agenda_id: meeting.id,
-            event_id: 'bsl2025',
+            event_id: eventId,
             status: currentStatus,
             is_favorite: newFavorite,
           });
@@ -1399,7 +1416,7 @@ const MySchedule = () => {
             renderHourGroup(hour, slots)
           )}
 
-          {/* My Meetings moved to dedicated page: /events/bsl2025/networking/my-meetings */}
+          {/* My Meetings moved to dedicated page: /events/${eventId}/networking/my-meetings */}
         </View>
       </ScrollView>
 

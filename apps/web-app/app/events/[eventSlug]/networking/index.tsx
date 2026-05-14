@@ -28,6 +28,7 @@ const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
 export default function NetworkingView() {
   const { isDark, colors } = useTheme();
   const { user } = useAuth();
+  const { event } = useEvent();
   const router = useRouter();
   const { showSuccess, showError } = useToastHelpers();
   const { t } = useTranslation();
@@ -36,6 +37,7 @@ export default function NetworkingView() {
   const { isLoggedIn, isLoading: authLoading } = useAuth();
   const tutorialStartedRef = useRef(false);
   const styles = getStyles(isDark, colors);
+  const eventId = event?.id || 'bsl';
 
   // Reset ref when tutorial is reset (completion status changes from true to false)
   useEffect(() => {
@@ -165,7 +167,7 @@ export default function NetworkingView() {
       title: t({ id: 'networking.quickAccessItems.findSpeakers.title', message: 'Find Speakers' }),
       icon: 'search',
       color: '#FF9800',
-      route: '/events/bsl2025/speakers',
+      route: `/events/${eventId}/speakers`,
       subtitle: t({ id: 'networking.quickAccessItems.findSpeakers.subtitle', message: 'Browse all speakers' }),
     },
     {
@@ -173,7 +175,7 @@ export default function NetworkingView() {
       title: t({ id: 'networking.quickAccessItems.yourRequest.title', message: 'Your Request' }),
       icon: 'mail',
       color: '#4CAF50',
-      route: '/events/bsl2025/networking/my-requests',
+      route: `/events/${eventId}/networking/my-requests`,
       subtitle: t({ id: 'networking.quickAccessItems.yourRequest.subtitle', message: 'View sent and incoming requests' }),
     },
     {
@@ -181,7 +183,7 @@ export default function NetworkingView() {
       title: t({ id: 'networking.quickAccessItems.myMeetings.title', message: 'My Meetings' }),
       icon: 'event',
       color: '#3F51B5',
-      route: '/events/bsl2025/networking/my-meetings',
+      route: `/events/${eventId}/networking/my-meetings`,
       subtitle: t({ id: 'networking.quickAccessItems.myMeetings.subtitle', message: 'Your accepted/created meetings' }),
     },
     {
@@ -189,7 +191,7 @@ export default function NetworkingView() {
       title: t({ id: 'networking.quickAccessItems.mySchedule.title', message: 'My Schedule' }),
       icon: 'event-note',
       color: '#9C27B0',
-      route: '/events/bsl2025/networking/my-schedule',
+      route: `/events/${eventId}/networking/my-schedule`,
       subtitle: t({ id: 'networking.quickAccessItems.mySchedule.subtitle', message: 'View and manage your schedule' }),
     },
     {
@@ -197,7 +199,7 @@ export default function NetworkingView() {
       title: t({ id: 'networking.quickAccessItems.blockedUsers.title', message: 'Blocked Users' }),
       icon: 'block',
       color: '#F44336',
-      route: '/events/bsl2025/networking/blocked',
+      route: `/events/${eventId}/networking/blocked`,
       subtitle: t({ id: 'networking.quickAccessItems.blockedUsers.subtitle', message: 'Manage blocked users' }),
     },
     {
@@ -205,7 +207,7 @@ export default function NetworkingView() {
       title: t({ id: 'networking.quickAccessItems.analytics.title', message: 'Analytics' }),
       icon: 'bar-chart',
       color: '#607D8B',
-      route: '/events/bsl2025/networking/analytics',
+      route: `/events/${eventId}/networking/analytics`,
       subtitle: t({ id: 'networking.quickAccessItems.analytics.subtitle', message: 'View networking statistics' }),
     },
   ];

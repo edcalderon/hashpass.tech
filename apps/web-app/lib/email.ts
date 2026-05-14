@@ -151,7 +151,7 @@ function replaceTemplatePlaceholders(template: string, translations: any, assets
     
     // Replace variables within the translation value (use global replace)
     // Handle {appUrl}/status pattern first (more specific) - must be done before {appUrl}
-    const appUrl = assets.appUrl || 'https://bsl2025.hashpass.tech';
+    const appUrl = assets.appUrl || 'https://bsl.hashpass.tech';
     const statusUrl = `${appUrl}/status`;
     
     // Replace {appUrl}/status with full clickable link
@@ -166,7 +166,7 @@ function replaceTemplatePlaceholders(template: string, translations: any, assets
       processedValue = processedValue.replace(/{hashpassUrl}/g, '<a href="https://hashpass.tech" style="color: #007AFF; text-decoration: none;">hashpass.tech</a>');
     }
     if (processedValue.includes('{bslUrl}')) {
-      processedValue = processedValue.replace(/{bslUrl}/g, '<a href="https://blockchainsummit.la/" style="color: #007AFF; text-decoration: none;">BSL 2025</a>');
+      processedValue = processedValue.replace(/{bslUrl}/g, '<a href="https://blockchainsummit.la/" style="color: #007AFF; text-decoration: none;">BSL On Tour</a>');
     }
     if (processedValue.includes('{supportEmail}')) {
       const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
@@ -642,7 +642,7 @@ export async function sendUserOnboardingEmail(
         screenshotExploreGifUrl,
         screenshotRequestMeetingGifUrl,
         screenshotNotificationsUrl,
-        appUrl: 'https://bsl2025.hashpass.tech'
+        appUrl: 'https://bsl.hashpass.tech'
       };
       
       // Replace placeholders with translations and assets
@@ -827,7 +827,7 @@ export async function sendWelcomeEmail(
         videoThumbnailUrl,
         videoGifUrl, // Use Mux animated GIF generated from the appropriate video based on locale
         videoPosterUrl,
-        appUrl: 'https://bsl2025.hashpass.tech'
+        appUrl: 'https://bsl.hashpass.tech'
       };
       
       // Replace placeholders with translations and assets (use normalized locale)
@@ -1028,7 +1028,7 @@ export async function sendSpeakerOnboardingEmail(
         screenshotNotificationsGifUrl,
         screenshotAcceptRequestUrl,
         screenshotScheduleViewUrl,
-        appUrl: 'https://bsl2025.hashpass.tech'
+        appUrl: 'https://bsl.hashpass.tech'
       };
       
       // Replace placeholders with translations and assets
@@ -1449,7 +1449,7 @@ export async function sendTroubleshootingEmail(
       const assets: Record<string, string> = {
         bslLogoUrl,
         hashpassLogoUrl,
-        appUrl: 'https://bsl2025.hashpass.tech',
+        appUrl: 'https://bsl.hashpass.tech',
         statusMessage: String(statusMessage || 'All systems operational'),
         statusTimestamp: String(statusTimestamp || new Date().toISOString()),
       };

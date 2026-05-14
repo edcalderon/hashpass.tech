@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, StatusBar, Image } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity, StatusBar, Image, ImageBackground } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../i18n/i18n';
 import { isMainBranch } from '../lib/event-detector';
+import { getTourBrandAsset, resolveEventImageSource } from '../lib/event-branding';
 import AgendaTracker from './AgendaTracker';
 
 interface EventBannerProps {
@@ -19,6 +21,7 @@ interface EventBannerProps {
   lastUpdated?: string | null;
   usingJsonFallback?: boolean;
   eventId?: string; // Event ID to determine if logo should be shown
+  eventImage?: string; // Optional event hero image
   isEventFinished?: boolean; // Whether the event has finished
 }
 
@@ -36,27 +39,36 @@ export default function EventBanner({
   backgroundColor = '#007AFF',
   showCountdown = false,
   showLiveIndicator = false,
-  eventStartDate = '2025-11-12T09:00:00-05:00', // BSL 2025 start time
+  eventStartDate,
   isLive = false,
   lastUpdated = null,
   usingJsonFallback = false,
   eventId,
+  eventImage,
   isEventFinished = false
 }: EventBannerProps) {
   const { isDark, colors } = useTheme();
   const router = useRouter();
   const { t } = useTranslation('explore');
-  
-  // Check if this is BSL2025 event to show logo instead of title
-  const isBSL2025 = eventId === 'bsl2025' || title === 'Blockchain Summit Latam 2025';
+  const tourBrand = getTourBrandAsset(eventId);
+  const heroImageSource = resolveEventImageSource(eventImage);
+  const hasValidStartDate = Boolean(eventStartDate && !Number.isNaN(new Date(eventStartDate).getTime()));
+  const gratitudeEventLabel = title || 'this event';
+  const isArchiveEvent = Boolean(isEventFinished || eventId === 'bsl2025' || tourBrand?.label?.toLowerCase().includes('archive'));
+  const suppressLiveContent = isArchiveEvent && !isEventFinished;
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [isEventLive, setIsEventLive] = useState(false);
   const [pulseAnim] = useState(new Animated.Value(1));
-  const styles = getStyles(isDark, colors, backgroundColor);
+  const styles = getStyles(isDark, colors, backgroundColor, isArchiveEvent);
 
   // Check if event has started based on eventStartDate
   useEffect(() => {
     const checkEventStatus = () => {
+      if (!eventStartDate || !hasValidStartDate) {
+        setIsEventLive(false);
+        return;
+      }
+
       const now = new Date().getTime();
       const eventTime = new Date(eventStartDate).getTime();
       const hasStarted = now >= eventTime;
@@ -67,10 +79,14 @@ export default function EventBanner({
     // Check every minute
     const interval = setInterval(checkEventStatus, 60000);
     return () => clearInterval(interval);
-  }, [eventStartDate]);
+  }, [eventStartDate, hasValidStartDate]);
 
   // Calculate time left until event
   const calculateTimeLeft = (): TimeLeft => {
+    if (!eventStartDate || !hasValidStartDate) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    }
+
     const now = new Date().getTime();
     const eventTime = new Date(eventStartDate).getTime();
     const difference = eventTime - now;
@@ -96,11 +112,11 @@ export default function EventBanner({
 
       return () => clearInterval(timer);
     }
-  }, [showCountdown, eventStartDate, isEventLive, isLive]);
+  }, [showCountdown, eventStartDate, hasValidStartDate, isEventLive, isLive, suppressLiveContent]);
 
   // Live indicator pulse animation
   useEffect(() => {
-    if (showLiveIndicator && (isLive || isEventLive)) {
+    if (showLiveIndicator && !suppressLiveContent && (isLive || isEventLive)) {
       const pulse = () => {
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -117,7 +133,7 @@ export default function EventBanner({
       };
       pulse();
     }
-  }, [showLiveIndicator, isLive, isEventLive, pulseAnim]);
+  }, [showLiveIndicator, isLive, isEventLive, pulseAnim, suppressLiveContent]);
 
   const formatTimeUnit = (value: number): string => {
     return value.toString().padStart(2, '0');
@@ -125,122 +141,178 @@ export default function EventBanner({
 
   return (
     <View style={styles.headerSection}>
+      {heroImageSource ? (
+        <ImageBackground
+          source={heroImageSource}
+          resizeMode="cover"
+          style={styles.heroBackground}
+          imageStyle={styles.heroBackgroundImage}
+        >
+          <LinearGradient
+            colors={
+              isDark
+                ? ['rgba(6, 12, 24, 0.18)', 'rgba(6, 12, 24, 0.72)', 'rgba(6, 12, 24, 0.94)']
+                : ['rgba(5, 12, 24, 0.08)', 'rgba(5, 12, 24, 0.52)', 'rgba(5, 12, 24, 0.88)']
+            }
+            locations={[0, 0.58, 1]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.heroOverlay}
+          />
+        </ImageBackground>
+      ) : (
+        <LinearGradient
+          colors={
+            isArchiveEvent
+              ? ['#07111F', '#0B1728', backgroundColor]
+              : [backgroundColor, backgroundColor, backgroundColor]
+          }
+          locations={[0, 0.52, 1]}
+          start={{ x: 0.15, y: 0 }}
+          end={{ x: 0.85, y: 1 }}
+          style={styles.heroFallback}
+        />
+      )}
+
       {/* Light beam effect at top */}
       <View style={styles.lightBeamEffect} />
 
-      {/* Main Event Info */}
-      <View style={styles.mainInfo}>
-        {isBSL2025 ? (
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg')}
-              style={styles.eventLogo}
-              resizeMode="contain"
-            />
-            <Text style={styles.logoSubLabel}>2025 - 9th Edition</Text>
+      <View style={styles.contentShell}>
+        {isArchiveEvent && (
+          <View style={styles.archiveBadge}>
+            <MaterialIcons name="history" size={16} color="#FFFFFF" />
+            <Text style={styles.archiveBadgeText}>Past Event</Text>
+          </View>
+        )}
+
+        {/* Main Event Info */}
+        <View style={styles.mainInfo}>
+          {tourBrand ? (
+            <View style={styles.logoContainer}>
+              <Image
+                source={tourBrand.logo}
+                style={styles.eventLogo}
+                resizeMode="contain"
+              />
+              <Text style={styles.logoSubLabel}>{tourBrand.label}</Text>
+            </View>
+          ) : (
+            <Text style={styles.eventTitle}>{title}</Text>
+          )}
+          <Text style={styles.eventSubtitle}>{subtitle}</Text>
+          <Text style={styles.eventDate}>{date}</Text>
+        </View>
+
+        {/* Finished Event Badge */}
+        {isEventFinished && (
+          <View style={styles.finishedBadge}>
+            <MaterialIcons name="celebration" size={20} color="#FFFFFF" />
+            <Text style={styles.finishedBadgeText}>
+              Past Event / Archived Edition
+            </Text>
+          </View>
+        )}
+
+        {/* Gratitude Message - Replaces Agenda Tracker when event is finished */}
+        {isEventFinished ? (
+          <View style={styles.gratitudeContainer}>
+            <MaterialIcons name="celebration" size={36} color="#FFFFFF" />
+            <Text style={styles.gratitudeTitle}>
+              ¡Gracias por ser parte de {gratitudeEventLabel}!
+            </Text>
+            <Text style={styles.gratitudeTitleEn}>
+              Thank you for being part of {gratitudeEventLabel}!
+            </Text>
+            <Text style={styles.gratitudeSubtitle}>
+              Esta edición quedó archivada como referencia histórica. Agradecemos a todos los asistentes, speakers y colaboradores que hicieron posible el evento.
+            </Text>
+            <Text style={styles.gratitudeSubtitleEn}>
+              This edition is archived as a historical reference. We thank all attendees, speakers and collaborators who made it possible.
+            </Text>
+            <View style={styles.gratitudeThanksContainer}>
+              <Text style={styles.gratitudeThanks}>
+                Especial agradecimiento al equipo organizador y a las instituciones anfitrionas.
+              </Text>
+              <Text style={styles.gratitudeThanksEn}>
+                Special thanks to the organizing team and the host institutions.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.viewMoreEventsButton}
+              onPress={() => router.push('/(shared)/dashboard/explore' as any)}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="explore" size={20} color="#FFFFFF" />
+              <Text style={styles.viewMoreEventsText}>
+                {isMainBranch ? t('banner.exploreAllEvents') : t('banner.exploreMoreEvents')}
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          <Text style={styles.eventTitle}>{title}</Text>
-        )}
-        <Text style={styles.eventSubtitle}>{subtitle}</Text>
-        <Text style={styles.eventDate}>{date}</Text>
-      </View>
+          <>
+            {/* Agenda Tracker - Show when event is live */}
+            {!suppressLiveContent && (isLive || isEventLive) && (
+              <AgendaTracker eventId={eventId} backgroundColor={backgroundColor} />
+            )}
 
-      {/* Finished Event Badge */}
-      {isEventFinished && (
-        <View style={styles.finishedBadge}>
-          <MaterialIcons name="celebration" size={20} color="#FFFFFF" />
-          <Text style={styles.finishedBadgeText}>
-            Evento Finalizado / Event Finished
-          </Text>
-        </View>
-      )}
-
-      {/* Gratitude Message - Replaces Agenda Tracker when event is finished */}
-      {isEventFinished ? (
-        <View style={styles.gratitudeContainer}>
-          <MaterialIcons name="celebration" size={36} color="#FFFFFF" />
-          <Text style={styles.gratitudeTitle}>
-            ¡Gracias por ser parte de BSL 2025!
-          </Text>
-          <Text style={styles.gratitudeTitleEn}>
-            Thank you for being part of BSL 2025!
-          </Text>
-          <Text style={styles.gratitudeSubtitle}>
-            El evento ha finalizado. Agradecemos a todos los asistentes, speakers y colaboradores que hicieron posible este evento histórico sin precedentes en Latinoamérica.
-          </Text>
-          <Text style={styles.gratitudeSubtitleEn}>
-            The event has ended. We thank all attendees, speakers and collaborators who made this unprecedented historic event in Latin America possible.
-          </Text>
-          <View style={styles.gratitudeThanksContainer}>
-            <Text style={styles.gratitudeThanks}>
-              Especial agradecimiento a Rodrigo, al equipo BSL (Juli, Julian, Laura), a la Universidad EAFIT y a todos los que contribuyeron.
-            </Text>
-            <Text style={styles.gratitudeThanksEn}>
-              Special thanks to Rodrigo, the BSL team (Juli, Julian, Laura), EAFIT University and everyone who contributed.
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.viewMoreEventsButton}
-            onPress={() => router.push('/(shared)/dashboard/explore' as any)}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="explore" size={20} color="#FFFFFF" />
-            <Text style={styles.viewMoreEventsText}>
-              {isMainBranch ? t('banner.exploreAllEvents') : t('banner.exploreMoreEvents')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          {/* Agenda Tracker - Show when event is live */}
-          {(isLive || isEventLive) && (
-            <AgendaTracker eventId={eventId} backgroundColor={backgroundColor} />
-          )}
-
-          {/* Countdown Timer - Only show before event starts */}
-          {showCountdown && !isLive && !isEventLive && (
-            <View style={styles.countdownContainer}>
-              <Text style={styles.countdownLabel}>Event starts in:</Text>
-              <View style={styles.countdownTimer}>
-                <View style={styles.timeUnit}>
-                  <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.days)}</Text>
-                  <Text style={styles.timeLabel}>DAYS</Text>
-                </View>
-                <Text style={styles.timeSeparator}>:</Text>
-                <View style={styles.timeUnit}>
-                  <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.hours)}</Text>
-                  <Text style={styles.timeLabel}>HRS</Text>
-                </View>
-                <Text style={styles.timeSeparator}>:</Text>
-                <View style={styles.timeUnit}>
-                  <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.minutes)}</Text>
-                  <Text style={styles.timeLabel}>MIN</Text>
-                </View>
-                <Text style={styles.timeSeparator}>:</Text>
-                <View style={styles.timeUnit}>
-                  <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.seconds)}</Text>
-                  <Text style={styles.timeLabel}>SEC</Text>
+            {/* Countdown Timer - Only show before event starts */}
+            {showCountdown && hasValidStartDate && !suppressLiveContent && !isLive && !isEventLive && (
+              <View style={styles.countdownContainer}>
+                <Text style={styles.countdownLabel}>Event starts in:</Text>
+                <View style={styles.countdownTimer}>
+                  <View style={styles.timeUnit}>
+                    <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.days)}</Text>
+                    <Text style={styles.timeLabel}>DAYS</Text>
+                  </View>
+                  <Text style={styles.timeSeparator}>:</Text>
+                  <View style={styles.timeUnit}>
+                    <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.hours)}</Text>
+                    <Text style={styles.timeLabel}>HRS</Text>
+                  </View>
+                  <Text style={styles.timeSeparator}>:</Text>
+                  <View style={styles.timeUnit}>
+                    <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.minutes)}</Text>
+                    <Text style={styles.timeLabel}>MIN</Text>
+                  </View>
+                  <Text style={styles.timeSeparator}>:</Text>
+                  <View style={styles.timeUnit}>
+                    <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.seconds)}</Text>
+                    <Text style={styles.timeLabel}>SEC</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
-        </>
-      )}
+            )}
+          </>
+        )}
+      </View>
     </View>
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => StyleSheet.create({
+const getStyles = (isDark: boolean, colors: any, backgroundColor: string, isArchiveEvent: boolean) => StyleSheet.create({
   headerSection: {
     padding: 20,
     paddingTop: (StatusBar.currentHeight || 0) + 100, // Extra top padding to account for nav bar overlay
-    backgroundColor: backgroundColor,
+    backgroundColor: isArchiveEvent ? (isDark ? '#07111F' : '#F4F7FB') : backgroundColor,
     alignItems: 'center',
-    minHeight: 360,
+    minHeight: 390,
     justifyContent: 'center',
     flex: 1,
     position: 'relative',
+    overflow: 'hidden',
+  },
+  heroBackground: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heroBackgroundImage: {
+    transform: [{ scale: 1.12 }],
+    opacity: isDark ? 0.9 : 1,
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heroFallback: {
+    ...StyleSheet.absoluteFillObject,
   },
   lightBeamEffect: {
     position: 'absolute',
@@ -251,6 +323,32 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
     backgroundColor: isDark ? 'rgba(0, 212, 255, 0.15)' : 'rgba(255, 107, 107, 0.15)',
     zIndex: 1,
     pointerEvents: 'none',
+  },
+  contentShell: {
+    width: '100%',
+    position: 'relative',
+    zIndex: 2,
+    alignItems: 'center',
+  },
+  archiveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(7, 17, 31, 0.52)',
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginBottom: 16,
+  },
+  archiveBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+    marginLeft: 6,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   mainInfo: {
     alignItems: 'center',
@@ -269,8 +367,9 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
     width: '100%',
   },
   eventLogo: {
-    width: 360,
-    height: 100,
+    width: '100%',
+    maxWidth: 420,
+    height: 110,
     marginBottom: 8,
   },
   logoSubLabel: {
@@ -379,7 +478,7 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
   finishedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -428,6 +527,7 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
     lineHeight: 21,
     opacity: 0.95,
     paddingHorizontal: 8,
+    maxWidth: 560,
   },
   gratitudeSubtitleEn: {
     fontSize: 13,
@@ -438,6 +538,7 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
     opacity: 0.85,
     fontStyle: 'italic',
     paddingHorizontal: 8,
+    maxWidth: 560,
   },
   gratitudeThanksContainer: {
     marginTop: 8,

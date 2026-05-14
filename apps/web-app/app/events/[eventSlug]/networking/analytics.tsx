@@ -9,6 +9,7 @@ import {
 import { useTheme } from '../../../../hooks/useTheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
+import { useEvent } from '@contexts/EventContext';
 import { useToastHelpers } from '@contexts/ToastContext';
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { SystemStats } from '@/types/networking';
@@ -16,6 +17,8 @@ import { SystemStats } from '@/types/networking';
 
 export default function AnalyticsView() {
   const { isDark, colors } = useTheme();
+  const { event } = useEvent();
+  const eventId = event?.id || 'bsl';
 
   const { showError } = useToastHelpers();
   const styles = getStyles(isDark, colors);
@@ -38,7 +41,7 @@ export default function AnalyticsView() {
 
   useEffect(() => {
     loadAnalytics();
-  }, []);
+  }, [eventId]);
 
   const loadAnalytics = async () => {
     try {
@@ -49,7 +52,7 @@ export default function AnalyticsView() {
       const { data: usersData, error: usersError } = await supabase
         .from('passes')
         .select('user_id', { count: 'exact' })
-        .eq('event_id', 'bsl2025')
+        .eq('event_id', eventId)
         .eq('status', 'active');
 
       // Get total speakers

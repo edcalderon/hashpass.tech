@@ -1,3 +1,25 @@
+## [1.7.6](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.2...v1.7.6) (2026-05-14)
+
+
+### Bug Fixes
+
+* sync BSL auth env paths ([02de787](https://github.com/edcalderon/hashpass.tech/commit/02de787634941afafefa0d3da9257f66e82d5297))
+
+
+
+
+
+## [1.7.6](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.2...v1.7.6) (2026-05-14)
+
+
+### Bug Fixes
+
+* sync BSL auth env paths ([02de787](https://github.com/edcalderon/hashpass.tech/commit/02de787634941afafefa0d3da9257f66e82d5297))
+
+
+
+
+
 ## [1.7.6](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.1...v1.7.6) (2026-05-13)
 
 
