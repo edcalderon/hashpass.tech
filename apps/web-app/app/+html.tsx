@@ -1,5 +1,9 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import { type ReactNode } from 'react';
+import {
+  resolvePublicSupabaseConfig,
+  type SupabaseProfileId,
+} from '../config/supabase-profiles';
 
 
 // This file is web-only and used to configure the root HTML for every
@@ -7,6 +11,38 @@ import { type ReactNode } from 'react';
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
 export default function Root({ children, metadata }: { children: ReactNode, metadata?: { description?: string; title?: string; keywords?: string; author?: string; viewport?: string; } }) {
+  const readBuildEnv = (name: string): string | undefined => {
+    if (typeof process === 'undefined') return undefined;
+
+    const value = process.env?.[name];
+    if (typeof value !== 'string') return undefined;
+
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : undefined;
+  };
+
+  const buildSupabaseConfig = (profileId: SupabaseProfileId) => {
+    const { supabaseUrl, supabaseAnonKey } = resolvePublicSupabaseConfig({
+      profileId,
+      readEnv: readBuildEnv,
+    });
+
+    return {
+      supabaseUrl: supabaseUrl || '',
+      supabaseAnonKey: supabaseAnonKey || '',
+    };
+  };
+
+  const activeSupabaseProfileId = (readBuildEnv('EXPO_PUBLIC_SUPABASE_PROFILE') ||
+    readBuildEnv('SUPABASE_PROFILE') ||
+    'core-production') as SupabaseProfileId;
+  const activeSupabaseConfig = buildSupabaseConfig(activeSupabaseProfileId);
+  const runtimeSupabaseProfiles = {
+    'core-development': buildSupabaseConfig('core-development'),
+    'core-production': buildSupabaseConfig('core-production'),
+    'bsl-development': buildSupabaseConfig('bsl-development'),
+    'bsl-production': buildSupabaseConfig('bsl-production'),
+  };
   return (
     <html lang="en">
       <head>
@@ -32,10 +68,12 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
         <meta name="theme-color" content="#000000" />
         <link rel="manifest" href="/manifest.json" />
 
-        {/* Inject API base URL for inline scripts */}
+        {/* Publish runtime config for inline browser scripts. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              window.__HASHPASS_RUNTIME__ = window.__HASHPASS_RUNTIME__ || {};
+
               // Set API base URL for version check (used by inline service worker script)
               // Defaults to api.hashpass.tech/api for production (API Gateway)
               // Can be overridden via environment variable EXPO_PUBLIC_API_BASE_URL
@@ -72,6 +110,12 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
 
                 return 'https://api.hashpass.tech/api/auth';
               })();
+
+              window.__HASHPASS_RUNTIME__.apiBaseUrl = window.__API_BASE_URL__;
+              window.__HASHPASS_RUNTIME__.betterAuthUrl = window.__BETTER_AUTH_URL__;
+              window.__HASHPASS_RUNTIME__.supabaseUrl = ${JSON.stringify(activeSupabaseConfig.supabaseUrl)};
+              window.__HASHPASS_RUNTIME__.supabaseAnonKey = ${JSON.stringify(activeSupabaseConfig.supabaseAnonKey)};
+              window.__HASHPASS_RUNTIME__.supabaseProfiles = ${JSON.stringify(runtimeSupabaseProfiles)};
             `,
           }}
         />
@@ -157,20 +201,6 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
                   
                   // Build redirect URL
                   let redirectUrl = correctOrigin + '/auth/callback';
-                  
-                  // Try to get apikey
-                  let apikey = '';
-                  try {
-                    apikey = window.__SUPABASE_ANON_KEY__ || 
-                             window.__EXPO_PUBLIC_SUPABASE_KEY__ ||
-                             (localStorage && localStorage.getItem('supabase_anon_key')) || '';
-                  } catch (e) {
-                    // Ignore
-                  }
-                  
-                  if (apikey) {
-                    redirectUrl += '?apikey=' + encodeURIComponent(apikey);
-                  }
                   
                   // Preserve hash fragment (contains all OAuth tokens)
                   redirectUrl += hashFragment;

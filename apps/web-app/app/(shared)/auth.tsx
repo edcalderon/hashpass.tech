@@ -38,6 +38,7 @@ import {
   resolveDefaultCountryISO2,
 } from '../../lib/country-dial-options';
 import { supabase } from '../../lib/supabase';
+import { resolvePublicSupabaseConfig } from '../../config/supabase-profiles';
 
 type EmailAuthMethod = 'magic-link' | 'otp-code';
 type BusyAction = 'magic-link' | 'otp-send' | 'otp-verify' | 'oauth' | null;
@@ -450,9 +451,9 @@ export default function AuthScreen() {
   const hasNavigatedRef = useRef(false);
   const hasShownOAuthErrorRef = useRef(false);
   const authProviderName = authService.getProviderName();
-  const hasSupabasePasswordlessConfig = Boolean(
-    process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_KEY
-  );
+  const { supabaseUrl: publicSupabaseUrl, supabaseAnonKey: publicSupabaseAnonKey } =
+    resolvePublicSupabaseConfig();
+  const hasSupabasePasswordlessConfig = Boolean(publicSupabaseUrl && publicSupabaseAnonKey);
   const isPasswordlessSupported = authProviderName === 'supabase' || hasSupabasePasswordlessConfig;
   const passwordlessUnavailableMessage = t(
     'passwordlessUnavailableMessage',
