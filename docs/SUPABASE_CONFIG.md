@@ -1,6 +1,7 @@
 # Supabase Authentication Configuration
 
 > Historical note: this document covers the older Supabase redirect configuration path. Current production sign-in uses the API-owned OAuth bridge documented in [AUTH_FLOW.md](AUTH_FLOW.md).
+> The live redirect helpers now preserve only the hash fragment and do not append `apikey` to callback URLs.
 
 ## Problem
 Supabase is redirecting to `auth.hashpass.co/bsl2025.hashpass.tech` instead of the correct callback URL. This happens when:
@@ -31,6 +32,8 @@ http://localhost:8081/auth/callback
 ```
 https://bsl2025.hashpass.tech/auth/callback
 ```
+
+If you are debugging the current web bundle, the public Supabase values are resolved from `window.__HASHPASS_RUNTIME__` and the callback URL should not carry an anon key.
 
 ⚠️ **IMPORTANT**: 
 - Do NOT include URLs with `(shared)` - Expo Router removes route groups from URLs

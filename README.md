@@ -50,7 +50,7 @@ We believe the future of events should be shaped by the community. By making Has
 
 ### Authentication
 
-Main `hashpass.tech` Google sign-in uses the API-owned Directus OAuth bridge documented in [docs/AUTH_FLOW.md](docs/AUTH_FLOW.md). BSL (`bsl.hashpass.tech`) uses a separate Better Auth social-login flow so event auth can evolve independently without changing the main Directus flow.
+Main `hashpass.tech` Google sign-in uses the API-owned Directus OAuth bridge documented in [docs/AUTH_FLOW.md](docs/AUTH_FLOW.md). BSL (`bsl.hashpass.tech`) uses Better Auth at `https://api.hashpass.tech/api/auth`, with its AWS SSM parameters normalized under `/hashpass/[env]/bsl/better-auth/` by `tools/scripts/util/setup-parameters.sh sync`.
 
 Use **pnpm** and **Turborepo** at the repo root:
 
@@ -71,7 +71,7 @@ pnpm run build:all    # turbo build all packages
 
 Set `AWS_ACCOUNT_ID` or `EXPECTED_AWS_ACCOUNT_ID` in your local shell or GitHub repository variables when you want the infra helpers to verify the target AWS account without hardcoding it in the repo.
 See [docs/INFRA_NAMING_GUIDE.md](docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the new infra track.
-Main `hashpass.tech` hosting still uses the Amplify track. BSL `bsl.hashpass.tech` uses the dedicated AWS pipeline and SSM parameter sync helpers instead of `amplify publish`.
+Main `hashpass.tech` hosting still uses the Amplify track. BSL `bsl.hashpass.tech` uses the dedicated AWS pipeline and SSM parameter sync helpers instead of `amplify publish`, and the sync flow keeps both `dev` and `production` BSL Better Auth secrets aligned.
 
 1. **Clone the repo:**
    ```bash

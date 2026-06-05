@@ -1,6 +1,7 @@
 # OAuth Redirect Fix - Quick Guide
 
 > Historical note: this guide was written for the older Supabase redirect issue. The current production Google sign-in flow is documented in [AUTH_FLOW.md](AUTH_FLOW.md).
+> Current redirect helpers preserve the hash fragment only and do not append an `apikey` query string.
 
 ## Problem
 
@@ -19,10 +20,7 @@ If you're stuck on the incorrect redirect page, open your browser console (F12) 
   const match = path.match(/([a-z0-9-]+\.hashpass\.tech)/i);
   if (match && hash.includes('access_token')) {
     const origin = 'https://' + match[1];
-    const apikey = window.__SUPABASE_ANON_KEY__ || window.__EXPO_PUBLIC_SUPABASE_KEY__ || '';
-    let url = origin + '/auth/callback';
-    if (apikey) url += '?apikey=' + encodeURIComponent(apikey);
-    url += hash;
+    const url = origin + '/auth/callback' + hash;
     console.log('Redirecting to:', url.substring(0, 200));
     window.location.replace(url);
   }
@@ -72,6 +70,7 @@ After saving, try OAuth login again. The redirect should work correctly.
 - Always set **Site URL** with full protocol: `https://bsl2025.hashpass.tech`
 - Add all possible Redirect URLs (development + production)
 - Use wildcards for localhost: `http://localhost:*/auth/callback`
+- Do not pass the anon key through the callback URL; the app shell resolves public Supabase values from `window.__HASHPASS_RUNTIME__`.
 
 ## Multi-Subdomain Support
 
@@ -81,4 +80,3 @@ The code now automatically extracts the subdomain from the path, so it works wit
 - Any `*.hashpass.tech` subdomain
 
 No code changes needed for new subdomains!
-

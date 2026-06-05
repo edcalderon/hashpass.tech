@@ -1,130 +1,110 @@
-# Environment Variables Configuration
+# Environment Variables Reference
 
-This document shows how to configure environment variables for the HashPass backend migration from Supabase to GCP Directus.
+This is the current source of truth for the environment variables used by the HashPass web app, the shared sync scripts, and AWS Parameter Store.
 
-## Production Configuration
+## How Values Flow
 
-After deploying the GCP infrastructure and setting up `sso.hashpass.co`, update your environment variables:
+- Root `.env` is the canonical source for shared values and environment-specific overrides.
+- `npm run env:propagate dev` and `npm run env:propagate production` call `tools/scripts/propagate-env.js`.
+- `node tools/scripts/sync-env.js dev` and `node tools/scripts/sync-env.js production` update runtime env exports from the root `.env`.
+- `bash tools/scripts/util/setup-parameters.sh sync dev` and `bash tools/scripts/util/setup-parameters.sh sync production` sync AWS SSM parameters and remove stale entries.
 
-### For Web Apps (Amplify, Netlify, Vercel, etc.)
+## Canonical Key Rules
 
-```bash
-# Backend Provider Configuration
-EXPO_PUBLIC_BACKEND_PROVIDER=directus
+- `EXPO_PUBLIC_SUPABASE_URL` is the canonical public Supabase URL.
+- `EXPO_PUBLIC_SUPABASE_KEY` is the canonical public anon key.
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY` is a compatibility alias and is written by the env sync scripts.
+- The same pattern applies to `_DEV` and `_PROD` overrides.
+- BSL tenant-specific runtime helpers also accept `EXPO_PUBLIC_BSL_SUPABASE_*` aliases when those are present.
 
-# Directus Configuration (NEW)
-EXPO_PUBLIC_DIRECTUS_URL=https://sso.hashpass.co
+## Main Production
 
-# Keep existing Supabase (for database access only)
-EXPO_PUBLIC_SUPABASE_URL=https://tgbdilebadmzqwubsijr.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-
-# API Configuration (unchanged - still using AWS Lambda)
-EXPO_PUBLIC_API_BASE_URL=https://api.hashpass.tech/api
-```
-
-### For Development
-
-Create or update your `.env` file:
+Main `hashpass.tech` still uses the API-owned Directus OAuth bridge.
 
 ```bash
-# Backend Provider - switch between providers
-EXPO_PUBLIC_BACKEND_PROVIDER=directus  # or 'supabase' for testing
-
-# Directus Configuration (local development)
-EXPO_PUBLIC_DIRECTUS_URL=http://localhost:8055  # or https://sso.hashpass.co
-
-# Keep Supabase for database
-EXPO_PUBLIC_SUPABASE_URL=https://tgbdilebadmzqwubsijr.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-
-# API Configuration
-EXPO_PUBLIC_API_BASE_URL=http://localhost:3000/api  # or https://api.hashpass.tech/api
+AUTH_PROVIDER=directus
+DIRECTUS_URL=<DIRECTUS_URL>
+EXPO_PUBLIC_DIRECTUS_URL=<DIRECTUS_URL>
+EXPO_PUBLIC_API_BASE_URL=<API_BASE_URL>
+EXPO_PUBLIC_FRONTEND_URL=<FRONTEND_URL>
 ```
 
-## Configuration Testing
+Required auth and database values:
 
-### Test Provider Switching
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+- `DEFAULT_ROLE_ID`
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_KEY`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY` if the target env expects the alias
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-1. **Test with Supabase** (existing):
-   ```bash
-   EXPO_PUBLIC_BACKEND_PROVIDER=supabase
-   ```
+The production Google redirect allow-list should include both the browser callback and the API callback:
 
-2. **Test with Directus** (new):
-   ```bash
-   EXPO_PUBLIC_BACKEND_PROVIDER=directus
-   EXPO_PUBLIC_DIRECTUS_URL=https://sso.hashpass.co
-   ```
+- `https://hashpass.tech/auth/callback`
+- `https://api.hashpass.tech/api/auth/oauth/callback`
 
-### Verify Configuration
+## BSL Event Production
 
-1. **Check Console Logs**:
-   - Look for "Using backend provider: directus" or "Using backend provider: supabase"
-   - Authentication logs should show the correct endpoints
+BSL event tenants use Better Auth and share the API-hosted auth endpoint.
 
-2. **Test Authentication**:
-   - Login/logout should work with both providers
-   - Sessions should be maintained correctly
-
-3. **Test Realtime**:
-   - WebSocket connections should work with Directus
-
-## Migration Strategy
-
-### Phase 1: Parallel Testing (Current)
 ```bash
-# Keep both providers available for testing
-EXPO_PUBLIC_BACKEND_PROVIDER=supabase  # Default to existing
-EXPO_PUBLIC_DIRECTUS_URL=https://sso.hashpass.co  # Available for testing
+EXPO_PUBLIC_BETTER_AUTH_URL=<BETTER_AUTH_URL>
+EXPO_PUBLIC_BETTER_AUTH_BASE_PATH=/api/auth
+BETTER_AUTH_URL=<BETTER_AUTH_URL>
+BETTER_AUTH_BASE_PATH=/api/auth
 ```
 
-### Phase 2: Switch to Directus
+Required BSL auth values:
+
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_DATABASE_URL`
+- `BSL_BETTER_AUTH_DATABASE_URL` as the legacy alias
+- `BETTER_AUTH_GOOGLE_CLIENT_ID`
+- `BETTER_AUTH_GOOGLE_CLIENT_SECRET`
+- `BETTER_AUTH_TRUSTED_ORIGINS`
+
+Required BSL Supabase values:
+
+- `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
+- `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
+- `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
+- `BSL_SUPABASE_DB_URL_PROD`
+
+The sync scripts also keep the public Supabase key aliases aligned for BSL browser helpers.
+
+## Development
+
+For local development, keep the root `.env` aligned with the local API and Directus hosts that are actually running on your machine.
+
+Common local values in this repo:
+
 ```bash
-# Switch to Directus as primary
-EXPO_PUBLIC_BACKEND_PROVIDER=directus
-EXPO_PUBLIC_DIRECTUS_URL=https://sso.hashpass.co
+DIRECTUS_URL=<LOCAL_DIRECTUS_URL>
+EXPO_PUBLIC_DIRECTUS_URL=<LOCAL_DIRECTUS_URL>
+EXPO_PUBLIC_API_BASE_URL=<LOCAL_API_BASE_URL>
 ```
 
-### Phase 3: Cleanup (Future)
-- Remove Supabase Auth configuration
-- Keep only database connection for migration completion
+For event development, the env propagation scripts derive the Better Auth URL from the development API base and keep the BSL aliases in sync.
 
-## Platform-Specific Configuration
+## Sync Commands
 
-### Amplify Console
-1. Go to: App Settings → Environment variables
-2. Add/Update the variables above
-3. Redeploy your app
+Use these after changing the root `.env`:
 
-### Netlify
-1. Go to: Site settings → Environment variables  
-2. Add the new variables
-3. Trigger a new deployment
-
-### Vercel
-1. Go to: Project → Settings → Environment Variables
-2. Add for Production and Preview environments
-3. Redeploy
-
-### Local Development
-1. Update `.env` file in project root
-2. Restart your development server
-3. Clear browser cache if needed
+```bash
+npm run env:propagate dev
+npm run env:propagate production
+node tools/scripts/sync-env.js dev
+node tools/scripts/sync-env.js production
+bash tools/scripts/util/setup-parameters.sh sync dev
+bash tools/scripts/util/setup-parameters.sh sync production
+```
 
 ## Troubleshooting
 
-### Provider Not Loading
-- Check that `EXPO_PUBLIC_BACKEND_PROVIDER` is exactly `directus` or `supabase`
-- Verify `EXPO_PUBLIC_DIRECTUS_URL` is set and accessible
-- Check browser console for provider initialization errors
-
-### Authentication Issues
-- Verify Directus is running at the specified URL
-- Check CORS configuration in Directus
-- Ensure SSL certificate is valid for production
-
-### Database Connection Issues
-- Supabase database connection should remain unchanged
-- Check that database migrations have been applied
-- Verify RLS policies are compatible with both providers
+- If the browser bundle looks like it lost public env values, verify `window.__HASHPASS_RUNTIME__` is being injected by the exported app shell.
+- If Supabase login fails, confirm both `EXPO_PUBLIC_SUPABASE_KEY` and any required alias are aligned for the target environment.
+- If BSL login fails, verify the `/hashpass/[env]/bsl/better-auth/` SSM subtree exists and that the derived `BETTER_AUTH_URL` matches the API host.
+- If AWS sync drops an expected value, check the relevant `_DEV` or `_PROD` override in the root `.env`.

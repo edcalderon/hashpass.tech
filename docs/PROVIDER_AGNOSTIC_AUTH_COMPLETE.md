@@ -58,18 +58,21 @@ export async function GET(request: Request) {
 ### Current Setup (Directus - Active)
 ```bash
 AUTH_PROVIDER=directus
-DIRECTUS_URL=https://sso.hashpass.co
+DIRECTUS_URL=<DIRECTUS_URL>
 DIRECTUS_ADMIN_EMAIL=admin@hashpass.tech
 ```
 
 ### Switch to Supabase (Just change env vars!)
 ```bash
 AUTH_PROVIDER=supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_URL=<SUPABASE_URL>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<SUPABASE_KEY>
+EXPO_PUBLIC_SUPABASE_URL=<SUPABASE_URL>
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<SUPABASE_KEY>
+EXPO_PUBLIC_SUPABASE_KEY=<SUPABASE_KEY>
 ```
+
+Current configs prefer `EXPO_PUBLIC_SUPABASE_KEY`; `EXPO_PUBLIC_SUPABASE_ANON_KEY` remains as a compatibility alias.
 
 ### Future: Keycloak Support
 ```bash

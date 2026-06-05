@@ -133,10 +133,7 @@ self.addEventListener('fetch', (event) => {
                 console.log('[SW Redirect] Using current hostname:', correctOrigin);
               }
               
-              let redirectUrl = correctOrigin + '/auth/callback';
-              const apikey = window.__SUPABASE_ANON_KEY__ || window.__EXPO_PUBLIC_SUPABASE_KEY__ || '';
-              if (apikey) redirectUrl += '?apikey=' + encodeURIComponent(apikey);
-              redirectUrl += hashFragment;
+              const redirectUrl = correctOrigin + '/auth/callback' + hashFragment;
               
               console.log('[SW Redirect] Redirecting to:', redirectUrl.substring(0, 200));
               window.location.replace(redirectUrl);

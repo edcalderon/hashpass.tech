@@ -39,27 +39,12 @@
       } else {
         console.log('📍 [Auto-fix] Using default origin:', correctOrigin);
       }
-    } catch (e) {
+    } catch {
       console.warn('⚠️ [Auto-fix] Could not access localStorage');
     }
     
     // Build redirect URL
     let redirectUrl = `${correctOrigin}/auth/callback`;
-    
-    // Try to get apikey
-    let apikey = '';
-    try {
-      apikey = window.__SUPABASE_ANON_KEY__ || 
-               window.__EXPO_PUBLIC_SUPABASE_KEY__ ||
-               (localStorage && localStorage.getItem('supabase_anon_key')) ||
-               (localStorage && localStorage.getItem('EXPO_PUBLIC_SUPABASE_KEY')) || '';
-    } catch (e) {
-      // Ignore
-    }
-    
-    if (apikey) {
-      redirectUrl += `?apikey=${encodeURIComponent(apikey)}`;
-    }
     
     // Preserve hash fragment
     redirectUrl += hashFragment;
@@ -73,7 +58,7 @@
           redirectUrl += `${separator}${key}=${encodeURIComponent(value)}`;
         }
       });
-    } catch (e) {
+    } catch {
       // Ignore
     }
     
@@ -83,8 +68,6 @@
     window.location.replace(redirectUrl);
   }
 })();
-
-
 
 
 
