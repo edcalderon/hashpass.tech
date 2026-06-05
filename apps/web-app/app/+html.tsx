@@ -7,6 +7,15 @@ import { type ReactNode } from 'react';
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
 export default function Root({ children, metadata }: { children: ReactNode, metadata?: { description?: string; title?: string; keywords?: string; author?: string; viewport?: string; } }) {
+  const supabaseUrlEnv = ['EXPO', 'PUBLIC', 'SUPABASE', 'URL'].join('_');
+  const supabaseKeyEnv = ['EXPO', 'PUBLIC', 'SUPABASE', 'KEY'].join('_');
+  const supabaseAnonKeyEnv = ['EXPO', 'PUBLIC', 'SUPABASE', 'ANON', 'KEY'].join('_');
+  const publicSupabaseUrl = typeof process !== 'undefined' ? process.env[supabaseUrlEnv] || '' : '';
+  const publicSupabaseAnonKey =
+    typeof process !== 'undefined'
+      ? process.env[supabaseKeyEnv] || process.env[supabaseAnonKeyEnv] || ''
+      : '';
+
   return (
     <html lang="en">
       <head>
@@ -32,13 +41,14 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
         <meta name="theme-color" content="#000000" />
         <link rel="manifest" href="/manifest.json" />
 
-        {/* Inject API base URL for inline scripts */}
+        {/* Publish runtime config for inline browser scripts. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              window.__HASHPASS_RUNTIME__ = window.__HASHPASS_RUNTIME__ || {};
+
               // Set API base URL for version check (used by inline service worker script)
               // Defaults to api.hashpass.tech/api for production (API Gateway)
-              // Can be overridden via environment variable EXPO_PUBLIC_API_BASE_URL
               window.__API_BASE_URL__ = (function () {
                 var envApiBase = ${JSON.stringify(
                   typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_BASE_URL || '' : ''
@@ -72,6 +82,11 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
 
                 return 'https://api.hashpass.tech/api/auth';
               })();
+
+              window.__HASHPASS_RUNTIME__.apiBaseUrl = window.__API_BASE_URL__;
+              window.__HASHPASS_RUNTIME__.betterAuthUrl = window.__BETTER_AUTH_URL__;
+              window.__HASHPASS_RUNTIME__.supabaseUrl = ${JSON.stringify(publicSupabaseUrl)};
+              window.__HASHPASS_RUNTIME__.supabaseAnonKey = ${JSON.stringify(publicSupabaseAnonKey)};
             `,
           }}
         />
@@ -99,7 +114,6 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
                   
                   console.log('🔧 [Auto-fix] Detected incorrect Supabase redirect with tokens');
                   
-                  // Get stored origin or use default
                   // Try to extract from path first (e.g., /bsl2025.hashpass.tech -> https://bsl2025.hashpass.tech)
                   // Dynamic: works with any hashpass.tech subdomain
                   let correctOrigin = '';
@@ -157,21 +171,7 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
                   
                   // Build redirect URL
                   let redirectUrl = correctOrigin + '/auth/callback';
-                  
-                  // Try to get apikey
-                  let apikey = '';
-                  try {
-                    apikey = window.__SUPABASE_ANON_KEY__ || 
-                             window.__EXPO_PUBLIC_SUPABASE_KEY__ ||
-                             (localStorage && localStorage.getItem('supabase_anon_key')) || '';
-                  } catch (e) {
-                    // Ignore
-                  }
-                  
-                  if (apikey) {
-                    redirectUrl += '?apikey=' + encodeURIComponent(apikey);
-                  }
-                  
+
                   // Preserve hash fragment (contains all OAuth tokens)
                   redirectUrl += hashFragment;
                   
@@ -179,10 +179,8 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
                   try {
                     const urlParams = new URLSearchParams(window.location.search);
                     urlParams.forEach(function(value, key) {
-                      if (key !== 'apikey') {
-                        redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 
-                                      encodeURIComponent(key) + '=' + encodeURIComponent(value);
-                      }
+                      redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 
+                                    encodeURIComponent(key) + '=' + encodeURIComponent(value);
                     });
                   } catch (e) {
                     // Ignore

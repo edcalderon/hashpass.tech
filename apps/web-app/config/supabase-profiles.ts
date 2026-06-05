@@ -6,6 +6,13 @@ export type SupabaseProfileId =
 
 type EnvReader = (name: string) => string | undefined;
 
+type BrowserRuntimeConfig = {
+  apiBaseUrl?: string;
+  betterAuthUrl?: string;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
+};
+
 type SupabaseProfile = {
   id: SupabaseProfileId;
   tenant: 'core' | 'bsl';
@@ -47,6 +54,7 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV',
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
       'EXPO_PUBLIC_SUPABASE_KEY',
+      'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     ],
     serviceRoleEnv: ['SUPABASE_SERVICE_ROLE_KEY_DEV', 'SUPABASE_SERVICE_ROLE_KEY'],
     dbUrlEnv: ['SUPABASE_DB_URL_DEV', 'DATABASE_URL_DEV', 'DEV_DB_URL'],
@@ -66,6 +74,7 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD',
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
       'EXPO_PUBLIC_SUPABASE_KEY',
+      'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     ],
     serviceRoleEnv: ['SUPABASE_SERVICE_ROLE_KEY_PROD', 'SUPABASE_SERVICE_ROLE_KEY'],
     dbUrlEnv: ['SUPABASE_DB_URL_PROD', 'DATABASE_URL_PROD', 'PROD_DB_URL'],
@@ -88,10 +97,12 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV',
       'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV',
       'EXPO_PUBLIC_BSL_SUPABASE_KEY',
+      'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY',
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
       'EXPO_PUBLIC_SUPABASE_KEY_DEV',
       'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV',
       'EXPO_PUBLIC_SUPABASE_KEY',
+      'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     ],
     serviceRoleEnv: [
       'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',
@@ -124,10 +135,12 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD',
       'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD',
       'EXPO_PUBLIC_BSL_SUPABASE_KEY',
+      'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY',
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
       'EXPO_PUBLIC_SUPABASE_KEY_PROD',
       'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD',
       'EXPO_PUBLIC_SUPABASE_KEY',
+      'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     ],
     serviceRoleEnv: [
       'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
@@ -155,9 +168,33 @@ const normalizeEnvValue = (value: string | undefined): string | undefined => {
   return trimmed.length ? trimmed : undefined;
 };
 
+const readBrowserRuntimeConfig = (): BrowserRuntimeConfig | undefined => {
+  if (typeof globalThis === 'undefined') return undefined;
+
+  const runtime = (globalThis as Record<string, unknown>).__HASHPASS_RUNTIME__;
+  if (!runtime || typeof runtime !== 'object') return undefined;
+
+  return runtime as BrowserRuntimeConfig;
+};
+
+const readRuntimeGlobal = (name: string): string | undefined => {
+  const runtime = readBrowserRuntimeConfig();
+  if (!runtime || !name.includes('PUBLIC')) return undefined;
+
+  if (name.includes('URL')) {
+    return normalizeEnvValue(runtime.supabaseUrl);
+  }
+
+  if (name.includes('KEY')) {
+    return normalizeEnvValue(runtime.supabaseAnonKey);
+  }
+
+  return undefined;
+};
+
 const firstEnv = (names: string[], readEnv: EnvReader = readProcessEnv) => {
   for (const name of names) {
-    const value = normalizeEnvValue(readEnv(name));
+    const value = normalizeEnvValue(readEnv(name)) || readRuntimeGlobal(name);
     if (value) return value;
   }
 
