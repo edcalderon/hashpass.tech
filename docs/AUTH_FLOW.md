@@ -49,7 +49,7 @@ The Directus admin account used by the API callback must be a local Directus use
 Event tenants (`https://bsl.hashpass.tech`, `https://bsl-dev.hashpass.tech`, and `https://bsl2025.hashpass.tech`) use Better Auth for Google social login. Main `hashpass.tech` remains on Directus.
 
 1. Domain-aware auth selection resolves event tenants to `better-auth`.
-2. The frontend calls Better Auth at `EXPO_PUBLIC_BETTER_AUTH_URL`, normally `https://api.hashpass.tech/api/auth` in production.
+2. The frontend calls Better Auth at `EXPO_PUBLIC_BETTER_AUTH_URL`, normally `https://api.hashpass.tech/api/auth` in production, while the browser runtime exposes public Supabase values through `window.__HASHPASS_RUNTIME__` for client-side helpers.
 3. Better Auth handles Google OAuth at `/api/auth/*`, stores its session in secure cookies, and redirects back to `/auth/callback`.
 4. The shared auth callback asks the active provider for the session, then routes the user to the requested event path.
 5. Event API calls include credentials, and server-side `authenticateRequest()` validates the Better Auth cookie for event hosts.
@@ -62,6 +62,8 @@ Event production requirements:
 - `BETTER_AUTH_DATABASE_URL` or `BSL_BETTER_AUTH_DATABASE_URL`
 - `BETTER_AUTH_GOOGLE_CLIENT_ID` / `BETTER_AUTH_GOOGLE_CLIENT_SECRET` (or the existing `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`)
 - Google OAuth redirect URI: `https://api.hashpass.tech/api/auth/callback/google`
+
+When you sync production or development secrets, `tools/scripts/util/setup-parameters.sh sync` keeps the BSL Better Auth subtree under `/hashpass/[env]/bsl/better-auth/` and preserves the public Supabase key aliases used by the browser runtime.
 
 Run the Better Auth schema migration against the configured event database after changing Better Auth config:
 

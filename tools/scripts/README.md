@@ -30,7 +30,7 @@ Release flow:
 - `release:bsl:dev` / `release:bsl:prod` target the BSL tenant explicitly and follow the AWS pipeline path
 - `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it
 
-BSL deployment and sync helpers use the `/hashpass/[env]/` SSM namespace. Keep those scripts separate from the Amplify-managed `core` track.
+BSL deployment and sync helpers use the `/hashpass/[env]/` SSM namespace. Keep those scripts separate from the Amplify-managed `core` track. The same sync flow also normalizes `/hashpass/[env]/bsl/better-auth/` and keeps `EXPO_PUBLIC_SUPABASE_KEY` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility.
 
 The branch-aware release flow:
 

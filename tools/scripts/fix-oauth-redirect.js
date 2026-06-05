@@ -58,7 +58,7 @@
         console.log('   const correctOrigin = "http://localhost:YOUR_PORT";');
         console.log('   Then run the script again.');
       }
-    } catch (e) {
+    } catch {
       console.warn('⚠️ localStorage not available (cross-origin restriction)');
       console.log('📍 Using default origin:', correctOrigin);
       console.log('💡 You may need to set correctOrigin manually if default is wrong');
@@ -67,51 +67,6 @@
     // Build redirect URL
     let redirectUrl = `${correctOrigin}/auth/callback`;
     console.log('🔧 Base redirect URL:', redirectUrl);
-    
-    // Try to get apikey from various sources
-    // The apikey is needed for Supabase to process the callback correctly
-    let apikey = '';
-    try {
-      // Try multiple sources for apikey
-      apikey = window.__SUPABASE_ANON_KEY__ || 
-               window.__EXPO_PUBLIC_SUPABASE_KEY__ ||
-               (typeof localStorage !== 'undefined' && localStorage.getItem('supabase_anon_key')) ||
-               (typeof localStorage !== 'undefined' && localStorage.getItem('EXPO_PUBLIC_SUPABASE_KEY')) ||
-               '';
-      
-      // If still no apikey, try to extract from the hash if it's there
-      if (!apikey && hashFragment) {
-        try {
-          const hashParams = new URLSearchParams(hashFragment.substring(1));
-          apikey = hashParams.get('apikey') || '';
-        } catch (e) {
-          // Hash might not be URL-encoded params
-        }
-      }
-      
-      // If still no apikey, try to extract from query params
-      if (!apikey && window.location.search) {
-        try {
-          const urlParams = new URLSearchParams(window.location.search);
-          apikey = urlParams.get('apikey') || '';
-        } catch (e) {
-          // Ignore
-        }
-      }
-    } catch (e) {
-      console.warn('⚠️ Could not get apikey from localStorage or window:', e);
-    }
-    
-    // Add apikey as query parameter if available (critical for custom auth domains)
-    if (apikey) {
-      redirectUrl += `?apikey=${encodeURIComponent(apikey)}`;
-      console.log('✅ apikey added to redirect URL (length:', apikey.length, ')');
-    } else {
-      console.warn('⚠️ No apikey found - callback may fail!');
-      console.warn('💡 You can set it manually before running:');
-      console.warn('   const apikey = "your-supabase-anon-key-here";');
-      console.warn('   Then run the script again.');
-    }
     
     // Preserve hash fragment (contains all OAuth tokens - THIS IS CRITICAL)
     if (hashFragment) {

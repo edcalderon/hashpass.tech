@@ -15,6 +15,7 @@ We use a strictly standardized set of environment profiles to ensure consistency
 > Deployment split:
 > - `hashpass.tech` / `core` stays on the Amplify-managed track.
 > - `bsl.hashpass.tech` / `bsl` uses the dedicated AWS pipeline and the same `/hashpass/[env]/` SSM namespace with BSL-specific aliases.
+> - BSL Better Auth secrets are normalized under `/hashpass/[env]/bsl/better-auth/`, and the sync helpers keep both `EXPO_PUBLIC_SUPABASE_KEY` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility.
 
 ---
 
@@ -25,9 +26,9 @@ The **root `.env` file** is the single source of truth. It contains:
 2. **Environment Overrides**: Key-value pairs with suffixes like `_DEV` or `_PROD`.
 
 ### Naming Convention in `.env`
-- **Base Key:** `DIRECTUS_URL=http://localhost:8055` (Defaults to `local`)
-- **Dev Override:** `DIRECTUS_URL_DEV=https://sso-dev.hashpass.co`
-- **Prod Override:** `DIRECTUS_URL_PROD=https://sso.hashpass.co`
+- **Base Key:** `DIRECTUS_URL=<LOCAL_DIRECTUS_URL>` (Defaults to `local`)
+- **Dev Override:** `DIRECTUS_URL_DEV=<DEV_DIRECTUS_URL>`
+- **Prod Override:** `DIRECTUS_URL_PROD=<PROD_DIRECTUS_URL>`
 
 ---
 
@@ -64,6 +65,7 @@ bash tools/scripts/util/setup-parameters.sh sync [dev|production]
 # Other commands: list, verify, delete
 ```
 - **Namespace**: Parameters are stored under `/hashpass/[env]/`.
+- **BSL Better Auth**: The sync command also normalizes the BSL Better Auth subtree under `/hashpass/[env]/bsl/better-auth/`.
 - **Surgical Sync**: The `sync` command identifies parameters that exist on AWS but are not in the script's list and deletes them (cleaning "stale" parameters).
 
 ---
@@ -84,7 +86,7 @@ npm run env:propagate local
 npm run env:propagate dev
 # 3. Update Lambda configurations
 node tools/scripts/sync-env.js dev
-# 4. Sync AWS Parameter Store
+# 4. Sync AWS Parameter Store, including BSL Better Auth aliases
 bash tools/scripts/util/setup-parameters.sh sync dev
 ```
 
@@ -95,7 +97,7 @@ bash tools/scripts/util/setup-parameters.sh sync dev
 npm run env:propagate production
 # 3. Update Production Lambda
 node tools/scripts/sync-env.js production
-# 4. Sync Production Parameter Store
+# 4. Sync Production Parameter Store, including BSL Better Auth aliases
 bash tools/scripts/util/setup-parameters.sh sync production
 ```
 

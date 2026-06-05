@@ -1,3 +1,15 @@
+## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.2...v1.7.7) (2026-06-05)
+
+
+
+
+
+## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.2...v1.7.7) (2026-06-05)
+
+
+
+
+
 ## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.4...v1.7.7) (2026-06-05)
 
 
