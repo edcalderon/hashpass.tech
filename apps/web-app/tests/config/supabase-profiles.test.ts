@@ -1,5 +1,4 @@
 /// <reference types="jest" />
-import { describe, expect, it } from '@jest/globals';
 import { resolvePublicSupabaseConfig } from '../../config/supabase-profiles';
 
 const PUBLIC_SUPABASE_URL_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'URL'].join('_');
@@ -74,6 +73,36 @@ describe('resolvePublicSupabaseConfig', () => {
 
       expect(config.supabaseUrl).toBe('https://browser-project.supabase.co');
       expect(config.supabaseAnonKey).toBe('anon-browser');
+    } finally {
+      if (typeof previousRuntime === 'undefined') {
+        delete globalAny.__HASHPASS_RUNTIME__;
+      } else {
+        globalAny.__HASHPASS_RUNTIME__ = previousRuntime;
+      }
+    }
+  });
+
+  it('prefers a browser runtime profile map for bsl-production when generic runtime values are absent', () => {
+    const globalAny = globalThis as Record<string, unknown>;
+    const previousRuntime = globalAny.__HASHPASS_RUNTIME__;
+
+    try {
+      globalAny.__HASHPASS_RUNTIME__ = {
+        supabaseProfiles: {
+          'bsl-production': {
+            supabaseUrl: 'https://profile-bsl.supabase.co',
+            supabaseAnonKey: 'anon-profile-bsl',
+          },
+        },
+      };
+
+      const config = resolvePublicSupabaseConfig({
+        profileId: 'bsl-production',
+        readEnv: () => undefined,
+      });
+
+      expect(config.supabaseUrl).toBe('https://profile-bsl.supabase.co');
+      expect(config.supabaseAnonKey).toBe('anon-profile-bsl');
     } finally {
       if (typeof previousRuntime === 'undefined') {
         delete globalAny.__HASHPASS_RUNTIME__;

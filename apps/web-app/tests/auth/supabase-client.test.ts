@@ -52,6 +52,8 @@ jest.mock('@supabase/supabase-js', () => ({
   createClient: mockCreateClient,
 }));
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const envBackup: Record<string, string | undefined> = {};
 
 const setEnv = (name: string, value?: string) => {
@@ -94,7 +96,6 @@ afterEach(() => {
 describe('web Supabase client initialization', () => {
   it('disables detectSessionInUrl on web and keeps auth callback handling manual', () => {
     // Import after env setup so the module initializes with the mocked client.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     require('../../lib/supabase');
 
     expect(mockCreateClient).toHaveBeenCalledTimes(1);
@@ -109,5 +110,52 @@ describe('web Supabase client initialization', () => {
         }),
       })
     );
+  });
+
+  it('falls back to the browser runtime profile map when generic env vars are absent', () => {
+    setEnv('EXPO_PUBLIC_SUPABASE_URL', undefined);
+    setEnv('EXPO_PUBLIC_SUPABASE_KEY', undefined);
+    setEnv('EXPO_PUBLIC_SUPABASE_URL_PROD', undefined);
+    setEnv('EXPO_PUBLIC_SUPABASE_KEY_PROD', undefined);
+    setEnv('EXPO_PUBLIC_BSL_SUPABASE_URL_PROD', undefined);
+    setEnv('EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD', undefined);
+    setEnv('EXPO_PUBLIC_SUPABASE_PROFILE', 'bsl-production');
+    setEnv('SUPABASE_PROFILE', 'bsl-production');
+
+    const globalAny = globalThis as Record<string, unknown>;
+    const previousRuntime = globalAny.__HASHPASS_RUNTIME__;
+
+    try {
+      globalAny.__HASHPASS_RUNTIME__ = {
+        supabaseProfiles: {
+          'bsl-production': {
+            supabaseUrl: 'https://runtime-bsl.supabase.co',
+            supabaseAnonKey: 'runtime-bsl-key',
+          },
+        },
+      };
+
+      // Import after runtime setup so the module initializes with the mocked client.
+      require('../../lib/supabase');
+
+      expect(mockCreateClient).toHaveBeenCalledTimes(1);
+      expect(mockCreateClient).toHaveBeenCalledWith(
+        'https://runtime-bsl.supabase.co',
+        'runtime-bsl-key',
+        expect.objectContaining({
+          auth: expect.objectContaining({
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: false,
+          }),
+        })
+      );
+    } finally {
+      if (typeof previousRuntime === 'undefined') {
+        delete globalAny.__HASHPASS_RUNTIME__;
+      } else {
+        globalAny.__HASHPASS_RUNTIME__ = previousRuntime;
+      }
+    }
   });
 });

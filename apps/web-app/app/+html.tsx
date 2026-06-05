@@ -1,5 +1,9 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import { type ReactNode } from 'react';
+import {
+  resolvePublicSupabaseConfig,
+  type SupabaseProfileId,
+} from '../config/supabase-profiles';
 
 
 // This file is web-only and used to configure the root HTML for every
@@ -7,14 +11,38 @@ import { type ReactNode } from 'react';
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
 export default function Root({ children, metadata }: { children: ReactNode, metadata?: { description?: string; title?: string; keywords?: string; author?: string; viewport?: string; } }) {
-  const supabaseUrlEnv = ['EXPO', 'PUBLIC', 'SUPABASE', 'URL'].join('_');
-  const supabaseKeyEnv = ['EXPO', 'PUBLIC', 'SUPABASE', 'KEY'].join('_');
-  const supabaseAnonKeyEnv = ['EXPO', 'PUBLIC', 'SUPABASE', 'ANON', 'KEY'].join('_');
-  const publicSupabaseUrl = typeof process !== 'undefined' ? process.env[supabaseUrlEnv] || '' : '';
-  const publicSupabaseAnonKey =
-    typeof process !== 'undefined'
-      ? process.env[supabaseKeyEnv] || process.env[supabaseAnonKeyEnv] || ''
-      : '';
+  const readBuildEnv = (name: string): string | undefined => {
+    if (typeof process === 'undefined') return undefined;
+
+    const value = process.env?.[name];
+    if (typeof value !== 'string') return undefined;
+
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : undefined;
+  };
+
+  const buildSupabaseConfig = (profileId: SupabaseProfileId) => {
+    const { supabaseUrl, supabaseAnonKey } = resolvePublicSupabaseConfig({
+      profileId,
+      readEnv: readBuildEnv,
+    });
+
+    return {
+      supabaseUrl: supabaseUrl || '',
+      supabaseAnonKey: supabaseAnonKey || '',
+    };
+  };
+
+  const activeSupabaseProfileId = (readBuildEnv('EXPO_PUBLIC_SUPABASE_PROFILE') ||
+    readBuildEnv('SUPABASE_PROFILE') ||
+    'core-production') as SupabaseProfileId;
+  const activeSupabaseConfig = buildSupabaseConfig(activeSupabaseProfileId);
+  const runtimeSupabaseProfiles = {
+    'core-development': buildSupabaseConfig('core-development'),
+    'core-production': buildSupabaseConfig('core-production'),
+    'bsl-development': buildSupabaseConfig('bsl-development'),
+    'bsl-production': buildSupabaseConfig('bsl-production'),
+  };
 
   return (
     <html lang="en">
@@ -85,8 +113,9 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
 
               window.__HASHPASS_RUNTIME__.apiBaseUrl = window.__API_BASE_URL__;
               window.__HASHPASS_RUNTIME__.betterAuthUrl = window.__BETTER_AUTH_URL__;
-              window.__HASHPASS_RUNTIME__.supabaseUrl = ${JSON.stringify(publicSupabaseUrl)};
-              window.__HASHPASS_RUNTIME__.supabaseAnonKey = ${JSON.stringify(publicSupabaseAnonKey)};
+              window.__HASHPASS_RUNTIME__.supabaseUrl = ${JSON.stringify(activeSupabaseConfig.supabaseUrl)};
+              window.__HASHPASS_RUNTIME__.supabaseAnonKey = ${JSON.stringify(activeSupabaseConfig.supabaseAnonKey)};
+              window.__HASHPASS_RUNTIME__.supabaseProfiles = ${JSON.stringify(runtimeSupabaseProfiles)};
             `,
           }}
         />

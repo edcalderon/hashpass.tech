@@ -11,6 +11,12 @@ type BrowserRuntimeConfig = {
   betterAuthUrl?: string;
   supabaseUrl?: string;
   supabaseAnonKey?: string;
+  supabaseProfiles?: Partial<Record<SupabaseProfileId, BrowserSupabaseProfileConfig>>;
+};
+
+type BrowserSupabaseProfileConfig = {
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
 };
 
 type SupabaseProfile = {
@@ -177,24 +183,40 @@ const readBrowserRuntimeConfig = (): BrowserRuntimeConfig | undefined => {
   return runtime as BrowserRuntimeConfig;
 };
 
-const readRuntimeGlobal = (name: string): string | undefined => {
+const readRuntimeProfileConfig = (profileId?: SupabaseProfileId): BrowserSupabaseProfileConfig | undefined => {
+  const runtime = readBrowserRuntimeConfig();
+  if (!runtime || !profileId) return undefined;
+
+  const profile = runtime.supabaseProfiles?.[profileId];
+  if (!profile || typeof profile !== 'object') return undefined;
+
+  return profile;
+};
+
+const readRuntimeGlobal = (name: string, profileId?: SupabaseProfileId): string | undefined => {
   const runtime = readBrowserRuntimeConfig();
   if (!runtime || !name.includes('PUBLIC')) return undefined;
 
+  const runtimeProfile = readRuntimeProfileConfig(profileId);
+
   if (name.includes('URL')) {
-    return normalizeEnvValue(runtime.supabaseUrl);
+    return normalizeEnvValue(runtimeProfile?.supabaseUrl) || normalizeEnvValue(runtime.supabaseUrl);
   }
 
   if (name.includes('KEY')) {
-    return normalizeEnvValue(runtime.supabaseAnonKey);
+    return normalizeEnvValue(runtimeProfile?.supabaseAnonKey) || normalizeEnvValue(runtime.supabaseAnonKey);
   }
 
   return undefined;
 };
 
-const firstEnv = (names: string[], readEnv: EnvReader = readProcessEnv) => {
+const firstEnv = (
+  names: string[],
+  readEnv: EnvReader = readProcessEnv,
+  profileId?: SupabaseProfileId
+) => {
   for (const name of names) {
-    const value = normalizeEnvValue(readEnv(name)) || readRuntimeGlobal(name);
+    const value = normalizeEnvValue(readEnv(name)) || readRuntimeGlobal(name, profileId);
     if (value) return value;
   }
 
@@ -273,8 +295,8 @@ export const resolvePublicSupabaseConfig = (input?: {
     profileId: profile.id,
     tenant: profile.tenant,
     environment: profile.environment,
-    supabaseUrl: firstEnv(profile.publicUrlEnv, readEnv),
-    supabaseAnonKey: firstEnv(profile.publicKeyEnv, readEnv),
+    supabaseUrl: firstEnv(profile.publicUrlEnv, readEnv, profile.id),
+    supabaseAnonKey: firstEnv(profile.publicKeyEnv, readEnv, profile.id),
   };
 };
 
