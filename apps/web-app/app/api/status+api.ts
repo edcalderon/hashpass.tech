@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getDatabasePool } from '@/lib/server/better-auth';
 
 export interface HealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -96,40 +96,43 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
   };
 
   try {
-    // Check database connectivity and key tables
+    // Check database connectivity and key tables via Postgres so health
+    // does not depend on the public Supabase REST key.
     const dbStartTime = Date.now();
+    const database = getDatabasePool();
+
+    const readCount = async (sql: string, params: unknown[] = []) => {
+      const result = await database.query(sql, params);
+      const rawCount = result.rows[0]?.count;
+      return typeof rawCount === 'number' ? rawCount : Number(rawCount || 0);
+    };
+
+    const readLatestUpdatedAt = async (sql: string, params: unknown[] = []) => {
+      const result = await database.query(sql, params);
+      const rawUpdatedAt = result.rows[0]?.updated_at;
+      if (!rawUpdatedAt) return null;
+      const parsed = new Date(rawUpdatedAt);
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+    };
 
     // 1. Check event_agenda table
     try {
-      const { data: latestUpdate, error: agendaError } = await supabase
-        .from('event_agenda')
-        .select('updated_at')
-        .eq('event_id', eventId)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const latestUpdatedAt = await readLatestUpdatedAt(
+        'SELECT updated_at FROM event_agenda WHERE event_id = $1 ORDER BY updated_at DESC LIMIT 1',
+        [eventId]
+      );
+      const agendaCount = await readCount(
+        'SELECT COUNT(*)::int AS count FROM event_agenda WHERE event_id = $1',
+        [eventId]
+      );
 
-      const { count: agendaCount, error: countError } = await supabase
-        .from('event_agenda')
-        .select('id', { count: 'exact', head: true })
-        .eq('event_id', eventId);
-
-      if (agendaError || countError) {
-        healthCheck.services.database.tables.event_agenda = {
-          accessible: false,
-          error: agendaError?.message || countError?.message,
-        };
-        healthCheck.checks.agenda.hasData = false;
-        healthCheck.status = 'degraded';
-      } else {
-        healthCheck.services.database.tables.event_agenda = {
-          accessible: true,
-          recordCount: agendaCount || 0,
-        };
-        healthCheck.checks.agenda.hasData = (agendaCount || 0) > 0;
-        healthCheck.checks.agenda.lastUpdated = (latestUpdate as any)?.updated_at || null;
-        healthCheck.checks.agenda.itemCount = agendaCount || 0;
-      }
+      healthCheck.services.database.tables.event_agenda = {
+        accessible: true,
+        recordCount: agendaCount,
+      };
+      healthCheck.checks.agenda.hasData = agendaCount > 0;
+      healthCheck.checks.agenda.lastUpdated = latestUpdatedAt;
+      healthCheck.checks.agenda.itemCount = agendaCount;
     } catch (error: any) {
       healthCheck.services.database.tables.event_agenda = {
         accessible: false,
@@ -140,25 +143,14 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
 
     // 2. Check bsl_speakers table
     try {
-      const { count: speakersCount, error: speakersError } = await supabase
-        .from('bsl_speakers')
-        .select('id', { count: 'exact', head: true });
+      const speakersCount = await readCount('SELECT COUNT(*)::int AS count FROM bsl_speakers');
 
-      if (speakersError) {
-        healthCheck.services.database.tables.bsl_speakers = {
-          accessible: false,
-          error: speakersError.message,
-        };
-        healthCheck.checks.speakers.accessible = false;
-        healthCheck.status = 'degraded';
-      } else {
-        healthCheck.services.database.tables.bsl_speakers = {
-          accessible: true,
-          recordCount: speakersCount || 0,
-        };
-        healthCheck.checks.speakers.count = speakersCount || 0;
-        healthCheck.checks.speakers.accessible = true;
-      }
+      healthCheck.services.database.tables.bsl_speakers = {
+        accessible: true,
+        recordCount: speakersCount,
+      };
+      healthCheck.checks.speakers.count = speakersCount;
+      healthCheck.checks.speakers.accessible = true;
     } catch (error: any) {
       healthCheck.services.database.tables.bsl_speakers = {
         accessible: false,
@@ -176,23 +168,13 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
 
       // Count from BSL_Bookings table
       try {
-        const { count: bslBookingsCount, error: bslBookingsError } = await supabase
-          .from('BSL_Bookings')
-          .select('id', { count: 'exact', head: true });
+        const bslBookingsCount = await readCount('SELECT COUNT(*)::int AS count FROM "BSL_Bookings"');
 
-        if (bslBookingsError) {
-          bookingErrors.push(`BSL_Bookings: ${bslBookingsError.message}`);
-          healthCheck.services.database.tables.BSL_Bookings = {
-            accessible: false,
-            error: bslBookingsError.message,
-          };
-        } else {
-          totalBookingsCount += bslBookingsCount || 0;
-          healthCheck.services.database.tables.BSL_Bookings = {
-            accessible: true,
-            recordCount: bslBookingsCount || 0,
-          };
-        }
+        totalBookingsCount += bslBookingsCount;
+        healthCheck.services.database.tables.BSL_Bookings = {
+          accessible: true,
+          recordCount: bslBookingsCount,
+        };
       } catch (error: any) {
         bookingErrors.push(`BSL_Bookings: ${error?.message || 'Unknown error'}`);
         healthCheck.services.database.tables.BSL_Bookings = {
@@ -203,23 +185,15 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
 
       // Count from meeting_requests table (sent requests)
       try {
-        const { count: meetingRequestsCount, error: meetingRequestsError } = await supabase
-          .from('meeting_requests')
-          .select('id', { count: 'exact', head: true });
+        const meetingRequestsCount = await readCount(
+          'SELECT COUNT(*)::int AS count FROM meeting_requests'
+        );
 
-        if (meetingRequestsError) {
-          bookingErrors.push(`meeting_requests: ${meetingRequestsError.message}`);
-          healthCheck.services.database.tables.meeting_requests = {
-            accessible: false,
-            error: meetingRequestsError.message,
-          };
-        } else {
-          totalBookingsCount += meetingRequestsCount || 0;
-          healthCheck.services.database.tables.meeting_requests = {
-            accessible: true,
-            recordCount: meetingRequestsCount || 0,
-          };
-        }
+        totalBookingsCount += meetingRequestsCount;
+        healthCheck.services.database.tables.meeting_requests = {
+          accessible: true,
+          recordCount: meetingRequestsCount,
+        };
       } catch (error: any) {
         bookingErrors.push(`meeting_requests: ${error?.message || 'Unknown error'}`);
         healthCheck.services.database.tables.meeting_requests = {
@@ -230,23 +204,13 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
 
       // Count from meetings table (accepted meetings)
       try {
-        const { count: meetingsCount, error: meetingsError } = await supabase
-          .from('meetings')
-          .select('id', { count: 'exact', head: true });
+        const meetingsCount = await readCount('SELECT COUNT(*)::int AS count FROM meetings');
 
-        if (meetingsError) {
-          bookingErrors.push(`meetings: ${meetingsError.message}`);
-          healthCheck.services.database.tables.meetings = {
-            accessible: false,
-            error: meetingsError.message,
-          };
-        } else {
-          totalBookingsCount += meetingsCount || 0;
-          healthCheck.services.database.tables.meetings = {
-            accessible: true,
-            recordCount: meetingsCount || 0,
-          };
-        }
+        totalBookingsCount += meetingsCount;
+        healthCheck.services.database.tables.meetings = {
+          accessible: true,
+          recordCount: meetingsCount,
+        };
       } catch (error: any) {
         bookingErrors.push(`meetings: ${error?.message || 'Unknown error'}`);
         healthCheck.services.database.tables.meetings = {
@@ -274,26 +238,17 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
 
     // 4. Check passes table
     try {
-      const { count: passesCount, error: passesError } = await supabase
-        .from('passes')
-        .select('id', { count: 'exact', head: true })
-        .eq('event_id', eventId);
+      const passesCount = await readCount(
+        'SELECT COUNT(*)::int AS count FROM passes WHERE event_id = $1',
+        [eventId]
+      );
 
-      if (passesError) {
-        healthCheck.services.database.tables.passes = {
-          accessible: false,
-          error: passesError.message,
-        };
-        healthCheck.checks.passes.accessible = false;
-        healthCheck.status = 'degraded';
-      } else {
-        healthCheck.services.database.tables.passes = {
-          accessible: true,
-          recordCount: passesCount || 0,
-        };
-        healthCheck.checks.passes.count = passesCount || 0;
-        healthCheck.checks.passes.accessible = true;
-      }
+      healthCheck.services.database.tables.passes = {
+        accessible: true,
+        recordCount: passesCount,
+      };
+      healthCheck.checks.passes.count = passesCount;
+      healthCheck.checks.passes.accessible = true;
     } catch (error: any) {
       healthCheck.services.database.tables.passes = {
         accessible: false,
