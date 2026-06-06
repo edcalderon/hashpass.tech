@@ -74,7 +74,7 @@ const normalizeDatabaseConnectionString = (connectionString: string): string => 
   }
 };
 
-const getDatabasePool = (): Pool => {
+export const getDatabasePool = (): Pool => {
   if (pool) return pool;
 
   const connectionString =
