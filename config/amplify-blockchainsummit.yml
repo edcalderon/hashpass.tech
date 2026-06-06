@@ -86,7 +86,7 @@ frontend:
         - 'echo "=== Contents of dist/server/ ==="'
         - ls -la dist/server/
         - ls -la dist/client/index.html
-    post_build:
+    postBuild:
       commands:
         # Deploy Lambda function automatically with frontend
         # This ensures API and frontend are always in sync
