@@ -1,5 +1,9 @@
 # ✅ Setup Completo: Lambda + Amplify Integration
 
+> Nota de archivo: esta guia describe la integracion Amplify + Lambda historica. El flujo actual
+> del proyecto mantiene `hashpass.tech` en Amplify y mueve `bsl.hashpass.tech` al pipeline
+> SST/CodeBuild descrito en `packages/tools/buildspecs/infra-deploy.yml`.
+
 ## Estado Actual
 
 ✅ **Configuración completada:**
@@ -154,4 +158,3 @@ curl https://api.hashpass.tech/api/config/versions
 - `docs/AMPLIFY-LAMBDA-INTEGRATION-FINAL.md` - Guía completa
 - `scripts/add-lambda-permissions-to-amplify-role.sh` - Script de setup
 - `amplify.yml` - Configuración del build
-

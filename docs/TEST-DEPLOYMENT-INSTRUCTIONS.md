@@ -1,5 +1,10 @@
 # Instrucciones para Probar el Despliegue
 
+> Nota de archivo: esta guia documenta el flujo Amplify + Lambda anterior. El flujo actual es:
+> - `hashpass.tech` / `core` en Amplify
+> - `bsl.hashpass.tech` / `bsl` en SST/CodeBuild con `packages/tools/buildspecs/infra-deploy.yml`
+> Para el flujo vigente, revisa `README.md` y `docs/ENVIRONMENT_STRATEGY.md`.
+
 ## ✅ Commit de Prueba Creado
 
 Se ha creado un commit de prueba que activará el despliegue automático de Lambda.
@@ -15,7 +20,7 @@ Dependiendo de qué app de Amplify quieras probar:
 git push edcalderon main
 ```
 
-#### Para bsl2025.hashpass.tech (bsl2025):
+#### Para bsl.hashpass.tech (flujo legacy bsl2025):
 ```bash
 git push origin bsl2025
 ```
@@ -98,4 +103,3 @@ Si algo falla, revisar:
 - `docs/AMPLIFY-LAMBDA-SETUP-COMPLETE.md` - Guía de troubleshooting
 - `docs/AMPLIFY-LAMBDA-INTEGRATION-FINAL.md` - Configuración completa
 - Logs completos en Amplify Console
-

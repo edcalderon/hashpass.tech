@@ -1,4 +1,9 @@
-# Amplify Deployment Checklist
+# Legacy Amplify Deployment Checklist
+
+> Nota de archivo: este checklist documenta el flujo Amplify anterior. El flujo actual deja
+> `hashpass.tech` en Amplify y `bsl.hashpass.tech` en SST/CodeBuild con
+> `packages/tools/buildspecs/infra-deploy.yml`.
+> Para la guia vigente, revisa `README.md`, `docs/ENVIRONMENT_STRATEGY.md` y `packages/infra/README.md`.
 
 ## Pre-Deployment Checklist
 
@@ -66,4 +71,3 @@
 |--------|--------|-------------|-----------------|
 | main | hashpass.tech | amplify-main.yml | true |
 | bsl2025 | bsl2025.hashpass.tech | amplify-bsl2025.yml | false |
-

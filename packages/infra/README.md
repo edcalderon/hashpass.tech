@@ -60,4 +60,4 @@ The generic `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` remain as
 fallbacks for local development and older CI jobs, but the BSL aliases are now
 preferred when they are present in the environment.
 
-See [docs/INFRA_NAMING_GUIDE.md](/home/ed/Documents/HASH/hashpass.tech/docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the BSL infra track.
+See [docs/INFRA_NAMING_GUIDE.md](../../docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the BSL infra track.
