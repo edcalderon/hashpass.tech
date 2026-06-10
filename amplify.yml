@@ -12,6 +12,7 @@ frontend:
         - 'echo "Skipping Amplify CLI backend initialization for static hosting"'
         - nvm install 22.22.0
         - corepack enable pnpm || true
+        - export CI=1
         - rm -rf node_modules
         - |
           if [ -f pnpm-lock.yaml ]; then

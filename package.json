@@ -81,7 +81,7 @@
     "release:bsl:prod": "node packages/tools/scripts/release-pipeline.js --env production --tenant blockchainsummit",
     "release:all:dev": "node packages/tools/scripts/release-pipeline.js --env development --all-tenants",
     "release:all:prod": "node packages/tools/scripts/release-pipeline.js --env production --all-tenants",
-    "prepare": "node -e \"if (process.env.CI || process.env.NPM_CONFIG_PRODUCTION || process.env.NODE_ENV === 'production') { process.exit(0); }\" && husky"
+    "prepare": "node -e \"const fs = require('fs'); if (process.env.CI || process.env.NPM_CONFIG_PRODUCTION || process.env.NODE_ENV === 'production' || !fs.existsSync('.git')) { process.exit(0); }\" && husky"
   },
   "expo": {
     "extra": {

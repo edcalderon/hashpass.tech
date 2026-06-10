@@ -42,8 +42,10 @@ The site build uses `expo export -p web` with the Expo web output set to
 building the API route server tree. The CodeBuild projects are seeded with the
 public Supabase variables from the root `.env` so the export can bundle the
 client correctly. The live BSL projects use `packages/tools/buildspecs/infra-deploy.yml`
-as their CodeBuild buildspec. Production BSL should use the BSL-specific
-variables first:
+as their CodeBuild buildspec. Both the Amplify and CodeBuild build paths set
+`CI=1` before dependency installation so Husky `prepare` hooks do not run
+against source archives that do not contain `.git` metadata. Production BSL
+should use the BSL-specific variables first:
 
 - `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
 - `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
