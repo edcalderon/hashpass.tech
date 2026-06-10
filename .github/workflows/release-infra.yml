@@ -64,7 +64,7 @@ jobs:
 
       - name: Release infra
         run: >
-          node tools/scripts/release-infra-pipeline.js
+          node packages/tools/scripts/release-infra-pipeline.js
           --env ${{ inputs.environment }}
           --bump ${{ inputs.bump }}
           ${{ inputs.skip_deploy && '--skip-deploy' || '' }}

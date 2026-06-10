@@ -51,8 +51,8 @@ frontend:
         - pkill -9 -x node || true
         - sleep 3
         # Amplify artifact upload skips hidden directories; normalize Expo asset paths off ".pnpm"
-        - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/client
-        - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/server
+        - node packages/tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/client
+        - node packages/tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/server
         - mkdir -p dist/client/config
         - cp apps/web-app/config/versions.json dist/client/config/versions.json 2>/dev/null || true
         - cp apps/web-app/public/sw.js dist/client/sw.js 2>/dev/null || true
@@ -88,8 +88,8 @@ frontend:
         # Deploy Lambda function automatically with frontend
         # This ensures API and frontend are always in sync
         - echo "📦 Packaging Lambda function..."
-        - chmod +x tools/scripts/package-lambda.sh
-        - ./tools/scripts/package-lambda.sh
+        - chmod +x packages/tools/scripts/package-lambda.sh
+        - ./packages/tools/scripts/package-lambda.sh
         - |
           if [ -f lambda-deployment.zip ]; then
             # Branch-aware Lambda function target

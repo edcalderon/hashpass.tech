@@ -34,7 +34,7 @@ GitHub Actions can deploy the package with AWS OIDC. The workflow in
 Before the first run, bootstrap a role with:
 
 ```bash
-REPO=<org>/<repo> ./tools/scripts/setup-infra-role.sh
+REPO=<org>/<repo> ./packages/tools/scripts/setup-infra-role.sh
 ```
 
 The site build uses `expo export -p web` with the Expo web output set to

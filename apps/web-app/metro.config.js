@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 try {
   const profile = process.env.NODE_ENV === 'production' ? 'production' : 'local';
   console.log(`📡 [Metro] Auto-propagating environment: ${profile}`);
-  execSync(`node ${path.resolve(__dirname, '../../tools/scripts/propagate-env.js')} ${profile}`, { stdio: 'inherit' });
+  execSync(`node ${path.resolve(__dirname, '../../packages/tools/scripts/propagate-env.js')} ${profile}`, { stdio: 'inherit' });
 } catch (error) {
   console.error('⚠️ [Metro] Environment propagation failed:', error.message);
 }

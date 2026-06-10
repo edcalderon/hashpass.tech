@@ -8,7 +8,7 @@ route53_zone_tech_name = "hashpass.tech"
 route53_zone_lat_name  = "hashpass.lat"
 
 # Build lambda-deployment.zip before apply.
-# Example: ./tools/scripts/package-lambda.sh
+# Example: ./packages/tools/scripts/package-lambda.sh
 lambda_zip_path         = "../../../../lambda-deployment.zip"
 lambda_source_code_hash = null
 

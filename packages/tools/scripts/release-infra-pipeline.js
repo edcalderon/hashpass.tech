@@ -138,8 +138,8 @@ function printUsage() {
   console.log(
     [
       'Usage:',
-      '  node tools/scripts/release-infra-pipeline.js [options]',
-      '  node tools/scripts/release-infra-pipeline.js <dev|prod> [patch|minor|major]',
+      '  node packages/tools/scripts/release-infra-pipeline.js [options]',
+      '  node packages/tools/scripts/release-infra-pipeline.js <dev|prod> [patch|minor|major]',
       '',
       'Options:',
       '  --env <dev|prod>       Target release environment (default: production)',
@@ -189,7 +189,7 @@ function runVersionBump(options) {
 function deployInfra(options) {
   if (options.skipDeploy) return;
 
-  runCommand('bash', ['tools/scripts/check-infra-dns.sh'], options);
+  runCommand('bash', ['packages/tools/scripts/check-infra-dns.sh'], options);
   const deployScript = options.environment === 'production' ? 'deploy:prod' : 'deploy:dev';
   runCommand('pnpm', ['--filter', '@hashpass/infra', 'run', deployScript], options);
 }

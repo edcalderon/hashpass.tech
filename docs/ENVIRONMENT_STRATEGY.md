@@ -49,10 +49,10 @@ npm run env:propagate [local|dev|production]
 Synchronizes critical environment variables directly to AWS Lambda functions.
 ```bash
 # Syncs _DEV overrides to hashpass-api-dev
-node tools/scripts/sync-env.js dev
+node packages/tools/scripts/sync-env.js dev
 
 # Syncs _PROD overrides to hashpass-api-prod
-node tools/scripts/sync-env.js production
+node packages/tools/scripts/sync-env.js production
 ```
 - **Security Rule**: `local` profile is blocked from syncing to AWS.
 
@@ -60,7 +60,7 @@ node tools/scripts/sync-env.js production
 Manages secrets and configurations in AWS SSM Parameter Store surgically.
 ```bash
 # Recommended: Create/Update parameters and delete stale ones
-bash tools/scripts/util/setup-parameters.sh sync [dev|production]
+bash packages/tools/scripts/util/setup-parameters.sh sync [dev|production]
 
 # Other commands: list, verify, delete
 ```
@@ -85,9 +85,9 @@ npm run env:propagate local
 # 2. Propagate locally (optional but good for consistency)
 npm run env:propagate dev
 # 3. Update Lambda configurations
-node tools/scripts/sync-env.js dev
+node packages/tools/scripts/sync-env.js dev
 # 4. Sync AWS Parameter Store, including BSL Better Auth aliases
-bash tools/scripts/util/setup-parameters.sh sync dev
+bash packages/tools/scripts/util/setup-parameters.sh sync dev
 ```
 
 ### Deploying to Production
@@ -96,9 +96,9 @@ bash tools/scripts/util/setup-parameters.sh sync dev
 # 2. Propagate production settings
 npm run env:propagate production
 # 3. Update Production Lambda
-node tools/scripts/sync-env.js production
+node packages/tools/scripts/sync-env.js production
 # 4. Sync Production Parameter Store, including BSL Better Auth aliases
-bash tools/scripts/util/setup-parameters.sh sync production
+bash packages/tools/scripts/util/setup-parameters.sh sync production
 ```
 
 ---

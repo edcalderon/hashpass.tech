@@ -102,7 +102,7 @@ hashpass.tech/
 │       ├── package.json
 │       └── index.js
 │
-├── tools/
+├── packages/tools/
 │   ├── scripts/              # Shared build/deploy scripts
 │   └── db/                   # Database migrations (Flyway)
 │
@@ -273,7 +273,7 @@ hashpass.tech/
 ### Phase 5: Update Build & Deploy (Day 7)
 
 1. **Migrate scripts**
-   - Move shared scripts to `tools/scripts/`
+   - Move shared scripts to `packages/tools/scripts/`
    - Update build scripts for Turborepo
    - Update CI/CD workflows
 

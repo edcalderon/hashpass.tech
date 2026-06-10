@@ -3,7 +3,7 @@
 # Script to remove unused SQL files
 # These files appear to be development/debugging scripts that are no longer needed
 
-cd "$(dirname "$0")/../scripts/sql" || exit 1
+cd "$(dirname "$0")/../sql" || exit 1
 
 # List of files to remove
 FILES_TO_REMOVE=(
@@ -45,7 +45,7 @@ FILES_TO_REMOVE=(
 )
 
 # Create a backup directory
-BACKUP_DIR="../../backup/sql/$(date +%Y%m%d_%H%M%S)"
+BACKUP_DIR="../../db/backup/sql/$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
 # Move files to backup instead of deleting them

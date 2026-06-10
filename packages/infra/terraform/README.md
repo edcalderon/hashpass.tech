@@ -26,7 +26,7 @@ This Terraform setup deploys the production naming convention discussed for Hash
 2. AWS credentials configured (for Route53, ACM, API Gateway, Lambda, Amplify)
 3. GCP credentials configured (ADC or `GOOGLE_APPLICATION_CREDENTIALS`)
 4. Lambda package built at the configured path:
-   - Example: `./tools/scripts/package-lambda.sh`
+   - Example: `./packages/tools/scripts/package-lambda.sh`
 5. GCP Secret Manager secrets created:
    - `directus-env-dev`
    - `directus-env-prod`

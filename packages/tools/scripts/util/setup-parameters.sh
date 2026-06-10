@@ -49,7 +49,7 @@ get_api_base_url() {
         *) target_env="development" ;;
     esac
 
-    node -e 'const fs = require("fs"); const config = JSON.parse(fs.readFileSync("tools/scripts/config/tenants.json", "utf8")); const env = process.argv[1]; const base = (config.defaults && config.defaults.apiBaseUrls && config.defaults.apiBaseUrls[env]) || ""; process.stdout.write(base);' "$target_env"
+    node -e 'const fs = require("fs"); const config = JSON.parse(fs.readFileSync("packages/tools/scripts/config/tenants.json", "utf8")); const env = process.argv[1]; const base = (config.defaults && config.defaults.apiBaseUrls && config.defaults.apiBaseUrls[env]) || ""; process.stdout.write(base);' "$target_env"
 }
 
 # Function to get value with override logic

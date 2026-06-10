@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { config as loadDotenv } from 'dotenv';
 
 const REPO_ROOT = resolve(new URL('../..', import.meta.url).pathname);
-const CONFIG_PATH = resolve(REPO_ROOT, 'tools/scripts/config/database-profiles.json');
+const CONFIG_PATH = resolve(REPO_ROOT, 'packages/tools/scripts/config/database-profiles.json');
 
 function loadEnv() {
   for (const file of ['.env.local', '.env']) {

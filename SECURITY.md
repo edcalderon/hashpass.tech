@@ -19,10 +19,10 @@ cp .env.example .env
 ```
 
 #### 2. Deployment Scripts
-All deployment scripts (e.g., `tools/scripts/deploy-oauth.sh`) now automatically load from `.env`:
+All deployment scripts (e.g., `packages/tools/scripts/deploy-oauth.sh`) now automatically load from `.env`:
 ```bash
 # Just run the script - it will load .env automatically
-./tools/scripts/deploy-oauth.sh
+./packages/tools/scripts/deploy-oauth.sh
 ```
 
 #### 3. Terraform
@@ -72,7 +72,7 @@ git push origin --force --all
 
 ### Files Audited for Security ✅
 
-- ✅ `tools/scripts/deploy-oauth.sh` - Now loads all secrets from .env
+- ✅ `packages/tools/scripts/deploy-oauth.sh` - Now loads all secrets from .env
 - ✅ `scripts/apply-migration-simple.sh` - Now loads DB password from .env
 - ✅ `docker-compose.yml` - Now uses .env variables
 - ✅ `packages/infra/terraform/gcp/variables.tf` - Removed default values for secrets

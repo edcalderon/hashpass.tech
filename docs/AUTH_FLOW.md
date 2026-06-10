@@ -63,7 +63,7 @@ Event production requirements:
 - `BETTER_AUTH_GOOGLE_CLIENT_ID` / `BETTER_AUTH_GOOGLE_CLIENT_SECRET` (or the existing `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`)
 - Google OAuth redirect URI: `https://api.hashpass.tech/api/auth/callback/google`
 
-When you sync production or development secrets, `tools/scripts/util/setup-parameters.sh sync` keeps the BSL Better Auth subtree under `/hashpass/[env]/bsl/better-auth/` and preserves the public Supabase key aliases used by the browser runtime.
+When you sync production or development secrets, `packages/tools/scripts/util/setup-parameters.sh sync` keeps the BSL Better Auth subtree under `/hashpass/[env]/bsl/better-auth/` and preserves the public Supabase key aliases used by the browser runtime.
 
 Run the Better Auth schema migration against the configured event database after changing Better Auth config:
 

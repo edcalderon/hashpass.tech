@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-TENANT_CONFIG_PATH="${TENANT_CONFIG_PATH:-${ROOT_DIR}/tools/scripts/config/tenants.json}"
+TENANT_CONFIG_PATH="${TENANT_CONFIG_PATH:-${ROOT_DIR}/packages/tools/scripts/config/tenants.json}"
 TENANT="${TENANT:-core}"
 
 APP_ID=""
@@ -13,12 +13,12 @@ DRY_RUN="false"
 print_usage() {
   cat <<'EOF'
 Usage:
-  tools/scripts/apply-amplify-custom-headers.sh [options]
-  tools/scripts/apply-amplify-custom-headers.sh <app_id> <region> [headers_file]
+  packages/tools/scripts/apply-amplify-custom-headers.sh [options]
+  packages/tools/scripts/apply-amplify-custom-headers.sh <app_id> <region> [headers_file]
 
 Options:
   --tenant <name>        Tenant key (default: core)
-  --config <path>        Tenant config file (default: tools/scripts/config/tenants.json)
+  --config <path>        Tenant config file (default: packages/tools/scripts/config/tenants.json)
   --app-id <id>          Override resolved app id
   --region <region>      Override resolved region
   --headers-file <path>  Override custom headers file path
@@ -26,9 +26,9 @@ Options:
   -h, --help             Show this help
 
 Examples:
-  tools/scripts/apply-amplify-custom-headers.sh --tenant core
-  tools/scripts/apply-amplify-custom-headers.sh --tenant blockchainsummit
-  tools/scripts/apply-amplify-custom-headers.sh dy8duury54wam us-east-2
+  packages/tools/scripts/apply-amplify-custom-headers.sh --tenant core
+  packages/tools/scripts/apply-amplify-custom-headers.sh --tenant blockchainsummit
+  packages/tools/scripts/apply-amplify-custom-headers.sh dy8duury54wam us-east-2
 EOF
 }
 
@@ -111,7 +111,7 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 resolve_tenant_json() {
-  node - "$ROOT_DIR/tools/scripts/lib/tenant-config.js" "$TENANT" "$TENANT_CONFIG_PATH" <<'NODE'
+  node - "$ROOT_DIR/packages/tools/scripts/lib/tenant-config.js" "$TENANT" "$TENANT_CONFIG_PATH" <<'NODE'
 const [modulePath, tenant, configPath] = process.argv.slice(2);
 const { resolveTenant } = require(modulePath);
 try {

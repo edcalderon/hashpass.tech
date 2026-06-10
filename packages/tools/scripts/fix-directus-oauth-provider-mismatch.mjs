@@ -9,8 +9,8 @@
  *
  * Usage:
  *   set -a; source .env; set +a
- *   node tools/scripts/fix-directus-oauth-provider-mismatch.mjs
- *   node tools/scripts/fix-directus-oauth-provider-mismatch.mjs --dry-run
+ *   node packages/tools/scripts/fix-directus-oauth-provider-mismatch.mjs
+ *   node packages/tools/scripts/fix-directus-oauth-provider-mismatch.mjs --dry-run
  */
 
 const DIRECTUS_URL =

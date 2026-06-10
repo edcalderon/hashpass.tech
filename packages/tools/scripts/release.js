@@ -272,7 +272,7 @@ function printUsage() {
   console.log(
     [
       'Usage:',
-      '  node tools/scripts/release.js [patch|minor|major] [options]',
+      '  node packages/tools/scripts/release.js [patch|minor|major] [options]',
       '',
       'Options:',
       '  --branch <name>           Override the detected branch',
@@ -346,7 +346,7 @@ function runMainRelease(options, branch) {
 
   const releaseVersion = readJsonVersion('package.json');
   runInherit('node', [
-    'tools/scripts/update-version.mjs',
+    'packages/tools/scripts/update-version.mjs',
     releaseVersion,
     '--type=stable',
     '--skip-git-info',

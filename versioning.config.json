@@ -4,7 +4,7 @@
     ".",
     "apps/*",
     "packages/*",
-    "tools/*",
+    "packages/tools/*",
     "packages/infra/*",
     "aws/*",
     "db/*",
@@ -52,8 +52,8 @@
         "wrangler.toml.example"
       ],
       "routes": {
-        ".js": "tools/scripts",
-        ".sh": "tools/scripts",
+        ".js": "packages/tools/scripts",
+        ".sh": "packages/tools/scripts",
         ".md": "docs",
         ".json": "config",
         ".yml": "config",

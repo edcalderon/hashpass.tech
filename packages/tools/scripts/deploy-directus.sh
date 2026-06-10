@@ -25,7 +25,7 @@ cd "$DIRECTUS_DIR"
 # Ensure we have an .env file (should be propagated already)
 if [ ! -f .env ]; then
     echo "⚠️  No .env found in $DIRECTUS_DIR. Attempting propagation..."
-    node "$ROOT_DIR/tools/scripts/propagate-env.js" local
+    node "$ROOT_DIR/packages/tools/scripts/propagate-env.js" local
 fi
 
 # Stop and remove any conflicting containers with common names

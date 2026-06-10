@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# HashPass Amplify Deployment Script
-# Deploys the web app and Lambda functions to AWS Amplify
+# BSL2025 HashPass Build and Deploy Script
+# This script builds the web app and deploys to Amplify (Lambda-based service)
 
 set -e
 
-echo "🚀 HashPass Amplify Deployment"
-echo "=============================="
+echo "🚀 BSL2025 HashPass - Amplify Build and Deploy"
+echo "=============================================="
 
 # Colors for output
 RED='\033[0;31m'
@@ -16,7 +16,14 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+PROJECT_ROOT="/home/ed/Documents/hash/bsl2025.hashpass.tech"
+
+# Check if running as root for Amplify deployment
+check_root() {
+    if [[ $EUID -eq 0 ]]; then
+        echo -e "${YELLOW}⚠️  Running as root. This is not required for Amplify deployment.${NC}"
+    fi
+}
 
 # Check prerequisites
 check_prerequisites() {
@@ -27,6 +34,18 @@ check_prerequisites() {
         echo -e "${RED}❌ Not in the correct project directory.${NC}"
         echo "Expected: $PROJECT_ROOT"
         echo "Current: $(pwd)"
+        exit 1
+    fi
+    
+    # Check if Node.js is installed
+    if ! command -v node &> /dev/null; then
+        echo -e "${RED}❌ Node.js is not installed. Please install Node.js 18+ first.${NC}"
+        exit 1
+    fi
+    
+    # Check if npm is installed
+    if ! command -v npm &> /dev/null; then
+        echo -e "${RED}❌ npm is not installed. Please install npm first.${NC}"
         exit 1
     fi
     
@@ -44,29 +63,37 @@ check_prerequisites() {
         exit 1
     fi
     
-    # Check if Node.js is installed
-    if ! command -v node &> /dev/null; then
-        echo -e "${RED}❌ Node.js is not installed.${NC}"
-        exit 1
-    fi
-    
     echo -e "${GREEN}✅ Prerequisites check passed${NC}"
 }
 
-# Install dependencies
+# Install main project dependencies
 install_dependencies() {
-    echo -e "${BLUE}📦 Installing dependencies...${NC}"
+    echo -e "${BLUE}📦 Installing main project dependencies...${NC}"
     
     cd "$PROJECT_ROOT"
     npm install
     
-    echo -e "${GREEN}✅ Dependencies installed${NC}"
+    echo -e "${GREEN}✅ Main dependencies installed${NC}"
+}
+
+# Setup parameters
+setup_parameters() {
+    echo -e "${BLUE}🔐 Setting up Parameter Store...${NC}"
+    
+    cd "$PROJECT_ROOT"
+    
+    # Setup parameters in AWS Parameter Store
+    "$PROJECT_ROOT/packages/tools/scripts/util/setup-parameters.sh" create
+    
+    echo -e "${GREEN}✅ Parameters setup completed${NC}"
 }
 
 # Run tests
 run_tests() {
     echo -e "${BLUE}🧪 Running tests...${NC}"
     
+    # Test main project
+    echo -e "${BLUE}  Testing main project...${NC}"
     cd "$PROJECT_ROOT"
     npm run lint
     
@@ -81,18 +108,6 @@ build_web_app() {
     npm run build:web
     
     echo -e "${GREEN}✅ Web application built successfully${NC}"
-}
-
-# Setup parameters
-setup_parameters() {
-    echo -e "${BLUE}🔐 Setting up Parameter Store...${NC}"
-    
-    cd "$PROJECT_ROOT"
-    
-    # Setup parameters in AWS Parameter Store
-    "$PROJECT_ROOT/tools/scripts/util/setup-parameters.sh" create
-    
-    echo -e "${GREEN}✅ Parameters setup completed${NC}"
 }
 
 # Deploy Lambda functions
@@ -179,8 +194,8 @@ deploy_all() {
     
     check_prerequisites
     install_dependencies
-    run_tests
     setup_parameters
+    run_tests
     build_web_app
     deploy_lambda_functions
     deploy_amplify
@@ -199,8 +214,8 @@ deploy_lambda_only() {
     
     check_prerequisites
     install_dependencies
-    run_tests
     setup_parameters
+    run_tests
     deploy_lambda_functions
     test_lambda_function
     show_status
@@ -208,7 +223,7 @@ deploy_lambda_only() {
     echo -e "\n${GREEN}🎉 Lambda deployment completed successfully!${NC}"
 }
 
-# Deploy only web app
+# Deploy only the web app
 deploy_web_only() {
     echo -e "${BLUE}🎯 Deploying web app only...${NC}"
     
@@ -223,7 +238,7 @@ deploy_web_only() {
 
 # Show help
 show_help() {
-    echo "HashPass Amplify Deployment Script"
+    echo "BSL2025 HashPass Build and Deploy Script"
     echo ""
     echo "Usage: $0 [OPTION]"
     echo ""
@@ -232,25 +247,19 @@ show_help() {
     echo "  lambda      Deploy only Lambda functions"
     echo "  web         Deploy only the web application"
     echo "  status      Show deployment status"
-    echo "  test        Test Lambda function"
     echo "  help        Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 all"
+    echo "  sudo $0 all"
     echo "  $0 lambda"
-    echo "  $0 web"
-    echo "  $0 status"
-    echo "  $0 test"
-    echo ""
-    echo "Prerequisites:"
-    echo "  - AWS CLI configured with appropriate credentials"
-    echo "  - Amplify CLI installed and configured"
-    echo "  - Node.js 18+ installed"
+    echo "  sudo $0 web"
+    echo "  sudo $0 status"
 }
 
 # Main script logic
 case "${1:-all}" in
     "all")
+        check_root
         deploy_all
         ;;
     "lambda")
@@ -260,10 +269,8 @@ case "${1:-all}" in
         deploy_web_only
         ;;
     "status")
+        check_root
         show_status
-        ;;
-    "test")
-        test_lambda_function
         ;;
     "help"|"-h"|"--help")
         show_help

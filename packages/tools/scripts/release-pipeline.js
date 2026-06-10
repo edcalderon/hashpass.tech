@@ -11,10 +11,10 @@
  * 5) Amplify RELEASE jobs for one tenant by default, or all tenants when explicitly requested
  *
  * Usage examples:
- *   node tools/scripts/release-pipeline.js --env development
- *   node tools/scripts/release-pipeline.js --env production --bump minor
- *   node tools/scripts/release-pipeline.js dev patch
- *   node tools/scripts/release-pipeline.js --env development --tenant core --dry-run
+ *   node packages/tools/scripts/release-pipeline.js --env development
+ *   node packages/tools/scripts/release-pipeline.js --env production --bump minor
+ *   node packages/tools/scripts/release-pipeline.js dev patch
+ *   node packages/tools/scripts/release-pipeline.js --env development --tenant core --dry-run
  */
 
 const { execSync, spawnSync } = require('child_process');
@@ -34,8 +34,8 @@ function printUsage() {
   console.log(
     [
       'Usage:',
-      '  node tools/scripts/release-pipeline.js [options]',
-      '  node tools/scripts/release-pipeline.js <dev|prod> [patch|minor|major]',
+      '  node packages/tools/scripts/release-pipeline.js [options]',
+      '  node packages/tools/scripts/release-pipeline.js <dev|prod> [patch|minor|major]',
       '',
       'Options:',
       '  --env <dev|prod>          Target environment (default: development)',
@@ -308,7 +308,7 @@ function runConsistencyAudit(options) {
   if (options.tenant === 'all') {
     runCommand(
       'node',
-      ['tools/scripts/check-consistency.js', '--all-tenants', '--env', options.environment, '--config', options.configPath],
+      ['packages/tools/scripts/check-consistency.js', '--all-tenants', '--env', options.environment, '--config', options.configPath],
       options
     );
     return;
@@ -316,7 +316,7 @@ function runConsistencyAudit(options) {
 
   runCommand(
     'node',
-    ['tools/scripts/check-consistency.js', '--tenant', options.tenant, '--env', options.environment, '--config', options.configPath],
+    ['packages/tools/scripts/check-consistency.js', '--tenant', options.tenant, '--env', options.environment, '--config', options.configPath],
     options
   );
 }
@@ -326,7 +326,7 @@ function runVersionBump(options) {
   const releaseType = options.environment === 'production' ? 'stable' : 'beta';
   runCommand(
     'node',
-    ['tools/scripts/update-version.mjs', options.bump, `--type=${releaseType}`, '--commit', '--tag'],
+    ['packages/tools/scripts/update-version.mjs', options.bump, `--type=${releaseType}`, '--commit', '--tag'],
     options
   );
 }
@@ -348,7 +348,7 @@ function runLambdaStage(options, runtime) {
 
   runCommand(
     'node',
-    ['tools/scripts/sync-env.js', syncEnv, '--tenant', runtime.tenant, '--config', options.configPath],
+    ['packages/tools/scripts/sync-env.js', syncEnv, '--tenant', runtime.tenant, '--config', options.configPath],
     options
   );
   runCommand('aws', ['lambda', 'wait', 'function-updated', '--function-name', lambdaFunction, '--region', lambdaRegion], options);
@@ -357,7 +357,7 @@ function runLambdaStage(options, runtime) {
 
   runCommand(
     'node',
-    ['tools/scripts/propagate-env.js', syncEnv, '--tenant', runtime.tenant, '--config', options.configPath],
+    ['packages/tools/scripts/propagate-env.js', syncEnv, '--tenant', runtime.tenant, '--config', options.configPath],
     options
   );
   runCommand(
@@ -365,7 +365,7 @@ function runLambdaStage(options, runtime) {
     ['-lc', `SKIP_ENV_PROPAGATE=1 BUILD_ENV=${syncEnv} pnpm --filter hashpass-web-app build`],
     options
   );
-  runCommand('bash', ['tools/scripts/package-lambda.sh'], options);
+  runCommand('bash', ['packages/tools/scripts/package-lambda.sh'], options);
   runCommand(
     'aws',
     [

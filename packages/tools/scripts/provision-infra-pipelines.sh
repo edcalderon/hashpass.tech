@@ -8,7 +8,7 @@ RESOURCE_PREFIX="${RESOURCE_PREFIX:-bsl-hashpass}"
 CONNECTION_NAME="${CONNECTION_NAME:-${RESOURCE_PREFIX}-github-${REGION}}"
 PIPELINE_ROLE_NAME="${PIPELINE_ROLE_NAME:-BslHashpassPipelineRole}"
 CODEBUILD_ROLE_NAME="${CODEBUILD_ROLE_NAME:-BslHashpassCodeBuildRole}"
-BUILDSPEC_FILE="${BUILDSPEC_FILE:-tools/buildspecs/infra-deploy.yml}"
+BUILDSPEC_FILE="${BUILDSPEC_FILE:-packages/tools/buildspecs/infra-deploy.yml}"
 CODEBUILD_CACHE_NAMESPACE="${CODEBUILD_CACHE_NAMESPACE:-${RESOURCE_PREFIX}}"
 CODEBUILD_COMPUTE_TYPE_DEV="${CODEBUILD_COMPUTE_TYPE_DEV:-BUILD_GENERAL1_MEDIUM}"
 CODEBUILD_COMPUTE_TYPE_PROD="${CODEBUILD_COMPUTE_TYPE_PROD:-BUILD_GENERAL1_LARGE}"
@@ -52,7 +52,7 @@ CONNECTION_ARN="${CONNECTION_ARN:-$(aws codeconnections list-connections \
 
 if [[ -z "${CONNECTION_ARN}" || "${CONNECTION_ARN}" == "None" ]]; then
   echo "ERROR: could not find a CodeConnections connection named ${CONNECTION_NAME} in ${REGION}."
-  echo "Run tools/scripts/provision-infra-connection.sh first."
+  echo "Run packages/tools/scripts/provision-infra-connection.sh first."
   exit 1
 fi
 

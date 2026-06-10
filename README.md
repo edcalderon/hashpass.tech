@@ -51,7 +51,7 @@ We believe the future of events should be shaped by the community. By making Has
 
 ### Authentication
 
-Main `hashpass.tech` Google sign-in uses the API-owned Directus OAuth bridge documented in [docs/AUTH_FLOW.md](docs/AUTH_FLOW.md). BSL (`bsl.hashpass.tech`) uses Better Auth at `https://api.hashpass.tech/api/auth`, with its AWS SSM parameters normalized under `/hashpass/[env]/bsl/better-auth/` by `tools/scripts/util/setup-parameters.sh sync`.
+Main `hashpass.tech` Google sign-in uses the API-owned Directus OAuth bridge documented in [docs/AUTH_FLOW.md](docs/AUTH_FLOW.md). BSL (`bsl.hashpass.tech`) uses Better Auth at `https://api.hashpass.tech/api/auth`, with its AWS SSM parameters normalized under `/hashpass/[env]/bsl/better-auth/` by `packages/tools/scripts/util/setup-parameters.sh sync`.
 
 Use **pnpm** and **Turborepo** at the repo root:
 
@@ -127,8 +127,8 @@ For a complete guide on our environment management strategy, see [docs/ENVIRONME
 
 Deploy:
 ```bash
-chmod +x ./tools/scripts/deploy-bslatam.sh
-./tools/scripts/deploy-bslatam.sh
+chmod +x ./packages/tools/scripts/deploy-bslatam.sh
+./packages/tools/scripts/deploy-bslatam.sh
 ```
 For the main `hashpass.tech` Amplify track: configure AWS credentials and run `amplify publish`.
 

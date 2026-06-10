@@ -22,7 +22,7 @@ phases:
       - pnpm --version
   pre_build:
     commands:
-      - export ROUTE53_ZONE_ID="$(bash tools/scripts/check-infra-dns.sh --print-zone-id)"
+      - export ROUTE53_ZONE_ID="$(bash packages/tools/scripts/check-infra-dns.sh --print-zone-id)"
       - rm -rf node_modules
       - pnpm install --frozen-lockfile --prefer-offline
   build:

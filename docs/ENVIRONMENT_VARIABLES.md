@@ -5,9 +5,9 @@ This is the current source of truth for the environment variables used by the Ha
 ## How Values Flow
 
 - Root `.env` is the canonical source for shared values and environment-specific overrides.
-- `npm run env:propagate dev` and `npm run env:propagate production` call `tools/scripts/propagate-env.js`.
-- `node tools/scripts/sync-env.js dev` and `node tools/scripts/sync-env.js production` update runtime env exports from the root `.env`.
-- `bash tools/scripts/util/setup-parameters.sh sync dev` and `bash tools/scripts/util/setup-parameters.sh sync production` sync AWS SSM parameters and remove stale entries.
+- `npm run env:propagate dev` and `npm run env:propagate production` call `packages/tools/scripts/propagate-env.js`.
+- `node packages/tools/scripts/sync-env.js dev` and `node packages/tools/scripts/sync-env.js production` update runtime env exports from the root `.env`.
+- `bash packages/tools/scripts/util/setup-parameters.sh sync dev` and `bash packages/tools/scripts/util/setup-parameters.sh sync production` sync AWS SSM parameters and remove stale entries.
 
 ## Canonical Key Rules
 
@@ -96,10 +96,10 @@ Use these after changing the root `.env`:
 ```bash
 npm run env:propagate dev
 npm run env:propagate production
-node tools/scripts/sync-env.js dev
-node tools/scripts/sync-env.js production
-bash tools/scripts/util/setup-parameters.sh sync dev
-bash tools/scripts/util/setup-parameters.sh sync production
+node packages/tools/scripts/sync-env.js dev
+node packages/tools/scripts/sync-env.js production
+bash packages/tools/scripts/util/setup-parameters.sh sync dev
+bash packages/tools/scripts/util/setup-parameters.sh sync production
 ```
 
 ## Troubleshooting

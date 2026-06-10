@@ -52,7 +52,7 @@ else
 fi
 
 echo "Seeding speakers..."
-node tools/scripts/util/seed-bslatam.mjs || true
+node packages/tools/scripts/util/seed-bslatam.mjs || true
 
 # Function to install Amplify CLI
 install_amplify_cli() {

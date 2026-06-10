@@ -9,4 +9,4 @@ echo "  Environment: ${ENVIRONMENT}"
 echo "  Bump:        ${BUMP}"
 echo ""
 
-node tools/scripts/release-infra-pipeline.js --env "${ENVIRONMENT}" --bump "${BUMP}" --dry-run --skip-deploy
+node packages/tools/scripts/release-infra-pipeline.js --env "${ENVIRONMENT}" --bump "${BUMP}" --dry-run --skip-deploy

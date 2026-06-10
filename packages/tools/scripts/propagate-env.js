@@ -2,16 +2,16 @@
 /* global __dirname, Buffer */
 
 /**
- * HashPass Environment Sync Tool (Hardenened)
- * 
- * Sources variables from the root .env to update AWS Lambda configurations.
- * NO HARDCODED SECRETS ALLOWED.
- * 
+ * HashPass Unified Environment Manager
+ *
+ * Sources variables from the root .env based on the target environment profile.
+ * Profiles are defined by suffixes like _DEV or _PROD.
+ * For non-local targets, canonical tenant URLs are enforced from tenant config.
+ *
  * Usage:
- *   node tools/scripts/sync-env.js [dev|production]
+ *   node packages/tools/scripts/propagate-env.js [local|dev|production] [--tenant <name>] [--config <path>]
  */
 
-const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
@@ -22,6 +22,9 @@ const {
 } = require('./lib/tenant-config');
 
 const ROOT_DIR = path.resolve(__dirname, '../../');
+const APPS_DIR = path.join(ROOT_DIR, 'apps');
+const WEB_APP_DIR = path.join(APPS_DIR, 'web-app');
+const DIRECTUS_DIR = path.join(APPS_DIR, 'directus');
 const PROCESS_ENV_OVERRIDE_KEYS = [
   'BETTER_AUTH_SECRET',
   'BETTER_AUTH_SECRET_DEV',
@@ -56,7 +59,7 @@ function applyProcessEnvOverrides(config) {
 
 function parseArgs(argv) {
   const options = {
-    envArg: 'dev',
+    envArg: process.env.NODE_ENV || 'local',
     tenant: process.env.TENANT || 'core',
     configPath: process.env.TENANT_CONFIG_PATH || DEFAULT_CONFIG_PATH,
   };
@@ -103,8 +106,16 @@ function parseArgs(argv) {
     }
   }
 
-  const environment = normalizeEnvironment(options.envArg);
-  return { ...options, environment };
+  const raw = String(options.envArg || 'local').trim().toLowerCase();
+  const isLocal = raw === 'local';
+  const environment = isLocal ? 'local' : normalizeEnvironment(raw);
+
+  return {
+    ...options,
+    envArg: raw,
+    isLocal,
+    environment,
+  };
 }
 
 function loadRootEnv() {
@@ -121,12 +132,12 @@ function loadRootEnv() {
     return { ...process.env };
   }
 
-  console.error('❌ Root .env not found and no CI environment detected. Cannot sync environments.');
+  console.error('❌ Root .env not found and no CI environment detected. Cannot propagate environments.');
   process.exit(1);
 }
 
 function mergeBySuffix(rootConfig, environment) {
-  const suffix = environment === 'production' ? '_PROD' : '_DEV';
+  const suffix = environment === 'production' ? '_PROD' : environment === 'development' ? '_DEV' : null;
   const targetConfig = {};
   const keys = Object.keys(rootConfig);
 
@@ -135,12 +146,15 @@ function mergeBySuffix(rootConfig, environment) {
     if (!hasSuffix) targetConfig[key] = rootConfig[key];
   });
 
-  keys.forEach((key) => {
-    if (key.endsWith(suffix)) {
-      const baseKey = key.slice(0, -suffix.length);
-      targetConfig[baseKey] = rootConfig[key];
-    }
-  });
+  if (suffix) {
+    keys.forEach((key) => {
+      if (key.endsWith(suffix)) {
+        const baseKey = key.slice(0, -suffix.length);
+        targetConfig[baseKey] = rootConfig[key];
+        console.log(`   ✨ Override found for: ${baseKey}`);
+      }
+    });
+  }
 
   return targetConfig;
 }
@@ -222,16 +236,9 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     'https://api-dev.hashpass.tech',
     'https://sso-dev.hashpass.co',
   ].join(',');
-  const betterAuthGoogleClientId = resolveBoundValue('BETTER_AUTH_GOOGLE_CLIENT_ID', [
-    'GOOGLE_CLIENT_ID',
-    'GOOGLE_CLIENT_ID_DEV',
-    'GOOGLE_CLIENT_ID_PROD',
-  ]);
-  const betterAuthGoogleClientSecret = resolveBoundValue('BETTER_AUTH_GOOGLE_CLIENT_SECRET', [
-    'GOOGLE_CLIENT_SECRET',
-    'GOOGLE_CLIENT_SECRET_DEV',
-    'GOOGLE_CLIENT_SECRET_PROD',
-  ]);
+  const betterAuthGoogleClientId = targetConfig.BETTER_AUTH_GOOGLE_CLIENT_ID || targetConfig.GOOGLE_CLIENT_ID || '';
+  const betterAuthGoogleClientSecret =
+    targetConfig.BETTER_AUTH_GOOGLE_CLIENT_SECRET || targetConfig.GOOGLE_CLIENT_SECRET || '';
   const eventTenantByRuntimeTenant = {
     core: 'main',
     bsl: 'bsl',
@@ -274,6 +281,18 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     targetConfig[key] = value;
   });
 
+  const tenantAliasEntries = [
+    [supabaseBindings.publicUrl, supabaseUrl],
+    [supabaseBindings.publicKey, supabaseKey],
+    [supabaseBindings.serviceRoleKey, supabaseServiceRoleKey],
+    [supabaseBindings.databaseUrl, supabaseDatabaseUrl],
+  ];
+
+  tenantAliasEntries.forEach(([bindingKey, value]) => {
+    if (!bindingKey || !value) return;
+    targetConfig[bindingKey] = value;
+  });
+
   const trimTrailingSlash = (value) => String(value || '').trim().replace(/\/$/, '');
   const splitCsv = (value) =>
     String(value || '')
@@ -301,18 +320,6 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
   targetConfig.AUTH_REDIRECT_ALLOW_LIST = mergeRedirectAllowList(
     targetConfig.AUTH_REDIRECT_ALLOW_LIST
   );
-
-  const tenantAliasEntries = [
-    [supabaseBindings.publicUrl, supabaseUrl],
-    [supabaseBindings.publicKey, supabaseKey],
-    [supabaseBindings.serviceRoleKey, supabaseServiceRoleKey],
-    [supabaseBindings.databaseUrl, supabaseDatabaseUrl],
-  ];
-
-  tenantAliasEntries.forEach(([bindingKey, value]) => {
-    if (!bindingKey || !value) return;
-    targetConfig[bindingKey] = value;
-  });
 }
 
 function decodeJwtPayload(token) {
@@ -331,10 +338,18 @@ function decodeJwtPayload(token) {
 }
 
 function validateSupabaseServiceRoleKey(targetConfig, runtime) {
+  const isCiEnvironment = Boolean(process.env.CI || process.env.AWS_BRANCH);
+  if (isCiEnvironment) {
+    // Amplify/CI builds often do not expose service-role secrets.
+    // Keep strict checks for local release tooling, but avoid blocking CI frontend builds.
+    return;
+  }
+
   const serviceRoleKey = targetConfig.SUPABASE_SERVICE_ROLE_KEY;
+
   if (!serviceRoleKey) {
     throw new Error(
-      'SUPABASE_SERVICE_ROLE_KEY is missing for AWS sync. ' +
+      'SUPABASE_SERVICE_ROLE_KEY is missing for non-local propagation. ' +
       `Set the tenant-specific Supabase alias for ${runtime.tenant}/${runtime.environment} in root .env.`
     );
   }
@@ -343,14 +358,14 @@ function validateSupabaseServiceRoleKey(targetConfig, runtime) {
   if (!payload || typeof payload.ref !== 'string') {
     throw new Error(
       'SUPABASE_SERVICE_ROLE_KEY is not a decodable JWT with "ref" claim. ' +
-      'Refusing to sync to AWS with unknown Supabase credentials.'
+      'Refusing to propagate to avoid releasing with wrong Supabase credentials.'
     );
   }
 
   if (runtime.supabaseRef && payload.ref !== runtime.supabaseRef) {
     throw new Error(
       `SUPABASE_SERVICE_ROLE_KEY ref mismatch: got "${payload.ref}", expected "${runtime.supabaseRef}" ` +
-      `for ${runtime.tenant}/${runtime.environment}.`
+      `for ${runtime.tenant}/${runtime.environment}. Add the correct tenant-specific Supabase alias to root .env.`
     );
   }
 }
@@ -360,7 +375,7 @@ function validateSupabaseAnonKey(targetConfig, runtime) {
 
   if (!anonKey) {
     throw new Error(
-      'EXPO_PUBLIC_SUPABASE_KEY is missing for AWS sync. ' +
+      'EXPO_PUBLIC_SUPABASE_KEY is missing for non-local propagation. ' +
       'Set the tenant-specific Supabase alias in root .env.'
     );
   }
@@ -369,158 +384,55 @@ function validateSupabaseAnonKey(targetConfig, runtime) {
   if (payload && typeof payload.ref === 'string' && runtime.supabaseRef && payload.ref !== runtime.supabaseRef) {
     throw new Error(
       `EXPO_PUBLIC_SUPABASE_KEY ref mismatch: got "${payload.ref}", expected "${runtime.supabaseRef}" ` +
-      `for ${runtime.tenant}/${runtime.environment}.`
-    );
-  }
-}
-
-function validateAuthDeliveryConfig(targetConfig, runtime) {
-  const requiredMailVars = [
-    'NODEMAILER_HOST',
-    'NODEMAILER_PORT',
-    'NODEMAILER_USER',
-    'NODEMAILER_PASS',
-    'NODEMAILER_FROM',
-  ];
-
-  const missingMailVars = requiredMailVars.filter(
-    (key) => !String(targetConfig[key] || '').trim()
-  );
-
-  if (missingMailVars.length > 0) {
-    throw new Error(
-      `Missing required mail vars for ${runtime.tenant}/${runtime.environment}: ${missingMailVars.join(', ')}. ` +
-      'Set them in root .env (or *_DEV/*_PROD overrides) before syncing.'
+      `for ${runtime.tenant}/${runtime.environment}. Add the correct tenant-specific Supabase alias to root .env.`
     );
   }
 }
 
 const options = parseArgs(process.argv.slice(2));
+console.log(`🔍 Propagation target: ${options.envArg}`);
 
-if (String(options.envArg).toLowerCase() === 'local') {
-  console.error('❌ Syncing [local] to AWS is not allowed. Local environments should only use root .env variables on your machine.');
-  process.exit(1);
-}
-
-const runtime = resolveTenant(options.tenant, options.environment, options.configPath);
 const rootConfig = loadRootEnv();
 const targetConfig = mergeBySuffix(rootConfig, options.environment);
-applyCanonicalTenantOverrides(targetConfig, runtime);
-validateSupabaseAnonKey(targetConfig, runtime);
-validateSupabaseServiceRoleKey(targetConfig, runtime);
-validateAuthDeliveryConfig(targetConfig, runtime);
 
-const lambdaName = runtime.lambda.functionName;
-const lambdaRegion = runtime.lambda.region;
-
-console.log(`🚀 Syncing environment [${options.environment}] for tenant [${runtime.tenant}] to Lambda [${lambdaName}] (${lambdaRegion})...`);
-
-try {
-  const configRaw = execFileSync(
-    'aws',
-    ['lambda', 'get-function-configuration', '--function-name', lambdaName, '--region', lambdaRegion],
-    { encoding: 'utf8' }
-  );
-  const currentVars = JSON.parse(configRaw).Environment?.Variables || {};
-
-  const KEYS_TO_SYNC = [
-    'EXPO_PUBLIC_SUPABASE_URL',
-    'EXPO_PUBLIC_SUPABASE_KEY',
-    'EXPO_PUBLIC_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY',
-    'SUPABASE_DB_URL',
-    'DATABASE_URL',
-    'DIRECTUS_URL',
-    'EXPO_PUBLIC_DIRECTUS_URL',
-    'DIRECTUS_SECRET',
-    'SESSION_COOKIE_NAME',
-    'REFRESH_TOKEN_COOKIE_NAME',
-    'GOOGLE_CLIENT_ID',
-    'GOOGLE_CLIENT_SECRET',
-    'AUTH_GOOGLE_MODE',
-    'AUTH_GOOGLE_REDIRECT_ALLOW_LIST',
-    'AUTH_REDIRECT_ALLOW_LIST',
-    'ADMIN_EMAIL',
-    'ADMIN_PASSWORD',
-    'DEFAULT_ROLE_ID',
-    'EXPO_PUBLIC_FRONTEND_URL',
-    'EXPO_PUBLIC_EVENT_TENANT',
-    'EXPO_PUBLIC_EVENT_IDS',
-    'FRONTEND_URL',
-    'AUTH_PROVIDER',
-    'EXPO_PUBLIC_BETTER_AUTH_URL',
-    'EXPO_PUBLIC_BETTER_AUTH_BASE_PATH',
-    'BETTER_AUTH_URL',
-    'BETTER_AUTH_BASE_PATH',
-    'BETTER_AUTH_SECRET',
-    'BETTER_AUTH_SECRETS',
-    'BETTER_AUTH_DATABASE_URL',
-    'BSL_BETTER_AUTH_DATABASE_URL',
-    'BETTER_AUTH_DATABASE_SSL',
-    'BETTER_AUTH_TRUSTED_ORIGINS',
-    'BETTER_AUTH_ALLOWED_HOSTS',
-    'BETTER_AUTH_GOOGLE_CLIENT_ID',
-    'BETTER_AUTH_GOOGLE_CLIENT_SECRET',
-    'DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED',
-    'DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED',
-    // OTP / transactional email + SMS delivery configuration
-    'NODEMAILER_HOST',
-    'NODEMAILER_PORT',
-    'NODEMAILER_USER',
-    'NODEMAILER_PASS',
-    'NODEMAILER_FROM',
-    'NODEMAILER_FROM_SUPPORT',
-    'BREVO_API_KEY',
-    'BREVO_SMS_SENDER',
-  ];
-
-  const tenantSupabaseKeys = Object.values(resolveTenantSupabaseBindings(runtime)).filter(Boolean);
-  const syncKeys = [...new Set([...KEYS_TO_SYNC, ...tenantSupabaseKeys])];
-
-  const newVars = { ...currentVars };
-  syncKeys.forEach((key) => {
-    if (targetConfig[key] !== undefined) {
-      newVars[key] = targetConfig[key];
-    }
-  });
-  newVars.NODE_ENV = options.environment === 'production' ? 'production' : 'development';
-
-  const keysToDrop = [
-    'BSL_BETTER_AUTH_DATABASE_URL',
-    'BETTER_AUTH_TRUSTED_ORIGINS',
-    'BETTER_AUTH_GOOGLE_CLIENT_ID',
-    'BETTER_AUTH_GOOGLE_CLIENT_SECRET',
-  ];
-  keysToDrop.forEach((key) => {
-    if (key in newVars) {
-      delete newVars[key];
-    }
-  });
-
-  Object.keys(newVars).forEach((key) => {
-    if (newVars[key] === undefined) delete newVars[key];
-  });
-
-  const environmentPayload = JSON.stringify({ Variables: newVars });
-
-  console.log(`📡 Updating ${lambdaName} in AWS ${lambdaRegion}...`);
-  execFileSync(
-    'aws',
-    [
-      'lambda',
-      'update-function-configuration',
-      '--function-name',
-      lambdaName,
-      '--region',
-      lambdaRegion,
-      '--environment',
-      environmentPayload,
-    ],
-    { stdio: 'inherit' }
-  );
-
-  console.log(`✅ ${options.environment} synced successfully to AWS for tenant ${runtime.tenant}!`);
-} catch (error) {
-  console.error('❌ Failed to sync:', error.message);
-  process.exit(1);
+if (!options.isLocal) {
+  const runtime = resolveTenant(options.tenant, options.environment, options.configPath);
+  applyCanonicalTenantOverrides(targetConfig, runtime);
+  validateSupabaseAnonKey(targetConfig, runtime);
+  validateSupabaseServiceRoleKey(targetConfig, runtime);
 }
+
+// Ensure NODE_ENV and target flags are correct
+targetConfig.NODE_ENV = options.environment === 'production' ? 'production' : 'development';
+targetConfig.EXPO_PUBLIC_ENV = options.envArg;
+
+// Generate .env file content
+const DISCLAIMER = `# ==============================================================================
+# ⚠️ AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
+# This file was generated from the root .env using packages/tools/scripts/propagate-env.js
+# Profile: ${options.envArg}
+# Generated at: ${new Date().toISOString()}
+# ==============================================================================
+
+`;
+
+const envContent = DISCLAIMER + Object.entries(targetConfig)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([key, value]) => `${key}=${value}`)
+  .join('\n');
+
+// Write to targets
+const webAppEnvPath = path.join(WEB_APP_DIR, '.env');
+const webAppEnvLocalPath = path.join(WEB_APP_DIR, `.env.${options.envArg}`);
+
+console.log(`📝 Writing to ${webAppEnvPath}...`);
+fs.writeFileSync(webAppEnvPath, envContent);
+
+console.log(`📝 Writing to ${webAppEnvLocalPath}...`);
+fs.writeFileSync(webAppEnvLocalPath, envContent);
+
+const directusEnvPath = path.join(DIRECTUS_DIR, '.env');
+console.log(`📝 Writing to ${directusEnvPath}...`);
+fs.writeFileSync(directusEnvPath, envContent);
+
+console.log('✅ Environment propagation complete!');

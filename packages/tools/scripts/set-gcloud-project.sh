@@ -1,6 +1,6 @@
 #!/bin/bash
 # Source this file to set the correct gcloud project context
-# Usage: source ./tools/scripts/set-gcloud-project.sh
+# Usage: source ./packages/tools/scripts/set-gcloud-project.sh
 
 set -euo pipefail
 

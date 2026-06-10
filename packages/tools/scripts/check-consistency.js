@@ -8,10 +8,10 @@
  * - Tenant-specific Amplify app/region/domains
  *
  * Usage:
- *   node tools/scripts/check-consistency.js --tenant core
- *   node tools/scripts/check-consistency.js --tenant blockchainsummit --prod
- *   node tools/scripts/check-consistency.js --all-tenants --env development
- *   node tools/scripts/check-consistency.js --list-tenants
+ *   node packages/tools/scripts/check-consistency.js --tenant core
+ *   node packages/tools/scripts/check-consistency.js --tenant blockchainsummit --prod
+ *   node packages/tools/scripts/check-consistency.js --all-tenants --env development
+ *   node packages/tools/scripts/check-consistency.js --list-tenants
  */
 
 const { execSync } = require('child_process');
@@ -119,7 +119,7 @@ function printUsage() {
   console.log(
     [
       'Usage:',
-      '  node tools/scripts/check-consistency.js [options]',
+      '  node packages/tools/scripts/check-consistency.js [options]',
       '',
       'Options:',
       '  --tenant <name>       Tenant key from tenant config (default: core)',
@@ -132,9 +132,9 @@ function printUsage() {
       '  -h, --help            Show this help',
       '',
       'Examples:',
-      '  node tools/scripts/check-consistency.js --tenant core',
-      '  node tools/scripts/check-consistency.js --tenant blockchainsummit --prod',
-      '  node tools/scripts/check-consistency.js --all-tenants --env development',
+      '  node packages/tools/scripts/check-consistency.js --tenant core',
+      '  node packages/tools/scripts/check-consistency.js --tenant blockchainsummit --prod',
+      '  node packages/tools/scripts/check-consistency.js --all-tenants --env development',
     ].join('\n')
   );
 }
