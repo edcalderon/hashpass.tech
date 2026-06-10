@@ -98,6 +98,18 @@ function readJsonVersion(relativePath) {
   return version;
 }
 
+function syncJsonVersion(relativePath, version) {
+  const filePath = path.join(ROOT_DIR, relativePath);
+  if (!fs.existsSync(filePath)) return;
+
+  const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  if (content?.version === version) return;
+
+  content.version = version;
+  fs.writeFileSync(filePath, `${JSON.stringify(content, null, 2)}\n`);
+  console.log(`✅ Synced ${relativePath}: version = ${version}`);
+}
+
 function parseArgs(argv) {
   const options = {
     bump: 'patch',
@@ -339,6 +351,9 @@ function runMainRelease(options, branch) {
     '--type=stable',
     '--skip-git-info',
   ], options);
+
+  syncJsonVersion('apps/web-app/config/version.production.json', releaseVersion);
+  syncJsonVersion('apps/web-app/config/version.development.json', releaseVersion);
 
   return releaseVersion;
 }

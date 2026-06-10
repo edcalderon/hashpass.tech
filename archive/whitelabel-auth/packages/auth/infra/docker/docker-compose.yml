@@ -39,7 +39,7 @@ services:
       GOTRUE_EXTERNAL_GITHUB_ENABLED: "${GITHUB_CLIENT_ID:+true}"
       GOTRUE_EXTERNAL_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GOTRUE_EXTERNAL_GITHUB_SECRET: ${GITHUB_SECRET}
-      GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-replace-with-random-jwt-secret}
       GOTRUE_JWT_EXP: 3600
     ports:
       - "9999:9999"
@@ -55,7 +55,7 @@ services:
       PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/postgres
       PGRST_DB_SCHEMAS: public
       PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token}
+      PGRST_JWT_SECRET: ${JWT_SECRET:-replace-with-random-jwt-secret}
     ports:
       - "3001:3000"
     depends_on:
@@ -72,7 +72,7 @@ services:
       DB_USER: postgres
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       PORT: 4000
-      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token}
+      JWT_SECRET: ${JWT_SECRET:-replace-with-random-jwt-secret}
       SECURE_CHANNELS: "false"
     ports:
       - "4000:4000"
@@ -106,7 +106,7 @@ services:
       
       # Sync Configuration
       SUPABASE_URL: ${SUPABASE_URL:-http://supabase-auth:9999}
-      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlc3QiLCJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjE5MDAwMDAwMDB9.test}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-replace-with-random-supabase-service-key}
       
       # CORS
       CORS_ENABLED: "true"
