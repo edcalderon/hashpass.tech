@@ -100,11 +100,12 @@
     "enabled": true,
     "defaultBranch": "main",
     "branches": {
-        "main": {
+      "main": {
         "versionFormat": "semantic",
         "tagFormat": "v{version}",
       "syncFiles": [
         "package.json",
+        "apps/web-app/package.json",
         "apps/web-app/config/version.production.json"
       ],
         "environment": "production",

@@ -1,37 +1,98 @@
-## [1.7.9](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.6...v1.7.9) (2026-06-10)
+## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.4...v1.7.7) (2026-06-10)
 
 
 ### Bug Fixes
 
-* clean node_modules before infra install ([c653140](https://github.com/edcalderon/hashpass.tech/commit/c653140511b147b546afe744d4413aa9b8afaf61))
-* clear node_modules before amplify install ([2a0fbd8](https://github.com/edcalderon/hashpass.tech/commit/2a0fbd8e2212ae3249953940316abd4236ac056e))
-* publish bsl supabase runtime profiles ([d1c1154](https://github.com/edcalderon/hashpass.tech/commit/d1c1154840bb691aa35713d8beb5dd72558ae3f3))
-* restore amplify postBuild deploy step ([a6cb6a2](https://github.com/edcalderon/hashpass.tech/commit/a6cb6a2dd5118ec4b18f399a171bfda1e595e183))
-* use postgres health checks for api status ([afc62f2](https://github.com/edcalderon/hashpass.tech/commit/afc62f2b4c770483a24956bb8ed1565e922dd224))
+* clean node_modules before infra install ([de4fc7e](https://github.com/edcalderon/hashpass.tech/commit/de4fc7e7ef82b98a332a5f319999c8733ff8ef14))
+* clear node_modules before amplify install ([a0bbff3](https://github.com/edcalderon/hashpass.tech/commit/a0bbff3b6f2b77e4c83bfa5e6eec0bb0e5f5f048))
+* publish bsl supabase runtime profiles ([9aa9424](https://github.com/edcalderon/hashpass.tech/commit/9aa9424b30f518d90ee7a924fddd31da0694dd8c))
+* restore amplify postBuild deploy step ([71d291f](https://github.com/edcalderon/hashpass.tech/commit/71d291f65c1b08199ec38a41de6ddbed1bc83303))
+* use postgres health checks for api status ([501a23c](https://github.com/edcalderon/hashpass.tech/commit/501a23c07a9c7eb3840542da6139994f4ddb9fe6))
 
 
 
-## [1.7.8](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.4...v1.7.8) (2026-06-05)
+
+
+## [1.7.9] - 2026-06-10
+
+### Released
+- Version 1.7.9 release
+
+### Technical Details
+- Version: 1.7.9
+- Release Type: stable
+- Build Number: 202606100333
+- Release Date: 2026-06-10T03:33:22.352Z
+
+
+## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.4...v1.7.7) (2026-06-10)
 
 
 ### Bug Fixes
 
-* sync BSL auth env paths ([ce26f8e](https://github.com/edcalderon/hashpass.tech/commit/ce26f8e3352ae80cb49f91796197c14f38fea718))
+* clean node_modules before infra install ([de4fc7e](https://github.com/edcalderon/hashpass.tech/commit/de4fc7e7ef82b98a332a5f319999c8733ff8ef14))
+* clear node_modules before amplify install ([a0bbff3](https://github.com/edcalderon/hashpass.tech/commit/a0bbff3b6f2b77e4c83bfa5e6eec0bb0e5f5f048))
+* publish bsl supabase runtime profiles ([9aa9424](https://github.com/edcalderon/hashpass.tech/commit/9aa9424b30f518d90ee7a924fddd31da0694dd8c))
+* restore amplify postBuild deploy step ([71d291f](https://github.com/edcalderon/hashpass.tech/commit/71d291f65c1b08199ec38a41de6ddbed1bc83303))
+* use postgres health checks for api status ([501a23c](https://github.com/edcalderon/hashpass.tech/commit/501a23c07a9c7eb3840542da6139994f4ddb9fe6))
 
 
 
-## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.2...v1.7.7) (2026-05-13)
+
+
+## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.2...v1.7.7) (2026-06-05)
 
 
 
 
 
-## [1.7.8](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7...v1.7.8) (2026-06-05)
+## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.2...v1.7.7) (2026-06-05)
+
+
+
+
+
+## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.4...v1.7.7) (2026-06-05)
+
+
+
+
+
+## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.4...v1.7.7) (2026-06-05)
+
+
+
+
+
+## [1.7.6](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.2...v1.7.6) (2026-05-14)
 
 
 ### Bug Fixes
 
-* sync BSL auth env paths ([ce26f8e](https://github.com/edcalderon/hashpass.tech/commit/ce26f8e3352ae80cb49f91796197c14f38fea718))
+* sync BSL auth env paths ([02de787](https://github.com/edcalderon/hashpass.tech/commit/02de787634941afafefa0d3da9257f66e82d5297))
+
+
+
+
+
+## [1.7.7] - 2026-05-14
+
+### Beta
+- Version 1.7.7 release
+
+### Technical Details
+- Version: 1.7.7
+- Release Type: beta
+- Build Number: 202605140233
+- Release Date: 2026-05-14T02:33:37.574Z
+
+
+## [1.7.6](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.2...v1.7.6) (2026-05-14)
+
+
+### Bug Fixes
+
+* sync BSL auth env paths ([02de787](https://github.com/edcalderon/hashpass.tech/commit/02de787634941afafefa0d3da9257f66e82d5297))
 
 
 
@@ -43,18 +104,6 @@
 
 
 
-
-
-## [1.7.7] - 2026-05-13
-
-### Released
-- Version 1.7.7 release
-
-### Technical Details
-- Version: 1.7.7
-- Release Type: stable
-- Build Number: 202605131728
-- Release Date: 2026-05-13T17:28:24.240Z
 
 
 ## [1.7.5](https://github.com/edcalderon/hashpass.tech/compare/v1.7.4-dev.3...v1.7.5) (2026-05-11)

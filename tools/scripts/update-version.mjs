@@ -75,6 +75,11 @@ const bumpTypeIndex = args.findIndex(arg => ['patch', 'minor', 'major'].includes
 
 const releaseType = args.find(arg => arg.startsWith('--type='))?.split('=')[1] || 'beta';
 const releaseNotes = args.find(arg => arg.startsWith('--notes='))?.split('=')[1] || '';
+const commitMessageIndex = args.findIndex(arg => arg === '--commit-message');
+const commitMessage = commitMessageIndex !== -1 && args[commitMessageIndex + 1]
+  ? args[commitMessageIndex + 1]
+  : (args.find(arg => arg.startsWith('--commit-message='))?.split('=')[1] || '');
+const skipGitInfo = args.includes('--skip-git-info');
 
 // Git operation flags (optional)
 const shouldCommit = args.includes('--commit') || args.includes('-c');
@@ -210,7 +215,7 @@ const filesToUpdate = [
       }
     ]
   },
-  {
+  ...(fs.existsSync(path.join(projectRoot, 'app.json')) ? [{
     path: 'app.json',
     updates: [
       {
@@ -218,7 +223,7 @@ const filesToUpdate = [
         value: newVersion
       }
     ]
-  },
+  }] : []),
   ...['apps/web-app/config/version.ts'].map((targetPath) => ({
     path: targetPath,
     updates: [
@@ -599,48 +604,49 @@ try {
   allUpdated = false;
 }
 
-// Update git-info.json files with current git information
-try {
-  // Get current git information
-  let gitCommit = 'unknown';
-  let gitCommitFull = 'unknown';
-  let gitBranch = 'main';
-  let gitRepoUrl = 'https://github.com/lstech-solutions/bsl2025.hashpass.tech';
-
+if (!skipGitInfo) {
   try {
-    gitCommit = execSync('git rev-parse --short HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
-    gitCommitFull = execSync('git rev-parse HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
-    gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
-    const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8', cwd: projectRoot }).trim();
+    // Get current git information
+    let gitCommit = 'unknown';
+    let gitCommitFull = 'unknown';
+    let gitBranch = 'main';
+    let gitRepoUrl = 'https://github.com/lstech-solutions/bsl2025.hashpass.tech';
 
-    // Convert SSH URL to HTTPS if needed
-    if (remoteUrl.startsWith('git@')) {
-      gitRepoUrl = remoteUrl.replace('git@github.com:', 'https://github.com/').replace('.git', '');
-    } else if (remoteUrl.startsWith('https://')) {
-      gitRepoUrl = remoteUrl.replace('.git', '');
-    }
-  } catch (gitError) {
-    console.warn('⚠️  Could not get git information, using defaults');
-  }
+    try {
+      gitCommit = execSync('git rev-parse --short HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
+      gitCommitFull = execSync('git rev-parse HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
+      gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8', cwd: projectRoot }).trim();
+      const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8', cwd: projectRoot }).trim();
 
-  const gitInfo = {
-    gitCommit: gitCommit,
-    gitCommitFull: gitCommitFull,
-    gitBranch: gitBranch,
-    gitRepoUrl: gitRepoUrl
-  };
-
-  for (const gitInfoPath of GIT_INFO_PATHS) {
-    if (!fs.existsSync(path.dirname(gitInfoPath))) {
-      continue;
+      // Convert SSH URL to HTTPS if needed
+      if (remoteUrl.startsWith('git@')) {
+        gitRepoUrl = remoteUrl.replace('git@github.com:', 'https://github.com/').replace('.git', '');
+      } else if (remoteUrl.startsWith('https://')) {
+        gitRepoUrl = remoteUrl.replace('.git', '');
+      }
+    } catch (gitError) {
+      console.warn('⚠️  Could not get git information, using defaults');
     }
 
-    fs.writeFileSync(gitInfoPath, JSON.stringify(gitInfo, null, 2) + '\n', 'utf8');
-    console.log(`✅ Updated ${path.relative(projectRoot, gitInfoPath)}: commit = ${gitCommit}, branch = ${gitBranch}`);
+    const gitInfo = {
+      gitCommit: gitCommit,
+      gitCommitFull: gitCommitFull,
+      gitBranch: gitBranch,
+      gitRepoUrl: gitRepoUrl
+    };
+
+    for (const gitInfoPath of GIT_INFO_PATHS) {
+      if (!fs.existsSync(path.dirname(gitInfoPath))) {
+        continue;
+      }
+
+      fs.writeFileSync(gitInfoPath, JSON.stringify(gitInfo, null, 2) + '\n', 'utf8');
+      console.log(`✅ Updated ${path.relative(projectRoot, gitInfoPath)}: commit = ${gitCommit}, branch = ${gitBranch}`);
+    }
+  } catch (error) {
+    console.error('❌ Error updating apps/web-app/config/git-info.json:', error.message);
+    // Don't fail the whole process if git info update fails
   }
-} catch (error) {
-  console.error('❌ Error updating apps/web-app/config/git-info.json:', error.message);
-  // Don't fail the whole process if git info update fails
 }
 
 // Git operations (if requested)
@@ -656,7 +662,7 @@ const performGitOperations = async () => {
     if (autoGit || shouldCommit) {
       console.log('\n📝 Creating commit for version ' + newVersion + '...');
       execSync('git add .', { cwd: projectRoot, stdio: 'inherit' });
-      execSync(`git commit -m "chore: bump version to ${newVersion} (build ${buildNumber})"`, {
+      execSync(`git commit -m "${commitMessage || `chore: bump version to ${newVersion} (build ${buildNumber})`}"`, {
         cwd: projectRoot,
         stdio: 'inherit'
       });

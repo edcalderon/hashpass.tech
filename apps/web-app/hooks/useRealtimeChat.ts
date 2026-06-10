@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { memoryManager } from '../lib/memory-manager';
+import { memoryManager } from '@hashpass/utils';
 
 interface UseRealtimeChatProps {
   roomName: string;
