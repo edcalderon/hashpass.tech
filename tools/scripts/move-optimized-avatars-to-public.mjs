@@ -18,7 +18,7 @@ const __dirname = dirname(__filename);
 
 // Configuration
 const MAX_SIZE_KB = 300; // 300KB limit
-const PUBLIC_AVATARS_DIR = join(__dirname, '..', 'public', 'assets', 'speakers', 'avatars');
+const PUBLIC_AVATARS_DIR = join(__dirname, '..', '..', 'apps', 'web-app', 'public', 'assets', 'speakers', 'avatars');
 const S3_BUCKET = process.env.EXPO_PUBLIC_AWS_S3_BUCKET || process.env.AWS_S3_BUCKET || 'hashpass-assets';
 const AWS_REGION = process.env.AWS_REGION || process.env.EXPO_PUBLIC_AWS_REGION || 'us-east-2';
 
@@ -222,4 +222,3 @@ async function main() {
 }
 
 main().catch(console.error);
-

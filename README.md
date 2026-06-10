@@ -45,8 +45,9 @@ We believe the future of events should be shaped by the community. By making Has
 - **`apps/web-app`** — Main Expo Router web application (uses `@hashpass/*` packages).
 - **`apps/directus`** — Directus SSO Docker setup for local auth testing.
 - **`packages/`** — Shared packages: `@hashpass/auth`, `@hashpass/config`, `@hashpass/types`, `@hashpass/backend`, `@hashpass/utils`, `@hashpass/ui`, `@hashpass/infra`.
+- **`packages/infra/`** — Infrastructure and deploy assets for Terraform, Lambda, Netlify, Cloudflare, and Amplify.
 - **`archive/whitelabel-auth/`** — Archived legacy auth monorepo kept for reference only. The active auth package lives in `packages/auth` as `@hashpass/auth`.
-- **`infrastructure/terraform`** — Terraform IaC (GCP, etc.).
+- **`packages/infra/terraform`** — Terraform IaC (GCP, etc.).
 
 ### Authentication
 

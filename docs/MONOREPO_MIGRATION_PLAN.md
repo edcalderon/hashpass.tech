@@ -14,7 +14,7 @@
    - `types/` - TypeScript types
    - `scripts/` - Build/deploy scripts scattered
    - `db/` - Database migrations
-   - `terraform/` - Infrastructure as code
+   - `packages/infra/terraform/` - Infrastructure as code
 
 2. **No Clear Separation**:
    - Shared code mixed with app-specific code
@@ -177,9 +177,9 @@ hashpass.tech/
 - **Purpose**: Shared TypeScript types
 - **Contains**:
   - `types/auth.ts`
-  - `types/events.ts`
-  - `types/agenda.ts`
-  - `types/theme.ts`
+  - `packages/types/src/events.ts`
+  - `packages/types/src/agenda.ts`
+  - `packages/types/src/theme.ts`
 - **Exports**: Type definitions
 
 #### `packages/utils` (@hashpass/utils)
@@ -278,7 +278,7 @@ hashpass.tech/
    - Update CI/CD workflows
 
 2. **Update infrastructure**
-   - Move `terraform/` → `infrastructure/terraform/`
+   - Move `terraform/` → `packages/infra/terraform/`
    - Update deployment scripts
 
 ### Phase 6: Testing & Cleanup (Day 8)
@@ -434,4 +434,4 @@ packages:
 **Estimated Duration**: 8 days
 **Priority**: High (Foundation for future scaling)
 
-Migration executed per `.agents/task`. Root app remains runnable; `apps/web-app` is the migrated app using `@hashpass/*` packages; `apps/directus` holds SSO Docker setup; Terraform moved to `infrastructure/terraform`.
+Migration executed per `.agents/task`. Root app remains runnable; `apps/web-app` is the migrated app using `@hashpass/*` packages; `apps/directus` holds SSO Docker setup; Terraform moved to `packages/infra/terraform`.

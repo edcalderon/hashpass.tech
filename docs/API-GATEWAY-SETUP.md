@@ -30,8 +30,8 @@ mkdir -p lambda-package
 cd lambda-package
 
 # 3. Copy Lambda handler
-cp ../lambda/index.js .
-cp ../lambda/package.json .
+cp ../packages/infra/lambda/index.js .
+cp ../packages/infra/lambda/package.json .
 
 # 4. Copy server build (needed by Expo Server)
 cp -r ../dist/server ./server
@@ -322,4 +322,3 @@ After setup is complete:
 2. Monitor CloudWatch logs
 3. Set up CloudWatch alarms for errors
 4. Configure API Gateway throttling if needed
-

@@ -54,7 +54,7 @@ This document outlines the performance and memory optimizations implemented to a
 - Proper cleanup on component unmount
 - Prevents subscription leaks
 
-### 5. Service Worker Optimizations (`public/sw.js`)
+### 5. Service Worker Optimizations (`apps/web-app/public/sw.js`)
 - **Size Limits**: Only caches files < 5MB
 - **File Type Filtering**: Skips caching large files (images, videos, PDFs)
 - **Content-Length Check**: Validates file size before caching
@@ -65,7 +65,7 @@ This document outlines the performance and memory optimizations implemented to a
 - **Cache Versioning**: Prevents stale cache issues
 - **Transformer Optimizations**: Minification settings for production
 
-### 7. Workbox Configuration (`workbox-config.js`)
+### 7. Workbox Configuration (`apps/web-app/workbox-config.js`)
 - **Reduced Cache Size**: 5MB → 2MB maximum file size
 - **Entry Limits**: Maximum 50 cache entries
 - **Prevents Memory Bloat**: Limits total cached data
@@ -134,5 +134,3 @@ imageCacheManager.clear();
 3. **Image Optimization**: Use WebP format and responsive images
 4. **Virtual Scrolling**: Extend to more list components
 5. **Memory Profiling**: Add periodic memory usage monitoring
-
-

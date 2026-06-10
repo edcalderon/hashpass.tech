@@ -4,24 +4,27 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
 echo "📦 Packaging Lambda Function for Deployment"
 echo "==========================================="
 echo ""
 
 # Resolve build directory (prefer the app Expo server bundle for API routes)
 BUILD_DIR=""
-if [ -d "apps/web-app/dist/server" ]; then
-    BUILD_DIR="apps/web-app/dist/server"
-elif [ -d "apps/web-app/dist/client" ]; then
-    BUILD_DIR="apps/web-app/dist/client"
-elif [ -d "dist/server" ]; then
-    BUILD_DIR="dist/server"
-elif [ -d "dist/client" ]; then
-    BUILD_DIR="dist/client"
-elif [ -d "apps/web-app/dist" ]; then
-    BUILD_DIR="apps/web-app/dist"
-elif [ -d "dist" ]; then
-    BUILD_DIR="dist"
+if [ -d "$PROJECT_ROOT/apps/web-app/dist/server" ]; then
+    BUILD_DIR="$PROJECT_ROOT/apps/web-app/dist/server"
+elif [ -d "$PROJECT_ROOT/apps/web-app/dist/client" ]; then
+    BUILD_DIR="$PROJECT_ROOT/apps/web-app/dist/client"
+elif [ -d "$PROJECT_ROOT/dist/server" ]; then
+    BUILD_DIR="$PROJECT_ROOT/dist/server"
+elif [ -d "$PROJECT_ROOT/dist/client" ]; then
+    BUILD_DIR="$PROJECT_ROOT/dist/client"
+elif [ -d "$PROJECT_ROOT/apps/web-app/dist" ]; then
+    BUILD_DIR="$PROJECT_ROOT/apps/web-app/dist"
+elif [ -d "$PROJECT_ROOT/dist" ]; then
+    BUILD_DIR="$PROJECT_ROOT/dist"
 else
     echo "❌ Build output not found. Expected dist/server, apps/web-app/dist/server, dist/client, apps/web-app/dist/client, apps/web-app/dist, or dist."
     echo "   Run: pnpm --filter hashpass-web-app build"
@@ -31,15 +34,15 @@ fi
 echo "0. Using build output from: ${BUILD_DIR}"
 
 # Create temporary directory for packaging
-PACKAGE_DIR="lambda-package"
+PACKAGE_DIR="$PROJECT_ROOT/lambda-package"
 echo "1. Creating package directory..."
-rm -rf $PACKAGE_DIR
-mkdir -p $PACKAGE_DIR
+rm -rf "$PACKAGE_DIR"
+mkdir -p "$PACKAGE_DIR"
 
 # Copy Lambda handler
 echo "2. Copying Lambda handler..."
-cp lambda/index.js $PACKAGE_DIR/
-cp lambda/package.json $PACKAGE_DIR/
+cp "$PROJECT_ROOT/packages/infra/lambda/index.js" "$PACKAGE_DIR/"
+cp "$PROJECT_ROOT/packages/infra/lambda/package.json" "$PACKAGE_DIR/"
 
 # Copy the Expo server bundle into the Lambda server root.
 echo "3. Copying build output into Lambda server root..."
@@ -56,31 +59,30 @@ fi
 
 # Copy config files needed by API routes
 echo "3a. Copying config files..."
-mkdir -p $PACKAGE_DIR/config
+mkdir -p "$PACKAGE_DIR/config"
 if [ -f "${BUILD_DIR}/config/versions.json" ]; then
   cp "${BUILD_DIR}/config/versions.json" "$PACKAGE_DIR/config/"
-elif [ -f "config/versions.json" ]; then
-  cp "config/versions.json" "$PACKAGE_DIR/config/"
+elif [ -f "$PROJECT_ROOT/apps/web-app/config/versions.json" ]; then
+  cp "$PROJECT_ROOT/apps/web-app/config/versions.json" "$PACKAGE_DIR/config/"
 fi
 # Note: We do NOT copy the root package.json as it has incompatible dependencies
-# The lambda/package.json already has the minimal dependencies needed
+# The packages/infra/lambda/package.json already has the minimal dependencies needed
 
 # Install dependencies
 echo "4. Installing dependencies..."
-cd $PACKAGE_DIR
+cd "$PACKAGE_DIR"
 npm install --production --verbose
 
 # Create deployment package
 echo "5. Creating deployment zip..."
-cd ..
 # Zip contents of package directory, not the directory itself
-cd $PACKAGE_DIR
-zip -r ../lambda-deployment.zip . -x "*.git*" "*.DS_Store*" "*.map" > /dev/null
-cd ..
+cd "$PACKAGE_DIR"
+zip -r "$PROJECT_ROOT/lambda-deployment.zip" . -x "*.git*" "*.DS_Store*" "*.map" > /dev/null
+cd "$PROJECT_ROOT"
 
 # Cleanup
 echo "6. Cleaning up..."
-rm -rf $PACKAGE_DIR
+rm -rf "$PACKAGE_DIR"
 
 echo ""
 echo "✅ Lambda package created: lambda-deployment.zip"

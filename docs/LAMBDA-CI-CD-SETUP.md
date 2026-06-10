@@ -59,7 +59,7 @@ Este documento explica cómo configurar el despliegue automático de Lambda cuan
 
    El archivo `.github/workflows/deploy-lambda.yml` está listo y se activará automáticamente cuando:
    - Haya cambios en `app/api/**`
-   - Haya cambios en `lambda/**`
+   - Haya cambios en `packages/infra/lambda/**`
    - Haya cambios en `scripts/package-lambda.sh`
    - Haya cambios en `package.json` o `package-lock.json`
    - Push a `main` o `bsl2025`
@@ -140,7 +140,7 @@ aws lambda update-function-code \
 
 ### Verificar que el workflow funciona:
 
-1. **Hacer un cambio en `app/api/` o `lambda/`**
+1. **Hacer un cambio en `app/api/` o `packages/infra/lambda/`**
 2. **Commit y push a `main`**
 3. **Verificar en GitHub Actions** que el workflow se ejecutó
 4. **Verificar Lambda** que se actualizó:

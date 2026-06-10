@@ -1,7 +1,7 @@
 import { createRequestHandler } from '@expo/server/adapter/netlify';
 
 const inner = createRequestHandler({
-  build: require('path').join(__dirname, '../../dist/server'),
+  build: require('path').join(process.cwd(), 'dist/server'),
 });
 
 const ALLOW_ORIGIN = process.env.CORS_ALLOW_ORIGIN || 'https://bsl2025.hashpass.tech';

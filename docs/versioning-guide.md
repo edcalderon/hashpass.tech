@@ -65,9 +65,9 @@ El script actualiza automáticamente:
 
 - ✅ `package.json` → campo `version`
 - ✅ `app.json` → campo `expo.version`
-- ✅ `config/version.ts` → `buildNumber`, `releaseDate`, `releaseType`, `notes`, `VERSION_HISTORY`
-- ✅ `config/versions.json` → `currentVersion`, array `versions[]`
-- ✅ `config/git-info.json` → información de git (commit, branch, repo)
+- ✅ `apps/web-app/config/version.ts` → `buildNumber`, `releaseDate`, `releaseType`, `notes`, `VERSION_HISTORY`
+- ✅ `apps/web-app/config/versions.json` → `currentVersion`, array `versions[]`
+- ✅ `apps/web-app/config/git-info.json` → información de git (commit, branch, repo)
 - ✅ `CHANGELOG.md` → nueva entrada de versión
 
 ## Flujo Recomendado
@@ -107,4 +107,3 @@ git push origin <branch> && git push --tags
 ✅ **Sin dependencias externas** - Solo requiere Node.js (no necesita `jq` ni otras herramientas).
 
 ✅ **Control total** - Puedes elegir qué operaciones git realizar.
-

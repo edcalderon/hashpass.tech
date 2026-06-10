@@ -83,7 +83,7 @@ setup_parameters() {
     cd "$PROJECT_ROOT"
     
     # Setup parameters in AWS Parameter Store
-    ./scripts/setup-parameters.sh create
+    "$PROJECT_ROOT/tools/scripts/util/setup-parameters.sh" create
     
     echo -e "${GREEN}✅ Parameters setup completed${NC}"
 }
@@ -146,18 +146,21 @@ test_lambda_function() {
     if [ -n "$function_name" ]; then
         echo -e "${BLUE}  Testing function: $function_name${NC}"
         
+        local response_file
+        response_file="$(mktemp /tmp/hashpass-lambda-response.XXXXXX.json)"
+
         # Test the Lambda function
         aws lambda invoke \
             --function-name "$function_name" \
             --payload '{"force": true}' \
-            response.json
+            "$response_file"
         
         echo -e "${BLUE}  Lambda response:${NC}"
-        cat response.json
+        cat "$response_file"
         echo ""
         
         # Clean up
-        rm -f response.json
+        rm -f "$response_file"
         
         echo -e "${GREEN}✅ Lambda function test completed${NC}"
     else

@@ -54,8 +54,8 @@ frontend:
         - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/client
         - node tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/server
         - mkdir -p dist/client/config
-        - cp config/versions.json dist/client/config/versions.json 2>/dev/null || cp apps/web-app/config/versions.json dist/client/config/versions.json 2>/dev/null || true
-        - cp apps/web-app/public/sw.js dist/client/sw.js 2>/dev/null || cp public/sw.js dist/client/sw.js 2>/dev/null || true
+        - cp apps/web-app/config/versions.json dist/client/config/versions.json 2>/dev/null || true
+        - cp apps/web-app/public/sw.js dist/client/sw.js 2>/dev/null || true
         - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
         - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
         - cp -r dist/server/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/

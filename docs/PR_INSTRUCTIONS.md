@@ -48,7 +48,7 @@ This PR fixes OAuth redirect issues, adds multi-subdomain support, and integrate
 ### Files Changed
 - `app/(shared)/auth/callback.tsx` - Immediate redirect + multi-subdomain support
 - `app/+html.tsx` - Dynamic subdomain extraction
-- `public/sw.js` - Incorrect redirect detection
+- `apps/web-app/public/sw.js` - Incorrect redirect detection
 - `SUPABASE_CONFIG.md` - Enhanced documentation
 - `lib/wazuh-client.ts` - Wazuh integration
 - `app/api/wazuh/log+api.ts` - Wazuh logging endpoint
@@ -74,5 +74,4 @@ Before merging, verify:
 - [ ] Wazuh environment variables are configured (if using Wazuh)
 - [ ] Tests pass
 - [ ] Documentation is reviewed
-
 

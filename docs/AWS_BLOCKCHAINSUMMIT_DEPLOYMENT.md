@@ -27,7 +27,7 @@ This plan prioritizes:
 
 ### API Routes (Expo server functions)
 
-- Keep a single AWS Lambda router for Expo server API routes (already implemented in `lambda/index.js`)
+- Keep a single AWS Lambda router for Expo server API routes (already implemented in `packages/infra/lambda/index.js`)
 - Put Lambda behind API Gateway HTTP API
 - Use custom domains:
   - `api-dev.hashpass.tech` -> dev API stage

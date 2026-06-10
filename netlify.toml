@@ -1,6 +1,6 @@
 [build]
   command = "npm install --include=dev && npm run build:web"
-  functions = "netlify/functions"
+  functions = "packages/infra/netlify/functions"
   publish = "dist/client"
 
 # Catch-all redirect for SPA routing (static files are served automatically first)

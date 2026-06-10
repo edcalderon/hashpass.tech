@@ -104,8 +104,8 @@ const NAMES = [
   "Rodrigo Sainz"
 ];
 const OUTDIR = path.resolve('tmp/speaker-avatars');
-const MAPPING = path.resolve('speaker-list-manual.json');
-const MISSING = path.resolve('missing-speaker-list.json');
+const MAPPING = path.resolve('config/speaker-list-manual.json');
+const MISSING = path.resolve('config/missing-speaker-list.json');
 
 if (!fs.existsSync(OUTDIR)) fs.mkdirSync(OUTDIR, { recursive: true });
 
@@ -159,7 +159,6 @@ async function tryDownload(name) {
   fs.writeFileSync(MISSING, JSON.stringify(missing,null,2));
   console.log(`✔️ Descarga finalizada. Avatares: ${found.length}, Faltantes: ${missing.length}`);
 })();
-
 
 
 

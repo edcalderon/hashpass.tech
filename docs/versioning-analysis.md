@@ -8,9 +8,9 @@
    - ✅ Actualiza todos los archivos de versión:
      - `package.json`
      - `app.json`
-     - `config/version.ts`
-     - `config/versions.json`
-     - `config/git-info.json`
+     - `apps/web-app/config/version.ts`
+     - `apps/web-app/config/versions.json`
+     - `apps/web-app/config/git-info.json`
    - ✅ Actualiza `CHANGELOG.md`
    - ✅ Actualiza historial de versiones
    - ✅ Validación de formato de versión
@@ -119,8 +119,7 @@ El script `bump-version.sh` ha sido eliminado ya que `update-version.mjs` ahora 
 
 - `package.json` → `version`
 - `app.json` → `expo.version`
-- `config/version.ts` → `buildNumber`, `releaseDate`, `releaseType`, `notes`, `VERSION_HISTORY`
-- `config/versions.json` → `currentVersion`, `versions[]`
-- `config/git-info.json` → `gitCommit`, `gitCommitFull`, `gitBranch`, `gitRepoUrl`
+- `apps/web-app/config/version.ts` → `buildNumber`, `releaseDate`, `releaseType`, `notes`, `VERSION_HISTORY`
+- `apps/web-app/config/versions.json` → `currentVersion`, `versions[]`
+- `apps/web-app/config/git-info.json` → `gitCommit`, `gitCommitFull`, `gitBranch`, `gitRepoUrl`
 - `CHANGELOG.md` → Nueva entrada de versión
-

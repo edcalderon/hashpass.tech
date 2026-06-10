@@ -4,6 +4,11 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PACKAGE_SCRIPT="$SCRIPT_DIR/package-lambda.sh"
+DEPLOYMENT_ZIP="$PROJECT_ROOT/lambda-deployment.zip"
+
 echo "🚀 Deploying Lambda Function from Amplify Build"
 echo "================================================"
 echo ""
@@ -30,15 +35,15 @@ echo "   App ID: ${AWS_APP_ID:-N/A}"
 echo ""
 
 # Check if Lambda package exists
-if [ ! -f "lambda-deployment.zip" ]; then
+if [ ! -f "$DEPLOYMENT_ZIP" ]; then
     echo "📦 Packaging Lambda function..."
-    ./scripts/package-lambda.sh || {
+    "$PACKAGE_SCRIPT" || {
         echo "⚠️  Lambda packaging failed, skipping deployment"
         exit 0
     }
 fi
 
-if [ ! -f "lambda-deployment.zip" ]; then
+if [ ! -f "$DEPLOYMENT_ZIP" ]; then
     echo "⚠️  lambda-deployment.zip not found, skipping deployment"
     exit 0
 fi
@@ -48,7 +53,7 @@ echo "📤 Deploying Lambda function: $LAMBDA_FUNCTION_NAME"
 aws lambda update-function-code \
   --function-name $LAMBDA_FUNCTION_NAME \
   --region $REGION \
-  --zip-file fileb://lambda-deployment.zip || {
+  --zip-file "fileb://$DEPLOYMENT_ZIP" || {
     echo "⚠️  Lambda deployment failed"
     echo "   This is OK if Lambda doesn't exist or permissions are missing"
     exit 0
@@ -57,4 +62,3 @@ aws lambda update-function-code \
 echo ""
 echo "✅ Lambda function deployed successfully!"
 echo ""
-

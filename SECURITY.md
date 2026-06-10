@@ -28,7 +28,7 @@ All deployment scripts (e.g., `tools/scripts/deploy-oauth.sh`) now automatically
 #### 3. Terraform
 Copy the example file and fill in your values:
 ```bash
-cd infrastructure/terraform/gcp
+cd packages/infra/terraform/gcp
 cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars with your actual values
 ```
@@ -75,7 +75,7 @@ git push origin --force --all
 - ✅ `tools/scripts/deploy-oauth.sh` - Now loads all secrets from .env
 - ✅ `scripts/apply-migration-simple.sh` - Now loads DB password from .env
 - ✅ `docker-compose.yml` - Now uses .env variables
-- ✅ `infrastructure/terraform/gcp/variables.tf` - Removed default values for secrets
+- ✅ `packages/infra/terraform/gcp/variables.tf` - Removed default values for secrets
 - ✅ `.gitignore` - Updated to exclude all sensitive files
 
 ### Regular Security Checks
