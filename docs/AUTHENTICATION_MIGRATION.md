@@ -99,11 +99,7 @@ curl -X POST https://sso.hashpass.co/auth/login \
 ```bash
 # Test the auth test endpoint
 curl -X GET https://hashpass.co/api/auth/test \
-<<<<<<< Updated upstream
-  -H "<AUTH_HEADER>"
-=======
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
->>>>>>> Stashed changes
+  -H "Authorization: Bearer <redacted>"
 ```
 
 ### 3. Test Frontend Authentication
@@ -175,8 +171,4 @@ For issues or questions regarding this migration:
 ---
 
 **Migration completed successfully! 🎉**
-<<<<<<< Updated upstream
 The HashPass platform now uses Directus SSO as the default authentication system.
-=======
-The HashPass platform now uses Directus SSO as the default authentication system.
->>>>>>> Stashed changes

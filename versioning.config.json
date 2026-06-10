@@ -138,5 +138,14 @@
         "bumpStrategy": "hotfix"
       }
     }
+  },
+  "releaseGuard": {
+    "enabled": true,
+    "tagPrefix": "v",
+    "allowBuildMetadata": true,
+    "checkReleaseFloor": true,
+    "metadataFiles": [
+      "apps/web-app/config/version.production.json"
+    ]
   }
 }

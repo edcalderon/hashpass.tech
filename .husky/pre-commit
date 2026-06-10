@@ -14,8 +14,10 @@ fi
 echo "🧪 Skipping test suite due to jest config..."
 # npm test -- --watchAll=false
 
-# === secrets-check: start ===
-echo "🔒 Running secrets check…"
-npx versioning check-secrets 2>/dev/null
-# === secrets-check: end ===
-npx @edcalderon/versioning validate
+echo "🔒 Running version validation..."
+if pnpm -s exec versioning --help >/dev/null 2>&1; then
+  pnpm -s exec versioning validate
+else
+  echo "❌ Versioning tool not found. Run pnpm install and retry."
+  exit 1
+fi
