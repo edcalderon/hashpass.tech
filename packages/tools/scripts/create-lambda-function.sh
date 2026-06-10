@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 PACKAGE_SCRIPT="$SCRIPT_DIR/package-lambda.sh"
 DEPLOYMENT_ZIP="$PROJECT_ROOT/lambda-deployment.zip"
 

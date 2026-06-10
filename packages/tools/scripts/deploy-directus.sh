@@ -4,7 +4,7 @@ set -e
 # Deploy Directus SSO with updated configuration
 # This script uses the apps/directus configuration as the source of truth
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 DIRECTUS_DIR="$ROOT_DIR/apps/directus"
 
 echo "🚀 Deploying Directus SSO updates [Context: $DIRECTUS_DIR]..."
