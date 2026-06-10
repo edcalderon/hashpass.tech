@@ -210,11 +210,7 @@ const readRuntimeGlobal = (name: string, profileId?: SupabaseProfileId): string 
   return undefined;
 };
 
-const firstEnv = (
-  names: string[],
-  readEnv: EnvReader = readProcessEnv,
-  profileId?: SupabaseProfileId
-) => {
+const firstEnv = (names: string[], readEnv: EnvReader = readProcessEnv, profileId?: SupabaseProfileId) => {
   for (const name of names) {
     const value = normalizeEnvValue(readEnv(name)) || readRuntimeGlobal(name, profileId);
     if (value) return value;

@@ -43,7 +43,6 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
     'bsl-development': buildSupabaseConfig('bsl-development'),
     'bsl-production': buildSupabaseConfig('bsl-production'),
   };
-
   return (
     <html lang="en">
       <head>
@@ -140,7 +139,7 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
                                            currentPath.match(/\/[a-z0-9-]+\.hashpass\.tech/i);
                 
                 if (isIncorrectRedirect && hashFragment && hashFragment.includes('access_token')) {
-                  
+
                   console.log('🔧 [Auto-fix] Detected incorrect Supabase redirect with tokens');
                   
                   // Try to extract from path first (e.g., /bsl2025.hashpass.tech -> https://bsl2025.hashpass.tech)
