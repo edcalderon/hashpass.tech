@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { passSystemService, PassRequestLimits } from './pass-system';
+import { resolveActiveEventId } from './event-path';
 
 export interface MeetingRequest {
   id: string;
@@ -282,18 +283,18 @@ class MatchmakingService {
   }
 
   // Get user's pass information
-  async getUserPassInfo(userId: string) {
-    return await passSystemService.getUserPassInfo(userId);
+  async getUserPassInfo(userId: string, eventId?: string) {
+    return await passSystemService.getUserPassInfo(userId, eventId);
   }
 
   // Check if user can make meeting request
-  async canMakeMeetingRequest(userId: string, speakerId: string, boostAmount: number = 0) {
-    return await passSystemService.canMakeMeetingRequest(userId, speakerId, boostAmount);
+  async canMakeMeetingRequest(userId: string, speakerId: string, boostAmount: number = 0, eventId?: string) {
+    return await passSystemService.canMakeMeetingRequest(userId, speakerId, boostAmount, eventId);
   }
 
   // Create default pass for user
-  async createDefaultPass(userId: string, passType: 'general' | 'business' | 'vip' = 'general') {
-    return await passSystemService.createDefaultPass(userId, passType);
+  async createDefaultPass(userId: string, passType: 'general' | 'business' | 'vip' = 'general', eventId?: string) {
+    return await passSystemService.createDefaultPass(userId, passType, eventId);
   }
 
   // Get pending meeting requests for a speaker
@@ -426,10 +427,12 @@ class MatchmakingService {
         return { canRequest: false, reason: 'User not authenticated' };
       }
 
+      const eventId = resolveActiveEventId();
+
       // Check request limits using database function
       const { data: canSend, error: limitError } = await supabase.rpc('can_send_meeting_request', {
         p_user_id: user.id,
-        p_event_id: 'bsl2025',
+        p_event_id: eventId,
         p_ticket_type: ticketType
       });
 
@@ -444,7 +447,7 @@ class MatchmakingService {
           .from('user_request_limits')
           .select('*')
           .eq('user_id', user.id)
-          .eq('event_id', 'bsl2025')
+          .eq('event_id', eventId)
           .single();
 
         if (limits) {
@@ -637,13 +640,15 @@ class MatchmakingService {
   }
 
   // Get user request limits
-  async getUserRequestLimits(userId: string, eventId: string = 'bsl2025'): Promise<UserRequestLimits | null> {
+  async getUserRequestLimits(userId: string, eventId?: string): Promise<UserRequestLimits | null> {
     try {
+      const resolvedEventId = resolveActiveEventId(eventId);
+
       const { data, error } = await supabase
         .from('user_request_limits')
         .select('*')
         .eq('user_id', userId)
-        .eq('event_id', eventId);
+        .eq('event_id', resolvedEventId);
 
       if (error) {
         // If table doesn't exist, return null instead of throwing error
@@ -770,7 +775,7 @@ class MatchmakingService {
   }
 
   // Get request limits summary for user
-  async getRequestLimitsSummary(userId: string, eventId: string = 'bsl2025'): Promise<{
+  async getRequestLimitsSummary(userId: string, eventId?: string): Promise<{
     ticketType: 'general' | 'business' | 'vip';
     totalRequests: number;
     remainingRequests: number;

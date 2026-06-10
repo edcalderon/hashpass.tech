@@ -76,7 +76,6 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
 
               // Set API base URL for version check (used by inline service worker script)
               // Defaults to api.hashpass.tech/api for production (API Gateway)
-              // Can be overridden via environment variable EXPO_PUBLIC_API_BASE_URL
               window.__API_BASE_URL__ = (function () {
                 var envApiBase = ${JSON.stringify(
                   typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_BASE_URL || '' : ''
@@ -143,7 +142,6 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
                   
                   console.log('🔧 [Auto-fix] Detected incorrect Supabase redirect with tokens');
                   
-                  // Get stored origin or use default
                   // Try to extract from path first (e.g., /bsl2025.hashpass.tech -> https://bsl2025.hashpass.tech)
                   // Dynamic: works with any hashpass.tech subdomain
                   let correctOrigin = '';
@@ -209,10 +207,8 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
                   try {
                     const urlParams = new URLSearchParams(window.location.search);
                     urlParams.forEach(function(value, key) {
-                      if (key !== 'apikey') {
-                        redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 
-                                      encodeURIComponent(key) + '=' + encodeURIComponent(value);
-                      }
+                      redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 
+                                    encodeURIComponent(key) + '=' + encodeURIComponent(value);
                     });
                   } catch (e) {
                     // Ignore

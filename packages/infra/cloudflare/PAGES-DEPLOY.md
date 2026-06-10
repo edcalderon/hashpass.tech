@@ -9,7 +9,7 @@ npm run deploy:cloudflare
 
 ### Option 2: Using deploy script
 ```bash
-./cloudflare/deploy-pages.sh
+./deploy-pages.sh
 ```
 
 ### Option 3: Manual deployment
@@ -108,4 +108,3 @@ Example routes:
 For more information, see:
 - [Cloudflare Pages Documentation](https://developers.cloudflare.com/pages/)
 - [Cloudflare Pages Functions](https://developers.cloudflare.com/pages/platform/functions/)
-

@@ -31,12 +31,12 @@ case "$BRANCH_NAME" in
     fi
     ;;
   "blockchainsummit")
-    if [ -f "config/amplify-blockchainsummit.yml" ]; then
-      cp config/amplify-blockchainsummit.yml amplify.yml
-      echo "✅ Linked config/amplify-blockchainsummit.yml → amplify.yml"
+    if [ -f "packages/infra/amplify/blockchainsummit.yml" ]; then
+      cp packages/infra/amplify/blockchainsummit.yml amplify.yml
+      echo "✅ Linked packages/infra/amplify/blockchainsummit.yml → amplify.yml"
       echo "📋 Configuration for blockchainsummit branch"
     else
-      echo "⚠️  config/amplify-blockchainsummit.yml not found, using default amplify.yml"
+      echo "⚠️  packages/infra/amplify/blockchainsummit.yml not found, using default amplify.yml"
     fi
     ;;
   *)

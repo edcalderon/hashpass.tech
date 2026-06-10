@@ -30,6 +30,18 @@ export interface QuickAccessItem {
   route: string;
 }
 
+export type EventTourRole = 'hub' | 'stop' | 'archive';
+
+export interface EventTourMeta {
+  hubEventId?: string;
+  role?: EventTourRole;
+  stopOrder?: number;
+  city?: string;
+  country?: string;
+  venue?: string;
+  summary?: string;
+}
+
 export interface EventConfig {
   id: string;
   name: string;
@@ -68,6 +80,6 @@ export interface EventConfig {
   agenda?: AgendaItem[];
   quickAccessItems?: QuickAccessItem[];
   eventType?: 'hashpass' | 'whitelabel';
+  tour?: EventTourMeta;
   website?: string; // Event website URL for footer links
 }
-

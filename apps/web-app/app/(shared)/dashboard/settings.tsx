@@ -16,6 +16,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { supabase } from '../../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../../../lib/api-client';
+import { buildEventPath } from '../../../lib/event-path';
 
 export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
@@ -437,7 +438,7 @@ export default function SettingsScreen() {
               showSuccess('Tutorial Reset', tSettings('networking.tutorialResetMessage') || 'The networking tutorial will start automatically when you visit the networking center.');
               // Navigate after a short delay to ensure state is updated
               setTimeout(() => {
-                router.push('/events/bsl2025/networking' as any);
+                router.push(buildEventPath(undefined, 'networking') as any);
               }, 500);
             },
             showChevron: true,

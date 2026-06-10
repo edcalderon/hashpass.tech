@@ -15,7 +15,7 @@ Cloudflare Pages is better suited for static sites with API routes. Here's how t
 
 **Option A: Using the deploy script (easiest)**
 ```bash
-./cloudflare/deploy-pages.sh
+./deploy-pages.sh
 ```
 
 **Option B: Manual deployment**
@@ -49,7 +49,7 @@ If you need to use Workers instead of Pages:
    # bucket = "./dist/client"
    
    # Uncomment the Worker configuration
-   main = "./cloudflare/worker.js"
+   main = "./worker.js"
    compatibility_flags = ["nodejs_compat"]
    ```
 
@@ -158,4 +158,3 @@ The worker uses the `jose` package for JWT verification. It's already added to `
 ### Testing
 
 To test without Cloudflare Access, simply don't set the `POLICY_AUD` and `TEAM_DOMAIN` environment variables. The worker will skip JWT validation.
-

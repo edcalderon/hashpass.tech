@@ -4,6 +4,11 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PACKAGE_SCRIPT="$SCRIPT_DIR/package-lambda.sh"
+DEPLOYMENT_ZIP="$PROJECT_ROOT/lambda-deployment.zip"
+
 echo "🚀 Creating Lambda Function for HashPass API"
 echo "============================================="
 echo ""
@@ -16,9 +21,9 @@ TIMEOUT=30
 MEMORY=512
 
 # Check if deployment package exists
-if [ ! -f "lambda-deployment.zip" ]; then
+if [ ! -f "$DEPLOYMENT_ZIP" ]; then
     echo "❌ lambda-deployment.zip not found!"
-    echo "   Run: ./scripts/package-lambda.sh"
+    echo "   Run: $PACKAGE_SCRIPT"
     exit 1
 fi
 
@@ -32,7 +37,7 @@ if aws lambda get-function --function-name $FUNCTION_NAME --region $REGION &>/de
         echo "📦 Updating Lambda function code..."
         aws lambda update-function-code \
           --function-name $FUNCTION_NAME \
-          --zip-file fileb://lambda-deployment.zip \
+          --zip-file "fileb://$DEPLOYMENT_ZIP" \
           --region $REGION
         
         echo ""
@@ -50,7 +55,7 @@ ROLE_ARN=$(aws iam get-role --role-name $ROLE_NAME --query 'Role.Arn' --output t
 
 if [ -z "$ROLE_ARN" ]; then
     echo "❌ IAM Role '$ROLE_NAME' not found!"
-    echo "   Run: ./scripts/create-lambda-role.sh"
+    echo "   Run: $SCRIPT_DIR/create-lambda-role.sh"
     exit 1
 fi
 
@@ -71,7 +76,7 @@ aws lambda create-function \
   --runtime $RUNTIME \
   --role $ROLE_ARN \
   --handler $HANDLER \
-  --zip-file fileb://lambda-deployment.zip \
+  --zip-file "fileb://$DEPLOYMENT_ZIP" \
   --timeout $TIMEOUT \
   --memory-size $MEMORY \
   --region $REGION \
@@ -87,6 +92,5 @@ echo "   Function ARN: $FUNCTION_ARN"
 echo ""
 echo "📚 Next steps:"
 echo "   1. Configure API Gateway (see docs/API-GATEWAY-SETUP.md)"
-echo "   2. Test the function: aws lambda invoke --function-name $FUNCTION_NAME --region $REGION response.json"
+echo "   2. Test the function: aws lambda invoke --function-name $FUNCTION_NAME --region $REGION /tmp/hashpass-lambda-response.json"
 echo ""
-

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { resolveActiveEventId } from './event-path';
 
 export type PassType = 'general' | 'business' | 'vip';
 export type PassStatus = 'active' | 'used' | 'expired' | 'cancelled' | 'suspended';
@@ -79,15 +80,17 @@ export interface PassTypeLimits {
 
 class PassSystemService {
   // Get user's pass information with real meeting request counts
-  async getUserPassInfo(userId: string): Promise<PassInfo | null> {
+  async getUserPassInfo(userId: string, eventId?: string): Promise<PassInfo | null> {
     try {
+      const resolvedEventId = resolveActiveEventId(eventId);
+
       // First, try to get the actual pass information from the passes table
       // Get the most recent active pass (in case user has multiple passes)
       const { data: passDataArray, error: passError } = await supabase
         .from('passes')
         .select('*')
         .eq('user_id', userId)
-        .eq('event_id', 'bsl2025')
+        .eq('event_id', resolvedEventId)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1);
@@ -111,14 +114,14 @@ class PassSystemService {
         // No active pass found, try to create one automatically
         console.log('⚠️ No active pass found for user, attempting to create one...');
         try {
-          const newPassId = await this.createDefaultPass(userId, 'general');
+          const newPassId = await this.createDefaultPass(userId, 'general', resolvedEventId);
           if (newPassId) {
             // Retry getting pass info after creation
             const { data: newPassDataArray, error: newPassError } = await supabase
               .from('passes')
               .select('*')
               .eq('user_id', userId)
-              .eq('event_id', 'bsl2025')
+              .eq('event_id', resolvedEventId)
               .eq('status', 'active')
               .order('created_at', { ascending: false })
               .limit(1);
@@ -234,9 +237,12 @@ class PassSystemService {
   async canMakeMeetingRequest(
     userId: string,
     speakerId: string,
-    boostAmount: number = 0
+    boostAmount: number = 0,
+    eventId?: string
   ): Promise<PassRequestLimits> {
     try {
+      const resolvedEventId = resolveActiveEventId(eventId);
+
       // Validate UUID format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!uuidRegex.test(userId)) {
@@ -255,7 +261,8 @@ class PassSystemService {
         .rpc('can_make_meeting_request', {
           p_user_id: userId, // Pass as UUID (Supabase will handle conversion)
           p_speaker_id: speakerId,
-          p_boost_amount: boostAmount
+          p_boost_amount: boostAmount,
+          p_event_id: resolvedEventId,
         })
         .single();
 
@@ -344,7 +351,9 @@ class PassSystemService {
   }
 
   // Create default pass for user
-  async createDefaultPass(userId: string, passType: PassType = 'general'): Promise<string | null> {
+  async createDefaultPass(userId: string, passType: PassType = 'general', eventId?: string): Promise<string | null> {
+    const resolvedEventId = resolveActiveEventId(eventId);
+
     try {
       const { data, error } = await supabase
         .rpc('create_default_pass', {
@@ -354,13 +363,13 @@ class PassSystemService {
         .single();
 
       if (error) {
-        console.error('Error creating default pass:', error);
+        console.error('Error creating default pass:', error, 'for event', resolvedEventId);
         return null;
       }
 
       return data as string;
     } catch (error) {
-      console.error('Error in createDefaultPass:', error);
+      console.error('Error in createDefaultPass:', error, 'for event', resolvedEventId);
       return null;
     }
   }

@@ -1,35 +1,189 @@
-import type { EventConfig } from '@hashpass/types';
+import type { AgendaItem, EventConfig, Speaker } from '@hashpass/types';
 
 export type { Speaker, AgendaItem, EventConfig, QuickAccessItem } from '@hashpass/types';
+
+const BSL_API_BASE_PATH = '/api/bslatam';
+const BSL_DATABASE = {
+  schema: 'bslatam',
+  tables: {
+    speakers: 'bslatam_speakers',
+    bookings: 'bslatam_bookings',
+    attendees: 'bslatam_attendees',
+  },
+} as const;
+
+const BSL_SHARED_API_ENDPOINTS = {
+  speakers: 'speakers',
+  bookings: 'bookings',
+  'verify-ticket': 'verify-ticket',
+  'auto-match': 'auto-match',
+  agenda: 'agenda',
+  status: 'status',
+} as const;
+
+const BSL_HUB_BRANDING = {
+  primaryColor: '#00A9E0',
+  secondaryColor: '#06111F',
+  logo: '/assets/logos/bsl/bsl-ontour-pro.svg',
+  favicon: '/favicon.ico',
+} as const;
+
+const BSL_TOUR_SHARED_FEATURES = ['matchmaking', 'speakers', 'bookings', 'admin'] as const;
+
+const makeTourQuickAccess = (eventId: string) => [
+  {
+    id: 'agenda',
+    title: 'Event Agenda',
+    subtitle: 'Schedule',
+    icon: 'event',
+    color: '#34A853',
+    route: `/events/${eventId}/agenda`,
+  },
+  {
+    id: 'networking',
+    title: 'Networking Center',
+    subtitle: 'Connect & meet',
+    icon: 'people-alt',
+    color: '#4CAF50',
+    route: `/events/${eventId}/networking`,
+  },
+  {
+    id: 'speakers',
+    title: 'Featured Speakers',
+    subtitle: 'Meet the experts',
+    icon: 'people',
+    color: '#007AFF',
+    route: `/events/${eventId}/speakers/calendar`,
+  },
+  {
+    id: 'event-info',
+    title: 'Event Information',
+    subtitle: 'Details & Logistics',
+    icon: 'info',
+    color: '#FF9500',
+    route: `/events/${eventId}/event-info`,
+  },
+] as const;
+
+const makeTourHubQuickAccess = () => [
+  {
+    id: 'peru2026',
+    title: 'Peru 2026',
+    subtitle: 'Lima • May 13-15',
+    icon: 'location-on',
+    color: '#D11A2A',
+    route: '/events/peru2026/home',
+  },
+  {
+    id: 'chile2026',
+    title: 'Chile 2026',
+    subtitle: 'Santiago • Aug 5-7',
+    icon: 'location-on',
+    color: '#FF5B5B',
+    route: '/events/chile2026/home',
+  },
+  {
+    id: 'colombia2026',
+    title: 'Colombia 2026',
+    subtitle: 'Bogotá • Nov 5-6',
+    icon: 'location-on',
+    color: '#F5C542',
+    route: '/events/colombia2026/home',
+  },
+  {
+    id: 'bsl2025',
+    title: 'BSL 2025 Archive',
+    subtitle: 'Medellín • Legacy edition',
+    icon: 'history',
+    color: '#60A5FA',
+    route: '/events/bsl2025/home',
+  },
+] as const;
+
+const makeTourStopConfig = (
+  eventId: 'peru2026' | 'chile2026' | 'colombia2026',
+  options: {
+    name: string;
+    title: string;
+    subtitle: string;
+    color: string;
+    eventStartDate: string;
+    eventEndDate: string;
+    eventDateString: string;
+    city: string;
+    country: string;
+    venue: string;
+    summary: string;
+    stopOrder: number;
+    image: string;
+    brandingLogo: string;
+    speakers: Speaker[];
+    agenda: AgendaItem[];
+  }
+): EventConfig => ({
+  id: eventId,
+  name: options.name,
+  domain: `${eventId}.hashpass.tech`,
+  website: `https://blockchainsummit.la/${eventId}/`,
+  title: options.title,
+  subtitle: options.subtitle,
+  image: options.image,
+  color: options.color,
+  eventStartDate: options.eventStartDate,
+  eventEndDate: options.eventEndDate,
+  eventDateString: options.eventDateString,
+  features: [...BSL_TOUR_SHARED_FEATURES],
+  eventType: 'whitelabel',
+  branding: {
+    primaryColor: options.color,
+    secondaryColor: '#06111F',
+    logo: options.brandingLogo,
+    favicon: '/favicon.ico',
+  },
+  api: {
+    basePath: BSL_API_BASE_PATH,
+    endpoints: { ...BSL_SHARED_API_ENDPOINTS },
+  },
+  routes: {
+    home: `/events/${eventId}/home`,
+    speakers: `/events/${eventId}/speakers`,
+    bookings: `/events/${eventId}/my-bookings`,
+    admin: `/events/${eventId}/admin`,
+  },
+  database: BSL_DATABASE,
+  speakers: options.speakers,
+  agenda: options.agenda,
+  tour: {
+    hubEventId: 'bsl',
+    role: 'stop',
+    stopOrder: options.stopOrder,
+    city: options.city,
+    country: options.country,
+    venue: options.venue,
+    summary: options.summary,
+  },
+  quickAccessItems: makeTourQuickAccess(eventId) as any,
+});
 
 export const EVENTS: Record<string, EventConfig> = {
   'bsl': {
     id: 'bsl',
-    name: 'Blockchain Summit Latam',
+    name: 'Blockchain Summit Latam On Tour',
     domain: 'bsl.hashpass.tech',
     website: 'https://blockchainsummit.la/',
-    title: 'Blockchain Summit Latam',
-    subtitle: 'Latam blockchain events and networking',
-    image: '/assets/images/hashpass-banner.jpg',
+    title: 'BSL On Tour',
+    subtitle: 'Peru, Chile and Colombia 2026 roadshow',
+    image: '/assets/logos/bsl/bsl-ontour-pro.svg',
     color: '#00A9E0',
+    eventDateString: 'BSL On Tour • 2026',
     features: ['matchmaking', 'speakers', 'bookings', 'admin', 'wallet'],
     eventType: 'whitelabel',
     branding: {
-      primaryColor: '#00A9E0',
-      secondaryColor: '#06111F',
-      logo: '/assets/logos/bsl-logo.png',
-      favicon: '/favicon.ico'
+      ...BSL_HUB_BRANDING,
     },
     api: {
-      basePath: '/api/bslatam',
-      endpoints: {
-        speakers: 'speakers',
-        bookings: 'bookings',
-        'verify-ticket': 'verify-ticket',
-        'auto-match': 'auto-match',
-        agenda: 'agenda',
-        status: 'status'
-      }
+      basePath: BSL_API_BASE_PATH,
+      endpoints: { ...BSL_SHARED_API_ENDPOINTS }
     },
     routes: {
       home: '/events/bsl/home',
@@ -38,21 +192,138 @@ export const EVENTS: Record<string, EventConfig> = {
       admin: '/events/bsl/admin'
     },
     database: {
-      schema: 'public',
+      schema: 'bslatam',
       tables: {
-        speakers: 'bsl_speakers',
-        bookings: 'meeting_requests',
-        attendees: 'passes',
+        speakers: 'bslatam_speakers',
+        bookings: 'bslatam_bookings',
+        attendees: 'bslatam_attendees',
         wallets: 'wallet_auth'
       }
     },
-    quickAccessItems: [
-      { id: 'agenda', title: 'Event Agenda', subtitle: 'Schedule', icon: 'event', color: '#34A853', route: '/events/bsl/agenda' },
-      { id: 'networking', title: 'Networking Center', subtitle: 'Connect & meet', icon: 'people-alt', color: '#4CAF50', route: '/events/bsl/networking' },
-      { id: 'speakers', title: 'Featured Speakers', subtitle: 'Meet the experts', icon: 'people', color: '#007AFF', route: '/events/bsl/speakers/calendar' },
-      { id: 'event-info', title: 'Event Information', subtitle: 'Details & Logistics', icon: 'info', color: '#FF9500', route: '/events/bsl/event-info' }
-    ]
+    tour: {
+      hubEventId: 'bsl',
+      role: 'hub',
+      summary: 'Institutional roadshow across Peru, Chile and Colombia',
+    },
+    quickAccessItems: makeTourHubQuickAccess() as any
   },
+  'peru2026': makeTourStopConfig('peru2026', {
+    name: 'BSL Perú 2026',
+    title: 'Blockchain Summit Latam Perú 2026',
+    subtitle: 'Universidad del Pacífico, Lima',
+    color: '#D11A2A',
+    eventStartDate: '2026-05-13T09:00:00-05:00',
+    eventEndDate: '2026-05-15T23:59:59-05:00',
+    eventDateString: 'May 13-15, 2026 • Lima, Perú',
+    city: 'Lima',
+    country: 'Peru',
+    venue: 'Universidad del Pacífico',
+    summary: 'Banco Central de Reserva del Perú and institutional finance.',
+    stopOrder: 1,
+    image: '/assets/logos/bsl/bsl-peru-pro.svg',
+    brandingLogo: '/assets/logos/bsl/bsl-peru-pro.svg',
+    speakers: [
+      { id: 'paul-castillo', name: 'Paul Castillo', title: 'Gerente General', company: 'Banco Central de Reserva del Perú' },
+      { id: 'elmer-sanchez', name: 'Elmer Sánchez', title: 'Gerencia de Operaciones Monetarias y Estabilidad Financiera', company: 'Banco Central de Reserva del Perú' },
+      { id: 'milton-vega', name: 'Milton Vega', title: 'Deputy Manager Payments and Financial Infraestructures', company: 'Central Bank Peru' },
+      { id: 'vanesa-colonia', name: 'Vanesa Colonia', title: 'Coordinadora de Evaluación', company: 'UIF Perú / SBS / AFP' },
+      { id: 'judith-vergara', name: 'Judith Vergara', title: 'Director of Executive Education', company: 'School of Finance, Economics and Government @ Universidad EAFIT' },
+      { id: 'magdalena-mahia', name: 'Magdalena Mahia', title: 'Team Lead Regulatory & Risk Compliance', company: 'Lemon' },
+      { id: 'erick-ortiz', name: 'Erick Ortiz', title: 'Blockchain Advisor / Project Manager Digital Payments', company: 'BBVA Perú' },
+      { id: 'juan-jose-miranda', name: 'Juan José Miranda', title: 'Director Innovation Center IC Blockchain/DLT/web3 & QC', company: 'IBIOL NTT DATA' },
+      { id: 'alexandre-borelli', name: 'Alexandre Borelli', title: 'CEO Latin America', company: 'Alcazar Group' },
+      { id: 'daniel-garcia', name: 'Daniel García', title: 'Superintendente Adjunto de Investigación, Desarrollo e Innovación', company: 'SMV' },
+      { id: 'jaime-varela', name: 'Jaime Varela', title: 'Growth Manager Latam', company: 'Binance' },
+      { id: 'alireza-siadat', name: 'Alireza Siadat', title: 'Head of Strategy and Policy', company: '1inch' },
+      { id: 'fabiana-alvarado', name: 'Fabiana Alvarado', title: 'Asociada Senior', company: 'Damma Legal Advisors' },
+      { id: 'omar-castelblanco', name: 'Omar Castelblanco', title: 'Co Founder & CEO', company: 'Relámpago Payments' },
+    ],
+    agenda: [
+      { id: 'peru-day1-reg', time: '08:00 - 09:00', title: 'Registro y café de bienvenida', type: 'registration' },
+      { id: 'peru-day1-open', time: '09:00 - 09:15', title: 'Palabras de apertura BSL Lima', type: 'keynote', speakers: ['paul-castillo'] },
+      { id: 'peru-day1-keynote', time: '09:20 - 09:50', title: 'Infraestructura financiera y crecimiento de pagos digitales en Perú', type: 'keynote', speakers: ['paul-castillo', 'milton-vega'] },
+      { id: 'peru-day1-panel', time: '10:00 - 10:45', title: 'Panel: regulación, banca central y open finance', type: 'panel', speakers: ['elmer-sanchez', 'vanesa-colonia', 'judith-vergara'] },
+      { id: 'peru-day1-commercial', time: '11:00 - 11:45', title: 'Panel: transformación digital de la banca comercial y mercados financieros', type: 'panel', speakers: ['magdalena-mahia', 'erick-ortiz', 'alexandre-borelli'] },
+      { id: 'peru-day1-lunch', time: '12:00 - 13:30', title: 'Almuerzo libre y networking estratégico', type: 'meal' },
+      { id: 'peru-day2-assets', time: '14:00 - 14:45', title: 'Activos digitales institucionales y mercados regulados', type: 'keynote', speakers: ['juan-jose-miranda', 'daniel-garcia'] },
+      { id: 'peru-day2-compliance', time: '15:00 - 15:45', title: 'Panel: compliance, custodia y expansión regional', type: 'panel', speakers: ['jaime-varela', 'alireza-siadat', 'judith-vergara'] },
+      { id: 'peru-day3-convergence', time: '16:00 - 16:45', title: 'Mesa de convergencia: infraestructura financiera y adopción institucional', type: 'panel', speakers: ['paul-castillo', 'fabiana-alvarado', 'omar-castelblanco'] },
+    ],
+  }),
+  'chile2026': makeTourStopConfig('chile2026', {
+    name: 'BSL Chile 2026',
+    title: 'Blockchain Summit Latam Chile 2026',
+    subtitle: 'Universidad de Chile - FEN, Santiago',
+    color: '#FF5B5B',
+    eventStartDate: '2026-08-05T09:00:00-04:00',
+    eventEndDate: '2026-08-07T23:59:59-04:00',
+    eventDateString: 'August 5-7, 2026 • Santiago, Chile',
+    city: 'Santiago',
+    country: 'Chile',
+    venue: 'Universidad de Chile - FEN - Alta Dirección',
+    summary: 'Digital finance, payments modernization, and institutional regulation with Banco Central de Chile.',
+    stopOrder: 2,
+    image: '/assets/logos/bsl/bsl-chile-pro.svg',
+    brandingLogo: '/assets/logos/bsl/bsl-chile-pro.svg',
+    speakers: [
+      { id: 'alberto-naudon', name: 'Alberto Naudon', title: 'Vicepresidente', company: 'Banco Central de Chile' },
+      { id: 'rodrigo-sainz', name: 'Rodrigo Sainz', title: 'Founder & CEO', company: 'Blockchain Summit Latam' },
+      { id: 'camilo-suarez', name: 'Camilo Suárez', title: 'Co Founder & CEO', company: 'Vurelo' },
+      { id: 'alireza-siadat', name: 'Alireza Siadat', title: 'Head of Strategy and Policy', company: '1inch' },
+      { id: 'daniel-mangabeira', name: 'Daniel Mangabeira', title: 'Vice President Strategy & Policy, Brazil & Latin America', company: 'Circle' },
+      { id: 'steffen-harting', name: 'Steffen Härting', title: 'Senior Manager', company: 'Deloitte: Crypto Asset Markets' },
+    ],
+    agenda: [
+      { id: 'chile-day1-reg', time: '08:00 - 09:00', title: 'Registro y bienvenida ejecutiva', type: 'registration' },
+      { id: 'chile-day1-open', time: '09:00 - 09:20', title: 'Apertura BSL Santiago', type: 'keynote', speakers: ['rodrigo-sainz'] },
+      { id: 'chile-day1-central-bank', time: '09:30 - 10:00', title: 'Finanzas digitales y estabilidad con el Banco Central de Chile', type: 'keynote', speakers: ['alberto-naudon'] },
+      { id: 'chile-day1-payments', time: '10:15 - 11:00', title: 'Infraestructura y sistema de pagos: modernización del mercado chileno', type: 'panel', speakers: ['camilo-suarez', 'alireza-siadat'] },
+      { id: 'chile-day2-regulation', time: '11:15 - 12:00', title: 'Estabilidad, regulación y transformación institucional', type: 'panel', speakers: ['daniel-mangabeira', 'steffen-harting'] },
+      { id: 'chile-day2-networking', time: '12:00 - 13:30', title: 'Almuerzo libre y conexiones de alto nivel', type: 'meal' },
+      { id: 'chile-day3-strategy', time: '14:00 - 14:45', title: 'Convergencia entre sector público y privado', type: 'panel', speakers: ['rodrigo-sainz', 'camilo-suarez', 'alberto-naudon'] },
+      { id: 'chile-day3-close', time: '15:00 - 15:30', title: 'Cierre: desarrollo financiero estructural y próximos pasos', type: 'keynote', speakers: ['alireza-siadat'] },
+    ],
+  }),
+  'colombia2026': makeTourStopConfig('colombia2026', {
+    name: 'BSL Colombia 2026',
+    title: 'Blockchain Summit Latam Colombia 2026',
+    subtitle: 'Bogotá, Colombia',
+    color: '#F5C542',
+    eventStartDate: '2026-11-05T09:00:00-05:00',
+    eventEndDate: '2026-11-06T23:59:59-05:00',
+    eventDateString: 'November 5-6, 2026 • Bogotá, Colombia',
+    city: 'Bogotá',
+    country: 'Colombia',
+    venue: 'Bogotá, Colombia',
+    summary: 'Institutional and regulatory summit for the Andean region with Banco de la República.',
+    stopOrder: 3,
+    image: '/assets/logos/bsl/bsl-colombia-pro.svg',
+    brandingLogo: '/assets/logos/bsl/bsl-colombia-pro.svg',
+    speakers: [
+      { id: 'leonardo-villar', name: 'Leonardo Villar', title: 'Gerente General', company: 'Banco de la República' },
+      { id: 'arlette-salas', name: 'Arlette Salas', title: 'LATAM Growth Lead', company: 'Hive / H.E.R DAO Venezuela' },
+      { id: 'rafael-gago', name: 'Rafael Gago', title: 'Director Comercial, Gerencia de Ideación e Incubación', company: 'nuam exchange' },
+      { id: 'andres-meneses', name: 'Andrés Meneses', title: 'Founder', company: 'Orbyt X' },
+      { id: 'rafael-teruszkin', name: 'Rafael Teruszkin', title: 'Head Latam', company: 'Bitpanda Technology Solutions' },
+      { id: 'liz-bejarano', name: 'Liz Bejarano', title: 'Directora Financiera y de Riesgo', company: 'Asobancaria' },
+      { id: 'albi-rodriguez', name: 'Albi Rodríguez', title: 'Senior Web3 & DLT Consultant', company: 'Independent' },
+      { id: 'judith-vergara', name: 'Judith Vergara', title: 'Director of Executive Education', company: 'Universidad EAFIT' },
+      { id: 'william-duran', name: 'William Durán', title: 'CO-CEO & Founder', company: 'Minteo' },
+      { id: 'daniel-aguilar', name: 'Daniel Aguilar', title: 'Co Founder & COO', company: 'Trokera' },
+      { id: 'pablo-santos', name: 'Pablo Santos', title: 'Founder & CEO', company: 'Finaktiva' },
+      { id: 'ana-maria-zuluaga', name: 'Ana María Zuluaga', title: 'Head of Open Finance Office', company: 'Grupo Aval' },
+    ],
+    agenda: [
+      { id: 'colombia-day1-reg', time: '08:00 - 09:00', title: 'Registro y bienvenida institucional', type: 'registration' },
+      { id: 'colombia-day1-open', time: '09:00 - 09:20', title: 'Apertura BSL Bogotá', type: 'keynote', speakers: ['leonardo-villar'] },
+      { id: 'colombia-day1-central-bank', time: '09:30 - 10:00', title: 'Infraestructura financiera y pagos modernos', type: 'keynote', speakers: ['leonardo-villar'] },
+      { id: 'colombia-day1-regulation', time: '10:15 - 11:00', title: 'Marco regulatorio y banca central en la era digital', type: 'panel', speakers: ['liz-bejarano', 'albi-rodriguez', 'judith-vergara'] },
+      { id: 'colombia-day2-open-finance', time: '11:15 - 12:00', title: 'Open finance, tokenización y mercados institucionales', type: 'panel', speakers: ['rafael-gago', 'andres-meneses', 'ana-maria-zuluaga'] },
+      { id: 'colombia-day2-lunch', time: '12:00 - 13:30', title: 'Almuerzo libre y networking estratégico', type: 'meal' },
+      { id: 'colombia-day2-strategy', time: '14:00 - 14:45', title: 'Diálogo estratégico entre sector público, banca y mercados', type: 'panel', speakers: ['rafael-teruszkin', 'william-duran', 'daniel-aguilar'] },
+      { id: 'colombia-day2-close', time: '15:00 - 15:30', title: 'Cierre: impacto económico, innovación e inclusión', type: 'keynote', speakers: ['pablo-santos', 'arlette-salas'] },
+    ],
+  }),
   'bsl2025': {
     id: 'bsl2025',
     name: 'BSL 2025',
@@ -70,7 +341,7 @@ export const EVENTS: Record<string, EventConfig> = {
     branding: {
       primaryColor: '#2196F3',
       secondaryColor: '#34A853',
-      logo: '/assets/logos/bsl-logo.png',
+      logo: '/assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg',
       favicon: '/favicon.ico'
     },
     api: {
@@ -97,6 +368,15 @@ export const EVENTS: Record<string, EventConfig> = {
         bookings: 'bslatam_bookings',
         attendees: 'bslatam_attendees'
       }
+    },
+    tour: {
+      hubEventId: 'bsl',
+      role: 'archive',
+      stopOrder: 99,
+      city: 'Medellín',
+      country: 'Colombia',
+      venue: 'Universidad EAFIT',
+      summary: 'Archived 2025 edition of Blockchain Summit Latam.',
     },
     speakers: [
       { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Claudia Restrepo', title: 'Rectora', company: 'EAFIT' },

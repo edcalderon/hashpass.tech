@@ -4,6 +4,7 @@ import {
   getAvailableEvents,
   getCurrentEvent,
   getEventTenantContext,
+  getRouteEventIdFromPathname,
   isGlobalEventTenant,
 } from '../../lib/event-detector';
 
@@ -47,7 +48,7 @@ describe('event tenant detection', () => {
     expect(tenant.id).toBe('main');
     expect(tenant.showAllEvents).toBe(true);
     expect(isGlobalEventTenant('hashpass.tech')).toBe(true);
-    expect(events).toEqual(expect.arrayContaining(['bsl', 'bsl2025']));
+    expect(events).toEqual(['bsl', 'peru2026', 'chile2026', 'colombia2026', 'bsl2025']);
   });
 
   it('scopes bsl.hashpass.tech to the BSL event family via shared tenant config', () => {
@@ -59,7 +60,7 @@ describe('event tenant detection', () => {
     expect(tenant.id).toBe('bsl');
     expect(tenant.source).toBe('config');
     expect(tenant.showAllEvents).toBe(false);
-    expect(events).toEqual(['bsl', 'bsl2025']);
+    expect(events).toEqual(['bsl', 'peru2026', 'chile2026', 'colombia2026', 'bsl2025']);
   });
 
   it('scopes bsl2025.hashpass.tech to the BSL 2025 event family via shared tenant config', () => {
@@ -82,7 +83,7 @@ describe('event tenant detection', () => {
 
     expect(tenant.id).toBe('bsl');
     expect(tenant.source).toBe('env-tenant');
-    expect(events).toEqual(['bsl', 'bsl2025']);
+    expect(events).toEqual(['bsl', 'peru2026', 'chile2026', 'colombia2026', 'bsl2025']);
   });
 
   it('supports exact local event filtering with EXPO_PUBLIC_EVENT_IDS', () => {
@@ -96,5 +97,10 @@ describe('event tenant detection', () => {
     expect(events).toEqual(['bsl2025']);
     expect(getCurrentEvent('bsl', 'localhost:8081')).toBeNull();
     expect(getCurrentEvent('bsl2025', 'localhost:8081')?.id).toBe('bsl2025');
+  });
+
+  it('resolves route slugs to event ids for route-aware event pages', () => {
+    expect(getRouteEventIdFromPathname('/events/peru2026/agenda')).toBe('peru2026');
+    expect(getRouteEventIdFromPathname('/events/chile2026/speakers/calendar')).toBe('chile2026');
   });
 });

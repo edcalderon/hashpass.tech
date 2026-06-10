@@ -51,6 +51,7 @@ export default function SpeakerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isDark, colors } = useTheme();
   const { event } = useEvent();
+  const eventId = event?.id || 'bsl';
   const { user, isLoggedIn } = useAuth();
   const { t } = useTranslation('networking');
   const router = useRouter();
@@ -900,7 +901,7 @@ export default function SpeakerDetail() {
         // Small delay to ensure the success message is visible
         setTimeout(() => {
           router.push({
-            pathname: '/events/bsl2025/networking/my-requests' as any,
+            pathname: `/events/${eventId}/networking/my-requests` as any,
             params: {
               requestId: createdRequest.id,
               highlightRequest: 'true'
@@ -973,14 +974,14 @@ export default function SpeakerDetail() {
       if (!session) {
         // Close the modal and redirect to auth page with return URL
         setShowMeetingModal(false);
-        const currentPath = `/events/bsl2025/speakers/${id}`;
+        const currentPath = `/events/${eventId}/speakers/${id}`;
         router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
         return;
       }
       // If we have a session but no user in context, redirect to login to refresh
       if (!user) {
         setShowMeetingModal(false);
-        const currentPath = `/events/bsl2025/speakers/${id}`;
+        const currentPath = `/events/${eventId}/speakers/${id}`;
         router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
         return;
       }
@@ -989,19 +990,19 @@ export default function SpeakerDetail() {
     // At this point, user must exist
     if (!user) {
       setShowMeetingModal(false);
-      const currentPath = `/events/bsl2025/speakers/${id}`;
+      const currentPath = `/events/${eventId}/speakers/${id}`;
       router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
       return;
     }
 
     // Check if user has a pass
     try {
-      const passInfo = await passSystemService.getUserPassInfo(user.id);
+      const passInfo = await passSystemService.getUserPassInfo(user.id, eventId);
       if (!passInfo) {
         console.log('❌ User has no pass, redirecting to login...');
         // Close the modal and redirect to auth page
         setShowMeetingModal(false);
-        const currentPath = `/events/bsl2025/speakers/${id}`;
+        const currentPath = `/events/${eventId}/speakers/${id}`;
         router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
         return;
       }
@@ -1009,7 +1010,7 @@ export default function SpeakerDetail() {
       console.error('❌ Error checking pass:', error);
       // If error checking pass, close modal and redirect to login
       setShowMeetingModal(false);
-      const currentPath = `/events/bsl2025/speakers/${id}`;
+      const currentPath = `/events/${eventId}/speakers/${id}`;
       router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
       return;
     }
@@ -1086,7 +1087,7 @@ export default function SpeakerDetail() {
         // Small delay to ensure the success message is visible
         setTimeout(() => {
           router.push({
-            pathname: '/events/bsl2025/networking/my-requests' as any,
+            pathname: `/events/${eventId}/networking/my-requests` as any,
             params: {
               requestId: meetingRequest.id,
               highlightRequest: 'true'
@@ -1141,7 +1142,7 @@ export default function SpeakerDetail() {
   const handleSpeakerDashboard = () => {
     // Check if current user is this speaker
     if (user && speaker && isCurrentUserSpeaker) {
-      router.push('/events/bsl2025/speakers/dashboard');
+      router.push(`/events/${eventId}/speakers/dashboard`);
     } else {
       Alert.alert(
         t('speakerView.speakerDashboard'),
@@ -3005,6 +3006,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontFamily: 'monospace',
   },
 });
-
-
-

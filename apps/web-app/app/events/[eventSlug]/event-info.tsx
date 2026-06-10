@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, useWindowDimensions } from 'react-native';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -9,31 +9,53 @@ export default function BSL2025EventInfoScreen() {
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
   const styles = getStyles(isDark, colors);
+  const sliderRef = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
+  const slideWidth = Math.max(Math.min(width - 40, 540), 320);
+  const slideGap = 12;
+  const slidePadding = Math.max(0, (width - slideWidth) / 2);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const eventId = event?.id || 'bsl';
+  const eventDateLabel = event?.eventDateString || event?.subtitle || 'Tour 2026';
+  const eventLocationLabel = event?.tour?.city && event?.tour?.country
+    ? `${event.tour.city}, ${event.tour.country}`
+    : event?.subtitle || 'Latin America';
+  const venueLabel = event?.tour?.venue || event?.subtitle || 'Blockchain Summit Latam';
+  const isArchiveEvent = event?.tour?.role === 'archive' || eventId === 'bsl2025';
   
   // Check if event is finished
-  const [isEventFinished, setIsEventFinished] = React.useState(false);
-  React.useEffect(() => {
+  const [isEventFinished, setIsEventFinished] = useState(false);
+  useEffect(() => {
     const checkEventFinished = () => {
       const now = new Date();
-      const end = new Date('2025-11-14T23:59:59-05:00');
-      setIsEventFinished(now > end);
+      const end = event?.eventEndDate ? new Date(event.eventEndDate) : null;
+      setIsEventFinished(Boolean(end && now > end));
     };
     checkEventFinished();
     const interval = setInterval(checkEventFinished, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [event?.eventEndDate]);
 
   const handleOpenLink = (url: string) => {
     Linking.openURL(url).catch(err => console.error('Failed to open link:', err));
   };
 
+  const aboutParagraphs = useMemo(
+    () => [
+      `${event?.title || 'Blockchain Summit Latam'} brings together blockchain, cryptocurrency, and financial technology professionals across Latin America.`,
+      'This edition connects industry leaders, regulators, innovators, and entrepreneurs around the future of digital finance and blockchain technology in the region.',
+      'Join us for keynotes, interactive panels, networking opportunities, and workshops covering topics from CBDCs and digital banking to regulatory frameworks and emerging technologies.',
+    ],
+    [event?.title]
+  );
+
   const eventInfo = [
     {
       title: 'Event Details',
       items: [
-        { icon: 'event', label: 'Date', value: 'November 12-14, 2025' },
-        { icon: 'location-on', label: 'Location', value: 'Medellín, Colombia' },
-        { icon: 'business', label: 'Venue', value: 'Universidad EAFIT' },
+        { icon: 'event', label: 'Date', value: eventDateLabel },
+        { icon: 'location-on', label: 'Location', value: eventLocationLabel },
+        { icon: 'business', label: 'Venue', value: venueLabel },
         { icon: 'language', label: 'Language', value: 'Spanish & English' },
       ]
     },
@@ -77,8 +99,8 @@ export default function BSL2025EventInfoScreen() {
         { 
           icon: 'web', 
           label: 'Website', 
-          value: 'blockchainsummit.la',
-          action: () => handleOpenLink('https://blockchainsummit.la')
+          value: event?.website || 'blockchainsummit.la',
+          action: () => handleOpenLink(event?.website || 'https://blockchainsummit.la')
         },
         { 
           icon: 'email', 
@@ -95,12 +117,28 @@ export default function BSL2025EventInfoScreen() {
         { 
           icon: 'location-on', 
           label: 'Address', 
-          value: 'Universidad EAFIT, Medellín, Colombia',
-          action: () => handleOpenLink('https://maps.google.com/?q=Universidad+EAFIT+Medellin')
+          value: venueLabel,
+          action: () => handleOpenLink(`https://maps.google.com/?q=${encodeURIComponent(venueLabel)}`)
         },
       ]
     }
   ];
+
+  const carouselSections = [...eventInfo, ...contactInfo];
+
+  const handleSliderMomentum = (event: any) => {
+    const offsetX = event?.nativeEvent?.contentOffset?.x ?? 0;
+    const index = Math.round(offsetX / (slideWidth + slideGap));
+    setActiveSlide(Math.max(0, Math.min(index, carouselSections.length)));
+  };
+
+  const scrollToSlide = (index: number) => {
+    sliderRef.current?.scrollTo({
+      x: index * (slideWidth + slideGap),
+      animated: true,
+    });
+    setActiveSlide(index);
+  };
 
   const renderInfoSection = (section: any) => (
     <View key={section.title} style={styles.section}>
@@ -144,6 +182,56 @@ export default function BSL2025EventInfoScreen() {
     </View>
   );
 
+  const renderAboutSection = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>About the Event</Text>
+      <View style={styles.sectionContent}>
+        {aboutParagraphs.map((paragraph, index) => (
+          <Text
+            key={index}
+            style={[
+              styles.aboutText,
+              index === aboutParagraphs.length - 1 && styles.aboutTextLast,
+            ]}
+          >
+            {paragraph}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+
+  const renderArchiveSummary = () => {
+    if (!isArchiveEvent) return null;
+
+    return (
+      <View style={styles.archiveSummary}>
+        <View style={styles.archiveBadge}>
+          <MaterialIcons name="history" size={16} color={isDark ? '#E0F2FE' : '#1D4ED8'} />
+          <Text style={styles.archiveBadgeText}>Past Event</Text>
+        </View>
+        <Text style={styles.archiveTitle}>Archived Edition</Text>
+        <Text style={styles.archiveDescription}>
+          BSL 2025 is preserved here as a reference archive. Swipe through the cards below to review the original details, topics, contacts and context.
+        </Text>
+        <View style={styles.archiveStats}>
+          <View style={styles.archiveStat}>
+            <Text style={styles.archiveStatLabel}>Date</Text>
+            <Text style={styles.archiveStatValue}>{eventDateLabel}</Text>
+          </View>
+          <View style={styles.archiveStat}>
+            <Text style={styles.archiveStatLabel}>Venue</Text>
+            <Text style={styles.archiveStatValue}>{venueLabel}</Text>
+          </View>
+          <View style={styles.archiveStat}>
+            <Text style={styles.archiveStatLabel}>Location</Text>
+            <Text style={styles.archiveStatValue}>{eventLocationLabel}</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <ScrollView
       style={styles.scrollView}
@@ -154,35 +242,90 @@ export default function BSL2025EventInfoScreen() {
       <EventBanner
         title="Event Information"
         subtitle="Conference Details & Logistics"
-        date="November 12-14, 2025 • Medellín, Colombia"
-        showCountdown={!isEventFinished}
-        showLiveIndicator={!isEventFinished}
+        date={eventDateLabel}
+        showCountdown={!isEventFinished && Boolean(event?.eventStartDate)}
+        showLiveIndicator={!isEventFinished && Boolean(event?.eventStartDate)}
         isEventFinished={isEventFinished}
-        eventId="bsl2025"
+        eventStartDate={event?.eventStartDate}
+        eventId={eventId}
+        eventImage={event?.image}
       />
 
-      {/* Event Information Sections */}
-      {eventInfo.map(renderInfoSection)}
+      {renderArchiveSummary()}
 
-      {/* Contact Information */}
-      {contactInfo.map(renderInfoSection)}
+      <View style={styles.sliderSection}>
+        <View style={styles.sliderHeader}>
+          <View>
+            <Text style={styles.sliderTitle}>
+              {isArchiveEvent ? 'Browse the archive' : 'Explore the details'}
+            </Text>
+            <Text style={styles.sliderSubtitle}>
+              {isArchiveEvent
+                ? 'Swipe through the section cards for a cleaner view of the archived event data.'
+                : 'Swipe through the section cards for a cleaner view of the event data.'}
+            </Text>
+          </View>
+          <View style={styles.sliderCounter}>
+            <Text style={styles.sliderCounterText}>
+              {String(activeSlide + 1).padStart(2, '0')}/{String(carouselSections.length + 1).padStart(2, '0')}
+            </Text>
+          </View>
+        </View>
 
-      {/* Additional Information */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About the Event</Text>
-        <View style={styles.sectionContent}>
-          <Text style={styles.aboutText}>
-            Blockchain Summit Latam 2025 is the premier gathering for blockchain, 
-            cryptocurrency, and financial technology professionals in Latin America. 
-            This three-day conference brings together industry leaders, regulators, 
-            innovators, and entrepreneurs to discuss the future of digital finance 
-            and blockchain technology in the region.
-          </Text>
-          <Text style={styles.aboutText}>
-            Join us for insightful keynotes, interactive panels, networking opportunities, 
-            and hands-on workshops covering topics from CBDCs and digital banking to 
-            regulatory frameworks and emerging technologies.
-          </Text>
+        <ScrollView
+          ref={sliderRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToInterval={slideWidth + slideGap}
+          snapToAlignment="start"
+          contentContainerStyle={[
+            styles.sliderTrack,
+            { paddingHorizontal: slidePadding },
+          ]}
+          onMomentumScrollEnd={handleSliderMomentum}
+          scrollEventThrottle={16}
+        >
+          {carouselSections.map((section: any, index: number) => (
+            <View
+              key={section.title}
+              style={[
+                styles.sliderSlide,
+                {
+                  width: slideWidth,
+                  marginRight: slideGap,
+                },
+              ]}
+            >
+              {renderInfoSection(section)}
+            </View>
+          ))}
+          <View
+            key="about"
+            style={[
+              styles.sliderSlide,
+              {
+                width: slideWidth,
+                marginRight: slideGap,
+              },
+            ]}
+          >
+            {renderAboutSection()}
+          </View>
+        </ScrollView>
+
+        <View style={styles.sliderDots}>
+          {[...carouselSections, { title: 'About' }].map((_, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.sliderDot,
+                index === activeSlide && styles.sliderDotActive,
+              ]}
+              onPress={() => scrollToSlide(index)}
+              activeOpacity={0.8}
+            />
+          ))}
         </View>
       </View>
     </ScrollView>
@@ -197,8 +340,146 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   scrollContent: {
     paddingBottom: 40,
   },
+  archiveSummary: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 24,
+    padding: 18,
+    borderRadius: 22,
+    backgroundColor: isDark ? 'rgba(7, 17, 31, 0.92)' : 'rgba(255, 255, 255, 0.96)',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(96, 165, 250, 0.22)' : 'rgba(37, 99, 235, 0.14)',
+    shadowColor: isDark ? 'rgba(0, 0, 0, 0.35)' : 'rgba(15, 23, 42, 0.12)',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  archiveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: isDark ? 'rgba(96, 165, 250, 0.16)' : 'rgba(37, 99, 235, 0.10)',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(96, 165, 250, 0.24)' : 'rgba(37, 99, 235, 0.16)',
+    marginBottom: 12,
+  },
+  archiveBadgeText: {
+    marginLeft: 6,
+    color: isDark ? '#E0F2FE' : '#1D4ED8',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  archiveTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.text.primary,
+    marginBottom: 8,
+    letterSpacing: -0.4,
+  },
+  archiveDescription: {
+    fontSize: 15,
+    color: colors.text.secondary,
+    lineHeight: 23,
+    marginBottom: 14,
+  },
+  archiveStats: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  archiveStat: {
+    flexGrow: 1,
+    minWidth: 92,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(248, 250, 252, 0.96)',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(148, 163, 184, 0.18)',
+  },
+  archiveStatLabel: {
+    fontSize: 11,
+    color: colors.text.secondary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    fontWeight: '700',
+  },
+  archiveStatValue: {
+    fontSize: 13,
+    color: colors.text.primary,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  sliderSection: {
+    marginBottom: 30,
+  },
+  sliderHeader: {
+    marginHorizontal: 20,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  sliderTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.text.primary,
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  sliderSubtitle: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    lineHeight: 20,
+    maxWidth: 320,
+  },
+  sliderCounter: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: isDark ? 'rgba(96, 165, 250, 0.14)' : 'rgba(37, 99, 235, 0.08)',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(96, 165, 250, 0.22)' : 'rgba(37, 99, 235, 0.14)',
+  },
+  sliderCounterText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: isDark ? '#E0F2FE' : '#1D4ED8',
+    letterSpacing: 0.8,
+  },
+  sliderTrack: {
+    alignItems: 'stretch',
+  },
+  sliderSlide: {
+    justifyContent: 'flex-start',
+  },
+  sliderDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+  },
+  sliderDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: isDark ? 'rgba(148, 163, 184, 0.42)' : 'rgba(148, 163, 184, 0.28)',
+  },
+  sliderDotActive: {
+    width: 24,
+    backgroundColor: isDark ? '#60A5FA' : '#2563EB',
+  },
   section: {
-    marginBottom: 32,
+    marginBottom: 0,
   },
   sectionTitle: {
     fontSize: 22,
@@ -270,5 +551,8 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 20,
     textAlign: 'justify',
+  },
+  aboutTextLast: {
+    marginBottom: 0,
   },
 });

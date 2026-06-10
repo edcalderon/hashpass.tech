@@ -118,15 +118,20 @@ export default function BSL2025AgendaScreen() {
     startTime: Date | null;
   }>({ visible: false, agendaItem: null, startTime: null });
   const [isConfirming, setIsConfirming] = useState(false);
+  const eventId = event?.id || 'bsl';
+  const eventDateLabel = event?.eventDateString || event?.subtitle || 'Tour 2026';
+  const eventLocationLabel = event?.tour?.city && event?.tour?.country
+    ? `${event.tour.city}, ${event.tour.country}`
+    : event?.subtitle || 'Latin America';
+  const eventVenueLabel = event?.tour?.venue || eventLocationLabel;
 
   // Helper functions used in effects and render
   const checkEventPeriod = () => {
     const now = new Date();
-    // Event runs Nov 12-14, 2025 (Medellín, Colombia, UTC-05)
-    const start = new Date('2025-11-12T00:00:00-05:00');
-    const end = new Date('2025-11-14T23:59:59-05:00');
-    setIsEventPeriod(now >= start && now <= end);
-    setIsEventFinished(now > end);
+    const start = event?.eventStartDate ? new Date(event.eventStartDate) : null;
+    const end = event?.eventEndDate ? new Date(event.eventEndDate) : null;
+    setIsEventPeriod(Boolean(start && end && now >= start && now <= end));
+    setIsEventFinished(Boolean(end && now > end));
   };
 
   const getTabLabel = (dayKey: string) => {
@@ -272,7 +277,7 @@ export default function BSL2025AgendaScreen() {
         console.log('📄 JSON fallback data:', event?.agenda?.length || 0, 'items');
         
         // Use fallback data
-        const fallbackAgenda = event?.agenda || EVENTS.bsl2025.agenda || [];
+        const fallbackAgenda = event?.agenda || EVENTS[eventId as keyof typeof EVENTS]?.agenda || [];
         console.log('📄 Setting fallback agenda:', fallbackAgenda.length, 'items');
               setAgenda(fallbackAgenda);
               setIsLive(false);
@@ -283,7 +288,7 @@ export default function BSL2025AgendaScreen() {
         console.log('🔄 Using JSON fallback due to error');
         
         // Use fallback data
-        const fallbackAgenda = event?.agenda || EVENTS.bsl2025.agenda || [];
+        const fallbackAgenda = event?.agenda || EVENTS[eventId as keyof typeof EVENTS]?.agenda || [];
         console.log('📋 Using fallback agenda with', fallbackAgenda.length, 'items');
         console.log('📄 JSON fallback data:', fallbackAgenda.length, 'items');
         setAgenda(fallbackAgenda);
@@ -296,7 +301,7 @@ export default function BSL2025AgendaScreen() {
     };
 
     loadAgenda();
-  }, [event?.agenda]);
+  }, [event?.agenda, eventId]);
 
   // Ensure filteredAgenda is populated when agenda loads
   useEffect(() => {
@@ -328,7 +333,7 @@ export default function BSL2025AgendaScreen() {
       const refreshAgenda = async () => {
         try {
           const response = await apiClient.request('agenda', {
-            params: { eventId: 'bsl2025' }
+            params: { eventId }
           });
           if (response.success && response.data) {
             let agendaData: any[] = [];
@@ -756,7 +761,7 @@ export default function BSL2025AgendaScreen() {
             
             // Clear URL parameters after scrolling to prevent re-triggering
             setTimeout(() => {
-              router.replace('/events/bsl2025/agenda', { scroll: false });
+              router.replace(`/events/${eventId}/agenda`, { scroll: false });
             }, 1000);
           },
           (error) => {
@@ -847,7 +852,7 @@ export default function BSL2025AgendaScreen() {
     }
     
     if (speakerId) {
-      router.push(`/events/bsl2025/speakers/${speakerId}`);
+      router.push(`/events/${eventId}/speakers/${speakerId}`);
     }
   };
 
@@ -864,6 +869,7 @@ export default function BSL2025AgendaScreen() {
           .from('user_agenda_status')
           .select('agenda_id, status, is_favorite')
           .eq('user_id', user.id)
+          .eq('event_id', eventId)
           .not('agenda_id', 'is', null);
         
         if (error) {
@@ -890,7 +896,7 @@ export default function BSL2025AgendaScreen() {
     };
 
     loadUserAgendaStatus();
-  }, [user]);
+  }, [user, eventId]);
 
   // Handle toggle confirmation
   const handleToggleConfirmation = async (agendaItem: AgendaItem, startTime: Date) => {
@@ -905,6 +911,7 @@ export default function BSL2025AgendaScreen() {
         .from('user_agenda_status')
         .select('id')
         .eq('user_id', user.id)
+        .eq('event_id', eventId)
         .eq('agenda_id', agendaItem.id)
         .maybeSingle();
 
@@ -925,7 +932,7 @@ export default function BSL2025AgendaScreen() {
           .insert({
             user_id: user.id,
             agenda_id: agendaItem.id,
-            event_id: 'bsl2025',
+            event_id: eventId,
             status: newStatus,
             confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
           });
@@ -966,6 +973,7 @@ export default function BSL2025AgendaScreen() {
         .from('user_agenda_status')
         .select('id')
         .eq('user_id', user.id)
+        .eq('event_id', eventId)
         .eq('agenda_id', agendaItem.id)
         .maybeSingle();
 
@@ -985,7 +993,7 @@ export default function BSL2025AgendaScreen() {
           .insert({
             user_id: user.id,
             agenda_id: agendaItem.id,
-            event_id: 'bsl2025',
+            event_id: eventId,
             status: currentStatus,
             is_favorite: newFavorite,
           });
@@ -1280,12 +1288,14 @@ export default function BSL2025AgendaScreen() {
         {/* Event Header */}
         <EventBanner
           title={t('title')}
-          subtitle={agenda.length === 1 ? t('subtitle_one') : t('subtitle_other').replace('{count}', String(agenda.length))}
-          date={t('date')}
-          showCountdown={!isEventFinished}
-          showLiveIndicator={isLive && !isEventFinished}
+          subtitle={`${agenda.length === 1 ? t('subtitle_one') : t('subtitle_other').replace('{count}', String(agenda.length))} • ${eventVenueLabel}`}
+          date={eventDateLabel}
+          showCountdown={!isEventFinished && Boolean(event?.eventStartDate)}
+          showLiveIndicator={isLive && !isEventFinished && Boolean(event?.eventStartDate)}
           isEventFinished={isEventFinished}
-          eventId="bsl2025"
+          eventStartDate={event?.eventStartDate}
+          eventId={eventId}
+          eventImage={event?.image}
         />
 
         {/* Tab Navigation - Centered with consistent sizing */}
@@ -1315,7 +1325,7 @@ export default function BSL2025AgendaScreen() {
                     // This prevents the scrolling effect from interfering with manual tab selection
                     if (params.session || params.scrollTo) {
                       handledSessionRef.current = null; // Reset session ref
-                      router.replace('/events/bsl2025/agenda', { scroll: false });
+                      router.replace(`/events/${eventId}/agenda`, { scroll: false });
                     }
                     setActiveTab(dayKey);
                   }}

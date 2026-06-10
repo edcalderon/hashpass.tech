@@ -3,7 +3,7 @@ import { supabaseServer as supabase } from '@/lib/supabase-server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId') || 'demo-user'; // For demo purposes
-  const eventId = searchParams.get('eventId') || 'bsl2025';
+  const eventId = searchParams.get('eventId') || 'bsl';
 
   try {
     // Get user passes from database
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       });
     }
 
-    // If no passes found, create demo passes for BSL2025
+    // If no passes found, create demo passes for the active event
     if (!userPasses || userPasses.length === 0) {
       console.log('No user passes found, creating demo passes...');
       
@@ -36,11 +36,11 @@ export async function GET(request: Request) {
           status: 'active',
           price_usd: 249.00,
           access_features: [
-            'All conferences (Nov 12-14)',
+            'All conference days',
             'Booth area access',
             'Exclusive networking zone',
             'B2B speed dating sessions',
-            'Official closing party (Nov 14)'
+            'Official closing party'
           ]
         },
         {
@@ -51,16 +51,16 @@ export async function GET(request: Request) {
           status: 'active',
           price_usd: 499.00,
           access_features: [
-            'All conferences (Nov 12-14)',
+            'All conference days',
             'Booth area access',
             'Exclusive networking zone',
             'B2B speed dating sessions',
-            'Welcome cocktail (Nov 12)',
+            'Welcome cocktail',
             'VIP area access',
             'Exclusive networking with speakers',
             'Exclusive networking with sponsors',
             'Exclusive networking with authorities',
-            'Official closing party (Nov 14)'
+            'Official closing party'
           ]
         }
       ];

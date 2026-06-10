@@ -10,6 +10,7 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../i18n/i18n';
 import { translateNotification } from '../../../lib/notification-translations';
+import { buildEventPath } from '../../../lib/event-path';
 
 type TabType = 'all' | 'archive';
 
@@ -86,7 +87,7 @@ export default function NotificationsScreen() {
     if (notification.type === 'chat_message' && notification.meeting_id) {
       // Navigate to meeting chat
       router.push({
-        pathname: '/events/bsl2025/networking/meeting-detail' as any,
+        pathname: buildEventPath(undefined, 'networking/meeting-detail') as any,
         params: {
           meetingId: notification.meeting_id,
           openChat: 'true'
@@ -117,7 +118,7 @@ export default function NotificationsScreen() {
         if (error) {
           console.error('Error fetching meeting request:', error);
           // Fallback: navigate to my-requests page
-          router.push('/events/bsl2025/networking/my-requests' as any);
+          router.push(buildEventPath(undefined, 'networking/my-requests') as any);
           return;
         }
 
@@ -134,7 +135,7 @@ export default function NotificationsScreen() {
           // Navigate to my-requests page instead of meeting-detail
           // This allows users to see the request in context and take actions
           router.push({
-            pathname: '/events/bsl2025/networking/my-requests' as any,
+            pathname: buildEventPath(undefined, 'networking/my-requests') as any,
             params: {
               requestId: (meetingRequest as any).id,
               highlightRequest: 'true'
@@ -142,16 +143,16 @@ export default function NotificationsScreen() {
           });
         } else {
           // Fallback: navigate to my-requests page
-          router.push('/events/bsl2025/networking/my-requests' as any);
+          router.push(buildEventPath(undefined, 'networking/my-requests') as any);
         }
       } catch (error) {
         console.error('Error navigating to meeting detail:', error);
         // Fallback: navigate to my-requests page
-        router.push('/events/bsl2025/networking/my-requests' as any);
+        router.push(buildEventPath(undefined, 'networking/my-requests') as any);
       }
     } else if (notification.speaker_id) {
       // Navigate to speaker details
-      router.push(`/events/bsl2025/speakers/${notification.speaker_id}` as any);
+      router.push(buildEventPath(undefined, `speakers/${notification.speaker_id}`) as any);
     }
   };
 

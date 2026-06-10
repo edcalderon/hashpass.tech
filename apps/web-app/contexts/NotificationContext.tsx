@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/i18n';
 import { translateNotification } from '../lib/notification-translations';
+import { buildEventPath } from '../lib/event-path';
 
 export interface Notification {
   id: string;
@@ -315,7 +316,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               // Navigate to meeting chat if it's a chat message
               if (newNotification.type === 'chat_message' && (newNotification as any).meeting_id) {
                 const meetingId = (newNotification as any).meeting_id;
-                window.location.href = `/events/bsl2025/networking/meeting-detail?meetingId=${meetingId}&openChat=true`;
+                window.location.href = `${buildEventPath(undefined, 'networking/meeting-detail')}?meetingId=${meetingId}&openChat=true`;
               }
               browserNotification.close();
             };

@@ -9,7 +9,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import EventBanner from '../../../components/EventBanner';
 import PassesDisplay from '../../../components/PassesDisplay';
-import { 
+import {
   getAvailableEvents, 
   getCurrentEvent, 
   shouldShowEventSelector,
@@ -17,6 +17,7 @@ import {
   isMainBranch,
   type EventInfo 
 } from '../../../lib/event-detector';
+import { resolveEventImageSource } from '../../../lib/event-branding';
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
@@ -380,38 +381,66 @@ export default function ExploreScreen() {
     }
   };
 
-  const renderEventCard = (eventData: EventInfo, index: number) => (
-    <TouchableOpacity
-      key={eventData.id}
-      style={[
-        styles.eventCard,
-        { 
-          marginLeft: isGlobalExplorer ? 0 : (index === 0 ? 0 : 12),
-          marginBottom: isGlobalExplorer ? 20 : 0,
-          width: isGlobalExplorer ? '100%' : 200,
-          height: isGlobalExplorer ? 200 : 120,
-          borderColor: selectedEvent?.id === eventData.id ? eventData.color : colors.divider,
-          borderWidth: selectedEvent?.id === eventData.id ? 2 : 1,
-        }
-      ]}
-      onPress={() => handleEventSelect(eventData)}
-      activeOpacity={0.8}
-    >
-      <Image source={{ uri: eventData.image || 'https://via.placeholder.com/400x200' }} style={styles.eventImage} />
-      <View style={styles.eventOverlay}>
-        <View style={[styles.eventBadge, { backgroundColor: eventData.color }]}>
-          <Text style={styles.eventBadgeText}>{eventData.id.toUpperCase()}</Text>
+  const getEventBadgeLabel = (eventData: EventInfo): string => {
+    if (eventData.tour?.role === 'hub') return 'BSL ON TOUR';
+    if (eventData.tour?.role === 'archive') return 'Past Event';
+    return eventData.name;
+  };
+
+  const renderEventCard = (eventData: EventInfo, index: number) => {
+    const isArchiveEvent = eventData.tour?.role === 'archive';
+
+    return (
+      <TouchableOpacity
+        key={eventData.id}
+        style={[
+          styles.eventCard,
+          {
+            marginLeft: isGlobalExplorer ? 0 : (index === 0 ? 0 : 12),
+            marginBottom: isGlobalExplorer ? 20 : 0,
+            width: isGlobalExplorer ? '100%' : 200,
+            height: isGlobalExplorer ? 200 : 120,
+            borderColor: selectedEvent?.id === eventData.id ? eventData.color : colors.divider,
+            borderWidth: selectedEvent?.id === eventData.id ? 2 : 1,
+            backgroundColor: isArchiveEvent ? '#08111E' : colors.background.paper,
+          },
+        ]}
+        onPress={() => handleEventSelect(eventData)}
+        activeOpacity={0.8}
+      >
+        <Image
+          source={resolveEventImageSource(eventData.image) || { uri: 'https://via.placeholder.com/400x200' }}
+          style={[
+            styles.eventImage,
+            isArchiveEvent && styles.archiveEventImage,
+          ]}
+        />
+        <View
+          style={[
+            styles.eventOverlay,
+            isArchiveEvent && styles.archiveEventOverlay,
+          ]}
+        >
+          <View
+            style={[
+              styles.eventBadge,
+              isArchiveEvent && styles.archiveEventBadge,
+              !isArchiveEvent && { backgroundColor: eventData.color },
+            ]}
+          >
+            <Text style={styles.eventBadgeText}>{getEventBadgeLabel(eventData)}</Text>
+          </View>
+          <View style={styles.eventInfo}>
+            <Text style={styles.eventTitle}>{eventData.title}</Text>
+            <Text style={styles.eventSubtitle}>{eventData.subtitle}</Text>
+            {isGlobalExplorer && eventData.eventDateString && (
+              <Text style={styles.eventDate}>{eventData.eventDateString}</Text>
+            )}
+          </View>
         </View>
-        <View style={styles.eventInfo}>
-          <Text style={styles.eventTitle}>{eventData.title}</Text>
-          <Text style={styles.eventSubtitle}>{eventData.subtitle}</Text>
-          {isGlobalExplorer && eventData.eventDateString && (
-            <Text style={styles.eventDate}>{eventData.eventDateString}</Text>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const getQuickTitle = (id: string, fallback: string) => {
     switch (id) {
@@ -504,13 +533,14 @@ export default function ExploreScreen() {
           /* EVENT-SPECIFIC EXPLORER MODE (tenant-scoped hosts like bsl.hashpass.tech) */
           /* Shows banner for the selected tenant event with countdown/live indicator */
           <EventBanner 
-            title={selectedEvent?.title || t({ id: 'explore.banner.title', message: 'Blockchain Summit Latam 2025' })}
-            subtitle={selectedEvent?.subtitle || t({ id: 'explore.banner.subtitle', message: 'November 12-14, 2025 • Universidad EAFIT, Medellín' })}
-            date={selectedEvent?.eventDateString || selectedEvent?.subtitle || t({ id: 'explore.banner.date', message: 'November 12-14, 2025' })}
-            showCountdown={true}
-            showLiveIndicator={true}
-            eventStartDate={selectedEvent?.eventStartDate || '2025-11-12T09:00:00-05:00'}
+            title={selectedEvent?.title || t({ id: 'explore.banner.title', message: 'BSL On Tour' })}
+            subtitle={selectedEvent?.subtitle || t({ id: 'explore.banner.subtitle', message: 'Peru, Chile and Colombia 2026 roadshow' })}
+            date={selectedEvent?.eventDateString || selectedEvent?.subtitle || t({ id: 'explore.banner.date', message: '2026 Tour' })}
+            showCountdown={Boolean(selectedEvent?.eventStartDate) && selectedEvent?.tour?.role !== 'hub'}
+            showLiveIndicator={Boolean(selectedEvent?.eventStartDate) && selectedEvent?.tour?.role !== 'hub'}
+            eventStartDate={selectedEvent?.eventStartDate}
             eventId={selectedEvent?.id}
+            eventImage={selectedEvent?.image}
           />
         )}
         {/* Header */}
@@ -672,6 +702,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
+  archiveEventImage: {
+    transform: [{ scale: 1.08 }],
+  },
   eventOverlay: {
     position: 'absolute',
     top: 0,
@@ -682,11 +715,19 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     justifyContent: 'space-between',
     padding: 12,
   },
+  archiveEventOverlay: {
+    backgroundColor: 'rgba(4, 10, 24, 0.56)',
+  },
   eventBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+  },
+  archiveEventBadge: {
+    backgroundColor: 'rgba(7, 17, 31, 0.52)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
   },
   eventBadgeText: {
     color: 'white',

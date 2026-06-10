@@ -34,6 +34,9 @@ config/private-gcloud.json
 infrastructure/terraform/gcp/gcp-credentials.json
 infrastructure/terraform/stacks/gcp/directus.*.env
 !infrastructure/terraform/stacks/gcp/directus.*.env.example
+packages/infra/terraform/gcp/gcp-credentials.json
+packages/infra/terraform/stacks/gcp/directus.*.env
+!packages/infra/terraform/stacks/gcp/directus.*.env.example
 keys/
 *.pem
 *.p8

@@ -58,6 +58,8 @@ fi
 
 pipeline_role_arn=""
 codebuild_role_arn=""
+env_var_names=()
+env_var_values=()
 
 read_env_value() {
   local key="$1"
@@ -88,11 +90,30 @@ append_env_var() {
     return
   fi
 
-  if [[ "${env_vars}" == "[" ]]; then
-    env_vars+="{name=${name},value=${value},type=PLAINTEXT}"
-  else
-    env_vars+=",{name=${name},value=${value},type=PLAINTEXT}"
-  fi
+  env_var_names+=("${name}")
+  env_var_values+=("${value}")
+}
+
+build_env_vars_json() {
+  local json="["
+  local index=""
+
+  for index in "${!env_var_names[@]}"; do
+    local entry
+    entry="$(jq -nc \
+      --arg name "${env_var_names[$index]}" \
+      --arg value "${env_var_values[$index]}" \
+      '{name: $name, value: $value, type: "PLAINTEXT"}')"
+
+    if [[ "${json}" == "[" ]]; then
+      json+="${entry}"
+    else
+      json+=",${entry}"
+    fi
+  done
+
+  json+="]"
+  printf '%s' "${json}"
 }
 
 ensure_role() {
@@ -260,8 +281,8 @@ create_or_update_codebuild() {
     exit 1
   fi
 
-  local env_vars
-  env_vars="["
+  env_var_names=()
+  env_var_values=()
   append_env_var "TARGET_STAGE" "${stage_name}"
   append_env_var "AWS_REGION" "${REGION}"
   append_env_var "AWS_DEFAULT_REGION" "${REGION}"
@@ -281,29 +302,57 @@ create_or_update_codebuild() {
   append_env_var "BSL_SUPABASE_SERVICE_ROLE_KEY" "${bsl_supabase_service_role_key}"
   append_env_var "BSL_SUPABASE_DB_URL" "${bsl_supabase_db_url}"
   append_env_var "EXPO_EXPORT_MAX_WORKERS" "${expo_export_max_workers}"
-  env_vars+="]"
+  local env_vars
+  local project_json
+  local project_file
+  env_vars="$(build_env_vars_json)"
+  project_json="$(jq -nc \
+    --arg name "${project_name}" \
+    --arg role "${build_role_arn}" \
+    --arg buildspec "${BUILDSPEC_FILE}" \
+    --arg cacheLocation "${CODEBUILD_CACHE_LOCATION}" \
+    --arg cacheNamespace "${CODEBUILD_CACHE_NAMESPACE}" \
+    --arg computeType "${compute_type}" \
+    --argjson envVars "${env_vars}" \
+    '{
+      name: $name,
+      serviceRole: $role,
+      source: {
+        type: "CODEPIPELINE",
+        buildspec: $buildspec
+      },
+      artifacts: {
+        type: "CODEPIPELINE"
+      },
+      environment: {
+        type: "LINUX_CONTAINER",
+        image: "aws/codebuild/standard:7.0",
+        computeType: $computeType,
+        privilegedMode: false,
+        environmentVariables: $envVars
+      },
+      cache: {
+        type: "S3",
+        location: $cacheLocation,
+        cacheNamespace: $cacheNamespace
+      }
+    }')"
+  project_file="$(mktemp)"
+  printf '%s' "${project_json}" > "${project_file}"
 
   if aws codebuild create-project \
     --region "${REGION}" \
-    --name "${project_name}" \
-    --service-role "${build_role_arn}" \
-    --source "type=CODEPIPELINE,buildspec=${BUILDSPEC_FILE}" \
-    --artifacts "type=CODEPIPELINE" \
-    --environment "type=LINUX_CONTAINER,image=aws/codebuild/standard:7.0,computeType=${compute_type},privilegedMode=false,environmentVariables=${env_vars}" \
-    --cache "type=S3,location=${CODEBUILD_CACHE_LOCATION},cacheNamespace=${CODEBUILD_CACHE_NAMESPACE}" \
+    --cli-input-json "file://${project_file}" \
     >/dev/null 2>&1; then
+    rm -f "${project_file}"
     return
   fi
 
   aws codebuild update-project \
     --region "${REGION}" \
-    --name "${project_name}" \
-    --service-role "${build_role_arn}" \
-    --source "type=CODEPIPELINE,buildspec=${BUILDSPEC_FILE}" \
-    --artifacts "type=CODEPIPELINE" \
-    --environment "type=LINUX_CONTAINER,image=aws/codebuild/standard:7.0,computeType=${compute_type},privilegedMode=false,environmentVariables=${env_vars}" \
-    --cache "type=S3,location=${CODEBUILD_CACHE_LOCATION},cacheNamespace=${CODEBUILD_CACHE_NAMESPACE}" \
+    --cli-input-json "file://${project_file}" \
     >/dev/null
+  rm -f "${project_file}"
 }
 
 write_pipeline_json() {

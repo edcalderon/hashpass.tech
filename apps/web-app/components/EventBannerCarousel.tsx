@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import EventBanner from './EventBanner';
 import LampBrandBanner from './LampBrandBanner';
 import { getAvailableEvents, EventInfo } from '../lib/event-detector';
+import { getLampBrandConfig } from '../lib/event-branding';
 
 interface CarouselSlide {
   type: 'download' | 'event' | 'logo';
@@ -66,55 +67,29 @@ const BSL_PLAIN_LOGO = {
 const BSL_LOGOS = [
   {
     id: 'bsl-on-tour',
-    name: 'Blockchain Summit Latam - On Tour',
+    name: 'BSL On Tour',
     logoSrc: BSL_ONTOUR_LOGO,
     accentColor: '#34D399',
   },
   {
     id: 'bsl-peru',
-    name: 'Blockchain Summit Latam - Peru',
+    name: 'BSL Perú 2026',
     logoSrc: BSL_PERU_LOGO,
     accentColor: '#E31C23',
   },
   {
     id: 'bsl-chile',
-    name: 'Blockchain Summit Latam - Chile',
+    name: 'BSL Chile 2026',
     logoSrc: BSL_CHILE_LOGO,
     accentColor: '#FF5B5B',
   },
   {
     id: 'bsl-colombia',
-    name: 'Blockchain Summit Latam - Colombia',
+    name: 'BSL Colombia 2026',
     logoSrc: BSL_COLOMBIA_LOGO,
     accentColor: '#FFD700',
   },
 ];
-
-const extractUri = (value: unknown): string | undefined => {
-  if (!value) return undefined;
-  if (typeof value === 'string') return value;
-
-  if (typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    if (typeof record.uri === 'string') return record.uri;
-    if (typeof record.default === 'string') return record.default;
-    if (typeof record.src === 'string') return record.src;
-  }
-
-  return undefined;
-};
-
-const resolveAssetUri = (assetModule: unknown): string | undefined => {
-  try {
-    const directUri = extractUri(assetModule);
-    if (directUri) return directUri;
-
-    const resolved = Image.resolveAssetSource(assetModule);
-    return extractUri(resolved);
-  } catch {
-    return undefined;
-  }
-};
 
 const hexToRgba = (hex: string, alpha: number) => {
   const normalized = hex.replace('#', '').trim();
@@ -151,24 +126,25 @@ export default function EventBannerCarousel({
 
   // Get available events
   const availableEvents = getAvailableEvents();
-  const bslLampBranding = useMemo<LampBrandingConfig>(() => {
-    const darkLogo = resolveAssetUri(BSL_WHITE_BRAND_LOGO);
-    const lightLogo = resolveAssetUri(BSL_WHITE_BRAND_LOGO);
-
-    return {
-      logoSrcDark: darkLogo,
-      logoSrcLight: lightLogo,
-      logoFallbackSrc: darkLogo || lightLogo,
-      logoAlt: 'Blockchain Summit Latam',
-    };
-  }, []);
-
   const defaultLampBrandingByEvent = useMemo<Record<string, LampBrandingConfig>>(
     () => ({
-      bsl: bslLampBranding,
-      bsl2025: bslLampBranding,
+      bsl: getLampBrandConfig('bsl') || {
+        logoAlt: 'BSL On Tour',
+      },
+      peru2026: getLampBrandConfig('peru2026') || {
+        logoAlt: 'BSL Perú 2026',
+      },
+      chile2026: getLampBrandConfig('chile2026') || {
+        logoAlt: 'BSL Chile 2026',
+      },
+      colombia2026: getLampBrandConfig('colombia2026') || {
+        logoAlt: 'BSL Colombia 2026',
+      },
+      bsl2025: getLampBrandConfig('bsl2025') || {
+        logoAlt: 'BSL 2025 Archive',
+      },
     }),
-    [bslLampBranding]
+    []
   );
 
   const lampBrandingByEvent = useMemo<Record<string, LampBrandingConfig>>(
@@ -352,6 +328,7 @@ export default function EventBannerCarousel({
                       showLiveIndicator={Boolean(event.eventStartDate)}
                       eventStartDate={getEventStartDate(event)}
                       isLive={false}
+                      eventImage={event.image}
                     />
                   )}
                 </TouchableOpacity>

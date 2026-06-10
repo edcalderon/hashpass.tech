@@ -16,13 +16,11 @@ const versioningConfigPath = path.join(projectRoot, 'versioning.config.json');
 // Files that should be updated when version changes
 const VERSION_FILES = [
   'package.json',
-  'config/version.production.json',
-  'config/version.development.json',
   'apps/web-app/config/version.production.json',
   'apps/web-app/config/version.development.json',
   'app.json',
-  'config/version.ts',
-  'config/versions.json',
+  'apps/web-app/config/version.ts',
+  'apps/web-app/config/versions.json',
   'CHANGELOG.md'
 ];
 
@@ -70,12 +68,12 @@ function getVersionFromFile(filePath) {
     }
   }
   
-  if (filePath === 'config/version.ts') {
+  if (filePath === 'apps/web-app/config/version.ts') {
     const versionMatch = content.match(/version:\s*['"]([^'"]+)['"]/);
     return versionMatch ? versionMatch[1] : null;
   }
   
-  if (filePath === 'config/versions.json') {
+  if (filePath === 'apps/web-app/config/versions.json') {
     const json = JSON.parse(content);
     return json.currentVersion;
   }
@@ -139,14 +137,6 @@ function validateVersionConsistency() {
   if (
     branchAwareEnabled &&
     stagedVersionFiles.length > 0 &&
-    stagedVersionFiles.every((f) => f === 'config/version.development.json')
-  ) {
-    return { valid: true, errors: [], warnings: [] };
-  }
-
-  if (
-    branchAwareEnabled &&
-    stagedVersionFiles.length > 0 &&
     stagedVersionFiles.every((f) => f === 'apps/web-app/config/version.development.json')
   ) {
     return { valid: true, errors: [], warnings: [] };
@@ -156,9 +146,7 @@ function validateVersionConsistency() {
   const comparableVersions = branchAwareEnabled
     ? Object.fromEntries(
         Object.entries(versions).filter(
-          ([file]) =>
-            file !== 'config/version.development.json' &&
-            file !== 'apps/web-app/config/version.development.json'
+          ([file]) => file !== 'apps/web-app/config/version.development.json'
         )
       )
     : versions;
@@ -196,7 +184,7 @@ function validateVersionConsistency() {
   // Check if all required files are updated
   const relevantVersionFiles = branchAwareEnabled
     ? VERSION_FILES.filter(
-        (f) => f !== 'config/version.development.json' && f !== 'apps/web-app/config/version.development.json'
+        (f) => f !== 'apps/web-app/config/version.development.json'
       )
     : VERSION_FILES;
 

@@ -223,12 +223,14 @@ CREATE INDEX IF NOT EXISTS idx_pass_limits_user ON pass_request_limits(user_id);
 CREATE OR REPLACE FUNCTION can_make_meeting_request(
   p_requester_id uuid,
   p_speaker_id uuid,
-  p_boost_amount decimal DEFAULT 0
+  p_boost_amount decimal DEFAULT 0,
+  p_event_id text DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql STABLE
 AS $$
 DECLARE
+  v_event_id text := COALESCE(NULLIF(p_event_id, ''), NULLIF(current_setting('app.event_id', true), ''), 'bsl');
   v_pass passes%ROWTYPE;
   v_speaker bsl_speakers%ROWTYPE;
   v_is_blocked boolean;
@@ -238,7 +240,7 @@ BEGIN
   -- Get requester's pass
   SELECT * INTO v_pass FROM passes
   WHERE user_id = p_requester_id::text
-  AND event_id = 'bsl2025'
+  AND event_id = v_event_id
   AND is_active = true
   LIMIT 1;
   

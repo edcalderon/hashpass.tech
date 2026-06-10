@@ -56,7 +56,7 @@ export interface HealthCheck {
  * Get current system health check
  * This function can be called from API endpoints or email functions
  */
-export async function getSystemHealthCheck(eventId: string = 'bsl2025'): Promise<HealthCheck> {
+export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<HealthCheck> {
   const healthCheck: HealthCheck = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -349,7 +349,7 @@ export async function OPTIONS() {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const eventId = searchParams.get('eventId') || 'bsl2025';
+  const eventId = searchParams.get('eventId') || 'bsl';
 
   try {
     const healthCheck = await getSystemHealthCheck(eventId);

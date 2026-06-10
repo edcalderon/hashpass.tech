@@ -22,13 +22,6 @@ export interface EventTenantContext {
 
 const MAIN_EVENT_TENANT_ID = 'main';
 
-// Null means "all whitelabel events". Explicit arrays are tenant-scoped.
-const EVENT_TENANT_EVENT_IDS: Record<string, string[] | null> = {
-  main: null,
-  bsl: ['bsl', 'bsl2025'],
-  bsl2025: ['bsl2025'],
-};
-
 const TENANT_ALIASES: Record<string, string> = {
   all: 'main',
   core: 'main',
@@ -39,10 +32,55 @@ const TENANT_ALIASES: Record<string, string> = {
   blockchain: 'bsl',
   'blockchain-summit': 'bsl',
   blockchainsummit: 'bsl',
+  'bsl-on-tour': 'bsl',
+  'bsl-ontour': 'bsl',
   bsl: 'bsl',
   bslatam: 'bsl',
+  ontour: 'bsl',
   'bsl-2025': 'bsl2025',
   bsl2025: 'bsl2025',
+};
+
+const getEventTourHubId = (eventId: string): string | null => {
+  const event = EVENTS[eventId];
+  if (!event) return null;
+  if (event.tour?.role === 'hub') return event.id;
+  return event.tour?.hubEventId || null;
+};
+
+const compareEventInfos = (a: EventInfo, b: EventInfo): number => {
+  const roleOrder = (event: EventInfo): number => {
+    if (event.tour?.role === 'hub') return 0;
+    if (event.tour?.role === 'stop') return 1;
+    if (event.tour?.role === 'archive') return 2;
+    return 3;
+  };
+
+  const aRole = roleOrder(a);
+  const bRole = roleOrder(b);
+  if (aRole !== bRole) return aRole - bRole;
+
+  const aStop = typeof a.tour?.stopOrder === 'number' ? a.tour.stopOrder : Number.MAX_SAFE_INTEGER;
+  const bStop = typeof b.tour?.stopOrder === 'number' ? b.tour.stopOrder : Number.MAX_SAFE_INTEGER;
+  if (aStop !== bStop) return aStop - bStop;
+
+  const aDate = a.eventStartDate ? new Date(a.eventStartDate).getTime() : Number.MAX_SAFE_INTEGER;
+  const bDate = b.eventStartDate ? new Date(b.eventStartDate).getTime() : Number.MAX_SAFE_INTEGER;
+  if (aDate !== bDate) return aDate - bDate;
+
+  return a.title.localeCompare(b.title);
+};
+
+const sortEventInfos = (events: EventInfo[]): EventInfo[] => {
+  return [...events].sort(compareEventInfos);
+};
+
+const getEventTourFamilyIds = (hubEventId: string): string[] => {
+  const family = Object.values(EVENTS)
+    .filter(event => event.eventType === 'whitelabel' && (event.id === hubEventId || event.tour?.hubEventId === hubEventId))
+    .map(event => configToEventInfo(event, true));
+
+  return sortEventInfos(family).map(event => event.id);
 };
 
 // Helper function to convert EventConfig to EventInfo
@@ -98,6 +136,13 @@ const normalizeTenantId = (value?: string | null): string | null => {
   return TENANT_ALIASES[token] || token;
 };
 
+export const getRouteEventIdFromPathname = (pathname?: string): string | null => {
+  const normalizedPath = normalizeToken(pathname);
+  const match = normalizedPath.match(/^\/events\/([^/]+)/);
+  if (!match) return null;
+  return normalizeTenantId(match[1]);
+};
+
 const readEventTenantEnv = (): string | undefined => {
   return (
     readEnv('EXPO_PUBLIC_EVENT_TENANT') ||
@@ -119,12 +164,22 @@ const readEventIdsEnv = (): string[] | null => {
 };
 
 const resolveEventIdsForTenant = (tenantId: string): string[] | null => {
-  if (tenantId in EVENT_TENANT_EVENT_IDS) {
-    return EVENT_TENANT_EVENT_IDS[tenantId];
+  if (tenantId === MAIN_EVENT_TENANT_ID) {
+    return null;
   }
 
-  if (EVENTS[tenantId]?.eventType === 'whitelabel') {
+  const event = EVENTS[tenantId];
+  if (event?.eventType === 'whitelabel') {
+    if (event.tour?.role === 'hub' || getEventTourHubId(tenantId) === tenantId) {
+      return getEventTourFamilyIds(tenantId);
+    }
+
     return [tenantId];
+  }
+
+  const familyIds = getEventTourFamilyIds(tenantId);
+  if (familyIds.length > 0) {
+    return familyIds;
   }
 
   const prefixMatches = Object.values(EVENTS)
@@ -153,11 +208,11 @@ const buildTenantContext = (
 
 // Build AVAILABLE_EVENTS from EVENTS config. Tenant filtering happens in
 // getAvailableEvents() so every consumer shares the same env/config policy.
-export const AVAILABLE_EVENTS: EventInfo[] = Object.values(EVENTS)
-  .filter(event => event.eventType === 'whitelabel')
-  .map(event => {
-    return configToEventInfo(event, true);
-  });
+export const AVAILABLE_EVENTS: EventInfo[] = sortEventInfos(
+  Object.values(EVENTS)
+    .filter(event => event.eventType === 'whitelabel')
+    .map(event => configToEventInfo(event, true))
+);
 
 export const getEventTenantContext = (hostname?: string): EventTenantContext => {
   const normalizedHostname = normalizeHostname(hostname);
@@ -186,11 +241,11 @@ export const getAvailableEvents = (hostname?: string): EventInfo[] => {
   const availableEvents = AVAILABLE_EVENTS.filter(event => event.available);
 
   if (tenantContext.showAllEvents) {
-    return availableEvents;
+    return sortEventInfos(availableEvents);
   }
 
   const allowedEventIds = new Set(tenantContext.eventIds || []);
-  return availableEvents.filter(event => allowedEventIds.has(event.id));
+  return sortEventInfos(availableEvents.filter(event => allowedEventIds.has(event.id)));
 };
 
 // Get current event from route, hostname, or context
@@ -257,7 +312,7 @@ export const getEventQuickAccessItems = (eventId: string) => {
       subtitle: 'Details & Logistics',
       icon: 'info',
       color: '#FF9500',
-      route: `/events/${eventId}/info`
+      route: `/events/${eventId}/event-info`
     }
   ];
 };

@@ -4,40 +4,42 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@components/*": [
-        "./components/*"
-      ],
-      "@hooks/*": [
-        "./hooks/*"
-      ],
-      "@lib/*": [
-        "./lib/*"
-      ],
-      "@providers/*": [
-        "./providers/*"
-      ],
-      "@contexts/*": [
-        "./contexts/*"
-      ],
-      "@screens/*": [
-        "./app/screens/*"
-      ],
-      "@navigation/*": [
-        "./navigation/*"
-      ]
-    },
-    "typeRoots": [
-      "./node_modules/@types",
-      "./types"
-    ]
+      "@/*": ["./apps/web-app/*"],
+      "@components/*": ["./apps/web-app/components/*"],
+      "@hooks/*": ["./apps/web-app/hooks/*"],
+      "@lib/*": ["./apps/web-app/lib/*"],
+      "@providers/*": ["./apps/web-app/providers/*"],
+      "@contexts/*": ["./apps/web-app/contexts/*"],
+      "@screens/*": ["./apps/web-app/app/screens/*"],
+      "@navigation/*": ["./apps/web-app/navigation/*"],
+      "@hashpass/auth": ["./packages/auth/src"],
+      "@hashpass/auth/*": ["./packages/auth/src/*"],
+      "@hashpass/config": ["./packages/config/src"],
+      "@hashpass/config/*": ["./packages/config/src/*"],
+      "@hashpass/types": ["./packages/types/src"],
+      "@hashpass/types/*": ["./packages/types/src/*"],
+      "@hashpass/backend": ["./packages/backend/src"],
+      "@hashpass/backend/*": ["./packages/backend/src/*"],
+      "@hashpass/utils": ["./packages/utils/src"],
+      "@hashpass/utils/*": ["./packages/utils/src/*"],
+      "@hashpass/ui": ["./packages/ui/src"],
+      "@hashpass/ui/*": ["./packages/ui/src/*"]
+    }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "nativewind-env.d.ts",
-    "types/**/*.d.ts"
+    "**/*.d.ts"
+  ],
+  "exclude": [
+    "archive/**",
+    "dist/**",
+    "storybook-static/**",
+    "node_modules/**",
+    ".expo/**",
+    ".turbo/**",
+    "apps/web-app/dist/**",
+    "apps/web-app/public/_expo/**",
+    "packages/infra/terraform/**/.terraform/**"
   ]
 }

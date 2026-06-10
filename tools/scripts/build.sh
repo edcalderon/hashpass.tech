@@ -72,6 +72,9 @@ copy_files() {
 rm -rf dist/client
 mkdir -p dist/client
 
+# Prefer the web app public directory.
+PUBLIC_DIR="apps/web-app/public"
+
 # Function to safely copy build output
 copy_build_output() {
   local src=$1
@@ -145,8 +148,8 @@ else
   
   # Ensure _expo/static exists for static files
   mkdir -p dist/client/_expo/static
-  if [ -d "public" ]; then
-    cp -r public/* dist/client/_expo/static/
+  if [ -d "$PUBLIC_DIR" ]; then
+    cp -r "$PUBLIC_DIR"/* dist/client/_expo/static/
   fi
 fi
 
@@ -247,9 +250,9 @@ echo "Final dist/client contents:"
 ls -la dist/client/
 
 # Copy public directory if it exists
-if [ -d "public" ]; then
+if [ -d "$PUBLIC_DIR" ]; then
   echo "[5.4/5] Copying public directory..."
-  cp -r public/* dist/client/
+  cp -r "$PUBLIC_DIR"/* dist/client/
 fi
 
 # Copy API routes if they exist (for serverless functions)

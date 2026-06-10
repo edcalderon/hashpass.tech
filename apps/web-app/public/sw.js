@@ -136,8 +136,6 @@ self.addEventListener('fetch', (event) => {
               }
               
               let redirectUrl = correctOrigin + '/auth/callback';
-              const apikey = window.__SUPABASE_ANON_KEY__ || window.__EXPO_PUBLIC_SUPABASE_KEY__ || '';
-              if (apikey) redirectUrl += '?apikey=' + encodeURIComponent(apikey);
               redirectUrl += hashFragment;
               
               console.log('[SW Redirect] Redirecting to:', redirectUrl.substring(0, 200));

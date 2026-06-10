@@ -27,7 +27,7 @@
         "production": "hashpass-api-prod"
       }
     },
-    "headersFile": "infrastructure/terraform/stacks/aws/custom-headers.blockchainsummit.yml"
+    "headersFile": "packages/infra/terraform/stacks/aws/custom-headers.blockchainsummit.yml"
   },
   "tenants": {
     "core": {

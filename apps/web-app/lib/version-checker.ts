@@ -67,14 +67,7 @@ function isUserActive(): boolean {
   
   // Check if we're on a networking or active page
   const pathname = window.location.pathname;
-  const activePages = [
-    '/events/bsl2025/networking',
-    '/events/bsl2025/my-bookings',
-    '/events/bsl2025/agenda',
-    '/dashboard',
-  ];
-  
-  const isOnActivePage = activePages.some(page => pathname.includes(page));
+  const isOnActivePage = pathname.startsWith('/events/') || pathname.startsWith('/dashboard');
   
   // Also check if page is visible (not in background tab)
   const isPageVisible = typeof document !== 'undefined' && !document.hidden;

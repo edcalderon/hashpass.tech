@@ -19,6 +19,7 @@ import { useLanguage } from '../../../providers/LanguageProvider';
 import { isAdmin } from '../../../lib/admin-utils';
 import { ScrollProvider, useScroll } from '@contexts/ScrollContext';
 import { NotificationProvider, useNotifications } from '@contexts/NotificationContext';
+import { useEvent } from '@contexts/EventContext';
 import { AnimationProvider, useAnimations } from '../../../providers/AnimationProvider';
 import VersionDisplay from '../../../components/VersionDisplay';
 import VersionStatusIndicator from '../../../components/VersionStatusIndicator';
@@ -40,6 +41,7 @@ const CopilotView = walkthroughable(View);
 function CustomDrawerContent() {
   const { colors, isDark, toggleTheme } = useTheme();
   const { signOut, user } = useAuth();
+  const { event } = useEvent();
   const { locale, setLocale } = useLanguage();
   const { unreadCount } = useNotifications();
   const { animationsEnabled } = useAnimations();
@@ -50,6 +52,11 @@ function CustomDrawerContent() {
   const isMobile = useIsMobile();
   const styles = getStyles(isDark, colors, isMobile);
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
+  const brandBadgeText =
+    event?.tour?.role === 'hub'
+      ? 'BSL ON TOUR'
+      : event?.name || event?.title || 'BSL';
+  const brandBadgeColor = event?.branding?.primaryColor || '#007AFF';
 
   // Animated fluid gradient effect with multiple layers
   const gradientAnimation1 = useSharedValue(0);
@@ -172,16 +179,52 @@ function CustomDrawerContent() {
   }, [user]);
 
   const baseMenuItems = [
-    { id: 'nav.explore', message: 'Explore', icon: 'compass-outline', route: './explore' as const },
-    { id: 'nav.wallet', message: 'Wallet', icon: 'wallet-outline', route: './wallet' as const },
-    { id: 'nav.notifications', message: 'Notifications', icon: 'notifications-outline', route: './notifications' as const },
-    { id: 'nav.profile', message: 'Profile', icon: 'person-outline', route: './profile' as const },
-    { id: 'nav.settings', message: 'Settings', icon: 'settings-outline', route: './settings' as const },
+    {
+      id: 'nav.explore',
+      message: 'Explore',
+      icon: 'compass-outline',
+      route: './explore' as const,
+      tone: '#00A9E0',
+    },
+    {
+      id: 'nav.wallet',
+      message: 'Wallet',
+      icon: 'wallet-outline',
+      route: './wallet' as const,
+      tone: '#3B82F6',
+    },
+    {
+      id: 'nav.notifications',
+      message: 'Notifications',
+      icon: 'notifications-outline',
+      route: './notifications' as const,
+      tone: '#F59E0B',
+    },
+    {
+      id: 'nav.profile',
+      message: 'Profile',
+      icon: 'person-outline',
+      route: './profile' as const,
+      tone: '#8B5CF6',
+    },
+    {
+      id: 'nav.settings',
+      message: 'Settings',
+      icon: 'settings-outline',
+      route: './settings' as const,
+      tone: '#64748B',
+    },
   ] as const;
 
   // Add admin menu item if user is admin
   const adminMenuItem = isUserAdmin
-    ? [{ id: 'nav.admin', message: 'Admin Panel', icon: 'shield-checkmark-outline', route: './admin' as const }]
+    ? [{
+      id: 'nav.admin',
+      message: 'Admin Panel',
+      icon: 'shield-checkmark-outline',
+      route: './admin' as const,
+      tone: '#10B981',
+    }]
     : [];
 
   const menuItems = [...baseMenuItems, ...adminMenuItem] as const;
@@ -391,8 +434,8 @@ function CustomDrawerContent() {
           </View>
           <View style={styles.brandingSection}>
             <Text style={styles.brandSubtitle}>{t({ id: 'nav.brandSubtitle', message: 'Digital Event Platform' })}</Text>
-            <View style={[styles.brandBadge, { backgroundColor: '#007AFF' }]}>
-              <Text style={styles.brandBadgeText}>BSL2025</Text>
+            <View style={[styles.brandBadge, { backgroundColor: brandBadgeColor }]}>
+              <Text style={styles.brandBadgeText}>{brandBadgeText}</Text>
             </View>
           </View>
         </View>
@@ -445,15 +488,23 @@ function CustomDrawerContent() {
                 style={[
                   styles.menuItem,
                   {
+                    boxShadow: isActive
+                      ? (isDark
+                        ? '0 10px 24px rgba(0, 0, 0, 0.24)'
+                        : '0 10px 24px rgba(15, 23, 42, 0.12)')
+                      : (isDark
+                        ? '0 6px 16px rgba(0, 0, 0, 0.18)'
+                        : '0 6px 16px rgba(15, 23, 42, 0.08)'),
                     backgroundColor: isActive
                       ? (isDark
-                        ? `rgba(175, 13, 1, 0.15)` // Red with transparency
-                        : `rgba(175, 13, 1, 0.1)`) // Red with transparency
+                        ? `${item.tone}1F`
+                        : `${item.tone}14`)
                       : (isDark
                         ? 'rgba(255, 255, 255, 0.05)'
                         : 'rgba(0, 0, 0, 0.03)'), // Subtle background
                     borderLeftWidth: isActive ? 4 : 0,
-                    borderLeftColor: isActive ? colors.primaryLight : 'transparent',
+                    borderLeftColor: isActive ? item.tone : 'transparent',
+                    borderColor: isActive ? `${item.tone}55` : colors.divider,
                   }
                 ]}
                 onPress={() => {
@@ -486,9 +537,7 @@ function CustomDrawerContent() {
                   styles.menuIconContainer,
                   {
                     backgroundColor: isActive
-                      ? (isDark
-                        ? `rgba(175, 13, 1, 0.2)`
-                        : `rgba(175, 13, 1, 0.15)`)
+                      ? item.tone
                       : (isDark
                         ? 'rgba(255, 255, 255, 0.08)'
                         : 'rgba(0, 0, 0, 0.05)'),
@@ -496,8 +545,8 @@ function CustomDrawerContent() {
                 ]}>
                   <Ionicons
                     name={item.icon as any}
-                    size={22}
-                    color={isActive ? colors.primaryLight : colors.text.secondary}
+                    size={20}
+                    color={isActive ? '#FFFFFF' : colors.text.secondary}
                   />
                 </View>
                 <Text
@@ -505,8 +554,8 @@ function CustomDrawerContent() {
                     styles.menuText,
                     {
                       color: isActive ? colors.text.primary : colors.text.secondary,
-                      fontWeight: isActive ? '700' : '500',
-                      fontSize: 15,
+                      fontWeight: isActive ? '600' : '500',
+                      fontSize: 16,
                     }
                   ]}
                 >
@@ -520,7 +569,7 @@ function CustomDrawerContent() {
                   </View>
                 )}
                 {isActive && (
-                  <View style={styles.activeIndicator} />
+                  <View style={[styles.activeIndicator, { backgroundColor: item.tone }]} />
                 )}
               </CopilotTouchableOpacity>
             </CopilotStep>
@@ -1236,20 +1285,25 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 16,
-    marginVertical: 4,
-    borderRadius: 14,
+    marginVertical: 6,
+    borderRadius: 18,
     borderLeftWidth: 4,
     borderLeftColor: 'transparent',
-    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.divider,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.82)',
     position: 'relative',
     overflow: 'hidden',
+    boxShadow: isDark
+      ? '0 6px 16px rgba(0, 0, 0, 0.18)'
+      : '0 6px 16px rgba(15, 23, 42, 0.08)',
   },
   menuIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -1257,13 +1311,12 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   activeIndicator: {
     position: 'absolute',
     right: 12,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primaryLight,
+    width: 4,
+    height: 24,
+    borderRadius: 999,
   },
   menuText: {
-    fontSize: 15,
+    fontSize: 16,
     color: colors.text.primary,
     flex: 1,
     letterSpacing: 0.2,
@@ -1309,15 +1362,20 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     flex: 1,
   },
   quickSettingsSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 14,
     marginBottom: 8,
-    borderRadius: 16,
+    borderRadius: 20,
     backgroundColor: isDark
       ? 'rgba(255, 255, 255, 0.05)'
-      : 'rgba(0, 0, 0, 0.02)',
+      : 'rgba(255, 255, 255, 0.84)',
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: isDark
+      ? '0 10px 24px rgba(0, 0, 0, 0.18)'
+      : '0 10px 24px rgba(15, 23, 42, 0.08)',
   },
   quickSettingsTitle: {
     fontSize: 14,
@@ -1335,7 +1393,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   quickToggleButton: {
     flex: 1,
     minHeight: 80,
-    borderRadius: 12,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -1343,16 +1401,14 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     backgroundColor: colors.background.paper,
     paddingVertical: 12,
     paddingHorizontal: 8,
-    shadowColor: colors.text.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    boxShadow: isDark
+      ? '0 4px 10px rgba(0, 0, 0, 0.14)'
+      : '0 4px 10px rgba(15, 23, 42, 0.08)',
   },
   quickToggleIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,

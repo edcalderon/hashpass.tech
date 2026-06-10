@@ -45,7 +45,7 @@
         correctOrigin = stored;
         console.log('📍 Using stored origin:', correctOrigin);
       }
-    } catch (e) {
+    } catch (_e) {
       console.warn('⚠️ Could not access localStorage');
     }
   }
@@ -59,25 +59,14 @@
   // Build redirect URL
   let redirectUrl = correctOrigin + '/auth/callback';
   
-  // Try to get apikey
-  const apikey = window.__SUPABASE_ANON_KEY__ || 
-                 window.__EXPO_PUBLIC_SUPABASE_KEY__ || '';
-  if (apikey) {
-    redirectUrl += '?apikey=' + encodeURIComponent(apikey);
-  }
-  
   // Preserve hash and query params
   redirectUrl += hashFragment;
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.forEach(function(value, key) {
-    if (key !== 'apikey') {
-      redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 
-                    encodeURIComponent(key) + '=' + encodeURIComponent(value);
-    }
+    redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 
+                  encodeURIComponent(key) + '=' + encodeURIComponent(value);
   });
   
   console.log('🚀 Redirecting to:', redirectUrl.substring(0, 300));
   window.location.replace(redirectUrl);
 })();
-
-

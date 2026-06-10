@@ -5,6 +5,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
+import { useEvent } from '@contexts/EventContext';
 import { useToastHelpers } from '@contexts/ToastContext';
 import SpeakerAvatar from '@/components/SpeakerAvatar';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -20,6 +21,8 @@ const generateUserAvatarUrl = (name: string): string => {
 export default function MeetingDetailScreen() {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const { event } = useEvent();
+  const eventId = event?.id || 'bsl';
   const router = useRouter();
   const { showError } = useToastHelpers();
   const { t } = useTranslation('networking');
@@ -373,7 +376,7 @@ export default function MeetingDetailScreen() {
               style={[styles.actionButton, styles.secondaryButton]}
               onPress={() => {
                 router.push({
-                  pathname: "/events/bsl2025/networking/meeting-chat",
+                  pathname: `/events/${eventId}/networking/meeting-chat`,
                   params: { 
                     meetingId: meeting.id,
                     title: `${t('meetings.detail.chatWith')} ${isSpeaker ? meeting.requester_name : meeting.speaker_name}`,

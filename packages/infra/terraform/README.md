@@ -41,7 +41,7 @@ Never commit filled `.env` files to git; keep only `.example` templates in VCS.
 ### AWS Stack
 
 ```bash
-cd infrastructure/terraform/stacks/aws
+cd packages/infra/terraform/stacks/aws
 cp terraform.tfvars.example terraform.tfvars
 terraform init
 terraform plan -var-file=terraform.tfvars
@@ -51,8 +51,8 @@ terraform apply -var-file=terraform.tfvars
 Shortcut:
 
 ```bash
-./infrastructure/terraform/scripts/stack.sh aws plan
-./infrastructure/terraform/scripts/stack.sh aws apply
+./packages/infra/terraform/scripts/stack.sh aws plan
+./packages/infra/terraform/scripts/stack.sh aws apply
 ```
 
 Outputs include:
@@ -64,7 +64,7 @@ Outputs include:
 ### GCP Stack
 
 ```bash
-cd infrastructure/terraform/stacks/gcp
+cd packages/infra/terraform/stacks/gcp
 cp terraform.tfvars.example terraform.tfvars
 cp directus.dev.env.example directus.dev.env
 # create directus.prod.env the same way if you deploy prod from this stack
@@ -76,8 +76,8 @@ terraform apply -var-file=terraform.tfvars
 Shortcut:
 
 ```bash
-./infrastructure/terraform/scripts/stack.sh gcp plan
-./infrastructure/terraform/scripts/stack.sh gcp apply
+./packages/infra/terraform/scripts/stack.sh gcp plan
+./packages/infra/terraform/scripts/stack.sh gcp apply
 ```
 
 Outputs include:
@@ -100,5 +100,5 @@ Outputs include:
 
 ## Notes
 
-- This new stack is isolated from legacy `infrastructure/terraform/gcp` files.
+- This new stack is isolated from legacy `packages/infra/terraform/gcp` files.
 - Keep secrets out of `.tfvars`; use environment variables or secret managers when possible.

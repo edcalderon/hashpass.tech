@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS passes (
   user_id text NOT NULL,
   pass_number serial,
   tier pass_tier DEFAULT 'free',
-  event_id text DEFAULT 'bsl2025',
+  event_id text DEFAULT COALESCE(NULLIF(current_setting('app.event_id', true), ''), 'bsl'),
   name text,
   email text,
   company text,

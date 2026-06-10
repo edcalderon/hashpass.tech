@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 
 const OUTDIR = path.resolve('tmp/speaker-avatars');
-const OUTJSON = path.resolve('scraped-speakers-local.json');
+const OUTJSON = path.resolve('config/scraped-speakers-local.json');
 if (!fs.existsSync(OUTDIR)) fs.mkdirSync(OUTDIR, { recursive: true });
 
 function sanitizeFilename(name) {
@@ -73,7 +73,6 @@ async function scrapeSpeakerAvatars() {
 }
 
 scrapeSpeakerAvatars().then(()=>console.log('✅ All done')).catch(e=>{console.error('❌ Fatal:',e);process.exit(1)});
-
 
 
 

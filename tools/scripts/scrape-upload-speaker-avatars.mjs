@@ -31,7 +31,7 @@ const s3Client = new S3Client({
   }
 });
 
-const OUTPUT_JSON = path.resolve("scraped-speakers-to-s3.json");
+const OUTPUT_JSON = path.resolve("config/scraped-speakers-to-s3.json");
 const UPLOAD_PREFIX = "speakers/avatars/";
 
 function sanitizeFilename(name) {

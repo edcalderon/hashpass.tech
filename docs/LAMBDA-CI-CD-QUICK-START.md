@@ -37,7 +37,7 @@ Ahora Lambda se actualiza **automáticamente** cuando haces cambios en `main` o 
 
 El workflow se activa cuando hay cambios en:
 - ✅ `app/api/**` - Cualquier archivo de API
-- ✅ `lambda/**` - Archivos de Lambda
+- ✅ `packages/infra/lambda/**` - Archivos de Lambda
 - ✅ `scripts/package-lambda.sh` - Script de empaquetado
 - ✅ `package.json` o `package-lock.json` - Dependencias
 
@@ -158,7 +158,7 @@ aws logs tail /aws/lambda/hashpass-api-handler --follow --region us-east-1
 
 1. Verifica que el archivo `.github/workflows/deploy-lambda.yml` existe
 2. Verifica que hiciste push a `main` o `bsl2025`
-3. Verifica que cambiaste archivos en `app/api/` o `lambda/`
+3. Verifica que cambiaste archivos en `app/api/` o `packages/infra/lambda/`
 
 ### Error: "Access Denied"
 

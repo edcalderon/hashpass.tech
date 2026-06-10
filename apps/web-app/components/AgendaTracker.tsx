@@ -7,6 +7,7 @@ import { useTranslation } from '../i18n/i18n';
 import { isMainBranch } from '../lib/event-detector';
 import { apiClient } from '../lib/api-client';
 import { AgendaItem, parseEventISO, formatTimeRange } from '../types/agenda';
+import { buildEventPath } from '../lib/event-path';
 
 interface AgendaTrackerProps {
   eventId?: string;
@@ -20,7 +21,7 @@ interface TimeLeft {
 }
 
 export default function AgendaTracker({ 
-  eventId = 'bsl2025',
+  eventId = 'bsl',
   backgroundColor = '#007AFF'
 }: AgendaTrackerProps) {
   const { isDark, colors } = useTheme();
@@ -330,13 +331,13 @@ export default function AgendaTracker({
       // If we have day info, include it in the URL to help with navigation
       if (dayKey) {
         console.log(`[AgendaTracker] Navigating to session ${currentEvent.id} on ${dayKey}`);
-        router.push(`/events/bsl2025/agenda?session=${currentEvent.id}&scrollTo=current&day=${encodeURIComponent(dayKey)}`);
+        router.push(`${buildEventPath(eventId, 'agenda')}?session=${currentEvent.id}&scrollTo=current&day=${encodeURIComponent(dayKey)}`);
       } else {
         console.log(`[AgendaTracker] Navigating to session ${currentEvent.id} (day unknown)`);
-        router.push(`/events/bsl2025/agenda?session=${currentEvent.id}&scrollTo=current`);
+        router.push(`${buildEventPath(eventId, 'agenda')}?session=${currentEvent.id}&scrollTo=current`);
       }
     } else {
-      router.push('/events/bsl2025/agenda');
+      router.push(buildEventPath(eventId, 'agenda'));
     }
   };
 
@@ -360,13 +361,13 @@ export default function AgendaTracker({
       // If we have day info, include it in the URL to help with navigation
       if (dayKey) {
         console.log(`[AgendaTracker] Navigating to next session ${nextEvent.id} on ${dayKey}`);
-        router.push(`/events/bsl2025/agenda?session=${nextEvent.id}&scrollTo=next&day=${encodeURIComponent(dayKey)}`);
+        router.push(`${buildEventPath(eventId, 'agenda')}?session=${nextEvent.id}&scrollTo=next&day=${encodeURIComponent(dayKey)}`);
       } else {
         console.log(`[AgendaTracker] Navigating to next session ${nextEvent.id} (day unknown)`);
-        router.push(`/events/bsl2025/agenda?session=${nextEvent.id}&scrollTo=next`);
+        router.push(`${buildEventPath(eventId, 'agenda')}?session=${nextEvent.id}&scrollTo=next`);
       }
     } else {
-      router.push('/events/bsl2025/agenda');
+      router.push(buildEventPath(eventId, 'agenda'));
     }
   };
 
@@ -783,4 +784,3 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string) => Sty
     letterSpacing: 0.5,
   },
 });
-

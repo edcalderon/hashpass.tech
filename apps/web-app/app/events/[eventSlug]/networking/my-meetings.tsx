@@ -4,6 +4,7 @@ import { useTheme } from '@hooks/useTheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@hooks/useAuth';
+import { useEvent } from '@contexts/EventContext';
 import { supabase } from '@lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import LoadingScreen from '@components/LoadingScreen';
@@ -14,6 +15,8 @@ import { useTranslation } from '@/i18n/i18n';
 const MeetingsPage = () => {
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const { event } = useEvent();
+  const eventId = event?.id || 'bsl';
   const { showError } = useToastHelpers();
   const router = useRouter();
   const { t } = useTranslation('networking');
@@ -147,7 +150,7 @@ const MeetingsPage = () => {
           
         if (speaker) {
           router.push({
-            pathname: "/events/bsl2025/networking/meeting-detail" as any, // Type assertion for now
+            pathname: `/events/${eventId}/networking/meeting-detail` as any, // Type assertion for now
             params: {
               meetingId: meeting.id,
               speakerName: meeting.speaker_name,
@@ -164,7 +167,7 @@ const MeetingsPage = () => {
         } else {
           // Fallback if speaker not found
           router.push({
-            pathname: "/events/bsl2025/networking/meeting-detail" as any,
+            pathname: `/events/${eventId}/networking/meeting-detail` as any,
             params: {
               meetingId: meeting.id,
               speakerName: meeting.speaker_name,
@@ -181,7 +184,7 @@ const MeetingsPage = () => {
         console.error('Error fetching speaker details:', error);
         // Fallback in case of error
         router.push({
-          pathname: "/events/bsl2025/networking/meeting-detail" as any,
+          pathname: `/events/${eventId}/networking/meeting-detail` as any,
           params: {
             meetingId: meeting.id,
             speakerName: meeting.speaker_name,
