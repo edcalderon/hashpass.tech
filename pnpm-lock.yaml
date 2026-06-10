@@ -274,8 +274,8 @@ importers:
         specifier: ^7.28.5
         version: 7.28.5(@babel/core@7.29.0)
       '@edcalderon/versioning':
-        specifier: ^1.4.5
-        version: 1.4.5
+        specifier: ^1.5.9
+        version: 1.5.9
       '@expo/metro-config':
         specifier: ^0.20.17
         version: 0.20.18
@@ -2039,8 +2039,8 @@ packages:
       react-native:
         optional: true
 
-  '@edcalderon/versioning@1.4.5':
-    resolution: {integrity: sha512-4Z+BdWSZoLJsTYGEadPRYXUzEfRbsJ3wEaLs5FHzQLuMgUSFzuCMVXQb05cOKXdHd8PQHEzYLil7fIAqk6XrGg==}
+  '@edcalderon/versioning@1.5.9':
+    resolution: {integrity: sha512-4VCee3ncnDUsZTMKY49CT20d7O5wS0YN9Re/p8DqeXQZhebZ5jZxmlAYSObrxGvHefhsvkzlhDmyF2unBk09QQ==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -13885,13 +13885,13 @@ snapshots:
       react-dom: 19.0.0(react@19.0.0)
       react-native: 0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
 
-  '@edcalderon/versioning@1.4.5':
+  '@edcalderon/versioning@1.5.9':
     dependencies:
       commander: 12.1.0
       conventional-changelog: 5.1.0
       fs-extra: 11.3.3
       semver: 7.7.4
-      simple-git: 3.31.1
+      simple-git: 3.33.0
     transitivePeerDependencies:
       - supports-color
 

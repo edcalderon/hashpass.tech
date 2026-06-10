@@ -299,7 +299,11 @@ export default function EventBannerCarousel({
 
             const event = slide.event;
             const lampBranding = lampBrandingByEvent[event.id];
-            const shouldUseLampBanner = Platform.OS === 'web' && Boolean(lampBranding);
+            const resolvedLampBrandLogo =
+              lampBranding?.logoSrcDark ||
+              lampBranding?.logoSrcLight ||
+              lampBranding?.logoFallbackSrc;
+            const shouldUseLampBanner = Platform.OS === 'web' && Boolean(resolvedLampBrandLogo);
 
             return (
               <View key={event.id} style={styles.slide}>

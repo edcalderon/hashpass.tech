@@ -16,6 +16,7 @@ const versioningConfigPath = path.join(projectRoot, 'versioning.config.json');
 // Files that should be updated when version changes
 const VERSION_FILES = [
   'package.json',
+  'apps/web-app/package.json',
   'apps/web-app/config/version.production.json',
   'apps/web-app/config/version.development.json',
   'app.json',
@@ -66,6 +67,11 @@ function getVersionFromFile(filePath) {
     } else {
       return json.expo?.version;
     }
+  }
+
+  if (filePath === 'apps/web-app/package.json') {
+    const json = JSON.parse(content);
+    return json.version;
   }
   
   if (filePath === 'apps/web-app/config/version.ts') {

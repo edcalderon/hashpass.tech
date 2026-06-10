@@ -162,7 +162,7 @@ export default function LampBrandBanner({
             isDarkMode ? "text-slate-200" : "text-red-500/70"
           )}
         >
-          Event Brand
+          {logoAlt}
         </motion.h2>
       )}
     </LampContainer>

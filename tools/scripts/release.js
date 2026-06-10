@@ -12,6 +12,7 @@
  */
 
 const { spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.resolve(__dirname, '../..');
@@ -85,6 +86,16 @@ function getCurrentBranch() {
 function isCleanTree() {
   const output = runAndRead('git', ['status', '--porcelain'], { log: false });
   return output.trim().length === 0;
+}
+
+function readJsonVersion(relativePath) {
+  const filePath = path.join(ROOT_DIR, relativePath);
+  const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const version = content?.version;
+  if (!version || typeof version !== 'string') {
+    throw new Error(`Unable to read version from ${relativePath}`);
+  }
+  return version;
 }
 
 function parseArgs(argv) {
@@ -312,6 +323,26 @@ function runRelease(options, branch) {
   runInherit(VERSIONING_BIN, ['exec', 'versioning', ...args], options);
 }
 
+function runMainRelease(options, branch) {
+  const mainOptions = {
+    ...options,
+    noCommit: true,
+    noTag: true,
+  };
+
+  runInherit(VERSIONING_BIN, ['exec', 'versioning', ...buildVersioningArgs(mainOptions, branch)], options);
+
+  const releaseVersion = readJsonVersion('package.json');
+  runInherit('node', [
+    'tools/scripts/update-version.mjs',
+    releaseVersion,
+    '--type=stable',
+    '--skip-git-info',
+  ], options);
+
+  return releaseVersion;
+}
+
 function getExactTagForHead(options) {
   if (options.dryRun || options.noTag) return '';
 
@@ -329,6 +360,20 @@ function getExactTagForHead(options) {
 function runGitPush(options, branch) {
   if (!options.push || options.noCommit || options.dryRun) return;
   runInherit('git', ['push', 'origin', branch, '--follow-tags'], options);
+}
+
+function runGitCommit(options, version) {
+  if (options.noCommit || options.dryRun) return;
+
+  runInherit('git', ['add', '.'], options);
+  runInherit('git', ['commit', '-m', `chore: release v${version}`], options);
+}
+
+function runGitTag(options, version) {
+  if (options.noCommit || options.noTag || options.dryRun) return;
+
+  const tagMessage = options.message || `Version ${version}`;
+  runInherit('git', ['tag', '-a', `v${version}`, '-m', tagMessage], options);
 }
 
 function promoteDevelopToMain(options, releaseBranch, releaseSha) {
@@ -392,12 +437,24 @@ function main() {
     console.log('');
 
     runPreflight(options);
-    runRelease(options, releaseBranch);
+    let releaseVersion = '';
+    if (releaseBranch === 'main') {
+      releaseVersion = runMainRelease(options, releaseBranch);
+    } else {
+      runRelease(options, releaseBranch);
+    }
+
+    if (releaseBranch === 'main') {
+      runGitCommit(options, releaseVersion);
+      runGitTag(options, releaseVersion);
+    }
 
     const releaseSha = runAndRead('git', ['rev-parse', 'HEAD'], { log: false, dryRun: options.dryRun });
     const releaseTag = getExactTagForHead(options);
 
-    runGitPush(options, releaseBranch);
+    if (!options.noCommit) {
+      runGitPush(options, releaseBranch);
+    }
 
     if (options.promote) {
       promoteDevelopToMain(options, releaseBranch, releaseSha);
