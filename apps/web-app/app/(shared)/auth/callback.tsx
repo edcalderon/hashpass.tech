@@ -7,6 +7,7 @@ import { useTranslation } from '../../../i18n/i18n';
 import { Check, AlertCircle } from 'lucide-react-native';
 import { authService } from '@hashpass/auth';
 import { createSessionFromUrl } from '../../../lib/supabase';
+import { resolvePublicSupabaseConfig } from '../../../config/supabase-profiles';
 
 type CallbackHashError = {
     code: string;
@@ -107,12 +108,14 @@ export default function AuthCallback() {
     const hasNavigatedRef = useRef(getHasNavigated());
     const hasShownSuccessToastRef = useRef(false);
     const authProviderName = authService.getProviderName();
-    const hasSupabasePasswordlessConfig = Boolean(
-        process.env.EXPO_PUBLIC_SUPABASE_URL && process.env.EXPO_PUBLIC_SUPABASE_KEY
-    );
+    const { supabaseUrl: publicSupabaseUrl, supabaseAnonKey: publicSupabaseAnonKey } =
+        resolvePublicSupabaseConfig();
+    const hasSupabasePasswordlessConfig = Boolean(publicSupabaseUrl && publicSupabaseAnonKey);
     const isPasswordlessSupported = authProviderName === 'supabase' || hasSupabasePasswordlessConfig;
-    const passwordlessUnavailableMessage =
-      'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.';
+    const passwordlessUnavailableMessage = t(
+        'passwordlessUnavailableMessage',
+        'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.'
+    );
 
     const isTransientSessionError = (message: string) => {
         const value = message.toLowerCase();
