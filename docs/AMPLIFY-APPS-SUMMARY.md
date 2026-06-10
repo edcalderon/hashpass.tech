@@ -1,4 +1,9 @@
-# Resumen de Apps de Amplify
+# Legacy Amplify Apps Summary
+
+> Current deployment split:
+> - `hashpass.tech` stays on Amplify.
+> - `bsl.hashpass.tech` is deployed through the SST/CodeBuild pipeline, not Amplify.
+> - This page is kept as a historical inventory of Amplify-hosted tenants only.
 
 ## Apps Actuales
 
@@ -13,7 +18,7 @@
 2. **blockchainsummit.hashpass.lat (event tenant)**
    - **App ID**: `d951nuj7hrqeg`
    - **Región**: `sa-east-1`
-   - **Propósito**: Tenant de evento (branches `main` y `develop`)
+   - **Propósito**: Tenant de evento legado de Amplify (branches `main` y `develop`)
    - **Estado**: ✅ Activa
 
 ### Frontend Apps Legacy (Opcionales)
@@ -38,6 +43,9 @@
 Frontend:
 ├── hashpass.tech / develop.dy8duury54wam.amplifyapp.com → Amplify App (dy8duury54wam, us-east-2)
 └── blockchainsummit.hashpass.lat / blockchainsummit-dev.hashpass.lat → Amplify App (d951nuj7hrqeg, sa-east-1)
+
+Non-Amplify:
+└── bsl.hashpass.tech / bsl-dev.hashpass.tech → SST/CodeBuild pipeline (`bsl-hashpass-dev-build` / `bsl-hashpass-prod-build`)
 
 API:
 └── api.hashpass.tech → API Gateway + Lambda (NO Amplify)

@@ -26,7 +26,7 @@ const {
   resolveTenant,
 } = require('./lib/tenant-config');
 
-const ROOT_DIR = path.resolve(__dirname, '../..');
+const ROOT_DIR = path.resolve(__dirname, '../../..');
 const DONE_STATUSES = new Set(['SUCCEED', 'FAILED', 'CANCELLED']);
 const VERSION_BUMPS = new Set(['none', 'patch', 'minor', 'major']);
 

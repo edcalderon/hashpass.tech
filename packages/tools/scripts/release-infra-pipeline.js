@@ -15,8 +15,8 @@
 const { spawnSync } = require('child_process');
 const path = require('path');
 
-const ROOT_DIR = path.resolve(__dirname, '../..');
-const VERSION_UPDATE_SCRIPT = path.join(ROOT_DIR, 'tools', 'scripts', 'update-version.mjs');
+const ROOT_DIR = path.resolve(__dirname, '../../..');
+const VERSION_UPDATE_SCRIPT = path.join(ROOT_DIR, 'packages', 'tools', 'scripts', 'update-version.mjs');
 
 function formatCommand(binary, args) {
   return [binary, ...args]

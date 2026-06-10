@@ -41,7 +41,9 @@ The site build uses `expo export -p web` with the Expo web output set to
 `static`, so SST only uploads the client bundle and does not spend time
 building the API route server tree. The CodeBuild projects are seeded with the
 public Supabase variables from the root `.env` so the export can bundle the
-client correctly. Production BSL should use the BSL-specific variables first:
+client correctly. The live BSL projects use `packages/tools/buildspecs/infra-deploy.yml`
+as their CodeBuild buildspec. Production BSL should use the BSL-specific
+variables first:
 
 - `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
 - `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`

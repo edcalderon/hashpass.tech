@@ -21,7 +21,7 @@ const {
   resolveTenant,
 } = require('./lib/tenant-config');
 
-const ROOT_DIR = path.resolve(__dirname, '../../');
+const ROOT_DIR = path.resolve(__dirname, '../../../');
 const PROCESS_ENV_OVERRIDE_KEYS = [
   'BETTER_AUTH_SECRET',
   'BETTER_AUTH_SECRET_DEV',

@@ -13,8 +13,9 @@ We use a strictly standardized set of environment profiles to ensure consistency
 | **`production`**| Live production environment on AWS. | `/hashpass/production/` / `*-prod`| `https://sso.hashpass.co` |
 
 > Deployment split:
-> - `hashpass.tech` / `core` stays on the Amplify-managed track.
-> - `bsl.hashpass.tech` / `bsl` uses the dedicated AWS pipeline and the same `/hashpass/[env]/` SSM namespace with BSL-specific aliases.
+> - `hashpass.tech` / `core` stays on the Amplify-managed track (`dy8duury54wam`, `us-east-2`).
+> - `bsl.hashpass.tech` / `bsl` uses the SST/CodeBuild pipeline (`bsl-hashpass-dev-build`, `bsl-hashpass-prod-build`) with `packages/tools/buildspecs/infra-deploy.yml`.
+> - `blockchainsummit.hashpass.lat` is a separate legacy Amplify tenant kept for the event track.
 > - BSL Better Auth secrets are normalized under `/hashpass/[env]/bsl/better-auth/`, and the sync helpers keep both `EXPO_PUBLIC_SUPABASE_KEY` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility.
 
 ---
@@ -37,7 +38,7 @@ The **root `.env` file** is the single source of truth. It contains:
 Environment variables flow from the root to sub-projects and AWS using three main tools:
 
 ### A. `propagate-env.js` (Root → Apps)
-Distills the root `.env` into environment-specific `.env` files inside `apps/web-app`, `apps/directus`, etc.
+Resolves the repository root from `packages/tools/scripts/` and distills the root `.env` into environment-specific `.env` files inside `apps/web-app`, `apps/directus`, etc.
 ```bash
 npm run env:propagate [local|dev|production]
 ```
@@ -46,7 +47,7 @@ npm run env:propagate [local|dev|production]
 - Sets `NODE_ENV` and `EXPO_PUBLIC_ENV`.
 
 ### B. `sync-env.js` (Root → AWS Lambda)
-Synchronizes critical environment variables directly to AWS Lambda functions.
+Resolves the repository root from `packages/tools/scripts/` and synchronizes critical environment variables directly to AWS Lambda functions.
 ```bash
 # Syncs _DEV overrides to hashpass-api-dev
 node packages/tools/scripts/sync-env.js dev

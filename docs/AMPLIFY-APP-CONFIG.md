@@ -7,6 +7,8 @@
 
 > This file documents the `blockchainsummit` tenant app.  
 > Core tenant app: `dy8duury54wam` (`us-east-2`, `hashpass.tech`).
+>
+> Legacy reference only: `bsl.hashpass.tech` now deploys through the SST/CodeBuild pipeline, not Amplify.
 
 ## Current Setup
 
@@ -31,7 +33,7 @@
 
 ```bash
 # Deploy Lambda manually
-./scripts/package-lambda.sh
+./packages/tools/scripts/package-lambda.sh
 aws lambda update-function-code \
   --function-name hashpass-api-handler \
   --region us-east-1 \
@@ -50,7 +52,7 @@ Enable Lambda deployment in `amplify.yml`:
 ```yaml
 post_build:
   commands:
-    - ./scripts/deploy-lambda-from-amplify.sh
+    - ./packages/tools/scripts/deploy-lambda-from-amplify.sh
 ```
 
 **Requirements:**
@@ -79,8 +81,8 @@ api.hashpass.tech → API Gateway ✅ CORRECT
 
 **Steps:**
 1. Wait for ACM certificate validation
-2. Run: `./scripts/setup-custom-domain.sh`
-3. Run: `./scripts/update-api-dns.sh`
+2. Run: `./packages/tools/scripts/setup-custom-domain.sh`
+3. Run: `./packages/tools/scripts/update-api-dns.sh`
 
 ## Environment Variables
 

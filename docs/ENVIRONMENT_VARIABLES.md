@@ -5,8 +5,8 @@ This is the current source of truth for the environment variables used by the Ha
 ## How Values Flow
 
 - Root `.env` is the canonical source for shared values and environment-specific overrides.
-- `npm run env:propagate dev` and `npm run env:propagate production` call `packages/tools/scripts/propagate-env.js`.
-- `node packages/tools/scripts/sync-env.js dev` and `node packages/tools/scripts/sync-env.js production` update runtime env exports from the root `.env`.
+- `npm run env:propagate dev` and `npm run env:propagate production` call `packages/tools/scripts/propagate-env.js`, which now resolves the repository root before writing `apps/web-app/.env` and related files.
+- `node packages/tools/scripts/sync-env.js dev` and `node packages/tools/scripts/sync-env.js production` update runtime env exports from the root `.env` using the same repo-root resolver.
 - `bash packages/tools/scripts/util/setup-parameters.sh sync dev` and `bash packages/tools/scripts/util/setup-parameters.sh sync production` sync AWS SSM parameters and remove stale entries.
 
 ## Canonical Key Rules
@@ -72,6 +72,7 @@ Required BSL Supabase values:
 - `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
 - `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
 - `BSL_SUPABASE_DB_URL_PROD`
+- The BSL CodeBuild buildspec is `packages/tools/buildspecs/infra-deploy.yml`, and the live pipeline projects are `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`.
 
 The sync scripts also keep the public Supabase key aliases aligned for BSL browser helpers.
 

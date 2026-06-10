@@ -15,7 +15,7 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const ROOT_DIR = path.resolve(__dirname, '../..');
+const ROOT_DIR = path.resolve(__dirname, '../../..');
 const VERSIONING_BIN = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 const DEFAULT_CONFIG = 'versioning.config.json';
 const VALID_BUMPS = new Set(['patch', 'minor', 'major']);

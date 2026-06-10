@@ -21,7 +21,7 @@ const {
   resolveTenant,
 } = require('./lib/tenant-config');
 
-const ROOT_DIR = path.resolve(__dirname, '../../');
+const ROOT_DIR = path.resolve(__dirname, '../../../');
 const APPS_DIR = path.join(ROOT_DIR, 'apps');
 const WEB_APP_DIR = path.join(APPS_DIR, 'web-app');
 const DIRECTUS_DIR = path.join(APPS_DIR, 'directus');

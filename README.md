@@ -72,7 +72,12 @@ pnpm run build:all    # turbo build all packages
 
 Set `AWS_ACCOUNT_ID` or `EXPECTED_AWS_ACCOUNT_ID` in your local shell or GitHub repository variables when you want the infra helpers to verify the target AWS account without hardcoding it in the repo.
 See [docs/INFRA_NAMING_GUIDE.md](docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the new infra track.
-Main `hashpass.tech` hosting still uses the Amplify track. BSL `bsl.hashpass.tech` uses the dedicated AWS pipeline and SSM parameter sync helpers instead of `amplify publish`, and the sync flow keeps both `dev` and `production` BSL Better Auth secrets aligned.
+
+Deployment split:
+- `hashpass.tech` / `core` is the Amplify app (`dy8duury54wam`, `us-east-2`) and should deploy through the Git-backed `main`/`develop` branch flow.
+- `bsl.hashpass.tech` / `bsl` deploys through the SST/CodeBuild pipeline. The live CodeBuild projects are `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`, and they use `packages/tools/buildspecs/infra-deploy.yml`.
+- `blockchainsummit.hashpass.lat` is a separate legacy Amplify tenant kept for the event track.
+- Use `pnpm run infra:deploy:dev` and `pnpm run infra:deploy:prod` for the BSL site, and `pnpm run infra:provision-pipelines` if you need to recreate the pipeline wiring.
 
 1. **Clone the repo:**
    ```bash
@@ -130,7 +135,7 @@ Deploy:
 chmod +x ./packages/tools/scripts/deploy-bslatam.sh
 ./packages/tools/scripts/deploy-bslatam.sh
 ```
-For the main `hashpass.tech` Amplify track: configure AWS credentials and run `amplify publish`.
+For the main `hashpass.tech` Amplify track, push to the tracked branch or trigger the Amplify Console release job; do not rely on `amplify publish` for routine web deploys.
 
 ---
 

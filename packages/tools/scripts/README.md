@@ -2,7 +2,7 @@
 
 Shared build/deploy scripts used across apps in the monorepo.
 
-Use `packages/tools/scripts/` as the primary location for app-specific and Lambda/deploy scripts (e.g. `package-lambda.sh`, `update-sw-version.mjs`). Reference these from root or app-level scripts as needed.
+Use `packages/tools/scripts/` as the primary location for app-specific and Lambda/deploy scripts (e.g. `package-lambda.sh`, `update-sw-version.mjs`). These scripts resolve the repository root from `packages/tools/scripts/`, so keep path joins rooted at the repo root, not `packages/`.
 
 ## Multi-tenant deployment config
 
@@ -13,8 +13,8 @@ Tenant deployment metadata is centralized in:
 Current tenants:
 
 - `core` (`hashpass.tech`, Amplify `dy8duury54wam` / `us-east-2`)
-- `bsl` (`bsl.hashpass.tech`, AWS pipeline + SSM sync, `bsl-dev.hashpass.tech` / `bsl.hashpass.tech`)
-- `blockchainsummit` (`blockchainsummit.hashpass.lat`, Amplify `d951nuj7hrqeg` / `sa-east-1`)
+- `bsl` (`bsl.hashpass.tech`, SST/CodeBuild pipeline, `bsl-hashpass-dev-build` / `bsl-hashpass-prod-build`)
+- `blockchainsummit` (`blockchainsummit.hashpass.lat`, legacy Amplify tenant `d951nuj7hrqeg` / `sa-east-1`)
 
 Shared branch cadence:
 
@@ -23,14 +23,14 @@ Shared branch cadence:
 
 Release flow:
 
-- `release` / `release:patch` / `release:minor` / `release:major` run the branch-aware version release flow
+- `release` / `release:patch` / `release:minor` / `release:major` run the branch-aware version release flow for the repo root
 - `release:promote` promotes a `develop` release onto `main`
 - `release:pipeline` remains the tenant/deploy pipeline for infra and Amplify work
 - `release:dev` / `release:prod` target `core` by default
-- `release:bsl:dev` / `release:bsl:prod` target the BSL tenant explicitly and follow the AWS pipeline path
+- `release:bsl:dev` / `release:bsl:prod` follow the event tenant path and remain available for the historical branch-aware release flow
 - `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it
 
-BSL deployment and sync helpers use the `/hashpass/[env]/` SSM namespace. Keep those scripts separate from the Amplify-managed `core` track. The same sync flow also normalizes `/hashpass/[env]/bsl/better-auth/` and keeps `EXPO_PUBLIC_SUPABASE_KEY` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility.
+BSL deployment and sync helpers use the `/hashpass/[env]/` SSM namespace. Keep those scripts separate from the Amplify-managed `core` track. The same sync flow also normalizes `/hashpass/[env]/bsl/better-auth/` and keeps `EXPO_PUBLIC_SUPABASE_KEY` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility. `packages/tools/scripts/propagate-env.js` and `packages/tools/scripts/sync-env.js` both resolve the repo root before writing files or syncing AWS state.
 
 The branch-aware release flow:
 
