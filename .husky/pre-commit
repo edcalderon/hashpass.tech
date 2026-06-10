@@ -2,12 +2,23 @@
 set -e
 
 echo "🔐 Running secret scan..."
+secret_scan_ran=0
 if pnpm -s exec versioning --help >/dev/null 2>&1; then
   pnpm -s exec versioning check-secrets
-elif command -v gitleaks >/dev/null 2>&1; then
-  gitleaks git --staged --redact --no-banner
+  secret_scan_ran=1
 else
-  echo "❌ Secret scan tool not found. Install 'versioning' or 'gitleaks' and retry."
+  echo "⚠️  Versioning tool not found; skipping repo-specific secret patterns."
+fi
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --staged --redact --no-banner
+  secret_scan_ran=1
+else
+  echo "⚠️  Gitleaks not found; install it locally to enable the staged generic secret scan."
+fi
+
+if [ "$secret_scan_ran" -eq 0 ]; then
+  echo "❌ No secret scan tool found. Install 'versioning' or 'gitleaks' and retry."
   exit 1
 fi
 

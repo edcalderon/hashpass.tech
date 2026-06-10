@@ -67,6 +67,7 @@
       "patterns": [
         "CUSTOM_API_KEY[=:][0-9a-f]{32}",
         "(SUPABASE|DIRECTUS|GOOGLE|AWS|BREVO|NODEMAILER|DB)_(KEY|SECRET|PASSWORD|PASS|ROLE|URL|USER)[^=:\"']*[:=][\\s\"']*[A-Za-z0-9._/-]{10,}",
+        "(?:export\\s+)?BUNDLE_ENTERPRISE__CONTRIBSYS__COM\\s*[:=]\\s*[A-Za-z0-9._/-]{10,}",
         "eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}",
         "sb_publishable_[A-Za-z0-9_-]{20,}",
         "xkeysib-[a-zA-Z0-9]{32,}",
