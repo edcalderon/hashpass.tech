@@ -28,6 +28,7 @@ on:
 
 jobs:
   release:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -24,6 +24,7 @@ permissions:
 
 jobs:
   deploy:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
     runs-on: ubuntu-latest
     env:
       EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}

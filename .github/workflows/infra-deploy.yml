@@ -23,6 +23,7 @@ on:
 
 jobs:
   deploy:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
     runs-on: ubuntu-latest
     permissions:
       contents: read
