@@ -6,6 +6,8 @@ name_prefix = "hashpass"
 
 route53_zone_tech_name = "hashpass.tech"
 route53_zone_lat_name  = "hashpass.lat"
+route53_zone_club_name = "hashpass.club"
+github_pages_domain    = "hashpass.club"
 
 # Build lambda-deployment.zip before apply.
 # Example: ./packages/tools/scripts/package-lambda.sh

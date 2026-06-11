@@ -14,9 +14,9 @@ We use a strictly standardized set of environment profiles to ensure consistency
 
 > Deployment split:
 > - `hashpass.tech` / `core` stays on the Amplify-managed track (`dy8duury54wam`, `us-east-2`).
-> - `hashpass.club` is the standalone static Next.js app in `apps/web-app`; `packages/infra` assembles it together with `apps/docs` into a single SST-managed static site and serves it at `https://hashpass.club`.
+> - `hashpass.club` is the standalone static Next.js app in `apps/web-app`; `packages/infra` assembles it together with `apps/docs` into a single Pages artifact and serves it at `https://hashpass.club`.
 > - `https://hashpass.club/documentation/` serves the Docusaurus build from `apps/docs`.
-> - `club.hashpass.tech` and `docs.hashpass.tech` are SST-managed aliases for the canonical `hashpass.club` site.
+> - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases that canonicalize to the GitHub Pages origin.
 > - `bsl.hashpass.tech` / `bsl` uses the SST/CodeBuild pipeline (`bsl-hashpass-dev-build`, `bsl-hashpass-prod-build`) with `packages/tools/buildspecs/infra-deploy.yml`.
 > - `blockchainsummit.hashpass.lat` is a separate legacy Amplify tenant kept for the event track.
 > - BSL Better Auth secrets are normalized under `/hashpass/[env]/bsl/better-auth/`, and the sync helpers keep both `EXPO_PUBLIC_SUPABASE_KEY` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility.
@@ -48,7 +48,7 @@ npm run env:propagate [local|dev|production]
 - Picks base variables.
 - Applies overrides (e.g., if `dev` is targeted, `KEY_DEV` becomes `KEY`).
 - Sets `NODE_ENV` and `EXPO_PUBLIC_ENV`.
-- The standalone Next.js app in `apps/web-app` does not use this Expo propagation path; it should receive its own deployment envs through the SST club-docs build target.
+- The standalone Next.js app in `apps/web-app` does not use this Expo propagation path; it should receive its own deployment envs through the GitHub Pages club build workflow.
 
 ### B. `sync-env.js` (Root → AWS Lambda)
 Resolves the repository root from `packages/tools/scripts/` and synchronizes critical environment variables directly to AWS Lambda functions.

@@ -14,7 +14,7 @@ This Terraform setup deploys the production naming convention discussed for Hash
 
 ## Structure
 
-- `stacks/aws`: AWS API + optional Amplify domain association
+- `stacks/aws`: AWS API + optional Amplify domain association + GitHub Pages DNS for `hashpass.club`
 - `stacks/gcp`: GCP Directus VM(s) + optional Cloud DNS records
 - `modules/aws_expo_router_api`: reusable Lambda + HTTP API + custom domain module
 - `modules/aws_amplify_domain`: reusable Amplify custom domain binding module
@@ -90,13 +90,13 @@ Outputs include:
 
 1. Deploy `stacks/gcp` (get static IPs for Directus)
 2. Update DNS for `sso-dev.hashpass.co` and `sso.hashpass.co` (if not using Cloud DNS in module)
-3. Deploy `stacks/aws` (API domains + Lambda)
+3. Deploy `stacks/aws` (API domains + Lambda + GitHub Pages DNS records)
 4. Configure frontend env vars:
    - dev: `EXPO_PUBLIC_API_BASE_URL=https://api-dev.hashpass.tech/api`
    - prod: `EXPO_PUBLIC_API_BASE_URL=https://api.hashpass.tech/api`
    - dev: `EXPO_PUBLIC_DIRECTUS_URL=https://sso-dev.hashpass.co`
    - prod: `EXPO_PUBLIC_DIRECTUS_URL=https://sso.hashpass.co`
-5. Validate OAuth callback + profile load end-to-end
+5. Publish the club site through the `club-v*` GitHub Pages workflow, then validate OAuth callback + profile load end-to-end
 
 ## Notes
 

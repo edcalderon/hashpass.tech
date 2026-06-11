@@ -17,6 +17,40 @@ import './globals.css';
 import { ThemeProvider } from './components/ThemeProvider';
 import { I18nProvider } from '@hashpass/i18n';
 
+const CANONICAL_SITE_URL = 'https://hashpass.club';
+
+function getCanonicalDomainRedirectScript() {
+  return `
+    (function () {
+      try {
+        var host = window.location.hostname.toLowerCase();
+        var path = window.location.pathname || '/';
+        var search = window.location.search || '';
+        var hash = window.location.hash || '';
+        var target = null;
+
+        if (host === 'club.hashpass.tech') {
+          target = '${CANONICAL_SITE_URL}' + path + search + hash;
+        } else if (host === 'docs.hashpass.tech') {
+          if (path === '/' || path === '/documentation' || path === '/documentation/') {
+            target = '${CANONICAL_SITE_URL}/documentation/' + search + hash;
+          } else if (!path.startsWith('/documentation/')) {
+            target =
+              '${CANONICAL_SITE_URL}/documentation' +
+              (path.charAt(0) === '/' ? path : '/' + path) +
+              search +
+              hash;
+          }
+        }
+
+        if (target && target !== window.location.href) {
+          window.location.replace(target);
+        }
+      } catch (error) {}
+    })();
+  `;
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://hashpass.club'),
   title: {
@@ -55,6 +89,11 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: getCanonicalDomainRedirectScript(),
+          }}
+        />
         {/* Prevent flash of wrong theme */}
         <script
           dangerouslySetInnerHTML={{

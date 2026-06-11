@@ -1,4 +1,4 @@
-name: Deploy Club Docs
+name: Deploy Club Pages
 
 on:
   push:
@@ -15,19 +15,18 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: club-docs-deploy
+  group: club-pages-deploy
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pages: write
   id-token: write
 
 jobs:
-  deploy:
+  build:
     if: github.repository == 'hashpass-tech/hashpass.tech'
     runs-on: ubuntu-latest
-    env:
-      EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
 
     steps:
       - name: Checkout
@@ -45,16 +44,28 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: |
-          rm -rf node_modules
-          pnpm install --no-frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build club and docs artifact
+        run: pnpm --filter @hashpass/infra run build:club-docs-site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          aws-region: us-east-2
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: hashpass-club-docs
+          path: .site-artifacts/club-docs
 
-      - name: Deploy club and docs front door
-        run: pnpm --filter @hashpass/infra run deploy:club-docs:prod
+  deploy:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

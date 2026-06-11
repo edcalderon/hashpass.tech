@@ -27,7 +27,8 @@
 - `main` continues to back the production `hashpass.tech` Amplify track.
 - `develop` is the integration branch for ongoing work across mobile, web, docs, and infra.
 - `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` stay on the SST/CodeBuild release path.
-- `club` and `club-dev` are the new Amplify release lanes for the standalone club app.
+- `hashpass.club` publishes through GitHub Pages from the `club-v*` release workflow.
+- `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases for the canonical club site.
 
 ## Workspace Layout
 
@@ -85,18 +86,18 @@ pnpm run dev          # run the mobile app from root (delegates to apps/mobile-a
 pnpm run dev:mobile   # run the mobile app explicitly
 pnpm run dev:club     # run the new hashpass.club Next.js app
 pnpm run dev:directus # run Directus Docker stack from apps/directus
-pnpm run dev:all      # run mobile app + club web app + Directus (single Ctrl+C stops all)
+pnpm run dev:all      # run mobile app + club web app + docs + Directus (auto-picks free ports)
 pnpm run build:mobile # build the mobile app
 pnpm run build:club   # build the hashpass.club Next.js app
 pnpm run infra:deploy:dev  # deploy the BSL dev site to bsl-dev.hashpass.tech
 pnpm run infra:deploy:prod # deploy the BSL production site to bsl.hashpass.tech
 pnpm run infra:provision-connection # create the GitHub CodeConnections connection
 pnpm run infra:provision-pipelines # create the AWS CodePipeline/CodeBuild pipelines
-pnpm run amplify:update-source # retarget the Amplify app to the canonical GitHub repo (set AMPLIFY_ACCESS_TOKEN first)
-pnpm run amplify:update-source:club # retarget the hashpass.club Amplify app to the canonical GitHub repo
-pnpm run amplify:update-source:club-dev # retarget the club-dev Amplify app to the canonical GitHub repo
-pnpm run release:club # release the production club Amplify tenant
-pnpm run release:club-dev # release the club-dev Amplify tenant
+pnpm run amplify:update-source # retarget the core Amplify app to the canonical GitHub repo (set AMPLIFY_ACCESS_TOKEN first)
+pnpm run amplify:update-source:club # legacy: retarget the old hashpass.club Amplify app to the canonical GitHub repo
+pnpm run amplify:update-source:club-dev # legacy: retarget the old club-dev Amplify app to the canonical GitHub repo
+pnpm run release:club:web # release the production club web app and publish the GitHub tag
+pnpm run release:club:web:patch # convenience patch release for the club web app
 pnpm run release:infra:patch # bump patch and release through the infra pipeline
 pnpm run release:infra:test # dry-run the infra release flow
 pnpm run build:all    # build the mobile app and the new club web app
@@ -108,8 +109,9 @@ See [apps/docs/docs/infra/INFRA_NAMING_GUIDE.md](apps/docs/docs/infra/INFRA_NAMI
 Deployment split:
 - `hashpass.tech` / `core` is the Amplify app (`dy8duury54wam`, `us-east-2`) and should continue deploying through the Git-backed `main`/`develop` branch flow from `apps/mobile-app`.
 - If Amplify still points at the old fork source, run `pnpm run amplify:update-source` once to move it to `hashpass-tech/hashpass.tech`.
-- `hashpass.club` is the new standalone Next.js app in `apps/web-app`. Its release path uses the `club` and `club-dev` Amplify tenants, and both should point at `hashpass-tech/hashpass.tech`.
-- Set `HASHPASS_CLUB_AMPLIFY_APP_ID` and `HASHPASS_CLUB_DEV_AMPLIFY_APP_ID` before running the club release helpers.
+- `hashpass.club` is the new standalone Next.js app in `apps/web-app`. It publishes through GitHub Pages and the `club-v*` release tag flow.
+- `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases that canonicalize to the GitHub Pages origin.
+- Configure the GitHub Pages custom domain in the repository settings before the first DNS cutover.
 - `bsl.hashpass.tech` / `bsl` deploys through the SST/CodeBuild pipeline. The live CodeBuild projects are `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`, and they use `packages/tools/buildspecs/infra-deploy.yml`.
 - `blockchainsummit.hashpass.lat` is a separate legacy Amplify tenant kept for the event track.
 - Use `pnpm run infra:deploy:dev` and `pnpm run infra:deploy:prod` for the BSL site, and `pnpm run infra:provision-pipelines` if you need to recreate the pipeline wiring.

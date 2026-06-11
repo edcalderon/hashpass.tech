@@ -1,33 +1,31 @@
 # Deployment Docs
 
-This section documents the current production site deployment for HashPass.
+This page documents the current production delivery path for the club site and docs.
 
 ## Canonical Production URLs
 
-- `https://hashpass.club` - static club web app
-- `https://hashpass.club/documentation/` - Docusaurus documentation
-- `https://club.hashpass.tech` - proxy to the club web app
-- `https://docs.hashpass.tech` - proxy to the documentation site
+- `https://hashpass.club` - canonical club web app on GitHub Pages
+- `https://hashpass.club/documentation/` - Docusaurus documentation on the same Pages artifact
+- `https://club.hashpass.tech` - DNS alias that canonicalizes to `https://hashpass.club`
+- `https://docs.hashpass.tech` - DNS alias that canonicalizes to `https://hashpass.club/documentation/`
 
 ## Deployment Model
 
-The production site is published from the SST infra package through a single GitHub Actions workflow that builds:
+The production site is published from a single GitHub Actions workflow:
 
-1. `apps/web-app` into the site root.
-2. `apps/docs` into `/documentation/`.
-3. A combined static artifact under `.site-artifacts/club-docs`.
+1. `apps/web-app` builds the root site.
+2. `apps/docs` builds the documentation site under `/documentation/`.
+3. `packages/infra/scripts/build-club-docs-site.sh` combines both outputs into `.site-artifacts/club-docs`.
+4. `actions/upload-pages-artifact` and `actions/deploy-pages` publish that artifact to GitHub Pages.
 
-That artifact is uploaded by `packages/infra/sst.config.ts` to a single AWS CloudFront/S3 site with these aliases:
+Route 53 handles the DNS layer:
 
-- `hashpass.club`
-- `club.hashpass.tech`
-- `docs.hashpass.tech`
-
-The docs build uses `HASHPASS_DOCS_URL=https://hashpass.club` and `HASHPASS_DOCS_BASE_URL=/documentation/` so all generated links are canonical on the production domain.
-
-The docs host uses an edge rewrite so `docs.hashpass.tech` can serve the same documentation content from the `/documentation/` prefix without changing the browser URL.
+- `hashpass.club` points at GitHub Pages using the GitHub Pages A and AAAA records.
+- `club.hashpass.tech` and `docs.hashpass.tech` are CNAME aliases to the canonical site.
 
 The workflow lives in `.github/workflows/deploy-club-docs.yml`.
+
+The docs build still uses `HASHPASS_DOCS_URL=https://hashpass.club` and `HASHPASS_DOCS_BASE_URL=/documentation/` so all generated links are canonical on the production domain.
 
 ## Current References
 
@@ -37,5 +35,7 @@ The workflow lives in `.github/workflows/deploy-club-docs.yml`.
 ## Notes
 
 - `hashpass.club` is the canonical public URL.
-- DNS/proxy handling for `club.hashpass.tech` and `docs.hashpass.tech` is managed by SST in `packages/infra`.
-- Legacy Amplify checklists, branch-specific deployment notes, and completed deployment summaries live in `archive/docs/`.
+- DNS changes can take up to 24 hours to propagate.
+- GitHub Pages custom domain settings must be configured in the repository settings before the DNS cutover is considered complete.
+- Legacy SST club front door notes remain in `packages/infra` for historical reference.
+- Historical deployment notes and one-off incident writeups live in `archive/docs/`.

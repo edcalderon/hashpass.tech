@@ -1,6 +1,25 @@
 locals {
   tech_zone_name = "${trim(var.route53_zone_tech_name, ".")}."
   lat_zone_name  = "${trim(var.route53_zone_lat_name, ".")}."
+  club_zone_name = "${trim(var.route53_zone_club_name, ".")}."
+
+  github_pages_domain = trim(var.github_pages_domain, ".")
+  github_pages_a_records = [
+    "185.199.108.153",
+    "185.199.109.153",
+    "185.199.110.153",
+    "185.199.111.153",
+  ]
+  github_pages_aaaa_records = [
+    "2606:50c0:8000::153",
+    "2606:50c0:8001::153",
+    "2606:50c0:8002::153",
+    "2606:50c0:8003::153",
+  ]
+  github_pages_aliases = [
+    "club.hashpass.tech",
+    "docs.hashpass.tech",
+  ]
 
   api_domains = {
     dev  = "api-dev.${trim(var.route53_zone_tech_name, ".")}"
@@ -41,6 +60,11 @@ data "aws_route53_zone" "tech" {
 
 data "aws_route53_zone" "lat" {
   name         = local.lat_zone_name
+  private_zone = false
+}
+
+data "aws_route53_zone" "club" {
+  name         = local.club_zone_name
   private_zone = false
 }
 
@@ -134,6 +158,35 @@ module "frontend_domain_association" {
       prefix      = "blockchainsummit-dev"
     }
   ]
+}
+
+resource "aws_route53_record" "github_pages_apex_a" {
+  zone_id         = data.aws_route53_zone.club.zone_id
+  name            = local.github_pages_domain
+  type            = "A"
+  ttl             = 300
+  records         = local.github_pages_a_records
+  allow_overwrite = true
+}
+
+resource "aws_route53_record" "github_pages_apex_aaaa" {
+  zone_id         = data.aws_route53_zone.club.zone_id
+  name            = local.github_pages_domain
+  type            = "AAAA"
+  ttl             = 300
+  records         = local.github_pages_aaaa_records
+  allow_overwrite = true
+}
+
+resource "aws_route53_record" "github_pages_aliases" {
+  for_each = toset(local.github_pages_aliases)
+
+  zone_id         = data.aws_route53_zone.tech.zone_id
+  name            = each.value
+  type            = "CNAME"
+  ttl             = 300
+  records         = [local.github_pages_domain]
+  allow_overwrite = true
 }
 
 resource "aws_amplify_branch" "frontend" {

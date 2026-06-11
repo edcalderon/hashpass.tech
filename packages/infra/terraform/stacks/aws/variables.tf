@@ -27,6 +27,18 @@ variable "route53_zone_lat_name" {
   default     = "hashpass.lat"
 }
 
+variable "route53_zone_club_name" {
+  description = "Route53 hosted zone name for the GitHub Pages club domain"
+  type        = string
+  default     = "hashpass.club"
+}
+
+variable "github_pages_domain" {
+  description = "Canonical GitHub Pages domain for the club site"
+  type        = string
+  default     = "hashpass.club"
+}
+
 variable "api_mapping_key" {
   description = "API mapping key exposed on custom domains"
   type        = string
