@@ -62,7 +62,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
+      # Use a dedicated Pages environment so tag-triggered club releases are not
+      # blocked by the repo's branch-restricted github-pages policy.
+      name: club-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
