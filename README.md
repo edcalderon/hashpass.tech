@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-black-cyan.svg" alt="HashPass" width="420" />
+  <img src="apps/web-app/public/logo-full-hashpass-black-cyan.svg" alt="HashPass" width="420" />
 </p>
 
 <p align="center">
