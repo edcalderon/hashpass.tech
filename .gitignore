@@ -2,9 +2,15 @@
 node_modules/
 dist/
 apps/*/dist/
+apps/docs/build/
+.docusaurus/
+.cache/
 .pnpm-store/
 aws/dist/
-apps/web-app/public/_expo/
+apps/mobile-app/public/_expo/
+apps/web-app/.next/
+apps/web-app/.vercel/
+apps/web-app/out/
 lambda-deployment.zip
 
 # Expo
@@ -64,6 +70,9 @@ storybook-static/
 .turbo/
 **/.turbo/
 **/.sst/
+.site-artifacts/
+apps/docs/.docusaurus/
+apps/docs/.cache/
 .versioning/
 google-cloud-sdk/
 .netlify/

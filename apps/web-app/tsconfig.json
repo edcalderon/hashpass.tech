@@ -1,32 +1,64 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
+    "allowJs": false,
+    "skipLibCheck": true,
     "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@components/*": ["./components/*"],
-      "@hooks/*": ["./hooks/*"],
-      "@lib/*": ["./lib/*"],
-      "@providers/*": ["./providers/*"],
-      "@contexts/*": ["./contexts/*"],
-      "@config/*": ["./config/*"],
-      "@screens/*": ["./app/screens/*"],
-      "@navigation/*": ["./navigation/*"],
-      "@hashpass/auth": ["../../packages/auth/src"],
-      "@hashpass/auth/*": ["../../packages/auth/src/*"],
-      "@hashpass/config": ["../../packages/config/src"],
-      "@hashpass/config/*": ["../../packages/config/src/*"],
-      "@hashpass/types": ["../../packages/types/src"],
-      "@hashpass/types/*": ["../../packages/types/src/*"],
-      "@hashpass/backend": ["../../packages/backend/src"],
-      "@hashpass/backend/*": ["../../packages/backend/src/*"],
-      "@hashpass/utils": ["../../packages/utils/src"],
-      "@hashpass/utils/*": ["../../packages/utils/src/*"],
-      "@hashpass/ui": ["../../packages/ui/src"],
-      "@hashpass/ui/*": ["../../packages/ui/src/*"]
+      "@hashpass/ui": [
+        "../../packages/ui/src/index.ts"
+      ],
+      "@hashpass/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@hashpass/utils": [
+        "../../packages/utils/src/index.ts"
+      ],
+      "@hashpass/utils/*": [
+        "../../packages/utils/src/*"
+      ],
+      "@hashpass/types": [
+        "../../packages/types/src/index.ts"
+      ],
+      "@hashpass/types/*": [
+        "../../packages/types/src/*"
+      ],
+      "@hashpass/i18n": [
+        "../../packages/i18n/src/index.ts"
+      ],
+      "@hashpass/i18n/*": [
+        "../../packages/i18n/src/*"
+      ],
+      "@/*": ["./*"]
     },
-    "typeRoots": ["./node_modules/@types", "./types", "../../node_modules/@types"]
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts", "types/**/*.d.ts"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

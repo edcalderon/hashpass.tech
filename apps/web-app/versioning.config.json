@@ -1,0 +1,65 @@
+{
+  "rootPackageJson": "package.json",
+  "packages": [
+    "."
+  ],
+  "changelogFile": "CHANGELOG.md",
+  "conventionalCommits": true,
+  "syncDependencies": false,
+  "ignorePackages": [],
+  "extensions": [],
+  "extensionConfig": {
+    "cleanup-repo": {
+      "enabled": false,
+      "defaultDestination": "docs",
+      "allowlist": [
+        "CHANGELOG.md",
+        "config/git-info.json",
+        "config/version.ts",
+        "config/versions.json",
+        "package.json",
+        "versioning.config.json"
+      ],
+      "routes": {
+        ".json": "config",
+        ".md": "docs",
+        ".ts": "config",
+        ".tsx": "app"
+      }
+    },
+    "secrets-check": {
+      "enabled": false,
+      "patterns": [],
+      "allowlist": []
+    },
+    "lifecycle-hooks": {
+      "enabled": false,
+      "hooks": {}
+    }
+  },
+  "branchAwareness": {
+    "enabled": false,
+    "defaultBranch": "main",
+    "branches": {
+      "main": {
+        "versionFormat": "semantic",
+        "tagFormat": "club-v{version}",
+        "syncFiles": [
+          "package.json",
+          "config/versions.json"
+        ],
+        "environment": "production",
+        "bumpStrategy": "semantic"
+      }
+    }
+  },
+  "releaseGuard": {
+    "enabled": true,
+    "tagPrefix": "club-v",
+    "allowBuildMetadata": true,
+    "checkReleaseFloor": true,
+    "metadataFiles": [
+      "config/versions.json"
+    ]
+  }
+}

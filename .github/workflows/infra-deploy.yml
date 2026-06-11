@@ -6,7 +6,7 @@ on:
       - main
       - develop
     paths:
-      - "apps/web-app/**"
+      - "apps/mobile-app/**"
       - "packages/infra/**"
       - "packages/auth/**"
       - "packages/backend/**"
@@ -29,6 +29,7 @@ jobs:
       id-token: write
     env:
       EXPECTED_AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      HASHPASS_INFRA_TARGET: bsl
 
     steps:
       - name: Checkout

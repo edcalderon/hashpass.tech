@@ -11,6 +11,12 @@ function firstEnv(names: string[]) {
   return "";
 }
 
+function getInfraTarget() {
+  const value = process.env.HASHPASS_INFRA_TARGET?.trim().toLowerCase();
+
+  return value === "club-docs" ? "club-docs" : "bsl";
+}
+
 function getPublicSupabaseEnv(stage: string) {
   const isProduction = stage === "production";
   const supabaseUrl = firstEnv(
@@ -100,12 +106,49 @@ export default $config({
     },
   },
   async run() {
+    const target = getInfraTarget();
+
+    if (target === "club-docs") {
+      if ($app.stage !== "production") {
+        throw new Error("The club-docs infra target only supports the production stage.");
+      }
+
+      const { CLUB_DOCS_HOST_REWRITE, CLUB_SITE_ALIASES, CLUB_SITE_BUILD_OUTPUT, CLUB_SITE_DOMAIN, CLUB_SITE_ENV } =
+        await import("./src/club-docs.js");
+
+      new sst.aws.StaticSite("club-site", {
+        path: "../..",
+        domain: {
+          name: CLUB_SITE_DOMAIN,
+          aliases: [...CLUB_SITE_ALIASES],
+          dns: sst.aws.dns({ override: true }),
+        },
+        build: {
+          command: "CI=1 pnpm --filter @hashpass/infra run build:club-docs-site",
+          output: CLUB_SITE_BUILD_OUTPUT,
+        },
+        environment: CLUB_SITE_ENV,
+        edge: {
+          viewerRequest: {
+            injection: CLUB_DOCS_HOST_REWRITE,
+          },
+        },
+      });
+
+      return {
+        stage: $app.stage,
+        target,
+        siteDomain: CLUB_SITE_DOMAIN,
+        aliases: [...CLUB_SITE_ALIASES],
+      };
+    }
+
     const { getBslSiteConfig } = await import("./src/domains.js");
     const site = getBslSiteConfig($app.stage);
     const zone = process.env.ROUTE53_ZONE_ID ? { zone: process.env.ROUTE53_ZONE_ID } : undefined;
 
     new sst.aws.StaticSite("bsl-web", {
-      path: "../../apps/web-app",
+      path: "../../apps/mobile-app",
       domain: {
         name: site.domain,
         dns: zone ? sst.aws.dns(zone) : sst.aws.dns(),
@@ -118,7 +161,7 @@ export default $config({
       },
       dev: {
         command: "npm run dev",
-        directory: "../../apps/web-app",
+        directory: "../../apps/mobile-app",
       },
       environment: {
         ...site.environment,
@@ -128,6 +171,7 @@ export default $config({
 
     return {
       stage: site.stage,
+      target,
       siteDomain: site.domain,
       apiBaseUrl: site.environment.EXPO_PUBLIC_API_BASE_URL,
     };

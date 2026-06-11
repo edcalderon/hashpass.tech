@@ -1,18 +1,21 @@
 # HashPass Infra
 
-This workspace package manages the BSL SST-based pipeline that replaces the legacy Amplify path for `bsl.hashpass.tech`.
+This workspace package now manages two AWS delivery targets:
 
-The main `hashpass.tech` app still follows the separate Amplify track documented in the repo root.
+- the existing BSL SST pipeline for `bsl.hashpass.tech`
+- the club front door for `hashpass.club`, `hashpass.club/documentation`, `club.hashpass.tech`, and `docs.hashpass.tech`
 
-It keeps the BSL web app deployment config in one place. The dev and deploy
-scripts call the SST CLI directly, while `doctor` wraps the upstream
-`@lsts_tech/infra` readiness checks.
+The dev and deploy scripts call the SST CLI directly, while `doctor` wraps the upstream `@lsts_tech/infra` readiness checks.
+
+Set `HASHPASS_INFRA_TARGET=club-docs` when you want the club front door instead of the BSL stack. The `deploy:club-docs:prod` script does that for production deploys.
 
 ## What it deploys
 
 - `bsl.hashpass.tech` for production
 - `bsl-dev.hashpass.tech` for development
-- `apps/web-app` as an SST `StaticSite`
+- `apps/mobile-app` as an SST `StaticSite`
+- `hashpass.club` as the canonical club site, with `club.hashpass.tech` and `docs.hashpass.tech` as aliases
+- `apps/web-app` and `apps/docs` assembled into a single combined static artifact for the club front door
 
 ## Commands
 
@@ -20,16 +23,20 @@ scripts call the SST CLI directly, while `doctor` wraps the upstream
 pnpm --filter @hashpass/infra run dev
 pnpm --filter @hashpass/infra run deploy:dev
 pnpm --filter @hashpass/infra run deploy:prod
+pnpm --filter @hashpass/infra run deploy:club-docs:prod
 pnpm --filter @hashpass/infra run doctor
 ```
 
 ## CI/CD
 
-GitHub Actions can deploy the package with AWS OIDC. The workflow in
-`.github/workflows/infra-deploy.yml` targets:
+GitHub Actions can deploy the package with AWS OIDC. The workflows target:
 
-- `develop` -> `dev`
-- `main` -> `production`
+- `.github/workflows/infra-deploy.yml` for the BSL target:
+  - `develop` -> `dev`
+  - `main` -> `production`
+- `.github/workflows/deploy-club-docs.yml` for the club front door:
+  - push tag `club`
+  - pushes that touch the club/docs source tree
 
 Before the first run, bootstrap a role with:
 
@@ -37,7 +44,7 @@ Before the first run, bootstrap a role with:
 REPO=<org>/<repo> ./packages/tools/scripts/setup-infra-role.sh
 ```
 
-The site build uses `expo export -p web` with the Expo web output set to
+The BSL site build uses `expo export -p web` with the Expo web output set to
 `static`, so SST only uploads the client bundle and does not spend time
 building the API route server tree. The CodeBuild projects are seeded with the
 public Supabase variables from the root `.env` so the export can bundle the
@@ -60,4 +67,4 @@ The generic `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` remain as
 fallbacks for local development and older CI jobs, but the BSL aliases are now
 preferred when they are present in the environment.
 
-See [docs/INFRA_NAMING_GUIDE.md](../../docs/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the BSL infra track.
+See [apps/docs/docs/infra/INFRA_NAMING_GUIDE.md](../../apps/docs/docs/infra/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the BSL infra track.

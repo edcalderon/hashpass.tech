@@ -13,6 +13,8 @@ Tenant deployment metadata is centralized in:
 Current tenants:
 
 - `core` (`hashpass.tech`, Amplify `dy8duury54wam` / `us-east-2`)
+- `club` (`hashpass.club`, Next.js Amplify tenant; app id comes from `HASHPASS_CLUB_AMPLIFY_APP_ID`)
+- `club-dev` (`club-dev.hashpass.tech`, Next.js Amplify tenant; app id comes from `HASHPASS_CLUB_DEV_AMPLIFY_APP_ID`)
 - `bsl` (`bsl.hashpass.tech`, SST/CodeBuild pipeline, `bsl-hashpass-dev-build` / `bsl-hashpass-prod-build`)
 - `blockchainsummit` (`blockchainsummit.hashpass.lat`, legacy Amplify tenant `d951nuj7hrqeg` / `sa-east-1`)
 
@@ -28,7 +30,9 @@ Release flow:
 - `release:pipeline` remains the tenant/deploy pipeline for infra and Amplify work
 - `release:dev` / `release:prod` target `core` by default
 - `release:bsl:dev` / `release:bsl:prod` follow the event tenant path and remain available for the historical branch-aware release flow
-- `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it
+- `release:club:web` / `release:club:web:patch` run the club web app patch release flow and emit `club-vX.Y.Z` tags
+- `release:club` / `release:club-dev` target the standalone Next.js app pipelines
+- `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it, including the club tenants once their Amplify app ids are configured
 
 BSL deployment and sync helpers use the `/hashpass/[env]/` SSM namespace. Keep those scripts separate from the Amplify-managed `core` track. The same sync flow also normalizes `/hashpass/[env]/bsl/better-auth/` and keeps `EXPO_PUBLIC_SUPABASE_KEY` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility. `packages/tools/scripts/propagate-env.js` and `packages/tools/scripts/sync-env.js` both resolve the repo root before writing files or syncing AWS state.
 
@@ -44,10 +48,13 @@ The branch-aware release flow:
 
 - `packages/tools/scripts/check-consistency.js`
 - `packages/tools/scripts/apply-amplify-custom-headers.sh`
+- `packages/tools/scripts/setup-infra-role.sh`
+- `packages/tools/scripts/setup-github-actions-role.sh`
 - `packages/tools/scripts/release-pipeline.js`
 - `packages/tools/scripts/release-infra-pipeline.js`
 - `packages/tools/scripts/provision-infra-connection.sh`
 - `packages/tools/scripts/provision-infra-pipelines.sh`
+- `packages/tools/scripts/update-amplify-source-repo.sh`
 - `packages/tools/scripts/test-release-infra-flow.sh`
 - `packages/tools/scripts/propagate-env.js` (for `dev`/`production`)
 - `packages/tools/scripts/sync-env.js`
@@ -59,23 +66,35 @@ node packages/tools/scripts/check-consistency.js --all-tenants --env development
 node packages/tools/scripts/check-consistency.js --tenant core --prod
 packages/tools/scripts/apply-amplify-custom-headers.sh --tenant core
 packages/tools/scripts/apply-amplify-custom-headers.sh --tenant blockchainsummit
+packages/tools/scripts/setup-infra-role.sh hashpass-tech/hashpass.tech
 node packages/tools/scripts/release.js patch
 node packages/tools/scripts/release.js minor --promote
 node packages/tools/scripts/release.js major --branch main
+node packages/tools/scripts/release-club-web.js patch --branch main
 node packages/tools/scripts/release-pipeline.js --env development
 node packages/tools/scripts/release-pipeline.js --env production --tenant core --bump minor
 node packages/tools/scripts/release-pipeline.js --env production --tenant blockchainsummit --bump minor
+node packages/tools/scripts/release-pipeline.js --env production --tenant club --dry-run
+node packages/tools/scripts/release-pipeline.js --env development --tenant club-dev --dry-run
 node packages/tools/scripts/release-pipeline.js --env production --all-tenants --bump minor
 node packages/tools/scripts/release-infra-pipeline.js --env production --bump patch
-packages/tools/scripts/provision-infra-connection.sh owner/repo
-packages/tools/scripts/provision-infra-pipelines.sh owner/repo
+packages/tools/scripts/provision-infra-connection.sh hashpass-tech/hashpass.tech
+packages/tools/scripts/provision-infra-pipelines.sh hashpass-tech/hashpass.tech
+packages/tools/scripts/setup-github-actions-role.sh hashpass-tech/hashpass.tech
+packages/tools/scripts/update-amplify-source-repo.sh --tenant core
+packages/tools/scripts/update-amplify-source-repo.sh --tenant club
+packages/tools/scripts/update-amplify-source-repo.sh --tenant club-dev
 packages/tools/scripts/test-release-infra-flow.sh production patch
 node packages/tools/scripts/propagate-env.js dev --tenant blockchainsummit
 node packages/tools/scripts/sync-env.js production --tenant core
 ```
 
+The Amplify source helper requires `AMPLIFY_ACCESS_TOKEN` for GitHub repositories or `AMPLIFY_OAUTH_TOKEN` for other providers.
+For the club tenants, set `HASHPASS_CLUB_AMPLIFY_APP_ID` and `HASHPASS_CLUB_DEV_AMPLIFY_APP_ID` in the environment or AWS release context before running the source or release helpers.
+`packages/tools/scripts/check-consistency.js` now also verifies that each Amplify app still points at the canonical `hashpass-tech/hashpass.tech` repository.
+
 Infra helpers derive the AWS account from active credentials unless `AWS_ACCOUNT_ID` or `EXPECTED_AWS_ACCOUNT_ID` is set in the environment or repository variables.
-See `docs/INFRA_NAMING_GUIDE.md` for the naming convention used by the new BSL infra resources.
+See `apps/docs/docs/infra/INFRA_NAMING_GUIDE.md` for the naming convention used by the new BSL infra resources.
 
 ### Environment safety guards
 

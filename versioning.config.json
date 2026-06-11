@@ -80,6 +80,7 @@
         "EXPO_PUBLIC_SUPABASE_URL: supabaseUrl,",
         "EXPO_PUBLIC_SUPABASE_KEY: supabaseAnonKey,",
         "AWS_SECRET_ACCESS_KEY=your-secret-access-key",
+        "process.env.GOOGLE_CLIENT_SECRET",
         "SUPABASE_SERVICE_ROLE_KEY=eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}",
         "directus_key=replace-with-random-key-min-32-chars",
         "directus_secret=replace-with-random-secret-min-32-chars",
@@ -106,8 +107,8 @@
         "tagFormat": "v{version}",
       "syncFiles": [
         "package.json",
-        "apps/web-app/package.json",
-        "apps/web-app/config/version.production.json"
+        "apps/mobile-app/package.json",
+        "apps/mobile-app/config/version.production.json"
       ],
         "environment": "production",
         "bumpStrategy": "semantic"
@@ -116,7 +117,7 @@
         "versionFormat": "dev",
         "tagFormat": "v{version}",
       "syncFiles": [
-        "apps/web-app/config/version.development.json"
+        "apps/mobile-app/config/version.development.json"
       ],
         "environment": "development",
         "bumpStrategy": "dev-build"
@@ -125,7 +126,7 @@
         "versionFormat": "feature",
         "tagFormat": "v{version}",
       "syncFiles": [
-        "apps/web-app/config/version.development.json"
+        "apps/mobile-app/config/version.development.json"
       ],
         "environment": "development",
         "bumpStrategy": "feature-branch"
@@ -134,7 +135,7 @@
         "versionFormat": "hotfix",
         "tagFormat": "v{version}",
       "syncFiles": [
-        "apps/web-app/config/version.development.json"
+        "apps/mobile-app/config/version.development.json"
       ],
         "environment": "development",
         "bumpStrategy": "hotfix"
@@ -147,7 +148,7 @@
     "allowBuildMetadata": true,
     "checkReleaseFloor": true,
     "metadataFiles": [
-      "apps/web-app/config/version.production.json"
+      "apps/mobile-app/config/version.production.json"
     ]
   }
 }

@@ -1,0 +1,7 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HashPass Docs">
+  <rect width="64" height="64" rx="18" fill="#08111F"/>
+  <path d="M20 18H26L24 46H18L20 18Z" fill="#22D3EE"/>
+  <path d="M38 18H44L42 46H36L38 18Z" fill="#22D3EE"/>
+  <path d="M14 28H50L49 34H13L14 28Z" fill="#F97316"/>
+  <path d="M16 40H48L47 46H15L16 40Z" fill="#22D3EE" opacity="0.9"/>
+</svg>
