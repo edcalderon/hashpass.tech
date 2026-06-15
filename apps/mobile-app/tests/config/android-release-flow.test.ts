@@ -6,6 +6,7 @@ import path from 'path';
 const mobileAppRoot = path.resolve(__dirname, '../../');
 const readJson = (relativePath: string) =>
   JSON.parse(fs.readFileSync(path.join(mobileAppRoot, relativePath), 'utf8')) as Record<string, any>;
+const rootPackageJson = readJson('../../package.json') as Record<string, any>;
 const appJson = readJson('app.json').expo as Record<string, any>;
 
 const TEST_ENV_KEYS = [
@@ -102,7 +103,7 @@ describe('Android release flow', () => {
   });
 
   it('keeps app.json aligned with the current store version and leaves Expo project linking to app.config.js', () => {
-    expect(appJson.version).toBe('1.8.0');
+    expect(appJson.version).toBe(rootPackageJson.version);
     expect(appJson.slug).toBe('hash-pass-tech');
     expect(appJson.android?.versionCode).toBeUndefined();
     expect(appJson.buildNumber).toBeUndefined();

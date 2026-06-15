@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "packageManager": "pnpm@10.28.2",
   "pnpm": {
     "patchedDependencies": {
@@ -71,6 +71,8 @@
     "amplify:update-source:club": "bash packages/tools/scripts/update-amplify-source-repo.sh --tenant club",
     "amplify:update-source:club-dev": "bash packages/tools/scripts/update-amplify-source-repo.sh --tenant club-dev",
     "version:update": "node packages/tools/scripts/update-version.mjs",
+    "update-readme": "pnpm exec versioning update-readme --readme README.md --changelog CHANGELOG.md --pkg package.json",
+    "readme:sync": "pnpm run update-readme",
     "version:bump": "node packages/tools/scripts/version-bump.js",
     "release": "node packages/tools/scripts/release.js",
     "release:patch": "node packages/tools/scripts/release.js patch",

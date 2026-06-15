@@ -6,6 +6,8 @@
   <img alt="Monorepo" src="https://img.shields.io/badge/monorepo-pnpm%20%2B%20Turborepo-111827?style=flat-square" />
   <img alt="Apps" src="https://img.shields.io/badge/apps-mobile%20%2B%20web-0ea5e9?style=flat-square" />
   <img alt="Docs" src="https://img.shields.io/badge/docs-Docusaurus-3b82f6?style=flat-square" />
+  <img alt="Tracked version" src="https://img.shields.io/github/v/tag/hashpass-tech/hashpass.tech?label=tracked%20version&style=flat-square&color=0ea5e9&sort=semver" />
+  <img alt="Release" src="https://img.shields.io/badge/release-patch-8b5cf6?style=flat-square" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8.3-3178c6?style=flat-square&logo=typescript&logoColor=white" />
   <img alt="Node.js" src="https://img.shields.io/badge/Node.js-22.22.0%2B-339933?style=flat-square&logo=node.js&logoColor=white" />
   <img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" />
@@ -14,6 +16,19 @@
 <p align="center">
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
+
+## 📋 Latest Changes (v1.8.1)
+
+### Released
+- README badge and changelog sync guard
+
+### Technical Details
+- Version: 1.8.1
+- Release Type: stable
+- Build Number: 202606152327
+- Release Date: 2026-06-15T23:27:34.521Z
+
+For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
 ## Current Status
 

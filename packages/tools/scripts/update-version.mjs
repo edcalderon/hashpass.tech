@@ -24,6 +24,11 @@ const VERSION_TS_PATHS = [
   path.join(mobileAppRoot, 'config', 'version.ts'),
 ];
 
+const VERSION_JSON_PATHS = [
+  path.join(mobileAppRoot, 'config', 'version.production.json'),
+  path.join(mobileAppRoot, 'config', 'version.development.json'),
+];
+
 const VERSIONS_JSON_TARGETS = [
   {
     versionTsPath: path.join(mobileAppRoot, 'config', 'version.ts'),
@@ -186,6 +191,18 @@ function updateChangelog(version, releaseType, notes = '') {
   console.log(`✅ Updated CHANGELOG.md with version ${version}`);
 }
 
+function syncReadmeFromChangelog() {
+  const readmeSyncScript = 'pnpm run update-readme';
+  console.log('📘 Syncing README.md from CHANGELOG.md...');
+
+  execSync(readmeSyncScript, {
+    cwd: projectRoot,
+    stdio: 'inherit',
+  });
+
+  console.log('✅ Synced README.md from CHANGELOG.md');
+}
+
 // Files to update
 const filesToUpdate = [
   {
@@ -246,6 +263,24 @@ const filesToUpdate = [
         key: 'notes',
         value: `'${releaseNotes || `Version ${newVersion} release`}'`,
         pattern: /notes:\s*'[^']*'/
+      }
+    ]
+  })),
+  ...(fs.existsSync(path.join(projectRoot, 'apps/mobile-app/app.json')) ? [{
+    path: 'apps/mobile-app/app.json',
+    updates: [
+      {
+        key: 'expo.version',
+        value: newVersion
+      }
+    ]
+  }] : []),
+  ...VERSION_JSON_PATHS.map((targetPath) => ({
+    path: path.relative(projectRoot, targetPath),
+    updates: [
+      {
+        key: 'version',
+        value: newVersion
       }
     ]
   }))
@@ -320,6 +355,13 @@ for (const file of filesToUpdate) {
 
 // Update CHANGELOG.md
 updateChangelog(newVersion, releaseType, releaseNotes);
+
+try {
+  syncReadmeFromChangelog();
+} catch (error) {
+  console.error('❌ Error syncing README.md from CHANGELOG.md:', error.message);
+  allUpdated = false;
+}
 
 // Helper function to extract features and bugfixes from CURRENT_VERSION
 function extractFeaturesAndBugfixes(content) {
@@ -728,8 +770,12 @@ try {
     console.log('\n📁 Files updated:');
     filesToUpdate.forEach(file => console.log(`   - ${file.path}`));
     console.log('   - apps/mobile-app/config/versions.json');
+    console.log('   - apps/mobile-app/app.json');
+    console.log('   - apps/mobile-app/config/version.production.json');
+    console.log('   - apps/mobile-app/config/version.development.json');
     console.log('   - apps/mobile-app/config/git-info.json');
     console.log('   - CHANGELOG.md');
+    console.log('   - README.md');
     console.log('   - apps/mobile-app/public/sw.js');
 
     // Perform git operations if requested

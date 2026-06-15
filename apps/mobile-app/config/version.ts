@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606151947, // Updated to current timestamp
+  buildNumber: 202606152327, // Updated to current timestamp
   releaseDate: '2026-06-15',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
-    'Guarded browser-only window access in mobile event and auth contexts to prevent Android startup crashes',
-    'Hardened speaker avatar URL handling when image URLs are missing',
-    'Switched the web app and PWA to public/favicon.ico for favicon assets'
+    'Added a tracked version badge to the root README',
+    'Synced the root README latest changes block from CHANGELOG.md during releases',
+    'Kept the Expo app version and release metadata aligned with the tracked package version'
   ],
   breakingChanges: [],
-  notes: 'Android startup crash fix and favicon refresh'
+  notes: 'README badge and changelog sync guard'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.1': {
+    version: '1.8.1',
+    buildNumber: 202606152327,
+    releaseDate: '2026-06-15',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Added a tracked version badge to the root README',
+      'Synced the root README latest changes block from CHANGELOG.md during releases',
+      'Kept the Expo app version and release metadata aligned with the tracked package version'
+    ],
+    breakingChanges: [],
+    notes: 'README badge and changelog sync guard'
+  },
   '1.8.0': {
     version: '1.8.0',
     buildNumber: 202606151947,

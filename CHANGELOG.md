@@ -10,6 +10,18 @@
 - Release Date: 2026-06-15T19:47:19.733Z
 
 
+## [1.8.1] - 2026-06-15
+
+### Released
+- README badge and changelog sync guard
+
+### Technical Details
+- Version: 1.8.1
+- Release Type: stable
+- Build Number: 202606152327
+- Release Date: 2026-06-15T23:27:34.521Z
+
+
 ## [1.7.9] - 2026-06-10
 
 ### Released
