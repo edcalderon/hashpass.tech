@@ -83,6 +83,7 @@ describe('Android release flow', () => {
     expect(easConfig.build?.development?.environment).toBe('development');
     expect(easConfig.build?.preview?.environment).toBe('preview');
     expect(easConfig.build?.preview?.android?.buildType).toBe('app-bundle');
+    expect(easConfig.build?.preview?.autoIncrement).toBe(true);
     expect(easConfig.build?.preview?.env?.EAS_BUILD_PROFILE).toBe('preview');
     expect(easConfig.build?.preview?.env?.EAS_PROJECT_ID).toBe(
       'b07c6fde-24ef-434a-8329-761815afe901',

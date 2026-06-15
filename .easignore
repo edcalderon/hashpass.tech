@@ -1,0 +1,54 @@
+# EAS upload pruning for HashPass mobile builds.
+# Keep the mobile app runtime, shared workspace packages, and build scripts it calls.
+
+# Large unrelated app areas
+archive/
+apps/docs/
+apps/directus/
+apps/web-app/
+packages/infra/
+db/
+
+# Mobile-only non-runtime content
+apps/mobile-app/assets/store/
+apps/mobile-app/assets/speakers/
+apps/mobile-app/docs/
+apps/mobile-app/tests/
+apps/mobile-app/public/README-splash.md
+apps/mobile-app/assets/images/favicon.png
+apps/mobile-app/assets/images/partial-react-logo.png
+apps/mobile-app/assets/images/react-logo.png
+apps/mobile-app/assets/images/react-logo@2x.png
+apps/mobile-app/assets/images/react-logo@3x.png
+apps/mobile-app/assets/images/splash-icon.png
+
+# Build outputs and caches
+node_modules/
+**/node_modules/
+dist/
+apps/*/dist/
+apps/mobile-app/.expo/
+apps/mobile-app/public/_expo/
+.expo/
+web-build/
+.turbo/
+**/.turbo/
+.site-artifacts/
+.netlify/
+.versioning/
+**/.sst/
+.docusaurus/
+.cache/
+.pnpm-store/
+apps/docs/build/
+
+# Local env and secrets
+.env
+.env.*
+**/.env*
+!**/.env.example
+config/private-gcloud.json
+config/hashpass-eas.json
+packages/infra/terraform/gcp/gcp-credentials.json
+infrastructure/terraform/gcp/gcp-credentials.json
+lambda-deployment.zip

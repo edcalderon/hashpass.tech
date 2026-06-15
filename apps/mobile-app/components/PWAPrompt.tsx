@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Platform } from 'react-native';
-import { PwaInstallPromptCard } from '@hashpass/ui';
+import PwaInstallPromptCard from '../../../packages/ui/src/PwaInstallPromptCard';
 import { buildAndroidIntentUrl, getInstallationStatus, resolvePwaLaunchUrl } from '../lib/pwa-utils';
 import { useTranslation } from '../i18n/i18n';
 

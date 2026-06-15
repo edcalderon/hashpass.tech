@@ -424,6 +424,7 @@ const envContent = DISCLAIMER + Object.entries(targetConfig)
 // Write to targets
 const webAppEnvPath = path.join(WEB_APP_DIR, '.env');
 const webAppEnvLocalPath = path.join(WEB_APP_DIR, `.env.${options.envArg}`);
+fs.mkdirSync(path.dirname(webAppEnvPath), { recursive: true });
 
 console.log(`📝 Writing to ${webAppEnvPath}...`);
 fs.writeFileSync(webAppEnvPath, envContent);
@@ -432,6 +433,7 @@ console.log(`📝 Writing to ${webAppEnvLocalPath}...`);
 fs.writeFileSync(webAppEnvLocalPath, envContent);
 
 const directusEnvPath = path.join(DIRECTUS_DIR, '.env');
+fs.mkdirSync(path.dirname(directusEnvPath), { recursive: true });
 console.log(`📝 Writing to ${directusEnvPath}...`);
 fs.writeFileSync(directusEnvPath, envContent);
 

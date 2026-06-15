@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, useColorScheme, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useTheme } from '../hooks/useTheme';
 import { supabase } from '../lib/supabase';
+import SpeakerAvatar from './SpeakerAvatar';
 
 interface MeetingDetailProps {
   meetingId: string;
@@ -32,8 +33,6 @@ export default function MeetingDetail({ meetingId, onClose, showHeader = true }:
   const { colors } = useTheme();
   const [meeting, setMeeting] = React.useState<MeetingInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -120,9 +119,9 @@ export default function MeetingDetail({ meetingId, onClose, showHeader = true }:
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text?.primary }]}>Meeting Details</Text>
           {onClose && (
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Pressable onPress={onClose} style={styles.closeButton} accessibilityRole="button" hitSlop={10}>
               <MaterialIcons name="close" size={24} color={colors.text?.primary} />
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
       )}
@@ -130,10 +129,12 @@ export default function MeetingDetail({ meetingId, onClose, showHeader = true }:
       <ScrollView style={styles.scrollView}>
         <View style={[styles.card, { backgroundColor: colors.background.paper }]}>
           <View style={styles.speakerInfo}>
-            <Image 
-              source={{ uri: meeting.speaker_image }} 
+            <SpeakerAvatar
+              name={meeting.speaker_name}
+              imageUrl={meeting.speaker_image}
+              size={64}
+              showBorder={false}
               style={styles.avatar}
-              defaultSource={require('../../assets/images/avatar-placeholder.png')}
             />
             <View style={styles.speakerDetails}>
               <Text style={[styles.speakerName, { color: colors.text?.primary }]}>
@@ -266,9 +267,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
     marginRight: 16,
   },
   speakerDetails: {

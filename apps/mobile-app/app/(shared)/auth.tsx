@@ -31,7 +31,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { getCurrentLocale, useTranslation } from '../../i18n/i18n';
 import { apiClient } from '../../lib/api-client';
 import { authService } from '@hashpass/auth';
-import { ShaderAnimation } from '@hashpass/ui';
+import ShaderAnimation from '../../components/ShaderAnimation';
 import { getEmailAutocompleteSuggestions } from '../../lib/email-autocomplete';
 import {
   buildCountryDialOptions,
