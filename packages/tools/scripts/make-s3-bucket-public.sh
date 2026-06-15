@@ -23,7 +23,7 @@ echo ""
 # Check if AWS CLI is installed
 if ! command -v aws &> /dev/null; then
     echo "⚠️  AWS CLI is not installed."
-    echo "   Please follow the manual steps in docs/MAKE_S3_BUCKET_PUBLIC.md"
+    echo "   Please follow the manual steps in apps/docs/docs/infra/MAKE_S3_BUCKET_PUBLIC.md"
     echo ""
     exit 1
 fi
@@ -120,4 +120,3 @@ echo "Test URL: $TEST_URL"
 echo ""
 echo "If you still see 403 errors, wait a few minutes for"
 echo "the changes to propagate, or check AWS Console."
-

@@ -16,12 +16,12 @@ const versioningConfigPath = path.join(projectRoot, 'versioning.config.json');
 // Files that should be updated when version changes
 const VERSION_FILES = [
   'package.json',
-  'apps/web-app/package.json',
-  'apps/web-app/config/version.production.json',
-  'apps/web-app/config/version.development.json',
+  'apps/mobile-app/package.json',
+  'apps/mobile-app/config/version.production.json',
+  'apps/mobile-app/config/version.development.json',
   'app.json',
-  'apps/web-app/config/version.ts',
-  'apps/web-app/config/versions.json',
+  'apps/mobile-app/config/version.ts',
+  'apps/mobile-app/config/versions.json',
   'CHANGELOG.md'
 ];
 
@@ -69,17 +69,17 @@ function getVersionFromFile(filePath) {
     }
   }
 
-  if (filePath === 'apps/web-app/package.json') {
+  if (filePath === 'apps/mobile-app/package.json') {
     const json = JSON.parse(content);
     return json.version;
   }
   
-  if (filePath === 'apps/web-app/config/version.ts') {
+  if (filePath === 'apps/mobile-app/config/version.ts') {
     const versionMatch = content.match(/version:\s*['"]([^'"]+)['"]/);
     return versionMatch ? versionMatch[1] : null;
   }
   
-  if (filePath === 'apps/web-app/config/versions.json') {
+  if (filePath === 'apps/mobile-app/config/versions.json') {
     const json = JSON.parse(content);
     return json.currentVersion;
   }
@@ -143,7 +143,7 @@ function validateVersionConsistency() {
   if (
     branchAwareEnabled &&
     stagedVersionFiles.length > 0 &&
-    stagedVersionFiles.every((f) => f === 'apps/web-app/config/version.development.json')
+    stagedVersionFiles.every((f) => f === 'apps/mobile-app/config/version.development.json')
   ) {
     return { valid: true, errors: [], warnings: [] };
   }
@@ -152,7 +152,7 @@ function validateVersionConsistency() {
   const comparableVersions = branchAwareEnabled
     ? Object.fromEntries(
         Object.entries(versions).filter(
-          ([file]) => file !== 'apps/web-app/config/version.development.json'
+          ([file]) => file !== 'apps/mobile-app/config/version.development.json'
         )
       )
     : versions;
@@ -190,7 +190,7 @@ function validateVersionConsistency() {
   // Check if all required files are updated
   const relevantVersionFiles = branchAwareEnabled
     ? VERSION_FILES.filter(
-        (f) => f !== 'apps/web-app/config/version.development.json'
+        (f) => f !== 'apps/mobile-app/config/version.development.json'
       )
     : VERSION_FILES;
 

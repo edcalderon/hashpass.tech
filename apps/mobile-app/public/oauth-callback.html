@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OAuth Callback - HashPass</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    h2 { margin-bottom: 10px; }
+    p { opacity: 0.8; }
+    .success { color: #4ade80; }
+    .error { color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="spinner" id="spinner"></div>
+    <h2 id="title">Processing Login...</h2>
+    <p id="message">Please wait while we complete your authentication.</p>
+  </div>
+
+  <script>
+    // OAuth callback handler - this page runs on the Directus domain
+    // It extracts tokens from cookies and sends them to the opener window
+    
+    async function handleCallback() {
+      const spinner = document.getElementById('spinner');
+      const title = document.getElementById('title');
+      const message = document.getElementById('message');
+      
+      try {
+        console.log('OAuth callback processing...');
+        console.log('Current URL:', window.location.href);
+        
+        // Check for access token in URL hash
+        const hash = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hash);
+        const accessToken = hashParams.get('access_token');
+        
+        // Check for access token in URL query
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryToken = urlParams.get('access_token');
+        
+        const token = accessToken || queryToken;
+        
+        if (token) {
+          console.log('Found access token in URL');
+          
+          // Send token to opener window via postMessage
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth_callback',
+              success: true,
+              access_token: token,
+              refresh_token: hashParams.get('refresh_token') || urlParams.get('refresh_token'),
+              expires_in: hashParams.get('expires_in') || urlParams.get('expires_in')
+            }, '*');
+            
+            spinner.style.display = 'none';
+            title.innerHTML = '✓ Login Successful!';
+            title.classList.add('success');
+            message.textContent = 'This window will close automatically...';
+            
+            setTimeout(() => window.close(), 1500);
+            return;
+          }
+        }
+        
+        // If no token in URL, try to verify session via API
+        // This makes a same-origin request to check if cookies were set
+        const response = await fetch('/users/me', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('Session verified:', userData.data?.email);
+          
+          // Get access token from response or try to get it from /auth/refresh
+          let sessionToken = null;
+          try {
+            const refreshResponse = await fetch('/auth/refresh', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ mode: 'json' })
+            });
+            
+            if (refreshResponse.ok) {
+              const tokenData = await refreshResponse.json();
+              sessionToken = tokenData.data?.access_token;
+            }
+          } catch (e) {
+            console.error('Could not get token from refresh:', e);
+          }
+          
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'oauth_callback',
+              success: true,
+              access_token: sessionToken || 'session_cookie',
+              user: userData.data
+            }, '*');
+            
+            spinner.style.display = 'none';
+            title.innerHTML = '✓ Login Successful!';
+            title.classList.add('success');
+            message.textContent = 'This window will close automatically...';
+            
+            setTimeout(() => window.close(), 1500);
+            return;
+          }
+        }
+        
+        // No session found - check for error
+        const error = urlParams.get('error') || urlParams.get('reason');
+        if (error) {
+          throw new Error(error);
+        }
+        
+        throw new Error('Authentication session could not be established');
+        
+      } catch (error) {
+        console.error('OAuth callback error:', error);
+        
+        spinner.style.display = 'none';
+        title.innerHTML = '✗ Login Failed';
+        title.classList.add('error');
+        message.textContent = error.message || 'An error occurred during authentication.';
+        
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'oauth_callback',
+            success: false,
+            error: error.message
+          }, '*');
+          
+          setTimeout(() => window.close(), 3000);
+        }
+      }
+    }
+    
+    // Run callback handler when page loads
+    handleCallback();
+  </script>
+</body>
+</html>

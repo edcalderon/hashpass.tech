@@ -52,5 +52,4 @@ echo "2. Verify Lambda function is deployed and has latest code"
 echo "3. Verify custom domain 'api.hashpass.tech' is mapped to API Gateway"
 echo "4. Check CloudWatch logs for errors"
 echo ""
-echo "See docs/API-GATEWAY-TROUBLESHOOTING.md for detailed instructions"
-
+echo "See apps/docs/docs/infra/api-gateway/API-GATEWAY-TROUBLESHOOTING.md for detailed instructions"

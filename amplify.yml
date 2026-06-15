@@ -37,7 +37,7 @@ frontend:
         - 'echo "Building for branch: $AWS_BRANCH"'
     build:
       commands:
-        - rm -rf dist apps/web-app/dist
+        - rm -rf dist apps/mobile-app/dist
         - mkdir -p dist/client/_expo/functions/api/bslatam
         # Use higher memory allowance to support more workers safely
         - export NODE_OPTIONS="--max-old-space-size=6144"
@@ -55,8 +55,8 @@ frontend:
         - node packages/tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/client
         - node packages/tools/scripts/normalize-expo-hidden-asset-paths.mjs dist/server
         - mkdir -p dist/client/config
-        - cp apps/web-app/config/versions.json dist/client/config/versions.json 2>/dev/null || true
-        - cp apps/web-app/public/sw.js dist/client/sw.js 2>/dev/null || true
+        - cp apps/mobile-app/config/versions.json dist/client/config/versions.json 2>/dev/null || true
+        - cp apps/mobile-app/public/sw.js dist/client/sw.js 2>/dev/null || true
         - mkdir -p amplify-backend-config/backend/function/bslApi/src/server/_expo/functions
         - rm -rf amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/api || true
         - cp -r dist/server/_expo/functions/api amplify-backend-config/backend/function/bslApi/src/server/_expo/functions/
@@ -177,7 +177,7 @@ frontend:
   cache:
     paths:
       - .turbo/**/*
-      - apps/web-app/.expo/**/*
+      - apps/mobile-app/.expo/**/*
 redirects:
   - source: '/sw.js'
     status: 200

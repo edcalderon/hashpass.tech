@@ -133,6 +133,8 @@ function printUsage() {
       '',
       'Examples:',
       '  node packages/tools/scripts/check-consistency.js --tenant core',
+      '  node packages/tools/scripts/check-consistency.js --tenant club --prod',
+      '  node packages/tools/scripts/check-consistency.js --tenant club-dev --env development',
       '  node packages/tools/scripts/check-consistency.js --tenant blockchainsummit --prod',
       '  node packages/tools/scripts/check-consistency.js --all-tenants --env development',
     ].join('\n')
@@ -171,13 +173,18 @@ function getLambdaEnv(functionName, region) {
   }
 }
 
-function getAmplifyAppEnv(appId, region) {
+function getAmplifyAppConfig(appId, region) {
   try {
     const config = runJson(`aws amplify get-app --app-id ${appId} --region ${region} --output json`);
-    return config.app && config.app.environmentVariables ? config.app.environmentVariables : {};
+    return config.app || null;
   } catch (_err) {
     return null;
   }
+}
+
+function getAmplifyAppEnv(appId, region) {
+  const config = getAmplifyAppConfig(appId, region);
+  return config && config.environmentVariables ? config.environmentVariables : {};
 }
 
 function getAmplifyBranchEnv(appId, region, branchName) {
@@ -243,6 +250,75 @@ async function auditTenant(tenantName, environment, configPath) {
   let issues = 0;
   let warnings = 0;
   const suggestions = [];
+
+  if (runtime.appType === 'next') {
+    const appConfig = getAmplifyAppConfig(runtime.amplify.appId, runtime.amplify.region);
+    const appEnv = appConfig && appConfig.environmentVariables ? appConfig.environmentVariables : null;
+    const branchEnv = getAmplifyBranchEnv(runtime.amplify.appId, runtime.amplify.region, runtime.branchName);
+
+    if (!appEnv) {
+      log(`Amplify app not found or not readable: ${runtime.amplify.appId}`, 'error');
+      issues += 1;
+    } else if (!branchEnv) {
+      log(`Amplify branch not found or not readable: ${runtime.branchName}`, 'error');
+      issues += 1;
+    } else {
+      const mergedAmplifyEnv = { ...appEnv, ...branchEnv };
+      const appRepository = appConfig && appConfig.repository ? String(appConfig.repository).trim() : '';
+
+      if (runtime.sourceRepository) {
+        if (!compareValue(appRepository, runtime.sourceRepository)) {
+          log('Amplify source repository differs from tenant config', 'error');
+          console.log(`    Actual:   ${appRepository || '(unset)'}`);
+          console.log(`    Expected: ${runtime.sourceRepository}`);
+          issues += 1;
+          suggestions.push(
+            `bash packages/tools/scripts/update-amplify-source-repo.sh --tenant ${runtime.tenant} --repo ${runtime.sourceRepository}`
+          );
+        } else {
+          log(`Amplify source repository matches tenant config (${runtime.sourceRepository})`, 'success');
+        }
+      }
+
+      const requiredNextChecks = [
+        ['NEXT_PUBLIC_SITE_URL', runtime.frontendUrl],
+        ['NEXT_PUBLIC_APP_NAME', runtime.appName],
+        ['NEXT_PUBLIC_SUPPORT_EMAIL', runtime.supportEmail],
+      ].filter(([, expected]) => Boolean(expected));
+
+      for (const [key, expected] of requiredNextChecks) {
+        const actual = mergedAmplifyEnv[key] || '';
+        if (!compareValue(actual, expected)) {
+          log(`Amplify mismatch in ${key} (${runtime.branchName}):`, 'error');
+          console.log(`    Actual:   ${actual || '(unset)'}`);
+          console.log(`    Expected: ${expected}`);
+          issues += 1;
+        }
+      }
+    }
+
+    console.log('');
+    console.log('------------------------------------------------------------');
+    if (issues === 0) {
+      log(`Audit completed without blocking issues: ${contextTitle}`, 'success');
+    } else {
+      log(`Audit found ${issues} issue(s): ${contextTitle}`, 'error');
+    }
+
+    if (warnings > 0) {
+      log(`Audit warnings: ${warnings}`, 'warn');
+    }
+
+    if (suggestions.length > 0) {
+      log('Suggested commands:', 'warn');
+      for (const suggestion of suggestions) {
+        console.log(`\n${suggestion}`);
+      }
+    }
+
+    console.log('');
+    return { issues, warnings };
+  }
 
   const lambdaName = runtime.lambda.functionName;
   const lambdaRegion = runtime.lambda.region;
@@ -408,8 +484,10 @@ async function auditTenant(tenantName, environment, configPath) {
   console.log('');
 
   log(`Auditing Amplify app: ${runtime.amplify.appId} (${runtime.amplify.region})`, 'info');
-  const appEnv = getAmplifyAppEnv(runtime.amplify.appId, runtime.amplify.region);
+  const appConfig = getAmplifyAppConfig(runtime.amplify.appId, runtime.amplify.region);
+  const appEnv = appConfig && appConfig.environmentVariables ? appConfig.environmentVariables : null;
   const branchEnv = getAmplifyBranchEnv(runtime.amplify.appId, runtime.amplify.region, runtime.branchName);
+  const appRepository = appConfig && appConfig.repository ? String(appConfig.repository).trim() : '';
 
   if (!appEnv) {
     log(`Amplify app not found/readable: ${runtime.amplify.appId}`, 'error');
@@ -419,6 +497,20 @@ async function auditTenant(tenantName, environment, configPath) {
     issues += 1;
   } else {
     const mergedAmplifyEnv = { ...appEnv, ...branchEnv };
+
+    if (runtime.sourceRepository) {
+      if (!compareValue(appRepository, runtime.sourceRepository)) {
+        log('Amplify source repository differs from tenant config', 'error');
+        console.log(`    Actual:   ${appRepository || '(unset)'}`);
+        console.log(`    Expected: ${runtime.sourceRepository}`);
+        issues += 1;
+        suggestions.push(
+          `bash packages/tools/scripts/update-amplify-source-repo.sh --tenant ${runtime.tenant} --repo ${runtime.sourceRepository}`
+        );
+      } else {
+        log(`Amplify source repository matches tenant config (${runtime.sourceRepository})`, 'success');
+      }
+    }
 
     const requiredAmplifyChecks = [['EXPO_PUBLIC_API_BASE_URL', runtime.apiBaseUrl]];
     const optionalAmplifyChecks = [

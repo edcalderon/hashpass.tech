@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import type { ReactNode } from 'react';
 
 import '@fontsource/fraunces/500.css';
@@ -18,41 +19,11 @@ import { ThemeProvider } from './components/ThemeProvider';
 import { I18nProvider } from '@hashpass/i18n';
 
 const CANONICAL_SITE_URL = 'https://hashpass.club';
-
-function getCanonicalDomainRedirectScript() {
-  return `
-    (function () {
-      try {
-        var host = window.location.hostname.toLowerCase();
-        var path = window.location.pathname || '/';
-        var search = window.location.search || '';
-        var hash = window.location.hash || '';
-        var target = null;
-
-        if (host === 'club.hashpass.tech') {
-          target = '${CANONICAL_SITE_URL}' + path + search + hash;
-        } else if (host === 'docs.hashpass.tech') {
-          if (path === '/' || path === '/documentation' || path === '/documentation/') {
-            target = '${CANONICAL_SITE_URL}/documentation/' + search + hash;
-          } else if (!path.startsWith('/documentation/')) {
-            target =
-              '${CANONICAL_SITE_URL}/documentation' +
-              (path.charAt(0) === '/' ? path : '/' + path) +
-              search +
-              hash;
-          }
-        }
-
-        if (target && target !== window.location.href) {
-          window.location.replace(target);
-        }
-      } catch (error) {}
-    })();
-  `;
-}
+const SOCIAL_IMAGE_PATH = '/og-image.png';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://hashpass.club'),
+  metadataBase: new URL(CANONICAL_SITE_URL),
+  applicationName: 'HashPass Club',
   title: {
     default: 'hashpass.club — Membership management',
     template: '%s | hashpass.club',
@@ -60,18 +31,61 @@ export const metadata: Metadata = {
   description:
     'HashPass gives invite-only clubs, communities, and events a unified platform to manage members, access, and renewals across mobile and web.',
   keywords: ['membership', 'club management', 'NFT tickets', 'blockchain', 'community'],
+  alternates: {
+    canonical: CANONICAL_SITE_URL,
+  },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'HashPass Club',
+  },
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://hashpass.club',
+    url: CANONICAL_SITE_URL,
     siteName: 'hashpass.club',
     title: 'hashpass.club — Membership management',
     description: 'Unified membership platform for invite-only clubs, communities, and events.',
+    images: [
+      {
+        url: SOCIAL_IMAGE_PATH,
+        width: 1200,
+        height: 630,
+        alt: 'HashPass Club membership management platform',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'hashpass.club',
     description: 'Membership infrastructure for modern clubs.',
+    images: [SOCIAL_IMAGE_PATH],
+  },
+  icons: {
+    icon: [
+      {
+        url: '/favicon.ico',
+        type: 'image/x-icon',
+        sizes: 'any',
+      },
+      {
+        url: '/favicon-32x32.png',
+        type: 'image/png',
+        sizes: '32x32',
+      },
+      {
+        url: '/favicon-16x16.png',
+        type: 'image/png',
+        sizes: '16x16',
+      },
+    ],
+    apple: '/apple-touch-icon.png',
+    shortcut: '/favicon.ico',
   },
   robots: { index: true, follow: true },
 };
@@ -89,16 +103,20 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: getCanonicalDomainRedirectScript(),
-          }}
+        <Script
+          id="canonical-domain-redirect"
+          src="/canonical-redirect.js"
+          strategy="beforeInteractive"
         />
-        {/* Prevent flash of wrong theme */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('hashpass_theme');var r=t==='light'?'light':t==='dark'?'dark':(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',r);}catch(e){}})()`,
-          }}
+        <Script
+          id="theme-bootstrap"
+          src="/theme-init.js"
+          strategy="beforeInteractive"
+        />
+        <Script
+          id="service-worker-registration"
+          src="/sw-register.js"
+          strategy="afterInteractive"
         />
       </head>
       <body>

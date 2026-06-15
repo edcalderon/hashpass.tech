@@ -46,7 +46,7 @@ create_service_accounts = true
 # Set false + provide map if you want to reuse existing service accounts.
 existing_service_account_emails = {}
 
-startup_repository_url = "https://github.com/edcalderon/hashpass.tech.git"
+startup_repository_url = "https://github.com/hashpass-tech/hashpass.tech.git"
 startup_repository_ref = "main"
 directus_compose_path  = "apps/directus/docker-compose.yml"
 

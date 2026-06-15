@@ -73,7 +73,7 @@ rm -rf dist/client
 mkdir -p dist/client
 
 # Prefer the web app public directory.
-PUBLIC_DIR="apps/web-app/public"
+PUBLIC_DIR="apps/mobile-app/public"
 
 # Function to safely copy build output
 copy_build_output() {

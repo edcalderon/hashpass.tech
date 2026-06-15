@@ -1,5 +1,6 @@
 {
   "defaults": {
+    "sourceRepository": "hashpass-tech/hashpass.tech",
     "releaseBranches": {
       "development": "develop",
       "production": "main"
@@ -32,6 +33,7 @@
   "tenants": {
     "core": {
       "label": "hashpass.tech",
+      "appType": "expo",
       "amplify": {
         "appId": "dy8duury54wam",
         "region": "us-east-2"
@@ -45,8 +47,37 @@
         "production": "mnnqryrdlhddorqsrtbn"
       }
     },
+    "club": {
+      "label": "hashpass.club",
+      "appType": "next",
+      "appName": "HashPass Club",
+      "supportEmail": "hello@hashpass.club",
+      "amplify": {
+        "appIdEnv": "HASHPASS_CLUB_AMPLIFY_APP_ID",
+        "region": "us-east-2"
+      },
+      "frontendUrls": {
+        "development": "https://club-dev.hashpass.tech",
+        "production": "https://hashpass.club"
+      }
+    },
+    "club-dev": {
+      "label": "hashpass.club (dev)",
+      "appType": "next",
+      "appName": "HashPass Club",
+      "supportEmail": "hello@hashpass.club",
+      "amplify": {
+        "appIdEnv": "HASHPASS_CLUB_DEV_AMPLIFY_APP_ID",
+        "region": "us-east-2"
+      },
+      "frontendUrls": {
+        "development": "https://club-dev.hashpass.tech",
+        "production": "https://club-dev.hashpass.tech"
+      }
+    },
     "bsl": {
       "label": "bsl.hashpass.tech",
+      "appType": "expo",
       "amplify": {
         "appId": "dy8duury54wam",
         "region": "us-east-2"
@@ -76,6 +107,7 @@
     },
     "blockchainsummit": {
       "label": "blockchainsummit.hashpass.lat",
+      "appType": "expo",
       "amplify": {
         "appId": "d951nuj7hrqeg",
         "region": "sa-east-1"

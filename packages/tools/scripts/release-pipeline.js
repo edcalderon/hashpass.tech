@@ -58,6 +58,8 @@ function printUsage() {
       'Examples:',
       '  npm run release:dev',
       '  npm run release:bsl:prod',
+      '  npm run release:club',
+      '  npm run release:club-dev',
       '  npm run release:pipeline -- --env development --tenant blockchainsummit --dry-run',
       '  npm run release:pipeline -- --env production --all-tenants --dry-run',
     ].join('\n')
@@ -293,6 +295,7 @@ function printPlan(options, runtimes, targetBranch) {
   console.log(`  Environment:      ${options.environment}`);
   console.log(`  Branch:           ${targetBranch}`);
   console.log(`  Tenants:          ${runtimes.map((r) => r.tenant).join(', ')}`);
+  console.log(`  App types:        ${[...new Set(runtimes.map((r) => r.appType || 'expo'))].join(', ')}`);
   console.log(`  Version bump:     ${options.bump}`);
   console.log(`  Lambda stage:     ${options.runLambda ? (options.deployLambdaCode ? 'env+code' : 'env-only') : 'skipped'}`);
   console.log(`  Directus stage:   ${options.runDirectus ? 'enabled' : 'skipped'}`);
@@ -340,7 +343,7 @@ function pushBranchAndTags(options, targetBranch) {
 }
 
 function runLambdaStage(options, runtime) {
-  if (!options.runLambda) return;
+  if (!options.runLambda || !runtime || !runtime.lambda || !runtime.lambda.functionName || !runtime.lambda.region) return;
 
   const syncEnv = options.environment === 'production' ? 'production' : 'dev';
   const lambdaFunction = runtime.lambda.functionName;
@@ -362,7 +365,7 @@ function runLambdaStage(options, runtime) {
   );
   runCommand(
     'bash',
-    ['-lc', `SKIP_ENV_PROPAGATE=1 BUILD_ENV=${syncEnv} pnpm --filter hashpass-web-app build`],
+    ['-lc', `SKIP_ENV_PROPAGATE=1 BUILD_ENV=${syncEnv} pnpm --filter hashpass-mobile-app build`],
     options
   );
   runCommand('bash', ['packages/tools/scripts/package-lambda.sh'], options);
@@ -517,19 +520,27 @@ function main() {
     }
 
     const targetBranch = runtimes[0].branchName;
-    const lambdaFunction = runtimes[0].lambda.functionName;
-    const lambdaRegion = runtimes[0].lambda.region;
+    const expoRuntimes = runtimes.filter((runtime) => runtime.appType !== 'next');
 
     for (const runtime of runtimes) {
       if (runtime.branchName !== targetBranch) {
         throw new Error('Resolved tenants have different release branches. This pipeline requires a shared branch.');
       }
-      if (
-        runtime.lambda.functionName !== lambdaFunction ||
-        runtime.lambda.region !== lambdaRegion
-      ) {
-        throw new Error('Resolved tenants have different Lambda targets. This pipeline expects one shared Lambda per environment.');
+    }
+
+    if (expoRuntimes.length > 0) {
+      const lambdaFunction = expoRuntimes[0].lambda.functionName;
+      const lambdaRegion = expoRuntimes[0].lambda.region;
+
+      for (const runtime of expoRuntimes) {
+        if (runtime.lambda.functionName !== lambdaFunction || runtime.lambda.region !== lambdaRegion) {
+          throw new Error('Resolved tenants have different Lambda targets. This pipeline expects one shared Lambda per environment.');
+        }
       }
+    } else {
+      options.runLambda = false;
+      options.deployLambdaCode = false;
+      options.runDirectus = false;
     }
 
     ensureCleanGitState(options);
@@ -539,8 +550,10 @@ function main() {
     runConsistencyAudit(options);
     runVersionBump(options);
     pushBranchAndTags(options, targetBranch);
-    runLambdaStage(options, runtimes[0]);
-    runDirectusStage(options);
+    if (expoRuntimes.length > 0) {
+      runLambdaStage(options, expoRuntimes[0]);
+      runDirectusStage(options);
+    }
 
     const jobs = startAmplifyJobs(options, runtimes);
     waitAmplifyJobs(options, jobs);

@@ -6,7 +6,7 @@ set -e
 ROLE_NAME="${ROLE_NAME:-BslHashpassInfraDeployRole}"
 EXPECTED_ACCOUNT_ID="${EXPECTED_AWS_ACCOUNT_ID:-${AWS_ACCOUNT_ID:-}}"
 REGION="${AWS_REGION:-us-east-2}"
-REPO="${1:-${GITHUB_REPOSITORY:-}}"
+REPO="${1:-${GITHUB_REPOSITORY:-hashpass-tech/hashpass.tech}}"
 
 echo "🔐 Setting up IAM Role for GitHub Actions infra deploys"
 echo "======================================================="

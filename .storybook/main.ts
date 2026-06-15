@@ -5,12 +5,12 @@ const isProduction = process.env.NODE_ENV === 'production';
 const stories = isProduction
   ? [
       // Only guides in production
-      '../docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
+      '../apps/docs/docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
     ]
   : [
       // All stories in development
       '../components/**/*.stories.@(js|jsx|ts|tsx|mdx)',
-      '../docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
+      '../apps/docs/docs/**/*.stories.@(js|jsx|ts|tsx|mdx)',
     ];
 
 const config: StorybookConfig = {
@@ -167,4 +167,3 @@ const config: StorybookConfig = {
 };
 
 export default config;
-

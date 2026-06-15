@@ -3,7 +3,7 @@ set -euo pipefail
 
 EXPECTED_ACCOUNT_ID="${EXPECTED_AWS_ACCOUNT_ID:-${AWS_ACCOUNT_ID:-}}"
 REGION="${AWS_REGION:-us-east-2}"
-REPO="${GITHUB_REPOSITORY:-edcalderon/hashpass.tech}"
+REPO="${GITHUB_REPOSITORY:-hashpass-tech/hashpass.tech}"
 RESOURCE_PREFIX="${RESOURCE_PREFIX:-bsl-hashpass}"
 CONNECTION_NAME="${CONNECTION_NAME:-${RESOURCE_PREFIX}-github-${REGION}}"
 PIPELINE_ROLE_NAME="${PIPELINE_ROLE_NAME:-BslHashpassPipelineRole}"

@@ -6,7 +6,7 @@ REGION="${AWS_REGION:-us-east-2}"
 RESOURCE_PREFIX="${RESOURCE_PREFIX:-bsl-hashpass}"
 CONNECTION_NAME="${CONNECTION_NAME:-${RESOURCE_PREFIX}-github-${REGION}}"
 PROVIDER_TYPE="${PROVIDER_TYPE:-GitHub}"
-REPO="${1:-${GITHUB_REPOSITORY:-}}"
+REPO="${1:-${GITHUB_REPOSITORY:-hashpass-tech/hashpass.tech}}"
 
 if [[ -z "${REPO}" ]]; then
   echo "ERROR: set GITHUB_REPOSITORY or pass <owner>/<repo> as the first argument."

@@ -23,10 +23,10 @@
   },
   "defaultGroups": ["core", "events", "wallet", "auth", "security"],
   "groups": {
-    "core": ["apps/web-app/db/migrations/V001__init_core_schema.sql"],
-    "events": ["apps/web-app/db/migrations/V002__meeting_requests_system.sql"],
-    "security": ["apps/web-app/db/migrations/V003__row_level_security.sql"],
-    "wallet": ["apps/web-app/db/migrations/V004__wallet_auth.sql"],
-    "auth": ["apps/web-app/db/migrations/V005__otp_codes.sql"]
+    "core": ["apps/mobile-app/db/migrations/V001__init_core_schema.sql"],
+    "events": ["apps/mobile-app/db/migrations/V002__meeting_requests_system.sql"],
+    "security": ["apps/mobile-app/db/migrations/V003__row_level_security.sql"],
+    "wallet": ["apps/mobile-app/db/migrations/V004__wallet_auth.sql"],
+    "auth": ["apps/mobile-app/db/migrations/V005__otp_codes.sql"]
   }
 }

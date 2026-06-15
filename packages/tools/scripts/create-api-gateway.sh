@@ -175,7 +175,6 @@ echo "   Example: $INVOKE_URL/api/config/versions"
 echo ""
 echo "📚 Next steps:"
 echo "   1. Test the API: curl $INVOKE_URL/api/config/versions"
-echo "   2. Configure custom domain (see docs/API-GATEWAY-SETUP.md)"
+    echo "   2. Configure custom domain (see apps/docs/docs/infra/api-gateway/API-GATEWAY-SETUP.md)"
 echo "   3. Update DNS to point api.hashpass.tech to API Gateway"
 echo ""
-

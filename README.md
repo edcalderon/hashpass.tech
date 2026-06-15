@@ -116,6 +116,22 @@ Deployment split:
 - `blockchainsummit.hashpass.lat` is a separate legacy Amplify tenant kept for the event track.
 - Use `pnpm run infra:deploy:dev` and `pnpm run infra:deploy:prod` for the BSL site, and `pnpm run infra:provision-pipelines` if you need to recreate the pipeline wiring.
 
+Mobile Android release flow:
+- `pnpm run android:bundle` builds the Play Store artifact as an Android App Bundle (`.aab`) via the production EAS project.
+- `pnpm run android:publish` submits the latest Android build to Google Play through EAS Submit on the production track.
+- `pnpm run android:release` builds and auto-submits in one step for the production track.
+- `pnpm run android:bundle:dev` builds an internal preview bundle on the development EAS project.
+- `pnpm run android:publish:dev` submits the latest internal preview build through the development EAS project.
+- `pnpm run android:release:dev` builds and auto-submits an internal preview build in one step.
+- The release wrapper accepts `--env production|development` if you call it directly from `packages/tools/scripts/run-mobile-release.js`.
+- `pnpm run eas:mobile:sync:dev` pushes the sanitized repo env to the Expo preview environment and `pnpm run eas:mobile:sync:prod` does the same for production.
+- These commands read `EXPO_TOKEN` for production and `EXPO_TOKEN_DEV` for development from the root `.env`, so no manual shell export is needed for local runs.
+- The wrapper selects `EAS_PROJECT_ID` for production and `EAS_PROJECT_ID_DEV` for development based on the EAS profile.
+- EAS is configured for remote app version management, so Android `versionCode` is handled by EAS instead of a hardcoded timestamp in `app.json`.
+- The production Expo project is already linked in `apps/mobile-app/app.json`; if you ever bootstrap a fresh Expo app, run `eas init` there instead of here.
+- Both submit profiles point at `config/hashpass-eas.json` for the Google Play service account, so `eas submit` can authenticate on production and preview/internal tracks.
+- If the app already has a Play Store listing, run `eas build:version:set --platform android` once to seed the remote Android version counter before the first production build.
+
 1. **Clone the repo:**
    ```bash
    git clone https://github.com/hashpass-tech/hashpass.tech.git

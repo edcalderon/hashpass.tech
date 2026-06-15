@@ -12,6 +12,7 @@ apps/web-app/.next/
 apps/web-app/.vercel/
 apps/web-app/out/
 lambda-deployment.zip
+package-lock.json
 
 # Expo
 .expo/
@@ -38,6 +39,7 @@ sst-env.d.ts
 **/.env*
 !**/.env.example
 config/private-gcloud.json
+config/hashpass-eas.json
 infrastructure/terraform/gcp/gcp-credentials.json
 infrastructure/terraform/stacks/gcp/directus.*.env
 !infrastructure/terraform/stacks/gcp/directus.*.env.example

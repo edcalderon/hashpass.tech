@@ -91,6 +91,6 @@ FUNCTION_ARN=$(aws lambda get-function --function-name $FUNCTION_NAME --region $
 echo "   Function ARN: $FUNCTION_ARN"
 echo ""
 echo "📚 Next steps:"
-echo "   1. Configure API Gateway (see docs/API-GATEWAY-SETUP.md)"
+echo "   1. Configure API Gateway (see apps/docs/docs/infra/api-gateway/API-GATEWAY-SETUP.md)"
 echo "   2. Test the function: aws lambda invoke --function-name $FUNCTION_NAME --region $REGION /tmp/hashpass-lambda-response.json"
 echo ""

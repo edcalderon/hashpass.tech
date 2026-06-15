@@ -8,10 +8,10 @@ frontend:
         - pnpm install --frozen-lockfile
     build:
       commands:
-        - pnpm --filter hashpass-web-app build
-        - cp -r apps/web-app/dist/server/. apps/web-app/dist/client/
+        - pnpm --filter hashpass-mobile-app build
+        - cp -r apps/mobile-app/dist/server/. apps/mobile-app/dist/client/
   artifacts:
-    baseDirectory: apps/web-app/dist/client
+    baseDirectory: apps/mobile-app/dist/client
     files:
       - '**/*'
   cache:

@@ -13,21 +13,21 @@ echo ""
 
 # Resolve build directory (prefer the app Expo server bundle for API routes)
 BUILD_DIR=""
-if [ -d "$PROJECT_ROOT/apps/web-app/dist/server" ]; then
-    BUILD_DIR="$PROJECT_ROOT/apps/web-app/dist/server"
-elif [ -d "$PROJECT_ROOT/apps/web-app/dist/client" ]; then
-    BUILD_DIR="$PROJECT_ROOT/apps/web-app/dist/client"
+if [ -d "$PROJECT_ROOT/apps/mobile-app/dist/server" ]; then
+    BUILD_DIR="$PROJECT_ROOT/apps/mobile-app/dist/server"
+elif [ -d "$PROJECT_ROOT/apps/mobile-app/dist/client" ]; then
+    BUILD_DIR="$PROJECT_ROOT/apps/mobile-app/dist/client"
 elif [ -d "$PROJECT_ROOT/dist/server" ]; then
     BUILD_DIR="$PROJECT_ROOT/dist/server"
 elif [ -d "$PROJECT_ROOT/dist/client" ]; then
     BUILD_DIR="$PROJECT_ROOT/dist/client"
-elif [ -d "$PROJECT_ROOT/apps/web-app/dist" ]; then
-    BUILD_DIR="$PROJECT_ROOT/apps/web-app/dist"
+elif [ -d "$PROJECT_ROOT/apps/mobile-app/dist" ]; then
+    BUILD_DIR="$PROJECT_ROOT/apps/mobile-app/dist"
 elif [ -d "$PROJECT_ROOT/dist" ]; then
     BUILD_DIR="$PROJECT_ROOT/dist"
 else
-    echo "❌ Build output not found. Expected dist/server, apps/web-app/dist/server, dist/client, apps/web-app/dist/client, apps/web-app/dist, or dist."
-    echo "   Run: pnpm --filter hashpass-web-app build"
+    echo "❌ Build output not found. Expected dist/server, apps/mobile-app/dist/server, dist/client, apps/mobile-app/dist/client, apps/mobile-app/dist, or dist."
+    echo "   Run: pnpm --filter hashpass-mobile-app build"
     exit 1
 fi
 
@@ -62,8 +62,8 @@ echo "3a. Copying config files..."
 mkdir -p "$PACKAGE_DIR/config"
 if [ -f "${BUILD_DIR}/config/versions.json" ]; then
   cp "${BUILD_DIR}/config/versions.json" "$PACKAGE_DIR/config/"
-elif [ -f "$PROJECT_ROOT/apps/web-app/config/versions.json" ]; then
-  cp "$PROJECT_ROOT/apps/web-app/config/versions.json" "$PACKAGE_DIR/config/"
+elif [ -f "$PROJECT_ROOT/apps/mobile-app/config/versions.json" ]; then
+  cp "$PROJECT_ROOT/apps/mobile-app/config/versions.json" "$PACKAGE_DIR/config/"
 fi
 # Note: We do NOT copy the root package.json as it has incompatible dependencies
 # The packages/infra/lambda/package.json already has the minimal dependencies needed
@@ -88,7 +88,7 @@ echo ""
 echo "✅ Lambda package created: lambda-deployment.zip"
 echo ""
 echo "📝 Next steps:"
-echo "   1. Create Lambda function (see docs/API-GATEWAY-SETUP.md)"
+echo "   1. Create Lambda function (see apps/docs/docs/infra/api-gateway/API-GATEWAY-SETUP.md)"
 echo "   2. Upload lambda-deployment.zip to Lambda"
 echo "   3. Configure API Gateway"
 echo ""

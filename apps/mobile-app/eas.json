@@ -1,0 +1,55 @@
+{
+  "cli": {
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "EAS_BUILD_PROFILE": "development",
+        "EAS_PROJECT_ID": "b07c6fde-24ef-434a-8329-761815afe901",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "b07c6fde-24ef-434a-8329-761815afe901"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "environment": "preview",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EAS_BUILD_PROFILE": "preview",
+        "EAS_PROJECT_ID": "b07c6fde-24ef-434a-8329-761815afe901",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "b07c6fde-24ef-434a-8329-761815afe901"
+      }
+    },
+    "production": {
+      "environment": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "autoIncrement": true,
+      "env": {
+        "EAS_BUILD_PROFILE": "production",
+        "EAS_PROJECT_ID": "f710aa31-82ef-4ee3-82a3-068b0fad04dc",
+        "EXPO_PUBLIC_EAS_PROJECT_ID": "f710aa31-82ef-4ee3-82a3-068b0fad04dc"
+      }
+    }
+  },
+  "submit": {
+    "preview": {
+      "android": {
+        "track": "internal",
+        "serviceAccountKeyPath": "../../config/hashpass-eas.json"
+      }
+    },
+    "production": {
+      "android": {
+        "track": "production",
+        "serviceAccountKeyPath": "../../config/hashpass-eas.json"
+      }
+    }
+  }
+}

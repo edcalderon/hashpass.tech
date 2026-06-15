@@ -47,11 +47,25 @@ function resolveTenant(tenantName, environment = 'development', configPath = DEF
 
   const defaults = config.defaults || {};
   const amplify = tenant.amplify || {};
-  const appId = amplify.appId || '';
-  const region = amplify.region || '';
+  const appType = tenant.appType || defaults.appType || 'expo';
+  const appId =
+    amplify.appId ||
+    (amplify.appIdEnv ? process.env[String(amplify.appIdEnv)] || '' : '') ||
+    '';
+  const region =
+    amplify.region ||
+    (amplify.regionEnv ? process.env[String(amplify.regionEnv)] || '' : '') ||
+    '';
+  const sourceRepository = tenant.sourceRepository || defaults.sourceRepository || '';
+  const appName = tenant.appName || defaults.appName || '';
+  const supportEmail = tenant.supportEmail || defaults.supportEmail || '';
 
   if (!appId || !region) {
-    throw new Error(`Tenant "${tenantName}" is missing amplify.appId or amplify.region`);
+    const appIdHint = amplify.appIdEnv ? ` or set ${amplify.appIdEnv}` : '';
+    const regionHint = amplify.regionEnv ? ` or set ${amplify.regionEnv}` : '';
+    throw new Error(
+      `Tenant "${tenantName}" is missing amplify.appId${appIdHint} or amplify.region${regionHint}`
+    );
   }
 
   const branchName =
@@ -76,13 +90,18 @@ function resolveTenant(tenantName, environment = 'development', configPath = DEF
   return {
     tenant: tenantName,
     label: tenant.label || tenantName,
+    appType,
     environment: env,
     branchName,
     configPath: resolvedConfigPath,
     amplify: {
       appId,
       region,
+      sourceRepository,
     },
+    sourceRepository,
+    appName,
+    supportEmail,
     directusUrl,
     supabaseRef,
     supabaseUrl: supabaseRef ? `https://${supabaseRef}.supabase.co` : '',

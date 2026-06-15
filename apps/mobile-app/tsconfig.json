@@ -1,0 +1,32 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@components/*": ["./components/*"],
+      "@hooks/*": ["./hooks/*"],
+      "@lib/*": ["./lib/*"],
+      "@providers/*": ["./providers/*"],
+      "@contexts/*": ["./contexts/*"],
+      "@config/*": ["./config/*"],
+      "@screens/*": ["./app/screens/*"],
+      "@navigation/*": ["./navigation/*"],
+      "@hashpass/auth": ["../../packages/auth/src"],
+      "@hashpass/auth/*": ["../../packages/auth/src/*"],
+      "@hashpass/config": ["../../packages/config/src"],
+      "@hashpass/config/*": ["../../packages/config/src/*"],
+      "@hashpass/types": ["../../packages/types/src"],
+      "@hashpass/types/*": ["../../packages/types/src/*"],
+      "@hashpass/backend": ["../../packages/backend/src"],
+      "@hashpass/backend/*": ["../../packages/backend/src/*"],
+      "@hashpass/utils": ["../../packages/utils/src"],
+      "@hashpass/utils/*": ["../../packages/utils/src/*"],
+      "@hashpass/ui": ["../../packages/ui/src"],
+      "@hashpass/ui/*": ["../../packages/ui/src/*"]
+    },
+    "typeRoots": ["./node_modules/@types", "./types", "../../node_modules/@types"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts", "types/**/*.d.ts"]
+}

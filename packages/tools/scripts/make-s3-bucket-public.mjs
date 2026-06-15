@@ -67,7 +67,7 @@ async function main() {
     } catch (error) {
       console.error('❌ Failed to disable block public access:', error.message);
       console.error('   Please do this manually in AWS Console');
-      console.error('   See: docs/MAKE_S3_BUCKET_PUBLIC.md');
+      console.error('   See: docs/infra/MAKE_S3_BUCKET_PUBLIC.md');
       process.exit(1);
     }
 
@@ -132,7 +132,7 @@ async function main() {
   } catch (error) {
     console.error('❌ Error:', error.message);
     console.error('');
-    console.error('Please follow manual steps in: docs/MAKE_S3_BUCKET_PUBLIC.md');
+    console.error('Please follow manual steps in: docs/infra/MAKE_S3_BUCKET_PUBLIC.md');
     process.exit(1);
   }
 }
@@ -141,4 +141,3 @@ main().catch((error) => {
   console.error('❌ Fatal error:', error);
   process.exit(1);
 });
-

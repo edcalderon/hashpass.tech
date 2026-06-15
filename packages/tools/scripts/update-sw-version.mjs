@@ -15,7 +15,7 @@ const version = packageJson.version;
 
 const candidateSwPaths = [
   path.join(projectRoot, 'public/sw.js'),
-  path.join(projectRoot, 'apps/web-app/public/sw.js'),
+  path.join(projectRoot, 'apps/mobile-app/public/sw.js'),
 ];
 
 let updatedCount = 0;

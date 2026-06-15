@@ -142,7 +142,7 @@ CREATE POLICY "Users can update their own passes" ON public.passes
     
     console.log('\n🎉 Setup complete!');
     console.log('📱 The explorer view should now display Edward Calderon\'s passes');
-    console.log('🔗 Test URL: http://localhost:3000/api/bslatam/user-passes?userId=edward-calderon-unal&eventId=bsl2025');
+    console.log('🔗 Test URL: http://localhost:8081/api/bslatam/user-passes?userId=edward-calderon-unal&eventId=bsl2025');
     
   } catch (error) {
     console.error('❌ Unexpected error:', error.message);

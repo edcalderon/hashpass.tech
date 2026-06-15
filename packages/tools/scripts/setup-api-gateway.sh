@@ -35,7 +35,7 @@ if [ -z "$EXISTING_FUNCTION" ]; then
     echo ""
     echo "📦 Step 1: Prepare Lambda deployment package"
     echo "   - Build the project: npm run build:web"
-    echo "   - See docs/API-GATEWAY-SETUP.md for detailed packaging instructions"
+    echo "   - See apps/docs/docs/infra/api-gateway/API-GATEWAY-SETUP.md for detailed packaging instructions"
     echo ""
     echo "📝 Step 2: Create Lambda function"
     echo "   Run: aws lambda create-function \\"
@@ -111,7 +111,6 @@ else
 fi
 
 echo "📚 For detailed step-by-step instructions, see:"
-echo "   - docs/API-GATEWAY-TROUBLESHOOTING.md"
-echo "   - docs/API-GATEWAY-SETUP.md (if exists)"
+echo "   - apps/docs/docs/infra/api-gateway/API-GATEWAY-TROUBLESHOOTING.md"
+echo "   - apps/docs/docs/infra/api-gateway/API-GATEWAY-SETUP.md (if exists)"
 echo ""
-

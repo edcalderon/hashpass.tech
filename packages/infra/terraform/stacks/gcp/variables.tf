@@ -94,7 +94,7 @@ variable "existing_service_account_emails" {
 variable "startup_repository_url" {
   description = "Git repository URL pulled by VM startup"
   type        = string
-  default     = "https://github.com/edcalderon/hashpass.tech.git"
+  default     = "https://github.com/hashpass-tech/hashpass.tech.git"
 }
 
 variable "startup_repository_ref" {

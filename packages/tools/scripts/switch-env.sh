@@ -5,7 +5,7 @@
 set -e
 
 ENV=${1:-local}
-WEB_APP_DIR="apps/web-app"
+WEB_APP_DIR="apps/mobile-app"
 
 # Validate argument
 case "$ENV" in

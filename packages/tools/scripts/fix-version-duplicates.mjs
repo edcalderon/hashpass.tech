@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Script to fix duplicate version entries in apps/web-app/config/version.ts
+ * Script to fix duplicate version entries in apps/mobile-app/config/version.ts
  * Removes duplicate entries, keeping only the first occurrence of each version
  */
 
@@ -11,10 +11,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, '..');
-const versionTsPath = path.join(projectRoot, 'apps/web-app/config/version.ts');
+const versionTsPath = path.join(projectRoot, 'apps/mobile-app/config/version.ts');
 
 function fixDuplicates() {
-  console.log('🔍 Reading apps/web-app/config/version.ts...\n');
+  console.log('🔍 Reading apps/mobile-app/config/version.ts...\n');
   
   let content = fs.readFileSync(versionTsPath, 'utf8');
   
@@ -125,7 +125,7 @@ function fixDuplicates() {
   // Write the fixed content
   fs.writeFileSync(versionTsPath, newContent, 'utf8');
   
-  console.log('✅ Fixed duplicate entries in apps/web-app/config/version.ts');
+  console.log('✅ Fixed duplicate entries in apps/mobile-app/config/version.ts');
   console.log(`   Removed ${entriesToRemove.length} duplicate entries`);
 }
 

@@ -4,14 +4,14 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./apps/web-app/*"],
-      "@components/*": ["./apps/web-app/components/*"],
-      "@hooks/*": ["./apps/web-app/hooks/*"],
-      "@lib/*": ["./apps/web-app/lib/*"],
-      "@providers/*": ["./apps/web-app/providers/*"],
-      "@contexts/*": ["./apps/web-app/contexts/*"],
-      "@screens/*": ["./apps/web-app/app/screens/*"],
-      "@navigation/*": ["./apps/web-app/navigation/*"],
+      "@/*": ["./apps/mobile-app/*"],
+      "@components/*": ["./apps/mobile-app/components/*"],
+      "@hooks/*": ["./apps/mobile-app/hooks/*"],
+      "@lib/*": ["./apps/mobile-app/lib/*"],
+      "@providers/*": ["./apps/mobile-app/providers/*"],
+      "@contexts/*": ["./apps/mobile-app/contexts/*"],
+      "@screens/*": ["./apps/mobile-app/app/screens/*"],
+      "@navigation/*": ["./apps/mobile-app/navigation/*"],
       "@hashpass/auth": ["./packages/auth/src"],
       "@hashpass/auth/*": ["./packages/auth/src/*"],
       "@hashpass/config": ["./packages/config/src"],
@@ -38,8 +38,8 @@
     "node_modules/**",
     ".expo/**",
     ".turbo/**",
-    "apps/web-app/dist/**",
-    "apps/web-app/public/_expo/**",
+    "apps/mobile-app/dist/**",
+    "apps/mobile-app/public/_expo/**",
     "packages/infra/terraform/**/.terraform/**"
   ]
 }

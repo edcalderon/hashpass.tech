@@ -151,7 +151,7 @@ async function addTestUserAndPasses() {
     
     // Test the API endpoint
     console.log('\n🔗 To test the passes, use this URL:');
-    console.log(`http://localhost:3000/api/bslatam/user-passes?userId=${userId}&eventId=${eventId}`);
+    console.log(`http://localhost:8081/api/bslatam/user-passes?userId=${userId}&eventId=${eventId}`);
     
     console.log('\n📱 In the explorer view, the passes should now display for user:', userId);
     

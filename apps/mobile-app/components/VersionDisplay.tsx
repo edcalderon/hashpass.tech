@@ -1,0 +1,177 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../hooks/useTheme';
+import { versionService } from '../lib/services/version-service';
+import { apiClient } from '../lib/api-client';
+import VersionInfoDrawer, { VersionStatusState } from './VersionInfoDrawer';
+
+interface VersionDisplayProps {
+  showInSidebar?: boolean;
+  compact?: boolean;
+}
+
+export default function VersionDisplay({ showInSidebar = false, compact = false }: VersionDisplayProps) {
+  const { isDark, colors } = useTheme();
+  const [status, setStatus] = useState<VersionStatusState>('checking');
+  const styles = getStyles(isDark, colors);
+
+  const versionInfo = versionService.getCurrentVersion();
+  const badgeInfo = versionService.getVersionBadgeInfo(versionInfo.releaseType);
+
+  useEffect(() => {
+    checkStatus();
+    // Check status every 30 seconds
+    const interval = setInterval(checkStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const checkStatus = async () => {
+    try {
+      setStatus('checking');
+      const response = await apiClient.get('/status', {
+        skipEventSegment: true,
+        skipAuth: true,
+      });
+
+      if (response.success) {
+        setStatus(response.data.status || 'unknown');
+      } else {
+        setStatus('unhealthy');
+      }
+    } catch (error) {
+      console.error('Status check failed:', error);
+      setStatus('unhealthy');
+    }
+  };
+
+  const VersionBadge = () => (
+    <View style={[styles.versionBadge, { backgroundColor: badgeInfo.color }]}>
+      <Text style={styles.versionBadgeText}>{badgeInfo.text}</Text>
+    </View>
+  );
+
+  if (compact) {
+    return (
+      <VersionInfoDrawer status={status} showStatusIndicator={true}>
+        {(openDrawer) => (
+          <TouchableOpacity
+            style={styles.compactContainer}
+            onPress={openDrawer}
+          >
+            <Text style={styles.compactText}>v{versionInfo.version}</Text>
+            <VersionBadge />
+          </TouchableOpacity>
+        )}
+      </VersionInfoDrawer>
+    );
+  }
+
+  if (showInSidebar) {
+    return (
+      <VersionInfoDrawer status={status} showStatusIndicator={true}>
+        {(openDrawer) => (
+          <View style={styles.sidebarContainer}>
+            <TouchableOpacity
+              style={styles.sidebarVersionContainer}
+              onPress={openDrawer}
+            >
+              <View style={styles.sidebarVersionInfo}>
+                <Text style={styles.sidebarVersionText}>v{versionInfo.version}</Text>
+                <VersionBadge />
+              </View>
+              <MaterialIcons name="info-outline" size={16} color={colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </VersionInfoDrawer>
+    );
+  }
+
+  return (
+    <VersionInfoDrawer showStatusIndicator={false}>
+      {(openDrawer) => (
+        <View style={styles.container}>
+          <TouchableOpacity
+            style={styles.versionContainer}
+            onPress={openDrawer}
+          >
+            <View style={styles.versionInfo}>
+              <Text style={styles.versionText}>v{versionInfo.version}</Text>
+              <VersionBadge />
+            </View>
+            <MaterialIcons name="info-outline" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
+        </View>
+      )}
+    </VersionInfoDrawer>
+  );
+}
+
+const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  compactContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  sidebarContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+  versionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  sidebarVersionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  versionInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sidebarVersionInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  versionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginRight: 8,
+  },
+  sidebarVersionText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.text.secondary,
+    marginRight: 6,
+  },
+  compactText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.text.secondary,
+    marginRight: 6,
+  },
+  versionBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  versionBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+});

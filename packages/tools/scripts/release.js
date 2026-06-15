@@ -352,8 +352,8 @@ function runMainRelease(options, branch) {
     '--skip-git-info',
   ], options);
 
-  syncJsonVersion('apps/web-app/config/version.production.json', releaseVersion);
-  syncJsonVersion('apps/web-app/config/version.development.json', releaseVersion);
+  syncJsonVersion('apps/mobile-app/config/version.production.json', releaseVersion);
+  syncJsonVersion('apps/mobile-app/config/version.development.json', releaseVersion);
 
   return releaseVersion;
 }

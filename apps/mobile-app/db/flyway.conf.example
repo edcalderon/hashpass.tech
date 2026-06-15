@@ -1,0 +1,30 @@
+# Flyway Configuration Example
+# Copy this to flyway.conf and update with your credentials
+# NEVER commit flyway.conf with real credentials!
+
+# Database connection
+flyway.url=jdbc:postgresql://db.xxxxx.supabase.co:5432/postgres
+flyway.user=postgres
+flyway.password=your-password-here
+
+# Schema to manage
+flyway.schemas=public
+
+# Migration settings
+flyway.locations=filesystem:./migrations
+
+# Baseline on migrate for existing databases
+flyway.baselineOnMigrate=true
+flyway.baselineVersion=0
+
+# Table to track migration history
+flyway.table=flyway_schema_history
+
+# Mixed mode - allow running both versioned and repeatable migrations
+flyway.mixed=true
+
+# Clean disabled for safety
+flyway.cleanDisabled=true
+
+# Placeholders for environment-specific values
+flyway.placeholders.app_name=hashpass

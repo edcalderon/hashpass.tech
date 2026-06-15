@@ -1,3 +1,15 @@
+## [1.8.0] - 2026-06-15
+
+### Released
+- Android startup crash fix and favicon refresh
+
+### Technical Details
+- Version: 1.8.0
+- Release Type: stable
+- Build Number: 202606151947
+- Release Date: 2026-06-15T19:47:19.733Z
+
+
 ## [1.7.9] - 2026-06-10
 
 ### Released
@@ -10,63 +22,51 @@
 - Release Date: 2026-06-10T03:33:22.352Z
 
 
-## [1.7.9] - 2026-06-10
-
-### Released
-- Version 1.7.9 release
-
-### Technical Details
-- Version: 1.7.9
-- Release Type: stable
-- Build Number: 202606100333
-- Release Date: 2026-06-10T03:33:22.352Z
-
-
-## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.4...v1.7.7) (2026-06-10)
+## [1.7.7](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.7-dev.4...v1.7.7) (2026-06-10)
 
 
 ### Bug Fixes
 
-* clean node_modules before infra install ([de4fc7e](https://github.com/edcalderon/hashpass.tech/commit/de4fc7e7ef82b98a332a5f319999c8733ff8ef14))
-* clear node_modules before amplify install ([a0bbff3](https://github.com/edcalderon/hashpass.tech/commit/a0bbff3b6f2b77e4c83bfa5e6eec0bb0e5f5f048))
-* publish bsl supabase runtime profiles ([9aa9424](https://github.com/edcalderon/hashpass.tech/commit/9aa9424b30f518d90ee7a924fddd31da0694dd8c))
-* restore amplify postBuild deploy step ([71d291f](https://github.com/edcalderon/hashpass.tech/commit/71d291f65c1b08199ec38a41de6ddbed1bc83303))
-* use postgres health checks for api status ([501a23c](https://github.com/edcalderon/hashpass.tech/commit/501a23c07a9c7eb3840542da6139994f4ddb9fe6))
+* clean node_modules before infra install ([de4fc7e](https://github.com/hashpass-tech/hashpass.tech/commit/de4fc7e7ef82b98a332a5f319999c8733ff8ef14))
+* clear node_modules before amplify install ([a0bbff3](https://github.com/hashpass-tech/hashpass.tech/commit/a0bbff3b6f2b77e4c83bfa5e6eec0bb0e5f5f048))
+* publish bsl supabase runtime profiles ([9aa9424](https://github.com/hashpass-tech/hashpass.tech/commit/9aa9424b30f518d90ee7a924fddd31da0694dd8c))
+* restore amplify postBuild deploy step ([71d291f](https://github.com/hashpass-tech/hashpass.tech/commit/71d291f65c1b08199ec38a41de6ddbed1bc83303))
+* use postgres health checks for api status ([501a23c](https://github.com/hashpass-tech/hashpass.tech/commit/501a23c07a9c7eb3840542da6139994f4ddb9fe6))
 
 
 
 
 
-## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.2...v1.7.7) (2026-06-05)
+## [1.7.7](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.7-dev.2...v1.7.7) (2026-06-05)
 
 
 
 
 
-## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.7-dev.2...v1.7.7) (2026-06-05)
+## [1.7.7](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.7-dev.2...v1.7.7) (2026-06-05)
 
 
 
 
 
-## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.4...v1.7.7) (2026-06-05)
+## [1.7.7](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.6-dev.4...v1.7.7) (2026-06-05)
 
 
 
 
 
-## [1.7.7](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.4...v1.7.7) (2026-06-05)
+## [1.7.7](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.6-dev.4...v1.7.7) (2026-06-05)
 
 
 
 
 
-## [1.7.6](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.2...v1.7.6) (2026-05-14)
+## [1.7.6](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.6-dev.2...v1.7.6) (2026-05-14)
 
 
 ### Bug Fixes
 
-* sync BSL auth env paths ([02de787](https://github.com/edcalderon/hashpass.tech/commit/02de787634941afafefa0d3da9257f66e82d5297))
+* sync BSL auth env paths ([02de787](https://github.com/hashpass-tech/hashpass.tech/commit/02de787634941afafefa0d3da9257f66e82d5297))
 
 
 
@@ -84,18 +84,18 @@
 - Release Date: 2026-05-14T02:33:37.574Z
 
 
-## [1.7.6](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.2...v1.7.6) (2026-05-14)
+## [1.7.6](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.6-dev.2...v1.7.6) (2026-05-14)
 
 
 ### Bug Fixes
 
-* sync BSL auth env paths ([02de787](https://github.com/edcalderon/hashpass.tech/commit/02de787634941afafefa0d3da9257f66e82d5297))
+* sync BSL auth env paths ([02de787](https://github.com/hashpass-tech/hashpass.tech/commit/02de787634941afafefa0d3da9257f66e82d5297))
 
 
 
 
 
-## [1.7.6](https://github.com/edcalderon/hashpass.tech/compare/v1.7.6-dev.1...v1.7.6) (2026-05-13)
+## [1.7.6](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.6-dev.1...v1.7.6) (2026-05-13)
 
 
 
@@ -103,7 +103,7 @@
 
 
 
-## [1.7.5](https://github.com/edcalderon/hashpass.tech/compare/v1.7.4-dev.3...v1.7.5) (2026-05-11)
+## [1.7.5](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.4-dev.3...v1.7.5) (2026-05-11)
 
 
 
@@ -121,91 +121,91 @@
 - Release Date: 2026-05-12T00:32:52.460Z
 
 
-## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.4-dev.3...v1.7.4) (2026-05-11)
+## [1.7.4](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.4-dev.3...v1.7.4) (2026-05-11)
 
 
 
 
 
-## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.4-dev.2...v1.7.4) (2026-05-11)
+## [1.7.4](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.4-dev.2...v1.7.4) (2026-05-11)
 
 
 
 
 
-## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3-dev.2...v1.7.4) (2026-05-11)
-
-
-### Bug Fixes
-
-* Improve PWA icon resolution with proper require fallback ([8a54c8f](https://github.com/edcalderon/hashpass.tech/commit/8a54c8f763a2bad3b0b7f1ef410dd2cd025b25cc))
-* Properly resolve PWA icon URIs with correct web fallbacks ([74a3a8e](https://github.com/edcalderon/hashpass.tech/commit/74a3a8e70c794a485f97936937e9fabd4c6ea524))
-
-
-### Features
-
-* Add "don't show again" checkbox to PWA install modal ([4174a2a](https://github.com/edcalderon/hashpass.tech/commit/4174a2a1d051b32cb902dd06af822d0c4568bcf8))
-* Add "don't show again" checkbox to PWA modal footer and fix icon loading ([934c0cb](https://github.com/edcalderon/hashpass.tech/commit/934c0cb017c439b54d92397e59fcb0bfa859971b))
-
-
-
-## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
-
-
-
-
-
-## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3-dev.2...v1.7.4) (2026-05-11)
+## [1.7.4](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.3-dev.2...v1.7.4) (2026-05-11)
 
 
 ### Bug Fixes
 
-* Improve PWA icon resolution with proper require fallback ([8a54c8f](https://github.com/edcalderon/hashpass.tech/commit/8a54c8f763a2bad3b0b7f1ef410dd2cd025b25cc))
-* Properly resolve PWA icon URIs with correct web fallbacks ([74a3a8e](https://github.com/edcalderon/hashpass.tech/commit/74a3a8e70c794a485f97936937e9fabd4c6ea524))
+* Improve PWA icon resolution with proper require fallback ([8a54c8f](https://github.com/hashpass-tech/hashpass.tech/commit/8a54c8f763a2bad3b0b7f1ef410dd2cd025b25cc))
+* Properly resolve PWA icon URIs with correct web fallbacks ([74a3a8e](https://github.com/hashpass-tech/hashpass.tech/commit/74a3a8e70c794a485f97936937e9fabd4c6ea524))
 
 
 ### Features
 
-* Add "don't show again" checkbox to PWA install modal ([4174a2a](https://github.com/edcalderon/hashpass.tech/commit/4174a2a1d051b32cb902dd06af822d0c4568bcf8))
-* Add "don't show again" checkbox to PWA modal footer and fix icon loading ([934c0cb](https://github.com/edcalderon/hashpass.tech/commit/934c0cb017c439b54d92397e59fcb0bfa859971b))
+* Add "don't show again" checkbox to PWA install modal ([4174a2a](https://github.com/hashpass-tech/hashpass.tech/commit/4174a2a1d051b32cb902dd06af822d0c4568bcf8))
+* Add "don't show again" checkbox to PWA modal footer and fix icon loading ([934c0cb](https://github.com/hashpass-tech/hashpass.tech/commit/934c0cb017c439b54d92397e59fcb0bfa859971b))
 
 
 
-## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
+## [1.7.4](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
 
 
 
 
 
-## [1.7.4](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
-
-## [1.7.3-dev.2](https://github.com/edcalderon/hashpass.tech/compare/v1.7.3-dev.1...v1.7.3-dev.2) (2026-05-11)
+## [1.7.4](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.3-dev.2...v1.7.4) (2026-05-11)
 
 
 ### Bug Fixes
 
-* branch-aware prod version and pwa open state ([f1feb09](https://github.com/edcalderon/hashpass.tech/commit/f1feb090c48b19858552aa1bdb791961a1dbe624))
-* bundle pwa version runtime files ([159f639](https://github.com/edcalderon/hashpass.tech/commit/159f639bf1d4f5d8c3304f9b1bc91d5bef869202))
+* Improve PWA icon resolution with proper require fallback ([8a54c8f](https://github.com/hashpass-tech/hashpass.tech/commit/8a54c8f763a2bad3b0b7f1ef410dd2cd025b25cc))
+* Properly resolve PWA icon URIs with correct web fallbacks ([74a3a8e](https://github.com/hashpass-tech/hashpass.tech/commit/74a3a8e70c794a485f97936937e9fabd4c6ea524))
 
 
 ### Features
 
-* make version display branch aware ([db00892](https://github.com/edcalderon/hashpass.tech/commit/db0089282c7050754f3e2ada6e43609a921a07d3))
+* Add "don't show again" checkbox to PWA install modal ([4174a2a](https://github.com/hashpass-tech/hashpass.tech/commit/4174a2a1d051b32cb902dd06af822d0c4568bcf8))
+* Add "don't show again" checkbox to PWA modal footer and fix icon loading ([934c0cb](https://github.com/hashpass-tech/hashpass.tech/commit/934c0cb017c439b54d92397e59fcb0bfa859971b))
 
-## [1.7.3](https://github.com/edcalderon/hashpass.tech/compare/v1.7.2...v1.7.3) (2026-05-10)
+
+
+## [1.7.4](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
+
+
+
+
+
+## [1.7.4](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.3...v1.7.4) (2026-05-10)
+
+## [1.7.3-dev.2](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.3-dev.1...v1.7.3-dev.2) (2026-05-11)
 
 
 ### Bug Fixes
 
-* **pwa:** improve native install prompt handling with proper debugging ([b67b57a](https://github.com/edcalderon/hashpass.tech/commit/b67b57a9d89d73602aaa510e95543d72aa7c784e))
-* **pwa:** properly contain modal with width constraints and prevent overflow ([2156c20](https://github.com/edcalderon/hashpass.tech/commit/2156c2086e4e8f4d7e0beb0ab5bf6e13f757ade4))
-* **pwa:** remove alert fallback and show install modal instead ([1455422](https://github.com/edcalderon/hashpass.tech/commit/1455422375ea92536bbe067af7c7d7f850d5eebb))
-* **pwa:** remove white background and add proper mobile variants ([7c40406](https://github.com/edcalderon/hashpass.tech/commit/7c4040612ff4c4ac1859b7543659761c85fdf37d))
+* branch-aware prod version and pwa open state ([f1feb09](https://github.com/hashpass-tech/hashpass.tech/commit/f1feb090c48b19858552aa1bdb791961a1dbe624))
+* bundle pwa version runtime files ([159f639](https://github.com/hashpass-tech/hashpass.tech/commit/159f639bf1d4f5d8c3304f9b1bc91d5bef869202))
 
 
 ### Features
 
-* **pwa:** redesign mobile modal as bottom sheet for better UX ([dcd09da](https://github.com/edcalderon/hashpass.tech/commit/dcd09dadb4234df052fc5beb6dedc39a6d0f7bd1))
+* make version display branch aware ([db00892](https://github.com/hashpass-tech/hashpass.tech/commit/db0089282c7050754f3e2ada6e43609a921a07d3))
+
+## [1.7.3](https://github.com/hashpass-tech/hashpass.tech/compare/v1.7.2...v1.7.3) (2026-05-10)
+
+
+### Bug Fixes
+
+* **pwa:** improve native install prompt handling with proper debugging ([b67b57a](https://github.com/hashpass-tech/hashpass.tech/commit/b67b57a9d89d73602aaa510e95543d72aa7c784e))
+* **pwa:** properly contain modal with width constraints and prevent overflow ([2156c20](https://github.com/hashpass-tech/hashpass.tech/commit/2156c2086e4e8f4d7e0beb0ab5bf6e13f757ade4))
+* **pwa:** remove alert fallback and show install modal instead ([1455422](https://github.com/hashpass-tech/hashpass.tech/commit/1455422375ea92536bbe067af7c7d7f850d5eebb))
+* **pwa:** remove white background and add proper mobile variants ([7c40406](https://github.com/hashpass-tech/hashpass.tech/commit/7c4040612ff4c4ac1859b7543659761c85fdf37d))
+
+
+### Features
+
+* **pwa:** redesign mobile modal as bottom sheet for better UX ([dcd09da](https://github.com/hashpass-tech/hashpass.tech/commit/dcd09dadb4234df052fc5beb6dedc39a6d0f7bd1))
 
 
 

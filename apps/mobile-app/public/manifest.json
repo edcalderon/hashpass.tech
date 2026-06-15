@@ -1,0 +1,93 @@
+{
+  "id": "/",
+  "name": "HashPass - Events, Passes and Networking",
+  "short_name": "HashPass",
+  "description": "Discover events, manage verified digital passes, build your agenda, and connect with the people who matter.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/home?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#05070C",
+  "theme_color": "#05070C",
+  "categories": [
+    "business",
+    "productivity",
+    "social"
+  ],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/assets/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/pwa-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/assets/pwa-screenshot-mobile.png",
+      "sizes": "1440x2560",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "HashPass secure digital event pass and dynamic QR check-in"
+    },
+    {
+      "src": "/assets/pwa-screenshot-wide.png",
+      "sizes": "2560x1440",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "HashPass event platform dashboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explore events",
+      "short_name": "Explore",
+      "description": "Discover available events and experiences.",
+      "url": "/dashboard/explore?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "/assets/pwa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Open wallet",
+      "short_name": "Wallet",
+      "description": "Open your verified digital passes.",
+      "url": "/dashboard/wallet?source=pwa-shortcut",
+      "icons": [
+        {
+          "src": "/assets/pwa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred"
+}
