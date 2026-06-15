@@ -35,20 +35,15 @@ function loadExpoConfig(profile: 'production' | 'preview') {
     string | undefined
   >;
 
-  setEnv({
-    EAS_BUILD_PROFILE: profile,
-    EXPO_PUBLIC_EAS_BUILD_PROFILE: profile,
-    EAS_PROJECT_ID: 'f710aa31-82ef-4ee3-82a3-068b0fad04dc',
-    EXPO_PUBLIC_EAS_PROJECT_ID: 'f710aa31-82ef-4ee3-82a3-068b0fad04dc',
-    EAS_PROJECT_ID_DEV: 'b07c6fde-24ef-434a-8329-761815afe901',
-    EXPO_PUBLIC_EAS_PROJECT_ID_DEV: 'b07c6fde-24ef-434a-8329-761815afe901',
-    EXPO_OWNER: 'hashpasstechs-team',
-    EXPO_OWNER_DEV: 'hashpasss-team',
-  });
-
   jest.resetModules();
 
   try {
+    const { buildEnv } = require('../../../../packages/tools/scripts/run-mobile-eas.js') as {
+      buildEnv: (options?: { profile?: string; easArgs?: string[]; baseEnv?: Record<string, string> }) => Record<
+        string,
+        any
+      >;
+    };
     const { buildExpoConfig } = require('../../lib/eas-config.js') as {
       buildExpoConfig: (options?: { baseConfig?: Record<string, any>; env?: NodeJS.ProcessEnv }) => Record<
         string,
@@ -56,7 +51,16 @@ function loadExpoConfig(profile: 'production' | 'preview') {
       >;
     };
 
-    return buildExpoConfig({ baseConfig: appJson, env: process.env });
+    const env = buildEnv({
+      profile,
+      easArgs: ['build', '--platform', 'android', '--profile', profile],
+      baseEnv: {},
+    });
+
+    return {
+      env,
+      appConfig: buildExpoConfig({ baseConfig: appJson, env }),
+    };
   } finally {
     setEnv(previousEnv);
     jest.resetModules();
@@ -106,26 +110,36 @@ describe('Android release flow', () => {
   });
 
   it('switches the Expo owner and project id for preview builds', () => {
-    const appConfig = loadExpoConfig('preview');
+    const { env, appConfig } = loadExpoConfig('preview');
 
+    expect(env.EXPO_OWNER).toBeUndefined();
+    expect(env.EXPO_OWNER_DEV).toBe('hashpasstechs-team');
+    expect(appConfig.slug).toBe('hash-pass-tech');
     expect(appConfig.owner).toBe('hashpasstechs-team');
     expect(appConfig.extra?.eas?.projectId).toBe('b07c6fde-24ef-434a-8329-761815afe901');
   });
 
   it('keeps the production Expo owner and project id for release builds', () => {
-    const appConfig = loadExpoConfig('production');
+    const { env, appConfig } = loadExpoConfig('production');
 
-    expect(appConfig.owner).toBe('hashpasstechs-team');
+    expect(env.EXPO_OWNER).toBe('hashpasss-team');
+    expect(env.EXPO_OWNER_DEV).toBeUndefined();
+    expect(appConfig.slug).toBe('hashpasstech');
+    expect(appConfig.owner).toBe('hashpasss-team');
     expect(appConfig.extra?.eas?.projectId).toBe('f710aa31-82ef-4ee3-82a3-068b0fad04dc');
   });
 
   it('publishes the preview Expo aliases through the mobile EAS wrapper', () => {
     const { buildEnv } = require('../../../../packages/tools/scripts/run-mobile-eas.js') as {
-      buildEnv: (options?: { profile?: string; easArgs?: string[] }) => Record<string, any>;
+      buildEnv: (options?: { profile?: string; easArgs?: string[]; baseEnv?: Record<string, string> }) => Record<
+        string,
+        any
+      >;
     };
     const env = buildEnv({
       profile: 'preview',
       easArgs: ['build', '--platform', 'android', '--profile', 'preview'],
+      baseEnv: {},
     });
 
     expect(env.EAS_BUILD_PROFILE).toBe('preview');
@@ -134,8 +148,8 @@ describe('Android release flow', () => {
     expect(env.EXPO_PUBLIC_EAS_PROJECT_ID).toBe('b07c6fde-24ef-434a-8329-761815afe901');
     expect(env.EAS_PROJECT_ID_DEV).toBe('b07c6fde-24ef-434a-8329-761815afe901');
     expect(env.EXPO_PUBLIC_EAS_PROJECT_ID_DEV).toBe('b07c6fde-24ef-434a-8329-761815afe901');
-    expect(env.EXPO_OWNER).toBe('hashpasstechs-team');
-    expect(env.EXPO_OWNER_DEV).toBeUndefined();
+    expect(env.EXPO_OWNER).toBeUndefined();
+    expect(env.EXPO_OWNER_DEV).toBe('hashpasstechs-team');
   });
 
   it('exposes release scripts for bundle creation and Play Store submission', () => {

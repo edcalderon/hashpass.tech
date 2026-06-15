@@ -1,4 +1,8 @@
 const PRODUCTION_PROFILE = 'production';
+const PRODUCTION_OWNER = 'hashpasss-team';
+const DEVELOPMENT_OWNER = 'hashpasstechs-team';
+const PRODUCTION_SLUG = 'hashpasstech';
+const DEVELOPMENT_SLUG = 'hash-pass-tech';
 
 function normalizeProfile(profile) {
   return String(profile || '').trim().toLowerCase();
@@ -25,14 +29,33 @@ function resolveProjectId({ env = process.env, profile, baseProjectId = null } =
 }
 
 function resolveOwner({ env = process.env, profile, baseOwner = null } = {}) {
-  void profile;
-  return env.EXPO_OWNER || baseOwner || 'hashpasstechs-team';
+  const selectedProfile = normalizeProfile(profile || env.EAS_BUILD_PROFILE || env.EXPO_PUBLIC_EAS_BUILD_PROFILE);
+
+  if (!selectedProfile || selectedProfile === PRODUCTION_PROFILE) {
+    return env.EXPO_OWNER || PRODUCTION_OWNER;
+  }
+
+  return env.EXPO_OWNER_DEV || baseOwner || DEVELOPMENT_OWNER;
+}
+
+function resolveSlug({ env = process.env, profile, baseSlug = null } = {}) {
+  const selectedProfile = normalizeProfile(profile || env.EAS_BUILD_PROFILE || env.EXPO_PUBLIC_EAS_BUILD_PROFILE);
+
+  if (!selectedProfile || selectedProfile === PRODUCTION_PROFILE) {
+    return env.EXPO_SLUG || PRODUCTION_SLUG;
+  }
+
+  return env.EXPO_SLUG_DEV || baseSlug || DEVELOPMENT_SLUG;
 }
 
 function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
   const owner = resolveOwner({
     env,
     baseOwner: baseConfig.owner || null,
+  });
+  const slug = resolveSlug({
+    env,
+    baseSlug: baseConfig.slug || null,
   });
   const projectId = resolveProjectId({
     env,
@@ -41,6 +64,7 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
 
   return {
     ...baseConfig,
+    ...(slug ? { slug } : {}),
     ...(owner ? { owner } : {}),
     extra: {
       ...(baseConfig.extra || {}),
@@ -57,5 +81,6 @@ module.exports = {
   normalizeProfile,
   resolveProjectId,
   resolveOwner,
+  resolveSlug,
   buildExpoConfig,
 };

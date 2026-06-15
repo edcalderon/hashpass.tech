@@ -11,7 +11,8 @@ const MOBILE_APP_DIR = path.join(ROOT_DIR, 'apps', 'mobile-app');
 const ROOT_ENV_PATH = path.join(ROOT_DIR, '.env');
 const MOBILE_ENV_PATH = path.join(MOBILE_APP_DIR, '.env');
 const PRODUCTION_PROFILE = 'production';
-const PRODUCTION_OWNER = 'hashpasstechs-team';
+const PRODUCTION_OWNER = 'hashpasss-team';
+const DEVELOPMENT_OWNER = 'hashpasstechs-team';
 
 function normalizeProfile(profile) {
   const value = String(profile || '').trim().toLowerCase();
@@ -104,7 +105,7 @@ function buildEnv({
       : {
           EAS_PROJECT_ID_DEV: projectId,
           EXPO_PUBLIC_EAS_PROJECT_ID_DEV: projectId,
-          EXPO_OWNER: env.EXPO_OWNER || PRODUCTION_OWNER,
+          EXPO_OWNER_DEV: env.EXPO_OWNER_DEV || DEVELOPMENT_OWNER,
         }),
     EXPO_TOKEN: expoToken,
   };
