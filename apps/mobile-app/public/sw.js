@@ -1,4 +1,4 @@
-const APP_VERSION = '1.8.1';
+const APP_VERSION = '1.8.2';
 const STATIC_CACHE = `hashpass-static-v${APP_VERSION}`;
 const PAGE_CACHE = `hashpass-pages-v${APP_VERSION}`;
 const OFFLINE_URL = '/offline.html';
@@ -8,7 +8,6 @@ const PRECACHE_URLS = [
   OFFLINE_URL,
   '/manifest.json',
   '/favicon.ico',
-  '/favicon-v2.ico',
   '/favicon-16x16.png',
   '/favicon-32x32.png',
   '/apple-touch-icon.png',

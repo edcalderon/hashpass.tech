@@ -17,16 +17,16 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.1)
+## 📋 Latest Changes (v1.8.2)
 
 ### Released
-- README badge and changelog sync guard
+- Fix mobile web black screen, update favicon URLs, and force Zustand middleware onto CJS for web rendering
 
 ### Technical Details
-- Version: 1.8.1
+- Version: 1.8.2
 - Release Type: stable
-- Build Number: 202606152327
-- Release Date: 2026-06-15T23:27:34.521Z
+- Build Number: 202606160040
+- Release Date: 2026-06-16T00:40:00.481Z
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

@@ -10,6 +10,18 @@
 - Release Date: 2026-06-15T19:47:19.733Z
 
 
+## [1.8.2] - 2026-06-16
+
+### Released
+- Fix mobile web black screen, update favicon URLs, and force Zustand middleware onto CJS for web rendering
+
+### Technical Details
+- Version: 1.8.2
+- Release Type: stable
+- Build Number: 202606160040
+- Release Date: 2026-06-16T00:40:00.481Z
+
+
 ## [1.8.1] - 2026-06-15
 
 ### Released

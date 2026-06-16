@@ -22,8 +22,8 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606152327, // Updated to current timestamp
-  releaseDate: '2026-06-15',
+  buildNumber: 202606160040, // Updated to current timestamp
+  releaseDate: '2026-06-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
@@ -33,11 +33,28 @@ export const CURRENT_VERSION: VersionInfo = {
     'Kept the Expo app version and release metadata aligned with the tracked package version'
   ],
   breakingChanges: [],
-  notes: 'README badge and changelog sync guard'
+  notes: 'Fix mobile web black screen, update favicon URLs, and force Zustand middleware onto CJS for web rendering'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.2': {
+    version: '1.8.2',
+    buildNumber: 202606160040,
+    releaseDate: '2026-06-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Added a tracked version badge to the root README',
+      'Synced the root README latest changes block from CHANGELOG.md during releases',
+      'Kept the Expo app version and release metadata aligned with the tracked package version'
+    ],
+    breakingChanges: [],
+    notes: 'Fix mobile web black screen, update favicon URLs, and force Zustand middleware onto CJS for web rendering'
+  },
   '1.8.1': {
     version: '1.8.1',
     buildNumber: 202606152327,

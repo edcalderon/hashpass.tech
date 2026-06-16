@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const { execSync } = require('child_process');
 
 // 🔄 Auto-propagate environment from root Source of Truth
@@ -17,6 +18,58 @@ const { resolve } = require('metro-resolver');
 
 const config = getDefaultConfig(__dirname);
 const originalResolveRequest = config.resolver?.resolveRequest;
+const pnpmStoreDir = path.resolve(__dirname, '../../node_modules/.pnpm');
+let zustandPackageDir;
+
+const getZustandPackageDir = () => {
+  if (zustandPackageDir !== undefined) {
+    return zustandPackageDir;
+  }
+
+  zustandPackageDir = null;
+
+  try {
+    const candidates = fs
+      .readdirSync(pnpmStoreDir)
+      .filter((name) => name.startsWith('zustand@'))
+      .sort();
+
+    for (const candidate of candidates) {
+      const packageDir = path.join(pnpmStoreDir, candidate, 'node_modules', 'zustand');
+      if (fs.existsSync(packageDir)) {
+        zustandPackageDir = packageDir;
+        break;
+      }
+    }
+  } catch (error) {
+    // Ignore lookup failures and fall back to Metro's default resolver.
+  }
+
+  return zustandPackageDir;
+};
+
+const resolveZustandCommonJs = (moduleName) => {
+  const packageDir = getZustandPackageDir();
+  if (!packageDir) {
+    return null;
+  }
+
+  if (moduleName === 'zustand') {
+    const entryPath = path.join(packageDir, 'index.js');
+    return fs.existsSync(entryPath) ? entryPath : null;
+  }
+
+  if (!moduleName.startsWith('zustand/')) {
+    return null;
+  }
+
+  const subPath = moduleName
+    .slice('zustand/'.length)
+    .replace(/\.(mjs|js)$/i, '');
+
+  const candidatePath = path.join(packageDir, `${subPath}.js`);
+  return fs.existsSync(candidatePath) ? candidatePath : null;
+};
 
 config.watchFolders = [
   path.resolve(__dirname, '../../packages'),
@@ -54,6 +107,11 @@ const metroResolveRequest = (context, moduleName, platform) => {
     moduleName.endsWith('/cosmiconfig/dist/index.js')
   ) {
     return { type: 'empty' };
+  }
+
+  const zustandCommonJs = resolveZustandCommonJs(moduleName);
+  if (zustandCommonJs) {
+    return { type: 'sourceFile', filePath: zustandCommonJs };
   }
 
   const normalizedModuleName =

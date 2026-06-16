@@ -161,7 +161,7 @@ export default function Root({
         <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={imageUrl} />
         <meta name="twitter:image:alt" content="HashPass event platform and digital pass" />
-        <link rel="icon" href="/favicon-v2.ico" sizes="any" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -210,7 +210,7 @@ export default function Root({
                 }
 
                 if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
-                  return window.__API_BASE_URL__.replace(/\/$/, '') + '/auth';
+                  return window.__API_BASE_URL__.replace(/\\/$/, '') + '/auth';
                 }
 
                 return 'https://api.hashpass.tech/api/auth';
@@ -242,7 +242,7 @@ export default function Root({
                 // Check if we're on the incorrect redirect path with auth tokens
                 // Works with any hashpass.tech subdomain (bsl2025, event2026, etc.)
                 const isIncorrectRedirect = currentPath.includes('hashpass.tech') || 
-                                           currentPath.match(/\/[a-z0-9-]+\.hashpass\.tech/i);
+                                           currentPath.match(/\\/[a-z0-9-]+\\.hashpass\\.tech/i);
                 
                 if (isIncorrectRedirect && hashFragment && hashFragment.includes('access_token')) {
 
@@ -259,7 +259,7 @@ export default function Root({
                   
                   // Method 1: Try to extract from path
                   if (currentPath.includes('hashpass.tech')) {
-                    const domainMatch = currentPath.match(/([a-z0-9-]+\.hashpass\.tech)/i);
+                    const domainMatch = currentPath.match(/([a-z0-9-]+\\.hashpass\\.tech)/i);
                     if (domainMatch) {
                       correctOrigin = 'https://' + domainMatch[1];
                       console.log('📍 [Auto-fix] Extracted origin from path:', correctOrigin);
@@ -279,7 +279,7 @@ export default function Root({
                   
                   // Method 3: If still no origin, extract from path (works for any subdomain)
                   if (!correctOrigin && currentPath.includes('hashpass.tech')) {
-                    const domainMatch = currentPath.match(/([a-z0-9-]+\.hashpass\.tech)/i);
+                    const domainMatch = currentPath.match(/([a-z0-9-]+\\.hashpass\\.tech)/i);
                     if (domainMatch) {
                       correctOrigin = 'https://' + domainMatch[1];
                       console.log('📍 [Auto-fix] Extracted from path (Method 3):', correctOrigin);
@@ -290,7 +290,7 @@ export default function Root({
                   // If the stored origin is localhost but we're on production, use production
                   if (correctOrigin.includes('localhost') && currentPath.includes('hashpass.tech')) {
                     // Extract production domain from path
-                    const domainMatch = currentPath.match(/([a-z0-9-]+\.hashpass\.tech)/i);
+                    const domainMatch = currentPath.match(/([a-z0-9-]+\\.hashpass\\.tech)/i);
                     if (domainMatch) {
                       correctOrigin = 'https://' + domainMatch[1];
                       console.log('📍 [Auto-fix] Overriding localhost with production:', correctOrigin);
