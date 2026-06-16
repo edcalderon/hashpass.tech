@@ -376,12 +376,13 @@ jobs:
           set -euo pipefail
           mkdir -p "$HOME/.gradle"
           # GitHub-hosted ubuntu-latest: 4 vCPU / 16 GiB — use all cores.
-          # EC2 t3a.large: 2 vCPU / 8 GiB — match vCPU count, cap heap below total RAM.
+          # EC2 t3a.large: 2 vCPU / 8 GiB — Xmx4g leaves ~3 GiB for NDK workers + OS.
+          # (Xmx5g caused OOM: JVM 5g + metaspace 512m + NDK + OS exceeded 8 GiB)
           if [ "${{ inputs.runner }}" = "github-hosted" ]; then
             GRADLE_HEAP="-Xmx8g"
             GRADLE_WORKERS=4
           else
-            GRADLE_HEAP="-Xmx5g"
+            GRADLE_HEAP="-Xmx4g"
             GRADLE_WORKERS=2
           fi
           printf '%s\n' \
