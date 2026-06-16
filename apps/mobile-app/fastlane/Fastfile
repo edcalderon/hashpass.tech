@@ -7,6 +7,49 @@ GOOGLE_PLAY_JSON_KEY = ENV.fetch(
 ).freeze
 PACKAGE_NAME = 'com.hashpass.tech'.freeze
 
+def env_value(*names)
+  names.each do |name|
+    value = ENV[name]
+    next if value.nil?
+
+    stripped = value.to_s.strip
+    return stripped unless stripped.empty?
+  end
+
+  nil
+end
+
+def resolve_android_signing_properties
+  store_file = env_value('ANDROID_KEYSTORE_PATH', 'ANDROID_RELEASE_KEYSTORE_PATH')
+  store_password = env_value('ANDROID_KEYSTORE_PASSWORD', 'ANDROID_RELEASE_KEYSTORE_PASSWORD')
+  key_alias = env_value('ANDROID_KEY_ALIAS', 'ANDROID_RELEASE_KEY_ALIAS')
+  key_password = env_value('ANDROID_KEY_PASSWORD', 'ANDROID_RELEASE_KEY_PASSWORD')
+
+  missing = []
+  missing << 'ANDROID_KEYSTORE_PATH' unless store_file
+  missing << 'ANDROID_KEYSTORE_PASSWORD' unless store_password
+  missing << 'ANDROID_KEY_ALIAS' unless key_alias
+  missing << 'ANDROID_KEY_PASSWORD' unless key_password
+
+  unless missing.empty?
+    UI.user_error!(
+      "Missing Android signing secrets for fastlane release: #{missing.join(', ')}. " +
+      'Set them in the GitHub Actions workflow or export them locally before building.',
+    )
+  end
+
+  unless File.exist?(store_file)
+    UI.user_error!("Android keystore file not found: #{store_file}")
+  end
+
+  {
+    'android.injected.signing.store.file' => store_file,
+    'android.injected.signing.store.password' => store_password,
+    'android.injected.signing.key.alias' => key_alias,
+    'android.injected.signing.key.password' => key_password,
+  }
+end
+
 def normalize_track(value)
   track = value.to_s.strip.downcase
 
@@ -23,7 +66,10 @@ def build_android_bundle
   gradle(
     task: 'bundle',
     build_type: 'Release',
-    project_dir: 'android'
+    project_dir: 'android',
+    properties: resolve_android_signing_properties,
+    print_command: false,
+    print_command_output: false
   )
 
   lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]

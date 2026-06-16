@@ -141,11 +141,15 @@ Mobile Android release flow:
 - `pnpm run android:release:eas` and `pnpm run android:release:eas:dev` are explicit aliases for the managed Expo/EAS flow.
 - `pnpm run android:release:fastlane` and `pnpm run android:release:fastlane:dev` run a local Expo prebuild, build with fastlane, and upload to Google Play.
 - The generic release wrapper accepts `--env production|development` and `--backend eas|fastlane` if you call `packages/tools/scripts/run-mobile-release.js` directly.
+- `pnpm run android:release` and `pnpm run android:release:dev` now honor `MOBILE_RELEASE_BACKEND`, so the same command can target EAS or fastlane without changing scripts.
+- The self-hosted GitHub Actions workflow `.github/workflows/mobile-android-release.yml` targets the `hashpass-mobile-release` runner label on AWS EC2, defaults to fastlane, and can be switched back to EAS through the workflow input.
+- Fastlane expects `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; the workflow writes the JSON and keystore into `RUNNER_TEMP` before the release starts.
 - The repo-wide `packageManager` field is the source of truth for pnpm; Amplify and infra buildspecs read it through `packages/tools/scripts/resolve-pnpm-version.js` so CI stays on the same pnpm version as local releases and EAS.
 - If you ever change pnpm again, update the `packageManager` field first and regenerate `pnpm-lock.yaml` with `corepack pnpm install` so the lockfile and release builders stay aligned.
 - `pnpm run eas:mobile:sync:dev` pushes the sanitized repo env to the Expo preview environment and `pnpm run eas:mobile:sync:prod` does the same for production.
 - The EAS commands read `EXPO_TOKEN` for production and `EXPO_TOKEN_DEV` for development from the root `.env`, so no manual shell export is needed for local runs.
 - The wrapper selects `EAS_PROJECT_ID` for production and `EAS_PROJECT_ID_DEV` for development based on the EAS profile.
+- Switching back to EAS only requires `MOBILE_RELEASE_BACKEND=eas`; the existing `EXPO_TOKEN` / `EXPO_TOKEN_DEV` and `EAS_PROJECT_ID` / `EAS_PROJECT_ID_DEV` values stay in place.
 - EAS stays on remote app version management, while the fastlane path injects a local Android `versionCode` during prebuild.
 - The production Expo project is already linked in `apps/mobile-app/app.json`; if you ever bootstrap a fresh Expo app, run `eas init` there instead of here.
 - Both submit profiles point at `config/hashpass-eas.json` for the Google Play service account, so `eas submit` can authenticate on production and preview/internal tracks.

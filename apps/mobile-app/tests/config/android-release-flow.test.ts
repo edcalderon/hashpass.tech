@@ -194,10 +194,10 @@ describe('Android release flow', () => {
       'node ../../packages/tools/scripts/run-mobile-eas.js submit --platform android --profile preview --latest',
     );
     expect(mobileScripts['android:release']).toBe(
-      'node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env production',
+      'node ../../packages/tools/scripts/run-mobile-release.js --env production',
     );
     expect(mobileScripts['android:release:dev']).toBe(
-      'node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env development',
+      'node ../../packages/tools/scripts/run-mobile-release.js --env development',
     );
     expect(mobileScripts['android:release:eas']).toBe(
       'node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env production',
