@@ -9,11 +9,15 @@ github_repository = "hashpass-tech/hashpass.tech"
 runner_name_prefix = "hashpass-mobile-release"
 runner_labels      = ["hashpass-mobile-release"]
 
-# t3.medium works for lighter builds; t3.large is safer for Android bundle builds.
-instance_type = "t3.large"
+# t3a.medium is the leanest x86 option that still gives 2 vCPU / 4 GiB RAM for Android builds.
+instance_type = "t3a.medium"
 
-# Leave empty to use the default VPC subnets.
+# Leave empty to let the stack create a dedicated public VPC/subnet for the runner.
 subnet_ids = []
+
+# Managed network settings used when subnet_ids is empty.
+vpc_cidr_block            = "10.40.0.0/16"
+public_subnet_cidr_blocks  = ["10.40.1.0/24"]
 
 associate_public_ip_address = true
 
@@ -25,9 +29,8 @@ root_volume_size_gb = 150
 # Set a fixed runner version if you want to pin bootstrap behavior.
 runner_version = null
 
-detailed_monitoring   = true
-cpu_alarm_threshold   = 85
-alarm_actions         = []
-ok_actions            = []
-create_github_runner_token_secret = true
-github_runner_token_secret_name    = "hashpass/mobile-release/github-runner-token"
+detailed_monitoring            = true
+cpu_alarm_threshold            = 85
+alarm_actions                  = []
+ok_actions                     = []
+github_runner_token_secret_name = "hashpass/mobile-release/github-runner-token"

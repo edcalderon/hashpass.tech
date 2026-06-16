@@ -18,7 +18,7 @@ Set `HASHPASS_INFRA_TARGET=club-docs` when you want the legacy SST club front do
 - `apps/mobile-app` as an SST `StaticSite`
 - `hashpass.club` as the canonical club site, with `club.hashpass.tech` and `docs.hashpass.tech` as DNS aliases
 - `apps/web-app` and `apps/docs` assembled into a single combined static artifact for GitHub Pages
-- `packages/infra/terraform/stacks/mobile-release` as the AWS EC2 GitHub Actions runner for mobile Android builds
+- `packages/infra/terraform/stacks/mobile-release` as the AWS EC2 GitHub Actions runner for mobile Android builds, including its managed public VPC when the account has no default network
 
 ## Commands
 

@@ -1,7 +1,7 @@
 locals {
   subnet_ids        = var.subnet_ids
   runner_labels_csv = join(",", compact(var.runner_labels))
-  runner_secret_arn = coalesce(var.github_runner_token_secret_arn, "")
+  runner_secret_arn = var.github_runner_token_secret_arn
   common_tags = merge(var.tags, {
     ManagedBy = "terraform"
     Project   = "hashpass"
@@ -13,7 +13,7 @@ locals {
   runner_user_data_step_4 = replace(local.runner_user_data_step_3, "__PNPM_VERSION__", var.pnpm_version)
   runner_user_data_step_5 = replace(local.runner_user_data_step_4, "__RUNNER_LABELS__", local.runner_labels_csv)
   runner_user_data_step_6 = replace(local.runner_user_data_step_5, "__RUNNER_NAME_PREFIX__", var.runner_name_prefix)
-  runner_user_data_step_7 = replace(local.runner_user_data_step_6, "__RUNNER_VERSION__", coalesce(var.runner_version, ""))
+  runner_user_data_step_7 = replace(local.runner_user_data_step_6, "__RUNNER_VERSION__", var.runner_version != null ? var.runner_version : "")
   runner_user_data        = replace(local.runner_user_data_step_7, "__NAME_PREFIX__", var.name_prefix)
 }
 
@@ -113,8 +113,6 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 }
 
 data "aws_iam_policy_document" "secret_access" {
-  count = trimspace(local.runner_secret_arn) != "" ? 1 : 0
-
   statement {
     effect = "Allow"
 
@@ -128,10 +126,9 @@ data "aws_iam_policy_document" "secret_access" {
 }
 
 resource "aws_iam_role_policy" "secret_access" {
-  count  = trimspace(local.runner_secret_arn) != "" ? 1 : 0
   name   = "${var.name_prefix}-runner-secret-access"
   role   = aws_iam_role.runner.id
-  policy = data.aws_iam_policy_document.secret_access[0].json
+  policy = data.aws_iam_policy_document.secret_access.json
 }
 
 resource "aws_iam_instance_profile" "runner" {

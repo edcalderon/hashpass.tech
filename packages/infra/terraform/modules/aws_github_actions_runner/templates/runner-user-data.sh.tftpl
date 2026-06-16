@@ -85,7 +85,9 @@ install_android_sdk() {
   export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
 
   log "Installing Android platform packages"
+  set +o pipefail
   yes | sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --licenses >/dev/null
+  set -o pipefail
   sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" \
     "platform-tools" \
     "platforms;android-34" \

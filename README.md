@@ -144,6 +144,7 @@ Mobile Android release flow:
 - `pnpm run android:release` and `pnpm run android:release:dev` now honor `MOBILE_RELEASE_BACKEND`, so the same command can target EAS or fastlane without changing scripts.
 - The self-hosted GitHub Actions workflow `.github/workflows/mobile-android-release.yml` targets the `hashpass-mobile-release` runner label on AWS EC2, defaults to fastlane, and can be switched back to EAS through the workflow input.
 - The reusable Terraform stack lives in `packages/infra/terraform/stacks/mobile-release`, with convenience commands exposed as `pnpm run infra:mobile-release:plan` and `pnpm run infra:mobile-release:apply`.
+- If the AWS account has no default VPC, the mobile release stack now creates a small managed public VPC and subnet automatically so the runner can provision cleanly.
 - Fastlane expects `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; the workflow writes the JSON and keystore into `RUNNER_TEMP` before the release starts.
 - The repo-wide `packageManager` field is the source of truth for pnpm; Amplify and infra buildspecs read it through `packages/tools/scripts/resolve-pnpm-version.js` so CI stays on the same pnpm version as local releases and EAS.
 - If you ever change pnpm again, update the `packageManager` field first and regenerate `pnpm-lock.yaml` with `corepack pnpm install` so the lockfile and release builders stay aligned.
@@ -156,6 +157,7 @@ Mobile Android release flow:
 - Both submit profiles point at `config/hashpass-eas.json` for the Google Play service account, so `eas submit` can authenticate on production and preview/internal tracks.
 - If the app already has a Play Store listing, run `eas build:version:set --platform android` once to seed the remote Android version counter before the first production build.
 - Fastlane requires Ruby, Bundler, the `fastlane` gem, a Java/Android SDK toolchain, and the Google Play service account JSON already used by EAS Submit.
+- After the stack is applied, seed the GitHub runner PAT secret with `gh auth token` or a repo-scoped PAT so the EC2 instance can register itself.
 - The fastlane path is built to clean up its generated `apps/mobile-app/android/` directory after each run so the repo can stay in managed Expo mode.
 
 1. **Clone the repo:**

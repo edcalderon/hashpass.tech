@@ -22,7 +22,6 @@ variable "github_repository" {
 variable "github_runner_token_secret_arn" {
   description = "Secrets Manager ARN containing the GitHub PAT used to mint runner registration tokens"
   type        = string
-  default     = null
 }
 
 variable "aws_region" {
@@ -39,7 +38,7 @@ variable "instance_count" {
 variable "instance_type" {
   description = "EC2 instance type for the runner"
   type        = string
-  default     = "t3.large"
+  default     = "t3a.medium"
 }
 
 variable "subnet_ids" {

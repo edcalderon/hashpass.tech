@@ -109,15 +109,19 @@ Outputs include:
 
 - GitHub runner token secret ARN
 - EC2 instance IDs and IPs
+- VPC and subnet IDs when the stack creates the network for you
 - CloudWatch dashboard URL
 - CPU and status-check alarm names
+
+If your AWS account has no default VPC, the stack will create a small managed VPC with public subnets automatically. That keeps the runner stack self-contained for repeatable tests.
 
 After `apply`, populate the runner secret with a GitHub PAT that can mint repository runner registration tokens:
 
 ```bash
+TOKEN="$(gh auth token)"
 aws secretsmanager put-secret-value \
   --secret-id "$(terraform output -raw github_runner_token_secret_arn)" \
-  --secret-string '<GITHUB_PAT>'
+  --secret-string "${TOKEN}"
 ```
 
 Keep the PAT scoped to the `hashpass-tech/hashpass.tech` repository and only the permissions needed to create runner registration and removal tokens.

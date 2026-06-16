@@ -31,7 +31,7 @@ variable "runner_labels" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.large"
+  default     = "t3a.medium"
 }
 
 variable "instance_count" {
@@ -41,9 +41,21 @@ variable "instance_count" {
 }
 
 variable "subnet_ids" {
-  description = "Subnet IDs where the runner instances will launch. Leave empty to use the default VPC subnets."
+  description = "Subnet IDs where the runner instances will launch. Leave empty to let the stack create managed public subnets."
   type        = list(string)
   default     = []
+}
+
+variable "vpc_cidr_block" {
+  description = "CIDR block for the managed runner VPC when subnet_ids is empty"
+  type        = string
+  default     = "10.40.0.0/16"
+}
+
+variable "public_subnet_cidr_blocks" {
+  description = "CIDR blocks for the managed public subnets when subnet_ids is empty"
+  type        = list(string)
+  default     = ["10.40.1.0/24"]
 }
 
 variable "associate_public_ip_address" {
@@ -92,12 +104,6 @@ variable "ok_actions" {
   description = "Optional SNS topic ARNs that receive alarm recovery notifications"
   type        = list(string)
   default     = []
-}
-
-variable "create_github_runner_token_secret" {
-  description = "Whether Terraform should create the Secrets Manager secret container for the GitHub runner PAT"
-  type        = bool
-  default     = true
 }
 
 variable "github_runner_token_secret_name" {

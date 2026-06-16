@@ -1,6 +1,21 @@
 output "github_runner_token_secret_arn" {
   description = "Secrets Manager ARN for the GitHub runner PAT container"
-  value       = var.create_github_runner_token_secret ? aws_secretsmanager_secret.github_runner_token[0].arn : null
+  value       = aws_secretsmanager_secret.github_runner_token.arn
+}
+
+output "runner_managed_network" {
+  description = "Whether the stack created the runner VPC and public subnets"
+  value       = length(var.subnet_ids) == 0
+}
+
+output "runner_vpc_id" {
+  description = "VPC ID hosting the runner fleet"
+  value       = length(var.subnet_ids) == 0 ? aws_vpc.runner[0].id : data.aws_subnet.provided[0].vpc_id
+}
+
+output "runner_subnet_ids" {
+  description = "Subnet IDs used by the runner fleet"
+  value       = local.runner_subnet_ids
 }
 
 output "runner_instance_ids" {
