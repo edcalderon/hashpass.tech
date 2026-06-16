@@ -1,0 +1,33 @@
+# HashPass mobile release runner Terraform variables
+
+aws_region = "us-east-1"
+
+name_prefix = "hashpass-mobile-release"
+
+github_repository = "hashpass-tech/hashpass.tech"
+
+runner_name_prefix = "hashpass-mobile-release"
+runner_labels      = ["hashpass-mobile-release"]
+
+# t3.medium works for lighter builds; t3.large is safer for Android bundle builds.
+instance_type = "t3.large"
+
+# Leave empty to use the default VPC subnets.
+subnet_ids = []
+
+associate_public_ip_address = true
+
+# Keep SSH closed by default. Add your office/VPN CIDRs only when needed.
+allowed_ssh_cidrs = []
+
+root_volume_size_gb = 150
+
+# Set a fixed runner version if you want to pin bootstrap behavior.
+runner_version = null
+
+detailed_monitoring   = true
+cpu_alarm_threshold   = 85
+alarm_actions         = []
+ok_actions            = []
+create_github_runner_token_secret = true
+github_runner_token_secret_name    = "hashpass/mobile-release/github-runner-token"

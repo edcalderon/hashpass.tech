@@ -7,7 +7,7 @@ ACTION="${2:-plan}"
 VAR_FILE="${3:-terraform.tfvars}"
 
 if [[ -z "${STACK}" ]]; then
-  echo "Usage: $0 <aws|gcp> [plan|apply|destroy|validate|fmt] [var-file]"
+  echo "Usage: $0 <aws|gcp|mobile-release> [plan|apply|destroy|validate|fmt] [var-file]"
   exit 1
 fi
 

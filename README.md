@@ -143,6 +143,7 @@ Mobile Android release flow:
 - The generic release wrapper accepts `--env production|development` and `--backend eas|fastlane` if you call `packages/tools/scripts/run-mobile-release.js` directly.
 - `pnpm run android:release` and `pnpm run android:release:dev` now honor `MOBILE_RELEASE_BACKEND`, so the same command can target EAS or fastlane without changing scripts.
 - The self-hosted GitHub Actions workflow `.github/workflows/mobile-android-release.yml` targets the `hashpass-mobile-release` runner label on AWS EC2, defaults to fastlane, and can be switched back to EAS through the workflow input.
+- The reusable Terraform stack lives in `packages/infra/terraform/stacks/mobile-release`, with convenience commands exposed as `pnpm run infra:mobile-release:plan` and `pnpm run infra:mobile-release:apply`.
 - Fastlane expects `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; the workflow writes the JSON and keystore into `RUNNER_TEMP` before the release starts.
 - The repo-wide `packageManager` field is the source of truth for pnpm; Amplify and infra buildspecs read it through `packages/tools/scripts/resolve-pnpm-version.js` so CI stays on the same pnpm version as local releases and EAS.
 - If you ever change pnpm again, update the `packageManager` field first and regenerate `pnpm-lock.yaml` with `corepack pnpm install` so the lockfile and release builders stay aligned.

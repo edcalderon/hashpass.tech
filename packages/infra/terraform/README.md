@@ -16,9 +16,11 @@ This Terraform setup deploys the production naming convention discussed for Hash
 
 - `stacks/aws`: AWS API + optional Amplify domain association + GitHub Pages DNS for `hashpass.club`
 - `stacks/gcp`: GCP Directus VM(s) + optional Cloud DNS records
+- `stacks/mobile-release`: AWS EC2 self-hosted GitHub Actions runner for mobile Android builds
 - `modules/aws_expo_router_api`: reusable Lambda + HTTP API + custom domain module
 - `modules/aws_amplify_domain`: reusable Amplify custom domain binding module
 - `modules/gcp_directus_instance`: reusable Directus compute module
+- `modules/aws_github_actions_runner`: reusable EC2 GitHub Actions runner module
 
 ## Prerequisites
 
@@ -85,6 +87,40 @@ Outputs include:
 - Directus instance names
 - static IPs
 - SSH commands
+
+### Mobile Release Runner Stack
+
+```bash
+cd packages/infra/terraform/stacks/mobile-release
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan -var-file=terraform.tfvars
+terraform apply -var-file=terraform.tfvars
+```
+
+Shortcut:
+
+```bash
+./packages/infra/terraform/scripts/stack.sh mobile-release plan
+./packages/infra/terraform/scripts/stack.sh mobile-release apply
+```
+
+Outputs include:
+
+- GitHub runner token secret ARN
+- EC2 instance IDs and IPs
+- CloudWatch dashboard URL
+- CPU and status-check alarm names
+
+After `apply`, populate the runner secret with a GitHub PAT that can mint repository runner registration tokens:
+
+```bash
+aws secretsmanager put-secret-value \
+  --secret-id "$(terraform output -raw github_runner_token_secret_arn)" \
+  --secret-string '<GITHUB_PAT>'
+```
+
+Keep the PAT scoped to the `hashpass-tech/hashpass.tech` repository and only the permissions needed to create runner registration and removal tokens.
 
 ## Suggested Deploy Order
 

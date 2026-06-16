@@ -1,0 +1,331 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+export AWS_REGION="__AWS_REGION__"
+export AWS_DEFAULT_REGION="__AWS_REGION__"
+
+GITHUB_REPOSITORY="__GITHUB_REPOSITORY__"
+GITHUB_RUNNER_TOKEN_SECRET_ARN="__GITHUB_RUNNER_TOKEN_SECRET_ARN__"
+PNPM_VERSION="__PNPM_VERSION__"
+RUNNER_NAME_PREFIX="__RUNNER_NAME_PREFIX__"
+RUNNER_LABELS="__RUNNER_LABELS__"
+RUNNER_VERSION="__RUNNER_VERSION__"
+
+RUNNER_USER="runner"
+RUNNER_HOME="/home/${RUNNER_USER}"
+RUNNER_ROOT="/opt/__NAME_PREFIX__-runner"
+RUNNER_BIN_DIR="${RUNNER_ROOT}/bin"
+RUNNER_INSTALL_DIR="${RUNNER_ROOT}/actions-runner"
+RUNNER_ENV_FILE="/etc/__NAME_PREFIX__-runner.env"
+RUNNER_SERVICE_FILE="/etc/systemd/system/__NAME_PREFIX__-runner.service"
+ANDROID_SDK_ROOT="/opt/android-sdk"
+JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+PNPM_HOME="${RUNNER_HOME}/.local/share/pnpm"
+
+log() {
+  printf '[hashpass-runner] %s\n' "$1"
+}
+
+install_packages() {
+  log "Installing base packages"
+  apt-get update
+  dpkg --add-architecture i386 >/dev/null 2>&1 || true
+  apt-get update
+  apt-get install -y \
+    awscli \
+    build-essential \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    jq \
+    lib32gcc-s1 \
+    lib32stdc++6 \
+    libc6:i386 \
+    libbz2-1.0:i386 \
+    libncurses5:i386 \
+    libstdc++6:i386 \
+    libz1:i386 \
+    openjdk-17-jdk \
+    pkg-config \
+    ruby-bundler \
+    ruby-full \
+    unzip \
+    xz-utils \
+    zip \
+    gradle
+}
+
+install_node() {
+  if ! command -v node >/dev/null 2>&1; then
+    log "Installing Node.js 22"
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+    apt-get install -y nodejs
+  fi
+
+  log "Enabling corepack and pnpm ${PNPM_VERSION}"
+  corepack enable
+  corepack prepare "pnpm@${PNPM_VERSION}" --activate
+}
+
+install_android_sdk() {
+  if [ ! -d "${ANDROID_SDK_ROOT}/cmdline-tools/latest" ]; then
+    log "Installing Android command line tools"
+    mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
+    tmp_dir="$(mktemp -d)"
+    curl -fsSL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -o "${tmp_dir}/cmdline-tools.zip"
+    unzip -q "${tmp_dir}/cmdline-tools.zip" -d "${tmp_dir}"
+    rm -rf "${ANDROID_SDK_ROOT}/cmdline-tools/latest"
+    mv "${tmp_dir}/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest"
+    rm -rf "${tmp_dir}"
+  fi
+
+  export ANDROID_SDK_ROOT
+  export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
+
+  log "Installing Android platform packages"
+  yes | sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" --licenses >/dev/null
+  sdkmanager --sdk_root="${ANDROID_SDK_ROOT}" \
+    "platform-tools" \
+    "platforms;android-34" \
+    "platforms;android-35" \
+    "build-tools;34.0.0" \
+    "build-tools;35.0.0" >/dev/null
+}
+
+create_runner_user() {
+  if ! id -u "${RUNNER_USER}" >/dev/null 2>&1; then
+    useradd --create-home --shell /bin/bash "${RUNNER_USER}"
+  fi
+
+  mkdir -p "${RUNNER_BIN_DIR}" "${RUNNER_INSTALL_DIR}" "${RUNNER_HOME}/.gradle" "${RUNNER_HOME}/.cache" "${RUNNER_HOME}/.local/share"
+  chown -R "${RUNNER_USER}:${RUNNER_USER}" "${RUNNER_ROOT}" "${RUNNER_HOME}"
+}
+
+fetch_runner_version() {
+  if [ -n "${RUNNER_VERSION}" ] && [ "${RUNNER_VERSION}" != "null" ]; then
+    printf '%s' "${RUNNER_VERSION}"
+    return
+  fi
+
+  curl -fsSL https://api.github.com/repos/actions/runner/releases/latest | jq -r '.tag_name | sub("^v"; "")'
+}
+
+download_runner() {
+  local version="$1"
+  local archive="${RUNNER_ROOT}/actions-runner-linux-x64-${version}.tar.gz"
+
+  if [ -f "${RUNNER_INSTALL_DIR}/run.sh" ]; then
+    return
+  fi
+
+  log "Downloading GitHub Actions runner ${version}"
+  mkdir -p "${RUNNER_INSTALL_DIR}"
+  curl -fsSL \
+    -o "${archive}" \
+    "https://github.com/actions/runner/releases/download/v${version}/actions-runner-linux-x64-${version}.tar.gz"
+  tar -xzf "${archive}" -C "${RUNNER_INSTALL_DIR}"
+  rm -f "${archive}"
+  chown -R "${RUNNER_USER}:${RUNNER_USER}" "${RUNNER_INSTALL_DIR}"
+}
+
+write_runner_env() {
+  cat > "${RUNNER_ENV_FILE}" <<EOF
+AWS_REGION=${AWS_REGION}
+AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}
+JAVA_HOME=${JAVA_HOME}
+PNPM_HOME=${PNPM_HOME}
+PATH=${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CI=1
+EXPO_NO_TELEMETRY=1
+GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
+GITHUB_RUNNER_TOKEN_SECRET_ARN=${GITHUB_RUNNER_TOKEN_SECRET_ARN}
+RUNNER_NAME_PREFIX=${RUNNER_NAME_PREFIX}
+RUNNER_LABELS=${RUNNER_LABELS}
+RUNNER_VERSION=${RUNNER_VERSION}
+EOF
+  chmod 0640 "${RUNNER_ENV_FILE}"
+  chown root:"${RUNNER_USER}" "${RUNNER_ENV_FILE}"
+}
+
+write_runner_scripts() {
+  cat > "${RUNNER_BIN_DIR}/runner-loop.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+source /etc/__NAME_PREFIX__-runner.env
+
+RUNNER_ROOT="/opt/__NAME_PREFIX__-runner"
+RUNNER_INSTALL_DIR="${RUNNER_ROOT}/actions-runner"
+
+if [ -z "${GITHUB_RUNNER_TOKEN_SECRET_ARN:-}" ]; then
+  echo "Missing GITHUB_RUNNER_TOKEN_SECRET_ARN" >&2
+  exit 1
+fi
+
+stop_requested=0
+runner_pid=""
+
+log() {
+  printf '[hashpass-runner] %s\n' "$1"
+}
+
+metadata_token() {
+  curl -fsSL -X PUT -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" \
+    http://169.254.169.254/latest/api/token
+}
+
+instance_id() {
+  local token
+  token="$(metadata_token)"
+  curl -fsSL -H "X-aws-ec2-metadata-token: ${token}" \
+    http://169.254.169.254/latest/meta-data/instance-id
+}
+
+fetch_github_pat() {
+  local secret_string
+  secret_string="$(aws secretsmanager get-secret-value \
+    --secret-id "${GITHUB_RUNNER_TOKEN_SECRET_ARN}" \
+    --query SecretString \
+    --output text)"
+
+  if printf '%s' "${secret_string}" | jq -e . >/dev/null 2>&1; then
+    printf '%s' "${secret_string}" | jq -r '.token // .github_token // .value // .secret // empty'
+  else
+    printf '%s' "${secret_string}"
+  fi
+}
+
+github_api() {
+  local method="$1"
+  local endpoint="$2"
+  local token="$3"
+
+  curl -fsSL \
+    -X "${method}" \
+    -H "Authorization: Bearer ${token}" \
+    -H "Accept: application/vnd.github+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com${endpoint}"
+}
+
+fetch_registration_token() {
+  local pat="$1"
+  github_api POST "/repos/${GITHUB_REPOSITORY}/actions/runners/registration-token" "${pat}" | jq -r '.token'
+}
+
+fetch_removal_token() {
+  local pat="$1"
+  github_api POST "/repos/${GITHUB_REPOSITORY}/actions/runners/remove-token" "${pat}" | jq -r '.token'
+}
+
+register_runner() {
+  local id pat registration_token runner_name
+  id="$(instance_id)"
+  pat="$(fetch_github_pat)"
+  registration_token="$(fetch_registration_token "${pat}")"
+  runner_name="${RUNNER_NAME_PREFIX}-${id}"
+
+  cd "${RUNNER_INSTALL_DIR}"
+
+  if [ -f .runner ]; then
+    rm -f .runner .credentials
+  fi
+
+  ./config.sh \
+    --unattended \
+    --ephemeral \
+    --replace \
+    --url "https://github.com/${GITHUB_REPOSITORY}" \
+    --token "${registration_token}" \
+    --name "${runner_name}" \
+    --labels "${RUNNER_LABELS}" \
+    --work "_work"
+}
+
+deregister_runner() {
+  local pat removal_token
+  pat="$(fetch_github_pat)"
+  removal_token="$(fetch_removal_token "${pat}")"
+  cd "${RUNNER_INSTALL_DIR}"
+  if [ -f .runner ] || [ -f .credentials ]; then
+    ./config.sh remove --unattended --token "${removal_token}" || true
+  fi
+}
+
+cleanup() {
+  stop_requested=1
+  if [ -n "${runner_pid}" ] && kill -0 "${runner_pid}" >/dev/null 2>&1; then
+    kill "${runner_pid}" >/dev/null 2>&1 || true
+    wait "${runner_pid}" >/dev/null 2>&1 || true
+  fi
+  deregister_runner || true
+}
+
+trap cleanup INT TERM
+
+while [ "${stop_requested}" -eq 0 ]; do
+  register_runner
+  cd "${RUNNER_INSTALL_DIR}"
+  ./run.sh &
+  runner_pid="$!"
+  wait "${runner_pid}" || true
+  runner_pid=""
+  deregister_runner || true
+
+  if [ "${stop_requested}" -eq 0 ]; then
+    sleep 5
+  fi
+done
+EOF
+
+  cat > "${RUNNER_SERVICE_FILE}" <<EOF
+[Unit]
+Description=HashPass mobile release GitHub Actions runner
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=${RUNNER_USER}
+Group=${RUNNER_USER}
+WorkingDirectory=${RUNNER_INSTALL_DIR}
+EnvironmentFile=${RUNNER_ENV_FILE}
+ExecStart=${RUNNER_BIN_DIR}/runner-loop.sh
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=600
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  chmod 0750 "${RUNNER_BIN_DIR}/runner-loop.sh"
+  chown "${RUNNER_USER}:${RUNNER_USER}" "${RUNNER_BIN_DIR}/runner-loop.sh"
+}
+
+start_services() {
+  systemctl daemon-reload
+  systemctl enable "__NAME_PREFIX__-runner.service"
+  systemctl restart "__NAME_PREFIX__-runner.service"
+}
+
+main() {
+  install_packages
+  create_runner_user
+  install_node
+  install_android_sdk
+  local runner_version
+  runner_version="$(fetch_runner_version)"
+  download_runner "${runner_version}"
+  write_runner_env
+  write_runner_scripts
+  start_services
+  log "GitHub Actions runner bootstrap complete"
+}
+
+main "$@"

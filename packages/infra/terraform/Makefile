@@ -19,10 +19,15 @@ destroy:
 fmt:
 	terraform -chdir=stacks/aws fmt -recursive
 	terraform -chdir=stacks/gcp fmt -recursive
+	terraform -chdir=stacks/mobile-release fmt -recursive
 	terraform -chdir=modules/aws_expo_router_api fmt -recursive
 	terraform -chdir=modules/aws_amplify_domain fmt -recursive
 	terraform -chdir=modules/gcp_directus_instance fmt -recursive
+	terraform -chdir=modules/aws_github_actions_runner fmt -recursive
 
 validate:
 	terraform -chdir=stacks/aws validate
 	terraform -chdir=stacks/gcp validate
+	terraform -chdir=stacks/mobile-release validate
+	terraform -chdir=modules/aws_github_actions_runner init -backend=false
+	terraform -chdir=modules/aws_github_actions_runner validate
