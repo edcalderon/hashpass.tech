@@ -10,7 +10,10 @@ const {
   MOBILE_APP_DIR,
   buildReleaseEnv,
   resolveSelectedProfile,
+  loadEnvFile,
 } = require('./mobile-release-env');
+
+const ANDROID_SIGNING_ENV_PATH = path.join(ROOT_DIR, 'config', 'android-signing.env');
 const { resolveAndroidVersionCode } = require(path.join(
   ROOT_DIR,
   'apps',
@@ -74,6 +77,21 @@ function buildFastlaneEnv({
   env.MOBILE_ANDROID_VERSION_CODE = String(androidVersionCode);
   env.ANDROID_VERSION_CODE = String(androidVersionCode);
   env.CI = env.CI || '1';
+
+  // Load local signing credentials from config/android-signing.env when not in CI.
+  // Values from process.env and .env files take precedence over this file.
+  if (!baseEnv.CI && fs.existsSync(ANDROID_SIGNING_ENV_PATH)) {
+    const signingEnv = loadEnvFile(ANDROID_SIGNING_ENV_PATH);
+    for (const [key, value] of Object.entries(signingEnv)) {
+      if (!env[key]) {
+        env[key] = value;
+      }
+    }
+    // Resolve a relative ANDROID_KEYSTORE_PATH against the repo root.
+    if (env.ANDROID_KEYSTORE_PATH && !path.isAbsolute(env.ANDROID_KEYSTORE_PATH)) {
+      env.ANDROID_KEYSTORE_PATH = path.resolve(ROOT_DIR, env.ANDROID_KEYSTORE_PATH);
+    }
+  }
 
   return env;
 }

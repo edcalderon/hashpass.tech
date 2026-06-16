@@ -53,6 +53,8 @@ keys/
 *.key
 *.mobileprovision
 *.jks
+*.keystore
+config/android-signing.env
 
 # Cloudflare secrets
 wrangler.toml.local
