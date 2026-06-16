@@ -2,13 +2,17 @@ const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
 
-// 🔄 Auto-propagate environment from root Source of Truth
-try {
-  const profile = process.env.NODE_ENV === 'production' ? 'production' : 'local';
-  console.log(`📡 [Metro] Auto-propagating environment: ${profile}`);
-  execSync(`node ${path.resolve(__dirname, '../../packages/tools/scripts/propagate-env.js')} ${profile}`, { stdio: 'inherit' });
-} catch (error) {
-  console.error('⚠️ [Metro] Environment propagation failed:', error.message);
+// Auto-propagate environment from root .env in local dev only.
+// In CI the root .env is absent and propagate-env writes to web-app/directus dirs
+// that are irrelevant for a mobile build, so skip it there entirely.
+if (!process.env.CI) {
+  try {
+    const profile = process.env.NODE_ENV === 'production' ? 'production' : 'local';
+    console.log(`📡 [Metro] Auto-propagating environment: ${profile}`);
+    execSync(`node ${path.resolve(__dirname, '../../packages/tools/scripts/propagate-env.js')} ${profile}`, { stdio: 'inherit' });
+  } catch (error) {
+    console.error('⚠️ [Metro] Environment propagation failed:', error.message);
+  }
 }
 
 const { getDefaultConfig } = require('expo/metro-config');

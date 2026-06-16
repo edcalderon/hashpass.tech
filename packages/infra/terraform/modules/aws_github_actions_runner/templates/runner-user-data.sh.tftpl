@@ -95,6 +95,8 @@ install_android_sdk() {
     "platforms;android-35" \
     "build-tools;34.0.0" \
     "build-tools;35.0.0" >/dev/null
+
+  chown -R "${RUNNER_USER}:${RUNNER_USER}" "${ANDROID_SDK_ROOT}"
 }
 
 create_runner_user() {
