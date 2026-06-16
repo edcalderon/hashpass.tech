@@ -72,6 +72,13 @@ jobs:
       EAS_PROJECT_ID_DEV: ${{ vars.EAS_PROJECT_ID_DEV }}
       EXPO_OWNER: ${{ vars.EXPO_OWNER }}
       EXPO_OWNER_DEV: ${{ vars.EXPO_OWNER_DEV }}
+      # Supabase public config — embedded into the JS bundle by Metro at build time.
+      # Add EXPO_PUBLIC_SUPABASE_URL_DEV / _PROD and EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV / _PROD
+      # as GitHub Variables (Settings → Secrets and variables → Variables).
+      EXPO_PUBLIC_SUPABASE_PROFILE: ${{ inputs.environment == 'development' && 'core-development' || 'core-production' }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_URL_DEV || vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV || vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+      EXPO_PUBLIC_DIRECTUS_URL: ${{ vars.EXPO_PUBLIC_DIRECTUS_URL }}
 
     steps:
       - name: Checkout
@@ -94,8 +101,9 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # Cache Gradle wrapper distribution and build cache.
+      # Cache Gradle wrapper + dependency cache + incremental build cache.
       # Only needed on GitHub-hosted runners — on EC2, ~/.gradle persists on disk between runs.
+      # Key includes the lock file so NDK/RN native outputs are reused across patch bumps.
       - name: Cache Gradle
         if: inputs.runner == 'github-hosted'
         uses: actions/cache@v4
@@ -103,7 +111,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('apps/mobile-app/package.json', 'apps/mobile-app/app.json') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile-app/package.json') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
@@ -351,21 +359,40 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           chmod 600 "$GOOGLE_PLAY_JSON_KEY" "$ANDROID_KEYSTORE_PATH"
 
+      # Write a minimal .env for the mobile app so Metro can embed the Supabase
+      # config into the JS bundle at build time. Without this, EXPO_PUBLIC_* vars
+      # are undefined in the bundle and the app crashes on first launch.
+      # The values come from GitHub Variables set in Settings → Secrets and variables.
+      - name: Write mobile app env
+        run: |
+          set -euo pipefail
+          env_file="apps/mobile-app/.env"
+          : > "$env_file"
+          [ -n "${EXPO_PUBLIC_SUPABASE_PROFILE:-}" ]   && printf 'EXPO_PUBLIC_SUPABASE_PROFILE=%s\n'   "$EXPO_PUBLIC_SUPABASE_PROFILE"   >> "$env_file"
+          [ -n "${EXPO_PUBLIC_SUPABASE_URL:-}" ]        && printf 'EXPO_PUBLIC_SUPABASE_URL=%s\n'        "$EXPO_PUBLIC_SUPABASE_URL"        >> "$env_file"
+          [ -n "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]   && printf 'EXPO_PUBLIC_SUPABASE_ANON_KEY=%s\n'   "$EXPO_PUBLIC_SUPABASE_ANON_KEY"   >> "$env_file"
+          [ -n "${EXPO_PUBLIC_DIRECTUS_URL:-}" ]        && printf 'EXPO_PUBLIC_DIRECTUS_URL=%s\n'        "$EXPO_PUBLIC_DIRECTUS_URL"        >> "$env_file"
+          vars_written=$(grep -c '.' "$env_file" || true)
+          echo "Wrote ${vars_written} env var(s) to ${env_file}"
+
       - name: Configure Gradle
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.gradle"
-          # GitHub-hosted ubuntu-latest has 7 GB RAM; self-hosted EC2 may be smaller.
+          # GitHub-hosted ubuntu-latest: 4 vCPU / 16 GiB — use all cores.
+          # EC2 t3a.large: 2 vCPU / 8 GiB — match vCPU count, cap heap below total RAM.
           if [ "${{ inputs.runner }}" = "github-hosted" ]; then
-            GRADLE_HEAP="-Xmx6g"
+            GRADLE_HEAP="-Xmx8g"
+            GRADLE_WORKERS=4
           else
-            GRADLE_HEAP="-Xmx4g"
+            GRADLE_HEAP="-Xmx5g"
+            GRADLE_WORKERS=2
           fi
           printf '%s\n' \
             "org.gradle.jvmargs=${GRADLE_HEAP} -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError" \
             'org.gradle.daemon=false' \
-            'org.gradle.parallel=false' \
-            'org.gradle.workers.max=2' \
+            'org.gradle.parallel=true' \
+            "org.gradle.workers.max=${GRADLE_WORKERS}" \
             'org.gradle.caching=true' \
             >> "$HOME/.gradle/gradle.properties"
 
