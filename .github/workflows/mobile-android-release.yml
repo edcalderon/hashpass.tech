@@ -72,6 +72,17 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Install EAS CLI
+        if: inputs.backend == 'eas'
+        run: |
+          set -euo pipefail
+
+          if ! command -v eas >/dev/null 2>&1; then
+            npm install -g eas-cli@20.1.0
+          fi
+
+          eas --version
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
