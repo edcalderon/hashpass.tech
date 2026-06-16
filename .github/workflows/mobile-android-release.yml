@@ -309,6 +309,16 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           chmod 600 "$GOOGLE_PLAY_JSON_KEY" "$ANDROID_KEYSTORE_PATH"
 
+      - name: Ensure Android SDK is writable
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
+          if [ -d "$sdk_root" ] && [ ! -w "$sdk_root" ]; then
+            echo "Android SDK at $sdk_root is not writable — fixing ownership for runner user $(id -un)"
+            sudo chown -R "$(id -un)" "$sdk_root"
+          fi
+          echo "Android SDK at $sdk_root is writable."
+
       - name: Release Android
         run: |
           set -euo pipefail
