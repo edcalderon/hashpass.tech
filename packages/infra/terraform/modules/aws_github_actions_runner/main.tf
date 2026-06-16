@@ -158,6 +158,13 @@ resource "aws_instance" "runner" {
     http_put_response_hop_limit = 2
   }
 
+  # Allow sustained CPU bursting without throttling — cold Gradle/NDK builds
+  # deplete T3 CPU credits fast; unlimited mode costs ~$0.05/vCPU-hr in surplus
+  # but keeps build times consistent and avoids multi-hour throttled builds.
+  credit_specification {
+    cpu_credits = "unlimited"
+  }
+
   root_block_device {
     encrypted             = true
     delete_on_termination = true
