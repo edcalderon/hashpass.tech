@@ -331,12 +331,8 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
-          bundler-cache: false
-
-      - name: Install fastlane bundle
-        if: inputs.backend == 'fastlane'
-        working-directory: apps/mobile-app
-        run: bundle install
+          bundler-cache: true
+          working-directory: apps/mobile-app
 
       - name: Materialize fastlane secrets
         if: inputs.backend == 'fastlane'
