@@ -246,7 +246,7 @@ export const hostnameFromRequest = (request: Request): string => {
 const runtimeHostname = (hostname?: string) => {
   if (hostname) return normalizeHostname(hostname);
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && window.location?.hostname) {
     return normalizeHostname(window.location.hostname);
   }
 

@@ -53,7 +53,7 @@ const resolveRuntimeHostname = (hostname?: string | null): string => {
   const explicit = normalizeHostname(hostname);
   if (explicit) return explicit;
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && window.location?.hostname) {
     return normalizeHostname(window.location.hostname);
   }
 

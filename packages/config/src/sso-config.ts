@@ -202,6 +202,22 @@ const normalizeHostname = (value?: string): string => {
   return raw.split('/')[0].split(':')[0];
 };
 
+const readWindowHostname = (): string => {
+  if (typeof window === 'undefined' || !window.location?.hostname) {
+    return '';
+  }
+
+  return window.location.hostname;
+};
+
+const readWindowOrigin = (): string => {
+  if (typeof window === 'undefined' || !window.location?.origin) {
+    return '';
+  }
+
+  return window.location.origin;
+};
+
 const isLocalHostname = (hostname: string): boolean => {
   return (
     hostname === 'localhost' ||
@@ -254,13 +270,12 @@ export const ENV_CONFIG = {
       return explicitApiBase.trim().replace(/\/$/, '');
     }
 
-    const resolvedHostname = hostname || (typeof window !== 'undefined' ? window.location.hostname : '');
+    const resolvedHostname = hostname || readWindowHostname();
     const normalizedHostname = normalizeHostname(resolvedHostname);
 
     if (normalizedHostname && isLocalHostname(normalizedHostname)) {
-      return typeof window !== 'undefined'
-        ? `${window.location.origin}/api`
-        : 'http://localhost:8081/api';
+      const origin = readWindowOrigin();
+      return origin ? `${origin}/api` : 'http://localhost:8081/api';
     }
 
     const tenantApiBaseUrl = resolveTenantApiBaseUrl(normalizedHostname);
@@ -280,7 +295,7 @@ export const ENV_CONFIG = {
    * Identifies the current tenant based on host
    */
   getTenant: (hostname?: string) => {
-    const host = hostname || (typeof window !== 'undefined' ? window.location.hostname : '');
+    const host = hostname || readWindowHostname();
     return resolveTenantByHostname(host) || SSO_CONFIG.tenants.core;
   },
 };

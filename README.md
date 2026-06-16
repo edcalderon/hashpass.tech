@@ -17,16 +17,16 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.3)
+## 📋 Latest Changes (v1.8.4)
 
 ### Released
-- Add startup version stamp, surface the React loading screen earlier, and fall back to injected commit metadata on mobile startup
+- Harden Android startup hostname access and ship repository license/trademark docs
 
 ### Technical Details
-- Version: 1.8.3
+- Version: 1.8.4
 - Release Type: stable
-- Build Number: 202606160300
-- Release Date: 2026-06-16T03:00:14.036Z
+- Build Number: 202606160417
+- Release Date: 2026-06-16T04:17:46.643Z
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
@@ -233,7 +233,13 @@ We welcome contributions of all kinds! Whether you’re fixing bugs, adding feat
 
 ## 📄 License
 
-See the repository root `LICENSE` file for licensing terms if it is present in your checkout.
+The source code in this repository is licensed under the **Apache License 2.0**.
+See [LICENSE](./LICENSE) for the full license text and [NOTICE](./NOTICE) for attribution notices.
+
+The **HashPass** name, **HashPass Tech** name, **HashPass Club** name, logos, icons, domain names (`hashpass.tech`, `hashpass.club`), and all other brand assets are trademarks or brand assets of HashPass Tech and are **not** licensed under the Apache License 2.0.
+See [TRADEMARKS.md](./TRADEMARKS.md) for the full trademark policy.
+
+You may fork, modify, and distribute this code under the Apache License 2.0, but you must use a different name and branding for any public or commercial derivative product unless you have prior written permission from HashPass Tech.
 
 ---
 

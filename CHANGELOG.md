@@ -10,6 +10,18 @@
 - Release Date: 2026-06-15T19:47:19.733Z
 
 
+## [1.8.4] - 2026-06-16
+
+### Released
+- Harden Android startup hostname access and ship repository license/trademark docs
+
+### Technical Details
+- Version: 1.8.4
+- Release Type: stable
+- Build Number: 202606160417
+- Release Date: 2026-06-16T04:17:46.643Z
+
+
 ## [1.8.3] - 2026-06-16
 
 ### Released

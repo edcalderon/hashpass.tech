@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606160300, // Updated to current timestamp
+  buildNumber: 202606160417, // Updated to current timestamp
   releaseDate: '2026-06-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
-    'Added a startup version stamp to the mobile loading screen',
-    'Hid the native splash earlier so the stamped React loading screen can render during startup',
-    'Fell back to the injected release commit when git-info metadata is unknown'
+    'Guarded browser-only hostname and origin access in mobile auth and SSO startup paths so Android can launch without window crashes',
+    'Hardened mobile Supabase profile hostname resolution when window.location is absent',
+    'Added LICENSE NOTICE and TRADEMARKS.md files for the release'
   ],
   breakingChanges: [],
-  notes: 'Add visible startup version stamp and surface the React loading screen earlier for mobile launch diagnostics'
+  notes: 'Harden Android startup hostname access and ship repository license/trademark docs'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.4': {
+    version: '1.8.4',
+    buildNumber: 202606160417,
+    releaseDate: '2026-06-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Guarded browser-only hostname and origin access in mobile auth and SSO startup paths so Android can launch without window crashes',
+      'Hardened mobile Supabase profile hostname resolution when window.location is absent',
+      'Added LICENSE NOTICE and TRADEMARKS.md files for the release'
+    ],
+    breakingChanges: [],
+    notes: 'Harden Android startup hostname access and ship repository license/trademark docs'
+  },
   '1.8.3': {
     version: '1.8.3',
     buildNumber: 202606160300,
