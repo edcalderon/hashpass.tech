@@ -100,6 +100,151 @@ jobs:
           cp "$GOOGLE_PLAY_JSON_KEY" config/hashpass-eas.json
           chmod 600 "$GOOGLE_PLAY_JSON_KEY" config/hashpass-eas.json
 
+      - name: Resolve fastlane signing secrets from Expo
+        if: inputs.backend == 'fastlane'
+        env:
+          MOBILE_RELEASE_ENV: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && \
+             [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] && \
+             [ -n "${ANDROID_KEY_ALIAS:-}" ] && \
+             [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then
+            echo "Fastlane signing secrets already provided by GitHub secrets."
+            exit 0
+          fi
+
+          node <<'NODE'
+          const fs = require('fs');
+
+          void (async () => {
+            const appConfig = require('./apps/mobile-app/app.json').expo;
+            const projectFullName = `${appConfig.owner}/${appConfig.slug}`;
+            const applicationIdentifier = appConfig.android.package;
+            const preferredTokens =
+              process.env.MOBILE_RELEASE_ENV === 'development'
+                ? [process.env.EXPO_TOKEN_DEV, process.env.EXPO_TOKEN]
+                : [process.env.EXPO_TOKEN, process.env.EXPO_TOKEN_DEV];
+            const tokens = preferredTokens.filter(token => typeof token === 'string' && token.trim());
+
+            if (!tokens.length) {
+              throw new Error('No Expo authentication token is available for fastlane signing export.');
+            }
+
+            const query = `
+              query CommonAndroidAppCredentialsWithBuildCredentialsByApplicationIdentifierQuery(
+                $projectFullName: String!
+                $applicationIdentifier: String
+                $legacyOnly: Boolean
+              ) {
+                app {
+                  byFullName(fullName: $projectFullName) {
+                    id
+                    androidAppCredentials(
+                      filter: {
+                        applicationIdentifier: $applicationIdentifier
+                        legacyOnly: $legacyOnly
+                      }
+                    ) {
+                      id
+                      applicationIdentifier
+                      androidAppBuildCredentialsList {
+                        id
+                        isDefault
+                        isLegacy
+                        name
+                        androidKeystore {
+                          id
+                          keystore
+                          keystorePassword
+                          keyAlias
+                          keyPassword
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            async function fetchCredentials(token) {
+              const response = await fetch('https://api.expo.dev/graphql', {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  query,
+                  variables: {
+                    projectFullName,
+                    applicationIdentifier,
+                    legacyOnly: false,
+                  },
+                }),
+              });
+
+              const payload = await response.json();
+              if (!response.ok || payload.errors?.length) {
+                const message = payload.errors?.map(error => error.message).join('; ')
+                  || `Expo GraphQL request failed with HTTP ${response.status}`;
+                throw new Error(message);
+              }
+
+              const app = payload?.data?.app?.byFullName;
+              const appCredentials = app?.androidAppCredentials?.[0];
+              const buildCredentialsList = appCredentials?.androidAppBuildCredentialsList ?? [];
+              const buildCredentials =
+                buildCredentialsList.find(entry => entry.isDefault && entry.androidKeystore) ??
+                buildCredentialsList.find(entry => entry.androidKeystore);
+
+              if (!buildCredentials?.androidKeystore) {
+                throw new Error(
+                  `No Android keystore was found in Expo for ${projectFullName} (${applicationIdentifier})`
+                );
+              }
+
+              const keystore = buildCredentials.androidKeystore;
+            const envFile = process.env.GITHUB_ENV;
+            if (!envFile) {
+              throw new Error('GITHUB_ENV is not set');
+            }
+
+            const envEntries = [
+              ['ANDROID_KEYSTORE_BASE64', keystore.keystore],
+              ['ANDROID_KEYSTORE_' + 'PASSWORD', keystore.keystorePassword],
+              ['ANDROID_KEY_ALIAS', keystore.keyAlias],
+              ['ANDROID_KEY_' + 'PASSWORD', keystore.keyPassword ?? ''],
+            ];
+
+            fs.appendFileSync(
+              envFile,
+              envEntries.map(([name, value]) => `${name}=${value}`).join('\n') + '\n'
+            );
+
+              console.log(
+                `Exported Android keystore for ${projectFullName} from Expo build credentials: ${buildCredentials.name}`
+              );
+            }
+
+            let lastError = null;
+            for (const token of tokens) {
+              try {
+                await fetchCredentials(token);
+                return;
+              } catch (error) {
+                lastError = error;
+              }
+            }
+
+            throw lastError ?? new Error('Failed to export Android keystore from Expo');
+          })().catch(error => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
       - name: Setup Ruby
         if: inputs.backend == 'fastlane'
         uses: ruby/setup-ruby@v1
