@@ -1,3 +1,30 @@
+## [1.8.5](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.4...v1.8.5) (2026-06-16)
+
+
+### Bug Fixes
+
+* **ci:** expose android gradle output in fastlane ([101f7b8](https://github.com/hashpass-tech/hashpass.tech/commit/101f7b8ef2492608890e815b91fae7d945511652))
+* **ci:** install eas cli for expo releases ([f5d438f](https://github.com/hashpass-tech/hashpass.tech/commit/f5d438ffd07df48d9838f6346567969a8f4c5c4b))
+* **ci:** make mobile release workflow parseable ([7425686](https://github.com/hashpass-tech/hashpass.tech/commit/7425686ac9e3f8d33c5d0b4c5d70d26160458c9a))
+* **ci:** move mobile runner tool cache into writable path ([a199995](https://github.com/hashpass-tech/hashpass.tech/commit/a1999952171137013ed235f767e3f548af5a63fd))
+* **ci:** use hosted tool cache on mobile runner ([7db26d4](https://github.com/hashpass-tech/hashpass.tech/commit/7db26d4cc8d31c152d52caedb724a5a48a7cac85))
+* **mobile-release:** embed Supabase env at build time + optimize Gradle parallelism ([efc63a4](https://github.com/hashpass-tech/hashpass.tech/commit/efc63a4c99576e46547c7b0eab1a4364578b92c6))
+* **mobile-release:** security hardening and dev build env fixes ([6bc8929](https://github.com/hashpass-tech/hashpass.tech/commit/6bc8929718137ab2a300b95765a5a4151e0d0f2a))
+
+
+### Features
+
+* **ci:** recover android signing secrets from expo ([f6b7666](https://github.com/hashpass-tech/hashpass.tech/commit/f6b76666b8bebddd8e31045809221ebdca3c0ea1))
+* **ci:** resolve expo signing export by project id ([994580d](https://github.com/hashpass-tech/hashpass.tech/commit/994580dc6e3e6f99ba23abe101777d4be163f575))
+* **infra:** add mobile release runner stack ([ea42faa](https://github.com/hashpass-tech/hashpass.tech/commit/ea42faa998d86e2f63f448b310cf0c0e982a5e6f))
+* **infra:** harden mobile release workflow ([951fc74](https://github.com/hashpass-tech/hashpass.tech/commit/951fc7499122be22a88ec9ab912f761fdf3269a9))
+* **mobile:** add self-hosted fastlane release path ([9141ef4](https://github.com/hashpass-tech/hashpass.tech/commit/9141ef4516bd94219e31dc9e417712fc81622dcc))
+* **mobile:** default Android releases to fastlane ([3e222ff](https://github.com/hashpass-tech/hashpass.tech/commit/3e222ff2a60dde653aca8158838e04e752809f02))
+
+
+
+
+
 ## [1.8.0] - 2026-06-15
 
 ### Released
