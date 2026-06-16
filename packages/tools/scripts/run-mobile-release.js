@@ -5,7 +5,7 @@ const { runEas } = require('./run-mobile-eas');
 const { runFastlane } = require('./run-mobile-fastlane');
 
 const DEFAULT_RELEASE_ENV = 'production';
-const DEFAULT_RELEASE_BACKEND = 'eas';
+const DEFAULT_RELEASE_BACKEND = 'fastlane';
 const PRODUCTION_PROFILE = 'production';
 const DEVELOPMENT_PROFILE = 'preview';
 const VALID_RELEASE_BACKENDS = new Set(['eas', 'fastlane']);
@@ -199,8 +199,9 @@ function main(argv = process.argv.slice(2)) {
       [
         'Usage: node packages/tools/scripts/run-mobile-release.js [--env production|development] [--profile eas-profile] [--backend eas|fastlane] [--no-submit]',
         '',
-        'Defaults to a production release.',
+        'Defaults to a production release using fastlane.',
         'Use --env development to target the development Expo account and internal preview profile.',
+        'Use --backend eas only if you explicitly want the managed Expo build path.',
         'Use --backend fastlane to build locally with Expo prebuild + fastlane supply.',
       ].join('\n'),
     );

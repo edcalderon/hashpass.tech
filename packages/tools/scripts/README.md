@@ -46,7 +46,7 @@ The branch-aware release flow:
 
 Mobile Android releases now reuse the same backend switch:
 
-- `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, so the same command can target EAS or fastlane
+- `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, defaulting to fastlane so the same command can run on the self-hosted runner
 - `pnpm run android:release:fastlane` and `pnpm run android:release:fastlane:dev` force the self-hosted fastlane path
 - The self-hosted workflow lives in `.github/workflows/mobile-android-release.yml` and expects the `hashpass-mobile-release` AWS runner label
 - Fastlane requires the Play service account JSON plus `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`

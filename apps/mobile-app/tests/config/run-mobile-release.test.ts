@@ -54,7 +54,7 @@ describe('run-mobile-release', () => {
   });
 
   it('normalizes release backends', () => {
-    expect(normalizeReleaseBackend()).toBe('eas');
+    expect(normalizeReleaseBackend()).toBe('fastlane');
     expect(normalizeReleaseBackend('eas')).toBe('eas');
     expect(normalizeReleaseBackend('expo')).toBe('eas');
     expect(normalizeReleaseBackend('fastlane')).toBe('fastlane');
@@ -74,9 +74,17 @@ describe('run-mobile-release', () => {
       env: 'production',
       profile: 'development',
       submit: true,
-      backend: 'eas',
+      backend: 'fastlane',
       track: null,
       releaseStatus: null,
+    });
+  });
+
+  it('defaults release parsing to fastlane when no backend is provided', () => {
+    expect(parseReleaseArgs([])).toMatchObject({
+      env: 'production',
+      submit: true,
+      backend: 'fastlane',
     });
   });
 
