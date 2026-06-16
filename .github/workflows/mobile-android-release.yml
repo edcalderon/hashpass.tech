@@ -19,15 +19,39 @@ on:
         options:
           - fastlane
           - eas
+      runner:
+        description: 'Build runner — aws-ec2 uses the self-hosted EC2 instance, github-hosted uses GitHub Actions infrastructure'
+        required: false
+        default: aws-ec2
+        type: choice
+        options:
+          - aws-ec2
+          - github-hosted
 
 concurrency:
   group: mobile-android-release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
+  # Resolves the runner label array from the human-readable input so that
+  # the release job can use fromJSON() on a single output string.
+  select-runner:
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.pick.outputs.runner }}
+    steps:
+      - id: pick
+        run: |
+          if [ "${{ inputs.runner }}" = "github-hosted" ]; then
+            echo 'runner=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'runner=["self-hosted","linux","x64","hashpass-mobile-release"]' >> "$GITHUB_OUTPUT"
+          fi
+
   release:
+    needs: select-runner
     if: github.repository == 'hashpass-tech/hashpass.tech'
-    runs-on: [self-hosted, linux, x64, hashpass-mobile-release]
+    runs-on: ${{ fromJSON(needs.select-runner.outputs.runner) }}
     timeout-minutes: 120
     permissions:
       contents: read
@@ -71,6 +95,19 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      # Cache Gradle wrapper distribution and build cache.
+      # Only needed on GitHub-hosted runners — on EC2, ~/.gradle persists on disk between runs.
+      - name: Cache Gradle
+        if: inputs.runner == 'github-hosted'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apps/mobile-app/package.json', 'apps/mobile-app/app.json') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
       - name: Install EAS CLI
         if: inputs.backend == 'eas'
@@ -235,26 +272,26 @@ jobs:
               }
 
               const keystore = buildCredentials.androidKeystore;
-            const envFile = process.env.GITHUB_ENV;
-            if (!envFile) {
-              throw new Error('GITHUB_ENV is not set');
-            }
+              const envFile = process.env.GITHUB_ENV;
+              if (!envFile) {
+                throw new Error('GITHUB_ENV is not set');
+              }
 
-            const envEntries = [
-              ['ANDROID_KEYSTORE_BASE64', keystore.keystore],
-              ['ANDROID_KEYSTORE_' + 'PASSWORD', keystore.keystorePassword],
-              ['ANDROID_KEY_ALIAS', keystore.keyAlias],
-              ['ANDROID_KEY_' + 'PASSWORD', keystore.keyPassword ?? ''],
-            ];
+              const envEntries = [
+                ['ANDROID_KEYSTORE_BASE64', keystore.keystore],
+                ['ANDROID_KEYSTORE_' + 'PASSWORD', keystore.keystorePassword],
+                ['ANDROID_KEY_ALIAS', keystore.keyAlias],
+                ['ANDROID_KEY_' + 'PASSWORD', keystore.keyPassword ?? ''],
+              ];
 
-            for (const [, value] of envEntries) {
-              if (value) process.stdout.write(`::add-mask::${value}\n`);
-            }
+              for (const [, value] of envEntries) {
+                if (value) process.stdout.write(`::add-mask::${value}\n`);
+              }
 
-            fs.appendFileSync(
-              envFile,
-              envEntries.map(([name, value]) => `${name}=${value}`).join('\n') + '\n'
-            );
+              fs.appendFileSync(
+                envFile,
+                envEntries.map(([name, value]) => `${name}=${value}`).join('\n') + '\n'
+              );
 
               console.log(
                 `Exported Android keystore for ${projectFullName} from Expo build credentials: ${buildCredentials.name}`
@@ -313,14 +350,22 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           chmod 600 "$GOOGLE_PLAY_JSON_KEY" "$ANDROID_KEYSTORE_PATH"
 
-      - name: Cap Gradle JVM heap to prevent OOM
+      - name: Configure Gradle
         run: |
+          set -euo pipefail
           mkdir -p "$HOME/.gradle"
+          # GitHub-hosted ubuntu-latest has 7 GB RAM; self-hosted EC2 may be smaller.
+          if [ "${{ inputs.runner }}" = "github-hosted" ]; then
+            GRADLE_HEAP="-Xmx6g"
+          else
+            GRADLE_HEAP="-Xmx4g"
+          fi
           printf '%s\n' \
-            'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError' \
+            "org.gradle.jvmargs=${GRADLE_HEAP} -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError" \
             'org.gradle.daemon=false' \
             'org.gradle.parallel=false' \
             'org.gradle.workers.max=2' \
+            'org.gradle.caching=true' \
             >> "$HOME/.gradle/gradle.properties"
 
       - name: Ensure Android SDK is writable
