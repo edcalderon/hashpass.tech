@@ -1182,7 +1182,7 @@ export default function AuthScreen() {
             accessibilityLabel={t('back', 'Go Back')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={28} color={isDark ? '#fff' : '#000'} />
+            <Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
 
           <ScrollView
@@ -1926,7 +1926,7 @@ const getStyles = (
     authHeaderTitle: {
       fontSize: 44,
       fontWeight: '800',
-      color: isDark ? '#f8f8fb' : '#0f1220',
+      color: '#f8f8fb',
       textAlign: 'center',
       letterSpacing: -0.8,
     },
@@ -1934,7 +1934,7 @@ const getStyles = (
       marginTop: 8,
       fontSize: 24,
       lineHeight: 30,
-      color: isDark ? 'rgba(238,239,247,0.78)' : 'rgba(25,34,56,0.64)',
+      color: 'rgba(238,239,247,0.78)',
       textAlign: 'center',
     },
     primaryAuthContainer: {
