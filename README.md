@@ -17,16 +17,16 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.2)
+## 📋 Latest Changes (v1.8.3)
 
 ### Released
-- Fix mobile web black screen, update favicon URLs, and force Zustand middleware onto CJS for web rendering
+- Add startup version stamp, surface the React loading screen earlier, and fall back to injected commit metadata on mobile startup
 
 ### Technical Details
-- Version: 1.8.2
+- Version: 1.8.3
 - Release Type: stable
-- Build Number: 202606160040
-- Release Date: 2026-06-16T00:40:00.481Z
+- Build Number: 202606160300
+- Release Date: 2026-06-16T03:00:14.036Z
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
@@ -138,14 +138,20 @@ Mobile Android release flow:
 - `pnpm run android:bundle:dev` builds an internal preview bundle on the development EAS project.
 - `pnpm run android:publish:dev` submits the latest internal preview build through the development EAS project.
 - `pnpm run android:release:dev` builds and auto-submits an internal preview build in one step.
-- The release wrapper accepts `--env production|development` if you call it directly from `packages/tools/scripts/run-mobile-release.js`.
+- `pnpm run android:release:eas` and `pnpm run android:release:eas:dev` are explicit aliases for the managed Expo/EAS flow.
+- `pnpm run android:release:fastlane` and `pnpm run android:release:fastlane:dev` run a local Expo prebuild, build with fastlane, and upload to Google Play.
+- The generic release wrapper accepts `--env production|development` and `--backend eas|fastlane` if you call `packages/tools/scripts/run-mobile-release.js` directly.
+- The repo-wide `packageManager` field is the source of truth for pnpm; Amplify and infra buildspecs read it through `packages/tools/scripts/resolve-pnpm-version.js` so CI stays on the same pnpm version as local releases and EAS.
+- If you ever change pnpm again, update the `packageManager` field first and regenerate `pnpm-lock.yaml` with `corepack pnpm install` so the lockfile and release builders stay aligned.
 - `pnpm run eas:mobile:sync:dev` pushes the sanitized repo env to the Expo preview environment and `pnpm run eas:mobile:sync:prod` does the same for production.
-- These commands read `EXPO_TOKEN` for production and `EXPO_TOKEN_DEV` for development from the root `.env`, so no manual shell export is needed for local runs.
+- The EAS commands read `EXPO_TOKEN` for production and `EXPO_TOKEN_DEV` for development from the root `.env`, so no manual shell export is needed for local runs.
 - The wrapper selects `EAS_PROJECT_ID` for production and `EAS_PROJECT_ID_DEV` for development based on the EAS profile.
-- EAS is configured for remote app version management, so Android `versionCode` is handled by EAS instead of a hardcoded timestamp in `app.json`.
+- EAS stays on remote app version management, while the fastlane path injects a local Android `versionCode` during prebuild.
 - The production Expo project is already linked in `apps/mobile-app/app.json`; if you ever bootstrap a fresh Expo app, run `eas init` there instead of here.
 - Both submit profiles point at `config/hashpass-eas.json` for the Google Play service account, so `eas submit` can authenticate on production and preview/internal tracks.
 - If the app already has a Play Store listing, run `eas build:version:set --platform android` once to seed the remote Android version counter before the first production build.
+- Fastlane requires Ruby, Bundler, the `fastlane` gem, a Java/Android SDK toolchain, and the Google Play service account JSON already used by EAS Submit.
+- The fastlane path is built to clean up its generated `apps/mobile-app/android/` directory after each run so the repo can stay in managed Expo mode.
 
 1. **Clone the repo:**
    ```bash

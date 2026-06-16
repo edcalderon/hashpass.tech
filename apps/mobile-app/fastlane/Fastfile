@@ -1,0 +1,56 @@
+default_platform(:android)
+
+FASTLANE_TRACKS = %w[internal production].freeze
+GOOGLE_PLAY_JSON_KEY = ENV.fetch(
+  'GOOGLE_PLAY_JSON_KEY',
+  File.expand_path('../../../config/hashpass-eas.json', __dir__),
+).freeze
+PACKAGE_NAME = 'com.hashpass.tech'.freeze
+
+def normalize_track(value)
+  track = value.to_s.strip.downcase
+
+  return 'internal' if track.empty?
+
+  unless FASTLANE_TRACKS.include?(track)
+    UI.user_error!("Unsupported Google Play track: #{value}")
+  end
+
+  track
+end
+
+def build_android_bundle
+  gradle(
+    task: 'bundle',
+    build_type: 'Release',
+    project_dir: 'android'
+  )
+
+  lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]
+end
+
+platform :android do
+  desc 'Build the Android App Bundle without uploading it.'
+  lane :build do |_options|
+    build_android_bundle
+  end
+
+  desc 'Build the Android App Bundle and upload it to Google Play.'
+  lane :release do |options|
+    track = normalize_track(options[:track] || ENV['FASTLANE_TRACK'])
+    release_status = (options[:release_status] || ENV['FASTLANE_RELEASE_STATUS'] || 'completed').to_s
+    aab_path = build_android_bundle
+
+    upload_to_play_store(
+      aab: aab_path,
+      track: track,
+      release_status: release_status,
+      package_name: PACKAGE_NAME,
+      json_key: GOOGLE_PLAY_JSON_KEY,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true
+    )
+  end
+end

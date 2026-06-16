@@ -3,6 +3,7 @@ const PRODUCTION_OWNER = 'hashpasss-team';
 const DEVELOPMENT_OWNER = 'hashpasstechs-team';
 const PRODUCTION_SLUG = 'hashpasstech';
 const DEVELOPMENT_SLUG = 'hash-pass-tech';
+const { resolveAndroidVersionCode } = require('./android-version-code');
 
 function normalizeProfile(profile) {
   return String(profile || '').trim().toLowerCase();
@@ -61,11 +62,21 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
     env,
     baseProjectId: baseConfig.extra?.eas?.projectId || null,
   });
+  const androidVersionCode = resolveAndroidVersionCode({ env });
+  const android = {
+    ...(baseConfig.android || {}),
+    ...(androidVersionCode
+      ? {
+          versionCode: androidVersionCode,
+        }
+      : {}),
+  };
 
   return {
     ...baseConfig,
     ...(slug ? { slug } : {}),
     ...(owner ? { owner } : {}),
+    ...(Object.keys(android).length ? { android } : {}),
     extra: {
       ...(baseConfig.extra || {}),
       eas: {

@@ -1,8 +1,8 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.2",
-  "packageManager": "pnpm@10.28.2",
+  "version": "1.8.3",
+  "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "patchedDependencies": {
       "react-native-css-interop@0.2.1": "patches/react-native-css-interop@0.2.1.patch"
@@ -20,6 +20,10 @@
     "android:publish:dev": "pnpm --filter hashpass-mobile-app android:publish:dev",
     "android:release": "pnpm --filter hashpass-mobile-app android:release",
     "android:release:dev": "pnpm --filter hashpass-mobile-app android:release:dev",
+    "android:release:eas": "pnpm --filter hashpass-mobile-app android:release:eas",
+    "android:release:eas:dev": "pnpm --filter hashpass-mobile-app android:release:eas:dev",
+    "android:release:fastlane": "pnpm --filter hashpass-mobile-app android:release:fastlane",
+    "android:release:fastlane:dev": "pnpm --filter hashpass-mobile-app android:release:fastlane:dev",
     "eas:mobile:sync": "node packages/tools/scripts/sync-mobile-eas-env.js --env production",
     "eas:mobile:sync:dev": "node packages/tools/scripts/sync-mobile-eas-env.js --env development",
     "eas:mobile:sync:prod": "node packages/tools/scripts/sync-mobile-eas-env.js --env production",

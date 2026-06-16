@@ -2,10 +2,13 @@
 /* global __dirname, process */
 
 const { runEas } = require('./run-mobile-eas');
+const { runFastlane } = require('./run-mobile-fastlane');
 
 const DEFAULT_RELEASE_ENV = 'production';
+const DEFAULT_RELEASE_BACKEND = 'eas';
 const PRODUCTION_PROFILE = 'production';
 const DEVELOPMENT_PROFILE = 'preview';
+const VALID_RELEASE_BACKENDS = new Set(['eas', 'fastlane']);
 
 function normalizeReleaseEnvironment(value) {
   const normalized = String(value || '').trim().toLowerCase();
@@ -25,6 +28,28 @@ function normalizeReleaseEnvironment(value) {
   throw new Error(`Unsupported mobile release environment: ${value}`);
 }
 
+function normalizeReleaseBackend(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+
+  if (!normalized) {
+    return DEFAULT_RELEASE_BACKEND;
+  }
+
+  if (normalized === 'expo') {
+    return 'eas';
+  }
+
+  if (normalized === 'local') {
+    return 'fastlane';
+  }
+
+  if (!VALID_RELEASE_BACKENDS.has(normalized)) {
+    throw new Error(`Unsupported mobile release backend: ${value}`);
+  }
+
+  return normalized;
+}
+
 function parseReleaseArgs(argv = []) {
   const options = {
     env:
@@ -34,6 +59,13 @@ function parseReleaseArgs(argv = []) {
       DEFAULT_RELEASE_ENV,
     profile: null,
     submit: true,
+    backend:
+      process.env.MOBILE_RELEASE_BACKEND ||
+      process.env.EAS_RELEASE_BACKEND ||
+      process.env.MOBILE_BUILD_BACKEND ||
+      DEFAULT_RELEASE_BACKEND,
+    track: null,
+    releaseStatus: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -61,6 +93,50 @@ function parseReleaseArgs(argv = []) {
       continue;
     }
 
+    if (arg === '--backend' && argv[i + 1]) {
+      options.backend = argv[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--backend=')) {
+      options.backend = arg.split('=')[1];
+      continue;
+    }
+
+    if (arg === '--release-backend' && argv[i + 1]) {
+      options.backend = argv[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--release-backend=')) {
+      options.backend = arg.split('=')[1];
+      continue;
+    }
+
+    if (arg === '--track' && argv[i + 1]) {
+      options.track = argv[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--track=')) {
+      options.track = arg.split('=')[1];
+      continue;
+    }
+
+    if (arg === '--release-status' && argv[i + 1]) {
+      options.releaseStatus = argv[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--release-status=')) {
+      options.releaseStatus = arg.split('=')[1];
+      continue;
+    }
+
     if (arg === '--no-submit') {
       options.submit = false;
       continue;
@@ -74,7 +150,10 @@ function parseReleaseArgs(argv = []) {
   return {
     ...options,
     env: normalizeReleaseEnvironment(options.env),
+    backend: normalizeReleaseBackend(options.backend),
     profile: options.profile ? String(options.profile).trim().toLowerCase() : null,
+    track: options.track ? String(options.track).trim().toLowerCase() : null,
+    releaseStatus: options.releaseStatus ? String(options.releaseStatus).trim().toLowerCase() : null,
   };
 }
 
@@ -98,39 +177,58 @@ function buildReleaseArgs(options = {}) {
   return args;
 }
 
+function runRelease(options = {}) {
+  const backend = normalizeReleaseBackend(options.backend);
+  const profile = resolveReleaseProfile({ env: options.env, profile: options.profile });
+
+  if (backend === 'fastlane') {
+    return runFastlane({
+      profile,
+      track: options.track || undefined,
+      submit: options.submit !== false,
+      releaseStatus: options.releaseStatus || undefined,
+    });
+  }
+
+  return runEas(buildReleaseArgs({ ...options, profile }), { profile });
+}
+
 function main(argv = process.argv.slice(2)) {
   if (argv.includes('--help') || argv.includes('-h')) {
     console.log(
       [
-        'Usage: node packages/tools/scripts/run-mobile-release.js [--env production|development] [--profile eas-profile] [--no-submit]',
+        'Usage: node packages/tools/scripts/run-mobile-release.js [--env production|development] [--profile eas-profile] [--backend eas|fastlane] [--no-submit]',
         '',
         'Defaults to a production release.',
         'Use --env development to target the development Expo account and internal preview profile.',
+        'Use --backend fastlane to build locally with Expo prebuild + fastlane supply.',
       ].join('\n'),
     );
     process.exit(0);
   }
 
-  let result;
-
   try {
     const options = parseReleaseArgs(argv);
-    result = runEas(buildReleaseArgs(options), { profile: options.profile || undefined });
+    const result = runRelease(options);
+
+    if (result && result.error) {
+      console.error(result.error.message);
+      process.exit(1);
+    }
+
+    if (result && result.signal) {
+      process.kill(process.pid, result.signal);
+    }
+
+    if (result && typeof result.status === 'number') {
+      process.exit(result.status);
+    }
+
+    process.exit(0);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
-
-  if (result.error) {
-    console.error(result.error.message);
-    process.exit(1);
-  }
-
-  if (result.signal) {
-    process.kill(process.pid, result.signal);
-  }
-
-  process.exit(result.status ?? 1);
 }
 
 if (require.main === module) {
@@ -139,11 +237,15 @@ if (require.main === module) {
 
 module.exports = {
   DEFAULT_RELEASE_ENV,
+  DEFAULT_RELEASE_BACKEND,
   PRODUCTION_PROFILE,
   DEVELOPMENT_PROFILE,
+  VALID_RELEASE_BACKENDS,
   normalizeReleaseEnvironment,
+  normalizeReleaseBackend,
   parseReleaseArgs,
   resolveReleaseProfile,
   buildReleaseArgs,
+  runRelease,
   main,
 };

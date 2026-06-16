@@ -5,6 +5,15 @@ import gitInfo from '../../config/git-info.json';
 // Re-export VersionInfo for backward compatibility
 export type { VersionInfo };
 
+function resolveBuildCommit(value?: string | null): string | null {
+  const normalized = String(value || '').trim();
+  if (!normalized || normalized === 'unknown') {
+    return null;
+  }
+
+  return normalized;
+}
+
 class VersionService {
   private versionsMap: Map<string, VersionInfo>;
 
@@ -66,8 +75,18 @@ class VersionService {
   }
 
   public getBuildInfo() {
-    const gitCommit = (gitInfo as any).gitCommit || process.env.GIT_COMMIT || 'unknown';
-    const gitCommitFull = (gitInfo as any).gitCommitFull || gitCommit;
+    const injectedCommit =
+      process.env.EXPO_PUBLIC_RELEASE_COMMIT ||
+      process.env.GIT_COMMIT ||
+      null;
+    const gitCommit =
+      resolveBuildCommit((gitInfo as any).gitCommit) ||
+      resolveBuildCommit(injectedCommit) ||
+      'unknown';
+    const gitCommitFull =
+      resolveBuildCommit((gitInfo as any).gitCommitFull) ||
+      resolveBuildCommit(injectedCommit) ||
+      gitCommit;
     const gitBranch = getRuntimeBranch();
     const gitRepoUrl = (gitInfo as any).gitRepoUrl || 'https://github.com/hashpass-tech/hashpass.tech';
     

@@ -1,10 +1,20 @@
 /// <reference types="jest" />
 
+jest.mock('../../../../packages/tools/scripts/run-mobile-eas.js', () => ({
+  runEas: jest.fn(() => ({ status: 0 })),
+}));
+
+jest.mock('../../../../packages/tools/scripts/run-mobile-fastlane.js', () => ({
+  runFastlane: jest.fn(),
+}));
+
 const {
   buildReleaseArgs,
   normalizeReleaseEnvironment,
+  normalizeReleaseBackend,
   parseReleaseArgs,
   resolveReleaseProfile,
+  runRelease,
 } = require('../../../../packages/tools/scripts/run-mobile-release.js') as {
   buildReleaseArgs: (options?: {
     env?: string;
@@ -12,15 +22,27 @@ const {
     submit?: boolean;
   }) => string[];
   normalizeReleaseEnvironment: (value?: string) => string;
+  normalizeReleaseBackend: (value?: string) => string;
   parseReleaseArgs: (argv?: string[]) => {
     env: string;
     profile: string | null;
     submit: boolean;
+    backend: string;
+    track: string | null;
+    releaseStatus: string | null;
   };
   resolveReleaseProfile: (options?: {
     env?: string;
     profile?: string | null;
   }) => string;
+  runRelease: (options?: {
+    env?: string;
+    profile?: string | null;
+    submit?: boolean;
+    backend?: string;
+    track?: string | null;
+    releaseStatus?: string | null;
+  }) => unknown;
 };
 
 describe('run-mobile-release', () => {
@@ -31,16 +53,30 @@ describe('run-mobile-release', () => {
     expect(normalizeReleaseEnvironment('preview')).toBe('development');
   });
 
-  it('parses env and submit flags', () => {
-    expect(parseReleaseArgs(['--env', 'development', '--no-submit'])).toEqual({
+  it('normalizes release backends', () => {
+    expect(normalizeReleaseBackend()).toBe('eas');
+    expect(normalizeReleaseBackend('eas')).toBe('eas');
+    expect(normalizeReleaseBackend('expo')).toBe('eas');
+    expect(normalizeReleaseBackend('fastlane')).toBe('fastlane');
+    expect(normalizeReleaseBackend('local')).toBe('fastlane');
+  });
+
+  it('parses env, backend, and submit flags', () => {
+    expect(parseReleaseArgs(['--env', 'development', '--backend', 'fastlane', '--no-submit'])).toEqual({
       env: 'development',
       profile: null,
       submit: false,
+      backend: 'fastlane',
+      track: null,
+      releaseStatus: null,
     });
     expect(parseReleaseArgs(['--profile', 'development'])).toEqual({
       env: 'production',
       profile: 'development',
       submit: true,
+      backend: 'eas',
+      track: null,
+      releaseStatus: null,
     });
   });
 
@@ -74,5 +110,24 @@ describe('run-mobile-release', () => {
       '--profile',
       'development',
     ]);
+  });
+
+  it('dispatches to fastlane when the backend is set to fastlane', () => {
+    const { runFastlane } = require('../../../../packages/tools/scripts/run-mobile-fastlane.js') as {
+      runFastlane: jest.Mock;
+    };
+
+    runRelease({
+      env: 'development',
+      backend: 'fastlane',
+      submit: true,
+    });
+
+    expect(runFastlane).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profile: 'preview',
+        submit: true,
+      }),
+    );
   });
 });

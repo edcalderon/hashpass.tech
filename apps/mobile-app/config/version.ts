@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606160040, // Updated to current timestamp
+  buildNumber: 202606160300, // Updated to current timestamp
   releaseDate: '2026-06-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
-    'Added a tracked version badge to the root README',
-    'Synced the root README latest changes block from CHANGELOG.md during releases',
-    'Kept the Expo app version and release metadata aligned with the tracked package version'
+    'Added a startup version stamp to the mobile loading screen',
+    'Hid the native splash earlier so the stamped React loading screen can render during startup',
+    'Fell back to the injected release commit when git-info metadata is unknown'
   ],
   breakingChanges: [],
-  notes: 'Fix mobile web black screen, update favicon URLs, and force Zustand middleware onto CJS for web rendering'
+  notes: 'Add visible startup version stamp and surface the React loading screen earlier for mobile launch diagnostics'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.3': {
+    version: '1.8.3',
+    buildNumber: 202606160300,
+    releaseDate: '2026-06-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Added a startup version stamp to the mobile loading screen',
+      'Hid the native splash earlier so the stamped React loading screen can render during startup',
+      'Fell back to the injected release commit when git-info metadata is unknown'
+    ],
+    breakingChanges: [],
+    notes: 'Add visible startup version stamp and surface the React loading screen earlier for mobile launch diagnostics'
+  },
   '1.8.2': {
     version: '1.8.2',
     buildNumber: 202606160040,

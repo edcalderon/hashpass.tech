@@ -3,7 +3,6 @@ version: 0.2
 env:
   shell: bash
   variables:
-    PNPM_VERSION: "10.14.0"
     PNPM_STORE_DIR: .pnpm-store
 
 cache:
@@ -17,6 +16,7 @@ phases:
       nodejs: 22
     commands:
       - corepack enable
+      - export PNPM_VERSION="$(node packages/tools/scripts/resolve-pnpm-version.js)"
       - corepack prepare pnpm@${PNPM_VERSION} --activate
       - pnpm config set store-dir ${PNPM_STORE_DIR}
       - pnpm --version

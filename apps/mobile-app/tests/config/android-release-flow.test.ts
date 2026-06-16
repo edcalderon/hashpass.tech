@@ -171,6 +171,16 @@ describe('Android release flow', () => {
     expect(scripts['android:publish:dev']).toBe('pnpm --filter hashpass-mobile-app android:publish:dev');
     expect(scripts['android:release']).toBe('pnpm --filter hashpass-mobile-app android:release');
     expect(scripts['android:release:dev']).toBe('pnpm --filter hashpass-mobile-app android:release:dev');
+    expect(scripts['android:release:eas']).toBe('pnpm --filter hashpass-mobile-app android:release:eas');
+    expect(scripts['android:release:eas:dev']).toBe(
+      'pnpm --filter hashpass-mobile-app android:release:eas:dev',
+    );
+    expect(scripts['android:release:fastlane']).toBe(
+      'pnpm --filter hashpass-mobile-app android:release:fastlane',
+    );
+    expect(scripts['android:release:fastlane:dev']).toBe(
+      'pnpm --filter hashpass-mobile-app android:release:fastlane:dev',
+    );
     expect(mobileScripts['android:bundle']).toBe(
       'node ../../packages/tools/scripts/run-mobile-eas.js build --platform android --profile production',
     );
@@ -184,10 +194,22 @@ describe('Android release flow', () => {
       'node ../../packages/tools/scripts/run-mobile-eas.js submit --platform android --profile preview --latest',
     );
     expect(mobileScripts['android:release']).toBe(
-      'node ../../packages/tools/scripts/run-mobile-release.js --env production',
+      'node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env production',
     );
     expect(mobileScripts['android:release:dev']).toBe(
-      'node ../../packages/tools/scripts/run-mobile-release.js --env development',
+      'node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env development',
+    );
+    expect(mobileScripts['android:release:eas']).toBe(
+      'node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env production',
+    );
+    expect(mobileScripts['android:release:eas:dev']).toBe(
+      'node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env development',
+    );
+    expect(mobileScripts['android:release:fastlane']).toBe(
+      'node ../../packages/tools/scripts/run-mobile-release.js --backend fastlane --env production',
+    );
+    expect(mobileScripts['android:release:fastlane:dev']).toBe(
+      'node ../../packages/tools/scripts/run-mobile-release.js --backend fastlane --env development',
     );
     expect(rootDependencies['@babel/core']).toBe('^7.25.2');
     expect(rootDependencies['@babel/plugin-transform-react-jsx']).toBe('^7.28.6');

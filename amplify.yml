@@ -11,7 +11,9 @@ frontend:
         - export AMPLIFY_DISABLE_TS=true
         - 'echo "Skipping Amplify CLI backend initialization for static hosting"'
         - nvm install 22.22.0
+        - export PNPM_VERSION="$(node packages/tools/scripts/resolve-pnpm-version.js)"
         - corepack enable pnpm || true
+        - corepack prepare pnpm@${PNPM_VERSION} --activate
         - export CI=1
         - rm -rf node_modules
         - |

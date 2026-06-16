@@ -1,22 +1,22 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
-import { ActivityIndicator, View } from 'react-native';
-import { useTheme } from '../hooks/useTheme';
+import LoadingScreen from '../components/LoadingScreen';
+import packageJson from '../package.json';
+
+const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
+  ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
+  : `v${packageJson.version} · local build`;
 
 export default function Index() {
   const { isLoading } = useAuth();
-  const { colors } = useTheme();
 
   if (isLoading) {
     return (
-      <View style={{ 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        backgroundColor: colors.background.default 
-      }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <LoadingScreen
+        fullScreen
+        message="Opening HashPass"
+        subtitle={startupStamp}
+      />
     );
   }
 

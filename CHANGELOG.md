@@ -10,6 +10,18 @@
 - Release Date: 2026-06-15T19:47:19.733Z
 
 
+## [1.8.3] - 2026-06-16
+
+### Released
+- Add startup version stamp, surface the React loading screen earlier, and fall back to injected commit metadata on mobile startup
+
+### Technical Details
+- Version: 1.8.3
+- Release Type: stable
+- Build Number: 202606160300
+- Release Date: 2026-06-16T03:00:14.036Z
+
+
 ## [1.8.2] - 2026-06-16
 
 ### Released

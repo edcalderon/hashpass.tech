@@ -4,7 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack, useRouter, usePathname, useSegments } from "expo-router";
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StatusBar, Platform } from 'react-native';
+import { StatusBar, Platform } from 'react-native';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { LanguageProvider } from '../providers/LanguageProvider';
 import { EventProvider } from '@contexts/EventContext';
@@ -25,6 +25,12 @@ import { I18nProvider } from '../providers/I18nProvider';
 import { CopilotProvider } from 'react-native-copilot';
 import { checkVersionOnStart, clearAuthCache } from '../lib/version-checker';
 import { showConsoleWelcome } from '../lib/console-welcome';
+import LoadingScreen from '../components/LoadingScreen';
+import packageJson from '../package.json';
+
+const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
+  ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
+  : `v${packageJson.version} · local build`;
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -154,16 +160,30 @@ function ThemedContent() {
     }
   }, [isLoading]);
 
-  // Handle splash screen hiding
+  // Hide the native splash as soon as the React tree has mounted so the
+  // stamped loading screen can surface during startup.
   useEffect(() => {
-    if (isReady) {
-      const hideSplash = async () => {
+    let mounted = true;
+
+    const hideSplash = async () => {
+      try {
         await SplashScreen.hideAsync();
-        setShowSplash(false);
-      };
-      hideSplash();
-    }
-  }, [isReady]);
+      } catch (error) {
+        console.warn('Failed to hide splash screen:', error);
+      } finally {
+        if (mounted) {
+          setShowSplash(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(hideSplash, 0);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Handle auth redirection with session verification
   useEffect(() => {
@@ -260,9 +280,11 @@ function ThemedContent() {
   // Show loading state
   if (isLoading || !isReady || showSplash) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.default }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <LoadingScreen
+        fullScreen
+        message="Starting HashPass"
+        subtitle={startupStamp}
+      />
     );
   }
 

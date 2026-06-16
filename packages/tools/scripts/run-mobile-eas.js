@@ -2,67 +2,23 @@
 /* global __dirname, process */
 
 const { spawnSync } = require('child_process');
-const fs = require('fs');
 const path = require('path');
-const dotenv = require('dotenv');
-
-const ROOT_DIR = path.resolve(__dirname, '../../..');
-const MOBILE_APP_DIR = path.join(ROOT_DIR, 'apps', 'mobile-app');
-const ROOT_ENV_PATH = path.join(ROOT_DIR, '.env');
-const MOBILE_ENV_PATH = path.join(MOBILE_APP_DIR, '.env');
-const PRODUCTION_PROFILE = 'production';
-const PRODUCTION_OWNER = 'hashpasss-team';
-const DEVELOPMENT_OWNER = 'hashpasstechs-team';
-
-function normalizeProfile(profile) {
-  const value = String(profile || '').trim().toLowerCase();
-
-  return value || PRODUCTION_PROFILE;
-}
-
-function parseProfile(argv = []) {
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
-
-    if (arg === '--profile' && argv[i + 1]) {
-      return normalizeProfile(argv[i + 1]);
-    }
-
-    if (arg.startsWith('--profile=')) {
-      return normalizeProfile(arg.split('=')[1]);
-    }
-  }
-
-  return null;
-}
-
-function resolveSelectedProfile({ profile, easArgs = [], baseEnv = process.env } = {}) {
-  return normalizeProfile(profile || parseProfile(easArgs) || baseEnv.EAS_BUILD_PROFILE);
-}
-
-function resolveProjectId(env, profile) {
-  const isProduction = profile === PRODUCTION_PROFILE;
-  const candidates = isProduction
-    ? [env.EAS_PROJECT_ID, env.EXPO_PUBLIC_EAS_PROJECT_ID, env.EAS_PROJECT_ID_DEV, env.EXPO_PUBLIC_EAS_PROJECT_ID_DEV]
-    : [env.EAS_PROJECT_ID_DEV, env.EXPO_PUBLIC_EAS_PROJECT_ID_DEV, env.EAS_PROJECT_ID, env.EXPO_PUBLIC_EAS_PROJECT_ID];
-
-  return candidates.find(Boolean) || null;
-}
-
-function resolveExpoToken(env, profile) {
-  const isProduction = profile === PRODUCTION_PROFILE;
-  const candidates = isProduction ? [env.EXPO_TOKEN, env.EXPO_TOKEN_DEV] : [env.EXPO_TOKEN_DEV, env.EXPO_TOKEN];
-
-  return candidates.find(Boolean) || null;
-}
-
-function loadEnvFile(filePath) {
-  if (!fs.existsSync(filePath)) {
-    return {};
-  }
-
-  return dotenv.parse(fs.readFileSync(filePath));
-}
+const {
+  ROOT_DIR,
+  MOBILE_APP_DIR,
+  ROOT_ENV_PATH,
+  MOBILE_ENV_PATH,
+  PRODUCTION_PROFILE,
+  PRODUCTION_OWNER,
+  DEVELOPMENT_OWNER,
+  normalizeProfile,
+  parseProfile,
+  resolveSelectedProfile,
+  resolveProjectId,
+  resolveExpoToken,
+  loadEnvFile,
+  buildReleaseEnv,
+} = require('./mobile-release-env');
 
 function buildEnv({
   rootEnvPath = ROOT_ENV_PATH,
@@ -71,11 +27,14 @@ function buildEnv({
   easArgs = [],
   profile,
 } = {}) {
-  const env = {
-    ...loadEnvFile(mobileEnvPath),
-    ...loadEnvFile(rootEnvPath),
-    ...baseEnv,
-  };
+  const env = buildReleaseEnv({
+    rootEnvPath,
+    mobileEnvPath,
+    baseEnv,
+    easArgs,
+    profile,
+    releaseBackend: 'eas',
+  });
   const selectedProfile = resolveSelectedProfile({ profile, easArgs, baseEnv: env });
   const projectId = resolveProjectId(env, selectedProfile);
   const expoToken = resolveExpoToken(env, selectedProfile);
