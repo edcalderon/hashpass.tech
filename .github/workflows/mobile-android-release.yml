@@ -247,6 +247,10 @@ jobs:
               ['ANDROID_KEY_' + 'PASSWORD', keystore.keyPassword ?? ''],
             ];
 
+            for (const [, value] of envEntries) {
+              if (value) process.stdout.write(`::add-mask::${value}\n`);
+            }
+
             fs.appendFileSync(
               envFile,
               envEntries.map(([name, value]) => `${name}=${value}`).join('\n') + '\n'
@@ -308,6 +312,16 @@ jobs:
 
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           chmod 600 "$GOOGLE_PLAY_JSON_KEY" "$ANDROID_KEYSTORE_PATH"
+
+      - name: Cap Gradle JVM heap to prevent OOM
+        run: |
+          mkdir -p "$HOME/.gradle"
+          printf '%s\n' \
+            'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError' \
+            'org.gradle.daemon=false' \
+            'org.gradle.parallel=false' \
+            'org.gradle.workers.max=2' \
+            >> "$HOME/.gradle/gradle.properties"
 
       - name: Ensure Android SDK is writable
         run: |
