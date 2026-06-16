@@ -9,8 +9,9 @@ github_repository = "hashpass-tech/hashpass.tech"
 runner_name_prefix = "hashpass-mobile-release"
 runner_labels      = ["hashpass-mobile-release"]
 
-# t3a.medium is the leanest x86 option that still gives 2 vCPU / 4 GiB RAM for Android builds.
-instance_type = "t3a.medium"
+# t3a.large gives 2 vCPU / 8 GiB RAM — minimum for Gradle + NDK builds without OOM.
+# t3a.medium (4 GiB) caused OOM after ~18 min during native compilation.
+instance_type = "t3a.large"
 
 # Leave empty to let the stack create a dedicated public VPC/subnet for the runner.
 subnet_ids = []

@@ -31,7 +31,7 @@ variable "runner_labels" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3a.medium"
+  default     = "t3a.large"
 }
 
 variable "instance_count" {
