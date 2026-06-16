@@ -34,8 +34,8 @@ jobs:
     env:
       CI: '1'
       MOBILE_RELEASE_BACKEND: ${{ inputs.backend }}
-      GOOGLE_PLAY_JSON_KEY: ${{ runner.temp }}/hashpass-mobile-release/google-play-service-account.json
-      ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/hashpass-mobile-release/hashpass-release.keystore
+      GOOGLE_PLAY_JSON_KEY: ${{ github.workspace }}/.runner-secrets/google-play-service-account.json
+      ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/.runner-secrets/hashpass-release.keystore
       GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
