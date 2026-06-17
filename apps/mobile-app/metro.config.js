@@ -18,9 +18,18 @@ if (!process.env.CI) {
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
 const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
+const { FileStore } = require('metro-cache');
 const { resolve } = require('metro-resolver');
 
 const config = getDefaultConfig(__dirname);
+
+// Persist Metro's per-file transform cache to a stable directory.
+// On the EC2 runner METRO_CACHE_DIR=/home/runner/.metro-cache (set in the workflow),
+// so the cache survives between builds on the same EBS volume.
+// Locally falls back to the OS temp dir (Metro's default behaviour).
+if (process.env.METRO_CACHE_DIR) {
+  config.cacheStores = [new FileStore({ root: process.env.METRO_CACHE_DIR })];
+}
 const originalResolveRequest = config.resolver?.resolveRequest;
 const pnpmStoreDir = path.resolve(__dirname, '../../node_modules/.pnpm');
 let zustandPackageDir;

@@ -147,6 +147,9 @@ jobs:
       # Set it here so every step (and its subprocesses, including Gradle's node/Metro) inherits it.
       # 3072m: safe on t3a.large (8 GiB) when Gradle JVM holds ~4 GiB — upgrade limit after t3a.xlarge.
       NODE_OPTIONS: '--max-old-space-size=3072'
+      # Metro transform cache — persisted on EC2 EBS so file-level transforms are skipped between runs.
+      # metro.config.js reads this and configures FileStore accordingly.
+      METRO_CACHE_DIR: '/home/runner/.metro-cache'
 
     steps:
       - name: Checkout
