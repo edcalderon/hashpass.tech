@@ -1,37 +1,40 @@
 import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { ArrowRight } from "lucide-react-native";
-import { cn } from "../lib/utils";
 
-interface InteractiveHoverButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface InteractiveHoverButtonProps {
   text?: string;
 }
 
-const InteractiveHoverButton = React.forwardRef<
-  HTMLButtonElement,
-  InteractiveHoverButtonProps
->(({ text = "Button", className, ...props }, ref) => {
+const InteractiveHoverButton = ({ text = "Button" }: InteractiveHoverButtonProps) => {
   return (
-    <button
-      ref={ref}
-      className={cn(
-        "group/cta relative w-40 cursor-pointer overflow-hidden rounded-full border-2 border-cyan-500/20 bg-cyan-500/10 p-3 text-center font-semibold text-cyan-500 transition-all duration-300 hover:bg-cyan-500/20 hover:text-cyan-400 dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-400 dark:hover:bg-cyan-500/20",
-        className,
-      )}
-      {...props}
-    >
-      <span className="inline-block translate-x-3 transition-all duration-300 group-hover/cta:translate-x-16 group-hover/cta:opacity-0">
-        {text}
-      </span>
-      <div className="absolute top-0 z-10 flex h-full w-full translate-x-16 items-center justify-center gap-3 text-cyan-400 opacity-0 transition-all duration-300 group-hover/cta:-translate-x-1 group-hover/cta:opacity-100 dark:text-cyan-300">
-        <span className="whitespace-nowrap">{text}</span>
-        <ArrowRight className="w-5 h-5" />
-      </div>
-      <div className="absolute left-[20%] top-[40%] h-2 w-2 scale-[1] rounded-lg bg-red-500 transition-all duration-300 group-hover/cta:left-[0%] group-hover/cta:top-[0%] group-hover/cta:h-full group-hover/cta:w-full group-hover/cta:scale-[1.8] group-hover/cta:bg-red-600/80 dark:bg-red-400 dark:group-hover/cta:bg-red-400/80"></div>
-    </button>
+    <View style={styles.button}>
+      <Text style={styles.text}>{text}</Text>
+      <ArrowRight color="#22d3ee" size={18} />
+    </View>
   );
-});
+};
 
 InteractiveHoverButton.displayName = "InteractiveHoverButton";
+
+const styles = StyleSheet.create({
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 9999,
+    borderWidth: 2,
+    borderColor: "rgba(34,211,238,0.2)",
+    backgroundColor: "rgba(34,211,238,0.1)",
+  },
+  text: {
+    color: "#22d3ee",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+});
 
 export { InteractiveHoverButton };

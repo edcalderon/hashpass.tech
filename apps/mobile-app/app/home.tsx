@@ -33,6 +33,7 @@ import EventBannerCarousel from '../components/EventBannerCarousel';
 import VersionStatusIndicator from '../components/VersionStatusIndicator';
 import CrystalForgeBackground from '../components/CrystalForgeBackground';
 import AnimatedGradientBackground from '../components/AnimatedGradientBackground';
+import { Svg, Path } from 'react-native-svg';
 
 // Import git info to check branch
 let gitInfo: { gitBranch?: string } = {};
@@ -319,21 +320,20 @@ export default function HomeScreen() {
                   <Animated.View style={[styles.scrollWheel, isMobile && styles.scrollWheelMobile, wheelAnimatedStyle]} />
                 </View>
                 <Animated.View style={[styles.arrowDown, isMobile && styles.arrowDownMobile, arrowAnimatedStyle]}>
-                  <svg
-                    width={isMobile ? '16' : '20'}
-                    height={isMobile ? '10' : '12'}
+                  <Svg
+                    width={isMobile ? 16 : 20}
+                    height={isMobile ? 10 : 12}
                     viewBox="0 0 20 12"
                     fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path
+                    <Path
                       d="M2 2L10 10L18 2"
                       stroke="#FFFFFF"
                       strokeWidth={isMobile ? '1.7' : '2'}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
-                  </svg>
+                  </Svg>
                 </Animated.View>
               </View>
             </TouchableOpacity>
