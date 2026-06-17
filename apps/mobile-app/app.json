@@ -2,7 +2,7 @@
   "expo": {
     "name": "hashpass.tech",
     "slug": "hash-pass-tech",
-    "version": "1.8.9",
+    "version": "1.8.10",
     "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -114,8 +114,7 @@
       }
     },
     "plugins": [
-      "expo-router",
-      "./plugins/withAndroidCrashReporter"
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true
