@@ -143,6 +143,10 @@ jobs:
       EXPO_PUBLIC_SUPABASE_URL: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_URL_DEV || vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV || vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
       EXPO_PUBLIC_DIRECTUS_URL: ${{ vars.EXPO_PUBLIC_DIRECTUS_URL }}
+      # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons.
+      # Set it here so every step (and its subprocesses, including Gradle's node/Metro) inherits it.
+      # 3072m: safe on t3a.large (8 GiB) when Gradle JVM holds ~4 GiB — upgrade limit after t3a.xlarge.
+      NODE_OPTIONS: '--max-old-space-size=3072'
 
     steps:
       - name: Checkout
@@ -439,17 +443,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.gradle"
-          # GitHub-hosted ubuntu-latest: 4 vCPU / 16 GiB — use all cores.
-          # EC2 t3a.xlarge: 4 vCPU / 16 GiB — Xmx6g leaves ~8 GiB for NDK + Metro + OS.
-          # (Xmx5g on t3a.large caused OOM: JVM heap + NDK workers + Metro node exceeded 8 GiB)
+          # GitHub-hosted ubuntu-latest: 4 vCPU / 16 GiB — use all cores, large heap.
+          # EC2 t3a.large (current): 2 vCPU / 8 GiB — Xmx4g + 3072m NODE_OPTIONS = ~7.5 GiB peak.
+          # Increase GRADLE_HEAP to Xmx8g after terraform apply upgrades instance to t3a.xlarge.
           if [ "${{ inputs.runner }}" = "github-hosted" ]; then
             GRADLE_HEAP="-Xmx8g"
             GRADLE_WORKERS=4
-            NODE_HEAP=4096
           else
-            GRADLE_HEAP="-Xmx6g"
-            GRADLE_WORKERS=4
-            NODE_HEAP=4096
+            GRADLE_HEAP="-Xmx4g"
+            GRADLE_WORKERS=2
           fi
           printf '%s\n' \
             "org.gradle.jvmargs=${GRADLE_HEAP} -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError" \
@@ -458,9 +460,6 @@ jobs:
             "org.gradle.workers.max=${GRADLE_WORKERS}" \
             'org.gradle.caching=true' \
             >> "$HOME/.gradle/gradle.properties"
-          # Metro bundler runs as a Node subprocess during :app:createBundleReleaseJsAndAssets.
-          # Without this cap, V8 can grow past available RAM when Gradle already holds most of it.
-          echo "NODE_OPTIONS=--max-old-space-size=${NODE_HEAP}" >> "$GITHUB_ENV"
 
       - name: Ensure Android SDK is writable
         run: |
