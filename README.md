@@ -17,27 +17,14 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.6)
+## 📋 Latest Changes (v1.8.7)
 
 ### Bug Fixes
 
-* add metro-cache as direct dep so FileStore is resolvable in pnpm ([a163706](https://github.com/hashpass-tech/hashpass.tech/commit/a1637060633ab230719159c33d4ae31d04c0ff4d))
-* **auth:** force white color on back arrow, Welcome title, and subtitle ([0ef2ec6](https://github.com/hashpass-tech/hashpass.tech/commit/0ef2ec6fc3a3e4e3a9f3bad97cf2eece29bf1348))
-* **mobile-ci:** fix Metro OOM, add incremental prebuild cache, EC2 idle shutdown + auto-start ([dfd450b](https://github.com/hashpass-tech/hashpass.tech/commit/dfd450b461ac5d4b7146d1dd283800fe7f469394))
-* **mobile-ci:** increase EC2 idle shutdown timeout to 30 minutes ([a8f9aa7](https://github.com/hashpass-tech/hashpass.tech/commit/a8f9aa72b7dba149bfd4d50db6f2263ec9617db8))
-* **mobile-ci:** set NODE_OPTIONS at job env level, restore Xmx4g for t3a.large ([0d305ce](https://github.com/hashpass-tech/hashpass.tech/commit/0d305ce00467c96010a494d5cb0a31bd318e8c5c))
-* **mobile:** resolve Android launch crash from conflicting worklets native module ([e547f88](https://github.com/hashpass-tech/hashpass.tech/commit/e547f8826a67980c7ea64cbaf52324cc687e56f9))
-
-
-### Features
-
-* **mobile:** local Android signing via config/android-signing.env ([e5eabe0](https://github.com/hashpass-tech/hashpass.tech/commit/e5eabe0b938c4772f61d1179dce0d98cf5afefa9))
-
-
-### Performance Improvements
-
-* **mobile-ci:** persist Metro transform cache on EC2 EBS between builds ([4d33267](https://github.com/hashpass-tech/hashpass.tech/commit/4d332670a1495ce79cfce84069dea3e7dcb7bcc4))
-* **mobile-ci:** raise heap limits for t3a.xlarge (16 GiB / 4 vCPU) ([9dd9b26](https://github.com/hashpass-tech/hashpass.tech/commit/9dd9b261f8aaa244b2f5db6cb93ab4b644779815))
+* **android:** move react-native-worklets to devDependencies to prevent libworklets.so startup crash ([4ab9c2b](https://github.com/hashpass-tech/hashpass.tech/commit/4ab9c2b028b6c6a4efe1bad0c3b2563c7b0a869b))
+* **auth:** show shader hero behind desktop left pane, keep text white ([a37a5da](https://github.com/hashpass-tech/hashpass.tech/commit/a37a5da275bf64781b2146de1166088507183819))
+* **auth:** theme-aware Welcome/subtitle/back-arrow in desktop layout ([4fbfed3](https://github.com/hashpass-tech/hashpass.tech/commit/4fbfed3c4f36c236f8bb37c4799672496f2f2ae6)), closes [#eef0f5](https://github.com/hashpass-tech/hashpass.tech/issues/eef0f5)
+* **mobile:** restore required worklets dep and disable New Architecture ([0f69b22](https://github.com/hashpass-tech/hashpass.tech/commit/0f69b222cea5f00b5fe98afc724015959b91b0bb))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

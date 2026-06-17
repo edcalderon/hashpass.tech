@@ -1,3 +1,17 @@
+## [1.8.7](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.6...v1.8.7) (2026-06-17)
+
+
+### Bug Fixes
+
+* **android:** move react-native-worklets to devDependencies to prevent libworklets.so startup crash ([4ab9c2b](https://github.com/hashpass-tech/hashpass.tech/commit/4ab9c2b028b6c6a4efe1bad0c3b2563c7b0a869b))
+* **auth:** show shader hero behind desktop left pane, keep text white ([a37a5da](https://github.com/hashpass-tech/hashpass.tech/commit/a37a5da275bf64781b2146de1166088507183819))
+* **auth:** theme-aware Welcome/subtitle/back-arrow in desktop layout ([4fbfed3](https://github.com/hashpass-tech/hashpass.tech/commit/4fbfed3c4f36c236f8bb37c4799672496f2f2ae6)), closes [#eef0f5](https://github.com/hashpass-tech/hashpass.tech/issues/eef0f5)
+* **mobile:** restore required worklets dep and disable New Architecture ([0f69b22](https://github.com/hashpass-tech/hashpass.tech/commit/0f69b222cea5f00b5fe98afc724015959b91b0bb))
+
+
+
+
+
 ## [1.8.6](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.5...v1.8.6) (2026-06-17)
 
 
