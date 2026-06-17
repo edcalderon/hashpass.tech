@@ -3,7 +3,18 @@
  * Writes the crash stack trace to {filesDir}/native_crash.txt so it survives restarts.
  * Also shows an AlertDialog on the NEXT launch (before React loads) if a crash file exists.
  */
-const { withMainApplication, withMainActivity } = require('@expo/config-plugins');
+// pnpm isolates packages — @expo/config-plugins is not a direct dep, so resolve
+// it through expo (which IS a direct dep and always depends on config-plugins).
+const path = require('path');
+let withMainApplication, withMainActivity;
+try {
+  ({ withMainApplication, withMainActivity } = require('@expo/config-plugins'));
+} catch (_) {
+  const expoRoot = path.dirname(require.resolve('expo/package.json'));
+  ({ withMainApplication, withMainActivity } = require(
+    require.resolve('@expo/config-plugins', { paths: [expoRoot] })
+  ));
+}
 
 function addCrashHandlerToMainApplication(config) {
   return withMainApplication(config, (mod) => {
