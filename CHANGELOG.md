@@ -1,3 +1,30 @@
+## [1.8.6](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.5...v1.8.6) (2026-06-17)
+
+
+### Bug Fixes
+
+* add metro-cache as direct dep so FileStore is resolvable in pnpm ([a163706](https://github.com/hashpass-tech/hashpass.tech/commit/a1637060633ab230719159c33d4ae31d04c0ff4d))
+* **auth:** force white color on back arrow, Welcome title, and subtitle ([0ef2ec6](https://github.com/hashpass-tech/hashpass.tech/commit/0ef2ec6fc3a3e4e3a9f3bad97cf2eece29bf1348))
+* **mobile-ci:** fix Metro OOM, add incremental prebuild cache, EC2 idle shutdown + auto-start ([dfd450b](https://github.com/hashpass-tech/hashpass.tech/commit/dfd450b461ac5d4b7146d1dd283800fe7f469394))
+* **mobile-ci:** increase EC2 idle shutdown timeout to 30 minutes ([a8f9aa7](https://github.com/hashpass-tech/hashpass.tech/commit/a8f9aa72b7dba149bfd4d50db6f2263ec9617db8))
+* **mobile-ci:** set NODE_OPTIONS at job env level, restore Xmx4g for t3a.large ([0d305ce](https://github.com/hashpass-tech/hashpass.tech/commit/0d305ce00467c96010a494d5cb0a31bd318e8c5c))
+* **mobile:** resolve Android launch crash from conflicting worklets native module ([e547f88](https://github.com/hashpass-tech/hashpass.tech/commit/e547f8826a67980c7ea64cbaf52324cc687e56f9))
+
+
+### Features
+
+* **mobile:** local Android signing via config/android-signing.env ([e5eabe0](https://github.com/hashpass-tech/hashpass.tech/commit/e5eabe0b938c4772f61d1179dce0d98cf5afefa9))
+
+
+### Performance Improvements
+
+* **mobile-ci:** persist Metro transform cache on EC2 EBS between builds ([4d33267](https://github.com/hashpass-tech/hashpass.tech/commit/4d332670a1495ce79cfce84069dea3e7dcb7bcc4))
+* **mobile-ci:** raise heap limits for t3a.xlarge (16 GiB / 4 vCPU) ([9dd9b26](https://github.com/hashpass-tech/hashpass.tech/commit/9dd9b261f8aaa244b2f5db6cb93ab4b644779815))
+
+
+
+
+
 ## [1.8.5](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.4...v1.8.5) (2026-06-16)
 
 
