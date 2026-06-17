@@ -1,3 +1,9 @@
+## [1.8.9](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.8...v1.8.9) (2026-06-17)
+
+
+
+
+
 ## [1.8.8](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.7...v1.8.8) (2026-06-17)
 
 
