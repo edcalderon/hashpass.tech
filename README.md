@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.10)
+## 📋 Latest Changes (v1.8.11)
 
 ### Bug Fixes
 
-* **mobile:** replace web-only Framer Motion components with native equivalents ([f86f4f9](https://github.com/hashpass-tech/hashpass.tech/commit/f86f4f9a1a8394448530048d37424800ccdb6cec))
+* **mobile:** replace LampBrandBanner framer-motion with native Image/View ([71c42b9](https://github.com/hashpass-tech/hashpass.tech/commit/71c42b95f277a734d625974ac76b6d07dc3f0696))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

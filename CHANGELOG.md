@@ -1,3 +1,14 @@
+## [1.8.11](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.10...v1.8.11) (2026-06-17)
+
+
+### Bug Fixes
+
+* **mobile:** replace LampBrandBanner framer-motion with native Image/View ([71c42b9](https://github.com/hashpass-tech/hashpass.tech/commit/71c42b95f277a734d625974ac76b6d07dc3f0696))
+
+
+
+
+
 ## [1.8.10](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.9...v1.8.10) (2026-06-17)
 
 
