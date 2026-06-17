@@ -113,6 +113,7 @@
     "lightningcss": "^1.29.2",
     "lucide-react": "^0.548.0",
     "lucide-react-native": "^0.479.0",
+    "metro-cache": "0.82.5",
     "metro-resolver": "0.82.5",
     "motion": "^12.23.3",
     "nativewind": "^4.1.23",
