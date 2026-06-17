@@ -26,11 +26,16 @@ import { CopilotProvider } from 'react-native-copilot';
 import { checkVersionOnStart, clearAuthCache } from '../lib/version-checker';
 import { showConsoleWelcome } from '../lib/console-welcome';
 import LoadingScreen from '../components/LoadingScreen';
+import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppErrorBoundary';
 import packageJson from '../package.json';
 
 const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
   ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
   : `v${packageJson.version} · local build`;
+
+// Surface JS errors thrown outside React render (async/native bridge) instead
+// of letting the app close with a blank screen.
+installGlobalErrorHandler();
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -39,6 +44,7 @@ export default function RootLayout() {
   const theme = useThemeProvider();
 
   return (
+    <AppErrorBoundary>
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemeProvider value={theme}>
@@ -66,6 +72,7 @@ export default function RootLayout() {
         </ThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
+    </AppErrorBoundary>
   );
 }
 
