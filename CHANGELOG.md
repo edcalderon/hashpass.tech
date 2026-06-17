@@ -1,3 +1,14 @@
+## [1.8.14](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.13...v1.8.14) (2026-06-17)
+
+
+### Bug Fixes
+
+* replace web-only HTML elements with React Native equivalents for Android ([ec939de](https://github.com/hashpass-tech/hashpass.tech/commit/ec939de429d4225017685c8b4ba57962241e0238))
+
+
+
+
+
 ## [1.8.13](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.12...v1.8.13) (2026-06-17)
 
 
