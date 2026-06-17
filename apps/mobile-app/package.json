@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.7",
+  "version": "1.8.8",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "expo-router/entry",
@@ -90,7 +90,6 @@
     "expo-camera": "~16.1.9",
     "expo-clipboard": "^8.0.7",
     "expo-constants": "~17.1.5",
-    "expo-dev-client": "~5.2.4",
     "expo-font": "~13.3.1",
     "expo-gl": "~15.1.7",
     "expo-haptics": "~14.1.4",
@@ -144,6 +143,7 @@
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.28.5",
+    "expo-dev-client": "~5.2.4",
     "react-native-worklets": "^0.6.0",
     "@expo/metro-config": "^0.20.17",
     "@lingui/cli": "^5.5.2",
