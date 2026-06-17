@@ -288,6 +288,7 @@ const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   sunny: 'sunny',
   'logo-apple': 'logo-apple',
   'logo-google-playstore': 'logo-google-playstore',
+  'globe-outline': 'language',
 };
 
 export const Ionicons = Platform.OS === 'web' ? WebIonicons : NativeIonicons;

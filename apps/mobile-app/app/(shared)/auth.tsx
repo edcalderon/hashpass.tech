@@ -384,7 +384,7 @@ export default function AuthScreen() {
     },
     {
       id: 'management',
-      icon: 'key-outline',
+      icon: 'wallet-outline',
       title: tIndex('features.management.title', 'Effortless Management'),
       description: tIndex(
         'features.management.description',
@@ -393,7 +393,7 @@ export default function AuthScreen() {
     },
     {
       id: 'sync',
-      icon: 'sync-outline',
+      icon: 'globe-outline',
       title: tIndex('features.sync.title', 'Cross-Platform Sync'),
       description: tIndex(
         'features.sync.description',
