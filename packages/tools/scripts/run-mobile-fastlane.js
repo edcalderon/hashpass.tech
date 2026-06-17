@@ -145,7 +145,9 @@ function runFastlane({
   track,
   submit = true,
   releaseStatus = DEFAULT_FASTLANE_RELEASE_STATUS,
-  prebuild = true,
+  // SKIP_EXPO_PREBUILD=1 is set by the workflow's "Conditional Expo prebuild" step
+  // when android/ is cached and inputs haven't changed — lets Gradle run incrementally.
+  prebuild = !process.env.SKIP_EXPO_PREBUILD,
   rootEnvPath,
   mobileEnvPath,
 } = {}) {

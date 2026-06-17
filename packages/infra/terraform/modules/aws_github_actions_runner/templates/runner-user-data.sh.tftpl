@@ -107,6 +107,11 @@ create_runner_user() {
   mkdir -p "${RUNNER_BIN_DIR}" "${RUNNER_INSTALL_DIR}" "${RUNNER_HOME}/.gradle" "${RUNNER_HOME}/.cache" "${RUNNER_HOME}/.local/share"
   mkdir -p "${RUNNER_TOOL_CACHE}"
   chown -R "${RUNNER_USER}:${RUNNER_USER}" "${RUNNER_ROOT}" "${RUNNER_HOME}" "${RUNNER_TOOL_CACHE}"
+
+  # Allow the runner to power off the instance for idle shutdown (no password required).
+  echo "${RUNNER_USER} ALL=(ALL) NOPASSWD: /usr/sbin/poweroff, /sbin/poweroff" \
+    > "/etc/sudoers.d/${RUNNER_USER}-poweroff"
+  chmod 0440 "/etc/sudoers.d/${RUNNER_USER}-poweroff"
 }
 
 fetch_runner_version() {
@@ -175,6 +180,15 @@ fi
 
 stop_requested=0
 runner_pid=""
+watchdog_pid=""
+
+# Shut down the instance after this many seconds of idle (no active job).
+# Prevents EC2 charges when no builds are queued. Override in the runner env file.
+IDLE_TIMEOUT="${RUNNER_IDLE_TIMEOUT:-900}"
+LAST_ACTIVITY_FILE=/tmp/runner-last-activity
+RUNNER_PID_FILE=/tmp/runner-job-pid
+
+date +%s > "$LAST_ACTIVITY_FILE"
 
 log() {
   printf '[hashpass-runner] %s\n' "$1"
@@ -269,18 +283,48 @@ cleanup() {
     kill "${runner_pid}" >/dev/null 2>&1 || true
     wait "${runner_pid}" >/dev/null 2>&1 || true
   fi
+  if [ -n "${watchdog_pid}" ] && kill -0 "${watchdog_pid}" >/dev/null 2>&1; then
+    kill "${watchdog_pid}" >/dev/null 2>&1 || true
+    wait "${watchdog_pid}" >/dev/null 2>&1 || true
+  fi
+  rm -f "$RUNNER_PID_FILE"
   deregister_runner || true
 }
 
 trap cleanup INT TERM
+
+# Background watchdog: power off the instance after IDLE_TIMEOUT seconds with no active job.
+# While a runner job PID is alive the timer resets — no shutdown during active builds.
+(
+  while true; do
+    sleep 60
+    RPID=$(cat "$RUNNER_PID_FILE" 2>/dev/null || echo "")
+    if [ -n "$RPID" ] && kill -0 "$RPID" 2>/dev/null; then
+      date +%s > "$LAST_ACTIVITY_FILE"
+      continue
+    fi
+    LAST=$(cat "$LAST_ACTIVITY_FILE" 2>/dev/null || date +%s)
+    NOW=$(date +%s)
+    IDLE=$((NOW - LAST))
+    if [ "$IDLE" -ge "$IDLE_TIMEOUT" ]; then
+      log "No active job for ${IDLE}s (threshold ${IDLE_TIMEOUT}s) — powering off to save costs"
+      sudo poweroff
+      exit 0
+    fi
+  done
+) &
+watchdog_pid=$!
 
 while [ "${stop_requested}" -eq 0 ]; do
   register_runner
   cd "${RUNNER_INSTALL_DIR}"
   ./run.sh &
   runner_pid="$!"
+  echo "$runner_pid" > "$RUNNER_PID_FILE"
   wait "${runner_pid}" || true
   runner_pid=""
+  rm -f "$RUNNER_PID_FILE"
+  date +%s > "$LAST_ACTIVITY_FILE"
   deregister_runner || true
 
   if [ "${stop_requested}" -eq 0 ]; then

@@ -31,7 +31,7 @@ variable "runner_labels" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3a.large"
+  default     = "t3a.xlarge"
 }
 
 variable "instance_count" {
@@ -119,4 +119,24 @@ variable "tags" {
     Project = "hashpass"
     Owner   = "platform"
   }
+}
+
+# ── GitHub Actions auto-start (OIDC) ──────────────────────────────────────────
+
+variable "enable_github_actions_runner_control" {
+  description = "Create an IAM OIDC role so GitHub Actions workflows can start/stop the EC2 runner automatically. After enabling, run terraform apply and add the output role ARN as GitHub variable AWS_RUNNER_ROLE_ARN."
+  type        = bool
+  default     = false
+}
+
+variable "create_github_oidc_provider" {
+  description = "Create the GitHub Actions OIDC identity provider. Set to false if it already exists in this AWS account (only one is allowed per account)."
+  type        = bool
+  default     = true
+}
+
+variable "github_actions_role_name" {
+  description = "Name of the IAM role GitHub Actions assumes to start/stop the EC2 runner"
+  type        = string
+  default     = "hashpass-mobile-release-github-actions"
 }

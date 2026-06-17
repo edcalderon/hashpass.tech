@@ -48,9 +48,73 @@ jobs:
             echo 'runner=["self-hosted","linux","x64","hashpass-mobile-release"]' >> "$GITHUB_OUTPUT"
           fi
 
+  # Wakes the EC2 runner before the release job runs.
+  # Requires three GitHub variables: AWS_RUNNER_ROLE_ARN, EC2_RUNNER_INSTANCE_ID, AWS_RUNNER_REGION.
+  # Skipped automatically when using github-hosted runner or when variables are not yet configured.
+  # Set up: run terraform apply with enable_github_actions_runner_control=true, then copy the
+  # github_actions_role_arn output as GitHub variable AWS_RUNNER_ROLE_ARN.
+  start-runner:
+    runs-on: ubuntu-latest
+    if: inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_RUNNER_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_RUNNER_REGION || 'us-east-1' }}
+
+      - name: Start EC2 instance
+        env:
+          INSTANCE_ID: ${{ vars.EC2_RUNNER_INSTANCE_ID }}
+        run: |
+          set -euo pipefail
+          STATE=$(aws ec2 describe-instances \
+            --instance-ids "$INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].State.Name' \
+            --output text)
+          echo "Instance $INSTANCE_ID is: $STATE"
+          case "$STATE" in
+            running)
+              echo "Already running." ;;
+            stopped)
+              aws ec2 start-instances --instance-ids "$INSTANCE_ID"
+              aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+              echo "Instance started." ;;
+            stopping)
+              aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"
+              aws ec2 start-instances --instance-ids "$INSTANCE_ID"
+              aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+              echo "Instance started." ;;
+            *)
+              echo "Unexpected instance state: $STATE" >&2; exit 1 ;;
+          esac
+
+      - name: Wait for runner to come online
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "Waiting for self-hosted runner (label: hashpass-mobile-release) to come online..."
+          for i in $(seq 1 36); do
+            COUNT=$(gh api "repos/${{ github.repository }}/actions/runners" \
+              --jq '[.runners[] | select(any(.labels[]; .name == "hashpass-mobile-release")) | select(.status == "online")] | length' \
+              2>/dev/null || echo 0)
+            if [ "${COUNT:-0}" -gt 0 ]; then
+              echo "Runner is online (attempt $i)."
+              exit 0
+            fi
+            echo "Attempt $i/36 — not online yet, waiting 10s..."
+            sleep 10
+          done
+          echo "Runner did not come online within 6 minutes." >&2
+          exit 1
+
   release:
-    needs: select-runner
-    if: github.repository == 'hashpass-tech/hashpass.tech'
+    needs: [select-runner, start-runner]
+    if: always() && github.repository == 'hashpass-tech/hashpass.tech' && needs.select-runner.result == 'success' && (needs.start-runner.result == 'success' || needs.start-runner.result == 'skipped')
     runs-on: ${{ fromJSON(needs.select-runner.outputs.runner) }}
     timeout-minutes: 120
     permissions:
@@ -376,14 +440,16 @@ jobs:
           set -euo pipefail
           mkdir -p "$HOME/.gradle"
           # GitHub-hosted ubuntu-latest: 4 vCPU / 16 GiB — use all cores.
-          # EC2 t3a.large: 2 vCPU / 8 GiB — Xmx4g leaves ~3 GiB for NDK workers + OS.
-          # (Xmx5g caused OOM: JVM 5g + metaspace 512m + NDK + OS exceeded 8 GiB)
+          # EC2 t3a.xlarge: 4 vCPU / 16 GiB — Xmx6g leaves ~8 GiB for NDK + Metro + OS.
+          # (Xmx5g on t3a.large caused OOM: JVM heap + NDK workers + Metro node exceeded 8 GiB)
           if [ "${{ inputs.runner }}" = "github-hosted" ]; then
             GRADLE_HEAP="-Xmx8g"
             GRADLE_WORKERS=4
+            NODE_HEAP=4096
           else
-            GRADLE_HEAP="-Xmx4g"
-            GRADLE_WORKERS=2
+            GRADLE_HEAP="-Xmx6g"
+            GRADLE_WORKERS=4
+            NODE_HEAP=4096
           fi
           printf '%s\n' \
             "org.gradle.jvmargs=${GRADLE_HEAP} -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError" \
@@ -392,6 +458,9 @@ jobs:
             "org.gradle.workers.max=${GRADLE_WORKERS}" \
             'org.gradle.caching=true' \
             >> "$HOME/.gradle/gradle.properties"
+          # Metro bundler runs as a Node subprocess during :app:createBundleReleaseJsAndAssets.
+          # Without this cap, V8 can grow past available RAM when Gradle already holds most of it.
+          echo "NODE_OPTIONS=--max-old-space-size=${NODE_HEAP}" >> "$GITHUB_ENV"
 
       - name: Ensure Android SDK is writable
         run: |
@@ -402,6 +471,34 @@ jobs:
             sudo chown -R "$(id -un)" "$sdk_root"
           fi
           echo "Android SDK at $sdk_root is writable."
+
+      # On the EC2 runner the android/ directory persists on EBS between runs
+      # (it is gitignored so checkout's git clean -ffd leaves it intact).
+      # When app.json + package.json + lockfile are unchanged we skip --clean and
+      # let Gradle do a fully incremental build — cuts Release Android from ~30 min
+      # to ~3-5 min by reusing all cached NDK outputs.
+      - name: Conditional Expo prebuild
+        run: |
+          set -euo pipefail
+          HASH_FILE="$HOME/.gradle/.prebuild-hash"
+          ANDROID_DIR="apps/mobile-app/android"
+
+          CURRENT_HASH=$(cat \
+            apps/mobile-app/app.json \
+            apps/mobile-app/package.json \
+            pnpm-lock.yaml 2>/dev/null | sha256sum | cut -d' ' -f1)
+          STORED_HASH=$(cat "$HASH_FILE" 2>/dev/null || echo "none")
+
+          if [ "$CURRENT_HASH" = "$STORED_HASH" ] && [ -d "$ANDROID_DIR" ]; then
+            echo "Prebuild inputs unchanged — reusing cached android/ directory."
+            echo "SKIP_EXPO_PREBUILD=1" >> "$GITHUB_ENV"
+          else
+            echo "Running expo prebuild --clean (inputs changed or android/ missing)..."
+            pnpm --dir apps/mobile-app exec expo prebuild \
+              --platform android --clean --non-interactive
+            printf '%s' "$CURRENT_HASH" > "$HASH_FILE"
+            echo "Prebuild complete — hash stored for next run."
+          fi
 
       - name: Release Android
         run: |

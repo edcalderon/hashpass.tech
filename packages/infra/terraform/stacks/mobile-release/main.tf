@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 locals {
   common_tags = merge(var.tags, {
     ManagedBy = "terraform"
@@ -92,6 +94,97 @@ check "runner_subnets_available" {
     condition     = length(local.runner_subnet_ids) > 0
     error_message = "No subnets were found. Provide subnet_ids or let the stack create its managed public subnets."
   }
+}
+
+# ── GitHub Actions OIDC — lets the workflow start/stop the EC2 runner ─────────
+# Enable with: enable_github_actions_runner_control = true in your tfvars.
+# After apply, copy the github_actions_role_arn output as GitHub variable AWS_RUNNER_ROLE_ARN.
+
+resource "aws_iam_openid_connect_provider" "github" {
+  count = (var.enable_github_actions_runner_control && var.create_github_oidc_provider) ? 1 : 0
+
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
+  ]
+  tags = local.common_tags
+}
+
+data "aws_iam_openid_connect_provider" "github" {
+  count = (var.enable_github_actions_runner_control && !var.create_github_oidc_provider) ? 1 : 0
+  url   = "https://token.actions.githubusercontent.com"
+}
+
+locals {
+  github_oidc_provider_arn = var.enable_github_actions_runner_control ? (
+    var.create_github_oidc_provider
+      ? aws_iam_openid_connect_provider.github[0].arn
+      : data.aws_iam_openid_connect_provider.github[0].arn
+  ) : ""
+}
+
+data "aws_iam_policy_document" "github_actions_assume_role" {
+  count = var.enable_github_actions_runner_control ? 1 : 0
+
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [local.github_oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:${var.github_repository}:*"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions" {
+  count = var.enable_github_actions_runner_control ? 1 : 0
+
+  name               = var.github_actions_role_name
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role[0].json
+  tags               = local.common_tags
+}
+
+resource "aws_iam_role_policy" "github_actions_runner_control" {
+  count = var.enable_github_actions_runner_control ? 1 : 0
+
+  name = "${var.name_prefix}-runner-control"
+  role = aws_iam_role.github_actions[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "StartStopRunner"
+        Effect = "Allow"
+        Action = ["ec2:StartInstances", "ec2:StopInstances"]
+        Resource = [
+          for id in module.mobile_release_runner.instance_ids :
+          "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${id}"
+        ]
+      },
+      {
+        Sid      = "DescribeRunner"
+        Effect   = "Allow"
+        Action   = ["ec2:DescribeInstances", "ec2:DescribeInstanceStatus", "ssm:DescribeInstanceInformation"]
+        Resource = "*"
+      },
+    ]
+  })
 }
 
 resource "aws_secretsmanager_secret" "github_runner_token" {
