@@ -1,3 +1,14 @@
+## [1.8.12](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.11...v1.8.12) (2026-06-17)
+
+
+### Bug Fixes
+
+* align root package.json expo versions with mobile-app to fix duplicate lockfile entries ([eabcd01](https://github.com/hashpass-tech/hashpass.tech/commit/eabcd01028c20546f5014820df3dfce0c934daee))
+
+
+
+
+
 ## [1.8.11](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.10...v1.8.11) (2026-06-17)
 
 

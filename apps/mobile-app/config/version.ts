@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606172155, // Updated to current timestamp
+  buildNumber: 202606172222, // Updated to current timestamp
   releaseDate: '2026-06-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -33,11 +33,28 @@ export const CURRENT_VERSION: VersionInfo = {
     'Added LICENSE NOTICE and TRADEMARKS.md files for the release'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.11 release'
+  notes: 'Version 1.8.12 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.12': {
+    version: '1.8.12',
+    buildNumber: 202606172222,
+    releaseDate: '2026-06-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Guarded browser-only hostname and origin access in mobile auth and SSO startup paths so Android can launch without window crashes',
+      'Hardened mobile Supabase profile hostname resolution when window.location is absent',
+      'Added LICENSE NOTICE and TRADEMARKS.md files for the release'
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.8.12 release'
+  },
   '1.8.11': {
     version: '1.8.11',
     buildNumber: 202606172155,
