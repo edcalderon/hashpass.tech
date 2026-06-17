@@ -1,3 +1,18 @@
+## [1.8.8](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.7...v1.8.8) (2026-06-17)
+
+
+### Bug Fixes
+
+* **android-plugin:** resolve @expo/config-plugins through expo in pnpm workspace ([0d605dc](https://github.com/hashpass-tech/hashpass.tech/commit/0d605dc7fcd1adce292654d159d5fb409bd78692))
+* **android:** move expo-dev-client to devDependencies to prevent launch crash ([531e33f](https://github.com/hashpass-tech/hashpass.tech/commit/531e33fda8ee1308bfae41bc650b4282c4a55c8f))
+* **auth:** replace ? placeholder icons with wallet and globe on feature slides ([02fde23](https://github.com/hashpass-tech/hashpass.tech/commit/02fde231f705f01927454c4dd3a5b924e772d79d))
+* downgrade framer-motion to 11.x for stability ([614a57b](https://github.com/hashpass-tech/hashpass.tech/commit/614a57b983bd5719f9df53968664cdf26ac4bcb2))
+* resolve Android launch crash by aligning Expo SDK 53 package versions ([903e2cd](https://github.com/hashpass-tech/hashpass.tech/commit/903e2cd022cc714065ae0bad554dbaf82fc88d1e))
+
+
+
+
+
 ## [1.8.7](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.6...v1.8.7) (2026-06-17)
 
 

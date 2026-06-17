@@ -17,14 +17,15 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.7)
+## 📋 Latest Changes (v1.8.8)
 
 ### Bug Fixes
 
-* **android:** move react-native-worklets to devDependencies to prevent libworklets.so startup crash ([4ab9c2b](https://github.com/hashpass-tech/hashpass.tech/commit/4ab9c2b028b6c6a4efe1bad0c3b2563c7b0a869b))
-* **auth:** show shader hero behind desktop left pane, keep text white ([a37a5da](https://github.com/hashpass-tech/hashpass.tech/commit/a37a5da275bf64781b2146de1166088507183819))
-* **auth:** theme-aware Welcome/subtitle/back-arrow in desktop layout ([4fbfed3](https://github.com/hashpass-tech/hashpass.tech/commit/4fbfed3c4f36c236f8bb37c4799672496f2f2ae6)), closes [#eef0f5](https://github.com/hashpass-tech/hashpass.tech/issues/eef0f5)
-* **mobile:** restore required worklets dep and disable New Architecture ([0f69b22](https://github.com/hashpass-tech/hashpass.tech/commit/0f69b222cea5f00b5fe98afc724015959b91b0bb))
+* **android-plugin:** resolve @expo/config-plugins through expo in pnpm workspace ([0d605dc](https://github.com/hashpass-tech/hashpass.tech/commit/0d605dc7fcd1adce292654d159d5fb409bd78692))
+* **android:** move expo-dev-client to devDependencies to prevent launch crash ([531e33f](https://github.com/hashpass-tech/hashpass.tech/commit/531e33fda8ee1308bfae41bc650b4282c4a55c8f))
+* **auth:** replace ? placeholder icons with wallet and globe on feature slides ([02fde23](https://github.com/hashpass-tech/hashpass.tech/commit/02fde231f705f01927454c4dd3a5b924e772d79d))
+* downgrade framer-motion to 11.x for stability ([614a57b](https://github.com/hashpass-tech/hashpass.tech/commit/614a57b983bd5719f9df53968664cdf26ac4bcb2))
+* resolve Android launch crash by aligning Expo SDK 53 package versions ([903e2cd](https://github.com/hashpass-tech/hashpass.tech/commit/903e2cd022cc714065ae0bad554dbaf82fc88d1e))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
