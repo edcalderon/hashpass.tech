@@ -183,8 +183,10 @@ runner_pid=""
 watchdog_pid=""
 
 # Shut down the instance after this many seconds of idle (no active job).
-# Prevents EC2 charges when no builds are queued. Override in the runner env file.
-IDLE_TIMEOUT="${RUNNER_IDLE_TIMEOUT:-900}"
+# The watchdog resets the timer whenever a job PID is alive — a build in progress
+# will never trigger shutdown, no matter how long it runs.
+# Override via RUNNER_IDLE_TIMEOUT in the runner env file.
+IDLE_TIMEOUT="${RUNNER_IDLE_TIMEOUT:-1800}"
 LAST_ACTIVITY_FILE=/tmp/runner-last-activity
 RUNNER_PID_FILE=/tmp/runner-job-pid
 
