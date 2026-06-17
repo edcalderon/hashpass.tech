@@ -15,7 +15,7 @@ frontend:
         - corepack enable pnpm || true
         - corepack prepare pnpm@${PNPM_VERSION} --activate
         - export CI=1
-        - rm -rf node_modules
+        - rm -rf node_modules apps/mobile-app/.expo
         - |
           if [ -f pnpm-lock.yaml ]; then
             pnpm install --frozen-lockfile
