@@ -1,3 +1,14 @@
+## [1.8.10](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.9...v1.8.10) (2026-06-17)
+
+
+### Bug Fixes
+
+* **mobile:** replace web-only Framer Motion components with native equivalents ([f86f4f9](https://github.com/hashpass-tech/hashpass.tech/commit/f86f4f9a1a8394448530048d37424800ccdb6cec))
+
+
+
+
+
 ## [1.8.9](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.8...v1.8.9) (2026-06-17)
 
 

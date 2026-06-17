@@ -17,15 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.8)
+## 📋 Latest Changes (v1.8.10)
 
 ### Bug Fixes
 
-* **android-plugin:** resolve @expo/config-plugins through expo in pnpm workspace ([0d605dc](https://github.com/hashpass-tech/hashpass.tech/commit/0d605dc7fcd1adce292654d159d5fb409bd78692))
-* **android:** move expo-dev-client to devDependencies to prevent launch crash ([531e33f](https://github.com/hashpass-tech/hashpass.tech/commit/531e33fda8ee1308bfae41bc650b4282c4a55c8f))
-* **auth:** replace ? placeholder icons with wallet and globe on feature slides ([02fde23](https://github.com/hashpass-tech/hashpass.tech/commit/02fde231f705f01927454c4dd3a5b924e772d79d))
-* downgrade framer-motion to 11.x for stability ([614a57b](https://github.com/hashpass-tech/hashpass.tech/commit/614a57b983bd5719f9df53968664cdf26ac4bcb2))
-* resolve Android launch crash by aligning Expo SDK 53 package versions ([903e2cd](https://github.com/hashpass-tech/hashpass.tech/commit/903e2cd022cc714065ae0bad554dbaf82fc88d1e))
+* **mobile:** replace web-only Framer Motion components with native equivalents ([f86f4f9](https://github.com/hashpass-tech/hashpass.tech/commit/f86f4f9a1a8394448530048d37424800ccdb6cec))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
