@@ -1,9 +1,9 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.8",
+  "version": "1.8.9",
   "private": true,
   "packageManager": "pnpm@9.15.5",
-  "main": "expo-router/entry",
+  "main": "./index.js",
   "scripts": {
     "start": "NODE_OPTIONS='--max-old-space-size=6144' expo start",
     "start:reset": "NODE_OPTIONS='--max-old-space-size=6144' expo start --clear",
