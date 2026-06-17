@@ -1,3 +1,14 @@
+## [1.8.13](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.12...v1.8.13) (2026-06-17)
+
+
+### Bug Fixes
+
+* clear Metro cache before Amplify builds to avoid stale absolute-path entries ([ee5f58d](https://github.com/hashpass-tech/hashpass.tech/commit/ee5f58de35473638390555dc8b048e3f841b810f))
+
+
+
+
+
 ## [1.8.12](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.11...v1.8.12) (2026-06-17)
 
 

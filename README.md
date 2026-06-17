@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.12)
+## 📋 Latest Changes (v1.8.13)
 
 ### Bug Fixes
 
-* align root package.json expo versions with mobile-app to fix duplicate lockfile entries ([eabcd01](https://github.com/hashpass-tech/hashpass.tech/commit/eabcd01028c20546f5014820df3dfce0c934daee))
+* clear Metro cache before Amplify builds to avoid stale absolute-path entries ([ee5f58d](https://github.com/hashpass-tech/hashpass.tech/commit/ee5f58de35473638390555dc8b048e3f841b810f))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
