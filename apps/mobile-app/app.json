@@ -3,6 +3,7 @@
     "name": "hashpass.tech",
     "slug": "hash-pass-tech",
     "version": "1.8.6",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "hashpass",
