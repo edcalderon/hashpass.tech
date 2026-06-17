@@ -461,7 +461,7 @@ export default function AuthScreen() {
     'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.'
   );
 
-  const styles = getStyles(isDark, colors, isCompactMobile, isVeryCompactMobile);
+  const styles = getStyles(isDark, colors, isCompactMobile, isVeryCompactMobile, isDesktopLayout);
   const isBusy = busyAction !== null;
   const magicLinkResendRemainingSeconds = magicLinkSentAt === null
     ? 0
@@ -1182,7 +1182,11 @@ export default function AuthScreen() {
             accessibilityLabel={t('back', 'Go Back')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={28} color="#fff" />
+            <Ionicons
+              name="arrow-back"
+              size={28}
+              color={isDesktopLayout ? (isDark ? '#fff' : '#000') : '#fff'}
+            />
           </TouchableOpacity>
 
           <ScrollView
@@ -1803,7 +1807,8 @@ const getStyles = (
   isDark: boolean,
   colors: any,
   isCompactMobile: boolean,
-  isVeryCompactMobile: boolean
+  isVeryCompactMobile: boolean,
+  isDesktopLayout: boolean
 ) =>
   StyleSheet.create({
     container: {
@@ -1926,7 +1931,9 @@ const getStyles = (
     authHeaderTitle: {
       fontSize: 44,
       fontWeight: '800',
-      color: '#f8f8fb',
+      // Narrow layout sits over the dark ShaderAnimation hero → always white.
+      // Desktop layout sits on the themed formPane → follow the color scheme.
+      color: isDesktopLayout ? (isDark ? '#f8f8fb' : '#0f1220') : '#f8f8fb',
       textAlign: 'center',
       letterSpacing: -0.8,
     },
@@ -1934,7 +1941,9 @@ const getStyles = (
       marginTop: 8,
       fontSize: 24,
       lineHeight: 30,
-      color: 'rgba(238,239,247,0.78)',
+      color: isDesktopLayout
+        ? (isDark ? 'rgba(238,239,247,0.78)' : 'rgba(25,34,56,0.64)')
+        : 'rgba(238,239,247,0.78)',
       textAlign: 'center',
     },
     primaryAuthContainer: {
