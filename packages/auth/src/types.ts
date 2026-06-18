@@ -26,6 +26,7 @@ export interface AuthResponse {
   session?: AuthSession;
   error?: string;
   pending?: boolean; // For OAuth redirects
+  oauthUrl?: string; // Native: caller must open this URL in a WebBrowser
 }
 
 export interface AuthStateChangeCallback {

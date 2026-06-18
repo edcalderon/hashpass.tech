@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { authService, AuthSession, AuthUser } from '@hashpass/auth';
 import { supabase } from '../lib/supabase';
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
 let oauthHashProcessingPromise: Promise<void> | null = null;
@@ -284,14 +285,47 @@ export const useAuth = () => {
       if (!authService.signInWithOAuth) {
         throw new Error('OAuth not supported by current auth provider');
       }
-      
+
       const result = await authService.signInWithOAuth(provider);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }
 
-      // For OAuth, the result might be pending (redirect in progress)
+      // On native, the provider returns a URL to open in the system browser
+      if (Platform.OS !== 'web' && result.oauthUrl) {
+        const callbackScheme = 'hashpass://auth/callback';
+        const browserResult = await WebBrowser.openAuthSessionAsync(
+          result.oauthUrl,
+          callbackScheme
+        );
+
+        if (browserResult.type === 'success' && browserResult.url) {
+          // Extract access_token + refresh_token from the redirect URL fragment
+          const redirectUrl = browserResult.url;
+          const fragmentStart = redirectUrl.indexOf('#');
+          const queryStart = redirectUrl.indexOf('?');
+          const paramStr = fragmentStart !== -1
+            ? redirectUrl.slice(fragmentStart + 1)
+            : queryStart !== -1
+            ? redirectUrl.slice(queryStart + 1)
+            : '';
+          const params = new URLSearchParams(paramStr);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+
+          if (accessToken) {
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken ?? '',
+            });
+            if (sessionError) throw new Error(sessionError.message);
+          }
+        }
+
+        return { pending: true };
+      }
+
       return result;
     } catch (error) {
       console.error('Error signing in with OAuth:', error);

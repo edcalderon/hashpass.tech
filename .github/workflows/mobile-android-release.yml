@@ -143,6 +143,7 @@ jobs:
       EXPO_PUBLIC_SUPABASE_URL: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_URL_DEV || vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV || vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
       EXPO_PUBLIC_DIRECTUS_URL: ${{ vars.EXPO_PUBLIC_DIRECTUS_URL }}
+      AUTH_PROVIDER: supabase
       # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons.
       # Set it here so every step (and its subprocesses, including Gradle's node/Metro) inherits it.
       # 6144m: safe on t3a.xlarge (16 GiB) — Metro gets 6 GiB, Gradle holds ~8 GiB, OS ~2 GiB.
@@ -439,6 +440,7 @@ jobs:
           [ -n "${EXPO_PUBLIC_SUPABASE_URL:-}" ]        && printf 'EXPO_PUBLIC_SUPABASE_URL=%s\n'        "$EXPO_PUBLIC_SUPABASE_URL"        >> "$env_file"
           [ -n "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]   && printf 'EXPO_PUBLIC_SUPABASE_ANON_KEY=%s\n'   "$EXPO_PUBLIC_SUPABASE_ANON_KEY"   >> "$env_file"
           [ -n "${EXPO_PUBLIC_DIRECTUS_URL:-}" ]        && printf 'EXPO_PUBLIC_DIRECTUS_URL=%s\n'        "$EXPO_PUBLIC_DIRECTUS_URL"        >> "$env_file"
+          [ -n "${AUTH_PROVIDER:-}" ]                   && printf 'AUTH_PROVIDER=%s\n'                   "$AUTH_PROVIDER"                   >> "$env_file"
           vars_written=$(grep -c '.' "$env_file" || true)
           echo "Wrote ${vars_written} env var(s) to ${env_file}"
 

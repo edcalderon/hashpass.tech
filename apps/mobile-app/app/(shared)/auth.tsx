@@ -1217,10 +1217,13 @@ export default function AuthScreen() {
                 <View style={[styles.authCard, isDesktopLayout ? styles.authCardDesktop : null]}>
             <View style={styles.logoContainer}>
               <Image
-                source={
-                  isDark
-                    ? require('../../assets/logos/hashpass/logo-full-hashpass-black.svg')
-                    : require('../../assets/logos/hashpass/logo-full-hashpass-white.svg')
+                source={Platform.OS === 'web'
+                  ? (isDark
+                    ? require('../../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
+                    : require('../../assets/logos/hashpass/logo-full-hashpass-black.svg'))
+                  : (isDark
+                    ? require('../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
+                    : require('../../assets/logos/hashpass/logo-full-hashpass-black.png'))
                 }
                 style={styles.logo}
                 resizeMode="contain"
@@ -1863,7 +1866,9 @@ const getStyles = (
     },
     scrollContent: {
       flexGrow: 1,
-      paddingTop: 70,
+      // Native: ThemeAndLanguageSwitcher sits at top:56 and is ~44px tall, so push
+      // content below it. Web doesn't need as much clearance.
+      paddingTop: Platform.OS === 'web' ? 70 : 112,
       paddingHorizontal: isCompactMobile ? 14 : 20,
       paddingBottom: 40,
     },
@@ -1927,7 +1932,7 @@ const getStyles = (
       paddingHorizontal: 12,
     },
     authHeaderTitle: {
-      fontSize: 44,
+      fontSize: isDesktopLayout ? 44 : isCompactMobile ? 32 : 38,
       fontWeight: '800',
       // Both layouts sit over the dark ShaderAnimation hero → always white.
       color: '#f8f8fb',
@@ -1936,8 +1941,8 @@ const getStyles = (
     },
     authHeaderSubtitle: {
       marginTop: 8,
-      fontSize: 24,
-      lineHeight: 30,
+      fontSize: isDesktopLayout ? 24 : isCompactMobile ? 16 : 18,
+      lineHeight: isDesktopLayout ? 30 : 24,
       color: 'rgba(238,239,247,0.78)',
       textAlign: 'center',
     },

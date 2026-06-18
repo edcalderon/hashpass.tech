@@ -72,20 +72,31 @@ export class SupabaseAuthProvider implements IAuthProvider {
 
   async signInWithOAuth(provider: 'google' | 'github' | 'facebook' | 'twitter'): Promise<AuthResponse> {
     try {
+      const isNative = Platform.OS !== 'web';
+
+      // On native we use skipBrowserRedirect so Supabase returns the URL without
+      // trying to navigate, then the caller opens it via expo-web-browser.
+      const redirectTo = isNative
+        ? 'hashpass://auth/callback'
+        : `${window.location.origin}/auth/callback`;
+
       const { data, error } = await this.supabase.auth.signInWithOAuth({
-        provider: provider,
+        provider,
         options: {
-          redirectTo: Platform.OS === 'web' ? 
-            `${window.location.origin}/auth/callback` : 
-            'exp://localhost:8081/--/auth/callback'
-        }
+          redirectTo,
+          skipBrowserRedirect: isNative,
+        },
       });
 
       if (error) {
         return { error: error.message };
       }
 
-      // For OAuth, the actual session will be established after redirect
+      if (isNative) {
+        // Return the URL so the mobile caller can open it in a WebBrowser session
+        return { pending: true, oauthUrl: data.url ?? undefined };
+      }
+
       return { pending: true };
     } catch (error) {
       console.error('OAuth sign in error:', error);
