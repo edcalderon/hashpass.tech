@@ -126,10 +126,6 @@ jobs:
       GOOGLE_PLAY_JSON_KEY: ${{ github.workspace }}/.runner-secrets/google-play-service-account.json
       ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/.runner-secrets/hashpass-release.keystore
       GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EXPO_TOKEN_DEV: ${{ secrets.EXPO_TOKEN_DEV }}
       EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
@@ -221,18 +217,9 @@ jobs:
           MOBILE_RELEASE_ENV: ${{ inputs.environment }}
         run: |
           set -euo pipefail
-
-          # For development builds always fetch the dev keystore from Expo — the
-          # GitHub secrets hold the production keystore and would cause a key mismatch.
-          if [ "${{ inputs.environment }}" != "development" ] && \
-             [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && \
-             [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] && \
-             [ -n "${ANDROID_KEY_ALIAS:-}" ] && \
-             [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then
-            echo "Fastlane signing secrets already provided by GitHub secrets (production build)."
-            exit 0
-          fi
-
+          # Always fetch the upload keystore from Expo so CI signs with the
+          # same key the app project owns. This avoids drift between GitHub
+          # secrets and the Google Play upload certificate.
           node <<'NODE'
           const fs = require('fs');
 

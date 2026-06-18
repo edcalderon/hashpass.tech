@@ -2,7 +2,7 @@
   "expo": {
     "name": "HASHPASS",
     "slug": "hash-pass-tech",
-    "version": "1.8.32",
+    "version": "1.8.33",
     "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
