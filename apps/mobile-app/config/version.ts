@@ -22,21 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606181934, // Updated to current timestamp
+  buildNumber: 202606182026, // Updated to current timestamp
   releaseDate: '2026-06-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
-    'Forced the web hero subtitle animation to stay white for proper contrast',
-    'Cleaned up the web hero FlipWords timer so the subtitle animation does not leak on unmount'
+    'Fixed the native testimonials avatar crash caused by an out-of-scope styles reference',
+    'Added a regression test that renders the testimonials column without relying on React Native runtime internals'
   ],
   breakingChanges: [],
-  notes: 'Web hero subtitle contrast fix'
+  notes: 'Testimonials avatar crash fix'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.30': {
+    version: '1.8.30',
+    buildNumber: 202606182026,
+    releaseDate: '2026-06-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Fixed the native testimonials avatar crash caused by an out-of-scope styles reference',
+      'Added a regression test that renders the testimonials column without relying on React Native runtime internals'
+    ],
+    breakingChanges: [],
+    notes: 'Testimonials avatar crash fix'
+  },
   '1.8.29': {
     version: '1.8.29',
     buildNumber: 202606181934,

@@ -4,6 +4,18 @@
 
 
 
+## [1.8.30] - 2026-06-18
+
+### Released
+- Testimonials avatar crash fix
+
+### Technical Details
+- Version: 1.8.30
+- Release Type: stable
+- Build Number: 202606182026
+- Release Date: 2026-06-18T20:26:46.872Z
+
+
 ## [1.8.29] - 2026-06-18
 
 ### Released

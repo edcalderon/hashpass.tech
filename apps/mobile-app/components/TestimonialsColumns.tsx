@@ -1,7 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import { useTheme } from "../hooks/useTheme";
 import type { ThemeColors } from "../lib/theme";
+
+const avatarStyles = StyleSheet.create({
+  avatar: { width: 36, height: 36, borderRadius: 18 },
+});
 
 const formatWalletAddress = (address: string): string => {
   if (!address || address.length < 10) return address;
@@ -30,26 +34,19 @@ const getAvatarUrls = (address: string): string[] => {
 
 const AvatarImage = ({ address, alt }: { address: string; alt: string }) => {
   const fallbacks = useMemo(() => getAvatarUrls(address), [address]);
-  const [imgSrc, setImgSrc] = useState(fallbacks[0] || "");
-  const [errorCount, setErrorCount] = useState(0);
-
-  useEffect(() => {
-    setImgSrc(fallbacks[0] || "");
-    setErrorCount(0);
-  }, [address, fallbacks]);
+  const [fallbackIndex, setFallbackIndex] = useState(0);
+  const imgSrc = fallbacks[fallbackIndex] || fallbacks[0] || "";
 
   const handleError = () => {
-    if (errorCount < fallbacks.length - 1) {
-      const nextIndex = errorCount + 1;
-      setErrorCount(nextIndex);
-      setImgSrc(fallbacks[nextIndex]);
+    if (fallbackIndex < fallbacks.length - 1) {
+      setFallbackIndex((currentIndex) => Math.min(currentIndex + 1, fallbacks.length - 1));
     }
   };
 
   return (
     <Image
       source={{ uri: imgSrc }}
-      style={styles.avatar}
+      style={avatarStyles.avatar}
       onError={handleError}
       accessibilityLabel={alt}
     />
@@ -69,8 +66,9 @@ const TestimonialsColumn = (props: {
       {props.testimonials.map(({ text, wallet, role }: any, i: number) => {
         const walletAddress =
           wallet || "0x0000000000000000000000000000000000000000";
+        const testimonialKey = `${walletAddress}-${role || "no-role"}-${text}`;
         return (
-          <View key={i} style={styles.card}>
+          <View key={testimonialKey} style={styles.card}>
             <Text style={styles.cardText}>{text}</Text>
             <View style={styles.authorRow}>
               <AvatarImage
@@ -117,7 +115,6 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
       lineHeight: 20,
     },
     authorRow: { flexDirection: "row", alignItems: "center", marginTop: 12, gap: 8 },
-    avatar: { width: 36, height: 36, borderRadius: 18 },
     authorInfo: { flex: 1 },
     walletText: {
       color: colors.text.primary,
