@@ -295,13 +295,15 @@ export default function HomeScreen() {
             maxCrystals={isMobile ? 24 : 52}
           />
           <Animated.View style={[styles.heroTextContainer, headerAnimatedStyle]}>
-            <Image
-              source={getHashpassFullLogo(isDark)}
-              style={[styles.logo, headerAnimatedStyle]}
-              resizeMode="contain"
-            />
-            <View style={styles.taglineContainer}>
-              <FlipWords words={words} textStyle={styles.tagline} />
+            <View style={styles.logoStack}>
+              <Image
+                source={getHashpassFullLogo(isDark)}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <View style={styles.taglineContainer} pointerEvents="none">
+                <FlipWords words={words} textStyle={styles.tagline} />
+              </View>
             </View>
           </Animated.View>
           <View style={{ flex: 1 }} /> 
@@ -539,87 +541,101 @@ export default function HomeScreen() {
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMode: boolean) => StyleSheet.create({
-  container: {
-    flex: 1,
-    position: 'relative',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  hero: {
-    minHeight: 400,
-    height: isMobile ? 400 : '100%',
-    maxHeight: 1000,
-    position: 'relative',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    paddingBottom: isMobile ? 40 : 60, 
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-    opacity: isDark ? 0.8 : 1,
-  },
-  heroTextContainer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    width: '100%',
-  },
-  logo: {
-    width: isMobile ? 300 : 650,
-    height: isMobile ? 150 : 250,
-    marginBottom: isMobile ? 10 : 25,
-  },
-  headline: {
-    fontSize: isMobile ? 24 : 48,
-    fontWeight: '800',
-    marginBottom: isMobile ? 10 : 10,
-    letterSpacing: isMobile ? -0.5 : -1,
-    lineHeight: isMobile ? 28 : 48,
-  },
-  taglineContainer: {
-    width: '100%',
-    maxWidth: 600,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tagline: {
-    fontSize: isMobile ? 24 : 44,
-    opacity: 0.9,
-    fontWeight: '400',
-    letterSpacing: 1,
-    textAlign: 'center',
-    color: Platform.OS === 'web' ? '#FFFFFF' : colors.text.primary,
-  },
-  sectionTitle: {
-    fontSize: isMobile ? 24 : 28,
-    fontWeight: '800',
-    marginBottom: 30,
-    textAlign: 'center',
-    letterSpacing: isMobile ? -0.5 : -0.5,
-    marginTop: 10,
-  },
-  footer: {
-    backgroundColor: colors.background.default,
-    borderTopWidth: 1,
-    borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    paddingTop: isMobile ? 40 : 60,
-    paddingBottom: isMobile ? 30 : 40,
-    paddingHorizontal: isMobile ? 20 : 40,
-    position: 'relative',
-    bottom: 0,
-  },
+const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMode: boolean) => {
+  const logoWidth = isMobile ? 300 : 650;
+  const logoHeight = isMobile ? 150 : 250;
+  const taglineOffset = isMobile ? 14 : 24;
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      position: 'relative',
+    },
+    scrollView: {
+      flex: 1,
+    },
+    hero: {
+      minHeight: 400,
+      height: isMobile ? 400 : '100%',
+      maxHeight: 1000,
+      position: 'relative',
+      overflow: 'hidden',
+      borderBottomLeftRadius: 30,
+      borderBottomRightRadius: 30,
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      paddingBottom: isMobile ? 40 : 60,
+    },
+    heroImage: {
+      width: '100%',
+      height: '100%',
+      opacity: isDark ? 0.8 : 1,
+    },
+    heroTextContainer: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      zIndex: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      width: '100%',
+    },
+    logoStack: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+    },
+    logo: {
+      width: logoWidth,
+      height: logoHeight,
+    },
+    headline: {
+      fontSize: isMobile ? 24 : 48,
+      fontWeight: '800',
+      marginBottom: 10,
+      letterSpacing: isMobile ? -0.5 : -1,
+      lineHeight: isMobile ? 28 : 48,
+    },
+    taglineContainer: {
+      position: 'absolute',
+      top: logoHeight + taglineOffset,
+      left: 0,
+      right: 0,
+      width: '100%',
+      maxWidth: 600,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tagline: {
+      fontSize: isMobile ? 24 : 44,
+      opacity: 0.9,
+      fontWeight: '400',
+      letterSpacing: 1,
+      textAlign: 'center',
+      color: Platform.OS === 'web' ? '#FFFFFF' : colors.text.primary,
+    },
+    sectionTitle: {
+      fontSize: isMobile ? 24 : 28,
+      fontWeight: '800',
+      marginBottom: 30,
+      textAlign: 'center',
+      letterSpacing: isMobile ? -0.5 : -0.5,
+      marginTop: 10,
+    },
+    footer: {
+      backgroundColor: colors.background.default,
+      borderTopWidth: 1,
+      borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+      paddingTop: isMobile ? 40 : 60,
+      paddingBottom: isMobile ? 30 : 40,
+      paddingHorizontal: isMobile ? 20 : 40,
+      position: 'relative',
+      bottom: 0,
+    },
   footerOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: isDark ? 'rgba(2, 6, 23, 0.30)' : 'rgba(248, 250, 252, 0.42)',
@@ -912,3 +928,4 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
     marginHorizontal: 0,
   }
 });
+};

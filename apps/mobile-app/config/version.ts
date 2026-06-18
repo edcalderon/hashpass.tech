@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606182142, // Updated to current timestamp
+  buildNumber: 202606182301, // Updated to current timestamp
   releaseDate: '2026-06-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -32,11 +32,27 @@ export const CURRENT_VERSION: VersionInfo = {
     'Added a regression test that renders the testimonials column without relying on React Native runtime internals'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.33 release'
+  notes: 'Version 1.8.34 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.34': {
+    version: '1.8.34',
+    buildNumber: 202606182301,
+    releaseDate: '2026-06-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Fixed the native testimonials avatar crash caused by an out-of-scope styles reference',
+      'Added a regression test that renders the testimonials column without relying on React Native runtime internals'
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.8.34 release'
+  },
   '1.8.33': {
     version: '1.8.33',
     buildNumber: 202606182142,
