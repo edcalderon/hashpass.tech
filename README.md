@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.14)
+## 📋 Latest Changes (v1.8.15)
 
 ### Bug Fixes
 
-* replace web-only HTML elements with React Native equivalents for Android ([ec939de](https://github.com/hashpass-tech/hashpass.tech/commit/ec939de429d4225017685c8b4ba57962241e0238))
+* pre-resolve react-native-worklets/plugin in babel.config.js to fix CI web build ([7dda78a](https://github.com/hashpass-tech/hashpass.tech/commit/7dda78a84bec4f74e8519dfdde8fa5a5ed9fbc7a))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

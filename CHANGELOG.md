@@ -1,3 +1,14 @@
+## [1.8.15](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.14...v1.8.15) (2026-06-18)
+
+
+### Bug Fixes
+
+* pre-resolve react-native-worklets/plugin in babel.config.js to fix CI web build ([7dda78a](https://github.com/hashpass-tech/hashpass.tech/commit/7dda78a84bec4f74e8519dfdde8fa5a5ed9fbc7a))
+
+
+
+
+
 ## [1.8.14](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.13...v1.8.14) (2026-06-17)
 
 
