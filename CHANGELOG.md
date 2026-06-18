@@ -1,3 +1,14 @@
+## [1.8.22](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.21...v1.8.22) (2026-06-18)
+
+
+### Bug Fixes
+
+* native landing page — transparent logos, scroll crash, FlipCard 3D, card layout ([140cb74](https://github.com/hashpass-tech/hashpass.tech/commit/140cb7404322422d54eed4a7a6cb1bd3f9fbc5c4))
+
+
+
+
+
 ## [1.8.21](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.20...v1.8.21) (2026-06-18)
 
 
