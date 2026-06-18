@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606181756, // Updated to current timestamp
+  buildNumber: 202606181759, // Updated to current timestamp
   releaseDate: '2026-06-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -33,11 +33,28 @@ export const CURRENT_VERSION: VersionInfo = {
     'Aligned Android adaptive icon and PWA install metadata with the HashPass brand'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.26 release'
+  notes: 'Version 1.8.27 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.27': {
+    version: '1.8.27',
+    buildNumber: 202606181759,
+    releaseDate: '2026-06-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Replaced the default Expo launcher icon with the HashPass brand mark',
+      'Renamed the installed app and web install surfaces to HASHPASS',
+      'Aligned Android adaptive icon and PWA install metadata with the HashPass brand'
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.8.27 release'
+  },
   '1.8.26': {
     version: '1.8.26',
     buildNumber: 202606181756,
