@@ -9,6 +9,18 @@
 
 
 
+## [1.8.23] - 2026-06-18
+
+### Released
+- Android launcher branding refresh: HASHPASS name and icon
+
+### Technical Details
+- Version: 1.8.23
+- Release Type: stable
+- Build Number: 202606181630
+- Release Date: 2026-06-18T16:30:35.043Z
+
+
 ## [1.8.21](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.20...v1.8.21) (2026-06-18)
 
 

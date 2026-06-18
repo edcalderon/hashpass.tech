@@ -17,11 +17,16 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.22)
+## 📋 Latest Changes (v1.8.23)
 
-### Bug Fixes
+### Released
+- Android launcher branding refresh: HASHPASS name and icon
 
-* native landing page — transparent logos, scroll crash, FlipCard 3D, card layout ([140cb74](https://github.com/hashpass-tech/hashpass.tech/commit/140cb7404322422d54eed4a7a6cb1bd3f9fbc5c4))
+### Technical Details
+- Version: 1.8.23
+- Release Type: stable
+- Build Number: 202606181630
+- Release Date: 2026-06-18T16:30:35.043Z
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

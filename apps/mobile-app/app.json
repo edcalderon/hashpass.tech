@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "hashpass.tech",
+    "name": "HASHPASS",
     "slug": "hash-pass-tech",
-    "version": "1.8.22",
+    "version": "1.8.23",
     "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -23,7 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#05070C"
       },
       "package": "com.hashpass.tech",
       "permissions": [
@@ -37,7 +37,7 @@
       "themeColor": "#05070C",
       "backgroundColor": "#05070C",
       "startUrl": "/home?source=pwa",
-      "shortName": "HashPass",
+      "shortName": "HASHPASS",
       "lang": "en",
       "scope": "/",
       "display": "standalone",
@@ -49,8 +49,8 @@
         "scope": "/"
       },
       "manifest": {
-        "name": "HashPass - Events, Passes and Networking",
-        "short_name": "HashPass",
+        "name": "HASHPASS",
+        "short_name": "HASHPASS",
         "id": "/",
         "description": "Discover events, manage verified digital passes, build your agenda, and connect with the people who matter.",
         "start_url": "/home?source=pwa",
@@ -98,7 +98,7 @@
         "og:image": "/assets/hashpass-social-card-1200x630.png",
         "apple-mobile-web-app-capable": "yes",
         "apple-mobile-web-app-status-bar-style": "black-translucent",
-        "apple-mobile-web-app-title": "HashPass",
+        "apple-mobile-web-app-title": "HASHPASS",
         "mobile-web-app-capable": "yes",
         "msapplication-TileColor": "#05070C",
         "msapplication-tap-highlight": "no",

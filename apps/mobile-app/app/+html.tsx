@@ -81,7 +81,7 @@ export default function Root({
       {
         '@type': 'Organization',
         '@id': `${SITE_URL}/#organization`,
-        name: 'HashPass',
+        name: 'HASHPASS',
         url: SITE_URL,
         logo: `${SITE_URL}/assets/pwa-icon-512.png`,
       },
@@ -89,7 +89,7 @@ export default function Root({
         '@type': 'WebSite',
         '@id': `${SITE_URL}/#website`,
         url: SITE_URL,
-        name: 'HashPass',
+        name: 'HASHPASS',
         description,
         publisher: {
           '@id': `${SITE_URL}/#organization`,
@@ -99,7 +99,7 @@ export default function Root({
       {
         '@type': 'WebApplication',
         '@id': `${SITE_URL}/#webapp`,
-        name: 'HashPass',
+        name: 'HASHPASS',
         url: SITE_URL,
         description,
         applicationCategory: 'BusinessApplication',
@@ -128,9 +128,9 @@ export default function Root({
         />
         <meta name="description" content={description} />
         <meta name="keywords" content={keywords} />
-        <meta name="author" content={metadata?.author || 'HashPass'} />
-        <meta name="publisher" content="HashPass" />
-        <meta name="application-name" content="HashPass" />
+        <meta name="author" content={metadata?.author || 'HASHPASS'} />
+        <meta name="publisher" content="HASHPASS" />
+        <meta name="application-name" content="HASHPASS" />
         <meta name="robots" content={robots} />
         <meta name="googlebot" content={robots} />
         <meta name="referrer" content="strict-origin-when-cross-origin" />
@@ -139,12 +139,12 @@ export default function Root({
         <meta name="theme-color" content="#05070C" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-title" content="HashPass" />
+        <meta name="apple-mobile-web-app-title" content="HASHPASS" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="msapplication-TileColor" content="#05070C" />
         <meta name="msapplication-TileImage" content="/assets/mstile-150x150.png" />
         {canonicalUrl ? <link rel="canonical" href={canonicalUrl} /> : null}
-        <meta property="og:site_name" content="HashPass" />
+        <meta property="og:site_name" content="HASHPASS" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
