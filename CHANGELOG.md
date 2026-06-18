@@ -1,3 +1,14 @@
+## [1.8.19](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.18...v1.8.19) (2026-06-18)
+
+
+### Bug Fixes
+
+* revert to original babel config for native builds ([d1bb33b](https://github.com/hashpass-tech/hashpass.tech/commit/d1bb33bcd3815703a801826f44fa028723328ac1))
+
+
+
+
+
 ## [1.8.18](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.17...v1.8.18) (2026-06-18)
 
 
