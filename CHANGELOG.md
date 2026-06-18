@@ -1,3 +1,14 @@
+## [1.8.20](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.19...v1.8.20) (2026-06-18)
+
+
+### Bug Fixes
+
+* guard window APIs in useIsMobile and fix babel preset for web CI ([761b6cd](https://github.com/hashpass-tech/hashpass.tech/commit/761b6cdefcc901b7d3a0b47cae2330e0e4c197f5))
+
+
+
+
+
 ## [1.8.19](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.18...v1.8.19) (2026-06-18)
 
 
