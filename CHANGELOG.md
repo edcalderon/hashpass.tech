@@ -1,3 +1,14 @@
+## [1.8.25](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.24...v1.8.25) (2026-06-18)
+
+
+### Bug Fixes
+
+* align supabase native callback ([bdb3b9d](https://github.com/hashpass-tech/hashpass.tech/commit/bdb3b9d488603343616e8358b98c4e1ad7337e72))
+
+
+
+
+
 ## [1.8.24](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.23...v1.8.24) (2026-06-18)
 
 

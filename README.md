@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.24)
+## 📋 Latest Changes (v1.8.25)
 
 ### Bug Fixes
 
-* native auth screen layout, Google OAuth via WebBrowser, and Supabase env ([dab0db1](https://github.com/hashpass-tech/hashpass.tech/commit/dab0db12259083c9540c343eb41caa62657f79cf))
+* align supabase native callback ([bdb3b9d](https://github.com/hashpass-tech/hashpass.tech/commit/bdb3b9d488603343616e8358b98c4e1ad7337e72))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
