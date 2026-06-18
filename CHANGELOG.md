@@ -1,3 +1,14 @@
+## [1.8.18](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.17...v1.8.18) (2026-06-18)
+
+
+### Bug Fixes
+
+* restore reanimated-before-worklets babel plugin ordering on native ([df072b0](https://github.com/hashpass-tech/hashpass.tech/commit/df072b0ea05ac5baae96c34da8a6f27da9527532))
+
+
+
+
+
 ## [1.8.17](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.16...v1.8.17) (2026-06-18)
 
 

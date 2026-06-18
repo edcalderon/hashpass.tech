@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.16)
+## 📋 Latest Changes (v1.8.18)
 
 ### Bug Fixes
 
-* split GlowingEffect for native and fix babel web CI resolution ([b3bae78](https://github.com/hashpass-tech/hashpass.tech/commit/b3bae78170c4a021ab51ef43f53910c24cf72e91))
+* restore reanimated-before-worklets babel plugin ordering on native ([df072b0](https://github.com/hashpass-tech/hashpass.tech/commit/df072b0ea05ac5baae96c34da8a6f27da9527532))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
