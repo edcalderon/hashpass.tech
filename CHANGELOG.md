@@ -1,3 +1,14 @@
+## [1.8.26](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.25...v1.8.26) (2026-06-18)
+
+
+### Bug Fixes
+
+* pass isDesktopLayout to getStyles to prevent startup crash on Android ([32c84c7](https://github.com/hashpass-tech/hashpass.tech/commit/32c84c7375abc43d217e2daaa79044d6edfb9976))
+
+
+
+
+
 ## [1.8.25](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.24...v1.8.25) (2026-06-18)
 
 
