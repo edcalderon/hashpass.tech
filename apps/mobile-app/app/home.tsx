@@ -599,7 +599,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     fontWeight: '400',
     letterSpacing: 1,
     textAlign: 'center',
-    color: colors.text.primary,
+    color: Platform.OS === 'web' ? '#FFFFFF' : colors.text.primary,
   },
   sectionTitle: {
     fontSize: isMobile ? 24 : 28,

@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606181910, // Updated to current timestamp
+  buildNumber: 202606181934, // Updated to current timestamp
   releaseDate: '2026-06-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
-    'Replaced the default Expo launcher icon with the HashPass brand mark',
-    'Renamed the installed app and web install surfaces to HASHPASS',
-    'Aligned Android adaptive icon and PWA install metadata with the HashPass brand'
+    'Forced the web hero subtitle animation to stay white for proper contrast',
+    'Cleaned up the web hero FlipWords timer so the subtitle animation does not leak on unmount'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.28 release'
+  notes: 'Web hero subtitle contrast fix'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.29': {
+    version: '1.8.29',
+    buildNumber: 202606181934,
+    releaseDate: '2026-06-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Forced the web hero subtitle animation to stay white for proper contrast',
+      'Cleaned up the web hero FlipWords timer so the subtitle animation does not leak on unmount'
+    ],
+    breakingChanges: [],
+    notes: 'Web hero subtitle contrast fix'
+  },
   '1.8.28': {
     version: '1.8.28',
     buildNumber: 202606181910,

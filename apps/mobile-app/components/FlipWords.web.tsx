@@ -1,41 +1,35 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { TextStyle } from "react-native";
 import { cn } from "../lib/utils";
 
 const FlipWords = ({
   words,
   duration = 3000,
   className,
+  textStyle,
 }: {
   words: string[];
   duration?: number;
   className?: string;
+  textStyle?: TextStyle;
 }) => {
   const [currentWord, setCurrentWord] = useState(words[0]);
-  const [isAnimating, setIsAnimating] = useState<boolean>(false);
-
-  // thanks for the fix Julian - https://github.com/Julian-AT
-  const startAnimation = useCallback(() => {
-    const word = words[words.indexOf(currentWord) + 1] || words[0];
-    setCurrentWord(word);
-    setIsAnimating(true);
-  }, [currentWord, words]);
 
   useEffect(() => {
-    if (!isAnimating)
-      setTimeout(() => {
-        startAnimation();
-      }, duration);
-  }, [isAnimating, duration, startAnimation]);
+    const timeout = window.setTimeout(() => {
+      const nextWord = words[words.indexOf(currentWord) + 1] || words[0];
+      setCurrentWord(nextWord);
+    }, duration);
+
+    return () => window.clearTimeout(timeout);
+  }, [currentWord, duration, words]);
 
   return (
-    <AnimatePresence
-      onExitComplete={() => {
-        setIsAnimating(false);
-      }}
-    >
+    <AnimatePresence mode="wait">
       <motion.div
+        style={textStyle as React.CSSProperties}
         initial={{
           opacity: 0,
           y: 10,

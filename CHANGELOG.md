@@ -4,6 +4,18 @@
 
 
 
+## [1.8.29] - 2026-06-18
+
+### Released
+- Web hero subtitle contrast fix
+
+### Technical Details
+- Version: 1.8.29
+- Release Type: stable
+- Build Number: 202606181934
+- Release Date: 2026-06-18T19:34:03.182Z
+
+
 ## [1.8.27](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.26...v1.8.27) (2026-06-18)
 
 
