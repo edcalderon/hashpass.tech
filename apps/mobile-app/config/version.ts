@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606182324, // Updated to current timestamp
+  buildNumber: 202606182333, // Updated to current timestamp
   releaseDate: '2026-06-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
-    'Fixed native magic link and Google sign-in handling so callback codes are exchanged for a session on Android',
-    'Improved the native auth card layout and feedback messages so the flow stays centered and readable',
-    'Added regression tests for native Supabase redirect and OAuth code exchange'
+    'Fixed the Spanish native auth SMS prompt so the question reads correctly',
+    'Kept the native auth flow copy aligned with the SMS fallback action'
   ],
   breakingChanges: [],
-  notes: 'Native auth flow fixes'
+  notes: 'Version 1.8.36 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.36': {
+    version: '1.8.36',
+    buildNumber: 202606182333,
+    releaseDate: '2026-06-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Fixed the Spanish native auth SMS prompt so the question reads correctly',
+      'Kept the native auth flow copy aligned with the SMS fallback action'
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.8.36 release'
+  },
   '1.8.35': {
     version: '1.8.35',
     buildNumber: 202606182324,

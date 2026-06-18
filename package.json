@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.35",
+  "version": "1.8.36",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "patchedDependencies": {
