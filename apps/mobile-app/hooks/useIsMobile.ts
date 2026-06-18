@@ -1,20 +1,24 @@
 import { useState, useEffect } from 'react';
+import { Dimensions, Platform } from 'react-native';
 
 export const useIsMobile = (breakpoint = 768): boolean => {
-  const [isMobile, setIsMobile] = useState<boolean>(false);
+  // On native, always treat as mobile (no window resize events).
+  const [isMobile, setIsMobile] = useState<boolean>(
+    Platform.OS !== 'web' ? true : Dimensions.get('window').width < breakpoint,
+  );
 
   useEffect(() => {
+    if (Platform.OS !== 'web') {
+      setIsMobile(true);
+      return;
+    }
+
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < breakpoint);
     };
 
-    // Initial check
     checkIfMobile();
-
-    // Add event listener for window resize
     window.addEventListener('resize', checkIfMobile);
-
-    // Clean up the event listener
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
