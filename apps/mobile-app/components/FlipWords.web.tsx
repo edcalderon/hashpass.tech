@@ -1,21 +1,24 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { TextStyle } from "react-native";
-import { cn } from "../lib/utils";
+import { StyleSheet, TextStyle } from "react-native";
 
 const FlipWords = ({
   words,
   duration = 3000,
-  className,
   textStyle,
 }: {
   words: string[];
   duration?: number;
-  className?: string;
   textStyle?: TextStyle;
 }) => {
   const [currentWord, setCurrentWord] = useState(words[0]);
+  const flattenedTextStyle = StyleSheet.flatten(textStyle) ?? {};
+  const fontSize = typeof flattenedTextStyle.fontSize === "number" ? flattenedTextStyle.fontSize : 18;
+  const reservedHeight =
+    typeof flattenedTextStyle.lineHeight === "number"
+      ? flattenedTextStyle.lineHeight
+      : Math.ceil(fontSize * 1.25);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -29,7 +32,19 @@ const FlipWords = ({
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        style={textStyle as React.CSSProperties}
+        style={{
+          ...(flattenedTextStyle as React.CSSProperties),
+          display: "flex",
+          width: "100%",
+          minHeight: reservedHeight,
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          position: "relative",
+          paddingLeft: 8,
+          paddingRight: 8,
+          textAlign: "center",
+        }}
         initial={{
           opacity: 0,
           y: 10,
@@ -51,10 +66,6 @@ const FlipWords = ({
           scale: 2,
           position: "absolute",
         }}
-        className={cn(
-          "z-10 inline-block relative text-left text-foreground px-2",
-          className
-        )}
         key={currentWord}
       >
         {/* edit suggested by Sajal: https://x.com/DewanganSajal */}
@@ -67,7 +78,7 @@ const FlipWords = ({
               delay: wordIndex * 0.3,
               duration: 0.3,
             }}
-            className="inline-block whitespace-nowrap"
+            style={{ display: "inline-block", whiteSpace: "nowrap" }}
           >
             {word.split("").map((letter, letterIndex) => (
               <motion.span
@@ -78,12 +89,12 @@ const FlipWords = ({
                   delay: wordIndex * 0.3 + letterIndex * 0.05,
                   duration: 0.2,
                 }}
-                className="inline-block"
+                style={{ display: "inline-block" }}
               >
                 {letter}
               </motion.span>
             ))}
-            <span className="inline-block">&nbsp;</span>
+            <span style={{ display: "inline-block" }}>&nbsp;</span>
           </motion.span>
         ))}
       </motion.div>

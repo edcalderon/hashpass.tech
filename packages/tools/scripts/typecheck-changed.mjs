@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -74,6 +73,187 @@ function isTypeScriptFile(filePath) {
   return /\.(tsx?|d\.ts)$/.test(filePath);
 }
 
+function isRelativeSpecifier(specifier) {
+  return specifier.startsWith('.') || specifier.startsWith('/');
+}
+
+function escapeForRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function loadLocalSpecifierMatchers(tsconfigPath) {
+  const raw = fs.readFileSync(tsconfigPath, 'utf8');
+  const config = JSON.parse(raw);
+  const paths = config?.compilerOptions?.paths ?? {};
+
+  return Object.keys(paths).map((pattern) => {
+    const escaped = escapeForRegExp(pattern).replace(/\\\*/g, '.*');
+    return new RegExp(`^${escaped}$`);
+  });
+}
+
+function isLocalSpecifier(specifier, matchers) {
+  if (isRelativeSpecifier(specifier)) {
+    return true;
+  }
+
+  return matchers.some((matcher) => matcher.test(specifier));
+}
+
+function splitTopLevelCommaList(value) {
+  return value
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function parseImportClause(clause, isTypeOnly) {
+  const result = {
+    defaultImport: '',
+    namedValueImports: new Set(),
+    namedTypeImports: new Set(),
+    namespaceImport: '',
+  };
+
+  let remaining = clause.trim();
+  if (!remaining) return result;
+
+  const namespaceMatch = remaining.match(/^\*\s+as\s+([A-Za-z_$][A-Za-z0-9_$]*)$/);
+  if (namespaceMatch) {
+    result.namespaceImport = namespaceMatch[1];
+    return result;
+  }
+
+  let defaultPart = '';
+  if (!remaining.startsWith('{')) {
+    const commaIndex = remaining.indexOf(',');
+    if (commaIndex === -1) {
+      defaultPart = remaining.trim();
+      remaining = '';
+    } else {
+      defaultPart = remaining.slice(0, commaIndex).trim();
+      remaining = remaining.slice(commaIndex + 1).trim();
+    }
+  }
+
+  if (defaultPart) {
+    const defaultName = defaultPart.replace(/^type\s+/, '').trim();
+    if (isTypeOnly || defaultPart.startsWith('type ')) {
+      result.namedTypeImports.add(defaultName);
+    } else {
+      result.defaultImport = defaultName;
+    }
+  }
+
+  const namedMatch = remaining.match(/^\{([\s\S]*)\}$/);
+  if (!namedMatch) {
+    return result;
+  }
+
+  for (const entry of splitTopLevelCommaList(namedMatch[1])) {
+    let spec = entry;
+    let isNamedType = isTypeOnly;
+
+    if (spec.startsWith('type ')) {
+      isNamedType = true;
+      spec = spec.slice(5).trim();
+    }
+
+    const aliasParts = spec.split(/\s+as\s+/);
+    const localName = (aliasParts[1] || aliasParts[0]).trim();
+
+    if (!localName) continue;
+
+    if (isNamedType) {
+      result.namedTypeImports.add(localName);
+    } else {
+      result.namedValueImports.add(localName);
+    }
+  }
+
+  return result;
+}
+
+function collectImportSpecifiers(content) {
+  const imports = [];
+  const importRegex = /^\s*import\s+(type\s+)?([\s\S]*?)\s+from\s+['"]([^'"]+)['"];?/gm;
+  const sideEffectRegex = /^\s*import\s+['"]([^'"]+)['"];?/gm;
+
+  for (const match of content.matchAll(importRegex)) {
+    imports.push({
+      specifier: match[3],
+      clause: match[2],
+      isTypeOnly: Boolean(match[1]),
+    });
+  }
+
+  for (const match of content.matchAll(sideEffectRegex)) {
+    imports.push({
+      specifier: match[1],
+      clause: '',
+      isTypeOnly: false,
+    });
+  }
+
+  return imports;
+}
+
+function resolveTempModulePath(tempBaseDir, sourceFilePath, specifier) {
+  const sourceDir = isRelativeSpecifier(specifier)
+    ? path.dirname(sourceFilePath)
+    : tempBaseDir;
+  const resolved = path.resolve(sourceDir, specifier);
+
+  if (resolved.endsWith('.d.ts')) {
+    return resolved;
+  }
+
+  return `${resolved}.d.ts`;
+}
+
+function ensureParentDir(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+}
+
+function linkNodeModules(sourceDir, targetDir) {
+  const source = path.join(sourceDir, 'node_modules');
+  const target = path.join(targetDir, 'node_modules');
+
+  if (!fs.existsSync(source) || fs.existsSync(target)) {
+    return;
+  }
+
+  ensureParentDir(target);
+  const linkType = process.platform === 'win32' ? 'junction' : 'dir';
+  fs.symlinkSync(source, target, linkType);
+}
+
+function writeStubModule(stubPath, stubInfo) {
+  const lines = ['/* eslint-disable @typescript-eslint/no-explicit-any */'];
+
+  if (stubInfo.defaultImport) {
+    lines.push(`declare const ${stubInfo.defaultImport}: any;`);
+    lines.push(`export default ${stubInfo.defaultImport};`);
+  }
+
+  for (const name of stubInfo.namedValueImports) {
+    lines.push(`export const ${name}: any;`);
+  }
+
+  for (const name of stubInfo.namedTypeImports) {
+    if (stubInfo.namedValueImports.has(name)) continue;
+    lines.push(`export type ${name} = any;`);
+  }
+
+  if (!stubInfo.defaultImport && stubInfo.namedValueImports.size === 0 && stubInfo.namedTypeImports.size === 0) {
+    lines.push('export {};');
+  }
+
+  lines.push('');
+  ensureParentDir(stubPath);
+  fs.writeFileSync(stubPath, `${lines.join('\n')}\n`);
+}
+
 function parseArgs(argv) {
   const options = {
     base: '',
@@ -125,16 +305,72 @@ function main() {
 
   const baseCommit = resolveBaseCommit(options.base || '');
   const changedFiles = getChangedFiles(baseCommit).filter(isTypeScriptFile);
+  const localSpecifierMatchers = loadLocalSpecifierMatchers(MOBILE_APP_TSCONFIG);
 
   if (changedFiles.length === 0) {
     console.log('No changed or uncommitted TypeScript files to typecheck.');
     return;
   }
 
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hashpass-typecheck-'));
+  const scratchRoot = path.join(ROOT_DIR, '.tmp');
+  fs.mkdirSync(scratchRoot, { recursive: true });
+  const tempDir = fs.mkdtempSync(path.join(scratchRoot, 'hashpass-typecheck-'));
+  linkNodeModules(ROOT_DIR, tempDir);
+  linkNodeModules(path.join(ROOT_DIR, 'apps', 'mobile-app'), path.join(tempDir, 'apps', 'mobile-app'));
+  const tempBaseDir = path.join(tempDir, 'apps', 'mobile-app');
   const tempTsconfigPath = path.join(tempDir, 'tsconfig.json');
   const tempBuildInfoPath = path.join(tempDir, 'tsconfig.tsbuildinfo');
-  const files = changedFiles.map((filePath) => path.relative(tempDir, path.join(ROOT_DIR, filePath)));
+  const files = [];
+  const stubModules = new Map();
+
+  for (const filePath of changedFiles) {
+    const sourceFilePath = path.join(ROOT_DIR, filePath);
+    const tempFilePath = path.join(tempDir, filePath);
+    ensureParentDir(tempFilePath);
+    fs.copyFileSync(sourceFilePath, tempFilePath);
+    files.push(path.relative(tempDir, tempFilePath));
+
+    const content = fs.readFileSync(sourceFilePath, 'utf8');
+    const imports = collectImportSpecifiers(content);
+
+    for (const spec of imports) {
+      if (!isLocalSpecifier(spec.specifier, localSpecifierMatchers)) {
+        continue;
+      }
+
+      const stubPath = resolveTempModulePath(tempBaseDir, tempFilePath, spec.specifier);
+      if (!stubModules.has(stubPath)) {
+        stubModules.set(stubPath, {
+          defaultImport: '',
+          namedValueImports: new Set(),
+          namedTypeImports: new Set(),
+        });
+      }
+
+      const stubInfo = stubModules.get(stubPath);
+      const parsed = parseImportClause(spec.clause, spec.isTypeOnly);
+
+      if (parsed.defaultImport) {
+        stubInfo.defaultImport = parsed.defaultImport;
+      }
+
+      if (parsed.namespaceImport) {
+        stubInfo.defaultImport = parsed.namespaceImport;
+      }
+
+      for (const name of parsed.namedValueImports) {
+        stubInfo.namedValueImports.add(name);
+      }
+
+      for (const name of parsed.namedTypeImports) {
+        stubInfo.namedTypeImports.add(name);
+      }
+    }
+  }
+
+  for (const [stubPath, stubInfo] of stubModules.entries()) {
+    writeStubModule(stubPath, stubInfo);
+  }
 
   const tempConfig = {
     extends: MOBILE_APP_TSCONFIG,
@@ -143,6 +379,8 @@ function main() {
       incremental: false,
       skipLibCheck: true,
       tsBuildInfoFile: tempBuildInfoPath,
+      baseUrl: tempBaseDir,
+      paths: {},
     },
     files,
     include: [],

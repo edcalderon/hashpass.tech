@@ -2,7 +2,8 @@ import { Platform, type ImageSourcePropType } from 'react-native';
 
 const HASHPASS_DARK_LOGO_WEB = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg');
 const HASHPASS_DARK_LOGO_NATIVE = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.png');
-const HASHPASS_LIGHT_LOGO_WEB = require('../assets/logos/hashpass/logo-full-hashpass-white.svg');
+// Web light mode uses the black SVG because the landing/auth background is already dark.
+const HASHPASS_LIGHT_LOGO_WEB = require('../assets/logos/hashpass/logo-full-hashpass-black.svg');
 const HASHPASS_LIGHT_LOGO_NATIVE = require('../assets/logos/hashpass/logo-full-hashpass-white.png');
 
 export const getHashpassFullLogo = (isDark: boolean): ImageSourcePropType => {

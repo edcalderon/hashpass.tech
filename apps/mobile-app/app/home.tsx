@@ -54,6 +54,7 @@ export default function HomeScreen() {
   
   // Get current event info for dynamic footer
   const currentEvent = getCurrentEvent();
+  const isWebLightMode = Platform.OS === 'web' && !isDark;
   
   // Check if we're on main branch (check both git branch and env vars)
   const gitBranch = gitInfo.gitBranch || process.env.GIT_BRANCH || 'main';
@@ -87,7 +88,7 @@ export default function HomeScreen() {
       -1, // Infinite repeat
       true // Reverse the animation on each iteration
     );
-  }, []);
+  }, [bounceAnim]);
 
   const arrowAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -101,7 +102,7 @@ export default function HomeScreen() {
     ],
     opacity: interpolate(bounceAnim.value, [0, 0.5, 1], [0.95, 0.25, 0.95]),
   }));
-  const styles = getStyles(isDark, colors, isMobile);
+  const styles = getStyles(isDark, colors, isMobile, isWebLightMode);
   const bgAnimation = useSharedValue(0);
   const scrollRef = React.useRef<any>(null);
   const feature1Anim = useSharedValue(0);
@@ -111,7 +112,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     bgAnimation.value = withTiming(1, { duration: 300 });
-  }, [isDark]);
+  }, [bgAnimation, isDark]);
 
   const animatedBackground = useAnimatedStyle(() => ({
     opacity: bgAnimation.value,
@@ -325,7 +326,7 @@ export default function HomeScreen() {
                   >
                     <Path
                       d="M2 2L10 10L18 2"
-                      stroke={colors.text.primary}
+                      stroke={isWebLightMode ? '#FFFFFF' : colors.text.primary}
                       strokeWidth={isMobile ? '1.7' : '2'}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -364,7 +365,7 @@ export default function HomeScreen() {
             showDotIndicators={true}
             autoPlay={true}
             autoPlayInterval={5000}
-            onEventPress={(event) => {
+            onEventPress={(event: { routes?: { home?: string } } | null | undefined) => {
               if (event?.routes?.home) {
                 const route = event.routes.home.replace(/\/+/g, '/'); // Remove any double slashes
                 router.push(route as any);
@@ -373,7 +374,7 @@ export default function HomeScreen() {
           />
         </Animated.View>
 
-        <Animated.View className="max-w-[740px] mx-auto" style={[styles.cta, ctaAnimatedStyle]}>
+        <Animated.View style={[styles.cta, styles.ctaCentered, ctaAnimatedStyle]}>
           {userName ? (
             <>
 
@@ -538,7 +539,7 @@ export default function HomeScreen() {
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleSheet.create({
+const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
@@ -732,6 +733,11 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     position: 'relative',
     color: isDark ? '#FFFFFF' : '#121212',
   },
+  ctaCentered: {
+    width: '100%',
+    maxWidth: 740,
+    alignSelf: 'center',
+  },
   ctaHeadline: {
     fontSize: 28,
     fontWeight: '800',
@@ -820,7 +826,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     gap: 5,
   },
   scrollDownText: {
-    color: colors.text.primary,
+    color: isWebLightMode ? '#FFFFFF' : colors.text.primary,
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -836,8 +842,16 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     height: 46,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: isDark ? 'rgba(255, 255, 255, 0.78)' : 'rgba(26, 26, 26, 0.24)',
-    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.18)' : 'rgba(26, 26, 26, 0.03)',
+    borderColor: isWebLightMode
+      ? 'rgba(255, 255, 255, 0.84)'
+      : isDark
+        ? 'rgba(255, 255, 255, 0.78)'
+        : 'rgba(26, 26, 26, 0.24)',
+    backgroundColor: isWebLightMode
+      ? 'rgba(255, 255, 255, 0.06)'
+      : isDark
+        ? 'rgba(0, 0, 0, 0.18)'
+        : 'rgba(26, 26, 26, 0.03)',
     alignItems: 'center',
     paddingTop: 8,
   },
@@ -852,7 +866,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     width: 4,
     height: 8,
     borderRadius: 2,
-    backgroundColor: colors.text.primary,
+    backgroundColor: isWebLightMode ? '#FFFFFF' : colors.text.primary,
   },
   scrollWheelMobile: {
     width: 3,
