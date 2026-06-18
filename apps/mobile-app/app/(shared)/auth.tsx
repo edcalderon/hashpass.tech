@@ -461,7 +461,7 @@ export default function AuthScreen() {
     'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.'
   );
 
-  const styles = getStyles(isDark, colors, isCompactMobile, isVeryCompactMobile);
+  const styles = getStyles(isDark, colors, isCompactMobile, isVeryCompactMobile, isDesktopLayout);
   const isBusy = busyAction !== null;
   const magicLinkResendRemainingSeconds = magicLinkSentAt === null
     ? 0
@@ -1806,7 +1806,8 @@ const getStyles = (
   isDark: boolean,
   colors: any,
   isCompactMobile: boolean,
-  isVeryCompactMobile: boolean
+  isVeryCompactMobile: boolean,
+  isDesktopLayout: boolean = false
 ) =>
   StyleSheet.create({
     container: {
