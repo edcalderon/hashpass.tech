@@ -1,24 +1,30 @@
 module.exports = function (api) {
   api.cache(true);
 
-  // Pre-resolve from babel.config.js location to avoid pnpm isolation issues
-  // where Babel's string resolver can't find react-native-worklets in CI.
-  function nativewindBabel() {
-    const config = require('nativewind/babel')();
-    config.plugins = (config.plugins || []).map(p =>
-      p === 'react-native-worklets/plugin'
-        ? require('react-native-worklets/plugin')
-        : p
-    );
-    return config;
-  }
+  // Pre-resolve all nativewind/babel plugins via require() from this file's location.
+  // This avoids pnpm's CI virtual-store string-resolver failures when nativewind/babel
+  // returns "react-native-worklets/plugin" as a string (which Babel resolves from
+  // nativewind's own dirname, where pnpm may not have symlinked the module).
+  const nativewindPlugins = [
+    require('react-native-css-interop/dist/babel-plugin').default,
+    // react-native-worklets is a devDependency; skip gracefully in web-only CI envs
+    ...((() => {
+      try {
+        return [require('react-native-worklets/plugin')];
+      } catch {
+        return [];
+      }
+    })()),
+  ];
 
   return {
     presets: [
+      // jsxImportSource: "nativewind" already configures @babel/plugin-transform-react-jsx
+      // with importSource="nativewind", so we don't need nativewind/babel's JSX plugin.
       ["babel-preset-expo", { jsxImportSource: "nativewind" }],
-      nativewindBabel,
     ],
     plugins: [
+      ...nativewindPlugins,
       'macros',
       [
         'module-resolver',
@@ -33,7 +39,6 @@ module.exports = function (api) {
             '@contexts': './contexts',
             '@screens': './app/screens',
             '@navigation': './navigation',
-            // Web shim avoids the Ionicons font download path on the BSL host.
             '@expo/vector-icons': './lib/vector-icons'
           },
         },
