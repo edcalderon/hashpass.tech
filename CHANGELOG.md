@@ -1,3 +1,14 @@
+## [1.8.16](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.15...v1.8.16) (2026-06-18)
+
+
+### Bug Fixes
+
+* split GlowingEffect for native and fix babel web CI resolution ([b3bae78](https://github.com/hashpass-tech/hashpass.tech/commit/b3bae78170c4a021ab51ef43f53910c24cf72e91))
+
+
+
+
+
 ## [1.8.15](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.14...v1.8.15) (2026-06-18)
 
 
