@@ -17,16 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.23)
+## 📋 Latest Changes (v1.8.24)
 
-### Released
-- Android launcher branding refresh: HASHPASS name and icon
+### Bug Fixes
 
-### Technical Details
-- Version: 1.8.23
-- Release Type: stable
-- Build Number: 202606181630
-- Release Date: 2026-06-18T16:30:35.043Z
+* native auth screen layout, Google OAuth via WebBrowser, and Supabase env ([dab0db1](https://github.com/hashpass-tech/hashpass.tech/commit/dab0db12259083c9540c343eb41caa62657f79cf))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

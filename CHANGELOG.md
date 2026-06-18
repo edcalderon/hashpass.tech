@@ -1,3 +1,14 @@
+## [1.8.24](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.23...v1.8.24) (2026-06-18)
+
+
+### Bug Fixes
+
+* native auth screen layout, Google OAuth via WebBrowser, and Supabase env ([dab0db1](https://github.com/hashpass-tech/hashpass.tech/commit/dab0db12259083c9540c343eb41caa62657f79cf))
+
+
+
+
+
 ## [1.8.22](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.21...v1.8.22) (2026-06-18)
 
 
