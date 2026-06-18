@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
+import { useTheme } from "../hooks/useTheme";
+import type { ThemeColors } from "../lib/theme";
 
 const formatWalletAddress = (address: string): string => {
   if (!address || address.length < 10) return address;
@@ -59,6 +61,9 @@ const TestimonialsColumn = (props: {
   testimonials: any;
   duration?: number;
 }) => {
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors, isDark);
+
   return (
     <View style={styles.column}>
       {props.testimonials.map(({ text, wallet, role }: any, i: number) => {
@@ -86,22 +91,44 @@ const TestimonialsColumn = (props: {
   );
 };
 
-const styles = StyleSheet.create({
-  column: { flex: 1, gap: 12 },
-  card: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    marginBottom: 12,
-  },
-  cardText: { color: "#e2e8f0", fontSize: 13, lineHeight: 20 },
-  authorRow: { flexDirection: "row", alignItems: "center", marginTop: 12, gap: 8 },
-  avatar: { width: 36, height: 36, borderRadius: 18 },
-  authorInfo: { flex: 1 },
-  walletText: { color: "#94a3b8", fontSize: 11, fontFamily: "monospace" },
-  roleText: { color: "#64748b", fontSize: 11, marginTop: 2 },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    column: { flex: 1, gap: 12 },
+    card: {
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : colors.background.paper,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(255,255,255,0.1)" : colors.divider,
+      marginBottom: 12,
+      ...(isDark
+        ? {}
+        : {
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.08,
+            shadowRadius: 16,
+            elevation: 2,
+          }),
+    },
+    cardText: {
+      color: colors.text.primary,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    authorRow: { flexDirection: "row", alignItems: "center", marginTop: 12, gap: 8 },
+    avatar: { width: 36, height: 36, borderRadius: 18 },
+    authorInfo: { flex: 1 },
+    walletText: {
+      color: colors.text.primary,
+      fontSize: 11,
+      fontFamily: "monospace",
+    },
+    roleText: {
+      color: colors.text.secondary,
+      fontSize: 11,
+      marginTop: 2,
+    },
+  });
 
 export default TestimonialsColumn;

@@ -40,6 +40,7 @@ import {
 } from '../../lib/country-dial-options';
 import { supabase } from '../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../config/supabase-profiles';
+import { getHashpassFullLogo } from '../../lib/hashpass-logo';
 
 type EmailAuthMethod = 'magic-link' | 'otp-code';
 type BusyAction = 'magic-link' | 'otp-send' | 'otp-verify' | 'oauth' | null;
@@ -452,6 +453,7 @@ export default function AuthScreen() {
   const hasNavigatedRef = useRef(false);
   const hasShownOAuthErrorRef = useRef(false);
   const authProviderName = authService.getProviderName();
+  const isNativeLightMode = Platform.OS !== 'web' && !isDark;
   const { supabaseUrl: publicSupabaseUrl, supabaseAnonKey: publicSupabaseAnonKey } =
     resolvePublicSupabaseConfig();
   const hasSupabasePasswordlessConfig = Boolean(publicSupabaseUrl && publicSupabaseAnonKey);
@@ -461,7 +463,14 @@ export default function AuthScreen() {
     'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.'
   );
 
-  const styles = getStyles(isDark, colors, isCompactMobile, isVeryCompactMobile, isDesktopLayout);
+  const styles = getStyles(
+    isDark,
+    colors,
+    isCompactMobile,
+    isVeryCompactMobile,
+    isDesktopLayout,
+    isNativeLightMode
+  );
   const isBusy = busyAction !== null;
   const magicLinkResendRemainingSeconds = magicLinkSentAt === null
     ? 0
@@ -1182,7 +1191,7 @@ export default function AuthScreen() {
             accessibilityLabel={t('back', 'Go Back')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={28} color="#fff" />
+            <Ionicons name="arrow-back" size={28} color={isNativeLightMode ? '#1f2125' : '#fff'} />
           </TouchableOpacity>
 
           <ScrollView
@@ -1215,44 +1224,37 @@ export default function AuthScreen() {
                 }
               >
                 <View style={[styles.authCard, isDesktopLayout ? styles.authCardDesktop : null]}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={Platform.OS === 'web'
-                  ? (isDark
-                    ? require('../../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
-                    : require('../../assets/logos/hashpass/logo-full-hashpass-black.svg'))
-                  : (isDark
-                    ? require('../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
-                    : require('../../assets/logos/hashpass/logo-full-hashpass-black.png'))
-                }
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </View>
+                  <View style={styles.logoContainer}>
+                    <Image
+                      source={getHashpassFullLogo(isDark)}
+                      style={styles.logo}
+                      resizeMode="contain"
+                    />
+                  </View>
 
-            <View style={styles.primaryAuthContainer} dataSet={{ authEnterSubmit: 'true' }}>
-              {!isPasswordlessSupported ? (
-                <View style={styles.passwordlessInfoCard}>
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={28}
-                    color={isDark ? '#f5f5f5' : '#1f2125'}
-                  />
-                  <Text style={styles.passwordlessInfoTitle}>
-                    {t('passwordlessUnavailableTitle', 'Email Link and OTP Unavailable')}
-                  </Text>
-                  <Text style={styles.passwordlessInfoMessage}>{passwordlessUnavailableMessage}</Text>
-                </View>
-              ) : isMagicLinkConfirmationVisible ? (
-                <View style={styles.magicLinkConfirmationCard}>
-                  <Ionicons
-                    name="mail-open-outline"
-                    size={30}
-                    color={isDark ? '#f5f5f5' : '#1f2125'}
-                  />
-                  <Text style={styles.magicLinkConfirmationTitle}>
-                    {t('magicLinkSentTitle', 'Link sent')}
-                  </Text>
+                  <View style={styles.primaryAuthContainer} dataSet={{ authEnterSubmit: 'true' }}>
+                    {!isPasswordlessSupported ? (
+                      <View style={styles.passwordlessInfoCard}>
+                        <Ionicons
+                          name="information-circle-outline"
+                          size={28}
+                          color={isDark ? '#f5f5f5' : '#1f2125'}
+                        />
+                        <Text style={styles.passwordlessInfoTitle}>
+                          {t('passwordlessUnavailableTitle', 'Email Link and OTP Unavailable')}
+                        </Text>
+                        <Text style={styles.passwordlessInfoMessage}>{passwordlessUnavailableMessage}</Text>
+                      </View>
+                    ) : isMagicLinkConfirmationVisible ? (
+                      <View style={styles.magicLinkConfirmationCard}>
+                        <Ionicons
+                          name="mail-open-outline"
+                          size={30}
+                          color={isDark ? '#f5f5f5' : '#1f2125'}
+                        />
+                        <Text style={styles.magicLinkConfirmationTitle}>
+                          {t('magicLinkSentTitle', 'Link sent')}
+                        </Text>
                   <Text style={styles.magicLinkConfirmationMessage}>
                     {t('magicLinkSentMessage', 'Please check your email to login.')}
                   </Text>
@@ -1807,7 +1809,8 @@ const getStyles = (
   colors: any,
   isCompactMobile: boolean,
   isVeryCompactMobile: boolean,
-  isDesktopLayout: boolean = false
+  isDesktopLayout: boolean = false,
+  isNativeLightMode: boolean = false
 ) =>
   StyleSheet.create({
     container: {
@@ -1914,7 +1917,14 @@ const getStyles = (
     },
     logoContainer: {
       alignItems: 'center',
+      alignSelf: 'center',
       marginBottom: 18,
+      paddingHorizontal: isNativeLightMode ? 18 : 0,
+      paddingVertical: isNativeLightMode ? 10 : 0,
+      borderRadius: isNativeLightMode ? 18 : 0,
+      backgroundColor: isNativeLightMode ? '#0f1115' : 'transparent',
+      borderWidth: isNativeLightMode ? 1 : 0,
+      borderColor: isNativeLightMode ? 'rgba(255,255,255,0.08)' : 'transparent',
     },
     logo: {
       width: isCompactMobile ? 272 : 302,
@@ -1935,8 +1945,7 @@ const getStyles = (
     authHeaderTitle: {
       fontSize: isDesktopLayout ? 44 : isCompactMobile ? 32 : 38,
       fontWeight: '800',
-      // Both layouts sit over the dark ShaderAnimation hero → always white.
-      color: '#f8f8fb',
+      color: isNativeLightMode ? '#121212' : '#f8f8fb',
       textAlign: 'center',
       letterSpacing: -0.8,
     },
@@ -1944,7 +1953,7 @@ const getStyles = (
       marginTop: 8,
       fontSize: isDesktopLayout ? 24 : isCompactMobile ? 16 : 18,
       lineHeight: isDesktopLayout ? 30 : 24,
-      color: 'rgba(238,239,247,0.78)',
+      color: isNativeLightMode ? '#4c4e55' : 'rgba(238,239,247,0.78)',
       textAlign: 'center',
     },
     primaryAuthContainer: {

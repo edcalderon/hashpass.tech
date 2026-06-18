@@ -34,6 +34,7 @@ import VersionStatusIndicator from '../components/VersionStatusIndicator';
 import CrystalForgeBackground from '../components/CrystalForgeBackground';
 import AnimatedGradientBackground from '../components/AnimatedGradientBackground';
 import { Svg, Path } from 'react-native-svg';
+import { getHashpassFullLogo } from '../lib/hashpass-logo';
 
 // Import git info to check branch
 let gitInfo: { gitBranch?: string } = {};
@@ -294,14 +295,7 @@ export default function HomeScreen() {
           />
           <Animated.View style={[styles.heroTextContainer, headerAnimatedStyle]}>
             <Image
-              source={Platform.OS === 'web'
-                ? (isDark
-                  ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
-                  : require('../assets/logos/hashpass/logo-full-hashpass-black.svg'))
-                : (isDark
-                  ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
-                  : require('../assets/logos/hashpass/logo-full-hashpass-black.png'))
-              }
+              source={getHashpassFullLogo(isDark)}
               style={[styles.logo, headerAnimatedStyle]}
               resizeMode="contain"
             />
@@ -331,7 +325,7 @@ export default function HomeScreen() {
                   >
                     <Path
                       d="M2 2L10 10L18 2"
-                      stroke="#FFFFFF"
+                      stroke={colors.text.primary}
                       strokeWidth={isMobile ? '1.7' : '2'}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -459,14 +453,7 @@ export default function HomeScreen() {
               {/* Brand Section */}
               <View style={styles.footerBrand}>
                 <Image
-                  source={Platform.OS === 'web'
-                    ? (isDark
-                      ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
-                      : require('../assets/logos/hashpass/logo-full-hashpass-white.svg'))
-                    : (isDark
-                      ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
-                      : require('../assets/logos/hashpass/logo-full-hashpass-white.png'))
-                  }
+                  source={getHashpassFullLogo(isDark)}
                   style={styles.footerLogo}
                   resizeMode="contain"
                 />
@@ -612,7 +599,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     fontWeight: '400',
     letterSpacing: 1,
     textAlign: 'center',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   sectionTitle: {
     fontSize: isMobile ? 24 : 28,
@@ -833,7 +820,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     gap: 5,
   },
   scrollDownText: {
-    color: 'rgba(255, 255, 255, 0.78)',
+    color: colors.text.primary,
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -849,8 +836,8 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     height: 46,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.78)',
-    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.78)' : 'rgba(26, 26, 26, 0.24)',
+    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.18)' : 'rgba(26, 26, 26, 0.03)',
     alignItems: 'center',
     paddingTop: 8,
   },
@@ -865,7 +852,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     width: 4,
     height: 8,
     borderRadius: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: colors.text.primary,
   },
   scrollWheelMobile: {
     width: 3,

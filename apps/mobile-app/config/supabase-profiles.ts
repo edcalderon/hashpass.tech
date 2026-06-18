@@ -44,6 +44,182 @@ export type ServerSupabaseConfig = PublicSupabaseConfig & {
   usingFallback: boolean;
 };
 
+const envValue = (name: string): string | undefined => {
+  switch (name) {
+    case 'EXPO_PUBLIC_SITE_URL':
+      return process.env.EXPO_PUBLIC_SITE_URL;
+    case 'SITE_URL':
+      return process.env.SITE_URL;
+    case 'FRONTEND_URL':
+      return process.env.FRONTEND_URL;
+    case 'EXPO_PUBLIC_SUPABASE_PROFILE':
+      return process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
+    case 'SUPABASE_PROFILE':
+      return process.env.SUPABASE_PROFILE;
+    case 'EXPO_PUBLIC_SUPABASE_URL':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL;
+    case 'EXPO_PUBLIC_SUPABASE_URL_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_URL_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL_PROD;
+    case 'EXPO_PUBLIC_SUPABASE_URL_BSL_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL_BSL_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_URL_BSL_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL_BSL_PROD;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_URL':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_URL;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_URL_DEV;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_URL_PROD':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_URL_PROD;
+    case 'NEXT_PUBLIC_SUPABASE_URL':
+      return process.env.NEXT_PUBLIC_SUPABASE_URL;
+    case 'EXPO_PUBLIC_SUPABASE_KEY':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY;
+    case 'EXPO_PUBLIC_SUPABASE_KEY_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_KEY_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY_PROD;
+    case 'EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_PROD;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_KEY':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_KEY;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD;
+    case 'NEXT_PUBLIC_SUPABASE_ANON_KEY':
+      return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    case 'SUPABASE_SERVICE_ROLE_KEY':
+      return process.env.SUPABASE_SERVICE_ROLE_KEY;
+    case 'SUPABASE_SERVICE_ROLE_KEY_DEV':
+      return process.env.SUPABASE_SERVICE_ROLE_KEY_DEV;
+    case 'SUPABASE_SERVICE_ROLE_KEY_PROD':
+      return process.env.SUPABASE_SERVICE_ROLE_KEY_PROD;
+    case 'SUPABASE_SERVICE_ROLE_KEY_BSL_DEV':
+      return process.env.SUPABASE_SERVICE_ROLE_KEY_BSL_DEV;
+    case 'SUPABASE_SERVICE_ROLE_KEY_BSL_PROD':
+      return process.env.SUPABASE_SERVICE_ROLE_KEY_BSL_PROD;
+    case 'BSL_SUPABASE_SERVICE_ROLE_KEY':
+      return process.env.BSL_SUPABASE_SERVICE_ROLE_KEY;
+    case 'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV':
+      return process.env.BSL_SUPABASE_SERVICE_ROLE_KEY_DEV;
+    case 'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD':
+      return process.env.BSL_SUPABASE_SERVICE_ROLE_KEY_PROD;
+    case 'SUPABASE_DB_URL':
+      return process.env.SUPABASE_DB_URL;
+    case 'SUPABASE_DB_URL_DEV':
+      return process.env.SUPABASE_DB_URL_DEV;
+    case 'SUPABASE_DB_URL_PROD':
+      return process.env.SUPABASE_DB_URL_PROD;
+    case 'SUPABASE_DB_URL_BSL_DEV':
+      return process.env.SUPABASE_DB_URL_BSL_DEV;
+    case 'SUPABASE_DB_URL_BSL_PROD':
+      return process.env.SUPABASE_DB_URL_BSL_PROD;
+    case 'BSL_SUPABASE_DB_URL_DEV':
+      return process.env.BSL_SUPABASE_DB_URL_DEV;
+    case 'BSL_SUPABASE_DB_URL_PROD':
+      return process.env.BSL_SUPABASE_DB_URL_PROD;
+    case 'DATABASE_URL':
+      return process.env.DATABASE_URL;
+    case 'DATABASE_URL_DEV':
+      return process.env.DATABASE_URL_DEV;
+    case 'DATABASE_URL_PROD':
+      return process.env.DATABASE_URL_PROD;
+    case 'DATABASE_URL_BSL_DEV':
+      return process.env.DATABASE_URL_BSL_DEV;
+    case 'DATABASE_URL_BSL_PROD':
+      return process.env.DATABASE_URL_BSL_PROD;
+    case 'DEV_DB_URL':
+      return process.env.DEV_DB_URL;
+    case 'PROD_DB_URL':
+      return process.env.PROD_DB_URL;
+    case 'DEV_BSL_DB_URL':
+      return process.env.DEV_BSL_DB_URL;
+    case 'PROD_BSL_DB_URL':
+      return process.env.PROD_BSL_DB_URL;
+    default:
+      if (typeof process === 'undefined') return undefined;
+      return process.env?.[name];
+  }
+};
+
+const STATIC_ENV: Record<string, string | undefined> = {
+  EXPO_PUBLIC_SITE_URL: envValue('EXPO_PUBLIC_SITE_URL'),
+  SITE_URL: envValue('SITE_URL'),
+  FRONTEND_URL: envValue('FRONTEND_URL'),
+  EXPO_PUBLIC_SUPABASE_PROFILE: envValue('EXPO_PUBLIC_SUPABASE_PROFILE'),
+  SUPABASE_PROFILE: envValue('SUPABASE_PROFILE'),
+  EXPO_PUBLIC_SUPABASE_URL: envValue('EXPO_PUBLIC_SUPABASE_URL'),
+  EXPO_PUBLIC_SUPABASE_URL_DEV: envValue('EXPO_PUBLIC_SUPABASE_URL_DEV'),
+  EXPO_PUBLIC_SUPABASE_URL_PROD: envValue('EXPO_PUBLIC_SUPABASE_URL_PROD'),
+  EXPO_PUBLIC_SUPABASE_URL_BSL_DEV: envValue('EXPO_PUBLIC_SUPABASE_URL_BSL_DEV'),
+  EXPO_PUBLIC_SUPABASE_URL_BSL_PROD: envValue('EXPO_PUBLIC_SUPABASE_URL_BSL_PROD'),
+  EXPO_PUBLIC_BSL_SUPABASE_URL: envValue('EXPO_PUBLIC_BSL_SUPABASE_URL'),
+  EXPO_PUBLIC_BSL_SUPABASE_URL_DEV: envValue('EXPO_PUBLIC_BSL_SUPABASE_URL_DEV'),
+  EXPO_PUBLIC_BSL_SUPABASE_URL_PROD: envValue('EXPO_PUBLIC_BSL_SUPABASE_URL_PROD'),
+  NEXT_PUBLIC_SUPABASE_URL: envValue('NEXT_PUBLIC_SUPABASE_URL'),
+  EXPO_PUBLIC_SUPABASE_KEY: envValue('EXPO_PUBLIC_SUPABASE_KEY'),
+  EXPO_PUBLIC_SUPABASE_KEY_DEV: envValue('EXPO_PUBLIC_SUPABASE_KEY_DEV'),
+  EXPO_PUBLIC_SUPABASE_KEY_PROD: envValue('EXPO_PUBLIC_SUPABASE_KEY_PROD'),
+  EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV: envValue('EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV'),
+  EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD: envValue('EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_DEV: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_DEV'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_PROD: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_PROD'),
+  EXPO_PUBLIC_BSL_SUPABASE_KEY: envValue('EXPO_PUBLIC_BSL_SUPABASE_KEY'),
+  EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV: envValue('EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV'),
+  EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD: envValue('EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD'),
+  EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY: envValue('EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY'),
+  EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV: envValue('EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV'),
+  EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD: envValue('EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD'),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: envValue('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+  SUPABASE_SERVICE_ROLE_KEY: envValue('SUPABASE_SERVICE_ROLE_KEY'),
+  SUPABASE_SERVICE_ROLE_KEY_DEV: envValue('SUPABASE_SERVICE_ROLE_KEY_DEV'),
+  SUPABASE_SERVICE_ROLE_KEY_PROD: envValue('SUPABASE_SERVICE_ROLE_KEY_PROD'),
+  SUPABASE_SERVICE_ROLE_KEY_BSL_DEV: envValue('SUPABASE_SERVICE_ROLE_KEY_BSL_DEV'),
+  SUPABASE_SERVICE_ROLE_KEY_BSL_PROD: envValue('SUPABASE_SERVICE_ROLE_KEY_BSL_PROD'),
+  BSL_SUPABASE_SERVICE_ROLE_KEY: envValue('BSL_SUPABASE_SERVICE_ROLE_KEY'),
+  BSL_SUPABASE_SERVICE_ROLE_KEY_DEV: envValue('BSL_SUPABASE_SERVICE_ROLE_KEY_DEV'),
+  BSL_SUPABASE_SERVICE_ROLE_KEY_PROD: envValue('BSL_SUPABASE_SERVICE_ROLE_KEY_PROD'),
+  SUPABASE_DB_URL: envValue('SUPABASE_DB_URL'),
+  SUPABASE_DB_URL_DEV: envValue('SUPABASE_DB_URL_DEV'),
+  SUPABASE_DB_URL_PROD: envValue('SUPABASE_DB_URL_PROD'),
+  SUPABASE_DB_URL_BSL_DEV: envValue('SUPABASE_DB_URL_BSL_DEV'),
+  SUPABASE_DB_URL_BSL_PROD: envValue('SUPABASE_DB_URL_BSL_PROD'),
+  BSL_SUPABASE_DB_URL_DEV: envValue('BSL_SUPABASE_DB_URL_DEV'),
+  BSL_SUPABASE_DB_URL_PROD: envValue('BSL_SUPABASE_DB_URL_PROD'),
+  DATABASE_URL: envValue('DATABASE_URL'),
+  DATABASE_URL_DEV: envValue('DATABASE_URL_DEV'),
+  DATABASE_URL_PROD: envValue('DATABASE_URL_PROD'),
+  DATABASE_URL_BSL_DEV: envValue('DATABASE_URL_BSL_DEV'),
+  DATABASE_URL_BSL_PROD: envValue('DATABASE_URL_BSL_PROD'),
+  DEV_DB_URL: envValue('DEV_DB_URL'),
+  PROD_DB_URL: envValue('PROD_DB_URL'),
+  DEV_BSL_DB_URL: envValue('DEV_BSL_DB_URL'),
+  PROD_BSL_DB_URL: envValue('PROD_BSL_DB_URL'),
+};
+
 const PROFILES: SupabaseProfile[] = [
   {
     id: 'core-development',
@@ -164,8 +340,17 @@ const PROFILES: SupabaseProfile[] = [
 ];
 
 const readProcessEnv: EnvReader = (name) => {
+  const staticValue = STATIC_ENV[name];
+  if (typeof staticValue === 'string') {
+    const trimmed = staticValue.trim();
+    return trimmed.length ? trimmed : undefined;
+  }
+
   if (typeof process === 'undefined') return undefined;
-  return process.env?.[name];
+  const value = process.env?.[name];
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : undefined;
 };
 
 const normalizeEnvValue = (value: string | undefined): string | undefined => {

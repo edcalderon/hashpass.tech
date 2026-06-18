@@ -7,9 +7,129 @@ import { DirectusAuthProvider } from './providers/directus';
 import { SupabaseAuthProvider } from './providers/supabase';
 import { BetterAuthProvider } from './providers/better-auth';
 import { ENV_CONFIG } from '@hashpass/config';
+import { Platform } from 'react-native';
 
 type AuthProviderRuntimeOptions = {
   hostname?: string | null;
+};
+
+const envValue = (name: string): string | undefined => {
+  switch (name) {
+    case 'AUTH_PROVIDER':
+      return process.env.AUTH_PROVIDER;
+    case 'EXPO_PUBLIC_SITE_URL':
+      return process.env.EXPO_PUBLIC_SITE_URL;
+    case 'SITE_URL':
+      return process.env.SITE_URL;
+    case 'FRONTEND_URL':
+      return process.env.FRONTEND_URL;
+    case 'EXPO_PUBLIC_SUPABASE_PROFILE':
+      return process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
+    case 'SUPABASE_PROFILE':
+      return process.env.SUPABASE_PROFILE;
+    case 'EXPO_PUBLIC_SUPABASE_URL':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL;
+    case 'EXPO_PUBLIC_SUPABASE_URL_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_URL_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL_PROD;
+    case 'EXPO_PUBLIC_SUPABASE_URL_BSL_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL_BSL_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_URL_BSL_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_URL_BSL_PROD;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_URL':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_URL;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_URL_DEV;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_URL_PROD':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_URL_PROD;
+    case 'NEXT_PUBLIC_SUPABASE_URL':
+      return process.env.NEXT_PUBLIC_SUPABASE_URL;
+    case 'EXPO_PUBLIC_SUPABASE_KEY':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY;
+    case 'EXPO_PUBLIC_SUPABASE_KEY_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_KEY_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY_PROD;
+    case 'EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_DEV':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_DEV;
+    case 'EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_PROD':
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_PROD;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_KEY':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_KEY;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV;
+    case 'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD':
+      return process.env.EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD;
+    case 'NEXT_PUBLIC_SUPABASE_ANON_KEY':
+      return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    case 'EXPO_PUBLIC_DIRECTUS_URL':
+      return process.env.EXPO_PUBLIC_DIRECTUS_URL;
+    case 'DIRECTUS_URL':
+      return process.env.DIRECTUS_URL;
+    case 'EXPO_PUBLIC_BETTER_AUTH_BASE_PATH':
+      return process.env.EXPO_PUBLIC_BETTER_AUTH_BASE_PATH;
+    case 'BETTER_AUTH_BASE_PATH':
+      return process.env.BETTER_AUTH_BASE_PATH;
+    default:
+      if (typeof process === 'undefined') return undefined;
+      return process.env?.[name];
+  }
+};
+
+const STATIC_ENV: Record<string, string | undefined> = {
+  AUTH_PROVIDER: envValue('AUTH_PROVIDER'),
+  EXPO_PUBLIC_SITE_URL: envValue('EXPO_PUBLIC_SITE_URL'),
+  SITE_URL: envValue('SITE_URL'),
+  FRONTEND_URL: envValue('FRONTEND_URL'),
+  EXPO_PUBLIC_SUPABASE_PROFILE: envValue('EXPO_PUBLIC_SUPABASE_PROFILE'),
+  SUPABASE_PROFILE: envValue('SUPABASE_PROFILE'),
+  EXPO_PUBLIC_SUPABASE_URL: envValue('EXPO_PUBLIC_SUPABASE_URL'),
+  EXPO_PUBLIC_SUPABASE_URL_DEV: envValue('EXPO_PUBLIC_SUPABASE_URL_DEV'),
+  EXPO_PUBLIC_SUPABASE_URL_PROD: envValue('EXPO_PUBLIC_SUPABASE_URL_PROD'),
+  EXPO_PUBLIC_SUPABASE_URL_BSL_DEV: envValue('EXPO_PUBLIC_SUPABASE_URL_BSL_DEV'),
+  EXPO_PUBLIC_SUPABASE_URL_BSL_PROD: envValue('EXPO_PUBLIC_SUPABASE_URL_BSL_PROD'),
+  EXPO_PUBLIC_BSL_SUPABASE_URL: envValue('EXPO_PUBLIC_BSL_SUPABASE_URL'),
+  EXPO_PUBLIC_BSL_SUPABASE_URL_DEV: envValue('EXPO_PUBLIC_BSL_SUPABASE_URL_DEV'),
+  EXPO_PUBLIC_BSL_SUPABASE_URL_PROD: envValue('EXPO_PUBLIC_BSL_SUPABASE_URL_PROD'),
+  NEXT_PUBLIC_SUPABASE_URL: envValue('NEXT_PUBLIC_SUPABASE_URL'),
+  EXPO_PUBLIC_SUPABASE_KEY: envValue('EXPO_PUBLIC_SUPABASE_KEY'),
+  EXPO_PUBLIC_SUPABASE_KEY_DEV: envValue('EXPO_PUBLIC_SUPABASE_KEY_DEV'),
+  EXPO_PUBLIC_SUPABASE_KEY_PROD: envValue('EXPO_PUBLIC_SUPABASE_KEY_PROD'),
+  EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV: envValue('EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV'),
+  EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD: envValue('EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_DEV: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_DEV'),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_PROD: envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY_BSL_PROD'),
+  EXPO_PUBLIC_BSL_SUPABASE_KEY: envValue('EXPO_PUBLIC_BSL_SUPABASE_KEY'),
+  EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV: envValue('EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV'),
+  EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD: envValue('EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD'),
+  EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY: envValue('EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY'),
+  EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV: envValue('EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV'),
+  EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD: envValue('EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD'),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: envValue('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+  EXPO_PUBLIC_DIRECTUS_URL: envValue('EXPO_PUBLIC_DIRECTUS_URL'),
+  DIRECTUS_URL: envValue('DIRECTUS_URL'),
+  EXPO_PUBLIC_BETTER_AUTH_BASE_PATH: envValue('EXPO_PUBLIC_BETTER_AUTH_BASE_PATH'),
+  BETTER_AUTH_BASE_PATH: envValue('BETTER_AUTH_BASE_PATH'),
 };
 
 const normalizeHostname = (value?: string | null): string => {
@@ -24,6 +144,12 @@ const normalizeHostname = (value?: string | null): string => {
 };
 
 const readProcessEnv = (name: string): string | undefined => {
+  const staticValue = STATIC_ENV[name];
+  if (typeof staticValue === 'string') {
+    const trimmed = staticValue.trim();
+    return trimmed.length ? trimmed : undefined;
+  }
+
   if (typeof process === 'undefined') return undefined;
   const value = process.env?.[name];
   if (typeof value !== 'string') return undefined;
@@ -71,6 +197,21 @@ const resolveProviderName = (hostname?: string | null): AuthProviderConfig['prov
   const tenantProvider = ENV_CONFIG.getTenant(resolvedHostname).authProvider as
     | AuthProviderConfig['provider']
     | undefined;
+  const supabaseCredentials = resolveSupabaseCredentials(resolvedHostname);
+  const hasSupabaseCredentials = Boolean(supabaseCredentials.url && supabaseCredentials.anonKey);
+  const isNativeReactRuntime = Platform.OS !== 'web';
+
+  // Native core builds can still land with the Directus default if AUTH_PROVIDER
+  // was not injected. When Supabase public credentials are available, prefer it
+  // on React Native so passwordless and browser-based Google sign-in work.
+  if (
+    isNativeReactRuntime &&
+    hasSupabaseCredentials &&
+    tenantProvider !== 'better-auth' &&
+    explicitProvider !== 'better-auth'
+  ) {
+    return 'supabase';
+  }
 
   if (tenantProvider && tenantProvider !== 'directus') {
     return tenantProvider;
@@ -83,7 +224,9 @@ const resolveProviderName = (hostname?: string | null): AuthProviderConfig['prov
 
 const resolveSupabaseCredentials = (hostname?: string | null) => {
   const resolvedHostname = resolveRuntimeHostname(hostname);
-  const isBsl = ENV_CONFIG.getTenant(resolvedHostname).slug !== 'main';
+  const supabaseProfile = firstEnv(['EXPO_PUBLIC_SUPABASE_PROFILE', 'SUPABASE_PROFILE']);
+  const isBslProfile = Boolean(supabaseProfile && /^bsl(?:-|$)/i.test(supabaseProfile));
+  const isBsl = isBslProfile || ENV_CONFIG.getTenant(resolvedHostname).slug !== 'main';
 
   const url = isBsl
     ? firstEnv([
