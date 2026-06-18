@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.30",
+  "version": "1.8.31",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "patchedDependencies": {
@@ -32,6 +32,7 @@
     "test": "pnpm --dir apps/mobile-app test",
     "env:propagate": "node packages/tools/scripts/propagate-env.js",
     "env:sync": "node packages/tools/scripts/sync-env.js",
+    "typecheck": "node packages/tools/scripts/typecheck-changed.mjs",
     "dev": "npm run env:propagate local && pnpm --filter hashpass-mobile-app dev",
     "dev:mobile": "npm run env:propagate local && pnpm --filter hashpass-mobile-app dev",
     "dev:club": "pnpm --filter hashpass-club-web dev",

@@ -311,6 +311,7 @@ function ensureCleanGitState(options) {
 function runPreflight(options) {
   runInherit(VERSIONING_BIN, ['exec', 'versioning', 'check-secrets'], options);
   runInherit(VERSIONING_BIN, ['exec', 'versioning', 'cleanup', 'scan'], options);
+  runInherit(VERSIONING_BIN, ['run', 'typecheck'], options);
   runInherit(VERSIONING_BIN, ['exec', 'versioning', 'validate', '--config', options.config], options);
 }
 

@@ -4,6 +4,18 @@
 
 
 
+## [1.8.31] - 2026-06-18
+
+### Released
+- Add focused mobile release typecheck gate
+
+### Technical Details
+- Version: 1.8.31
+- Release Type: stable
+- Build Number: 202606182046
+- Release Date: 2026-06-18T20:46:55.217Z
+
+
 ## [1.8.30] - 2026-06-18
 
 ### Released

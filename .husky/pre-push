@@ -2,6 +2,13 @@
 set -e
 
 echo "🔍 Running pre-push validation..."
+if pnpm -s run typecheck; then
+  echo "✅ Typecheck passed."
+else
+  echo "❌ Typecheck failed. Fix the errors before pushing."
+  exit 1
+fi
+
 if pnpm -s exec versioning --help >/dev/null 2>&1; then
   pnpm -s exec versioning validate
 else

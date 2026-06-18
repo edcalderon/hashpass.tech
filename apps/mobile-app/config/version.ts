@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606182026, // Updated to current timestamp
+  buildNumber: 202606182046, // Updated to current timestamp
   releaseDate: '2026-06-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -32,11 +32,27 @@ export const CURRENT_VERSION: VersionInfo = {
     'Added a regression test that renders the testimonials column without relying on React Native runtime internals'
   ],
   breakingChanges: [],
-  notes: 'Testimonials avatar crash fix'
+  notes: 'Add focused mobile release typecheck gate'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.31': {
+    version: '1.8.31',
+    buildNumber: 202606182046,
+    releaseDate: '2026-06-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Fixed the native testimonials avatar crash caused by an out-of-scope styles reference',
+      'Added a regression test that renders the testimonials column without relying on React Native runtime internals'
+    ],
+    breakingChanges: [],
+    notes: 'Add focused mobile release typecheck gate'
+  },
   '1.8.30': {
     version: '1.8.30',
     buildNumber: 202606182026,
