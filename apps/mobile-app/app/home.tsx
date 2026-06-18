@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation, getCurrentLocale } from '../i18n/i18n';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -134,16 +134,15 @@ export default function HomeScreen() {
   });
 
   const handleScrollToFeatures = () => {
-    // Get the height of the viewport
-    const screenHeight = window.innerHeight || document.documentElement.clientHeight;
-
-    // Scroll to just below the hero section
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        y: screenHeight * 0.5,
-        animated: true,
-        duration: 500 * (isMobile ? 3 : 2.5), // Add duration for smoother scrolling
-      });
+    if (!scrollRef.current) return;
+    if (Platform.OS === 'web') {
+      const screenHeight = window.innerHeight || document.documentElement.clientHeight;
+      scrollRef.current.scrollTo({ y: screenHeight * 0.5, animated: true });
+    } else {
+      const targetY = featuresLayout.y > 0
+        ? featuresLayout.y
+        : Dimensions.get('window').height * 0.85;
+      scrollRef.current.scrollTo({ y: targetY, animated: true });
     }
   };
 
@@ -295,16 +294,20 @@ export default function HomeScreen() {
           />
           <Animated.View style={[styles.heroTextContainer, headerAnimatedStyle]}>
             <Image
-              source={isDark
-                ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
-                : require('../assets/logos/hashpass/logo-full-hashpass-black.svg')
+              source={Platform.OS === 'web'
+                ? (isDark
+                  ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
+                  : require('../assets/logos/hashpass/logo-full-hashpass-black.svg'))
+                : (isDark
+                  ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
+                  : require('../assets/logos/hashpass/logo-full-hashpass-black.png'))
               }
               style={[styles.logo, headerAnimatedStyle]}
               resizeMode="contain"
             />
-            <Text style={[styles.tagline, { color: '#FFFFFF' }]}>
-              <FlipWords words={words} className="text-white" />
-            </Text>
+            <View style={styles.taglineContainer}>
+              <FlipWords words={words} textStyle={styles.tagline} />
+            </View>
           </Animated.View>
           <View style={{ flex: 1 }} /> 
           <Animated.View style={[styles.scrollDownContainer, headerAnimatedStyle]}>
@@ -380,7 +383,7 @@ export default function HomeScreen() {
           {userName ? (
             <>
 
-              <Text style={styles.ctaHeadline}>👋 {t('welcomeBack')} <br />{userName}</Text>
+              <Text style={styles.ctaHeadline}>👋 {t('welcomeBack')}{'\n'}{userName}</Text>
               <Animated.View style={styles.ctaButton}>
                 <TouchableOpacity
                   onPress={() => router.push('/(shared)/dashboard/explore')}
@@ -456,10 +459,13 @@ export default function HomeScreen() {
               {/* Brand Section */}
               <View style={styles.footerBrand}>
                 <Image
-                  source={
-                    isDark
+                  source={Platform.OS === 'web'
+                    ? (isDark
                       ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
-                      : require('../assets/logos/hashpass/logo-full-hashpass-white.svg')
+                      : require('../assets/logos/hashpass/logo-full-hashpass-white.svg'))
+                    : (isDark
+                      ? require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
+                      : require('../assets/logos/hashpass/logo-full-hashpass-white.png'))
                   }
                   style={styles.footerLogo}
                   resizeMode="contain"
@@ -479,11 +485,13 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
-                      const storybookUrl = typeof window !== 'undefined' && (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost')
+                      const storybookUrl = Platform.OS === 'web' && typeof window !== 'undefined' && (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost')
                         ? '/storybook'
                         : process.env.EXPO_PUBLIC_STORYBOOK_URL || 'http://localhost:6006';
-                      if (typeof window !== 'undefined') {
+                      if (Platform.OS === 'web' && typeof window !== 'undefined') {
                         window.open(storybookUrl, '_blank');
+                      } else {
+                        Linking.openURL(storybookUrl);
                       }
                     }}
                     style={styles.footerLink}
@@ -592,18 +600,20 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     letterSpacing: isMobile ? -0.5 : -1,
     lineHeight: isMobile ? 28 : 48,
   },
+  taglineContainer: {
+    width: '100%',
+    maxWidth: 600,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   tagline: {
     fontSize: isMobile ? 24 : 44,
     opacity: 0.9,
     fontWeight: '400',
     letterSpacing: 1,
     textAlign: 'center',
-    width: '100%',
-    maxWidth: 600,
-    transform: [{ translateY: 0 }],
-    backfaceVisibility: 'hidden',
-    position: 'relative',
-  } as const,
+    color: '#FFFFFF',
+  },
   sectionTitle: {
     fontSize: isMobile ? 24 : 28,
     fontWeight: '800',

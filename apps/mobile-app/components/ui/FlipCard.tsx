@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withTiming,
+  withDelay,
   interpolate,
   SharedValue,
 } from 'react-native-reanimated';
@@ -29,24 +30,32 @@ const FlipCard: React.FC<FlipCardProps> = ({
   const regularCardAnimatedStyle = useAnimatedStyle(() => {
     const spinValue = interpolate(Number(isFlipped.value), [0, 1], [0, 180]);
     const rotateValue = withTiming(`${spinValue}deg`, { duration });
+    const opacityValue = withTiming(isFlipped.value ? 0 : 1, { duration: duration / 2 });
 
     return {
       transform: [
+        { perspective: 1000 },
         isDirectionX ? { rotateX: rotateValue } : { rotateY: rotateValue },
       ],
-      backfaceVisibility: 'hidden', // Crucial for flip effect
+      backfaceVisibility: 'hidden',
+      opacity: opacityValue,
     };
   });
 
   const flippedCardAnimatedStyle = useAnimatedStyle(() => {
     const spinValue = interpolate(Number(isFlipped.value), [0, 1], [180, 360]);
     const rotateValue = withTiming(`${spinValue}deg`, { duration });
+    const opacityValue = isFlipped.value
+      ? withDelay(duration / 2, withTiming(1, { duration: duration / 2 }))
+      : withTiming(0, { duration: duration / 2 });
 
     return {
       transform: [
+        { perspective: 1000 },
         isDirectionX ? { rotateX: rotateValue } : { rotateY: rotateValue },
       ],
-      backfaceVisibility: 'hidden', // Crucial for flip effect
+      backfaceVisibility: 'hidden',
+      opacity: opacityValue,
     };
   });
 
@@ -75,7 +84,6 @@ const FlipCard: React.FC<FlipCardProps> = ({
 const flipCardStyles = StyleSheet.create({
   container: {
     position: 'relative',
-    perspective: '1000', // Crucial for 3D effect
   },
   cardBase: {
     position: 'absolute',

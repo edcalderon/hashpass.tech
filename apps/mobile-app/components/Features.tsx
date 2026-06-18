@@ -1,63 +1,102 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable, Dimensions, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n/i18n';
+import { useRouter } from 'expo-router';
 import { GlowingEffect } from './GlowingEffect';
 import FlipCard from './FlipCard';
 import FeatureFlipCard from './FeatureFlipCard';
 
+const CARD_SIZE = Math.min(280, Dimensions.get('window').width - 64);
+
 const getFeatureStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   feature: {
-    marginBottom: 30,
-    padding: 25,
-    borderRadius: 2 * 16,
-    shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.05)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 3,
+    marginBottom: 24,
+    padding: 20,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: isDark ? 0.45 : 0.08,
+    shadowRadius: 16,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    transform: [{ scale: 1 }],
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
     alignItems: 'center',
-    textAlign: 'center',
-    backgroundColor: isDark ? colors.background.paper : colors.background.default,
+    backgroundColor: isDark ? '#07070a' : '#f8fafc',
+    width: CARD_SIZE + 40,
+  },
+  cardInner: {
+    width: CARD_SIZE,
+    height: CARD_SIZE,
   },
   iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     marginBottom: 16,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+  },
+  iconContainerSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 0,
   },
   featureTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 12,
-    letterSpacing: -0.3,
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 8,
+    letterSpacing: -0.5,
     textAlign: 'center',
-    width: '100%',
-    color: isDark ? colors.primary : colors.secondaryDark,
+    color: isDark ? '#ffffff' : '#09090b',
+  },
+  featureTitleSmall: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    color: isDark ? '#ffffff' : '#09090b',
+  },
+  featureHint: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    color: isDark ? '#71717a' : '#a1a1aa',
   },
   featureDescription: {
-    fontSize: 16,
-    lineHeight: 24,
-    opacity: isDark ? 0.85 : 0.9,
-    letterSpacing: 0.1,
-    textAlign: 'center',
-    width: '100%',
-    color: isDark ? colors.primaryContrastText : colors.textSecondary,
+    fontSize: 15,
+    lineHeight: 26,
+    textAlign: 'left',
+    color: isDark ? '#d4d4d8' : '#3f3f46',
+    flexShrink: 1,
+  },
+  actionButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    borderColor: 'rgba(6, 182, 212, 0.3)',
+    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#06b6d4',
   },
   webCardItem: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 30,
-    width: 'min(320px, 92vw)',
+    width: 320,
+    maxWidth: '92%' as any,
   },
 });
 
@@ -80,6 +119,7 @@ const Features: React.FC<FeaturesProps> = ({
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation('index');
+  const router = useRouter();
   const featureStyles = getFeatureStyles(isDark, colors);
   const flipValues = useRef([
     useSharedValue(false),
@@ -149,13 +189,7 @@ const Features: React.FC<FeaturesProps> = ({
             onPress={() => {
               flipValues[index].value = !flipValues[index].value;
             }}
-            onHoverIn={() => {
-              flipValues[index].value = true;
-            }}
-            onHoverOut={() => {
-              flipValues[index].value = false;
-            }}
-            style={[featureStyles.feature, [feature1Style, feature2Style, feature3Style][index], { backgroundColor: isDark ? 'black' : colors.background.default }]}
+            style={[featureStyles.feature, [feature1Style, feature2Style, feature3Style][index]]}
           >
             <GlowingEffect
               spread={40}
@@ -166,31 +200,51 @@ const Features: React.FC<FeaturesProps> = ({
               borderWidth={3}
               isDarkMode={isDark}
             />
-            <View style={{ width: 280, height: 280 }}>
+            <View style={featureStyles.cardInner}>
               <FlipCard
                 isFlipped={flipValues[index]}
                 RegularContent={
-                  <View style={{ 
-                    flex: 1, 
-                    justifyContent: 'center', 
+                  <View style={{
+                    flex: 1,
+                    justifyContent: 'center',
                     alignItems: 'center',
-                    padding: 20,
+                    padding: 16,
                   }}>
-                    <View style={[featureStyles.iconContainer, { marginBottom: 16 }]}>
-                      <Ionicons name={feature.icon as any} size={45} color={colors.primary} />
+                    <View style={[
+                      featureStyles.iconContainer,
+                      { borderWidth: 1, borderColor: `${feature.color}66`, backgroundColor: `${feature.color}1f` },
+                    ]}>
+                      <Ionicons name={feature.icon as any} size={32} color={feature.color} />
                     </View>
-                    <Text style={[featureStyles.featureTitle, { color: colors.text.primary }]}>{feature.title}</Text>
-                    <Text style={[featureStyles.featureDescription, { color: colors.text.secondary, textAlign: 'center' }]}>{t('learnMore', 'Learn More')}</Text>
+                    <Text style={featureStyles.featureTitle}>{feature.title}</Text>
+                    <Text style={featureStyles.featureHint}>{t('tapToRead', 'Tap to read more')}</Text>
                   </View>
                 }
                 FlippedContent={
-                  <View style={{ 
-                    flex: 1, 
-                    justifyContent: 'center', 
-                    alignItems: 'center',
+                  <View style={{
+                    flex: 1,
                     padding: 20,
+                    justifyContent: 'space-between',
                   }}>
-                    <Text style={[featureStyles.featureDescription, { color: colors.text.primary, textAlign: 'center' }]}>{feature.description}</Text>
+                    <View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                        <View style={[
+                          featureStyles.iconContainerSmall,
+                          { borderWidth: 1, borderColor: `${feature.color}66`, backgroundColor: `${feature.color}1f` },
+                        ]}>
+                          <Ionicons name={feature.icon as any} size={16} color={feature.color} />
+                        </View>
+                        <Text style={featureStyles.featureTitleSmall}>{feature.title}</Text>
+                      </View>
+                      <Text style={featureStyles.featureDescription}>{feature.description}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={[featureStyles.actionButton, { borderColor: `${feature.color}4d`, backgroundColor: `${feature.color}12` }]}
+                      onPress={() => router.push('/(shared)/auth' as any)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[featureStyles.actionButtonText, { color: feature.color }]}>{feature.actionText}</Text>
+                    </TouchableOpacity>
                   </View>
                 }
               />

@@ -1,14 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Text, StyleSheet } from "react-native";
+import { Animated, Text, StyleSheet, TextStyle } from "react-native";
 
 const FlipWords = ({
   words,
   duration = 3000,
   className,
+  textStyle,
 }: {
   words: string[];
   duration?: number;
   className?: string;
+  textStyle?: TextStyle;
 }) => {
   const [currentWord, setCurrentWord] = useState(words[0]);
   const opacity = useRef(new Animated.Value(1)).current;
@@ -37,17 +39,21 @@ const FlipWords = ({
   }, [currentWord, duration, animateToNext]);
 
   return (
-    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-      <Text style={styles.text}>{currentWord}</Text>
+    <Animated.View style={[styles.container, { opacity, transform: [{ translateY }] }]}>
+      <Text style={[styles.text, textStyle]}>{currentWord}</Text>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+  },
   text: {
     color: "white",
     fontSize: 18,
     fontWeight: "600",
+    textAlign: 'center',
   },
 });
 

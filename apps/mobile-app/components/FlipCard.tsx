@@ -3,6 +3,7 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withTiming,
+  withDelay,
   interpolate,
   SharedValue,
 } from 'react-native-reanimated';
@@ -45,10 +46,12 @@ const FlipCard: React.FC<FlipCardProps> = ({
   const regularCardAnimatedStyle = useAnimatedStyle(() => {
     const spinValue = interpolate(Number(isFlipped.value), [0, 1], [0, 180]);
     const rotateValue = withTiming(`${spinValue}deg`, { duration });
-    const opacityValue = withTiming(isFlipped.value ? 0 : 1, { duration });
+    // Fade out in the first half of the flip so the back face never shows through
+    const opacityValue = withTiming(isFlipped.value ? 0 : 1, { duration: duration / 2 });
 
     return {
       transform: [
+        { perspective: 1000 },
         isDirectionX ? { rotateX: rotateValue } : { rotateY: rotateValue },
       ],
       opacity: opacityValue,
@@ -58,10 +61,14 @@ const FlipCard: React.FC<FlipCardProps> = ({
   const flippedCardAnimatedStyle = useAnimatedStyle(() => {
     const spinValue = interpolate(Number(isFlipped.value), [0, 1], [180, 360]);
     const rotateValue = withTiming(`${spinValue}deg`, { duration });
-    const opacityValue = withTiming(isFlipped.value ? 1 : 0, { duration });
+    // Fade in during the second half of the flip
+    const opacityValue = isFlipped.value
+      ? withDelay(duration / 2, withTiming(1, { duration: duration / 2 }))
+      : withTiming(0, { duration: duration / 2 });
 
     return {
       transform: [
+        { perspective: 1000 },
         isDirectionX ? { rotateX: rotateValue } : { rotateY: rotateValue },
       ],
       opacity: opacityValue,
