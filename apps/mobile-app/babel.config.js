@@ -1,10 +1,22 @@
 module.exports = function (api) {
   api.cache(true);
 
+  // Pre-resolve from babel.config.js location to avoid pnpm isolation issues
+  // where Babel's string resolver can't find react-native-worklets in CI.
+  function nativewindBabel() {
+    const config = require('nativewind/babel')();
+    config.plugins = (config.plugins || []).map(p =>
+      p === 'react-native-worklets/plugin'
+        ? require('react-native-worklets/plugin')
+        : p
+    );
+    return config;
+  }
+
   return {
     presets: [
       ["babel-preset-expo", { jsxImportSource: "nativewind" }],
-      "nativewind/babel",
+      nativewindBabel,
     ],
     plugins: [
       'macros',
