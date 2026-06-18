@@ -30,7 +30,11 @@ import VersionDisplay from '../../components/VersionDisplay';
 import { useAuth } from '../../hooks/useAuth';
 import { getCurrentLocale, useTranslation } from '../../i18n/i18n';
 import { apiClient } from '../../lib/api-client';
-import { authService, SUPABASE_OAUTH_CALLBACK_PATH } from '@hashpass/auth';
+import {
+  authService,
+  SUPABASE_OAUTH_CALLBACK_PATH,
+  getSupabaseOAuthRedirectUrl,
+} from '@hashpass/auth';
 import ShaderAnimation from '../../components/ShaderAnimation';
 import { getEmailAutocompleteSuggestions } from '../../lib/email-autocomplete';
 import {
@@ -182,8 +186,8 @@ const DesktopHeroPanel = ({ slides, isDark, styles }: DesktopHeroPanelProps) => 
   const contentEntrance = useRef(new Animated.Value(0)).current;
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const heroGradientColors = isDark
-    ? ['#030a12', '#0a1f31', '#13415e']
-    : ['#ffffff', '#fff9f8', '#fff1ee'];
+    ? (['#030a12', '#0a1f31', '#13415e'] as const)
+    : (['#ffffff', '#fff9f8', '#fff1ee'] as const);
 
   useEffect(() => {
     const blobAnimations = [
@@ -252,14 +256,6 @@ const DesktopHeroPanel = ({ slides, isDark, styles }: DesktopHeroPanelProps) => 
     title: 'Secure & Private',
     description: 'Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.',
   };
-
-  useEffect(() => {
-    if (!slides.length) {
-      setActiveSlideIndex(0);
-      return;
-    }
-    setActiveSlideIndex((previousIndex) => previousIndex % slides.length);
-  }, [slides.length]);
 
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -472,6 +468,22 @@ export default function AuthScreen() {
     isNativeLightMode
   );
   const isBusy = busyAction !== null;
+  const authActionMessage = useMemo(() => {
+    switch (busyAction) {
+      case 'magic-link':
+        return t('sendingMagicLink', 'Sending magic link...');
+      case 'otp-send':
+        return t('sendingVerificationCode', 'Sending verification code...');
+      case 'otp-verify':
+        return t('verifyingCode', 'Verifying code...');
+      case 'oauth':
+        return Platform.OS === 'web'
+          ? t('openingGoogleSignIn', 'Opening Google sign-in...')
+          : t('openingGoogleSignInNative', 'Opening Google sign-in...');
+      default:
+        return '';
+    }
+  }, [busyAction, t]);
   const magicLinkResendRemainingSeconds = magicLinkSentAt === null
     ? 0
     : Math.max(
@@ -487,7 +499,7 @@ export default function AuthScreen() {
   const isMagicLinkConfirmationVisible = emailAuthMethod === 'magic-link' && magicLinkSentAt !== null;
   const selectedCountry = useMemo(
     () =>
-      countryDialOptions.find((country) => country.iso2 === selectedCountryISO2) ||
+      countryDialOptions.find((country: { iso2: string }) => country.iso2 === selectedCountryISO2) ||
       countryDialOptions[0],
     [countryDialOptions, selectedCountryISO2]
   );
@@ -501,7 +513,7 @@ export default function AuthScreen() {
   );
   const activeOtpDigitIndex = Math.min(otpCode.length, OTP_CODE_LENGTH - 1);
   const emailSuggestions = useMemo(
-    () => getEmailAutocompleteSuggestions(email, { limit: 12 }),
+    () => getEmailAutocompleteSuggestions(email, { limit: 12 }) as string[],
     [email]
   );
   const normalizedEmailInput = email.trim().toLowerCase();
@@ -531,13 +543,6 @@ export default function AuthScreen() {
       router.replace(redirectPath as any);
     }
   }, [authLoading, isLoggedIn, redirectPath, router, user]);
-
-  useEffect(() => {
-    if (!countryDialOptions.length) return;
-    if (countryDialOptions.some((country) => country.iso2 === selectedCountryISO2)) return;
-
-    setSelectedCountryISO2(resolveDefaultCountryISO2(countryDialOptions, currentLocale));
-  }, [countryDialOptions, currentLocale, selectedCountryISO2]);
 
   useEffect(() => {
     if (!shouldShowEmailSuggestions) {
@@ -677,10 +682,11 @@ export default function AuthScreen() {
         window.localStorage.setItem('auth_signin_method', 'magic_link');
       }
 
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const redirectTo = origin
-        ? `${origin}${SUPABASE_OAUTH_CALLBACK_PATH}?returnTo=${encodeURIComponent(redirectPath)}`
-        : undefined;
+      const redirectTo = getSupabaseOAuthRedirectUrl({
+        callbackPath: `${SUPABASE_OAUTH_CALLBACK_PATH}?returnTo=${encodeURIComponent(redirectPath)}`,
+        origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+        platform: Platform.OS,
+      });
 
       const { error } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
@@ -756,7 +762,7 @@ export default function AuthScreen() {
     setPhoneError('');
 
     try {
-      const response = await apiClient.post<{ success?: boolean; message?: string; error?: string; delivery?: 'email' | 'sms' }>(
+      const response = (await apiClient.post(
         '/auth/otp',
         {
           email: normalizedEmail,
@@ -764,7 +770,16 @@ export default function AuthScreen() {
           phone: otpDeliveryMethod === 'sms' ? normalizedPhone : undefined,
         },
         { skipEventSegment: true }
-      );
+      )) as {
+        success?: boolean;
+        data?: {
+          success?: boolean;
+          message?: string;
+          error?: string;
+          delivery?: 'email' | 'sms';
+        };
+        error?: string;
+      };
 
       if (!response.success) {
         throw new Error(response.error || t('otpSendFailed', 'Could not send verification code.'));
@@ -827,23 +842,27 @@ export default function AuthScreen() {
     setOtpError('');
 
     try {
-      const verifyResponse = await apiClient.post<{
-        success?: boolean;
-        token_hash?: string;
-        type?: 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email';
-        email?: string;
-        session?: {
-          access_token?: string;
-          refresh_token?: string;
-          expires_in?: number;
-          token_type?: string;
-        } | null;
-        error?: string;
-      }>(
+      const verifyResponse = (await apiClient.post(
         '/auth/otp/verify',
         { email: normalizedEmail, code: normalizedCode },
         { skipEventSegment: true }
-      );
+      )) as {
+        success?: boolean;
+        data?: {
+          success?: boolean;
+          token_hash?: string;
+          type?: 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email';
+          email?: string;
+          session?: {
+            access_token?: string;
+            refresh_token?: string;
+            expires_in?: number;
+            token_type?: string;
+          } | null;
+          error?: string;
+        };
+        error?: string;
+      };
 
       if (!verifyResponse.success) {
         throw new Error(verifyResponse.error || t('otpInvalid', 'Invalid or expired code.'));
@@ -1651,17 +1670,35 @@ export default function AuthScreen() {
 
             <View style={styles.oauthContainer}>
               <TouchableOpacity
-                style={styles.oauthButton}
+                style={[
+                  styles.oauthButton,
+                  Platform.OS !== 'web' ? styles.oauthButtonNative : null,
+                ]}
                 onPress={() => void handleGoogleSignIn()}
                 disabled={isBusy}
+                accessibilityRole="button"
+                accessibilityLabel={t('googleSignIn', 'Continue with Google')}
               >
                 {busyAction === 'oauth' ? (
                   <ActivityIndicator size="small" color={colors.text.primary} />
                 ) : (
-                  <Ionicons name="logo-google" size={28} color={colors.text.primary} />
+                  <>
+                    <Ionicons name="logo-google" size={24} color={colors.text.primary} />
+                    {Platform.OS !== 'web' ? (
+                      <Text style={styles.oauthButtonText}>
+                        {t('continueWithGoogle', 'Continue with Google')}
+                      </Text>
+                    ) : null}
+                  </>
                 )}
               </TouchableOpacity>
             </View>
+
+            {Platform.OS !== 'web' && authActionMessage ? (
+              <View style={styles.authActionMessageContainer} dataSet={{ authEnterIgnore: 'true' }}>
+                <Text style={styles.authActionMessage}>{authActionMessage}</Text>
+              </View>
+            ) : null}
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
@@ -1873,7 +1910,8 @@ const getStyles = (
       // Native: ThemeAndLanguageSwitcher sits at top:56 and is ~44px tall, so push
       // content below it. Web doesn't need as much clearance.
       paddingTop: Platform.OS === 'web' ? 70 : 112,
-      paddingHorizontal: isCompactMobile ? 14 : 20,
+      paddingHorizontal:
+        Platform.OS === 'web' ? (isCompactMobile ? 14 : 20) : (isCompactMobile ? 18 : 24),
       paddingBottom: 40,
     },
     scrollContentDesktop: {
@@ -1894,7 +1932,8 @@ const getStyles = (
     },
     authCard: {
       width: '100%',
-      maxWidth: 420,
+      maxWidth: Platform.OS === 'web' ? 420 : isCompactMobile ? 392 : 420,
+      alignSelf: 'center',
       borderRadius: 18,
       paddingHorizontal: isCompactMobile ? 14 : 20,
       paddingVertical: isCompactMobile ? 20 : 24,
@@ -2472,7 +2511,9 @@ const getStyles = (
     oauthContainer: {
       flexDirection: 'row',
       justifyContent: 'center',
+      alignItems: 'center',
       marginBottom: 18,
+      width: '100%',
     },
     oauthButton: {
       width: 56,
@@ -2492,6 +2533,34 @@ const getStyles = (
           shadowRadius: 4,
           elevation: 3,
         }),
+    },
+    oauthButtonNative: {
+      width: '100%',
+      maxWidth: '100%',
+      height: 52,
+      borderRadius: 14,
+      alignSelf: 'stretch',
+      flexDirection: 'row',
+      gap: 10,
+      paddingHorizontal: 16,
+    },
+    oauthButtonText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text.primary,
+    },
+    authActionMessageContainer: {
+      width: '100%',
+      alignItems: 'center',
+      marginTop: -2,
+      marginBottom: 8,
+      paddingHorizontal: 8,
+    },
+    authActionMessage: {
+      fontSize: 13,
+      lineHeight: 18,
+      color: isDark ? '#d7d9df' : '#46484f',
+      textAlign: 'center',
     },
     footer: {
       marginTop: 2,

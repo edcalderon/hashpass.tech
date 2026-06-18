@@ -158,4 +158,55 @@ describe('web Supabase client initialization', () => {
       }
     }
   });
+
+  it('exchanges an OAuth code returned in the callback URL for a session', async () => {
+    const queryParams = require('expo-auth-session/build/QueryParams');
+    queryParams.getQueryParams.mockReturnValueOnce({
+      params: { code: 'oauth-code-123' },
+      errorCode: null,
+    });
+
+    require('../../lib/supabase');
+    const { createSessionFromUrl } = require('../../lib/supabase');
+
+    const clientInstance = mockCreateClient.mock.results[0]?.value as {
+      auth: {
+        exchangeCodeForSession: jest.Mock;
+      };
+    };
+
+    clientInstance.auth.exchangeCodeForSession.mockResolvedValueOnce({
+      data: {
+        session: {
+          access_token: 'access-token',
+          refresh_token: 'refresh-token',
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          user: {
+            id: 'user-123',
+            email: 'user@example.com',
+            role: 'authenticated',
+            user_metadata: {},
+            app_metadata: {},
+            aud: 'authenticated',
+            confirmation_sent_at: null,
+            confirmed_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            phone: null,
+            phone_confirmed_at: null,
+            email_confirmed_at: null,
+            last_sign_in_at: new Date().toISOString(),
+          },
+        },
+      },
+      error: null,
+    });
+
+    const result = await createSessionFromUrl('hashpass://auth/callback?code=oauth-code-123');
+
+    expect(clientInstance.auth.exchangeCodeForSession).toHaveBeenCalledWith('oauth-code-123');
+    expect(result.error).toBeNull();
+    expect(result.session?.access_token).toBe('access-token');
+    expect(result.session?.user.email).toBe('user@example.com');
+  });
 });

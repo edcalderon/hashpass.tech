@@ -17,16 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.31)
+## 📋 Latest Changes (v1.8.35)
 
 ### Released
-- Add focused mobile release typecheck gate
-
-### Technical Details
-- Version: 1.8.31
-- Release Type: stable
-- Build Number: 202606182046
-- Release Date: 2026-06-18T20:46:55.217Z
+- Fixed native magic link and Google sign-in handling so callback codes are exchanged for a session on Android.
+- Improved the native auth card layout and feedback messages so the flow stays centered and readable.
+- Added regression tests for native Supabase redirect and OAuth code exchange.
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

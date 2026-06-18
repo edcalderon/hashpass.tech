@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { authService, AuthSession, AuthUser, getSupabaseOAuthRedirectUrl } from '@hashpass/auth';
-import { supabase } from '../lib/supabase';
+import { authService, getSupabaseOAuthRedirectUrl } from '@hashpass/auth';
+import type { AuthSession, AuthUser } from '@hashpass/auth';
+import { createSessionFromUrl, supabase } from '../lib/supabase';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
@@ -108,7 +109,7 @@ export const useAuth = () => {
           email: email || '',
           oauth_success: 'true'
         })
-          .then(async (result) => {
+          .then(async (result: any) => {
             if (result?.error) {
               console.error('[useAuth] ❌ Failed to process OAuth tokens:', result.error);
               return;
@@ -137,7 +138,7 @@ export const useAuth = () => {
 
             window.history.replaceState(null, '', location.pathname + location.search);
           })
-          .catch((error) => {
+          .catch((error: any) => {
             console.error('[useAuth] ❌ Error processing OAuth tokens:', error);
           })
           .finally(() => {
@@ -195,7 +196,7 @@ export const useAuth = () => {
     });
 
     // Subscribe to Supabase state changes (needed for passwordless and dual-session bridge).
-    const { data: supabaseSub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: supabaseSub } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       supabaseUser = session?.user ? mapSupabaseUserToAuthUser(session.user) : null;
       isSupabaseLoggedIn = !!session?.user;
       // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
@@ -208,14 +209,12 @@ export const useAuth = () => {
     supabaseUnsubscribeRef.current = () => supabaseSub.subscription.unsubscribe();
 
     // Initialize session once globally to avoid repeated /users/me probes.
-    if (!sessionBootstrapPromise) {
-      sessionBootstrapPromise = authService.getSession();
-    }
-    sessionBootstrapPromise
-      .then((session) => {
+    const bootstrapPromise = sessionBootstrapPromise ?? (sessionBootstrapPromise = authService.getSession());
+    bootstrapPromise
+      .then((session: AuthSession | null) => {
         syncDirectusStateFromProvider(session);
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error('[useAuth] Session bootstrap failed:', error);
         syncDirectusStateFromProvider(null);
       })
@@ -227,11 +226,11 @@ export const useAuth = () => {
 
     supabase.auth
       .getSession()
-      .then(({ data }) => {
+      .then(({ data }: any) => {
         supabaseUser = data.session?.user ? mapSupabaseUserToAuthUser(data.session.user) : null;
         isSupabaseLoggedIn = !!data.session?.user;
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error('[useAuth] Supabase session bootstrap failed:', error);
       })
       .finally(() => {
@@ -300,30 +299,29 @@ export const useAuth = () => {
           callbackUrl
         );
 
-        if (browserResult.type === 'success' && browserResult.url) {
-          // Extract access_token + refresh_token from the redirect URL fragment
-          const redirectUrl = browserResult.url;
-          const fragmentStart = redirectUrl.indexOf('#');
-          const queryStart = redirectUrl.indexOf('?');
-          const paramStr = fragmentStart !== -1
-            ? redirectUrl.slice(fragmentStart + 1)
-            : queryStart !== -1
-            ? redirectUrl.slice(queryStart + 1)
-            : '';
-          const params = new URLSearchParams(paramStr);
-          const accessToken = params.get('access_token');
-          const refreshToken = params.get('refresh_token');
+        if (browserResult.type !== 'success') {
+          throw new Error('Google sign-in was cancelled before the browser returned to the app.');
+        }
 
-          if (accessToken) {
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken ?? '',
-            });
-            if (sessionError) throw new Error(sessionError.message);
-          }
+        if (!browserResult.url) {
+          throw new Error('Google sign-in completed, but the app did not receive a callback URL.');
+        }
+
+        const sessionResult = await createSessionFromUrl(browserResult.url);
+
+        if (sessionResult.error) {
+          throw sessionResult.error;
+        }
+
+        if (!sessionResult.session) {
+          throw new Error('Google sign-in completed, but no Supabase session was created.');
         }
 
         return { pending: true };
+      }
+
+      if (Platform.OS !== 'web' && !result.oauthUrl) {
+        throw new Error('Google sign-in could not start. Check the Supabase OAuth configuration.');
       }
 
       return result;

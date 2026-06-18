@@ -41,4 +41,13 @@ describe('getSupabaseOAuthRedirectUrl', () => {
       })
     ).toBe('hashpass://auth/callback');
   });
+
+  it('preserves query parameters in the callback path for native redirects', () => {
+    expect(
+      getSupabaseOAuthRedirectUrl({
+        callbackPath: 'auth/callback?returnTo=%2Fdashboard%2Fexplore',
+        platform: 'android',
+      })
+    ).toBe('hashpass://auth/callback?returnTo=%2Fdashboard%2Fexplore');
+  });
 });

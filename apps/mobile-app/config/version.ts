@@ -22,21 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606182301, // Updated to current timestamp
+  buildNumber: 202606182324, // Updated to current timestamp
   releaseDate: '2026-06-18',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
-    'Fixed the native testimonials avatar crash caused by an out-of-scope styles reference',
-    'Added a regression test that renders the testimonials column without relying on React Native runtime internals'
+    'Fixed native magic link and Google sign-in handling so callback codes are exchanged for a session on Android',
+    'Improved the native auth card layout and feedback messages so the flow stays centered and readable',
+    'Added regression tests for native Supabase redirect and OAuth code exchange'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.34 release'
+  notes: 'Native auth flow fixes'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.35': {
+    version: '1.8.35',
+    buildNumber: 202606182324,
+    releaseDate: '2026-06-18',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Fixed native magic link and Google sign-in handling so callback codes are exchanged for a session on Android',
+      'Improved the native auth card layout and feedback messages so the flow stays centered and readable',
+      'Added regression tests for native Supabase redirect and OAuth code exchange'
+    ],
+    breakingChanges: [],
+    notes: 'Native auth flow fixes'
+  },
   '1.8.34': {
     version: '1.8.34',
     buildNumber: 202606182301,

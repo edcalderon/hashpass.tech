@@ -1,3 +1,10 @@
+## [1.8.35](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.34...v1.8.35) (2026-06-18)
+
+### Released
+- Fixed native magic link and Google sign-in handling so callback codes are exchanged for a session on Android.
+- Improved the native auth card layout and feedback messages so the flow stays centered and readable.
+- Added regression tests for native Supabase redirect and OAuth code exchange.
+
 ## [1.8.34](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.33...v1.8.34) (2026-06-18)
 
 
