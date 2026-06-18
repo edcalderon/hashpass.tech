@@ -30,7 +30,7 @@ import VersionDisplay from '../../components/VersionDisplay';
 import { useAuth } from '../../hooks/useAuth';
 import { getCurrentLocale, useTranslation } from '../../i18n/i18n';
 import { apiClient } from '../../lib/api-client';
-import { authService } from '@hashpass/auth';
+import { authService, SUPABASE_OAUTH_CALLBACK_PATH } from '@hashpass/auth';
 import ShaderAnimation from '../../components/ShaderAnimation';
 import { getEmailAutocompleteSuggestions } from '../../lib/email-autocomplete';
 import {
@@ -66,7 +66,7 @@ const normalizeReturnToPath = (rawPath: string): string => {
 
   normalized = normalized.replace(/\/\([^/]+\)/g, '');
 
-  if (!normalized || normalized === '/auth' || normalized.includes('/auth/callback')) {
+  if (!normalized || normalized === '/auth' || normalized.includes(SUPABASE_OAUTH_CALLBACK_PATH)) {
     return '/dashboard/explore';
   }
 
@@ -670,7 +670,7 @@ export default function AuthScreen() {
 
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const redirectTo = origin
-        ? `${origin}/auth/callback?returnTo=${encodeURIComponent(redirectPath)}`
+        ? `${origin}${SUPABASE_OAUTH_CALLBACK_PATH}?returnTo=${encodeURIComponent(redirectPath)}`
         : undefined;
 
       const { error } = await supabase.auth.signInWithOtp({

@@ -12,6 +12,7 @@ import {
 } from '../types';
 import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
+import { getSupabaseOAuthRedirectUrl } from '../supabase-oauth';
 
 export class SupabaseAuthProvider implements IAuthProvider {
   private supabase: SupabaseClient;
@@ -72,13 +73,11 @@ export class SupabaseAuthProvider implements IAuthProvider {
 
   async signInWithOAuth(provider: 'google' | 'github' | 'facebook' | 'twitter'): Promise<AuthResponse> {
     try {
+      const redirectTo = getSupabaseOAuthRedirectUrl();
       const isNative = Platform.OS !== 'web';
 
       // On native we use skipBrowserRedirect so Supabase returns the URL without
       // trying to navigate, then the caller opens it via expo-web-browser.
-      const redirectTo = isNative
-        ? 'hashpass://auth/callback'
-        : `${window.location.origin}/auth/callback`;
 
       const { data, error } = await this.supabase.auth.signInWithOAuth({
         provider,

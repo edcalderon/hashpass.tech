@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { authService, AuthSession, AuthUser } from '@hashpass/auth';
+import { authService, AuthSession, AuthUser, getSupabaseOAuthRedirectUrl } from '@hashpass/auth';
 import { supabase } from '../lib/supabase';
-import { Platform, Linking } from 'react-native';
+import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
@@ -294,10 +294,10 @@ export const useAuth = () => {
 
       // On native, the provider returns a URL to open in the system browser
       if (Platform.OS !== 'web' && result.oauthUrl) {
-        const callbackScheme = 'hashpass://auth/callback';
+        const callbackUrl = getSupabaseOAuthRedirectUrl();
         const browserResult = await WebBrowser.openAuthSessionAsync(
           result.oauthUrl,
-          callbackScheme
+          callbackUrl
         );
 
         if (browserResult.type === 'success' && browserResult.url) {

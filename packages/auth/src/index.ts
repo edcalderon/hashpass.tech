@@ -12,6 +12,11 @@ export {
 } from './auth-service';
 export type { AuthUser as DirectusUser, AuthSession as DirectusSession } from './types';
 export * from './directus-auth';
+export {
+  getSupabaseOAuthRedirectUrl,
+  SUPABASE_OAUTH_CALLBACK_PATH,
+  SUPABASE_OAUTH_NATIVE_SCHEME,
+} from './supabase-oauth';
 export * as edcalderonAuth from './vendor/edcalderon-auth';
 export {
   extractToken as directusExtractToken,
