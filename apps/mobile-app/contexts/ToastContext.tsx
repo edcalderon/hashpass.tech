@@ -74,40 +74,38 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   }, []);
 
   const getToastStyles = (type: Toast['type']) => {
-    const baseBackground = isDark ? colors.surface : colors.background.paper;
+    // Dark mode: use #2C2C2E (clearly distinct from #121212 and #1E1E1E screen backgrounds)
+    // Light mode: use pure white (distinct from #F5F5F7 backgrounds)
+    const baseBackground = isDark ? '#2C2C2E' : '#FFFFFF';
     const baseStyles = {
       borderLeftWidth: 4,
-      backgroundColor: baseBackground, // Always use theme background color
+      backgroundColor: baseBackground,
     };
 
     switch (type) {
       case 'success':
-        // Use theme success color with border accent, background stays theme color
         return {
           ...baseStyles,
           borderLeftColor: colors.success.main,
-          borderColor: isDark ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.25)',
+          borderColor: isDark ? 'rgba(76, 175, 80, 0.5)' : 'rgba(76, 175, 80, 0.35)',
         };
       case 'error':
-        // Use theme error color with border accent, background stays theme color
         return {
           ...baseStyles,
           borderLeftColor: colors.error.main,
-          borderColor: isDark ? 'rgba(255, 82, 82, 0.3)' : 'rgba(255, 82, 82, 0.25)',
+          borderColor: isDark ? 'rgba(255, 82, 82, 0.5)' : 'rgba(255, 82, 82, 0.35)',
         };
       case 'warning':
-        // Use theme warning color with border accent, background stays theme color
         return {
           ...baseStyles,
           borderLeftColor: colors.warning.main,
-          borderColor: isDark ? 'rgba(255, 171, 0, 0.3)' : 'rgba(255, 171, 0, 0.25)',
+          borderColor: isDark ? 'rgba(255, 171, 0, 0.5)' : 'rgba(255, 171, 0, 0.35)',
         };
       case 'info':
-        // Use primary color with border accent, background stays theme color
         return {
           ...baseStyles,
           borderLeftColor: colors.primary,
-          borderColor: isDark ? 'rgba(161, 209, 214, 0.3)' : 'rgba(175, 13, 1, 0.25)',
+          borderColor: isDark ? 'rgba(161, 209, 214, 0.5)' : 'rgba(175, 13, 1, 0.35)',
         };
       default:
         return {
@@ -249,14 +247,14 @@ const ToastItem: React.FC<ToastItemProps> = ({
     >
       <View 
         style={[
-          styles.toast, 
+          styles.toast,
           toastStyles,
           {
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: isDark ? 0.5 : 0.2,
-            shadowRadius: 8,
-            elevation: 8,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: isDark ? 0.85 : 0.25,
+            shadowRadius: 14,
+            elevation: 20,
           }
         ]}
         pointerEvents="auto"
@@ -275,15 +273,15 @@ const ToastItem: React.FC<ToastItemProps> = ({
               />
             </View>
             <View style={styles.toastTextContainer}>
-              <Text style={[styles.toastTitle, { 
-                color: colors.text.primary,
+              <Text style={[styles.toastTitle, {
+                color: isDark ? '#FFFFFF' : '#1A1A1A',
                 fontWeight: '600',
               }]}>
                 {toast.title}
               </Text>
               {toast.message && (
-                <Text style={[styles.toastMessage, { 
-                  color: colors.text.secondary,
+                <Text style={[styles.toastMessage, {
+                  color: isDark ? '#AEAEB2' : '#6C6C70',
                 }]}>
                   {toast.message}
                 </Text>
@@ -297,7 +295,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
               <MaterialIcons
                 name="close"
                 size={18}
-                color={colors.text.secondary}
+                color={isDark ? '#8E8E93' : '#6C6C70'}
               />
             </TouchableOpacity>
           </View>
