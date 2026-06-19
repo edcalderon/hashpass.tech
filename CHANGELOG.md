@@ -1,3 +1,15 @@
+## [1.8.42](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.41...v1.8.42) (2026-06-19)
+
+
+### Bug Fixes
+
+* **auth:** guard window.localStorage access on native to fix Google OAuth and magic link ([50a44bd](https://github.com/hashpass-tech/hashpass.tech/commit/50a44bd007b2c043c2810efbd5731b5038cabf61))
+* **ci:** add queue grace period to stop-runner before shutting down EC2 ([e9733b9](https://github.com/hashpass-tech/hashpass.tech/commit/e9733b96ba86787bfb0ddb7cc2e2b8648d9edd13))
+
+
+
+
+
 ## [1.8.41](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.40...v1.8.41) (2026-06-19)
 
 

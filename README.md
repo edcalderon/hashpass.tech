@@ -17,12 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.41)
+## 📋 Latest Changes (v1.8.42)
 
 ### Bug Fixes
 
-* filter out "null" string from window.location.origin on native ([9d0ef6f](https://github.com/hashpass-tech/hashpass.tech/commit/9d0ef6f10dd627081bc7b0f90bfbeb15633f5faf))
-* include type augmentation files in partial typecheck temp dir ([328988d](https://github.com/hashpass-tech/hashpass.tech/commit/328988dcbf5a7411646faaf6a3dd37862bec96b6))
+* **auth:** guard window.localStorage access on native to fix Google OAuth and magic link ([50a44bd](https://github.com/hashpass-tech/hashpass.tech/commit/50a44bd007b2c043c2810efbd5731b5038cabf61))
+* **ci:** add queue grace period to stop-runner before shutting down EC2 ([e9733b9](https://github.com/hashpass-tech/hashpass.tech/commit/e9733b96ba86787bfb0ddb7cc2e2b8648d9edd13))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
