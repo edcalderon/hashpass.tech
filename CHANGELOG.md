@@ -1,3 +1,15 @@
+## [1.8.43](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.42...v1.8.43) (2026-06-19)
+
+
+### Bug Fixes
+
+* **ci:** cap Gradle heap at 3072 MiB on t3a.large to prevent OOM ([d2bfd0c](https://github.com/hashpass-tech/hashpass.tech/commit/d2bfd0c1ecdc70cc36054e5ae92efd7691c405d8))
+* use pure white logo for footer on dark mode web for better contrast ([750b401](https://github.com/hashpass-tech/hashpass.tech/commit/750b401db1e4b03a28f01f8d81871389f0ddec91))
+
+
+
+
+
 ## [1.8.42](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.41...v1.8.42) (2026-06-19)
 
 

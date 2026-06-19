@@ -17,12 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.42)
+## 📋 Latest Changes (v1.8.43)
 
 ### Bug Fixes
 
-* **auth:** guard window.localStorage access on native to fix Google OAuth and magic link ([50a44bd](https://github.com/hashpass-tech/hashpass.tech/commit/50a44bd007b2c043c2810efbd5731b5038cabf61))
-* **ci:** add queue grace period to stop-runner before shutting down EC2 ([e9733b9](https://github.com/hashpass-tech/hashpass.tech/commit/e9733b96ba86787bfb0ddb7cc2e2b8648d9edd13))
+* **ci:** cap Gradle heap at 3072 MiB on t3a.large to prevent OOM ([d2bfd0c](https://github.com/hashpass-tech/hashpass.tech/commit/d2bfd0c1ecdc70cc36054e5ae92efd7691c405d8))
+* use pure white logo for footer on dark mode web for better contrast ([750b401](https://github.com/hashpass-tech/hashpass.tech/commit/750b401db1e4b03a28f01f8d81871389f0ddec91))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
