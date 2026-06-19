@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.40",
+  "version": "1.8.41",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "expo-router/entry",

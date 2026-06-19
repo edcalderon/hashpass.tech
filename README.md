@@ -17,16 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.40)
+## 📋 Latest Changes (v1.8.41)
 
-### Released
-- Version 1.8.40 release
+### Bug Fixes
 
-### Technical Details
-- Version: 1.8.40
-- Release Type: stable
-- Build Number: 202606190052
-- Release Date: 2026-06-19T00:52:12.232Z
+* filter out "null" string from window.location.origin on native ([9d0ef6f](https://github.com/hashpass-tech/hashpass.tech/commit/9d0ef6f10dd627081bc7b0f90bfbeb15633f5faf))
+* include type augmentation files in partial typecheck temp dir ([328988d](https://github.com/hashpass-tech/hashpass.tech/commit/328988dcbf5a7411646faaf6a3dd37862bec96b6))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

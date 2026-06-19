@@ -1,3 +1,15 @@
+## [1.8.41](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.40...v1.8.41) (2026-06-19)
+
+
+### Bug Fixes
+
+* filter out "null" string from window.location.origin on native ([9d0ef6f](https://github.com/hashpass-tech/hashpass.tech/commit/9d0ef6f10dd627081bc7b0f90bfbeb15633f5faf))
+* include type augmentation files in partial typecheck temp dir ([328988d](https://github.com/hashpass-tech/hashpass.tech/commit/328988dcbf5a7411646faaf6a3dd37862bec96b6))
+
+
+
+
+
 ## [1.8.38](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.37...v1.8.38) (2026-06-19)
 
 
