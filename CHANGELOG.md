@@ -1,3 +1,14 @@
+## [1.8.49](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.48...v1.8.49) (2026-06-19)
+
+
+### Bug Fixes
+
+* **mobile:** make native toasts opaque and visually distinct ([c0110e4](https://github.com/hashpass-tech/hashpass.tech/commit/c0110e4ab7b45024e171125e591d7ef2d89a5e18)), closes [#1E1E1](https://github.com/hashpass-tech/hashpass.tech/issues/1E1E1) [#121212](https://github.com/hashpass-tech/hashpass.tech/issues/121212) [#2C2C2](https://github.com/hashpass-tech/hashpass.tech/issues/2C2C2)
+
+
+
+
+
 ## [1.8.48](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.47...v1.8.48) (2026-06-19)
 
 
