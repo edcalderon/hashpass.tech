@@ -185,8 +185,10 @@ watchdog_pid=""
 # Shut down the instance after this many seconds of idle (no active job).
 # The watchdog resets the timer whenever a job PID is alive — a build in progress
 # will never trigger shutdown, no matter how long it runs.
+# The CI workflow also sends an explicit stop-instances call after each build, so
+# this is a safety net for cases where that job is skipped or fails.
 # Override via RUNNER_IDLE_TIMEOUT in the runner env file.
-IDLE_TIMEOUT="${RUNNER_IDLE_TIMEOUT:-1800}"
+IDLE_TIMEOUT="${RUNNER_IDLE_TIMEOUT:-600}"
 LAST_ACTIVITY_FILE=/tmp/runner-last-activity
 RUNNER_PID_FILE=/tmp/runner-job-pid
 

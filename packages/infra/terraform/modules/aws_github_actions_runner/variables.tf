@@ -62,7 +62,7 @@ variable "allowed_ssh_cidrs" {
 variable "root_volume_size_gb" {
   description = "Root EBS volume size in GB"
   type        = number
-  default     = 150
+  default     = 80
 }
 
 variable "runner_version" {

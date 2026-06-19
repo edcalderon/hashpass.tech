@@ -29,9 +29,9 @@ variable "runner_labels" {
 }
 
 variable "instance_type" {
-  description = "EC2 instance type"
+  description = "EC2 instance type. t3a.large (8 GiB) handles incremental builds; upgrade to t3a.xlarge (16 GiB) if NDK recompilation OOMs."
   type        = string
-  default     = "t3a.xlarge"
+  default     = "t3a.large"
 }
 
 variable "instance_count" {
@@ -71,9 +71,9 @@ variable "allowed_ssh_cidrs" {
 }
 
 variable "root_volume_size_gb" {
-  description = "Root EBS volume size in GB"
+  description = "Root EBS volume size in GB. 80 GB covers Android SDK + Gradle cache + NDK outputs + pnpm store."
   type        = number
-  default     = 150
+  default     = 80
 }
 
 variable "runner_version" {
@@ -83,9 +83,9 @@ variable "runner_version" {
 }
 
 variable "detailed_monitoring" {
-  description = "Enable EC2 detailed monitoring"
+  description = "Enable EC2 detailed monitoring (adds ~$3.50/month per instance)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "cpu_alarm_threshold" {

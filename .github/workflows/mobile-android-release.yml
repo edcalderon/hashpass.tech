@@ -140,10 +140,10 @@ jobs:
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV || vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
       EXPO_PUBLIC_DIRECTUS_URL: ${{ vars.EXPO_PUBLIC_DIRECTUS_URL }}
       AUTH_PROVIDER: supabase
-      # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons.
-      # Set it here so every step (and its subprocesses, including Gradle's node/Metro) inherits it.
-      # 6144m: safe on t3a.xlarge (16 GiB) — Metro gets 6 GiB, Gradle holds ~8 GiB, OS ~2 GiB.
-      NODE_OPTIONS: '--max-old-space-size=6144'
+      # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons so this
+      # must live here. 3584m works safely on t3a.large (8 GiB) and t3a.xlarge (16 GiB) alike —
+      # Metro rarely exceeds 3 GiB; Gradle heap is tuned separately per-machine in Configure Gradle.
+      NODE_OPTIONS: '--max-old-space-size=3584'
       # Metro transform cache — persisted on EC2 EBS so file-level transforms are skipped between runs.
       # metro.config.js reads this and configures FileStore accordingly.
       METRO_CACHE_DIR: '/home/runner/.metro-cache'
@@ -431,19 +431,29 @@ jobs:
           vars_written=$(grep -c '.' "$env_file" || true)
           echo "Wrote ${vars_written} env var(s) to ${env_file}"
 
+      - name: Tune build memory limits
+        run: |
+          set -euo pipefail
+          # Detect available RAM and set Gradle heap + parallelism accordingly.
+          # This lets the same workflow run safely on t3a.large (8 GiB) and t3a.xlarge (16 GiB).
+          TOTAL_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
+          # Gradle gets 50% of RAM, capped at 8 GiB.
+          GRADLE_MB=$(( TOTAL_MB / 2 ))
+          [ "$GRADLE_MB" -gt 8192 ] && GRADLE_MB=8192
+          # Limit workers to 2 on ≤9 GiB machines to leave headroom for NDK subprocesses.
+          if [ "$TOTAL_MB" -le 9216 ]; then
+            GRADLE_WORKERS=2
+          else
+            GRADLE_WORKERS=4
+          fi
+          echo "GRADLE_HEAP=-Xmx${GRADLE_MB}m" >> "$GITHUB_ENV"
+          echo "GRADLE_WORKERS=${GRADLE_WORKERS}" >> "$GITHUB_ENV"
+          echo "RAM: ${TOTAL_MB} MiB → Gradle heap: ${GRADLE_MB} MiB, workers: ${GRADLE_WORKERS}"
+
       - name: Configure Gradle
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.gradle"
-          # GitHub-hosted ubuntu-latest: 4 vCPU / 16 GiB
-          # EC2 t3a.xlarge: 4 vCPU / 16 GiB — Xmx8g + 6144m NODE_OPTIONS leaves ~2 GiB for OS.
-          if [ "${{ inputs.runner }}" = "github-hosted" ]; then
-            GRADLE_HEAP="-Xmx8g"
-            GRADLE_WORKERS=4
-          else
-            GRADLE_HEAP="-Xmx8g"
-            GRADLE_WORKERS=4
-          fi
           printf '%s\n' \
             "org.gradle.jvmargs=${GRADLE_HEAP} -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError" \
             'org.gradle.daemon=false' \
@@ -498,3 +508,39 @@ jobs:
           else
             pnpm run android:release
           fi
+
+  # Stops the EC2 runner immediately after the build (success or failure) rather than
+  # waiting for the 10-min idle watchdog. Eliminates up to 10 min of idle billing per run.
+  stop-runner:
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: always() && inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_RUNNER_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_RUNNER_REGION || 'us-east-1' }}
+
+      - name: Stop EC2 instance
+        env:
+          INSTANCE_ID: ${{ vars.EC2_RUNNER_INSTANCE_ID }}
+        run: |
+          set -euo pipefail
+          STATE=$(aws ec2 describe-instances \
+            --instance-ids "$INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].State.Name' \
+            --output text)
+          echo "Instance $INSTANCE_ID is: $STATE"
+          case "$STATE" in
+            running|pending)
+              aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
+              echo "Stop request sent." ;;
+            stopped|stopping)
+              echo "Already stopping/stopped — nothing to do." ;;
+            *)
+              echo "Unexpected state: $STATE — skipping stop." ;;
+          esac
