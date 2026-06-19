@@ -608,6 +608,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       alignSelf: 'center',
       alignItems: 'center',
       justifyContent: 'center',
+      // Reserve the exact height FlipWords.web.tsx will occupy so the logo
+      // position doesn't shift when the animated text first enters the layout.
+      minHeight: isMobile ? 30 : 55,
     },
     tagline: {
       fontSize: isMobile ? 24 : 44,
