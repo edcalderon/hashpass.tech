@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.49)
+## 📋 Latest Changes (v1.8.50)
 
-### Bug Fixes
+### Performance Improvements
 
-* **mobile:** make native toasts opaque and visually distinct ([c0110e4](https://github.com/hashpass-tech/hashpass.tech/commit/c0110e4ab7b45024e171125e591d7ef2d89a5e18)), closes [#1E1E1](https://github.com/hashpass-tech/hashpass.tech/issues/1E1E1) [#121212](https://github.com/hashpass-tech/hashpass.tech/issues/121212) [#2C2C2](https://github.com/hashpass-tech/hashpass.tech/issues/2C2C2)
+* **ci:** skip pnpm install when lock file unchanged ([2d94b76](https://github.com/hashpass-tech/hashpass.tech/commit/2d94b76057c2e3ffcde39a16ea2612f3d426ce90))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

@@ -1,3 +1,14 @@
+## [1.8.50](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.49...v1.8.50) (2026-06-19)
+
+
+### Performance Improvements
+
+* **ci:** skip pnpm install when lock file unchanged ([2d94b76](https://github.com/hashpass-tech/hashpass.tech/commit/2d94b76057c2e3ffcde39a16ea2612f3d426ce90))
+
+
+
+
+
 ## [1.8.49](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.48...v1.8.49) (2026-06-19)
 
 
