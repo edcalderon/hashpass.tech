@@ -1,3 +1,14 @@
+## [1.8.45](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.44...v1.8.45) (2026-06-19)
+
+
+### Bug Fixes
+
+* **landing:** correct hero logo in light mode and prevent tagline displacement ([6f650f4](https://github.com/hashpass-tech/hashpass.tech/commit/6f650f469b78b7aa2136d3a6e8463328a0526525))
+
+
+
+
+
 ## [1.8.44](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.43...v1.8.44) (2026-06-19)
 
 
