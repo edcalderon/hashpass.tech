@@ -437,13 +437,15 @@ jobs:
           # Detect available RAM and set Gradle heap + parallelism accordingly.
           # This lets the same workflow run safely on t3a.large (8 GiB) and t3a.xlarge (16 GiB).
           TOTAL_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
-          # Gradle gets 50% of RAM, capped at 8 GiB.
-          GRADLE_MB=$(( TOTAL_MB / 2 ))
-          [ "$GRADLE_MB" -gt 8192 ] && GRADLE_MB=8192
-          # Limit workers to 2 on ≤9 GiB machines to leave headroom for NDK subprocesses.
+          # On ≤9 GiB machines (t3a.large = 8 GiB), Node already reserves 3584 MiB via
+          # NODE_OPTIONS. Cap Gradle at 3072 MiB so Node + Gradle + OS fits in 8 GiB.
+          # On larger instances give Gradle 50% of RAM, capped at 8 GiB.
           if [ "$TOTAL_MB" -le 9216 ]; then
+            GRADLE_MB=3072
             GRADLE_WORKERS=2
           else
+            GRADLE_MB=$(( TOTAL_MB / 2 ))
+            [ "$GRADLE_MB" -gt 8192 ] && GRADLE_MB=8192
             GRADLE_WORKERS=4
           fi
           echo "GRADLE_HEAP=-Xmx${GRADLE_MB}m" >> "$GITHUB_ENV"
