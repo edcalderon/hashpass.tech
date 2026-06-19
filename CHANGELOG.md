@@ -1,3 +1,14 @@
+## [1.8.48](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.47...v1.8.48) (2026-06-19)
+
+
+### Performance Improvements
+
+* **ci:** reduce Android build time — drop --stacktrace, add config cache ([b9b2939](https://github.com/hashpass-tech/hashpass.tech/commit/b9b2939af6474d96b7a5e8d7d33ad3b6949c6724))
+
+
+
+
+
 ## [1.8.47](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.46...v1.8.47) (2026-06-19)
 
 
