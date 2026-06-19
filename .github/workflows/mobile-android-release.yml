@@ -476,26 +476,42 @@ jobs:
 
       # On the EC2 runner the android/ directory persists on EBS between runs
       # (it is gitignored so checkout's git clean -ffd leaves it intact).
-      # When app.json + package.json + lockfile are unchanged we skip --clean and
-      # let Gradle do a fully incremental build — cuts Release Android from ~30 min
-      # to ~3-5 min by reusing all cached NDK outputs.
+      # When native-relevant config is unchanged we skip --clean and let Gradle
+      # do a fully incremental build — cuts Release Android from ~30 min to ~3-5 min.
+      #
+      # The hash intentionally excludes version fields from app.json/package.json
+      # because a bare version bump (patch release) does not affect native output.
+      # Only Expo plugins, android/ios config, and the dependency tree trigger a
+      # full prebuild + NDK recompile.
       - name: Conditional Expo prebuild
         run: |
           set -euo pipefail
           HASH_FILE="$HOME/.gradle/.prebuild-hash"
           ANDROID_DIR="apps/mobile-app/android"
 
-          CURRENT_HASH=$(cat \
-            apps/mobile-app/app.json \
-            apps/mobile-app/package.json \
-            pnpm-lock.yaml 2>/dev/null | sha256sum | cut -d' ' -f1)
+          # Extract only the fields that drive native output.
+          NATIVE_CONFIG=$(node -e "
+            const app = require('./apps/mobile-app/app.json').expo;
+            const pkg = require('./apps/mobile-app/package.json');
+            console.log(JSON.stringify({
+              plugins: app.plugins,
+              android: app.android,
+              ios: app.ios,
+              dependencies: pkg.dependencies,
+              devDependencies: pkg.devDependencies,
+            }));
+          " 2>/dev/null)
+          CURRENT_HASH=$(printf '%s' "$NATIVE_CONFIG" && cat pnpm-lock.yaml 2>/dev/null)
+          CURRENT_HASH=$(printf '%s' "$CURRENT_HASH" | sha256sum | cut -d' ' -f1)
           STORED_HASH=$(cat "$HASH_FILE" 2>/dev/null || echo "none")
 
+          echo "Native config hash: $CURRENT_HASH (stored: $STORED_HASH)"
+
           if [ "$CURRENT_HASH" = "$STORED_HASH" ] && [ -d "$ANDROID_DIR" ]; then
-            echo "Prebuild inputs unchanged — reusing cached android/ directory."
+            echo "Prebuild inputs unchanged — reusing cached android/ directory (incremental Gradle build)."
             echo "SKIP_EXPO_PREBUILD=1" >> "$GITHUB_ENV"
           else
-            echo "Running expo prebuild --clean (inputs changed or android/ missing)..."
+            echo "Running expo prebuild --clean (native config changed or android/ missing)..."
             pnpm --dir apps/mobile-app exec expo prebuild \
               --platform android --clean --non-interactive
             printf '%s' "$CURRENT_HASH" > "$HASH_FILE"
