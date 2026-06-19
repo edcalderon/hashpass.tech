@@ -509,8 +509,10 @@ jobs:
             pnpm run android:release
           fi
 
-  # Stops the EC2 runner immediately after the build (success or failure) rather than
-  # waiting for the 10-min idle watchdog. Eliminates up to 10 min of idle billing per run.
+  # Stops the EC2 runner after the build rather than waiting for the idle watchdog.
+  # Grace period: waits 90 s then checks the GitHub API — if the runner picked up a
+  # queued job in the meantime it is marked busy and we skip the stop so that job
+  # can finish. The watchdog (600 s timeout) handles shutdown after that build.
   stop-runner:
     runs-on: ubuntu-latest
     needs: [release]
@@ -518,6 +520,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read
     steps:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -525,11 +528,25 @@ jobs:
           role-to-assume: ${{ vars.AWS_RUNNER_ROLE_ARN }}
           aws-region: ${{ vars.AWS_RUNNER_REGION || 'us-east-1' }}
 
-      - name: Stop EC2 instance
+      - name: Stop EC2 instance (queue-aware)
         env:
           INSTANCE_ID: ${{ vars.EC2_RUNNER_INSTANCE_ID }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # Wait long enough for the ephemeral runner to re-register and for GitHub
+          # to dispatch any queued job to it (~5 s re-register + ~30 s dispatch + buffer).
+          echo "Waiting 90 s for any queued builds to start on the runner..."
+          sleep 90
+          # If the runner grabbed a queued job, it will be marked busy — leave it running.
+          BUSY=$(gh api "repos/${{ github.repository }}/actions/runners" \
+            --jq '[.runners[] | select(any(.labels[]; .name == "hashpass-mobile-release")) | select(.busy == true)] | length' \
+            2>/dev/null || echo 0)
+          if [ "${BUSY:-0}" -gt 0 ]; then
+            echo "Runner is busy with a queued job — skipping stop. Idle watchdog will shut down after that build."
+            exit 0
+          fi
+          # No active job — safe to stop now.
           STATE=$(aws ec2 describe-instances \
             --instance-ids "$INSTANCE_ID" \
             --query 'Reservations[0].Instances[0].State.Name' \
