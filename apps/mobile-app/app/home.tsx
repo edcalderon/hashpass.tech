@@ -34,7 +34,7 @@ import VersionStatusIndicator from '../components/VersionStatusIndicator';
 import CrystalForgeBackground from '../components/CrystalForgeBackground';
 import AnimatedGradientBackground from '../components/AnimatedGradientBackground';
 import { Svg, Path } from 'react-native-svg';
-import { getHashpassFullLogo } from '../lib/hashpass-logo';
+import { getHashpassFullLogo, getHashpassFooterLogo } from '../lib/hashpass-logo';
 
 // Import git info to check branch
 let gitInfo: { gitBranch?: string } = {};
@@ -456,7 +456,7 @@ export default function HomeScreen() {
               {/* Brand Section */}
               <View style={styles.footerBrand}>
                 <Image
-                  source={getHashpassFullLogo(isDark)}
+                  source={getHashpassFooterLogo(isDark)}
                   style={styles.footerLogo}
                   resizeMode="contain"
                 />
@@ -608,9 +608,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       alignSelf: 'center',
       alignItems: 'center',
       justifyContent: 'center',
-      // Reserve the exact height FlipWords.web.tsx will occupy so the logo
-      // position doesn't shift when the animated text first enters the layout.
-      minHeight: isMobile ? 30 : 55,
+      // Fixed height so the FlipWords animation (enter, exit, word-flip) never
+      // shifts the logo above it. overflow:hidden clips any spring overshoot.
+      height: isMobile ? 36 : 60,
+      overflow: 'hidden',
     },
     tagline: {
       fontSize: isMobile ? 24 : 44,

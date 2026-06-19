@@ -8,10 +8,11 @@ jest.mock('react-native', () => ({
 
 jest.mock('../../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg', () => 'white-cyan-svg');
 jest.mock('../../assets/logos/hashpass/logo-full-hashpass-black.svg', () => 'black-svg');
+jest.mock('../../assets/logos/hashpass/logo-full-hashpass-white.svg', () => 'white-svg');
 jest.mock('../../assets/logos/hashpass/logo-full-hashpass-white.png', () => 'white-native-png');
 jest.mock('../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png', () => 'white-cyan-native-png');
 
-const { getHashpassFullLogo } = require('../../lib/hashpass-logo');
+const { getHashpassFullLogo, getHashpassFooterLogo } = require('../../lib/hashpass-logo');
 
 describe('getHashpassFullLogo', () => {
   it('uses the white-cyan logo on dark web surfaces', () => {
@@ -30,5 +31,25 @@ describe('getHashpassFullLogo', () => {
     mockPlatform.OS = 'android';
 
     expect(getHashpassFullLogo(false)).toBe('white-native-png');
+  });
+});
+
+describe('getHashpassFooterLogo', () => {
+  it('uses the white-cyan logo on dark web footer', () => {
+    mockPlatform.OS = 'web';
+
+    expect(getHashpassFooterLogo(true)).toBe('white-cyan-svg');
+  });
+
+  it('uses the white logo on light web footer (dark-tinted background)', () => {
+    mockPlatform.OS = 'web';
+
+    expect(getHashpassFooterLogo(false)).toBe('white-svg');
+  });
+
+  it('uses the white native logo on light native footer', () => {
+    mockPlatform.OS = 'android';
+
+    expect(getHashpassFooterLogo(false)).toBe('white-native-png');
   });
 });
