@@ -4,6 +4,18 @@
 
 
 
+## [1.8.39] - 2026-06-19
+
+### Released
+- Version 1.8.39 release
+
+### Technical Details
+- Version: 1.8.39
+- Release Type: stable
+- Build Number: 202606190047
+- Release Date: 2026-06-19T00:47:46.118Z
+
+
 ## [1.8.36](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.35...v1.8.36) (2026-06-18)
 
 

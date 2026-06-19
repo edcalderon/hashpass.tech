@@ -46,6 +46,8 @@ import { supabase } from '../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../config/supabase-profiles';
 import { getHashpassFullLogo } from '../../lib/hashpass-logo';
 
+const HASHPASS_WEB_LIGHT_AUTH_LOGO = require('../../assets/logos/hashpass/logo-full-hashpass-white.svg');
+
 type EmailAuthMethod = 'magic-link' | 'otp-code';
 type BusyAction = 'magic-link' | 'otp-send' | 'otp-verify' | 'oauth' | null;
 type OtpDeliveryMethod = 'email' | 'sms';
@@ -461,6 +463,10 @@ export default function AuthScreen() {
   const hasShownOAuthErrorRef = useRef(false);
   const authProviderName = authService.getProviderName();
   const isNativeLightMode = Platform.OS !== 'web' && !isDark;
+  const authLogoSource =
+    Platform.OS === 'web' && !isDark
+      ? HASHPASS_WEB_LIGHT_AUTH_LOGO
+      : getHashpassFullLogo(isDark);
   const { supabaseUrl: publicSupabaseUrl, supabaseAnonKey: publicSupabaseAnonKey } =
     resolvePublicSupabaseConfig();
   const hasSupabasePasswordlessConfig = Boolean(publicSupabaseUrl && publicSupabaseAnonKey);
@@ -1257,7 +1263,7 @@ export default function AuthScreen() {
                 <View style={[styles.authCard, isDesktopLayout ? styles.authCardDesktop : null]}>
                   <View style={styles.logoContainer}>
                     <Image
-                      source={getHashpassFullLogo(isDark)}
+                      source={authLogoSource}
                       style={styles.logo}
                       resizeMode="contain"
                     />

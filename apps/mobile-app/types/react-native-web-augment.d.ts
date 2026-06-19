@@ -1,7 +1,8 @@
 import 'react-native';
 
 declare module 'react-native' {
-  // Web-only auth screens rely on `dataSet` hooks for enter-key handling.
+  // Web-only auth screens rely on `dataSet` hooks for enter-key handling,
+  // and the changed-file typecheck needs this module in scope.
   interface ViewProps {
     className?: string;
     dataSet?: Record<string, string>;
