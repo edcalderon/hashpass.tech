@@ -139,6 +139,10 @@ jobs:
       EXPO_PUBLIC_SUPABASE_URL: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_URL_DEV || vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ inputs.environment == 'development' && vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV || vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
       EXPO_PUBLIC_DIRECTUS_URL: ${{ vars.EXPO_PUBLIC_DIRECTUS_URL }}
+      # Used by getSupabaseOAuthRedirectUrl as the web-relay origin for native OAuth
+      # and magic-link callbacks. Without this, the polyfilled window.location.origin
+      # (localhost:8081 from Metro) gets embedded in the OAuth redirect URL.
+      EXPO_PUBLIC_SITE_URL: https://hashpass.tech
       AUTH_PROVIDER: supabase
       # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons so this
       # must live here. 3584m works safely on t3a.large (8 GiB) and t3a.xlarge (16 GiB) alike —

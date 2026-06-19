@@ -28,8 +28,14 @@ const normalizeOrigin = (origin?: string) => {
 const resolveWebOrigin = () => {
   if (typeof window !== 'undefined') {
     const origin = window.location?.origin;
-    // React Native polyfills may return the string "null" — treat it as absent.
-    if (origin && origin !== 'null') {
+    // React Native polyfills window but set location.origin to "null" or a
+    // localhost URL (Metro bundler). Neither is a valid redirect origin for OAuth.
+    const isUnusableOrigin =
+      !origin ||
+      origin === 'null' ||
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+    if (!isUnusableOrigin) {
       return normalizeOrigin(origin);
     }
   }

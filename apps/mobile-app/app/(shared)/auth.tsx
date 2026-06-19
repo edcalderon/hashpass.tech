@@ -2060,6 +2060,7 @@ const getStyles = (
       lineHeight: 20,
       color: isDark ? '#d5d6db' : '#4c4e55',
       textAlign: 'center',
+      width: '100%',
     },
     magicLinkConfirmationEmail: {
       fontSize: 14,
@@ -2073,6 +2074,7 @@ const getStyles = (
       color: isDark ? '#bec0c6' : '#61636a',
       textAlign: 'center',
       marginTop: 2,
+      width: '100%',
     },
     magicLinkCloseButton: {
       marginTop: 6,
