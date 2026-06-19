@@ -4,6 +4,18 @@
 
 
 
+## [1.8.40] - 2026-06-19
+
+### Released
+- Version 1.8.40 release
+
+### Technical Details
+- Version: 1.8.40
+- Release Type: stable
+- Build Number: 202606190052
+- Release Date: 2026-06-19T00:52:12.232Z
+
+
 ## [1.8.39] - 2026-06-19
 
 ### Released

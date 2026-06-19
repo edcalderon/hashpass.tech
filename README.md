@@ -17,16 +17,16 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.39)
+## 📋 Latest Changes (v1.8.40)
 
 ### Released
-- Version 1.8.39 release
+- Version 1.8.40 release
 
 ### Technical Details
-- Version: 1.8.39
+- Version: 1.8.40
 - Release Type: stable
-- Build Number: 202606190047
-- Release Date: 2026-06-19T00:47:46.118Z
+- Build Number: 202606190052
+- Release Date: 2026-06-19T00:52:12.232Z
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
