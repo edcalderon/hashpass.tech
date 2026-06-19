@@ -1,3 +1,14 @@
+## [1.8.44](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.43...v1.8.44) (2026-06-19)
+
+
+### Bug Fixes
+
+* **landing:** reserve tagline height to prevent logo displacement on load ([ecb8ca3](https://github.com/hashpass-tech/hashpass.tech/commit/ecb8ca39b78cdb0b05b3e8944de251ce45055786))
+
+
+
+
+
 ## [1.8.43](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.42...v1.8.43) (2026-06-19)
 
 

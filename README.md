@@ -17,12 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.43)
+## 📋 Latest Changes (v1.8.44)
 
 ### Bug Fixes
 
-* **ci:** cap Gradle heap at 3072 MiB on t3a.large to prevent OOM ([d2bfd0c](https://github.com/hashpass-tech/hashpass.tech/commit/d2bfd0c1ecdc70cc36054e5ae92efd7691c405d8))
-* use pure white logo for footer on dark mode web for better contrast ([750b401](https://github.com/hashpass-tech/hashpass.tech/commit/750b401db1e4b03a28f01f8d81871389f0ddec91))
+* **landing:** reserve tagline height to prevent logo displacement on load ([ecb8ca3](https://github.com/hashpass-tech/hashpass.tech/commit/ecb8ca39b78cdb0b05b3e8944de251ce45055786))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
