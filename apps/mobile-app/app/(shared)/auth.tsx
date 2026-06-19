@@ -1958,12 +1958,6 @@ const getStyles = (
       alignItems: 'center',
       alignSelf: 'center',
       marginBottom: 18,
-      paddingHorizontal: isNativeLightMode ? 18 : 0,
-      paddingVertical: isNativeLightMode ? 10 : 0,
-      borderRadius: isNativeLightMode ? 18 : 0,
-      backgroundColor: isNativeLightMode ? '#0f1115' : 'transparent',
-      borderWidth: isNativeLightMode ? 1 : 0,
-      borderColor: isNativeLightMode ? 'rgba(255,255,255,0.08)' : 'transparent',
     },
     logo: {
       width: isCompactMobile ? 272 : 302,

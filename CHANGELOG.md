@@ -4,6 +4,18 @@
 
 
 
+## [1.8.37] - 2026-06-19
+
+### Released
+- Fixed native light-mode auth contrast and web logo selection
+
+### Technical Details
+- Version: 1.8.37
+- Release Type: stable
+- Build Number: 202606190008
+- Release Date: 2026-06-19T00:08:26.955Z
+
+
 ## [1.8.35](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.34...v1.8.35) (2026-06-18)
 
 ### Released
