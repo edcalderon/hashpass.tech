@@ -56,6 +56,17 @@ const MAGIC_LINK_RESEND_COOLDOWN_SECONDS = 45;
 const OTP_RESEND_COOLDOWN_SECONDS = 45;
 const OTP_DIGIT_KEYS = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'] as const;
 
+const buildSupabaseCallbackPath = (returnTo: string, nativeRelay = false) => {
+  const params = new URLSearchParams();
+  params.set('returnTo', returnTo);
+
+  if (nativeRelay) {
+    params.set('nativeRelay', '1');
+  }
+
+  return `${SUPABASE_OAUTH_CALLBACK_PATH}?${params.toString()}`;
+};
+
 const normalizeReturnToPath = (rawPath: string): string => {
   let normalized = rawPath;
 
@@ -682,10 +693,11 @@ export default function AuthScreen() {
         window.localStorage.setItem('auth_signin_method', 'magic_link');
       }
 
+      const nativeRelay = Platform.OS !== 'web';
       const redirectTo = getSupabaseOAuthRedirectUrl({
-        callbackPath: `${SUPABASE_OAUTH_CALLBACK_PATH}?returnTo=${encodeURIComponent(redirectPath)}`,
+        callbackPath: buildSupabaseCallbackPath(redirectPath, nativeRelay),
         origin: typeof window !== 'undefined' ? window.location.origin : undefined,
-        platform: Platform.OS,
+        relayToNative: nativeRelay,
       });
 
       const { error } = await supabase.auth.signInWithOtp({

@@ -71,6 +71,15 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
         }
       : {}),
   };
+  const publicExtras = {
+    EXPO_PUBLIC_API_BASE_URL: env.EXPO_PUBLIC_API_BASE_URL,
+    EXPO_PUBLIC_FRONTEND_URL: env.EXPO_PUBLIC_FRONTEND_URL,
+    EXPO_PUBLIC_SITE_URL: env.EXPO_PUBLIC_SITE_URL,
+    EXPO_PUBLIC_EAS_BUILD_PROFILE: env.EXPO_PUBLIC_EAS_BUILD_PROFILE || env.EAS_BUILD_PROFILE,
+    EXPO_PUBLIC_SUPABASE_PROFILE: env.EXPO_PUBLIC_SUPABASE_PROFILE,
+    EXPO_PUBLIC_SUPABASE_URL: env.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  };
 
   return {
     ...baseConfig,
@@ -79,6 +88,9 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
     ...(Object.keys(android).length ? { android } : {}),
     extra: {
       ...(baseConfig.extra || {}),
+      ...Object.fromEntries(
+        Object.entries(publicExtras).filter(([, value]) => typeof value === 'string' && value.trim().length > 0)
+      ),
       eas: {
         ...((baseConfig.extra && baseConfig.extra.eas) || {}),
         ...(projectId ? { projectId } : {}),

@@ -8,6 +8,7 @@ type SupabaseOAuthRedirectOptions = {
   origin?: string;
   platform?: string;
   scheme?: string;
+  relayToNative?: boolean;
 };
 
 const normalizeCallbackPath = (callbackPath?: string) => {
@@ -32,6 +33,7 @@ const resolveWebOrigin = () => {
   const envOrigin =
     typeof process !== 'undefined'
       ? process.env.EXPO_PUBLIC_SITE_URL ||
+        process.env.EXPO_PUBLIC_FRONTEND_URL ||
         process.env.SITE_URL ||
         process.env.FRONTEND_URL ||
         ''
@@ -48,8 +50,9 @@ const normalizeScheme = (scheme?: string) => {
 export const getSupabaseOAuthRedirectUrl = (options: SupabaseOAuthRedirectOptions = {}) => {
   const callbackPath = normalizeCallbackPath(options.callbackPath);
   const platform = options.platform || Platform.OS;
+  const relayToNative = Boolean(options.relayToNative);
 
-  if (platform === 'web') {
+  if (platform === 'web' || relayToNative) {
     const origin = normalizeOrigin(options.origin || resolveWebOrigin());
     return origin ? `${origin}${callbackPath}` : callbackPath;
   }

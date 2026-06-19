@@ -50,4 +50,15 @@ describe('getSupabaseOAuthRedirectUrl', () => {
       })
     ).toBe('hashpass://auth/callback?returnTo=%2Fdashboard%2Fexplore');
   });
+
+  it('uses the web callback origin when native relay mode is requested', () => {
+    expect(
+      getSupabaseOAuthRedirectUrl({
+        callbackPath: 'auth/callback?nativeRelay=1&returnTo=%2Fdashboard%2Fexplore',
+        origin: 'https://hashpass.tech',
+        platform: 'android',
+        relayToNative: true,
+      })
+    ).toBe('https://hashpass.tech/auth/callback?nativeRelay=1&returnTo=%2Fdashboard%2Fexplore');
+  });
 });

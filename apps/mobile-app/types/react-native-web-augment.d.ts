@@ -1,6 +1,7 @@
 import 'react-native';
 
 declare module 'react-native' {
+  // Web-only auth screens rely on `dataSet` hooks for enter-key handling.
   interface ViewProps {
     className?: string;
     dataSet?: Record<string, string>;

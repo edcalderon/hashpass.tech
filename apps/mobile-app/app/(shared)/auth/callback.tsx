@@ -5,7 +5,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useTranslation } from '../../../i18n/i18n';
 import { Check, AlertCircle } from 'lucide-react-native';
-import { authService } from '@hashpass/auth';
+import { authService, SUPABASE_OAUTH_CALLBACK_PATH, SUPABASE_OAUTH_NATIVE_SCHEME } from '@hashpass/auth';
 import { createSessionFromUrl } from '../../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../../config/supabase-profiles';
 
@@ -77,6 +77,29 @@ const getHashAuthError = (): CallbackHashError | null => {
     return normalizeCallbackHashError(rawCode || rawError, sanitizedDescription);
 };
 
+const getNativeRelayUrl = (nativeRelayValue?: string | string[] | null) => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+        return null;
+    }
+
+    const normalizedNativeRelay = Array.isArray(nativeRelayValue)
+        ? nativeRelayValue[0]
+        : nativeRelayValue;
+
+    if (normalizedNativeRelay !== '1' && normalizedNativeRelay !== 'true') {
+        return null;
+    }
+
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('nativeRelay');
+
+    const search = currentUrl.searchParams.toString();
+    const hash = currentUrl.hash || '';
+    const queryString = search ? `?${search}` : '';
+
+    return `${SUPABASE_OAUTH_NATIVE_SCHEME}://${SUPABASE_OAUTH_CALLBACK_PATH.slice(1)}${queryString}${hash}`;
+};
+
 export default function AuthCallback() {
     const { t } = useTranslation('auth');
     const router = useRouter();
@@ -116,6 +139,8 @@ export default function AuthCallback() {
         'passwordlessUnavailableMessage',
         'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.'
     );
+    const nativeRelayValue = Array.isArray(params.nativeRelay) ? params.nativeRelay[0] : params.nativeRelay;
+    const nativeRelayUrl = getNativeRelayUrl(nativeRelayValue);
 
     const isTransientSessionError = (message: string) => {
         const value = message.toLowerCase();
@@ -319,6 +344,12 @@ export default function AuthCallback() {
     
     // Provider-agnostic OAuth callback handler
     useEffect(() => {
+        if (nativeRelayUrl) {
+            console.log('🔁 Native auth relay detected, forwarding to the app callback...');
+            window.location.replace(nativeRelayUrl);
+            return;
+        }
+
         // CRITICAL: Check sessionStorage first to prevent re-processing after navigation
         if (getHasNavigated()) {
             if (hasOAuthPayloadInUrl()) {

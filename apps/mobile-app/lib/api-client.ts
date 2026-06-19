@@ -5,8 +5,11 @@
 
 import React from 'react';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import { getCurrentEvent } from './event-detector';
 import { authService } from '@hashpass/auth';
+import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
+import { supabase } from './supabase';
 
 export type ApiResponse<T = any> = {
   data: T;
@@ -29,6 +32,72 @@ export interface ApiRequestOptions {
   skipEventSegment?: boolean; // Skip event-specific segment for global endpoints
   skipAuth?: boolean; // Skip attaching Authorization for public endpoints
 }
+
+const LOCALHOST_API_PATTERN = /^(https?:\/\/)?(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?(?:\/|$)/i;
+const REMOTE_API_BASE_BY_ENV = {
+  development: 'https://api-dev.hashpass.tech/api',
+  production: 'https://api.hashpass.tech/api',
+} as const;
+
+const normalizeBaseUrl = (value: string) => value.trim().replace(/\/$/, '');
+
+const readBuildEnvironment = (): 'development' | 'production' | null => {
+  const candidates = [
+    process.env.EXPO_PUBLIC_EAS_BUILD_PROFILE,
+    process.env.EAS_BUILD_PROFILE,
+    (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_EAS_BUILD_PROFILE,
+    (Constants?.expoConfig?.extra as any)?.EAS_BUILD_PROFILE,
+    process.env.EXPO_PUBLIC_SUPABASE_PROFILE,
+    process.env.SUPABASE_PROFILE,
+    (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_SUPABASE_PROFILE,
+    (Constants?.expoConfig?.extra as any)?.SUPABASE_PROFILE,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = String(candidate || '').trim().toLowerCase();
+    if (!normalized) continue;
+    if (normalized.includes('development') || normalized.includes('preview') || normalized.endsWith('-dev')) {
+      return 'development';
+    }
+    if (normalized.includes('production') || normalized === 'prod' || normalized.endsWith('-prod')) {
+      return 'production';
+    }
+  }
+
+  return null;
+};
+
+const resolveFallbackApiBaseUrl = () => {
+  const environment = readBuildEnvironment();
+  if (environment) {
+    return REMOTE_API_BASE_BY_ENV[environment];
+  }
+
+  const resolvedEnvironment = resolvePublicSupabaseConfig().environment;
+  return resolvedEnvironment === 'development'
+    ? REMOTE_API_BASE_BY_ENV.development
+    : REMOTE_API_BASE_BY_ENV.production;
+};
+
+const resolveRuntimeApiBaseUrl = () => {
+  const envBase =
+    ((process.env.EXPO_PUBLIC_API_BASE_URL || '') ||
+      (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_API_BASE_URL ||
+      '').trim();
+
+  if (!envBase) {
+    return Platform.OS === 'web' ? '' : resolveFallbackApiBaseUrl();
+  }
+
+  const normalizedBase = normalizeBaseUrl(envBase);
+  const isAbsolute = /^https?:\/\//i.test(normalizedBase);
+
+  if (Platform.OS !== 'web' && (!isAbsolute || LOCALHOST_API_PATTERN.test(normalizedBase))) {
+    return resolveFallbackApiBaseUrl();
+  }
+
+  return normalizedBase;
+};
 
 export class EventApiClient {
   private baseURL: string;
@@ -63,11 +132,10 @@ export class EventApiClient {
 
   constructor() {
     const event = getCurrentEvent();
-    // Prefer env/Constants first; fallback to event config; else default
-    const envBase = ((process.env.EXPO_PUBLIC_API_BASE_URL || '') || (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_API_BASE_URL || '').trim();
-    if (envBase) {
-      // Normalize env base: ensure it ends with a slash
-      this.baseURL = envBase.endsWith('/') ? envBase : `${envBase}/`;
+    const resolvedBaseUrl = resolveRuntimeApiBaseUrl();
+
+    if (resolvedBaseUrl) {
+      this.baseURL = resolvedBaseUrl.endsWith('/') ? resolvedBaseUrl : `${resolvedBaseUrl}/`;
     } else if (event?.api?.basePath) {
       // Ensure basePath starts with a slash and doesn't end with one
       this.baseURL = event.api.basePath.startsWith('/') 
@@ -99,18 +167,17 @@ export class EventApiClient {
     const event = getCurrentEvent();
     
     // Determine base URL: env/Constants wins, then event config, else constructor default
-    const envBase = ((process.env.EXPO_PUBLIC_API_BASE_URL || '') || (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_API_BASE_URL || '').trim();
+    const runtimeBaseUrl = resolveRuntimeApiBaseUrl();
     
     let baseUrl: string;
-    if (envBase) {
+    if (runtimeBaseUrl) {
       // If skipEventSegment is true, use the base URL directly (for global endpoints)
       if (options.skipEventSegment) {
-        baseUrl = envBase.endsWith('/') ? envBase.slice(0, -1) : envBase;
+        baseUrl = runtimeBaseUrl;
       } else {
         // If we have an env base URL (e.g., https://api.hashpass.tech/api/), append event-specific segment
         const eventSegment = this.getEventApiSegment(event);
-        const cleanEnvBase = envBase.endsWith('/') ? envBase : `${envBase}/`;
-        baseUrl = `${cleanEnvBase}${eventSegment}`;
+        baseUrl = `${runtimeBaseUrl}/${eventSegment}`;
       }
     } else {
       // No envBase - check if we should skip event segment
@@ -171,7 +238,7 @@ export class EventApiClient {
       typeof body === 'object' &&
       !(typeof FormData !== 'undefined' && body instanceof FormData);
 
-    if (shouldSerializeJson && !requestHeaders['Content-Type'] && method !== 'GET' && method !== 'HEAD') {
+    if (shouldSerializeJson && !requestHeaders['Content-Type'] && method !== 'GET') {
       requestHeaders['Content-Type'] = 'application/json';
     }
 
@@ -294,14 +361,13 @@ export class EventApiClient {
     formData.append('file', file);
 
     const event = getCurrentEvent();
-    const envBase = ((process.env.EXPO_PUBLIC_API_BASE_URL || '') || (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_API_BASE_URL || '').trim();
+    const runtimeBaseUrl = resolveRuntimeApiBaseUrl();
     
     let baseUrl: string;
-    if (envBase) {
+    if (runtimeBaseUrl) {
       // If we have an env base URL (e.g., https://hashpass.co/api/), append event-specific segment
       const eventSegment = this.getEventApiSegment(event);
-      const cleanEnvBase = envBase.endsWith('/') ? envBase : `${envBase}/`;
-      baseUrl = `${cleanEnvBase}${eventSegment}`;
+      baseUrl = `${runtimeBaseUrl}/${eventSegment}`;
     } else {
       // Fallback to event config or constructor default
       baseUrl = event?.api?.basePath || this.baseURL;
