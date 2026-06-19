@@ -372,6 +372,22 @@ function main() {
     writeStubModule(stubPath, stubInfo);
   }
 
+  // Copy global type augmentation files so that module augmentations (dataSet, className, etc.)
+  // are available even when `include` is empty in the temp tsconfig.
+  const typesSourceDir = path.join(ROOT_DIR, 'apps', 'mobile-app', 'types');
+  const typesDestDir = path.join(tempBaseDir, 'types');
+  if (fs.existsSync(typesSourceDir)) {
+    fs.mkdirSync(typesDestDir, { recursive: true });
+    for (const entry of fs.readdirSync(typesSourceDir)) {
+      if (entry.endsWith('.d.ts')) {
+        const src = path.join(typesSourceDir, entry);
+        const dest = path.join(typesDestDir, entry);
+        fs.copyFileSync(src, dest);
+        files.push(path.relative(tempDir, dest));
+      }
+    }
+  }
+
   const tempConfig = {
     extends: MOBILE_APP_TSCONFIG,
     compilerOptions: {
