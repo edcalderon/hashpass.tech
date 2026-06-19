@@ -1,3 +1,14 @@
+## [1.8.47](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.46...v1.8.47) (2026-06-19)
+
+
+### Bug Fixes
+
+* **auth:** correct OAuth/magic-link redirect URL on native + center dialog ([7b650c4](https://github.com/hashpass-tech/hashpass.tech/commit/7b650c474de6824a170a5b3b27309cb55b574a0e))
+
+
+
+
+
 ## [1.8.46](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.45...v1.8.46) (2026-06-19)
 
 
