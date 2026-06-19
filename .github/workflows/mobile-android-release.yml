@@ -199,7 +199,17 @@ jobs:
           eas --version
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: |
+          set -euo pipefail
+          LOCK_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1)
+          HASH_FILE="$HOME/.gradle/.pnpm-lock-hash"
+          STORED=$(cat "$HASH_FILE" 2>/dev/null || echo "none")
+          if [ "$LOCK_HASH" = "$STORED" ] && [ -d node_modules ]; then
+            echo "pnpm-lock.yaml unchanged and node_modules present — skipping install."
+          else
+            pnpm install --frozen-lockfile --prefer-offline
+            printf '%s' "$LOCK_HASH" > "$HASH_FILE"
+          fi
 
       - name: Materialize Google Play service account
         run: |
