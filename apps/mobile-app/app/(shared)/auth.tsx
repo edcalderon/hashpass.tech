@@ -695,7 +695,7 @@ export default function AuthScreen() {
     setOtpError('');
 
     try {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem('auth_signin_method', 'magic_link');
       }
 
@@ -737,7 +737,7 @@ export default function AuthScreen() {
         t('magicLinkFailed', 'Could not send magic link. Please try again.')
       );
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.removeItem('auth_signin_method');
       }
 
@@ -942,7 +942,7 @@ export default function AuthScreen() {
     setBusyAction('oauth');
 
     try {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem('auth_signin_method', 'google_oauth');
       }
 
@@ -959,7 +959,7 @@ export default function AuthScreen() {
         t('oauthError', 'Google sign-in failed. Please try again.')
       );
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.removeItem('auth_signin_method');
       }
 
