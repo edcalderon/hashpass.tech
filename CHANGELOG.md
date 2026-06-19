@@ -1,3 +1,14 @@
+## [1.8.46](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.45...v1.8.46) (2026-06-19)
+
+
+### Bug Fixes
+
+* **ci:** exclude version field from prebuild hash to enable incremental builds ([4db87bc](https://github.com/hashpass-tech/hashpass.tech/commit/4db87bc2f7f7752c47392f998b6f696b1347cdb2))
+
+
+
+
+
 ## [1.8.45](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.44...v1.8.45) (2026-06-19)
 
 
