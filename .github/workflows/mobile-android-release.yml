@@ -466,6 +466,8 @@ jobs:
             'org.gradle.parallel=true' \
             "org.gradle.workers.max=${GRADLE_WORKERS}" \
             'org.gradle.caching=true' \
+            'org.gradle.configuration-cache=true' \
+            'org.gradle.configuration-cache.problems=warn' \
             >> "$HOME/.gradle/gradle.properties"
 
       - name: Ensure Android SDK is writable

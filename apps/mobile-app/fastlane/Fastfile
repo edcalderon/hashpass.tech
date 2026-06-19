@@ -68,7 +68,6 @@ def build_android_bundle
     build_type: 'Release',
     project_dir: 'android',
     properties: resolve_android_signing_properties,
-    flags: '--stacktrace',
     print_command: false,
     print_command_output: true
   )
