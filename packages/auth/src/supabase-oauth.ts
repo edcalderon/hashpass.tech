@@ -26,8 +26,12 @@ const normalizeOrigin = (origin?: string) => {
 };
 
 const resolveWebOrigin = () => {
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return normalizeOrigin(window.location.origin);
+  if (typeof window !== 'undefined') {
+    const origin = window.location?.origin;
+    // React Native polyfills may return the string "null" — treat it as absent.
+    if (origin && origin !== 'null') {
+      return normalizeOrigin(origin);
+    }
   }
 
   const envOrigin =

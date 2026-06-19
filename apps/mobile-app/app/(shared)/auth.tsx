@@ -700,9 +700,13 @@ export default function AuthScreen() {
       }
 
       const nativeRelay = Platform.OS !== 'web';
+      // React Native polyfills may expose window.location.origin as the string "null".
+      // Treat that as absent so getSupabaseOAuthRedirectUrl falls back to the env var.
+      const rawWindowOrigin = typeof window !== 'undefined' ? window.location?.origin : undefined;
+      const safeWindowOrigin = rawWindowOrigin && rawWindowOrigin !== 'null' ? rawWindowOrigin : undefined;
       const redirectTo = getSupabaseOAuthRedirectUrl({
         callbackPath: buildSupabaseCallbackPath(redirectPath, nativeRelay),
-        origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+        origin: safeWindowOrigin,
         relayToNative: nativeRelay,
       });
 
