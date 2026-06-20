@@ -353,9 +353,9 @@ export const useAuth = () => {
       if (!authService.handleOAuthCallback) {
         throw new Error('OAuth callback not supported by current auth provider');
       }
-      
+
       const result = await authService.handleOAuthCallback(codeOrParams, state);
-      
+
       if (result.error) {
         throw new Error(result.error);
       }

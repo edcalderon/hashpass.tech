@@ -2,7 +2,7 @@
  * Directus authentication provider implementation
  */
 
-import {
+import type {
   IAuthProvider,
   AuthUser,
   AuthSession,
@@ -12,7 +12,8 @@ import {
 } from '../types';
 import { Platform } from 'react-native';
 import { ENV_CONFIG } from '@hashpass/config';
-import { DirectusApiClient, DirectusApiError } from './directus-api-client';
+import { DirectusApiClient } from './directus-api-client';
+import type { DirectusApiError } from './directus-api-client';
 
 export class DirectusAuthProvider implements IAuthProvider {
   private baseUrl: string;

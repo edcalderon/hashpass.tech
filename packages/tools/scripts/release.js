@@ -62,6 +62,24 @@ function runAndRead(binary, args, options = {}) {
   return (result.stdout || '').trim();
 }
 
+function switchBranch(branch, options = {}) {
+  runInherit('git', ['switch', branch], options);
+}
+
+function stashDirtyWorktree(options = {}) {
+  if (!options.allowDirty || options.dryRun) return false;
+  if (isCleanTree()) return false;
+
+  runInherit('git', ['stash', 'push', '-u', '-m', 'codex-release-auto-stash', '--', '.'], options);
+  return true;
+}
+
+function restoreDirtyWorktree(options = {}) {
+  if (!options.allowDirty || options.dryRun) return;
+
+  runInherit('git', ['stash', 'pop', '--index'], options);
+}
+
 function getCurrentBranch() {
   const envBranch =
     process.env.RELEASE_BRANCH ||
@@ -294,8 +312,12 @@ function printUsage() {
       'Examples:',
       '  npm run release -- patch',
       '  npm run release:minor',
-      '  npm run release -- patch --promote',
+      '  npm run release -- patch --branch develop --promote',
+      '  npm run release:promote',
       '  npm run release -- major --branch main',
+      '',
+      'Promote flow:',
+      '  develop release -> main sync -> develop fast-forward + dev re-release',
     ].join('\n')
   );
 }
@@ -396,7 +418,7 @@ function promoteDevelopToMain(options, releaseBranch, releaseSha) {
   if (!options.promote) return;
 
   if (releaseBranch !== 'develop') {
-    throw new Error('--promote is only supported from develop.');
+    throw new Error('--promote is only supported when releasing from develop.');
   }
 
   if (options.noCommit) {
@@ -406,14 +428,13 @@ function promoteDevelopToMain(options, releaseBranch, releaseSha) {
   if (options.dryRun) {
     console.log('$ git fetch origin main');
     console.log('$ git switch main');
-    console.log(`$ git merge ${releaseSha}`);
+    console.log(`$ git merge ${releaseSha || '<release-sha>'}`);
     console.log('$ git push origin main');
-    console.log(`$ git switch ${releaseBranch}`);
     return;
   }
 
   runInherit('git', ['fetch', 'origin', 'main'], options);
-  runInherit('git', ['switch', 'main'], options);
+  switchBranch('main', options);
 
   const isAncestorResult = spawnSync('git', ['merge-base', '--is-ancestor', 'origin/main', releaseSha], {
     cwd: ROOT_DIR,
@@ -426,10 +447,13 @@ function promoteDevelopToMain(options, releaseBranch, releaseSha) {
 
   runInherit('git', mergeArgs, options);
   runGitPush(options, 'main');
-  runInherit('git', ['switch', releaseBranch], options);
 }
 
 function main() {
+  let initialBranch = '';
+  let currentBranch = '';
+  let stashApplied = false;
+
   try {
     const options = parseArgs(process.argv.slice(2));
 
@@ -438,10 +462,22 @@ function main() {
       return;
     }
 
-    const branch = options.branch || getCurrentBranch();
+    initialBranch = getCurrentBranch();
+    const branch = options.branch || initialBranch;
     const releaseBranch = branch.trim();
 
     ensureCleanGitState(options);
+
+    if (releaseBranch !== initialBranch && !isCleanTree()) {
+      stashApplied = stashDirtyWorktree(options);
+    }
+
+    currentBranch = initialBranch;
+
+    if (releaseBranch !== initialBranch) {
+      switchBranch(releaseBranch, options);
+      currentBranch = releaseBranch;
+    }
 
     console.log('');
     console.log('Release plan');
@@ -472,8 +508,22 @@ function main() {
       runGitPush(options, releaseBranch);
     }
 
+    let developSync = null;
     if (options.promote) {
       promoteDevelopToMain(options, releaseBranch, releaseSha);
+      currentBranch = 'main';
+      developSync = syncDevelopAfterPromote(options);
+      currentBranch = 'develop';
+    }
+
+    if (currentBranch !== initialBranch) {
+      switchBranch(initialBranch, options);
+      currentBranch = initialBranch;
+    }
+
+    if (stashApplied) {
+      restoreDirtyWorktree(options);
+      stashApplied = false;
     }
 
     console.log('');
@@ -481,9 +531,29 @@ function main() {
     console.log(`  Branch: ${releaseBranch}`);
     if (releaseTag) console.log(`  Tag:    ${releaseTag}`);
     console.log(`  SHA:    ${releaseSha}`);
+    if (developSync?.developTag) {
+      console.log(`  Develop sync tag: ${developSync.developTag}`);
+      console.log(`  Develop sync SHA: ${developSync.developSha}`);
+    }
   } catch (error) {
     console.error(`Release failed: ${error.message}`);
     process.exitCode = 1;
+  } finally {
+    try {
+      if (currentBranch && initialBranch && currentBranch !== initialBranch) {
+        switchBranch(initialBranch, { dryRun: false });
+      }
+    } catch (_error) {
+      // best effort restore; the main error is reported above
+    }
+
+    try {
+      if (stashApplied) {
+        restoreDirtyWorktree({ allowDirty: true, dryRun: false });
+      }
+    } catch (_error) {
+      // best effort restore; the main error is reported above
+    }
   }
 }
 

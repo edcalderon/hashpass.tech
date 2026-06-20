@@ -304,7 +304,11 @@ function main() {
   }
 
   const baseCommit = resolveBaseCommit(options.base || '');
-  const changedFiles = getChangedFiles(baseCommit).filter(isTypeScriptFile);
+  // apps/web-app uses its own Next.js tsconfig; skip it here to avoid false positives
+  // when web-app files are untracked or changed alongside mobile/packages work.
+  const changedFiles = getChangedFiles(baseCommit)
+    .filter(isTypeScriptFile)
+    .filter(f => !f.startsWith('apps/web-app/') && !f.startsWith('apps/docs/'));
   const localSpecifierMatchers = loadLocalSpecifierMatchers(MOBILE_APP_TSCONFIG);
 
   if (changedFiles.length === 0) {

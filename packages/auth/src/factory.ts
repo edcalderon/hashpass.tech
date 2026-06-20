@@ -2,7 +2,7 @@
  * Authentication provider factory
  */
 
-import { IAuthProvider, AuthProviderConfig } from './types';
+import type { IAuthProvider, AuthProviderConfig } from './types';
 import { DirectusAuthProvider } from './providers/directus';
 import { SupabaseAuthProvider } from './providers/supabase';
 import { BetterAuthProvider } from './providers/better-auth';
