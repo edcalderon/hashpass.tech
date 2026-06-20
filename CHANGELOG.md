@@ -1,3 +1,18 @@
+## [1.8.52](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.51...v1.8.52) (2026-06-20)
+
+
+### Bug Fixes
+
+* **native:** use Directus OAuth flow on native and fix toast overflow ([160dd26](https://github.com/hashpass-tech/hashpass.tech/commit/160dd26bd9d3dcc81312c7aec44b04b3a1100910))
+* **typecheck:** stub value imports as declare class so they work as types too ([f18c339](https://github.com/hashpass-tech/hashpass.tech/commit/f18c339d3147ded27cf95d6744c3995a09bc2c90))
+* **typecheck:** use const:any for value stubs, declare class only for new-called imports ([d413599](https://github.com/hashpass-tech/hashpass.tech/commit/d4135999e55b46d0ced2c6ff0ef611f30d4825df))
+* **typecheck:** use declare function for function stubs, declare class only for new-called imports ([a27f456](https://github.com/hashpass-tech/hashpass.tech/commit/a27f456c2ca1bf20d76f78fc13acb042f535bbf0))
+* **typecheck:** use import type for type-only imports, skip web-app from mobile typecheck ([25b39f8](https://github.com/hashpass-tech/hashpass.tech/commit/25b39f8fbfb454997b49575e142da6302e436bd0))
+
+
+
+
+
 ## [1.8.51](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.50...v1.8.51) (2026-06-20)
 
 
