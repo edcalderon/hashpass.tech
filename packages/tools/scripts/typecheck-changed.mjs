@@ -237,7 +237,9 @@ function writeStubModule(stubPath, stubInfo) {
   }
 
   for (const name of stubInfo.namedValueImports) {
-    lines.push(`export const ${name}: any;`);
+    // Use declare class so the name is usable as both a value (new X()) and a type
+    // (private field: X) in the importing file. A plain const can't be used as a type.
+    lines.push(`export declare class ${name} { constructor(...args: any[]); [key: string]: any; static [key: string]: any; }`);
   }
 
   for (const name of stubInfo.namedTypeImports) {
