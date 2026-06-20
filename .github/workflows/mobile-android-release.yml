@@ -143,7 +143,10 @@ jobs:
       # and magic-link callbacks. Without this, the polyfilled window.location.origin
       # (localhost:8081 from Metro) gets embedded in the OAuth redirect URL.
       EXPO_PUBLIC_SITE_URL: https://hashpass.tech
-      AUTH_PROVIDER: supabase
+      # Directus is the primary auth provider for native. Supabase credentials are
+      # still bundled above so magic-link / OTP flows (which call supabase.auth directly)
+      # continue to work alongside Directus OAuth.
+      AUTH_PROVIDER: directus
       # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons so this
       # must live here. 3584m works safely on t3a.large (8 GiB) and t3a.xlarge (16 GiB) alike —
       # Metro rarely exceeds 3 GiB; Gradle heap is tuned separately per-machine in Configure Gradle.

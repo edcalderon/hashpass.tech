@@ -334,7 +334,10 @@ export class DirectusAuthProvider implements IAuthProvider {
         // Native: open OAuth in system browser. Use Directus's JSON mode so tokens are
         // returned in the redirect URL instead of a cookie (cookies aren't shared between
         // the system browser and the React Native HTTP client).
-        const nativeCallbackUrl = 'https://hashpass.tech/auth/callback?nativeRelay=1';
+        const siteOrigin =
+          (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_SITE_URL) ||
+          'https://hashpass.tech';
+        const nativeCallbackUrl = `${siteOrigin}/auth/callback?nativeRelay=1`;
         const oauthUrl =
           `${this.baseUrl}/auth/login/${encodeURIComponent(provider)}` +
           `?redirect=${encodeURIComponent(nativeCallbackUrl)}&mode=json`;
