@@ -1,3 +1,14 @@
+## [1.8.51](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.50...v1.8.51) (2026-06-20)
+
+
+### Bug Fixes
+
+* **auth:** fix Google OAuth and magic-link redirecting to localhost/Supabase domain on native ([a206a2e](https://github.com/hashpass-tech/hashpass.tech/commit/a206a2ef3ff1f8f8ead12c5e71c8f458427bbc6e))
+
+
+
+
+
 ## [1.8.50](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.49...v1.8.50) (2026-06-19)
 
 

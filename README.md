@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.50)
+## 📋 Latest Changes (v1.8.51)
 
-### Performance Improvements
+### Bug Fixes
 
-* **ci:** skip pnpm install when lock file unchanged ([2d94b76](https://github.com/hashpass-tech/hashpass.tech/commit/2d94b76057c2e3ffcde39a16ea2612f3d426ce90))
+* **auth:** fix Google OAuth and magic-link redirecting to localhost/Supabase domain on native ([a206a2e](https://github.com/hashpass-tech/hashpass.tech/commit/a206a2ef3ff1f8f8ead12c5e71c8f458427bbc6e))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
