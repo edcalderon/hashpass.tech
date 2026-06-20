@@ -307,6 +307,23 @@ export const useAuth = () => {
           throw new Error('Google sign-in completed, but the app did not receive a callback URL.');
         }
 
+        const providerName = authService.getProviderName();
+
+        if (providerName === 'directus' && authService.handleOAuthCallback) {
+          // Parse query params from the deep-link callback URL and hand them to the
+          // Directus provider which extracts the access_token returned via mode=json.
+          const callbackUrlObj = new URL(browserResult.url);
+          const callbackParams: Record<string, string> = {};
+          callbackUrlObj.searchParams.forEach((v, k) => { callbackParams[k] = v; });
+
+          const callbackResult = await authService.handleOAuthCallback(callbackParams);
+          if (callbackResult.error) {
+            throw new Error(callbackResult.error);
+          }
+          return { pending: true };
+        }
+
+        // Supabase: extract tokens from URL fragment / query params
         const sessionResult = await createSessionFromUrl(browserResult.url);
 
         if (sessionResult.error) {
@@ -321,7 +338,7 @@ export const useAuth = () => {
       }
 
       if (Platform.OS !== 'web' && !result.oauthUrl) {
-        throw new Error('Google sign-in could not start. Check the Supabase OAuth configuration.');
+        throw new Error('Google sign-in could not start. Check the OAuth configuration.');
       }
 
       return result;

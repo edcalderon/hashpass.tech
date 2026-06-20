@@ -204,11 +204,13 @@ const resolveProviderName = (hostname?: string | null): AuthProviderConfig['prov
   // Native core builds can still land with the Directus default if AUTH_PROVIDER
   // was not injected. When Supabase public credentials are available, prefer it
   // on React Native so passwordless and browser-based Google sign-in work.
+  // Explicit AUTH_PROVIDER=directus bypasses this so native can use Directus OAuth.
   if (
     isNativeReactRuntime &&
     hasSupabaseCredentials &&
     tenantProvider !== 'better-auth' &&
-    explicitProvider !== 'better-auth'
+    explicitProvider !== 'better-auth' &&
+    explicitProvider !== 'directus'
   ) {
     return 'supabase';
   }

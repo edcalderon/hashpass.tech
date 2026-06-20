@@ -280,9 +280,13 @@ const ToastItem: React.FC<ToastItemProps> = ({
                 {toast.title}
               </Text>
               {toast.message && (
-                <Text style={[styles.toastMessage, {
-                  color: isDark ? '#AEAEB2' : '#6C6C70',
-                }]}>
+                <Text
+                  style={[styles.toastMessage, {
+                    color: isDark ? '#AEAEB2' : '#6C6C70',
+                  }]}
+                  numberOfLines={3}
+                  ellipsizeMode="tail"
+                >
                   {toast.message}
                 </Text>
               )}
@@ -378,7 +382,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   toastContent: {
-    flex: 1,
+    flexShrink: 1,
   },
   toastHeader: {
     flexDirection: 'row',
