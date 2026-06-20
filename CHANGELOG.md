@@ -1,3 +1,14 @@
+## [1.8.53](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.52...v1.8.53) (2026-06-20)
+
+
+### Bug Fixes
+
+* **ci:** set AUTH_PROVIDER=directus for native builds; use EXPO_PUBLIC_SITE_URL for Directus OAuth relay ([7a8d39f](https://github.com/hashpass-tech/hashpass.tech/commit/7a8d39fb74cee751b562931551b60bd5331ee3dd))
+
+
+
+
+
 ## [1.8.52](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.51...v1.8.52) (2026-06-20)
 
 
