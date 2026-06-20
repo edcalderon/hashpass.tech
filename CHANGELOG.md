@@ -1,3 +1,14 @@
+## [1.8.54](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.53...v1.8.54) (2026-06-20)
+
+
+### Bug Fixes
+
+* **ci:** add actions:read permission to start-runner job ([fd31155](https://github.com/hashpass-tech/hashpass.tech/commit/fd31155096ce160e13dc2842ebda26f890378bbc))
+
+
+
+
+
 ## [1.8.53](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.52...v1.8.53) (2026-06-20)
 
 

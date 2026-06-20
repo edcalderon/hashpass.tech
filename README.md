@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.53)
+## 📋 Latest Changes (v1.8.54)
 
 ### Bug Fixes
 
-* **ci:** set AUTH_PROVIDER=directus for native builds; use EXPO_PUBLIC_SITE_URL for Directus OAuth relay ([7a8d39f](https://github.com/hashpass-tech/hashpass.tech/commit/7a8d39fb74cee751b562931551b60bd5331ee3dd))
+* **ci:** add actions:read permission to start-runner job ([fd31155](https://github.com/hashpass-tech/hashpass.tech/commit/fd31155096ce160e13dc2842ebda26f890378bbc))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
