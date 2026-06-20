@@ -1,3 +1,14 @@
+## [1.8.55](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.54...v1.8.55) (2026-06-20)
+
+
+### Bug Fixes
+
+* **ci:** replace runner online poll with 30s sleep ([42d89b8](https://github.com/hashpass-tech/hashpass.tech/commit/42d89b8fa6f9019d1a86c152e19fa81fb1d46f6c))
+
+
+
+
+
 ## [1.8.54](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.53...v1.8.54) (2026-06-20)
 
 

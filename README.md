@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.54)
+## 📋 Latest Changes (v1.8.55)
 
 ### Bug Fixes
 
-* **ci:** add actions:read permission to start-runner job ([fd31155](https://github.com/hashpass-tech/hashpass.tech/commit/fd31155096ce160e13dc2842ebda26f890378bbc))
+* **ci:** replace runner online poll with 30s sleep ([42d89b8](https://github.com/hashpass-tech/hashpass.tech/commit/42d89b8fa6f9019d1a86c152e19fa81fb1d46f6c))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
