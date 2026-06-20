@@ -236,18 +236,24 @@ function writeStubModule(stubPath, stubInfo) {
     lines.push(`export default ${stubInfo.defaultImport};`);
   }
 
-  for (const name of stubInfo.namedValueImports) {
-    // Use declare class so the name is usable as both a value (new X()) and a type
-    // (private field: X) in the importing file. A plain const can't be used as a type.
+  for (const name of stubInfo.namedClassImports) {
+    // Class stub: usable as a constructor (new X()) and as a type annotation (field: X).
     lines.push(`export declare class ${name} { constructor(...args: any[]); [key: string]: any; static [key: string]: any; }`);
+  }
+
+  for (const name of stubInfo.namedValueImports) {
+    // Function stub: callable without `new`. Not usable as a bare type name, but
+    // type-only usages should be `import type` in the source file.
+    lines.push(`export declare function ${name}(...args: any[]): any;`);
   }
 
   for (const name of stubInfo.namedTypeImports) {
     if (stubInfo.namedValueImports.has(name)) continue;
+    if (stubInfo.namedClassImports.has(name)) continue;
     lines.push(`export type ${name} = any;`);
   }
 
-  if (!stubInfo.defaultImport && stubInfo.namedValueImports.size === 0 && stubInfo.namedTypeImports.size === 0) {
+  if (!stubInfo.defaultImport && stubInfo.namedValueImports.size === 0 && stubInfo.namedClassImports.size === 0 && stubInfo.namedTypeImports.size === 0) {
     lines.push('export {};');
   }
 
@@ -349,6 +355,7 @@ function main() {
         stubModules.set(stubPath, {
           defaultImport: '',
           namedValueImports: new Set(),
+          namedClassImports: new Set(),
           namedTypeImports: new Set(),
         });
       }
@@ -365,7 +372,15 @@ function main() {
       }
 
       for (const name of parsed.namedValueImports) {
-        stubInfo.namedValueImports.add(name);
+        // If this file uses `new Name(` it's a class; generate a class stub so the name
+        // can be used as both a constructor and a type annotation. Otherwise generate a
+        // function stub so it can be called directly without `new`.
+        const isClassUsage = new RegExp(`\\bnew\\s+${name}\\s*[<(]`).test(content);
+        if (isClassUsage) {
+          stubInfo.namedClassImports.add(name);
+        } else {
+          stubInfo.namedValueImports.add(name);
+        }
       }
 
       for (const name of parsed.namedTypeImports) {
