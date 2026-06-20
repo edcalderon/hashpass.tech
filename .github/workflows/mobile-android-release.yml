@@ -442,6 +442,11 @@ jobs:
           [ -n "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]   && printf 'EXPO_PUBLIC_SUPABASE_ANON_KEY=%s\n'   "$EXPO_PUBLIC_SUPABASE_ANON_KEY"   >> "$env_file"
           [ -n "${EXPO_PUBLIC_DIRECTUS_URL:-}" ]        && printf 'EXPO_PUBLIC_DIRECTUS_URL=%s\n'        "$EXPO_PUBLIC_DIRECTUS_URL"        >> "$env_file"
           [ -n "${AUTH_PROVIDER:-}" ]                   && printf 'AUTH_PROVIDER=%s\n'                   "$AUTH_PROVIDER"                   >> "$env_file"
+          # EXPO_PUBLIC_SITE_URL is the web-relay origin used by getSupabaseOAuthRedirectUrl
+          # for both Google OAuth (native relay) and magic-link emailRedirectTo.
+          # Without this in the .env file, window.location.origin (localhost from Metro)
+          # leaks into the redirect URL and Supabase/email clients land on localhost.
+          [ -n "${EXPO_PUBLIC_SITE_URL:-}" ]            && printf 'EXPO_PUBLIC_SITE_URL=%s\n'            "$EXPO_PUBLIC_SITE_URL"            >> "$env_file"
           vars_written=$(grep -c '.' "$env_file" || true)
           echo "Wrote ${vars_written} env var(s) to ${env_file}"
 
@@ -549,8 +554,8 @@ jobs:
   # can finish. The watchdog (600 s timeout) handles shutdown after that build.
   stop-runner:
     runs-on: ubuntu-latest
-    needs: [release]
-    if: always() && inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
+    needs: [release, start-runner]
+    if: always() && needs.start-runner.result == 'success'
     permissions:
       id-token: write
       contents: read

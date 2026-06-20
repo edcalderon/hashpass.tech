@@ -700,10 +700,15 @@ export default function AuthScreen() {
       }
 
       const nativeRelay = Platform.OS !== 'web';
-      // React Native polyfills may expose window.location.origin as the string "null".
-      // Treat that as absent so getSupabaseOAuthRedirectUrl falls back to the env var.
+      // React Native polyfills expose window.location.origin as "null" or the Metro
+      // dev-server URL (http://localhost:8081). Both are unusable as OAuth redirect
+      // origins — fall back to the EXPO_PUBLIC_SITE_URL env var instead.
       const rawWindowOrigin = typeof window !== 'undefined' ? window.location?.origin : undefined;
-      const safeWindowOrigin = rawWindowOrigin && rawWindowOrigin !== 'null' ? rawWindowOrigin : undefined;
+      const isUnusableOrigin =
+        !rawWindowOrigin ||
+        rawWindowOrigin === 'null' ||
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(rawWindowOrigin);
+      const safeWindowOrigin = isUnusableOrigin ? undefined : rawWindowOrigin;
       const redirectTo = getSupabaseOAuthRedirectUrl({
         callbackPath: buildSupabaseCallbackPath(redirectPath, nativeRelay),
         origin: safeWindowOrigin,
