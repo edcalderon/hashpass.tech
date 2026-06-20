@@ -242,9 +242,9 @@ function writeStubModule(stubPath, stubInfo) {
   }
 
   for (const name of stubInfo.namedValueImports) {
-    // Function stub: callable without `new`. Not usable as a bare type name, but
-    // type-only usages should be `import type` in the source file.
-    lines.push(`export declare function ${name}(...args: any[]): any;`);
+    // `any` is callable, constructable, and allows property access — safe for objects,
+    // functions, and mixed-use imports. Type-position usage must use `import type`.
+    lines.push(`export declare const ${name}: any;`);
   }
 
   for (const name of stubInfo.namedTypeImports) {
