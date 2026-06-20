@@ -59,7 +59,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      actions: read
     steps:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -94,24 +93,14 @@ jobs:
           esac
 
       - name: Wait for runner to come online
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
-          echo "Waiting for self-hosted runner (label: hashpass-mobile-release) to come online..."
-          for i in $(seq 1 36); do
-            COUNT=$(gh api "repos/${{ github.repository }}/actions/runners" \
-              --jq '[.runners[] | select(any(.labels[]; .name == "hashpass-mobile-release")) | select(.status == "online")] | length' \
-              2>/dev/null || echo 0)
-            if [ "${COUNT:-0}" -gt 0 ]; then
-              echo "Runner is online (attempt $i)."
-              exit 0
-            fi
-            echo "Attempt $i/36 — not online yet, waiting 10s..."
-            sleep 10
-          done
-          echo "Runner did not come online within 6 minutes." >&2
-          exit 1
+          # GitHub queues the release job and dispatches it once the runner registers.
+          # A 30-second pause is enough for the runner service to re-register after the
+          # EC2 starts. Polling the runners API requires manage_runners:org which the
+          # GITHUB_TOKEN cannot hold in org repos — a fixed sleep is simpler and reliable.
+          echo "EC2 started. Waiting 30s for runner service to register..."
+          sleep 30
+          echo "Done waiting — GitHub will dispatch the release job when the runner is online."
 
   release:
     needs: [select-runner, start-runner]
