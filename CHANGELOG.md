@@ -1,3 +1,14 @@
+## [1.8.59](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.58...v1.8.59) (2026-06-21)
+
+
+### Bug Fixes
+
+* **ci:** gracefully skip sudo when no-new-privileges flag is set on EC2 runner ([7a7b37d](https://github.com/hashpass-tech/hashpass.tech/commit/7a7b37d2ac30817d16eb4c3c89d7da72c5996fc1))
+
+
+
+
+
 ## [1.8.58](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.57...v1.8.58) (2026-06-21)
 
 

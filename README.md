@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.58)
+## 📋 Latest Changes (v1.8.59)
 
 ### Bug Fixes
 
-* **ci:** correct heredoc indentation and use env-var for ccache init script ([aa1e0c0](https://github.com/hashpass-tech/hashpass.tech/commit/aa1e0c08cdd4a361c7272f4791344d20c4a41d49))
+* **ci:** gracefully skip sudo when no-new-privileges flag is set on EC2 runner ([7a7b37d](https://github.com/hashpass-tech/hashpass.tech/commit/7a7b37d2ac30817d16eb4c3c89d7da72c5996fc1))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
