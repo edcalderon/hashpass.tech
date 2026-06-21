@@ -1,3 +1,14 @@
+## [1.8.56](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.55...v1.8.56) (2026-06-21)
+
+
+### Bug Fixes
+
+* **auth:** read EXPO_PUBLIC_AUTH_PROVIDER so native bundle picks up directus provider ([d990788](https://github.com/hashpass-tech/hashpass.tech/commit/d990788aadf5de55f9e86b1baee3a57cdfef9a24))
+
+
+
+
+
 ## [1.8.55](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.54...v1.8.55) (2026-06-20)
 
 
