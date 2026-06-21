@@ -1,3 +1,14 @@
+## [1.8.65](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.64...v1.8.65) (2026-06-21)
+
+
+### Bug Fixes
+
+* **auth:** use API base URL for native OAuth and fix magic link localhost fallback ([4e34de5](https://github.com/hashpass-tech/hashpass.tech/commit/4e34de5dad6d24fdda8279fe20b6bd73020be55d))
+
+
+
+
+
 ## [1.8.64](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.63...v1.8.64) (2026-06-21)
 
 
