@@ -49,7 +49,10 @@ const resolveWebOrigin = () => {
         ''
       : '';
 
-  return normalizeOrigin(envOrigin);
+  // When no env var is set (common in native builds where EXPO_PUBLIC_SITE_URL may
+  // not be baked in), fall back to the production URL so Supabase emails contain a
+  // clickable link instead of a localhost URL from the dashboard's site URL config.
+  return normalizeOrigin(envOrigin || 'https://hashpass.tech');
 };
 
 const normalizeScheme = (scheme?: string) => {
