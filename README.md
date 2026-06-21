@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.57)
+## 📋 Latest Changes (v1.8.58)
 
-### Performance Improvements
+### Bug Fixes
 
-* **ci:** add ccache for CMake and fix Gradle property duplication ([745fab3](https://github.com/hashpass-tech/hashpass.tech/commit/745fab39c5a89a9454e0bdae566228a2705824ad))
+* **ci:** correct heredoc indentation and use env-var for ccache init script ([aa1e0c0](https://github.com/hashpass-tech/hashpass.tech/commit/aa1e0c08cdd4a361c7272f4791344d20c4a41d49))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

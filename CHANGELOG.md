@@ -1,3 +1,14 @@
+## [1.8.58](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.57...v1.8.58) (2026-06-21)
+
+
+### Bug Fixes
+
+* **ci:** correct heredoc indentation and use env-var for ccache init script ([aa1e0c0](https://github.com/hashpass-tech/hashpass.tech/commit/aa1e0c08cdd4a361c7272f4791344d20c4a41d49))
+
+
+
+
+
 ## [1.8.57](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.56...v1.8.57) (2026-06-21)
 
 
