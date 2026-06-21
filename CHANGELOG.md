@@ -1,3 +1,14 @@
+## [1.8.61](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.60...v1.8.61) (2026-06-21)
+
+
+### Bug Fixes
+
+* **ci:** export PATH immediately after ccache binary download ([4142382](https://github.com/hashpass-tech/hashpass.tech/commit/4142382db3896392a622b5aa119d6bab8d7d2b23))
+
+
+
+
+
 ## [1.8.60](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.59...v1.8.60) (2026-06-21)
 
 
