@@ -40,18 +40,25 @@ const resolveWebOrigin = () => {
     }
   }
 
-  const envOrigin =
-    typeof process !== 'undefined'
-      ? process.env.EXPO_PUBLIC_SITE_URL ||
-        process.env.EXPO_PUBLIC_FRONTEND_URL ||
-        process.env.SITE_URL ||
-        process.env.FRONTEND_URL ||
-        ''
-      : '';
+  // Pick the first env var that is an HTTPS, non-localhost URL.
+  // Localhost values are unusable: Supabase rejects them as emailRedirectTo and
+  // falls back to the dashboard site URL (which may also be localhost).
+  const isUsableHttpsOrigin = (v?: string): boolean => {
+    if (!v) return false;
+    return v.startsWith('https://') && !/localhost|127\.0\.0\.1/.test(v);
+  };
 
-  // When no env var is set (common in native builds where EXPO_PUBLIC_SITE_URL may
-  // not be baked in), fall back to the production URL so Supabase emails contain a
-  // clickable link instead of a localhost URL from the dashboard's site URL config.
+  const envOrigin = typeof process !== 'undefined'
+    ? [
+        process.env.EXPO_PUBLIC_SITE_URL,
+        process.env.EXPO_PUBLIC_FRONTEND_URL,
+        process.env.SITE_URL,
+        process.env.FRONTEND_URL,
+      ].find(isUsableHttpsOrigin) || ''
+    : '';
+
+  // Fall back to production URL when no usable env var is available (dev builds,
+  // CI environments where EXPO_PUBLIC_SITE_URL is not baked in, etc.).
   return normalizeOrigin(envOrigin || 'https://hashpass.tech');
 };
 

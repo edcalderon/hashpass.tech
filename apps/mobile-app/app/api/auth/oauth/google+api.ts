@@ -164,11 +164,26 @@ export async function GET(request: Request): Promise<Response> {
   const returnTo = normalizeReturnToPath(returnCookie.returnTo);
   const frontendOrigin = resolveFrontendOrigin(request, returnCookie.frontendOrigin, url.origin);
   const expectedState = getCookieValue(cookies, OAUTH_STATE_COOKIE_NAME);
-  const nativeCallback = getCookieValue(cookies, OAUTH_NATIVE_CALLBACK_COOKIE_NAME);
-  
+
+  // Extract native_callback from the state parameter first — this is the reliable path
+  // because Google preserves state across the OAuth round-trip regardless of cookie
+  // handling. Fall back to the cookie for older clients that didn't embed it in state.
+  let nativeCallback: string | null = null;
+  if (state && state.includes('|nc=')) {
+    try {
+      nativeCallback = decodeURIComponent(state.substring(state.indexOf('|nc=') + 4));
+    } catch {
+      nativeCallback = null;
+    }
+  }
+  if (!nativeCallback) {
+    nativeCallback = getCookieValue(cookies, OAUTH_NATIVE_CALLBACK_COOKIE_NAME);
+  }
+
   console.log('[Google OAuth] Received callback from Google');
   console.log('[Google OAuth] Code:', code ? code.substring(0, 20) + '...' : 'MISSING');
   console.log('[Google OAuth] State:', state ? state.substring(0, 20) + '...' : 'MISSING');
+  console.log('[Google OAuth] Native callback:', nativeCallback || '(none — web flow)');
   console.log('[Google OAuth] Return to:', returnTo);
   console.log('[Google OAuth] Frontend origin:', frontendOrigin);
 
@@ -182,7 +197,10 @@ export async function GET(request: Request): Promise<Response> {
     });
   }
 
-  if (expectedState && state !== expectedState) {
+  // Compare state values — both the stored cookie and the returned state may include |nc=...
+  const stateBase = state ? state.split('|nc=')[0] : '';
+  const expectedStateBase = expectedState ? expectedState.split('|nc=')[0] : '';
+  if (expectedState && stateBase !== expectedStateBase) {
     console.error('[Google OAuth] State mismatch.');
     const errorUrl = new URL(returnTo, frontendOrigin);
     errorUrl.searchParams.set('error', 'oauth_failed');

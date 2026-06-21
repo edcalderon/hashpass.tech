@@ -141,7 +141,13 @@ export async function GET(request: Request): Promise<Response> {
   const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
 
   if (provider === 'google' && GOOGLE_CLIENT_ID) {
-    const state = createOAuthState();
+    const stateBase = createOAuthState();
+    // Encode native_callback inside state so Google preserves it across the round-trip.
+    // Cookies from api.hashpass.tech are often stripped by API Gateway on 302 responses,
+    // so the state parameter is the only reliable carrier for this value.
+    const fullState = nativeCallback
+      ? `${stateBase}|nc=${encodeURIComponent(nativeCallback)}`
+      : stateBase;
     const googleCallbackUrl = new URL('/api/auth/oauth/google', url.origin);
     const googleOAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     googleOAuthUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
@@ -150,7 +156,7 @@ export async function GET(request: Request): Promise<Response> {
     googleOAuthUrl.searchParams.set('scope', 'openid profile email');
     googleOAuthUrl.searchParams.set('access_type', 'offline');
     googleOAuthUrl.searchParams.set('prompt', 'select_account');
-    googleOAuthUrl.searchParams.set('state', state);
+    googleOAuthUrl.searchParams.set('state', fullState);
 
     console.log('[OAuth Login] Redirecting to Google OAuth through API callback:', googleOAuthUrl.toString());
 
@@ -159,7 +165,7 @@ export async function GET(request: Request): Promise<Response> {
     headers.set('Cache-Control', 'no-store');
     headers.append('Set-Cookie', setCookieHeader);
     headers.append('Set-Cookie', setFrontendOriginCookieHeader);
-    headers.append('Set-Cookie', `${OAUTH_STATE_COOKIE_NAME}=${encodeURIComponent(state)}; Path=/; SameSite=Lax; Max-Age=600${secureFlag}`);
+    headers.append('Set-Cookie', `${OAUTH_STATE_COOKIE_NAME}=${encodeURIComponent(fullState)}; Path=/; SameSite=Lax; Max-Age=600${secureFlag}`);
     if (nativeCallback) {
       headers.append('Set-Cookie', `${OAUTH_NATIVE_CALLBACK_COOKIE_NAME}=${encodeURIComponent(nativeCallback)}; Path=/; SameSite=Lax; Max-Age=600${secureFlag}`);
     }
