@@ -511,6 +511,8 @@ jobs:
                 "https://github.com/ccache/ccache/releases/download/v${CCACHE_VER}/ccache-${CCACHE_VER}-linux-x86_64.tar.xz" \
                 | tar -xJ --strip-components=1 -C "$HOME/.local/bin" \
                     "ccache-${CCACHE_VER}-linux-x86_64/ccache"
+              # GITHUB_PATH only takes effect in the next step; export for this step too.
+              export PATH="$HOME/.local/bin:$PATH"
               echo "$HOME/.local/bin" >> "$GITHUB_PATH"
             fi
           fi
