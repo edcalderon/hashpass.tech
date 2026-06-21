@@ -1,3 +1,14 @@
+## [1.8.67](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.66...v1.8.67) (2026-06-21)
+
+
+### Bug Fixes
+
+* **auth:** use HTTPS web relay for native OAuth callback instead of hashpass:// 302 ([401225c](https://github.com/hashpass-tech/hashpass.tech/commit/401225c55504bee907ef55428b4743fe35d56dd6))
+
+
+
+
+
 ## [1.8.66](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.65...v1.8.66) (2026-06-21)
 
 
