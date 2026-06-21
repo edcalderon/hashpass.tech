@@ -95,11 +95,11 @@ jobs:
       - name: Wait for runner to come online
         run: |
           # GitHub queues the release job and dispatches it once the runner registers.
-          # A 30-second pause is enough for the runner service to re-register after the
-          # EC2 starts. Polling the runners API requires manage_runners:org which the
-          # GITHUB_TOKEN cannot hold in org repos — a fixed sleep is simpler and reliable.
-          echo "EC2 started. Waiting 30s for runner service to register..."
-          sleep 30
+          # 75s covers EC2 boot + runner service start on a cold instance. Polling the
+          # runners API requires manage_runners:org which GITHUB_TOKEN can't hold in
+          # org repos — a fixed sleep is simpler and reliable.
+          echo "EC2 started. Waiting 75s for runner service to register..."
+          sleep 75
           echo "Done waiting — GitHub will dispatch the release job when the runner is online."
 
   release:
