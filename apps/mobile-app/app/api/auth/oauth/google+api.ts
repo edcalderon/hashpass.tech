@@ -454,13 +454,22 @@ export async function GET(request: Request): Promise<Response> {
           let finalUrl: string;
 
           if (nativeCallback) {
-            // Native app flow: redirect to deep-link with tokens in query params so
-            // WebBrowser.openAuthSessionAsync detects the hashpass:// scheme and closes.
-            const deepLink = new URL(nativeCallback);
-            deepLink.searchParams.set('access_token', tokens.access_token);
-            if (tokens.refresh_token) deepLink.searchParams.set('refresh_token', tokens.refresh_token);
-            deepLink.searchParams.set('email', userEmail);
-            finalUrl = deepLink.toString();
+            // Native app flow: DON'T redirect to hashpass:// directly from the server.
+            // Chrome Custom Tabs on Android does not reliably intercept server-sent
+            // 302s to custom schemes. Instead, redirect to the web /auth/callback page
+            // with nativeRelay=1. That page calls window.location.replace('hashpass://...')
+            // which Chrome Custom Tabs handles as a proper Android intent, triggering
+            // WebBrowser.openAuthSessionAsync to close and return the URL to the app.
+            const webOrigin =
+              DEFAULT_FRONTEND_ORIGIN || // e.g. https://hashpass.tech from env
+              (isTrustedFrontendOrigin(frontendOrigin) ? frontendOrigin : '') ||
+              'https://hashpass.tech';   // hard fallback (never redirect to api.hashpass.tech)
+            const webCallbackUrl = new URL('/auth/callback', webOrigin);
+            webCallbackUrl.searchParams.set('access_token', tokens.access_token);
+            if (tokens.refresh_token) webCallbackUrl.searchParams.set('refresh_token', tokens.refresh_token);
+            webCallbackUrl.searchParams.set('email', userEmail);
+            webCallbackUrl.searchParams.set('nativeRelay', '1');
+            finalUrl = webCallbackUrl.toString();
           } else {
             // Web flow: tokens in URL fragment to avoid logging in server access logs.
             const redirectUrl = new URL(returnTo, frontendOrigin);
