@@ -473,10 +473,17 @@ jobs:
 
       # Set up ccache to cache C/C++ compilation units between builds.
       # On EC2, the cache directory lives on the persistent EBS volume so it survives
-      # across builds. On the first warm run after setup ccache will populate; on
-      # subsequent runs (where Reanimated / RN native code hasn't changed) it will
-      # return compiled object files from cache instead of recompiling — cutting
-      # CMake time from ~30 min to seconds for unchanged C++ files.
+      # across builds. On the first warm run ccache will populate; on subsequent runs
+      # (where Reanimated / RN native code hasn't changed) it returns compiled object
+      # files from cache instead of recompiling — cutting CMake from ~30 min to seconds.
+      #
+      # The Gradle init script injects CMAKE_C/CXX_COMPILER_LAUNCHER=ccache into all
+      # Android CMake builds. It survives expo prebuild --clean because it lives in
+      # ~/.gradle/init.d/ (on EBS) rather than in the generated android/ directory.
+      #
+      # NOTE: heredoc content below must be indented 10 spaces so YAML includes it in
+      # the literal block scalar; after YAML strips the common indent, the shell sees
+      # each line at column 0 — the same pattern used by the node <<'NODE' block above.
       - name: Setup ccache
         if: inputs.runner != 'github-hosted'
         run: |
@@ -489,39 +496,39 @@ jobs:
           CCACHE_DIR=/home/runner/.ccache
           ccache --set-config=cache_dir="${CCACHE_DIR}"
           ccache --set-config=max_size=4G
-          # Use a faster hash that skips mtime checks — correct for CI where files
-          # don't change mid-build and avoids stale-cache false misses.
+          # Skipping mtime in the hash avoids false cache misses in CI (files don't
+          # change mid-build, so mtime drift is irrelevant and only slows hashing).
           ccache --set-config=hash_dir=false
           echo "CCACHE_DIR=${CCACHE_DIR}" >> "$GITHUB_ENV"
 
-          # Gradle init script: injects ccache as the CMake C/C++ compiler launcher
-          # for the Android application project. Stored on EBS so it persists.
           mkdir -p "$HOME/.gradle/init.d"
           cat > "$HOME/.gradle/init.d/ccache.gradle" << 'GROOVY'
-// Injects ccache as the CMake C/C++ compiler launcher for Android application builds.
-// Applied via Gradle init script so it works with Expo-generated android/ without
-// modifying any generated file (edits to android/app/build.gradle are lost on prebuild).
-gradle.allprojects { project ->
-    project.afterEvaluate {
-        if (!project.plugins.hasPlugin("com.android.application")) return
-        def cmake = null
-        try {
-            cmake = project.android?.defaultConfig?.externalNativeBuild?.cmake
-        } catch (Exception ignored) {}
-        if (cmake == null) return
-        try {
-            cmake.arguments(
-                "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
-                "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
-            )
-            println "[ccache] Injected CMake compiler launcher: ccache"
-        } catch (Exception e) {
-            println "[ccache] Warning: could not inject CMake arguments: ${e.message}"
-        }
-    }
-}
-GROOVY
+          // Injects ccache as CMake C/C++ compiler launcher for Android application builds.
+          // Applied via Gradle init script so it works with Expo-generated android/ without
+          // modifying any generated file (edits to android/app/build.gradle are lost on
+          // expo prebuild --clean; this init script lives on EBS and survives those runs).
+          gradle.allprojects { project ->
+              project.afterEvaluate {
+                  if (!project.plugins.hasPlugin("com.android.application")) return
+                  def cmake = null
+                  try {
+                      cmake = project.android?.defaultConfig?.externalNativeBuild?.cmake
+                  } catch (Exception ignored) {}
+                  if (cmake == null) return
+                  try {
+                      cmake.arguments(
+                          "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+                          "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+                      )
+                      println "[ccache] Injected CMake compiler launcher: ccache"
+                  } catch (Exception e) {
+                      println "[ccache] Warning: could not inject CMake arguments: " + e.message
+                  }
+              }
+          }
+          GROOVY
 
+          echo "Wrote ~/.gradle/init.d/ccache.gradle"
           ccache --show-stats
 
       - name: Configure Gradle
@@ -529,17 +536,19 @@ GROOVY
           set -euo pipefail
           mkdir -p "$HOME/.gradle"
           # Overwrite (not append) so each run starts with exactly these settings.
-          # Appending caused duplicate properties and stale GRADLE_HEAP values across
-          # runs, which also invalidated Gradle's configuration cache every build.
+          # Previous append (>>) caused duplicate properties and stale GRADLE_HEAP
+          # values across runs, which also invalidated Gradle's configuration cache.
+          # Heredoc content is indented 10 spaces so YAML includes it in the block
+          # scalar; YAML strips the common indent so the shell sees it at column 0.
           cat > "$HOME/.gradle/gradle.properties" << EOF
-org.gradle.jvmargs=${GRADLE_HEAP} -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError
-org.gradle.daemon=false
-org.gradle.parallel=true
-org.gradle.workers.max=${GRADLE_WORKERS}
-org.gradle.caching=true
-org.gradle.configuration-cache=true
-org.gradle.configuration-cache.problems=warn
-EOF
+          org.gradle.jvmargs=${GRADLE_HEAP} -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError
+          org.gradle.daemon=false
+          org.gradle.parallel=true
+          org.gradle.workers.max=${GRADLE_WORKERS}
+          org.gradle.caching=true
+          org.gradle.configuration-cache=true
+          org.gradle.configuration-cache.problems=warn
+          EOF
 
       - name: Ensure Android SDK is writable
         run: |
