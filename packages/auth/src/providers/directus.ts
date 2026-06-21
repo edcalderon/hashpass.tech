@@ -331,16 +331,19 @@ export class DirectusAuthProvider implements IAuthProvider {
         // Return pending state since this is a redirect
         return { pending: true };
       } else {
-        // Native: open OAuth in system browser. Use Directus's JSON mode so tokens are
-        // returned in the redirect URL instead of a cookie (cookies aren't shared between
-        // the system browser and the React Native HTTP client).
+        // Native: open OAuth through the web relay (/api/auth/oauth/login) so it can
+        // use the direct Google path (GOOGLE_CLIENT_ID) without needing Directus to
+        // have Google OAuth configured. After OAuth the relay redirects to the deep-link
+        // scheme so WebBrowser.openAuthSessionAsync closes and returns the URL to the app.
+        // Tokens arrive in query params (not hash) so useAuth can extract them from the
+        // browserResult.url via URLSearchParams.
         const siteOrigin =
           (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_SITE_URL) ||
           'https://hashpass.tech';
-        const nativeCallbackUrl = `${siteOrigin}/auth/callback?nativeRelay=1`;
+        const nativeCallback = `hashpass://auth/callback`;
         const oauthUrl =
-          `${this.baseUrl}/auth/login/${encodeURIComponent(provider)}` +
-          `?redirect=${encodeURIComponent(nativeCallbackUrl)}&mode=json`;
+          `${siteOrigin}/api/auth/oauth/login` +
+          `?provider=${encodeURIComponent(provider)}&native_callback=${encodeURIComponent(nativeCallback)}`;
         return { pending: true, oauthUrl };
       }
     } catch (error) {

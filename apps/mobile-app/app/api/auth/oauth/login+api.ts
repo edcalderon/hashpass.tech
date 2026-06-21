@@ -11,6 +11,7 @@ const DEFAULT_FRONTEND_ORIGIN =
   '';
 const OAUTH_FRONTEND_ORIGIN_COOKIE_NAME = 'oauth_frontend_origin';
 const OAUTH_STATE_COOKIE_NAME = 'oauth_google_state';
+const OAUTH_NATIVE_CALLBACK_COOKIE_NAME = 'oauth_native_callback';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 
 type OAuthReturnCookiePayload = {
@@ -98,6 +99,7 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const provider = url.searchParams.get('provider') || 'google';
   const returnTo = normalizeReturnToPath(url.searchParams.get('returnTo') || DEFAULT_RETURN_TO);
+  const nativeCallback = url.searchParams.get('native_callback') || '';
   const frontendOrigin = resolveFrontendOrigin(request, url.origin);
   const frontendHostname = normalizeHostname(url.hostname);
   const directusHostname = getDirectusHostname(DIRECTUS_URL);
@@ -158,6 +160,9 @@ export async function GET(request: Request): Promise<Response> {
     headers.append('Set-Cookie', setCookieHeader);
     headers.append('Set-Cookie', setFrontendOriginCookieHeader);
     headers.append('Set-Cookie', `${OAUTH_STATE_COOKIE_NAME}=${encodeURIComponent(state)}; Path=/; SameSite=Lax; Max-Age=600${secureFlag}`);
+    if (nativeCallback) {
+      headers.append('Set-Cookie', `${OAUTH_NATIVE_CALLBACK_COOKIE_NAME}=${encodeURIComponent(nativeCallback)}; Path=/; SameSite=Lax; Max-Age=600${secureFlag}`);
+    }
 
     return new ExpoResponse(null, {
       status: 302,

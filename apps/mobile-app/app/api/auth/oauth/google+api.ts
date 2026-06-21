@@ -15,6 +15,7 @@ const DEFAULT_FRONTEND_ORIGIN =
   process.env.FRONTEND_URL ||
   '';
 const OAUTH_STATE_COOKIE_NAME = 'oauth_google_state';
+const OAUTH_NATIVE_CALLBACK_COOKIE_NAME = 'oauth_native_callback';
 const TRUSTED_FRONTEND_HOSTS = new Set([
   'localhost',
   '127.0.0.1',
@@ -163,6 +164,7 @@ export async function GET(request: Request): Promise<Response> {
   const returnTo = normalizeReturnToPath(returnCookie.returnTo);
   const frontendOrigin = resolveFrontendOrigin(request, returnCookie.frontendOrigin, url.origin);
   const expectedState = getCookieValue(cookies, OAUTH_STATE_COOKIE_NAME);
+  const nativeCallback = getCookieValue(cookies, OAUTH_NATIVE_CALLBACK_COOKIE_NAME);
   
   console.log('[Google OAuth] Received callback from Google');
   console.log('[Google OAuth] Code:', code ? code.substring(0, 20) + '...' : 'MISSING');
@@ -431,23 +433,35 @@ export async function GET(request: Request): Promise<Response> {
           console.log('[Google OAuth] Access token:', tokens.access_token.substring(0, 20) + '...');
           console.log('[Google OAuth] Redirecting to:', returnTo);
           
-          // Build frontend callback URL with tokens in fragment.
-          // This avoids relying on third-party Directus cookies from sso.hashpass.co.
-          const redirectUrl = new URL(returnTo, frontendOrigin);
-          const fragment = new URLSearchParams({
-            access_token: tokens.access_token,
-            ...(tokens.refresh_token && { refresh_token: tokens.refresh_token }),
-            email: userEmail
-          });
-          
-          const finalUrl = `${redirectUrl.toString().split('#')[0]}#${fragment.toString()}`;
+          let finalUrl: string;
+
+          if (nativeCallback) {
+            // Native app flow: redirect to deep-link with tokens in query params so
+            // WebBrowser.openAuthSessionAsync detects the hashpass:// scheme and closes.
+            const deepLink = new URL(nativeCallback);
+            deepLink.searchParams.set('access_token', tokens.access_token);
+            if (tokens.refresh_token) deepLink.searchParams.set('refresh_token', tokens.refresh_token);
+            deepLink.searchParams.set('email', userEmail);
+            finalUrl = deepLink.toString();
+          } else {
+            // Web flow: tokens in URL fragment to avoid logging in server access logs.
+            const redirectUrl = new URL(returnTo, frontendOrigin);
+            const fragment = new URLSearchParams({
+              access_token: tokens.access_token,
+              ...(tokens.refresh_token && { refresh_token: tokens.refresh_token }),
+              email: userEmail
+            });
+            finalUrl = `${redirectUrl.toString().split('#')[0]}#${fragment.toString()}`;
+          }
+
           console.log('[Google OAuth] Final redirect URL:', finalUrl.substring(0, 100) + '...');
-          
+
           const headers = new Headers();
           headers.set('Location', finalUrl);
           headers.set('Cache-Control', 'no-store');
           headers.append('Set-Cookie', 'oauth_return_to=; Path=/; Max-Age=0');
           headers.append('Set-Cookie', `${OAUTH_STATE_COOKIE_NAME}=; Path=/; Max-Age=0`);
+          headers.append('Set-Cookie', `${OAUTH_NATIVE_CALLBACK_COOKIE_NAME}=; Path=/; Max-Age=0`);
 
           return new ExpoResponse(null, {
             status: 302,
