@@ -26,6 +26,7 @@
         "backgroundColor": "#05070C"
       },
       "package": "com.hashpass.tech",
+      "versionCode": 10862,
       "permissions": [
         "android.permission.CAMERA"
       ]

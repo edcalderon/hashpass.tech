@@ -157,6 +157,12 @@ if (autoGit || shouldCommit || shouldTag || shouldPush) {
 const buildNumber = parseInt(new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12));
 const releaseDate = new Date().toISOString().split('T')[0];
 
+// Android version code — derived from semver so it's deterministic and always
+// increases with every release. Formula: major*10000 + minor*100 + patch.
+// Range: up to ~2M for v2.0.0, well within Android's 2.1B limit.
+const [vMajor, vMinor, vPatch] = newVersion.split('.').map(Number);
+const androidVersionCode = vMajor * 10000 + vMinor * 100 + vPatch;
+
 // Function to update the CHANGELOG.md file
 function updateChangelog(version, releaseType, notes = '') {
   const changelogPath = path.join(projectRoot, 'CHANGELOG.md');
@@ -272,6 +278,10 @@ const filesToUpdate = [
       {
         key: 'expo.version',
         value: newVersion
+      },
+      {
+        key: 'expo.android.versionCode',
+        value: androidVersionCode
       }
     ]
   }] : []),
@@ -330,6 +340,23 @@ for (const file of filesToUpdate) {
         if (regex.test(content)) {
           content = content.replace(regex, `$1"${update.value}"`);
           updated = true;
+        }
+      } else if (keys.length >= 3 && file.path.endsWith('app.json')) {
+        // Deep path in app.json — use JSON parse/stringify to set or create the field.
+        try {
+          const json = JSON.parse(content);
+          let node = json;
+          for (let i = 0; i < keys.length - 1; i++) {
+            if (node[keys[i]] == null || typeof node[keys[i]] !== 'object') {
+              node[keys[i]] = {};
+            }
+            node = node[keys[i]];
+          }
+          node[keys[keys.length - 1]] = update.value;
+          content = JSON.stringify(json, null, 2) + '\n';
+          updated = true;
+        } catch {
+          // fall through — updated stays false
         }
       }
 
