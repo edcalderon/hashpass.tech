@@ -1,3 +1,14 @@
+## [1.8.66](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.65...v1.8.66) (2026-06-21)
+
+
+### Bug Fixes
+
+* **auth:** encode native_callback in OAuth state param and harden magic link URL ([91205d2](https://github.com/hashpass-tech/hashpass.tech/commit/91205d22397448ecc21d0948213a9a0bd200c74d))
+
+
+
+
+
 ## [1.8.65](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.64...v1.8.65) (2026-06-21)
 
 

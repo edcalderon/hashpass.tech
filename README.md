@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.65)
+## 📋 Latest Changes (v1.8.66)
 
 ### Bug Fixes
 
-* **auth:** use API base URL for native OAuth and fix magic link localhost fallback ([4e34de5](https://github.com/hashpass-tech/hashpass.tech/commit/4e34de5dad6d24fdda8279fe20b6bd73020be55d))
+* **auth:** encode native_callback in OAuth state param and harden magic link URL ([91205d2](https://github.com/hashpass-tech/hashpass.tech/commit/91205d22397448ecc21d0948213a9a0bd200c74d))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
