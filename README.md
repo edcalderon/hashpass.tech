@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.59)
+## 📋 Latest Changes (v1.8.60)
 
-### Bug Fixes
+### Performance Improvements
 
-* **ci:** gracefully skip sudo when no-new-privileges flag is set on EC2 runner ([7a7b37d](https://github.com/hashpass-tech/hashpass.tech/commit/7a7b37d2ac30817d16eb4c3c89d7da72c5996fc1))
+* **ci:** preserve android/ across runs for incremental Gradle builds ([a73588e](https://github.com/hashpass-tech/hashpass.tech/commit/a73588eae88db8f44d75d6be4d8cec43d0f0f1e8))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

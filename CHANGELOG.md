@@ -1,3 +1,14 @@
+## [1.8.60](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.59...v1.8.60) (2026-06-21)
+
+
+### Performance Improvements
+
+* **ci:** preserve android/ across runs for incremental Gradle builds ([a73588e](https://github.com/hashpass-tech/hashpass.tech/commit/a73588eae88db8f44d75d6be4d8cec43d0f0f1e8))
+
+
+
+
+
 ## [1.8.59](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.58...v1.8.59) (2026-06-21)
 
 
