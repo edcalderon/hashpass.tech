@@ -1,3 +1,14 @@
+## [1.8.57](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.56...v1.8.57) (2026-06-21)
+
+
+### Performance Improvements
+
+* **ci:** add ccache for CMake and fix Gradle property duplication ([745fab3](https://github.com/hashpass-tech/hashpass.tech/commit/745fab39c5a89a9454e0bdae566228a2705824ad))
+
+
+
+
+
 ## [1.8.56](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.55...v1.8.56) (2026-06-21)
 
 
