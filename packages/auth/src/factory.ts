@@ -15,6 +15,8 @@ type AuthProviderRuntimeOptions = {
 
 const envValue = (name: string): string | undefined => {
   switch (name) {
+    case 'EXPO_PUBLIC_AUTH_PROVIDER':
+      return process.env.EXPO_PUBLIC_AUTH_PROVIDER;
     case 'AUTH_PROVIDER':
       return process.env.AUTH_PROVIDER;
     case 'EXPO_PUBLIC_SITE_URL':
@@ -94,6 +96,7 @@ const envValue = (name: string): string | undefined => {
 };
 
 const STATIC_ENV: Record<string, string | undefined> = {
+  EXPO_PUBLIC_AUTH_PROVIDER: envValue('EXPO_PUBLIC_AUTH_PROVIDER'),
   AUTH_PROVIDER: envValue('AUTH_PROVIDER'),
   EXPO_PUBLIC_SITE_URL: envValue('EXPO_PUBLIC_SITE_URL'),
   SITE_URL: envValue('SITE_URL'),
@@ -193,7 +196,10 @@ const resolveRuntimeHostname = (hostname?: string | null): string => {
 
 const resolveProviderName = (hostname?: string | null): AuthProviderConfig['provider'] => {
   const resolvedHostname = resolveRuntimeHostname(hostname);
-  const explicitProvider = readProcessEnv('AUTH_PROVIDER') as AuthProviderConfig['provider'] | undefined;
+  // EXPO_PUBLIC_AUTH_PROVIDER is the bundled (EXPO_PUBLIC_*) form Metro inlines into the
+  // React Native runtime. AUTH_PROVIDER works only on Node.js / web where non-prefixed
+  // env vars are accessible. Check the bundled form first.
+  const explicitProvider = (readProcessEnv('EXPO_PUBLIC_AUTH_PROVIDER') || readProcessEnv('AUTH_PROVIDER')) as AuthProviderConfig['provider'] | undefined;
   const tenantProvider = ENV_CONFIG.getTenant(resolvedHostname).authProvider as
     | AuthProviderConfig['provider']
     | undefined;

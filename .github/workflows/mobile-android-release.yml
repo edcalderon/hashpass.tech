@@ -133,9 +133,11 @@ jobs:
       # and magic-link callbacks. Without this, the polyfilled window.location.origin
       # (localhost:8081 from Metro) gets embedded in the OAuth redirect URL.
       EXPO_PUBLIC_SITE_URL: https://hashpass.tech
-      # Directus is the primary auth provider for native. Supabase credentials are
-      # still bundled above so magic-link / OTP flows (which call supabase.auth directly)
-      # continue to work alongside Directus OAuth.
+      # Directus is the primary auth provider for native. EXPO_PUBLIC_ prefix is required
+      # so Metro inlines it into the React Native JS bundle (non-prefixed vars are
+      # Node.js-only and undefined at app runtime). Supabase credentials are still bundled
+      # so magic-link / OTP flows (supabase.auth.signInWithOtp) work alongside Directus OAuth.
+      EXPO_PUBLIC_AUTH_PROVIDER: directus
       AUTH_PROVIDER: directus
       # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons so this
       # must live here. 3584m works safely on t3a.large (8 GiB) and t3a.xlarge (16 GiB) alike —
@@ -435,6 +437,9 @@ jobs:
           [ -n "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]   && printf 'EXPO_PUBLIC_SUPABASE_ANON_KEY=%s\n'   "$EXPO_PUBLIC_SUPABASE_ANON_KEY"   >> "$env_file"
           [ -n "${EXPO_PUBLIC_DIRECTUS_URL:-}" ]        && printf 'EXPO_PUBLIC_DIRECTUS_URL=%s\n'        "$EXPO_PUBLIC_DIRECTUS_URL"        >> "$env_file"
           [ -n "${AUTH_PROVIDER:-}" ]                   && printf 'AUTH_PROVIDER=%s\n'                   "$AUTH_PROVIDER"                   >> "$env_file"
+          # EXPO_PUBLIC_AUTH_PROVIDER is the Metro-bundled form (EXPO_PUBLIC_ prefix required
+          # for Expo to inline it into the React Native JS runtime).
+          [ -n "${EXPO_PUBLIC_AUTH_PROVIDER:-}" ]       && printf 'EXPO_PUBLIC_AUTH_PROVIDER=%s\n'       "$EXPO_PUBLIC_AUTH_PROVIDER"       >> "$env_file"
           # EXPO_PUBLIC_SITE_URL is the web-relay origin used by getSupabaseOAuthRedirectUrl
           # for both Google OAuth (native relay) and magic-link emailRedirectTo.
           # Without this in the .env file, window.location.origin (localhost from Metro)
