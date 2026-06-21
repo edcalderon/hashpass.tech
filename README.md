@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.62)
+## 📋 Latest Changes (v1.8.63)
 
 ### Bug Fixes
 
-* **ci:** increase EC2 runner startup wait from 30s to 75s ([797b019](https://github.com/hashpass-tech/hashpass.tech/commit/797b01951dcc97d9390284f713a5a069c4a44870))
+* **android:** derive versionCode from semver in app.json ([50f0816](https://github.com/hashpass-tech/hashpass.tech/commit/50f0816bc79f007ab657b37120ae862dfe6f5b14))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

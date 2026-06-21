@@ -1,3 +1,14 @@
+## [1.8.63](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.62...v1.8.63) (2026-06-21)
+
+
+### Bug Fixes
+
+* **android:** derive versionCode from semver in app.json ([50f0816](https://github.com/hashpass-tech/hashpass.tech/commit/50f0816bc79f007ab657b37120ae862dfe6f5b14))
+
+
+
+
+
 ## [1.8.62](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.61...v1.8.62) (2026-06-21)
 
 
