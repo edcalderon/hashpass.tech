@@ -489,8 +489,13 @@ jobs:
         run: |
           set -euo pipefail
           if ! command -v ccache >/dev/null 2>&1; then
-            sudo apt-get update -q
-            sudo apt-get install -y ccache
+            if sudo -n true 2>/dev/null; then
+              sudo apt-get update -q
+              sudo apt-get install -y ccache
+            else
+              echo "ccache not installed and sudo is unavailable (no-new-privileges) — skipping ccache setup"
+              exit 0
+            fi
           fi
 
           CCACHE_DIR=/home/runner/.ccache
@@ -556,7 +561,11 @@ jobs:
           sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
           if [ -d "$sdk_root" ] && [ ! -w "$sdk_root" ]; then
             echo "Android SDK at $sdk_root is not writable — fixing ownership for runner user $(id -un)"
-            sudo chown -R "$(id -un)" "$sdk_root"
+            if sudo -n true 2>/dev/null; then
+              sudo chown -R "$(id -un)" "$sdk_root"
+            else
+              echo "Warning: sudo unavailable (no-new-privileges) — cannot fix SDK ownership. Build may fail if Gradle needs write access to $sdk_root."
+            fi
           fi
           echo "Android SDK at $sdk_root is writable."
 
