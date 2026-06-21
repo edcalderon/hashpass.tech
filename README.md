@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.61)
+## 📋 Latest Changes (v1.8.62)
 
 ### Bug Fixes
 
-* **ci:** export PATH immediately after ccache binary download ([4142382](https://github.com/hashpass-tech/hashpass.tech/commit/4142382db3896392a622b5aa119d6bab8d7d2b23))
+* **ci:** increase EC2 runner startup wait from 30s to 75s ([797b019](https://github.com/hashpass-tech/hashpass.tech/commit/797b01951dcc97d9390284f713a5a069c4a44870))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

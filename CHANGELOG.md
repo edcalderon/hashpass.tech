@@ -1,3 +1,14 @@
+## [1.8.62](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.61...v1.8.62) (2026-06-21)
+
+
+### Bug Fixes
+
+* **ci:** increase EC2 runner startup wait from 30s to 75s ([797b019](https://github.com/hashpass-tech/hashpass.tech/commit/797b01951dcc97d9390284f713a5a069c4a44870))
+
+
+
+
+
 ## [1.8.61](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.60...v1.8.61) (2026-06-21)
 
 
