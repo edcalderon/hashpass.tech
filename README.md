@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.63)
+## 📋 Latest Changes (v1.8.64)
 
 ### Bug Fixes
 
-* **android:** derive versionCode from semver in app.json ([50f0816](https://github.com/hashpass-tech/hashpass.tech/commit/50f0816bc79f007ab657b37120ae862dfe6f5b14))
+* **auth:** route native Google OAuth through web relay to avoid Directus config error ([eed321e](https://github.com/hashpass-tech/hashpass.tech/commit/eed321e28a6f3ab9a7e9b6a6d94775b51adf6a7b))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

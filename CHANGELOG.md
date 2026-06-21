@@ -1,3 +1,14 @@
+## [1.8.64](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.63...v1.8.64) (2026-06-21)
+
+
+### Bug Fixes
+
+* **auth:** route native Google OAuth through web relay to avoid Directus config error ([eed321e](https://github.com/hashpass-tech/hashpass.tech/commit/eed321e28a6f3ab9a7e9b6a6d94775b51adf6a7b))
+
+
+
+
+
 ## [1.8.63](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.62...v1.8.63) (2026-06-21)
 
 
