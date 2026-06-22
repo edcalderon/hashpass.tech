@@ -1,3 +1,14 @@
+## [1.8.75](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.74...v1.8.75) (2026-06-22)
+
+
+### Bug Fixes
+
+* **auth:** detect web PKCE code as passwordless, add native relay fallback UI ([60b94f3](https://github.com/hashpass-tech/hashpass.tech/commit/60b94f399fec305f63ebe9f6fe91be32c26e89bc))
+
+
+
+
+
 ## [1.8.74](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.73...v1.8.74) (2026-06-22)
 
 

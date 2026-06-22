@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.74)
+## 📋 Latest Changes (v1.8.75)
 
 ### Bug Fixes
 
-* **auth:** resolve OTP CORS 401, native magic link relay and PKCE callback ([a09308c](https://github.com/hashpass-tech/hashpass.tech/commit/a09308c2f373043faac463e7b97c003e13e50f6d))
+* **auth:** detect web PKCE code as passwordless, add native relay fallback UI ([60b94f3](https://github.com/hashpass-tech/hashpass.tech/commit/60b94f399fec305f63ebe9f6fe91be32c26e89bc))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
