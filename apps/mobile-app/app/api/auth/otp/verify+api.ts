@@ -158,7 +158,6 @@ export async function POST(request: Request) {
       const { data, error } = await supabase.auth.verifyOtp({
         token_hash: parsedToken.tokenHash,
         type: type as any,
-        email: normalizedEmail,
       } as any);
 
       if (!error) {
