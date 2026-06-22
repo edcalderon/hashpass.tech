@@ -1,4 +1,8 @@
-# Guía de Versionado
+# Guía de Versionado (Legacy)
+
+> **Updated workflow**: See [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md) for the current release process. The canonical command is `npm run release:patch` (not `version:bump`).
+
+---
 
 ## Comandos Rápidos
 
