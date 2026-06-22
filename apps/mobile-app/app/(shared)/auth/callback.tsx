@@ -345,6 +345,10 @@ export default function AuthCallback() {
     // Provider-agnostic OAuth callback handler
     useEffect(() => {
         if (nativeRelayUrl) {
+            // Guard: prevent auth processing if this effect re-fires after the relay
+            // (Android Chrome may change the URL when handling a custom scheme, causing a re-render)
+            if (isProcessingRef.current) return;
+            isProcessingRef.current = true;
             console.log('🔁 Native auth relay detected, forwarding to the app callback...');
             window.location.replace(nativeRelayUrl);
             return;
@@ -416,7 +420,9 @@ export default function AuthCallback() {
                     Platform.OS === 'web' && typeof window !== 'undefined'
                         ? window.localStorage.getItem('auth_signin_method')
                         : null;
-                const isPasswordlessMethod = signInMethod === 'magic_link' || signInMethod === 'otp_code';
+                // On native, a 'code' param means a PKCE magic link deep link — treat it as passwordless
+                const isNativePasswordlessCode = Platform.OS !== 'web' && Boolean(params.code);
+                const isPasswordlessMethod = signInMethod === 'magic_link' || signInMethod === 'otp_code' || isNativePasswordlessCode;
 
                 if (isPasswordlessMethod && !isPasswordlessSupported) {
                     console.warn('⚠️ Passwordless callback blocked due to provider mismatch:', {
@@ -448,7 +454,9 @@ export default function AuthCallback() {
                     const currentUrl =
                         Platform.OS === 'web' && typeof window !== 'undefined'
                             ? window.location.href
-                            : '';
+                            : `hashpass://auth/callback?${Object.entries(params as Record<string, string>)
+                                .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+                                .join('&')}`;
 
                     const sessionResult = await createSessionFromUrl(currentUrl);
 

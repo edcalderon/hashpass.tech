@@ -56,14 +56,19 @@ export async function POST(request: Request) {
       );
     }
 
-    if (process.env.NODE_ENV !== 'production') {
+    {
       let supabaseHost = supabaseUrl;
       try {
         supabaseHost = new URL(supabaseUrl).hostname;
       } catch {
         // Keep raw value if URL parsing fails.
       }
-      console.log('ℹ️ OTP API Supabase target:', supabaseHost, '| selectedProfile=', selectedProfile);
+      console.log(
+        'ℹ️ OTP API Supabase target:', supabaseHost,
+        '| profile=', selectedProfile,
+        '| hasServiceKey=', Boolean(supabaseServiceKey),
+        '| origin=', request.headers.get('origin') || '(none)',
+      );
     }
 
     // Handle JSON parsing errors
@@ -136,12 +141,20 @@ export async function POST(request: Request) {
     }
 
     if (linkError || !linkData) {
-      console.error('Error generating OTP link:', JSON.stringify(linkError, null, 2));
+      const errorStatus = (linkError as any)?.status || 0;
+      // 401 usually means the service role key doesn't match the Supabase project URL.
+      // Check: EXPO_PUBLIC_SUPABASE_URL_PROD / BSL_SUPABASE_SERVICE_ROLE_KEY_PROD in Lambda env.
+      console.error(
+        '❌ OTP generateLink failed:',
+        JSON.stringify(linkError, null, 2),
+        '| supabaseUrl=', supabaseUrl,
+        '| profile=', selectedProfile,
+        '| httpStatus=', errorStatus,
+      );
 
       // Check for rate limit errors specifically - check multiple possible formats
       const errorMessage = linkError?.message || '';
       const errorCode = linkError?.code || '';
-      const errorStatus = linkError?.status || 0;
 
       if (errorMessage.includes('rate limit') ||
         errorMessage.includes('over_email_send_rate_limit') ||

@@ -796,7 +796,7 @@ export default function AuthScreen() {
           delivery: otpDeliveryMethod,
           phone: otpDeliveryMethod === 'sms' ? normalizedPhone : undefined,
         },
-        { skipEventSegment: true }
+        { skipEventSegment: true, skipAuth: true }
       )) as {
         success?: boolean;
         data?: {
@@ -872,7 +872,7 @@ export default function AuthScreen() {
       const verifyResponse = (await apiClient.post(
         '/auth/otp/verify',
         { email: normalizedEmail, code: normalizedCode },
-        { skipEventSegment: true }
+        { skipEventSegment: true, skipAuth: true }
       )) as {
         success?: boolean;
         data?: {

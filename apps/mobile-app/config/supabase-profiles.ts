@@ -225,7 +225,7 @@ const PROFILES: SupabaseProfile[] = [
     id: 'core-development',
     tenant: 'core',
     environment: 'development',
-    hosts: ['localhost', '127.0.0.1'],
+    hosts: ['localhost', '127.0.0.1', 'api-dev.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_SUPABASE_URL_DEV',
       'NEXT_PUBLIC_SUPABASE_URL',
@@ -245,7 +245,7 @@ const PROFILES: SupabaseProfile[] = [
     id: 'core-production',
     tenant: 'core',
     environment: 'production',
-    hosts: ['hashpass.tech', 'www.hashpass.tech'],
+    hosts: ['hashpass.tech', 'www.hashpass.tech', 'api.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_SUPABASE_URL_PROD',
       'NEXT_PUBLIC_SUPABASE_URL',
@@ -340,6 +340,18 @@ const PROFILES: SupabaseProfile[] = [
 ];
 
 const readProcessEnv: EnvReader = (name) => {
+  // On the server side (no window), always check the live process.env first using a
+  // dynamic key — Metro replaces process.env.LITERAL_NAME with build-time values but
+  // cannot replace process.env[variable], so Lambda/server runtime env vars always win.
+  // This lets correctly-configured Lambda environment variables override any URL or key
+  // that was baked into the bundle during the Expo build.
+  if (typeof window === 'undefined' && typeof process !== 'undefined') {
+    const live = process.env?.[name];
+    if (typeof live === 'string' && live.trim()) {
+      return live.trim();
+    }
+  }
+
   const staticValue = STATIC_ENV[name];
   if (typeof staticValue === 'string') {
     const trimmed = staticValue.trim();
