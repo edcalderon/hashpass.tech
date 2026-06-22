@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.75)
+## 📋 Latest Changes (v1.8.76)
 
 ### Bug Fixes
 
-* **auth:** detect web PKCE code as passwordless, add native relay fallback UI ([60b94f3](https://github.com/hashpass-tech/hashpass.tech/commit/60b94f399fec305f63ebe9f6fe91be32c26e89bc))
+* **auth:** use Android Intent URL for native relay in Chrome Custom Tabs ([3921d6f](https://github.com/hashpass-tech/hashpass.tech/commit/3921d6fd6abf551fa9983cb2eee087139f70791c))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

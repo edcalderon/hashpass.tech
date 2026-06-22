@@ -1,3 +1,14 @@
+## [1.8.76](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.75...v1.8.76) (2026-06-22)
+
+
+### Bug Fixes
+
+* **auth:** use Android Intent URL for native relay in Chrome Custom Tabs ([3921d6f](https://github.com/hashpass-tech/hashpass.tech/commit/3921d6fd6abf551fa9983cb2eee087139f70791c))
+
+
+
+
+
 ## [1.8.75](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.74...v1.8.75) (2026-06-22)
 
 
