@@ -190,7 +190,7 @@ export async function POST(request: Request) {
 
     // Sync the user registry in the background — we don't have a session yet (the client
     // will establish it), so look up the user by email to get their ID.
-    supabase.auth.admin.getUserByEmail(normalizedEmail).then(({ data: userData }) => {
+    supabase.auth.admin.getUserByEmail(normalizedEmail).then(({ data: userData }: { data: any }) => {
       if (userData?.user?.id) {
         const u = userData.user;
         syncPublicUserRegistry(request, {

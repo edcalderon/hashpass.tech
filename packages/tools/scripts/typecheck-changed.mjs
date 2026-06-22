@@ -176,7 +176,13 @@ function parseImportClause(clause, isTypeOnly) {
 
 function collectImportSpecifiers(content) {
   const imports = [];
-  const importRegex = /^\s*import\s+(type\s+)?([^\n]*?)\s+from\s+['"]([^'"]+)['"];?/gm;
+  // Clause group handles both single-line and multi-line imports:
+  // - Braced form (possibly multi-line): import { Foo,\n  Bar } from '...'
+  // - Simple form (single line):         import Foo from '...'
+  // [^}]* intentionally matches newlines so { } spans can cross lines.
+  // [^\n]*? keeps each alternative anchored to a single line for the
+  // prefix/suffix, preventing merging across unrelated import statements.
+  const importRegex = /^\s*import\s+(type\s+)?([^\n]*?\{[^}]*\}[^\n]*?|[^\n]*?)\s+from\s+['"]([^'"]+)['"];?/gm;
   const sideEffectRegex = /^\s*import\s+['"]([^'"]+)['"];?/gm;
 
   for (const match of content.matchAll(importRegex)) {
