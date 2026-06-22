@@ -1,3 +1,19 @@
+## [1.8.80](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.79...v1.8.80) (2026-06-22)
+
+
+### Bug Fixes
+
+* **typecheck:** prevent cross-line import regex match in typecheck-changed script ([6da69a5](https://github.com/hashpass-tech/hashpass.tech/commit/6da69a51270715f218696eb9a4c897fdca5c24dc))
+
+
+### Features
+
+* **native:** add native app update notification with soft prompt and hard block ([16a09b7](https://github.com/hashpass-tech/hashpass.tech/commit/16a09b7d59827ec874db9c8cf976ea9af4e8b3da))
+
+
+
+
+
 ## [1.8.79](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.78...v1.8.79) (2026-06-22)
 
 

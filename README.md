@@ -17,11 +17,16 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.79)
+## 📋 Latest Changes (v1.8.80)
 
 ### Bug Fixes
 
-* **api:** remove email from verifyOtp token_hash call ([513cca2](https://github.com/hashpass-tech/hashpass.tech/commit/513cca2766713fe55763e54491576156e19b293c))
+* **typecheck:** prevent cross-line import regex match in typecheck-changed script ([6da69a5](https://github.com/hashpass-tech/hashpass.tech/commit/6da69a51270715f218696eb9a4c897fdca5c24dc))
+
+
+### Features
+
+* **native:** add native app update notification with soft prompt and hard block ([16a09b7](https://github.com/hashpass-tech/hashpass.tech/commit/16a09b7d59827ec874db9c8cf976ea9af4e8b3da))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
