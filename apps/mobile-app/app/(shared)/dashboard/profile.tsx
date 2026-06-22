@@ -6,7 +6,8 @@ import { useScroll } from '@contexts/ScrollContext';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
-import { authService, AuthUser } from '@hashpass/auth';
+import { authService } from '@hashpass/auth';
+import type { AuthUser } from '@hashpass/auth';
 
 // Generate avatar URL using UI-Avatars service (similar to landing page)
 const generateAvatarUrl = (name: string, style: 'avataaars' | 'fun-emoji' | 'bottts' = 'avataaars'): string => {
@@ -135,11 +136,15 @@ export default function ProfileScreen() {
       return `${directusAssetBase}/assets/${activeUser.avatar}`;
     }
 
-    if (activeUser?.user_metadata?.avatar_url) {
-      return activeUser.user_metadata.avatar_url;
+    // Supabase stores Google photo as avatar_url; Google SDK sets picture
+    const metaPhoto = activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture;
+    if (metaPhoto) {
+      return metaPhoto;
     }
+
+    // Native Image can't render SVG — use UI-Avatars which returns PNG
     const name = getDisplayName() || 'hashpass-user';
-    return generateAvatarUrl(name, 'avataaars');
+    return generateUIAvatarUrl(name);
   };
 
   const handleAvatarPress = () => {
@@ -259,6 +264,9 @@ export default function ProfileScreen() {
             <Image
               source={{ uri: getCurrentAvatarUrl() }}
               style={styles.avatar}
+              onError={() => {
+                // Silently handled — avatar falls back to initials placeholder via container bg
+              }}
             />
             <View style={styles.avatarEditBadge}>
               <MaterialIcons name="camera-alt" size={20} color="#FFFFFF" />

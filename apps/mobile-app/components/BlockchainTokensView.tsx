@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet, Modal, ActivityIndicator, Platform } from 'react-native';
 import { Coins, ArrowRightLeft, ExternalLink, TrendingUp, Shield, ChevronLeft, ChevronRight, Info, X, RefreshCw } from 'lucide-react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 import { useAuth } from '../hooks/useAuth';
 import { lukasRewardService } from '../lib/lukas-reward-service';
+import type { UserBalance } from '../lib/lukas-reward-service';
 import { useToastHelpers } from '../contexts/ToastContext';
 import { useBalance } from '../contexts/BalanceContext';
 
@@ -116,14 +117,13 @@ const BlockchainTokensView = () => {
       fetchTokenBalance('LUKAS', true);
     }, [fetchTokenBalance]);
 
-    // Subscribe to custom refresh events
+    // Subscribe to custom refresh events (web only — window.addEventListener not available on native)
     useEffect(() => {
-      if (typeof window !== 'undefined') {
-        window.addEventListener('balance:refresh', handleBalanceRefresh);
-        return () => {
-          window.removeEventListener('balance:refresh', handleBalanceRefresh);
-        };
-      }
+      if (Platform.OS !== 'web') return;
+      window.addEventListener('balance:refresh', handleBalanceRefresh);
+      return () => {
+        window.removeEventListener('balance:refresh', handleBalanceRefresh);
+      };
     }, [handleBalanceRefresh]);
 
   // Initial fetch and subscription setup
@@ -141,7 +141,7 @@ const BlockchainTokensView = () => {
     const unsubscribe = lukasRewardService.subscribeToBalance(
       user.id,
       'LUKAS',
-      (balance) => {
+      (balance: UserBalance | null) => {
         console.log('💰 Balance subscription callback:', balance);
         // Always update from subscription - it's the source of truth
         // The refreshingToken check was preventing updates during manual refresh
