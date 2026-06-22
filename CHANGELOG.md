@@ -1,3 +1,14 @@
+## [1.8.68](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.67...v1.8.68) (2026-06-22)
+
+
+### Bug Fixes
+
+* **auth:** guard window.location in handleOAuthCallback for native ([9a01750](https://github.com/hashpass-tech/hashpass.tech/commit/9a01750c20e4ff3474dfeb3135315900916d315a))
+
+
+
+
+
 ## [1.8.67](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.66...v1.8.67) (2026-06-21)
 
 

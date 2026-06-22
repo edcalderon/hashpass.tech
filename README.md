@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.67)
+## 📋 Latest Changes (v1.8.68)
 
 ### Bug Fixes
 
-* **auth:** use HTTPS web relay for native OAuth callback instead of hashpass:// 302 ([401225c](https://github.com/hashpass-tech/hashpass.tech/commit/401225c55504bee907ef55428b4743fe35d56dd6))
+* **auth:** guard window.location in handleOAuthCallback for native ([9a01750](https://github.com/hashpass-tech/hashpass.tech/commit/9a01750c20e4ff3474dfeb3135315900916d315a))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
