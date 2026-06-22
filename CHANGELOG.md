@@ -1,3 +1,14 @@
+## [1.8.77](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.76...v1.8.77) (2026-06-22)
+
+
+### Bug Fixes
+
+* **auth:** enable PKCE flow and fix native relay for magic link on Android ([b8ed0a1](https://github.com/hashpass-tech/hashpass.tech/commit/b8ed0a14a831a04244c757af32bf28db2d06e8e9))
+
+
+
+
+
 ## [1.8.76](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.75...v1.8.76) (2026-06-22)
 
 
