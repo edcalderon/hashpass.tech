@@ -362,48 +362,43 @@ export class DirectusAuthProvider implements IAuthProvider {
 
       console.log('🔄 Processing Directus OAuth callback with params:', params);
 
-      // First, let's try to see if there are any tokens or session info we can extract
-      let authData: any = {};
+      // React Native polyfills `window` but not `window.location`. Guard both.
+      const hasWindowLocation =
+        typeof window !== 'undefined' && window.location != null;
+      const urlParams = hasWindowLocation
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams();
+      const hashParams = hasWindowLocation
+        ? new URLSearchParams(window.location.hash.substring(1))
+        : new URLSearchParams();
 
-      if (typeof window !== 'undefined') {
-        // Check URL parameters and hash for any OAuth data
-        const urlParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      // Merge tokens from: passed params (highest priority) → URL search → URL hash.
+      // On native, urlParams/hashParams are empty so params is the only source.
+      const authData: any = {
+        access_token: params.access_token || urlParams.get('access_token') || hashParams.get('access_token'),
+        token_type: params.token_type || urlParams.get('token_type') || hashParams.get('token_type'),
+        expires_in: params.expires_in || urlParams.get('expires_in') || hashParams.get('expires_in'),
+        expires: params.expires || urlParams.get('expires') || hashParams.get('expires'),
+        scope: params.scope || urlParams.get('scope') || hashParams.get('scope'),
+        state: params.state || urlParams.get('state') || hashParams.get('state'),
+        code: params.code || urlParams.get('code'),
+        session_token: params.session_token || urlParams.get('session_token'),
+        user: params.user || urlParams.get('user'),
+        token: params.token || urlParams.get('token'),
+        refresh_token: params.refresh_token || urlParams.get('refresh_token') || hashParams.get('refresh_token'),
+        oauth_success: params.oauth_success || urlParams.get('oauth_success') || hashParams.get('oauth_success'),
+        user_id: params.user_id || urlParams.get('user_id') || hashParams.get('user_id'),
+        email: params.email || urlParams.get('email') || hashParams.get('email'),
+        reason: params.reason || urlParams.get('reason'),
+      };
 
-        authData = {
-          // Standard OAuth params
-          access_token: params.access_token || urlParams.get('access_token') || hashParams.get('access_token'),
-          token_type: params.token_type || urlParams.get('token_type') || hashParams.get('token_type'),
-          expires_in: params.expires_in || urlParams.get('expires_in') || hashParams.get('expires_in'),
-          expires: params.expires || urlParams.get('expires') || hashParams.get('expires'),
-          scope: params.scope || urlParams.get('scope') || hashParams.get('scope'),
-          state: params.state || urlParams.get('state') || hashParams.get('state'),
-          // Additional possible params (Directus specific)
-          code: params.code || urlParams.get('code'),
-          session_token: params.session_token || urlParams.get('session_token'),
-          user: params.user || urlParams.get('user'),
-          // Check for Directus JSON mode tokens
-          token: params.token || urlParams.get('token'), // Directus might pass token differently
-          refresh_token: params.refresh_token || urlParams.get('refresh_token') || hashParams.get('refresh_token'),
-          // Our OAuth proxy success flag
-          oauth_success: params.oauth_success || urlParams.get('oauth_success') || hashParams.get('oauth_success'),
-          user_id: params.user_id || urlParams.get('user_id') || hashParams.get('user_id'),
-          email: params.email || urlParams.get('email') || hashParams.get('email'),
-          reason: params.reason || urlParams.get('reason')
-        };
-
-        console.log('📋 Extracted auth data:', authData);
+      console.log('📋 Extracted auth data:', authData);
+      if (hasWindowLocation) {
         console.log('🔍 URL info:', {
           search: window.location.search,
           hash: window.location.hash.substring(0, 30) + (window.location.hash.length > 30 ? '...' : ''),
-          paramsKeys: Object.keys(params)
+          paramsKeys: Object.keys(params),
         });
-
-        // Clear the hash to prevent re-processing
-        if (window.location.hash) {
-          // window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          console.log('⏳ Hash observed, not clearing immediately for debug');
-        }
       }
 
       if (authData.reason) {
