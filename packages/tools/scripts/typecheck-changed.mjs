@@ -176,7 +176,7 @@ function parseImportClause(clause, isTypeOnly) {
 
 function collectImportSpecifiers(content) {
   const imports = [];
-  const importRegex = /^\s*import\s+(type\s+)?([\s\S]*?)\s+from\s+['"]([^'"]+)['"];?/gm;
+  const importRegex = /^\s*import\s+(type\s+)?([^\n]*?)\s+from\s+['"]([^'"]+)['"];?/gm;
   const sideEffectRegex = /^\s*import\s+['"]([^'"]+)['"];?/gm;
 
   for (const match of content.matchAll(importRegex)) {

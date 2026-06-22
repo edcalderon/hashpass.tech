@@ -101,7 +101,7 @@ function ThemedContent() {
       showConsoleWelcome();
 
       // Check version immediately
-      checkVersionOnStart().catch((error) => {
+      checkVersionOnStart().catch((error: unknown) => {
         console.error('Version check failed:', error);
       });
 
@@ -151,7 +151,7 @@ function ThemedContent() {
   }, [user, isLoggedIn, isLoading]);
 
   // Check if we're in the auth flow
-  const isAuthFlow = (segments[0] === '(shared)' && segments[1] === 'auth') || pathname.startsWith('/(shared)/auth') || pathname.startsWith('/auth');
+  const isAuthFlow = (segments[0] === '(shared)' && (segments as string[])[1] === 'auth') || pathname.startsWith('/(shared)/auth') || pathname.startsWith('/auth');
   const isEventPublic = pathname.startsWith('/events/');
   const isHomePage = pathname === '/home' || pathname === '/' || pathname === '/index';
   // Public pages that don't require authentication
@@ -222,7 +222,7 @@ function ThemedContent() {
     };
 
     const triggerAuthRecheck = () => {
-      authService.getSession().catch((error) => {
+      authService.getSession().catch((error: unknown) => {
         console.debug('Auth recheck during redirect grace failed:', error);
       });
     };
