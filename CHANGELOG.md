@@ -1,3 +1,14 @@
+## [1.8.73](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.72...v1.8.73) (2026-06-22)
+
+
+### Bug Fixes
+
+* **native:** guard window.addEventListener with Platform.OS and fix avatar SVG on Android ([46c4e30](https://github.com/hashpass-tech/hashpass.tech/commit/46c4e30b4f8b3cf6b27e7e4f65a72f178a278c12))
+
+
+
+
+
 ## [1.8.72](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.71...v1.8.72) (2026-06-22)
 
 

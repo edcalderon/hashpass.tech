@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.72)
+## 📋 Latest Changes (v1.8.73)
 
 ### Bug Fixes
 
-* **dashboard:** convert Header outer View to RNAnimated.View for borderWidth and shadowOpacity ([b8ef724](https://github.com/hashpass-tech/hashpass.tech/commit/b8ef72487efba7f66165fdf4126593708330d7ac))
+* **native:** guard window.addEventListener with Platform.OS and fix avatar SVG on Android ([46c4e30](https://github.com/hashpass-tech/hashpass.tech/commit/46c4e30b4f8b3cf6b27e7e4f65a72f178a278c12))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
