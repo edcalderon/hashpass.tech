@@ -12,13 +12,6 @@ type ParsedTokenHash = {
   verificationType: string;
 };
 
-type SessionPayload = {
-  access_token: string;
-  refresh_token: string;
-  expires_in?: number;
-  token_type?: string;
-  user?: Record<string, any> | null;
-};
 
 function parseStoredTokenHash(rawTokenHash: string | null | undefined): ParsedTokenHash {
   const fallback: ParsedTokenHash = {
@@ -145,74 +138,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const verificationTypes = Array.from(
-      new Set([parsedToken.verificationType, 'magiclink', 'signup', 'email'])
-    );
-
-    let verificationResult: {
-      data: { session: SessionPayload | null; user: Record<string, any> | null } | null;
-      error: any;
-    } | null = null;
-
-    for (const type of verificationTypes) {
-      const { data, error } = await supabase.auth.verifyOtp({
-        token_hash: parsedToken.tokenHash,
-        type: type as any,
-      } as any);
-
-      if (!error) {
-        verificationResult = { data, error: null };
-        break;
-      }
-
-      const message = typeof error.message === 'string' ? error.message : '';
-      const canRetryWithAnotherType =
-        /email link is invalid or has expired/i.test(message) ||
-        /otp has expired or is invalid/i.test(message);
-
-      if (!canRetryWithAnotherType) {
-        verificationResult = { data: null, error };
-        break;
-      }
-
-      verificationResult = { data: null, error };
-    }
-
-    if (!verificationResult || verificationResult.error) {
-      const errorMessage = verificationResult?.error?.message || 'Failed to verify OTP';
-      return new Response(
-        JSON.stringify({
-          error: errorMessage,
-          code: verificationResult?.error?.code || 'otp_verify_failed',
-        }),
-        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
-    }
-
-    const session = verificationResult.data?.session || null;
-    const user = verificationResult.data?.user || null;
-
-    if (user?.id && user?.email) {
-      await syncPublicUserRegistry(request, {
-        provider: 'supabase',
-        authUserId: user.id,
-        email: user.email,
-        firstName: user.user_metadata?.first_name || null,
-        lastName: user.user_metadata?.last_name || null,
-        fullName: user.user_metadata?.full_name || null,
-        avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-        status: user.user_metadata?.status || 'active',
-        emailVerifiedAt: user.email_confirmed_at || user.confirmed_at || null,
-        lastSignInAt: user.last_sign_in_at || null,
-        authMetadata: user.app_metadata || {},
-        profileMetadata: user.user_metadata || {},
-        providerIds: {
-          supabase: user.id,
-        },
-      });
-    }
-
-    // Mark the code as used only after the Supabase session is created successfully.
+    // Mark the code as used before generating the fresh link so it cannot be replayed.
     await supabase
       .from('otp_codes')
       .update({ used: true })
@@ -220,16 +146,79 @@ export async function POST(request: Request) {
       .eq('code', normalizedCode)
       .eq('token_hash', otpData.token_hash);
 
-    console.log('OTP code verified on server, returning session payload to client');
-    
+    // Generate a fresh single-use magic-link so the client can exchange it for a session
+    // using its own anon-key Supabase instance. We never call verifyOtp server-side with
+    // the service-role client — GoTrue rejects token_hash verification in that context.
+    const { data: freshLinkData, error: freshLinkError } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: normalizedEmail,
+    });
+
+    if (freshLinkError || !freshLinkData) {
+      console.error('OTP verify: failed to generate fresh magic link:', freshLinkError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to prepare authentication token', code: 'link_gen_failed' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const freshVerificationType =
+      typeof freshLinkData.properties?.verification_type === 'string'
+        ? freshLinkData.properties.verification_type
+        : 'magiclink';
+
+    let freshTokenHash =
+      typeof freshLinkData.properties?.hashed_token === 'string'
+        ? freshLinkData.properties.hashed_token.trim()
+        : '';
+
+    if (!freshTokenHash && freshLinkData.properties?.action_link) {
+      try {
+        const u = new URL(freshLinkData.properties.action_link);
+        freshTokenHash = u.searchParams.get('token_hash') || u.searchParams.get('token') || '';
+      } catch { /* ignore parse errors */ }
+    }
+
+    if (!freshTokenHash) {
+      return new Response(
+        JSON.stringify({ error: 'Could not extract authentication token', code: 'link_gen_failed' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    console.log('OTP code verified on server, returning fresh token to client');
+
+    // Sync the user registry in the background — we don't have a session yet (the client
+    // will establish it), so look up the user by email to get their ID.
+    supabase.auth.admin.getUserByEmail(normalizedEmail).then(({ data: userData }) => {
+      if (userData?.user?.id) {
+        const u = userData.user;
+        syncPublicUserRegistry(request, {
+          provider: 'supabase',
+          authUserId: u.id,
+          email: u.email ?? normalizedEmail,
+          firstName: u.user_metadata?.first_name || null,
+          lastName: u.user_metadata?.last_name || null,
+          fullName: u.user_metadata?.full_name || null,
+          avatarUrl: u.user_metadata?.avatar_url || u.user_metadata?.picture || null,
+          status: u.user_metadata?.status || 'active',
+          emailVerifiedAt: u.email_confirmed_at || u.confirmed_at || null,
+          lastSignInAt: u.last_sign_in_at || null,
+          authMetadata: u.app_metadata || {},
+          profileMetadata: u.user_metadata || {},
+          providerIds: { supabase: u.id },
+        }).catch(console.error);
+      }
+    }).catch(console.error);
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
-        token_hash: parsedToken.tokenHash,
-        type: parsedToken.verificationType,
+        token_hash: freshTokenHash,
+        type: freshVerificationType,
         email: normalizedEmail,
-        session,
-        user,
+        session: null,
+        user: null,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
