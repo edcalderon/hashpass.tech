@@ -238,7 +238,7 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_KEY',
       'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     ],
-    serviceRoleEnv: ['SUPABASE_SERVICE_ROLE_KEY_DEV', 'SUPABASE_SERVICE_ROLE_KEY'],
+    serviceRoleEnv: ['SUPABASE_SERVICE_ROLE_KEY_DEV', 'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV', 'BSL_SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_ROLE_KEY'],
     dbUrlEnv: ['SUPABASE_DB_URL_DEV', 'DATABASE_URL_DEV', 'DEV_DB_URL'],
   },
   {
@@ -258,7 +258,15 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_KEY',
       'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     ],
-    serviceRoleEnv: ['SUPABASE_SERVICE_ROLE_KEY_PROD', 'SUPABASE_SERVICE_ROLE_KEY'],
+    // BSL_SUPABASE_SERVICE_ROLE_KEY is tried before SUPABASE_SERVICE_ROLE_KEY because the
+    // Lambda currently uses mnnqryrdlhddorqsrtbn.supabase.co (the BSL project) for all
+    // tenants. SUPABASE_SERVICE_ROLE_KEY may be stale or for a different project.
+    serviceRoleEnv: [
+      'SUPABASE_SERVICE_ROLE_KEY_PROD',
+      'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
+      'BSL_SUPABASE_SERVICE_ROLE_KEY',
+      'SUPABASE_SERVICE_ROLE_KEY',
+    ],
     dbUrlEnv: ['SUPABASE_DB_URL_PROD', 'DATABASE_URL_PROD', 'PROD_DB_URL'],
   },
   {
