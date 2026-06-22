@@ -547,6 +547,10 @@ const initializeSupabase = () => {
           persistSession: true,
           // Only auto-detect sessions on native. Web uses the explicit callback route.
           detectSessionInUrl: shouldDetectSessionInUrl,
+          // PKCE ensures magic links return ?code=... (not #access_token=... implicit flow).
+          // The code_verifier is stored in the same storage adapter (AsyncStorage on native,
+          // localStorage on web), so the client that sent the OTP can always exchange the code.
+          flowType: 'pkce',
         },
         global: {
           headers: {
@@ -695,6 +699,7 @@ const initializeSupabase = () => {
             autoRefreshToken: true,
             persistSession: true,
             detectSessionInUrl: shouldDetectSessionInUrl,
+            flowType: 'pkce',
           },
           global: {
             headers: {
