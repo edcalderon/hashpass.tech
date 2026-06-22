@@ -1,3 +1,15 @@
+## [1.8.81](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.80...v1.8.81) (2026-06-22)
+
+
+### Bug Fixes
+
+* **auth:** verify OTP client-side to avoid GoTrue service-role rejection ([b040816](https://github.com/hashpass-tech/hashpass.tech/commit/b040816cdd576f6266099969ebfea7f13d4cb3ac))
+* **typecheck:** handle multi-line named imports in typecheck-changed regex ([935883c](https://github.com/hashpass-tech/hashpass.tech/commit/935883c8b6733572931337dd99ecfc4c6f433281))
+
+
+
+
+
 ## [1.8.80](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.79...v1.8.80) (2026-06-22)
 
 
