@@ -283,7 +283,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('New notification received:', payload);
           const newNotification = payload.new as Notification;
           
@@ -298,8 +298,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           // Add to the beginning of the list
           setNotifications(prev => [translatedNotification, ...prev]);
           
-          // Show browser notification if permission granted
-          if (typeof window !== 'undefined' && Notification.permission === 'granted' && newNotification.is_urgent) {
+          // Show browser notification if permission granted (web-only; Notification API doesn't exist on native)
+          if (typeof window !== 'undefined' && typeof Notification !== 'undefined' && Notification.permission === 'granted' && newNotification.is_urgent) {
             const notificationOptions: NotificationOptions = {
               body: newNotification.message,
               icon: '/favicon.ico',
@@ -307,7 +307,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               badge: '/favicon.ico',
               requireInteraction: false,
             };
-            
+
             // Add click handler for chat messages to navigate to meeting room
             const browserNotification = new window.Notification(newNotification.title, notificationOptions);
             
@@ -331,7 +331,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Notification updated:', payload);
           const updatedNotification = payload.new as Notification;
           
@@ -352,7 +352,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('Notification deleted:', payload);
           const deletedNotification = payload.old as Notification;
           
@@ -363,8 +363,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       )
       .subscribe();
 
-    // Request notification permission (only in browser)
-    if (typeof window !== 'undefined' && Notification.permission === 'default') {
+    // Request notification permission (web-only)
+    if (typeof window !== 'undefined' && typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
