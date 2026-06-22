@@ -1,3 +1,14 @@
+## [1.8.78](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.77...v1.8.78) (2026-06-22)
+
+
+### Bug Fixes
+
+* **api:** resolve OTP 401 by adding BSL service role key to core profile lookup ([de77f2b](https://github.com/hashpass-tech/hashpass.tech/commit/de77f2b571afd209cd4b57a03f6f69c08af94b95))
+
+
+
+
+
 ## [1.8.77](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.76...v1.8.77) (2026-06-22)
 
 

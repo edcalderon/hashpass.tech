@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.77)
+## 📋 Latest Changes (v1.8.78)
 
 ### Bug Fixes
 
-* **auth:** enable PKCE flow and fix native relay for magic link on Android ([b8ed0a1](https://github.com/hashpass-tech/hashpass.tech/commit/b8ed0a14a831a04244c757af32bf28db2d06e8e9))
+* **api:** resolve OTP 401 by adding BSL service role key to core profile lookup ([de77f2b](https://github.com/hashpass-tech/hashpass.tech/commit/de77f2b571afd209cd4b57a03f6f69c08af94b95))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
