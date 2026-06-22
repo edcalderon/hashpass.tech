@@ -1,3 +1,14 @@
+## [1.8.70](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.69...v1.8.70) (2026-06-22)
+
+
+### Bug Fixes
+
+* **auth:** avoid logging complex objects in native OAuth callback ([d7c8c71](https://github.com/hashpass-tech/hashpass.tech/commit/d7c8c715707b62c818138217c0b21983befa9773))
+
+
+
+
+
 ## [1.8.69](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.68...v1.8.69) (2026-06-22)
 
 
