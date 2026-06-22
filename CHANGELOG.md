@@ -1,3 +1,14 @@
+## [1.8.69](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.68...v1.8.69) (2026-06-22)
+
+
+### Bug Fixes
+
+* **notifications:** guard Notification API access on native ([d865259](https://github.com/hashpass-tech/hashpass.tech/commit/d865259aa83e85232c9a32087144e42037e458c2))
+
+
+
+
+
 ## [1.8.68](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.67...v1.8.68) (2026-06-22)
 
 

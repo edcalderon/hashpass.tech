@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.68)
+## 📋 Latest Changes (v1.8.69)
 
 ### Bug Fixes
 
-* **auth:** guard window.location in handleOAuthCallback for native ([9a01750](https://github.com/hashpass-tech/hashpass.tech/commit/9a01750c20e4ff3474dfeb3135315900916d315a))
+* **notifications:** guard Notification API access on native ([d865259](https://github.com/hashpass-tech/hashpass.tech/commit/d865259aa83e85232c9a32087144e42037e458c2))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
