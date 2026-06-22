@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.73)
+## 📋 Latest Changes (v1.8.74)
 
 ### Bug Fixes
 
-* **native:** guard window.addEventListener with Platform.OS and fix avatar SVG on Android ([46c4e30](https://github.com/hashpass-tech/hashpass.tech/commit/46c4e30b4f8b3cf6b27e7e4f65a72f178a278c12))
+* **auth:** resolve OTP CORS 401, native magic link relay and PKCE callback ([a09308c](https://github.com/hashpass-tech/hashpass.tech/commit/a09308c2f373043faac463e7b97c003e13e50f6d))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

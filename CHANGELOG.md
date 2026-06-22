@@ -1,3 +1,14 @@
+## [1.8.74](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.73...v1.8.74) (2026-06-22)
+
+
+### Bug Fixes
+
+* **auth:** resolve OTP CORS 401, native magic link relay and PKCE callback ([a09308c](https://github.com/hashpass-tech/hashpass.tech/commit/a09308c2f373043faac463e7b97c003e13e50f6d))
+
+
+
+
+
 ## [1.8.73](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.72...v1.8.73) (2026-06-22)
 
 
