@@ -1,0 +1,8 @@
+{
+  "_comment": "Native app update policy. Edit minimumVersion to hard-block older builds.",
+  "minimumVersion": "1.8.9",
+  "androidStoreUrl": "market://details?id=com.hashpass.tech",
+  "androidStoreWebUrl": "https://play.google.com/store/apps/details?id=com.hashpass.tech",
+  "iosStoreUrl": null,
+  "iosStoreWebUrl": null
+}

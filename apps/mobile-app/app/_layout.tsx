@@ -20,6 +20,9 @@ import { passSystemService } from '../lib/pass-system';
 import "./global.css";
 import PWAPrompt from '../components/PWAPrompt';
 import VersionUpdateNotification from '../components/VersionUpdateNotification';
+import ForceUpdateScreen from '../components/ForceUpdateScreen';
+import SoftUpdateBanner from '../components/SoftUpdateBanner';
+import { useNativeUpdateCheck } from '../hooks/useNativeUpdateCheck';
 import * as SplashScreen from 'expo-splash-screen';
 import { I18nProvider } from '../providers/I18nProvider';
 import { CopilotProvider } from 'react-native-copilot';
@@ -83,6 +86,7 @@ function ThemedContent() {
   const segments = useSegments();
   const router = useRouter();
   const { user, isLoggedIn, isLoading } = useAuth();
+  const nativeUpdate = useNativeUpdateCheck();
   const [isReady, setIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [versionUpdate, setVersionUpdate] = useState<{ currentVersion: string; latestVersion: string } | null>(null);
@@ -295,6 +299,17 @@ function ThemedContent() {
     );
   }
 
+  // Hard block: this version is below the minimum supported version
+  if (Platform.OS !== 'web' && nativeUpdate.needsHardUpdate && nativeUpdate.minimumVersion) {
+    return (
+      <ForceUpdateScreen
+        minimumVersion={nativeUpdate.minimumVersion}
+        storeUrl={nativeUpdate.storeUrl}
+        storeWebUrl={nativeUpdate.storeWebUrl}
+      />
+    );
+  }
+
   return (
     <>
       <Stack
@@ -356,6 +371,13 @@ function ThemedContent() {
           currentVersion={versionUpdate.currentVersion}
           latestVersion={versionUpdate.latestVersion}
           onUpdateComplete={() => setVersionUpdate(null)}
+        />
+      )}
+      {Platform.OS !== 'web' && nativeUpdate.needsSoftUpdate && nativeUpdate.latestVersion && (
+        <SoftUpdateBanner
+          latestVersion={nativeUpdate.latestVersion}
+          storeUrl={nativeUpdate.storeUrl}
+          storeWebUrl={nativeUpdate.storeWebUrl}
         />
       )}
     </>

@@ -56,6 +56,20 @@ export async function GET(request: Request) {
     const backendVersion = runtimeVersion;
     versions.currentVersion = backendVersion;
     versions.environment = runtimeEnvironment;
+
+    // Read update policy (minimumVersion, store URLs)
+    let updatePolicy: Record<string, any> = {};
+    const policyPaths = [
+      join(process.cwd(), 'config', 'update-policy.json'),
+      join(process.cwd(), 'dist', 'client', 'config', 'update-policy.json'),
+      join(process.cwd(), 'dist', 'config', 'update-policy.json'),
+    ];
+    for (const path of policyPaths) {
+      try {
+        updatePolicy = JSON.parse(readFileSync(path, 'utf-8'));
+        break;
+      } catch { continue; }
+    }
     
     // Log for debugging (include client version if provided)
     console.log(`[API] Serving versions.json from: ${versionsPath}`);
@@ -68,10 +82,17 @@ export async function GET(request: Request) {
       }
     }
 
+    const minimumVersion: string | null = updatePolicy.minimumVersion ?? null;
+
     // Always return success - version mismatches are handled gracefully
     // Frontend can be newer or backend can be newer, both are acceptable
     return new Response(JSON.stringify({
       ...versions,
+      minimumVersion,
+      androidStoreUrl: updatePolicy.androidStoreUrl ?? null,
+      androidStoreWebUrl: updatePolicy.androidStoreWebUrl ?? null,
+      iosStoreUrl: updatePolicy.iosStoreUrl ?? null,
+      iosStoreWebUrl: updatePolicy.iosStoreWebUrl ?? null,
       // Include version comparison info for client-side handling
       versionInfo: {
         backendVersion,
@@ -79,6 +100,9 @@ export async function GET(request: Request) {
         isMatch: clientVersion ? clientVersion === backendVersion : null,
         // Only suggest update if backend is newer (not if frontend is newer)
         needsUpdate: clientVersion ? compareAppVersions(clientVersion, backendVersion) < 0 : null,
+        needsHardUpdate: clientVersion && minimumVersion
+          ? compareAppVersions(clientVersion, minimumVersion) < 0
+          : null,
       },
     }), {
       status: 200,
