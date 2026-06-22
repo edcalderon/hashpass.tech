@@ -1,3 +1,14 @@
+## [1.8.71](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.70...v1.8.71) (2026-06-22)
+
+
+### Bug Fixes
+
+* **dashboard:** use RNAnimated.View to fix crash after Google auth on native ([b0d3468](https://github.com/hashpass-tech/hashpass.tech/commit/b0d34680439d56a1be97138ec7713f7aeab501b9))
+
+
+
+
+
 ## [1.8.70](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.69...v1.8.70) (2026-06-22)
 
 

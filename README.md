@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.70)
+## 📋 Latest Changes (v1.8.71)
 
 ### Bug Fixes
 
-* **auth:** avoid logging complex objects in native OAuth callback ([d7c8c71](https://github.com/hashpass-tech/hashpass.tech/commit/d7c8c715707b62c818138217c0b21983befa9773))
+* **dashboard:** use RNAnimated.View to fix crash after Google auth on native ([b0d3468](https://github.com/hashpass-tech/hashpass.tech/commit/b0d34680439d56a1be97138ec7713f7aeab501b9))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
