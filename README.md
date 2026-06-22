@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.78)
+## 📋 Latest Changes (v1.8.79)
 
 ### Bug Fixes
 
-* **api:** resolve OTP 401 by adding BSL service role key to core profile lookup ([de77f2b](https://github.com/hashpass-tech/hashpass.tech/commit/de77f2b571afd209cd4b57a03f6f69c08af94b95))
+* **api:** remove email from verifyOtp token_hash call ([513cca2](https://github.com/hashpass-tech/hashpass.tech/commit/513cca2766713fe55763e54491576156e19b293c))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

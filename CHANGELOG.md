@@ -1,3 +1,14 @@
+## [1.8.79](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.78...v1.8.79) (2026-06-22)
+
+
+### Bug Fixes
+
+* **api:** remove email from verifyOtp token_hash call ([513cca2](https://github.com/hashpass-tech/hashpass.tech/commit/513cca2766713fe55763e54491576156e19b293c))
+
+
+
+
+
 ## [1.8.78](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.77...v1.8.78) (2026-06-22)
 
 
