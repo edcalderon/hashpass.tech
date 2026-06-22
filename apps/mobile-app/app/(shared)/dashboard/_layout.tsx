@@ -785,16 +785,16 @@ export default function DashboardLayout() {
     // Use regular View for styles that come from old Animated API
     // Animated.View from reanimated doesn't support old Animated.Interpolation directly
     return (
-      <View
+      <RNAnimated.View
         style={[
           styles.header,
           {
             backgroundColor: 'transparent',
-            borderBottomWidth: headerBorderWidth as any,
+            borderBottomWidth: headerBorderWidth,
             borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
             shadowColor: isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.2)',
             shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: headerShadowOpacity as any,
+            shadowOpacity: headerShadowOpacity,
             shadowRadius: 6,
             elevation: 8,
             overflow: 'hidden',
@@ -992,7 +992,7 @@ export default function DashboardLayout() {
           }}
         />
 
-      </View>
+      </RNAnimated.View>
     );
   };
 
