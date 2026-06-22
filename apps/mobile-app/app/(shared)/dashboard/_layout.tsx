@@ -28,11 +28,9 @@ import MiniNotificationDropdown from '../../../components/MiniNotificationDropdo
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
 
-// Define the type for our drawer navigation
-type DrawerNavigation = CompositeNavigationProp<
-  DrawerNavigationProp<RootStackParamList>,
-  NativeStackNavigationProp<RootStackParamList>
->;
+// DrawerNavigationProp generic constraint mismatch across @react-navigation versions
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DrawerNavigation = any;
 
 const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
 const CopilotView = walkthroughable(View);
@@ -48,7 +46,7 @@ function CustomDrawerContent() {
   const router = useRouter();
   const pathname = usePathname();
   const navigation = useNavigation<DrawerNavigation>();
-  const copilotHook = useCopilot();
+  const copilotHook = useCopilot() as any;
   const isMobile = useIsMobile();
   const styles = getStyles(isDark, colors, isMobile);
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
@@ -676,7 +674,7 @@ export default function DashboardLayout() {
     if (!authLoading && !isLoggedIn) {
       if (shouldDelayRedirectForRecentAuth()) {
         console.log('⏳ Recent auth success detected in dashboard; delaying redirect and rechecking session.');
-        authService.getSession().catch((error) => {
+        authService.getSession().catch((error: unknown) => {
           console.debug('Dashboard auth recheck during redirect grace failed:', error);
         });
         return;
@@ -694,7 +692,7 @@ export default function DashboardLayout() {
     const { headerOpacity, headerBackground, headerTint, headerBlur, headerBorderWidth, headerShadowOpacity, headerHeight, setHeaderHeight, scrollY } = useScroll();
     const { animationsEnabled } = useAnimations();
     const { user } = useAuth();
-    const copilotHook = useCopilot();
+    const copilotHook = useCopilot() as any;
     const handleNext = copilotHook?.handleNext || copilotHook?.handleNth;
     const [qrScannerVisible, setQrScannerVisible] = React.useState(false);
 
@@ -883,19 +881,19 @@ export default function DashboardLayout() {
             </RNAnimated.View>
           )}
         </View>
-        <Animated.View
+        <RNAnimated.View
           style={[
             styles.headerContent,
             animationsEnabled ? {
               opacity: headerOpacity.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.8, 1] // Slight fade in effect
+                outputRange: [0.8, 1],
               }),
             } : {
-              opacity: 1, // No animation when disabled
+              opacity: 1,
             },
             {
-              pointerEvents: 'auto', // Make buttons clickable
+              pointerEvents: 'auto',
             }
           ]}
         >
@@ -932,7 +930,6 @@ export default function DashboardLayout() {
                 activeOpacity={0.8}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                 // Make sure this is clickable even during tutorial
-                pointerEvents="auto"
               >
                 <Ionicons
                   name="menu"
@@ -978,18 +975,18 @@ export default function DashboardLayout() {
               </CopilotTouchableOpacity>
             </CopilotStep>
           </View>
-        </Animated.View>
+        </RNAnimated.View>
 
         {/* Regular QR Scanner Modal */}
         <QRScanner
           visible={qrScannerVisible}
           onClose={() => setQrScannerVisible(false)}
-          onScanSuccess={(result) => {
+          onScanSuccess={(result: unknown) => {
             console.log('QR Scan Success:', result);
             setQrScannerVisible(false);
             // You can add navigation or other actions here based on scan result
           }}
-          onScanError={(error) => {
+          onScanError={(error: unknown) => {
             console.error('QR Scan Error:', error);
             // Error is already shown in the scanner component
           }}

@@ -23,6 +23,7 @@
         ".gitignore",
         ".npmrc",
         "CHANGELOG.md",
+        "CLAUDE.md",
         "LICENSE",
         "README.md",
         "TRADEMARKS.md",
