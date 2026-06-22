@@ -96,8 +96,20 @@ const getNativeRelayUrl = (nativeRelayValue?: string | string[] | null) => {
     const search = currentUrl.searchParams.toString();
     const hash = currentUrl.hash || '';
     const queryString = search ? `?${search}` : '';
+    const callbackPath = `${SUPABASE_OAUTH_CALLBACK_PATH.slice(1)}${queryString}${hash}`;
 
-    return `${SUPABASE_OAUTH_NATIVE_SCHEME}://${SUPABASE_OAUTH_CALLBACK_PATH.slice(1)}${queryString}${hash}`;
+    // Gmail and most email clients on Android open links inside Chrome Custom Tabs
+    // (an in-app browser), which blocks custom-scheme navigation (hashpass://) for security.
+    // Android Intent URLs ARE processed by Custom Tabs: they hand off to the Android
+    // intent system which opens the registered app directly.
+    // iOS Safari does not support Intent URLs — use hashpass:// there.
+    const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+        // intent://<path>#Intent;scheme=<scheme>;package=<pkg>;end
+        return `intent://${callbackPath}#Intent;scheme=${SUPABASE_OAUTH_NATIVE_SCHEME};package=com.hashpass.tech;end`;
+    }
+
+    return `${SUPABASE_OAUTH_NATIVE_SCHEME}://${callbackPath}`;
 };
 
 export default function AuthCallback() {
