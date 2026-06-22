@@ -1,3 +1,14 @@
+## [1.8.72](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.71...v1.8.72) (2026-06-22)
+
+
+### Bug Fixes
+
+* **dashboard:** convert Header outer View to RNAnimated.View for borderWidth and shadowOpacity ([b8ef724](https://github.com/hashpass-tech/hashpass.tech/commit/b8ef72487efba7f66165fdf4126593708330d7ac))
+
+
+
+
+
 ## [1.8.71](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.70...v1.8.71) (2026-06-22)
 
 
