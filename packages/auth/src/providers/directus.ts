@@ -360,7 +360,7 @@ export class DirectusAuthProvider implements IAuthProvider {
         }
         : codeOrParams;
 
-      console.log('🔄 Processing Directus OAuth callback with params:', params);
+      console.log('🔄 Processing Directus OAuth callback');
 
       // React Native polyfills `window` but not `window.location`. Guard both.
       const hasWindowLocation =
@@ -392,13 +392,11 @@ export class DirectusAuthProvider implements IAuthProvider {
         reason: params.reason || urlParams.get('reason'),
       };
 
-      console.log('📋 Extracted auth data:', authData);
-      if (hasWindowLocation) {
-        console.log('🔍 URL info:', {
-          search: window.location.search,
-          hash: window.location.hash.substring(0, 30) + (window.location.hash.length > 30 ? '...' : ''),
-          paramsKeys: Object.keys(params),
-        });
+      // Log only string representations to avoid native Hermes exceptions with objects
+      if (authData.access_token) {
+        console.log('✅ Access token found: ' + authData.access_token.substring(0, 20) + '...');
+      } else {
+        console.log('⚠️ No access token in auth data');
       }
 
       if (authData.reason) {
