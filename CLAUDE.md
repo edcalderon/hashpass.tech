@@ -90,6 +90,17 @@ Always push to origin for CI/CD. Push to upstream for backup after release scrip
 
 Headroom compresses long conversation context to save tokens. It's installed as a Claude Code MCP server.
 
+### Automatic usage (REQUIRED)
+
+**Always invoke `mcp__headroom__headroom_compress` proactively — do not wait to be asked:**
+
+- At the start of any long session (after reading multiple large files or accumulating significant context)
+- Whenever the conversation has gone through several back-and-forth turns on a complex task
+- Before starting a new major subtask within the same session
+- Any time you notice the system-reminder mentions context is being compressed/summarized
+
+After compressing, call `mcp__headroom__headroom_stats` once to confirm compression succeeded and log the token savings. Use `mcp__headroom__headroom_retrieve` if you need to recall something from earlier in the conversation that may have been compressed.
+
 ### Installation (already done — for reference / re-setup)
 ```bash
 # 1. Install into a permanent venv
