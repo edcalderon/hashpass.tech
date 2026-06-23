@@ -42,6 +42,34 @@ The script:
    git push upstream main <TAG_NAME>
    ```
 
+### Native Android App Environment — dev builds hit api-dev (intentional)
+
+**This is by design, not a bug.**
+
+Android builds triggered with `--field environment=development` bake `EXPO_PUBLIC_SUPABASE_PROFILE=core-development` into the JS bundle. At runtime, `readBuildEnvironment()` in `lib/api-client.ts` detects the substring `"development"` in that value and routes ALL API calls to `https://api-dev.hashpass.tech/api` (the `hashpass-api-dev` Lambda in us-east-1).
+
+| Build field | Supabase profile | API Lambda |
+|-------------|-----------------|------------|
+| `environment=development` | `core-development` | `hashpass-api-dev` (us-east-1) |
+| `environment=production` | `core-production` | `hashpass-api-prod` (us-east-1) |
+
+**Consequence:** If `hashpass-api-dev` is out of date, dev builds will behave differently from prod — even if prod was just fixed. Always keep `develop` branch in sync with `main` so that Amplify builds of `develop` update `hashpass-api-dev` to the same code.
+
+```bash
+# Sync develop with main after every release
+git checkout develop && git merge main && git push origin develop && git push upstream develop
+git checkout main
+```
+
+**If api-dev urgently needs the same code as api-prod** (e.g. a hotfix was released to main but develop wasn't synced), you can manually copy the prod Lambda bundle to dev:
+```bash
+# Download prod bundle and deploy to dev
+aws lambda get-function --function-name hashpass-api-prod --region us-east-1 \
+  --query 'Code.Location' --output text | xargs curl -s -o /tmp/lambda-prod.zip
+aws lambda update-function-code --function-name hashpass-api-dev \
+  --region us-east-1 --zip-file fileb:///tmp/lambda-prod.zip
+```
+
 ### Android Launch Crash Debugging
 If the app won't open on Android:
 
