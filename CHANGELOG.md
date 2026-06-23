@@ -1,3 +1,14 @@
+## [1.8.89](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.88...v1.8.89) (2026-06-23)
+
+
+### Bug Fixes
+
+* **otp:** use email+token verify path to bypass token_hash GoTrue issue ([d4979ab](https://github.com/hashpass-tech/hashpass.tech/commit/d4979ab0a1d65e0b608bf73539dac65ab3eff5b0))
+
+
+
+
+
 ## [1.8.88](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.87...v1.8.88) (2026-06-23)
 
 

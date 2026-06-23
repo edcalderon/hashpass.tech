@@ -17,12 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.88)
+## 📋 Latest Changes (v1.8.89)
 
 ### Bug Fixes
 
-* **toast:** inset progress bar from card corners to prevent overflow ([0b02e6f](https://github.com/hashpass-tech/hashpass.tech/commit/0b02e6fe8b7b71ea27d595ee264973088b9a95e7))
-* **toast:** remove duplicate height property in progressBar style ([f0579ad](https://github.com/hashpass-tech/hashpass.tech/commit/f0579ad764e7c912676af5d6ea991b2b530afb96))
+* **otp:** use email+token verify path to bypass token_hash GoTrue issue ([d4979ab](https://github.com/hashpass-tech/hashpass.tech/commit/d4979ab0a1d65e0b608bf73539dac65ab3eff5b0))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
