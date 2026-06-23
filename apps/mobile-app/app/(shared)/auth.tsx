@@ -1620,38 +1620,41 @@ export default function AuthScreen() {
 
                       <View style={styles.otpDigitsWrapper} dataSet={{ authEnterIgnore: 'true' } as any}>
                         {OTP_DIGIT_KEYS.map((key, index) => (
-                          <TextInput
+                          <View
                             key={key}
-                            ref={(r) => { digitRefs.current[index] = r; }}
                             style={[
                               styles.otpDigitCell,
-                              styles.otpDigitInput,
                               otpDigits[index] ? styles.otpDigitCellFilled : null,
                               focusedDigitIndex === index ? styles.otpDigitCellActive : null,
                               otpError ? styles.otpDigitCellError : null,
                             ]}
-                            value={otpDigits[index]}
-                            onChangeText={(v) => handleDigitChange(index, v)}
-                            onKeyPress={(e) => handleDigitKeyPress(index, e.nativeEvent.key)}
-                            onFocus={() => {
-                              setFocusedDigitIndex(index);
-                              activeSubmitFieldRef.current = 'otp';
-                            }}
-                            onBlur={() => {
-                              setFocusedDigitIndex((prev) => (prev === index ? -1 : prev));
-                              if (activeSubmitFieldRef.current === 'otp') {
-                                activeSubmitFieldRef.current = null;
-                              }
-                            }}
-                            keyboardType="number-pad"
-                            maxLength={OTP_CODE_LENGTH}
-                            editable={!isBusy}
-                            textContentType={index === 0 ? 'oneTimeCode' : undefined}
-                            autoComplete={index === 0 ? 'one-time-code' : 'off'}
-                            returnKeyType="done"
-                            selectTextOnFocus
-                            onSubmitEditing={() => runSubmitAction(handleOtpInputSubmit)}
-                          />
+                          >
+                            <TextInput
+                              ref={(r) => { digitRefs.current[index] = r; }}
+                              style={styles.otpDigitInput}
+                              value={otpDigits[index]}
+                              onChangeText={(v) => handleDigitChange(index, v)}
+                              onKeyPress={(e) => handleDigitKeyPress(index, e.nativeEvent.key)}
+                              onFocus={() => {
+                                setFocusedDigitIndex(index);
+                                activeSubmitFieldRef.current = 'otp';
+                              }}
+                              onBlur={() => {
+                                setFocusedDigitIndex((prev) => (prev === index ? -1 : prev));
+                                if (activeSubmitFieldRef.current === 'otp') {
+                                  activeSubmitFieldRef.current = null;
+                                }
+                              }}
+                              keyboardType="number-pad"
+                              maxLength={index === 0 ? OTP_CODE_LENGTH : 1}
+                              editable={!isBusy}
+                              textContentType={index === 0 ? 'oneTimeCode' : undefined}
+                              autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                              returnKeyType="done"
+                              selectTextOnFocus
+                              onSubmitEditing={() => runSubmitAction(handleOtpInputSubmit)}
+                            />
+                          </View>
                         ))}
                       </View>
 
@@ -2293,11 +2296,14 @@ const getStyles = (
       backgroundColor: '#F44336',
     },
     otpDigitInput: {
+      width: '100%',
+      height: '100%',
       fontSize: 24,
       fontWeight: '700',
       color: isDark ? '#fff' : '#121212',
       textAlign: 'center',
       padding: 0,
+      backgroundColor: 'transparent',
       caretColor: '#c81000',
     } as any,
     otpClearButton: {
