@@ -258,6 +258,12 @@ export default function PrivacyTermsModal({ visible, type, onClose }: PrivacyTer
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.header}>
+            <Text style={styles.headerTitle} selectable={false}>
+              {type === 'privacy'
+                ? t({ id: 'privacy.title', message: 'Privacy Policy' })
+                : t({ id: 'terms.title', message: 'Terms of Service' })
+              }
+            </Text>
             <TouchableOpacity
               onPress={onClose}
               style={styles.closeButton}
@@ -265,13 +271,6 @@ export default function PrivacyTermsModal({ visible, type, onClose }: PrivacyTer
             >
               <Ionicons name="close" size={28} color={colors.text.primary} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle} selectable={false}>
-              {type === 'privacy' 
-                ? t({ id: 'privacy.title', message: 'Privacy Policy' })
-                : t({ id: 'terms.title', message: 'Terms of Service' })
-              }
-            </Text>
-            <View style={{ width: 40 }} />
           </View>
 
           <ScrollView 
