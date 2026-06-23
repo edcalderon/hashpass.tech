@@ -154,6 +154,7 @@
     "otpSmsHint": "We will send the login code by SMS using the selected country code.",
     "otpSmsSentMessage": "Check your phone for the 6-digit code.",
     "otpResendPrompt": "Didn't receive the OTP code?",
+    "clearCode": "Clear",
     "otpResendCountdown": "Send another code in {seconds}s.",
     "otpSendAnother": "Send again",
     "otpVerifyFailed": "Could not verify the code. Please request a new one.",

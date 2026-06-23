@@ -8,6 +8,11 @@ output "github_actions_role_arn" {
   value       = var.enable_github_actions_runner_control ? aws_iam_role.github_actions[0].arn : ""
 }
 
+output "infra_deploy_role_arn" {
+  description = "IAM role ARN for GitHub Actions to deploy SST infra. Copy as GitHub variable AWS_INFRA_DEPLOY_ROLE_ARN once enable_github_actions_runner_control = true."
+  value       = var.enable_github_actions_runner_control ? aws_iam_role.github_actions_infra[0].arn : ""
+}
+
 output "runner_managed_network" {
   description = "Whether the stack created the runner VPC and public subnets"
   value       = length(var.subnet_ids) == 0

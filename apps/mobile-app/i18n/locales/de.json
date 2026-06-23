@@ -145,6 +145,7 @@
     "otpSmsHint": "Wir senden den Login-Code per SMS mit der ausgewählten Ländervorwahl.",
     "otpSmsSentMessage": "Prüfe dein Telefon auf den 6-stelligen Code.",
     "otpResendPrompt": "OTP-Code nicht erhalten?",
+    "clearCode": "Löschen",
     "otpResendCountdown": "Neuen Code in {seconds}s senden.",
     "otpSendAnother": "Erneut senden",
     "otpVerifyFailed": "Code konnte nicht verifiziert werden. Bitte fordere einen neuen an.",

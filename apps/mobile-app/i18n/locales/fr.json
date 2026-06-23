@@ -145,6 +145,7 @@
     "otpSmsHint": "Nous enverrons le code de connexion par SMS en utilisant l'indicatif sélectionné.",
     "otpSmsSentMessage": "Vérifiez votre téléphone pour le code à 6 chiffres.",
     "otpResendPrompt": "Vous n'avez pas reçu le code OTP ?",
+    "clearCode": "Effacer",
     "otpResendCountdown": "Renvoyer un code dans {seconds}s.",
     "otpSendAnother": "Renvoyer",
     "otpVerifyFailed": "Impossible de vérifier le code. Veuillez en demander un nouveau.",

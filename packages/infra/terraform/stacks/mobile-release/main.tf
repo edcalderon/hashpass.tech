@@ -187,6 +187,101 @@ resource "aws_iam_role_policy" "github_actions_runner_control" {
   })
 }
 
+# ── GitHub Actions OIDC — SST infra deployment role ───────────────────────────
+# Separate role from the runner-control role so infra deploys use least-privilege
+# credentials scoped only to what SST needs (S3, CloudFront, Route53, ACM, Lambda, IAM).
+# After apply, copy the infra_deploy_role_arn output as GitHub variable AWS_INFRA_DEPLOY_ROLE_ARN.
+
+resource "aws_iam_role" "github_actions_infra" {
+  count = var.enable_github_actions_runner_control ? 1 : 0
+
+  name               = "${var.github_actions_role_name}-infra-deploy"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role[0].json
+  tags               = local.common_tags
+}
+
+resource "aws_iam_role_policy" "github_actions_infra_deploy" {
+  count = var.enable_github_actions_runner_control ? 1 : 0
+
+  name = "${var.name_prefix}-infra-deploy"
+  role = aws_iam_role.github_actions_infra[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "S3Full"
+        Effect = "Allow"
+        Action = ["s3:*"]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudFrontFull"
+        Effect = "Allow"
+        Action = ["cloudfront:*"]
+        Resource = "*"
+      },
+      {
+        Sid    = "Route53Infra"
+        Effect = "Allow"
+        Action = [
+          "route53:ListHostedZones",
+          "route53:GetHostedZone",
+          "route53:ListResourceRecordSets",
+          "route53:ChangeResourceRecordSets",
+          "route53:GetChange",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AcmFull"
+        Effect = "Allow"
+        Action = ["acm:*"]
+        Resource = "*"
+      },
+      {
+        Sid    = "LambdaFull"
+        Effect = "Allow"
+        Action = ["lambda:*"]
+        Resource = "*"
+      },
+      {
+        Sid    = "IamSstRoles"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:GetRole",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:GetRolePolicy",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:PassRole",
+          "iam:ListRolePolicies",
+          "iam:ListAttachedRolePolicies",
+          "iam:TagRole",
+          "iam:UntagRole",
+          "iam:CreateServiceLinkedRole",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "SsmFull"
+        Effect = "Allow"
+        Action = ["ssm:*"]
+        Resource = "*"
+      },
+      {
+        Sid    = "StsRead"
+        Effect = "Allow"
+        Action = ["sts:GetCallerIdentity"]
+        Resource = "*"
+      },
+    ]
+  })
+}
+
 resource "aws_secretsmanager_secret" "github_runner_token" {
   name        = var.github_runner_token_secret_name
   description = "GitHub PAT used by the HashPass mobile release runner to mint registration tokens"

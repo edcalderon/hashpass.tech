@@ -154,6 +154,7 @@
     "otpSmsHint": "선택한 국가 코드를 사용해 SMS로 로그인 코드를 전송합니다.",
     "otpSmsSentMessage": "휴대폰에서 6자리 코드를 확인해 주세요.",
     "otpResendPrompt": "OTP 코드를 받지 못하셨나요?",
+    "clearCode": "지우기",
     "otpResendCountdown": "{seconds}초 후 코드 다시 보내기",
     "otpSendAnother": "다시 보내기",
     "otpVerifyFailed": "코드를 확인할 수 없습니다. 새 코드를 요청해 주세요.",

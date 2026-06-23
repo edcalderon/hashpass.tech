@@ -154,6 +154,7 @@
     "otpSmsHint": "Enviaremos el código de acceso por SMS con el código de país seleccionado.",
     "otpSmsSentMessage": "Revisa tu teléfono para ver el código de 6 dígitos.",
     "otpResendPrompt": "¿No recibiste el código OTP?",
+    "clearCode": "Borrar",
     "otpResendCountdown": "Enviar otro código en {seconds}s.",
     "otpSendAnother": "Enviar de nuevo",
     "otpVerifyFailed": "No se pudo verificar el código. Solicita uno nuevo.",
