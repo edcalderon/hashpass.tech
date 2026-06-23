@@ -91,20 +91,49 @@ The IAM role (`hashpass-mobile-release-github-actions`) has the `hashpass-infra-
 | `infra-deploy.yml` | Push to `main`/`develop` (infra/api paths) + manual | SST deploy for `bsl.hashpass.tech` |
 | `release-infra.yml` | Manual | Version bump + infra deploy |
 
+## Native Android App — dev builds hit api-dev (intentional)
+
+Android CI builds with `--field environment=development` embed `EXPO_PUBLIC_SUPABASE_PROFILE=core-development` into the JS bundle. At runtime, `readBuildEnvironment()` in `lib/api-client.ts` detects `"development"` as a substring and routes all API calls to `api-dev.hashpass.tech`. This is **by design** — the dev build tests against the dev Supabase project AND the dev Lambda together.
+
+| CI field | Supabase profile | API Lambda |
+|----------|-----------------|------------|
+| `environment=development` | `core-development` | `hashpass-api-dev` (us-east-1) |
+| `environment=production` | `core-production` | `hashpass-api-prod` (us-east-1) |
+
+**Keep the Lambdas in sync:** `hashpass-api-dev` is updated by Amplify when the `develop` branch is pushed. Always merge `main` → `develop` and push after every release so dev builds don't run stale server code.
+
+If you need to fast-sync `api-dev` with `api-prod` without a full build (e.g. after a hotfix):
+```bash
+aws lambda get-function --function-name hashpass-api-prod --region us-east-1 \
+  --query 'Code.Location' --output text | xargs curl -s -o /tmp/lambda-prod.zip
+aws lambda update-function-code --function-name hashpass-api-dev \
+  --region us-east-1 --zip-file fileb:///tmp/lambda-prod.zip
+```
+
 ## Lambda Environment Variables
 
-The Lambda (`hashpass-api-prod`) uses `hostnameFromRequest()` to select a Supabase profile based on the request's `Origin` / `Referer` / `Host` header. See `apps/mobile-app/config/supabase-profiles.ts` for the host→profile mapping.
+Both `hashpass-api-prod` and `hashpass-api-dev` use `hostnameFromRequest()` to select a Supabase profile from the request's `Origin` / `Referer` / `Host` header. See `apps/mobile-app/config/supabase-profiles.ts` for the host→profile mapping:
 
-All secrets (Supabase service keys, SMTP credentials, OAuth secrets) are configured directly in the Lambda environment — not via SST at deploy time. To update Lambda env vars:
+- `api.hashpass.tech` → `core-production`
+- `api-dev.hashpass.tech` → `core-development`
+
+All secrets (Supabase service keys, SMTP credentials, OAuth secrets) are configured directly in each Lambda's environment — not via SST at deploy time. To update Lambda env vars:
 
 ```bash
+# Production
 aws lambda update-function-configuration \
   --function-name hashpass-api-prod \
   --region us-east-1 \
   --environment "Variables={KEY=value,...}"
+
+# Development
+aws lambda update-function-configuration \
+  --function-name hashpass-api-dev \
+  --region us-east-1 \
+  --environment "Variables={KEY=value,...}"
 ```
 
-Or use the AWS Console → Lambda → hashpass-api-prod → Configuration → Environment variables.
+Or use the AWS Console → Lambda → select function → Configuration → Environment variables.
 
 ## CloudFront Distributions
 
