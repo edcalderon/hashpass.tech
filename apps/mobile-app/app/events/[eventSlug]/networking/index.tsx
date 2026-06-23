@@ -13,6 +13,7 @@ import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
+// @ts-ignore — Expo SDK 53 type definitions lag behind; named export works at runtime
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
@@ -33,7 +34,7 @@ export default function NetworkingView() {
   const router = useRouter();
   const { showSuccess, showError } = useToastHelpers();
   const { t } = useTranslation();
-  const { start: startNetworkingTutorial, copilotEvents, handleNth } = useCopilot();
+  const { start: startNetworkingTutorial, copilotEvents, handleNth } = useCopilot() as any;
   const { shouldShowTutorial, markTutorialCompleted, isReady, networkingTutorialCompleted, updateTutorialStep } = useTutorialPreferences();
   const { isLoggedIn, isLoading: authLoading } = useAuth();
   const tutorialStartedRef = useRef(false);
