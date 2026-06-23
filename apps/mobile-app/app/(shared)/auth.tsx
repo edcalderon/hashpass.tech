@@ -899,12 +899,14 @@ export default function AuthScreen() {
         throw new Error(extractApiError(verifyResponse.data, t('otpInvalid', 'Invalid or expired code.')));
       }
 
-      // The server validated our custom 6-digit code and returned a fresh single-use
-      // Supabase magic-link token. Redeem it client-side with the anon-key client so
-      // GoTrue processes it in the normal (non-admin) context.
-      const { error: sessionError } = await supabase.auth.verifyOtp({
-        token_hash: verifyResponse.data.token_hash,
-        type: (verifyResponse.data.type ?? 'magiclink') as any,
+      const sessionPayload = verifyResponse.data.session;
+      if (!sessionPayload?.access_token || !sessionPayload?.refresh_token) {
+        throw new Error(t('otpVerifyFailed', 'Could not verify the code. Please request a new one.'));
+      }
+
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: sessionPayload.access_token,
+        refresh_token: sessionPayload.refresh_token,
       });
 
       if (sessionError) {

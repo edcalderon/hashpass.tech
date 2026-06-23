@@ -1,4 +1,7 @@
+import { createClient } from '@supabase/supabase-js';
 import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../../lib/supabase-server';
+import { resolvePublicSupabaseConfig } from '../../../../config/supabase-profiles';
+import { hostnameFromRequest } from '../../../../config/supabase-profiles';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 
 const corsHeaders = {
@@ -11,7 +14,6 @@ type ParsedTokenHash = {
   tokenHash: string;
   verificationType: string;
 };
-
 
 function parseStoredTokenHash(rawTokenHash: string | null | undefined): ParsedTokenHash {
   const fallback: ParsedTokenHash = {
@@ -44,8 +46,16 @@ export async function OPTIONS() {
 }
 
 /**
- * API endpoint to verify OTP code
- * Maps the user-entered code to the token_hash and verifies it
+ * API endpoint to verify OTP code.
+ *
+ * Flow:
+ * 1. Look up the 6-digit code in otp_codes (service-role client).
+ * 2. Mark the code as used.
+ * 3. Generate a fresh single-use magic-link via the admin API.
+ * 4. Verify the fresh token using an anon-key client (same Supabase project,
+ *    resolved from the request hostname). GoTrue rejects token_hash verification
+ *    when the Authorization header carries a service-role key.
+ * 5. Return the session to the client; client calls supabase.auth.setSession().
  */
 export async function POST(request: Request) {
   try {
@@ -82,23 +92,22 @@ export async function POST(request: Request) {
     if (lookupError) {
       console.error('OTP lookup error:', lookupError);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Database error while verifying code',
-          details: lookupError.message 
+          details: lookupError.message
         }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
     if (!otpData) {
-      // Log for debugging
       console.log('OTP code not found:', {
         email: normalizedEmail,
         code: normalizedCode,
         selectedProfile,
         usingDevFallback,
       });
-      
+
       // Check if code exists but is used or expired
       const { data: expiredData } = await supabase
         .from('otp_codes')
@@ -108,7 +117,7 @@ export async function POST(request: Request) {
         .order('expires_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      
+
       if (expiredData) {
         if (expiredData.used) {
           return new Response(
@@ -123,7 +132,7 @@ export async function POST(request: Request) {
           );
         }
       }
-      
+
       return new Response(
         JSON.stringify({ error: 'Invalid verification code' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -138,7 +147,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Mark the code as used before generating the fresh link so it cannot be replayed.
+    // Mark the code as used before touching Supabase auth so it cannot be replayed.
     await supabase
       .from('otp_codes')
       .update({ used: true })
@@ -146,9 +155,10 @@ export async function POST(request: Request) {
       .eq('code', normalizedCode)
       .eq('token_hash', otpData.token_hash);
 
-    // Generate a fresh single-use magic-link so the client can exchange it for a session
-    // using its own anon-key Supabase instance. We never call verifyOtp server-side with
-    // the service-role client — GoTrue rejects token_hash verification in that context.
+    // Generate a fresh single-use magic-link using the admin (service-role) client.
+    // We immediately redeem it via an anon-key client so the session is established
+    // server-side. GoTrue rejects token_hash verification requests that carry a
+    // service-role Authorization header ("Only the token_hash and type should be provided").
     const { data: freshLinkData, error: freshLinkError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email: normalizedEmail,
@@ -186,30 +196,83 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('OTP code verified on server, returning fresh token to client');
+    // Resolve the anon key for this request's Supabase project (same project as the
+    // service-role client — determined by request hostname). Using the anon key avoids
+    // GoTrue's rejection of service-role token_hash verification.
+    const hostname = hostnameFromRequest(request);
+    const { supabaseUrl: anonUrl, supabaseAnonKey: anonKey } = resolvePublicSupabaseConfig({ hostname });
 
-    // Sync the user registry in the background — we don't have a session yet (the client
-    // will establish it), so look up the user by email to get their ID.
-    supabase.auth.admin.getUserByEmail(normalizedEmail).then(({ data: userData }: { data: any }) => {
-      if (userData?.user?.id) {
-        const u = userData.user;
-        syncPublicUserRegistry(request, {
-          provider: 'supabase',
-          authUserId: u.id,
-          email: u.email ?? normalizedEmail,
-          firstName: u.user_metadata?.first_name || null,
-          lastName: u.user_metadata?.last_name || null,
-          fullName: u.user_metadata?.full_name || null,
-          avatarUrl: u.user_metadata?.avatar_url || u.user_metadata?.picture || null,
-          status: u.user_metadata?.status || 'active',
-          emailVerifiedAt: u.email_confirmed_at || u.confirmed_at || null,
-          lastSignInAt: u.last_sign_in_at || null,
-          authMetadata: u.app_metadata || {},
-          profileMetadata: u.user_metadata || {},
-          providerIds: { supabase: u.id },
-        }).catch(console.error);
+    if (!anonUrl || !anonKey) {
+      console.error('OTP verify: missing anon Supabase config for hostname:', hostname);
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error', code: 'server_config_error' }),
+        { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const anonClient = createClient(anonUrl, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const verificationTypes = Array.from(
+      new Set([freshVerificationType, 'magiclink', 'signup', 'email'])
+    );
+
+    let verificationResult: { data: any; error: any } | null = null;
+
+    for (const type of verificationTypes) {
+      const { data, error } = await anonClient.auth.verifyOtp({
+        token_hash: freshTokenHash,
+        type: type as any,
+      });
+
+      if (!error) {
+        verificationResult = { data, error: null };
+        break;
       }
-    }).catch(console.error);
+
+      const message = typeof error.message === 'string' ? error.message : '';
+      const canRetry =
+        /email link is invalid or has expired/i.test(message) ||
+        /otp has expired or is invalid/i.test(message);
+
+      verificationResult = { data: null, error };
+      if (!canRetry) break;
+    }
+
+    if (!verificationResult || verificationResult.error) {
+      const errorMessage = verificationResult?.error?.message || 'Failed to verify OTP';
+      return new Response(
+        JSON.stringify({
+          error: errorMessage,
+          code: verificationResult?.error?.code || 'otp_verify_failed',
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const session = verificationResult.data?.session || null;
+    const user = verificationResult.data?.user || null;
+
+    if (user?.id && user?.email) {
+      await syncPublicUserRegistry(request, {
+        provider: 'supabase',
+        authUserId: user.id,
+        email: user.email,
+        firstName: user.user_metadata?.first_name || null,
+        lastName: user.user_metadata?.last_name || null,
+        fullName: user.user_metadata?.full_name || null,
+        avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        status: user.user_metadata?.status || 'active',
+        emailVerifiedAt: user.email_confirmed_at || user.confirmed_at || null,
+        lastSignInAt: user.last_sign_in_at || null,
+        authMetadata: user.app_metadata || {},
+        profileMetadata: user.user_metadata || {},
+        providerIds: { supabase: user.id },
+      });
+    }
+
+    console.log('OTP code verified on server, returning session payload to client');
 
     return new Response(
       JSON.stringify({
@@ -217,8 +280,8 @@ export async function POST(request: Request) {
         token_hash: freshTokenHash,
         type: freshVerificationType,
         email: normalizedEmail,
-        session: null,
-        user: null,
+        session,
+        user,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
