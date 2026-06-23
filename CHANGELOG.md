@@ -1,3 +1,19 @@
+## [1.8.113](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.112...v1.8.113) (2026-06-23)
+
+
+### Bug Fixes
+
+* **types:** cast SSO_CONFIG tenant values to fix unknown type error in better-auth.ts ([4834795](https://github.com/hashpass-tech/hashpass.tech/commit/48347959e7a992be787ecfe5a78f214275f2be07))
+
+
+### Features
+
+* **db:** rename Better Auth user table to ba_users, run V004+V005 on prod ([f99af65](https://github.com/hashpass-tech/hashpass.tech/commit/f99af652e7f50b12a367bd618621e1a639d3ab1e))
+
+
+
+
+
 ## [1.8.112](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.111...v1.8.112) (2026-06-23)
 
 

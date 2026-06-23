@@ -17,11 +17,16 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.112)
+## 📋 Latest Changes (v1.8.113)
+
+### Bug Fixes
+
+* **types:** cast SSO_CONFIG tenant values to fix unknown type error in better-auth.ts ([4834795](https://github.com/hashpass-tech/hashpass.tech/commit/48347959e7a992be787ecfe5a78f214275f2be07))
+
 
 ### Features
 
-* **db:** add public.users canonical user registry (V004) ([e0f9209](https://github.com/hashpass-tech/hashpass.tech/commit/e0f920914b642838c0a7885cd511e738ad560310))
+* **db:** rename Better Auth user table to ba_users, run V004+V005 on prod ([f99af65](https://github.com/hashpass-tech/hashpass.tech/commit/f99af652e7f50b12a367bd618621e1a639d3ab1e))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
