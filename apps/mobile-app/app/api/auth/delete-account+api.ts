@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { verifyUserToken } from '@hashpass/auth';
 
 /**
@@ -11,6 +11,7 @@ import { verifyUserToken } from '@hashpass/auth';
  * Body: { userId: string } — must match the authenticated user's ID.
  */
 export async function POST(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   try {
     // Verify the caller is authenticated
     const authHeader = request.headers.get('authorization');
