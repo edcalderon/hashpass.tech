@@ -1,3 +1,19 @@
+## [1.8.97](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.96...v1.8.97) (2026-06-23)
+
+
+### Bug Fixes
+
+* **ui:** use default import for Ionicons to satisfy TS module resolution ([f20f363](https://github.com/hashpass-tech/hashpass.tech/commit/f20f3636107bd01afbde7c62088bade1248aa3bb))
+
+
+### Features
+
+* **ui:** use alert-circle and arrow-forward-circle icons in update dialog ([b082445](https://github.com/hashpass-tech/hashpass.tech/commit/b082445a6c2399290b0cd9db4121f3e5190059b4))
+
+
+
+
+
 ## [1.8.96](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.95...v1.8.96) (2026-06-23)
 
 
