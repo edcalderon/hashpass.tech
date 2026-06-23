@@ -291,6 +291,44 @@ export const useAuth = () => {
         throw new Error(result.error);
       }
 
+      // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────
+      // When enabled, uses the system account picker with no browser popup.
+      // Disabled → falls through to the WebBrowser block below (unchanged).
+      const nativeGoogleEnabled =
+        Platform.OS !== 'web' &&
+        provider === 'google' &&
+        process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true';
+
+      if (nativeGoogleEnabled) {
+        const { GoogleSignin, statusCodes } = await import(
+          '@react-native-google-signin/google-signin'
+        );
+        try {
+          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+          const userInfo = await GoogleSignin.signIn();
+          const idToken = (userInfo as any).data?.idToken ?? (userInfo as any).idToken;
+          if (!idToken) throw new Error('Google Sign-In did not return an ID token.');
+
+          const { error: signInError } = await supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: idToken,
+          });
+          if (signInError) throw signInError;
+          return { pending: true };
+        } catch (err: any) {
+          if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+            return { pending: false };
+          }
+          if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+            console.warn('[useAuth] Play Services unavailable, falling back to browser OAuth');
+            // fall through to WebBrowser block below
+          } else {
+            throw err;
+          }
+        }
+      }
+      // ── End native Google Sign-In ───────────────────────────────────────────────
+
       // On native, the provider returns a URL to open in the system browser
       if (Platform.OS !== 'web' && result.oauthUrl) {
         const callbackUrl = getSupabaseOAuthRedirectUrl();

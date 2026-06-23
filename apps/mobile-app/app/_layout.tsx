@@ -138,6 +138,22 @@ function ThemedContent() {
     }
   }, []);
 
+  // Configure native Google Sign-In SDK once on startup (Android only, feature-flagged)
+  useEffect(() => {
+    if (
+      Platform.OS !== 'web' &&
+      process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true' &&
+      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
+    ) {
+      import('@react-native-google-signin/google-signin').then(({ GoogleSignin }) => {
+        GoogleSignin.configure({
+          webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+          offlineAccess: false,
+        });
+      });
+    }
+  }, []);
+
   // Ensure new Directus users get default passes created
   useEffect(() => {
     const ensureUserPass = async () => {
