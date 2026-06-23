@@ -182,22 +182,22 @@ export async function POST(request: Request) {
     let verificationResult: { data: any; error: any } | null = null;
 
     // Build candidate request bodies. GoTrue supports two verify paths:
-    //   1. { email, token, type } — standard OTP path (email_otp raw token)
-    //   2. { token_hash, type }   — magic link path (hashed token)
-    // Try the email+token path first when email_otp is available; it is more
-    // reliable across GoTrue versions and does not trigger the
-    // "Only the token_hash and type should be provided" validation.
+    //   1. { token_hash, type } — primary: direct hash comparison, no PKCE ambiguity
+    //   2. { email, token, type } — fallback: raw email_otp token (GoTrue hashes it server-side)
+    // token_hash is tried first because magic links were designed around it and
+    // it avoids the "Only the token_hash and type should be provided" validation
+    // that older GoTrue versions enforce on other body shapes.
     type VerifyBody =
-      | { email: string; token: string; type: string }
-      | { token_hash: string; type: string };
+      | { token_hash: string; type: string }
+      | { email: string; token: string; type: string };
 
     const buildBodies = (type: string): VerifyBody[] => {
       const bodies: VerifyBody[] = [];
-      if (parsedToken.emailOtp) {
-        bodies.push({ email: normalizedEmail, token: parsedToken.emailOtp, type });
-      }
       if (parsedToken.tokenHash) {
         bodies.push({ token_hash: parsedToken.tokenHash, type });
+      }
+      if (parsedToken.emailOtp) {
+        bodies.push({ email: normalizedEmail, token: parsedToken.emailOtp, type });
       }
       return bodies;
     };
@@ -239,12 +239,15 @@ export async function POST(request: Request) {
 
         const errData = await res.json().catch(() => ({}));
         const message: string = errData.msg || errData.error_description || errData.message || `status ${res.status}`;
-        const canRetry =
+        const isExpired =
           /email link is invalid or has expired/i.test(message) ||
           /otp has expired or is invalid/i.test(message);
 
         verificationResult = { data: null, error: { message, code: errData.error_code || 'verify_failed' } };
-        if (!canRetry) break;
+        // Only stop all retries when the token itself is expired/invalid.
+        // For any other error (wrong type, unsupported body shape, etc.) keep
+        // trying the remaining bodies and types.
+        if (isExpired) break outer;
       }
       if (verificationResult?.data) break;
     }

@@ -80,11 +80,49 @@ If app opens but crashes with a JS error:
 
 Always push to origin for CI/CD. Push to upstream for backup after release scripts.
 
-## Key Files
+## Deployment Architecture
+
+### How Each Domain Is Deployed
+
+On every push to `main`, **two independent auto-deploy systems** run in parallel:
+
+| Domain | System | What triggers it |
+|--------|--------|-----------------|
+| `hashpass.tech` | AWS Amplify (`amplify.yml`) | Push to `main` (Amplify webhook) |
+| `api.hashpass.tech` | AWS Lambda `hashpass-api-prod` (us-east-1) | **Same Amplify build** — postBuild step runs `package-lambda.sh` then `aws lambda update-function-code` |
+| `bsl.hashpass.tech` | SST StaticSite via SST Console autodeploy | Push to `main` (SST Console webhook, configured in `sst.config.ts`) |
+| Android | EC2 + Fastlane → Play Store | Manual `gh workflow run` (see workflow below) |
+
+**Critical facts:**
+- `api.hashpass.tech` Lambda is in **us-east-1**, deployed by **Amplify** (NOT SST, NOT GitHub Actions)
+- `bsl.hashpass.tech` is deployed by **SST Console** (NOT the `infra-deploy.yml` GitHub Actions workflow)
+- `infra-deploy.yml` is now **manual-only** — its push trigger was removed in v1.8.91 because the IAM role lacks Route53 permissions needed by SST
+
+### Checking Deployment Status
+
+```bash
+# Check Amplify build history (hashpass.tech + Lambda)
+aws amplify list-jobs --app-id dy8duury54wam --region us-east-2 \
+  --branch-name main \
+  --query 'jobSummaries[0:5].{id:jobId,status:status,commit:commitId}' --output table
+
+# Trigger manual Amplify build (if auto didn't fire)
+aws amplify start-job --app-id dy8duury54wam --region us-east-2 \
+  --branch-name main --job-type RELEASE
+```
+
+For `bsl.hashpass.tech`: check SST Console at sst.dev.
+
+### Key Files
 - `.github/workflows/mobile-android-release.yml` — Android release CI
+- `.github/workflows/infra-deploy.yml` — SST deploy (manual-only)
+- `amplify.yml` — Amplify build config (also deploys Lambda in postBuild)
+- `packages/infra/sst.config.ts` — SST config with autodeploy settings
+- `packages/infra/lambda/index.js` — Lambda handler for API routes
 - `apps/mobile-app/package.json` — mobile version source of truth
 - `apps/mobile-app/app.json` — Expo config
 - `packages/tools/scripts/release.js` — version script
+- `packages/tools/scripts/package-lambda.sh` — Lambda packaging script
 
 ## Headroom MCP (Token Compression)
 
@@ -148,7 +186,22 @@ rm -rf ~/.headroom/venv
 # Restart Claude Code
 ```
 
+## OTP Authentication (Native Mobile)
+
+The native app uses a 6-digit code flow, NOT magic links. Flow:
+
+1. **Send** (`/api/auth/otp`): `admin.generateLink({ type: 'magiclink' })` → stores `{type}::{hashed_token}::{email_otp}` in `otp_codes` table → sends 6-digit code by email/SMS
+2. **Verify** (`/api/auth/otp/verify`): DB lookup by code → direct `fetch()` to GoTrue `/auth/v1/verify` (bypasses Supabase JS client to avoid PKCE fields) → tries `{ token_hash, type }` first, then `{ email, token: email_otp, type }` → returns session to client → client calls `supabase.auth.setSession()`
+
+**Why direct fetch:** `supabase.auth.verifyOtp()` injects PKCE fields that cause GoTrue to reject with "Only the token_hash and type should be provided".
+
+See `apps/docs/docs/auth/AUTH_FLOW.md` for full details.
+
 ## Recent Fixes
+- v1.8.92: OTP verify: fixed body order (token_hash first) and break logic (only stop on expired, not on recoverable errors)
+- v1.8.91: infra-deploy.yml converted to manual-only (SST Console autodeploy handles bsl.hashpass.tech)
+- v1.8.90: Fixed gitleaks false positive (gitleaks README.md extracted into workspace by tar; now extracts binary only)
+- v1.8.89: OTP: store email_otp alongside token_hash; verify tries both GoTrue paths
 - v1.8.85: OTP digit inputs wrapped in View to fix web layout overflow (6 inputs were overflowing container)
 - v1.8.84: Bypassed Supabase JS client for OTP verify (GoTrue rejected extra PKCE fields); added individual digit editing, Clear button, auto-submit on 6th digit
 - v1.8.9: Fixed 5 Expo SDK 53 package mismatches (expo-image, expo-clipboard, expo-image-picker, expo-router, expo-web-browser) + downgraded framer-motion 12→11

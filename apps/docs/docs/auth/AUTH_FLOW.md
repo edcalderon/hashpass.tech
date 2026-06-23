@@ -71,6 +71,43 @@ Run the Better Auth schema migration against the configured event database after
 pnpm exec @better-auth/cli migrate --config apps/mobile-app/lib/server/better-auth.ts
 ```
 
+## OTP (One-Time Password) Flow — Native Mobile
+
+HashPass native uses a 6-digit OTP code instead of magic links. The Lambda generates a token via Supabase Admin API, stores a mapping, and sends the code via custom email or SMS.
+
+### Send (`POST /api/auth/otp`)
+
+1. Call `supabase.auth.admin.generateLink({ type: 'magiclink', email })`.
+2. Extract from the response:
+   - `properties.hashed_token` → `tokenHash` (SHA256 of the raw token; used with GoTrue `token_hash` path)
+   - `properties.email_otp` → `emailOtp` (raw token; used with GoTrue `{ email, token }` path)
+   - `properties.verification_type` → `verificationType` (usually `'magiclink'`)
+3. Store `{verificationType}::{tokenHash}::{emailOtp}` as `token_hash` in the `otp_codes` table alongside the 6-digit `code`, email, and expiry.
+4. Send the 6-digit code via SMTP (Brevo) or Brevo transactional SMS.
+
+### Verify (`POST /api/auth/otp/verify`)
+
+1. Look up the `otp_codes` row by email + 6-digit code (not used, not expired).
+2. Parse `token_hash` column: split on `::` to recover `verificationType`, `tokenHash`, `emailOtp`.
+3. Mark the row `used = true` immediately (replay prevention).
+4. Call GoTrue `/auth/v1/verify` directly (no Supabase JS client — avoids PKCE fields being injected):
+   - **Primary**: `{ token_hash: tokenHash, type: verificationType }` — the most reliable path for magic link tokens.
+   - **Fallback**: `{ email, token: emailOtp, type: verificationType }` — used if token_hash path fails for a recoverable reason.
+   - Tries multiple `type` values (`magiclink`, `signup`, `email`) to survive GoTrue version quirks.
+   - Stops immediately if the error is "expired/invalid" (no point retrying an expired token).
+5. Return the GoTrue session (`access_token`, `refresh_token`) to the client.
+6. Client calls `supabase.auth.setSession()` to establish the local session.
+
+### Why we bypass the Supabase JS client for verify
+
+`supabase.auth.verifyOtp({ token_hash, type })` internally appends `code_verifier` and other PKCE fields. GoTrue rejects this with "Only the token_hash and type should be provided". Using a raw `fetch()` to `/auth/v1/verify` avoids the issue entirely.
+
+### Relevant files
+
+- `apps/mobile-app/app/api/auth/otp+api.ts` — send endpoint
+- `apps/mobile-app/app/api/auth/otp/verify+api.ts` — verify endpoint
+- `apps/mobile-app/db/otp_codes.sql` — DB schema for otp_codes table
+
 ## Troubleshooting
 
 - If login fails before Google opens, check the API route response from `/api/auth/oauth/login`.
