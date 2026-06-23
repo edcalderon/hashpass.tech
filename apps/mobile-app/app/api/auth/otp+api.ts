@@ -198,6 +198,13 @@ export async function POST(request: Request) {
         ? linkData.properties.hashed_token.trim()
         : '';
 
+    // email_otp is the raw token that GoTrue's { email, token, type } path accepts.
+    // This is more reliable than hashed_token + token_hash path across GoTrue versions.
+    const emailOtp =
+      typeof linkData.properties?.email_otp === 'string'
+        ? linkData.properties.email_otp.trim()
+        : '';
+
     // Backward-compatible fallback: parse from action_link if hashed_token is absent.
     if (!tokenHash && linkData.properties?.action_link) {
       const linkUrl = new URL(linkData.properties.action_link);
@@ -207,7 +214,7 @@ export async function POST(request: Request) {
         '';
     }
 
-    if (!tokenHash) {
+    if (!tokenHash && !emailOtp) {
       console.error('Could not extract token hash from generated link');
       return new Response(
         JSON.stringify({ error: 'Failed to extract OTP token' }),
@@ -215,9 +222,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Encode verification type with token hash to support multiple GoTrue OTP types
-    // without requiring an immediate schema migration.
-    const encodedTokenHash = `${verificationType}::${tokenHash}`;
+    // Encode verification type + token hash + raw email_otp so the verify endpoint
+    // can try both GoTrue paths: { email, token, type } and { token_hash, type }.
+    const encodedTokenHash = emailOtp
+      ? `${verificationType}::${tokenHash}::${emailOtp}`
+      : `${verificationType}::${tokenHash}`;
 
     // Generate a 6-digit OTP code
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();

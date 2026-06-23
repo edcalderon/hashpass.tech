@@ -12,27 +12,31 @@ const corsHeaders = {
 type ParsedTokenHash = {
   tokenHash: string;
   verificationType: string;
+  emailOtp: string;
 };
 
 function parseStoredTokenHash(rawTokenHash: string | null | undefined): ParsedTokenHash {
   const fallback: ParsedTokenHash = {
     tokenHash: rawTokenHash?.trim() || '',
     verificationType: 'magiclink',
+    emailOtp: '',
   };
 
   if (!rawTokenHash) return fallback;
 
-  const separatorIndex = rawTokenHash.indexOf('::');
-  if (separatorIndex <= 0) return fallback;
+  const parts = rawTokenHash.split('::');
+  if (parts.length < 2) return fallback;
 
-  const verificationType = rawTokenHash.slice(0, separatorIndex).trim();
-  const tokenHash = rawTokenHash.slice(separatorIndex + 2).trim();
+  const verificationType = parts[0].trim();
+  const tokenHash = parts[1].trim();
+  const emailOtp = parts.length >= 3 ? parts[2].trim() : '';
 
   if (!tokenHash) return fallback;
 
   return {
     tokenHash,
     verificationType: verificationType || 'magiclink',
+    emailOtp,
   };
 }
 
@@ -115,7 +119,7 @@ export async function POST(request: Request) {
         .eq('code', normalizedCode)
         .order('expires_at', { ascending: false })
         .limit(1)
-        .maybeSingle();
+        .maybeSingle() as any;
 
       if (expiredData) {
         if (expiredData.used) {
@@ -138,8 +142,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const parsedToken = parseStoredTokenHash(otpData.token_hash);
-    if (!parsedToken.tokenHash) {
+    const parsedToken = parseStoredTokenHash((otpData as any).token_hash);
+    if (!parsedToken.tokenHash && !parsedToken.emailOtp) {
       return new Response(
         JSON.stringify({ error: 'Invalid verification token payload' }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -149,10 +153,10 @@ export async function POST(request: Request) {
     // Mark the code as used before touching Supabase auth so it cannot be replayed.
     await supabase
       .from('otp_codes')
-      .update({ used: true })
+      .update({ used: true } as any)
       .eq('email', normalizedEmail)
       .eq('code', normalizedCode)
-      .eq('token_hash', otpData.token_hash);
+      .eq('token_hash', (otpData as any).token_hash);
 
     // Use the stored token_hash directly — admin.generateLink() does not send an email,
     // so the stored token from the OTP send step is still valid and unConsumed.
@@ -177,49 +181,72 @@ export async function POST(request: Request) {
 
     let verificationResult: { data: any; error: any } | null = null;
 
-    for (const type of verificationTypes) {
-      let res: Response;
-      try {
-        res = await fetch(gotrueVerifyUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': anonKey,
-            'Authorization': `Bearer ${anonKey}`,
-          },
-          body: JSON.stringify({ token_hash: parsedToken.tokenHash, type }),
-        });
-      } catch (fetchErr) {
-        verificationResult = { data: null, error: { message: String(fetchErr), code: 'fetch_error' } };
-        break;
-      }
+    // Build candidate request bodies. GoTrue supports two verify paths:
+    //   1. { email, token, type } — standard OTP path (email_otp raw token)
+    //   2. { token_hash, type }   — magic link path (hashed token)
+    // Try the email+token path first when email_otp is available; it is more
+    // reliable across GoTrue versions and does not trigger the
+    // "Only the token_hash and type should be provided" validation.
+    type VerifyBody =
+      | { email: string; token: string; type: string }
+      | { token_hash: string; type: string };
 
-      if (res.ok) {
-        const resData = await res.json();
-        // GoTrue returns: { access_token, refresh_token, expires_in, token_type, user, ... }
-        verificationResult = {
-          data: {
-            session: {
-              access_token: resData.access_token,
-              refresh_token: resData.refresh_token,
-              expires_in: resData.expires_in,
-              token_type: resData.token_type,
+    const buildBodies = (type: string): VerifyBody[] => {
+      const bodies: VerifyBody[] = [];
+      if (parsedToken.emailOtp) {
+        bodies.push({ email: normalizedEmail, token: parsedToken.emailOtp, type });
+      }
+      if (parsedToken.tokenHash) {
+        bodies.push({ token_hash: parsedToken.tokenHash, type });
+      }
+      return bodies;
+    };
+
+    outer: for (const type of verificationTypes) {
+      for (const body of buildBodies(type)) {
+        let res: Response;
+        try {
+          res = await fetch(gotrueVerifyUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': `Bearer ${anonKey}`,
             },
-            user: resData.user,
-          },
-          error: null,
-        };
-        break;
+            body: JSON.stringify(body),
+          });
+        } catch (fetchErr) {
+          verificationResult = { data: null, error: { message: String(fetchErr), code: 'fetch_error' } };
+          break outer;
+        }
+
+        if (res.ok) {
+          const resData = await res.json();
+          verificationResult = {
+            data: {
+              session: {
+                access_token: resData.access_token,
+                refresh_token: resData.refresh_token,
+                expires_in: resData.expires_in,
+                token_type: resData.token_type,
+              },
+              user: resData.user,
+            },
+            error: null,
+          };
+          break outer;
+        }
+
+        const errData = await res.json().catch(() => ({}));
+        const message: string = errData.msg || errData.error_description || errData.message || `status ${res.status}`;
+        const canRetry =
+          /email link is invalid or has expired/i.test(message) ||
+          /otp has expired or is invalid/i.test(message);
+
+        verificationResult = { data: null, error: { message, code: errData.error_code || 'verify_failed' } };
+        if (!canRetry) break;
       }
-
-      const errData = await res.json().catch(() => ({}));
-      const message: string = errData.msg || errData.error_description || errData.message || `status ${res.status}`;
-      const canRetry =
-        /email link is invalid or has expired/i.test(message) ||
-        /otp has expired or is invalid/i.test(message);
-
-      verificationResult = { data: null, error: { message, code: errData.error_code || 'verify_failed' } };
-      if (!canRetry) break;
+      if (verificationResult?.data) break;
     }
 
     if (!verificationResult || verificationResult.error) {
