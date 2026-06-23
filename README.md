@@ -17,12 +17,14 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.104)
+## 📋 Latest Changes (v1.8.105)
 
 ### Bug Fixes
 
-* **auth:** clear Google cached account on sign-out and cache clear ([3dfc138](https://github.com/hashpass-tech/hashpass.tech/commit/3dfc138e775c46c5d16f4505520a339f5ea732eb))
-* **types:** add ts-ignore for Ionicons import in settings.tsx (SDK 53 lag) ([d7715c7](https://github.com/hashpass-tech/hashpass.tech/commit/d7715c77f0733e847ddba2203afc11654215ec72))
+* **networking:** add missing useEvent import in NetworkingView ([04c7ae2](https://github.com/hashpass-tech/hashpass.tech/commit/04c7ae218e0836db667c7af3485c8151dbef031a))
+* **networking:** annotate remaining implicit-any params in NetworkingView ([ba78d54](https://github.com/hashpass-tech/hashpass.tech/commit/ba78d546d1e8f866765b7534068d1cf084dbf538))
+* **networking:** fix pre-existing type errors in NetworkingView ([246107d](https://github.com/hashpass-tech/hashpass.tech/commit/246107d1d61c290943f59dc81e7a430379103951))
+* **networking:** suppress SDK 53 vector-icons type lag and copilot handleNth type mismatch ([29e3512](https://github.com/hashpass-tech/hashpass.tech/commit/29e351252f1d11297454e8b25a7d68835377eeb9))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
