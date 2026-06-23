@@ -217,7 +217,7 @@ export default function NetworkingView() {
   const loadNetworkingStats = useCallback(async (retryCount = 0, silent = false) => {
     if (!user) {
       console.log('No user found, skipping networking stats load');
-      setStatsState(prev => ({ ...prev, loading: false, error: 'No user found' }));
+      setStatsState((prev: StatsState) => ({ ...prev, loading: false, error: 'No user found' }));
       return;
     }
 
@@ -233,9 +233,9 @@ export default function NetworkingView() {
     try {
       // Only show loading state on initial load or manual refresh, not on real-time updates
       if (!silent) {
-        setStatsState(prev => ({ 
-          ...prev, 
-          loading: true, 
+        setStatsState((prev: StatsState) => ({
+          ...prev,
+          loading: true,
           error: null,
           retryCount 
         }));
@@ -318,7 +318,7 @@ export default function NetworkingView() {
 
       console.log('✅ Networking stats loaded successfully:', newStats);
 
-      setStatsState(prev => ({
+      setStatsState((_prev: StatsState) => ({
         data: newStats,
         loading: false,
         error: null,
@@ -338,7 +338,7 @@ export default function NetworkingView() {
         }, retryDelay);
       } else {
         console.error('❌ Max retries reached, showing error state');
-        setStatsState(prev => ({
+        setStatsState((prev: StatsState) => ({
           ...prev,
           loading: false,
           error: errorMessage,
@@ -360,7 +360,7 @@ export default function NetworkingView() {
       // Safety timeout: if loading takes more than 20 seconds, show error
       timeoutId = setTimeout(() => {
         if (isMounted) {
-          setStatsState(prev => {
+          setStatsState((prev: StatsState) => {
             if (prev.loading) {
               console.warn('⚠️ Loading timeout reached, showing error state');
               return {
@@ -437,7 +437,7 @@ export default function NetworkingView() {
           table: 'meeting_requests',
           filter: `speaker_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('📊 Stats: INCOMING request changed:', payload.eventType);
           // Debounce stats reload to avoid too many calls
           setTimeout(() => {
