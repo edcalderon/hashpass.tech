@@ -92,7 +92,7 @@ export default function CrystalForgeBackground({
 
       const crystals: CrystalMesh[] = [];
       const pointer = new THREE.Vector2(0, 0);
-      const clock = new THREE.Clock();
+      const clock = new THREE.Timer();
 
       const disposeCrystal = (crystal: CrystalMesh) => {
         crystal.geometry.dispose();
