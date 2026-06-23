@@ -6,7 +6,6 @@ on:
       - main
       - develop
     paths:
-      - "apps/mobile-app/**"
       - "packages/infra/**"
       - "packages/auth/**"
       - "packages/backend/**"
