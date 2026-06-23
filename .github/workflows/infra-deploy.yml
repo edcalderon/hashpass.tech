@@ -1,26 +1,8 @@
 name: Deploy Infra
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-    paths:
-      - "packages/infra/**"
-      - "packages/auth/**"
-      - "packages/backend/**"
-      - "packages/config/**"
-      - "packages/types/**"
-      - "packages/ui/**"
-      - "packages/utils/**"
-      - "apps/mobile-app/app/api/**"
-      - "apps/mobile-app/lib/**"
-      - "apps/mobile-app/config/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "tsconfig*.json"
-      - ".github/workflows/infra-deploy.yml"
+  # SST Console autodeploy (configured in sst.config.ts) handles pushes to main/develop.
+  # This workflow is kept for manual one-off deploys only.
   workflow_dispatch: {}
 
 jobs:
