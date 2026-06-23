@@ -253,6 +253,17 @@ export const useAuth = () => {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Clear native Google Sign-In cache so the account picker always shows on next login.
+    // Must run before app sign-out to avoid the SDK being in a bad state.
+    if (Platform.OS !== 'web' && process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true') {
+      try {
+        const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+        await GoogleSignin.signOut();
+      } catch {
+        // Non-critical — proceed with app sign-out regardless
+      }
+    }
+
     const results = await Promise.allSettled([
       authService.signOut(),
       supabase.auth.signOut(),

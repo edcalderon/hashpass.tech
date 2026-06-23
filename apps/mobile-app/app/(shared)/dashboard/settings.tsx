@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, Alert, StatusBar, TextInput, Modal } from 'react-native';
+import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, Alert, StatusBar, TextInput, Modal, Platform } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useLanguage } from '../../../providers/LanguageProvider';
 import { useAnimations } from '../../../providers/AnimationProvider';
@@ -101,6 +101,16 @@ export default function SettingsScreen() {
     return lang ? lang.nativeName : 'English';
   };
 
+  const clearGoogleAccount = async () => {
+    if (Platform.OS === 'web' || process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN !== 'true') return;
+    try {
+      const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+      await GoogleSignin.signOut();
+    } catch {
+      // Non-critical
+    }
+  };
+
   const handleClearCache = async () => {
     try {
       setClearingCache(true);
@@ -136,6 +146,9 @@ export default function SettingsScreen() {
       if (keysToRemove.length > 0) {
         await AsyncStorage.multiRemove(keysToRemove);
       }
+
+      // Clear Google account cache so next sign-in shows account picker
+      await clearGoogleAccount();
 
       // Also clear web localStorage if on web (but keep auth)
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -497,6 +510,16 @@ export default function SettingsScreen() {
               Alert.alert('Coming Soon', 'Password change feature will be available soon.');
             },
             showChevron: true,
+          })}
+
+          {Platform.OS !== 'web' && process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true' && renderSettingItem({
+            icon: 'logo-google',
+            title: 'Reset Google Account',
+            subtitle: 'Force account picker on next Google sign-in',
+            onPress: async () => {
+              await clearGoogleAccount();
+              showSuccess('Google Account Reset', 'The cached Google account has been cleared. You will be prompted to choose an account on your next sign-in.');
+            },
           })}
         </View>
 
