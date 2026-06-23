@@ -18,7 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import QuickAccessGrid from '@/components/explorer/QuickAccessGrid';
 import LoadingScreen from '@/components/LoadingScreen';
-import { NetworkingStats, StatsState, QuickAccessItem } from '@/types/networking';
+import type { NetworkingStats, StatsState, QuickAccessItem } from '@/types/networking';
 import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
 import { useTutorialPreferences } from '@/hooks/useTutorialPreferences';
 import { useTranslation } from '@/i18n/i18n';
@@ -376,7 +376,7 @@ export default function NetworkingView() {
       }, 20000); // 20 second safety timeout
     } else {
       // If no user, set loading to false immediately
-      setStatsState(prev => ({ ...prev, loading: false }));
+      setStatsState((prev: StatsState) => ({ ...prev, loading: false }));
     }
 
     return () => {
@@ -414,7 +414,7 @@ export default function NetworkingView() {
           table: 'meeting_requests',
           filter: `requester_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log('📊 Stats: SENT request changed:', payload.eventType);
           // Debounce stats reload to avoid too many calls
           setTimeout(() => {
@@ -422,7 +422,7 @@ export default function NetworkingView() {
           }, 500);
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         console.log('📡 Stats SENT subscription status:', status);
       });
 
@@ -445,7 +445,7 @@ export default function NetworkingView() {
           }, 500);
         }
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         console.log('📡 Stats INCOMING subscription status:', status);
       });
 
