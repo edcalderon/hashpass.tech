@@ -12,6 +12,7 @@ import {
 import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
+import { useEvent } from '@contexts/EventContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
