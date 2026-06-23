@@ -1,3 +1,14 @@
+## [1.8.82](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.81...v1.8.82) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** use anon-key client for OTP token_hash verification ([1fe3c34](https://github.com/hashpass-tech/hashpass.tech/commit/1fe3c34c79c05da3a9fafef1a09c7c5b5f2094af))
+
+
+
+
+
 ## [1.8.81](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.80...v1.8.81) (2026-06-22)
 
 

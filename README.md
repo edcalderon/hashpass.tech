@@ -17,12 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.81)
+## 📋 Latest Changes (v1.8.82)
 
 ### Bug Fixes
 
-* **auth:** verify OTP client-side to avoid GoTrue service-role rejection ([b040816](https://github.com/hashpass-tech/hashpass.tech/commit/b040816cdd576f6266099969ebfea7f13d4cb3ac))
-* **typecheck:** handle multi-line named imports in typecheck-changed regex ([935883c](https://github.com/hashpass-tech/hashpass.tech/commit/935883c8b6733572931337dd99ecfc4c6f433281))
+* **auth:** use anon-key client for OTP token_hash verification ([1fe3c34](https://github.com/hashpass-tech/hashpass.tech/commit/1fe3c34c79c05da3a9fafef1a09c7c5b5f2094af))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
