@@ -633,7 +633,7 @@ jobs:
           else
             echo "Running expo prebuild --clean (native config changed or android/ missing)..."
             pnpm --dir apps/mobile-app exec expo prebuild \
-              --platform android --clean --non-interactive
+              --platform android --clean
             printf '%s' "$CURRENT_HASH" > "$HASH_FILE"
             echo "Prebuild complete — hash stored for next run."
           fi
