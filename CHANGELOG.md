@@ -1,3 +1,14 @@
+## [1.8.85](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.84...v1.8.85) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** wrap OTP digit TextInputs in View to fix web layout overflow ([7cacc5c](https://github.com/hashpass-tech/hashpass.tech/commit/7cacc5c39cb7b2ed51cc16edf7e89329076d7754))
+
+
+
+
+
 ## [1.8.84](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.83...v1.8.84) (2026-06-23)
 
 

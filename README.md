@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.84)
+## 📋 Latest Changes (v1.8.85)
 
 ### Bug Fixes
 
-* **auth:** bypass Supabase JS client for OTP verify + individual digit inputs ([13586cf](https://github.com/hashpass-tech/hashpass.tech/commit/13586cf150cdf69431bcf36d42d056c82258a551))
+* **auth:** wrap OTP digit TextInputs in View to fix web layout overflow ([7cacc5c](https://github.com/hashpass-tech/hashpass.tech/commit/7cacc5c39cb7b2ed51cc16edf7e89329076d7754))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
