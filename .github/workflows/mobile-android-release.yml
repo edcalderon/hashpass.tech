@@ -440,6 +440,11 @@ jobs:
 
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           chmod 600 "$GOOGLE_PLAY_JSON_KEY" "$ANDROID_KEYSTORE_PATH"
+          # Print SHA-1 for GCP Android OAuth client registration
+          echo "=== Keystore SHA-1 fingerprint (register this in GCP → Credentials → Android OAuth client) ==="
+          keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null \
+            | grep -i "SHA1:" | head -1 || echo "keytool not available"
 
       # Write a minimal .env for the mobile app so Metro can embed the Supabase
       # config into the JS bundle at build time. Without this, EXPO_PUBLIC_* vars

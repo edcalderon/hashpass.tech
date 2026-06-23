@@ -116,7 +116,9 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-google-signin/google-signin"
+      ["@react-native-google-signin/google-signin", {
+        "iosUrlScheme": "com.googleusercontent.apps.576459188181-r65kt04nh0m4q86jbo1ohm12di9v3mjq"
+      }]
     ],
     "experiments": {
       "typedRoutes": true
