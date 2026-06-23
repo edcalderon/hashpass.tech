@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.90)
+## 📋 Latest Changes (v1.8.91)
 
 ### Bug Fixes
 
-* **ci:** extract only gitleaks binary to prevent README.md false positive ([dee71c7](https://github.com/hashpass-tech/hashpass.tech/commit/dee71c78e23e1554d133aa5e3f35df7be7146335))
+* **ci:** disable auto-trigger on infra-deploy, keep manual-only ([2e5b39c](https://github.com/hashpass-tech/hashpass.tech/commit/2e5b39cbaf16ac3e3584569294a814c978ce8f3c))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

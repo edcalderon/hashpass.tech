@@ -1,3 +1,14 @@
+## [1.8.91](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.90...v1.8.91) (2026-06-23)
+
+
+### Bug Fixes
+
+* **ci:** disable auto-trigger on infra-deploy, keep manual-only ([2e5b39c](https://github.com/hashpass-tech/hashpass.tech/commit/2e5b39cbaf16ac3e3584569294a814c978ce8f3c))
+
+
+
+
+
 ## [1.8.90](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.89...v1.8.90) (2026-06-23)
 
 
