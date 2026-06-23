@@ -1,3 +1,14 @@
+## [1.8.112](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.111...v1.8.112) (2026-06-23)
+
+
+### Features
+
+* **db:** add public.users canonical user registry (V004) ([e0f9209](https://github.com/hashpass-tech/hashpass.tech/commit/e0f920914b642838c0a7885cd511e738ad560310))
+
+
+
+
+
 ## [1.8.111](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.110...v1.8.111) (2026-06-23)
 
 

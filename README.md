@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.111)
+## 📋 Latest Changes (v1.8.112)
 
-### Bug Fixes
+### Features
 
-* **auth:** resolve Supabase auth user by email before deleteUser ([8e27a6d](https://github.com/hashpass-tech/hashpass.tech/commit/8e27a6d3880c04b5a487f4c25ced0e3b85f9c1e8))
+* **db:** add public.users canonical user registry (V004) ([e0f9209](https://github.com/hashpass-tech/hashpass.tech/commit/e0f920914b642838c0a7885cd511e738ad560310))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
