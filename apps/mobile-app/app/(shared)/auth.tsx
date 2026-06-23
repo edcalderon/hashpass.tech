@@ -2222,7 +2222,7 @@ const getStyles = (
     },
     methodTabText: {
       fontSize: isCompactMobile ? 15 : 16,
-      color: colors.textSecondary,
+      color: colors.text.secondary,
       fontWeight: '600',
       flexShrink: 1,
     },
@@ -2385,7 +2385,7 @@ const getStyles = (
     countryPickerISO2: {
       fontSize: 12,
       fontWeight: '600',
-      color: colors.textSecondary,
+      color: colors.text.secondary,
       textTransform: 'uppercase',
     },
     phoneInputContainer: {
@@ -2753,6 +2753,6 @@ const getStyles = (
     loadingText: {
       marginTop: 16,
       fontSize: 16,
-      color: colors.textSecondary,
+      color: colors.text.secondary,
     },
   });

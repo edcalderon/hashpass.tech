@@ -154,50 +154,10 @@ export async function POST(request: Request) {
       .eq('code', normalizedCode)
       .eq('token_hash', otpData.token_hash);
 
-    // Generate a fresh single-use magic-link using the admin (service-role) client.
-    // We immediately redeem it via an anon-key client so the session is established
-    // server-side. GoTrue rejects token_hash verification requests that carry a
-    // service-role Authorization header ("Only the token_hash and type should be provided").
-    const { data: freshLinkData, error: freshLinkError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: normalizedEmail,
-    });
-
-    if (freshLinkError || !freshLinkData) {
-      console.error('OTP verify: failed to generate fresh magic link:', freshLinkError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to prepare authentication token', code: 'link_gen_failed' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
-    }
-
-    const freshVerificationType =
-      typeof freshLinkData.properties?.verification_type === 'string'
-        ? freshLinkData.properties.verification_type
-        : 'magiclink';
-
-    let freshTokenHash =
-      typeof freshLinkData.properties?.hashed_token === 'string'
-        ? freshLinkData.properties.hashed_token.trim()
-        : '';
-
-    if (!freshTokenHash && freshLinkData.properties?.action_link) {
-      try {
-        const u = new URL(freshLinkData.properties.action_link);
-        freshTokenHash = u.searchParams.get('token_hash') || u.searchParams.get('token') || '';
-      } catch { /* ignore parse errors */ }
-    }
-
-    if (!freshTokenHash) {
-      return new Response(
-        JSON.stringify({ error: 'Could not extract authentication token', code: 'link_gen_failed' }),
-        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
-    }
-
-    // Resolve the anon key for this request's Supabase project (same project as the
-    // service-role client — determined by request hostname). Using the anon key avoids
-    // GoTrue's rejection of service-role token_hash verification.
+    // Use the stored token_hash directly — admin.generateLink() does not send an email,
+    // so the stored token from the OTP send step is still valid and unConsumed.
+    // Generating a fresh link here caused GoTrue to return "Only the token_hash and type
+    // should be provided" because the JS client attaches extra PKCE fields internally.
     const hostname = hostnameFromRequest(request);
     const { supabaseUrl: anonUrl, supabaseAnonKey: anonKey } = resolvePublicSupabaseConfig({ hostname });
 
@@ -209,14 +169,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify the fresh token via a direct GoTrue HTTP request.
-    // Using the Supabase JS client here can cause GoTrue to reject the request
-    // ("Only the token_hash and type should be provided") due to client-side
-    // PKCE / extra-field behaviour. Raw fetch gives us full control over the body.
     const gotrueVerifyUrl = `${anonUrl}/auth/v1/verify`;
 
     const verificationTypes = Array.from(
-      new Set([freshVerificationType, 'magiclink', 'signup', 'email'])
+      new Set([parsedToken.verificationType, 'magiclink', 'signup', 'email'])
     );
 
     let verificationResult: { data: any; error: any } | null = null;
@@ -231,7 +187,7 @@ export async function POST(request: Request) {
             'apikey': anonKey,
             'Authorization': `Bearer ${anonKey}`,
           },
-          body: JSON.stringify({ token_hash: freshTokenHash, type }),
+          body: JSON.stringify({ token_hash: parsedToken.tokenHash, type }),
         });
       } catch (fetchErr) {
         verificationResult = { data: null, error: { message: String(fetchErr), code: 'fetch_error' } };
