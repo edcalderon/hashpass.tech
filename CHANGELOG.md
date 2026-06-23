@@ -1,3 +1,14 @@
+## [1.8.110](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.109...v1.8.110) (2026-06-23)
+
+
+### Bug Fixes
+
+* **web:** replace Ionicons with inline SVG in update modal to fix ? glyphs ([71f5697](https://github.com/hashpass-tech/hashpass.tech/commit/71f5697b215eca9a0aa7f728dac4057baf500d31))
+
+
+
+
+
 ## [1.8.109](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.108...v1.8.109) (2026-06-23)
 
 

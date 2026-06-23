@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.109)
+## 📋 Latest Changes (v1.8.110)
 
 ### Bug Fixes
 
-* **settings:** add skipEventSegment to delete-account API call ([3bf6368](https://github.com/hashpass-tech/hashpass.tech/commit/3bf6368fc2c84b27171240af3521feb2e9e32464))
+* **web:** replace Ionicons with inline SVG in update modal to fix ? glyphs ([71f5697](https://github.com/hashpass-tech/hashpass.tech/commit/71f5697b215eca9a0aa7f728dac4057baf500d31))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
