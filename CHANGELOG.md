@@ -1,3 +1,14 @@
+## [1.8.111](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.110...v1.8.111) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** resolve Supabase auth user by email before deleteUser ([8e27a6d](https://github.com/hashpass-tech/hashpass.tech/commit/8e27a6d3880c04b5a487f4c25ced0e3b85f9c1e8))
+
+
+
+
+
 ## [1.8.110](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.109...v1.8.110) (2026-06-23)
 
 
