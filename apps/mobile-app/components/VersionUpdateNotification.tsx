@@ -51,7 +51,7 @@ export default function VersionUpdateNotification({
         <View style={styles.dialog}>
           <View style={styles.iconRow}>
             <View style={styles.iconBg}>
-              <Ionicons name="cloud-download" size={28} color={colors.primary} />
+              <Ionicons name="alert-circle" size={32} color={colors.primary} />
             </View>
           </View>
           <Text style={styles.title}>Update Available</Text>
@@ -63,7 +63,7 @@ export default function VersionUpdateNotification({
               <Text style={styles.versionChipLabel}>Current</Text>
               <Text style={styles.versionChipValue}>v{currentVersion}</Text>
             </View>
-            <Ionicons name="arrow-forward" size={16} color={colors.text.secondary} />
+            <Ionicons name="arrow-forward-circle" size={26} color={colors.primary} />
             <View style={[styles.versionChip, styles.versionChipNew, { borderColor: colors.primary }]}>
               <Text style={[styles.versionChipLabel, { color: colors.primary }]}>Latest</Text>
               <Text style={[styles.versionChipValue, { color: colors.primary }]}>v{latestVersion}</Text>
@@ -134,10 +134,10 @@ const getStyles = (isDark: boolean, colors: any) =>
       marginBottom: 16,
     },
     iconBg: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: isDark ? 'rgba(220,38,38,0.15)' : 'rgba(220,38,38,0.08)',
       justifyContent: 'center',
       alignItems: 'center',
     },
