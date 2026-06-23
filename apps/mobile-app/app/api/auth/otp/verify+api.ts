@@ -260,8 +260,8 @@ export async function POST(request: Request) {
     return new Response(
       JSON.stringify({
         success: true,
-        token_hash: freshTokenHash,
-        type: freshVerificationType,
+        token_hash: parsedToken.tokenHash,
+        type: parsedToken.verificationType,
         email: normalizedEmail,
         session,
         user,
