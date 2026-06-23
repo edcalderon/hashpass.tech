@@ -4,6 +4,7 @@ import { useTheme } from '../../../hooks/useTheme';
 import { useLanguage } from '../../../providers/LanguageProvider';
 import { useAnimations } from '../../../providers/AnimationProvider';
 import { useToastHelpers } from '@contexts/ToastContext';
+// @ts-ignore — Expo SDK 53 type definitions lag behind; named export works at runtime
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../../../i18n/i18n';
 import { version } from '../../../package.json';
