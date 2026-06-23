@@ -25,10 +25,10 @@ const DEFAULT_ALLOWED_HOSTS = Array.from(
     '127.0.0.1',
     'api.hashpass.tech',
     'api-dev.hashpass.tech',
-    ...Object.values(SSO_CONFIG.tenants).flatMap((tenant) => [
-      tenant.domain,
-      ...(tenant.hostnames || []),
-    ]),
+    ...Object.values(SSO_CONFIG.tenants).flatMap((tenant) => {
+      const t = tenant as { domain: string; hostnames?: string[] };
+      return [t.domain, ...(t.hostnames || [])];
+    }),
   ])
 );
 const DEFAULT_TRUSTED_ORIGINS = SSO_CONFIG.cors.origins;
