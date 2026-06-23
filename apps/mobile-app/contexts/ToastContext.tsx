@@ -327,13 +327,12 @@ const ToastItem: React.FC<ToastItemProps> = ({
         
         {/* Progress bar for non-critical toasts */}
         {isNonCritical && (
-          <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBarContainer, { backgroundColor: `${icon.color}18` }]}>
             <Animated.View
               style={[
                 styles.progressBar,
                 {
                   backgroundColor: icon.color,
-                  opacity: 0.85, // Slightly transparent for a more polished look
                   width: progressAnim.interpolate({
                     inputRange: [0, 1],
                     outputRange: ['0%', '100%'],
@@ -438,20 +437,18 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     position: 'absolute',
-    bottom: 0,
-    left: 0, // Start from left edge to overlap with left border color
-    right: 14, // Padding on right to prevent reaching card border
-    height: 2, // Thinner, more polished bar
-    backgroundColor: 'transparent',
+    bottom: 6,
+    left: 16,
+    right: 16,
+    height: 3,
     overflow: 'hidden',
-    borderBottomLeftRadius: 12, // Adjusted radius to match increased padding
-    borderBottomRightRadius: 12,
+    borderRadius: 2,
   },
   progressBar: {
     height: '100%',
     backgroundColor: '#2196F3',
-    alignSelf: 'flex-start', // Align to left so it fills from left to right
-    borderRadius: 1, // Slight rounding on the bar itself
+    height: '100%',
+    borderRadius: 2,
   },
 });
 
