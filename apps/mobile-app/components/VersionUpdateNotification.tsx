@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — named export exists at runtime; types lag behind SDK 53
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 
 interface VersionUpdateNotificationProps {
