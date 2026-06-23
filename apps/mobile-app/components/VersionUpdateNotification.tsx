@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore — named export exists at runtime; types lag behind SDK 53
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 
 interface VersionUpdateNotificationProps {
@@ -53,7 +50,11 @@ export default function VersionUpdateNotification({
         <View style={styles.dialog}>
           <View style={styles.iconRow}>
             <View style={styles.iconBg}>
-              <Ionicons name="alert-circle" size={32} color={colors.primary} />
+              {/* inline SVG — no font dependency, renders reliably on web */}
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L12 14M12 2L8 6M12 2L16 6" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke={colors.primary} strokeWidth="2" strokeLinecap="round"/>
+              </svg>
             </View>
           </View>
           <Text style={styles.title}>Update Available</Text>
@@ -65,7 +66,10 @@ export default function VersionUpdateNotification({
               <Text style={styles.versionChipLabel}>Current</Text>
               <Text style={styles.versionChipValue}>v{currentVersion}</Text>
             </View>
-            <Ionicons name="arrow-forward-circle" size={26} color={colors.primary} />
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke={colors.primary} strokeWidth="2"/>
+              <path d="M10 8L14 12L10 16" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
             <View style={[styles.versionChip, styles.versionChipNew, { borderColor: colors.primary }]}>
               <Text style={[styles.versionChipLabel, { color: colors.primary }]}>Latest</Text>
               <Text style={[styles.versionChipValue, { color: colors.primary }]}>v{latestVersion}</Text>
