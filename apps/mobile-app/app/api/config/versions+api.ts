@@ -83,12 +83,23 @@ export async function GET(request: Request) {
     }
 
     const minimumVersion: string | null = updatePolicy.minimumVersion ?? null;
+    // nativeVersion tracks the latest version that has an actual Play Store build.
+    // Web-only patches bump currentVersion but NOT nativeVersion, so native apps
+    // never get prompted to update to a version that doesn't exist in the store.
+    const nativeVersion: string | null = updatePolicy.nativeVersion ?? null;
+
+    const needsUpdate = clientVersion ? compareAppVersions(clientVersion, backendVersion) < 0 : null;
+    // For native clients, compare against nativeVersion (Play Store), not the web version.
+    const needsNativeUpdate = clientVersion && nativeVersion
+      ? compareAppVersions(clientVersion, nativeVersion) < 0
+      : needsUpdate;
 
     // Always return success - version mismatches are handled gracefully
     // Frontend can be newer or backend can be newer, both are acceptable
     return new Response(JSON.stringify({
       ...versions,
       minimumVersion,
+      nativeVersion,
       androidStoreUrl: updatePolicy.androidStoreUrl ?? null,
       androidStoreWebUrl: updatePolicy.androidStoreWebUrl ?? null,
       iosStoreUrl: updatePolicy.iosStoreUrl ?? null,
@@ -96,10 +107,11 @@ export async function GET(request: Request) {
       // Include version comparison info for client-side handling
       versionInfo: {
         backendVersion,
+        nativeVersion,
         clientVersion: clientVersion || null,
         isMatch: clientVersion ? clientVersion === backendVersion : null,
-        // Only suggest update if backend is newer (not if frontend is newer)
-        needsUpdate: clientVersion ? compareAppVersions(clientVersion, backendVersion) < 0 : null,
+        needsUpdate,
+        needsNativeUpdate,
         needsHardUpdate: clientVersion && minimumVersion
           ? compareAppVersions(clientVersion, minimumVersion) < 0
           : null,

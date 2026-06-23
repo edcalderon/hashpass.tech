@@ -84,6 +84,7 @@
     "readme:sync": "pnpm run update-readme",
     "version:bump": "node packages/tools/scripts/version-bump.js",
     "release": "node packages/tools/scripts/release.js",
+    "release:native": "node packages/tools/scripts/set-native-version.js",
     "release:patch": "node packages/tools/scripts/release.js patch",
     "release:minor": "node packages/tools/scripts/release.js minor",
     "release:major": "node packages/tools/scripts/release.js major",

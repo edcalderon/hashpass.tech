@@ -41,7 +41,10 @@ async function fetchUpdateStatus(): Promise<NativeUpdateStatus> {
 
   const data = await res.json();
 
-  const latestVersion: string | null = data.currentVersion ?? null;
+  // nativeVersion = latest version with an actual Play Store build.
+  // Web-only patches bump currentVersion but NOT nativeVersion, so we never
+  // prompt users to update to a version that doesn't exist in the store.
+  const latestVersion: string | null = data.nativeVersion ?? data.currentVersion ?? null;
   const minimumVersion: string | null = data.minimumVersion ?? null;
   const storeUrl: string | null =
     Platform.OS === 'android'
