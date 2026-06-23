@@ -1,3 +1,15 @@
+## [1.8.106](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.105...v1.8.106) (2026-06-23)
+
+
+### Bug Fixes
+
+* **settings:** fix Delete Account by moving deletion to server-side Lambda endpoint ([cb5f520](https://github.com/hashpass-tech/hashpass.tech/commit/cb5f5204fad76951fd3853c07dec21fd0223e640))
+* **types:** use getSupabaseServerForRequest in delete-account endpoint ([8c3d880](https://github.com/hashpass-tech/hashpass.tech/commit/8c3d880035728f6a2d0fb0679a02d7452ae894fa))
+
+
+
+
+
 ## [1.8.105](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.104...v1.8.105) (2026-06-23)
 
 

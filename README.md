@@ -17,14 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.105)
+## 📋 Latest Changes (v1.8.106)
 
 ### Bug Fixes
 
-* **networking:** add missing useEvent import in NetworkingView ([04c7ae2](https://github.com/hashpass-tech/hashpass.tech/commit/04c7ae218e0836db667c7af3485c8151dbef031a))
-* **networking:** annotate remaining implicit-any params in NetworkingView ([ba78d54](https://github.com/hashpass-tech/hashpass.tech/commit/ba78d546d1e8f866765b7534068d1cf084dbf538))
-* **networking:** fix pre-existing type errors in NetworkingView ([246107d](https://github.com/hashpass-tech/hashpass.tech/commit/246107d1d61c290943f59dc81e7a430379103951))
-* **networking:** suppress SDK 53 vector-icons type lag and copilot handleNth type mismatch ([29e3512](https://github.com/hashpass-tech/hashpass.tech/commit/29e351252f1d11297454e8b25a7d68835377eeb9))
+* **settings:** fix Delete Account by moving deletion to server-side Lambda endpoint ([cb5f520](https://github.com/hashpass-tech/hashpass.tech/commit/cb5f5204fad76951fd3853c07dec21fd0223e640))
+* **types:** use getSupabaseServerForRequest in delete-account endpoint ([8c3d880](https://github.com/hashpass-tech/hashpass.tech/commit/8c3d880035728f6a2d0fb0679a02d7452ae894fa))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
