@@ -17,6 +17,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../../../lib/api-client';
 import { buildEventPath } from '../../../lib/event-path';
+import VersionDetailsModal from '../../../components/VersionDetailsModal';
 
 export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
@@ -34,6 +35,7 @@ export default function SettingsScreen() {
   const { user, signOut } = useAuth();
   const [clearingCache, setClearingCache] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -569,6 +571,8 @@ export default function SettingsScreen() {
             icon: 'information-circle-outline',
             title: 'App Version',
             subtitle: `HashPass v${version}`,
+            onPress: () => setShowVersionModal(true),
+            showChevron: true,
           })}
 
           {renderSettingItem({
@@ -603,6 +607,11 @@ export default function SettingsScreen() {
         </View>
 
       </ScrollView>
+
+      <VersionDetailsModal
+        visible={showVersionModal}
+        onClose={() => setShowVersionModal(false)}
+      />
 
       {/* Delete Account Confirmation Modal */}
       <Modal

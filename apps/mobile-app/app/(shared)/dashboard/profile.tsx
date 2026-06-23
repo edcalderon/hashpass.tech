@@ -3,21 +3,22 @@ import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar,
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
 import { useScroll } from '@contexts/ScrollContext';
+// @ts-ignore — Expo SDK 53 type definitions lag behind; named export works at runtime
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
 import type { AuthUser } from '@hashpass/auth';
 
-// Generate avatar URL using UI-Avatars service (similar to landing page)
+// DiceBear PNG format — React Native Image cannot render SVG so we use /png endpoints
 const generateAvatarUrl = (name: string, style: 'avataaars' | 'fun-emoji' | 'bottts' = 'avataaars'): string => {
-  const seed = name.toLowerCase().replace(/\s+/g, '-');
+  const seed = encodeURIComponent(name.toLowerCase().replace(/\s+/g, '-'));
   if (style === 'avataaars') {
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+    return `https://api.dicebear.com/7.x/avataaars/png?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
   } else if (style === 'fun-emoji') {
-    return `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${encodeURIComponent(seed)}`;
+    return `https://api.dicebear.com/7.x/fun-emoji/png?seed=${seed}`;
   } else {
-    return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+    return `https://api.dicebear.com/7.x/bottts/png?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
   }
 };
 
@@ -27,6 +28,7 @@ const generateUIAvatarUrl = (name: string): string => {
 };
 
 const AVATAR_STYLES = [
+  { key: 'google-photo', label: 'Google Photo', icon: 'account-circle' },
   { key: 'avataaars', label: 'Avataaars', icon: 'person' },
   { key: 'fun-emoji', label: 'Fun Emoji', icon: 'emoji-emotions' },
   { key: 'bottts', label: 'Bottts', icon: 'android' },
@@ -159,30 +161,39 @@ export default function ProfileScreen() {
       const name = getDisplayName() || 'hashpass-user';
       let avatarUrl: string;
 
-      if (style === 'ui-avatar') {
+      if (style === 'google-photo') {
+        const googlePhoto = activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture;
+        if (!googlePhoto) {
+          showError('No Google Photo', 'No Google profile photo found for your account');
+          return;
+        }
+        avatarUrl = googlePhoto;
+      } else if (style === 'ui-avatar') {
         avatarUrl = generateUIAvatarUrl(name);
       } else {
         avatarUrl = generateAvatarUrl(name, style as 'avataaars' | 'fun-emoji' | 'bottts');
       }
 
-      // Update user metadata - for now, just update locally
-      // TODO: Implement provider-agnostic profile update API
-      // This will need to call the active auth provider's API.
-      console.log('Avatar update requested for:', avatarUrl);
-      
-      // Update Supabase metadata when the active auth provider is Supabase.
-      if (authService.getProviderName() === 'supabase') {
-        const { error } = await supabase.auth.updateUser({
-          data: {
-            ...activeUser.user_metadata,
-            avatar_url: avatarUrl,
-          },
-        });
-        if (error) throw error;
-        await supabase.auth.getSession();
+      // Update Supabase auth metadata (works for all Supabase-authenticated users including Google)
+      const { error: metaError } = await supabase.auth.updateUser({
+        data: { ...activeUser.user_metadata, avatar_url: avatarUrl },
+      });
+      if (metaError) throw metaError;
+
+      // Also persist to user_profiles table so other parts of the app read it consistently
+      const { error: dbError } = await (supabase as any)
+        .from('user_profiles')
+        .upsert({ user_id: activeUser.id, avatar_url: avatarUrl }, { onConflict: 'user_id' });
+      if (dbError) console.warn('[profile] user_profiles upsert:', dbError.message);
+
+      // Refresh session so user_metadata reflects the change immediately
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session?.user) {
+        setProfileUser((prev) => prev ? {
+          ...prev,
+          user_metadata: { ...prev.user_metadata, avatar_url: avatarUrl },
+        } : prev);
       }
-      // For Directus, we would update via Directus API
-      // For now, just log success since avatar is typically stored in metadata
 
       showSuccess('Avatar Updated', 'Your profile picture has been updated successfully');
       setShowAvatarModal(false);
@@ -394,13 +405,22 @@ export default function ProfileScreen() {
             </View>
 
             <ScrollView style={styles.avatarGrid} showsVerticalScrollIndicator={false}>
-              {AVATAR_STYLES.map((style) => {
-                const previewUrl = style.key === 'ui-avatar' 
-                  ? generateUIAvatarUrl(userNameDisplay)
-                  : generateAvatarUrl(userNameDisplay, style.key as 'avataaars' | 'fun-emoji' | 'bottts');
-                
+              {AVATAR_STYLES.filter((style) => {
+                if (style.key === 'google-photo') {
+                  return !!(activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture);
+                }
+                return true;
+              }).map((style) => {
+                let previewUrl: string;
+                if (style.key === 'google-photo') {
+                  previewUrl = activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture || '';
+                } else if (style.key === 'ui-avatar') {
+                  previewUrl = generateUIAvatarUrl(userNameDisplay);
+                } else {
+                  previewUrl = generateAvatarUrl(userNameDisplay, style.key as 'avataaars' | 'fun-emoji' | 'bottts');
+                }
+
                 const isSelected = selectedStyle === style.key;
-                const isCurrent = selectedStyle === style.key;
 
                 return (
                   <TouchableOpacity
@@ -408,7 +428,6 @@ export default function ProfileScreen() {
                     style={[
                       styles.avatarOption,
                       isSelected && styles.avatarOptionSelected,
-                      isCurrent && styles.avatarOptionCurrent,
                     ]}
                     onPress={() => {
                       setSelectedStyle(style.key);
@@ -421,7 +440,7 @@ export default function ProfileScreen() {
                         source={{ uri: previewUrl }}
                         style={styles.avatarPreview}
                       />
-                      {isCurrent && (
+                      {isSelected && (
                         <View style={styles.currentBadge}>
                           <MaterialIcons name="check-circle" size={20} color={colors.primary} />
                         </View>

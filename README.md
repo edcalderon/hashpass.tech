@@ -17,14 +17,20 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.106)
+## 📋 Latest Changes (v1.8.107)
 
-### Bug Fixes
+### Features
 
-* **settings:** fix Delete Account by moving deletion to server-side Lambda endpoint ([cb5f520](https://github.com/hashpass-tech/hashpass.tech/commit/cb5f5204fad76951fd3853c07dec21fd0223e640))
-* **types:** use getSupabaseServerForRequest in delete-account endpoint ([8c3d880](https://github.com/hashpass-tech/hashpass.tech/commit/8c3d880035728f6a2d0fb0679a02d7452ae894fa))
+* **settings:** App Version row is now tappable — opens VersionDetailsModal with changelog, build info, and repo link
+* **profile:** avatar picker previews now render correctly on Android (switched DiceBear from SVG to PNG endpoints)
+* **profile:** avatar selection now persists to `user_profiles` DB table and immediately refreshes the displayed avatar
+* **profile:** Google-authenticated users see a "Google Photo" option in the avatar picker to restore their Google profile picture
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
+### Documentation
+
+* **auth:** added Native Google Sign-In SDK flow documentation including SHA-1 key distinction (App signing key vs upload key), sign-out cache clearing behavior, and Reset Google Account feature
+
+For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
 
 ## Current Status
 
@@ -88,6 +94,8 @@ For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub release
 ### Authentication
 
 Main `hashpass.tech` Google sign-in uses the API-owned Directus OAuth bridge documented in [apps/docs/docs/auth/AUTH_FLOW.md](apps/docs/docs/auth/AUTH_FLOW.md). BSL (`bsl.hashpass.tech`) uses Better Auth at `https://api.hashpass.tech/api/auth`, with its AWS SSM parameters normalized under `/hashpass/[env]/bsl/better-auth/` by `packages/tools/scripts/util/setup-parameters.sh sync`.
+
+The **Android native app** uses the `@react-native-google-signin/google-signin` SDK (no browser popup) when `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=true` is baked into the bundle. The GCP Android OAuth client must be registered with the **App signing key** SHA-1 from Play Console (not the upload key). See [Native Google Sign-In SDK Flow](apps/docs/docs/auth/AUTH_FLOW.md#native-google-sign-in-sdk-flow-android) for full details.
 
 Use **pnpm** and **Turborepo** at the repo root:
 

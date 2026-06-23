@@ -108,6 +108,62 @@ HashPass native uses a 6-digit OTP code instead of magic links. The Lambda gener
 - `apps/mobile-app/app/api/auth/otp/verify+api.ts` — verify endpoint
 - `apps/mobile-app/db/otp_codes.sql` — DB schema for otp_codes table
 
+## Native Google Sign-In SDK Flow (Android)
+
+Android builds use the [`@react-native-google-signin/google-signin`](https://github.com/react-native-google-signin/google-signin) SDK (v16) instead of a browser popup when `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=true` is baked into the bundle at build time.
+
+### How it works
+
+```
+Android native app
+  └─ signInWithOAuth('google') called
+        │  (nativeGoogleEnabled=true)
+        ▼
+  GoogleSignin.hasPlayServices()
+        ▼
+  GoogleSignin.configure({ webClientId: EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID })
+        ▼
+  GoogleSignin.signIn()   ← system account picker (no browser popup)
+        │
+        ▼
+  response.data.idToken   ← ID token from Google's servers
+        ▼
+  supabase.auth.signInWithIdToken({ provider: 'google', token: idToken })
+        ▼
+  Supabase session established → user logged in
+```
+
+### Required configuration
+
+| Setting | Value |
+|---------|-------|
+| `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN` | `true` (baked into bundle at CI build time) |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | OAuth 2.0 Web client ID from GCP (type: Web application) |
+| GCP Android OAuth client SHA-1 | **App signing key certificate** SHA-1 from Play Console → App integrity → App signing |
+
+**Critical:** Google Play re-signs the AAB with its own App Signing Key. The SHA-1 registered in GCP must be the **App signing key** from Play Console, NOT the upload key from your local keystore. Using the upload key SHA-1 causes `DEVELOPER_ERROR` at runtime.
+
+| Key | SHA-1 |
+|-----|-------|
+| App signing key (Play, register this in GCP) | `38:54:0E:C7:01:A7:11:AF:EE:D0:80:B1:EC:D0:E1:09:09:B0:68:79` |
+| Upload key (local Fastlane build, do NOT register in GCP) | `C1:B7:B9:E6:7F:D1:99:06:16:07:6E:D0:0E:D3:BA:20:12:24:8C:B1` |
+
+### Sign-out behavior
+
+`GoogleSignin.signOut()` is called at the start of every app sign-out (in `useAuth.signOut()`) so the system account picker always appears on the next login attempt instead of silently reusing the cached account. It is also called when the user clears cache in Settings.
+
+A **Reset Google Account** button in Settings → Security lets users manually revoke the cached account selection without signing out of the app.
+
+### Relevant files
+
+- `apps/mobile-app/app/_layout.tsx` — `GoogleSignin.configure()` called once on app boot
+- `apps/mobile-app/hooks/useAuth.ts` — `signInWithOAuth('google')` native SDK path and `signOut()` cache clearing
+- `apps/mobile-app/app/(shared)/dashboard/settings.tsx` — Reset Google Account button
+
+### Fallback
+
+If Play Services are unavailable or the user cancels, the flow falls through to the `WebBrowser.openAuthSessionAsync` browser OAuth path (unchanged from web).
+
 ## Troubleshooting
 
 - If login fails before Google opens, check the API route response from `/api/auth/oauth/login`.
@@ -115,3 +171,5 @@ HashPass native uses a 6-digit OTP code instead of magic links. The Lambda gener
 - If the API callback fails with `Failed to authenticate as admin`, verify the Directus admin row is local and the password matches the production env.
 - If the browser lands on `/dashboard/explore?error=oauth_failed...`, check the API Lambda logs for the callback request ID.
 - For Better Auth failures, check `/api/auth/ok`, `/api/auth/get-session`, Google redirect URI configuration, and whether cookies are being sent to `api.hashpass.tech`.
+- For `DEVELOPER_ERROR` on Android Google Sign-In: verify the SHA-1 in the GCP Android OAuth client is the **App signing key** SHA-1 from Play Console (not the upload key).
+- If the system account picker is skipped and the previous account is reused: the user should tap **Reset Google Account** in Settings → Security, or sign out and back in.
