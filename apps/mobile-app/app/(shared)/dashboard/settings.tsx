@@ -14,7 +14,6 @@ import * as Haptics from 'expo-haptics';
 import { t } from '@lingui/macro';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
 import { useAuth } from '../../../hooks/useAuth';
-import { supabase } from '../../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../../../lib/api-client';
 import { buildEventPath } from '../../../lib/event-path';
@@ -268,14 +267,15 @@ export default function SettingsScreen() {
       const userEmail = user.email;
       const userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
 
-      // Call the delete user function
-      const { data, error } = await supabase.rpc('delete_user_account', {
-        p_user_id: user.id,
+      // Call server-side delete endpoint (handles data cleanup + auth.users deletion)
+      const deleteResult = await apiClient.post('/auth/delete-account', {
+        userId: user.id,
       });
 
-      if (error) {
-        console.error('Error deleting user account:', error);
-        throw error;
+      if (!deleteResult.success) {
+        const errorMessage = deleteResult.error || 'Failed to delete account';
+        console.error('Error deleting user account:', errorMessage);
+        throw new Error(errorMessage);
       }
 
       // Send confirmation email (don't wait for it, as it's not critical)
