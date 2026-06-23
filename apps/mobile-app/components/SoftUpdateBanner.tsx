@@ -7,7 +7,9 @@ import {
   Linking,
   Animated,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// @ts-ignore — Expo SDK 53 type definitions lag behind; named export works at runtime
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 
@@ -21,8 +23,9 @@ type Props = {
 
 export default function SoftUpdateBanner({ latestVersion, storeUrl, storeWebUrl }: Props) {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
-  const slideAnim = React.useRef(new Animated.Value(-100)).current;
+  const slideAnim = React.useRef(new Animated.Value(120)).current;
 
   useEffect(() => {
     AsyncStorage.getItem(DISMISSED_KEY).then((dismissed) => {
@@ -40,7 +43,7 @@ export default function SoftUpdateBanner({ latestVersion, storeUrl, storeWebUrl 
 
   const dismiss = async () => {
     Animated.timing(slideAnim, {
-      toValue: -100,
+      toValue: 120,
       duration: 250,
       useNativeDriver: true,
     }).start(() => setVisible(false));
@@ -73,7 +76,7 @@ export default function SoftUpdateBanner({ latestVersion, storeUrl, storeWebUrl 
     <Animated.View
       style={[
         styles.container,
-        { backgroundColor: bannerBg, borderLeftColor: borderColor },
+        { backgroundColor: bannerBg, borderLeftColor: borderColor, bottom: insets.bottom + 12 },
         { transform: [{ translateY: slideAnim }] },
       ]}
     >
@@ -97,20 +100,20 @@ export default function SoftUpdateBanner({ latestVersion, storeUrl, storeWebUrl 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+    left: 12,
+    right: 12,
     zIndex: 1000,
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     paddingHorizontal: 16,
     borderLeftWidth: 4,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 6,
+    shadowRadius: 8,
+    elevation: 8,
   },
   icon: {
     marginRight: 10,
