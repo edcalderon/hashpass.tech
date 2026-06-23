@@ -26,7 +26,7 @@ const BackToTop: React.FC<BackToTopProps> = ({ scrollY, scrollRef, colors }) => 
   const availableLocales = getAvailableLocales();
   const isOnAuthPage = pathname?.includes('/auth');
 
-  const currentLanguage = availableLocales.find(lang => lang.code === locale) || availableLocales[0];
+  const currentLanguage = availableLocales.find((lang: { code: string }) => lang.code === locale) || availableLocales[0];
 
   const buttonOpacity = useAnimatedStyle(() => ({
     opacity: scrollY.value > 30 ? 1 : 0,
@@ -61,7 +61,7 @@ const BackToTop: React.FC<BackToTopProps> = ({ scrollY, scrollRef, colors }) => 
       });
 
       // Find current language index and switch to next
-      const currentIndex = availableLocales.findIndex(lang => lang.code === locale);
+      const currentIndex = availableLocales.findIndex((lang: { code: string }) => lang.code === locale);
       const nextIndex = (currentIndex + 1) % availableLocales.length;
       const nextLocale = availableLocales[nextIndex].code;
       
