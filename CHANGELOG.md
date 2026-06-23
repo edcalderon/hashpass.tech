@@ -1,3 +1,15 @@
+## [1.8.103](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.102...v1.8.103) (2026-06-23)
+
+
+### Bug Fixes
+
+* **types:** add ts-ignore for Ionicons named import in PrivacyTermsModal (SDK 53 lag) ([5608f37](https://github.com/hashpass-tech/hashpass.tech/commit/5608f3737a84d83cb234edd894a609e3ec6bd7f9))
+* **ui:** move close icon to right in PrivacyTermsModal to match all other drawers ([d574161](https://github.com/hashpass-tech/hashpass.tech/commit/d57416193ec198fbfde38a887e4d7f9e6650cb9e))
+
+
+
+
+
 ## [1.8.102](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.101...v1.8.102) (2026-06-23)
 
 

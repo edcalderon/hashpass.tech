@@ -17,11 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.101)
+## 📋 Latest Changes (v1.8.103)
 
 ### Bug Fixes
 
-* **auth:** switch Google Sign-In plugin to no-Firebase mode, fix webClientId ([06b7789](https://github.com/hashpass-tech/hashpass.tech/commit/06b77896f5d36ce88c07334a5ca72a6ec67e4f43))
+* **types:** add ts-ignore for Ionicons named import in PrivacyTermsModal (SDK 53 lag) ([5608f37](https://github.com/hashpass-tech/hashpass.tech/commit/5608f3737a84d83cb234edd894a609e3ec6bd7f9))
+* **ui:** move close icon to right in PrivacyTermsModal to match all other drawers ([d574161](https://github.com/hashpass-tech/hashpass.tech/commit/d57416193ec198fbfde38a887e4d7f9e6650cb9e))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
