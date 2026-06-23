@@ -1,3 +1,15 @@
+## [1.8.88](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.87...v1.8.88) (2026-06-23)
+
+
+### Bug Fixes
+
+* **toast:** inset progress bar from card corners to prevent overflow ([0b02e6f](https://github.com/hashpass-tech/hashpass.tech/commit/0b02e6fe8b7b71ea27d595ee264973088b9a95e7))
+* **toast:** remove duplicate height property in progressBar style ([f0579ad](https://github.com/hashpass-tech/hashpass.tech/commit/f0579ad764e7c912676af5d6ea991b2b530afb96))
+
+
+
+
+
 ## [1.8.87](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.86...v1.8.87) (2026-06-23)
 
 

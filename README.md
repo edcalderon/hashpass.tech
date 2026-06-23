@@ -17,21 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.87)
+## 📋 Latest Changes (v1.8.88)
 
 ### Bug Fixes
 
-* **auth:** add clearCode translations + fix infra deploy IAM role ([39084dc](https://github.com/hashpass-tech/hashpass.tech/commit/39084dcbcc925638d28b9d02d3035d1c23ccf80a))
-* **auth:** remove remaining stale freshTokenHash/freshVerificationType refs ([2c7ceed](https://github.com/hashpass-tech/hashpass.tech/commit/2c7ceedf03cf0cd5c68589ac29b46188355cb8f5))
-* **auth:** use stored token_hash for OTP verify + fix dark mode tab contrast ([265f162](https://github.com/hashpass-tech/hashpass.tech/commit/265f1621f41087e59fb848313226e78c2b550553))
-* **backtotop:** add explicit types for locale array callbacks ([da70210](https://github.com/hashpass-tech/hashpass.tech/commit/da70210867961fecea2c18724bd7d4ea613ccfb8))
-* **web:** remove console spam, fix THREE.Clock deprecation, clean up DevTools hook ([c54f16b](https://github.com/hashpass-tech/hashpass.tech/commit/c54f16b3007ff48a284db3d062b58bd9ba0daf8e))
-* **web:** THREE.Timer uses getElapsed() not getElapsedTime() ([52f952d](https://github.com/hashpass-tech/hashpass.tech/commit/52f952d49b7b5b79074f248817c2e0fe91303f03))
-
-
-### Features
-
-* **landing:** add sign-in button to bottom floating FAB column ([898be18](https://github.com/hashpass-tech/hashpass.tech/commit/898be18f1cbd646b06440b2066b78ba9f1a60351))
+* **toast:** inset progress bar from card corners to prevent overflow ([0b02e6f](https://github.com/hashpass-tech/hashpass.tech/commit/0b02e6fe8b7b71ea27d595ee264973088b9a95e7))
+* **toast:** remove duplicate height property in progressBar style ([f0579ad](https://github.com/hashpass-tech/hashpass.tech/commit/f0579ad764e7c912676af5d6ea991b2b530afb96))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
