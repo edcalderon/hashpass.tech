@@ -213,7 +213,7 @@ export default function CrystalForgeBackground({
       const animate = () => {
         frameId = window.requestAnimationFrame(animate);
 
-        const elapsed = clock.getElapsedTime();
+        const elapsed = clock.getElapsed();
         creationGroup.rotation.y += isDarkMode ? 0.0009 : 0.0006;
         camera.position.z = 24 + Math.sin(elapsed * 0.18) * 1.1;
 
