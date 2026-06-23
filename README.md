@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.89)
+## 📋 Latest Changes (v1.8.90)
 
 ### Bug Fixes
 
-* **otp:** use email+token verify path to bypass token_hash GoTrue issue ([d4979ab](https://github.com/hashpass-tech/hashpass.tech/commit/d4979ab0a1d65e0b608bf73539dac65ab3eff5b0))
+* **ci:** extract only gitleaks binary to prevent README.md false positive ([dee71c7](https://github.com/hashpass-tech/hashpass.tech/commit/dee71c78e23e1554d133aa5e3f35df7be7146335))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

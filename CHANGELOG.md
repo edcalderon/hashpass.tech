@@ -1,3 +1,14 @@
+## [1.8.90](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.89...v1.8.90) (2026-06-23)
+
+
+### Bug Fixes
+
+* **ci:** extract only gitleaks binary to prevent README.md false positive ([dee71c7](https://github.com/hashpass-tech/hashpass.tech/commit/dee71c78e23e1554d133aa5e3f35df7be7146335))
+
+
+
+
+
 ## [1.8.89](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.88...v1.8.89) (2026-06-23)
 
 
