@@ -419,7 +419,7 @@ export default function AuthScreen() {
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [emailAuthMethod, setEmailAuthMethod] = useState<EmailAuthMethod>('magic-link');
   const [email, setEmail] = useState('');
-  const [otpCode, setOtpCode] = useState('');
+  const [otpDigits, setOtpDigits] = useState<string[]>(new Array(OTP_CODE_LENGTH).fill(''));
   const [otpDeliveryMethod, setOtpDeliveryMethod] = useState<OtpDeliveryMethod>('email');
   const [countryPickerVisible, setCountryPickerVisible] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState('');
@@ -435,12 +435,12 @@ export default function AuthScreen() {
   const [emailSuggestionsDismissed, setEmailSuggestionsDismissed] = useState(false);
   const [activeEmailSuggestionIndex, setActiveEmailSuggestionIndex] = useState(0);
   const [otpError, setOtpError] = useState('');
-  const [isOtpInputFocused, setIsOtpInputFocused] = useState(false);
+  const [focusedDigitIndex, setFocusedDigitIndex] = useState(-1);
   const [phoneError, setPhoneError] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'privacy' | 'terms'>('privacy');
   const emailInputRef = useRef<TextInput>(null);
-  const otpInputRef = useRef<TextInput>(null);
+  const digitRefs = useRef<(TextInput | null)[]>(new Array(OTP_CODE_LENGTH).fill(null));
   const lastSubmitTriggerRef = useRef(0);
   const shouldShowEmailSuggestionsRef = useRef(false);
   const activeEmailSuggestionRef = useRef<string | null>(null);
@@ -524,11 +524,8 @@ export default function AuthScreen() {
     () => filterCountryDialOptions(countryDialOptions, countrySearchQuery),
     [countryDialOptions, countrySearchQuery]
   );
-  const otpCodeDigits = useMemo(
-    () => OTP_DIGIT_KEYS.map((_, index) => otpCode[index] || ''),
-    [otpCode]
-  );
-  const activeOtpDigitIndex = Math.min(otpCode.length, OTP_CODE_LENGTH - 1);
+  // Compact joined code used for validation + API calls
+  const otpCode = otpDigits.join('');
   const emailSuggestions = useMemo(
     () => getEmailAutocompleteSuggestions(email, { limit: 12 }) as string[],
     [email]
@@ -586,7 +583,7 @@ export default function AuthScreen() {
 
   useEffect(() => {
     if (!otpSent) {
-      setIsOtpInputFocused(false);
+      setFocusedDigitIndex(-1);
       if (activeSubmitFieldRef.current === 'otp') {
         activeSubmitFieldRef.current = null;
       }
@@ -594,18 +591,26 @@ export default function AuthScreen() {
     }
 
     const timer = setTimeout(() => {
-      otpInputRef.current?.focus();
+      digitRefs.current[0]?.focus();
       activeSubmitFieldRef.current = 'otp';
-      setIsOtpInputFocused(true);
-      try {
-        otpInputRef.current?.setNativeProps?.({ selection: { start: 0, end: 0 } });
-      } catch {
-        // Ignore selection assignment failures on unsupported targets.
-      }
     }, 40);
 
     return () => clearTimeout(timer);
   }, [otpSent]);
+
+  // Auto-submit when all 6 digit slots are filled
+  const autoSubmittedCodeRef = useRef('');
+  useEffect(() => {
+    const allFilled = otpDigits.every((d) => d !== '');
+    const fullCode = otpDigits.join('');
+    if (allFilled && otpSent && !isBusy && autoSubmittedCodeRef.current !== fullCode) {
+      autoSubmittedCodeRef.current = fullCode;
+      void handleVerifyOtpCode();
+    }
+    if (!allFilled) {
+      autoSubmittedCodeRef.current = '';
+    }
+  }, [otpDigits, otpSent, isBusy]);
 
   useEffect(() => {
     if (hasShownOAuthErrorRef.current) return;
@@ -728,7 +733,7 @@ export default function AuthScreen() {
       }
 
       setOtpSent(false);
-      setOtpCode('');
+      setOtpDigits(new Array(OTP_CODE_LENGTH).fill(''));
       setMagicLinkSentAt(Date.now());
       setMagicLinkTimerNow(Date.now());
 
@@ -819,7 +824,7 @@ export default function AuthScreen() {
       }
 
       setOtpSent(true);
-      setOtpCode('');
+      setOtpDigits(new Array(OTP_CODE_LENGTH).fill(''));
       setOtpCodeSentAt(Date.now());
       setMagicLinkTimerNow(Date.now());
       focusOtpInput(0);
@@ -935,10 +940,50 @@ export default function AuthScreen() {
     }
   };
 
-  const handleOtpCodeChange = (text: string) => {
-    const normalizedDigits = text.replace(/[^0-9]/g, '').slice(0, OTP_CODE_LENGTH);
-    setOtpCode(normalizedDigits);
+  const handleDigitChange = (index: number, value: string) => {
+    const cleaned = value.replace(/[^0-9]/g, '');
+
+    if (cleaned.length > 1) {
+      // SMS auto-fill or paste: distribute from index 0
+      const chars = cleaned.slice(0, OTP_CODE_LENGTH).split('');
+      const newDigits = new Array(OTP_CODE_LENGTH).fill('');
+      chars.forEach((c, i) => { newDigits[i] = c; });
+      setOtpDigits(newDigits);
+      if (otpError) setOtpError('');
+      const nextFocus = Math.min(chars.length, OTP_CODE_LENGTH - 1);
+      digitRefs.current[nextFocus]?.focus();
+      return;
+    }
+
+    const newDigits = [...otpDigits];
+    newDigits[index] = cleaned;
+    setOtpDigits(newDigits);
     if (otpError) setOtpError('');
+
+    if (cleaned && index < OTP_CODE_LENGTH - 1) {
+      digitRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleDigitKeyPress = (index: number, key: string) => {
+    if (key === 'Backspace') {
+      if (otpDigits[index]) {
+        const newDigits = [...otpDigits];
+        newDigits[index] = '';
+        setOtpDigits(newDigits);
+      } else if (index > 0) {
+        const newDigits = [...otpDigits];
+        newDigits[index - 1] = '';
+        setOtpDigits(newDigits);
+        digitRefs.current[index - 1]?.focus();
+      }
+    }
+  };
+
+  const handleClearOtpCode = () => {
+    setOtpDigits(new Array(OTP_CODE_LENGTH).fill(''));
+    setOtpError('');
+    digitRefs.current[0]?.focus();
   };
 
   const handleGoogleSignIn = async () => {
@@ -1109,26 +1154,14 @@ export default function AuthScreen() {
     }
   };
 
-  const focusOtpInput = (selectionIndex = otpCode.length) => {
-    const boundedIndex = Math.max(0, Math.min(OTP_CODE_LENGTH, selectionIndex));
-
-    const applyFocus = () => {
-      otpInputRef.current?.focus();
+  const focusOtpInput = (selectionIndex = 0) => {
+    const boundedIndex = Math.max(0, Math.min(OTP_CODE_LENGTH - 1, selectionIndex));
+    const focus = () => {
+      digitRefs.current[boundedIndex]?.focus();
       activeSubmitFieldRef.current = 'otp';
-      setIsOtpInputFocused(true);
-      try {
-        otpInputRef.current?.setNativeProps?.({ selection: { start: boundedIndex, end: boundedIndex } });
-      } catch {
-        // Ignore selection assignment failures on unsupported targets.
-      }
     };
-
-    if (Platform.OS === 'web') {
-      setTimeout(applyFocus, 0);
-      return;
-    }
-
-    applyFocus();
+    if (Platform.OS === 'web') { setTimeout(focus, 0); return; }
+    focus();
   };
 
   const handleEmailInputSubmit = () => {
@@ -1585,67 +1618,52 @@ export default function AuthScreen() {
                         {t('enterOtpCode', 'Enter 6-digit code')}
                       </Text>
 
-                      <TouchableOpacity
-                        activeOpacity={0.92}
-                        onPress={() => focusOtpInput()}
-                        style={styles.otpDigitsWrapper}
-                        disabled={isBusy}
-                        dataSet={{ authEnterIgnore: 'true' }}
-                      >
-                        {otpCodeDigits.map((digit, index) => {
-                          const isActive =
-                            !isBusy &&
-                            otpCode.length < OTP_CODE_LENGTH &&
-                            index === activeOtpDigitIndex;
-                          const isTargetActive = isActive && isOtpInputFocused;
+                      <View style={styles.otpDigitsWrapper} dataSet={{ authEnterIgnore: 'true' } as any}>
+                        {OTP_DIGIT_KEYS.map((key, index) => (
+                          <TextInput
+                            key={key}
+                            ref={(r) => { digitRefs.current[index] = r; }}
+                            style={[
+                              styles.otpDigitCell,
+                              styles.otpDigitInput,
+                              otpDigits[index] ? styles.otpDigitCellFilled : null,
+                              focusedDigitIndex === index ? styles.otpDigitCellActive : null,
+                              otpError ? styles.otpDigitCellError : null,
+                            ]}
+                            value={otpDigits[index]}
+                            onChangeText={(v) => handleDigitChange(index, v)}
+                            onKeyPress={(e) => handleDigitKeyPress(index, e.nativeEvent.key)}
+                            onFocus={() => {
+                              setFocusedDigitIndex(index);
+                              activeSubmitFieldRef.current = 'otp';
+                            }}
+                            onBlur={() => {
+                              setFocusedDigitIndex((prev) => (prev === index ? -1 : prev));
+                              if (activeSubmitFieldRef.current === 'otp') {
+                                activeSubmitFieldRef.current = null;
+                              }
+                            }}
+                            keyboardType="number-pad"
+                            maxLength={OTP_CODE_LENGTH}
+                            editable={!isBusy}
+                            textContentType={index === 0 ? 'oneTimeCode' : undefined}
+                            autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                            returnKeyType="done"
+                            selectTextOnFocus
+                            onSubmitEditing={() => runSubmitAction(handleOtpInputSubmit)}
+                          />
+                        ))}
+                      </View>
 
-                          return (
-                            <View
-                              key={OTP_DIGIT_KEYS[index]}
-                              style={[
-                                styles.otpDigitCell,
-                                digit ? styles.otpDigitCellFilled : null,
-                                isTargetActive ? styles.otpDigitCellActive : null,
-                                otpError ? styles.otpDigitCellError : null,
-                              ]}
-                            >
-                              <Text style={styles.otpDigitText}>{digit || ' '}</Text>
-                              <View
-                                style={[
-                                  styles.otpDigitUnderline,
-                                  isTargetActive ? styles.otpDigitUnderlineActive : null,
-                                  otpError ? styles.otpDigitUnderlineError : null,
-                                ]}
-                              />
-                            </View>
-                          );
-                        })}
-                      </TouchableOpacity>
-
-                      <TextInput
-                        ref={otpInputRef}
-                        style={styles.otpHiddenInput}
-                        value={otpCode}
-                        onChangeText={handleOtpCodeChange}
-                        keyboardType="number-pad"
-                        maxLength={OTP_CODE_LENGTH}
-                        editable={!isBusy}
-                        onFocus={() => {
-                          activeSubmitFieldRef.current = 'otp';
-                          setIsOtpInputFocused(true);
-                        }}
-                        onBlur={() => {
-                          if (activeSubmitFieldRef.current === 'otp') {
-                            activeSubmitFieldRef.current = null;
-                          }
-                          setIsOtpInputFocused(false);
-                        }}
-                        textContentType="oneTimeCode"
-                        autoComplete="one-time-code"
-                        returnKeyType="done"
-                        onSubmitEditing={() => runSubmitAction(handleOtpInputSubmit)}
-                        onKeyPress={(event) => handleEnterKeyPress(event, handleOtpInputSubmit)}
-                      />
+                      {otpCode.length > 0 && !isBusy && (
+                        <TouchableOpacity
+                          onPress={handleClearOtpCode}
+                          style={styles.otpClearButton}
+                          dataSet={{ authEnterIgnore: 'true' } as any}
+                        >
+                          <Text style={styles.otpClearText}>{t('clearCode', 'Clear')}</Text>
+                        </TouchableOpacity>
+                      )}
 
                       {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
                       <Text style={styles.otpResendPrompt}>
@@ -2274,13 +2292,24 @@ const getStyles = (
     otpDigitUnderlineError: {
       backgroundColor: '#F44336',
     },
-    otpHiddenInput: {
-      position: 'absolute',
-      width: 1,
-      height: 1,
-      opacity: 0,
+    otpDigitInput: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: isDark ? '#fff' : '#121212',
+      textAlign: 'center',
       padding: 0,
-      margin: 0,
+      caretColor: '#c81000',
+    } as any,
+    otpClearButton: {
+      alignSelf: 'flex-end',
+      marginTop: 4,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+    },
+    otpClearText: {
+      fontSize: 12,
+      color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)',
+      fontWeight: '600',
     },
     otpResendPrompt: {
       fontSize: 13,

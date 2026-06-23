@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 import { resolvePublicSupabaseConfig } from '../../../../config/supabase-profiles';
 import { hostnameFromRequest } from '../../../../config/supabase-profiles';
@@ -210,9 +209,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const anonClient = createClient(anonUrl, anonKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    // Verify the fresh token via a direct GoTrue HTTP request.
+    // Using the Supabase JS client here can cause GoTrue to reject the request
+    // ("Only the token_hash and type should be provided") due to client-side
+    // PKCE / extra-field behaviour. Raw fetch gives us full control over the body.
+    const gotrueVerifyUrl = `${anonUrl}/auth/v1/verify`;
 
     const verificationTypes = Array.from(
       new Set([freshVerificationType, 'magiclink', 'signup', 'email'])
@@ -221,27 +222,53 @@ export async function POST(request: Request) {
     let verificationResult: { data: any; error: any } | null = null;
 
     for (const type of verificationTypes) {
-      const { data, error } = await anonClient.auth.verifyOtp({
-        token_hash: freshTokenHash,
-        type: type as any,
-      });
-
-      if (!error) {
-        verificationResult = { data, error: null };
+      let res: Response;
+      try {
+        res = await fetch(gotrueVerifyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+            'Authorization': `Bearer ${anonKey}`,
+          },
+          body: JSON.stringify({ token_hash: freshTokenHash, type }),
+        });
+      } catch (fetchErr) {
+        verificationResult = { data: null, error: { message: String(fetchErr), code: 'fetch_error' } };
         break;
       }
 
-      const message = typeof error.message === 'string' ? error.message : '';
+      if (res.ok) {
+        const resData = await res.json();
+        // GoTrue returns: { access_token, refresh_token, expires_in, token_type, user, ... }
+        verificationResult = {
+          data: {
+            session: {
+              access_token: resData.access_token,
+              refresh_token: resData.refresh_token,
+              expires_in: resData.expires_in,
+              token_type: resData.token_type,
+            },
+            user: resData.user,
+          },
+          error: null,
+        };
+        break;
+      }
+
+      const errData = await res.json().catch(() => ({}));
+      const message: string = errData.msg || errData.error_description || errData.message || `status ${res.status}`;
       const canRetry =
         /email link is invalid or has expired/i.test(message) ||
         /otp has expired or is invalid/i.test(message);
 
-      verificationResult = { data: null, error };
+      verificationResult = { data: null, error: { message, code: errData.error_code || 'verify_failed' } };
       if (!canRetry) break;
     }
 
     if (!verificationResult || verificationResult.error) {
       const errorMessage = verificationResult?.error?.message || 'Failed to verify OTP';
+      console.error('OTP verify: GoTrue verification failed:', errorMessage);
       return new Response(
         JSON.stringify({
           error: errorMessage,
