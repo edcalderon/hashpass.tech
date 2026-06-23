@@ -108,7 +108,7 @@ function ThemedContent() {
       // Listen for version update messages from service worker
       const handleServiceWorkerMessage = (event: MessageEvent) => {
         if (event.data && event.data.type === 'VERSION_UPDATE_AVAILABLE') {
-          console.log('📦 Version update available:', event.data);
+          console.log('📦 Version update available (SW):', event.data);
           setVersionUpdate({
             currentVersion: event.data.currentVersion,
             latestVersion: event.data.latestVersion,
@@ -116,10 +116,24 @@ function ThemedContent() {
         }
       };
 
+      // Listen for version update events dispatched by version-checker
+      const handleVersionUpdateEvent = (event: Event) => {
+        const e = event as CustomEvent<{ currentVersion: string; latestVersion: string }>;
+        if (e.detail) {
+          console.log('📦 Version update available (checker):', e.detail);
+          setVersionUpdate({
+            currentVersion: e.detail.currentVersion,
+            latestVersion: e.detail.latestVersion,
+          });
+        }
+      };
+
       navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+      window.addEventListener('hashpass:version-update', handleVersionUpdateEvent);
 
       return () => {
         navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+        window.removeEventListener('hashpass:version-update', handleVersionUpdateEvent);
       };
     }
   }, []);

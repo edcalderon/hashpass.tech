@@ -22,8 +22,11 @@ const INITIAL_STATE: NativeUpdateStatus = {
 };
 
 function getVersionsApiUrl(): string {
-  const base = process.env.EXPO_PUBLIC_FRONTEND_URL ?? 'https://hashpass.tech';
-  return `${base}/api/config/versions`;
+  // Use the API Lambda subdomain, not the Amplify SPA frontend
+  const apiBase = __DEV__
+    ? 'https://api-dev.hashpass.tech/api'
+    : 'https://api.hashpass.tech/api';
+  return `${apiBase}/config/versions`;
 }
 
 async function fetchUpdateStatus(): Promise<NativeUpdateStatus> {

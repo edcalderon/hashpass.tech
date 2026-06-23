@@ -166,21 +166,17 @@ export async function checkVersionAndClearCache(forceCheck: boolean = false): Pr
     // If frontend is newer, that's OK - don't reload
     if (currentVersion !== latestVersion) {
       if (needsUpdate) {
-        // Backend is newer - frontend should update
-        console.warn('[VersionChecker] ⚠️ Backend is newer! Clearing cache and reloading...');
-        await clearAllCaches();
-        
-        // Reload page after cache clear
-        setTimeout(() => {
-          if (typeof window !== 'undefined') {
-            window.location.reload();
-          }
-        }, 1000);
-        
+        // Backend is newer — notify the UI so the user can choose to update
+        console.warn('[VersionChecker] ⚠️ Update available:', latestVersion);
+        window.dispatchEvent(
+          new CustomEvent('hashpass:version-update', {
+            detail: { currentVersion, latestVersion },
+          })
+        );
         return true;
       } else {
-        // Frontend is newer - this is OK, no action needed
-        console.log('[VersionChecker] ℹ️ Frontend is newer than backend - this is OK, continuing...');
+        // Frontend is newer than backend — this is OK, no action needed
+        console.log('[VersionChecker] ℹ️ Frontend is newer than backend - continuing...');
         return false;
       }
     }

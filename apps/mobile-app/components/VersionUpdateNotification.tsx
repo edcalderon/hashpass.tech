@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
-// clearAllCaches is defined below
 
 interface VersionUpdateNotificationProps {
   currentVersion: string;
@@ -17,36 +16,6 @@ export default function VersionUpdateNotification({
 }: VersionUpdateNotificationProps) {
   const { colors, isDark } = useTheme();
   const [isUpdating, setIsUpdating] = useState(false);
-  const [countdown, setCountdown] = useState(2);
-  const screenWidth = Dimensions.get('window').width;
-  const isMobile = screenWidth < 480;
-  const isTablet = screenWidth < 768;
-
-  // Auto-reload countdown
-  useEffect(() => {
-    if (isUpdating) return;
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          // Trigger update
-          setIsUpdating(true);
-          clearAllCaches().then(() => {
-            if (typeof window !== 'undefined') {
-              window.location.reload();
-            }
-          }).catch((error) => {
-            console.error('Error updating version:', error);
-            setIsUpdating(false);
-          });
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isUpdating]);
 
   if (Platform.OS !== 'web') {
     return null;
@@ -55,166 +24,197 @@ export default function VersionUpdateNotification({
   const handleUpdate = async () => {
     setIsUpdating(true);
     try {
-      // Clear all caches
       await clearAllCaches();
-      
-      // Reload the page to get the new version
       if (typeof window !== 'undefined') {
         window.location.reload();
       }
-    } catch (error) {
-      console.error('Error updating version:', error);
+    } catch {
       setIsUpdating(false);
     }
   };
 
-  const styles = getStyles(isDark, colors, isMobile, isTablet);
+  const handleLater = () => {
+    onUpdateComplete?.();
+  };
+
+  const styles = getStyles(isDark, colors);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Ionicons name="cloud-download-outline" size={24} color={colors.primary} />
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>New Version Available</Text>
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+    >
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={handleLater} />
+        <View style={styles.dialog}>
+          <View style={styles.iconRow}>
+            <View style={styles.iconBg}>
+              <Ionicons name="cloud-download" size={28} color={colors.primary} />
+            </View>
+          </View>
+          <Text style={styles.title}>Update Available</Text>
           <Text style={styles.subtitle}>
-            Version {latestVersion} is available (current: {currentVersion})
+            A new version of HashPass is ready.
           </Text>
-          {!isUpdating && countdown > 0 && (
-            <Text style={styles.countdownText}>
-              Updating automatically in {countdown}...
-            </Text>
-          )}
+          <View style={styles.versionRow}>
+            <View style={styles.versionChip}>
+              <Text style={styles.versionChipLabel}>Current</Text>
+              <Text style={styles.versionChipValue}>v{currentVersion}</Text>
+            </View>
+            <Ionicons name="arrow-forward" size={16} color={colors.text.secondary} />
+            <View style={[styles.versionChip, styles.versionChipNew, { borderColor: colors.primary }]}>
+              <Text style={[styles.versionChipLabel, { color: colors.primary }]}>Latest</Text>
+              <Text style={[styles.versionChipValue, { color: colors.primary }]}>v{latestVersion}</Text>
+            </View>
+          </View>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.laterButton} onPress={handleLater}>
+              <Text style={styles.laterText}>Later</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.updateButton, isUpdating && styles.buttonDisabled]}
+              onPress={handleUpdate}
+              disabled={isUpdating}
+            >
+              <Text style={styles.updateText}>
+                {isUpdating ? 'Updating…' : 'Update Now'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <TouchableOpacity
-          style={[styles.button, isUpdating && styles.buttonDisabled]}
-          onPress={handleUpdate}
-          disabled={isUpdating}
-        >
-          {isUpdating ? (
-            <Text style={styles.buttonText}>Updating...</Text>
-          ) : (
-            <Text style={styles.buttonText}>Update Now</Text>
-          )}
-        </TouchableOpacity>
       </View>
-    </View>
+    </Modal>
   );
 }
 
-// Helper function to clear all caches (extracted from version-checker for direct use)
 async function clearAllCaches(): Promise<void> {
-  if (typeof window === 'undefined') {
-    return;
+  if (typeof window === 'undefined') return;
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
   }
-
   try {
-    // Clear Service Worker caches
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(
-        cacheNames.map((cacheName) => {
-          console.log('[VersionUpdate] Clearing cache:', cacheName);
-          return caches.delete(cacheName);
-        })
-      );
-    }
-
-    // Clear browser caches (localStorage, sessionStorage)
-    try {
-      localStorage.clear();
-      sessionStorage.clear();
-    } catch (e) {
-      console.warn('[VersionUpdate] Failed to clear storage:', e);
-    }
-
-    // Unregister all service workers
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(
-        registrations.map((registration) => {
-          console.log('[VersionUpdate] Unregistering service worker');
-          return registration.unregister();
-        })
-      );
-    }
-
-    console.log('[VersionUpdate] ✅ All caches cleared');
-  } catch (error) {
-    console.error('[VersionUpdate] Error clearing caches:', error);
-    throw error;
+    localStorage.clear();
+    sessionStorage.clear();
+  } catch { /* ignore */ }
+  if ('serviceWorker' in navigator) {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map((r) => r.unregister()));
   }
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isTablet: boolean) =>
+const getStyles = (isDark: boolean, colors: any) =>
   StyleSheet.create({
-    container: {
-      position: 'fixed',
-      top: isMobile ? 50 : 20,
-      left: isMobile ? 8 : 20,
-      right: isMobile ? 8 : 'auto',
-      width: isMobile ? 'auto' : 'auto',
-      maxWidth: isMobile ? '100%' : 'calc(100% - 40px)',
-      minWidth: isMobile ? undefined : 320,
-      zIndex: 10000,
-      backgroundColor: colors.background.paper,
-      borderRadius: 12,
-      padding: isMobile ? 12 : 16,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-      elevation: 10,
-      borderWidth: 0,
-      borderColor: colors.primary,
-    },
-    content: {
-      flexDirection: isMobile ? 'column' : 'row',
-      alignItems: isMobile ? 'stretch' : 'center',
-      gap: isMobile ? 8 : 12,
-    },
-    textContainer: {
+    overlay: {
       flex: 1,
-      alignItems: isMobile ? 'center' : 'flex-start',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+    },
+    dialog: {
+      backgroundColor: colors.background.paper,
+      borderRadius: 20,
+      padding: 28,
+      width: '100%',
+      maxWidth: 360,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.35,
+      shadowRadius: 16,
+      elevation: 16,
+    },
+    iconRow: {
+      marginBottom: 16,
+    },
+    iconBg: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     title: {
-      fontSize: isMobile ? 14 : 16,
-      fontWeight: '600',
+      fontSize: 20,
+      fontWeight: '700',
       color: colors.text.primary,
-      marginBottom: 4,
-      textAlign: isMobile ? 'center' : 'left',
+      marginBottom: 8,
+      textAlign: 'center',
     },
     subtitle: {
-      fontSize: isMobile ? 11 : 12,
+      fontSize: 14,
       color: colors.text.secondary,
-      marginBottom: 4,
-      textAlign: isMobile ? 'center' : 'left',
+      textAlign: 'center',
+      marginBottom: 20,
+      lineHeight: 20,
     },
-    countdownText: {
-      fontSize: isMobile ? 10 : 11,
-      color: colors.primary,
+    versionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 24,
+    },
+    versionChip: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      alignItems: 'center',
+    },
+    versionChipNew: {
+      borderWidth: 1,
+    },
+    versionChipLabel: {
+      fontSize: 10,
       fontWeight: '600',
-      marginTop: 4,
-      textAlign: isMobile ? 'center' : 'left',
+      color: colors.text.secondary,
+      marginBottom: 2,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
     },
-    button: {
+    versionChipValue: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.text.primary,
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      gap: 10,
+      width: '100%',
+    },
+    laterButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: 'center',
+    },
+    laterText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text.secondary,
+    },
+    updateButton: {
+      flex: 2,
+      paddingVertical: 12,
+      borderRadius: 12,
       backgroundColor: colors.primary,
-      paddingHorizontal: isMobile ? 12 : 16,
-      paddingVertical: isMobile ? 6 : 8,
-      borderRadius: 8,
-      minWidth: isMobile ? undefined : 120,
-      width: isMobile ? '100%' : 'auto',
+      alignItems: 'center',
     },
     buttonDisabled: {
       opacity: 0.6,
     },
-    buttonText: {
-      color: colors.primaryContrastText || '#FFFFFF',
-      fontSize: isMobile ? 12 : 14,
-      fontWeight: '600',
-      textAlign: 'center',
+    updateText: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#FFFFFF',
     },
   });
-

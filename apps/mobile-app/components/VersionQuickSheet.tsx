@@ -1,10 +1,14 @@
-import React from 'react';
-import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
+import { apiClient } from '../lib/api-client';
+import { compareAppVersions } from '../config/runtime-version';
+import packageJson from '../package.json';
 
 type StatusState = 'healthy' | 'degraded' | 'unhealthy' | 'checking' | 'unknown';
+type UpdateCheckState = 'idle' | 'checking' | 'up-to-date' | 'update-available' | 'error';
 
 interface VersionQuickSheetProps {
   visible: boolean;
@@ -53,10 +57,51 @@ export default function VersionQuickSheet({
 }: VersionQuickSheetProps) {
   const { isDark, colors } = useTheme();
   const styles = getStyles(isDark, colors);
+  const [updateCheckState, setUpdateCheckState] = useState<UpdateCheckState>('idle');
+  const [availableVersion, setAvailableVersion] = useState<string | null>(null);
+  const [storeUrl, setStoreUrl] = useState<string | null>(null);
 
   const versionInfo = versionService.getCurrentVersion();
   const badgeInfo = versionService.getVersionBadgeInfo(versionInfo.releaseType);
   const buildInfo = versionService.getBuildInfo();
+
+  const handleCheckForUpdates = async () => {
+    setUpdateCheckState('checking');
+    try {
+      const currentVersion = packageJson.version;
+      const response = await apiClient.get('/config/versions', {
+        skipAuth: true,
+        skipEventSegment: true,
+        params: { clientVersion: currentVersion },
+      } as any);
+      if (!response.success || !response.data) {
+        setUpdateCheckState('error');
+        return;
+      }
+      const data = response.data;
+      const latest: string | null = data.currentVersion ?? null;
+      setAvailableVersion(latest);
+      const url: string | null = Platform.OS === 'android'
+        ? (data.androidStoreUrl ?? null)
+        : (data.iosStoreUrl ?? null);
+      setStoreUrl(url);
+      if (latest && compareAppVersions(currentVersion, latest) < 0) {
+        setUpdateCheckState('update-available');
+      } else {
+        setUpdateCheckState('up-to-date');
+      }
+    } catch {
+      setUpdateCheckState('error');
+    }
+  };
+
+  const handleOpenStore = () => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') window.location.reload();
+    } else if (storeUrl) {
+      Linking.openURL(storeUrl);
+    }
+  };
 
   return (
     <Modal
@@ -118,6 +163,46 @@ export default function VersionQuickSheet({
                 <Text style={styles.statusText}>{getStatusText(status)}</Text>
               </View>
             )}
+
+            <View style={styles.updateCheckSection}>
+              {updateCheckState === 'idle' && (
+                <TouchableOpacity style={styles.checkButton} onPress={handleCheckForUpdates}>
+                  <MaterialIcons name="system-update" size={16} color={colors.primary} />
+                  <Text style={styles.checkButtonText}>Check for updates</Text>
+                </TouchableOpacity>
+              )}
+              {updateCheckState === 'checking' && (
+                <View style={styles.checkResult}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={styles.checkResultText}>Checking for updates...</Text>
+                </View>
+              )}
+              {updateCheckState === 'up-to-date' && (
+                <View style={styles.checkResult}>
+                  <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
+                  <Text style={[styles.checkResultText, { color: '#4CAF50' }]}>You're on the latest version</Text>
+                </View>
+              )}
+              {updateCheckState === 'update-available' && (
+                <View style={styles.updateAvailableRow}>
+                  <View style={styles.checkResult}>
+                    <MaterialIcons name="new-releases" size={16} color={colors.primary} />
+                    <Text style={[styles.checkResultText, { color: colors.primary }]}>
+                      v{availableVersion} is available
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={styles.updateNowButton} onPress={handleOpenStore}>
+                    <Text style={styles.updateNowText}>Update</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {updateCheckState === 'error' && (
+                <TouchableOpacity style={styles.checkResult} onPress={handleCheckForUpdates}>
+                  <MaterialIcons name="error-outline" size={16} color={colors.text.secondary} />
+                  <Text style={styles.checkResultText}>Couldn't check — tap to retry</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             <View style={styles.actionsRow}>
               <TouchableOpacity style={styles.secondaryButton} onPress={onClose}>
@@ -270,6 +355,51 @@ const getStyles = (isDark: boolean, colors: any) =>
     statusText: {
       fontSize: 12,
       color: colors.text.secondary,
+    },
+    updateCheckSection: {
+      marginBottom: 12,
+    },
+    checkButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      alignSelf: 'flex-start',
+    },
+    checkButtonText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    checkResult: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 6,
+    },
+    checkResultText: {
+      fontSize: 12,
+      color: colors.text.secondary,
+    },
+    updateAvailableRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    updateNowButton: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    updateNowText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#FFFFFF',
     },
     actionsRow: {
       flexDirection: 'row',
