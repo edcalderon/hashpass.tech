@@ -189,7 +189,7 @@ export default function ProfileScreen() {
       // Refresh session so user_metadata reflects the change immediately
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData?.session?.user) {
-        setProfileUser((prev) => prev ? {
+        setProfileUser((prev: AuthUser | null) => prev ? {
           ...prev,
           user_metadata: { ...prev.user_metadata, avatar_url: avatarUrl },
         } : prev);
