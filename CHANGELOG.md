@@ -1,3 +1,14 @@
+## [1.8.101](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.100...v1.8.101) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** switch Google Sign-In plugin to no-Firebase mode, fix webClientId ([06b7789](https://github.com/hashpass-tech/hashpass.tech/commit/06b77896f5d36ce88c07334a5ca72a6ec67e4f43))
+
+
+
+
+
 ## [1.8.100](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.99...v1.8.100) (2026-06-23)
 
 

@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.99)
+## 📋 Latest Changes (v1.8.101)
 
 ### Bug Fixes
 
-* **versioning:** track nativeVersion separately from web version in update-policy.json ([003f811](https://github.com/hashpass-tech/hashpass.tech/commit/003f8119e4e721764a30ef78b31dca4d2a49285e))
+* **auth:** switch Google Sign-In plugin to no-Firebase mode, fix webClientId ([06b7789](https://github.com/hashpass-tech/hashpass.tech/commit/06b77896f5d36ce88c07334a5ca72a6ec67e4f43))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

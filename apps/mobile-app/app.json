@@ -2,7 +2,7 @@
   "expo": {
     "name": "HASHPASS",
     "slug": "hash-pass-tech",
-    "version": "1.8.100",
+    "version": "1.8.101",
     "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -26,7 +26,7 @@
         "backgroundColor": "#05070C"
       },
       "package": "com.hashpass.tech",
-      "versionCode": 10900,
+      "versionCode": 10901,
       "permissions": [
         "android.permission.CAMERA"
       ]
@@ -116,9 +116,12 @@
     },
     "plugins": [
       "expo-router",
-      ["@react-native-google-signin/google-signin", {
-        "iosUrlScheme": "com.googleusercontent.apps.576459188181-r65kt04nh0m4q86jbo1ohm12di9v3mjq"
-      }]
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.576459188181-r65kt04nh0m4q86jbo1ohm12di9v3mjq"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
