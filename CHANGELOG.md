@@ -1,3 +1,14 @@
+## [1.8.84](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.83...v1.8.84) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** bypass Supabase JS client for OTP verify + individual digit inputs ([13586cf](https://github.com/hashpass-tech/hashpass.tech/commit/13586cf150cdf69431bcf36d42d056c82258a551))
+
+
+
+
+
 ## [1.8.83](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.82...v1.8.83) (2026-06-23)
 
 
