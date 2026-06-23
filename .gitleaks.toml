@@ -1,0 +1,7 @@
+title = "gitleaks config"
+
+[allowlist]
+  description = "Allowlist regex patterns stored in versioning.config.json (not real secrets)"
+  paths = [
+    '''versioning\.config\.json''',
+  ]
