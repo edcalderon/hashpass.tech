@@ -17,12 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.103)
+## 📋 Latest Changes (v1.8.104)
 
 ### Bug Fixes
 
-* **types:** add ts-ignore for Ionicons named import in PrivacyTermsModal (SDK 53 lag) ([5608f37](https://github.com/hashpass-tech/hashpass.tech/commit/5608f3737a84d83cb234edd894a609e3ec6bd7f9))
-* **ui:** move close icon to right in PrivacyTermsModal to match all other drawers ([d574161](https://github.com/hashpass-tech/hashpass.tech/commit/d57416193ec198fbfde38a887e4d7f9e6650cb9e))
+* **auth:** clear Google cached account on sign-out and cache clear ([3dfc138](https://github.com/hashpass-tech/hashpass.tech/commit/3dfc138e775c46c5d16f4505520a339f5ea732eb))
+* **types:** add ts-ignore for Ionicons import in settings.tsx (SDK 53 lag) ([d7715c7](https://github.com/hashpass-tech/hashpass.tech/commit/d7715c77f0733e847ddba2203afc11654215ec72))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

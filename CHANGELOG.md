@@ -1,3 +1,15 @@
+## [1.8.104](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.103...v1.8.104) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** clear Google cached account on sign-out and cache clear ([3dfc138](https://github.com/hashpass-tech/hashpass.tech/commit/3dfc138e775c46c5d16f4505520a339f5ea732eb))
+* **types:** add ts-ignore for Ionicons import in settings.tsx (SDK 53 lag) ([d7715c7](https://github.com/hashpass-tech/hashpass.tech/commit/d7715c77f0733e847ddba2203afc11654215ec72))
+
+
+
+
+
 ## [1.8.103](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.102...v1.8.103) (2026-06-23)
 
 
