@@ -73,11 +73,13 @@ Note: requires an IAM role with Route53, CloudFront, S3, and SSM permissions. Th
 
 ### Manually triggering the GitHub Actions infra-deploy workflow
 
-`infra-deploy.yml` is now **manual-only** (push trigger was removed in v1.8.91). Run it when you need a one-off SST deploy from CI:
+`infra-deploy.yml` triggers automatically on push to `main`/`develop` when infra or API files change. You can also trigger it manually:
 
 ```bash
 gh workflow run infra-deploy.yml --repo hashpass-tech/hashpass.tech
 ```
+
+The IAM role (`hashpass-mobile-release-github-actions`) has the `hashpass-infra-deploy-sst` inline policy covering: SSM, S3, Lambda, CloudFront (create/update/invalidate), Route53 (ListHostedZones, ChangeResourceRecordSets, GetChange), and ACM (certificate management).
 
 ## CI/CD GitHub Actions Workflows
 
@@ -86,7 +88,7 @@ gh workflow run infra-deploy.yml --repo hashpass-tech/hashpass.tech
 | `mobile-android-release.yml` | Manual (`gh workflow run ... --ref v<VERSION>`) | EC2 → Fastlane → Play Store |
 | `secret-scan.yml` | Push to `main`/`develop`, PRs | gitleaks scan of committed files |
 | `deploy-club-docs.yml` | Push to `main` | Builds and publishes `hashpass.club` to GitHub Pages |
-| `infra-deploy.yml` | **Manual only** | One-off SST deploy for `bsl.hashpass.tech` |
+| `infra-deploy.yml` | Push to `main`/`develop` (infra/api paths) + manual | SST deploy for `bsl.hashpass.tech` |
 | `release-infra.yml` | Manual | Version bump + infra deploy |
 
 ## Lambda Environment Variables

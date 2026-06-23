@@ -96,7 +96,7 @@ On every push to `main`, **two independent auto-deploy systems** run in parallel
 **Critical facts:**
 - `api.hashpass.tech` Lambda is in **us-east-1**, deployed by **Amplify** (NOT SST, NOT GitHub Actions)
 - `bsl.hashpass.tech` is deployed by **SST Console** (NOT the `infra-deploy.yml` GitHub Actions workflow)
-- `infra-deploy.yml` is now **manual-only** — its push trigger was removed in v1.8.91 because the IAM role lacks Route53 permissions needed by SST
+- `infra-deploy.yml` auto-triggers on push to `main`/`develop` when infra or API paths change (Route53 + CloudFront permissions added to IAM role in v1.8.92)
 
 ### Checking Deployment Status
 
@@ -198,8 +198,8 @@ The native app uses a 6-digit code flow, NOT magic links. Flow:
 See `apps/docs/docs/auth/AUTH_FLOW.md` for full details.
 
 ## Recent Fixes
-- v1.8.92: OTP verify: fixed body order (token_hash first) and break logic (only stop on expired, not on recoverable errors)
-- v1.8.91: infra-deploy.yml converted to manual-only (SST Console autodeploy handles bsl.hashpass.tech)
+- v1.8.92: OTP verify: fixed body order (token_hash first) and break logic (only stop on expired); re-enabled infra-deploy push trigger after adding Route53+CloudFront+ACM to IAM role `hashpass-infra-deploy-sst`
+- v1.8.91: infra-deploy.yml converted to manual-only (temp fix; reverted in v1.8.92)
 - v1.8.90: Fixed gitleaks false positive (gitleaks README.md extracted into workspace by tar; now extracts binary only)
 - v1.8.89: OTP: store email_otp alongside token_hash; verify tries both GoTrue paths
 - v1.8.85: OTP digit inputs wrapped in View to fix web layout overflow (6 inputs were overflowing container)
