@@ -6,6 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useLanguage } from '../providers/LanguageProvider';
 import { getAvailableLocales } from '../i18n/i18n';
 import * as Haptics from 'expo-haptics';
+import { useRouter, usePathname } from 'expo-router';
 
 interface BackToTopProps {
   scrollY: SharedValue<number>;
@@ -16,10 +17,14 @@ interface BackToTopProps {
 const BackToTop: React.FC<BackToTopProps> = ({ scrollY, scrollRef, colors }) => {
   const { isDark, toggleTheme } = useTheme();
   const { locale, setLocale } = useLanguage();
+  const router = useRouter();
+  const pathname = usePathname();
   const scaleAnim = useSharedValue(1);
   const rotateAnim = useSharedValue(0);
   const languageScaleAnim = useSharedValue(1);
+  const loginScaleAnim = useSharedValue(1);
   const availableLocales = getAvailableLocales();
+  const isOnAuthPage = pathname?.includes('/auth');
 
   const currentLanguage = availableLocales.find(lang => lang.code === locale) || availableLocales[0];
 
@@ -77,6 +82,18 @@ const BackToTop: React.FC<BackToTopProps> = ({ scrollY, scrollRef, colors }) => 
     transform: [{ scale: languageScaleAnim.value }],
   }));
 
+  const handleLoginPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    loginScaleAnim.value = withTiming(0.9, { duration: 100 }, () => {
+      loginScaleAnim.value = withSpring(1, { damping: 10, stiffness: 100 });
+    });
+    router.push('/(shared)/auth');
+  };
+
+  const loginButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: loginScaleAnim.value }],
+  }));
+
   const buttonStyle = {
     ...baseStyles.button,
     backgroundColor: colors.surface
@@ -120,6 +137,25 @@ const BackToTop: React.FC<BackToTopProps> = ({ scrollY, scrollRef, colors }) => 
           </Text>
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Sign-in Button */}
+      {!isOnAuthPage && (
+        <Animated.View style={[baseStyles.loginButtonWrapper, loginButtonStyle]}>
+          <TouchableOpacity
+            style={[baseStyles.button, baseStyles.loginButton, {
+              backgroundColor: isDark ? colors.secondary : colors.primary,
+            }]}
+            onPress={handleLoginPress}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="log-in"
+              size={24}
+              color={isDark ? colors.secondaryContrastText : colors.primaryContrastText}
+            />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </Animated.View>
   );
 };
@@ -149,6 +185,12 @@ const baseStyles = StyleSheet.create({
     marginBottom: 12,
   },
   languageButton: {
+    marginBottom: 12,
+  },
+  loginButtonWrapper: {
+    marginBottom: 0,
+  },
+  loginButton: {
     marginBottom: 0,
   },
   languageText: {
