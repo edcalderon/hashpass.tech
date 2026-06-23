@@ -305,9 +305,16 @@ export const useAuth = () => {
         );
         try {
           await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-          const userInfo = await GoogleSignin.signIn();
-          const idToken = (userInfo as any).data?.idToken ?? (userInfo as any).idToken;
-          if (!idToken) throw new Error('Google Sign-In did not return an ID token.');
+          const response = await GoogleSignin.signIn();
+          console.log('[GoogleSignin] signIn response type:', (response as any)?.type, 'keys:', Object.keys(response ?? {}));
+          const idToken =
+            (response as any).data?.idToken ??
+            (response as any).idToken ??
+            null;
+          if (!idToken) {
+            const responseType = (response as any)?.type ?? 'unknown';
+            throw new Error(`Google Sign-In did not return an ID token (response type: ${responseType}).`);
+          }
 
           const { error: signInError } = await supabase.auth.signInWithIdToken({
             provider: 'google',
@@ -316,6 +323,7 @@ export const useAuth = () => {
           if (signInError) throw signInError;
           return { pending: true };
         } catch (err: any) {
+          console.log('[GoogleSignin] error code:', err?.code, 'message:', err?.message);
           if (err.code === statusCodes.SIGN_IN_CANCELLED) {
             return { pending: false };
           }

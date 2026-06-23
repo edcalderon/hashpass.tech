@@ -140,18 +140,23 @@ function ThemedContent() {
 
   // Configure native Google Sign-In SDK once on startup (Android only, feature-flagged)
   useEffect(() => {
-    if (
+    const nativeEnabled =
       Platform.OS !== 'web' &&
       process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true' &&
-      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
-    ) {
-      import('@react-native-google-signin/google-signin').then(({ GoogleSignin }) => {
-        GoogleSignin.configure({
-          webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-          offlineAccess: false,
-        });
+      !!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    console.log(
+      `[GoogleSignin] native enabled=${nativeEnabled}`,
+      `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=${process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN}`,
+      `webClientId=${process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '(unset)'}`,
+    );
+    if (!nativeEnabled) return;
+    import('@react-native-google-signin/google-signin').then(({ GoogleSignin }) => {
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: false,
       });
-    }
+      console.log('[GoogleSignin] configure() done');
+    });
   }, []);
 
   // Ensure new Directus users get default passes created
