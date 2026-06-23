@@ -272,7 +272,7 @@ export default function SettingsScreen() {
       // Call server-side delete endpoint (handles data cleanup + auth.users deletion)
       const deleteResult = await apiClient.post('/auth/delete-account', {
         userId: user.id,
-      });
+      }, { skipEventSegment: true });
 
       if (!deleteResult.success) {
         const errorMessage = deleteResult.error || 'Failed to delete account';
