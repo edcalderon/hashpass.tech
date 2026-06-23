@@ -86,6 +86,59 @@ Always push to origin for CI/CD. Push to upstream for backup after release scrip
 - `apps/mobile-app/app.json` — Expo config
 - `packages/tools/scripts/release.js` — version script
 
+## Headroom MCP (Token Compression)
+
+Headroom compresses long conversation context to save tokens. It's installed as a Claude Code MCP server.
+
+### Installation (already done — for reference / re-setup)
+```bash
+# 1. Install into a permanent venv
+python3 -m venv ~/.headroom/venv
+~/.headroom/venv/bin/pip install "headroom-ai[mcp]"
+
+# 2. Register with Claude Code
+~/.headroom/venv/bin/headroom mcp install
+# → writes to ~/.claude.json mcpServers.headroom
+
+# 3. Fix command path to absolute (the installer writes "headroom" which won't be on PATH)
+python3 - <<'EOF'
+import json
+with open('/home/ed/.claude.json', 'r') as f:
+    data = json.load(f)
+data['mcpServers']['headroom']['command'] = '/home/ed/.headroom/venv/bin/headroom'
+with open('/home/ed/.claude.json', 'w') as f:
+    json.dump(data, f, indent=2)
+EOF
+
+# 4. Restart Claude Code
+```
+
+### MCP tools available after restart
+- `headroom_compress` — compress current context
+- `headroom_retrieve` — retrieve compressed segments
+- `headroom_stats` — show compression stats
+
+### Roll back / remove headroom
+```bash
+# Remove MCP registration from Claude Code config
+python3 - <<'EOF'
+import json
+with open('/home/ed/.claude.json', 'r') as f:
+    data = json.load(f)
+data.get('mcpServers', {}).pop('headroom', None)
+with open('/home/ed/.claude.json', 'w') as f:
+    json.dump(data, f, indent=2)
+print("Removed headroom from mcpServers")
+EOF
+
+# Delete the venv (optional)
+rm -rf ~/.headroom/venv
+
+# Restart Claude Code
+```
+
 ## Recent Fixes
+- v1.8.85: OTP digit inputs wrapped in View to fix web layout overflow (6 inputs were overflowing container)
+- v1.8.84: Bypassed Supabase JS client for OTP verify (GoTrue rejected extra PKCE fields); added individual digit editing, Clear button, auto-submit on 6th digit
 - v1.8.9: Fixed 5 Expo SDK 53 package mismatches (expo-image, expo-clipboard, expo-image-picker, expo-router, expo-web-browser) + downgraded framer-motion 12→11
 - v1.8.4+: All versions before v1.8.8 crashed on Android startup with `java.lang.NoSuchMethodError` in ExpoImageModule
