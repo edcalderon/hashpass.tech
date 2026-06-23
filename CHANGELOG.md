@@ -1,3 +1,19 @@
+## [1.8.107](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.106...v1.8.107) (2026-06-23)
+
+
+### Bug Fixes
+
+* **types:** annotate setProfileUser prev param to satisfy typecheck ([7eb9e82](https://github.com/hashpass-tech/hashpass.tech/commit/7eb9e82c8577f53d87ca1b847964ae7f19e24c37))
+
+
+### Features
+
+* **mobile:** clickable app version, avatar picker fixes, native Google Sign-In docs ([4c0223c](https://github.com/hashpass-tech/hashpass.tech/commit/4c0223cefb1d2628dbc1fe163d625809d660be13))
+
+
+
+
+
 ## [1.8.106](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.105...v1.8.106) (2026-06-23)
 
 

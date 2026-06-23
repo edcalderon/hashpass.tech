@@ -19,18 +19,16 @@
 
 ## 📋 Latest Changes (v1.8.107)
 
+### Bug Fixes
+
+* **types:** annotate setProfileUser prev param to satisfy typecheck ([7eb9e82](https://github.com/hashpass-tech/hashpass.tech/commit/7eb9e82c8577f53d87ca1b847964ae7f19e24c37))
+
+
 ### Features
 
-* **settings:** App Version row is now tappable — opens VersionDetailsModal with changelog, build info, and repo link
-* **profile:** avatar picker previews now render correctly on Android (switched DiceBear from SVG to PNG endpoints)
-* **profile:** avatar selection now persists to `user_profiles` DB table and immediately refreshes the displayed avatar
-* **profile:** Google-authenticated users see a "Google Photo" option in the avatar picker to restore their Google profile picture
+* **mobile:** clickable app version, avatar picker fixes, native Google Sign-In docs ([4c0223c](https://github.com/hashpass-tech/hashpass.tech/commit/4c0223cefb1d2628dbc1fe163d625809d660be13))
 
-### Documentation
-
-* **auth:** added Native Google Sign-In SDK flow documentation including SHA-1 key distinction (App signing key vs upload key), sign-out cache clearing behavior, and Reset Google Account feature
-
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
 ## Current Status
 
