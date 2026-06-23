@@ -17,16 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.97)
+## 📋 Latest Changes (v1.8.98)
 
 ### Bug Fixes
 
-* **ui:** use default import for Ionicons to satisfy TS module resolution ([f20f363](https://github.com/hashpass-tech/hashpass.tech/commit/f20f3636107bd01afbde7c62088bade1248aa3bb))
-
-
-### Features
-
-* **ui:** use alert-circle and arrow-forward-circle icons in update dialog ([b082445](https://github.com/hashpass-tech/hashpass.tech/commit/b082445a6c2399290b0cd9db4121f3e5190059b4))
+* **ui:** revert to named Ionicons import — deep path unresolvable by Metro ([7e6a1c4](https://github.com/hashpass-tech/hashpass.tech/commit/7e6a1c4db54a18219e5ce7b430f8ecdb55a723d3))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

@@ -1,3 +1,14 @@
+## [1.8.98](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.97...v1.8.98) (2026-06-23)
+
+
+### Bug Fixes
+
+* **ui:** revert to named Ionicons import — deep path unresolvable by Metro ([7e6a1c4](https://github.com/hashpass-tech/hashpass.tech/commit/7e6a1c4db54a18219e5ce7b430f8ecdb55a723d3))
+
+
+
+
+
 ## [1.8.97](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.96...v1.8.97) (2026-06-23)
 
 
