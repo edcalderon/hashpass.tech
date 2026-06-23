@@ -1,3 +1,14 @@
+## [1.8.83](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.82...v1.8.83) (2026-06-23)
+
+
+### Features
+
+* **updates:** fix native version check URL and add manual update check ([2514d1c](https://github.com/hashpass-tech/hashpass.tech/commit/2514d1c067e7356b629ecb53f79b9d86c81e0b7c))
+
+
+
+
+
 ## [1.8.82](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.81...v1.8.82) (2026-06-23)
 
 

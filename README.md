@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.82)
+## 📋 Latest Changes (v1.8.83)
 
-### Bug Fixes
+### Features
 
-* **auth:** use anon-key client for OTP token_hash verification ([1fe3c34](https://github.com/hashpass-tech/hashpass.tech/commit/1fe3c34c79c05da3a9fafef1a09c7c5b5f2094af))
+* **updates:** fix native version check URL and add manual update check ([2514d1c](https://github.com/hashpass-tech/hashpass.tech/commit/2514d1c067e7356b629ecb53f79b9d86c81e0b7c))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
