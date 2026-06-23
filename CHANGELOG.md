@@ -1,3 +1,14 @@
+## [1.8.109](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.108...v1.8.109) (2026-06-23)
+
+
+### Bug Fixes
+
+* **settings:** add skipEventSegment to delete-account API call ([3bf6368](https://github.com/hashpass-tech/hashpass.tech/commit/3bf6368fc2c84b27171240af3521feb2e9e32464))
+
+
+
+
+
 ## [1.8.108](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.107...v1.8.108) (2026-06-23)
 
 
