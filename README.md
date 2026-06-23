@@ -17,12 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.92)
+## 📋 Latest Changes (v1.8.94)
 
-### Bug Fixes
+### Features
 
-* **auth:** try token_hash first in OTP verify; stop only on expired error ([81a2b2d](https://github.com/hashpass-tech/hashpass.tech/commit/81a2b2d5d59462f722a536494d3f55535a8a6d5d))
-* **ci:** re-enable infra-deploy push trigger with Route53/CloudFront/ACM IAM permissions ([d31e8ae](https://github.com/hashpass-tech/hashpass.tech/commit/d31e8ae05e278ae2789361118254308a61cc780e))
+* **auth:** add native Google Sign-In SDK alongside browser-based fallback ([3c60365](https://github.com/hashpass-tech/hashpass.tech/commit/3c6036569907367b2ff9e8c6823b6db686163011))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

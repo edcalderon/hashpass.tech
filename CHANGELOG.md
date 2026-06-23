@@ -1,3 +1,14 @@
+## [1.8.94](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.93...v1.8.94) (2026-06-23)
+
+
+### Features
+
+* **auth:** add native Google Sign-In SDK alongside browser-based fallback ([3c60365](https://github.com/hashpass-tech/hashpass.tech/commit/3c6036569907367b2ff9e8c6823b6db686163011))
+
+
+
+
+
 ## [1.8.93](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.92...v1.8.93) (2026-06-23)
 
 
