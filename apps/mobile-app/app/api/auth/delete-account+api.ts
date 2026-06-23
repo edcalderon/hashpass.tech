@@ -80,7 +80,30 @@ export async function POST(request: Request) {
     }
 
     // ── Delete from auth.users ────────────────────────────────────────────────
-    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
+    // userId from the client may be a Directus UUID when the user authenticated via
+    // the browser OAuth/Directus path. In that case Supabase won't find it.
+    // Always resolve the real Supabase UUID by email first (reliable across providers).
+    let supabaseAuthId = userId;
+    const email = callerUser.email;
+
+    if (email) {
+      try {
+        const { data: listData } = await (supabase as any).auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const supabaseUser = (listData?.users ?? []).find((u: any) => u.email === email);
+        if (supabaseUser?.id) {
+          supabaseAuthId = supabaseUser.id;
+          console.log(`[delete-account] Resolved Supabase auth ID by email: ${supabaseAuthId}`);
+        } else {
+          console.warn(`[delete-account] No Supabase auth user found for email ${email}; skipping auth deletion`);
+          // User may not have a Supabase account (pure Directus). Data is already cleaned — treat as success.
+          return json({ success: true, message: 'Account data deleted (no Supabase auth user found)' }, 200);
+        }
+      } catch (listErr: any) {
+        console.warn('[delete-account] listUsers failed, falling back to provided userId:', listErr?.message);
+      }
+    }
+
+    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(supabaseAuthId);
     if (deleteAuthError) {
       console.error('[delete-account] auth.admin.deleteUser failed:', deleteAuthError);
       return json({ error: `Failed to delete auth user: ${deleteAuthError.message}` }, 500);
