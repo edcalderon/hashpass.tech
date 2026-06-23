@@ -1,3 +1,14 @@
+## [1.8.99](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.98...v1.8.99) (2026-06-23)
+
+
+### Bug Fixes
+
+* **versioning:** track nativeVersion separately from web version in update-policy.json ([003f811](https://github.com/hashpass-tech/hashpass.tech/commit/003f8119e4e721764a30ef78b31dca4d2a49285e))
+
+
+
+
+
 ## [1.8.98](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.97...v1.8.98) (2026-06-23)
 
 
