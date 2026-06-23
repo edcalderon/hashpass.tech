@@ -1,3 +1,15 @@
+## [1.8.92](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.91...v1.8.92) (2026-06-23)
+
+
+### Bug Fixes
+
+* **auth:** try token_hash first in OTP verify; stop only on expired error ([81a2b2d](https://github.com/hashpass-tech/hashpass.tech/commit/81a2b2d5d59462f722a536494d3f55535a8a6d5d))
+* **ci:** re-enable infra-deploy push trigger with Route53/CloudFront/ACM IAM permissions ([d31e8ae](https://github.com/hashpass-tech/hashpass.tech/commit/d31e8ae05e278ae2789361118254308a61cc780e))
+
+
+
+
+
 ## [1.8.91](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.90...v1.8.91) (2026-06-23)
 
 
