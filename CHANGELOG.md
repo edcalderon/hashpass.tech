@@ -1,3 +1,14 @@
+## [1.8.108](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.107...v1.8.108) (2026-06-23)
+
+
+### Bug Fixes
+
+* **mobile:** move SoftUpdateBanner to bottom to avoid notch overlap ([94d239c](https://github.com/hashpass-tech/hashpass.tech/commit/94d239c4fdc09af45dabc8f2194c020444b95670))
+
+
+
+
+
 ## [1.8.107](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.106...v1.8.107) (2026-06-23)
 
 
