@@ -225,7 +225,33 @@ The native app uses a 6-digit code flow, NOT magic links. Flow:
 
 See `apps/docs/docs/auth/AUTH_FLOW.md` for full details.
 
+## DB Schema Conventions
+
+### Table Naming
+- **Singular nouns** — `user`, `pass`, `meeting` (not `users`, `passes`, `meetings`)
+- **Exception:** `ba_users` keeps the `ba_` prefix to distinguish Better Auth's internal store from the canonical registry
+- **`user_*` prefix tables** (`user_profile`, `user_balance`, etc.) use the prefix as a namespace — the entity after the underscore is the singular noun
+
+### Canonical User Registry (`public.user`)
+Provider-agnostic source of truth. All auth providers replicate here.
+
+| Table | Purpose |
+|-------|---------|
+| `public.user` | Canonical registry — one row per unique email across ALL auth providers |
+| `ba_users` | Better Auth's internal user store (BSL event platform only); configured via `user: { modelName: 'ba_users' }` in `lib/server/better-auth.ts` |
+| `user_profiles` | Extended profile data; `user_id uuid → auth.users(id)` FK |
+| `user_balances` | Token balances; `user_id uuid → auth.users(id)` FK |
+| `user_roles` | Role assignments; `user_id uuid → auth.users(id)` FK |
+| `user_transactions` | Token transaction log; `user_id uuid → auth.users(id)` FK |
+| `user_blocks` | Blocked user pairs; `blocker_id/blocked_id uuid → auth.users(id)` FK |
+
+Migration history: V004 (create), V005 (rename ba_users), V006 (singular rename + FKs).
+See `apps/docs/docs/auth/USER_REGISTRY.md` for full schema and sync paths.
+
 ## Recent Fixes
+- v1.8.114: V006 migration — renamed canonical `public.users` → `public.user` (SQL singular standard); added FK constraints from all `user_*` tables → `auth.users(id)` ON DELETE CASCADE; fixed `user_profiles.user_id` text→uuid; applied to both prod and dev
+- v1.8.113: V004+V005 migrations applied — created `public.user` canonical registry with `upsert_public_user_registry()` + auth.users sync triggers; renamed Better Auth `user` → `ba_users`; configured `modelName: 'ba_users'` in Better Auth
+- v1.8.112: Delete Account fix — resolve Supabase auth UUID by email (Directus OAuth path sends Directus UUID, not Supabase UUID)
 - v1.8.92: OTP verify: fixed body order (token_hash first) and break logic (only stop on expired); re-enabled infra-deploy push trigger after adding Route53+CloudFront+ACM to IAM role `hashpass-infra-deploy-sst`
 - v1.8.91: infra-deploy.yml converted to manual-only (temp fix; reverted in v1.8.92)
 - v1.8.90: Fixed gitleaks false positive (gitleaks README.md extracted into workspace by tar; now extracts binary only)
