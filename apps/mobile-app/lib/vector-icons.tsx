@@ -85,18 +85,15 @@ import {
   Zap,
   type LucideProps,
 } from 'lucide-react-native';
-import {
-  Ionicons as NativeIonicons,
-  MaterialIcons as NativeMaterialIcons,
-} from '../node_modules/@expo/vector-icons';
+import type { TextStyle } from 'react-native';
+// @ts-ignore — Expo SDK 53 type definitions lag behind named exports; works at runtime
+import { Ionicons as NativeIonicons, MaterialIcons as NativeMaterialIcons } from '@expo/vector-icons';
 
-type IconProps = Omit<React.ComponentProps<typeof NativeMaterialIcons>, 'name'> & {
-  name: string;
-};
+type IconProps = { name: string; size?: number; color?: string; style?: any };
 
 type WebIconComponent = React.ComponentType<LucideProps>;
 
-function GoogleIcon({ size = 24, color = '#4285F4', style }: { size?: number; color?: string; style?: unknown }) {
+function GoogleIcon({ size = 24, color = '#4285F4', style }: { size?: number; color?: string; style?: TextStyle }) {
   return (
     <Text
       style={[
