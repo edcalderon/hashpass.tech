@@ -1,3 +1,14 @@
+## [1.8.136](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.135...v1.8.136) (2026-06-24)
+
+
+### Bug Fixes
+
+* **android-release:** upload Play deobfuscation files ([fed702b](https://github.com/hashpass-tech/hashpass.tech/commit/fed702bb59bee37cd7e94ed8588c5f989daed5d9))
+
+
+
+
+
 ## [1.8.135](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.134...v1.8.135) (2026-06-24)
 
 
