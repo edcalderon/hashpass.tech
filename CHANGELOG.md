@@ -1,3 +1,14 @@
+## [1.8.134](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.133...v1.8.134) (2026-06-24)
+
+
+### Bug Fixes
+
+* **android:** select matching upload credential ([07acd69](https://github.com/hashpass-tech/hashpass.tech/commit/07acd69b0bc608ede4d3238bdb4d9052d56fbaab))
+
+
+
+
+
 ## [1.8.133](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.132...v1.8.133) (2026-06-24)
 
 
