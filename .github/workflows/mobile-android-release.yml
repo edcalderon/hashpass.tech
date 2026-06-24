@@ -480,10 +480,11 @@ jobs:
           # This lets the same workflow run safely on t3a.large (8 GiB) and t3a.xlarge (16 GiB).
           TOTAL_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
           # On ≤9 GiB machines (t3a.large = 8 GiB), Node already reserves 3584 MiB via
-          # NODE_OPTIONS. Cap Gradle at 3072 MiB so Node + Gradle + OS fits in 8 GiB.
+          # NODE_OPTIONS. Bundle task is memory-intensive, so give Gradle 4096 MiB
+          # (Node 3584 + Gradle 4096 = 7.68 GiB, leaving ~256 MiB for OS).
           # On larger instances give Gradle 50% of RAM, capped at 8 GiB.
           if [ "$TOTAL_MB" -le 9216 ]; then
-            GRADLE_MB=3072
+            GRADLE_MB=4096
             GRADLE_WORKERS=2
           else
             GRADLE_MB=$(( TOTAL_MB / 2 ))
