@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.130)
+## 📋 Latest Changes (v1.8.131)
 
 ### Bug Fixes
 
-* **header:** keep background opaque (0.95) throughout scroll on native ([8f03cab](https://github.com/hashpass-tech/hashpass.tech/commit/8f03cabb5879bd48f33abb137110a6380541ae95))
+* **ci:** fix stop-runner killing in-progress builds due to 403 API error ([de6fd31](https://github.com/hashpass-tech/hashpass.tech/commit/de6fd3172ceb372515f04b92518033001ee30546))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

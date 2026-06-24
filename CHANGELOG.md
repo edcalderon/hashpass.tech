@@ -1,3 +1,14 @@
+## [1.8.131](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.130...v1.8.131) (2026-06-24)
+
+
+### Bug Fixes
+
+* **ci:** fix stop-runner killing in-progress builds due to 403 API error ([de6fd31](https://github.com/hashpass-tech/hashpass.tech/commit/de6fd3172ceb372515f04b92518033001ee30546))
+
+
+
+
+
 ## [1.8.130](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.129...v1.8.130) (2026-06-24)
 
 
