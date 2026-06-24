@@ -17,12 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.127)
+## 📋 Latest Changes (v1.8.128)
 
 ### Bug Fixes
 
-* **ci:** increase Gradle heap to 4096 MiB to prevent OOM on bundle task ([e3de2ae](https://github.com/hashpass-tech/hashpass.tech/commit/e3de2ae12fe772698947f3ef748078251a666d87))
-* **sidebar:** increase left padding proportionally to prevent border cutoff ([36bfa4f](https://github.com/hashpass-tech/hashpass.tech/commit/36bfa4ffe194f114476916a35a8fb4fe16694b06))
+* **ci:** reduce Node+Gradle heap to prevent OOM SIGTERM on 8 GiB EC2 ([98db512](https://github.com/hashpass-tech/hashpass.tech/commit/98db512edc53f0e671d3ff6daebdb2243bfcd1be))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

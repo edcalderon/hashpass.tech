@@ -1,3 +1,14 @@
+## [1.8.128](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.127...v1.8.128) (2026-06-24)
+
+
+### Bug Fixes
+
+* **ci:** reduce Node+Gradle heap to prevent OOM SIGTERM on 8 GiB EC2 ([98db512](https://github.com/hashpass-tech/hashpass.tech/commit/98db512edc53f0e671d3ff6daebdb2243bfcd1be))
+
+
+
+
+
 ## [1.8.127](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.126...v1.8.127) (2026-06-24)
 
 
