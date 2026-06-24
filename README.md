@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.129)
+## 📋 Latest Changes (v1.8.130)
 
 ### Bug Fixes
 
-* **sidebar:** reset menu item padding so cards fill drawer width ([32538b1](https://github.com/hashpass-tech/hashpass.tech/commit/32538b1b96bc12a4e6a1543c77d3945937888c10))
+* **header:** keep background opaque (0.95) throughout scroll on native ([8f03cab](https://github.com/hashpass-tech/hashpass.tech/commit/8f03cabb5879bd48f33abb137110a6380541ae95))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

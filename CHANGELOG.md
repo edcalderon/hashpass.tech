@@ -1,3 +1,14 @@
+## [1.8.130](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.129...v1.8.130) (2026-06-24)
+
+
+### Bug Fixes
+
+* **header:** keep background opaque (0.95) throughout scroll on native ([8f03cab](https://github.com/hashpass-tech/hashpass.tech/commit/8f03cabb5879bd48f33abb137110a6380541ae95))
+
+
+
+
+
 ## [1.8.129](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.128...v1.8.129) (2026-06-24)
 
 
