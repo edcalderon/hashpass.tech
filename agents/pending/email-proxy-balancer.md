@@ -1,5 +1,10 @@
 # Task: Email Proxy Balancer
 
+> **Status:** Pending — not started
+> **Roadmap:** `.versioning/ROADMAP.md` → `now-01`
+> **Reentry:** `.versioning/REENTRY.md` → Active Agent Tasks
+> **Priority:** High — Brevo 300/day free-tier cap currently unenforced; app has no failover
+
 ## Goal
 
 Replace the single-provider email setup with a transparent proxy/balancer that:
