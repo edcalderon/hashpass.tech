@@ -119,7 +119,7 @@ export default function ProfileScreen() {
   // Always fetch raw Supabase session — it has created_at and user_metadata.avatar_url
   // regardless of which auth provider (Directus/Supabase) is active.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: { data: any }) => {
       if (data?.session?.user) setRawSupabaseUser(data.session.user);
     });
   }, []);
