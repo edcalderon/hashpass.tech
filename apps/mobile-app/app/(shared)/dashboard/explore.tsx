@@ -1,10 +1,11 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react';
+import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Animated, NativeSyntheticEvent, NativeScrollEvent, StatusBar, Platform, InteractionManager } from 'react-native';
+import Reanimated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useScroll } from '@contexts/ScrollContext';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import EventBanner from '../../../components/EventBanner';
@@ -63,13 +64,27 @@ export default function ExploreScreen() {
     isGlobalExplorer ? null : (currentEventInfo || availableEvents[0] || null)
   );
   const [showEventSelector, setShowEventSelector] = useState(shouldShowEventSelector());
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
-  const [scrollX, setScrollX] = useState(0);
-  const [maxScrollX, setMaxScrollX] = useState(0);
-  const [viewportWidth, setViewportWidth] = useState(0);
-  const [contentWidth, setContentWidth] = useState(0);
+  const scrollXRef = useRef(0);
+  const maxScrollXRef = useRef(0);
+  const viewportWidthRef = useRef(0);
+  const contentWidthRef = useRef(0);
   const quickAccessScrollRef = useRef<ScrollView>(null);
+  const quickAccessLeftArrowOpacity = useSharedValue(0.32);
+  const quickAccessRightArrowOpacity = useSharedValue(1);
+  const quickAccessLeftArrowStyle = useAnimatedStyle(() => ({
+    opacity: quickAccessLeftArrowOpacity.value,
+  }));
+  const quickAccessRightArrowStyle = useAnimatedStyle(() => ({
+    opacity: quickAccessRightArrowOpacity.value,
+  }));
+
+  const updateQuickAccessArrows = useCallback((scrollX: number, maxScrollX: number) => {
+    const canScrollLeft = scrollX > 0;
+    const canScrollRight = scrollX < maxScrollX - 10;
+
+    quickAccessLeftArrowOpacity.value = canScrollLeft ? 1 : 0.32;
+    quickAccessRightArrowOpacity.value = canScrollRight ? 1 : 0.32;
+  }, [quickAccessLeftArrowOpacity, quickAccessRightArrowOpacity]);
 
   // Reset ref when tutorial is reset (completion status changes or progress is cleared)
   useEffect(() => {
@@ -213,7 +228,7 @@ export default function ExploreScreen() {
     const dx = e?.nativeEvent?.deltaX ?? e?.deltaX ?? 0;
     const dy = e?.nativeEvent?.deltaY ?? e?.deltaY ?? 0;
     const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
-    const nextX = Math.max(0, Math.min(scrollX + delta, maxScrollX));
+    const nextX = Math.max(0, Math.min(scrollXRef.current + delta, maxScrollXRef.current));
     
     if (typeof e?.preventDefault === 'function') {
       e.preventDefault();
@@ -259,10 +274,11 @@ export default function ExploreScreen() {
           const currentScrollX = scrollElement.scrollLeft;
           const currentMaxScrollX = scrollElement.scrollWidth - scrollElement.clientWidth;
           
-          setScrollX(currentScrollX);
-          setMaxScrollX(currentMaxScrollX);
-          setShowLeftArrow(currentScrollX > 0);
-          setShowRightArrow(currentScrollX < currentMaxScrollX - 10);
+          scrollXRef.current = currentScrollX;
+          maxScrollXRef.current = currentMaxScrollX;
+          viewportWidthRef.current = scrollElement.clientWidth;
+          contentWidthRef.current = scrollElement.scrollWidth;
+          updateQuickAccessArrows(currentScrollX, currentMaxScrollX);
         };
         
         scrollElement.addEventListener('scroll', handleWebScroll, { passive: true });
@@ -285,7 +301,7 @@ export default function ExploreScreen() {
       clearTimeout(timeoutId);
       if (cleanupFn) cleanupFn();
     };
-  }, []);
+  }, [updateQuickAccessArrows]);
 
   // Early return if no event info is available (after all hooks are declared)
   if (!currentEventInfo) {
@@ -297,8 +313,8 @@ export default function ExploreScreen() {
   }
   
   // Quick Access card dimensions (matching styles)
-  const cardWidth = 140;
-  const cardSpacing = 12;
+  const cardWidth = 132;
+  const cardSpacing = 10;
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -310,11 +326,11 @@ export default function ExploreScreen() {
     const currentScrollX = contentOffset.x;
     const currentMaxScrollX = contentSize.width - layoutMeasurement.width;
     
-    setScrollX(currentScrollX);
-    setMaxScrollX(currentMaxScrollX);
-    setViewportWidth(layoutMeasurement.width);
-    setShowLeftArrow(currentScrollX > 0);
-    setShowRightArrow(currentScrollX < currentMaxScrollX - 10);
+    scrollXRef.current = currentScrollX;
+    maxScrollXRef.current = currentMaxScrollX;
+    viewportWidthRef.current = layoutMeasurement.width;
+    contentWidthRef.current = contentSize.width;
+    updateQuickAccessArrows(currentScrollX, currentMaxScrollX);
   };
 
   // Additional scroll handlers for better web support
@@ -332,13 +348,15 @@ export default function ExploreScreen() {
 
   const handleQuickAccessLayout = (e: any) => {
     const w = e?.nativeEvent?.layout?.width || 0;
-    setViewportWidth(w);
-    setMaxScrollX(Math.max(0, contentWidth - w));
+    viewportWidthRef.current = w;
+    maxScrollXRef.current = Math.max(0, contentWidthRef.current - w);
+    updateQuickAccessArrows(scrollXRef.current, maxScrollXRef.current);
   };
 
   const handleQuickAccessContentSizeChange = (w: number, _h: number) => {
-    setContentWidth(w);
-    setMaxScrollX(Math.max(0, w - viewportWidth));
+    contentWidthRef.current = w;
+    maxScrollXRef.current = Math.max(0, w - viewportWidthRef.current);
+    updateQuickAccessArrows(scrollXRef.current, maxScrollXRef.current);
   };
 
 
@@ -347,18 +365,18 @@ export default function ExploreScreen() {
     
     // For small screens, scroll by one card at a time
     // For larger screens, scroll by viewport width minus spacing
-    const scrollAmount = viewportWidth > 0 && viewportWidth > cardWidth * 2
-      ? Math.min(viewportWidth - cardSpacing, cardWidth * 2)
+    const scrollAmount = viewportWidthRef.current > 0 && viewportWidthRef.current > cardWidth * 2
+      ? Math.min(viewportWidthRef.current - cardSpacing, cardWidth * 2)
       : cardWidth + cardSpacing;
     
-    const currentScrollX = scrollX || 0;
+    const currentScrollX = scrollXRef.current || 0;
     const target = direction === 'left' 
       ? Math.max(0, currentScrollX - scrollAmount)
-      : Math.min(maxScrollX, currentScrollX + scrollAmount);
+      : Math.min(maxScrollXRef.current, currentScrollX + scrollAmount);
     
     // Only scroll if we're not already at the boundary
     if ((direction === 'left' && currentScrollX > 0) || 
-        (direction === 'right' && currentScrollX < maxScrollX)) {
+        (direction === 'right' && currentScrollX < maxScrollXRef.current)) {
       quickAccessScrollRef.current.scrollTo({ x: target, animated: true });
     }
   };
@@ -489,11 +507,15 @@ export default function ExploreScreen() {
       ]}
       onPress={() => router.push(item.route as any)}
     >
-      <View style={[styles.cardIcon, { backgroundColor: item.color }]}>
-        <MaterialIcons name={item.icon as any} size={24} color="white" />
+      <View style={[styles.cardIcon, { backgroundColor: item.color + '18' }]}>
+        <MaterialIcons name={item.icon as any} size={22} color={item.color} />
       </View>
-      <Text style={styles.cardTitle}>{getQuickTitle(item.id, item.title)}</Text>
-      <Text style={styles.cardSubtitle}>{getQuickSubtitle(item.id, item.subtitle)}</Text>
+      <Text style={styles.cardTitle} numberOfLines={1}>
+        {getQuickTitle(item.id, item.title)}
+      </Text>
+      <Text style={styles.cardSubtitle} numberOfLines={2}>
+        {getQuickSubtitle(item.id, item.subtitle)}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -600,14 +622,14 @@ export default function ExploreScreen() {
             <CopilotView style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'explore.quickAccess', message: 'Quick Access' })}</Text>
             <View style={styles.quickAccessContainer}>
-              {showLeftArrow && (
-                <TouchableOpacity 
-                  style={styles.scrollArrowLeft} 
+              <Reanimated.View style={[styles.scrollArrowLeft, quickAccessLeftArrowStyle]}>
+                <TouchableOpacity
+                  style={styles.scrollArrowButton}
                   onPress={() => scrollQuickAccess('left')}
                 >
                   <MaterialIcons name="chevron-left" size={24} color={colors.primary} />
                 </TouchableOpacity>
-              )}
+              </Reanimated.View>
               <ScrollView
                 ref={quickAccessScrollRef}
                 horizontal
@@ -629,14 +651,14 @@ export default function ExploreScreen() {
               >
                 {getQuickAccessItems().map((item, index) => renderQuickAccessItem(item, index))}
               </ScrollView>
-              {showRightArrow && (
-                <TouchableOpacity 
-                  style={styles.scrollArrowRight} 
+              <Reanimated.View style={[styles.scrollArrowRight, quickAccessRightArrowStyle]}>
+                <TouchableOpacity
+                  style={styles.scrollArrowButton}
                   onPress={() => scrollQuickAccess('right')}
                 >
                   <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
                 </TouchableOpacity>
-              )}
+              </Reanimated.View>
             </View>
             </CopilotView>
           </CopilotStep>
@@ -759,13 +781,14 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     padding: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.text.primary,
-    marginBottom: 16,
+    marginBottom: 12,
+    letterSpacing: 0.2,
   },
   horizontalScroll: {
-    paddingRight: 20,
+    paddingRight: 16,
   },
   quickAccessContainer: {
     position: 'relative',
@@ -774,12 +797,12 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   scrollArrowLeft: {
     position: 'absolute',
-    left: -10,
+    left: -8,
     zIndex: 1,
     backgroundColor: colors.background.paper,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 18,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.text.primary,
@@ -790,12 +813,12 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   scrollArrowRight: {
     position: 'absolute',
-    right: -10,
+    right: -8,
     zIndex: 1,
     backgroundColor: colors.background.paper,
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 18,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.text.primary,
@@ -804,39 +827,48 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  quickAccessCard: {
-    width: 140,
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    padding: 16,
+  scrollArrowButton: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickAccessCard: {
+    width: 132,
+    backgroundColor: colors.background.paper,
+    borderRadius: 16,
+    padding: 14,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    minHeight: 120,
     borderWidth: 1,
     borderColor: colors.divider,
     shadowColor: colors.text.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   cardIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: colors.text.primary,
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: 4,
+    lineHeight: 16,
   },
   cardSubtitle: {
     fontSize: 11,
     color: colors.text.secondary,
-    textAlign: 'center',
+    textAlign: 'left',
     lineHeight: 14,
   },
   bottomSpacing: {

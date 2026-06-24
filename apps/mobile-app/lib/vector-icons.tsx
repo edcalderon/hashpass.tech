@@ -8,8 +8,10 @@ import {
   ArrowUp,
   Bell,
   BellOff,
+  Bot,
   BookOpen,
   Building2,
+  Cog,
   CalendarDays,
   CalendarX2,
   Camera,
@@ -51,6 +53,7 @@ import {
   Menu,
   MessageCircle,
   Moon,
+  Lightbulb,
   PartyPopper,
   Phone,
   Plus,
@@ -62,7 +65,6 @@ import {
   Search,
   SearchX,
   Send,
-  Settings2,
   Share2,
   Shield,
   ShieldCheck,
@@ -86,8 +88,12 @@ import {
   type LucideProps,
 } from 'lucide-react-native';
 import type { TextStyle } from 'react-native';
-// @ts-ignore — Expo SDK 53 type definitions lag behind named exports; works at runtime
-import { Ionicons as NativeIonicons, MaterialIcons as NativeMaterialIcons } from '@expo/vector-icons';
+// Use a relative node_modules path so the Babel module-resolver alias for
+// `@expo/vector-icons` does not rewrite these native fallbacks back into this wrapper.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const NativeIonicons = require('../../../node_modules/@expo/vector-icons/Ionicons.js').default as React.ComponentType<LucideProps>;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const NativeMaterialIcons = require('../../../node_modules/@expo/vector-icons/MaterialIcons.js').default as React.ComponentType<LucideProps>;
 
 type IconProps = { name: string; size?: number; color?: string; style?: any };
 
@@ -190,6 +196,8 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   'notifications-none': BellOff,
   'open-in-full': Maximize,
   'open-in-new': ExternalLink,
+  lightbulb: Lightbulb,
+  'lightbulb-outline': Lightbulb,
   'pause-circle-outline': CirclePause,
   people: Users,
   'people-alt': UsersRound,
@@ -198,7 +206,12 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   'finger-print-outline': Fingerprint,
   'lock-closed-outline': Lock,
   'people-outline': Users,
+  person: User,
   'person-outline': User,
+  'account-circle': User,
+  'emoji-emotions': PartyPopper,
+  android: Bot,
+  face: User,
   'photo-camera': Camera,
   'trash-outline': Trash2,
   'play-circle-outline': CirclePlay,
@@ -223,7 +236,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   'video-call': Video,
   'volume-off': VolumeX,
   warning: TriangleAlert,
-  settings: Settings2,
+  settings: Cog,
   'call-outline': Phone,
   'logo-google-playstore': SquarePlay,
   'logo-apple': Apple,

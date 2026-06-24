@@ -13,8 +13,7 @@ import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
-// @ts-ignore — Expo SDK 53 type definitions lag behind; named export works at runtime
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '../../../../lib/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import QuickAccessGrid from '@/components/explorer/QuickAccessGrid';
@@ -609,8 +608,8 @@ export default function NetworkingView() {
             }))}
             title={t({ id: 'networking.quickAccess', message: 'Quick Access' })}
             showScrollArrows={true}
-            cardWidth={160}
-            cardSpacing={12}
+            cardWidth={144}
+            cardSpacing={10}
             onItemPress={handleQuickAccess}
           />
         </CopilotView>

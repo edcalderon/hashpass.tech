@@ -3,8 +3,7 @@ import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar,
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
 import { useScroll } from '@contexts/ScrollContext';
-// @ts-ignore — Expo SDK 53 type definitions lag behind; named export works at runtime
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';

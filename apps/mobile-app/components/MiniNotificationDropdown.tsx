@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useRouter } from 'expo-router';
@@ -377,4 +377,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     marginRight: 4,
   },
 });
-

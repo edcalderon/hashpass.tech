@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
 import { isAdmin, getUserAdminRole, AdminRole } from '../../../lib/admin-utils';
@@ -1192,4 +1192,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     marginTop: 32,
   },
 });
-

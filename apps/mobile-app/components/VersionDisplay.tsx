@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
@@ -111,7 +111,7 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
 const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   compactContainer: {
     flexDirection: 'row',
@@ -135,7 +135,15 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : colors.background.paper,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    boxShadow: isDark
+      ? '0 2px 4px rgba(0, 0, 0, 0.12)'
+      : '0 2px 4px rgba(15, 23, 42, 0.06)',
   },
   versionInfo: {
     flexDirection: 'row',
@@ -144,6 +152,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   sidebarVersionInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
   versionText: {
     fontSize: 14,
@@ -153,7 +162,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   sidebarVersionText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text.secondary,
     marginRight: 6,
   },

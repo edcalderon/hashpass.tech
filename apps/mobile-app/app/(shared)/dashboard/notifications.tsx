@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, StatusBar } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useNotifications } from '@contexts/NotificationContext';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { useScroll } from '@contexts/ScrollContext';
@@ -52,6 +52,7 @@ export default function NotificationsScreen() {
   useEffect(() => {
     const notificationId = params.notificationId as string | undefined;
     const shouldHighlight = params.highlightNotification === 'true';
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
     if (notificationId && shouldHighlight) {
       // Find the notification
@@ -62,7 +63,7 @@ export default function NotificationsScreen() {
       }
       
       // Scroll to notification after a short delay to ensure it's rendered
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         const notificationView = notificationRefs.current[notificationId];
         if (notificationView && scrollViewRef.current) {
           notificationView.measureLayout(
@@ -75,6 +76,12 @@ export default function NotificationsScreen() {
         }
       }, 300);
     }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [params.notificationId, params.highlightNotification, notifications, markAsRead]);
 
   const handleNotificationPress = async (notification: any) => {
@@ -767,11 +774,9 @@ const getStyles = (isDark: boolean, colors: any, navBarHeight: number = 0, scrol
     backgroundColor: colors.background.paper,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    boxShadow: isDark
+      ? '0 2px 4px rgba(0, 0, 0, 0.24)'
+      : '0 2px 4px rgba(15, 23, 42, 0.08)',
     borderWidth: 1,
     borderColor: colors.divider,
     position: 'relative',

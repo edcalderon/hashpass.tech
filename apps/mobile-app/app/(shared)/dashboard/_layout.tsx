@@ -341,14 +341,14 @@ function CustomDrawerContent() {
     <View style={[styles.container, { backgroundColor: colors.background.default, flex: 1 }]}>
       {/* Drawer Header */}
       <View style={[styles.drawerHeader, {
-        backgroundColor: isDark ? colors.primaryLight : colors.primaryDark, // Red in dark mode, blue in light mode
-        borderBottomWidth: 2,
-        borderBottomColor: colors.primaryContrastText + '33', // 20% opacity white
-        shadowColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.2)',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : colors.background.paper,
+        borderTopWidth: 4,
+        borderTopColor: brandBadgeColor,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.divider,
+        boxShadow: isDark
+          ? '0 3px 12px rgba(0, 0, 0, 0.24)'
+          : '0 3px 12px rgba(15, 23, 42, 0.12)',
       }]}>
         {/* Animated Fluid Gradient Background Layers - only render when animations enabled */}
         {animationsEnabled ? (
@@ -358,8 +358,8 @@ function CustomDrawerContent() {
                 styles.fluidGradientLayer,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(175, 13, 1, 0.6)' // Red with high opacity
-                    : 'rgba(30, 58, 138, 0.5)', // Blue with high opacity
+                    ? 'rgba(175, 13, 1, 0.14)'
+                    : 'rgba(30, 58, 138, 0.08)',
                 },
                 animatedGradientStyle1
               ]}
@@ -369,8 +369,8 @@ function CustomDrawerContent() {
                 styles.fluidGradientLayer,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(161, 209, 214, 0.5)' // Cyan with high opacity
-                    : 'rgba(0, 122, 255, 0.4)', // Blue with high opacity
+                    ? 'rgba(161, 209, 214, 0.10)'
+                    : 'rgba(0, 122, 255, 0.06)',
                 },
                 animatedGradientStyle2
               ]}
@@ -380,8 +380,8 @@ function CustomDrawerContent() {
                 styles.fluidGradientLayer,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(255, 215, 0, 0.45)' // Gold with high opacity
-                    : 'rgba(100, 181, 246, 0.35)', // Light blue with high opacity
+                    ? 'rgba(255, 215, 0, 0.08)'
+                    : 'rgba(100, 181, 246, 0.05)',
                 },
                 animatedGradientStyle3
               ]}
@@ -391,8 +391,8 @@ function CustomDrawerContent() {
                 styles.fluidGradientLayer,
                 {
                   backgroundColor: isDark
-                    ? 'rgba(255, 87, 34, 0.45)' // Orange with high opacity
-                    : 'rgba(63, 81, 181, 0.35)', // Indigo with high opacity
+                    ? 'rgba(255, 87, 34, 0.06)'
+                    : 'rgba(63, 81, 181, 0.04)',
                 },
                 animatedGradientStyle4
               ]}
@@ -577,6 +577,7 @@ function CustomDrawerContent() {
 
       {/* Quick Settings & Actions */}
       <View style={styles.quickSettingsSection}>
+        <Text style={styles.quickSettingsTitle}>{t({ id: 'nav.quickActions', message: 'Quick actions' })}</Text>
         <View style={styles.quickTogglesRow}>
           {/* Language Toggle */}
           <TouchableOpacity
@@ -598,11 +599,11 @@ function CustomDrawerContent() {
             onPress={toggleTheme}
             activeOpacity={0.7}
           >
-            <View style={[styles.quickToggleIcon, { backgroundColor: isDark ? '#FFD700' : '#6C63FF' }]}>
+            <View style={[styles.quickToggleIcon, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(175, 13, 1, 0.10)' }]}>
               <Ionicons
                 name={isDark ? 'sunny' : 'moon'}
-                size={24}
-                color="white"
+                size={20}
+                color={isDark ? '#FFFFFF' : colors.primary}
               />
             </View>
             <Text style={styles.quickToggleLabel}>
@@ -616,11 +617,11 @@ function CustomDrawerContent() {
             onPress={handleLogout}
             activeOpacity={0.7}
           >
-            <View style={[styles.quickToggleIcon, { backgroundColor: colors.error.main }]}>
+            <View style={[styles.quickToggleIcon, { backgroundColor: 'rgba(255, 59, 48, 0.12)' }]}>
               <Ionicons
                 name="log-out-outline"
-                size={24}
-                color="white"
+                size={20}
+                color={colors.error.main}
               />
             </View>
             <Text style={[styles.quickToggleLabel, { color: colors.error.main }]}>
@@ -689,7 +690,7 @@ export default function DashboardLayout() {
   const Header = () => {
     const drawerNavigation = useNavigation<DrawerNavigation>();
     const headerRouter = useRouter();
-    const { headerOpacity, headerBackground, headerTint, headerBlur, headerBorderWidth, headerShadowOpacity, headerHeight, setHeaderHeight, scrollY } = useScroll();
+    const { headerOpacity, headerBackground, headerTint, headerBlur, headerBorderWidth, headerHeight, setHeaderHeight, scrollY } = useScroll();
     const { animationsEnabled } = useAnimations();
     const { user } = useAuth();
     const copilotHook = useCopilot() as any;
@@ -792,11 +793,9 @@ export default function DashboardLayout() {
             backgroundColor: 'transparent',
             borderBottomWidth: headerBorderWidth,
             borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
-            shadowColor: isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.2)',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: headerShadowOpacity,
-            shadowRadius: 6,
-            elevation: 8,
+            boxShadow: isDark
+              ? '0 3px 6px rgba(0, 0, 0, 0.36)'
+              : '0 3px 6px rgba(15, 23, 42, 0.18)',
             overflow: 'hidden',
           }
         ]}
@@ -1036,7 +1035,7 @@ export default function DashboardLayout() {
                 header: () => <ScreenWithHeader />,
                 drawerType: 'front',
                 drawerStyle: {
-                  width: '80%',
+                  width: isMobile ? '88%' : 360,
                 },
                 overlayColor: 'rgba(0,0,0,0.5)',
                 drawerPosition: 'left',
@@ -1139,11 +1138,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
-    shadowColor: isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 10,
+    boxShadow: isDark
+      ? '0 6px 12px rgba(0, 0, 0, 0.28)'
+      : '0 6px 12px rgba(15, 23, 42, 0.12)',
     borderWidth: 1,
     borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)',
   },
@@ -1166,17 +1163,15 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     height: 40,
   },
   drawerHeader: {
-    padding: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.primaryContrastText + '33', // White border with opacity from theme
-    backgroundColor: isDark ? colors.primaryLight : colors.primaryDark, // Red in dark mode, blue in light mode
+    padding: isMobile ? 16 : 18,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : colors.background.paper,
     position: 'relative',
     overflow: 'hidden',
-    shadowColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.2)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    boxShadow: isDark
+      ? '0 3px 12px rgba(0, 0, 0, 0.22)'
+      : '0 3px 12px rgba(15, 23, 42, 0.12)',
   },
   gradientBackground: {
     position: 'absolute',
@@ -1200,60 +1195,49 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   brandingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 30,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 24,
     borderWidth: 2,
-    shadowColor: 'rgba(0, 0, 0, 0.3)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    boxShadow: '0 3px 6px rgba(0, 0, 0, 0.18)',
   },
   logoImage: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
   },
   brandingSection: {
     flex: 1,
     alignItems: 'flex-start',
   },
   brandSubtitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF', // Pure white for better contrast
-    letterSpacing: 1.2,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text.secondary,
+    letterSpacing: 1,
     textTransform: 'uppercase',
-    marginBottom: 12,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    marginBottom: 10,
   },
   brandBadge: {
-    backgroundColor: isDark ? colors.primary : colors.secondary,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: isDark ? colors.primaryLight : colors.primaryDark,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1,
-    borderColor: colors.primaryContrastText + '4D', // 30% opacity white
-    shadowColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.2)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 6,
+    borderColor: colors.primaryContrastText + '26',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.14)',
   },
   brandBadgeText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.primaryContrastText,
-    letterSpacing: 1.5,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
   },
   drawerHeaderText: {
@@ -1268,8 +1252,8 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     flex: 1,
   },
   menuItemsContent: {
-    paddingTop: 24,
-    paddingBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
     paddingHorizontal: 16,
     flexGrow: 1,
   },
@@ -1282,28 +1266,28 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    marginVertical: 6,
-    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginVertical: 5,
+    borderRadius: 16,
     borderLeftWidth: 4,
     borderLeftColor: 'transparent',
     borderWidth: 1,
     borderColor: colors.divider,
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(255, 255, 255, 0.82)',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : colors.background.default,
     position: 'relative',
     overflow: 'hidden',
     boxShadow: isDark
-      ? '0 6px 16px rgba(0, 0, 0, 0.18)'
-      : '0 6px 16px rgba(15, 23, 42, 0.08)',
+      ? '0 4px 12px rgba(0, 0, 0, 0.12)'
+      : '0 4px 12px rgba(15, 23, 42, 0.06)',
   },
   menuIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   activeIndicator: {
     position: 'absolute',
@@ -1313,25 +1297,25 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     borderRadius: 999,
   },
   menuText: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.text.primary,
     flex: 1,
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   menuBadge: {
     backgroundColor: '#FF3B30',
-    borderRadius: 12,
-    paddingHorizontal: 8,
+    borderRadius: 10,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    minWidth: 24,
-    height: 20,
+    minWidth: 22,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
   },
   menuBadgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
   logoutButton: {
@@ -1346,11 +1330,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     borderLeftColor: '#FF3B30',
     borderWidth: 1,
     borderColor: isDark ? 'rgba(255, 59, 48, 0.2)' : 'rgba(255, 59, 48, 0.1)',
-    shadowColor: isDark ? 'rgba(255, 59, 48, 0.2)' : 'rgba(255, 59, 48, 0.1)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    boxShadow: isDark
+      ? '0 4px 10px rgba(255, 59, 48, 0.14)'
+      : '0 4px 10px rgba(255, 59, 48, 0.08)',
   },
   logoutText: {
     fontSize: 16,
@@ -1359,66 +1341,69 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     flex: 1,
   },
   quickSettingsSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     marginHorizontal: 16,
-    marginTop: 14,
+    marginTop: 12,
     marginBottom: 8,
-    borderRadius: 20,
+    borderRadius: 18,
     backgroundColor: isDark
-      ? 'rgba(255, 255, 255, 0.05)'
-      : 'rgba(255, 255, 255, 0.84)',
+      ? 'rgba(255, 255, 255, 0.04)'
+      : colors.background.default,
     borderWidth: 1,
     borderColor: colors.divider,
     boxShadow: isDark
-      ? '0 10px 24px rgba(0, 0, 0, 0.18)'
-      : '0 10px 24px rgba(15, 23, 42, 0.08)',
+      ? '0 8px 18px rgba(0, 0, 0, 0.12)'
+      : '0 8px 18px rgba(15, 23, 42, 0.06)',
   },
   quickSettingsTitle: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: 10,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
+    color: colors.text.secondary,
   },
   quickTogglesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
+    flexDirection: isMobile ? 'column' : 'row',
+    alignItems: 'stretch',
+    gap: 10,
   },
   quickToggleButton: {
     flex: 1,
-    minHeight: 80,
-    borderRadius: 16,
-    justifyContent: 'center',
+    minHeight: 54,
+    borderRadius: 14,
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: colors.divider,
     backgroundColor: colors.background.paper,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
     boxShadow: isDark
-      ? '0 4px 10px rgba(0, 0, 0, 0.14)'
-      : '0 4px 10px rgba(15, 23, 42, 0.08)',
+      ? '0 3px 8px rgba(0, 0, 0, 0.10)'
+      : '0 3px 8px rgba(15, 23, 42, 0.05)',
   },
   quickToggleIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 0,
+    marginRight: 12,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
   },
   quickToggleLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.text.secondary,
-    textAlign: 'center',
+    textAlign: 'left',
+    flex: 1,
   },
   languageFlag: {
-    fontSize: 20,
+    fontSize: 18,
   },
   mainContent: {
     flex: 1,

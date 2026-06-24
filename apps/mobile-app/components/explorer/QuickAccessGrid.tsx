@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { MaterialIcons } from '../../lib/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 
@@ -28,38 +29,53 @@ export default function QuickAccessGrid({
   title = "Quick Access", 
   showScrollArrows = false,
   onItemPress,
-  cardWidth = 140,
-  cardSpacing = 12
+  cardWidth = 132,
+  cardSpacing = 10
 }: QuickAccessGridProps) {
   const { isDark, colors } = useTheme();
   const router = useRouter();
   const styles = getStyles(isDark, colors, cardWidth, cardSpacing);
   
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(showScrollArrows);
-  const [scrollX, setScrollX] = useState(0);
-  const [maxScrollX, setMaxScrollX] = useState(0);
-  const [viewportWidth, setViewportWidth] = useState(0);
-  const [contentWidth, setContentWidth] = useState(0);
+  const scrollXRef = useRef(0);
+  const maxScrollXRef = useRef(0);
+  const viewportWidthRef = useRef(0);
+  const contentWidthRef = useRef(0);
   const scrollRef = useRef<ScrollView>(null);
+  const leftArrowOpacity = useSharedValue(0.32);
+  const rightArrowOpacity = useSharedValue(1);
+  const leftArrowStyle = useAnimatedStyle(() => ({
+    opacity: leftArrowOpacity.value,
+  }));
+  const rightArrowStyle = useAnimatedStyle(() => ({
+    opacity: rightArrowOpacity.value,
+  }));
+
+  const updateArrowVisibility = (scrollX: number, maxScrollX: number) => {
+    if (!showScrollArrows) return;
+
+    const canScrollLeft = scrollX > 0;
+    const canScrollRight = scrollX < maxScrollX - 10;
+
+    leftArrowOpacity.value = canScrollLeft ? 1 : 0.32;
+    rightArrowOpacity.value = canScrollRight ? 1 : 0.32;
+  };
 
   const handleScroll = (event: any) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const x = contentOffset.x;
     const maxX = Math.max(0, contentSize.width - layoutMeasurement.width);
-    setScrollX(x);
-    setMaxScrollX(maxX);
-    setViewportWidth(layoutMeasurement.width);
-    if (showScrollArrows) {
-      setShowLeftArrow(x > 0);
-      setShowRightArrow(x < maxX - 10);
-    }
+    scrollXRef.current = x;
+    maxScrollXRef.current = maxX;
+    viewportWidthRef.current = layoutMeasurement.width;
+    updateArrowVisibility(x, maxX);
   };
 
   const scrollTo = (direction: 'left' | 'right') => {
-    const delta = Math.max(160, viewportWidth - cardSpacing);
-    const target = direction === 'left' ? scrollX - delta : scrollX + delta;
-    const nextX = Math.max(0, Math.min(target, maxScrollX));
+    const delta = Math.max(160, viewportWidthRef.current - cardSpacing);
+    const target = direction === 'left'
+      ? scrollXRef.current - delta
+      : scrollXRef.current + delta;
+    const nextX = Math.max(0, Math.min(target, maxScrollXRef.current));
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ x: nextX, animated: true });
     }
@@ -67,13 +83,15 @@ export default function QuickAccessGrid({
 
   const handleLayout = (e: any) => {
     const w = e?.nativeEvent?.layout?.width || 0;
-    setViewportWidth(w);
-    setMaxScrollX(Math.max(0, contentWidth - w));
+    viewportWidthRef.current = w;
+    maxScrollXRef.current = Math.max(0, contentWidthRef.current - w);
+    updateArrowVisibility(scrollXRef.current, maxScrollXRef.current);
   };
 
   const handleContentSizeChange = (w: number, _h: number) => {
-    setContentWidth(w);
-    setMaxScrollX(Math.max(0, w - viewportWidth));
+    contentWidthRef.current = w;
+    maxScrollXRef.current = Math.max(0, w - viewportWidthRef.current);
+    updateArrowVisibility(scrollXRef.current, maxScrollXRef.current);
   };
 
   const handleWheel = (e: any) => {
@@ -81,7 +99,7 @@ export default function QuickAccessGrid({
     const dx = e?.nativeEvent?.deltaX ?? e?.deltaX ?? 0;
     const dy = e?.nativeEvent?.deltaY ?? e?.deltaY ?? 0;
     const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
-    const nextX = Math.max(0, Math.min(scrollX + delta, maxScrollX));
+    const nextX = Math.max(0, Math.min(scrollXRef.current + delta, maxScrollXRef.current));
     if (typeof e?.preventDefault === 'function') e.preventDefault();
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ x: nextX, animated: false });
@@ -106,10 +124,12 @@ export default function QuickAccessGrid({
       onPress={() => handleItemPress(item)}
     >
       <View style={[styles.cardIcon, { backgroundColor: item.color + '20' }]}>
-        <MaterialIcons name={item.icon as any} size={32} color={item.color} />
+        <MaterialIcons name={item.icon as any} size={24} color={item.color} />
       </View>
-      <Text style={styles.cardTitle}>{item.title}</Text>
-      <Text style={styles.cardDescription}>
+      <Text style={styles.cardTitle} numberOfLines={1}>
+        {item.title}
+      </Text>
+      <Text style={styles.cardDescription} numberOfLines={2}>
         {item.subtitle || item.description}
       </Text>
     </TouchableOpacity>
@@ -119,13 +139,15 @@ export default function QuickAccessGrid({
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.quickAccessContainer}>
-        {showScrollArrows && showLeftArrow && (
-          <TouchableOpacity
-            style={[styles.scrollArrow, styles.leftArrow]}
-            onPress={() => scrollTo('left')}
-          >
-            <MaterialIcons name="chevron-left" size={24} color={colors.primary} />
-          </TouchableOpacity>
+        {showScrollArrows && (
+          <Animated.View style={[styles.scrollArrow, styles.leftArrow, leftArrowStyle]}>
+            <TouchableOpacity
+              style={styles.scrollArrowButton}
+              onPress={() => scrollTo('left')}
+            >
+              <MaterialIcons name="chevron-left" size={24} color={colors.primary} />
+            </TouchableOpacity>
+          </Animated.View>
         )}
         <ScrollView
           ref={scrollRef}
@@ -145,13 +167,15 @@ export default function QuickAccessGrid({
         >
           {items.map((item, index) => renderQuickAccessItem(item, index))}
         </ScrollView>
-        {showScrollArrows && showRightArrow && (
-          <TouchableOpacity
-            style={[styles.scrollArrow, styles.rightArrow]}
-            onPress={() => scrollTo('right')}
-          >
-            <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
-          </TouchableOpacity>
+        {showScrollArrows && (
+          <Animated.View style={[styles.scrollArrow, styles.rightArrow, rightArrowStyle]}>
+            <TouchableOpacity
+              style={styles.scrollArrowButton}
+              onPress={() => scrollTo('right')}
+            >
+              <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
+            </TouchableOpacity>
+          </Animated.View>
         )}
       </View>
     </View>
@@ -160,16 +184,18 @@ export default function QuickAccessGrid({
 
 const getStyles = (isDark: boolean, colors: any, cardWidth: number, cardSpacing: number) => StyleSheet.create({
   section: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.text?.primary || (isDark ? '#ffffff' : '#000000'),
-    marginBottom: 16,
+    marginBottom: 12,
+    letterSpacing: 0.2,
   },
   horizontalScroll: {
-    paddingRight: 20,
+    paddingRight: 16,
   },
   quickAccessContainer: {
     position: 'relative',
@@ -180,59 +206,64 @@ const getStyles = (isDark: boolean, colors: any, cardWidth: number, cardSpacing:
     position: 'absolute',
     zIndex: 1,
     backgroundColor: colors.background?.paper || (isDark ? '#1E1E1E' : '#F5F5F7'),
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 18,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: isDark ? 0.3 : 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    boxShadow: isDark
+      ? '0 2px 4px rgba(0, 0, 0, 0.20)'
+      : '0 2px 4px rgba(15, 23, 42, 0.08)',
     borderWidth: 1,
     borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
   },
   leftArrow: {
-    left: -10,
+    left: -8,
   },
   rightArrow: {
-    right: -10,
+    right: -8,
+  },
+  scrollArrowButton: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   quickAccessCard: {
     width: cardWidth,
     backgroundColor: colors.background?.paper || (isDark ? '#1E1E1E' : '#F5F5F7'),
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: isDark ? 0.3 : 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: 16,
+    padding: 14,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    minHeight: 120,
+    boxShadow: isDark
+      ? '0 4px 10px rgba(0, 0, 0, 0.16)'
+      : '0 4px 10px rgba(15, 23, 42, 0.08)',
     borderWidth: 1,
     borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
   },
   cardIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: colors.text?.primary || (isDark ? '#ffffff' : '#000000'),
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: 4,
+    lineHeight: 16,
   },
   cardDescription: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.text?.secondary || (isDark ? '#cccccc' : '#666666'),
-    textAlign: 'center',
-    lineHeight: 16,
+    textAlign: 'left',
+    lineHeight: 14,
   },
 });
