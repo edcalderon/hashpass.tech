@@ -1,3 +1,14 @@
+## [1.8.114](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.113...v1.8.114) (2026-06-24)
+
+
+### Features
+
+* **db:** rename public.users → public.user per SQL singular naming standard + add FKs ([0f4f908](https://github.com/hashpass-tech/hashpass.tech/commit/0f4f9088addf884fdf572433d12d85f078fc1a4a))
+
+
+
+
+
 ## [1.8.113](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.112...v1.8.113) (2026-06-23)
 
 
