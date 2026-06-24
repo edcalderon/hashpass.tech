@@ -54,8 +54,8 @@ export async function POST(request: Request) {
       { table: 'otp_codes',           filter: { email: callerUser.email ?? '' } },
       { table: 'chat_last_seen',      filter: { user_id: userId } },
       { table: 'meeting_chat_messages', filter: { sender_id: userId } },
-      // Canonical user registry (V004) — match by email to cover all provider IDs
-      { table: 'users',               filter: { email: callerUser.email ?? '' } },
+      // Canonical user registry — match by email to cover all provider IDs
+      { table: 'user',                filter: { email: callerUser.email ?? '' } },
     ];
 
     for (const step of cleanupSteps) {
