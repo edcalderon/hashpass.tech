@@ -1,3 +1,16 @@
+## [1.8.120](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.119...v1.8.120) (2026-06-24)
+
+
+### Bug Fixes
+
+* **vector-icons:** remove duplicate globe-outline key ([bff44d9](https://github.com/hashpass-tech/hashpass.tech/commit/bff44d9a6f0dc039efcaefc8e1a838bf0ff744ae))
+* **vector-icons:** resolve pre-existing TS errors caught by pre-push hook ([4ad2523](https://github.com/hashpass-tech/hashpass.tech/commit/4ad2523226e318286e4f079e69bcb93ad0143c89))
+* **web:** replace @expo/vector-icons with SVG fallbacks; fix delete-account 401 ([793a068](https://github.com/hashpass-tech/hashpass.tech/commit/793a068cbe1d5cce890b7042684bf3e92a7c1878))
+
+
+
+
+
 ## [1.8.119](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.118...v1.8.119) (2026-06-24)
 
 

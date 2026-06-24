@@ -17,12 +17,13 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.119)
+## 📋 Latest Changes (v1.8.120)
 
 ### Bug Fixes
 
-* explicit any type for supabase.auth.getSession destructure ([692e7a6](https://github.com/hashpass-tech/hashpass.tech/commit/692e7a6de2bbc848ebdcaf16dffcb7d7f5694b41))
-* **profile:** restore Google avatar + Member Since from Supabase session ([007695a](https://github.com/hashpass-tech/hashpass.tech/commit/007695abf4d6e122cee3fe3306299c1eb8292ec8))
+* **vector-icons:** remove duplicate globe-outline key ([bff44d9](https://github.com/hashpass-tech/hashpass.tech/commit/bff44d9a6f0dc039efcaefc8e1a838bf0ff744ae))
+* **vector-icons:** resolve pre-existing TS errors caught by pre-push hook ([4ad2523](https://github.com/hashpass-tech/hashpass.tech/commit/4ad2523226e318286e4f079e69bcb93ad0143c89))
+* **web:** replace @expo/vector-icons with SVG fallbacks; fix delete-account 401 ([793a068](https://github.com/hashpass-tech/hashpass.tech/commit/793a068cbe1d5cce890b7042684bf3e92a7c1878))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
