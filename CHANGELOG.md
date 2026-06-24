@@ -1,3 +1,14 @@
+## [1.8.125](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.124...v1.8.125) (2026-06-24)
+
+
+### Bug Fixes
+
+* **sidebar:** prevent left border clipping on menu items ([8bf8b87](https://github.com/hashpass-tech/hashpass.tech/commit/8bf8b8792ca8b540f1a401b8b7142e153d3d43d9))
+
+
+
+
+
 ## [1.8.124](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.123...v1.8.124) (2026-06-24)
 
 
