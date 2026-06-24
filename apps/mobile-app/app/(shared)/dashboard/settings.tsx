@@ -29,7 +29,7 @@ export default function SettingsScreen() {
   const { headerHeight } = useScroll();
   const { showSuccess, showInfo, showError } = useToastHelpers();
   const { t: tProfile } = useTranslation('profile');
-  const { t: tSettings } = useTranslation();
+  const { t: tSettings } = useTranslation('settings');
   const router = useRouter();
   const { resetTutorial, resetAllTutorials, mainTutorialCompleted, networkingTutorialCompleted } = useTutorialPreferences();
   const { user, signOut } = useAuth();
@@ -372,12 +372,12 @@ export default function SettingsScreen() {
       >
         {/* App Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App Settings</Text>
-          
+          <Text style={styles.sectionTitle}>{tSettings('appSettings', 'App Settings')}</Text>
+
           {renderSettingItem({
             icon: isDark ? 'moon' : 'moon-outline',
-            title: 'Dark Mode',
-            subtitle: 'Switch between light and dark themes',
+            title: tSettings('darkMode', 'Dark Mode'),
+            subtitle: tSettings('darkModeSubtitle', 'Switch between light and dark themes'),
             rightComponent: (
               <Switch
                 value={isDark}
@@ -390,7 +390,7 @@ export default function SettingsScreen() {
 
           {renderSettingItem({
             icon: 'language-outline',
-            title: 'Language',
+            title: tSettings('language', 'Language'),
             subtitle: getLanguageName(locale),
             onPress: handleLanguageChange,
             showChevron: true,
@@ -398,8 +398,8 @@ export default function SettingsScreen() {
 
           {renderSettingItem({
             icon: 'notifications-outline',
-            title: 'Push Notifications',
-            subtitle: 'Receive notifications about events and updates',
+            title: tSettings('pushNotifications', 'Push Notifications'),
+            subtitle: tSettings('pushNotificationsSubtitle', 'Receive notifications about events and updates'),
             rightComponent: (
               <Switch
                 value={notifications}
@@ -412,8 +412,8 @@ export default function SettingsScreen() {
 
           {renderSettingItem({
             icon: 'eye-outline',
-            title: 'Animations',
-            subtitle: 'Enable smooth transitions and animations',
+            title: tSettings('animations', 'Animations'),
+            subtitle: tSettings('animationsSubtitle', 'Enable smooth transitions and animations'),
             rightComponent: (
               <Switch
                 value={animationsEnabled}
@@ -427,12 +427,12 @@ export default function SettingsScreen() {
 
         {/* Tutorial Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tutorials</Text>
-          
+          <Text style={styles.sectionTitle}>{tSettings('tutorials', 'Tutorials')}</Text>
+
           {renderSettingItem({
             icon: 'school-outline',
-            title: 'Main Screen Tutorial',
-            subtitle: mainTutorialCompleted ? 'Completed' : 'Not completed',
+            title: tSettings('mainTutorial', 'Main Screen Tutorial'),
+            subtitle: mainTutorialCompleted ? tSettings('mainTutorialCompleted', 'Completed') : tSettings('mainTutorialNotCompleted', 'Not completed'),
             onPress: async () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               await resetTutorial('main');
@@ -447,8 +447,8 @@ export default function SettingsScreen() {
 
           {renderSettingItem({
             icon: 'people-outline',
-            title: 'Networking Tutorial',
-            subtitle: networkingTutorialCompleted ? 'Completed' : 'Not completed',
+            title: tSettings('networkingTutorial', 'Networking Tutorial'),
+            subtitle: networkingTutorialCompleted ? tSettings('networkingTutorialCompleted', 'Completed') : tSettings('networkingTutorialNotCompleted', 'Not completed'),
             onPress: async () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               await resetTutorial('networking');
@@ -463,8 +463,8 @@ export default function SettingsScreen() {
 
           {renderSettingItem({
             icon: 'refresh-outline',
-            title: 'Reset All Tutorials',
-            subtitle: 'Restart all tutorials from the beginning',
+            title: tSettings('resetAllTutorials', 'Reset All Tutorials'),
+            subtitle: tSettings('resetAllTutorialsSubtitle', 'Restart all tutorials from the beginning'),
             onPress: () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               Alert.alert(
@@ -489,12 +489,12 @@ export default function SettingsScreen() {
 
         {/* Security Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Security</Text>
-          
+          <Text style={styles.sectionTitle}>{tSettings('security', 'Security')}</Text>
+
           {renderSettingItem({
             icon: 'finger-print-outline',
-            title: 'Biometric Authentication',
-            subtitle: 'Use fingerprint or face recognition',
+            title: tSettings('biometric', 'Biometric Authentication'),
+            subtitle: tSettings('biometricSubtitle', 'Use fingerprint or face recognition'),
             rightComponent: (
               <Switch
                 value={biometricAuth}
@@ -507,10 +507,9 @@ export default function SettingsScreen() {
 
           {renderSettingItem({
             icon: 'lock-closed-outline',
-            title: 'Change Password',
-            subtitle: 'Update your account password',
+            title: tSettings('changePassword', 'Change Password'),
+            subtitle: tSettings('changePasswordSubtitle', 'Update your account password'),
             onPress: () => {
-              // Navigate to change password
               Alert.alert('Coming Soon', 'Password change feature will be available soon.');
             },
             showChevron: true,
@@ -518,8 +517,8 @@ export default function SettingsScreen() {
 
           {Platform.OS !== 'web' && process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true' && renderSettingItem({
             icon: 'logo-google',
-            title: 'Reset Google Account',
-            subtitle: 'Force account picker on next Google sign-in',
+            title: tSettings('resetGoogleAccount', 'Reset Google Account'),
+            subtitle: tSettings('resetGoogleAccountSubtitle', 'Force account picker on next Google sign-in'),
             onPress: async () => {
               await clearGoogleAccount();
               showSuccess('Google Account Reset', 'The cached Google account has been cleared. You will be prompted to choose an account on your next sign-in.');
@@ -529,12 +528,12 @@ export default function SettingsScreen() {
 
         {/* Privacy Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy</Text>
-          
+          <Text style={styles.sectionTitle}>{tSettings('privacy_section', 'Privacy')}</Text>
+
           {renderSettingItem({
             icon: 'shield-outline',
-            title: 'Data Usage',
-            subtitle: 'Allow app to collect usage data for improvements',
+            title: tSettings('dataUsage', 'Data Usage'),
+            subtitle: tSettings('dataUsageSubtitle', 'Allow app to collect usage data for improvements'),
             rightComponent: (
               <Switch
                 value={dataUsage}
@@ -547,8 +546,8 @@ export default function SettingsScreen() {
 
           {renderSettingItem({
             icon: 'trash-outline',
-            title: 'Clear Cache',
-            subtitle: clearingCache ? 'Clearing...' : 'Free up storage space',
+            title: tSettings('clearCache', 'Clear Cache'),
+            subtitle: clearingCache ? tSettings('clearingCache', 'Clearing...') : tSettings('clearCacheSubtitle', 'Free up storage space'),
             onPress: handleClearCache,
             showChevron: false,
             disabled: clearingCache,
@@ -556,8 +555,8 @@ export default function SettingsScreen() {
 
           {renderSettingItem({
             icon: 'warning-outline',
-            title: 'Delete Account',
-            subtitle: 'Permanently delete your account and all data',
+            title: tSettings('deleteAccount', 'Delete Account'),
+            subtitle: deletingAccount ? tSettings('deleteConfirm.deleting', 'Deleting...') : tSettings('deleteAccountSubtitle', 'Permanently delete your account and all data'),
             onPress: handleDeleteAccount,
             showChevron: true,
             disabled: deletingAccount,
@@ -566,11 +565,11 @@ export default function SettingsScreen() {
 
         {/* About Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          
+          <Text style={styles.sectionTitle}>{tSettings('about', 'About')}</Text>
+
           {renderSettingItem({
             icon: 'information-circle-outline',
-            title: 'App Version',
+            title: tSettings('appVersion', 'App Version'),
             subtitle: `HashPass v${version}`,
             onPress: () => setShowVersionModal(true),
             showChevron: true,
@@ -578,8 +577,8 @@ export default function SettingsScreen() {
 
           {renderSettingItem({
             icon: 'help-circle-outline',
-            title: 'Help & Support',
-            subtitle: 'Get help and contact support',
+            title: tSettings('helpSupport', 'Help & Support'),
+            subtitle: tSettings('helpSupportSubtitle', 'Get help and contact support'),
             onPress: () => {
               Alert.alert('Help & Support', 'Contact us at support@hashpass.tech');
             },
@@ -628,33 +627,33 @@ export default function SettingsScreen() {
               <Ionicons name="warning" size={32} color="#ef4444" />
             </View>
 
-            <Text style={styles.disclaimerTitle}>Delete Account</Text>
-            <Text style={styles.disclaimerSubtitle}>This action is permanent and cannot be undone</Text>
+            <Text style={styles.disclaimerTitle}>{tSettings('deleteDisclaimer.title', 'Delete Account')}</Text>
+            <Text style={styles.disclaimerSubtitle}>{tSettings('deleteDisclaimer.subtitle', 'This action is permanent and cannot be undone')}</Text>
 
             {/* Bullet points */}
             <View style={styles.disclaimerList}>
               <View style={styles.disclaimerRow}>
                 <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.disclaimerRowIcon} />
-                <Text style={styles.disclaimerRowText}>All your data will be permanently deleted from our systems</Text>
+                <Text style={styles.disclaimerRowText}>{tSettings('deleteDisclaimer.bullet1', 'All your data will be permanently deleted from our systems')}</Text>
               </View>
               <View style={styles.disclaimerRow}>
                 <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.disclaimerRowIcon} />
-                <Text style={styles.disclaimerRowText}>We do not retain any of your personal information after deletion</Text>
+                <Text style={styles.disclaimerRowText}>{tSettings('deleteDisclaimer.bullet2', 'We do not retain any of your personal information after deletion')}</Text>
               </View>
               <View style={styles.disclaimerRow}>
                 <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.disclaimerRowIcon} />
-                <Text style={styles.disclaimerRowText}>Your passes, connections, and history will be lost forever</Text>
+                <Text style={styles.disclaimerRowText}>{tSettings('deleteDisclaimer.bullet3', 'Your passes, connections, and history will be lost forever')}</Text>
               </View>
             </View>
 
             {/* Legal links */}
             <View style={styles.disclaimerLinks}>
               <TouchableOpacity onPress={() => Linking.openURL('https://hashpass.tech/terms')}>
-                <Text style={styles.disclaimerLink}>Terms of Service</Text>
+                <Text style={styles.disclaimerLink}>{tSettings('deleteDisclaimer.terms', 'Terms of Service')}</Text>
               </TouchableOpacity>
               <Text style={styles.disclaimerLinkSep}>·</Text>
               <TouchableOpacity onPress={() => Linking.openURL('https://hashpass.tech/privacy')}>
-                <Text style={styles.disclaimerLink}>Privacy Policy</Text>
+                <Text style={styles.disclaimerLink}>{tSettings('deleteDisclaimer.privacy', 'Privacy Policy')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -663,13 +662,13 @@ export default function SettingsScreen() {
               style={styles.disclaimerDeleteBtn}
               onPress={handleDisclaimerConfirm}
             >
-              <Text style={styles.disclaimerDeleteBtnText}>I Understand, Continue</Text>
+              <Text style={styles.disclaimerDeleteBtnText}>{tSettings('deleteDisclaimer.confirm', 'I Understand, Continue')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.disclaimerCancelBtn}
               onPress={() => setShowDisclaimerModal(false)}
             >
-              <Text style={styles.disclaimerCancelBtnText}>Cancel</Text>
+              <Text style={styles.disclaimerCancelBtnText}>{tSettings('deleteDisclaimer.cancel', 'Cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -691,12 +690,12 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Confirm Account Deletion</Text>
-            
+            <Text style={styles.modalTitle}>{tSettings('deleteConfirm.title', 'Confirm Account Deletion')}</Text>
+
             {!otpSent ? (
               <>
                 <Text style={styles.modalMessage}>
-                  A verification code will be sent to your email address to confirm account deletion.
+                  {tSettings('deleteConfirm.sendCodeMessage', 'A verification code will be sent to your email address to confirm account deletion.')}
                 </Text>
                 {user?.email && (
                   <Text style={[styles.modalMessage, { marginTop: 8, fontWeight: '600' }]}>
@@ -713,7 +712,7 @@ export default function SettingsScreen() {
                     }}
                     disabled={sendingOtp}
                   >
-                    <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                    <Text style={styles.modalButtonCancelText}>{tSettings('deleteConfirm.cancel', 'Cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -726,7 +725,7 @@ export default function SettingsScreen() {
                     disabled={sendingOtp}
                   >
                     <Text style={styles.modalButtonDeleteText}>
-                      {sendingOtp ? 'Sending...' : 'Send Code'}
+                      {sendingOtp ? tSettings('deleteConfirm.sending', 'Sending...') : tSettings('deleteConfirm.sendCode', 'Send Code')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -734,7 +733,7 @@ export default function SettingsScreen() {
             ) : (
               <>
                 <Text style={styles.modalMessage}>
-                  Enter the 6-digit verification code sent to:
+                  {tSettings('deleteConfirm.enterCode', 'Enter the 6-digit verification code sent to:')}
                 </Text>
                 {user?.email && (
                   <Text style={[styles.modalMessage, { marginTop: 4, fontWeight: '600', color: colors.primary || '#4f46e5' }]}>
@@ -746,7 +745,7 @@ export default function SettingsScreen() {
                   style={styles.modalInput}
                   value={otpCode}
                   onChangeText={(text) => setOtpCode(text.replace(/[^0-9]/g, '').slice(0, 6))}
-                  placeholder="Enter 6-digit code"
+                  placeholder={tSettings('deleteConfirm.placeholder', 'Enter 6-digit code')}
                   placeholderTextColor={colors.text.secondary}
                   keyboardType="numeric"
                   maxLength={6}
@@ -760,7 +759,7 @@ export default function SettingsScreen() {
                   disabled={sendingOtp || verifyingOtp || deletingAccount}
                 >
                   <Text style={styles.resendButtonText}>
-                    {sendingOtp ? 'Sending...' : "Didn't receive code? Resend"}
+                    {sendingOtp ? tSettings('deleteConfirm.sending', 'Sending...') : tSettings('deleteConfirm.resend', "Didn't receive code? Resend")}
                   </Text>
                 </TouchableOpacity>
                 <View style={styles.modalButtons}>
@@ -773,7 +772,7 @@ export default function SettingsScreen() {
                     }}
                     disabled={verifyingOtp || deletingAccount}
                   >
-                    <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                    <Text style={styles.modalButtonCancelText}>{tSettings('deleteConfirm.cancel', 'Cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -786,7 +785,11 @@ export default function SettingsScreen() {
                     disabled={otpCode.length !== 6 || verifyingOtp || deletingAccount}
                   >
                     <Text style={styles.modalButtonDeleteText}>
-                      {verifyingOtp ? 'Verifying...' : deletingAccount ? 'Deleting...' : 'Verify & Delete'}
+                      {deletingAccount
+                        ? tSettings('deleteConfirm.deleting', 'Deleting...')
+                        : verifyingOtp
+                        ? tSettings('deleteConfirm.verifying', 'Verifying...')
+                        : tSettings('deleteConfirm.verify', 'Verify & Delete')}
                     </Text>
                   </TouchableOpacity>
                 </View>

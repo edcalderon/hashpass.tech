@@ -1,5 +1,4 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
-import { verifyUserToken } from '@hashpass/auth';
 
 /**
  * POST /api/auth/delete-account
@@ -9,6 +8,10 @@ import { verifyUserToken } from '@hashpass/auth';
  *
  * Auth: Bearer <access_token> in Authorization header.
  * Body: { userId: string } — must match the authenticated user's ID.
+ *
+ * Note: verifyUserToken() from @hashpass/auth routes to Directus for the
+ * api.hashpass.tech hostname, which rejects Supabase JWTs. We validate
+ * directly with supabase.auth.getUser() instead.
  */
 export async function POST(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
@@ -20,8 +23,9 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { user: callerUser, error: authError } = await verifyUserToken(token, request);
+    const { data: { user: callerUser }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !callerUser) {
+      console.error('[delete-account] token verification failed:', authError?.message);
       return json({ error: 'Unauthorized' }, 401);
     }
 
