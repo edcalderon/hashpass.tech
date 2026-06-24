@@ -1,3 +1,14 @@
+## [1.8.129](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.128...v1.8.129) (2026-06-24)
+
+
+### Bug Fixes
+
+* **sidebar:** reset menu item padding so cards fill drawer width ([32538b1](https://github.com/hashpass-tech/hashpass.tech/commit/32538b1b96bc12a4e6a1543c77d3945937888c10))
+
+
+
+
+
 ## [1.8.128](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.127...v1.8.128) (2026-06-24)
 
 

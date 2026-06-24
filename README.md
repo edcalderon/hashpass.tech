@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.128)
+## 📋 Latest Changes (v1.8.129)
 
 ### Bug Fixes
 
-* **ci:** reduce Node+Gradle heap to prevent OOM SIGTERM on 8 GiB EC2 ([98db512](https://github.com/hashpass-tech/hashpass.tech/commit/98db512edc53f0e671d3ff6daebdb2243bfcd1be))
+* **sidebar:** reset menu item padding so cards fill drawer width ([32538b1](https://github.com/hashpass-tech/hashpass.tech/commit/32538b1b96bc12a4e6a1543c77d3945937888c10))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
