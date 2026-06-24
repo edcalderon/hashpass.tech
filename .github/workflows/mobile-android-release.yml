@@ -691,15 +691,24 @@ jobs:
           # to dispatch any queued job to it (~5 s re-register + ~30 s dispatch + buffer).
           echo "Waiting 90 s for any queued builds to start on the runner..."
           sleep 90
-          # If the runner grabbed a queued job, it will be marked busy — leave it running.
-          BUSY=$(gh api "repos/${{ github.repository }}/actions/runners" \
-            --jq '[.runners[] | select(any(.labels[]; .name == "hashpass-mobile-release")) | select(.busy == true)] | length' \
-            2>/dev/null || echo 0)
-          if [ "${BUSY:-0}" -gt 0 ]; then
-            echo "Runner is busy with a queued job — skipping stop. Idle watchdog will shut down after that build."
+          # Check if another Mobile Android Release is currently in progress or queued.
+          # Uses the workflow runs API (accessible with actions:read) rather than the
+          # runners API (/actions/runners requires manage_runners:org which GITHUB_TOKEN
+          # cannot hold in org repos — previously returned 403, which concat'd with the
+          # '|| echo 0' fallback produced a non-integer BUSY value, the integer comparison
+          # then failed silently, and the instance was stopped mid-build).
+          IN_PROGRESS=$(gh api "repos/${{ github.repository }}/actions/runs?per_page=10&event=workflow_dispatch" \
+            --jq "[.workflow_runs[] | select(.name == \"Mobile Android Release\") | select(.status == \"in_progress\" or .status == \"queued\") | select(.id != ${{ github.run_id }})] | length" \
+            2>/dev/null) || IN_PROGRESS=""
+          if ! [[ "$IN_PROGRESS" =~ ^[0-9]+$ ]]; then
+            echo "Could not determine if another release is running (API error) — skipping stop to be safe."
             exit 0
           fi
-          # No active job — safe to stop now.
+          if [ "$IN_PROGRESS" -gt 0 ]; then
+            echo "Another release is in progress or queued — skipping stop. Idle watchdog will shut down after that build."
+            exit 0
+          fi
+          # No other release running — safe to stop now.
           STATE=$(aws ec2 describe-instances \
             --instance-ids "$INSTANCE_ID" \
             --query 'Reservations[0].Instances[0].State.Name' \
