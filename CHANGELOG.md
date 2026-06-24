@@ -1,3 +1,14 @@
+## [1.8.117](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.116...v1.8.117) (2026-06-24)
+
+
+### Bug Fixes
+
+* **auth:** fix native delete-account Unauthorized + full settings i18n ([ca573bc](https://github.com/hashpass-tech/hashpass.tech/commit/ca573bc22f022d9c2d5793a308844f6350a13da8))
+
+
+
+
+
 ## [1.8.116](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.115...v1.8.116) (2026-06-24)
 
 
