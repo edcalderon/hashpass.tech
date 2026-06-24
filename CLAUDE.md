@@ -33,10 +33,11 @@ The script:
    gh workflow run mobile-android-release.yml \
      --repo hashpass-tech/hashpass.tech \
      --ref v<NEW_VERSION> \
-     --field environment=development \
+     --field environment=production \
      --field backend=fastlane \
      --field runner=aws-ec2
    ```
+   Use `environment=development` only when you explicitly want the internal preview track.
 5. **Push to edcalderon fork** after version bump (for backup):
    ```bash
    git push upstream main <TAG_NAME>

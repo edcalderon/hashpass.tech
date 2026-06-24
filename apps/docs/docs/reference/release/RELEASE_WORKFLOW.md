@@ -51,12 +51,13 @@ This script:
 gh workflow run mobile-android-release.yml \
   --repo hashpass-tech/hashpass.tech \
   --ref v<NEW_VERSION> \
-  --field environment=development \
+  --field environment=production \
   --field backend=fastlane \
   --field runner=aws-ec2
 ```
 
-This builds a signed AAB on the EC2 runner and submits it to Play Store internal track via Fastlane.
+This builds a signed AAB on the EC2 runner and submits it to the Play Store production track via Fastlane.
+Use `environment=development` only when you explicitly want the preview/internal track.
 
 ### Step 4 — Back up to the personal fork
 
