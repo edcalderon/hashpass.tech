@@ -73,6 +73,7 @@ gh workflow run mobile-android-release.yml \
 ```
 
 The workflow track input maps directly to Play Console tracks. `production` remains the default; `alpha` is the closed-testing path requested for Play review prep.
+The workflow also matches Expo build credentials by the `ANDROID_UPLOAD_KEY_SHA1` repository variable before exporting the keystore to Fastlane.
 
 ### Step 4 — Back up to the personal fork
 

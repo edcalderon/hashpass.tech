@@ -124,6 +124,7 @@ jobs:
       MOBILE_RELEASE_BACKEND: ${{ inputs.backend }}
       MOBILE_RELEASE_ENV: ${{ inputs.environment }}
       MOBILE_RELEASE_TRACK: ${{ inputs.environment == 'development' && 'internal' || inputs.track }}
+      ANDROID_UPLOAD_KEY_SHA1: ${{ vars.ANDROID_UPLOAD_KEY_SHA1 }}
       GOOGLE_PLAY_JSON_KEY: ${{ github.workspace }}/.runner-secrets/google-play-service-account.json
       ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/.runner-secrets/hashpass-release.keystore
       GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
@@ -256,11 +257,11 @@ jobs:
           MOBILE_RELEASE_ENV: ${{ inputs.environment }}
         run: |
           set -euo pipefail
-          # Always fetch the upload keystore from Expo so CI signs with the
-          # same key the app project owns. This avoids drift between GitHub
-          # secrets and the Google Play upload certificate.
           node <<'NODE'
           const fs = require('fs');
+          const os = require('os');
+          const path = require('path');
+          const { spawnSync } = require('child_process');
 
           void (async () => {
             const appConfig = require('./apps/mobile-app/app.json').expo;
@@ -352,6 +353,52 @@ jobs:
               return payload.data;
             }
 
+            function normalizeFingerprint(value) {
+              return String(value || '').replace(/\s+/g, '').toUpperCase();
+            }
+
+            function extractFingerprint(stdout) {
+              const match = String(stdout || '').match(/SHA1:\s*([A-F0-9:]+)/i);
+              return match ? normalizeFingerprint(match[1]) : null;
+            }
+
+            function fingerprintKeystore(keystore, label) {
+              const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hashpass-expo-keystore-'));
+              const keystorePath = path.join(tempDir, 'keystore.jks');
+
+              try {
+                fs.writeFileSync(keystorePath, Buffer.from(keystore.keystore, 'base64'));
+                const keytoolArgs = [
+                  '-list',
+                  '-v',
+                  '-keystore',
+                  keystorePath,
+                  '-storepass',
+                  keystore.keystorePassword,
+                ];
+                const result = spawnSync('keytool', keytoolArgs, { encoding: 'utf8' });
+
+                if (result.error) {
+                  throw result.error;
+                }
+
+                if (result.status !== 0) {
+                  throw new Error(
+                    `keytool failed for Expo build credential ${label}: ${String(result.stderr || result.stdout || '').trim()}`,
+                  );
+                }
+
+                const fingerprint = extractFingerprint(result.stdout);
+                if (!fingerprint) {
+                  throw new Error(`Unable to read SHA-1 fingerprint for Expo build credential ${label}`);
+                }
+
+                return fingerprint;
+              } finally {
+                fs.rmSync(tempDir, { recursive: true, force: true });
+              }
+            }
+
             async function fetchCredentials(token, projectId) {
               const app = await runGraphql(token, appQuery, { appId: projectId });
               const projectFullName = app?.app?.byId?.fullName;
@@ -368,17 +415,40 @@ jobs:
               const appNode = credentials?.app?.byFullName;
               const appCredentials = appNode?.androidAppCredentials?.[0];
               const buildCredentialsList = appCredentials?.androidAppBuildCredentialsList ?? [];
-              const buildCredentials =
-                buildCredentialsList.find(entry => entry.isDefault && entry.androidKeystore) ??
-                buildCredentialsList.find(entry => entry.androidKeystore);
+              const buildCredentials = buildCredentialsList.filter(entry => entry?.androidKeystore);
 
-              if (!buildCredentials?.androidKeystore) {
+              if (!buildCredentials.length) {
                 throw new Error(
                   `No Android keystore was found in Expo for ${projectFullName} (${applicationIdentifier})`
                 );
               }
 
-              const keystore = buildCredentials.androidKeystore;
+              const expectedUploadKeySha1 = normalizeFingerprint(process.env.ANDROID_UPLOAD_KEY_SHA1);
+              let selectedBuildCredentials = buildCredentials.find(entry => entry.isDefault) ?? buildCredentials[0];
+
+              if (expectedUploadKeySha1) {
+                const fingerprintedCredentials = buildCredentials.map(entry => ({
+                  entry,
+                  fingerprint: fingerprintKeystore(entry.androidKeystore, entry.name),
+                }));
+                const fingerprintMatch = fingerprintedCredentials.find(
+                  candidate => candidate.fingerprint === expectedUploadKeySha1,
+                );
+
+                if (!fingerprintMatch) {
+                  const availableFingerprints = fingerprintedCredentials
+                    .map(candidate => `${candidate.entry.name}=${candidate.fingerprint}`)
+                    .join(', ');
+                  throw new Error(
+                    `No Expo Android build credential for ${projectFullName} matches ANDROID_UPLOAD_KEY_SHA1=${expectedUploadKeySha1}. ` +
+                      `Available fingerprints: ${availableFingerprints || 'none'}`,
+                  );
+                }
+
+                selectedBuildCredentials = fingerprintMatch.entry;
+              }
+
+              const keystore = selectedBuildCredentials.androidKeystore;
               const envFile = process.env.GITHUB_ENV;
               if (!envFile) {
                 throw new Error('GITHUB_ENV is not set');
@@ -401,7 +471,7 @@ jobs:
               );
 
               console.log(
-                `Exported Android keystore for ${projectFullName} from Expo build credentials: ${buildCredentials.name}`
+                `Exported Android keystore for ${projectFullName} from Expo build credentials: ${selectedBuildCredentials.name}`
               );
             }
 
