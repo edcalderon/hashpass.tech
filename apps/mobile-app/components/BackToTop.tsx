@@ -1,12 +1,12 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet, Text } from 'react-native';
 import Animated, { useAnimatedStyle, SharedValue, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useLanguage } from '../providers/LanguageProvider';
 import { getAvailableLocales } from '../i18n/i18n';
 import * as Haptics from 'expo-haptics';
 import { useRouter, usePathname } from 'expo-router';
+import { Ionicons } from '../lib/vector-icons';
 
 interface BackToTopProps {
   scrollY: SharedValue<number>;

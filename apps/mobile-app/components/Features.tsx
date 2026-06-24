@@ -1,13 +1,13 @@
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, Platform, Pressable, Dimensions, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/i18n/i18n';
 import { useRouter } from 'expo-router';
 import { GlowingEffect } from './GlowingEffect';
 import FlipCard from './FlipCard';
 import FeatureFlipCard from './FeatureFlipCard';
+import { Ionicons } from '../lib/vector-icons';
 
 const CARD_SIZE = Math.min(280, Dimensions.get('window').width - 64);
 

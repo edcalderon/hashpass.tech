@@ -2,17 +2,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated, Easing, Text, TouchableWithoutFeedback, Dimensions, Platform } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useLanguage } from '../providers/LanguageProvider';
 import { getAvailableLocales, useTranslation } from '../i18n/i18n';
 import { useRouter, usePathname } from 'expo-router';
 import Reanimated, { SharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { Ionicons } from '../lib/vector-icons';
 
 interface ThemeAndLanguageSwitcherProps {
   scrollY?: SharedValue<number>;
   hideAfterScrollY?: number;
 }
+
+type LocaleOption = {
+  code: string;
+  name: string;
+};
 
 const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLanguageSwitcherProps) => {
   const { toggleTheme, colors, isDark } = useTheme();
@@ -49,7 +54,7 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
     };
   }, []);
 
-  const currentLanguage = availableLocales.find(lang => lang.code === locale) || availableLocales[0];
+  const currentLanguage = availableLocales.find((lang: LocaleOption) => lang.code === locale) || availableLocales[0];
   const currentLanguageLabel = t(`languages.${currentLanguage.name}`);
 
   const handleThemeToggle = () => {
@@ -206,7 +211,7 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
               }
             ]}
           >
-            {availableLocales.map((lang) => (
+            {availableLocales.map((lang: LocaleOption) => (
               <TouchableOpacity
                 key={lang.code}
                 style={[
