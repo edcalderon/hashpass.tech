@@ -1,3 +1,14 @@
+## [1.8.124](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.123...v1.8.124) (2026-06-24)
+
+
+### Bug Fixes
+
+* **sidebar:** responsive quick actions, accessible version display, startup crash fix ([1a33bf2](https://github.com/hashpass-tech/hashpass.tech/commit/1a33bf295e5309fc4067377e6932145097a38f9d))
+
+
+
+
+
 ## [1.8.123](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.122...v1.8.123) (2026-06-24)
 
 
