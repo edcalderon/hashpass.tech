@@ -40,6 +40,9 @@ The script:
    ```
    Use `environment=development` only when you explicitly want the internal preview track. For the first Play Console closed-testing release, keep `environment=production`, set `track=alpha`, and use `release_status=draft` while the Play Console app is still in draft.
    The release workflow uses the `ANDROID_UPLOAD_KEY_SHA1` repository variable to select the Expo build credential that matches the Play upload certificate.
+   Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
+   The Fastlane lane also uploads any deobfuscation files it finds in the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` is present. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
+   For the full internal, closed, open, and production track ladder plus the publishing checklist, see `apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md`.
 5. **Push to edcalderon fork** after version bump (for backup):
    ```bash
    git push upstream main <TAG_NAME>

@@ -116,6 +116,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withAndroidReleaseMinification",
       [
         "@react-native-google-signin/google-signin",
         {

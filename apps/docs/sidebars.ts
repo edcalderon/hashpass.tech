@@ -84,7 +84,7 @@ const sidebars = {
         {
           type: 'category',
           label: 'Release',
-          items: ['reference/release/versioning-guide'],
+          items: ['reference/release/PLAY_CONSOLE_RELEASE_FLOW', 'reference/release/versioning-guide'],
         },
       ],
     },

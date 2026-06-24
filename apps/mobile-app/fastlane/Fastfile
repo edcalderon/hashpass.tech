@@ -75,6 +75,19 @@ def build_android_bundle
   lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]
 end
 
+def find_deobfuscation_files
+  patterns = [
+    File.join('android', '**', 'outputs', 'mapping', '**', 'mapping.txt'),
+    File.join('android', '**', 'outputs', 'native-debug-symbols', '**', 'native-debug-symbols.zip'),
+  ]
+
+  patterns
+    .flat_map { |pattern| Dir.glob(pattern) }
+    .select { |file| File.file?(file) }
+    .uniq
+    .sort
+end
+
 platform :android do
   desc 'Build the Android App Bundle without uploading it.'
   lane :build do |_options|
@@ -86,8 +99,18 @@ platform :android do
     track = normalize_track(options[:track] || ENV['FASTLANE_TRACK'])
     release_status = (options[:release_status] || ENV['FASTLANE_RELEASE_STATUS'] || 'completed').to_s
     aab_path = build_android_bundle
+    deobfuscation_files = find_deobfuscation_files
 
-    upload_to_play_store(
+    if deobfuscation_files.any?
+      UI.message("Uploading deobfuscation files: #{deobfuscation_files.join(', ')}")
+    else
+      UI.important(
+        'No mapping.txt or native-debug-symbols.zip file was found under Android build outputs. ' +
+        'Play Console will keep the deobfuscation warning for this release.',
+      )
+    end
+
+    upload_options = {
       aab: aab_path,
       track: track,
       release_status: release_status,
@@ -96,7 +119,11 @@ platform :android do
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
-      skip_upload_changelogs: true
-    )
+      skip_upload_changelogs: true,
+    }
+
+    upload_options[:mapping_paths] = deobfuscation_files if deobfuscation_files.any?
+
+    upload_to_play_store(**upload_options)
   end
 end

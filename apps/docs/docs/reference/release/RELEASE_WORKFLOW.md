@@ -21,6 +21,8 @@ aws amplify start-job --app-id <ID> --region us-east-2 --branch-name main --job-
 
 ## Android Release
 
+For the Play Console track ladder and the production publishing checklist, see [PLAY_CONSOLE_RELEASE_FLOW.md](./PLAY_CONSOLE_RELEASE_FLOW.md).
+
 Follow this sequence exactly. Order matters.
 
 ### Step 1 — Commit your changes
@@ -59,6 +61,7 @@ gh workflow run mobile-android-release.yml \
 
 This builds a signed AAB on the EC2 runner and submits it to the Play Store production track via Fastlane.
 Use `environment=development` only when you explicitly want the preview/internal track.
+Expo prebuild now enables Android release minification, so Gradle emits a `mapping.txt` file for release builds. The Fastlane lane uploads any Play deobfuscation files it finds in the Android build outputs, such as `mapping.txt` or `native-debug-symbols.zip`, so crash traces stay readable in Play Console. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
 
 For the first closed-testing release, keep `environment=production`, switch the track to alpha, and set the release status to draft while the Play Console app is still a draft:
 
