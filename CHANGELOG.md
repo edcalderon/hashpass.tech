@@ -1,3 +1,14 @@
+## [1.8.132](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.131...v1.8.132) (2026-06-24)
+
+
+### Bug Fixes
+
+* **ci:** fix Metro OOM — redistribute heap from Gradle to Node on 8 GiB EC2 ([3a2fe03](https://github.com/hashpass-tech/hashpass.tech/commit/3a2fe035b9dbd8709875ee7c376f68345050d2a4))
+
+
+
+
+
 ## [1.8.131](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.130...v1.8.131) (2026-06-24)
 
 
