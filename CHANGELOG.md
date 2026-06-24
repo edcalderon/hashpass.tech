@@ -1,3 +1,14 @@
+## [1.8.126](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.125...v1.8.126) (2026-06-24)
+
+
+### Bug Fixes
+
+* **header:** prevent content scroll-behind on native; add semi-transparent safe area ([054b420](https://github.com/hashpass-tech/hashpass.tech/commit/054b420c41af5e6cef1f48357fd3d24ed236bc19))
+
+
+
+
+
 ## [1.8.125](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.124...v1.8.125) (2026-06-24)
 
 
