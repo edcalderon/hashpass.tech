@@ -1,3 +1,19 @@
+## [1.8.133](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.132...v1.8.133) (2026-06-24)
+
+
+### Bug Fixes
+
+* **web:** mirror route html into client export ([964cb00](https://github.com/hashpass-tech/hashpass.tech/commit/964cb0017cf726b6774a09b062d31bd86c4ec93c))
+
+
+### Features
+
+* **android:** support alpha closed testing releases ([00593f3](https://github.com/hashpass-tech/hashpass.tech/commit/00593f3ce8128530b9fcf8a7860d31852194bfe4))
+
+
+
+
+
 ## [1.8.132](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.131...v1.8.132) (2026-06-24)
 
 

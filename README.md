@@ -17,13 +17,18 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.132)
+## 📋 Latest Changes (v1.8.133)
 
 ### Bug Fixes
 
-* **ci:** fix Metro OOM — redistribute heap from Gradle to Node on 8 GiB EC2 ([3a2fe03](https://github.com/hashpass-tech/hashpass.tech/commit/3a2fe035b9dbd8709875ee7c376f68345050d2a4))
+* **web:** mirror route html into client export ([964cb00](https://github.com/hashpass-tech/hashpass.tech/commit/964cb0017cf726b6774a09b062d31bd86c4ec93c))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+
+### Features
+
+* **android:** support alpha closed testing releases ([00593f3](https://github.com/hashpass-tech/hashpass.tech/commit/00593f3ce8128530b9fcf8a7860d31852194bfe4))
+
+For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
 ## Current Status
 
