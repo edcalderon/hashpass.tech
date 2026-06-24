@@ -1280,7 +1280,7 @@ const getStyles = (
   menuItemsContent: {
     paddingTop: 16,
     paddingBottom: 12,
-    paddingStart: (isMobile ? 24 : 20) + (insets.left || 0),
+    paddingStart: (isMobile ? 32 : 28) + (insets.left || 0),
     paddingEnd: (isMobile ? 20 : 18) + (insets.right || 0),
     flexGrow: 1,
   },
@@ -1294,7 +1294,8 @@ const getStyles = (
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: isMobile ? 13 : 12,
-    paddingHorizontal: isMobile ? 16 : 14,
+    paddingRight: isMobile ? 16 : 14,
+    paddingLeft: isMobile ? 18 : 16,
     marginVertical: isMobile ? 6 : 5,
     borderRadius: isMobile ? 18 : 16,
     borderLeftWidth: 4,
@@ -1303,7 +1304,7 @@ const getStyles = (
     borderColor: colors.divider,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : colors.background.default,
     position: 'relative',
-    overflow: 'hidden',
+    overflow: 'visible',
     boxShadow: isDark
       ? '0 4px 12px rgba(0, 0, 0, 0.12)'
       : '0 4px 12px rgba(15, 23, 42, 0.06)',
