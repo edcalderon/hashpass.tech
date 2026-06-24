@@ -20,6 +20,7 @@
     "android:publish:dev": "pnpm --filter hashpass-mobile-app android:publish:dev",
     "android:release": "pnpm --filter hashpass-mobile-app android:release",
     "android:release:dev": "pnpm --filter hashpass-mobile-app android:release:dev",
+    "android:release:alpha": "pnpm --filter hashpass-mobile-app android:release:alpha",
     "android:release:eas": "pnpm --filter hashpass-mobile-app android:release:eas",
     "android:release:eas:dev": "pnpm --filter hashpass-mobile-app android:release:eas:dev",
     "android:release:fastlane": "pnpm --filter hashpass-mobile-app android:release:fastlane",

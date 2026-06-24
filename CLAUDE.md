@@ -34,10 +34,11 @@ The script:
      --repo hashpass-tech/hashpass.tech \
      --ref v<NEW_VERSION> \
      --field environment=production \
+     --field track=production \
      --field backend=fastlane \
      --field runner=aws-ec2
    ```
-   Use `environment=development` only when you explicitly want the internal preview track.
+   Use `environment=development` only when you explicitly want the internal preview track. For the first Play Console closed-testing release, keep `environment=production` and set `track=alpha`.
 5. **Push to edcalderon fork** after version bump (for backup):
    ```bash
    git push upstream main <TAG_NAME>
@@ -87,7 +88,7 @@ If the app won't open on Android:
    }
    "
    ```
-3. **Never assume a fix worked** without testing on Play Store internal track first
+3. **Never assume a fix worked** without testing on Play Store internal or the relevant closed-testing track first.
 
 ### JavaScript Errors on Startup
 If app opens but crashes with a JS error:

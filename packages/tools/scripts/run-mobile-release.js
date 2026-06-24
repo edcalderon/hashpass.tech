@@ -64,7 +64,7 @@ function parseReleaseArgs(argv = []) {
       process.env.EAS_RELEASE_BACKEND ||
       process.env.MOBILE_BUILD_BACKEND ||
       DEFAULT_RELEASE_BACKEND,
-    track: null,
+    track: process.env.MOBILE_RELEASE_TRACK || null,
     releaseStatus: null,
   };
 
@@ -197,10 +197,11 @@ function main(argv = process.argv.slice(2)) {
   if (argv.includes('--help') || argv.includes('-h')) {
     console.log(
       [
-        'Usage: node packages/tools/scripts/run-mobile-release.js [--env production|development] [--profile eas-profile] [--backend eas|fastlane] [--no-submit]',
+        'Usage: node packages/tools/scripts/run-mobile-release.js [--env production|development] [--profile eas-profile] [--backend eas|fastlane] [--track play-track] [--no-submit]',
         '',
         'Defaults to a production release using fastlane.',
         'Use --env development to target the development Expo account and internal preview profile.',
+        'Use --track alpha for the Play Console closed-testing track.',
         'Use --backend eas only if you explicitly want the managed Expo build path.',
         'Use --backend fastlane to build locally with Expo prebuild + fastlane supply.',
       ].join('\n'),

@@ -1,6 +1,6 @@
 default_platform(:android)
 
-FASTLANE_TRACKS = %w[internal production].freeze
+FASTLANE_TRACKS = %w[internal alpha beta production].freeze
 GOOGLE_PLAY_JSON_KEY = ENV.fetch(
   'GOOGLE_PLAY_JSON_KEY',
   File.expand_path('../../../config/hashpass-eas.json', __dir__),
