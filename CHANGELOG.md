@@ -1,3 +1,15 @@
+## [1.8.127](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.126...v1.8.127) (2026-06-24)
+
+
+### Bug Fixes
+
+* **ci:** increase Gradle heap to 4096 MiB to prevent OOM on bundle task ([e3de2ae](https://github.com/hashpass-tech/hashpass.tech/commit/e3de2ae12fe772698947f3ef748078251a666d87))
+* **sidebar:** increase left padding proportionally to prevent border cutoff ([36bfa4f](https://github.com/hashpass-tech/hashpass.tech/commit/36bfa4ffe194f114476916a35a8fb4fe16694b06))
+
+
+
+
+
 ## [1.8.126](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.125...v1.8.126) (2026-06-24)
 
 
