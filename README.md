@@ -17,13 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.120)
+## 📋 Latest Changes (v1.8.121)
 
 ### Bug Fixes
 
-* **vector-icons:** remove duplicate globe-outline key ([bff44d9](https://github.com/hashpass-tech/hashpass.tech/commit/bff44d9a6f0dc039efcaefc8e1a838bf0ff744ae))
-* **vector-icons:** resolve pre-existing TS errors caught by pre-push hook ([4ad2523](https://github.com/hashpass-tech/hashpass.tech/commit/4ad2523226e318286e4f079e69bcb93ad0143c89))
-* **web:** replace @expo/vector-icons with SVG fallbacks; fix delete-account 401 ([793a068](https://github.com/hashpass-tech/hashpass.tech/commit/793a068cbe1d5cce890b7042684bf3e92a7c1878))
+* **mobile:** route startup icons through local shim ([0e6e392](https://github.com/hashpass-tech/hashpass.tech/commit/0e6e392171d9573e581024d3f694cde1bc215e98))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

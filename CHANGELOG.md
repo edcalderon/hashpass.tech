@@ -1,3 +1,14 @@
+## [1.8.121](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.120...v1.8.121) (2026-06-24)
+
+
+### Bug Fixes
+
+* **mobile:** route startup icons through local shim ([0e6e392](https://github.com/hashpass-tech/hashpass.tech/commit/0e6e392171d9573e581024d3f694cde1bc215e98))
+
+
+
+
+
 ## [1.8.120](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.119...v1.8.120) (2026-06-24)
 
 
