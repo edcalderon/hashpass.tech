@@ -42,6 +42,8 @@ The script:
    git push upstream main <TAG_NAME>
    ```
 
+**Android CI memory tuning:** See `apps/docs/docs/infra/ANDROID_CI_MEMORY.md` before touching `NODE_OPTIONS` or `GRADLE_MB` in the workflow — wrong values cause silent SIGTERM or Metro OOM.
+
 ### Native Android App Environment — dev builds hit api-dev (intentional)
 
 **This is by design, not a bug.**
