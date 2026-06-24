@@ -806,8 +806,10 @@ export default function DashboardLayout() {
       <RNAnimated.View
         style={[
           styles.header,
+          Platform.OS !== 'web' && {
+            backgroundColor: adjustedHeaderBackground as any,
+          },
           {
-            backgroundColor: 'transparent',
             borderBottomWidth: headerBorderWidth,
             borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
             boxShadow: isDark
@@ -1023,7 +1025,7 @@ export default function DashboardLayout() {
     return (
       <View style={[styles.headerContainer, {
         height: statusBarHeight,
-        backgroundColor: 'transparent',
+        backgroundColor: isDark ? 'rgba(18, 18, 18, 0.95)' : 'rgba(255, 255, 255, 0.95)',
         position: 'absolute',
         top: 0,
         left: 0,
@@ -1032,7 +1034,7 @@ export default function DashboardLayout() {
       }]}>
         <StatusBar
           barStyle={colors.background.default === '#FFFFFF' ? 'dark-content' : 'light-content'}
-          backgroundColor="transparent"
+          backgroundColor={colors.background.default}
           translucent={true}
         />
         <Header />
