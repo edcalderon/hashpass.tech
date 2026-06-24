@@ -50,6 +50,7 @@ Mobile Android releases now reuse the same backend switch:
 - `pnpm run android:release:alpha` submits the production build path to the Play Console alpha closed-testing track
 - `pnpm run android:release:fastlane` and `pnpm run android:release:fastlane:dev` force the self-hosted fastlane path
 - The self-hosted workflow lives in `.github/workflows/mobile-android-release.yml`, expects the `hashpass-mobile-release` AWS runner label, and now accepts a Play track input for production or closed-testing releases
+- The workflow also prefers Expo build credentials whose SHA-1 matches the `ANDROID_UPLOAD_KEY_SHA1` repository variable before falling back to the default Expo credential
 - Fastlane requires the Play service account JSON plus `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; the GitHub Actions release workflow resolves those signing values from Expo before invoking Fastlane
 
 ### Scripts using tenant config
