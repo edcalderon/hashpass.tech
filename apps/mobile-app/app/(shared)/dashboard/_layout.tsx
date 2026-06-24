@@ -1282,7 +1282,7 @@ const getStyles = (
   menuItemsContent: {
     paddingTop: 16,
     paddingBottom: 12,
-    paddingStart: (isMobile ? 32 : 28) + (insets.left || 0),
+    paddingStart: (isMobile ? 44 : 40) + (insets.left || 0),
     paddingEnd: (isMobile ? 20 : 18) + (insets.right || 0),
     flexGrow: 1,
   },
@@ -1297,7 +1297,7 @@ const getStyles = (
     alignItems: 'center',
     paddingVertical: isMobile ? 13 : 12,
     paddingRight: isMobile ? 16 : 14,
-    paddingLeft: isMobile ? 18 : 16,
+    paddingLeft: isMobile ? 22 : 20,
     marginVertical: isMobile ? 6 : 5,
     borderRadius: isMobile ? 18 : 16,
     borderLeftWidth: 4,
