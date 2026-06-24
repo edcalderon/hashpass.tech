@@ -1,4 +1,5 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
+import { verifyUserToken } from '@hashpass/auth';
 
 /**
  * POST /api/auth/delete-account
@@ -9,9 +10,11 @@ import { getSupabaseServerForRequest } from '@/lib/supabase-server';
  * Auth: Bearer <access_token> in Authorization header.
  * Body: { userId: string } — must match the authenticated user's ID.
  *
- * Note: verifyUserToken() from @hashpass/auth routes to Directus for the
- * api.hashpass.tech hostname, which rejects Supabase JWTs. We validate
- * directly with supabase.auth.getUser() instead.
+ * Token verification strategy:
+ *   1. Try supabase.auth.getUser(token) — works for native Android (Supabase JWT)
+ *   2. Fall back to verifyUserToken(token, request) — works for web (Directus token)
+ *      Note: verifyUserToken routes by hostname, so api.hashpass.tech → Directus.
+ *      That's correct for web but wrong for native, hence trying Supabase first.
  */
 export async function POST(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
@@ -23,10 +26,20 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user: callerUser }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !callerUser) {
-      console.error('[delete-account] token verification failed:', authError?.message);
-      return json({ error: 'Unauthorized' }, 401);
+
+    // Try Supabase JWT first (covers native Android + web Supabase sessions)
+    let callerUser: { id: string; email?: string } | null = null;
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser(token);
+    if (supabaseUser) {
+      callerUser = { id: supabaseUser.id, email: supabaseUser.email };
+    } else {
+      // Fall back to provider-routed verification (covers web Directus sessions)
+      const { user: providerUser, error: providerErr } = await verifyUserToken(token, request);
+      if (providerErr || !providerUser) {
+        console.error('[delete-account] token verification failed (both paths):', providerErr);
+        return json({ error: 'Unauthorized' }, 401);
+      }
+      callerUser = { id: providerUser.id, email: providerUser.email };
     }
 
     const body = await request.json();
