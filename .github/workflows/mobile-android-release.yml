@@ -11,6 +11,16 @@ on:
         options:
           - production
           - development
+      track:
+        description: Google Play track
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - alpha
+          - beta
+          - internal
       backend:
         description: Release backend
         required: true
@@ -113,6 +123,7 @@ jobs:
       CI: '1'
       MOBILE_RELEASE_BACKEND: ${{ inputs.backend }}
       MOBILE_RELEASE_ENV: ${{ inputs.environment }}
+      MOBILE_RELEASE_TRACK: ${{ inputs.environment == 'development' && 'internal' || inputs.track }}
       GOOGLE_PLAY_JSON_KEY: ${{ github.workspace }}/.runner-secrets/google-play-service-account.json
       ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/.runner-secrets/hashpass-release.keystore
       GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}

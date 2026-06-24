@@ -45,6 +45,20 @@ const {
   }) => unknown;
 };
 
+const originalMobileReleaseTrack = process.env.MOBILE_RELEASE_TRACK;
+
+beforeEach(() => {
+  delete process.env.MOBILE_RELEASE_TRACK;
+});
+
+afterAll(() => {
+  if (originalMobileReleaseTrack === undefined) {
+    delete process.env.MOBILE_RELEASE_TRACK;
+  } else {
+    process.env.MOBILE_RELEASE_TRACK = originalMobileReleaseTrack;
+  }
+});
+
 describe('run-mobile-release', () => {
   it('normalizes release environments', () => {
     expect(normalizeReleaseEnvironment()).toBe('production');
@@ -69,6 +83,9 @@ describe('run-mobile-release', () => {
       backend: 'fastlane',
       track: null,
       releaseStatus: null,
+    });
+    expect(parseReleaseArgs(['--track', 'alpha'])).toMatchObject({
+      track: 'alpha',
     });
     expect(parseReleaseArgs(['--profile', 'development'])).toEqual({
       env: 'production',
@@ -137,5 +154,22 @@ describe('run-mobile-release', () => {
         submit: true,
       }),
     );
+  });
+
+  it('uses the mobile release track env fallback when present', () => {
+    const originalTrack = process.env.MOBILE_RELEASE_TRACK;
+    process.env.MOBILE_RELEASE_TRACK = 'alpha';
+
+    try {
+      expect(parseReleaseArgs([])).toMatchObject({
+        track: 'alpha',
+      });
+    } finally {
+      if (originalTrack === undefined) {
+        delete process.env.MOBILE_RELEASE_TRACK;
+      } else {
+        process.env.MOBILE_RELEASE_TRACK = originalTrack;
+      }
+    }
   });
 });

@@ -22,7 +22,7 @@ const { resolveAndroidVersionCode } = require(path.join(
   'android-version-code.js',
 ));
 
-const FASTLANE_TRACKS = new Set(['internal', 'production']);
+const FASTLANE_TRACKS = new Set(['internal', 'alpha', 'beta', 'production']);
 const DEFAULT_FASTLANE_RELEASE_STATUS = 'completed';
 const ANDROID_DIR = path.join(MOBILE_APP_DIR, 'android');
 
