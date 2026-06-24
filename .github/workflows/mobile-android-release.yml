@@ -145,9 +145,10 @@ jobs:
       EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN: ${{ vars.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN }}
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
       # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons so this
-      # must live here. 3584m works safely on t3a.large (8 GiB) and t3a.xlarge (16 GiB) alike —
-      # Metro rarely exceeds 3 GiB; Gradle heap is tuned separately per-machine in Configure Gradle.
-      NODE_OPTIONS: '--max-old-space-size=3584'
+      # must live here. 2048m is sufficient for Metro bundling; Gradle heap is tuned separately
+      # per-machine in Tune build memory limits. On 8 GiB instances (3584+4096 = 8192 MiB) the
+      # two processes ran concurrently during bundle and left no room for the OS, causing SIGTERM.
+      NODE_OPTIONS: '--max-old-space-size=2048'
       # Metro transform cache — persisted on EC2 EBS so file-level transforms are skipped between runs.
       # metro.config.js reads this and configures FileStore accordingly.
       METRO_CACHE_DIR: '/home/runner/.metro-cache'
@@ -479,12 +480,12 @@ jobs:
           # Detect available RAM and set Gradle heap + parallelism accordingly.
           # This lets the same workflow run safely on t3a.large (8 GiB) and t3a.xlarge (16 GiB).
           TOTAL_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
-          # On ≤9 GiB machines (t3a.large = 8 GiB), Node already reserves 3584 MiB via
-          # NODE_OPTIONS. Bundle task is memory-intensive, so give Gradle 4096 MiB
-          # (Node 3584 + Gradle 4096 = 7.68 GiB, leaving ~256 MiB for OS).
+          # On ≤9 GiB machines (t3a.large = 8 GiB): Node=2048 MiB + Gradle=3072 MiB +
+          # Metaspace=512 MiB = 5632 MiB, leaving ~2.5 GiB for OS + runner.
+          # (Previous 4096 MiB Gradle + 3584 MiB Node = 8192 MiB left no room for OS → SIGTERM.)
           # On larger instances give Gradle 50% of RAM, capped at 8 GiB.
           if [ "$TOTAL_MB" -le 9216 ]; then
-            GRADLE_MB=4096
+            GRADLE_MB=3072
             GRADLE_WORKERS=2
           else
             GRADLE_MB=$(( TOTAL_MB / 2 ))
