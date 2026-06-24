@@ -1,3 +1,14 @@
+## [1.8.116](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.115...v1.8.116) (2026-06-24)
+
+
+### Bug Fixes
+
+* **auth:** fix native delete-account auth + add disclaimer dialog ([3b2e307](https://github.com/hashpass-tech/hashpass.tech/commit/3b2e3074f3ecb2d4694cf7a56c78b4cc4fca8969))
+
+
+
+
+
 ## [1.8.115](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.114...v1.8.115) (2026-06-24)
 
 
