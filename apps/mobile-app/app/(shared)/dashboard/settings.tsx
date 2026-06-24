@@ -4,8 +4,8 @@ import { useTheme } from '../../../hooks/useTheme';
 import { useLanguage } from '../../../providers/LanguageProvider';
 import { useAnimations } from '../../../providers/AnimationProvider';
 import { useToastHelpers } from '@contexts/ToastContext';
-// @ts-ignore — Expo SDK 53 type definitions lag behind; named export works at runtime
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '../../../lib/vector-icons';
+import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
 import { useTranslation } from '../../../i18n/i18n';
 import { version } from '../../../package.json';
 import { useScroll } from '@contexts/ScrollContext';
@@ -626,10 +626,14 @@ export default function SettingsScreen() {
             <View style={styles.disclaimerAccentBar} />
 
             <View style={styles.disclaimerBody}>
-              {/* Icon */}
+              {/* Icon — inline SVG so web never falls back to a font glyph */}
               <View style={styles.disclaimerIconWrap}>
                 <View style={styles.disclaimerIconInner}>
-                  <Ionicons name="alert-circle-outline" size={34} color="#af0d01" />
+                  <Svg width={34} height={34} viewBox="0 0 24 24" fill="none">
+                    <SvgCircle cx="12" cy="12" r="10" stroke="#af0d01" strokeWidth="1.5" />
+                    <SvgPath d="M12 7v5.5" stroke="#af0d01" strokeWidth="1.5" strokeLinecap="round" />
+                    <SvgCircle cx="12" cy="16.5" r="0.9" fill="#af0d01" />
+                  </Svg>
                 </View>
               </View>
 
@@ -670,7 +674,12 @@ export default function SettingsScreen() {
                 onPress={handleDisclaimerConfirm}
                 activeOpacity={0.85}
               >
-                <Ionicons name="trash-outline" size={17} color="#fff" style={{ marginRight: 7 }} />
+                <View style={{ marginRight: 7 }}>
+                  <Svg width={17} height={17} viewBox="0 0 24 24" fill="none">
+                    <SvgPath d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <SvgPath d="M10 11v6M14 11v6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+                  </Svg>
+                </View>
                 <Text style={styles.disclaimerDeleteBtnText}>{tSettings('deleteDisclaimer.confirm', 'I Understand, Continue')}</Text>
               </TouchableOpacity>
 
@@ -692,7 +701,6 @@ export default function SettingsScreen() {
         transparent={true}
         animationType="fade"
         onRequestClose={() => {
-          console.log('Modal onRequestClose called');
           if (!sendingOtp && !verifyingOtp && !deletingAccount) {
             setShowDeleteConfirm(false);
             setOtpCode('');
@@ -701,102 +709,87 @@ export default function SettingsScreen() {
         }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{tSettings('deleteConfirm.title', 'Confirm Account Deletion')}</Text>
+          <View style={styles.disclaimerCard}>
+            {/* Top accent bar */}
+            <View style={styles.disclaimerAccentBar} />
 
-            {!otpSent ? (
-              <>
-                <Text style={styles.modalMessage}>
-                  {tSettings('deleteConfirm.sendCodeMessage', 'A verification code will be sent to your email address to confirm account deletion.')}
-                </Text>
-                {user?.email && (
-                  <Text style={[styles.modalMessage, { marginTop: 8, fontWeight: '600' }]}>
-                    {user.email}
+            <View style={styles.disclaimerBody}>
+              {/* Icon */}
+              <View style={styles.disclaimerIconWrap}>
+                <View style={styles.disclaimerIconInner}>
+                  <Svg width={34} height={34} viewBox="0 0 24 24" fill="none">
+                    <SvgPath d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 01-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 011-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 011.52 0C14.51 3.81 17 5 19 5a1 1 0 011 1z" stroke="#af0d01" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <SvgPath d="M9 12l2 2 4-4" stroke="#af0d01" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </Svg>
+                </View>
+              </View>
+
+              <Text style={styles.disclaimerTitle}>{tSettings('deleteConfirm.title', 'Confirm Account Deletion')}</Text>
+
+              {!otpSent ? (
+                <>
+                  <Text style={[styles.disclaimerRowText, { textAlign: 'center', marginBottom: 12 }]}>
+                    {tSettings('deleteConfirm.sendCodeMessage', 'A verification code will be sent to your email address to confirm account deletion.')}
                   </Text>
-                )}
-                <View style={styles.modalButtons}>
+                  {user?.email && (
+                    <Text style={styles.confirmEmail}>{user.email}</Text>
+                  )}
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonCancel, { marginRight: 6 }]}
-                    onPress={() => {
-                      setShowDeleteConfirm(false);
-                      setOtpCode('');
-                      setOtpSent(false);
-                    }}
-                    disabled={sendingOtp}
-                  >
-                    <Text style={styles.modalButtonCancelText}>{tSettings('deleteConfirm.cancel', 'Cancel')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modalButton,
-                      styles.modalButtonDelete,
-                      { marginLeft: 6 },
-                      sendingOtp && styles.modalButtonDisabled
-                    ]}
+                    style={[styles.disclaimerDeleteBtn, sendingOtp && { opacity: 0.6 }]}
                     onPress={sendDeleteOtp}
                     disabled={sendingOtp}
+                    activeOpacity={0.85}
                   >
-                    <Text style={styles.modalButtonDeleteText}>
+                    <Text style={styles.disclaimerDeleteBtnText}>
                       {sendingOtp ? tSettings('deleteConfirm.sending', 'Sending...') : tSettings('deleteConfirm.sendCode', 'Send Code')}
                     </Text>
                   </TouchableOpacity>
-                </View>
-              </>
-            ) : (
-              <>
-                <Text style={styles.modalMessage}>
-                  {tSettings('deleteConfirm.enterCode', 'Enter the 6-digit verification code sent to:')}
-                </Text>
-                {user?.email && (
-                  <Text style={[styles.modalMessage, { marginTop: 4, fontWeight: '600', color: colors.primary || '#4f46e5' }]}>
-                    {user.email}
-                  </Text>
-                )}
-                <TextInput
-                  ref={otpInputRef}
-                  style={styles.modalInput}
-                  value={otpCode}
-                  onChangeText={(text) => setOtpCode(text.replace(/[^0-9]/g, '').slice(0, 6))}
-                  placeholder={tSettings('deleteConfirm.placeholder', 'Enter 6-digit code')}
-                  placeholderTextColor={colors.text.secondary}
-                  keyboardType="numeric"
-                  maxLength={6}
-                  textContentType="oneTimeCode"
-                  editable={!verifyingOtp && !deletingAccount}
-                  selectTextOnFocus={false}
-                />
-                <TouchableOpacity
-                  style={styles.resendButton}
-                  onPress={sendDeleteOtp}
-                  disabled={sendingOtp || verifyingOtp || deletingAccount}
-                >
-                  <Text style={styles.resendButtonText}>
-                    {sendingOtp ? tSettings('deleteConfirm.sending', 'Sending...') : tSettings('deleteConfirm.resend', "Didn't receive code? Resend")}
-                  </Text>
-                </TouchableOpacity>
-                <View style={styles.modalButtons}>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonCancel, { marginRight: 6 }]}
-                    onPress={() => {
-                      setShowDeleteConfirm(false);
-                      setOtpCode('');
-                      setOtpSent(false);
-                    }}
-                    disabled={verifyingOtp || deletingAccount}
+                    style={styles.disclaimerCancelBtn}
+                    onPress={() => { setShowDeleteConfirm(false); setOtpCode(''); setOtpSent(false); }}
+                    disabled={sendingOtp}
+                    activeOpacity={0.6}
                   >
-                    <Text style={styles.modalButtonCancelText}>{tSettings('deleteConfirm.cancel', 'Cancel')}</Text>
+                    <Text style={styles.disclaimerCancelBtnText}>{tSettings('deleteConfirm.cancel', 'Cancel')}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={[styles.disclaimerRowText, { textAlign: 'center', marginBottom: 8 }]}>
+                    {tSettings('deleteConfirm.enterCode', 'Enter the 6-digit verification code sent to:')}
+                  </Text>
+                  {user?.email && (
+                    <Text style={styles.confirmEmail}>{user.email}</Text>
+                  )}
+                  <TextInput
+                    ref={otpInputRef}
+                    style={styles.modalInput}
+                    value={otpCode}
+                    onChangeText={(text) => setOtpCode(text.replace(/[^0-9]/g, '').slice(0, 6))}
+                    placeholder={tSettings('deleteConfirm.placeholder', 'Enter 6-digit code')}
+                    placeholderTextColor={colors.text.secondary}
+                    keyboardType="numeric"
+                    maxLength={6}
+                    textContentType="oneTimeCode"
+                    editable={!verifyingOtp && !deletingAccount}
+                    selectTextOnFocus={false}
+                  />
+                  <TouchableOpacity
+                    style={styles.resendButton}
+                    onPress={sendDeleteOtp}
+                    disabled={sendingOtp || verifyingOtp || deletingAccount}
+                  >
+                    <Text style={styles.resendButtonText}>
+                      {sendingOtp ? tSettings('deleteConfirm.sending', 'Sending...') : tSettings('deleteConfirm.resend', "Didn't receive code? Resend")}
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[
-                      styles.modalButton,
-                      styles.modalButtonDelete,
-                      { marginLeft: 6 },
-                      (otpCode.length !== 6 || verifyingOtp || deletingAccount) && styles.modalButtonDisabled
-                    ]}
+                    style={[styles.disclaimerDeleteBtn, (otpCode.length !== 6 || verifyingOtp || deletingAccount) && { opacity: 0.5 }]}
                     onPress={handleVerifyOtp}
                     disabled={otpCode.length !== 6 || verifyingOtp || deletingAccount}
+                    activeOpacity={0.85}
                   >
-                    <Text style={styles.modalButtonDeleteText}>
+                    <Text style={styles.disclaimerDeleteBtnText}>
                       {deletingAccount
                         ? tSettings('deleteConfirm.deleting', 'Deleting...')
                         : verifyingOtp
@@ -804,9 +797,17 @@ export default function SettingsScreen() {
                         : tSettings('deleteConfirm.verify', 'Verify & Delete')}
                     </Text>
                   </TouchableOpacity>
-                </View>
-              </>
-            )}
+                  <TouchableOpacity
+                    style={styles.disclaimerCancelBtn}
+                    onPress={() => { setShowDeleteConfirm(false); setOtpCode(''); setOtpSent(false); }}
+                    disabled={verifyingOtp || deletingAccount}
+                    activeOpacity={0.6}
+                  >
+                    <Text style={styles.disclaimerCancelBtnText}>{tSettings('deleteConfirm.cancel', 'Cancel')}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </View>
         </View>
       </Modal>
@@ -1138,5 +1139,13 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: colors.text.secondary,
+  },
+  confirmEmail: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#af0d01',
+    textAlign: 'center',
+    marginBottom: 18,
+    letterSpacing: 0.1,
   },
 });

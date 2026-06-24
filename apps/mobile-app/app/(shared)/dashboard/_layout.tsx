@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '../../../lib/vector-icons';
 import { useRouter, usePathname, useNavigation as useExpoNavigation } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { DrawerActions, useNavigation } from '@react-navigation/native';

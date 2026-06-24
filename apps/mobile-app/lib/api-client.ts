@@ -242,25 +242,29 @@ export class EventApiClient {
       requestHeaders['Content-Type'] = 'application/json';
     }
 
-    // Add authentication header if available
+    // Add authentication header if available.
+    // Supabase JWT is tried first — it is valid on both web and native (OTP, Google OAuth
+    // with dual-session bridge). Directus JWT is the fallback for pure Directus sessions.
     if (!options.skipAuth) {
-      const session = await authService.getSession();
-      const isBearerUsableToken =
-        !!session?.access_token &&
-        session.access_token !== 'session_based' &&
-        session.access_token !== 'oauth_session';
+      let authAttached = false;
 
-      if (isBearerUsableToken) {
-        requestHeaders['Authorization'] = `Bearer ${session.access_token}`;
-      } else {
-        // Fallback: try Supabase native session (covers Google native SDK on Android where
-        // authService returns 'oauth_session'/'session_based' but supabase holds a real JWT)
-        try {
-          const { data: { session: supabaseSession } } = await supabase.auth.getSession();
-          if (supabaseSession?.access_token) {
-            requestHeaders['Authorization'] = `Bearer ${supabaseSession.access_token}`;
-          }
-        } catch { /* ignore — no session available */ }
+      try {
+        const { data: { session: supabaseSession } } = await supabase.auth.getSession();
+        if (supabaseSession?.access_token) {
+          requestHeaders['Authorization'] = `Bearer ${supabaseSession.access_token}`;
+          authAttached = true;
+        }
+      } catch { /* ignore — supabase client unavailable */ }
+
+      if (!authAttached) {
+        const session = await authService.getSession();
+        const isBearerUsableToken =
+          !!session?.access_token &&
+          session.access_token !== 'session_based' &&
+          session.access_token !== 'oauth_session';
+        if (isBearerUsableToken) {
+          requestHeaders['Authorization'] = `Bearer ${session.access_token}`;
+        }
       }
     }
 
