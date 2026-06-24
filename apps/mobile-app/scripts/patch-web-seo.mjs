@@ -108,6 +108,15 @@ const routeFromFile = (filePath) => {
   return relativePath ? `/${relativePath.replace(/^\/+/, '')}` : '/';
 };
 
+const routeToClientTarget = (route) => {
+  if (route === '/') {
+    return path.join(distRoot, 'client', 'index.html');
+  }
+
+  const relativeRoute = route.replace(/^\/+/, '');
+  return path.join(distRoot, 'client', relativeRoute, 'index.html');
+};
+
 const isPrivateRoute = (route) =>
   route === '/auth' ||
   route.startsWith('/auth/') ||
@@ -173,6 +182,7 @@ const collectHtmlFiles = async (directory) => {
 const main = async () => {
   const htmlFiles = await collectHtmlFiles(distRoot);
   let patchedCount = 0;
+  const copiedTargets = new Set();
 
   for (const filePath of htmlFiles) {
     const route = routeFromFile(filePath);
@@ -183,9 +193,19 @@ const main = async () => {
       await fs.writeFile(filePath, patchedHtml, 'utf8');
       patchedCount += 1;
     }
+
+    if (filePath.includes(`${path.sep}server${path.sep}`)) {
+      const targetPath = routeToClientTarget(route);
+      if (!copiedTargets.has(targetPath)) {
+        await fs.mkdir(path.dirname(targetPath), { recursive: true });
+        await fs.writeFile(targetPath, patchedHtml, 'utf8');
+        copiedTargets.add(targetPath);
+      }
+    }
   }
 
   console.log(`Patched SEO metadata in ${patchedCount} generated HTML files.`);
+  console.log(`Mirrored ${copiedTargets.size} server route page(s) into dist/client.`);
 };
 
 main().catch((error) => {
