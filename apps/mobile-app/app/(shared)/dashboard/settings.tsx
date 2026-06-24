@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, Alert, StatusBar, TextInput, Modal, Platform } from 'react-native';
+import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, Alert, StatusBar, TextInput, Modal, Platform, Linking } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useLanguage } from '../../../providers/LanguageProvider';
 import { useAnimations } from '../../../providers/AnimationProvider';
@@ -36,6 +36,7 @@ export default function SettingsScreen() {
   const [clearingCache, setClearingCache] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
+  const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -176,12 +177,12 @@ export default function SettingsScreen() {
   };
 
   const handleDeleteAccount = () => {
-    console.log('Delete account button clicked');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    // Open the modal - don't send OTP automatically
-    // User must click "Send Code" button to request the OTP
-    console.log('Opening delete confirmation modal');
+    setShowDisclaimerModal(true);
+  };
+
+  const handleDisclaimerConfirm = () => {
+    setShowDisclaimerModal(false);
     setShowDeleteConfirm(true);
     setOtpCode('');
     setOtpSent(false);
@@ -613,6 +614,67 @@ export default function SettingsScreen() {
         onClose={() => setShowVersionModal(false)}
       />
 
+      {/* Delete Account Disclaimer Modal */}
+      <Modal
+        visible={showDisclaimerModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDisclaimerModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.disclaimerContent]}>
+            {/* Warning icon */}
+            <View style={styles.disclaimerIconWrap}>
+              <Ionicons name="warning" size={32} color="#ef4444" />
+            </View>
+
+            <Text style={styles.disclaimerTitle}>Delete Account</Text>
+            <Text style={styles.disclaimerSubtitle}>This action is permanent and cannot be undone</Text>
+
+            {/* Bullet points */}
+            <View style={styles.disclaimerList}>
+              <View style={styles.disclaimerRow}>
+                <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.disclaimerRowIcon} />
+                <Text style={styles.disclaimerRowText}>All your data will be permanently deleted from our systems</Text>
+              </View>
+              <View style={styles.disclaimerRow}>
+                <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.disclaimerRowIcon} />
+                <Text style={styles.disclaimerRowText}>We do not retain any of your personal information after deletion</Text>
+              </View>
+              <View style={styles.disclaimerRow}>
+                <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.disclaimerRowIcon} />
+                <Text style={styles.disclaimerRowText}>Your passes, connections, and history will be lost forever</Text>
+              </View>
+            </View>
+
+            {/* Legal links */}
+            <View style={styles.disclaimerLinks}>
+              <TouchableOpacity onPress={() => Linking.openURL('https://hashpass.tech/terms')}>
+                <Text style={styles.disclaimerLink}>Terms of Service</Text>
+              </TouchableOpacity>
+              <Text style={styles.disclaimerLinkSep}>·</Text>
+              <TouchableOpacity onPress={() => Linking.openURL('https://hashpass.tech/privacy')}>
+                <Text style={styles.disclaimerLink}>Privacy Policy</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Actions */}
+            <TouchableOpacity
+              style={styles.disclaimerDeleteBtn}
+              onPress={handleDisclaimerConfirm}
+            >
+              <Text style={styles.disclaimerDeleteBtnText}>I Understand, Continue</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.disclaimerCancelBtn}
+              onPress={() => setShowDisclaimerModal(false)}
+            >
+              <Text style={styles.disclaimerCancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Delete Account Confirmation Modal */}
       <Modal
         visible={showDeleteConfirm}
@@ -920,5 +982,92 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 14,
     color: colors.primary?.main || '#4f46e5',
     fontWeight: '500',
+  },
+  disclaimerContent: {
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+  },
+  disclaimerIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#fee2e2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  disclaimerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  disclaimerSubtitle: {
+    fontSize: 14,
+    color: '#ef4444',
+    textAlign: 'center',
+    fontWeight: '500',
+    marginBottom: 20,
+  },
+  disclaimerList: {
+    backgroundColor: isDark ? 'rgba(239,68,68,0.08)' : '#fff5f5',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 18,
+    gap: 10,
+  },
+  disclaimerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  disclaimerRowIcon: {
+    marginTop: 1,
+    marginRight: 8,
+  },
+  disclaimerRowText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text.secondary,
+    lineHeight: 18,
+  },
+  disclaimerLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 6,
+  },
+  disclaimerLink: {
+    fontSize: 13,
+    color: colors.primary?.main || '#4f46e5',
+    textDecorationLine: 'underline',
+  },
+  disclaimerLinkSep: {
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
+  disclaimerDeleteBtn: {
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  disclaimerDeleteBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  disclaimerCancelBtn: {
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  disclaimerCancelBtnText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.secondary,
   },
 });

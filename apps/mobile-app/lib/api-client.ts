@@ -252,6 +252,15 @@ export class EventApiClient {
 
       if (isBearerUsableToken) {
         requestHeaders['Authorization'] = `Bearer ${session.access_token}`;
+      } else {
+        // Fallback: try Supabase native session (covers Google native SDK on Android where
+        // authService returns 'oauth_session'/'session_based' but supabase holds a real JWT)
+        try {
+          const { data: { session: supabaseSession } } = await supabase.auth.getSession();
+          if (supabaseSession?.access_token) {
+            requestHeaders['Authorization'] = `Bearer ${supabaseSession.access_token}`;
+          }
+        } catch { /* ignore — no session available */ }
       }
     }
 
