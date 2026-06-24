@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.134)
+## 📋 Latest Changes (v1.8.135)
 
 ### Bug Fixes
 
-* **android:** select matching upload credential ([07acd69](https://github.com/hashpass-tech/hashpass.tech/commit/07acd69b0bc608ede4d3238bdb4d9052d56fbaab))
+* **android:** support draft alpha releases ([40f8d2f](https://github.com/hashpass-tech/hashpass.tech/commit/40f8d2f3babffe2df5b295e7c2fe9d1351dd18f0))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

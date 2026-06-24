@@ -1,3 +1,14 @@
+## [1.8.135](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.134...v1.8.135) (2026-06-24)
+
+
+### Bug Fixes
+
+* **android:** support draft alpha releases ([40f8d2f](https://github.com/hashpass-tech/hashpass.tech/commit/40f8d2f3babffe2df5b295e7c2fe9d1351dd18f0))
+
+
+
+
+
 ## [1.8.134](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.133...v1.8.134) (2026-06-24)
 
 
