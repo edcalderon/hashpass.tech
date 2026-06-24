@@ -21,6 +21,16 @@ on:
           - alpha
           - beta
           - internal
+      release_status:
+        description: Google Play release status
+        required: true
+        default: completed
+        type: choice
+        options:
+          - completed
+          - draft
+          - halted
+          - inProgress
       backend:
         description: Release backend
         required: true
@@ -124,6 +134,7 @@ jobs:
       MOBILE_RELEASE_BACKEND: ${{ inputs.backend }}
       MOBILE_RELEASE_ENV: ${{ inputs.environment }}
       MOBILE_RELEASE_TRACK: ${{ inputs.environment == 'development' && 'internal' || inputs.track }}
+      FASTLANE_RELEASE_STATUS: ${{ inputs.release_status }}
       ANDROID_UPLOAD_KEY_SHA1: ${{ vars.ANDROID_UPLOAD_KEY_SHA1 }}
       GOOGLE_PLAY_JSON_KEY: ${{ github.workspace }}/.runner-secrets/google-play-service-account.json
       ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/.runner-secrets/hashpass-release.keystore

@@ -132,15 +132,16 @@ Deployment split:
 - `pnpm run android:publish` submits the latest Android build to Google Play through EAS Submit on the production track.
 - `pnpm run android:release` now defaults to the self-hosted fastlane path and auto-submits in one step for the production track.
 - `pnpm run android:release:alpha` uses the same fastlane path but submits to the Play Console alpha closed-testing track.
+- If the Play Console app is still in draft, set `FASTLANE_RELEASE_STATUS=draft` for the first alpha closed-testing upload; switch back to `completed` once Play accepts the app.
 - `pnpm run android:bundle:dev` builds an internal preview bundle on the development EAS project.
 - `pnpm run android:publish:dev` submits the latest internal preview build through the development EAS project.
 - `pnpm run android:release:dev` now defaults to the self-hosted fastlane path and auto-submits an internal preview build in one step.
 - `pnpm run android:release:eas` and `pnpm run android:release:eas:dev` are explicit fallback aliases for the managed Expo/EAS flow.
 - `pnpm run android:release:fastlane` and `pnpm run android:release:fastlane:dev` run a local Expo prebuild, build with fastlane, and upload to Google Play.
-- The generic release wrapper accepts `--env production|development`, `--backend eas|fastlane`, and `--track production|alpha|beta|internal` if you call `packages/tools/scripts/run-mobile-release.js` directly.
+- The generic release wrapper accepts `--env production|development`, `--backend eas|fastlane`, `--track production|alpha|beta|internal`, and `--release-status draft|completed|halted|inProgress` if you call `packages/tools/scripts/run-mobile-release.js` directly.
 - `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, defaulting to fastlane so the same command can target the self-hosted runner without changing scripts.
 - The self-hosted GitHub Actions workflow `.github/workflows/mobile-android-release.yml` targets the `hashpass-mobile-release` runner label on AWS EC2, defaults to fastlane, and can be switched back to EAS through the workflow input.
-- The workflow also accepts a Play track input; keep `environment=production` for closed testing releases and set `track=alpha` for the first closed test. `environment=development` always stays on the internal preview track.
+- The workflow also accepts Play track and release-status inputs; keep `environment=production` for closed testing releases, set `track=alpha` for the first closed test, and use `release_status=draft` while the app is still in Play Console draft. `environment=development` always stays on the internal preview track.
 - The reusable Terraform stack lives in `packages/infra/terraform/stacks/mobile-release`, with convenience commands exposed as `pnpm run infra:mobile-release:plan` and `pnpm run infra:mobile-release:apply`.
 - If the AWS account has no default VPC, the mobile release stack now creates a small managed public VPC and subnet automatically so the runner can provision cleanly.
 - Fastlane expects `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; the workflow writes the JSON and keystore into `.runner-secrets/` before the release starts.

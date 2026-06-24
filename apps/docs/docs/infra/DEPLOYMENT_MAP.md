@@ -85,7 +85,7 @@ The IAM role (`hashpass-mobile-release-github-actions`) has the `hashpass-infra-
 
 | Workflow | Trigger | Does what |
 |----------|---------|-----------|
-| `mobile-android-release.yml` | Manual (`gh workflow run ... --ref v<VERSION>`) | EC2 → Fastlane → Play Store production or closed testing tracks |
+| `mobile-android-release.yml` | Manual (`gh workflow run ... --ref v<VERSION>`) | EC2 → Fastlane → Play Store production or closed testing tracks (`release_status=draft` for the first alpha upload while the Play app is still draft) |
 | `secret-scan.yml` | Push to `main`/`develop`, PRs | gitleaks scan of committed files |
 | `deploy-club-docs.yml` | Push to `main` | Builds and publishes `hashpass.club` to GitHub Pages |
 | `infra-deploy.yml` | Push to `main`/`develop` (infra/api paths) + manual | SST deploy for `bsl.hashpass.tech` |

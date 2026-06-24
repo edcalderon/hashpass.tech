@@ -38,7 +38,7 @@ The script:
      --field backend=fastlane \
      --field runner=aws-ec2
    ```
-   Use `environment=development` only when you explicitly want the internal preview track. For the first Play Console closed-testing release, keep `environment=production` and set `track=alpha`.
+   Use `environment=development` only when you explicitly want the internal preview track. For the first Play Console closed-testing release, keep `environment=production`, set `track=alpha`, and use `release_status=draft` while the Play Console app is still in draft.
    The release workflow uses the `ANDROID_UPLOAD_KEY_SHA1` repository variable to select the Expo build credential that matches the Play upload certificate.
 5. **Push to edcalderon fork** after version bump (for backup):
    ```bash

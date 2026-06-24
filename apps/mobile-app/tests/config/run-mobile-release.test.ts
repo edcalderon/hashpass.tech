@@ -46,9 +46,13 @@ const {
 };
 
 const originalMobileReleaseTrack = process.env.MOBILE_RELEASE_TRACK;
+const originalFastlaneReleaseStatus = process.env.FASTLANE_RELEASE_STATUS;
+const originalMobileReleaseStatus = process.env.MOBILE_RELEASE_RELEASE_STATUS;
 
 beforeEach(() => {
   delete process.env.MOBILE_RELEASE_TRACK;
+  delete process.env.FASTLANE_RELEASE_STATUS;
+  delete process.env.MOBILE_RELEASE_RELEASE_STATUS;
 });
 
 afterAll(() => {
@@ -56,6 +60,18 @@ afterAll(() => {
     delete process.env.MOBILE_RELEASE_TRACK;
   } else {
     process.env.MOBILE_RELEASE_TRACK = originalMobileReleaseTrack;
+  }
+
+  if (originalFastlaneReleaseStatus === undefined) {
+    delete process.env.FASTLANE_RELEASE_STATUS;
+  } else {
+    process.env.FASTLANE_RELEASE_STATUS = originalFastlaneReleaseStatus;
+  }
+
+  if (originalMobileReleaseStatus === undefined) {
+    delete process.env.MOBILE_RELEASE_RELEASE_STATUS;
+  } else {
+    process.env.MOBILE_RELEASE_RELEASE_STATUS = originalMobileReleaseStatus;
   }
 });
 
@@ -169,6 +185,23 @@ describe('run-mobile-release', () => {
         delete process.env.MOBILE_RELEASE_TRACK;
       } else {
         process.env.MOBILE_RELEASE_TRACK = originalTrack;
+      }
+    }
+  });
+
+  it('uses the fastlane release status env fallback when present', () => {
+    const originalStatus = process.env.FASTLANE_RELEASE_STATUS;
+    process.env.FASTLANE_RELEASE_STATUS = 'draft';
+
+    try {
+      expect(parseReleaseArgs([])).toMatchObject({
+        releaseStatus: 'draft',
+      });
+    } finally {
+      if (originalStatus === undefined) {
+        delete process.env.FASTLANE_RELEASE_STATUS;
+      } else {
+        process.env.FASTLANE_RELEASE_STATUS = originalStatus;
       }
     }
   });
