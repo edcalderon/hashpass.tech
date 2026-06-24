@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
@@ -23,7 +23,6 @@ import { NotificationProvider, useNotifications } from '@contexts/NotificationCo
 import { useEvent } from '@contexts/EventContext';
 import { AnimationProvider, useAnimations } from '../../../providers/AnimationProvider';
 import VersionDisplay from '../../../components/VersionDisplay';
-import VersionStatusIndicator from '../../../components/VersionStatusIndicator';
 import QRScanner from '../../../components/QRScanner';
 import MiniNotificationDropdown from '../../../components/MiniNotificationDropdown';
 import { t } from '@lingui/macro';
@@ -50,7 +49,9 @@ function CustomDrawerContent() {
   const copilotHook = useCopilot() as any;
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
-  const styles = getStyles(isDark, colors, isMobile, insets);
+  const { width: viewportWidth } = useWindowDimensions();
+  const compactQuickActions = viewportWidth < 480;
+  const styles = getStyles(isDark, colors, isMobile, insets, compactQuickActions);
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
   const brandBadgeText =
     event?.tour?.role === 'hub'
@@ -580,31 +581,34 @@ function CustomDrawerContent() {
       {/* Quick Settings & Actions */}
       <View style={styles.quickSettingsSection}>
         <Text style={styles.quickSettingsTitle}>{t({ id: 'nav.quickActions', message: 'Quick actions' })}</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          nestedScrollEnabled
-          contentContainerStyle={styles.quickTogglesScrollContent}
-        >
+        <View style={styles.quickTogglesRow}>
           {/* Language Toggle */}
           <TouchableOpacity
-            style={[styles.quickToggleButton, styles.quickToggleButtonCompact]}
+            style={styles.quickToggleButton}
             onPress={handleLanguageToggle}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`${t({ id: 'nav.language', message: 'Language' })}: ${locale.toUpperCase()}`}
           >
             <View style={styles.quickToggleIcon}>
               <Text style={styles.languageFlag}>{getLanguageFlag(locale)}</Text>
             </View>
-            <Text style={styles.quickToggleLabel}>
-              {locale.toUpperCase()}
-            </Text>
+            {!compactQuickActions && (
+              <Text style={styles.quickToggleLabel} numberOfLines={1}>
+                {locale.toUpperCase()}
+              </Text>
+            )}
           </TouchableOpacity>
 
           {/* Theme Toggle */}
           <TouchableOpacity
-            style={[styles.quickToggleButton, styles.quickToggleButtonCompact]}
+            style={styles.quickToggleButton}
             onPress={toggleTheme}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={isDark
+              ? t({ id: 'nav.light', message: 'Light' })
+              : t({ id: 'nav.dark', message: 'Dark' })}
           >
             <View style={[styles.quickToggleIcon, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(175, 13, 1, 0.10)' }]}>
               <Ionicons
@@ -613,16 +617,20 @@ function CustomDrawerContent() {
                 color={isDark ? '#FFFFFF' : colors.primary}
               />
             </View>
-            <Text style={styles.quickToggleLabel}>
-              {isDark ? t({ id: 'nav.light', message: 'Light' }) : t({ id: 'nav.dark', message: 'Dark' })}
-            </Text>
+            {!compactQuickActions && (
+              <Text style={styles.quickToggleLabel} numberOfLines={1}>
+                {isDark ? t({ id: 'nav.light', message: 'Light' }) : t({ id: 'nav.dark', message: 'Dark' })}
+              </Text>
+            )}
           </TouchableOpacity>
 
           {/* Logout Button */}
           <TouchableOpacity
-            style={[styles.quickToggleButton, styles.quickToggleButtonCompact]}
+            style={styles.quickToggleButton}
             onPress={handleLogout}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={t({ id: 'nav.logout', message: 'Logout' })}
           >
             <View style={[styles.quickToggleIcon, { backgroundColor: 'rgba(255, 59, 48, 0.12)' }]}>
               <Ionicons
@@ -631,15 +639,17 @@ function CustomDrawerContent() {
                 color={colors.error.main}
               />
             </View>
-            <Text style={[styles.quickToggleLabel, { color: colors.error.main }]}>
-              {t({ id: 'nav.logout', message: 'Logout' })}
-            </Text>
+            {!compactQuickActions && (
+              <Text style={[styles.quickToggleLabel, { color: colors.error.main }]} numberOfLines={1}>
+                {t({ id: 'nav.logout', message: 'Logout' })}
+              </Text>
+            )}
           </TouchableOpacity>
-        </ScrollView>
+        </View>
       </View>
 
       {/* Version Display */}
-      <VersionDisplay showInSidebar={true} />
+      <VersionDisplay showInSidebar={true} bottomInset={insets.bottom} />
     </View>
   );
 }
@@ -1112,7 +1122,13 @@ export default function DashboardLayout() {
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean, insets: { left?: number; right?: number; bottom?: number } = {}) => StyleSheet.create({
+const getStyles = (
+  isDark: boolean,
+  colors: any,
+  isMobile: boolean,
+  insets: { top?: number; left?: number; right?: number; bottom?: number } = {},
+  compactQuickActions = false,
+) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.default,
@@ -1170,7 +1186,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, insets: { le
     height: 40,
   },
   drawerHeader: {
-    padding: isMobile ? 18 : 18,
+    paddingTop: (isMobile ? 12 : 18)
+      + (insets.top || (Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0)),
+    paddingBottom: isMobile ? 14 : 18,
+    paddingHorizontal: 18,
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : colors.background.paper,
@@ -1260,9 +1279,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, insets: { le
   },
   menuItemsContent: {
     paddingTop: 16,
-    paddingBottom: 12 + (insets?.bottom || 0),
-    paddingStart: isMobile ? 20 : 16,
-    paddingEnd: isMobile ? 18 : 16,
+    paddingBottom: 12,
+    paddingStart: (isMobile ? 24 : 20) + (insets.left || 0),
+    paddingEnd: (isMobile ? 20 : 18) + (insets.right || 0),
     flexGrow: 1,
   },
   menuItems: {
@@ -1349,11 +1368,12 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, insets: { le
     flex: 1,
   },
   quickSettingsSection: {
-    paddingHorizontal: isMobile ? 14 : 12,
-    paddingVertical: 12,
-    marginHorizontal: isMobile ? 12 : 16,
-    marginTop: 12,
-    marginBottom: 8 + (insets?.bottom || 0),
+    paddingHorizontal: compactQuickActions ? 10 : 12,
+    paddingVertical: compactQuickActions ? 10 : 12,
+    marginStart: (isMobile ? 20 : 16) + (insets.left || 0),
+    marginEnd: (isMobile ? 18 : 16) + (insets.right || 0),
+    marginTop: 10,
+    marginBottom: 6,
     borderRadius: 18,
     backgroundColor: isDark
       ? 'rgba(255, 255, 255, 0.04)'
@@ -1376,24 +1396,19 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, insets: { le
   quickTogglesRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: 10,
-  },
-  quickTogglesScrollContent: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: 10,
-    paddingBottom: 2,
-    paddingRight: 4,
+    width: '100%',
+    gap: 8,
   },
   quickToggleButton: {
     flex: 1,
-    minHeight: 54,
-    borderRadius: 14,
-    justifyContent: 'flex-start',
+    minWidth: 0,
+    minHeight: compactQuickActions ? 48 : 50,
+    borderRadius: 13,
+    justifyContent: compactQuickActions ? 'center' : 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: 8,
+    paddingHorizontal: compactQuickActions ? 8 : 6,
     borderWidth: 1,
     borderColor: colors.divider,
     backgroundColor: colors.background.paper,
@@ -1401,29 +1416,23 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, insets: { le
       ? '0 3px 8px rgba(0, 0, 0, 0.10)'
       : '0 3px 8px rgba(15, 23, 42, 0.05)',
   },
-  quickToggleButtonCompact: {
-    flex: 0,
-    minWidth: 108,
-    minHeight: 48,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
   quickToggleIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
+    width: compactQuickActions ? 38 : 30,
+    height: compactQuickActions ? 38 : 30,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 0,
-    marginRight: 12,
+    marginRight: compactQuickActions ? 0 : 5,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
   },
   quickToggleLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.text.secondary,
     textAlign: 'left',
-    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
   languageFlag: {
     fontSize: 18,

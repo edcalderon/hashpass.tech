@@ -4,17 +4,23 @@ import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
-import VersionInfoDrawer, { VersionStatusState } from './VersionInfoDrawer';
+import VersionInfoDrawer from './VersionInfoDrawer';
+import type { VersionStatusState } from './VersionInfoDrawer';
 
 interface VersionDisplayProps {
   showInSidebar?: boolean;
   compact?: boolean;
+  bottomInset?: number;
 }
 
-export default function VersionDisplay({ showInSidebar = false, compact = false }: VersionDisplayProps) {
-  const { isDark, colors } = useTheme();
+export default function VersionDisplay({
+  showInSidebar = false,
+  compact = false,
+  bottomInset = 0,
+}: VersionDisplayProps) {
+  const { colors } = useTheme();
   const [status, setStatus] = useState<VersionStatusState>('checking');
-  const styles = getStyles(isDark, colors);
+  const styles = getStyles(colors);
 
   const versionInfo = versionService.getCurrentVersion();
   const badgeInfo = versionService.getVersionBadgeInfo(versionInfo.releaseType);
@@ -54,7 +60,7 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
   if (compact) {
     return (
       <VersionInfoDrawer status={status} showStatusIndicator={true}>
-        {(openDrawer) => (
+        {(openDrawer: () => void) => (
           <TouchableOpacity
             style={styles.compactContainer}
             onPress={openDrawer}
@@ -70,11 +76,18 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
   if (showInSidebar) {
     return (
       <VersionInfoDrawer status={status} showStatusIndicator={true}>
-        {(openDrawer) => (
-          <View style={styles.sidebarContainer}>
+        {(openDrawer: () => void) => (
+          <View
+            style={[
+              styles.sidebarContainer,
+              { paddingBottom: Math.max(8, bottomInset) },
+            ]}
+          >
             <TouchableOpacity
               style={styles.sidebarVersionContainer}
               onPress={openDrawer}
+              accessibilityRole="button"
+              accessibilityLabel={`Version ${versionInfo.version}, ${badgeInfo.text}`}
             >
               <View style={styles.sidebarVersionInfo}>
                 <Text style={styles.sidebarVersionText}>v{versionInfo.version}</Text>
@@ -90,7 +103,7 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
 
   return (
     <VersionInfoDrawer showStatusIndicator={false}>
-      {(openDrawer) => (
+      {(openDrawer: () => void) => (
         <View style={styles.container}>
           <TouchableOpacity
             style={styles.versionContainer}
@@ -108,7 +121,7 @@ export default function VersionDisplay({ showInSidebar = false, compact = false 
   );
 }
 
-const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -120,8 +133,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingVertical: 4,
   },
   sidebarContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 8,
     borderTopWidth: 1,
     borderTopColor: colors.divider,
   },
@@ -135,15 +149,8 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : colors.background.paper,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    boxShadow: isDark
-      ? '0 2px 4px rgba(0, 0, 0, 0.12)'
-      : '0 2px 4px rgba(15, 23, 42, 0.06)',
+    minHeight: 28,
+    paddingVertical: 2,
   },
   versionInfo: {
     flexDirection: 'row',
