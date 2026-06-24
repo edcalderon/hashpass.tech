@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '../../../lib/vector-icons';
@@ -48,7 +49,8 @@ function CustomDrawerContent() {
   const navigation = useNavigation<DrawerNavigation>();
   const copilotHook = useCopilot() as any;
   const isMobile = useIsMobile();
-  const styles = getStyles(isDark, colors, isMobile);
+  const insets = useSafeAreaInsets();
+  const styles = getStyles(isDark, colors, isMobile, insets);
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
   const brandBadgeText =
     event?.tour?.role === 'hub'
@@ -578,10 +580,15 @@ function CustomDrawerContent() {
       {/* Quick Settings & Actions */}
       <View style={styles.quickSettingsSection}>
         <Text style={styles.quickSettingsTitle}>{t({ id: 'nav.quickActions', message: 'Quick actions' })}</Text>
-        <View style={styles.quickTogglesRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          nestedScrollEnabled
+          contentContainerStyle={styles.quickTogglesScrollContent}
+        >
           {/* Language Toggle */}
           <TouchableOpacity
-            style={styles.quickToggleButton}
+            style={[styles.quickToggleButton, styles.quickToggleButtonCompact]}
             onPress={handleLanguageToggle}
             activeOpacity={0.7}
           >
@@ -595,7 +602,7 @@ function CustomDrawerContent() {
 
           {/* Theme Toggle */}
           <TouchableOpacity
-            style={styles.quickToggleButton}
+            style={[styles.quickToggleButton, styles.quickToggleButtonCompact]}
             onPress={toggleTheme}
             activeOpacity={0.7}
           >
@@ -613,7 +620,7 @@ function CustomDrawerContent() {
 
           {/* Logout Button */}
           <TouchableOpacity
-            style={styles.quickToggleButton}
+            style={[styles.quickToggleButton, styles.quickToggleButtonCompact]}
             onPress={handleLogout}
             activeOpacity={0.7}
           >
@@ -628,7 +635,7 @@ function CustomDrawerContent() {
               {t({ id: 'nav.logout', message: 'Logout' })}
             </Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
 
       {/* Version Display */}
@@ -1105,7 +1112,7 @@ export default function DashboardLayout() {
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleSheet.create({
+const getStyles = (isDark: boolean, colors: any, isMobile: boolean, insets: { left?: number; right?: number; bottom?: number } = {}) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.default,
@@ -1163,7 +1170,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     height: 40,
   },
   drawerHeader: {
-    padding: isMobile ? 16 : 18,
+    padding: isMobile ? 18 : 18,
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : colors.background.paper,
@@ -1253,8 +1260,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   menuItemsContent: {
     paddingTop: 16,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
+    paddingBottom: 12 + (insets?.bottom || 0),
+    paddingStart: isMobile ? 20 : 16,
+    paddingEnd: isMobile ? 18 : 16,
     flexGrow: 1,
   },
   menuItems: {
@@ -1266,10 +1274,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginVertical: 5,
-    borderRadius: 16,
+    paddingVertical: isMobile ? 13 : 12,
+    paddingHorizontal: isMobile ? 16 : 14,
+    marginVertical: isMobile ? 6 : 5,
+    borderRadius: isMobile ? 18 : 16,
     borderLeftWidth: 4,
     borderLeftColor: 'transparent',
     borderWidth: 1,
@@ -1287,7 +1295,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: isMobile ? 14 : 12,
   },
   activeIndicator: {
     position: 'absolute',
@@ -1341,17 +1349,18 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     flex: 1,
   },
   quickSettingsSection: {
-    paddingHorizontal: 12,
+    paddingHorizontal: isMobile ? 14 : 12,
     paddingVertical: 12,
-    marginHorizontal: 16,
+    marginHorizontal: isMobile ? 12 : 16,
     marginTop: 12,
-    marginBottom: 8,
+    marginBottom: 8 + (insets?.bottom || 0),
     borderRadius: 18,
     backgroundColor: isDark
       ? 'rgba(255, 255, 255, 0.04)'
-      : colors.background.default,
+      : colors.background.paper,
     borderWidth: 1,
     borderColor: colors.divider,
+    overflow: 'hidden',
     boxShadow: isDark
       ? '0 8px 18px rgba(0, 0, 0, 0.12)'
       : '0 8px 18px rgba(15, 23, 42, 0.06)',
@@ -1365,9 +1374,16 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     color: colors.text.secondary,
   },
   quickTogglesRow: {
-    flexDirection: isMobile ? 'column' : 'row',
+    flexDirection: 'row',
     alignItems: 'stretch',
     gap: 10,
+  },
+  quickTogglesScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 10,
+    paddingBottom: 2,
+    paddingRight: 4,
   },
   quickToggleButton: {
     flex: 1,
@@ -1384,6 +1400,13 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     boxShadow: isDark
       ? '0 3px 8px rgba(0, 0, 0, 0.10)'
       : '0 3px 8px rgba(15, 23, 42, 0.05)',
+  },
+  quickToggleButtonCompact: {
+    flex: 0,
+    minWidth: 108,
+    minHeight: 48,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
   quickToggleIcon: {
     width: 34,
