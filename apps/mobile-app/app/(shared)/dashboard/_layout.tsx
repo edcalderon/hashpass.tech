@@ -752,29 +752,23 @@ export default function DashboardLayout() {
       extrapolate: 'clamp',
     }) : bgRgb.b;
 
-    // Build rgba string dynamically with smooth gradient transitions
-    // More interpolation points for smoother color transitions
-    // At the beginning (scrollY = 0), use full app background color (no transparency)
-    // If animations disabled, use solid color like sidebar
+    // Build rgba string dynamically with smooth color transitions.
+    // Alpha is kept at 0.95 throughout so scrollable content is never visible
+    // behind the header. BlurView underneath still shows through the 5% gap.
+    // If animations disabled, use solid color.
     const adjustedHeaderBackground = animationsEnabled
       ? scrollY.interpolate({
         inputRange: [
           0,
-          HEADER_SCROLL_DISTANCE * 0.15,
           HEADER_SCROLL_DISTANCE * 0.3,
-          HEADER_SCROLL_DISTANCE * 0.5,
-          HEADER_SCROLL_DISTANCE * 0.7,
-          HEADER_SCROLL_DISTANCE * 0.85,
+          HEADER_SCROLL_DISTANCE * 0.6,
           HEADER_SCROLL_DISTANCE
         ],
         outputRange: [
-          `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, 1)`,   // Start with full app background color (100% opaque, 100% theme)
-          `rgba(${Math.round(bgRgb.r * 0.9 + bannerRgb.r * 0.1)}, ${Math.round(bgRgb.g * 0.9 + bannerRgb.g * 0.1)}, ${Math.round(bgRgb.b * 0.9 + bannerRgb.b * 0.1)}, 0.9)`,   // 90% theme, 10% banner, slightly transparent
-          `rgba(${Math.round(bgRgb.r * 0.7 + bannerRgb.r * 0.3)}, ${Math.round(bgRgb.g * 0.7 + bannerRgb.g * 0.3)}, ${Math.round(bgRgb.b * 0.7 + bannerRgb.b * 0.3)}, 0.7)`,   // 70% theme, 30% banner
-          `rgba(${Math.round(bgRgb.r * 0.5 + bannerRgb.r * 0.5)}, ${Math.round(bgRgb.g * 0.5 + bannerRgb.g * 0.5)}, ${Math.round(bgRgb.b * 0.5 + bannerRgb.b * 0.5)}, 0.5)`,   // 50% theme, 50% banner
-          `rgba(${Math.round(bgRgb.r * 0.3 + bannerRgb.r * 0.7)}, ${Math.round(bgRgb.g * 0.3 + bannerRgb.g * 0.7)}, ${Math.round(bgRgb.b * 0.3 + bannerRgb.b * 0.7)}, 0.3)`,   // 30% theme, 70% banner
-          `rgba(${Math.round(bgRgb.r * 0.15 + bannerRgb.r * 0.85)}, ${Math.round(bgRgb.g * 0.15 + bannerRgb.g * 0.85)}, ${Math.round(bgRgb.b * 0.15 + bannerRgb.b * 0.85)}, 0.2)`,   // 15% theme, 85% banner
-          `rgba(${bannerRgb.r}, ${bannerRgb.g}, ${bannerRgb.b}, 0.15)`   // 100% banner color when scrolled
+          `rgba(${bgRgb.r}, ${bgRgb.g}, ${bgRgb.b}, 0.95)`,
+          `rgba(${Math.round(bgRgb.r * 0.7 + bannerRgb.r * 0.3)}, ${Math.round(bgRgb.g * 0.7 + bannerRgb.g * 0.3)}, ${Math.round(bgRgb.b * 0.7 + bannerRgb.b * 0.3)}, 0.95)`,
+          `rgba(${Math.round(bgRgb.r * 0.3 + bannerRgb.r * 0.7)}, ${Math.round(bgRgb.g * 0.3 + bannerRgb.g * 0.7)}, ${Math.round(bgRgb.b * 0.3 + bannerRgb.b * 0.7)}, 0.95)`,
+          `rgba(${bannerRgb.r}, ${bannerRgb.g}, ${bannerRgb.b}, 0.95)`,
         ],
         extrapolate: 'clamp',
       })
