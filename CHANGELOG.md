@@ -1,3 +1,14 @@
+## [1.8.118](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.117...v1.8.118) (2026-06-24)
+
+
+### Bug Fixes
+
+* **auth:** fix delete-account on web (Directus) + rebrand disclaimer UI ([f6706d5](https://github.com/hashpass-tech/hashpass.tech/commit/f6706d57a7bf31fb5c90fe46cd042319b5cd520d)), closes [#af0d01](https://github.com/hashpass-tech/hashpass.tech/issues/af0d01) [#ef4444](https://github.com/hashpass-tech/hashpass.tech/issues/ef4444)
+
+
+
+
+
 ## [1.8.117](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.116...v1.8.117) (2026-06-24)
 
 
