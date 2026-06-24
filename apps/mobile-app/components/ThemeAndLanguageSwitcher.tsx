@@ -14,6 +14,11 @@ interface ThemeAndLanguageSwitcherProps {
   hideAfterScrollY?: number;
 }
 
+type LocaleOption = {
+  code: string;
+  name: string;
+};
+
 const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLanguageSwitcherProps) => {
   const { toggleTheme, colors, isDark } = useTheme();
   const { locale, setLocale } = useLanguage();
@@ -49,7 +54,7 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
     };
   }, []);
 
-  const currentLanguage = availableLocales.find(lang => lang.code === locale) || availableLocales[0];
+  const currentLanguage = availableLocales.find((lang: LocaleOption) => lang.code === locale) || availableLocales[0];
   const currentLanguageLabel = t(`languages.${currentLanguage.name}`);
 
   const handleThemeToggle = () => {
@@ -206,7 +211,7 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
               }
             ]}
           >
-            {availableLocales.map((lang) => (
+            {availableLocales.map((lang: LocaleOption) => (
               <TouchableOpacity
                 key={lang.code}
                 style={[
