@@ -1,3 +1,15 @@
+## [1.8.119](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.118...v1.8.119) (2026-06-24)
+
+
+### Bug Fixes
+
+* explicit any type for supabase.auth.getSession destructure ([692e7a6](https://github.com/hashpass-tech/hashpass.tech/commit/692e7a6de2bbc848ebdcaf16dffcb7d7f5694b41))
+* **profile:** restore Google avatar + Member Since from Supabase session ([007695a](https://github.com/hashpass-tech/hashpass.tech/commit/007695abf4d6e122cee3fe3306299c1eb8292ec8))
+
+
+
+
+
 ## [1.8.118](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.117...v1.8.118) (2026-06-24)
 
 

@@ -17,11 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.118)
+## 📋 Latest Changes (v1.8.119)
 
 ### Bug Fixes
 
-* **auth:** fix delete-account on web (Directus) + rebrand disclaimer UI ([f6706d5](https://github.com/hashpass-tech/hashpass.tech/commit/f6706d57a7bf31fb5c90fe46cd042319b5cd520d)), closes [#af0d01](https://github.com/hashpass-tech/hashpass.tech/issues/af0d01) [#ef4444](https://github.com/hashpass-tech/hashpass.tech/issues/ef4444)
+* explicit any type for supabase.auth.getSession destructure ([692e7a6](https://github.com/hashpass-tech/hashpass.tech/commit/692e7a6de2bbc848ebdcaf16dffcb7d7f5694b41))
+* **profile:** restore Google avatar + Member Since from Supabase session ([007695a](https://github.com/hashpass-tech/hashpass.tech/commit/007695abf4d6e122cee3fe3306299c1eb8292ec8))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
