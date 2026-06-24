@@ -49,6 +49,8 @@ export default function ProfileScreen() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [retryingProfile, setRetryingProfile] = useState(false);
+  // Raw Supabase user — always has created_at + user_metadata.avatar_url regardless of auth provider
+  const [rawSupabaseUser, setRawSupabaseUser] = useState<any>(null);
 
   const hasProfileContent = useCallback((candidate?: AuthUser | null): boolean => {
     const hasName = Boolean(
@@ -114,6 +116,14 @@ export default function ProfileScreen() {
     resolveProfileUser(false);
   }, [authLoading, resolveProfileUser]);
 
+  // Always fetch raw Supabase session — it has created_at and user_metadata.avatar_url
+  // regardless of which auth provider (Directus/Supabase) is active.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session?.user) setRawSupabaseUser(data.session.user);
+    });
+  }, []);
+
   const activeUser = profileUser ?? user ?? null;
 
   // Calculate padding needed to account for navbar
@@ -129,22 +139,22 @@ export default function ProfileScreen() {
   };
 
   const getCurrentAvatarUrl = (): string => {
-    const directusAssetBase = process.env.EXPO_PUBLIC_DIRECTUS_URL || process.env.DIRECTUS_URL || 'http://localhost:8055';
+    // Priority 1: Supabase user_metadata (Google OAuth sets avatar_url / picture here)
+    // Raw Supabase session is the most reliable source across all auth paths
+    const supabaseMeta = rawSupabaseUser?.user_metadata;
+    const supabasePhoto = supabaseMeta?.avatar_url || supabaseMeta?.picture;
+    if (supabasePhoto) return supabasePhoto;
 
-    if (typeof activeUser?.avatar === 'string' && activeUser.avatar.length > 0) {
-      if (/^https?:\/\//.test(activeUser.avatar)) {
-        return activeUser.avatar;
-      }
-      return `${directusAssetBase}/assets/${activeUser.avatar}`;
-    }
-
-    // Supabase stores Google photo as avatar_url; Google SDK sets picture
+    // Priority 2: activeUser user_metadata (populated for native Supabase path after mapSupabaseUserToAuthUser fix)
     const metaPhoto = activeUser?.user_metadata?.avatar_url || activeUser?.user_metadata?.picture;
-    if (metaPhoto) {
-      return metaPhoto;
+    if (metaPhoto) return metaPhoto;
+
+    // Priority 3: Directus avatar — only trust full URLs (UUID-only assets require auth and a live Directus server)
+    if (typeof activeUser?.avatar === 'string' && /^https?:\/\//.test(activeUser.avatar)) {
+      return activeUser.avatar;
     }
 
-    // Native Image can't render SVG — use UI-Avatars which returns PNG
+    // Fallback: initials via UI-Avatars
     const name = getDisplayName() || 'hashpass-user';
     return generateUIAvatarUrl(name);
   };
@@ -210,25 +220,23 @@ export default function ProfileScreen() {
   const userNameDisplay = userName || 'Not available';
   const userEmailDisplay = userEmail || 'Not available';
   
-  // Get member since date - use created_at from user
-  // Supabase user object should always have created_at, but we handle gracefully if missing
+  // Member since — try multiple sources in priority order:
+  // rawSupabaseUser.created_at is always set by Supabase regardless of auth provider
   const getMemberSince = () => {
-    const createdAt = activeUser?.created_at || activeUser?.date_created;
+    const createdAt =
+      rawSupabaseUser?.created_at ||
+      activeUser?.created_at ||
+      activeUser?.date_created;
     if (createdAt) {
       try {
         const date = new Date(createdAt);
-        // Check if date is valid
         if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long' 
-          });
+          return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
         }
       } catch (e) {
         console.warn('Error parsing created_at:', e);
       }
     }
-    // Return null instead of 'Unknown' - we'll conditionally render or show fallback
     return null;
   };
   

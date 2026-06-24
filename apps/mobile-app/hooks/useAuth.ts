@@ -63,6 +63,9 @@ const mapSupabaseUserToAuthUser = (supabaseUser: any): AuthUser => ({
     '',
   role: supabaseUser.role || supabaseUser.user_metadata?.role || 'authenticated',
   status: 'active',
+  // Preserve these so profile screen can read avatar_url / created_at directly
+  user_metadata: supabaseUser.user_metadata,
+  created_at: supabaseUser.created_at,
 });
 
 export const useAuth = () => {
