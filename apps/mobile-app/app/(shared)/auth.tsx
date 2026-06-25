@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -598,20 +598,6 @@ export default function AuthScreen() {
     return () => clearTimeout(timer);
   }, [otpSent]);
 
-  // Auto-submit when all 6 digit slots are filled
-  const autoSubmittedCodeRef = useRef('');
-  useEffect(() => {
-    const allFilled = otpDigits.every((d) => d !== '');
-    const fullCode = otpDigits.join('');
-    if (allFilled && otpSent && !isBusy && autoSubmittedCodeRef.current !== fullCode) {
-      autoSubmittedCodeRef.current = fullCode;
-      void handleVerifyOtpCode();
-    }
-    if (!allFilled) {
-      autoSubmittedCodeRef.current = '';
-    }
-  }, [otpDigits, otpSent, isBusy]);
-
   useEffect(() => {
     if (hasShownOAuthErrorRef.current) return;
     if (typeof rawAuthError !== 'string' && typeof rawAuthMessage !== 'string') return;
@@ -661,7 +647,7 @@ export default function AuthScreen() {
     return () => formReveal.stop();
   }, [formEntrance, isDesktopLayout, useNativeDriver]);
 
-  const validateEmailOrShowError = (): string | null => {
+  const validateEmailOrShowError = useCallback((): string | null => {
     const normalized = email.trim().toLowerCase();
 
     if (!normalized) {
@@ -676,7 +662,7 @@ export default function AuthScreen() {
 
     setEmailError('');
     return normalized;
-  };
+  }, [email, t]);
 
   const resetMagicLinkConfirmation = () => {
     setMagicLinkSentAt(null);
@@ -851,7 +837,7 @@ export default function AuthScreen() {
     }
   };
 
-  const handleVerifyOtpCode = async () => {
+  const handleVerifyOtpCode = useCallback(async () => {
     if (isBusy) return;
 
     if (!isPasswordlessSupported) {
@@ -938,7 +924,34 @@ export default function AuthScreen() {
     } finally {
       setBusyAction(null);
     }
-  };
+  }, [
+    isBusy,
+    isPasswordlessSupported,
+    otpCode,
+    passwordlessUnavailableMessage,
+    redirectPath,
+    router,
+    setBusyAction,
+    setOtpError,
+    showError,
+    showSuccess,
+    t,
+    validateEmailOrShowError,
+  ]);
+
+  // Auto-submit when all 6 digit slots are filled
+  const autoSubmittedCodeRef = useRef('');
+  useEffect(() => {
+    const allFilled = otpDigits.every((d) => d !== '');
+    const fullCode = otpDigits.join('');
+    if (allFilled && otpSent && !isBusy && autoSubmittedCodeRef.current !== fullCode) {
+      autoSubmittedCodeRef.current = fullCode;
+      void handleVerifyOtpCode();
+    }
+    if (!allFilled) {
+      autoSubmittedCodeRef.current = '';
+    }
+  }, [handleVerifyOtpCode, isBusy, otpDigits, otpSent]);
 
   const handleDigitChange = (index: number, value: string) => {
     const cleaned = value.replace(/[^0-9]/g, '');
@@ -1334,74 +1347,80 @@ export default function AuthScreen() {
                         <Text style={styles.magicLinkConfirmationTitle}>
                           {t('magicLinkSentTitle', 'Link sent')}
                         </Text>
-                  <Text style={styles.magicLinkConfirmationMessage}>
-                    {t('magicLinkSentMessage', 'Please check your email to login.')}
-                  </Text>
-                  <Text style={styles.magicLinkConfirmationEmail}>{email.trim().toLowerCase()}</Text>
-                  {magicLinkResendRemainingSeconds > 0 ? (
-                    <Text style={styles.magicLinkCountdownText}>
-                      {t('magicLinkResendCountdown', { seconds: magicLinkResendRemainingSeconds })}
-                    </Text>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.secondaryActionButton}
-                      onPress={() => void handleSendMagicLink()}
-                      disabled={isBusy}
-                      dataSet={{ authEnterIgnore: 'true' }}
-                    >
-                      <Text style={styles.secondaryActionText}>
-                        {t('magicLinkSendAnother', 'Send another link')}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                        <Text style={styles.magicLinkConfirmationMessage}>
+                          {t('magicLinkSentMessage', 'Please check your email to login.')}
+                        </Text>
+                        <Text
+                          style={styles.magicLinkConfirmationEmail}
+                          numberOfLines={1}
+                          ellipsizeMode="middle"
+                        >
+                          {email.trim().toLowerCase()}
+                        </Text>
+                        {magicLinkResendRemainingSeconds > 0 ? (
+                          <Text style={styles.magicLinkCountdownText}>
+                            {t('magicLinkResendCountdown', { seconds: magicLinkResendRemainingSeconds })}
+                          </Text>
+                        ) : (
+                          <TouchableOpacity
+                            style={styles.secondaryActionButton}
+                            onPress={() => void handleSendMagicLink()}
+                            disabled={isBusy}
+                            dataSet={{ authEnterIgnore: 'true' }}
+                          >
+                            <Text style={styles.secondaryActionText}>
+                              {t('magicLinkSendAnother', 'Send another link')}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
 
-                  <TouchableOpacity
-                    style={styles.magicLinkCloseButton}
-                    onPress={resetMagicLinkConfirmation}
-                    disabled={isBusy}
-                    dataSet={{ authEnterIgnore: 'true' }}
-                  >
-                    <Text style={styles.magicLinkCloseText}>{t('magicLinkClose', 'Close')}</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <>
-                  <View
-                    style={[
-                      styles.emailInputContainer,
-                      emailError ? styles.emailInputContainerError : null,
-                    ]}
-                  >
-                    <Ionicons
-                      name="mail-outline"
-                      size={18}
-                      color={emailError ? '#F44336' : colors.text.secondary}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      ref={emailInputRef}
-                      style={styles.emailInput}
-                      value={email}
-                      onChangeText={handleEmailInputChange}
-                      placeholder={t('emailPlaceholder', 'Enter your email')}
-                      placeholderTextColor={colors.text.secondary}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      editable={!isBusy}
-                      onFocus={() => {
-                        activeSubmitFieldRef.current = 'email';
-                      }}
-                      onBlur={() => {
-                        if (activeSubmitFieldRef.current === 'email') {
-                          activeSubmitFieldRef.current = null;
-                        }
-                      }}
-                      returnKeyType="send"
-                      onSubmitEditing={handleEmailSubmitEditing}
-                      onKeyPress={handleEmailInputKeyPress}
-                    />
-                  </View>
+                        <TouchableOpacity
+                          style={styles.magicLinkCloseButton}
+                          onPress={resetMagicLinkConfirmation}
+                          disabled={isBusy}
+                          dataSet={{ authEnterIgnore: 'true' }}
+                        >
+                          <Text style={styles.magicLinkCloseText}>{t('magicLinkClose', 'Close')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <>
+                        <View
+                          style={[
+                            styles.emailInputContainer,
+                            emailError ? styles.emailInputContainerError : null,
+                          ]}
+                        >
+                          <Ionicons
+                            name="mail-outline"
+                            size={18}
+                            color={emailError ? '#F44336' : colors.text.secondary}
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            ref={emailInputRef}
+                            style={styles.emailInput}
+                            value={email}
+                            onChangeText={handleEmailInputChange}
+                            placeholder={t('emailPlaceholder', 'Enter your email')}
+                            placeholderTextColor={colors.text.secondary}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            editable={!isBusy}
+                            onFocus={() => {
+                              activeSubmitFieldRef.current = 'email';
+                            }}
+                            onBlur={() => {
+                              if (activeSubmitFieldRef.current === 'email') {
+                                activeSubmitFieldRef.current = null;
+                              }
+                            }}
+                            returnKeyType="send"
+                            onSubmitEditing={handleEmailSubmitEditing}
+                            onKeyPress={handleEmailInputKeyPress}
+                          />
+                        </View>
                   {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                   {shouldShowEmailSuggestions ? (
                     <View style={styles.emailSuggestionsContainer}>
@@ -2059,6 +2078,8 @@ const getStyles = (
     },
     passwordlessInfoCard: {
       width: '100%',
+      maxWidth: isDesktopLayout ? 420 : isCompactMobile ? 360 : 380,
+      alignSelf: 'center',
       borderRadius: 12,
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#d9d9de',
@@ -2082,6 +2103,8 @@ const getStyles = (
     },
     magicLinkConfirmationCard: {
       width: '100%',
+      maxWidth: isDesktopLayout ? 420 : isCompactMobile ? 360 : 380,
+      alignSelf: 'center',
       borderRadius: 12,
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#d9d9de',

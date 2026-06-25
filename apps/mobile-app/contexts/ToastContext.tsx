@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity } from 'react-native';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { MaterialIcons } from '../lib/vector-icons';
 
 export interface Toast {
   id: string;
@@ -56,13 +56,6 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       console.log('🔔 Updated toasts array:', updated);
       return updated;
     });
-
-    // Auto-hide after duration
-    if (newToast.duration && newToast.duration > 0) {
-      setTimeout(() => {
-        hideToast(id);
-      }, newToast.duration);
-    }
   }, []);
 
   const hideToast = useCallback((id: string) => {
@@ -182,9 +175,98 @@ const ToastItem: React.FC<ToastItemProps> = ({
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(100)); // Start from bottom (positive value)
   const [progressAnim] = useState(new Animated.Value(0)); // Progress bar animation
+  const autoHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoDismissDuration = toast.duration ?? 0;
+  const remainingDurationRef = useRef(autoDismissDuration);
+  const startTimestampRef = useRef<number | null>(null);
+  const isPausedRef = useRef(false);
+  const isDismissingRef = useRef(false);
 
   // Determine if toast is non-critical (errors are critical, others are not)
-  const isNonCritical = toast.type !== 'error' && toast.duration && toast.duration > 0;
+  const isAutoDismissToast = toast.type !== 'error' && autoDismissDuration > 0;
+
+  const clearAutoHideTimer = useCallback(() => {
+    if (autoHideTimeoutRef.current) {
+      clearTimeout(autoHideTimeoutRef.current);
+      autoHideTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleHide = useCallback(() => {
+    if (isDismissingRef.current) return;
+
+    isDismissingRef.current = true;
+    clearAutoHideTimer();
+    progressAnim.stopAnimation();
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 100, // Slide down to bottom
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onHide();
+    });
+  }, [clearAutoHideTimer, fadeAnim, onHide, progressAnim, slideAnim]);
+
+  const startAutoHideCountdown = useCallback((durationMs: number) => {
+    if (!isAutoDismissToast || durationMs <= 0 || isDismissingRef.current) return;
+
+    clearAutoHideTimer();
+    remainingDurationRef.current = durationMs;
+    startTimestampRef.current = Date.now();
+    isPausedRef.current = false;
+
+    autoHideTimeoutRef.current = setTimeout(() => {
+      autoHideTimeoutRef.current = null;
+      if (!isDismissingRef.current) {
+        handleHide();
+      }
+    }, durationMs);
+
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: durationMs,
+      useNativeDriver: false, // Width animation requires native driver to be false
+    }).start(({ finished }) => {
+      if (finished && !isPausedRef.current && !isDismissingRef.current) {
+        handleHide();
+      }
+    });
+  }, [clearAutoHideTimer, handleHide, isAutoDismissToast, progressAnim]);
+
+  const pauseAutoHideCountdown = useCallback(() => {
+    if (!isAutoDismissToast || isPausedRef.current || isDismissingRef.current) return;
+
+    isPausedRef.current = true;
+    clearAutoHideTimer();
+    progressAnim.stopAnimation((value) => {
+      const currentValue = typeof value === 'number' ? value : 0;
+      const startedAt = startTimestampRef.current;
+      const elapsed = startedAt ? Date.now() - startedAt : 0;
+      remainingDurationRef.current = Math.max(0, remainingDurationRef.current - elapsed);
+      startTimestampRef.current = null;
+      progressAnim.setValue(currentValue);
+    });
+  }, [clearAutoHideTimer, isAutoDismissToast, progressAnim]);
+
+  const resumeAutoHideCountdown = useCallback(() => {
+    if (!isAutoDismissToast || !isPausedRef.current || isDismissingRef.current) return;
+
+    const remaining = remainingDurationRef.current;
+    if (remaining <= 0) {
+      handleHide();
+      return;
+    }
+
+    startAutoHideCountdown(remaining);
+  }, [handleHide, isAutoDismissToast, startAutoHideCountdown]);
 
   React.useEffect(() => {
     // Animate in with spring effect
@@ -204,31 +286,14 @@ const ToastItem: React.FC<ToastItemProps> = ({
     ]).start();
 
     // Start progress bar animation for non-critical toasts
-    if (isNonCritical && toast.duration) {
-      Animated.timing(progressAnim, {
-        toValue: 1,
-        duration: toast.duration,
-        useNativeDriver: false, // Width animation requires native driver to be false
-      }).start();
+    if (isAutoDismissToast && autoDismissDuration > 0) {
+      startAutoHideCountdown(autoDismissDuration);
     }
-  }, []);
-
-  const handleHide = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 100, // Slide down to bottom
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onHide();
-    });
-  };
+    return () => {
+      clearAutoHideTimer();
+      progressAnim.stopAnimation();
+    };
+  }, [autoDismissDuration, clearAutoHideTimer, fadeAnim, isAutoDismissToast, progressAnim, slideAnim, startAutoHideCountdown]);
 
   const icon = getToastIcon(toast.type);
   const toastStyles = getToastStyles(toast.type);
@@ -245,7 +310,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
       ]}
       pointerEvents="box-none"
     >
-      <View 
+      <Pressable
         style={[
           styles.toast,
           toastStyles,
@@ -257,7 +322,8 @@ const ToastItem: React.FC<ToastItemProps> = ({
             elevation: 20,
           }
         ]}
-        pointerEvents="auto"
+        onPressIn={isAutoDismissToast ? pauseAutoHideCountdown : undefined}
+        onPressOut={isAutoDismissToast ? resumeAutoHideCountdown : undefined}
       >
         <View style={styles.toastContent}>
           <View style={styles.toastHeader}>
@@ -291,7 +357,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
                 </Text>
               )}
             </View>
-            <TouchableOpacity
+            <Pressable
               style={styles.closeButton}
               onPress={handleHide}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -301,11 +367,11 @@ const ToastItem: React.FC<ToastItemProps> = ({
                 size={18}
                 color={isDark ? '#8E8E93' : '#6C6C70'}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           
           {toast.action && (
-            <TouchableOpacity
+            <Pressable
               style={[
                 styles.actionButton, 
                 { 
@@ -321,12 +387,12 @@ const ToastItem: React.FC<ToastItemProps> = ({
               <Text style={[styles.actionButtonText, { color: icon.color }]}>
                 {toast.action.label}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
         
-        {/* Progress bar for non-critical toasts */}
-        {isNonCritical && (
+        {/* Progress bar for auto-dismiss toasts */}
+        {isAutoDismissToast && (
           <View style={[styles.progressBarContainer, { backgroundColor: `${icon.color}18` }]}>
             <Animated.View
               style={[
@@ -342,7 +408,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
             />
           </View>
         )}
-      </View>
+      </Pressable>
     </Animated.View>
   );
 };
