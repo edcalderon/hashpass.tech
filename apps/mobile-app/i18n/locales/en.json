@@ -122,6 +122,7 @@
     "magicLinkResendCountdown": "Didn't receive it? Send another in {seconds}s.",
     "magicLinkSendAnother": "Send another link",
     "magicLinkClose": "Close",
+    "openingGoogleSignIn": "Opening Google sign-in...",
     "privacy": {
       "text": "By signing in, you agree to our",
       "terms": "Terms of Service",

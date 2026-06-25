@@ -113,6 +113,7 @@
     "magicLinkResendCountdown": "Vous ne l'avez pas reçu ? Renvoyez-en un dans {seconds}s.",
     "magicLinkSendAnother": "Renvoyer un lien",
     "magicLinkClose": "Fermer",
+    "openingGoogleSignIn": "Ouverture de la connexion Google...",
     "privacy": {
       "text": "En vous connectant, vous acceptez nos",
       "terms": "Conditions d'utilisation",

@@ -18,7 +18,6 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -42,6 +41,7 @@ import {
   filterCountryDialOptions,
   resolveDefaultCountryISO2,
 } from '../../lib/country-dial-options';
+import { Ionicons } from '../../lib/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../config/supabase-profiles';
 import { getHashpassFullLogo } from '../../lib/hashpass-logo';
@@ -485,6 +485,10 @@ export default function AuthScreen() {
     isNativeLightMode
   );
   const isBusy = busyAction !== null;
+  const signInWithGoogleLabel = t('signInWithGoogle', 'Sign in with Google');
+  const openingGoogleSignInLabel = t('openingGoogleSignIn', 'Opening Google sign-in...');
+  const oauthButtonLabel =
+    busyAction === 'oauth' ? openingGoogleSignInLabel : signInWithGoogleLabel;
   const authActionMessage = useMemo(() => {
     switch (busyAction) {
       case 'magic-link':
@@ -493,10 +497,6 @@ export default function AuthScreen() {
         return t('sendingVerificationCode', 'Sending verification code...');
       case 'otp-verify':
         return t('verifyingCode', 'Verifying code...');
-      case 'oauth':
-        return Platform.OS === 'web'
-          ? t('openingGoogleSignIn', 'Opening Google sign-in...')
-          : t('openingGoogleSignInNative', 'Opening Google sign-in...');
       default:
         return '';
     }
@@ -1725,18 +1725,34 @@ export default function AuthScreen() {
                 onPress={() => void handleGoogleSignIn()}
                 disabled={isBusy}
                 accessibilityRole="button"
-                accessibilityLabel={t('googleSignIn', 'Continue with Google')}
+                accessibilityLabel={oauthButtonLabel}
+                accessibilityState={{ disabled: isBusy, busy: busyAction === 'oauth' }}
               >
-                {busyAction === 'oauth' ? (
-                  <ActivityIndicator size="small" color={colors.text.primary} />
+                {Platform.OS !== 'web' ? (
+                  <View style={styles.oauthButtonContent}>
+                    {busyAction === 'oauth' ? (
+                      <ActivityIndicator size="small" color={colors.text.primary} />
+                    ) : (
+                      <Ionicons name="logo-google" size={24} color={colors.text.primary} />
+                    )}
+                    <Text
+                      style={[
+                        styles.oauthButtonText,
+                        busyAction === 'oauth' ? styles.oauthButtonTextBusy : null,
+                      ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {oauthButtonLabel}
+                    </Text>
+                  </View>
                 ) : (
                   <>
-                    <Ionicons name="logo-google" size={24} color={colors.text.primary} />
-                    {Platform.OS !== 'web' ? (
-                      <Text style={styles.oauthButtonText}>
-                        {t('continueWithGoogle', 'Continue with Google')}
-                      </Text>
-                    ) : null}
+                    {busyAction === 'oauth' ? (
+                      <ActivityIndicator size="small" color={colors.text.primary} />
+                    ) : (
+                      <Ionicons name="logo-google" size={24} color={colors.text.primary} />
+                    )}
                   </>
                 )}
               </TouchableOpacity>
@@ -2599,13 +2615,32 @@ const getStyles = (
       borderRadius: 14,
       alignSelf: 'stretch',
       flexDirection: 'row',
-      gap: 10,
-      paddingHorizontal: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: isVeryCompactMobile ? 8 : 10,
+      paddingHorizontal: isVeryCompactMobile ? 12 : 16,
+      overflow: 'hidden',
+    },
+    oauthButtonContent: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: isVeryCompactMobile ? 8 : 10,
+      overflow: 'hidden',
     },
     oauthButtonText: {
-      fontSize: 16,
+      flex: 1,
+      minWidth: 0,
+      fontSize: isVeryCompactMobile ? 14 : isCompactMobile ? 15 : 16,
       fontWeight: '700',
       color: colors.text.primary,
+      textAlign: 'center',
+      lineHeight: isVeryCompactMobile ? 18 : 20,
+    },
+    oauthButtonTextBusy: {
+      letterSpacing: 0.1,
     },
     authActionMessageContainer: {
       width: '100%',

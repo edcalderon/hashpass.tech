@@ -122,6 +122,7 @@
     "magicLinkResendCountdown": "받지 못하셨나요? {seconds}초 후 다시 보낼 수 있어요.",
     "magicLinkSendAnother": "링크 다시 보내기",
     "magicLinkClose": "닫기",
+    "openingGoogleSignIn": "Google 로그인을 여는 중...",
     "privacy": {
       "text": "로그인함으로써 다음에 동의합니다",
       "terms": "서비스 약관",
