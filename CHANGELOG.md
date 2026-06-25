@@ -1,3 +1,14 @@
+## [1.8.140](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.139...v1.8.140) (2026-06-25)
+
+
+### Bug Fixes
+
+* **native:** center auth toast and pause countdown ([b4b8546](https://github.com/hashpass-tech/hashpass.tech/commit/b4b85461f9a3686717e71361725f545719e04f29))
+
+
+
+
+
 ## [1.8.139](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.138...v1.8.139) (2026-06-25)
 
 

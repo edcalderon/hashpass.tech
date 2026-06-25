@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.139)
+## 📋 Latest Changes (v1.8.140)
 
 ### Bug Fixes
 
-* **native:** use vector icon wrapper on policy screens ([32a0370](https://github.com/hashpass-tech/hashpass.tech/commit/32a0370914df384dd90cd6b7ef6090838094a72f))
+* **native:** center auth toast and pause countdown ([b4b8546](https://github.com/hashpass-tech/hashpass.tech/commit/b4b85461f9a3686717e71361725f545719e04f29))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
