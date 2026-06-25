@@ -6,8 +6,8 @@ This guide covers the Play Console track ladder for HashPass and how it maps to 
 
 | Track | Play Console purpose | Repo command | Release status | When to use |
 |------|----------------------|--------------|----------------|-------------|
-| Internal | Early QA for trusted testers | `environment=development` | `completed` | Before the app is fully configured or when you want the fastest smoke test |
-| Closed (`alpha`) | Controlled pre-launch testing | `environment=production --track=alpha` | `draft` for the first upload, then `completed` | Required gate before production access for new personal developer accounts |
+| Internal | Early QA for trusted testers | `environment=development` | `completed` | Required first step before closed alpha or when you want the fastest smoke test |
+| Closed (`alpha`) | Controlled pre-launch testing | `environment=production --track=alpha` | `draft` for the first upload, then `completed` | Follow the internal track for the same tag before broader pre-launch testing or production access |
 | Open (`beta`) | Broader public testing | `environment=production --track=beta` | `completed` | After production access is granted and you want wider feedback |
 | Production | Public release | `environment=production --track=production` | `completed` | For the live app release and staged rollouts |
 
@@ -17,9 +17,10 @@ Notes:
 - In the Play Console UI, open testing maps to the `beta` track.
 - `release_status=draft` is only needed for the first closed-testing upload while Play still treats the app as draft.
 - `release_status=completed` is the default for normal releases.
+- Closed alpha is blocked until the matching internal release has already succeeded for the same tag.
 - Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
 - The Fastlane release lane uploads any available Play deobfuscation files from the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` exists.
-- This only applies to builds created after this change; the already-uploaded `v1.8.135` draft artifact will stay without deobfuscation until a new build is uploaded.
+- This only applies to builds created after this change; the already-uploaded `v1.8.137` draft artifact will stay without deobfuscation until a new build is uploaded.
 
 ## 1. Internal Testing
 
@@ -30,6 +31,7 @@ Why it exists:
 - Fastest way to validate a build before broader release.
 - Can be used before the app is fully configured.
 - Supports up to 100 testers.
+- It is the required first release before any closed alpha upload on the same tag.
 
 How to release from this repo:
 
@@ -59,7 +61,7 @@ What to verify:
 
 ## 2. Closed Testing
 
-Closed testing is the required pre-production gate for newly created personal developer accounts.
+Closed testing is the required pre-production gate for newly created personal developer accounts, but it should follow a successful internal release for the same tag.
 
 Google's current guidance for newly created personal developer accounts is:
 
@@ -80,6 +82,8 @@ gh workflow run mobile-android-release.yml \
 ```
 
 For subsequent alpha updates, switch `release_status` back to `completed` once Play no longer treats the app as draft.
+
+If the internal release has not already succeeded for the same tag, run the internal workflow first and wait for it to complete before dispatching alpha.
 
 What to do in Play Console:
 
@@ -178,13 +182,13 @@ After rollout:
 - If something is wrong, halt the rollout or ship a fix before expanding further.
 - Keep the next patch ready so you can respond quickly.
 
-## v1.8.135 Baseline Production Checklist
+## Baseline Production Checklist
 
 Use this checklist when moving from the current closed-test baseline to the live production release.
 
 1. Confirm the alpha closed test is still active, has at least 12 opted-in testers, and those testers have remained opted in for 14 continuous days.
 2. Confirm production access has been approved in Play Console and that Store listing, Data Safety, content rating, app access, and signing are all complete.
-3. Cut the next patch version from `main` with `npm run release:patch`. Do not reuse `v1.8.135` for production.
+3. Cut the next patch version from `main` with `npm run release:patch`. Do not reuse the last shipped tag for production.
 4. Trigger `mobile-android-release.yml` on the new tag with `environment=production`, `track=production`, `release_status=completed`, `backend=fastlane`, and `runner=aws-ec2`.
 5. In Play Console, add production release notes, pick a staged rollout percentage, and start the rollout.
 6. Verify the workflow run, the web deploy checks, and Android Vitals after rollout begins.
@@ -192,8 +196,8 @@ Use this checklist when moving from the current closed-test baseline to the live
 
 ## Recommended Path
 
-1. Start with internal testing if you need the fastest QA loop.
-2. Run a closed test on `alpha`.
+1. Start with internal testing. The workflow now blocks `alpha` until internal succeeds for the same tag.
+2. Run a closed test on `alpha` after the internal release is live.
 3. Keep testers opted in for 14 days and apply for production access.
 4. Use open testing only if you want a broader pre-production audience after access is granted.
 5. Publish to production on `track=production`.

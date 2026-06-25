@@ -38,7 +38,8 @@ The script:
      --field backend=fastlane \
      --field runner=aws-ec2
    ```
-   Use `environment=development` only when you explicitly want the internal preview track. For the first Play Console closed-testing release, keep `environment=production`, set `track=alpha`, and use `release_status=draft` while the Play Console app is still in draft.
+   Use `environment=development` only when you explicitly want the internal preview track. For closed testing, publish the matching internal release first on the same tag, then run `environment=production` with `track=alpha`. The workflow now blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
+   For the first Play Console closed-testing release, keep `environment=production`, set `track=alpha`, and use `release_status=draft` while the Play Console app is still in draft.
    The release workflow uses the `ANDROID_UPLOAD_KEY_SHA1` repository variable to select the Expo build credential that matches the Play upload certificate.
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
    The Fastlane lane also uploads any deobfuscation files it finds in the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` is present. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.

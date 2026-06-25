@@ -1,4 +1,5 @@
 name: Mobile Android Release
+run-name: Mobile Android Release - ${{ inputs.environment }}/${{ inputs.track }} - ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -68,14 +69,59 @@ jobs:
             echo 'runner=["self-hosted","linux","x64","hashpass-mobile-release"]' >> "$GITHUB_OUTPUT"
           fi
 
+  # Blocks closed alpha until the matching internal release has already succeeded
+  # for the same tag. This keeps version codes in release order and avoids drift
+  # between internal and closed testing tracks.
+  require-internal-before-alpha:
+    runs-on: ubuntu-latest
+    if: inputs.environment == 'production' && inputs.track == 'alpha'
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Require a successful internal release first
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const refName = context.ref_name;
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'mobile-android-release.yml',
+                head_sha: context.sha,
+                per_page: 100,
+              }
+            );
+
+            const internalRun = runs.find((run) => {
+              const title = run.display_title || run.displayTitle || run.name || '';
+              return run.event === 'workflow_dispatch' &&
+                run.conclusion === 'success' &&
+                title.includes('development/internal') &&
+                title.includes(refName);
+            });
+
+            if (!internalRun) {
+              core.setFailed(
+                [
+                  `Blocked alpha release for ${refName}.`,
+                  'Run the internal release first with environment=development, wait for success,',
+                  'then rerun the alpha release so internal and closed testing stay in sync.',
+                ].join(' ')
+              );
+            }
+
   # Wakes the EC2 runner before the release job runs.
   # Requires three GitHub variables: AWS_RUNNER_ROLE_ARN, EC2_RUNNER_INSTANCE_ID, AWS_RUNNER_REGION.
   # Skipped automatically when using github-hosted runner or when variables are not yet configured.
   # Set up: run terraform apply with enable_github_actions_runner_control=true, then copy the
   # github_actions_role_arn output as GitHub variable AWS_RUNNER_ROLE_ARN.
   start-runner:
+    needs: [require-internal-before-alpha]
     runs-on: ubuntu-latest
-    if: inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
+    if: always() && (needs.require-internal-before-alpha.result == 'success' || needs.require-internal-before-alpha.result == 'skipped') && inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
     permissions:
       id-token: write
       contents: read
@@ -123,8 +169,8 @@ jobs:
           echo "Done waiting — GitHub will dispatch the release job when the runner is online."
 
   release:
-    needs: [select-runner, start-runner]
-    if: always() && github.repository == 'hashpass-tech/hashpass.tech' && needs.select-runner.result == 'success' && (needs.start-runner.result == 'success' || needs.start-runner.result == 'skipped')
+    needs: [select-runner, start-runner, require-internal-before-alpha]
+    if: always() && github.repository == 'hashpass-tech/hashpass.tech' && needs.select-runner.result == 'success' && needs.require-internal-before-alpha.result != 'failure' && (needs.start-runner.result == 'success' || needs.start-runner.result == 'skipped')
     runs-on: ${{ fromJSON(needs.select-runner.outputs.runner) }}
     timeout-minutes: 120
     permissions:

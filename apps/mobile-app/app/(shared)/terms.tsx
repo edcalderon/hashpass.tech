@@ -5,19 +5,25 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { t } from '@lingui/macro';
-import { useLingui } from '@lingui/react';
 
 export default function TermsOfServiceScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
-  const { i18n } = useLingui();
   const styles = getStyles(isDark, colors);
+  const handleBackPress = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={handleBackPress}
           style={styles.backButton}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
@@ -195,4 +201,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
 });
-
