@@ -17,11 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.136)
+## 📋 Latest Changes (v1.8.137)
 
 ### Bug Fixes
 
-* **android-release:** upload Play deobfuscation files ([fed702b](https://github.com/hashpass-tech/hashpass.tech/commit/fed702bb59bee37cd7e94ed8588c5f989daed5d9))
+* **auth:** keep Google sign-in loading state inside button ([8e2e698](https://github.com/hashpass-tech/hashpass.tech/commit/8e2e698a27d004e39cb6368b4dfb534a03ba49e4))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

@@ -1,3 +1,14 @@
+## [1.8.137](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.136...v1.8.137) (2026-06-25)
+
+
+### Bug Fixes
+
+* **auth:** keep Google sign-in loading state inside button ([8e2e698](https://github.com/hashpass-tech/hashpass.tech/commit/8e2e698a27d004e39cb6368b4dfb534a03ba49e4))
+
+
+
+
+
 ## [1.8.136](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.135...v1.8.136) (2026-06-24)
 
 
