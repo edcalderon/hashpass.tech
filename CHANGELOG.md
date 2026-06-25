@@ -1,3 +1,15 @@
+## [1.8.138](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.137...v1.8.138) (2026-06-25)
+
+
+### Bug Fixes
+
+* **native:** use Ionicons subpath imports ([8117038](https://github.com/hashpass-tech/hashpass.tech/commit/8117038d27d7a21a32955d1b102118a9e4d029f2))
+* **release:** enforce internal-before-alpha and privacy fallback ([9f79e1a](https://github.com/hashpass-tech/hashpass.tech/commit/9f79e1a1849b2824fe6d7874c767f8f6a1290d42))
+
+
+
+
+
 ## [1.8.137](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.136...v1.8.137) (2026-06-25)
 
 
