@@ -17,12 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.138)
+## 📋 Latest Changes (v1.8.139)
 
 ### Bug Fixes
 
-* **native:** use Ionicons subpath imports ([8117038](https://github.com/hashpass-tech/hashpass.tech/commit/8117038d27d7a21a32955d1b102118a9e4d029f2))
-* **release:** enforce internal-before-alpha and privacy fallback ([9f79e1a](https://github.com/hashpass-tech/hashpass.tech/commit/9f79e1a1849b2824fe6d7874c767f8f6a1290d42))
+* **native:** use vector icon wrapper on policy screens ([32a0370](https://github.com/hashpass-tech/hashpass.tech/commit/32a0370914df384dd90cd6b7ef6090838094a72f))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

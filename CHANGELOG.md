@@ -1,3 +1,14 @@
+## [1.8.139](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.138...v1.8.139) (2026-06-25)
+
+
+### Bug Fixes
+
+* **native:** use vector icon wrapper on policy screens ([32a0370](https://github.com/hashpass-tech/hashpass.tech/commit/32a0370914df384dd90cd6b7ef6090838094a72f))
+
+
+
+
+
 ## [1.8.138](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.137...v1.8.138) (2026-06-25)
 
 
