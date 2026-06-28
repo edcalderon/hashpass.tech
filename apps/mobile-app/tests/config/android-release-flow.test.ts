@@ -158,7 +158,15 @@ describe('Android release flow', () => {
     const rootPackageJson = readJson('../../package.json');
     const mobilePackageJson = readJson('package.json');
     const reactNativeConfig = require('../../react-native.config.js') as {
-      dependencies?: Record<string, { platforms?: { android?: { packageImportPath?: string } } }>;
+      dependencies?: Record<
+        string,
+        {
+          platforms?: {
+            android?: { packageImportPath?: string };
+            ios?: { packageImportPath?: string };
+          };
+        }
+      >;
     };
     const scripts = rootPackageJson.scripts as Record<string, string>;
     const rootDependencies = rootPackageJson.dependencies as Record<string, string>;
