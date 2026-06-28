@@ -136,9 +136,10 @@ jobs:
             echo 'runner=["self-hosted","linux","x64","hashpass-mobile-release"]' >> "$GITHUB_OUTPUT"
           fi
 
-  # Blocks alpha until the matching internal release has already succeeded for
-  # the same ref. This keeps version codes in release order and avoids drift
-  # between internal and closed testing tracks.
+  # Blocks alpha until the matching internal release job has already succeeded
+  # for the same ref. This keeps version codes in release order and avoids
+  # drift between internal and closed testing tracks, even if a later auto-
+  # promote job failed on the same workflow run.
   require-internal-before-alpha:
     runs-on: ubuntu-latest
     if: inputs.track == 'alpha'
@@ -170,19 +171,42 @@ jobs:
               }
             );
 
-            const internalRun = runs.find((run) => {
+            async function hasSuccessfulReleaseJob(runId) {
+              const jobs = await github.paginate(
+                github.rest.actions.listJobsForWorkflowRun,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                }
+              );
+
+              return jobs.some((job) => job.name === 'release' && job.conclusion === 'success');
+            }
+
+            let internalRun = null;
+            for (const run of runs) {
               const title = run.display_title || run.displayTitle || run.name || '';
-              return run.event === 'workflow_dispatch' &&
-                run.conclusion === 'success' &&
-                title.includes('development/internal') &&
-                title.includes(refName);
-            });
+              if (
+                run.event !== 'workflow_dispatch' ||
+                !title.includes('development/internal') ||
+                !title.includes(refName)
+              ) {
+                continue;
+              }
+
+              if (await hasSuccessfulReleaseJob(run.id)) {
+                internalRun = run;
+                break;
+              }
+            }
 
             if (!internalRun) {
               core.setFailed(
                 [
                   `Blocked alpha release for ${refName}.`,
-                  'Run the internal release first with environment=development, wait for success,',
+                  'Run the internal release first with environment=development, wait for the release job to succeed,',
                   'then rerun the alpha release so internal and closed testing stay in sync.',
                 ].join(' ')
               );
