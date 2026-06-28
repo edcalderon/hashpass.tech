@@ -2,16 +2,16 @@
 
 This guide covers the Play Console track ladder for HashPass and how it maps to the repo's Android release workflow.
 
-Temporary release posture: the current cycle is internal-first. Use `environment=development` for validation, keep alpha gated by the matching internal release on the same tag, and do not publish to production until the release freeze is lifted.
+Temporary release posture: the current cycle is internal-first on the development profile. Use `environment=development` for validation, keep alpha gated by the matching internal release on the same tag, and do not publish to production until the release freeze is lifted.
 
 ## Track Matrix
 
 | Track | Play Console purpose | Repo command | Release status | When to use |
 |------|----------------------|--------------|----------------|-------------|
 | Internal | Early QA for trusted testers | `environment=development` | `completed` | Required first step before closed alpha or when you want the fastest smoke test |
-| Closed (`alpha`) | Controlled pre-launch testing | `environment=production --track=alpha` | `draft` for the first upload, then `completed` | Follow the internal track for the same tag before broader pre-launch testing or production access |
+| Closed (`alpha`) | Controlled pre-launch testing | `environment=development --track=alpha` | `draft` for the first upload, then `completed` | Follow the internal track for the same tag before broader pre-launch testing while production is paused |
 | Open (`beta`) | Broader public testing | `environment=production --track=beta` | `completed` | After production access is granted and you want wider feedback |
-| Production | Public release | `environment=production --track=production` | `completed` | For the live app release and staged rollouts once the release freeze is lifted |
+| Production | Public release | `environment=production --track=production` | `completed` | Paused until the release freeze is lifted |
 
 Notes:
 
@@ -64,7 +64,7 @@ What to verify:
 
 ## 2. Closed Testing
 
-Closed testing is the required pre-production gate for newly created personal developer accounts, but it should follow a successful internal release for the same tag.
+Closed testing is the current second step after internal and remains the pre-production gate for newly created personal developer accounts.
 
 Google's current guidance for newly created personal developer accounts is:
 
@@ -77,7 +77,7 @@ How to release the first closed test from this repo:
 gh workflow run mobile-android-release.yml \
   --repo hashpass-tech/hashpass.tech \
   --ref v<NEW_VERSION> \
-  --field environment=production \
+  --field environment=development \
   --field track=alpha \
   --field release_status=draft \
   --field backend=fastlane \
@@ -115,7 +115,7 @@ What to verify:
 
 ## 3. Open Testing
 
-Open testing is broader pre-production testing and is only available after production access.
+Open testing is broader pre-production testing and is only available after production access. It is not part of the current release freeze.
 
 Use it when you want a larger audience to see the test listing and provide private feedback.
 
@@ -145,9 +145,9 @@ What to verify:
 - Feedback is arriving through Play.
 - The release is stable enough to justify widening the audience.
 
-## 4. Production
+## 4. Production (Paused)
 
-Production is the public release path.
+Production is the public release path and is paused for the current development cycle.
 
 Before publishing, make sure:
 
@@ -156,7 +156,7 @@ Before publishing, make sure:
 - Store listing, Data Safety, content rating, app access, and signing are complete.
 - You have a release note summary ready for users and reviewers.
 
-How to publish from this repo:
+How to publish from this repo when the freeze lifts:
 
 ```bash
 gh workflow run mobile-android-release.yml \
@@ -189,6 +189,8 @@ After rollout:
 
 Use this checklist when moving from the current closed-test baseline to the live production release.
 
+This checklist is deferred until production access has been approved and the release freeze lifts.
+
 1. Confirm the alpha closed test is still active, has at least 12 opted-in testers, and those testers have remained opted in for 14 continuous days.
 2. Confirm production access has been approved in Play Console and that Store listing, Data Safety, content rating, app access, and signing are all complete.
 3. Cut the next patch version from `main` with `npm run release:patch`. Do not reuse the last shipped tag for production.
@@ -201,9 +203,9 @@ Use this checklist when moving from the current closed-test baseline to the live
 
 1. Start with internal testing. The workflow now blocks `alpha` until internal succeeds for the same tag.
 2. Run a closed test on `alpha` after the internal release is live.
-3. Keep testers opted in for 14 days and apply for production access.
+3. Keep testers opted in for 14 days and apply for production access when you are ready.
 4. Use open testing only if you want a broader pre-production audience after access is granted.
-5. Publish to production on `track=production`.
+5. Publish to production only after the freeze lifts.
 
 ## Related Docs
 

@@ -130,9 +130,10 @@ Deployment split:
 - Use `pnpm run infra:deploy:dev` and `pnpm run infra:deploy:prod` for the BSL site, and `pnpm run infra:provision-pipelines` if you need to recreate the pipeline wiring.
 
 - `pnpm run android:bundle` builds the Play Store artifact as an Android App Bundle (`.aab`) via the production EAS project.
-- `pnpm run android:publish` submits the latest Android build to Google Play through EAS Submit on the production track.
-- `pnpm run android:release` now defaults to the self-hosted fastlane path and auto-submits in one step for the production track.
-- `pnpm run android:release:alpha` uses the same fastlane path but submits to the Play Console alpha closed-testing track and is blocked until a successful internal release exists for the same tag.
+- `pnpm run android:publish` is the production-track EAS Submit path and is paused until the release freeze lifts.
+- Android production publishing is paused for the current release freeze. Use the development/internal path and the alpha closed-testing path instead.
+- `pnpm run android:release` is the production-track fastlane path and should stay paused until the freeze lifts.
+- `pnpm run android:release:alpha` uses the same fastlane path, runs against the development profile, and submits to the Play Console alpha closed-testing track after the matching internal release succeeds for the same tag.
 - If the Play Console app is still in draft, set `FASTLANE_RELEASE_STATUS=draft` for the first alpha closed-testing upload; switch back to `completed` once Play accepts the app.
 - `pnpm run android:bundle:dev` builds an internal preview bundle on the development EAS project.
 - `pnpm run android:publish:dev` submits the latest internal preview build through the development EAS project.
@@ -142,8 +143,8 @@ Deployment split:
 - The generic release wrapper accepts `--env production|development`, `--backend eas|fastlane`, `--track production|alpha|beta|internal`, and `--release-status draft|completed|halted|inProgress` if you call `packages/tools/scripts/run-mobile-release.js` directly.
 - `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, defaulting to fastlane so the same command can target the self-hosted runner without changing scripts.
 - The self-hosted GitHub Actions workflow `.github/workflows/mobile-android-release.yml` targets the `hashpass-mobile-release` runner label on AWS EC2, defaults to fastlane, and can be switched back to EAS through the workflow input.
-- Temporary release posture: keep Android publishing internal-first for now. Use the development/internal path before any closed alpha retry, and do not use the production track until the release freeze is lifted.
-- The workflow also accepts Play track and release-status inputs; keep `environment=production` for closed testing releases, set `track=alpha` for the first closed test, and use `release_status=draft` while the app is still in Play Console draft. `environment=development` always stays on the internal preview track, and closed alpha cannot run until the matching internal release has already succeeded for the same tag.
+- Temporary release posture: keep Android publishing on the development profile for now. Use `pnpm run android:release:dev` for internal testing, then `pnpm run android:release:alpha` after the same tag succeeds internally. Leave production paused until the release freeze is lifted.
+- The workflow accepts `environment=development` with `track=internal` for the first pass and `track=alpha` after internal succeeds; `release_status=draft` is only needed while the app is still in Play Console draft. Production dispatches are paused during the freeze.
 - Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
 - The Fastlane release lane automatically uploads any Play deobfuscation files it finds in the Android build outputs (`mapping.txt` or `native-debug-symbols.zip`), so future crash traces stay readable in Play Console. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
 - The full Play Console ladder and production publish checklist live in [apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md](apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md).

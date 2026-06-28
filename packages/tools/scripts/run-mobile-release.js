@@ -202,9 +202,9 @@ function main(argv = process.argv.slice(2)) {
       [
         'Usage: node packages/tools/scripts/run-mobile-release.js [--env production|development] [--profile eas-profile] [--backend eas|fastlane] [--track play-track] [--release-status draft|completed|halted|inProgress] [--no-submit]',
         '',
-        'Defaults to a production release using fastlane.',
-        'Use --env development to target the development Expo account and internal preview profile.',
-        'Use --track alpha for the Play Console closed-testing track.',
+        'Defaults to a production-profile release using fastlane, but the current freeze expects development/internal or development/alpha releases.',
+        'Use --env development to target the development Expo account and internal preview profile while production is paused.',
+        'Use --track alpha with --env development for the Play Console closed-testing track after the internal release succeeds for the same tag.',
         'Use --release-status draft when the Play app is still in draft for the first closed-testing upload.',
         'Use --backend eas only if you explicitly want the managed Expo build path.',
         'Use --backend fastlane to build locally with Expo prebuild + fastlane supply.',

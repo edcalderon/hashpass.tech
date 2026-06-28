@@ -22,7 +22,7 @@ The script:
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering.
 
 ### Mobile Android Release Workflow
-**Temporary release posture:** while the app is under active development, keep Android publishing internal-first. Do not dispatch the production track for now. Publish `environment=development` first, then retry alpha only after the same tag has a successful internal release. The workflow already blocks alpha until internal succeeds for that tag.
+**Temporary release posture:** while the app is under active development, keep Android publishing internal-first. Use `environment=development` with `track=internal` for the first pass, then rerun the same tag with `track=alpha` after the internal release succeeds. Production dispatches are paused for now.
 
 1. **Create commit** with your changes
 2. **Push to origin/main** (hashpass-tech/hashpass.tech)
@@ -35,18 +35,18 @@ The script:
    gh workflow run mobile-android-release.yml \
      --repo hashpass-tech/hashpass.tech \
      --ref v<NEW_VERSION> \
-     --field environment=production \
-     --field track=production \
+     --field environment=development \
+     --field track=internal \
      --field backend=fastlane \
      --field runner=aws-ec2
    ```
-   Use `environment=development` only when you explicitly want the internal preview track. For closed testing, publish the matching internal release first on the same tag, then run `environment=production` with `track=alpha`. The workflow now blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
-   For the first Play Console closed-testing release, keep `environment=production`, set `track=alpha`, and use `release_status=draft` while the Play Console app is still in draft.
+   Use `environment=development` with `track=internal` for smoke tests. For closed testing, publish the matching internal release first on the same tag, then rerun `environment=development` with `track=alpha`. The workflow blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
+   For the first Play Console closed-testing release, keep `environment=development`, set `track=alpha`, and use `release_status=draft` while the Play Console app is still in draft.
    Production track publishing (`environment=production` / `track=production`) remains paused until the release freeze is lifted.
    The release workflow uses the `ANDROID_UPLOAD_KEY_SHA1` repository variable to select the Expo build credential that matches the Play upload certificate.
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
    The Fastlane lane also uploads any deobfuscation files it finds in the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` is present. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
-   For the full internal, closed, open, and production track ladder plus the publishing checklist, see `apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md`.
+   For the current internal/alpha path and the future production checklist, see `apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md`.
 5. **Push to edcalderon fork** after version bump (for backup):
    ```bash
    git push upstream main <TAG_NAME>

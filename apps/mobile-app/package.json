@@ -14,7 +14,7 @@
     "android:publish:dev": "node ../../packages/tools/scripts/run-mobile-eas.js submit --platform android --profile preview --latest",
     "android:release": "node ../../packages/tools/scripts/run-mobile-release.js --env production",
     "android:release:dev": "node ../../packages/tools/scripts/run-mobile-release.js --env development",
-    "android:release:alpha": "node ../../packages/tools/scripts/run-mobile-release.js --backend fastlane --env production --track alpha",
+    "android:release:alpha": "node ../../packages/tools/scripts/run-mobile-release.js --backend fastlane --env development --track alpha",
     "android:release:eas": "node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env production",
     "android:release:eas:dev": "node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env development",
     "android:release:fastlane": "node ../../packages/tools/scripts/run-mobile-release.js --backend fastlane --env production",

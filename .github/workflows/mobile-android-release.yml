@@ -7,7 +7,7 @@ on:
       environment:
         description: Release environment
         required: true
-        default: production
+        default: development
         type: choice
         options:
           - production
@@ -15,7 +15,7 @@ on:
       track:
         description: Google Play track
         required: true
-        default: production
+        default: internal
         type: choice
         options:
           - production
@@ -54,9 +54,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Temporary release posture: production Android releases are paused.
+  # Development dispatches are limited to internal or alpha while the freeze is active.
+  validate-release-target:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate release target
+        run: |
+          set -euo pipefail
+
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            cat >&2 <<'EOF'
+            Production Android releases are paused for the current development cycle.
+            Use environment=development with track=internal for smoke tests or track=alpha for closed testing after internal succeeds.
+            EOF
+            exit 1
+          fi
+
+          case "${{ inputs.track }}" in
+            internal|alpha)
+              ;;
+            *)
+              cat >&2 <<'EOF'
+            Development Android releases are limited to the internal and alpha tracks while the production freeze is active.
+            Use track=internal for the first pass, then track=alpha after the internal release succeeds for the same tag.
+            EOF
+              exit 1
+              ;;
+          esac
+
   # Resolves the runner label array from the human-readable input so that
   # the release job can use fromJSON() on a single output string.
   select-runner:
+    needs: [validate-release-target]
     runs-on: ubuntu-latest
     outputs:
       runner: ${{ steps.pick.outputs.runner }}
@@ -69,12 +99,12 @@ jobs:
             echo 'runner=["self-hosted","linux","x64","hashpass-mobile-release"]' >> "$GITHUB_OUTPUT"
           fi
 
-  # Blocks closed alpha until the matching internal release has already succeeded
-  # for the same tag. This keeps version codes in release order and avoids drift
+  # Blocks alpha until the matching internal release has already succeeded for
+  # the same tag. This keeps version codes in release order and avoids drift
   # between internal and closed testing tracks.
   require-internal-before-alpha:
     runs-on: ubuntu-latest
-    if: inputs.environment == 'production' && inputs.track == 'alpha'
+    if: inputs.track == 'alpha'
     permissions:
       actions: read
       contents: read
@@ -119,9 +149,9 @@ jobs:
   # Set up: run terraform apply with enable_github_actions_runner_control=true, then copy the
   # github_actions_role_arn output as GitHub variable AWS_RUNNER_ROLE_ARN.
   start-runner:
-    needs: [require-internal-before-alpha]
+    needs: [validate-release-target, require-internal-before-alpha]
     runs-on: ubuntu-latest
-    if: always() && (needs.require-internal-before-alpha.result == 'success' || needs.require-internal-before-alpha.result == 'skipped') && inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
+    if: always() && needs.validate-release-target.result == 'success' && (needs.require-internal-before-alpha.result == 'success' || needs.require-internal-before-alpha.result == 'skipped') && inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
     permissions:
       id-token: write
       contents: read
@@ -169,8 +199,8 @@ jobs:
           echo "Done waiting — GitHub will dispatch the release job when the runner is online."
 
   release:
-    needs: [select-runner, start-runner, require-internal-before-alpha]
-    if: always() && github.repository == 'hashpass-tech/hashpass.tech' && needs.select-runner.result == 'success' && needs.require-internal-before-alpha.result != 'failure' && (needs.start-runner.result == 'success' || needs.start-runner.result == 'skipped')
+    needs: [validate-release-target, select-runner, start-runner, require-internal-before-alpha]
+    if: always() && github.repository == 'hashpass-tech/hashpass.tech' && needs.validate-release-target.result == 'success' && needs.select-runner.result == 'success' && needs.require-internal-before-alpha.result != 'failure' && (needs.start-runner.result == 'success' || needs.start-runner.result == 'skipped')
     runs-on: ${{ fromJSON(needs.select-runner.outputs.runner) }}
     timeout-minutes: 120
     permissions:
@@ -179,7 +209,7 @@ jobs:
       CI: '1'
       MOBILE_RELEASE_BACKEND: ${{ inputs.backend }}
       MOBILE_RELEASE_ENV: ${{ inputs.environment }}
-      MOBILE_RELEASE_TRACK: ${{ inputs.environment == 'development' && 'internal' || inputs.track }}
+      MOBILE_RELEASE_TRACK: ${{ inputs.track }}
       FASTLANE_RELEASE_STATUS: ${{ inputs.release_status }}
       ANDROID_UPLOAD_KEY_SHA1: ${{ vars.ANDROID_UPLOAD_KEY_SHA1 }}
       GOOGLE_PLAY_JSON_KEY: ${{ github.workspace }}/.runner-secrets/google-play-service-account.json
