@@ -115,7 +115,7 @@ jobs:
           fi
 
   # Blocks alpha until the matching internal release has already succeeded for
-  # the same tag. This keeps version codes in release order and avoids drift
+  # the same ref. This keeps version codes in release order and avoids drift
   # between internal and closed testing tracks.
   require-internal-before-alpha:
     runs-on: ubuntu-latest
@@ -128,7 +128,15 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const refName = context.ref_name;
+            const refName = String(context.ref_name || context.ref || '')
+              .replace(/^refs\/heads\//, '')
+              .replace(/^refs\/tags\//, '');
+
+            if (!refName) {
+              core.setFailed('Unable to determine the release ref for alpha gating.');
+              return;
+            }
+
             const runs = await github.paginate(
               github.rest.actions.listWorkflowRunsForRepo,
               {
@@ -847,7 +855,7 @@ jobs:
         run: ccache --show-stats || true
 
   # Optional single-step promotion path: after a successful internal release,
-  # dispatch the matching alpha run on the same tag. The alpha job still runs
+  # dispatch the matching alpha run on the same ref. The alpha job still runs
   # through the same internal-before-alpha guard.
   auto-promote-alpha:
     needs: [release]
@@ -865,11 +873,20 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const refName = String(context.ref_name || context.ref || '')
+              .replace(/^refs\/heads\//, '')
+              .replace(/^refs\/tags\//, '');
+
+            if (!refName) {
+              core.setFailed('Unable to determine the release ref for alpha dispatch.');
+              return;
+            }
+
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'mobile-android-release.yml',
-              ref: context.ref_name,
+              ref: refName,
               inputs: {
                 environment: 'development',
                 track: 'alpha',
@@ -879,7 +896,7 @@ jobs:
                 auto_promote_alpha: 'false',
               },
             });
-            core.info(`Queued alpha release for ${context.ref_name}.`);
+            core.info(`Queued alpha release for ${refName}.`);
 
   # Stops the EC2 runner after the build rather than waiting for the idle watchdog.
   # Grace period: waits 90 s then checks the GitHub API — if the runner picked up a
