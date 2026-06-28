@@ -134,7 +134,7 @@ Deployment split:
 - Android production publishing is paused for the current release freeze. Use the development/internal path and the alpha closed-testing path instead.
 - `pnpm run android:release` is the production-track fastlane path and should stay paused until the freeze lifts.
 - `pnpm run android:release:alpha` uses the same fastlane path, runs against the development profile, and submits to the Play Console alpha closed-testing track after the matching internal release succeeds for the same tag.
-- If the Play Console app is still in draft, set `FASTLANE_RELEASE_STATUS=draft` for the first alpha closed-testing upload; switch back to `completed` once Play accepts the app.
+- If you want one-step promotion, dispatch the Android workflow with `auto_promote_alpha=true`; set `alpha_release_status=draft` for the first closed-test upload while Play still treats the app as draft.
 - `pnpm run android:bundle:dev` builds an internal preview bundle on the development EAS project.
 - `pnpm run android:publish:dev` submits the latest internal preview build through the development EAS project.
 - `pnpm run android:release:dev` now defaults to the self-hosted fastlane path and auto-submits an internal preview build in one step.
@@ -144,7 +144,7 @@ Deployment split:
 - `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, defaulting to fastlane so the same command can target the self-hosted runner without changing scripts.
 - The self-hosted GitHub Actions workflow `.github/workflows/mobile-android-release.yml` targets the `hashpass-mobile-release` runner label on AWS EC2, defaults to fastlane, and can be switched back to EAS through the workflow input.
 - Temporary release posture: keep Android publishing on the development profile for now. Use `pnpm run android:release:dev` for internal testing, then `pnpm run android:release:alpha` after the same tag succeeds internally. Leave production paused until the release freeze is lifted.
-- The workflow accepts `environment=development` with `track=internal` for the first pass and `track=alpha` after internal succeeds; `release_status=draft` is only needed while the app is still in Play Console draft. Production dispatches are paused during the freeze.
+- The workflow accepts `environment=development` with `track=internal` for the first pass and `track=alpha` after internal succeeds. If you want the workflow to auto-dispatch alpha after internal, set `auto_promote_alpha=true` and, when needed, `alpha_release_status=draft`. Production dispatches are paused during the freeze.
 - Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
 - The Fastlane release lane automatically uploads any Play deobfuscation files it finds in the Android build outputs (`mapping.txt` or `native-debug-symbols.zip`), so future crash traces stay readable in Play Console. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
 - The full Play Console ladder and production publish checklist live in [apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md](apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md).

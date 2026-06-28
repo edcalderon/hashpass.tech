@@ -48,6 +48,7 @@ Mobile Android releases now reuse the same backend switch:
 
 - `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, defaulting to fastlane so the same command can run on the self-hosted runner
 - `pnpm run android:release:alpha` submits the development-profile build path to the Play Console alpha closed-testing track and is blocked until a successful internal release exists for the same tag
+- The Android workflow can auto-dispatch alpha after internal when `auto_promote_alpha=true`; set `alpha_release_status=draft` if the first closed-test upload still needs to be a draft
 - If the Play Console app is still a draft, set `FASTLANE_RELEASE_STATUS=draft` for the first alpha closed-testing upload; switch back to `completed` after the app leaves draft
 - `pnpm run android:release:fastlane` and `pnpm run android:release:fastlane:dev` force the self-hosted fastlane path
 - The self-hosted workflow lives in `.github/workflows/mobile-android-release.yml`, expects the `hashpass-mobile-release` AWS runner label, and now accepts development/internal and development/alpha releases while production is paused. Closed alpha cannot run until internal has already succeeded for the same tag.
