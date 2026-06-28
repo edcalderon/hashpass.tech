@@ -22,6 +22,8 @@ The script:
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering.
 
 ### Mobile Android Release Workflow
+**Temporary release posture:** while the app is under active development, keep Android publishing internal-first. Do not dispatch the production track for now. Publish `environment=development` first, then retry alpha only after the same tag has a successful internal release. The workflow already blocks alpha until internal succeeds for that tag.
+
 1. **Create commit** with your changes
 2. **Push to origin/main** (hashpass-tech/hashpass.tech)
 3. **Run `npm run release:patch`** — this:
@@ -40,6 +42,7 @@ The script:
    ```
    Use `environment=development` only when you explicitly want the internal preview track. For closed testing, publish the matching internal release first on the same tag, then run `environment=production` with `track=alpha`. The workflow now blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
    For the first Play Console closed-testing release, keep `environment=production`, set `track=alpha`, and use `release_status=draft` while the Play Console app is still in draft.
+   Production track publishing (`environment=production` / `track=production`) remains paused until the release freeze is lifted.
    The release workflow uses the `ANDROID_UPLOAD_KEY_SHA1` repository variable to select the Expo build credential that matches the Play upload certificate.
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
    The Fastlane lane also uploads any deobfuscation files it finds in the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` is present. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.

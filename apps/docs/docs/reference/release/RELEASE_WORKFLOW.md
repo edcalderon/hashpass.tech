@@ -23,6 +23,8 @@ aws amplify start-job --app-id <ID> --region us-east-2 --branch-name main --job-
 
 For the Play Console track ladder and the production publishing checklist, see [PLAY_CONSOLE_RELEASE_FLOW.md](./PLAY_CONSOLE_RELEASE_FLOW.md).
 
+Temporary release posture: while the app is under active development, stop at the internal preview step. Do not dispatch the production track until the release freeze is lifted. The alpha guard still requires a successful internal release on the same tag.
+
 Follow this sequence exactly. Order matters.
 
 ### Step 1 — Commit your changes

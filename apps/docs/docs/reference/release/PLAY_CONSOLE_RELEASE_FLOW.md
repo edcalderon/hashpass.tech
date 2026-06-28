@@ -2,6 +2,8 @@
 
 This guide covers the Play Console track ladder for HashPass and how it maps to the repo's Android release workflow.
 
+Temporary release posture: the current cycle is internal-first. Use `environment=development` for validation, keep alpha gated by the matching internal release on the same tag, and do not publish to production until the release freeze is lifted.
+
 ## Track Matrix
 
 | Track | Play Console purpose | Repo command | Release status | When to use |
@@ -9,7 +11,7 @@ This guide covers the Play Console track ladder for HashPass and how it maps to 
 | Internal | Early QA for trusted testers | `environment=development` | `completed` | Required first step before closed alpha or when you want the fastest smoke test |
 | Closed (`alpha`) | Controlled pre-launch testing | `environment=production --track=alpha` | `draft` for the first upload, then `completed` | Follow the internal track for the same tag before broader pre-launch testing or production access |
 | Open (`beta`) | Broader public testing | `environment=production --track=beta` | `completed` | After production access is granted and you want wider feedback |
-| Production | Public release | `environment=production --track=production` | `completed` | For the live app release and staged rollouts |
+| Production | Public release | `environment=production --track=production` | `completed` | For the live app release and staged rollouts once the release freeze is lifted |
 
 Notes:
 
@@ -18,9 +20,10 @@ Notes:
 - `release_status=draft` is only needed for the first closed-testing upload while Play still treats the app as draft.
 - `release_status=completed` is the default for normal releases.
 - Closed alpha is blocked until the matching internal release has already succeeded for the same tag.
+- Production publishing is paused for the current development cycle; do not use the production track until the hold is lifted.
 - Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
 - The Fastlane release lane uploads any available Play deobfuscation files from the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` exists.
-- This only applies to builds created after this change; the already-uploaded `v1.8.137` draft artifact will stay without deobfuscation until a new build is uploaded.
+- This only applies to builds created after this change; already-uploaded draft artifacts will stay without deobfuscation until a new build is uploaded.
 
 ## 1. Internal Testing
 
