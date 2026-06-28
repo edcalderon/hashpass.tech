@@ -2,7 +2,7 @@
 /* global __dirname, process */
 
 const { runEas } = require('./run-mobile-eas');
-const { runFastlane } = require('./run-mobile-fastlane');
+const { runFastlane, runFastlanePromote } = require('./run-mobile-fastlane');
 
 const DEFAULT_RELEASE_ENV = 'production';
 const DEFAULT_RELEASE_BACKEND = 'fastlane';
@@ -65,6 +65,10 @@ function parseReleaseArgs(argv = []) {
       process.env.MOBILE_BUILD_BACKEND ||
       DEFAULT_RELEASE_BACKEND,
     track: process.env.MOBILE_RELEASE_TRACK || null,
+    promoteTo:
+      process.env.MOBILE_RELEASE_PROMOTE_TO ||
+      process.env.FASTLANE_TRACK_PROMOTE_TO ||
+      null,
     releaseStatus:
       process.env.FASTLANE_RELEASE_STATUS ||
       process.env.MOBILE_RELEASE_RELEASE_STATUS ||
@@ -129,6 +133,17 @@ function parseReleaseArgs(argv = []) {
       continue;
     }
 
+    if (arg === '--promote-to' && argv[i + 1]) {
+      options.promoteTo = argv[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--promote-to=')) {
+      options.promoteTo = arg.split('=')[1];
+      continue;
+    }
+
     if (arg === '--release-status' && argv[i + 1]) {
       options.releaseStatus = argv[i + 1];
       i += 1;
@@ -156,6 +171,7 @@ function parseReleaseArgs(argv = []) {
     backend: normalizeReleaseBackend(options.backend),
     profile: options.profile ? String(options.profile).trim().toLowerCase() : null,
     track: options.track ? String(options.track).trim().toLowerCase() : null,
+    promoteTo: options.promoteTo ? String(options.promoteTo).trim().toLowerCase() : null,
     releaseStatus: options.releaseStatus ? String(options.releaseStatus).trim().toLowerCase() : null,
   };
 }
@@ -185,12 +201,25 @@ function runRelease(options = {}) {
   const profile = resolveReleaseProfile({ env: options.env, profile: options.profile });
 
   if (backend === 'fastlane') {
+    if (options.promoteTo) {
+      return runFastlanePromote({
+        profile,
+        track: options.track || undefined,
+        promoteTo: options.promoteTo,
+        releaseStatus: options.releaseStatus || undefined,
+      });
+    }
+
     return runFastlane({
       profile,
       track: options.track || undefined,
       submit: options.submit !== false,
       releaseStatus: options.releaseStatus || undefined,
     });
+  }
+
+  if (options.promoteTo) {
+    throw new Error('Promotion-only releases are only supported with the fastlane backend.');
   }
 
   return runEas(buildReleaseArgs({ ...options, profile }), { profile });
@@ -200,11 +229,11 @@ function main(argv = process.argv.slice(2)) {
   if (argv.includes('--help') || argv.includes('-h')) {
     console.log(
       [
-        'Usage: node packages/tools/scripts/run-mobile-release.js [--env production|development] [--profile eas-profile] [--backend eas|fastlane] [--track play-track] [--release-status draft|completed|halted|inProgress] [--no-submit]',
+        'Usage: node packages/tools/scripts/run-mobile-release.js [--env production|development] [--profile eas-profile] [--backend eas|fastlane] [--track play-track] [--promote-to play-track] [--release-status draft|completed|halted|inProgress] [--no-submit]',
         '',
         'Defaults to a production-profile release using fastlane, but the current freeze expects development/internal or development/alpha releases.',
         'Use --env development to target the development Expo account and internal preview profile while production is paused.',
-        'Use --track alpha with --env development for the Play Console closed-testing track after the internal release succeeds for the same tag.',
+        'Use --backend fastlane with --promote-to alpha, --env development, and --track internal to promote the internal Play release into closed testing.',
         'Use --release-status draft when the Play app is still in draft for the first closed-testing upload.',
         'Use --backend eas only if you explicitly want the managed Expo build path.',
         'Use --backend fastlane to build locally with Expo prebuild + fastlane supply.',

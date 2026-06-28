@@ -96,6 +96,33 @@ function buildFastlaneEnv({
   return env;
 }
 
+function buildPromoteEnv({
+  baseEnv = process.env,
+  profile,
+  track,
+  promoteTo,
+  releaseStatus = DEFAULT_FASTLANE_RELEASE_STATUS,
+  rootEnvPath,
+  mobileEnvPath,
+} = {}) {
+  const env = buildReleaseEnv({
+    baseEnv,
+    profile,
+    rootEnvPath,
+    mobileEnvPath,
+    releaseBackend: 'fastlane',
+  });
+  const selectedProfile = resolveSelectedProfile({ profile, baseEnv: env });
+
+  env.MOBILE_RELEASE_BACKEND = 'fastlane';
+  env.FASTLANE_TRACK = resolveFastlaneTrack({ profile: selectedProfile, track });
+  env.FASTLANE_TRACK_PROMOTE_TO = normalizeFastlaneTrack(promoteTo);
+  env.FASTLANE_RELEASE_STATUS = releaseStatus || DEFAULT_FASTLANE_RELEASE_STATUS;
+  env.CI = env.CI || '1';
+
+  return env;
+}
+
 function runCommand(binary, args, { env, cwd = MOBILE_APP_DIR } = {}) {
   const result = spawnSync(binary, args, {
     cwd,
@@ -139,6 +166,28 @@ function cleanGeneratedAndroidDir(hadAndroidDir) {
   fs.rmSync(ANDROID_DIR, { recursive: true, force: true });
 }
 
+function runFastlanePromote({
+  baseEnv = process.env,
+  profile,
+  track,
+  promoteTo,
+  releaseStatus = DEFAULT_FASTLANE_RELEASE_STATUS,
+  rootEnvPath,
+  mobileEnvPath,
+} = {}) {
+  const env = buildPromoteEnv({
+    baseEnv,
+    profile,
+    track,
+    promoteTo,
+    releaseStatus,
+    rootEnvPath,
+    mobileEnvPath,
+  });
+
+  runFastlaneLane('promote', env);
+}
+
 function runFastlane({
   baseEnv = process.env,
   profile,
@@ -180,9 +229,11 @@ module.exports = {
   normalizeFastlaneTrack,
   resolveFastlaneTrack,
   buildFastlaneEnv,
+  buildPromoteEnv,
   runCommand,
   runExpoPrebuild,
   runFastlaneLane,
   cleanGeneratedAndroidDir,
+  runFastlanePromote,
   runFastlane,
 };

@@ -44,6 +44,7 @@ The script:
    ```
    Use `environment=development` with `track=internal` for smoke tests. For closed testing, publish the matching internal release first on the same tag, then rerun `environment=development` with `track=alpha`. The workflow blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
    To do the internal release and auto-promote alpha in a single dispatch, set `auto_promote_alpha=true`. If the Play Console app is still in draft, set `alpha_release_status=draft`; otherwise leave it at `completed`.
+   The alpha handoff uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle.
    Production track publishing (`environment=production` / `track=production`) remains paused until the release freeze is lifted.
    The release workflow uses the `ANDROID_UPLOAD_KEY_SHA1` repository variable to select the Expo build credential that matches the Play upload certificate.
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.

@@ -1,10 +1,18 @@
 /// <reference types="jest" />
 
 const {
+  buildPromoteEnv,
   buildFastlaneEnv,
   normalizeFastlaneTrack,
   resolveFastlaneTrack,
 } = require('../../../../packages/tools/scripts/run-mobile-fastlane.js') as {
+  buildPromoteEnv: (options?: {
+    baseEnv?: Record<string, string>;
+    profile?: string;
+    track?: string | null;
+    promoteTo?: string | null;
+    releaseStatus?: string;
+  }) => Record<string, string>;
   buildFastlaneEnv: (options?: {
     baseEnv?: Record<string, string>;
     profile?: string;
@@ -50,5 +58,26 @@ describe('run-mobile-fastlane', () => {
     expect(env.ANDROID_VERSION_CODE).toBe('123456');
     expect(env.CI).toBe('1');
     expect(env.EAS_BUILD_PROFILE).toBe('production');
+  });
+
+  it('builds a promote-only environment without local versioning', () => {
+    const env = buildPromoteEnv({
+      profile: 'preview',
+      track: 'internal',
+      promoteTo: 'alpha',
+      baseEnv: {
+        EAS_BUILD_PROFILE: 'preview',
+        EAS_PROJECT_ID_DEV: 'b07c6fde-24ef-434a-8329-761815afe901',
+        EXPO_OWNER_DEV: 'hashpasstechs-team',
+      },
+    });
+
+    expect(env.MOBILE_RELEASE_BACKEND).toBe('fastlane');
+    expect(env.FASTLANE_TRACK).toBe('internal');
+    expect(env.FASTLANE_TRACK_PROMOTE_TO).toBe('alpha');
+    expect(env.FASTLANE_RELEASE_STATUS).toBe('completed');
+    expect(env.MOBILE_ANDROID_VERSION_CODE).toBeUndefined();
+    expect(env.ANDROID_VERSION_CODE).toBeUndefined();
+    expect(env.CI).toBe('1');
   });
 });

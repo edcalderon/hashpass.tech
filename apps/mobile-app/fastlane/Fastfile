@@ -126,4 +126,31 @@ platform :android do
 
     upload_to_play_store(**upload_options)
   end
+
+  desc 'Promote an existing Play release from one track to another without uploading a new bundle.'
+  lane :promote do |options|
+    track = normalize_track(options[:track] || ENV['FASTLANE_TRACK'])
+    promote_to = normalize_track(
+      options[:track_promote_to] || ENV['FASTLANE_TRACK_PROMOTE_TO']
+    )
+    release_status = (
+      options[:track_promote_release_status] ||
+      ENV['FASTLANE_RELEASE_STATUS'] ||
+      'completed'
+    ).to_s
+
+    upload_to_play_store(
+      track: track,
+      track_promote_to: promote_to,
+      track_promote_release_status: release_status,
+      package_name: PACKAGE_NAME,
+      json_key: GOOGLE_PLAY_JSON_KEY,
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true,
+    )
+  end
 end

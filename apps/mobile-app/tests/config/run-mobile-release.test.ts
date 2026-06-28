@@ -6,6 +6,7 @@ jest.mock('../../../../packages/tools/scripts/run-mobile-eas.js', () => ({
 
 jest.mock('../../../../packages/tools/scripts/run-mobile-fastlane.js', () => ({
   runFastlane: jest.fn(),
+  runFastlanePromote: jest.fn(),
 }));
 
 const {
@@ -29,6 +30,7 @@ const {
     submit: boolean;
     backend: string;
     track: string | null;
+    promoteTo: string | null;
     releaseStatus: string | null;
   };
   resolveReleaseProfile: (options?: {
@@ -41,6 +43,7 @@ const {
     submit?: boolean;
     backend?: string;
     track?: string | null;
+    promoteTo?: string | null;
     releaseStatus?: string | null;
   }) => unknown;
 };
@@ -98,6 +101,7 @@ describe('run-mobile-release', () => {
       submit: false,
       backend: 'fastlane',
       track: null,
+      promoteTo: null,
       releaseStatus: null,
     });
     expect(parseReleaseArgs(['--track', 'alpha'])).toMatchObject({
@@ -109,6 +113,19 @@ describe('run-mobile-release', () => {
       submit: true,
       backend: 'fastlane',
       track: null,
+      promoteTo: null,
+      releaseStatus: null,
+    });
+  });
+
+  it('parses the promote-only track target', () => {
+    expect(parseReleaseArgs(['--env', 'development', '--track', 'internal', '--promote-to', 'alpha'])).toEqual({
+      env: 'development',
+      profile: null,
+      submit: true,
+      backend: 'fastlane',
+      track: 'internal',
+      promoteTo: 'alpha',
       releaseStatus: null,
     });
   });
@@ -170,6 +187,40 @@ describe('run-mobile-release', () => {
         submit: true,
       }),
     );
+  });
+
+  it('dispatches to the fastlane promote path when promote-to is set', () => {
+    const { runFastlanePromote } = require('../../../../packages/tools/scripts/run-mobile-fastlane.js') as {
+      runFastlanePromote: jest.Mock;
+    };
+
+    runRelease({
+      env: 'development',
+      backend: 'fastlane',
+      track: 'internal',
+      promoteTo: 'alpha',
+      releaseStatus: 'draft',
+    });
+
+    expect(runFastlanePromote).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profile: 'preview',
+        track: 'internal',
+        promoteTo: 'alpha',
+        releaseStatus: 'draft',
+      }),
+    );
+  });
+
+  it('rejects promote-only releases on non-fastlane backends', () => {
+    expect(() =>
+      runRelease({
+        env: 'development',
+        backend: 'eas',
+        track: 'internal',
+        promoteTo: 'alpha',
+      }),
+    ).toThrow('Promotion-only releases are only supported with the fastlane backend.');
   });
 
   it('uses the mobile release track env fallback when present', () => {

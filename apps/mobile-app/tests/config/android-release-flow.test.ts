@@ -105,7 +105,7 @@ describe('Android release flow', () => {
   it('keeps app.json aligned with the current store version and leaves Expo project linking to app.config.js', () => {
     expect(appJson.version).toBe(rootPackageJson.version);
     expect(appJson.slug).toBe('hash-pass-tech');
-    expect(appJson.android?.versionCode).toBeUndefined();
+    expect(appJson.android?.versionCode).toBe(10942);
     expect(appJson.buildNumber).toBeUndefined();
     expect(appJson.extra?.eas?.projectId).toBeUndefined();
     expect(appJson.owner).toBe('hashpasstechs-team');
@@ -164,6 +164,7 @@ describe('Android release flow', () => {
     const rootDependencies = rootPackageJson.dependencies as Record<string, string>;
     const mobileScripts = mobilePackageJson.scripts as Record<string, string>;
     const mobileDependencies = mobilePackageJson.dependencies as Record<string, string>;
+    const mobileDevDependencies = mobilePackageJson.devDependencies as Record<string, string>;
 
     expect(scripts['android:bundle']).toBe('pnpm --filter hashpass-mobile-app android:bundle');
     expect(scripts['android:bundle:dev']).toBe('pnpm --filter hashpass-mobile-app android:bundle:dev');
@@ -221,7 +222,7 @@ describe('Android release flow', () => {
     expect(mobileDependencies['babel-preset-expo']).toBe('^13.2.5');
     expect(mobileDependencies['expo-camera']).toBe('~16.1.9');
     expect(mobileDependencies['expo-barcode-scanner']).toBeUndefined();
-    expect(mobileDependencies['react-native-worklets']).toBe('^0.6.0');
+    expect(mobileDevDependencies['react-native-worklets']).toBe('^0.6.0');
     expect(mobileDependencies['metro-resolver']).toBe('0.82.5');
     expect(reactNativeConfig.dependencies?.['react-native-worklets']?.platforms?.android).toBeNull();
     expect(reactNativeConfig.dependencies?.['react-native-worklets']?.platforms?.ios).toBeNull();

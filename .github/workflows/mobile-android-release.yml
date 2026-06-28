@@ -37,6 +37,11 @@ on:
         required: false
         default: false
         type: boolean
+      promote_only:
+        description: Promote the existing internal release to alpha without rebuilding
+        required: false
+        default: false
+        type: boolean
       alpha_release_status:
         description: Google Play release status for the auto-promoted alpha release
         required: false
@@ -98,11 +103,28 @@ jobs:
               ;;
           esac
 
+          if [ "${{ inputs.promote_only }}" = "true" ] && [ "${{ inputs.backend }}" != "fastlane" ]; then
+            cat >&2 <<'EOF'
+            Promotion-only alpha releases currently require backend=fastlane.
+            The promotion path reuses the existing internal Play release instead of uploading a new bundle.
+          EOF
+            exit 1
+          fi
+
+          if [ "${{ inputs.promote_only }}" = "true" ] && { [ "${{ inputs.environment }}" != "development" ] || [ "${{ inputs.track }}" != "alpha" ]; }; then
+            cat >&2 <<'EOF'
+            Promotion-only dispatches must use environment=development and track=alpha.
+            This path is reserved for promoting the already-published internal release into closed testing.
+          EOF
+            exit 1
+          fi
+
   # Resolves the runner label array from the human-readable input so that
   # the release job can use fromJSON() on a single output string.
   select-runner:
     needs: [validate-release-target]
     runs-on: ubuntu-latest
+    if: inputs.promote_only != true
     outputs:
       runner: ${{ steps.pick.outputs.runner }}
     steps:
@@ -143,7 +165,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 workflow_id: 'mobile-android-release.yml',
-                head_sha: context.sha,
+                branch: refName,
                 per_page: 100,
               }
             );
@@ -166,6 +188,79 @@ jobs:
               );
             }
 
+  # Promotes the existing internal release to alpha without uploading a second bundle.
+  promote-alpha:
+    needs: [validate-release-target, require-internal-before-alpha]
+    if: always() && github.repository == 'hashpass-tech/hashpass.tech' && needs.validate-release-target.result == 'success' && needs.require-internal-before-alpha.result != 'failure' && inputs.promote_only && inputs.environment == 'development' && inputs.track == 'alpha'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      CI: '1'
+      MOBILE_RELEASE_BACKEND: ${{ inputs.backend }}
+      MOBILE_RELEASE_ENV: ${{ inputs.environment }}
+      MOBILE_RELEASE_TRACK: internal
+      MOBILE_RELEASE_PROMOTE_TO: alpha
+      FASTLANE_RELEASE_STATUS: ${{ inputs.release_status }}
+      GOOGLE_PLAY_JSON_KEY: ${{ github.workspace }}/.runner-secrets/google-play-service-account.json
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: false
+
+      - name: Clean workspace
+        run: |
+          set -euo pipefail
+          git clean -ffd
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.0"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Materialize Google Play service account
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "Missing required environment variable: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+            exit 1
+          fi
+
+          mkdir -p "$(dirname "$GOOGLE_PLAY_JSON_KEY")" config
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$GOOGLE_PLAY_JSON_KEY"
+          cp "$GOOGLE_PLAY_JSON_KEY" config/hashpass-eas.json
+          chmod 600 "$GOOGLE_PLAY_JSON_KEY" config/hashpass-eas.json
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: apps/mobile-app
+
+      - name: Promote Android
+        run: |
+          set -euo pipefail
+          node packages/tools/scripts/run-mobile-release.js \
+            --backend fastlane \
+            --env development \
+            --track internal \
+            --promote-to alpha
+
   # Wakes the EC2 runner before the release job runs.
   # Requires three GitHub variables: AWS_RUNNER_ROLE_ARN, EC2_RUNNER_INSTANCE_ID, AWS_RUNNER_REGION.
   # Skipped automatically when using github-hosted runner or when variables are not yet configured.
@@ -174,7 +269,7 @@ jobs:
   start-runner:
     needs: [validate-release-target, require-internal-before-alpha]
     runs-on: ubuntu-latest
-    if: always() && needs.validate-release-target.result == 'success' && (needs.require-internal-before-alpha.result == 'success' || needs.require-internal-before-alpha.result == 'skipped') && inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
+    if: always() && inputs.promote_only != true && needs.validate-release-target.result == 'success' && (needs.require-internal-before-alpha.result == 'success' || needs.require-internal-before-alpha.result == 'skipped') && inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
     permissions:
       id-token: write
       contents: read
@@ -223,7 +318,7 @@ jobs:
 
   release:
     needs: [validate-release-target, select-runner, start-runner, require-internal-before-alpha]
-    if: always() && github.repository == 'hashpass-tech/hashpass.tech' && needs.validate-release-target.result == 'success' && needs.select-runner.result == 'success' && needs.require-internal-before-alpha.result != 'failure' && (needs.start-runner.result == 'success' || needs.start-runner.result == 'skipped')
+    if: always() && inputs.promote_only != true && github.repository == 'hashpass-tech/hashpass.tech' && needs.validate-release-target.result == 'success' && needs.select-runner.result == 'success' && needs.require-internal-before-alpha.result != 'failure' && (needs.start-runner.result == 'success' || needs.start-runner.result == 'skipped')
     runs-on: ${{ fromJSON(needs.select-runner.outputs.runner) }}
     timeout-minutes: 120
     permissions:
@@ -859,7 +954,7 @@ jobs:
   # through the same internal-before-alpha guard.
   auto-promote-alpha:
     needs: [release]
-    if: always() && needs.release.result == 'success' && inputs.environment == 'development' && inputs.track == 'internal' && inputs.auto_promote_alpha
+    if: always() && inputs.promote_only != true && needs.release.result == 'success' && inputs.environment == 'development' && inputs.track == 'internal' && inputs.auto_promote_alpha
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -868,8 +963,6 @@ jobs:
       - name: Dispatch alpha release
         env:
           ALPHA_RELEASE_STATUS: ${{ inputs.alpha_release_status }}
-          BACKEND: ${{ inputs.backend }}
-          RUNNER: ${{ inputs.runner }}
         uses: actions/github-script@v7
         with:
           script: |
@@ -891,8 +984,9 @@ jobs:
                 environment: 'development',
                 track: 'alpha',
                 release_status: process.env.ALPHA_RELEASE_STATUS,
-                backend: process.env.BACKEND,
-                runner: process.env.RUNNER,
+                backend: 'fastlane',
+                runner: 'github-hosted',
+                promote_only: 'true',
                 auto_promote_alpha: 'false',
               },
             });
@@ -905,7 +999,7 @@ jobs:
   stop-runner:
     runs-on: ubuntu-latest
     needs: [release, start-runner]
-    if: always() && needs.start-runner.result == 'success'
+    if: always() && inputs.promote_only != true && needs.start-runner.result == 'success'
     permissions:
       id-token: write
       contents: read
