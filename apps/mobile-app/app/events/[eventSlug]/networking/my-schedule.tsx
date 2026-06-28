@@ -26,7 +26,7 @@ import { supabase } from '../../../../lib/supabase';
 import { apiClient } from '../../../../lib/api-client';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useTranslation } from '../../../../i18n/i18n';
-import { Meeting, TimeSlot, DaySchedule } from '@/types/networking';
+import type { Meeting, TimeSlot, DaySchedule } from '@/types/networking';
 import ScheduleConfirmationModal from '../../../../components/ScheduleConfirmationModal';
 import * as Haptics from 'expo-haptics';
 import { AgendaItem } from '../../../../types/events';
@@ -491,12 +491,12 @@ const MySchedule = () => {
 
   // Group time slots by hour for better organization
   const groupedSlots = useMemo(() => {
-    const selectedDay = schedule.find(day => isSameDay(day.date, selectedDate));
+    const selectedDay = schedule.find((day: DaySchedule) => isSameDay(day.date, selectedDate));
     if (!selectedDay) return {};
 
     const grouped: {[hour: string]: TimeSlot[]} = {};
 
-    selectedDay.timeSlots.forEach(slot => {
+    selectedDay.timeSlots.forEach((slot: TimeSlot) => {
       const hour = format(slot.startTime, 'h a'); // e.g. "9 AM"
       if (!grouped[hour]) {
         grouped[hour] = [];
@@ -509,14 +509,14 @@ const MySchedule = () => {
 
   // Calculate day statistics for calendar view
   const dayStats = useMemo(() => {
-    return schedule.map(day => {
+    return schedule.map((day: DaySchedule) => {
       let confirmedCount = 0;
       let tentativeCount = 0;
       let interestedCount = 0;
       let blockedCount = 0;
       let favoritesCount = 0;
       
-      (day.slots || []).forEach(slot => {
+      (day.slots || []).forEach((slot: TimeSlot) => {
         const slotKey = slot.startTime.toISOString();
         const freeSlotStatus = userFreeSlotStatus[slotKey] || 'available';
         
@@ -1604,18 +1604,18 @@ const MySchedule = () => {
               {/* Timeline of Events */}
               {(() => {
                 if (!daySummaryModal.dayStat) return null;
-                const selectedDay = schedule.find(day => isSameDay(day.date, daySummaryModal.dayStat!.date));
+                const selectedDay = schedule.find((day: DaySchedule) => isSameDay(day.date, daySummaryModal.dayStat!.date));
                 if (!selectedDay || !selectedDay.slots) return null;
 
                 // Get all slots with meetings or tracked free slots, sorted by time
                 const timelineSlots = selectedDay.slots
-                  .filter(slot => {
+                  .filter((slot: TimeSlot) => {
                     if (slot.meeting) return true;
                     const slotKey = slot.startTime.toISOString();
                     const freeSlotStatus = userFreeSlotStatus[slotKey] || 'available';
                     return freeSlotStatus !== 'available';
                   })
-                  .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+                  .sort((a: TimeSlot, b: TimeSlot) => a.startTime.getTime() - b.startTime.getTime());
 
                 if (timelineSlots.length === 0) return null;
 
@@ -1628,7 +1628,7 @@ const MySchedule = () => {
                       style={styles.timelineScrollView}
                       showsVerticalScrollIndicator={true}
                     >
-                      {timelineSlots.map((slot, index) => {
+                      {timelineSlots.map((slot: TimeSlot, index: number) => {
                         const slotKey = slot.startTime.toISOString();
                         const freeSlotStatus = userFreeSlotStatus[slotKey] || 'available';
                         
