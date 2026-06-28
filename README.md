@@ -17,11 +17,12 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.140)
+## 📋 Latest Changes (v1.8.141)
 
 ### Bug Fixes
 
-* **native:** center auth toast and pause countdown ([b4b8546](https://github.com/hashpass-tech/hashpass.tech/commit/b4b85461f9a3686717e71361725f545719e04f29))
+* **android:** handle edge-to-edge in mobile app ([dac295c](https://github.com/hashpass-tech/hashpass.tech/commit/dac295c3b076e382026cb974d81484f382581b07))
+* **android:** tighten networking schedule types ([cdb3006](https://github.com/hashpass-tech/hashpass.tech/commit/cdb300601a6abbdb0ab9c0303ca1fae972df3a1e))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 

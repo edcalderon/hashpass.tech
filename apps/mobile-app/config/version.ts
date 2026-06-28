@@ -22,8 +22,8 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202606251957, // Updated to current timestamp
-  releaseDate: '2026-06-25',
+  buildNumber: 202606280349, // Updated to current timestamp
+  releaseDate: '2026-06-28',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
@@ -33,11 +33,28 @@ export const CURRENT_VERSION: VersionInfo = {
     'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.140 release'
+  notes: 'Version 1.8.141 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.141': {
+    version: '1.8.141',
+    buildNumber: 202606280349,
+    releaseDate: '2026-06-28',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
+      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.8.141 release'
+  },
   '1.8.140': {
     version: '1.8.140',
     buildNumber: 202606251957,

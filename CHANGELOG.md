@@ -1,3 +1,15 @@
+## [1.8.141](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.140...v1.8.141) (2026-06-28)
+
+
+### Bug Fixes
+
+* **android:** handle edge-to-edge in mobile app ([dac295c](https://github.com/hashpass-tech/hashpass.tech/commit/dac295c3b076e382026cb974d81484f382581b07))
+* **android:** tighten networking schedule types ([cdb3006](https://github.com/hashpass-tech/hashpass.tech/commit/cdb300601a6abbdb0ab9c0303ca1fae972df3a1e))
+
+
+
+
+
 ## [1.8.140](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.139...v1.8.140) (2026-06-25)
 
 
