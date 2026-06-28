@@ -82,7 +82,7 @@ jobs:
             cat >&2 <<'EOF'
             Production Android releases are paused for the current development cycle.
             Use environment=development with track=internal for smoke tests or track=alpha for closed testing after internal succeeds.
-            EOF
+          EOF
             exit 1
           fi
 
@@ -93,7 +93,7 @@ jobs:
               cat >&2 <<'EOF'
             Development Android releases are limited to the internal and alpha tracks while the production freeze is active.
             Use track=internal for the first pass, then track=alpha after the internal release succeeds for the same tag.
-            EOF
+          EOF
               exit 1
               ;;
           esac
