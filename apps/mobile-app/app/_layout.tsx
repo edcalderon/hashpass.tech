@@ -4,7 +4,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack, useRouter, usePathname, useSegments } from "expo-router";
 import React, { useEffect, useState } from 'react';
-import { StatusBar, Platform } from 'react-native';
+import { Platform, View } from 'react-native';
+import { SystemBars } from 'react-native-edge-to-edge';
 import { ThemeProvider } from '../providers/ThemeProvider';
 import { LanguageProvider } from '../providers/LanguageProvider';
 import { EventProvider } from '@contexts/EventContext';
@@ -48,33 +49,32 @@ export default function RootLayout() {
 
   return (
     <AppErrorBoundary>
-    <SafeAreaProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <ThemeProvider value={theme}>
-          <StatusBar
-            barStyle={theme.isDark ? 'light-content' : 'dark-content'}
-            backgroundColor={theme.colors.background.default}
-          />
-          <EventProvider>
-            <LanguageProvider>
-              <I18nProvider>
-                <NotificationProvider>
-                  <BalanceProvider>
-                    <ToastProvider>
-                      <ScrollProvider>
-                        <CopilotProvider overlay="view">
-                          <ThemedContent />
-                        </CopilotProvider>
-                      </ScrollProvider>
-                    </ToastProvider>
-                  </BalanceProvider>
-                </NotificationProvider>
-              </I18nProvider>
-            </LanguageProvider>
-          </EventProvider>
-        </ThemeProvider>
-      </GestureHandlerRootView>
-    </SafeAreaProvider>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <ThemeProvider value={theme}>
+            <View style={{ flex: 1, backgroundColor: theme.colors.background.default }}>
+              <SystemBars style={theme.isDark ? 'light' : 'dark'} />
+              <EventProvider>
+                <LanguageProvider>
+                  <I18nProvider>
+                    <NotificationProvider>
+                      <BalanceProvider>
+                        <ToastProvider>
+                          <ScrollProvider>
+                            <CopilotProvider overlay="view">
+                              <ThemedContent />
+                            </CopilotProvider>
+                          </ScrollProvider>
+                        </ToastProvider>
+                      </BalanceProvider>
+                    </NotificationProvider>
+                  </I18nProvider>
+                </LanguageProvider>
+              </EventProvider>
+            </View>
+          </ThemeProvider>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     </AppErrorBoundary>
   );
 }

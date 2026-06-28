@@ -7,7 +7,6 @@ import {
   ScrollView,
   FlatList,
   SafeAreaView,
-  StatusBar,
   Platform,
   ViewStyle,
   TextStyle,
@@ -15,10 +14,11 @@ import {
   RefreshControl,
   Modal,
 } from 'react-native';
+import { SystemBars } from 'react-native-edge-to-edge';
 import { useTheme } from '../../../../hooks/useTheme';
 import { format, addDays, isSameDay, isToday, isPast, isFuture, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '../../../../lib/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
@@ -1253,7 +1253,7 @@ const MySchedule = () => {
       styles.container,
       { backgroundColor: colors.background.primary }
     ]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <SystemBars style={isDark ? 'light' : 'dark'} />
 
       {/* Scrollable Content - Includes Calendar and Time Slots */}
       <ScrollView 

@@ -4,7 +4,7 @@
     "slug": "hash-pass-tech",
     "version": "1.8.140",
     "newArchEnabled": true,
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "hashpass",
     "userInterfaceStyle": "automatic",
@@ -122,7 +122,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.576459188181-r65kt04nh0m4q86jbo1ohm12di9v3mjq"
         }
-      ]
+      ],
+      "react-native-edge-to-edge"
     ],
     "experiments": {
       "typedRoutes": true

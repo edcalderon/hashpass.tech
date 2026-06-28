@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, A
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
+import { SystemBars } from 'react-native-edge-to-edge';
 import { Ionicons } from '../../../lib/vector-icons';
 import { useRouter, usePathname, useNavigation as useExpoNavigation } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
@@ -658,9 +659,10 @@ function CustomDrawerContent() {
 export default function DashboardLayout() {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
+  const insets = useSafeAreaInsets();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const styles = getStyles(isDark, colors, isMobile);
+  const styles = getStyles(isDark, colors, isMobile, insets);
   const AUTH_RECENT_SUCCESS_KEY = 'auth_recent_success_at';
   const AUTH_REDIRECT_GRACE_MS = 12000;
 
@@ -1013,8 +1015,8 @@ export default function DashboardLayout() {
     const { headerHeight } = useScroll();
 
     // Header should overlay content without taking space
-    // Only reserve space for StatusBar
-    const statusBarHeight = StatusBar.currentHeight || 0;
+    // Reserve only the top safe area so the drawer header stays clear of system bars.
+    const statusBarHeight = insets.top || StatusBar.currentHeight || 0;
 
     return (
       <View style={[styles.headerContainer, {
@@ -1026,11 +1028,7 @@ export default function DashboardLayout() {
         right: 0,
         zIndex: 1000,
       }]}>
-        <StatusBar
-          barStyle={colors.background.default === '#FFFFFF' ? 'dark-content' : 'light-content'}
-          backgroundColor={colors.background.default}
-          translucent={true}
-        />
+        <SystemBars style={isDark ? 'light' : 'dark'} />
         <Header />
       </View>
     );
@@ -1136,7 +1134,7 @@ const getStyles = (
   },
   header: {
     position: 'absolute',
-    top: StatusBar.currentHeight || 0,
+    top: insets.top || StatusBar.currentHeight || 0,
     left: 0,
     right: 0,
     zIndex: 1000,

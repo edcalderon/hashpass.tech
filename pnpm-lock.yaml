@@ -725,6 +725,9 @@ importers:
       react-native-css-interop:
         specifier: 0.2.1
         version: 0.2.1(patch_hash=3ovotlv4g2dqpzrx3otza2w5re)(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
+      react-native-edge-to-edge:
+        specifier: 1.6.0
+        version: 1.6.0(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-gesture-handler:
         specifier: ~2.24.0
         version: 2.24.0(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
