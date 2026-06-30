@@ -48,6 +48,11 @@ output "dev_site_website_endpoint" {
   value       = module.site_dev.site_website_endpoint
 }
 
+output "dev_site_domain_name" {
+  description = "Development Route53 alias FQDN"
+  value       = aws_route53_record.dev_site.fqdn
+}
+
 output "codebuild_project_name" {
   description = "CodeBuild project name"
   value       = module.site.codebuild_project_name

@@ -51,6 +51,7 @@ The hosted zone also carries DNS for `api.hashpass.tech`, `api-dev.hashpass.tech
 - If CloudFront is unavailable in the new account, use the S3 website fallback first and keep the CloudFront toggle off until AWS verifies the account.
 - The first web surface lands in `packages/infra/terraform/stacks/hashpass-web` and deploys through `packages/tools/buildspecs/hashpass-web-deploy.yml`.
 - That stack now provisions both the production `main` pipeline and the development `develop` pipeline in the target account.
+- The target DNS stack now also creates a dedicated `dev.hashpass.tech` hosted zone so the development site can be isolated from the apex cutover.
 - The DNS landing zone lives in `packages/infra/terraform/stacks/hashpass-dns`.
 - The API backend lives in `packages/infra/terraform/stacks/hashpass-api-target` and starts with `enable_custom_domain = false` until the new nameservers are delegated.
 - Use `pnpm run infra:hashpass-web:plan` and `pnpm run infra:hashpass-web:apply` once the CodeConnections handshake is complete and the target-account `terraform.tfvars` is populated.

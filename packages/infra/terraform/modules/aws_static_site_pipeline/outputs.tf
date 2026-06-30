@@ -8,6 +8,11 @@ output "artifact_bucket_name" {
   value       = aws_s3_bucket.artifacts.bucket
 }
 
+output "site_bucket_hosted_zone_id" {
+  description = "Route 53 hosted zone ID for the site bucket website endpoint"
+  value       = aws_s3_bucket.site.hosted_zone_id
+}
+
 output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID"
   value       = var.enable_cloudfront ? aws_cloudfront_distribution.site[0].id : null

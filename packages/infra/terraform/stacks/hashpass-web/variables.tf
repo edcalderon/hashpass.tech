@@ -79,6 +79,12 @@ variable "dev_branch_name" {
   default     = "develop"
 }
 
+variable "dev_route53_zone_name" {
+  description = "Route53 hosted zone name for the development web domain"
+  type        = string
+  default     = "dev.hashpass.tech"
+}
+
 variable "dev_enable_cloudfront" {
   description = "Whether to create CloudFront for the development pipeline"
   type        = bool

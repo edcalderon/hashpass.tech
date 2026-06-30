@@ -64,3 +64,20 @@ module "site_dev" {
   build_environment    = local.dev_build_environment
   tags                 = var.tags
 }
+
+data "aws_route53_zone" "dev" {
+  name         = "${trim(var.dev_route53_zone_name, ".")}."
+  private_zone = false
+}
+
+resource "aws_route53_record" "dev_site" {
+  zone_id = data.aws_route53_zone.dev.zone_id
+  name    = trim(var.dev_route53_zone_name, ".")
+  type    = "A"
+
+  alias {
+    evaluate_target_health = false
+    name                   = replace(module.site_dev.site_website_endpoint, "http://", "")
+    zone_id                = module.site_dev.site_bucket_hosted_zone_id
+  }
+}

@@ -18,7 +18,7 @@ Set `HASHPASS_INFRA_TARGET=club-docs` when you want the legacy SST club front do
 
 - `bsl.hashpass.tech` for production
 - `bsl-dev.hashpass.tech` for development
-- `packages/infra/terraform/stacks/hashpass-dns` as the target-account hosted zone layer that keeps the migration reversible until registrar cutover
+- `packages/infra/terraform/stacks/hashpass-dns` as the target-account hosted zone layer that keeps the migration reversible until registrar cutover, including the dedicated `dev.hashpass.tech` zone
 - `packages/infra/terraform/stacks/hashpass-api-target` as the target-account API Gateway + Lambda layer for `api.hashpass.tech`
 - `apps/mobile-app` as an SST `StaticSite`
 - `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` S3 pipeline pair that replaces Amplify without deleting the source account first

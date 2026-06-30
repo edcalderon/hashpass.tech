@@ -30,6 +30,7 @@ dev_enable_cloudfront = false
 # The development pipeline deploys from develop and stays separate from the
 # production pipeline in the same Terraform state.
 dev_branch_name = "develop"
+dev_route53_zone_name = "dev.hashpass.tech"
 
 # Optional explicit names if you want to pin them for the migration.
 # site_bucket_name     = "hashpass-production-site-952191196420"

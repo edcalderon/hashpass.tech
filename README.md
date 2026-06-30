@@ -125,6 +125,7 @@ See [apps/docs/docs/infra/INFRA_NAMING_GUIDE.md](apps/docs/docs/infra/INFRA_NAMI
 Deployment split:
 - `hashpass.tech` / `core` is still on the Amplify app (`dy8duury54wam`, `us-east-2`) until the new target-account S3/CloudFront replacement is validated and DNS is cut over.
 - The target-account `hashpass-web` Terraform stack provisions the replacement production and development pipelines in `packages/infra/terraform/stacks/hashpass-web`.
+- The target DNS work also includes a dedicated `dev.hashpass.tech` hosted zone for the development surface.
 - If Amplify still points at the old fork source, run `pnpm run amplify:update-source` once to move it to `hashpass-tech/hashpass.tech`.
 - `hashpass.club` is the new standalone Next.js app in `apps/web-app`. It publishes through GitHub Pages and the `club-v*` release tag flow.
 - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases that canonicalize to the GitHub Pages origin.

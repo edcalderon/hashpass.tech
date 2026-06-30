@@ -86,6 +86,7 @@ same Terraform state. It creates:
 - a CodeBuild project that runs `npm run build:web` and deploys the output to S3
 - a CodePipeline that pulls from GitHub and triggers the CodeBuild deploy
 - a matching development pipeline that builds from `develop` with the dev Supabase inputs
+- a `dev.hashpass.tech` hosted zone and alias record when the DNS stack is present
 
 Before the first apply, create the CodeConnections connection in the target
 account and complete the GitHub handshake:
@@ -104,6 +105,7 @@ from the root `.env` values for:
 - `google_client_id`
 - `supabase_url_dev`
 - `supabase_key_dev`
+- `dev_route53_zone_name` if you want to override the `dev.hashpass.tech` zone name
 
 Apply it with:
 
@@ -141,7 +143,7 @@ Shortcut:
 
 Outputs include:
 
-- hosted zone IDs for `hashpass.tech`, `hashpass.lat`, and `hashpass.club`
+- hosted zone IDs for `hashpass.tech`, `dev.hashpass.tech`, `hashpass.lat`, and `hashpass.club`
 - nameserver sets for later registrar delegation
 
 ### HashPass API Stack
