@@ -5,9 +5,15 @@ This Terraform setup deploys the production naming convention discussed for Hash
 - Frontend (Amplify):
   - `blockchainsummit.hashpass.lat`
   - `blockchainsummit-dev.hashpass.lat`
+- Frontend (S3 + CloudFront):
+  - `hashpass.tech` target-account static site pipeline
 - API (AWS Lambda + API Gateway):
   - `api.hashpass.tech`
   - `api-dev.hashpass.tech`
+- DNS (Route 53):
+  - `hashpass.tech`
+  - `hashpass.lat`
+  - `hashpass.club`
 - Directus (GCP):
   - `sso.hashpass.co`
   - `sso-dev.hashpass.co`
@@ -16,9 +22,14 @@ This Terraform setup deploys the production naming convention discussed for Hash
 
 - `stacks/aws`: AWS API + optional Amplify domain association + GitHub Pages DNS for `hashpass.club`
 - `stacks/gcp`: GCP Directus VM(s) + optional Cloud DNS records
+- `stacks/hashpass-dns`: target-account Route 53 hosted zones for the migration cutover
+- `stacks/hashpass-api-target`: target-account API Gateway + Lambda stack for `api.hashpass.tech`
+- `stacks/hashpass-web`: target-account S3/CloudFront pipeline for `hashpass.tech`
 - `stacks/mobile-release`: AWS EC2 self-hosted GitHub Actions runner for mobile Android builds
+- `stacks/mobile-release-target`: isolated target-account Android runner stack used during migration
 - `modules/aws_expo_router_api`: reusable Lambda + HTTP API + custom domain module
 - `modules/aws_amplify_domain`: reusable Amplify custom domain binding module
+- `modules/aws_static_site_pipeline`: reusable S3 + CloudFront + CodePipeline site module
 - `modules/gcp_directus_instance`: reusable Directus compute module
 - `modules/aws_github_actions_runner`: reusable EC2 GitHub Actions runner module
 
@@ -63,6 +74,101 @@ Outputs include:
 - Lambda names
 - domain association metadata if Amplify association is enabled
 
+### HashPass Web Stack
+
+This stack provisions the target-account replacement for the `hashpass.tech`
+Amplify site. It creates both the production and development pipelines in the
+same Terraform state. It creates:
+
+- an S3 bucket for the built site
+- a CloudFront distribution with the S3 bucket as origin when the account is verified for CloudFront
+- an S3 website fallback when CloudFront is disabled
+- a CodeBuild project that runs `npm run build:web` and deploys the output to S3
+- a CodePipeline that pulls from GitHub and triggers the CodeBuild deploy
+- a matching development pipeline that builds from `develop` with the dev Supabase inputs
+
+Before the first apply, create the CodeConnections connection in the target
+account and complete the GitHub handshake:
+
+```bash
+TARGET_AWS_ACCOUNT_ID=952191196420 \
+AWS_REGION=us-east-2 \
+./packages/tools/scripts/provision-infra-connection.sh
+```
+
+Then populate `packages/infra/terraform/stacks/hashpass-web/terraform.tfvars`
+from the root `.env` values for:
+
+- `supabase_url`
+- `supabase_key`
+- `google_client_id`
+- `supabase_url_dev`
+- `supabase_key_dev`
+
+Apply it with:
+
+```bash
+./packages/infra/terraform/scripts/stack.sh hashpass-web plan
+./packages/infra/terraform/scripts/stack.sh hashpass-web apply
+```
+
+The initial rollout keeps Amplify alive in the source account. If the target
+AWS account cannot create CloudFront yet, leave `enable_cloudfront = false`
+and `dev_enable_cloudfront = false`, then validate against the S3 website
+endpoint first. Once AWS verifies the account, you can flip CloudFront back on
+and reapply without touching the source account.
+
+### HashPass DNS Stack
+
+This stack creates the target-account hosted zones for the migration. It does
+not delegate the registrar by itself, so it is safe to apply before DNS
+cutover.
+
+```bash
+cd packages/infra/terraform/stacks/hashpass-dns
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan -var-file=terraform.tfvars
+terraform apply -var-file=terraform.tfvars
+```
+
+Shortcut:
+
+```bash
+./packages/infra/terraform/scripts/stack.sh hashpass-dns plan
+./packages/infra/terraform/scripts/stack.sh hashpass-dns apply
+```
+
+Outputs include:
+
+- hosted zone IDs for `hashpass.tech`, `hashpass.lat`, and `hashpass.club`
+- nameserver sets for later registrar delegation
+
+### HashPass API Stack
+
+This stack provisions the target-account Lambda + API Gateway pair for
+`api.hashpass.tech` and `api-dev.hashpass.tech`.
+
+```bash
+cd packages/infra/terraform/stacks/hashpass-api-target
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan -var-file=terraform.tfvars
+terraform apply -var-file=terraform.tfvars
+```
+
+Shortcut:
+
+```bash
+./packages/infra/terraform/scripts/stack.sh hashpass-api-target plan
+./packages/infra/terraform/scripts/stack.sh hashpass-api-target apply
+```
+
+Start with `enable_custom_domain = false` while the target zone is still
+undelegated. That keeps the backend deployable and lets you verify it through
+the `execute-api` URL. After registrar cutover, flip the flag back to `true`
+and reapply to create the ACM validation records and public custom domains.
+
 ### GCP Stack
 
 ```bash
@@ -105,6 +211,14 @@ Shortcut:
 ./packages/infra/terraform/scripts/stack.sh mobile-release apply
 ```
 
+The target-account runner stack uses a separate Terraform state so it can be
+provisioned in parallel during the migration:
+
+```bash
+./packages/infra/terraform/scripts/stack.sh mobile-release-target plan
+./packages/infra/terraform/scripts/stack.sh mobile-release-target apply
+```
+
 Outputs include:
 
 - GitHub runner token secret ARN
@@ -129,14 +243,17 @@ Keep the PAT scoped to the `hashpass-tech/hashpass.tech` repository and only the
 ## Suggested Deploy Order
 
 1. Deploy `stacks/gcp` (get static IPs for Directus)
-2. Update DNS for `sso-dev.hashpass.co` and `sso.hashpass.co` (if not using Cloud DNS in module)
-3. Deploy `stacks/aws` (API domains + Lambda + GitHub Pages DNS records)
-4. Configure frontend env vars:
+2. Deploy `stacks/hashpass-dns` in the target AWS account to create the hosted zones and nameservers
+3. Deploy `stacks/hashpass-api-target` in the target AWS account with `enable_custom_domain = false`
+4. Deploy `stacks/hashpass-web` in the target AWS account and validate either the CloudFront domain or the S3 website endpoint, depending on the account state
+5. Deploy `stacks/mobile-release-target` in the target AWS account and verify a test Android build
+6. Re-run the BSL pipeline provisioning against the target account once the hosted zone exists
+7. Configure frontend env vars:
    - dev: `EXPO_PUBLIC_API_BASE_URL=https://api-dev.hashpass.tech/api`
    - prod: `EXPO_PUBLIC_API_BASE_URL=https://api.hashpass.tech/api`
    - dev: `EXPO_PUBLIC_DIRECTUS_URL=https://sso-dev.hashpass.co`
    - prod: `EXPO_PUBLIC_DIRECTUS_URL=https://sso.hashpass.co`
-5. Publish the club site through the `club-v*` GitHub Pages workflow, then validate OAuth callback + profile load end-to-end
+8. Publish the club site through the `club-v*` GitHub Pages workflow, then validate OAuth callback + profile load end-to-end
 
 ## Notes
 

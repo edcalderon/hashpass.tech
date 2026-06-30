@@ -35,7 +35,7 @@ For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub release
 - `packages/infra` and `packages/tools` own infrastructure, release automation, and pipeline helpers.
 - `apps/docs` is the active Docusaurus documentation source of truth.
 - `archive/docs` stores historical docs, migration notes, and retired playbooks.
-- `main` continues to back the production `hashpass.tech` Amplify track.
+- `main` continues to back the production `hashpass.tech` Amplify track while the target-account S3/CloudFront replacement is staged in parallel.
 - `develop` is the integration branch for ongoing work across mobile, web, docs, and infra.
 - `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` stay on the SST/CodeBuild release path.
 - `hashpass.club` publishes through GitHub Pages from the `club-v*` release workflow.
@@ -104,8 +104,11 @@ pnpm run build:mobile # build the mobile app
 pnpm run build:club   # build the hashpass.club Next.js app
 pnpm run infra:deploy:dev  # deploy the BSL dev site to bsl-dev.hashpass.tech
 pnpm run infra:deploy:prod # deploy the BSL production site to bsl.hashpass.tech
+pnpm run infra:hashpass-web:plan   # preview the target-account hashpass.tech S3/CloudFront stack
+pnpm run infra:hashpass-web:apply  # provision the target-account hashpass.tech replacement
 pnpm run infra:provision-connection # create the GitHub CodeConnections connection
 pnpm run infra:provision-pipelines # create the AWS CodePipeline/CodeBuild pipelines
+pnpm run deploy:web:s3       # build and sync the static site to S3/CloudFront
 pnpm run amplify:update-source # retarget the core Amplify app to the canonical GitHub repo (set AMPLIFY_ACCESS_TOKEN first)
 pnpm run amplify:update-source:club # legacy: retarget the old hashpass.club Amplify app to the canonical GitHub repo
 pnpm run amplify:update-source:club-dev # legacy: retarget the old club-dev Amplify app to the canonical GitHub repo
@@ -116,11 +119,12 @@ pnpm run release:infra:test # dry-run the infra release flow
 pnpm run build:all    # build the mobile app and the new club web app
 ```
 
-Set `AWS_ACCOUNT_ID` or `EXPECTED_AWS_ACCOUNT_ID` in your local shell or GitHub repository variables when you want the infra helpers to verify the target AWS account without hardcoding it in the repo.
+Set `TARGET_AWS_ACCOUNT_ID`, `AWS_ACCOUNT_ID`, or `EXPECTED_AWS_ACCOUNT_ID` in your local shell or GitHub repository variables when you want the infra helpers to verify the target AWS account without hardcoding it in the repo.
 See [apps/docs/docs/infra/INFRA_NAMING_GUIDE.md](apps/docs/docs/infra/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the new infra track.
 
 Deployment split:
-- `hashpass.tech` / `core` is the Amplify app (`dy8duury54wam`, `us-east-2`) and should continue deploying through the Git-backed `main`/`develop` branch flow from `apps/mobile-app`.
+- `hashpass.tech` / `core` is still on the Amplify app (`dy8duury54wam`, `us-east-2`) until the new target-account S3/CloudFront replacement is validated and DNS is cut over.
+- The target-account `hashpass-web` Terraform stack provisions the replacement production and development pipelines in `packages/infra/terraform/stacks/hashpass-web`.
 - If Amplify still points at the old fork source, run `pnpm run amplify:update-source` once to move it to `hashpass-tech/hashpass.tech`.
 - `hashpass.club` is the new standalone Next.js app in `apps/web-app`. It publishes through GitHub Pages and the `club-v*` release tag flow.
 - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases that canonicalize to the GitHub Pages origin.

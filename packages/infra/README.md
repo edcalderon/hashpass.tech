@@ -1,11 +1,14 @@
 # HashPass Infra
 
-This workspace package now manages the BSL AWS delivery path plus the club Pages build and DNS layer:
+This workspace package now manages the BSL AWS delivery path, the target-account `hashpass.tech` DNS/API/web stack, and the club Pages build/DNS layer:
 
 - the existing BSL SST pipeline for `bsl.hashpass.tech`
+- the target-account `hashpass.tech` hosted zones and API stack
+- the target-account `hashpass.tech` static site pipeline on S3, with CloudFront enabled only when the destination account is verified
 - the club Pages artifact for `hashpass.club` and `hashpass.club/documentation`
 - the Route53 records for `club.hashpass.tech` and `docs.hashpass.tech`
 - the mobile Android self-hosted runner stack for `hashpass-mobile-release`
+- the isolated target-account Android runner stack for `hashpass-mobile-release`
 
 The dev and deploy scripts call the SST CLI directly for the BSL path, while the club Pages build uses this package as the static artifact source and GitHub Actions handles publication. `doctor` wraps the upstream `@lsts_tech/infra` readiness checks.
 
@@ -15,10 +18,14 @@ Set `HASHPASS_INFRA_TARGET=club-docs` when you want the legacy SST club front do
 
 - `bsl.hashpass.tech` for production
 - `bsl-dev.hashpass.tech` for development
+- `packages/infra/terraform/stacks/hashpass-dns` as the target-account hosted zone layer that keeps the migration reversible until registrar cutover
+- `packages/infra/terraform/stacks/hashpass-api-target` as the target-account API Gateway + Lambda layer for `api.hashpass.tech`
 - `apps/mobile-app` as an SST `StaticSite`
+- `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` S3 pipeline pair that replaces Amplify without deleting the source account first
 - `hashpass.club` as the canonical club site, with `club.hashpass.tech` and `docs.hashpass.tech` as DNS aliases
 - `apps/web-app` and `apps/docs` assembled into a single combined static artifact for GitHub Pages
 - `packages/infra/terraform/stacks/mobile-release` as the AWS EC2 GitHub Actions runner for mobile Android builds, including its managed public VPC when the account has no default network
+- `packages/infra/terraform/stacks/mobile-release-target` as the target-account Android runner used during the migration
 
 ## Commands
 
@@ -28,6 +35,8 @@ pnpm --filter @hashpass/infra run deploy:dev
 pnpm --filter @hashpass/infra run deploy:prod
 pnpm --filter @hashpass/infra run deploy:club-docs:prod # legacy AWS path
 pnpm --filter @hashpass/infra run doctor
+pnpm run infra:hashpass-web:plan
+pnpm run infra:hashpass-web:apply
 pnpm run infra:mobile-release:plan
 pnpm run infra:mobile-release:apply
 ```

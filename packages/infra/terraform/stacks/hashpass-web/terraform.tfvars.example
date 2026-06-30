@@ -1,0 +1,48 @@
+# HashPass web site target-account pipeline
+
+aws_region   = "us-east-2"
+name_prefix  = "hashpass"
+environment  = "production"
+repository   = "hashpass-tech/hashpass.tech"
+branch_name  = "main"
+
+# Create the connection with:
+#   TARGET_AWS_ACCOUNT_ID=952191196420 \
+#   AWS_REGION=us-east-2 \
+#   packages/tools/scripts/provision-infra-connection.sh
+connection_arn = "arn:aws:codestar-connections:us-east-2:123456789012:connection/example"
+
+# Production web build inputs. These are public values but should stay outside git.
+supabase_url = "https://mnnqryrdlhddorqsrtbn.supabase.co"
+supabase_key = "<EXPO_PUBLIC_SUPABASE_KEY_PROD>"
+google_client_id = "<GOOGLE_CLIENT_ID>"
+
+# Development web build inputs. Use the dev Supabase project so the branch
+# pipeline tests against the development auth/database path.
+supabase_url_dev = "https://fxgftanraszjjyeidvia.supabase.co"
+supabase_key_dev = "<EXPO_PUBLIC_SUPABASE_KEY_DEV>"
+
+# The new AWS account currently cannot create fresh CloudFront distributions
+# until AWS verifies it, so keep this false for the first migration pass.
+enable_cloudfront = false
+dev_enable_cloudfront = false
+
+# The development pipeline deploys from develop and stays separate from the
+# production pipeline in the same Terraform state.
+dev_branch_name = "develop"
+
+# Optional explicit names if you want to pin them for the migration.
+# site_bucket_name     = "hashpass-production-site-952191196420"
+# artifact_bucket_name = "hashpass-production-pipelines-952191196420-us-east-2"
+# dev_site_bucket_name     = "hashpass-dev-site-952191196420-us-east-2"
+# dev_artifact_bucket_name = "hashpass-dev-pipelines-952191196420-us-east-2"
+
+# Additional build environment variables if required by the app bundle.
+build_environment_overrides = {
+  EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN = "false"
+}
+
+tags = {
+  Project = "hashpass"
+  Owner   = "platform"
+}
