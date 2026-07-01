@@ -244,7 +244,15 @@ process_job() {
 
   mkdir -p "${source_dir}"
 
-  if ! artifact_aws s3 cp "s3://${source_bucket}/${source_key}" "${source_zip}" >/dev/null; then
+  for attempt in 1 2 3; do
+    if artifact_aws s3 cp "s3://${source_bucket}/${source_key}" "${source_zip}" >/dev/null && [[ -s "${source_zip}" ]]; then
+      break
+    fi
+
+    sleep 2
+  done
+
+  if [[ ! -s "${source_zip}" ]]; then
     fail_job "${job_id}" "failed to download source artifact"
     rm -rf "${work_dir}"
     return 1

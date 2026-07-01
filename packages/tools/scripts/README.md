@@ -111,7 +111,7 @@ See `apps/docs/docs/infra/INFRA_NAMING_GUIDE.md` for the naming convention used 
 
 The static site deploy helper expects `SITE_BUCKET_NAME` and, optionally, `SITE_CLOUDFRONT_DISTRIBUTION_ID`. It syncs the built `dist/client` tree to S3, reapplies no-cache headers to HTML and manifest assets, and creates a CloudFront invalidation when a distribution ID is present.
 The static site build helper installs the project dependencies, resolves the pinned pnpm version from the repo root, and produces the `dist/client` tree that the deploy helper consumes. It also resets the workspace-local Expo / Metro cache before export so the EC2 worker cannot reuse stale absolute paths from a previous job. The shared EC2 CodePipeline worker now runs the build helper directly before invoking the deploy helper in direct mode.
-If the build helper is missing from a source archive, the worker falls back to the same inline pnpm build flow so the pipeline remains usable even when the archive is incomplete.
+The worker also retries the source artifact download once the CodePipeline job starts, then verifies the archive exists before unzipping it. If the build helper is missing from a source archive, the worker falls back to the same inline pnpm build flow so the pipeline remains usable even when the archive is incomplete.
 
 ### Environment safety guards
 
