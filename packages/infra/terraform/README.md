@@ -24,12 +24,12 @@ This Terraform setup deploys the production naming convention discussed for Hash
 - `stacks/gcp`: GCP Directus VM(s) + optional Cloud DNS records
 - `stacks/hashpass-dns`: target-account Route 53 hosted zones for the migration cutover
 - `stacks/hashpass-api-target`: target-account API Gateway + Lambda stack for `api.hashpass.tech`
-- `stacks/hashpass-web`: target-account S3/CloudFront pipeline for `hashpass.tech`
+- `stacks/hashpass-web`: target-account CodePipeline + EC2 worker stack for `hashpass.tech`
 - `stacks/mobile-release`: AWS EC2 self-hosted GitHub Actions runner for mobile Android builds
 - `stacks/mobile-release-target`: isolated target-account Android runner stack used during migration
 - `modules/aws_expo_router_api`: reusable Lambda + HTTP API + custom domain module
 - `modules/aws_amplify_domain`: reusable Amplify custom domain binding module
-- `modules/aws_static_site_pipeline`: reusable S3 + CloudFront + CodePipeline site module
+- `modules/aws_static_site_pipeline`: reusable S3 + CloudFront + CodePipeline site module with a custom EC2 build action
 - `modules/gcp_directus_instance`: reusable Directus compute module
 - `modules/aws_github_actions_runner`: reusable EC2 GitHub Actions runner module
 
@@ -83,8 +83,8 @@ same Terraform state. It creates:
 - an S3 bucket for the built site
 - a CloudFront distribution with the S3 bucket as origin when the account is verified for CloudFront
 - an S3 website fallback when CloudFront is disabled
-- a CodeBuild project that runs `npm run build:web` and deploys the output to S3
-- a CodePipeline that pulls from GitHub and triggers the CodeBuild deploy
+- a dedicated EC2 build worker that polls a custom CodePipeline build action and runs the shared build/deploy helpers
+- a CodePipeline that pulls from GitHub and triggers the EC2 worker
 - a matching development pipeline that builds from `develop` with the dev Supabase inputs
 - a `dev.hashpass.tech` hosted zone and alias record when the DNS stack is present
 
@@ -118,7 +118,12 @@ The initial rollout keeps Amplify alive in the source account. If the target
 AWS account cannot create CloudFront yet, leave `enable_cloudfront = false`
 and `dev_enable_cloudfront = false`, then validate against the S3 website
 endpoint first. Once AWS verifies the account, you can flip CloudFront back on
-and reapply without touching the source account.
+and reapply without touching the source account. The worker runs the same
+`packages/tools/scripts/build-static-site.sh` and
+`packages/tools/scripts/deploy-static-site.sh` helpers that local testing uses,
+so the target path stays close to the old Amplify build flow without depending
+on CodeBuild. If a source archive ever omits the build helper, the worker falls
+back to an inline static-site build so the pipeline can still complete.
 
 ### HashPass DNS Stack
 

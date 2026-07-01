@@ -92,6 +92,8 @@ node packages/tools/scripts/release-infra-pipeline.js --env production --bump pa
 packages/tools/scripts/provision-infra-connection.sh hashpass-tech/hashpass.tech
 packages/tools/scripts/provision-infra-pipelines.sh hashpass-tech/hashpass.tech
 packages/tools/scripts/setup-github-actions-role.sh hashpass-tech/hashpass.tech
+packages/tools/scripts/build-static-site.sh
+packages/tools/scripts/deploy-static-site.sh
 packages/tools/scripts/update-amplify-source-repo.sh --tenant core
 packages/tools/scripts/update-amplify-source-repo.sh --tenant club
 packages/tools/scripts/update-amplify-source-repo.sh --tenant club-dev
@@ -104,8 +106,12 @@ The Amplify source helper requires `AMPLIFY_ACCESS_TOKEN` for GitHub repositorie
 For the club tenants, set `HASHPASS_CLUB_AMPLIFY_APP_ID` and `HASHPASS_CLUB_DEV_AMPLIFY_APP_ID` in the environment or AWS release context before running the source or release helpers.
 `packages/tools/scripts/check-consistency.js` now also verifies that each Amplify app still points at the canonical `hashpass-tech/hashpass.tech` repository.
 
-Infra helpers derive the AWS account from active credentials unless `AWS_ACCOUNT_ID` or `EXPECTED_AWS_ACCOUNT_ID` is set in the environment or repository variables.
+Infra helpers derive the AWS account from active credentials unless `TARGET_AWS_ACCOUNT_ID`, `AWS_ACCOUNT_ID`, or `EXPECTED_AWS_ACCOUNT_ID` is set in the environment or repository variables.
 See `apps/docs/docs/infra/INFRA_NAMING_GUIDE.md` for the naming convention used by the new BSL infra resources.
+
+The static site deploy helper expects `SITE_BUCKET_NAME` and, optionally, `SITE_CLOUDFRONT_DISTRIBUTION_ID`. It syncs the built `dist/client` tree to S3, reapplies no-cache headers to HTML and manifest assets, and creates a CloudFront invalidation when a distribution ID is present.
+The static site build helper installs the project dependencies, resolves the pinned pnpm version from the repo root, and produces the `dist/client` tree that the deploy helper consumes. The shared EC2 CodePipeline worker now runs the build helper directly before invoking the deploy helper in direct mode.
+If the build helper is missing from a source archive, the worker falls back to the same inline pnpm build flow so the pipeline remains usable even when the archive is incomplete.
 
 ### Environment safety guards
 

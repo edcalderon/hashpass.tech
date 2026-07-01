@@ -20,4 +20,5 @@ corepack pnpm config set store-dir "${PNPM_STORE_DIR}"
 
 corepack pnpm --version
 corepack pnpm install --frozen-lockfile --prefer-offline
-npm run build:web
+corepack pnpm --filter hashpass-mobile-app build
+npm run postbuild:web

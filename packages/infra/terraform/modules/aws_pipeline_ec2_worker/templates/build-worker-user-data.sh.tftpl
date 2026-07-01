@@ -1,0 +1,361 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+export AWS_REGION="__AWS_REGION__"
+export AWS_DEFAULT_REGION="__AWS_REGION__"
+
+ACTION_PROVIDER="__PROVIDER_NAME__"
+ACTION_VERSION="__PROVIDER_VERSION__"
+
+BUILD_USER="builder"
+BUILD_HOME="/home/${BUILD_USER}"
+BUILD_ROOT="/opt/__NAME_PREFIX__-build-runner"
+BUILD_BIN_DIR="${BUILD_ROOT}/bin"
+BUILD_WORKSPACE_ROOT="/var/lib/__NAME_PREFIX__-build-runner/workspaces"
+BUILD_CACHE_ROOT="/var/cache/__NAME_PREFIX__-build-runner"
+BUILD_ENV_FILE="/etc/__NAME_PREFIX__-build-runner.env"
+BUILD_SERVICE_FILE="/etc/systemd/system/__NAME_PREFIX__-build-runner.service"
+
+log() {
+  printf '[hashpass-build-runner] %s\n' "$1"
+}
+
+install_packages() {
+  log "Installing base packages"
+  apt-get update
+  apt-get install -y \
+    awscli \
+    build-essential \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    jq \
+    unzip \
+    zip
+}
+
+install_node() {
+  if ! command -v node >/dev/null 2>&1; then
+    log "Installing Node.js 22"
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+    apt-get install -y nodejs
+  fi
+}
+
+create_build_user() {
+  if ! id -u "${BUILD_USER}" >/dev/null 2>&1; then
+    useradd --create-home --shell /bin/bash "${BUILD_USER}"
+  fi
+
+  mkdir -p "${BUILD_BIN_DIR}" "${BUILD_WORKSPACE_ROOT}" "${BUILD_CACHE_ROOT}" "${BUILD_HOME}/.cache" "${BUILD_HOME}/.local/share"
+  chown -R "${BUILD_USER}:${BUILD_USER}" "${BUILD_ROOT}" "${BUILD_WORKSPACE_ROOT}" "${BUILD_CACHE_ROOT}" "${BUILD_HOME}"
+}
+
+write_env_file() {
+  cat > "${BUILD_ENV_FILE}" <<EOF
+AWS_REGION=${AWS_REGION}
+AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+ACTION_PROVIDER=${ACTION_PROVIDER}
+ACTION_VERSION=${ACTION_VERSION}
+BUILD_HOME=${BUILD_HOME}
+BUILD_ROOT=${BUILD_ROOT}
+BUILD_BIN_DIR=${BUILD_BIN_DIR}
+BUILD_WORKSPACE_ROOT=${BUILD_WORKSPACE_ROOT}
+BUILD_CACHE_ROOT=${BUILD_CACHE_ROOT}
+PNPM_STORE_DIR=${BUILD_CACHE_ROOT}/pnpm-store
+CI=1
+NODE_ENV=production
+PATH=/usr/local/bin:/usr/bin:/bin
+EOF
+
+  chmod 0640 "${BUILD_ENV_FILE}"
+  chown root:"${BUILD_USER}" "${BUILD_ENV_FILE}"
+}
+
+write_worker_script() {
+  cat > "${BUILD_BIN_DIR}/worker-loop.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+source /etc/__NAME_PREFIX__-build-runner.env
+
+log() {
+  printf '[hashpass-build-runner] %s\n' "$1"
+}
+
+artifact_aws() {
+  local access_key_name secret_key_name session_token_name
+
+  access_key_name="AWS_ACCESS_KEY_ID"
+  secret_key_name="AWS_SECRET_ACCESS_KEY"
+  session_token_name="AWS_SESSION_TOKEN"
+
+  env \
+    "$(printf '%s=%s' "${access_key_name}" "${ARTIFACT_ACCESS_KEY_ID}")" \
+    "$(printf '%s=%s' "${secret_key_name}" "${ARTIFACT_SECRET_ACCESS_KEY}")" \
+    "$(printf '%s=%s' "${session_token_name}" "${ARTIFACT_SESSION_TOKEN}")" \
+    AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" \
+    aws "$@"
+}
+
+json_env_export() {
+  local json="$1"
+
+  if [[ -z "${json}" || "${json}" == "null" ]]; then
+    return
+  fi
+
+  while IFS= read -r entry; do
+    local key value
+    key="$(jq -r '.key' <<<"${entry}")"
+    value="$(jq -r '.value | tostring' <<<"${entry}")"
+    export "${key}=${value}"
+  done < <(jq -c 'to_entries[]' <<<"${json}")
+}
+
+resolve_script_path() {
+  local configured_path="$1"
+  local script_name matches
+
+  if [[ -f "${configured_path}" ]]; then
+    printf '%s\n' "${configured_path}"
+    return 0
+  fi
+
+  script_name="$(basename "${configured_path}")"
+  mapfile -t matches < <(find . -type f -name "${script_name}" -print | sort)
+
+  if [[ "${#matches[@]}" -gt 0 ]]; then
+    printf '%s\n' "${matches[0]#./}"
+    return 0
+  fi
+
+  return 1
+}
+
+run_static_site_build_fallback() {
+  local pnpm_version
+
+  log "Running inline static-site build fallback"
+  pnpm_version="$(node packages/tools/scripts/resolve-pnpm-version.js)"
+  rm -rf node_modules dist
+  corepack prepare "pnpm@${pnpm_version}" --activate
+  corepack pnpm config set store-dir "${PNPM_STORE_DIR}"
+  corepack pnpm --version
+  corepack pnpm install --frozen-lockfile --prefer-offline
+  corepack pnpm --filter hashpass-mobile-app build
+  npm run postbuild:web
+}
+
+fail_job() {
+  local job_id="$1"
+  local message="$2"
+
+  aws codepipeline put-job-failure-result \
+    --job-id "${job_id}" \
+    --failure-details "type=JobFailed,message=${message}" \
+    >/dev/null || true
+}
+
+process_job() {
+  local job_json="$1"
+  local job_id nonce build_script output_directory deploy_script build_env_json deploy_bucket deploy_cf
+  local source_bucket source_key output_bucket output_key work_dir source_zip artifact_zip source_dir
+  local artifact_credentials
+  local resolved_build_script resolved_deploy_script
+
+  job_id="$(jq -r '.id' <<<"${job_json}")"
+  nonce="$(jq -r '.nonce' <<<"${job_json}")"
+  build_script="$(jq -r '.data.actionConfiguration.configuration.BuildScript // empty' <<<"${job_json}")"
+  output_directory="$(jq -r '.data.actionConfiguration.configuration.OutputDirectory // empty' <<<"${job_json}")"
+  deploy_script="$(jq -r '.data.actionConfiguration.configuration.DeployScript // empty' <<<"${job_json}")"
+  build_env_json="$(jq -r '.data.actionConfiguration.configuration.BuildEnvironmentJson // empty' <<<"${job_json}")"
+  deploy_bucket="$(jq -r '.data.actionConfiguration.configuration.DeployBucketName // empty' <<<"${job_json}")"
+  deploy_cf="$(jq -r '.data.actionConfiguration.configuration.DeployCloudFrontDistributionId // empty' <<<"${job_json}")"
+  source_bucket="$(jq -r '.data.inputArtifacts[0].location.s3Location.bucketName' <<<"${job_json}")"
+  source_key="$(jq -r '.data.inputArtifacts[0].location.s3Location.objectKey' <<<"${job_json}")"
+  output_bucket="$(jq -r '.data.outputArtifacts[0].location.s3Location.bucketName' <<<"${job_json}")"
+  output_key="$(jq -r '.data.outputArtifacts[0].location.s3Location.objectKey' <<<"${job_json}")"
+  artifact_credentials="$(jq -c '.data.artifactCredentials' <<<"${job_json}")"
+  ARTIFACT_ACCESS_KEY_ID="$(jq -r '.accessKeyId' <<<"${artifact_credentials}")"
+  ARTIFACT_SECRET_ACCESS_KEY="$(jq -r '.secretAccessKey' <<<"${artifact_credentials}")"
+  ARTIFACT_SESSION_TOKEN="$(jq -r '.sessionToken' <<<"${artifact_credentials}")"
+
+  if [[ -z "${job_id}" || "${job_id}" == "null" ]]; then
+    return 0
+  fi
+
+  log "Starting job ${job_id}"
+
+  if ! aws codepipeline acknowledge-job --job-id "${job_id}" --nonce "${nonce}" >/dev/null; then
+    fail_job "${job_id}" "failed to acknowledge job"
+    return 1
+  fi
+
+  work_dir="$(mktemp -d "${BUILD_WORKSPACE_ROOT}/job-${job_id}.XXXXXX")"
+  source_dir="${work_dir}/source"
+  source_zip="${work_dir}/source.zip"
+  artifact_zip="${work_dir}/artifact.zip"
+
+  mkdir -p "${source_dir}"
+
+  if ! artifact_aws s3 cp "s3://${source_bucket}/${source_key}" "${source_zip}" >/dev/null; then
+    fail_job "${job_id}" "failed to download source artifact"
+    rm -rf "${work_dir}"
+    return 1
+  fi
+
+  unzip -q "${source_zip}" -d "${source_dir}"
+  cd "${source_dir}"
+
+  export AWS_REGION="${AWS_REGION}"
+  export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}"
+  export CI=1
+  export NODE_ENV=production
+  export PNPM_STORE_DIR="${PNPM_STORE_DIR}"
+  export SITE_BUILD_DIR="${output_directory}"
+  export BUILD_OUTPUT_DIR="${output_directory}"
+  export SITE_BUCKET_NAME="${deploy_bucket}"
+  export SITE_CLOUDFRONT_DISTRIBUTION_ID="${deploy_cf}"
+
+  json_env_export "${build_env_json}"
+
+  if [[ -z "${build_script}" ]]; then
+    fail_job "${job_id}" "missing BuildScript action configuration"
+    rm -rf "${work_dir}"
+    return 1
+  fi
+
+  resolved_build_script=""
+  if resolved_build_script="$(resolve_script_path "${build_script}")"; then
+    :
+  elif [[ "$(basename "${build_script}")" == "build-static-site.sh" ]]; then
+    log "Build script ${build_script} was not present in the source artifact; using the inline static-site build fallback"
+  else
+    fail_job "${job_id}" "build script not found: ${build_script}"
+    rm -rf "${work_dir}"
+    return 1
+  fi
+
+  if [[ -n "${resolved_build_script}" ]]; then
+    if ! bash "${resolved_build_script}"; then
+      fail_job "${job_id}" "build script failed: ${resolved_build_script}"
+      rm -rf "${work_dir}"
+      return 1
+    fi
+  else
+    if ! run_static_site_build_fallback; then
+      fail_job "${job_id}" "build script fallback failed: ${build_script}"
+      rm -rf "${work_dir}"
+      return 1
+    fi
+  fi
+
+  if [[ -n "${deploy_script}" ]]; then
+    resolved_deploy_script=""
+    if ! resolved_deploy_script="$(resolve_script_path "${deploy_script}")"; then
+      fail_job "${job_id}" "deploy script not found: ${deploy_script}"
+      rm -rf "${work_dir}"
+      return 1
+    fi
+
+    if ! bash "${resolved_deploy_script}"; then
+      fail_job "${job_id}" "deploy script failed: ${resolved_deploy_script}"
+      rm -rf "${work_dir}"
+      return 1
+    fi
+  fi
+
+  if [[ ! -d "${output_directory}" ]]; then
+    fail_job "${job_id}" "output directory not found: ${output_directory}"
+    rm -rf "${work_dir}"
+    return 1
+  fi
+
+  (cd "${output_directory}" && zip -qr "${artifact_zip}" .)
+
+  if ! artifact_aws s3 cp "${artifact_zip}" "s3://${output_bucket}/${output_key}" >/dev/null; then
+    fail_job "${job_id}" "failed to upload output artifact"
+    rm -rf "${work_dir}"
+    return 1
+  fi
+
+  if ! aws codepipeline put-job-success-result --job-id "${job_id}" >/dev/null; then
+    fail_job "${job_id}" "failed to report success"
+    rm -rf "${work_dir}"
+    return 1
+  fi
+
+  log "Completed job ${job_id}"
+  rm -rf "${work_dir}"
+}
+
+main() {
+  log "Polling CodePipeline custom action ${ACTION_PROVIDER} v${ACTION_VERSION}"
+
+  while true; do
+    job_json="$(aws codepipeline poll-for-jobs \
+      --action-type-id category=Build,owner=Custom,provider="${ACTION_PROVIDER}",version="${ACTION_VERSION}" \
+      --query 'jobs[0]' \
+      --output json 2>/dev/null || true)"
+
+    if [[ -z "${job_json}" || "${job_json}" == "null" ]]; then
+      sleep 5
+      continue
+    fi
+
+    if ! process_job "${job_json}"; then
+      log "Job processing failed"
+    fi
+  done
+}
+
+main "$@"
+EOF
+
+  cat > "${BUILD_SERVICE_FILE}" <<EOF
+[Unit]
+Description=HashPass pipeline build worker
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=${BUILD_USER}
+Group=${BUILD_USER}
+WorkingDirectory=${BUILD_WORKSPACE_ROOT}
+EnvironmentFile=${BUILD_ENV_FILE}
+ExecStart=${BUILD_BIN_DIR}/worker-loop.sh
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=600
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  chmod 0750 "${BUILD_BIN_DIR}/worker-loop.sh"
+  chown "${BUILD_USER}:${BUILD_USER}" "${BUILD_BIN_DIR}/worker-loop.sh"
+}
+
+start_services() {
+  systemctl daemon-reload
+  systemctl enable "__NAME_PREFIX__-build-runner.service"
+  systemctl restart "__NAME_PREFIX__-build-runner.service"
+}
+
+main() {
+  install_packages
+  install_node
+  create_build_user
+  write_env_file
+  write_worker_script
+  start_services
+  log "Pipeline build worker bootstrap complete"
+}
+
+main "$@"
