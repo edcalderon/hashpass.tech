@@ -13,8 +13,9 @@ echo "  PNPM store dir:  ${PNPM_STORE_DIR}"
 export CI=1
 export NODE_MAX_OLD_SPACE_SIZE="${NODE_MAX_OLD_SPACE_SIZE:-3072}"
 export EXPO_EXPORT_MAX_WORKERS="${EXPO_EXPORT_MAX_WORKERS:-1}"
+export METRO_CACHE_DIR="${METRO_CACHE_DIR:-${ROOT_DIR}/apps/mobile-app/.expo/metro-cache}"
 
-rm -rf node_modules dist
+rm -rf node_modules dist apps/mobile-app/.expo apps/mobile-app/.metro
 
 PNPM_VERSION="$(
   node <<'NODE'

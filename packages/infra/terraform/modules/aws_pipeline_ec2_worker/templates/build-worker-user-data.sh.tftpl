@@ -181,8 +181,9 @@ run_static_site_build_fallback() {
   cd "${project_root}"
   export NODE_MAX_OLD_SPACE_SIZE="${NODE_MAX_OLD_SPACE_SIZE:-3072}"
   export EXPO_EXPORT_MAX_WORKERS="${EXPO_EXPORT_MAX_WORKERS:-1}"
+  export METRO_CACHE_DIR="${METRO_CACHE_DIR:-${project_root}/apps/mobile-app/.expo/metro-cache}"
   pnpm_version="$(resolve_pnpm_version)"
-  rm -rf node_modules dist
+  rm -rf node_modules dist apps/mobile-app/.expo apps/mobile-app/.metro
   corepack prepare "pnpm@${pnpm_version}" --activate
   corepack pnpm config set store-dir "${PNPM_STORE_DIR}"
   corepack pnpm --version
