@@ -8,6 +8,9 @@ locals {
   build_action_provider_name = trimspace(var.build_action_provider_name)
   build_action_version       = trimspace(var.build_action_version)
   deploy_mode                = lower(trimspace(var.deploy_mode))
+  custom_domain_name         = trimspace(var.custom_domain_name)
+  acm_certificate_arn        = trimspace(var.acm_certificate_arn)
+  cloudfront_aliases         = local.custom_domain_name != "" ? [local.custom_domain_name] : []
   tags = merge(var.tags, {
     Environment = var.environment
     ManagedBy   = "terraform"
@@ -19,6 +22,17 @@ check "connection_arn_required" {
   assert {
     condition     = trimspace(var.connection_arn) != ""
     error_message = "connection_arn is required for the site pipeline module."
+  }
+}
+
+check "custom_domain_requires_certificate" {
+  assert {
+    condition = (
+      local.custom_domain_name == "" && local.acm_certificate_arn == ""
+      ) || (
+      local.custom_domain_name != "" && local.acm_certificate_arn != ""
+    )
+    error_message = "custom_domain_name and acm_certificate_arn must be set together for CloudFront custom domains."
   }
 }
 
@@ -89,6 +103,7 @@ resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   comment             = "${var.name_prefix} ${var.environment} static site"
   default_root_object = "index.html"
+  aliases             = local.cloudfront_aliases
   price_class         = "PriceClass_100"
   is_ipv6_enabled     = true
   wait_for_deployment = true
@@ -136,7 +151,10 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn            = local.acm_certificate_arn != "" ? local.acm_certificate_arn : null
+    cloudfront_default_certificate = local.acm_certificate_arn == ""
+    ssl_support_method             = local.acm_certificate_arn != "" ? "sni-only" : null
+    minimum_protocol_version       = local.acm_certificate_arn != "" ? "TLSv1.2_2021" : null
   }
 
   tags = local.tags

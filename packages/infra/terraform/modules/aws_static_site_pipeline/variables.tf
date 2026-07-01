@@ -85,6 +85,18 @@ variable "site_bucket_name" {
   default     = null
 }
 
+variable "custom_domain_name" {
+  description = "Optional CloudFront custom domain name"
+  type        = string
+  default     = ""
+}
+
+variable "acm_certificate_arn" {
+  description = "Optional ACM certificate ARN for a CloudFront custom domain"
+  type        = string
+  default     = ""
+}
+
 variable "artifact_bucket_name" {
   description = "Optional explicit S3 bucket name for pipeline artifacts"
   type        = string

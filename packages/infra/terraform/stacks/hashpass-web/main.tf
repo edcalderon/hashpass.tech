@@ -3,6 +3,7 @@ data "aws_caller_identity" "current" {}
 locals {
   build_site_bucket_name     = try(trimspace(var.site_bucket_name), "") != "" ? trimspace(var.site_bucket_name) : "${var.name_prefix}-${var.environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   build_dev_site_bucket_name = try(trimspace(var.dev_site_bucket_name), "") != "" ? trimspace(var.dev_site_bucket_name) : "${var.name_prefix}-${var.dev_environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  dev_custom_domain_name     = trim(var.dev_route53_zone_name, ".")
 
   build_worker_deploy_bucket_names = distinct([
     for bucket_name in [local.build_site_bucket_name, local.build_dev_site_bucket_name] :
@@ -177,7 +178,7 @@ module "site_dev" {
   connection_arn             = var.connection_arn
   site_bucket_name           = var.dev_site_bucket_name
   artifact_bucket_name       = var.dev_artifact_bucket_name
-  enable_cloudfront          = var.dev_enable_cloudfront
+  enable_cloudfront          = false
   build_action_provider_name = var.build_action_provider_name
   build_action_version       = var.build_action_version
   build_action_timeout       = var.build_action_timeout
@@ -196,15 +197,137 @@ data "aws_route53_zone" "dev" {
   private_zone = false
 }
 
+locals {
+  dev_site_alias_name = var.dev_enable_cloudfront ? aws_cloudfront_distribution.dev_site[0].domain_name : replace(module.site_dev.site_website_endpoint, "http://", "")
+  dev_site_alias_zone = var.dev_enable_cloudfront ? aws_cloudfront_distribution.dev_site[0].hosted_zone_id : module.site_dev.site_bucket_hosted_zone_id
+  dev_site_validation = var.dev_enable_cloudfront ? one(aws_acm_certificate.dev_site[0].domain_validation_options) : null
+}
+
+resource "aws_acm_certificate" "dev_site" {
+  count    = var.dev_enable_cloudfront ? 1 : 0
+  provider = aws.use1
+
+  domain_name       = local.dev_custom_domain_name
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = var.tags
+}
+
+resource "aws_route53_record" "dev_site_cert_validation" {
+  count = var.dev_enable_cloudfront ? 1 : 0
+
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.dev.zone_id
+  name            = local.dev_site_validation.resource_record_name
+  type            = local.dev_site_validation.resource_record_type
+  records         = [local.dev_site_validation.resource_record_value]
+  ttl             = 60
+}
+
+resource "aws_acm_certificate_validation" "dev_site" {
+  count    = var.dev_enable_cloudfront ? 1 : 0
+  provider = aws.use1
+
+  certificate_arn         = aws_acm_certificate.dev_site[0].arn
+  validation_record_fqdns = [aws_route53_record.dev_site_cert_validation[0].fqdn]
+}
+
+resource "aws_cloudfront_distribution" "dev_site" {
+  count = var.dev_enable_cloudfront ? 1 : 0
+
+  enabled             = true
+  comment             = "${var.name_prefix} ${var.dev_environment} static site"
+  default_root_object = "index.html"
+  aliases             = [local.dev_custom_domain_name]
+  price_class         = "PriceClass_100"
+  is_ipv6_enabled     = true
+  wait_for_deployment = true
+
+  origin {
+    domain_name = replace(module.site_dev.site_website_endpoint, "http://", "")
+    origin_id   = "${local.dev_custom_domain_name}-origin"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  default_cache_behavior {
+    target_origin_id       = "${local.dev_custom_domain_name}-origin"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD", "OPTIONS"]
+    viewer_protocol_policy = "redirect-to-https"
+    compress               = true
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+  }
+
+  custom_error_response {
+    error_code            = 403
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 0
+  }
+
+  custom_error_response {
+    error_code            = 404
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 0
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    acm_certificate_arn            = aws_acm_certificate_validation.dev_site[0].certificate_arn
+    cloudfront_default_certificate = false
+    ssl_support_method             = "sni-only"
+    minimum_protocol_version       = "TLSv1.2_2021"
+  }
+
+  tags = var.tags
+}
+
 resource "aws_route53_record" "dev_site" {
   zone_id = data.aws_route53_zone.dev.zone_id
-  name    = trim(var.dev_route53_zone_name, ".")
+  name    = local.dev_custom_domain_name
   type    = "A"
 
   alias {
     evaluate_target_health = false
-    name                   = replace(module.site_dev.site_website_endpoint, "http://", "")
-    zone_id                = module.site_dev.site_bucket_hosted_zone_id
+    name                   = local.dev_site_alias_name
+    zone_id                = local.dev_site_alias_zone
+  }
+}
+
+resource "aws_route53_record" "dev_site_ipv6" {
+  count = var.dev_enable_cloudfront ? 1 : 0
+
+  zone_id = data.aws_route53_zone.dev.zone_id
+  name    = local.dev_custom_domain_name
+  type    = "AAAA"
+
+  alias {
+    evaluate_target_health = false
+    name                   = local.dev_site_alias_name
+    zone_id                = local.dev_site_alias_zone
   }
 }
 

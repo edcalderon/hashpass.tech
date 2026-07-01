@@ -22,6 +22,10 @@ on:
       - ".github/workflows/hashpass-web-pipeline-monitor.yml"
   workflow_dispatch:
     inputs:
+      aws_web_pipeline_role_arn:
+        description: Optional IAM role ARN override for manual dispatch
+        required: false
+        type: string
       mode:
         description: Monitor the pipelines or run the idle stop check only
         required: true
@@ -44,7 +48,7 @@ jobs:
       id-token: write
     env:
       AWS_REGION: ${{ vars.AWS_WEB_PIPELINE_REGION || 'us-east-2' }}
-      AWS_WEB_PIPELINE_ROLE_ARN: ${{ vars.AWS_WEB_PIPELINE_ROLE_ARN }}
+      AWS_WEB_PIPELINE_ROLE_ARN: ${{ vars.AWS_WEB_PIPELINE_ROLE_ARN || inputs.aws_web_pipeline_role_arn }}
       WEB_PIPELINE_NAMES: ${{ vars.WEB_PIPELINE_NAMES || 'hashpass-dev-site,hashpass-production-site' }}
       WEB_PIPELINE_PROJECT_TAG: ${{ vars.WEB_PIPELINE_PROJECT_TAG || 'hashpass' }}
       WEB_PIPELINE_SERVICE_TAG: ${{ vars.WEB_PIPELINE_SERVICE_TAG || 'pipeline-build-worker' }}
@@ -64,7 +68,7 @@ jobs:
           set -euo pipefail
 
           if [ -z "${AWS_WEB_PIPELINE_ROLE_ARN:-}" ]; then
-            echo "Missing GitHub variable AWS_WEB_PIPELINE_ROLE_ARN."
+            echo "Missing AWS_WEB_PIPELINE_ROLE_ARN. Set the GitHub repo variable or pass workflow_dispatch input aws_web_pipeline_role_arn."
             exit 1
           fi
 

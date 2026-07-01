@@ -109,5 +109,6 @@ Rollback should be a traffic flip, not a rebuild.
 - Use `TARGET_AWS_ACCOUNT_ID` when you need scripts to assert the destination account explicitly.
 - Build the target static site with `pnpm run deploy:web:s3` for a local dry run, or let the new EC2 worker perform the same build and S3 sync inside AWS.
 - Use `.github/workflows/hashpass-web-pipeline-monitor.yml` for day-to-day control of the web worker. Set `AWS_WEB_PIPELINE_ROLE_ARN` from the Terraform output and dispatch the workflow with `mode=monitor` or `mode=stop` instead of using ad hoc target-account AWS CLI calls, unless you are debugging a failure.
+- If the GitHub repo variable is missing during bootstrap, pass the same role ARN through the manual `aws_web_pipeline_role_arn` workflow dispatch input and then save it as the repo variable after the first successful run.
 - If CloudFront is unavailable in the target account, keep `enable_cloudfront = false` in the stack tfvars and validate against the S3 website endpoint first.
 - Keep source-account credentials and resources available until the migration has been stable long enough to close the rollback window.

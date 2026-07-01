@@ -23,6 +23,16 @@ output "cloudfront_distribution_domain_name" {
   value       = var.enable_cloudfront ? aws_cloudfront_distribution.site[0].domain_name : null
 }
 
+output "cloudfront_distribution_hosted_zone_id" {
+  description = "Route 53 hosted zone ID for the CloudFront distribution"
+  value       = var.enable_cloudfront ? aws_cloudfront_distribution.site[0].hosted_zone_id : null
+}
+
+output "custom_domain_name" {
+  description = "Optional CloudFront custom domain name"
+  value       = local.custom_domain_name
+}
+
 output "build_action_provider_name" {
   description = "CodePipeline custom action provider name"
   value       = var.build_action_provider_name

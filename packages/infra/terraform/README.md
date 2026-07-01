@@ -124,6 +124,10 @@ and reapply without touching the source account. The worker runs the same
 so the target path stays close to the old Amplify build flow without depending
 on CodeBuild. If a source archive ever omits the build helper, the worker falls
 back to an inline static-site build so the pipeline can still complete.
+When `dev_enable_cloudfront = true`, the stack also creates a DNS-validated
+ACM certificate in `us-east-1` for `dev.hashpass.tech` and points the Route 53
+alias at CloudFront instead of the S3 website endpoint. That is the HTTPS path
+for the development site once the target account is cleared for CloudFront.
 The EC2 worker role also gets bucket-level S3 permissions only for the deploy
 buckets passed in by the stack, which is required for `aws s3 sync --delete`
 and the HTML cache refresh `aws s3 cp` calls.
@@ -133,7 +137,9 @@ and start/stop the shared EC2 worker by instance ID. Copy the
 `github_actions_role_arn` output into the GitHub variable
 `AWS_WEB_PIPELINE_ROLE_ARN`, then use the monitor workflow in
 `.github/workflows/hashpass-web-pipeline-monitor.yml` to keep the worker off
-when both the dev and production pipelines are idle.
+when both the dev and production pipelines are idle. If the repo variable is
+not set yet, you can pass the same role ARN as the manual
+`aws_web_pipeline_role_arn` workflow dispatch input.
 That workflow is the normal control plane for the worker lifecycle. Use
 GitHub Actions to start, monitor, or stop the EC2 instance by tag, and keep
 direct target-account AWS CLI usage for bootstrap or emergency debugging only.
