@@ -1,3 +1,32 @@
+## [1.8.143](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.142...v1.8.143) (2026-07-01)
+
+
+### Bug Fixes
+
+* **infra:** harden ec2 pipeline worker ([8d75955](https://github.com/hashpass-tech/hashpass.tech/commit/8d759556881d9df214631dfddb3c2c741d8627af))
+* **infra:** isolate metro cache in static builds ([051643a](https://github.com/hashpass-tech/hashpass.tech/commit/051643ad7928e28fcf1659f7d210c7294cccc2db))
+* **infra:** retry worker source download ([0c47295](https://github.com/hashpass-tech/hashpass.tech/commit/0c47295daba97d26165f69d05a4c123e2569f969))
+* **mobile:** isolate native google signin imports ([9e3c635](https://github.com/hashpass-tech/hashpass.tech/commit/9e3c635104f6fb48db21d792c57c08614f3d6d1e))
+* **release:** correct android promotion workflow heredoc ([90f7ba2](https://github.com/hashpass-tech/hashpass.tech/commit/90f7ba2e8699f6a9a31f819e74a58e08954b1fed))
+* **release:** default android flow to development internal ([0fd78c5](https://github.com/hashpass-tech/hashpass.tech/commit/0fd78c548947d82637d32e26c4a4290512a399fd))
+* **release:** derive alpha dispatch ref correctly ([3587064](https://github.com/hashpass-tech/hashpass.tech/commit/358706449b2349539fcb807dd7de265a8d840202))
+* **release:** gate alpha on successful internal job ([2b58931](https://github.com/hashpass-tech/hashpass.tech/commit/2b5893189b862eeae62100027e324e63b667a338))
+* **release:** promote alpha without rebuilding ([ce87b7e](https://github.com/hashpass-tech/hashpass.tech/commit/ce87b7e71daad46f0e470760a9531adc2c49420f))
+
+
+### Features
+
+* **infra:** add dev.hashpass.tech hosted zone ([0710559](https://github.com/hashpass-tech/hashpass.tech/commit/07105596f43aa76df143080e3888f50133c98321))
+* **infra:** add target hashpass.tech web pipelines ([f4b0f32](https://github.com/hashpass-tech/hashpass.tech/commit/f4b0f322b5471b944fb2c055a73dc771f6ec2a16))
+* **infra:** migrate hashpass web pipelines to ec2 worker ([02881c9](https://github.com/hashpass-tech/hashpass.tech/commit/02881c90f7db58d1f0536f7d905ed2165748e041))
+* **infra:** replace codebuild with ec2 worker ([db61945](https://github.com/hashpass-tech/hashpass.tech/commit/db6194576380f6fc794a7cc58b0179433e766c41))
+* **release:** auto-promote android alpha from internal ([99dfd8a](https://github.com/hashpass-tech/hashpass.tech/commit/99dfd8af26f7467667610146bd84bf428978a7a8))
+* **scripts:** add shared static site build helper ([6265337](https://github.com/hashpass-tech/hashpass.tech/commit/6265337c6b19e128be6058eb45255b3e648f5214))
+
+
+
+
+
 ## [1.8.142](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.141...v1.8.142) (2026-06-28)
 
 

@@ -56,7 +56,7 @@ function loadExpoConfig(profile: 'production' | 'preview') {
       profile,
       easArgs: ['build', '--platform', 'android', '--profile', profile],
       baseEnv: {},
-    });
+    }) as NodeJS.ProcessEnv;
 
     return {
       env,
