@@ -124,6 +124,9 @@ and reapply without touching the source account. The worker runs the same
 so the target path stays close to the old Amplify build flow without depending
 on CodeBuild. If a source archive ever omits the build helper, the worker falls
 back to an inline static-site build so the pipeline can still complete.
+The EC2 worker role also gets bucket-level S3 permissions only for the deploy
+buckets passed in by the stack, which is required for `aws s3 sync --delete`
+and the HTML cache refresh `aws s3 cp` calls.
 
 ### HashPass DNS Stack
 

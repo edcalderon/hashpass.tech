@@ -135,11 +135,53 @@ resolve_script_path() {
   return 1
 }
 
+resolve_project_root() {
+  local candidate candidate_dir
+
+  if [[ -f package.json && -d apps/mobile-app && -d packages/tools ]]; then
+    printf '.\n'
+    return 0
+  fi
+
+  while IFS= read -r candidate; do
+    candidate_dir="$(dirname "${candidate}")"
+
+    if [[ -f "${candidate_dir}/package.json" && -d "${candidate_dir}/apps/mobile-app" && -d "${candidate_dir}/packages/tools" ]]; then
+      printf '%s\n' "${candidate_dir#./}"
+      return 0
+    fi
+  done < <(find . -type f -name package.json -not -path '*/node_modules/*' | sort)
+
+  return 1
+}
+
+resolve_pnpm_version() {
+  node <<'NODE'
+const fs = require('fs');
+const path = require('path');
+
+const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+const packageManager = String(packageJson.packageManager || '').trim();
+const match = packageManager.match(/^pnpm@(.+)$/);
+
+if (!match) {
+  throw new Error(`Expected packageManager to be set to pnpm@<version> in ${packageJsonPath}`);
+}
+
+process.stdout.write(`${match[1]}\n`);
+NODE
+}
+
 run_static_site_build_fallback() {
-  local pnpm_version
+  local pnpm_version project_root
 
   log "Running inline static-site build fallback"
-  pnpm_version="$(node packages/tools/scripts/resolve-pnpm-version.js)"
+  project_root="$(resolve_project_root)"
+  cd "${project_root}"
+  export NODE_MAX_OLD_SPACE_SIZE="${NODE_MAX_OLD_SPACE_SIZE:-3072}"
+  export EXPO_EXPORT_MAX_WORKERS="${EXPO_EXPORT_MAX_WORKERS:-1}"
+  pnpm_version="$(resolve_pnpm_version)"
   rm -rf node_modules dist
   corepack prepare "pnpm@${pnpm_version}" --activate
   corepack pnpm config set store-dir "${PNPM_STORE_DIR}"

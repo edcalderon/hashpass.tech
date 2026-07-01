@@ -52,6 +52,12 @@ variable "allowed_ssh_cidrs" {
   default     = []
 }
 
+variable "deploy_bucket_names" {
+  description = "Optional S3 bucket names the worker can deploy to directly"
+  type        = list(string)
+  default     = []
+}
+
 variable "root_volume_size_gb" {
   description = "Root EBS volume size in GB"
   type        = number
