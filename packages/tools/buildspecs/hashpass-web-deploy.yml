@@ -5,29 +5,10 @@ env:
   variables:
     PNPM_STORE_DIR: .pnpm-store
 
-cache:
-  key: pnpm-$(codebuild-hash-files pnpm-lock.yaml pnpm-workspace.yaml)
-  paths:
-    - .pnpm-store/**/*
-
 phases:
-  install:
-    runtime-versions:
-      nodejs: 22
-    commands:
-      - corepack enable
-      - export PNPM_VERSION="$(node packages/tools/scripts/resolve-pnpm-version.js)"
-      - corepack prepare pnpm@${PNPM_VERSION} --activate
-      - pnpm config set store-dir ${PNPM_STORE_DIR}
-      - pnpm --version
-  pre_build:
-    commands:
-      - export CI=1
-      - rm -rf node_modules
-      - pnpm install --frozen-lockfile --prefer-offline
   build:
     commands:
-      - npm run build:web
+      - bash packages/tools/scripts/build-static-site.sh
       - bash packages/tools/scripts/deploy-static-site.sh
 
 artifacts:

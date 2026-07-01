@@ -112,6 +112,20 @@ See `apps/docs/docs/infra/INFRA_NAMING_GUIDE.md` for the naming convention used 
 The static site deploy helper expects `SITE_BUCKET_NAME` and, optionally, `SITE_CLOUDFRONT_DISTRIBUTION_ID`. It syncs the built `dist/client` tree to S3, reapplies no-cache headers to HTML and manifest assets, and creates a CloudFront invalidation when a distribution ID is present.
 The static site build helper installs the project dependencies, resolves the pinned pnpm version from the repo root, and produces the `dist/client` tree that the deploy helper consumes. It also resets the workspace-local Expo / Metro cache before export so the EC2 worker cannot reuse stale absolute paths from a previous job. The shared EC2 CodePipeline worker now runs the build helper directly before invoking the deploy helper in direct mode.
 The worker also retries the source artifact download once the CodePipeline job starts, then verifies the archive exists before unzipping it. If the build helper is missing from a source archive, the worker falls back to the same inline pnpm build flow so the pipeline remains usable even when the archive is incomplete.
+The web pipeline monitor script keeps the shared EC2 worker warm while either
+`hashpass-dev-site` or `hashpass-production-site` is active, then stops the
+worker after a quiet grace period once both pipelines are idle. It is designed
+to pair with the GitHub Actions OIDC role emitted by the `hashpass-web` stack.
+Use `.github/workflows/hashpass-web-pipeline-monitor.yml` as the normal
+control plane instead of reaching into the target AWS account with the CLI.
+That workflow needs `AWS_WEB_PIPELINE_ROLE_ARN`, `AWS_WEB_PIPELINE_REGION`,
+and optionally the `WEB_PIPELINE_*` repo variables for custom pipeline names or
+worker tags.
+
+```bash
+gh workflow run hashpass-web-pipeline-monitor.yml -f mode=monitor
+gh workflow run hashpass-web-pipeline-monitor.yml -f mode=stop
+```
 
 ### Environment safety guards
 

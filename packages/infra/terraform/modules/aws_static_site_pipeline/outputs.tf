@@ -4,7 +4,7 @@ output "site_bucket_name" {
 }
 
 output "artifact_bucket_name" {
-  description = "S3 bucket name used for pipeline artifacts and CodeBuild cache"
+  description = "S3 bucket name used for pipeline artifacts"
   value       = aws_s3_bucket.artifacts.bucket
 }
 
@@ -23,14 +23,19 @@ output "cloudfront_distribution_domain_name" {
   value       = var.enable_cloudfront ? aws_cloudfront_distribution.site[0].domain_name : null
 }
 
-output "codebuild_project_name" {
-  description = "CodeBuild project name"
-  value       = aws_codebuild_project.site.name
+output "build_action_provider_name" {
+  description = "CodePipeline custom action provider name"
+  value       = var.build_action_provider_name
 }
 
 output "codepipeline_name" {
   description = "CodePipeline name"
   value       = aws_codepipeline.site.name
+}
+
+output "deploy_mode" {
+  description = "Deployment mode used by the pipeline"
+  value       = var.deploy_mode
 }
 
 output "site_website_endpoint" {

@@ -85,21 +85,6 @@ log() {
   printf '[hashpass-build-runner] %s\n' "$1"
 }
 
-artifact_aws() {
-  local access_key_name secret_key_name session_token_name
-
-  access_key_name="AWS_ACCESS_KEY_ID"
-  secret_key_name="AWS_SECRET_ACCESS_KEY"
-  session_token_name="AWS_SESSION_TOKEN"
-
-  env \
-    "$(printf '%s=%s' "${access_key_name}" "${ARTIFACT_ACCESS_KEY_ID}")" \
-    "$(printf '%s=%s' "${secret_key_name}" "${ARTIFACT_SECRET_ACCESS_KEY}")" \
-    "$(printf '%s=%s' "${session_token_name}" "${ARTIFACT_SESSION_TOKEN}")" \
-    AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" \
-    aws "$@"
-}
-
 json_env_export() {
   local json="$1"
 
@@ -206,7 +191,6 @@ process_job() {
   local job_json="$1"
   local job_id nonce build_script output_directory deploy_script build_env_json deploy_bucket deploy_cf
   local source_bucket source_key output_bucket output_key work_dir source_zip artifact_zip source_dir
-  local artifact_credentials
   local resolved_build_script resolved_deploy_script
 
   job_id="$(jq -r '.id' <<<"${job_json}")"
@@ -221,10 +205,6 @@ process_job() {
   source_key="$(jq -r '.data.inputArtifacts[0].location.s3Location.objectKey' <<<"${job_json}")"
   output_bucket="$(jq -r '.data.outputArtifacts[0].location.s3Location.bucketName' <<<"${job_json}")"
   output_key="$(jq -r '.data.outputArtifacts[0].location.s3Location.objectKey' <<<"${job_json}")"
-  artifact_credentials="$(jq -c '.data.artifactCredentials' <<<"${job_json}")"
-  ARTIFACT_ACCESS_KEY_ID="$(jq -r '.accessKeyId' <<<"${artifact_credentials}")"
-  ARTIFACT_SECRET_ACCESS_KEY="$(jq -r '.secretAccessKey' <<<"${artifact_credentials}")"
-  ARTIFACT_SESSION_TOKEN="$(jq -r '.sessionToken' <<<"${artifact_credentials}")"
 
   if [[ -z "${job_id}" || "${job_id}" == "null" ]]; then
     return 0
@@ -245,7 +225,7 @@ process_job() {
   mkdir -p "${source_dir}"
 
   for attempt in 1 2 3; do
-    if artifact_aws s3 cp "s3://${source_bucket}/${source_key}" "${source_zip}" >/dev/null && [[ -s "${source_zip}" ]]; then
+    if aws s3 cp "s3://${source_bucket}/${source_key}" "${source_zip}" >/dev/null && [[ -s "${source_zip}" ]]; then
       break
     fi
 
@@ -327,7 +307,9 @@ process_job() {
 
   (cd "${output_directory}" && zip -qr "${artifact_zip}" .)
 
-  if ! artifact_aws s3 cp "${artifact_zip}" "s3://${output_bucket}/${output_key}" >/dev/null; then
+  # Use the instance profile for the final upload so long builds do not fail when
+  # the short-lived CodePipeline job credentials expire.
+  if ! aws s3 cp "${artifact_zip}" "s3://${output_bucket}/${output_key}" >/dev/null; then
     fail_job "${job_id}" "failed to upload output artifact"
     rm -rf "${work_dir}"
     return 1

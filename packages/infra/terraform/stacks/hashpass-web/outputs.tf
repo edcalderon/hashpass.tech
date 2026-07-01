@@ -9,12 +9,12 @@ output "dev_site_bucket_name" {
 }
 
 output "artifact_bucket_name" {
-  description = "S3 bucket storing pipeline artifacts and cache"
+  description = "S3 bucket storing pipeline artifacts"
   value       = module.site.artifact_bucket_name
 }
 
 output "dev_artifact_bucket_name" {
-  description = "S3 bucket storing development pipeline artifacts and cache"
+  description = "S3 bucket storing development pipeline artifacts"
   value       = module.site_dev.artifact_bucket_name
 }
 
@@ -53,14 +53,39 @@ output "dev_site_domain_name" {
   value       = aws_route53_record.dev_site.fqdn
 }
 
-output "codebuild_project_name" {
-  description = "CodeBuild project name"
-  value       = module.site.codebuild_project_name
+output "build_worker_instance_ids" {
+  description = "EC2 instance IDs for the shared pipeline build worker"
+  value       = module.build_worker.instance_ids
 }
 
-output "dev_codebuild_project_name" {
-  description = "Development CodeBuild project name"
-  value       = module.site_dev.codebuild_project_name
+output "build_worker_public_ips" {
+  description = "Public IPs for the shared pipeline build worker"
+  value       = module.build_worker.public_ips
+}
+
+output "build_worker_private_ips" {
+  description = "Private IPs for the shared pipeline build worker"
+  value       = module.build_worker.private_ips
+}
+
+output "build_worker_dashboard_url" {
+  description = "CloudWatch dashboard URL for the shared pipeline build worker"
+  value       = module.build_worker.dashboard_url
+}
+
+output "build_worker_security_group_id" {
+  description = "Security group attached to the shared pipeline build worker"
+  value       = module.build_worker.security_group_id
+}
+
+output "github_actions_role_arn" {
+  description = "IAM role ARN for GitHub Actions to monitor the web pipelines and start/stop the shared EC2 worker. Copy as GitHub variable AWS_WEB_PIPELINE_ROLE_ARN once enable_github_actions_worker_control = true."
+  value       = var.enable_github_actions_worker_control ? aws_iam_role.github_actions[0].arn : ""
+}
+
+output "build_action_provider_name" {
+  description = "Custom CodePipeline build action provider name"
+  value       = module.site.build_action_provider_name
 }
 
 output "codepipeline_name" {

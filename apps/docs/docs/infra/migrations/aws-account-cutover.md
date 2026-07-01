@@ -47,9 +47,9 @@ The hosted zone also carries DNS for `api.hashpass.tech`, `api-dev.hashpass.tech
 ### Phase 1: Stand up the target account
 
 - Use IaC only.
-- Create the target IAM roles, hosted zones, S3 buckets, CloudFront distribution, CodeBuild projects, and runner resources.
+- Create the target IAM roles, hosted zones, S3 buckets, CloudFront distribution, build worker, and runner resources.
 - If CloudFront is unavailable in the new account, use the S3 website fallback first and keep the CloudFront toggle off until AWS verifies the account.
-- The first web surface lands in `packages/infra/terraform/stacks/hashpass-web` and deploys through `packages/tools/buildspecs/hashpass-web-deploy.yml`.
+- The first web surface lands in `packages/infra/terraform/stacks/hashpass-web` and deploys through the shared EC2 worker plus `packages/tools/scripts/build-static-site.sh` and `packages/tools/scripts/deploy-static-site.sh`.
 - That stack now provisions both the production `main` pipeline and the development `develop` pipeline in the target account.
 - The target DNS stack now also creates a dedicated `dev.hashpass.tech` hosted zone so the development site can be isolated from the apex cutover.
 - The DNS landing zone lives in `packages/infra/terraform/stacks/hashpass-dns`.
@@ -107,6 +107,7 @@ Rollback should be a traffic flip, not a rebuild.
 
 - Use the target AWS credentials from the repository root `.env` when operating against account `952191196420`.
 - Use `TARGET_AWS_ACCOUNT_ID` when you need scripts to assert the destination account explicitly.
-- Build the target static site with `pnpm run deploy:web:s3` for a local dry run, or let the new CodeBuild pipeline perform the same build and S3 sync inside AWS.
+- Build the target static site with `pnpm run deploy:web:s3` for a local dry run, or let the new EC2 worker perform the same build and S3 sync inside AWS.
+- Use `.github/workflows/hashpass-web-pipeline-monitor.yml` for day-to-day control of the web worker. Set `AWS_WEB_PIPELINE_ROLE_ARN` from the Terraform output and dispatch the workflow with `mode=monitor` or `mode=stop` instead of using ad hoc target-account AWS CLI calls, unless you are debugging a failure.
 - If CloudFront is unavailable in the target account, keep `enable_cloudfront = false` in the stack tfvars and validate against the S3 website endpoint first.
 - Keep source-account credentials and resources available until the migration has been stable long enough to close the rollback window.

@@ -1,8 +1,17 @@
+data "aws_caller_identity" "current" {}
+
 locals {
-  build_worker_deploy_bucket_names = [
-    for bucket_name in [var.site_bucket_name, var.dev_site_bucket_name] : try(trimspace(bucket_name), "")
-    if try(trimspace(bucket_name), "") != ""
-  ]
+  build_site_bucket_name     = try(trimspace(var.site_bucket_name), "") != "" ? trimspace(var.site_bucket_name) : "${var.name_prefix}-${var.environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  build_dev_site_bucket_name = try(trimspace(var.dev_site_bucket_name), "") != "" ? trimspace(var.dev_site_bucket_name) : "${var.name_prefix}-${var.dev_environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+
+  build_worker_deploy_bucket_names = distinct([
+    for bucket_name in [local.build_site_bucket_name, local.build_dev_site_bucket_name] :
+    bucket_name if bucket_name != ""
+  ])
+  build_worker_artifact_bucket_names = distinct([
+    for environment in [var.environment, var.dev_environment] :
+    "${var.name_prefix}-${environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  ])
 
   build_environment = merge(
     {
@@ -126,6 +135,7 @@ module "build_worker" {
   associate_public_ip_address = var.build_worker_associate_public_ip_address
   allowed_ssh_cidrs           = var.build_worker_allowed_ssh_cidrs
   deploy_bucket_names         = local.build_worker_deploy_bucket_names
+  artifact_bucket_names       = local.build_worker_artifact_bucket_names
   root_volume_size_gb         = var.build_worker_root_volume_size_gb
   detailed_monitoring         = var.build_worker_detailed_monitoring
   tags                        = var.tags
@@ -196,4 +206,112 @@ resource "aws_route53_record" "dev_site" {
     name                   = replace(module.site_dev.site_website_endpoint, "http://", "")
     zone_id                = module.site_dev.site_bucket_hosted_zone_id
   }
+}
+
+locals {
+  github_oidc_provider_arn = var.enable_github_actions_worker_control ? (
+    var.create_github_oidc_provider
+    ? aws_iam_openid_connect_provider.github[0].arn
+    : data.aws_iam_openid_connect_provider.github[0].arn
+  ) : ""
+}
+
+# ── GitHub Actions OIDC — lets the workflow monitor the web pipeline and stop the EC2 worker ──
+# Enable with: enable_github_actions_worker_control = true in your tfvars.
+# After apply, copy the github_actions_role_arn output as GitHub variable AWS_WEB_PIPELINE_ROLE_ARN.
+
+resource "aws_iam_openid_connect_provider" "github" {
+  count = (var.enable_github_actions_worker_control && var.create_github_oidc_provider) ? 1 : 0
+
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+  thumbprint_list = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
+  ]
+  tags = var.tags
+}
+
+data "aws_iam_openid_connect_provider" "github" {
+  count = (var.enable_github_actions_worker_control && !var.create_github_oidc_provider) ? 1 : 0
+  url   = "https://token.actions.githubusercontent.com"
+}
+
+data "aws_iam_policy_document" "github_actions_assume_role" {
+  count = var.enable_github_actions_worker_control ? 1 : 0
+
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [local.github_oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:${var.repository}:*"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions" {
+  count = var.enable_github_actions_worker_control ? 1 : 0
+
+  name               = var.github_actions_role_name
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role[0].json
+  tags               = var.tags
+}
+
+resource "aws_iam_role_policy" "github_actions_worker_control" {
+  count = var.enable_github_actions_worker_control ? 1 : 0
+
+  name = "${var.name_prefix}-web-worker-control"
+  role = aws_iam_role.github_actions[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "StartStopWebWorker"
+        Effect = "Allow"
+        Action = [
+          "ec2:StartInstances",
+          "ec2:StopInstances",
+        ]
+        Resource = [
+          for id in module.build_worker.instance_ids :
+          "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${id}"
+        ]
+      },
+      {
+        Sid    = "DescribeWebWorker"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:DescribeInstanceStatus",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "MonitorWebPipelines"
+        Effect = "Allow"
+        Action = [
+          "codepipeline:GetPipelineState",
+          "codepipeline:GetPipelineExecution",
+          "codepipeline:ListPipelineExecutions",
+          "codepipeline:ListActionExecutions",
+        ]
+        Resource = "*"
+      },
+    ]
+  })
 }

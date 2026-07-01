@@ -21,7 +21,7 @@ Set `HASHPASS_INFRA_TARGET=club-docs` when you want the legacy SST club front do
 - `packages/infra/terraform/stacks/hashpass-dns` as the target-account hosted zone layer that keeps the migration reversible until registrar cutover, including the dedicated `dev.hashpass.tech` zone
 - `packages/infra/terraform/stacks/hashpass-api-target` as the target-account API Gateway + Lambda layer for `api.hashpass.tech`
 - `apps/mobile-app` as an SST `StaticSite`
-- `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` S3 pipeline pair that replaces Amplify without deleting the source account first
+- `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` CodePipeline + EC2 worker stack that replaces Amplify without deleting the source account first
 - `hashpass.club` as the canonical club site, with `club.hashpass.tech` and `docs.hashpass.tech` as DNS aliases
 - `apps/web-app` and `apps/docs` assembled into a single combined static artifact for GitHub Pages
 - `packages/infra/terraform/stacks/mobile-release` as the AWS EC2 GitHub Actions runner for mobile Android builds, including its managed public VPC when the account has no default network

@@ -58,6 +58,12 @@ variable "deploy_bucket_names" {
   default     = []
 }
 
+variable "artifact_bucket_names" {
+  description = "Optional S3 bucket names the worker can use for CodePipeline artifact upload and download"
+  type        = list(string)
+  default     = []
+}
+
 variable "root_volume_size_gb" {
   description = "Root EBS volume size in GB"
   type        = number

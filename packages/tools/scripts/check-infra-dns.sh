@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_ACCOUNT_ID="${EXPECTED_AWS_ACCOUNT_ID:-${AWS_ACCOUNT_ID:-}}"
+EXPECTED_ACCOUNT_ID="${TARGET_AWS_ACCOUNT_ID:-${EXPECTED_AWS_ACCOUNT_ID:-${AWS_ACCOUNT_ID:-}}}"
 DOMAIN_NAME="${DOMAIN_NAME:-hashpass.tech}"
 TARGET_STAGES=("bsl.hashpass.tech" "bsl-dev.hashpass.tech")
 

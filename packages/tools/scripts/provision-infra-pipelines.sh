@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_ACCOUNT_ID="${EXPECTED_AWS_ACCOUNT_ID:-${AWS_ACCOUNT_ID:-}}"
+EXPECTED_ACCOUNT_ID="${TARGET_AWS_ACCOUNT_ID:-${EXPECTED_AWS_ACCOUNT_ID:-${AWS_ACCOUNT_ID:-}}}"
 REGION="${AWS_REGION:-us-east-2}"
 REPO="${GITHUB_REPOSITORY:-hashpass-tech/hashpass.tech}"
 RESOURCE_PREFIX="${RESOURCE_PREFIX:-bsl-hashpass}"
@@ -36,7 +36,7 @@ if [[ -z "${CURRENT_ACCOUNT}" ]]; then
   exit 1
 fi
 
-ACCOUNT_ID="${AWS_ACCOUNT_ID:-${CURRENT_ACCOUNT}}"
+ACCOUNT_ID="${TARGET_AWS_ACCOUNT_ID:-${AWS_ACCOUNT_ID:-${CURRENT_ACCOUNT}}}"
 ARTIFACT_BUCKET="${ARTIFACT_BUCKET:-${RESOURCE_PREFIX}-pipelines-${ACCOUNT_ID}-${REGION}}"
 CODEBUILD_CACHE_LOCATION="${CODEBUILD_CACHE_LOCATION:-${ARTIFACT_BUCKET}/codebuild-cache}"
 
@@ -176,6 +176,7 @@ create_or_update_codebuild() {
   local stage_suffix=""
   local compute_type=""
   local expo_export_max_workers=""
+  local supabase_profile=""
 
   if [[ "${DRY_RUN}" == true ]]; then
     echo "Would create/update CodeBuild project ${project_name} (${stage_name})"
@@ -204,7 +205,6 @@ create_or_update_codebuild() {
 
   local supabase_url=""
   local supabase_anon_key=""
-  local supabase_profile=""
   local bsl_supabase_url=""
   local bsl_supabase_anon_key=""
   local bsl_supabase_service_role_key=""
@@ -340,6 +340,19 @@ create_or_update_codebuild() {
   project_file="$(mktemp)"
   printf '%s' "${project_json}" > "${project_file}"
 
+  if aws codebuild batch-get-projects \
+    --region "${REGION}" \
+    --names "${project_name}" \
+    --query 'projects[0].name' \
+    --output text 2>/dev/null | grep -qx "${project_name}"; then
+    aws codebuild update-project \
+      --region "${REGION}" \
+      --cli-input-json "file://${project_file}" \
+      >/dev/null
+    rm -f "${project_file}"
+    return
+  fi
+
   if aws codebuild create-project \
     --region "${REGION}" \
     --cli-input-json "file://${project_file}" \
@@ -348,11 +361,9 @@ create_or_update_codebuild() {
     return
   fi
 
-  aws codebuild update-project \
-    --region "${REGION}" \
-    --cli-input-json "file://${project_file}" \
-    >/dev/null
+  echo "ERROR: failed to create CodeBuild project ${project_name}" >&2
   rm -f "${project_file}"
+  return 1
 }
 
 write_pipeline_json() {

@@ -127,6 +127,21 @@ back to an inline static-site build so the pipeline can still complete.
 The EC2 worker role also gets bucket-level S3 permissions only for the deploy
 buckets passed in by the stack, which is required for `aws s3 sync --delete`
 and the HTML cache refresh `aws s3 cp` calls.
+If you enable `enable_github_actions_worker_control = true`, the stack also
+creates a least-privilege GitHub Actions role that can read CodePipeline state
+and start/stop the shared EC2 worker by instance ID. Copy the
+`github_actions_role_arn` output into the GitHub variable
+`AWS_WEB_PIPELINE_ROLE_ARN`, then use the monitor workflow in
+`.github/workflows/hashpass-web-pipeline-monitor.yml` to keep the worker off
+when both the dev and production pipelines are idle.
+That workflow is the normal control plane for the worker lifecycle. Use
+GitHub Actions to start, monitor, or stop the EC2 instance by tag, and keep
+direct target-account AWS CLI usage for bootstrap or emergency debugging only.
+
+```bash
+gh workflow run hashpass-web-pipeline-monitor.yml -f mode=monitor
+gh workflow run hashpass-web-pipeline-monitor.yml -f mode=stop
+```
 
 ### HashPass DNS Stack
 

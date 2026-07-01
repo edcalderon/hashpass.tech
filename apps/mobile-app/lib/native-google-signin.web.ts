@@ -3,7 +3,9 @@ export const nativeGoogleSigninStatusCodes = {
   PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
 } as const;
 
-export async function configureNativeGoogleSignin(): Promise<void> {
+export async function configureNativeGoogleSignin(
+  _webClientId?: string | null
+): Promise<void> {
   return;
 }
 

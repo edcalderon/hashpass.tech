@@ -23,6 +23,11 @@ const sidebars = {
         'infra/README',
         'infra/CLOUDINARY_CONFIG',
         'infra/INFRA_NAMING_GUIDE',
+        {
+          type: 'category',
+          label: 'Migration',
+          items: ['infra/migrations/aws-account-cutover'],
+        },
         'infra/MAKE_S3_BUCKET_PUBLIC',
         'infra/SPEAKER_AVATARS_S3_SETUP',
         {

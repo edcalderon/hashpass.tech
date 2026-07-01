@@ -25,15 +25,17 @@ output "api_default_invoke_url" {
 
 output "custom_domain_name" {
   description = "Custom API domain"
-  value       = aws_apigatewayv2_domain_name.api.domain_name
+  value       = var.enable_custom_domain ? aws_apigatewayv2_domain_name.api[0].domain_name : null
 }
 
 output "custom_domain_target" {
   description = "Regional target domain used by Route53 alias"
-  value       = aws_apigatewayv2_domain_name.api.domain_name_configuration[0].target_domain_name
+  value       = var.enable_custom_domain ? aws_apigatewayv2_domain_name.api[0].domain_name_configuration[0].target_domain_name : null
 }
 
 output "api_base_url" {
   description = "Base URL including mapping key"
-  value       = local.mapping_key == null ? "https://${var.domain_name}" : "https://${var.domain_name}/${local.mapping_key}"
+  value       = var.enable_custom_domain ? (
+    local.mapping_key == null ? "https://${var.domain_name}" : "https://${var.domain_name}/${local.mapping_key}"
+  ) : aws_apigatewayv2_stage.default.invoke_url
 }

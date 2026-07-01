@@ -1,10 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import {
   ChevronLeft,
@@ -77,7 +72,7 @@ const DigitalTicketWallet = ({
 }: DigitalTicketWalletProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expandedQR, setExpandedQR] = useState<string | null>(null);
-  const { t } = useTranslation('digitalWallet');
+  const { t } = useTranslation("digitalWallet");
 
   const qrScale = useSharedValue(1);
 
@@ -111,7 +106,7 @@ const DigitalTicketWallet = ({
 
   if (tickets.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center p-6 bg-gray-100 dark:bg-gray-900">
+      <View className="w-full items-center justify-center p-6 bg-gray-100 dark:bg-gray-900">
         <View className="bg-white dark:bg-gray-800 rounded-xl p-8 items-center shadow-md w-full">
           <Ticket size={64} className="text-indigo-500 dark:text-indigo-400" />
           <Text className="text-2xl font-bold mt-4 text-center text-gray-900 dark:text-white">
@@ -124,7 +119,9 @@ const DigitalTicketWallet = ({
             className="mt-6 bg-indigo-600 dark:bg-indigo-700 py-3 px-6 rounded-full"
             onPress={() => {}}
           >
-            <Text className="text-white font-semibold">{t("discoverEvents")}</Text>
+            <Text className="text-white font-semibold">
+              {t("discoverEvents")}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -134,7 +131,7 @@ const DigitalTicketWallet = ({
   const currentTicket = tickets[currentIndex];
 
   return (
-    <View className="flex-1 dark:bg-gray-900 p-4 rounded-xl shadow-sm">
+    <View className="w-full self-stretch min-h-0 dark:bg-gray-900 p-4 rounded-xl shadow-sm">
       <View className="bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg mb-4 border border-gray-200 dark:border-gray-700">
         {currentTicket.image && (
           <Image
@@ -146,11 +143,17 @@ const DigitalTicketWallet = ({
         )}
 
         <View className="p-4">
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">{currentTicket.eventName}</Text>
+          <Text className="text-xl font-bold text-gray-900 dark:text-white">
+            {currentTicket.eventName}
+          </Text>
           <View className="flex-row items-center mt-2">
-            <Text className="text-gray-600 dark:text-gray-300">{currentTicket.date}</Text>
+            <Text className="text-gray-600 dark:text-gray-300">
+              {currentTicket.date}
+            </Text>
           </View>
-          <Text className="text-gray-600 dark:text-gray-300 mt-1">{currentTicket.location}</Text>
+          <Text className="text-gray-600 dark:text-gray-300 mt-1">
+            {currentTicket.location}
+          </Text>
 
           <View className="flex-row justify-between items-center mt-4">
             <View className="bg-indigo-100 dark:bg-indigo-900/30 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-800">
@@ -162,7 +165,9 @@ const DigitalTicketWallet = ({
               <Text className="text-amber-600 dark:text-amber-400 font-bold mr-1">
                 {currentTicket.earnedTokens}
               </Text>
-              <Text className="text-gray-600 dark:text-gray-400">{t("tokensEarned")}</Text>
+              <Text className="text-gray-600 dark:text-gray-400">
+                {t("tokensEarned")}
+              </Text>
             </View>
           </View>
 
@@ -195,7 +200,11 @@ const DigitalTicketWallet = ({
       {/* Navigation Controls */}
       <View className="flex-row justify-between items-center mt-4">
         <TouchableOpacity
-          className={`p-2 rounded-full ${currentIndex === 0 ? "bg-gray-200 dark:bg-gray-700" : "bg-indigo-500 dark:bg-indigo-600"}`}
+          className={`p-2 rounded-full ${
+            currentIndex === 0
+              ? "bg-gray-200 dark:bg-gray-700"
+              : "bg-indigo-500 dark:bg-indigo-600"
+          }`}
           onPress={handlePrevious}
           disabled={currentIndex === 0}
         >
@@ -246,9 +255,7 @@ const DigitalTicketWallet = ({
 
       <View className="mt-4 bg-amber-50 p-3 rounded-lg flex-row items-center">
         <AlertCircle size={20} color="#d97706" />
-        <Text className="ml-2 text-amber-700">
-          {t("presentQR")}
-        </Text>
+        <Text className="ml-2 text-amber-700">{t("presentQR")}</Text>
       </View>
     </View>
   );

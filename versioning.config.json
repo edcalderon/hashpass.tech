@@ -81,6 +81,8 @@
       "allowlist": [
         "EXPO_PUBLIC_SUPABASE_URL: supabaseUrl,",
         "EXPO_PUBLIC_SUPABASE_KEY: supabaseAnonKey,",
+        "EXPO_PUBLIC_SUPABASE_URL      = var.supabase_url",
+        "EXPO_PUBLIC_SUPABASE_KEY      = var.supabase_key",
         "AWS_SECRET_ACCESS_KEY=your-secret-access-key",
         "process.env.GOOGLE_CLIENT_SECRET",
         "SUPABASE_SERVICE_ROLE_KEY=eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}",

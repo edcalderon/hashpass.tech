@@ -1,11 +1,13 @@
 data "aws_caller_identity" "current" {}
 
 locals {
-  site_bucket_name     = try(trimspace(var.site_bucket_name), "") == "" ? "${var.name_prefix}-${var.environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}" : trimspace(var.site_bucket_name)
-  artifact_bucket_name = try(trimspace(var.artifact_bucket_name), "") == "" ? "${var.name_prefix}-${var.environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}" : trimspace(var.artifact_bucket_name)
-  site_origin_id       = "${local.site_bucket_name}-origin"
-  pipeline_name        = "${var.name_prefix}-${var.environment}-site"
-  codebuild_name       = "${var.name_prefix}-${var.environment}-site-build"
+  site_bucket_name           = try(trimspace(var.site_bucket_name), "") == "" ? "${var.name_prefix}-${var.environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}" : trimspace(var.site_bucket_name)
+  artifact_bucket_name       = try(trimspace(var.artifact_bucket_name), "") == "" ? "${var.name_prefix}-${var.environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}" : trimspace(var.artifact_bucket_name)
+  site_origin_id             = "${local.site_bucket_name}-origin"
+  pipeline_name              = "${var.name_prefix}-${var.environment}-site"
+  build_action_provider_name = trimspace(var.build_action_provider_name)
+  build_action_version       = trimspace(var.build_action_version)
+  deploy_mode                = lower(trimspace(var.deploy_mode))
   tags = merge(var.tags, {
     Environment = var.environment
     ManagedBy   = "terraform"
@@ -232,138 +234,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
   }
 }
 
-data "aws_iam_policy_document" "codebuild_assume_role" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["codebuild.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "codebuild" {
-  name               = "${local.codebuild_name}-role"
-  assume_role_policy = data.aws_iam_policy_document.codebuild_assume_role.json
-  tags               = local.tags
-}
-
-data "aws_iam_policy_document" "codebuild_permissions" {
-  statement {
-    sid = "ArtifactBucketAccess"
-    actions = [
-      "s3:GetBucketLocation",
-      "s3:GetObject",
-      "s3:GetObjectVersion",
-      "s3:ListBucket",
-      "s3:PutObject",
-      "s3:DeleteObject",
-    ]
-    resources = [
-      aws_s3_bucket.artifacts.arn,
-      "${aws_s3_bucket.artifacts.arn}/*",
-    ]
-  }
-
-  statement {
-    sid = "SiteBucketAccess"
-    actions = [
-      "s3:GetBucketLocation",
-      "s3:GetObject",
-      "s3:ListBucket",
-      "s3:PutObject",
-      "s3:DeleteObject",
-    ]
-    resources = [
-      aws_s3_bucket.site.arn,
-      "${aws_s3_bucket.site.arn}/*",
-    ]
-  }
-
-  dynamic "statement" {
-    for_each = var.enable_cloudfront ? [1] : []
-
-    content {
-      sid = "CloudFrontInvalidation"
-      actions = [
-        "cloudfront:CreateInvalidation",
-        "cloudfront:GetDistribution",
-        "cloudfront:GetDistributionConfig",
-      ]
-      resources = [aws_cloudfront_distribution.site[0].arn]
-    }
-  }
-
-  statement {
-    sid = "Logs"
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_role_policy" "codebuild" {
-  name   = "${local.codebuild_name}-policy"
-  role   = aws_iam_role.codebuild.id
-  policy = data.aws_iam_policy_document.codebuild_permissions.json
-}
-
-resource "aws_codebuild_project" "site" {
-  name          = local.codebuild_name
-  description   = "Build and deploy the HashPass web site to S3/CloudFront"
-  service_role  = aws_iam_role.codebuild.arn
-  build_timeout = var.build_timeout
-  badge_enabled = false
-
-  source {
-    type      = "CODEPIPELINE"
-    buildspec = var.buildspec_path
-  }
-
-  artifacts {
-    type = "CODEPIPELINE"
-  }
-
-  environment {
-    compute_type                = var.build_compute_type
-    image                       = var.build_image
-    type                        = "LINUX_CONTAINER"
-    image_pull_credentials_type = "CODEBUILD"
-    privileged_mode             = false
-
-    dynamic "environment_variable" {
-      for_each = merge({
-        AWS_DEFAULT_REGION = var.aws_region
-        AWS_REGION         = var.aws_region
-        BUILD_ENV          = var.environment
-        CI                 = "1"
-        SITE_BUCKET_NAME   = aws_s3_bucket.site.bucket
-        TARGET_STAGE       = var.environment
-        }, var.enable_cloudfront ? {
-        SITE_CLOUDFRONT_DISTRIBUTION_ID = aws_cloudfront_distribution.site[0].id
-        SITE_CLOUDFRONT_DOMAIN_NAME     = aws_cloudfront_distribution.site[0].domain_name
-      } : {}, var.build_environment)
-
-      content {
-        name  = environment_variable.key
-        value = environment_variable.value
-        type  = "PLAINTEXT"
-      }
-    }
-  }
-
-  cache {
-    type     = "S3"
-    location = "${aws_s3_bucket.artifacts.bucket}/codebuild-cache"
-  }
-
-  tags = local.tags
-}
-
 data "aws_iam_policy_document" "codepipeline_assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -399,28 +269,27 @@ data "aws_iam_policy_document" "codepipeline_permissions" {
   }
 
   statement {
+    sid = "SiteBucketAccess"
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:ListBucket",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = [
+      aws_s3_bucket.site.arn,
+      "${aws_s3_bucket.site.arn}/*",
+    ]
+  }
+
+  statement {
     sid = "UseConnection"
     actions = [
       "codestar-connections:UseConnection",
     ]
     resources = [var.connection_arn]
-  }
-
-  statement {
-    sid = "InvokeCodeBuild"
-    actions = [
-      "codebuild:BatchGetBuilds",
-      "codebuild:StartBuild",
-    ]
-    resources = [aws_codebuild_project.site.arn]
-  }
-
-  statement {
-    sid = "PassCodeBuildRole"
-    actions = [
-      "iam:PassRole",
-    ]
-    resources = [aws_iam_role.codebuild.arn]
   }
 }
 
@@ -463,15 +332,60 @@ resource "aws_codepipeline" "site" {
     name = "Build"
 
     action {
-      name            = "DeploySite"
-      category        = "Build"
-      owner           = "AWS"
-      provider        = "CodeBuild"
-      version         = "1"
-      input_artifacts = ["SourceArtifact"]
+      name             = "BuildSite"
+      category         = "Build"
+      owner            = "Custom"
+      provider         = local.build_action_provider_name
+      version          = local.build_action_version
+      input_artifacts  = ["SourceArtifact"]
+      output_artifacts = ["BuildArtifact"]
 
-      configuration = {
-        ProjectName = aws_codebuild_project.site.name
+      configuration = merge(
+        {
+          BuildScript     = var.build_script_path
+          OutputDirectory = var.build_output_directory
+          BuildEnvironmentJson = jsonencode(merge({
+            AWS_DEFAULT_REGION = var.aws_region
+            AWS_REGION         = var.aws_region
+            BUILD_ENV          = var.environment
+            CI                 = "1"
+            TARGET_STAGE       = var.environment
+          }, var.build_environment))
+        },
+        local.deploy_mode == "direct" ? merge(
+          {
+            # Direct deployments keep the existing S3 sync and cache-control
+            # flow alive on the EC2 worker while artifact mode can hand off to
+            # the optional S3 deploy action below.
+            DeployScript     = var.deploy_script_path
+            DeployBucketName = aws_s3_bucket.site.bucket
+          },
+          var.enable_cloudfront ? {
+            DeployCloudFrontDistributionId = aws_cloudfront_distribution.site[0].id
+          } : {}
+        ) : {}
+      )
+    }
+  }
+
+  dynamic "stage" {
+    for_each = local.deploy_mode == "artifact" ? [1] : []
+
+    content {
+      name = "Deploy"
+
+      action {
+        name            = "DeploySite"
+        category        = "Deploy"
+        owner           = "AWS"
+        provider        = "S3"
+        version         = "1"
+        input_artifacts = ["BuildArtifact"]
+
+        configuration = {
+          BucketName = aws_s3_bucket.site.bucket
+          Extract    = "true"
+        }
       }
     }
   }

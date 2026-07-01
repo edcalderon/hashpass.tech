@@ -10,7 +10,7 @@ branch_name  = "main"
 #   TARGET_AWS_ACCOUNT_ID=952191196420 \
 #   AWS_REGION=us-east-2 \
 #   packages/tools/scripts/provision-infra-connection.sh
-connection_arn = "arn:aws:codestar-connections:us-east-2:123456789012:connection/example"
+connection_arn = "arn:aws:codeconnections:us-east-2:123456789012:connection/example"
 
 # Production web build inputs. These are public values but should stay outside git.
 supabase_url = "https://mnnqryrdlhddorqsrtbn.supabase.co"
@@ -21,6 +21,26 @@ google_client_id = "<GOOGLE_CLIENT_ID>"
 # pipeline tests against the development auth/database path.
 supabase_url_dev = "https://fxgftanraszjjyeidvia.supabase.co"
 supabase_key_dev = "<EXPO_PUBLIC_SUPABASE_KEY_DEV>"
+
+build_action_provider_name = "hashpass-ec2-build"
+build_action_version       = "1"
+build_action_timeout       = 60
+build_script_path          = "packages/tools/scripts/build-static-site.sh"
+build_output_directory     = "dist/client"
+deploy_script_path         = "packages/tools/scripts/deploy-static-site.sh"
+deploy_mode                = "direct"
+
+build_worker_instance_type           = "t3a.medium"
+build_worker_instance_count          = 1
+build_worker_root_volume_size_gb     = 100
+build_worker_associate_public_ip_address = true
+build_worker_allowed_ssh_cidrs       = []
+build_worker_detailed_monitoring     = true
+
+# Enable this once the target account has a GitHub Actions OIDC provider and
+# you want the monitor workflow to start/stop the EC2 worker automatically.
+enable_github_actions_worker_control = true
+create_github_oidc_provider          = false
 
 # The new AWS account currently cannot create fresh CloudFront distributions
 # until AWS verifies it, so keep this false for the first migration pass.

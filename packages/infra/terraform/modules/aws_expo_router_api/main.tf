@@ -2,7 +2,7 @@ locals {
   lambda_function_name = "${var.name_prefix}-${var.environment}-expo-router-api"
   api_name             = "${var.name_prefix}-${var.environment}-http-api"
   mapping_key          = trimspace(var.mapping_key) == "" ? null : trimspace(var.mapping_key)
-  cert_validation      = one(aws_acm_certificate.api_domain.domain_validation_options)
+  cert_validation      = var.enable_custom_domain ? one(aws_acm_certificate.api_domain[0].domain_validation_options) : null
   tags = merge(var.tags, {
     Environment = var.environment
     ManagedBy   = "terraform"
@@ -121,6 +121,8 @@ resource "aws_lambda_permission" "allow_api_gateway" {
 }
 
 resource "aws_acm_certificate" "api_domain" {
+  count = var.enable_custom_domain ? 1 : 0
+
   domain_name       = var.domain_name
   validation_method = "DNS"
 
@@ -132,6 +134,8 @@ resource "aws_acm_certificate" "api_domain" {
 }
 
 resource "aws_route53_record" "cert_validation" {
+  count = var.enable_custom_domain ? 1 : 0
+
   allow_overwrite = true
   zone_id = var.route53_zone_id
   name    = local.cert_validation.resource_record_name
@@ -141,15 +145,19 @@ resource "aws_route53_record" "cert_validation" {
 }
 
 resource "aws_acm_certificate_validation" "api_domain" {
-  certificate_arn         = aws_acm_certificate.api_domain.arn
-  validation_record_fqdns = [aws_route53_record.cert_validation.fqdn]
+  count = var.enable_custom_domain ? 1 : 0
+
+  certificate_arn         = aws_acm_certificate.api_domain[0].arn
+  validation_record_fqdns = [aws_route53_record.cert_validation[0].fqdn]
 }
 
 resource "aws_apigatewayv2_domain_name" "api" {
+  count = var.enable_custom_domain ? 1 : 0
+
   domain_name = var.domain_name
 
   domain_name_configuration {
-    certificate_arn = aws_acm_certificate_validation.api_domain.certificate_arn
+    certificate_arn = aws_acm_certificate_validation.api_domain[0].certificate_arn
     endpoint_type   = "REGIONAL"
     security_policy = "TLS_1_2"
   }
@@ -158,32 +166,38 @@ resource "aws_apigatewayv2_domain_name" "api" {
 }
 
 resource "aws_apigatewayv2_api_mapping" "api" {
+  count = var.enable_custom_domain ? 1 : 0
+
   api_id          = aws_apigatewayv2_api.http_api.id
-  domain_name     = aws_apigatewayv2_domain_name.api.id
+  domain_name     = aws_apigatewayv2_domain_name.api[0].id
   stage           = aws_apigatewayv2_stage.default.id
   api_mapping_key = local.mapping_key
 }
 
 resource "aws_route53_record" "api_ipv4" {
+  count = var.enable_custom_domain ? 1 : 0
+
   zone_id = var.route53_zone_id
   name    = var.domain_name
   type    = "A"
 
   alias {
     evaluate_target_health = false
-    name                   = aws_apigatewayv2_domain_name.api.domain_name_configuration[0].target_domain_name
-    zone_id                = aws_apigatewayv2_domain_name.api.domain_name_configuration[0].hosted_zone_id
+    name                   = aws_apigatewayv2_domain_name.api[0].domain_name_configuration[0].target_domain_name
+    zone_id                = aws_apigatewayv2_domain_name.api[0].domain_name_configuration[0].hosted_zone_id
   }
 }
 
 resource "aws_route53_record" "api_ipv6" {
+  count = var.enable_custom_domain ? 1 : 0
+
   zone_id = var.route53_zone_id
   name    = var.domain_name
   type    = "AAAA"
 
   alias {
     evaluate_target_health = false
-    name                   = aws_apigatewayv2_domain_name.api.domain_name_configuration[0].target_domain_name
-    zone_id                = aws_apigatewayv2_domain_name.api.domain_name_configuration[0].hosted_zone_id
+    name                   = aws_apigatewayv2_domain_name.api[0].domain_name_configuration[0].target_domain_name
+    zone_id                = aws_apigatewayv2_domain_name.api[0].domain_name_configuration[0].hosted_zone_id
   }
 }

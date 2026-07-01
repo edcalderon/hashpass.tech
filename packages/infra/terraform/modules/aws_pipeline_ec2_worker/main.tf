@@ -16,6 +16,16 @@ locals {
   deploy_bucket_object_arns = [
     for bucket_name in local.deploy_bucket_names : "arn:aws:s3:::${bucket_name}/*"
   ]
+  artifact_bucket_names = distinct([
+    for bucket_name in var.artifact_bucket_names : try(trimspace(bucket_name), "")
+    if try(trimspace(bucket_name), "") != ""
+  ])
+  artifact_bucket_arns = [
+    for bucket_name in local.artifact_bucket_names : "arn:aws:s3:::${bucket_name}"
+  ]
+  artifact_bucket_object_arns = [
+    for bucket_name in local.artifact_bucket_names : "arn:aws:s3:::${bucket_name}/*"
+  ]
   worker_user_data_raw    = file("${path.module}/templates/build-worker-user-data.sh.tftpl")
   worker_user_data_step_1 = replace(local.worker_user_data_raw, "__AWS_REGION__", var.aws_region)
   worker_user_data_step_2 = replace(local.worker_user_data_step_1, "__PROVIDER_NAME__", var.provider_name)
@@ -235,6 +245,42 @@ resource "aws_iam_role_policy" "deploy_bucket_access" {
   name   = "${var.name_prefix}-build-deploy-s3"
   role   = aws_iam_role.worker.id
   policy = data.aws_iam_policy_document.deploy_bucket_access[0].json
+}
+
+data "aws_iam_policy_document" "artifact_bucket_access" {
+  count = length(local.artifact_bucket_names) > 0 ? 1 : 0
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+    ]
+
+    resources = local.artifact_bucket_arns
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:DeleteObject",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:PutObject",
+    ]
+
+    resources = local.artifact_bucket_object_arns
+  }
+}
+
+resource "aws_iam_role_policy" "artifact_bucket_access" {
+  count = length(local.artifact_bucket_names) > 0 ? 1 : 0
+
+  name   = "${var.name_prefix}-build-artifact-s3"
+  role   = aws_iam_role.worker.id
+  policy = data.aws_iam_policy_document.artifact_bucket_access[0].json
 }
 
 resource "aws_iam_instance_profile" "worker" {

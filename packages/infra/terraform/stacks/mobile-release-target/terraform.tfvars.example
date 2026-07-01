@@ -1,0 +1,40 @@
+# HashPass mobile release runner target-account Terraform variables
+
+aws_region = "us-east-1"
+
+name_prefix = "hashpass-mobile-release"
+
+github_repository = "hashpass-tech/hashpass.tech"
+
+runner_name_prefix = "hashpass-mobile-release"
+runner_labels      = ["hashpass-mobile-release"]
+
+# t3a.large gives 2 vCPU / 8 GiB RAM — minimum for Gradle + NDK builds without OOM.
+# t3a.medium (4 GiB) caused OOM after ~18 min during native compilation.
+instance_type = "t3a.large"
+
+# Leave empty to let the stack create a dedicated public VPC/subnet for the runner.
+subnet_ids = []
+
+# Managed network settings used when subnet_ids is empty.
+vpc_cidr_block           = "10.40.0.0/16"
+public_subnet_cidr_blocks = ["10.40.1.0/24"]
+
+associate_public_ip_address = true
+
+# Keep SSH closed by default. Add your office/VPN CIDRs only when needed.
+allowed_ssh_cidrs = []
+
+root_volume_size_gb = 150
+
+# Set a fixed runner version if you want to pin bootstrap behavior.
+runner_version = null
+
+detailed_monitoring             = true
+cpu_alarm_threshold             = 85
+alarm_actions                   = []
+ok_actions                      = []
+github_runner_token_secret_name = "hashpass/mobile-release-target/github-runner-token"
+
+# The target runner should accept GitHub workflows once the OIDC role is created.
+enable_github_actions_runner_control = true

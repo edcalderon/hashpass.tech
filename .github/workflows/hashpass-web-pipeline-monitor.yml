@@ -1,0 +1,104 @@
+name: HashPass Web Pipeline Monitor
+run-name: HashPass Web Pipeline Monitor - ${{ github.ref_name }}
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "apps/mobile-app/**"
+      - "packages/auth/**"
+      - "packages/config/**"
+      - "packages/infra/terraform/modules/aws_pipeline_ec2_worker/**"
+      - "packages/infra/terraform/modules/aws_static_site_pipeline/**"
+      - "packages/infra/terraform/stacks/hashpass-web/**"
+      - "packages/tools/scripts/build-static-site.sh"
+      - "packages/tools/scripts/deploy-static-site.sh"
+      - "packages/tools/scripts/manage-web-pipeline-worker.sh"
+      - "packages/types/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/hashpass-web-pipeline-monitor.yml"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Monitor the pipelines or run the idle stop check only
+        required: true
+        default: monitor
+        type: choice
+        options:
+          - monitor
+          - stop
+
+concurrency:
+  group: hashpass-web-pipeline-worker
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_WEB_PIPELINE_REGION || 'us-east-2' }}
+      AWS_WEB_PIPELINE_ROLE_ARN: ${{ vars.AWS_WEB_PIPELINE_ROLE_ARN }}
+      WEB_PIPELINE_NAMES: ${{ vars.WEB_PIPELINE_NAMES || 'hashpass-dev-site,hashpass-production-site' }}
+      WEB_PIPELINE_PROJECT_TAG: ${{ vars.WEB_PIPELINE_PROJECT_TAG || 'hashpass' }}
+      WEB_PIPELINE_SERVICE_TAG: ${{ vars.WEB_PIPELINE_SERVICE_TAG || 'pipeline-build-worker' }}
+      WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '90' }}
+      WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '600' }}
+      WEB_PIPELINE_POLL_SECONDS: ${{ vars.WEB_PIPELINE_POLL_SECONDS || '20' }}
+      WEB_PIPELINE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'monitor' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: false
+
+      - name: Validate AWS control role
+        run: |
+          set -euo pipefail
+
+          if [ -z "${AWS_WEB_PIPELINE_ROLE_ARN:-}" ]; then
+            echo "Missing GitHub variable AWS_WEB_PIPELINE_ROLE_ARN."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials (OIDC)
+        id: configure-aws
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_WEB_PIPELINE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: hashpass-web-pipeline-monitor
+
+      - name: Monitor web pipelines and worker
+        if: env.WEB_PIPELINE_MODE == 'monitor' && steps.configure-aws.outcome == 'success'
+        run: |
+          set -euo pipefail
+          packages/tools/scripts/manage-web-pipeline-worker.sh \
+            --mode monitor \
+            --pipelines "${WEB_PIPELINE_NAMES}" \
+            --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
+            --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
+            --region "${AWS_REGION}" \
+            --grace-seconds "${WEB_PIPELINE_GRACE_SECONDS}" \
+            --start-wait-seconds "${WEB_PIPELINE_START_WAIT_SECONDS}" \
+            --poll-seconds "${WEB_PIPELINE_POLL_SECONDS}"
+
+      - name: Stop web worker if idle
+        if: always() && steps.configure-aws.outcome == 'success'
+        run: |
+          set -euo pipefail
+          packages/tools/scripts/manage-web-pipeline-worker.sh \
+            --mode stop \
+            --pipelines "${WEB_PIPELINE_NAMES}" \
+            --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
+            --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
+            --region "${AWS_REGION}" \
+            --grace-seconds 0 \
+            --poll-seconds "${WEB_PIPELINE_POLL_SECONDS}"

@@ -17,6 +17,7 @@ variable "domain_name" {
 variable "route53_zone_id" {
   description = "Route53 hosted zone ID where the domain record should be created"
   type        = string
+  default     = null
 }
 
 variable "mapping_key" {
@@ -58,6 +59,12 @@ variable "lambda_timeout" {
   description = "Lambda timeout in seconds"
   type        = number
   default     = 30
+}
+
+variable "enable_custom_domain" {
+  description = "Whether to create ACM, custom domain, and Route53 records"
+  type        = bool
+  default     = true
 }
 
 variable "lambda_architectures" {

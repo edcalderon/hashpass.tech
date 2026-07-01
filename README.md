@@ -104,7 +104,7 @@ pnpm run build:mobile # build the mobile app
 pnpm run build:club   # build the hashpass.club Next.js app
 pnpm run infra:deploy:dev  # deploy the BSL dev site to bsl-dev.hashpass.tech
 pnpm run infra:deploy:prod # deploy the BSL production site to bsl.hashpass.tech
-pnpm run infra:hashpass-web:plan   # preview the target-account hashpass.tech S3/CloudFront stack
+pnpm run infra:hashpass-web:plan   # preview the target-account hashpass.tech CodePipeline + EC2 worker stack
 pnpm run infra:hashpass-web:apply  # provision the target-account hashpass.tech replacement
 pnpm run infra:provision-connection # create the GitHub CodeConnections connection
 pnpm run infra:provision-pipelines # create the AWS CodePipeline/CodeBuild pipelines
@@ -124,7 +124,8 @@ See [apps/docs/docs/infra/INFRA_NAMING_GUIDE.md](apps/docs/docs/infra/INFRA_NAMI
 
 Deployment split:
 - `hashpass.tech` / `core` is still on the Amplify app (`dy8duury54wam`, `us-east-2`) until the new target-account S3/CloudFront replacement is validated and DNS is cut over.
-- The target-account `hashpass-web` Terraform stack provisions the replacement production and development pipelines in `packages/infra/terraform/stacks/hashpass-web`.
+- The target-account `hashpass-web` Terraform stack provisions the replacement production and development pipelines plus the shared EC2 build worker in `packages/infra/terraform/stacks/hashpass-web`.
+- Routine worker control for that stack goes through `.github/workflows/hashpass-web-pipeline-monitor.yml`; copy the `github_actions_role_arn` output into the GitHub variable `AWS_WEB_PIPELINE_ROLE_ARN` and dispatch the workflow with `mode=monitor` or `mode=stop` instead of driving the target account worker directly with ad hoc AWS CLI calls.
 - The target DNS work also includes a dedicated `dev.hashpass.tech` hosted zone for the development surface.
 - If Amplify still points at the old fork source, run `pnpm run amplify:update-source` once to move it to `hashpass-tech/hashpass.tech`.
 - `hashpass.club` is the new standalone Next.js app in `apps/web-app`. It publishes through GitHub Pages and the `club-v*` release tag flow.
