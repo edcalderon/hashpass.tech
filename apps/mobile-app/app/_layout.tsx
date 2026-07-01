@@ -31,6 +31,7 @@ import { checkVersionOnStart, clearAuthCache } from '../lib/version-checker';
 import { showConsoleWelcome } from '../lib/console-welcome';
 import LoadingScreen from '../components/LoadingScreen';
 import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppErrorBoundary';
+import { configureNativeGoogleSignin } from '../lib/native-google-signin';
 import packageJson from '../package.json';
 
 const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
@@ -150,13 +151,7 @@ function ThemedContent() {
       `webClientId=${process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '(unset)'}`,
     );
     if (!nativeEnabled) return;
-    import('@react-native-google-signin/google-signin').then(({ GoogleSignin }) => {
-      GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-        offlineAccess: false,
-      });
-      console.log('[GoogleSignin] configure() done');
-    });
+    void configureNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
   }, []);
 
   // Ensure new Directus users get default passes created

@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../../../lib/api-client';
 import { buildEventPath } from '../../../lib/event-path';
 import VersionDetailsModal from '../../../components/VersionDetailsModal';
+import { clearNativeGoogleAccount } from '../../../lib/native-google-signin';
 
 export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
@@ -106,12 +107,7 @@ export default function SettingsScreen() {
 
   const clearGoogleAccount = async () => {
     if (Platform.OS === 'web' || process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN !== 'true') return;
-    try {
-      const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
-      await GoogleSignin.signOut();
-    } catch {
-      // Non-critical
-    }
+    await clearNativeGoogleAccount();
   };
 
   const handleClearCache = async () => {

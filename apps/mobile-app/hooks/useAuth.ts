@@ -4,6 +4,11 @@ import type { AuthSession, AuthUser } from '@hashpass/auth';
 import { createSessionFromUrl, supabase } from '../lib/supabase';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import {
+  clearNativeGoogleAccount,
+  nativeGoogleSigninStatusCodes,
+  signInWithNativeGoogleAccount,
+} from '../lib/native-google-signin';
 
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
 let oauthHashProcessingPromise: Promise<void> | null = null;
@@ -259,12 +264,7 @@ export const useAuth = () => {
     // Clear native Google Sign-In cache so the account picker always shows on next login.
     // Must run before app sign-out to avoid the SDK being in a bad state.
     if (Platform.OS !== 'web' && process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true') {
-      try {
-        const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
-        await GoogleSignin.signOut();
-      } catch {
-        // Non-critical — proceed with app sign-out regardless
-      }
+      await clearNativeGoogleAccount();
     }
 
     const results = await Promise.allSettled([
@@ -314,21 +314,8 @@ export const useAuth = () => {
         process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true';
 
       if (nativeGoogleEnabled) {
-        const { GoogleSignin, statusCodes } = await import(
-          '@react-native-google-signin/google-signin'
-        );
         try {
-          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-          const response = await GoogleSignin.signIn();
-          console.log('[GoogleSignin] signIn response type:', (response as any)?.type, 'keys:', Object.keys(response ?? {}));
-          const idToken =
-            (response as any).data?.idToken ??
-            (response as any).idToken ??
-            null;
-          if (!idToken) {
-            const responseType = (response as any)?.type ?? 'unknown';
-            throw new Error(`Google Sign-In did not return an ID token (response type: ${responseType}).`);
-          }
+          const { idToken } = await signInWithNativeGoogleAccount();
 
           const { error: signInError } = await supabase.auth.signInWithIdToken({
             provider: 'google',
@@ -338,10 +325,10 @@ export const useAuth = () => {
           return { pending: true };
         } catch (err: any) {
           console.log('[GoogleSignin] error code:', err?.code, 'message:', err?.message);
-          if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+          if (err.code === nativeGoogleSigninStatusCodes.SIGN_IN_CANCELLED) {
             return { pending: false };
           }
-          if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+          if (err.code === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
             console.warn('[useAuth] Play Services unavailable, falling back to browser OAuth');
             // fall through to WebBrowser block below
           } else {
