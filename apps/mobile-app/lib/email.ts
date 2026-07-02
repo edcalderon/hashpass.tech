@@ -2,7 +2,8 @@ import nodemailer from 'nodemailer';
 import emails from '../i18n/locales/emails.json';
 import { getEmailAssetUrl } from './s3-service';
 import { supabaseServer } from './supabase-server';
-import { getSystemHealthCheck, HealthCheck } from '../app/api/status+api';
+import { getSystemHealthCheck } from '../app/api/status+api';
+import type { HealthCheck } from '../app/api/status+api';
 
 // Default to English if locale is not provided or not supported
 const DEFAULT_LOCALE = 'en';
@@ -329,7 +330,7 @@ async function getUserIdFromEmail(email: string): Promise<string | null> {
       return null;
     }
     
-    const user = data?.users?.find(u => u.email === email);
+    const user = data?.users?.find((u: { email?: string; id?: string }) => u.email === email);
     return user?.id || null;
   } catch (error) {
     console.error('Error getting user from email:', error);
@@ -482,14 +483,19 @@ ${content.html.website}`,
 
 export async function sendBookingEmail(
   to: string,
-  type: 'requested' | 'accepted' | 'cancelled',
+  type: 'requested' | 'accepted' | 'confirmed' | 'cancelled',
   payload: { speakerName?: string; start?: string; location?: string }
 ): Promise<{ success: boolean; error?: string; messageId?: string }> {
   if (!emailEnabled || !transporter) {
     return { success: false, error: 'Email service is not configured' };
   }
   try {
-    const subject = type === 'requested' ? 'Nueva solicitud de cita' : type === 'accepted' ? 'Tu cita fue aceptada' : 'Tu cita fue cancelada';
+    const subject =
+      type === 'requested'
+        ? 'Nueva solicitud de cita'
+        : type === 'cancelled'
+          ? 'Tu cita fue cancelada'
+          : 'Tu cita fue aceptada';
     const html = `
       <p>${subject}</p>
       ${payload.speakerName ? `<p>Con: ${payload.speakerName}</p>` : ''}

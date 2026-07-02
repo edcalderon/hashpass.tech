@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
-import { MaterialIcons } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
@@ -11,6 +10,7 @@ import SpeakerAvatar from '@/components/SpeakerAvatar';
 import LoadingScreen from '@/components/LoadingScreen';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from '@/i18n/i18n';
+import { MaterialIcons } from '../../../../lib/vector-icons';
 
 // Helper function to generate user avatar URL
 const generateUserAvatarUrl = (name: string): string => {
@@ -159,6 +159,7 @@ export default function MeetingDetailScreen() {
       // Legacy meeting_request statuses
       case 'requested': return '#FF9800';
       case 'accepted': return '#4CAF50';
+      case 'approved': return '#4CAF50';
       case 'rejected': return '#F44336';
       default: return '#9E9E9E';
     }
@@ -177,6 +178,7 @@ export default function MeetingDetailScreen() {
       // Legacy meeting_request statuses
       case 'requested': return 'schedule';
       case 'accepted': return 'check-circle';
+      case 'approved': return 'check-circle';
       case 'rejected': return 'cancel';
       default: return 'help';
     }

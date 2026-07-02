@@ -1,9 +1,10 @@
-import { supabase } from '@/lib/supabase';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { sendBookingEmail } from '@/lib/email';
 import { authenticateRequest } from '@hashpass/auth';
 
 export async function PATCH(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   const url = new URL(request.url);
   const id = url.pathname.split('/').pop();
   try {
@@ -33,7 +34,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json().catch(() => null);
-    if (!body || !['accepted', 'rejected', 'cancelled'].includes(body.status)) {
+    if (!body || !['accepted', 'confirmed', 'rejected', 'cancelled'].includes(body.status)) {
       return Response.json(
         { error: 'Invalid status' },
         { status: 400 }
@@ -93,6 +94,7 @@ export async function PATCH(request: Request) {
 
 // GET /api/bslatam/bookings/[id] - Get booking details
 export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const supabase = getSupabaseServerForRequest(request);
   try {
     // Use provider-agnostic authentication
     const { user, error: authError } = await authenticateRequest(request);
@@ -151,6 +153,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 // DELETE /api/bslatam/bookings/[id] - Cancel a booking
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  const supabase = getSupabaseServerForRequest(request);
   try {
     // Use provider-agnostic authentication
     const { user, error: authError } = await authenticateRequest(request);
@@ -229,5 +232,3 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     );
   }
 }
-
-

@@ -128,6 +128,10 @@ When `dev_enable_cloudfront = true`, the stack also creates a DNS-validated
 ACM certificate in `us-east-1` for `dev.hashpass.tech` and points the Route 53
 alias at CloudFront instead of the S3 website endpoint. That is the HTTPS path
 for the development site once the target account is cleared for CloudFront.
+If the target account is still blocked from creating CloudFront, keep the
+`dev.hashpass.tech` hosted zone in the target account but point its alias at a
+temporary source-account CloudFront distribution until the target stack can be
+reapplied with `dev_enable_cloudfront = true`.
 The EC2 worker role also gets bucket-level S3 permissions only for the deploy
 buckets passed in by the stack, which is required for `aws s3 sync --delete`
 and the HTML cache refresh `aws s3 cp` calls.
@@ -143,6 +147,10 @@ not set yet, you can pass the same role ARN as the manual
 That workflow is the normal control plane for the worker lifecycle. Use
 GitHub Actions to start, monitor, or stop the EC2 instance by tag, and keep
 direct target-account AWS CLI usage for bootstrap or emergency debugging only.
+The target Supabase compatibility layer for the post-Amplify migration lives in
+`packages/tools/scripts/sql/target-bsl-bootstrap.sql`. Apply it before testing
+the new web/API path, and keep future target-side database changes in checked-in
+SQL migrations rather than ad hoc console edits.
 
 ```bash
 gh workflow run hashpass-web-pipeline-monitor.yml -f mode=monitor
@@ -199,6 +207,14 @@ Start with `enable_custom_domain = false` while the target zone is still
 undelegated. That keeps the backend deployable and lets you verify it through
 the `execute-api` URL. After registrar cutover, flip the flag back to `true`
 and reapply to create the ACM validation records and public custom domains.
+Keep `dev.hashpass.tech` delegated from the target hosted zone during migration
+and leave the apex `hashpass.tech` routing on the source hosted zone until the
+final cutover. That lets you verify the target API and web pipeline without
+moving the public apex early.
+The Lambda DB connection must use a pooler-form URL. For dev, the host should
+be `aws-0-us-east-2.pooler.supabase.com`; for prod, use
+`aws-1-us-west-2.pooler.supabase.com`. Direct `db.<ref>.supabase.co` URLs can
+fail DNS lookups from Lambda even when the Supabase project itself is valid.
 
 ### GCP Stack
 

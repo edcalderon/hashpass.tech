@@ -60,6 +60,7 @@ export async function POST(request: Request) {
     const cleanupSteps: Array<{ table: string; filter: Record<string, string> | Record<string, string>[] }> = [
       { table: 'passes',              filter: { user_id: userId } },
       { table: 'pass_request_limits', filter: { user_id: userId } },
+      { table: 'user_request_limits', filter: { user_id: userId } },
       { table: 'user_tutorial_progress', filter: { user_id: userId } },
       { table: 'meeting_requests',    filter: { requester_id: userId } },
       { table: 'meetings',            filter: { user_id: userId } },

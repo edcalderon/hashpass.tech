@@ -4,8 +4,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../../../../hooks/useTheme';
 import { useEvent } from '@contexts/EventContext';
 import { useAuth } from '../../../../hooks/useAuth';
-import { MaterialIcons } from '@expo/vector-icons';
-import { matchmakingService, CreateMeetingRequestData } from '../../../../lib/matchmaking';
+import { matchmakingService } from '../../../../lib/matchmaking';
+import type { CreateMeetingRequestData } from '../../../../lib/matchmaking';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useBalance } from '@contexts/BalanceContext';
 import { supabase } from '../../../../lib/supabase';
@@ -16,12 +16,15 @@ import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl } from
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { CopilotStep, walkthroughable } from 'react-native-copilot';
 import { useTranslation } from '../../../../i18n/i18n';
+import { MaterialIcons } from '../../../../lib/vector-icons';
 
 // Helper function to generate user avatar URL
 const generateUserAvatarUrl = (name: string): string => {
   const seed = name.toLowerCase().replace(/\s+/g, '-');
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 };
+
+const isApprovedRequestStatus = (status?: string | null) => status === 'approved' || status === 'accepted';
 
 const CopilotView = walkthroughable(View);
 
@@ -213,7 +216,7 @@ export default function SpeakerDetail() {
 
       // Fallback to event config (JSON) - always available
       console.log('📋 Loading speaker from event config (JSON fallback)...');
-      const foundSpeaker = event?.speakers?.find(s => s.id === id);
+      const foundSpeaker = event?.speakers?.find((s: { id: string }) => s.id === id);
       
       if (foundSpeaker) {
         setSpeaker({
@@ -243,7 +246,7 @@ export default function SpeakerDetail() {
       console.error('❌ Error loading speaker:', error);
       // Even if there's an error, try the JSON fallback
       console.log('🔄 Attempting JSON fallback after error...');
-      const foundSpeaker = event?.speakers?.find(s => s.id === id);
+      const foundSpeaker = event?.speakers?.find((s: { id: string }) => s.id === id);
       if (foundSpeaker) {
         setSpeaker({
           id: foundSpeaker.id,
@@ -306,7 +309,7 @@ export default function SpeakerDetail() {
           table: 'meeting_requests',
           filter: `requester_id=eq.${user.id}`
         },
-        (payload) => {
+        (payload: { eventType?: string; new?: any; old?: any }) => {
           console.log('🔄 Real-time update received:', payload);
           
           if (payload.eventType === 'INSERT') {
@@ -1267,34 +1270,44 @@ export default function SpeakerDetail() {
             contentContainerStyle={styles.scrollContentContainer}
           >
             {meetingRequests.map((request, index) => (
-            <TouchableOpacity 
-              key={request.id} 
+            <TouchableOpacity
+              key={request.id}
               style={[
                 styles.simpleRequestCard,
                 {
-                  backgroundColor: request.status === 'approved' ? `${colors.primary}10` : 
-                                  request.status === 'declined' ? `${colors.error}10` : 
-                                  `${colors.warning}10`,
-                  borderColor: request.status === 'approved' ? colors.primary : 
-                              request.status === 'declined' ? colors.error.main : 
-                              '#FF9500'
+                  backgroundColor: isApprovedRequestStatus(request.status)
+                    ? `${colors.primary}10`
+                    : request.status === 'declined'
+                      ? `${colors.error}10`
+                      : `${colors.warning}10`,
+                  borderColor: isApprovedRequestStatus(request.status)
+                    ? colors.primary
+                    : request.status === 'declined'
+                      ? colors.error.main
+                      : '#FF9500',
                 }
               ]}
               onPress={() => handleRequestCardPress(request)}
             >
               <View style={styles.simpleRequestHeader}>
                 <View style={styles.simpleRequestInfo}>
-                  <Text style={[
-                    styles.simpleRequestStatus,
-                    {
-                      color: request.status === 'approved' ? colors.primary : 
-                             request.status === 'declined' ? colors.error.main : 
-                             '#FF9500'
-                    }
-                  ]}>
-                    {request.status === 'approved' ? t('speakerView.approved') :
-                     request.status === 'declined' ? t('speakerView.declined') :
-                     t('speakerView.pendingStatus')}
+                  <Text
+                    style={[
+                      styles.simpleRequestStatus,
+                      {
+                        color: isApprovedRequestStatus(request.status)
+                          ? colors.primary
+                          : request.status === 'declined'
+                            ? colors.error.main
+                            : '#FF9500',
+                      }
+                    ]}
+                  >
+                    {isApprovedRequestStatus(request.status)
+                      ? t('speakerView.approved')
+                      : request.status === 'declined'
+                        ? t('speakerView.declined')
+                        : t('speakerView.pendingStatus')}
                   </Text>
                   <Text style={styles.simpleRequestDate}>
                     {new Date(request.created_at).toLocaleDateString()}
@@ -1400,13 +1413,13 @@ export default function SpeakerDetail() {
             showRequestButton={true}
             onRequestPress={handleRequestMeeting}
             refreshTrigger={passRefreshTrigger}
-            onPassInfoLoaded={(passInfo) => {
+            onPassInfoLoaded={(passInfo: { pass_type?: string } | null) => {
               console.log('Pass info loaded:', passInfo);
               if (passInfo && passInfo.pass_type) {
                 setUserPassType(passInfo.pass_type as 'general' | 'business' | 'vip');
               }
             }}
-            onRequestLimitsLoaded={(limits) => {
+            onRequestLimitsLoaded={(limits: unknown) => {
               console.log('Request limits loaded:', limits);
             }}
           />
@@ -1713,40 +1726,60 @@ export default function SpeakerDetail() {
           {selectedRequestDetail && (
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
               {/* Request Status */}
-              <View style={[
-                styles.detailStatusCard,
-                {
-                  backgroundColor: selectedRequestDetail.status === 'approved' ? `${colors.primary}10` : 
-                                  selectedRequestDetail.status === 'declined' ? `${colors.error}10` : 
-                                  `${colors.warning}10`,
-                  borderColor: selectedRequestDetail.status === 'approved' ? colors.primary : 
-                              selectedRequestDetail.status === 'declined' ? colors.error.main : 
-                              '#FF9500'
-                }
-              ]}>
+              <View
+                style={[
+                  styles.detailStatusCard,
+                  {
+                    backgroundColor: isApprovedRequestStatus(selectedRequestDetail.status)
+                      ? `${colors.primary}10`
+                      : selectedRequestDetail.status === 'declined'
+                        ? `${colors.error}10`
+                        : `${colors.warning}10`,
+                    borderColor: isApprovedRequestStatus(selectedRequestDetail.status)
+                      ? colors.primary
+                      : selectedRequestDetail.status === 'declined'
+                        ? colors.error.main
+                        : '#FF9500',
+                  }
+                ]}
+              >
                 <View style={styles.detailStatusHeader}>
-                  <MaterialIcons 
-                    name={selectedRequestDetail.status === 'approved' ? 'check-circle' : 
-                          selectedRequestDetail.status === 'declined' ? 'cancel' : 
-                          'schedule'} 
-                    size={24} 
-                    color={selectedRequestDetail.status === 'approved' ? colors.primary : 
-                           selectedRequestDetail.status === 'declined' ? colors.error.main : 
-                           '#FF9500'} 
-                  />
-                  <Text style={[
-                    styles.detailStatusTitle,
-                    {
-                      color: selectedRequestDetail.status === 'approved' ? colors.primary : 
-                             selectedRequestDetail.status === 'declined' ? colors.error.main : 
-                             '#FF9500'
+                  <MaterialIcons
+                    name={
+                      isApprovedRequestStatus(selectedRequestDetail.status)
+                        ? 'check-circle'
+                        : selectedRequestDetail.status === 'declined'
+                          ? 'cancel'
+                          : 'schedule'
                     }
-                  ]}>
+                    size={24}
+                    color={
+                      isApprovedRequestStatus(selectedRequestDetail.status)
+                        ? colors.primary
+                        : selectedRequestDetail.status === 'declined'
+                          ? colors.error.main
+                          : '#FF9500'
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.detailStatusTitle,
+                      {
+                        color: isApprovedRequestStatus(selectedRequestDetail.status)
+                          ? colors.primary
+                          : selectedRequestDetail.status === 'declined'
+                            ? colors.error.main
+                            : '#FF9500',
+                      }
+                    ]}
+                  >
                     {selectedRequestDetail.requester_id === user?.id
-                      ? (selectedRequestDetail.status === 'approved' ? t('requestView.yourMeetingRequestApproved') :
-                         selectedRequestDetail.status === 'declined' ? t('requestView.yourMeetingRequestDeclined') :
-                         t('requestView.yourMeetingRequestPending'))
-                      : (selectedRequestDetail.status === 'approved' ? t('requestView.meetingRequestApproved') :
+                      ? isApprovedRequestStatus(selectedRequestDetail.status)
+                        ? t('requestView.yourMeetingRequestApproved')
+                        : selectedRequestDetail.status === 'declined'
+                          ? t('requestView.yourMeetingRequestDeclined')
+                          : t('requestView.yourMeetingRequestPending')
+                      : (isApprovedRequestStatus(selectedRequestDetail.status) ? t('requestView.meetingRequestApproved') :
                          selectedRequestDetail.status === 'declined' ? t('requestView.meetingRequestDeclined') :
                          t('requestView.meetingRequestPending'))}
                   </Text>
@@ -1843,7 +1876,7 @@ export default function SpeakerDetail() {
                 </View>
               )}
 
-              {selectedRequestDetail.status === 'approved' && (
+              {isApprovedRequestStatus(selectedRequestDetail.status) && (
                 <View style={styles.detailInfoSection}>
                   <Text style={styles.detailSectionTitle}>{t('speakerView.greatNews')}</Text>
                   <Text style={styles.detailMessage}>

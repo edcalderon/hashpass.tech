@@ -307,7 +307,7 @@ class PassSystemService {
         .select('*')
         .eq('requester_id', userId)
         .eq('speaker_id', speakerId)
-        .in('status', ['pending', 'approved', 'declined'])
+        .in('status', ['pending', 'requested', 'approved', 'accepted', 'declined', 'rejected', 'cancelled'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();

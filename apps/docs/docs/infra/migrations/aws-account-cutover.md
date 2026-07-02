@@ -57,6 +57,7 @@ The hosted zone also carries DNS for `api.hashpass.tech`, `api-dev.hashpass.tech
 - Use `pnpm run infra:hashpass-web:plan` and `pnpm run infra:hashpass-web:apply` once the CodeConnections handshake is complete and the target-account `terraform.tfvars` is populated.
 - Keep the source account untouched.
 - Validate the new stack using the S3 website endpoint or a temporary parallel hostname before any DNS cutover.
+- If the target account is not yet approved for CloudFront, keep `dev.hashpass.tech` on the target hosted zone but point the alias at a temporary source-account CloudFront distribution until `dev_enable_cloudfront = true` can be applied in the target account.
 
 ### Phase 2: Mirror the web surface
 
@@ -110,5 +111,13 @@ Rollback should be a traffic flip, not a rebuild.
 - Build the target static site with `pnpm run deploy:web:s3` for a local dry run, or let the new EC2 worker perform the same build and S3 sync inside AWS.
 - Use `.github/workflows/hashpass-web-pipeline-monitor.yml` for day-to-day control of the web worker. Set `AWS_WEB_PIPELINE_ROLE_ARN` from the Terraform output and dispatch the workflow with `mode=monitor` or `mode=stop` instead of using ad hoc target-account AWS CLI calls, unless you are debugging a failure.
 - If the GitHub repo variable is missing during bootstrap, pass the same role ARN through the manual `aws_web_pipeline_role_arn` workflow dispatch input and then save it as the repo variable after the first successful run.
+- The target Supabase compatibility layer lives in
+  `packages/tools/scripts/sql/target-bsl-bootstrap.sql`. Apply that script once
+  to the target database before testing the new web/API flow, then keep future
+  target DB changes in checked-in SQL migrations instead of ad hoc target CLI.
+- Keep the source hosted zone authoritative for `hashpass.tech` until the apex
+  cutover. Delegate only `dev.hashpass.tech` to the target hosted zone while the
+  development path is being validated.
 - If CloudFront is unavailable in the target account, keep `enable_cloudfront = false` in the stack tfvars and validate against the S3 website endpoint first.
+- For the target API Lambda, keep `BETTER_AUTH_DATABASE_URL` in pooler format (`aws-0-us-east-2.pooler.supabase.com` for dev, `aws-1-us-west-2.pooler.supabase.com` for prod). The direct `db.<ref>.supabase.co` form can fail DNS resolution inside Lambda even when the Supabase project ref itself is valid.
 - Keep source-account credentials and resources available until the migration has been stable long enough to close the rollback window.

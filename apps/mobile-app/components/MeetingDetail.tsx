@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useTheme } from '../hooks/useTheme';
 import { supabase } from '../lib/supabase';
+import { MaterialIcons } from '../lib/vector-icons';
 import SpeakerAvatar from './SpeakerAvatar';
 
 interface MeetingDetailProps {
@@ -37,6 +37,7 @@ export default function MeetingDetail({ meetingId, onClose, showHeader = true }:
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'accepted':
+      case 'approved':
         return '#4CAF50';
       case 'pending':
       case 'requested':
@@ -80,7 +81,7 @@ export default function MeetingDetail({ meetingId, onClose, showHeader = true }:
           table: 'meeting_requests',
           filter: `id=eq.${meetingId}`
         },
-        (payload) => {
+        (payload: { new: MeetingInfo }) => {
           setMeeting(payload.new as MeetingInfo);
         }
       )

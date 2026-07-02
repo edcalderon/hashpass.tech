@@ -303,15 +303,16 @@ export default function NetworkingView() {
         // Don't throw here, just use default values
       }
 
-      // Calculate scheduled meetings (accepted requests)
-      const scheduledMeetings = statsData.approved_requests || 0;
+      // Calculate scheduled meetings (accept both legacy accepted and approved states)
+      const scheduledMeetings = statsData.approved_requests || statsData.accepted_requests || 0;
+      const acceptedRequests = statsData.accepted_requests || statsData.approved_requests || 0;
 
       const newStats: NetworkingStats = {
         totalRequests: statsData.total_requests || 0,
-        pendingRequests: statsData.pending_requests || 0,
-        acceptedRequests: statsData.approved_requests || 0,
-        declinedRequests: statsData.declined_requests || 0,
-        cancelledRequests: statsData.cancelled_requests || 0,
+        pendingRequests: statsData.pending_requests ?? 0,
+        acceptedRequests,
+        declinedRequests: statsData.declined_requests ?? 0,
+        cancelledRequests: statsData.cancelled_requests ?? 0,
         blockedUsers: speakerStats.blockedUsers,
         scheduledMeetings: scheduledMeetings,
       };
