@@ -1,3 +1,15 @@
+## [1.8.144](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.143...v1.8.144) (2026-07-02)
+
+
+### Features
+
+* **infra:** add dev cloudfront and workflow ARN fallback ([2c0f28c](https://github.com/hashpass-tech/hashpass.tech/commit/2c0f28cda665925e04ec67341edf156ef787a485))
+* **web:** migrate hashpass web deployment to target ([aae8130](https://github.com/hashpass-tech/hashpass.tech/commit/aae81302c2688f961651ec641021e4af0aca2cd4))
+
+
+
+
+
 ## [1.8.143](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.142...v1.8.143) (2026-07-01)
 
 
