@@ -1,3 +1,14 @@
+## [1.8.145](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.144...v1.8.145) (2026-07-03)
+
+
+### Bug Fixes
+
+* complete target api cutover and hero polish ([0aa4854](https://github.com/hashpass-tech/hashpass.tech/commit/0aa4854fcd66e172bd2a0bb5a61adaf446b864bc))
+
+
+
+
+
 ## [1.8.144](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.143...v1.8.144) (2026-07-02)
 
 

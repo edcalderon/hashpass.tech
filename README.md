@@ -17,12 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.144)
+## 📋 Latest Changes (v1.8.145)
 
-### Features
+### Bug Fixes
 
-* **infra:** add dev cloudfront and workflow ARN fallback ([2c0f28c](https://github.com/hashpass-tech/hashpass.tech/commit/2c0f28cda665925e04ec67341edf156ef787a485))
-* **web:** migrate hashpass web deployment to target ([aae8130](https://github.com/hashpass-tech/hashpass.tech/commit/aae81302c2688f961651ec641021e4af0aca2cd4))
+* complete target api cutover and hero polish ([0aa4854](https://github.com/hashpass-tech/hashpass.tech/commit/0aa4854fcd66e172bd2a0bb5a61adaf446b864bc))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
 
