@@ -1,3 +1,14 @@
+## [1.8.146](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.145...v1.8.146) (2026-07-03)
+
+
+### Bug Fixes
+
+* stabilize hashpass web worker release flow ([e1c233b](https://github.com/hashpass-tech/hashpass.tech/commit/e1c233b6e28f2cc33db9c608e6df0f8d944d889e))
+
+
+
+
+
 ## [1.8.145](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.144...v1.8.145) (2026-07-03)
 
 
