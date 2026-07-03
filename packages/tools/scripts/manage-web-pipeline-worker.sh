@@ -297,7 +297,7 @@ monitor_mode() {
       if stop_worker_if_idle; then
         summary ""
         summary "- Final action: worker stopped after no pipeline execution appeared."
-        return 1
+        return 0
       fi
 
       active_pipelines=()

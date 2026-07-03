@@ -205,9 +205,9 @@ variable "build_worker_instance_count" {
 }
 
 variable "build_worker_instance_type" {
-  description = "EC2 instance type for the pipeline build worker"
+  description = "EC2 instance type for the pipeline build worker. Use a non-burstable shape for sustained builds."
   type        = string
-  default     = "t3a.medium"
+  default     = "m6i.large"
 }
 
 variable "build_worker_subnet_ids" {

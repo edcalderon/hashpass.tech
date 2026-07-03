@@ -51,6 +51,7 @@ The hosted zone also carries DNS for `api.hashpass.tech`, `api-dev.hashpass.tech
 - Create the target IAM roles, hosted zones, S3 buckets, CloudFront distribution, build worker, and runner resources.
 - If CloudFront is unavailable in the new account, use the S3 website fallback first and keep the CloudFront toggle off until AWS verifies the account.
 - The first web surface lands in `packages/infra/terraform/stacks/hashpass-web` and deploys through the shared EC2 worker plus `packages/tools/scripts/build-static-site.sh` and `packages/tools/scripts/deploy-static-site.sh`.
+- Use a non-burstable worker shape such as `m6i.large` for the shared EC2 build worker. The burstable `t3a.medium` shape was throttling sustained Expo export builds and pushed pipeline runtime from about 7 minutes to more than 25 minutes.
 - That stack now provisions both the production `main` pipeline and the development `develop` pipeline in the target account.
 - The target DNS stack now keeps `dev.hashpass.tech` inside the parent `hashpass.tech` hosted zone so the development site can be isolated without a separate child zone.
 - The DNS landing zone lives in `packages/infra/terraform/stacks/hashpass-dns`.
@@ -111,6 +112,7 @@ Rollback should be a traffic flip, not a rebuild.
 - Use the target AWS credentials from the repository root `.env` when operating against account `952191196420`.
 - Use `TARGET_AWS_ACCOUNT_ID` when you need scripts to assert the destination account explicitly.
 - Build the target static site with `pnpm run deploy:web:s3` for a local dry run, or let the new EC2 worker perform the same build and S3 sync inside AWS.
+- Leave `dev_enable_cloudfront = false` until you actually want HTTPS on `dev.hashpass.tech`; the HTTP/S3 fallback is fine while prod cutover is being validated.
 - Use `.github/workflows/hashpass-web-pipeline-monitor.yml` for day-to-day control of the web worker. Set `AWS_WEB_PIPELINE_ROLE_ARN` from the Terraform output and dispatch the workflow with `mode=monitor` or `mode=stop` instead of using ad hoc target-account AWS CLI calls, unless you are debugging a failure.
 - If the GitHub repo variable is missing during bootstrap, pass the same role ARN through the manual `aws_web_pipeline_role_arn` workflow dispatch input and then save it as the repo variable after the first successful run.
 - The target Supabase compatibility layer lives in

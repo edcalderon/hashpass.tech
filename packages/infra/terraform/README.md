@@ -137,6 +137,9 @@ so the build flow stays close to the old Amplify setup without depending on
 CodeBuild. The worker runs the same
 `packages/tools/scripts/build-static-site.sh` and
 `packages/tools/scripts/deploy-static-site.sh` helpers that local testing uses.
+The recommended worker shape is `m6i.large`; the old burstable `t3a.medium`
+shape can exhaust CPU credits during Expo export and stretch the pipeline to
+25+ minutes.
 When CloudFront is available, the deploy helper invalidates it automatically;
 for the current direct-S3 fallback, the stack uses literal A records instead of
 Route 53 alias records because the alias form was not resolving cleanly in the
@@ -148,6 +151,8 @@ When `dev_enable_cloudfront = true`, the stack also creates a DNS-validated
 ACM certificate in `us-east-1` for `dev.hashpass.tech` and points the Route 53
 alias at CloudFront instead of the S3 website endpoint. That remains the HTTPS
 path for the development site once the target account is cleared for CloudFront.
+Leaving `dev_enable_cloudfront = false` is fine while you keep the development
+site on the current HTTP/S3 fallback and focus on production cutover.
 The EC2 worker role also gets bucket-level S3 permissions only for the deploy
 buckets passed in by the stack, which is required for `aws s3 sync --delete`
 and the HTML cache refresh `aws s3 cp` calls.

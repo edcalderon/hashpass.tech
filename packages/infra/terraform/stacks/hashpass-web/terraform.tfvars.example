@@ -30,7 +30,7 @@ build_output_directory     = "dist/client"
 deploy_script_path         = "packages/tools/scripts/deploy-static-site.sh"
 deploy_mode                = "direct"
 
-build_worker_instance_type           = "t3a.medium"
+build_worker_instance_type           = "m6i.large"
 build_worker_instance_count          = 1
 build_worker_root_volume_size_gb     = 100
 build_worker_associate_public_ip_address = true

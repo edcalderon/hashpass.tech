@@ -29,9 +29,9 @@ variable "instance_count" {
 }
 
 variable "instance_type" {
-  description = "EC2 instance type for the worker"
+  description = "EC2 instance type for the worker. Use a non-burstable shape for sustained builds."
   type        = string
-  default     = "t3a.medium"
+  default     = "m6i.large"
 }
 
 variable "subnet_ids" {
