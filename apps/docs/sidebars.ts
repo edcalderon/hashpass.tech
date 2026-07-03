@@ -14,7 +14,7 @@ const sidebars = {
     {
       type: 'category',
       label: 'Deployment',
-      items: ['deployment/README', 'deployment/amplify/AMPLIFY-API-ROUTES'],
+      items: ['deployment/README'],
     },
     {
       type: 'category',

@@ -29,7 +29,7 @@ The docs build still uses `HASHPASS_DOCS_URL=https://hashpass.club` and `HASHPAS
 
 ## Current References
 
-- [`amplify/AMPLIFY-API-ROUTES.md`](amplify/AMPLIFY-API-ROUTES.md) - legacy Amplify API route reference
+- `archive/amplify/docs/AMPLIFY-API-ROUTES.md` - legacy Amplify API route reference kept in the repository archive only
 - [`../infra/env/ENVIRONMENT_VARIABLES.md`](../infra/env/ENVIRONMENT_VARIABLES.md) - runtime variable matrix for mobile, club, and BSL releases
 
 ## Notes

@@ -55,6 +55,7 @@ export default function CrystalForgeBackground({
 
       const width = mountNode.clientWidth || window.innerWidth;
       const height = mountNode.clientHeight || window.innerHeight;
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(68, width / height, 0.1, 220);
@@ -65,7 +66,7 @@ export default function CrystalForgeBackground({
         alpha: true,
         powerPreference: 'high-performance',
       });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setPixelRatio(pixelRatio);
       renderer.setSize(width, height);
       renderer.setClearColor(0x000000, 0);
       mountNode.appendChild(renderer.domElement);
@@ -199,9 +200,10 @@ export default function CrystalForgeBackground({
       const onResize = () => {
         const nextWidth = mountNode.clientWidth || window.innerWidth;
         const nextHeight = mountNode.clientHeight || window.innerHeight;
+        const nextPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
         camera.aspect = nextWidth / nextHeight;
         camera.updateProjectionMatrix();
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setPixelRatio(nextPixelRatio);
         renderer.setSize(nextWidth, nextHeight);
         composer.setSize(nextWidth, nextHeight);
       };
@@ -289,15 +291,22 @@ export default function CrystalForgeBackground({
         pointerEvents: 'none',
       }}
     >
-      <div ref={mountRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+      <div
+        ref={mountRef}
+        style={{
+          position: 'absolute',
+          inset: '-10%',
+          pointerEvents: 'none',
+        }}
+      />
       <div
         style={{
           position: 'absolute',
-          inset: 0,
+          inset: '-12%',
           pointerEvents: 'none',
           background: isDarkMode
-            ? 'radial-gradient(circle at 50% 34%, rgba(8,145,178,0.16) 0%, rgba(8,145,178,0.08) 32%, rgba(8,145,178,0) 70%)'
-            : 'radial-gradient(circle at 50% 34%, rgba(239,68,68,0.14) 0%, rgba(239,68,68,0.07) 30%, rgba(239,68,68,0) 70%)',
+            ? 'radial-gradient(circle at 50% 32%, rgba(8,145,178,0.18) 0%, rgba(8,145,178,0.09) 38%, rgba(8,145,178,0) 82%)'
+            : 'radial-gradient(circle at 50% 32%, rgba(239,68,68,0.16) 0%, rgba(239,68,68,0.08) 36%, rgba(239,68,68,0) 82%)',
         }}
       />
     </div>

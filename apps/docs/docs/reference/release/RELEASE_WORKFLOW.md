@@ -4,20 +4,19 @@
 
 All version fields (`package.json`, `app.json`, `apps/mobile-app/config/version.ts`, Android `versionCode`, etc.) must stay in sync. The release scripts handle this automatically. Manual edits cause version skipping and ordering bugs.
 
-## Web Release (hashpass.tech + bsl.hashpass.tech)
+## Web Release (hashpass.tech + dev.hashpass.tech)
 
-The web app deploys automatically. When you push to `main`:
+The web app now deploys through the target-account pipeline and CloudFront front
+door. When you push to `main`:
 
-1. GitHub Actions (`infra-deploy.yml`) runs the SST deploy → updates `bsl.hashpass.tech` and `api.hashpass.tech`
-2. AWS Amplify detects the push → rebuilds and deploys `hashpass.tech`
+1. GitHub Actions runs the target-account web checks and deploy orchestration.
+2. The target pipeline rebuilds and publishes `hashpass.tech` and `dev.hashpass.tech`.
 
-Both happen in parallel and take 5–15 minutes. No manual action needed for web-only changes.
+Both paths are automatic and typically take a few minutes. No manual action is
+needed for web-only changes.
 
-If Amplify auto-deploy is not triggering, start it manually:
-```bash
-# Get the app ID from Amplify console (us-east-2), then:
-aws amplify start-job --app-id <ID> --region us-east-2 --branch-name main --job-type RELEASE
-```
+Legacy Amplify start-job instructions are archived in
+`archive/amplify/README.md` for historical reference only.
 
 ## Android Release
 
@@ -110,7 +109,7 @@ Versions follow `MAJOR.MINOR.PATCH` (semver) and `versionCode` is derived from t
 
 | What | When rebuilt | Where |
 |------|-------------|-------|
-| Web static bundle | Every push to `main` (Amplify + SST) | `hashpass.tech`, `bsl.hashpass.tech` |
+| Web static bundle | Every target web release | `hashpass.tech`, `dev.hashpass.tech` |
 | Lambda API routes | Every SST deploy | `api.hashpass.tech` |
 | Android APK/AAB | Manual CI trigger on release tag | Play Store |
 

@@ -4,6 +4,8 @@
 
 Este documento explica cómo configurar el despliegue automático de Lambda cuando hay cambios en el repositorio.
 
+> Deprecated: la ruta basada en Amplify es histórica solamente. El archivo y los scripts de referencia viven en `archive/amplify/` y no forman parte del flujo activo.
+
 ## Opciones de Integración
 
 ### Opción 1: GitHub Actions (Recomendado) ✅
@@ -64,7 +66,7 @@ Este documento explica cómo configurar el despliegue automático de Lambda cuan
    - Haya cambios en `package.json` o `package-lock.json`
    - Push a `main` o `develop`
 
-### Opción 2: Integrar en Amplify Build
+### Opción 2: Integrar en Amplify Build (Histórica)
 
 **Ventajas:**
 - ✅ Todo en un solo lugar
@@ -85,7 +87,7 @@ Este documento explica cómo configurar el despliegue automático de Lambda cuan
      --policy-arn arn:aws:iam::aws:policy/AWSLambda_FullAccess
    ```
 
-2. **Descomentar en `amplify.yml`:**
+2. **Referencia histórica en `archive/amplify/config/amplify.yml`:**
 
    ```yaml
    post_build:

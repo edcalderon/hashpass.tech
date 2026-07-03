@@ -6,6 +6,15 @@
 - Treat `CLAUDE.md` as the source of truth for versioning, push order, and release flow.
 - If `CLAUDE.md` and `README.md` differ, stop and ask before changing the release path.
 
+## Codebase Memory MCP
+
+Use `codebase-memory-mcp` first for repo discovery and fast checks.
+
+- Start with `codebase-memory-mcp cli list_projects` and `codebase-memory-mcp cli index_status`.
+- Prefer `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`, and `get_architecture` before opening many files or running broad grep.
+- Use `search_code`, `rg`, or direct file reads only for literals, config values, generated files, or when the graph has already narrowed the target.
+- If the project is missing or stale, re-index `/home/ed/Documents/HASH/hashpass.tech` and then repeat the graph search.
+
 ## Deployment Command Contract
 
 When the user says `deploy`, `release`, or `release patch`, complete the full production release unless the user limits the scope.

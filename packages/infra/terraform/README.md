@@ -117,24 +117,24 @@ Apply it with:
 ./packages/infra/terraform/scripts/stack.sh hashpass-web apply
 ```
 
-CloudFront is now the production front door for `hashpass.tech`, but it lives
-in the source account and points at the target-account S3 website origin. That
-gives HTTPS, clean apex routing, and a stable origin abstraction while the
-target account remains blocked from creating new CloudFront resources by AWS
-account verification.
+CloudFront is now the production front door for `hashpass.tech`, and the same
+source-account front door also serves `dev.hashpass.tech` so the public dev URL
+stays on HTTPS. Both hostnames point at the target-account S3 website origins,
+which keeps the origin static while the target account remains blocked from
+creating new CloudFront resources by AWS account verification.
 The current live layout is:
 - `hashpass.tech` resolves through the source-account CloudFront front door.
 - `www.hashpass.tech` remains a CNAME to `hashpass.tech` and is covered by the
   same CloudFront certificate.
-- `dev.hashpass.tech` is delegated from the source `hashpass.tech` hosted zone
-  to the target `hashpass.tech` hosted zone and is served there with literal A
-  records pointing at the target S3 website endpoint.
-- The target `hashpass.tech` hosted zone now carries both the
-  `dev.hashpass.tech` record and the production origin used by the source
-  CloudFront front door.
-The target web stack still uses the shared EC2 build worker plus CodePipeline,
-so the build flow stays close to the old Amplify setup without depending on
-CodeBuild. The worker runs the same
+- `dev.hashpass.tech` is routed through the source-account CloudFront front
+  door and aliases directly from the parent `hashpass.tech` hosted zone.
+- The target `hashpass.tech` hosted zone still carries the static origin used
+  by the source CloudFront front door.
+The target web stack still uses a single shared EC2 build worker plus
+CodePipeline, so the build flow stays close to the old Amplify setup without
+depending on CodeBuild. Keep `build_worker_instance_count = 1` unless you
+need concurrent dev and prod throughput; a second worker only helps parallel
+queues and increases idle cost. The worker runs the same
 `packages/tools/scripts/build-static-site.sh` and
 `packages/tools/scripts/deploy-static-site.sh` helpers that local testing uses.
 The recommended worker shape is `m6i.large`; the old burstable `t3a.medium`
@@ -148,11 +148,10 @@ Keep the site buckets on generated unique names unless you have a specific
 reason to pin them. The bucket name does not need to match the apex record when
 CloudFront is handling the public domain or when direct A records are used.
 When `dev_enable_cloudfront = true`, the stack also creates a DNS-validated
-ACM certificate in `us-east-1` for `dev.hashpass.tech` and points the Route 53
-alias at CloudFront instead of the S3 website endpoint. That remains the HTTPS
-path for the development site once the target account is cleared for CloudFront.
-Leaving `dev_enable_cloudfront = false` is fine while you keep the development
-site on the current HTTP/S3 fallback and focus on production cutover.
+ACM certificate in `us-east-1` for `dev.hashpass.tech` and can point the Route
+53 alias at a target-account CloudFront distribution instead of the S3 website
+endpoint. Until then, the public dev hostname should remain on the source
+CloudFront front door so browsers always get HTTPS.
 The EC2 worker role also gets bucket-level S3 permissions only for the deploy
 buckets passed in by the stack, which is required for `aws s3 sync --delete`
 and the HTML cache refresh `aws s3 cp` calls.
@@ -168,9 +167,11 @@ and start/stop the shared EC2 worker by instance ID. Copy the
 when both the dev and production pipelines are idle. If the repo variable is
 not set yet, you can pass the same role ARN as the manual
 `aws_web_pipeline_role_arn` workflow dispatch input.
-That workflow is the normal control plane for the worker lifecycle. Use
-GitHub Actions to start, monitor, or stop the EC2 instance by tag, and keep
-direct target-account AWS CLI usage for bootstrap or emergency debugging only.
+That workflow is the normal control plane for the worker lifecycle. It now
+includes a periodic stop sweep in addition to the push-triggered monitor so an
+idle worker can still be reclaimed if no later commit arrives. Use GitHub
+Actions to start, monitor, or stop the EC2 instance by tag, and keep direct
+target-account AWS CLI usage for bootstrap or emergency debugging only.
 The target Supabase compatibility layer for the post-Amplify migration lives in
 `packages/tools/scripts/sql/target-bsl-bootstrap.sql`. Apply it before testing
 the new web/API path, and keep future target-side database changes in checked-in

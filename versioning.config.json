@@ -28,8 +28,6 @@
         "README.md",
         "TRADEMARKS.md",
         "SECURITY.md",
-        "amplify-hashpass-tech.yml",
-        "amplify.yml",
         "app.json",
         "babel.config.js",
         "docker-compose.yml",
@@ -79,6 +77,8 @@
         "aws_secret_access_key[\\s\"']*[:=][\\s\"']*[A-Za-z0-9/+=]{40}"
       ],
       "allowlist": [
+        "AMPLIFY_OAUTH_TOKEN:-${OAUTH_TOKEN:-}",
+        "AMPLIFY_ACCESS_TOKEN:-${ACCESS_TOKEN:-}",
         "EXPO_PUBLIC_SUPABASE_URL: supabaseUrl,",
         "EXPO_PUBLIC_SUPABASE_KEY: supabaseAnonKey,",
         "EXPO_PUBLIC_SUPABASE_URL      = var.supabase_url",

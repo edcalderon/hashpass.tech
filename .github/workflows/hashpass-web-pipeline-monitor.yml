@@ -20,6 +20,8 @@ on:
       - "package.json"
       - "pnpm-lock.yaml"
       - ".github/workflows/hashpass-web-pipeline-monitor.yml"
+  schedule:
+    - cron: "*/10 * * * *"
   workflow_dispatch:
     inputs:
       aws_web_pipeline_role_arn:
@@ -55,7 +57,7 @@ jobs:
       WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '90' }}
       WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '600' }}
       WEB_PIPELINE_POLL_SECONDS: ${{ vars.WEB_PIPELINE_POLL_SECONDS || '20' }}
-      WEB_PIPELINE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'monitor' }}
+      WEB_PIPELINE_MODE: ${{ github.event_name == 'schedule' && 'stop' || github.event_name == 'workflow_dispatch' && inputs.mode || 'monitor' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

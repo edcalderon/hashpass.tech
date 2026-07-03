@@ -69,6 +69,8 @@ wrangler.secrets.toml
 # Amplify backend config folder should not be tracked
 amplify/
 amplify-backend-config/
+!archive/amplify/
+!archive/amplify/**
 
 # Storybook build artifacts
 storybook-static/
@@ -95,3 +97,4 @@ yarn-error.*
 
 # Project-specific local envs
 apps/web-app/.env.staging
+TODO

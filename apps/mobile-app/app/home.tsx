@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation, getCurrentLocale } from '../i18n/i18n';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -38,12 +38,12 @@ import { getHashpassFullLogo, getHashpassFooterLogo } from '../lib/hashpass-logo
 
 // Import git info to check branch
 let gitInfo: { gitBranch?: string } = {};
-try {
-  gitInfo = require('../config/git-info.json');
-} catch (e) {
-  // Fallback if git-info.json doesn't exist
-  gitInfo = {};
-}
+  try {
+    gitInfo = require('../config/git-info.json');
+  } catch {
+    // Fallback if git-info.json doesn't exist
+    gitInfo = {};
+  }
 
 export default function HomeScreen() {
   const { colors, isDark } = useTheme();
@@ -125,9 +125,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const scrollY = useSharedValue(0);
   const buttonAnimation = useSharedValue(0);
+  const { height: windowHeight } = useWindowDimensions();
 
   const featuresRef = React.useRef<View>(null);
-  const [featuresLayout, setFeaturesLayout] = React.useState({ y: 0 });
+  const featuresLayoutRef = React.useRef({ y: 0 });
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -141,9 +142,9 @@ export default function HomeScreen() {
       const screenHeight = window.innerHeight || document.documentElement.clientHeight;
       scrollRef.current.scrollTo({ y: screenHeight * 0.5, animated: true });
     } else {
-      const targetY = featuresLayout.y > 0
-        ? featuresLayout.y
-        : Dimensions.get('window').height * 0.85;
+      const targetY = featuresLayoutRef.current.y > 0
+        ? featuresLayoutRef.current.y
+        : windowHeight * 0.85;
       scrollRef.current.scrollTo({ y: targetY, animated: true });
     }
   };
@@ -165,25 +166,6 @@ export default function HomeScreen() {
       { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
     );
     return {
-      opacity: withTiming(opacity, { duration: 100 })
-    };
-  });
-
-  const heroImageAnimatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      scrollY.value,
-      [0, 200],
-      [1, 0.9],
-      { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
-    );
-    const opacity = interpolate(
-      scrollY.value,
-      [0, 200],
-      [1, 0],
-      { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
-    );
-    return {
-      transform: [{ scale: withTiming(scale, { duration: 100 }) }],
       opacity: withTiming(opacity, { duration: 100 })
     };
   });
@@ -292,7 +274,7 @@ export default function HomeScreen() {
           <CrystalForgeBackground
             isDarkMode={isDark}
             enableClickSpawn={!isMobile}
-            maxCrystals={isMobile ? 24 : 52}
+            maxCrystals={isMobile ? 20 : 36}
           />
           <Animated.View style={[styles.heroTextContainer, headerAnimatedStyle]}>
             <View style={styles.logoStack}>
@@ -343,7 +325,7 @@ export default function HomeScreen() {
 
         <View ref={featuresRef} onLayout={(event) => {
           const { y } = event.nativeEvent.layout;
-          setFeaturesLayout({ y });
+          featuresLayoutRef.current = { y };
         }}>
           <Features
             styles={styles}
@@ -542,9 +524,9 @@ export default function HomeScreen() {
 }
 
 const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMode: boolean) => {
-  const logoWidth = isMobile ? 300 : 650;
-  const logoHeight = isMobile ? 150 : 250;
-  const taglineOffset = isMobile ? 14 : 24;
+  const logoWidth = isMobile ? 300 : 580;
+  const logoHeight = isMobile ? 150 : 220;
+  const taglineOffset = isMobile ? 10 : 18;
 
   return StyleSheet.create({
     container: {
@@ -609,15 +591,17 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       alignItems: 'center',
       justifyContent: 'center',
       // Fixed height so the FlipWords animation (enter, exit, word-flip) never
-      // shifts the logo above it. overflow:hidden clips any spring overshoot.
-      height: isMobile ? 36 : 60,
+      // shifts the logo above it. A little more vertical room prevents the
+      // glyph edges from clipping when the word scales in on web.
+      height: isMobile ? 42 : 72,
       overflow: 'hidden',
     },
     tagline: {
-      fontSize: isMobile ? 24 : 44,
+      fontSize: isMobile ? 18 : 34,
       opacity: 0.9,
-      fontWeight: '400',
-      letterSpacing: 1,
+      fontWeight: '500',
+      letterSpacing: isMobile ? 0.8 : 1.5,
+      lineHeight: isMobile ? 22 : 40,
       textAlign: 'center',
       color: Platform.OS === 'web' ? '#FFFFFF' : colors.text.primary,
     },

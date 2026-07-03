@@ -2,6 +2,31 @@
 
 ## Critical Rules
 
+### Codebase Memory MCP
+`codebase-memory-mcp` is the first-pass discovery layer for this repo.
+Treat it as the fastest source of truth for symbol lookup, dependency tracing, and repo orientation before opening files or using grep.
+
+Use it in this order:
+
+1. `codebase-memory-mcp cli list_projects` to confirm the repo is indexed.
+2. `codebase-memory-mcp cli index_status` to check freshness.
+3. `search_graph` to find functions, classes, routes, variables, and files.
+4. `trace_path` to inspect callers, callees, and dependency flow.
+5. `get_code_snippet` when you need the exact implementation for a symbol.
+6. `query_graph` for broader structural or repeated-pattern questions.
+7. `get_architecture` for a high-level map of the repo.
+
+Fallback rule:
+
+- Use `search_code`, `rg`, or file reads only after the graph narrows the search, or for string literals, config values, generated files, and non-code content.
+- If the project is missing or the graph looks stale, re-index the current repo and then repeat the graph search instead of doing a broad filesystem scan first.
+
+Project index command:
+
+```bash
+codebase-memory-mcp cli index_repository '{"repo_path":"/home/ed/Documents/HASH/hashpass.tech","mode":"full"}'
+```
+
 ### Version Management
 **NEVER manually edit version numbers in package.json or app.json.**
 
@@ -68,7 +93,7 @@ Android builds triggered with `--field environment=development` bake `EXPO_PUBLI
 | `environment=development` | `core-development` | `hashpass-api-dev` (us-east-1) |
 | `environment=production` | `core-production` | `hashpass-api-prod` (us-east-1) |
 
-**Consequence:** If `hashpass-api-dev` is out of date, dev builds will behave differently from prod — even if prod was just fixed. Always keep `develop` branch in sync with `main` so that Amplify builds of `develop` update `hashpass-api-dev` to the same code.
+**Consequence:** If `hashpass-api-dev` is out of date, dev builds will behave differently from prod — even if prod was just fixed. Always keep `develop` branch in sync with `main` so that target deploys of `develop` update `hashpass-api-dev` to the same code.
 
 ```bash
 # Sync develop with main after every release
@@ -127,39 +152,30 @@ Always push to origin for CI/CD. Push to upstream for backup after release scrip
 
 ### How Each Domain Is Deployed
 
+Historical Amplify instructions now live under [`archive/amplify/README.md`](archive/amplify/README.md). The active deployment path is the target-account web pipeline plus the other systems below.
+
 On every push to `main`, **two independent auto-deploy systems** run in parallel:
 
 | Domain | System | What triggers it |
 |--------|--------|-----------------|
-| `hashpass.tech` | AWS Amplify (`amplify.yml`) | Push to `main` (Amplify webhook) |
-| `api.hashpass.tech` | AWS Lambda `hashpass-api-prod` (us-east-1) | **Same Amplify build** — postBuild step runs `package-lambda.sh` then `aws lambda update-function-code` |
+| `hashpass.tech` | Target-account web pipeline + source CloudFront front door | Push to `main` |
+| `api.hashpass.tech` | AWS Lambda `hashpass-api-prod` (us-east-1) | Target web/API deployment flow |
 | `bsl.hashpass.tech` | SST StaticSite via SST Console autodeploy | Push to `main` (SST Console webhook, configured in `sst.config.ts`) |
 | Android | EC2 + Fastlane → Play Store | Manual `gh workflow run` (see workflow below) |
 
 **Critical facts:**
-- `api.hashpass.tech` Lambda is in **us-east-1**, deployed by **Amplify** (NOT SST, NOT GitHub Actions)
+- `api.hashpass.tech` Lambda is in **us-east-1**, deployed by the target web/API flow (NOT legacy Amplify)
 - `bsl.hashpass.tech` is deployed by **SST Console** (NOT the `infra-deploy.yml` GitHub Actions workflow)
 - `infra-deploy.yml` auto-triggers on push to `main`/`develop` when infra or API paths change (Route53 + CloudFront permissions added to IAM role in v1.8.92)
 
 ### Checking Deployment Status
 
-```bash
-# Check Amplify build history (hashpass.tech + Lambda)
-aws amplify list-jobs --app-id dy8duury54wam --region us-east-2 \
-  --branch-name main \
-  --query 'jobSummaries[0:5].{id:jobId,status:status,commit:commitId}' --output table
-
-# Trigger manual Amplify build (if auto didn't fire)
-aws amplify start-job --app-id dy8duury54wam --region us-east-2 \
-  --branch-name main --job-type RELEASE
-```
-
-For `bsl.hashpass.tech`: check SST Console at sst.dev.
+Historical Amplify build history is archived in `archive/amplify/README.md`. For the active stack, check the target web pipeline and the SST Console for `bsl.hashpass.tech`.
 
 ### Key Files
 - `.github/workflows/mobile-android-release.yml` — Android release CI
 - `.github/workflows/infra-deploy.yml` — SST deploy (manual-only)
-- `amplify.yml` — Amplify build config (also deploys Lambda in postBuild)
+- `archive/amplify/config/amplify.yml` — archived Amplify build config (historical only)
 - `packages/infra/sst.config.ts` — SST config with autodeploy settings
 - `packages/infra/lambda/index.js` — Lambda handler for API routes
 - `apps/mobile-app/package.json` — mobile version source of truth

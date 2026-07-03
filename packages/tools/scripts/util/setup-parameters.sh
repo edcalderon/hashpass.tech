@@ -243,7 +243,7 @@ clean_stale_parameters() {
 test_lambda_access() {
     echo -e "${BLUE}🧪 Testing Lambda function access to parameters...${NC}"
     echo -e "${YELLOW}⚠️  Lambda function must be deployed first to test parameter access${NC}"
-    echo "Run: amplify push"
+    echo "Run the active deployment pipeline or the matching AWS deploy step."
     echo "Then: npm run lambda:test"
 }
 
@@ -338,7 +338,7 @@ case "$COMMAND" in
         verify_parameters
         list_parameters
         echo -e "\n${GREEN}🎉 Parameter Store setup completed successfully!${NC}"
-        echo -e "${YELLOW}💡 You can now deploy the Lambda function with: amplify push${NC}"
+        echo -e "${YELLOW}💡 You can now deploy the Lambda function with the active release pipeline or matching AWS deploy step.${NC}"
         ;;
     "sync")
         check_prerequisites

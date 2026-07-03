@@ -3,6 +3,7 @@
 Shared build/deploy scripts used across apps in the monorepo.
 
 Use `packages/tools/scripts/` as the primary location for app-specific and Lambda/deploy scripts (e.g. `package-lambda.sh`, `update-sw-version.mjs`). These scripts resolve the repository root from `packages/tools/scripts/`, so keep path joins rooted at the repo root, not `packages/`.
+Legacy Amplify helpers have been moved to [`archive/amplify/scripts/`](../../archive/amplify/scripts/) and are preserved there as deprecated reference material only.
 
 ## Multi-tenant deployment config
 
@@ -27,7 +28,7 @@ Release flow:
 
 - `release` / `release:patch` / `release:minor` / `release:major` run the branch-aware version release flow for the repo root
 - `release:promote` promotes a `develop` release onto `main`
-- `release:pipeline` remains the tenant/deploy pipeline for infra and Amplify work
+- `release:pipeline` remains the tenant/deploy pipeline for infra and legacy Amplify work
 - `release:dev` / `release:prod` target `core` by default
 - `release:bsl:dev` / `release:bsl:prod` follow the event tenant path and remain available for the historical branch-aware release flow
 - `release:club:web` / `release:club:web:patch` run the club web app patch release flow and emit `club-vX.Y.Z` tags
@@ -58,14 +59,12 @@ Mobile Android releases now reuse the same backend switch:
 ### Scripts using tenant config
 
 - `packages/tools/scripts/check-consistency.js`
-- `packages/tools/scripts/apply-amplify-custom-headers.sh`
 - `packages/tools/scripts/setup-infra-role.sh`
 - `packages/tools/scripts/setup-github-actions-role.sh`
 - `packages/tools/scripts/release-pipeline.js`
 - `packages/tools/scripts/release-infra-pipeline.js`
 - `packages/tools/scripts/provision-infra-connection.sh`
 - `packages/tools/scripts/provision-infra-pipelines.sh`
-- `packages/tools/scripts/update-amplify-source-repo.sh`
 - `packages/tools/scripts/test-release-infra-flow.sh`
 - `packages/tools/scripts/propagate-env.js` (for `dev`/`production`)
 - `packages/tools/scripts/sync-env.js`
@@ -75,8 +74,6 @@ Examples:
 ```bash
 node packages/tools/scripts/check-consistency.js --all-tenants --env development
 node packages/tools/scripts/check-consistency.js --tenant core --prod
-packages/tools/scripts/apply-amplify-custom-headers.sh --tenant core
-packages/tools/scripts/apply-amplify-custom-headers.sh --tenant blockchainsummit
 packages/tools/scripts/setup-infra-role.sh hashpass-tech/hashpass.tech
 node packages/tools/scripts/release.js patch
 node packages/tools/scripts/release.js minor --promote
@@ -94,17 +91,23 @@ packages/tools/scripts/provision-infra-pipelines.sh hashpass-tech/hashpass.tech
 packages/tools/scripts/setup-github-actions-role.sh hashpass-tech/hashpass.tech
 packages/tools/scripts/build-static-site.sh
 packages/tools/scripts/deploy-static-site.sh
-packages/tools/scripts/update-amplify-source-repo.sh --tenant core
-packages/tools/scripts/update-amplify-source-repo.sh --tenant club
-packages/tools/scripts/update-amplify-source-repo.sh --tenant club-dev
 packages/tools/scripts/test-release-infra-flow.sh production patch
 node packages/tools/scripts/propagate-env.js dev --tenant blockchainsummit
 node packages/tools/scripts/sync-env.js production --tenant core
 ```
 
-The Amplify source helper requires `AMPLIFY_ACCESS_TOKEN` for GitHub repositories or `AMPLIFY_OAUTH_TOKEN` for other providers.
-For the club tenants, set `HASHPASS_CLUB_AMPLIFY_APP_ID` and `HASHPASS_CLUB_DEV_AMPLIFY_APP_ID` in the environment or AWS release context before running the source or release helpers.
-`packages/tools/scripts/check-consistency.js` now also verifies that each Amplify app still points at the canonical `hashpass-tech/hashpass.tech` repository.
+Archived Amplify helpers:
+
+- `archive/amplify/scripts/add-lambda-permissions-to-amplify-role.sh`
+- `archive/amplify/scripts/apply-amplify-custom-headers.sh`
+- `archive/amplify/scripts/update-amplify-source-repo.sh`
+- `archive/amplify/scripts/setup-amplify.sh`
+- `archive/amplify/scripts/delete-amplify-api-app.sh`
+- `archive/amplify/scripts/deploy-lambda-from-amplify.sh`
+- `archive/amplify/scripts/util/amplify-deploy.sh`
+- `archive/amplify/scripts/util/build-and-deploy.sh`
+
+Those scripts still describe the retired Amplify flow, but they are no longer part of the active deployment path. Treat them as reference only.
 
 Infra helpers derive the AWS account from active credentials unless `TARGET_AWS_ACCOUNT_ID`, `AWS_ACCOUNT_ID`, or `EXPECTED_AWS_ACCOUNT_ID` is set in the environment or repository variables.
 See `apps/docs/docs/infra/INFRA_NAMING_GUIDE.md` for the naming convention used by the new BSL infra resources.
@@ -117,6 +120,8 @@ The web pipeline monitor script keeps the shared EC2 worker warm while either
 `hashpass-dev-site` or `hashpass-production-site` is active, then stops the
 worker after a quiet grace period once both pipelines are idle. It is designed
 to pair with the GitHub Actions OIDC role emitted by the `hashpass-web` stack.
+The workflow now also runs a periodic stop sweep so an idle worker can still be
+reclaimed even if no new push arrives after the final build.
 Use `.github/workflows/hashpass-web-pipeline-monitor.yml` as the normal
 control plane instead of reaching into the target AWS account with the CLI.
 That workflow needs `AWS_WEB_PIPELINE_ROLE_ARN`, `AWS_WEB_PIPELINE_REGION`,

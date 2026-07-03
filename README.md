@@ -34,11 +34,20 @@ For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub release
 - `packages/infra` and `packages/tools` own infrastructure, release automation, and pipeline helpers.
 - `apps/docs` is the active Docusaurus documentation source of truth.
 - `archive/docs` stores historical docs, migration notes, and retired playbooks.
-- `main` continues to back the production `hashpass.tech` Amplify track while the target-account S3/CloudFront replacement is staged in parallel.
+- `main` now backs the production `hashpass.tech` web deployment while the archived Amplify helpers remain available under `archive/amplify/`.
 - `develop` is the integration branch for ongoing work across mobile, web, docs, and infra.
 - `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` stay on the SST/CodeBuild release path.
 - `hashpass.club` publishes through GitHub Pages from the `club-v*` release workflow.
 - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases for the canonical club site.
+
+## Codebase Memory MCP
+
+Use `codebase-memory-mcp` first for repo discovery and fast checks.
+
+- Start with `codebase-memory-mcp cli list_projects` and `codebase-memory-mcp cli index_status`.
+- Prefer `search_graph`, `trace_path`, `get_code_snippet`, `query_graph`, and `get_architecture` before opening many files or running broad grep.
+- Use `search_code`, `rg`, or direct file reads only for literals, config values, generated files, or when the graph has already narrowed the target.
+- If the project is missing or stale, re-index `/home/ed/Documents/HASH/hashpass.tech` and then repeat the graph search.
 
 ## Workspace Layout
 
@@ -69,7 +78,7 @@ For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub release
 - **`apps/directus`** — Directus SSO Docker setup for local auth testing.
 - **`packages/ui`** — Shared design system for mobile and web, including the club theme and shared components.
 - **`packages/`** — Shared packages: `@hashpass/auth`, `@hashpass/config`, `@hashpass/types`, `@hashpass/backend`, `@hashpass/utils`, `@hashpass/ui`, `@hashpass/infra`.
-- **`packages/infra/`** — Infrastructure and deploy assets for Terraform, Lambda, Netlify, Cloudflare, and Amplify.
+- **`packages/infra/`** — Infrastructure and deploy assets for Terraform, Lambda, Netlify, Cloudflare, and legacy deployment helpers.
 - **`archive/whitelabel-auth/`** — Archived legacy auth monorepo kept for reference only. The active auth package lives in `packages/auth` as `@hashpass/auth`.
 - **`packages/infra/terraform`** — Terraform IaC (GCP, etc.).
 
@@ -108,9 +117,6 @@ pnpm run infra:hashpass-web:apply  # provision the target-account hashpass.tech 
 pnpm run infra:provision-connection # create the GitHub CodeConnections connection
 pnpm run infra:provision-pipelines # create the AWS CodePipeline/CodeBuild pipelines
 pnpm run deploy:web:s3       # build and sync the static site to S3/CloudFront
-pnpm run amplify:update-source # retarget the core Amplify app to the canonical GitHub repo (set AMPLIFY_ACCESS_TOKEN first)
-pnpm run amplify:update-source:club # legacy: retarget the old hashpass.club Amplify app to the canonical GitHub repo
-pnpm run amplify:update-source:club-dev # legacy: retarget the old club-dev Amplify app to the canonical GitHub repo
 pnpm run release:club:web # release the production club web app and publish the GitHub tag
 pnpm run release:club:web:patch # convenience patch release for the club web app
 pnpm run release:infra:patch # bump patch and release through the infra pipeline
@@ -118,20 +124,21 @@ pnpm run release:infra:test # dry-run the infra release flow
 pnpm run build:all    # build the mobile app and the new club web app
 ```
 
+Historical Amplify configs and helper scripts now live under [`archive/amplify/`](archive/amplify/). They are deprecated reference material only and are not part of the active CLI surface.
+
 Set `TARGET_AWS_ACCOUNT_ID`, `AWS_ACCOUNT_ID`, or `EXPECTED_AWS_ACCOUNT_ID` in your local shell or GitHub repository variables when you want the infra helpers to verify the target AWS account without hardcoding it in the repo.
 See [apps/docs/docs/infra/INFRA_NAMING_GUIDE.md](apps/docs/docs/infra/INFRA_NAMING_GUIDE.md) for the resource naming convention used by the new infra track.
 
 Deployment split:
-- `hashpass.tech` / `core` is still on the Amplify app (`dy8duury54wam`, `us-east-2`) until the new target-account S3/CloudFront replacement is validated and DNS is cut over.
+- `hashpass.tech` / `core` now uses the target-account web pipeline and source-account CloudFront front door. The old Amplify helpers are archived only.
 - The target-account `hashpass-web` Terraform stack provisions the replacement production and development pipelines plus the shared EC2 build worker in `packages/infra/terraform/stacks/hashpass-web`.
 - Routine worker control for that stack goes through `.github/workflows/hashpass-web-pipeline-monitor.yml`; copy the `github_actions_role_arn` output into the GitHub variable `AWS_WEB_PIPELINE_ROLE_ARN` and dispatch the workflow with `mode=monitor` or `mode=stop` instead of driving the target account worker directly with ad hoc AWS CLI calls.
 - The target DNS work also includes a dedicated `dev.hashpass.tech` hosted zone for the development surface.
-- If Amplify still points at the old fork source, run `pnpm run amplify:update-source` once to move it to `hashpass-tech/hashpass.tech`.
 - `hashpass.club` is the new standalone Next.js app in `apps/web-app`. It publishes through GitHub Pages and the `club-v*` release tag flow.
 - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases that canonicalize to the GitHub Pages origin.
 - Configure the GitHub Pages custom domain in the repository settings before the first DNS cutover.
 - `bsl.hashpass.tech` / `bsl` deploys through the SST/CodeBuild pipeline. The live CodeBuild projects are `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`, and they use `packages/tools/buildspecs/infra-deploy.yml`.
-- `blockchainsummit.hashpass.lat` is a separate legacy Amplify tenant kept for the event track.
+- `blockchainsummit.hashpass.lat` is historical only; the legacy Amplify helpers that referenced it are archived in `archive/amplify/`.
 - Use `pnpm run infra:deploy:dev` and `pnpm run infra:deploy:prod` for the BSL site, and `pnpm run infra:provision-pipelines` if you need to recreate the pipeline wiring.
 
 - `pnpm run android:bundle` builds the Play Store artifact as an Android App Bundle (`.aab`) via the production EAS project.
@@ -157,7 +164,7 @@ Deployment split:
 - The reusable Terraform stack lives in `packages/infra/terraform/stacks/mobile-release`, with convenience commands exposed as `pnpm run infra:mobile-release:plan` and `pnpm run infra:mobile-release:apply`.
 - If the AWS account has no default VPC, the mobile release stack now creates a small managed public VPC and subnet automatically so the runner can provision cleanly.
 - Fastlane expects `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; the workflow writes the JSON and keystore into `.runner-secrets/` before the release starts.
-- The repo-wide `packageManager` field is the source of truth for pnpm; Amplify and infra buildspecs read it through `packages/tools/scripts/resolve-pnpm-version.js` so CI stays on the same pnpm version as local releases and EAS.
+- The repo-wide `packageManager` field is the source of truth for pnpm; legacy Amplify and infra buildspecs read it through `packages/tools/scripts/resolve-pnpm-version.js` so CI stays on the same pnpm version as local releases and EAS.
 - If you ever change pnpm again, update the `packageManager` field first and regenerate `pnpm-lock.yaml` with `corepack pnpm install` so the lockfile and release builders stay aligned.
 - `pnpm run eas:mobile:sync:dev` pushes the sanitized repo env to the Expo preview environment and `pnpm run eas:mobile:sync:prod` does the same for production.
 - The EAS commands read `EXPO_TOKEN` for production and `EXPO_TOKEN_DEV` for development from the root `.env`, so no manual shell export is needed for local runs.
@@ -227,7 +234,7 @@ Deploy:
 chmod +x ./packages/tools/scripts/deploy-bslatam.sh
 ./packages/tools/scripts/deploy-bslatam.sh
 ```
-For the main `hashpass.tech` Amplify track, push to the tracked branch or trigger the Amplify Console release job; do not rely on `amplify publish` for routine web deploys.
+For the main `hashpass.tech` web deployment, use the target-account pipeline and CloudFront front door. The archived Amplify helpers live in `archive/amplify/` for reference only.
 
 ---
 

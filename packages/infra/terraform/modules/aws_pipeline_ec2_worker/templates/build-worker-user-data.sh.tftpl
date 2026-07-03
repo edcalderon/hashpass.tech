@@ -187,6 +187,13 @@ fail_job() {
     >/dev/null || true
 }
 
+cleanup_job() {
+  local work_dir="$1"
+
+  cd "${BUILD_WORKSPACE_ROOT}" 2>/dev/null || cd /
+  rm -rf "${work_dir}"
+}
+
 process_job() {
   local job_json="$1"
   local job_id nonce build_script output_directory deploy_script build_env_json deploy_bucket deploy_cf deploy_cf_domain
@@ -250,7 +257,7 @@ process_job() {
       done < "${download_error_log}"
     fi
     fail_job "${job_id}" "failed to download source artifact"
-    rm -rf "${work_dir}"
+    cleanup_job "${work_dir}"
     return 1
   fi
 
@@ -272,7 +279,7 @@ process_job() {
 
   if [[ -z "${build_script}" ]]; then
     fail_job "${job_id}" "missing BuildScript action configuration"
-    rm -rf "${work_dir}"
+    cleanup_job "${work_dir}"
     return 1
   fi
 
@@ -283,20 +290,20 @@ process_job() {
     log "Build script ${build_script} was not present in the source artifact; using the inline static-site build fallback"
   else
     fail_job "${job_id}" "build script not found: ${build_script}"
-    rm -rf "${work_dir}"
+    cleanup_job "${work_dir}"
     return 1
   fi
 
   if [[ -n "${resolved_build_script}" ]]; then
     if ! bash "${resolved_build_script}"; then
       fail_job "${job_id}" "build script failed: ${resolved_build_script}"
-      rm -rf "${work_dir}"
+      cleanup_job "${work_dir}"
       return 1
     fi
   else
     if ! run_static_site_build_fallback; then
       fail_job "${job_id}" "build script fallback failed: ${build_script}"
-      rm -rf "${work_dir}"
+      cleanup_job "${work_dir}"
       return 1
     fi
   fi
@@ -305,20 +312,20 @@ process_job() {
     resolved_deploy_script=""
     if ! resolved_deploy_script="$(resolve_script_path "${deploy_script}")"; then
       fail_job "${job_id}" "deploy script not found: ${deploy_script}"
-      rm -rf "${work_dir}"
+      cleanup_job "${work_dir}"
       return 1
     fi
 
     if ! bash "${resolved_deploy_script}"; then
       fail_job "${job_id}" "deploy script failed: ${resolved_deploy_script}"
-      rm -rf "${work_dir}"
+      cleanup_job "${work_dir}"
       return 1
     fi
   fi
 
   if [[ ! -d "${output_directory}" ]]; then
     fail_job "${job_id}" "output directory not found: ${output_directory}"
-    rm -rf "${work_dir}"
+    cleanup_job "${work_dir}"
     return 1
   fi
 
@@ -328,18 +335,18 @@ process_job() {
   # fail when the short-lived CodePipeline credentials expire.
   if ! aws s3 cp "${artifact_zip}" "s3://${output_bucket}/${output_key}" >/dev/null; then
     fail_job "${job_id}" "failed to upload output artifact"
-    rm -rf "${work_dir}"
+    cleanup_job "${work_dir}"
     return 1
   fi
 
   if ! aws codepipeline put-job-success-result --job-id "${job_id}" >/dev/null; then
     fail_job "${job_id}" "failed to report success"
-    rm -rf "${work_dir}"
+    cleanup_job "${work_dir}"
     return 1
   fi
 
   log "Completed job ${job_id}"
-  rm -rf "${work_dir}"
+  cleanup_job "${work_dir}"
 }
 
 main() {

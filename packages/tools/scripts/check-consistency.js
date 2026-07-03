@@ -273,7 +273,7 @@ async function auditTenant(tenantName, environment, configPath) {
           console.log(`    Expected: ${runtime.sourceRepository}`);
           issues += 1;
           suggestions.push(
-            `bash packages/tools/scripts/update-amplify-source-repo.sh --tenant ${runtime.tenant} --repo ${runtime.sourceRepository}`
+            `bash archive/amplify/scripts/update-amplify-source-repo.sh --tenant ${runtime.tenant} --repo ${runtime.sourceRepository}`
           );
         } else {
           log(`Amplify source repository matches tenant config (${runtime.sourceRepository})`, 'success');
@@ -505,7 +505,7 @@ async function auditTenant(tenantName, environment, configPath) {
         console.log(`    Expected: ${runtime.sourceRepository}`);
         issues += 1;
         suggestions.push(
-          `bash packages/tools/scripts/update-amplify-source-repo.sh --tenant ${runtime.tenant} --repo ${runtime.sourceRepository}`
+          `bash archive/amplify/scripts/update-amplify-source-repo.sh --tenant ${runtime.tenant} --repo ${runtime.sourceRepository}`
         );
       } else {
         log(`Amplify source repository matches tenant config (${runtime.sourceRepository})`, 'success');
