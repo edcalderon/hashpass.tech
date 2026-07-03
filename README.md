@@ -23,7 +23,7 @@
 
 * stabilize hashpass web worker release flow ([e1c233b](https://github.com/hashpass-tech/hashpass.tech/commit/e1c233b6e28f2cc33db9c608e6df0f8d944d889e))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/edcalderon/my-second-brain/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
 
 ## Current Status
 

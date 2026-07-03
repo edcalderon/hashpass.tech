@@ -26,7 +26,7 @@ This Terraform setup deploys the production naming convention discussed for Hash
 - `stacks/hashpass-api-target`: target-account API Gateway + Lambda stack for `api.hashpass.tech`
 - `stacks/hashpass-web`: target-account CodePipeline + EC2 worker stack for `hashpass.tech`
 - `stacks/mobile-release`: AWS EC2 self-hosted GitHub Actions runner for mobile Android builds
-- `stacks/mobile-release-target`: isolated target-account Android runner stack used during migration
+- `stacks/mobile-release-target`: isolated target-account Android runner stack used during migration, with its own `hashpass-mobile-release-target` label
 - `modules/aws_expo_router_api`: reusable Lambda + HTTP API + custom domain module
 - `modules/aws_amplify_domain`: reusable Amplify custom domain binding module
 - `modules/aws_static_site_pipeline`: reusable S3 + CloudFront + CodePipeline site module with a custom EC2 build action
@@ -328,7 +328,7 @@ Keep the PAT scoped to the `hashpass-tech/hashpass.tech` repository and only the
 2. Deploy `stacks/hashpass-dns` in the target AWS account to create the hosted zones and nameservers
 3. Deploy `stacks/hashpass-api-target` in the target AWS account with `enable_custom_domain = true`
 4. Deploy `stacks/hashpass-web` in the target AWS account and validate either the CloudFront domain or the S3 website endpoint, depending on the account state
-5. Deploy `stacks/mobile-release-target` in the target AWS account and verify a test Android build
+5. Deploy `stacks/mobile-release-target` in the target AWS account and verify a test Android build, then keep its label distinct from the source runner label so GitHub does not dispatch release jobs to the wrong fleet
 6. Re-run the BSL pipeline provisioning against the target account once the hosted zone exists
 7. Configure frontend env vars:
    - dev: `EXPO_PUBLIC_API_BASE_URL=https://api-dev.hashpass.tech/api`

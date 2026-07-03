@@ -2,12 +2,12 @@
 
 aws_region = "us-east-1"
 
-name_prefix = "hashpass-mobile-release"
+name_prefix = "hashpass-mobile-release-target"
 
 github_repository = "hashpass-tech/hashpass.tech"
 
-runner_name_prefix = "hashpass-mobile-release"
-runner_labels      = ["hashpass-mobile-release"]
+runner_name_prefix = "hashpass-mobile-release-target"
+runner_labels      = ["hashpass-mobile-release-target"]
 
 # t3a.large gives 2 vCPU / 8 GiB RAM — minimum for Gradle + NDK builds without OOM.
 # t3a.medium (4 GiB) caused OOM after ~18 min during native compilation.

@@ -33,10 +33,13 @@ The full release includes:
 10. Verify the Android workflow and the web deployment checks.
 
 Do not report a deployment as complete while a required push, branch sync, release workflow, or deployment check is pending or failed.
+Do not hand-edit release artifacts or perform a release by hand; the release scripts own the version bump, changelog, README sync, tag, and push sequence.
+The Husky pre-commit hook runs the README sync guard, so a stale changelog/README pair should be fixed with `npm run update-readme` before committing.
 
 ## Versioning
 
 - Never edit version numbers in `package.json`, `app.json`, or the mobile version files by hand.
+- Never hand-edit `CHANGELOG.md` or the README latest-changes section to force a release. Use the repo release scripts and README sync guard instead.
 - Use the release script for version bumps:
   - `npm run release:patch`
   - `npm run release:minor`

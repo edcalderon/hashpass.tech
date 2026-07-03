@@ -29,6 +29,8 @@ codebase-memory-mcp cli index_repository '{"repo_path":"/home/ed/Documents/HASH/
 
 ### Version Management
 **NEVER manually edit version numbers in package.json or app.json.**
+**Do not hand-release.** The release scripts own the version bump, CHANGELOG.md, README.md sync, tag, and push flow.
+The Husky pre-commit hook runs `pnpm run readme:check`, so stale changelog/README pairs must be fixed with `pnpm run update-readme` before commit.
 
 Always use the release script:
 ```bash
@@ -39,6 +41,7 @@ npm run release:major   # Bumps X.0.0 (major)
 
 The script:
 - Automatically updates ALL version fields (package.json, app.json, READMEs, etc.)
+- Runs the repo README sync wrapper so the latest-changes block and GitHub releases link stay aligned with this repo
 - Creates git commit with proper message
 - Creates version tag
 - Pushes to origin/main with tag

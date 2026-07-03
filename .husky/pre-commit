@@ -1,9 +1,14 @@
 #!/usr/bin/env sh
 set -e
 
+versioning_available=0
+if pnpm -s exec versioning --help >/dev/null 2>&1; then
+  versioning_available=1
+fi
+
 echo "🔐 Running secret scan..."
 secret_scan_ran=0
-if pnpm -s exec versioning --help >/dev/null 2>&1; then
+if [ "$versioning_available" -eq 1 ]; then
   pnpm -s exec versioning check-secrets
   secret_scan_ran=1
 else
@@ -22,11 +27,19 @@ if [ "$secret_scan_ran" -eq 0 ]; then
   exit 1
 fi
 
+echo "📘 Checking README sync..."
+if [ "$versioning_available" -eq 1 ]; then
+  pnpm -s run readme:check
+else
+  echo "❌ Versioning tool not found. Run pnpm install and retry."
+  exit 1
+fi
+
 echo "🧪 Skipping test suite due to jest config..."
 # npm test -- --watchAll=false
 
 echo "🔒 Running version validation..."
-if pnpm -s exec versioning --help >/dev/null 2>&1; then
+if [ "$versioning_available" -eq 1 ]; then
   pnpm -s exec versioning validate
 else
   echo "❌ Versioning tool not found. Run pnpm install and retry."

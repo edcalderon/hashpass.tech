@@ -3,7 +3,7 @@ data "aws_caller_identity" "current" {}
 locals {
   common_tags = merge(var.tags, {
     ManagedBy = "terraform"
-    Stack     = "mobile-release"
+    Stack     = "mobile-release-target"
     Service   = "github-actions-runner"
   })
   root_package_json = jsondecode(file("${path.module}/../../../../../package.json"))

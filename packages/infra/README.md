@@ -8,7 +8,7 @@ This workspace package now manages the BSL AWS delivery path, the source-account
 - the club Pages artifact for `hashpass.club` and `hashpass.club/documentation`
 - the Route53 records for `club.hashpass.tech` and `docs.hashpass.tech`
 - the mobile Android self-hosted runner stack for `hashpass-mobile-release`
-- the isolated target-account Android runner stack for `hashpass-mobile-release`
+- the isolated target-account Android runner stack for `hashpass-mobile-release-target`
 
 The dev and deploy scripts call the SST CLI directly for the BSL path, while the club Pages build uses this package as the static artifact source and GitHub Actions handles publication. `doctor` wraps the upstream `@lsts_tech/infra` readiness checks.
 
@@ -25,7 +25,7 @@ Set `HASHPASS_INFRA_TARGET=club-docs` when you want the legacy SST club front do
 - `hashpass.club` as the canonical club site, with `club.hashpass.tech` and `docs.hashpass.tech` as DNS aliases
 - `apps/web-app` and `apps/docs` assembled into a single combined static artifact for GitHub Pages
 - `packages/infra/terraform/stacks/mobile-release` as the AWS EC2 GitHub Actions runner for mobile Android builds, including its managed public VPC when the account has no default network
-- `packages/infra/terraform/stacks/mobile-release-target` as the target-account Android runner used during the migration
+- `packages/infra/terraform/stacks/mobile-release-target` as the target-account Android runner used during the migration; it uses the distinct `hashpass-mobile-release-target` label so it does not compete with the source runner
 
 ## Commands
 

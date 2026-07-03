@@ -42,6 +42,8 @@ The branch-aware release flow:
 - Detects the current branch automatically
 - Runs `versioning check-secrets`, `versioning cleanup scan`, and `versioning validate`
 - Uses `@edcalderon/versioning` to create the changelog, version commit, and git tag
+- Uses the repo-owned `update-readme` wrapper so the latest-changes block and GitHub releases link stay on this repository
+- `pnpm run readme:check` is the Husky pre-commit guard that blocks stale README/changelog pairs before a release commit lands
 - Pushes the current branch with `--follow-tags`
 - Can optionally promote a `develop` release to `main`
 

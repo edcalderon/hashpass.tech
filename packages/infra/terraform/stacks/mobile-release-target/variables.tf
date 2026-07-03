@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "name_prefix" {
   description = "Prefix used for AWS resource names"
   type        = string
-  default     = "hashpass-mobile-release"
+  default     = "hashpass-mobile-release-target"
 }
 
 variable "github_repository" {
@@ -19,13 +19,13 @@ variable "github_repository" {
 variable "runner_name_prefix" {
   description = "Prefix used for the GitHub runner name"
   type        = string
-  default     = "hashpass-mobile-release"
+  default     = "hashpass-mobile-release-target"
 }
 
 variable "runner_labels" {
   description = "Custom GitHub runner labels"
   type        = list(string)
-  default     = ["hashpass-mobile-release"]
+  default     = ["hashpass-mobile-release-target"]
 }
 
 variable "instance_type" {
@@ -138,5 +138,5 @@ variable "create_github_oidc_provider" {
 variable "github_actions_role_name" {
   description = "Name of the IAM role GitHub Actions assumes to start/stop the EC2 runner"
   type        = string
-  default     = "hashpass-mobile-release-github-actions"
+  default     = "hashpass-mobile-release-target-github-actions"
 }
