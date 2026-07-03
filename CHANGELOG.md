@@ -1,3 +1,14 @@
+## [1.8.148](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.147...v1.8.148) (2026-07-03)
+
+
+### Bug Fixes
+
+* **infra:** use tag-based web worker control ([6d0216c](https://github.com/hashpass-tech/hashpass.tech/commit/6d0216cbaf45cfff49108eaa4af1145d14a897e3))
+
+
+
+
+
 ## [1.8.147](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.146...v1.8.147) (2026-07-03)
 
 
