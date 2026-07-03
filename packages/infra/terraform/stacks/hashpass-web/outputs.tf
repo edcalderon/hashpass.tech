@@ -79,7 +79,7 @@ output "build_worker_security_group_id" {
 }
 
 output "github_actions_role_arn" {
-  description = "IAM role ARN for GitHub Actions to monitor the web pipelines and start/stop the shared EC2 worker. Copy as GitHub variable AWS_WEB_PIPELINE_ROLE_ARN once enable_github_actions_worker_control = true."
+  description = "IAM role ARN for GitHub Actions to monitor the web pipelines and start/stop the shared EC2 worker fleet by tag. Copy as GitHub variable AWS_WEB_PIPELINE_ROLE_ARN once enable_github_actions_worker_control = true."
   value       = var.enable_github_actions_worker_control ? aws_iam_role.github_actions[0].arn : ""
 }
 

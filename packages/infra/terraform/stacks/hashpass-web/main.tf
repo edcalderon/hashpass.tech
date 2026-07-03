@@ -570,10 +570,13 @@ resource "aws_iam_role_policy" "github_actions_worker_control" {
           "ec2:StartInstances",
           "ec2:StopInstances",
         ]
-        Resource = [
-          for id in module.build_worker.instance_ids :
-          "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${id}"
-        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Project" = "hashpass"
+            "aws:ResourceTag/Service" = "pipeline-build-worker"
+          }
+        }
       },
       {
         Sid    = "DescribeWebWorker"

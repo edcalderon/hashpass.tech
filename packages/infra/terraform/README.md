@@ -160,7 +160,8 @@ the source bundle; the final artifact upload stays on the instance profile so
 long builds do not fail when the job token expires.
 If you enable `enable_github_actions_worker_control = true`, the stack also
 creates a least-privilege GitHub Actions role that can read CodePipeline state
-and start/stop the shared EC2 worker by instance ID. Copy the
+and start/stop the shared EC2 worker fleet by matching `Project` and `Service`
+tags. Copy the
 `github_actions_role_arn` output into the GitHub variable
 `AWS_WEB_PIPELINE_ROLE_ARN`, then use the monitor workflow in
 `.github/workflows/hashpass-web-pipeline-monitor.yml` to keep the worker off
