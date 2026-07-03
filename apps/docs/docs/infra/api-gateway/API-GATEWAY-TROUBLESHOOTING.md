@@ -2,11 +2,11 @@
 
 ## Problem: 404 Errors on API Routes
 
-If you're getting 404 errors on `https://api.hashpass.tech/api/*`, it means API Gateway is not configured correctly or the Lambda function is not deployed.
+If you're getting 404 errors on `https://api.hashpass.tech/api/*`, it usually means the custom domain, API mapping, or Lambda deployment is out of sync in the target account.
 
 ## ⚠️ CRITICAL: DNS Configuration Issue
 
-**Current Status**: `api.hashpass.tech` is pointing to **Amplify Hosting (CloudFront/S3)**, NOT API Gateway.
+**Current Status**: `api.hashpass.tech` should point to the target-account API Gateway custom domain, not CloudFront/S3.
 
 **Evidence**:
 - DNS resolves to AWS CloudFront IPs (18.155.252.x)
@@ -27,7 +27,7 @@ If you're getting 404 errors on `https://api.hashpass.tech/api/*`, it means API 
 
 ### 2. Verify Lambda Function is Deployed
 - Go to AWS Lambda Console
-- Check if function `bslApi` or similar exists
+- Check if function `hashpass-api-prod` or `hashpass-api-dev` exists
 - Verify it's deployed and has the latest code
 - Check CloudWatch logs for errors
 
@@ -47,15 +47,15 @@ If you're getting 404 errors on `https://api.hashpass.tech/api/*`, it means API 
 ### Step 1: Create/Update Lambda Function
 
 1. **Go to AWS Lambda Console**
-2. **Create or update function `bslApi`:**
+2. **Create or update function `hashpass-api-prod` or `hashpass-api-dev`:**
    - Runtime: Node.js 18.x or 20.x
    - Handler: `index.handler` or `handler.handler`
    - Timeout: 30 seconds (or more)
    - Memory: 512 MB (or more)
 
 3. **Upload the function code:**
-   - The function should be in `amplify-backend-config/backend/function/bslApi/`
-   - Or use the handler from `amplify/function-handler.js`
+   - The function code is packaged by `packages/tools/scripts/package-lambda.sh`
+   - The handler lives in `packages/infra/lambda/index.js`
 
 ### Step 2: Configure API Gateway
 
@@ -238,4 +238,3 @@ curl https://api.hashpass.tech/api/config/versions
 2. Check CloudWatch logs for any errors
 3. Test the endpoint with curl or Postman
 4. If still not working, check API Gateway logs and Lambda logs
-

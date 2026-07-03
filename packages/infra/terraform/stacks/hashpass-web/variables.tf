@@ -80,7 +80,13 @@ variable "dev_branch_name" {
 }
 
 variable "dev_route53_zone_name" {
-  description = "Route53 hosted zone name for the development web domain"
+  description = "Route53 hosted zone name used to host the development web domain"
+  type        = string
+  default     = "hashpass.tech"
+}
+
+variable "dev_custom_domain_name" {
+  description = "Custom domain name for the development web site"
   type        = string
   default     = "dev.hashpass.tech"
 }
@@ -95,6 +101,30 @@ variable "site_bucket_name" {
   description = "Optional explicit S3 bucket name for the site"
   type        = string
   default     = null
+}
+
+variable "site_route53_zone_name" {
+  description = "Route53 hosted zone name for the production web domain"
+  type        = string
+  default     = "hashpass.tech"
+}
+
+variable "site_custom_domain_name" {
+  description = "CloudFront custom domain name for the production site"
+  type        = string
+  default     = "hashpass.tech"
+}
+
+variable "site_acm_certificate_arn" {
+  description = "ACM certificate ARN in us-east-1 for the production site CloudFront distribution"
+  type        = string
+  default     = ""
+}
+
+variable "site_route53_a_records" {
+  description = "Optional literal A records for the production site when CloudFront is unavailable"
+  type        = list(string)
+  default     = []
 }
 
 variable "artifact_bucket_name" {
@@ -115,6 +145,12 @@ variable "dev_artifact_bucket_name" {
   default     = null
 }
 
+variable "dev_route53_a_records" {
+  description = "Optional literal A records for the development site when CloudFront is unavailable"
+  type        = list(string)
+  default     = []
+}
+
 variable "build_action_provider_name" {
   description = "CodePipeline custom action provider name used by the shared EC2 worker"
   type        = string
@@ -124,7 +160,7 @@ variable "build_action_provider_name" {
 variable "build_action_version" {
   description = "CodePipeline custom action provider version used by the shared EC2 worker"
   type        = string
-  default     = "1"
+  default     = "2"
 }
 
 variable "build_action_timeout" {

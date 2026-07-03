@@ -11,7 +11,7 @@ variable "tech_zone_name" {
 }
 
 variable "dev_zone_name" {
-  description = "HashPass development hosted zone name"
+  description = "Deprecated. dev.hashpass.tech is now hosted in the parent hashpass.tech zone and no separate target hosted zone is created."
   type        = string
   default     = "dev.hashpass.tech"
 }

@@ -1,16 +1,31 @@
-data "aws_caller_identity" "current" {}
-
 locals {
-  site_bucket_name           = try(trimspace(var.site_bucket_name), "") == "" ? "${var.name_prefix}-${var.environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}" : trimspace(var.site_bucket_name)
-  artifact_bucket_name       = try(trimspace(var.artifact_bucket_name), "") == "" ? "${var.name_prefix}-${var.environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}" : trimspace(var.artifact_bucket_name)
-  site_origin_id             = "${local.site_bucket_name}-origin"
-  pipeline_name              = "${var.name_prefix}-${var.environment}-site"
-  build_action_provider_name = trimspace(var.build_action_provider_name)
-  build_action_version       = trimspace(var.build_action_version)
-  deploy_mode                = lower(trimspace(var.deploy_mode))
-  custom_domain_name         = trimspace(var.custom_domain_name)
-  acm_certificate_arn        = trimspace(var.acm_certificate_arn)
-  cloudfront_aliases         = local.custom_domain_name != "" ? [local.custom_domain_name] : []
+  site_bucket_name                  = try(trimspace(var.site_bucket_name), "") == "" ? "${var.name_prefix}-${var.environment}-site-${var.account_id}-${var.aws_region}" : trimspace(var.site_bucket_name)
+  artifact_bucket_name              = try(trimspace(var.artifact_bucket_name), "") == "" ? "${var.name_prefix}-${var.environment}-pipelines-${var.account_id}-${var.aws_region}" : trimspace(var.artifact_bucket_name)
+  site_origin_id                    = "${local.site_bucket_name}-origin"
+  pipeline_name                     = "${var.name_prefix}-${var.environment}-site"
+  build_action_provider_name        = trimspace(var.build_action_provider_name)
+  build_action_version              = trimspace(var.build_action_version)
+  deploy_mode                       = lower(trimspace(var.deploy_mode))
+  custom_domain_name                = trimspace(var.custom_domain_name)
+  acm_certificate_arn               = trimspace(var.acm_certificate_arn)
+  deploy_cloudfront_distribution_id = trimspace(var.deploy_cloudfront_distribution_id)
+  deploy_cloudfront_domain_name     = trimspace(var.deploy_cloudfront_domain_name)
+  cloudfront_aliases                = local.custom_domain_name != "" ? [local.custom_domain_name] : []
+  deploy_cloudfront_action_configuration = merge(
+    local.deploy_cloudfront_distribution_id != "" ? {
+      DeployCloudFrontDistributionId = local.deploy_cloudfront_distribution_id
+    } : {},
+    local.deploy_cloudfront_domain_name != "" ? {
+      DeployCloudFrontDomainName = local.deploy_cloudfront_domain_name
+    } : {},
+  )
+  deploy_direct_action_configuration = merge(
+    {
+      DeployScript     = var.deploy_script_path
+      DeployBucketName = local.site_bucket_name
+    },
+    local.deploy_cloudfront_action_configuration,
+  )
   tags = merge(var.tags, {
     Environment = var.environment
     ManagedBy   = "terraform"
@@ -370,18 +385,7 @@ resource "aws_codepipeline" "site" {
             TARGET_STAGE       = var.environment
           }, var.build_environment))
         },
-        local.deploy_mode == "direct" ? merge(
-          {
-            # Direct deployments keep the existing S3 sync and cache-control
-            # flow alive on the EC2 worker while artifact mode can hand off to
-            # the optional S3 deploy action below.
-            DeployScript     = var.deploy_script_path
-            DeployBucketName = aws_s3_bucket.site.bucket
-          },
-          var.enable_cloudfront ? {
-            DeployCloudFrontDistributionId = aws_cloudfront_distribution.site[0].id
-          } : {}
-        ) : {}
+        local.deploy_mode == "direct" ? local.deploy_direct_action_configuration : {}
       )
     }
   }

@@ -19,7 +19,7 @@ variable "provider_name" {
 variable "provider_version" {
   description = "CodePipeline custom action provider version"
   type        = string
-  default     = "1"
+  default     = "2"
 }
 
 variable "instance_count" {

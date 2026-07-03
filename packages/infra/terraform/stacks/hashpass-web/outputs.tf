@@ -49,8 +49,8 @@ output "dev_site_website_endpoint" {
 }
 
 output "dev_site_domain_name" {
-  description = "Development Route53 alias FQDN"
-  value       = aws_route53_record.dev_site.fqdn
+  description = "Development Route53 record FQDN"
+  value       = try(aws_route53_record.dev_site[0].fqdn, null)
 }
 
 output "build_worker_instance_ids" {

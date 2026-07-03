@@ -120,8 +120,8 @@ export async function POST(request: Request): Promise<Response> {
     
     // Call the stored procedure to generate slots
     const { data, error } = await supabase.rpc('generate_weekly_slots', {
-      user_uuid: userId,
-      start_date: startDate
+      p_user_id: userId,
+      p_start_date: startDate
     });
 
     if (error) {

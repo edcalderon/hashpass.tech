@@ -6,59 +6,44 @@ This is the authoritative reference for which service hosts which domain and how
 
 | Domain | Hosting | Stack | Region | How deployed |
 |--------|---------|-------|--------|--------------|
-| `hashpass.tech` | AWS Amplify | Static (Expo web export) | us-east-2 | Auto — Amplify webhook on push to `main` |
-| `api.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | **us-east-1** | Auto — Amplify postBuild step (same build as above) |
-| `api-dev.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | us-east-1 | Auto — Amplify postBuild step on push to `develop` |
+| `hashpass.tech` | Source CloudFront + Route53 | Static site from target-account S3 origin | global / us-east-1 | Auto — target web pipeline publishes the origin; source Route53 aliases apex to CloudFront |
+| `api.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | **us-east-1** | Auto — target-account Terraform/Lambda deploy |
+| `api-dev.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | us-east-1 | Auto — target-account dev Lambda deploy |
 | `bsl.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `main` |
 | `bsl-dev.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `develop` |
 | `hashpass.club` | GitHub Pages | Next.js static | CDN | Auto — `deploy-club-docs.yml` on push to `main` |
 
-## Critical: Two separate auto-deploy systems run in parallel
+## Critical: The front door, API, and BSL deploy paths are independent
 
-On every push to `main`, **two independent systems** both deploy from the same commit:
+The public surface is now split across independent deployment paths:
 
-1. **AWS Amplify** (`amplify.yml`) — deploys `hashpass.tech` + Lambda `hashpass-api-prod` (us-east-1)
-2. **SST Console autodeploy** (`sst.config.ts` → `console.autodeploy`) — deploys `bsl.hashpass.tech` (us-east-2)
+1. The source-account CloudFront front door serves `hashpass.tech` and aliases the apex to the target-account static origin.
+2. The target-account web pipeline publishes the `hashpass.tech` S3 origin and the `dev.hashpass.tech` development origin.
+3. The target-account Lambda/API Gateway stack serves `api.hashpass.tech` and `api-dev.hashpass.tech`.
+4. The SST Console autodeploy path still serves `bsl.hashpass.tech` (us-east-2).
 
 These are completely independent. A failure in one does not affect the other. Check the correct dashboard when debugging.
 
-## api.hashpass.tech is NOT managed by SST — it is deployed by Amplify
-
-**This is the most commonly confused fact.**
-
-`api.hashpass.tech` runs on a Lambda function (`hashpass-api-prod`, us-east-1) that is packaged and deployed by the **Amplify postBuild step** in `amplify.yml`, not by SST or any GitHub Actions workflow.
-
-The deploy command in `amplify.yml` postBuild:
-```bash
-aws lambda update-function-code \
-  --function-name hashpass-api-prod \
-  --region us-east-1 \
-  --zip-file fileb://lambda-deployment.zip
-```
-
-The Lambda package is built by `packages/tools/scripts/package-lambda.sh`, which bundles the Expo API routes from `dist/server/` into a zip using the handler at `packages/infra/lambda/index.js`.
-
 ## How to Deploy Each Target
 
-### `hashpass.tech` + `api.hashpass.tech` (Amplify)
+### `hashpass.tech`
 
-Amplify watches `main` and `develop` branches and auto-builds on push. If a build doesn't trigger, start it manually:
+The public front door is a source-account CloudFront distribution. If the origin changes, update the target web pipeline and then cut the source alias over to the new distribution:
 
 ```bash
-# Check recent builds
-aws amplify list-jobs --app-id dy8duury54wam --region us-east-2 --branch-name main \
-  --query 'jobSummaries[0:5].{id:jobId,status:status,commit:commitId}' --output table
-
-# Trigger a manual build
-aws amplify start-job --app-id dy8duury54wam --region us-east-2 \
-  --branch-name main --job-type RELEASE
+# Inspect the source front door
+terraform -chdir=packages/infra/terraform/stacks/aws plan -var-file=terraform.dev.tfvars -var='site_origin_domain_name=hashpass-production-site-952191196420-us-east-2.s3-website.us-east-2.amazonaws.com'
 ```
 
-A successful Amplify build deploys BOTH `hashpass.tech` AND the Lambda (`api.hashpass.tech`).
+The target web pipeline publishes the S3 origin that CloudFront serves.
+
+### `api.hashpass.tech` / `api-dev.hashpass.tech`
+
+The API lives in the target-account Lambda + API Gateway stack, not Amplify. Use the target Terraform stack or the repo sync scripts that update the Lambda environment directly.
 
 **Lambda names:**
-- Production (`main` branch): `hashpass-api-prod` (us-east-1)
-- Development (`develop` branch): `hashpass-api-dev` (us-east-1)
+- Production: `hashpass-api-prod` (us-east-1)
+- Development: `hashpass-api-dev` (us-east-1)
 
 ### `bsl.hashpass.tech` (SST)
 
@@ -100,7 +85,7 @@ Android CI builds with `--field environment=development` embed `EXPO_PUBLIC_SUPA
 | `environment=development` | `core-development` | `hashpass-api-dev` (us-east-1) |
 | `environment=production` | `core-production` | `hashpass-api-prod` (us-east-1) |
 
-**Keep the Lambdas in sync:** `hashpass-api-dev` is updated by Amplify when the `develop` branch is pushed. Always merge `main` → `develop` and push after every release so dev builds don't run stale server code.
+**Keep the Lambdas in sync:** `hashpass-api-dev` is updated through the target-account deploy path. Always merge `main` → `develop` and redeploy after every release so dev builds don't run stale server code.
 
 If you need to fast-sync `api-dev` with `api-prod` without a full build (e.g. after a hotfix):
 ```bash
@@ -139,4 +124,4 @@ Or use the AWS Console → Lambda → select function → Configuration → Envi
 
 SST manages the `bsl.hashpass.tech` CloudFront distribution automatically. Do not manually edit SST-created distributions — SST will overwrite changes on the next deploy.
 
-`hashpass.tech` uses Amplify's built-in CDN (also CloudFront-backed, managed by Amplify).
+`hashpass.tech` uses a source-account CloudFront distribution that fronts the target-account static origin. Keep DNS and certificate validation changes in the source zone and origin changes in the target web stack.

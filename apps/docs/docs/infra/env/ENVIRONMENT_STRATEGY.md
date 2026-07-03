@@ -13,7 +13,7 @@ We use a strictly standardized set of environment profiles to ensure consistency
 | **`production`**| Live production environment on AWS. | `/hashpass/production/` / `*-prod`| `https://sso.hashpass.co` |
 
 > Deployment split:
-> - `hashpass.tech` / `core` stays on the Amplify-managed track (`dy8duury54wam`, `us-east-2`).
+> - `hashpass.tech` / `core` is served through the source-account CloudFront front door, which points at the target-account static origin while the legacy Amplify app is retired.
 > - `hashpass.club` is the standalone static Next.js app in `apps/web-app`; `packages/infra` assembles it together with `apps/docs` into a single Pages artifact and serves it at `https://hashpass.club`.
 > - `https://hashpass.club/documentation/` serves the Docusaurus build from `apps/docs`.
 > - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases that canonicalize to the GitHub Pages origin.

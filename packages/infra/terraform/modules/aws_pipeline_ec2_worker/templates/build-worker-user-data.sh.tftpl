@@ -189,7 +189,7 @@ fail_job() {
 
 process_job() {
   local job_json="$1"
-  local job_id nonce build_script output_directory deploy_script build_env_json deploy_bucket deploy_cf
+  local job_id nonce build_script output_directory deploy_script build_env_json deploy_bucket deploy_cf deploy_cf_domain
   local source_bucket source_key output_bucket output_key work_dir source_zip artifact_zip source_dir
   local resolved_build_script resolved_deploy_script
 
@@ -201,6 +201,7 @@ process_job() {
   build_env_json="$(jq -r '.data.actionConfiguration.configuration.BuildEnvironmentJson // empty' <<<"${job_json}")"
   deploy_bucket="$(jq -r '.data.actionConfiguration.configuration.DeployBucketName // empty' <<<"${job_json}")"
   deploy_cf="$(jq -r '.data.actionConfiguration.configuration.DeployCloudFrontDistributionId // empty' <<<"${job_json}")"
+  deploy_cf_domain="$(jq -r '.data.actionConfiguration.configuration.DeployCloudFrontDomainName // empty' <<<"${job_json}")"
   source_bucket="$(jq -r '.data.inputArtifacts[0].location.s3Location.bucketName' <<<"${job_json}")"
   source_key="$(jq -r '.data.inputArtifacts[0].location.s3Location.objectKey' <<<"${job_json}")"
   output_bucket="$(jq -r '.data.outputArtifacts[0].location.s3Location.bucketName' <<<"${job_json}")"
@@ -221,18 +222,33 @@ process_job() {
   source_dir="${work_dir}/source"
   source_zip="${work_dir}/source.zip"
   artifact_zip="${work_dir}/artifact.zip"
+  download_error_log="${work_dir}/source-download-error.log"
 
   mkdir -p "${source_dir}"
 
-  for attempt in 1 2 3; do
-    if aws s3 cp "s3://${source_bucket}/${source_key}" "${source_zip}" >/dev/null && [[ -s "${source_zip}" ]]; then
+  # Source artifacts can take a moment to become readable on the worker, so
+  # retry with exponential backoff and keep the last AWS CLI error for logging.
+  # Use the instance profile instead of short-lived CodePipeline credentials.
+  sleep_seconds=2
+  for attempt in 1 2 3 4 5 6 7 8 9 10; do
+    if aws s3 cp "s3://${source_bucket}/${source_key}" "${source_zip}" >/dev/null 2>"${download_error_log}" && [[ -s "${source_zip}" ]]; then
       break
     fi
 
-    sleep 2
+    if [[ "${attempt}" -lt 10 ]]; then
+      log "Source artifact download attempt ${attempt} failed; retrying in ${sleep_seconds}s"
+      sleep "${sleep_seconds}"
+      sleep_seconds=$((sleep_seconds * 2))
+    fi
   done
 
   if [[ ! -s "${source_zip}" ]]; then
+    log "Source artifact download failed for s3://${source_bucket}/${source_key}"
+    if [[ -s "${download_error_log}" ]]; then
+      while IFS= read -r line; do
+        log "  ${line}"
+      done < "${download_error_log}"
+    fi
     fail_job "${job_id}" "failed to download source artifact"
     rm -rf "${work_dir}"
     return 1
@@ -250,6 +266,7 @@ process_job() {
   export BUILD_OUTPUT_DIR="${output_directory}"
   export SITE_BUCKET_NAME="${deploy_bucket}"
   export SITE_CLOUDFRONT_DISTRIBUTION_ID="${deploy_cf}"
+  export SITE_CLOUDFRONT_DOMAIN_NAME="${deploy_cf_domain}"
 
   json_env_export "${build_env_json}"
 
@@ -307,8 +324,8 @@ process_job() {
 
   (cd "${output_directory}" && zip -qr "${artifact_zip}" .)
 
-  # Use the instance profile for the final upload so long builds do not fail when
-  # the short-lived CodePipeline job credentials expire.
+  # Upload the output artifact with the instance profile so long builds do not
+  # fail when the short-lived CodePipeline credentials expire.
   if ! aws s3 cp "${artifact_zip}" "s3://${output_bucket}/${output_key}" >/dev/null; then
     fail_job "${job_id}" "failed to upload output artifact"
     rm -rf "${work_dir}"

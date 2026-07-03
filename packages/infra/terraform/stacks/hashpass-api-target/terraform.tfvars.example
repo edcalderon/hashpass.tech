@@ -9,8 +9,8 @@ route53_zone_tech_name = "hashpass.tech"
 lambda_zip_path         = "../../../../../lambda-deployment.zip"
 lambda_source_code_hash = null
 
-# Keep /api mapping to match EXPO_PUBLIC_API_BASE_URL values
-api_mapping_key = "api"
+# Keep the custom domain at the root so the app's /api routes stay intact.
+api_mapping_key = ""
 
 # Directus endpoints by environment
 # dev -> sso-dev.hashpass.co
@@ -32,6 +32,8 @@ lambda_environment_overrides = {
   }
 }
 
+# The target account now owns the public API custom domains and Route 53
+# aliases for api.hashpass.tech and api-dev.hashpass.tech.
 # CORS origins for API Gateway by environment
 api_cors_origins = {
   dev = [
@@ -56,4 +58,4 @@ tags = {
   Project     = "hashpass"
 }
 
-enable_custom_domain = false
+enable_custom_domain = true

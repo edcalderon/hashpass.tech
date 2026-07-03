@@ -1,10 +1,10 @@
 # HashPass Infra
 
-This workspace package now manages the BSL AWS delivery path, the target-account `hashpass.tech` DNS/API/web stack, and the club Pages build/DNS layer:
+This workspace package now manages the BSL AWS delivery path, the source-account `hashpass.tech` CloudFront front door, the target-account `hashpass.tech` DNS/API/web stack, and the club Pages build/DNS layer:
 
 - the existing BSL SST pipeline for `bsl.hashpass.tech`
 - the target-account `hashpass.tech` hosted zones and API stack
-- the target-account `hashpass.tech` static site pipeline on S3, with CloudFront enabled only when the destination account is verified
+- the target-account `hashpass.tech` static site pipeline on S3, fronted by source-account CloudFront for production
 - the club Pages artifact for `hashpass.club` and `hashpass.club/documentation`
 - the Route53 records for `club.hashpass.tech` and `docs.hashpass.tech`
 - the mobile Android self-hosted runner stack for `hashpass-mobile-release`
@@ -18,10 +18,10 @@ Set `HASHPASS_INFRA_TARGET=club-docs` when you want the legacy SST club front do
 
 - `bsl.hashpass.tech` for production
 - `bsl-dev.hashpass.tech` for development
-- `packages/infra/terraform/stacks/hashpass-dns` as the target-account hosted zone layer that keeps the migration reversible until registrar cutover, including the dedicated `dev.hashpass.tech` zone
+- `packages/infra/terraform/stacks/hashpass-dns` as the target-account hosted zone layer that keeps the migration reversible until registrar cutover, with `dev.hashpass.tech` living inside the parent `hashpass.tech` zone
 - `packages/infra/terraform/stacks/hashpass-api-target` as the target-account API Gateway + Lambda layer for `api.hashpass.tech`
 - `apps/mobile-app` as an SST `StaticSite`
-- `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` CodePipeline + EC2 worker stack that replaces Amplify without deleting the source account first
+- `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` CodePipeline + EC2 worker stack that now feeds the source CloudFront front door
 - `hashpass.club` as the canonical club site, with `club.hashpass.tech` and `docs.hashpass.tech` as DNS aliases
 - `apps/web-app` and `apps/docs` assembled into a single combined static artifact for GitHub Pages
 - `packages/infra/terraform/stacks/mobile-release` as the AWS EC2 GitHub Actions runner for mobile Android builds, including its managed public VPC when the account has no default network

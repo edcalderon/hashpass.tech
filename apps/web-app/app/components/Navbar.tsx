@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useTranslation } from '@hashpass/i18n';
 import { useLocale, useSetLocale, useAvailableLocales } from '@hashpass/i18n';
 import type { SupportedLocale } from '@hashpass/i18n';
@@ -143,7 +144,20 @@ export function Navbar() {
           }}
         >
           {/* ── Logo ── */}
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0, textDecoration: 'none' }}>
+          <Link
+            href="/"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              flexShrink: 0,
+              textDecoration: 'none',
+              position: 'relative',
+              zIndex: 1,
+              backgroundColor: 'transparent',
+              isolation: 'isolate',
+            }}
+          >
             <img
               src={overHero
                 ? '/logo-full-hashpass-white-cyan.svg'
@@ -174,36 +188,64 @@ export function Navbar() {
             >
               .club
             </span>
-          </a>
+          </Link>
 
           {/* ── Desktop nav links ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }} className="nav-links-desktop">
             {navLinks.map(({ key, href }) => (
-              <a
-                key={key}
-                href={href}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: linkColor,
-                  transition: 'color 0.2s, background 0.2s',
-                  textDecoration: 'none',
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.color = linkHoverColor;
-                  el.style.background = overHero ? 'rgba(255,255,255,0.1)' : 'var(--bg-overlay)';
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.color = linkColor;
-                  el.style.background = 'transparent';
-                }}
-              >
-                {t(key)}
-              </a>
+              href.startsWith('/') ? (
+                <Link
+                  key={key}
+                  href={href}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: linkColor,
+                    transition: 'color 0.2s, background 0.2s',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkHoverColor;
+                    el.style.background = overHero ? 'rgba(255,255,255,0.1)' : 'var(--bg-overlay)';
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkColor;
+                    el.style.background = 'transparent';
+                  }}
+                >
+                  {t(key)}
+                </Link>
+              ) : (
+                <a
+                  key={key}
+                  href={href}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: linkColor,
+                    transition: 'color 0.2s, background 0.2s',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkHoverColor;
+                    el.style.background = overHero ? 'rgba(255,255,255,0.1)' : 'var(--bg-overlay)';
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.color = linkColor;
+                    el.style.background = 'transparent';
+                  }}
+                >
+                  {t(key)}
+                </a>
+              )
             ))}
           </div>
 

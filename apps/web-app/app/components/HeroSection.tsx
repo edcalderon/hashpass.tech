@@ -77,6 +77,10 @@ export function HeroSection() {
             minHeight: '100vh',
             padding: '120px 24px 80px',
             textAlign: 'center',
+            position: 'relative',
+            zIndex: 3,
+            isolation: 'isolate',
+            width: '100%',
           }}
         >
           {/* Badge */}
@@ -104,12 +108,12 @@ export function HeroSection() {
           {/* Headline */}
           <h1
             style={{
-              fontSize: 'clamp(48px, 8vw, 96px)',
+              fontSize: 'clamp(44px, 7.5vw, 88px)',
               fontWeight: 700,
               lineHeight: 1.05,
-              letterSpacing: -2,
+              letterSpacing: -1.7,
               color: headlineColor,
-              maxWidth: 900,
+              maxWidth: 860,
               margin: '0 0 24px',
               fontFamily: 'var(--font-display)',
               whiteSpace: 'pre-line',

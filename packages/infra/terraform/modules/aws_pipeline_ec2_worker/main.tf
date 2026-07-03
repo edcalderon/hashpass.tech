@@ -126,9 +126,9 @@ resource "aws_route_table_association" "worker_public" {
 }
 
 locals {
-  worker_subnet_ids     = length(local.subnet_ids) == 0 ? aws_subnet.worker_public[*].id : local.subnet_ids
-  worker_subnet_vpc_ids = length(local.subnet_ids) == 0 ? [aws_vpc.worker[0].id] : distinct([for subnet in data.aws_subnet.selected : subnet.vpc_id])
-  worker_vpc_id         = local.worker_subnet_vpc_ids[0]
+  worker_subnet_ids     = length(local.subnet_ids) == 0 ? try(aws_subnet.worker_public[*].id, []) : local.subnet_ids
+  worker_subnet_vpc_ids = length(local.subnet_ids) == 0 ? try([aws_vpc.worker[0].id], []) : distinct([for subnet in data.aws_subnet.selected : subnet.vpc_id])
+  worker_vpc_id         = try(local.worker_subnet_vpc_ids[0], null)
 }
 
 check "worker_subnets_same_vpc" {
@@ -209,6 +209,26 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 resource "aws_iam_role_policy_attachment" "codepipeline_custom_action" {
   role       = aws_iam_role.worker.name
   policy_arn = "arn:aws:iam::aws:policy/AWSCodePipelineCustomActionAccess"
+}
+
+data "aws_iam_policy_document" "cloudfront" {
+  statement {
+    sid = "AllowCloudFrontInvalidations"
+
+    actions = [
+      "cloudfront:CreateInvalidation",
+      "cloudfront:GetDistribution",
+      "cloudfront:ListDistributions",
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "cloudfront" {
+  name   = "${var.name_prefix}-build-cloudfront"
+  role   = aws_iam_role.worker.id
+  policy = data.aws_iam_policy_document.cloudfront.json
 }
 
 data "aws_iam_policy_document" "deploy_bucket_access" {

@@ -17,9 +17,9 @@ variable "route53_zone_tech_name" {
 }
 
 variable "api_mapping_key" {
-  description = "API mapping key exposed on custom domains"
+  description = "API mapping key exposed on custom domains. Leave empty for the current /api route layout."
   type        = string
-  default     = "api"
+  default     = ""
 }
 
 variable "lambda_zip_path" {

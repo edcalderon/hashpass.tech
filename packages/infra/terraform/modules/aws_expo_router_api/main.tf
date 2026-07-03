@@ -137,11 +137,11 @@ resource "aws_route53_record" "cert_validation" {
   count = var.enable_custom_domain ? 1 : 0
 
   allow_overwrite = true
-  zone_id = var.route53_zone_id
-  name    = local.cert_validation.resource_record_name
-  type    = local.cert_validation.resource_record_type
-  records = [local.cert_validation.resource_record_value]
-  ttl     = 60
+  zone_id         = var.route53_zone_id
+  name            = local.cert_validation.resource_record_name
+  type            = local.cert_validation.resource_record_type
+  records         = [local.cert_validation.resource_record_value]
+  ttl             = 60
 }
 
 resource "aws_acm_certificate_validation" "api_domain" {

@@ -23,7 +23,7 @@ supabase_url_dev = "https://fxgftanraszjjyeidvia.supabase.co"
 supabase_key_dev = "<EXPO_PUBLIC_SUPABASE_KEY_DEV>"
 
 build_action_provider_name = "hashpass-ec2-build"
-build_action_version       = "1"
+build_action_version       = "2"
 build_action_timeout       = 60
 build_script_path          = "packages/tools/scripts/build-static-site.sh"
 build_output_directory     = "dist/client"
@@ -42,20 +42,45 @@ build_worker_detailed_monitoring     = true
 enable_github_actions_worker_control = true
 create_github_oidc_provider          = false
 
-# The new AWS account currently cannot create fresh CloudFront distributions
-# until AWS verifies it, so keep this false for the first migration pass.
-enable_cloudfront = false
+# Production CloudFront for hashpass.tech. Request/validate the ACM certificate
+# in us-east-1, then paste the issued ARN here before enabling the cutover.
+site_route53_zone_name   = "hashpass.tech"
+site_custom_domain_name  = "hashpass.tech"
+site_acm_certificate_arn = ""
+
+enable_cloudfront = true
 dev_enable_cloudfront = false
 
 # The development pipeline deploys from develop and stays separate from the
-# production pipeline in the same Terraform state.
+# production pipeline in the same Terraform state. The dev hostname now lives
+# inside the parent hashpass.tech zone in the target account.
 dev_branch_name = "develop"
-dev_route53_zone_name = "dev.hashpass.tech"
+dev_route53_zone_name = "hashpass.tech"
+dev_custom_domain_name = "dev.hashpass.tech"
 
-# Optional explicit names if you want to pin them for the migration.
-# site_bucket_name     = "hashpass-production-site-952191196420"
-# artifact_bucket_name = "hashpass-production-pipelines-952191196420-us-east-2"
-# dev_site_bucket_name     = "hashpass-dev-site-952191196420-us-east-2"
+# Leave these unset unless you need fixed bucket names. Terraform will use
+# unique generated names, and Route 53 can still alias to the S3 website
+# endpoint of a bucket with any name.
+# site_bucket_name     = ""
+# dev_site_bucket_name = ""
+
+# If CloudFront is unavailable in the target account, use literal A records for
+# the S3 website endpoint instead of Route 53 alias records. Keep these empty
+# when CloudFront is enabled.
+# site_route53_a_records = []
+# dev_route53_a_records = [
+#   "3.5.88.53",
+#   "3.5.88.112",
+#   "3.5.133.254",
+#   "3.5.130.101",
+#   "52.219.179.88",
+#   "3.5.132.48",
+#   "52.219.98.72",
+#   "3.5.93.118",
+# ]
+
+# Artifact buckets can keep the generated names unless you want to pin them.
+# artifact_bucket_name     = "hashpass-production-pipelines-952191196420-us-east-2"
 # dev_artifact_bucket_name = "hashpass-dev-pipelines-952191196420-us-east-2"
 
 # Additional build environment variables if required by the app bundle.

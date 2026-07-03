@@ -2,7 +2,6 @@
 aws_region = "us-east-2"
 
 tech_zone_name = "hashpass.tech"
-dev_zone_name  = "dev.hashpass.tech"
 lat_zone_name  = "hashpass.lat"
 club_zone_name = "hashpass.club"
 

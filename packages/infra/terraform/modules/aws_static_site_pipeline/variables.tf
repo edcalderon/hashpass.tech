@@ -10,6 +10,11 @@ variable "aws_region" {
   default     = "us-east-2"
 }
 
+variable "account_id" {
+  description = "AWS account ID used for generated bucket names"
+  type        = string
+}
+
 variable "environment" {
   description = "Deployment environment name"
   type        = string
@@ -68,6 +73,12 @@ variable "deploy_script_path" {
   default     = "packages/tools/scripts/deploy-static-site.sh"
 }
 
+variable "deploy_cloudfront_domain_name" {
+  description = "Optional CloudFront custom domain name used by direct deployments to resolve the distribution ID at runtime."
+  type        = string
+  default     = ""
+}
+
 variable "deploy_mode" {
   description = "How the build worker deploys the site. Use direct to run the deploy script on the worker, or artifact to let CodePipeline extract the output artifact to S3."
   type        = string
@@ -101,6 +112,12 @@ variable "artifact_bucket_name" {
   description = "Optional explicit S3 bucket name for pipeline artifacts"
   type        = string
   default     = null
+}
+
+variable "deploy_cloudfront_distribution_id" {
+  description = "Optional CloudFront distribution ID to invalidate after direct deployments"
+  type        = string
+  default     = ""
 }
 
 variable "enable_cloudfront" {

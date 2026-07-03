@@ -2,7 +2,7 @@
 
 ## Current Problem
 
-`api.hashpass.tech` is currently pointing to **Amplify Hosting (CloudFront)**, not API Gateway. This is why you're getting 404 errors.
+`api.hashpass.tech` should point to the target-account API Gateway custom domain, not CloudFront/Amplify. If you're getting 404 errors or redirects, the DNS record is still stale.
 
 **Evidence:**
 - DNS resolves to CloudFront IPs: `18.155.252.x`
@@ -37,9 +37,9 @@
    curl https://api.hashpass.tech/api/config/versions
    ```
 
-### Option 2: Use Different Subdomain for API Gateway
+### Option 2: Use a Different Subdomain for the API
 
-If you want to keep `api.hashpass.tech` for Amplify Hosting:
+If you need a separate hostname for testing or staging:
 
 1. **Create new subdomain** (e.g., `api-gateway.hashpass.tech` or `api-proxy.hashpass.tech`)
 
@@ -54,15 +54,13 @@ If you want to keep `api.hashpass.tech` for Amplify Hosting:
 4. **Update frontend code:**
    - Change `EXPO_PUBLIC_API_BASE_URL` to new subdomain
 
-### Option 3: Use Cloudflare Pages (Alternative)
+### Option 3: Use a Different Edge Platform (Alternative)
 
-If API Gateway is too complex, use Cloudflare Pages which handles API routes automatically:
+If API Gateway is not the right fit, choose a different edge platform that supports your runtime and update DNS accordingly:
 
 ```bash
-npm run deploy:cloudflare
+<your-deploy-command>
 ```
-
-Then update DNS to point `api.hashpass.tech` to Cloudflare Pages.
 
 ## Verification
 
@@ -82,8 +80,8 @@ curl https://api.hashpass.tech/api/config/versions
 ## Current DNS Status
 
 Based on verification:
-- `api.hashpass.tech` → `18.155.252.x` (CloudFront/Amplify Hosting) ❌
-- Should be → API Gateway domain ✅
+- `api.hashpass.tech` → CloudFront/Amplify Hosting or another stale target ❌
+- Should be → the API Gateway custom domain ✅
 
 ## Next Steps
 

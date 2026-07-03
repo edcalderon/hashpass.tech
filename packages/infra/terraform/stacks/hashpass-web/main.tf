@@ -3,7 +3,19 @@ data "aws_caller_identity" "current" {}
 locals {
   build_site_bucket_name     = try(trimspace(var.site_bucket_name), "") != "" ? trimspace(var.site_bucket_name) : "${var.name_prefix}-${var.environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   build_dev_site_bucket_name = try(trimspace(var.dev_site_bucket_name), "") != "" ? trimspace(var.dev_site_bucket_name) : "${var.name_prefix}-${var.dev_environment}-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
-  dev_custom_domain_name     = trim(var.dev_route53_zone_name, ".")
+  site_custom_domain_name    = trimspace(var.site_custom_domain_name)
+  site_acm_certificate_arn   = trimspace(var.site_acm_certificate_arn)
+  site_route53_zone_name     = trim(var.site_route53_zone_name, ".")
+  site_route53_a_records = [
+    for ip_address in var.site_route53_a_records : trimspace(ip_address)
+    if trimspace(ip_address) != ""
+  ]
+  dev_route53_zone_name  = trim(var.dev_route53_zone_name, ".")
+  dev_custom_domain_name = trimspace(var.dev_custom_domain_name)
+  dev_route53_a_records = [
+    for ip_address in var.dev_route53_a_records : trimspace(ip_address)
+    if trimspace(ip_address) != ""
+  ]
 
   build_worker_deploy_bucket_names = distinct([
     for bucket_name in [local.build_site_bucket_name, local.build_dev_site_bucket_name] :
@@ -45,6 +57,16 @@ check "required_inputs" {
   assert {
     condition     = trimspace(var.connection_arn) != ""
     error_message = "connection_arn is required."
+  }
+}
+
+check "site_cloudfront_inputs" {
+  assert {
+    condition = (
+      !var.enable_cloudfront
+      || (local.site_custom_domain_name != "" && local.site_acm_certificate_arn != "")
+    )
+    error_message = "site_custom_domain_name and site_acm_certificate_arn must be set when enable_cloudfront is true."
   }
 }
 
@@ -117,6 +139,15 @@ resource "aws_codepipeline_custom_action_type" "ec2_build" {
     type        = "String"
   }
 
+  configuration_property {
+    name        = "DeployCloudFrontDomainName"
+    description = "Optional CloudFront alias used by direct deployments to resolve the distribution ID at runtime"
+    key         = false
+    required    = false
+    secret      = false
+    type        = "String"
+  }
+
   tags = merge(var.tags, {
     ManagedBy = "terraform"
     Service   = "static-site-pipeline"
@@ -145,55 +176,175 @@ module "build_worker" {
 module "site" {
   source = "../../modules/aws_static_site_pipeline"
 
-  name_prefix                = var.name_prefix
-  aws_region                 = var.aws_region
-  environment                = var.environment
-  repository                 = var.repository
-  branch_name                = var.branch_name
-  connection_arn             = var.connection_arn
-  site_bucket_name           = var.site_bucket_name
-  artifact_bucket_name       = var.artifact_bucket_name
-  enable_cloudfront          = var.enable_cloudfront
-  build_action_provider_name = var.build_action_provider_name
-  build_action_version       = var.build_action_version
-  build_action_timeout       = var.build_action_timeout
-  build_script_path          = var.build_script_path
-  build_output_directory     = var.build_output_directory
-  deploy_script_path         = var.deploy_script_path
-  deploy_mode                = var.deploy_mode
-  build_environment          = local.build_environment
-  tags                       = var.tags
+  name_prefix                       = var.name_prefix
+  aws_region                        = var.aws_region
+  account_id                        = data.aws_caller_identity.current.account_id
+  environment                       = var.environment
+  repository                        = var.repository
+  branch_name                       = var.branch_name
+  connection_arn                    = var.connection_arn
+  site_bucket_name                  = var.site_bucket_name
+  artifact_bucket_name              = var.artifact_bucket_name
+  deploy_cloudfront_distribution_id = ""
+  deploy_cloudfront_domain_name     = var.enable_cloudfront ? local.site_custom_domain_name : ""
+  enable_cloudfront                 = false
+  build_action_provider_name        = var.build_action_provider_name
+  build_action_version              = var.build_action_version
+  build_action_timeout              = var.build_action_timeout
+  build_script_path                 = var.build_script_path
+  build_output_directory            = var.build_output_directory
+  deploy_script_path                = var.deploy_script_path
+  deploy_mode                       = var.deploy_mode
+  build_environment                 = local.build_environment
+  tags                              = var.tags
 
   depends_on = [module.build_worker, aws_codepipeline_custom_action_type.ec2_build]
+}
+
+data "aws_route53_zone" "tech" {
+  name         = "${local.site_route53_zone_name}."
+  private_zone = false
+}
+
+locals {
+  site_alias_name = var.enable_cloudfront ? aws_cloudfront_distribution.site[0].domain_name : replace(module.site.site_website_endpoint, "http://", "")
+  site_alias_zone = var.enable_cloudfront ? aws_cloudfront_distribution.site[0].hosted_zone_id : module.site.site_bucket_hosted_zone_id
+}
+
+resource "aws_cloudfront_distribution" "site" {
+  count = var.enable_cloudfront ? 1 : 0
+
+  enabled             = true
+  comment             = "${var.name_prefix} ${var.environment} static site"
+  default_root_object = "index.html"
+  aliases             = [local.site_custom_domain_name]
+  price_class         = "PriceClass_100"
+  is_ipv6_enabled     = true
+  wait_for_deployment = true
+
+  origin {
+    domain_name = replace(module.site.site_website_endpoint, "http://", "")
+    origin_id   = "${local.site_custom_domain_name}-origin"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  default_cache_behavior {
+    target_origin_id       = "${local.site_custom_domain_name}-origin"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD", "OPTIONS"]
+    viewer_protocol_policy = "redirect-to-https"
+    compress               = true
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+  }
+
+  custom_error_response {
+    error_code            = 403
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 0
+  }
+
+  custom_error_response {
+    error_code            = 404
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 0
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    acm_certificate_arn            = local.site_acm_certificate_arn
+    cloudfront_default_certificate = false
+    ssl_support_method             = "sni-only"
+    minimum_protocol_version       = "TLSv1.2_2021"
+  }
+
+  tags = var.tags
+}
+
+resource "aws_route53_record" "site" {
+  count = var.enable_cloudfront || length(local.site_route53_a_records) > 0 ? 1 : 0
+
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.tech.zone_id
+  name            = local.site_custom_domain_name
+  type            = "A"
+  ttl             = var.enable_cloudfront ? null : 300
+  records         = var.enable_cloudfront ? null : local.site_route53_a_records
+
+  dynamic "alias" {
+    for_each = var.enable_cloudfront ? [1] : []
+
+    content {
+      evaluate_target_health = false
+      name                   = local.site_alias_name
+      zone_id                = local.site_alias_zone
+    }
+  }
+}
+
+resource "aws_route53_record" "site_ipv6" {
+  count = var.enable_cloudfront ? 1 : 0
+
+  zone_id = data.aws_route53_zone.tech.zone_id
+  name    = local.site_custom_domain_name
+  type    = "AAAA"
+
+  alias {
+    evaluate_target_health = false
+    name                   = local.site_alias_name
+    zone_id                = local.site_alias_zone
+  }
 }
 
 module "site_dev" {
   source = "../../modules/aws_static_site_pipeline"
 
-  name_prefix                = var.name_prefix
-  aws_region                 = var.aws_region
-  environment                = var.dev_environment
-  repository                 = var.repository
-  branch_name                = var.dev_branch_name
-  connection_arn             = var.connection_arn
-  site_bucket_name           = var.dev_site_bucket_name
-  artifact_bucket_name       = var.dev_artifact_bucket_name
-  enable_cloudfront          = false
-  build_action_provider_name = var.build_action_provider_name
-  build_action_version       = var.build_action_version
-  build_action_timeout       = var.build_action_timeout
-  build_script_path          = var.build_script_path
-  build_output_directory     = var.build_output_directory
-  deploy_script_path         = var.deploy_script_path
-  deploy_mode                = var.deploy_mode
-  build_environment          = local.dev_build_environment
-  tags                       = var.tags
+  name_prefix                       = var.name_prefix
+  aws_region                        = var.aws_region
+  account_id                        = data.aws_caller_identity.current.account_id
+  environment                       = var.dev_environment
+  repository                        = var.repository
+  branch_name                       = var.dev_branch_name
+  connection_arn                    = var.connection_arn
+  site_bucket_name                  = var.dev_site_bucket_name
+  artifact_bucket_name              = var.dev_artifact_bucket_name
+  deploy_cloudfront_distribution_id = ""
+  deploy_cloudfront_domain_name     = var.dev_enable_cloudfront ? local.dev_custom_domain_name : ""
+  enable_cloudfront                 = false
+  build_action_provider_name        = var.build_action_provider_name
+  build_action_version              = var.build_action_version
+  build_action_timeout              = var.build_action_timeout
+  build_script_path                 = var.build_script_path
+  build_output_directory            = var.build_output_directory
+  deploy_script_path                = var.deploy_script_path
+  deploy_mode                       = var.deploy_mode
+  build_environment                 = local.dev_build_environment
+  tags                              = var.tags
 
   depends_on = [module.build_worker, aws_codepipeline_custom_action_type.ec2_build]
 }
 
 data "aws_route53_zone" "dev" {
-  name         = "${trim(var.dev_route53_zone_name, ".")}."
+  name         = "${local.dev_route53_zone_name}."
   private_zone = false
 }
 
@@ -306,14 +457,23 @@ resource "aws_cloudfront_distribution" "dev_site" {
 }
 
 resource "aws_route53_record" "dev_site" {
-  zone_id = data.aws_route53_zone.dev.zone_id
-  name    = local.dev_custom_domain_name
-  type    = "A"
+  count = var.dev_enable_cloudfront || length(local.dev_route53_a_records) > 0 ? 1 : 0
 
-  alias {
-    evaluate_target_health = false
-    name                   = local.dev_site_alias_name
-    zone_id                = local.dev_site_alias_zone
+  allow_overwrite = true
+  zone_id         = data.aws_route53_zone.dev.zone_id
+  name            = local.dev_custom_domain_name
+  type            = "A"
+  ttl             = var.dev_enable_cloudfront ? null : 300
+  records         = var.dev_enable_cloudfront ? null : local.dev_route53_a_records
+
+  dynamic "alias" {
+    for_each = var.dev_enable_cloudfront ? [1] : []
+
+    content {
+      evaluate_target_health = false
+      name                   = local.dev_site_alias_name
+      zone_id                = local.dev_site_alias_zone
+    }
   }
 }
 

@@ -39,10 +39,28 @@ variable "github_pages_domain" {
   default     = "hashpass.club"
 }
 
-variable "api_mapping_key" {
-  description = "API mapping key exposed on custom domains"
+variable "site_custom_domain_name" {
+  description = "Canonical production domain name for hashpass.tech"
   type        = string
-  default     = "api"
+  default     = "hashpass.tech"
+}
+
+variable "site_www_domain_name" {
+  description = "WWW hostname for the production site"
+  type        = string
+  default     = "www.hashpass.tech"
+}
+
+variable "site_origin_domain_name" {
+  description = "Origin domain name for the production CloudFront front door"
+  type        = string
+  default     = ""
+}
+
+variable "api_mapping_key" {
+  description = "API mapping key exposed on custom domains. Leave empty for the current /api route layout."
+  type        = string
+  default     = ""
 }
 
 variable "lambda_zip_path" {

@@ -20,7 +20,7 @@ This Terraform setup deploys the production naming convention discussed for Hash
 
 ## Structure
 
-- `stacks/aws`: AWS API + optional Amplify domain association + GitHub Pages DNS for `hashpass.club`
+- `stacks/aws`: source CloudFront front door + optional Amplify domain association + GitHub Pages DNS for `hashpass.club`
 - `stacks/gcp`: GCP Directus VM(s) + optional Cloud DNS records
 - `stacks/hashpass-dns`: target-account Route 53 hosted zones for the migration cutover
 - `stacks/hashpass-api-target`: target-account API Gateway + Lambda stack for `api.hashpass.tech`
@@ -36,7 +36,7 @@ This Terraform setup deploys the production naming convention discussed for Hash
 ## Prerequisites
 
 1. Terraform `>= 1.5`
-2. AWS credentials configured (for Route53, ACM, API Gateway, Lambda, Amplify)
+2. AWS credentials configured (for Route53, ACM, CloudFront, API Gateway, Lambda, Amplify)
 3. GCP credentials configured (ADC or `GOOGLE_APPLICATION_CREDENTIALS`)
 4. Lambda package built at the configured path:
    - Example: `./packages/tools/scripts/package-lambda.sh`
@@ -70,8 +70,8 @@ Shortcut:
 
 Outputs include:
 
-- API base URLs for frontend env vars
-- Lambda names
+- the source-account CloudFront distribution/domain for `hashpass.tech`
+- the origin domain wired behind the front door
 - domain association metadata if Amplify association is enabled
 
 ### HashPass Web Stack
@@ -86,7 +86,7 @@ same Terraform state. It creates:
 - a dedicated EC2 build worker that polls a custom CodePipeline build action and runs the shared build/deploy helpers
 - a CodePipeline that pulls from GitHub and triggers the EC2 worker
 - a matching development pipeline that builds from `develop` with the dev Supabase inputs
-- a `dev.hashpass.tech` hosted zone and alias record when the DNS stack is present
+- a `dev.hashpass.tech` record in the target `hashpass.tech` hosted zone when the DNS stack is present
 
 Before the first apply, create the CodeConnections connection in the target
 account and complete the GitHub handshake:
@@ -105,7 +105,10 @@ from the root `.env` values for:
 - `google_client_id`
 - `supabase_url_dev`
 - `supabase_key_dev`
-- `dev_route53_zone_name` if you want to override the `dev.hashpass.tech` zone name
+- `dev_route53_zone_name` if you want to override the hosted zone used for `dev.hashpass.tech`
+- `dev_custom_domain_name` if you want to override the `dev.hashpass.tech` hostname
+- `site_bucket_name` and `dev_site_bucket_name` only if you want fixed bucket names; otherwise let Terraform generate unique names and point Route 53 at the resulting website endpoints
+- `site_acm_certificate_arn` once you have requested and validated the `hashpass.tech` ACM certificate in `us-east-1`
 
 Apply it with:
 
@@ -114,27 +117,43 @@ Apply it with:
 ./packages/infra/terraform/scripts/stack.sh hashpass-web apply
 ```
 
-The initial rollout keeps Amplify alive in the source account. If the target
-AWS account cannot create CloudFront yet, leave `enable_cloudfront = false`
-and `dev_enable_cloudfront = false`, then validate against the S3 website
-endpoint first. Once AWS verifies the account, you can flip CloudFront back on
-and reapply without touching the source account. The worker runs the same
+CloudFront is now the production front door for `hashpass.tech`, but it lives
+in the source account and points at the target-account S3 website origin. That
+gives HTTPS, clean apex routing, and a stable origin abstraction while the
+target account remains blocked from creating new CloudFront resources by AWS
+account verification.
+The current live layout is:
+- `hashpass.tech` resolves through the source-account CloudFront front door.
+- `www.hashpass.tech` remains a CNAME to `hashpass.tech` and is covered by the
+  same CloudFront certificate.
+- `dev.hashpass.tech` is delegated from the source `hashpass.tech` hosted zone
+  to the target `hashpass.tech` hosted zone and is served there with literal A
+  records pointing at the target S3 website endpoint.
+- The target `hashpass.tech` hosted zone now carries both the
+  `dev.hashpass.tech` record and the production origin used by the source
+  CloudFront front door.
+The target web stack still uses the shared EC2 build worker plus CodePipeline,
+so the build flow stays close to the old Amplify setup without depending on
+CodeBuild. The worker runs the same
 `packages/tools/scripts/build-static-site.sh` and
-`packages/tools/scripts/deploy-static-site.sh` helpers that local testing uses,
-so the target path stays close to the old Amplify build flow without depending
-on CodeBuild. If a source archive ever omits the build helper, the worker falls
-back to an inline static-site build so the pipeline can still complete.
+`packages/tools/scripts/deploy-static-site.sh` helpers that local testing uses.
+When CloudFront is available, the deploy helper invalidates it automatically;
+for the current direct-S3 fallback, the stack uses literal A records instead of
+Route 53 alias records because the alias form was not resolving cleanly in the
+target zone.
+Keep the site buckets on generated unique names unless you have a specific
+reason to pin them. The bucket name does not need to match the apex record when
+CloudFront is handling the public domain or when direct A records are used.
 When `dev_enable_cloudfront = true`, the stack also creates a DNS-validated
 ACM certificate in `us-east-1` for `dev.hashpass.tech` and points the Route 53
-alias at CloudFront instead of the S3 website endpoint. That is the HTTPS path
-for the development site once the target account is cleared for CloudFront.
-If the target account is still blocked from creating CloudFront, keep the
-`dev.hashpass.tech` hosted zone in the target account but point its alias at a
-temporary source-account CloudFront distribution until the target stack can be
-reapplied with `dev_enable_cloudfront = true`.
+alias at CloudFront instead of the S3 website endpoint. That remains the HTTPS
+path for the development site once the target account is cleared for CloudFront.
 The EC2 worker role also gets bucket-level S3 permissions only for the deploy
 buckets passed in by the stack, which is required for `aws s3 sync --delete`
 and the HTML cache refresh `aws s3 cp` calls.
+The worker uses the short-lived CodePipeline artifact credentials only to fetch
+the source bundle; the final artifact upload stays on the instance profile so
+long builds do not fail when the job token expires.
 If you enable `enable_github_actions_worker_control = true`, the stack also
 creates a least-privilege GitHub Actions role that can read CodePipeline state
 and start/stop the shared EC2 worker by instance ID. Copy the
@@ -151,6 +170,11 @@ The target Supabase compatibility layer for the post-Amplify migration lives in
 `packages/tools/scripts/sql/target-bsl-bootstrap.sql`. Apply it before testing
 the new web/API path, and keep future target-side database changes in checked-in
 SQL migrations rather than ad hoc console edits.
+Before deleting the remaining legacy source-account API/Lambda leftovers,
+verify that the source CloudFront front door is serving `https://hashpass.tech`
+from the target origin and that the DNS answers are stable. The source account
+is no longer the public API path; keep the front door only until you are
+satisfied the new routing is healthy.
 
 ```bash
 gh workflow run hashpass-web-pipeline-monitor.yml -f mode=monitor
@@ -159,9 +183,10 @@ gh workflow run hashpass-web-pipeline-monitor.yml -f mode=stop
 
 ### HashPass DNS Stack
 
-This stack creates the target-account hosted zones for the migration. It does
-not delegate the registrar by itself, so it is safe to apply before DNS
-cutover.
+This stack creates the target-account hosted zones for the migration. It now
+leaves `dev.hashpass.tech` inside the parent `hashpass.tech` zone instead of
+creating a separate child zone. It does not delegate the registrar by itself,
+so it is safe to apply before DNS cutover.
 
 ```bash
 cd packages/infra/terraform/stacks/hashpass-dns
@@ -180,7 +205,7 @@ Shortcut:
 
 Outputs include:
 
-- hosted zone IDs for `hashpass.tech`, `dev.hashpass.tech`, `hashpass.lat`, and `hashpass.club`
+- hosted zone IDs for `hashpass.tech`, `hashpass.lat`, and `hashpass.club`
 - nameserver sets for later registrar delegation
 
 ### HashPass API Stack
@@ -203,14 +228,17 @@ Shortcut:
 ./packages/infra/terraform/scripts/stack.sh hashpass-api-target apply
 ```
 
-Start with `enable_custom_domain = false` while the target zone is still
-undelegated. That keeps the backend deployable and lets you verify it through
-the `execute-api` URL. After registrar cutover, flip the flag back to `true`
-and reapply to create the ACM validation records and public custom domains.
-Keep `dev.hashpass.tech` delegated from the target hosted zone during migration
-and leave the apex `hashpass.tech` routing on the source hosted zone until the
-final cutover. That lets you verify the target API and web pipeline without
-moving the public apex early.
+The target stack now owns the public custom domains as part of the migration.
+Keep `enable_custom_domain = true` so the Route 53 aliases stay on the target
+account and the public `api.hashpass.tech` and `api-dev.hashpass.tech` names
+continue to resolve through the target custom domains.
+Leave `api_mapping_key` empty for this stack so the public `api.hashpass.tech`
+domain preserves the app's `/api/...` routes instead of stripping the prefix.
+Keep `dev.hashpass.tech` delegated from the source parent hosted zone to the
+target parent `hashpass.tech` hosted zone during migration and leave the apex
+`hashpass.tech` routing on the source hosted zone until the final cutover. The
+target API stack can be validated independently because its custom domains now
+live in the target account.
 The Lambda DB connection must use a pooler-form URL. For dev, the host should
 be `aws-0-us-east-2.pooler.supabase.com`; for prod, use
 `aws-1-us-west-2.pooler.supabase.com`. Direct `db.<ref>.supabase.co` URLs can
@@ -291,7 +319,7 @@ Keep the PAT scoped to the `hashpass-tech/hashpass.tech` repository and only the
 
 1. Deploy `stacks/gcp` (get static IPs for Directus)
 2. Deploy `stacks/hashpass-dns` in the target AWS account to create the hosted zones and nameservers
-3. Deploy `stacks/hashpass-api-target` in the target AWS account with `enable_custom_domain = false`
+3. Deploy `stacks/hashpass-api-target` in the target AWS account with `enable_custom_domain = true`
 4. Deploy `stacks/hashpass-web` in the target AWS account and validate either the CloudFront domain or the S3 website endpoint, depending on the account state
 5. Deploy `stacks/mobile-release-target` in the target AWS account and verify a test Android build
 6. Re-run the BSL pipeline provisioning against the target account once the hosted zone exists

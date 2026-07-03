@@ -152,6 +152,44 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
 
 DO $$
 BEGIN
+  CREATE TYPE public.pass_type AS ENUM ('general', 'business', 'vip');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END;
+$$;
+
+CREATE TABLE IF NOT EXISTS public.passes (
+  id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  user_id text NOT NULL,
+  event_id text NOT NULL DEFAULT 'bsl2025',
+  pass_number text NOT NULL DEFAULT '',
+  tier pass_tier NOT NULL DEFAULT 'free',
+  pass_type public.pass_type NOT NULL DEFAULT 'general',
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'used', 'expired', 'cancelled', 'suspended')),
+  purchase_date timestamptz NOT NULL DEFAULT now(),
+  price_usd numeric(10,2),
+  name text,
+  email text,
+  company text,
+  title text,
+  max_requests_allowed integer NOT NULL DEFAULT 0,
+  requests_remaining integer NOT NULL DEFAULT 0,
+  requests_sent integer NOT NULL DEFAULT 0,
+  request_limit_percentage numeric(10,2) NOT NULL DEFAULT 0,
+  max_meeting_requests integer NOT NULL DEFAULT 0,
+  used_meeting_requests integer NOT NULL DEFAULT 0,
+  max_boost_amount numeric(10,2) NOT NULL DEFAULT 0,
+  used_boost_amount numeric(10,2) NOT NULL DEFAULT 0,
+  access_features text[] NOT NULL DEFAULT '{}'::text[],
+  special_perks text[] NOT NULL DEFAULT '{}'::text[],
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+DO $$
+BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
@@ -242,12 +280,23 @@ CREATE TABLE IF NOT EXISTS public.meeting_requests (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.meeting_slots (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public."user"(id) ON DELETE CASCADE,
+  start_time timestamptz NOT NULL,
+  end_time timestamptz NOT NULL,
+  status text NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'booked', 'unavailable')),
+  meeting_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS public.meetings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   meeting_request_id uuid REFERENCES public.meeting_requests(id) ON DELETE SET NULL,
   event_id text NOT NULL DEFAULT 'bsl2025',
   slot_id uuid REFERENCES public.meeting_slots(id) ON DELETE SET NULL,
-  speaker_id text NOT NULL REFERENCES public.bsl_speakers(id) ON DELETE CASCADE,
+  speaker_id uuid NOT NULL REFERENCES public.bsl_speakers(id) ON DELETE CASCADE,
   requester_id uuid NOT NULL REFERENCES public."user"(id) ON DELETE CASCADE,
   host_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   attendee_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -272,7 +321,7 @@ CREATE TABLE IF NOT EXISTS public.meetings (
 CREATE TABLE IF NOT EXISTS public.speaker_availability (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id text NOT NULL DEFAULT 'bsl2025',
-  speaker_id text NOT NULL REFERENCES public.bsl_speakers(id) ON DELETE CASCADE,
+  speaker_id uuid NOT NULL REFERENCES public.bsl_speakers(id) ON DELETE CASCADE,
   speaker_name text NOT NULL,
   date date NOT NULL,
   start_time text NOT NULL,
@@ -364,47 +413,969 @@ CREATE TABLE IF NOT EXISTS public.chat_last_seen (
   UNIQUE (meeting_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.user_agenda_status (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public."user"(id) ON DELETE CASCADE,
+  event_id text NOT NULL DEFAULT 'bsl2025',
+  agenda_id text,
+  meeting_id uuid,
+  slot_time timestamptz,
+  status text NOT NULL DEFAULT 'tentative',
+  slot_status text,
+  is_favorite boolean NOT NULL DEFAULT false,
+  confirmed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.user_blocks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  blocker_id uuid,
+  blocked_id uuid,
+  blocker_user_id uuid,
+  blocked_user_id uuid,
+  speaker_id uuid REFERENCES public.bsl_speakers(id) ON DELETE CASCADE,
+  reason text,
+  blocked_at timestamptz NOT NULL DEFAULT now(),
+  is_muted boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
     WHERE table_schema = 'public'
-      AND table_name = 'user_agenda_status'
-      AND column_name = 'meeting_id'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'imageurl'
   ) THEN
-    ALTER TABLE public.user_agenda_status ADD COLUMN meeting_id uuid;
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1
-    FROM information_schema.table_constraints
-    WHERE table_schema = 'public'
-      AND table_name = 'user_agenda_status'
-      AND constraint_name = 'user_agenda_status_user_slot_key'
-  ) THEN
-    ALTER TABLE public.user_agenda_status
-      ADD CONSTRAINT user_agenda_status_user_slot_key UNIQUE (user_id, slot_time);
+    ALTER TABLE public.bsl_speakers ADD COLUMN imageurl text;
   END IF;
 
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
     WHERE table_schema = 'public'
-      AND table_name = 'user_blocks'
-      AND column_name = 'blocker_user_id'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'linkedin'
   ) THEN
-    ALTER TABLE public.user_blocks ADD COLUMN blocker_user_id uuid;
+    ALTER TABLE public.bsl_speakers ADD COLUMN linkedin text;
   END IF;
 
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
     WHERE table_schema = 'public'
-      AND table_name = 'user_blocks'
-      AND column_name = 'is_muted'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'twitter'
   ) THEN
-    ALTER TABLE public.user_blocks ADD COLUMN is_muted boolean NOT NULL DEFAULT false;
+    ALTER TABLE public.bsl_speakers ADD COLUMN twitter text;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'tags'
+  ) THEN
+    ALTER TABLE public.bsl_speakers ADD COLUMN tags text[];
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'availability'
+  ) THEN
+    ALTER TABLE public.bsl_speakers ADD COLUMN availability jsonb;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'is_active'
+  ) THEN
+    ALTER TABLE public.bsl_speakers ADD COLUMN is_active boolean NOT NULL DEFAULT true;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'is_accepting_meetings'
+  ) THEN
+    ALTER TABLE public.bsl_speakers ADD COLUMN is_accepting_meetings boolean NOT NULL DEFAULT true;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'image_url'
+  ) THEN
+    UPDATE public.bsl_speakers
+    SET imageurl = COALESCE(imageurl, image_url)
+    WHERE imageurl IS NULL AND image_url IS NOT NULL;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'linkedin_url'
+  ) THEN
+    UPDATE public.bsl_speakers
+    SET linkedin = COALESCE(linkedin, linkedin_url)
+    WHERE linkedin IS NULL AND linkedin_url IS NOT NULL;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'bsl_speakers'
+      AND column_name = 'twitter_url'
+  ) THEN
+    UPDATE public.bsl_speakers
+    SET twitter = COALESCE(twitter, twitter_url)
+    WHERE twitter IS NULL AND twitter_url IS NOT NULL;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'user_profiles'
+      AND column_name = 'id'
+  ) THEN
+    DROP TABLE public.user_profiles;
+    CREATE TABLE public.user_profiles (
+      user_id uuid PRIMARY KEY REFERENCES public."user"(id) ON DELETE CASCADE,
+      full_name text,
+      display_name text,
+      avatar_url text,
+      company text,
+      title text,
+      bio text,
+      wallet_address text,
+      email text,
+      phone text,
+      metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'passes'
+  ) THEN
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = 'pass_request_limits'
+    ) THEN
+      ALTER TABLE public.pass_request_limits DROP CONSTRAINT IF EXISTS pass_request_limits_pass_id_fkey;
+
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'pass_request_limits'
+          AND column_name = 'pass_id'
+          AND data_type <> 'text'
+      ) THEN
+        ALTER TABLE public.pass_request_limits
+          ALTER COLUMN pass_id TYPE text USING pass_id::text;
+      END IF;
+    END IF;
+
+    ALTER TABLE public.passes DROP CONSTRAINT IF EXISTS unique_user_event;
+
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'id'
+        AND data_type <> 'text'
+    ) THEN
+      ALTER TABLE public.passes
+        ALTER COLUMN id DROP DEFAULT,
+        ALTER COLUMN id TYPE text USING id::text,
+        ALTER COLUMN id SET DEFAULT gen_random_uuid()::text;
+    END IF;
+
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = 'pass_request_limits'
+    ) THEN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = 'public'
+          AND table_name = 'pass_request_limits'
+          AND constraint_name = 'pass_request_limits_pass_id_fkey'
+      ) THEN
+        ALTER TABLE public.pass_request_limits
+          ADD CONSTRAINT pass_request_limits_pass_id_fkey
+          FOREIGN KEY (pass_id) REFERENCES public.passes(id) ON DELETE CASCADE;
+      END IF;
+    END IF;
+
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'pass_number'
+        AND data_type <> 'text'
+    ) THEN
+      ALTER TABLE public.passes
+        ALTER COLUMN pass_number DROP DEFAULT,
+        ALTER COLUMN pass_number TYPE text USING pass_number::text,
+        ALTER COLUMN pass_number SET DEFAULT '';
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'pass_type'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN pass_type public.pass_type NOT NULL DEFAULT 'general';
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'status'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN status text NOT NULL DEFAULT 'active';
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'purchase_date'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN purchase_date timestamptz NOT NULL DEFAULT now();
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'price_usd'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN price_usd numeric(10,2);
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'max_meeting_requests'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN max_meeting_requests integer NOT NULL DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'used_meeting_requests'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN used_meeting_requests integer NOT NULL DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'max_boost_amount'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN max_boost_amount numeric(10,2) NOT NULL DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'used_boost_amount'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN used_boost_amount numeric(10,2) NOT NULL DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'access_features'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN access_features text[] NOT NULL DEFAULT '{}'::text[];
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND column_name = 'special_perks'
+    ) THEN
+      ALTER TABLE public.passes ADD COLUMN special_perks text[] NOT NULL DEFAULT '{}'::text[];
+    END IF;
+
+    UPDATE public.passes
+    SET pass_type = COALESCE(pass_type, 'general')
+    WHERE pass_type IS NULL;
+
+    UPDATE public.passes
+    SET status = COALESCE(status, 'active')
+    WHERE status IS NULL;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'passes'
+        AND constraint_name = 'passes_status_check'
+    ) THEN
+      ALTER TABLE public.passes
+        ADD CONSTRAINT passes_status_check
+        CHECK (status IN ('active', 'used', 'expired', 'cancelled', 'suspended'));
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'meeting_requests'
+  ) THEN
+    DROP POLICY IF EXISTS requests_insert_own ON public.meeting_requests;
+    DROP POLICY IF EXISTS requests_select_participant ON public.meeting_requests;
+    DROP POLICY IF EXISTS requests_update_requester ON public.meeting_requests;
+    DROP POLICY IF EXISTS requests_update_speaker ON public.meeting_requests;
+
+    DROP INDEX IF EXISTS public.idx_meeting_requests_unique_pending_request;
+    DROP INDEX IF EXISTS public.idx_meeting_requests_expires;
+
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'speaker_id'
+    ) THEN
+      ALTER TABLE public.meeting_requests
+        DROP CONSTRAINT IF EXISTS meeting_requests_speaker_id_fkey;
+    END IF;
+
+    UPDATE public.meeting_requests mr
+    SET speaker_id = s.user_id
+    FROM public.bsl_speakers s
+    WHERE mr.speaker_id = s.id
+      AND s.user_id IS NOT NULL;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'event_id'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN event_id text NOT NULL DEFAULT 'bsl2025';
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'speaker_name'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN speaker_name text NOT NULL DEFAULT '';
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'requester_name'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN requester_name text;
+    END IF;
+
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'status'
+        AND data_type <> 'text'
+    ) THEN
+      ALTER TABLE public.meeting_requests
+        ALTER COLUMN status TYPE text USING status::text;
+    END IF;
+
+    UPDATE public.meeting_requests mr
+    SET speaker_name = COALESCE(NULLIF(mr.speaker_name, ''), s.name)
+    FROM public.bsl_speakers s
+    WHERE mr.speaker_id = s.user_id
+      AND (mr.speaker_name IS NULL OR mr.speaker_name = '');
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'requester_company'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN requester_company text;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'requester_title'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN requester_title text;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'requester_ticket_type'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN requester_ticket_type text CHECK (requester_ticket_type IN ('general', 'business', 'vip'));
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'preferred_date'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN preferred_date text;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'preferred_time'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN preferred_time text;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'boost_transaction_hash'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN boost_transaction_hash text;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'priority_score'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN priority_score integer NOT NULL DEFAULT 50;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'availability_window_start'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN availability_window_start timestamptz;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'availability_window_end'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN availability_window_end timestamptz;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'meeting_scheduled_at'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN meeting_scheduled_at timestamptz;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'meeting_location'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN meeting_location text;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND column_name = 'meeting_id'
+    ) THEN
+      ALTER TABLE public.meeting_requests ADD COLUMN meeting_id uuid;
+    END IF;
+
+    UPDATE public.meeting_requests
+    SET meeting_scheduled_at = COALESCE(meeting_scheduled_at, scheduled_at),
+        meeting_location = COALESCE(meeting_location, location)
+    WHERE meeting_scheduled_at IS NULL
+       OR meeting_location IS NULL;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND constraint_name = 'meeting_requests_requester_id_fkey'
+    ) THEN
+      ALTER TABLE public.meeting_requests
+        ADD CONSTRAINT meeting_requests_requester_id_fkey
+        FOREIGN KEY (requester_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND constraint_name = 'meeting_requests_speaker_id_fkey'
+    ) THEN
+      ALTER TABLE public.meeting_requests
+        ADD CONSTRAINT meeting_requests_speaker_id_fkey
+        FOREIGN KEY (speaker_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_requests'
+        AND constraint_name = 'meeting_requests_status_check'
+    ) THEN
+      ALTER TABLE public.meeting_requests
+        ADD CONSTRAINT meeting_requests_status_check
+        CHECK (status IN ('pending', 'requested', 'approved', 'accepted', 'declined', 'rejected', 'expired', 'cancelled', 'completed', 'confirmed'));
+    END IF;
+
+    ALTER TABLE public.meeting_requests
+      ALTER COLUMN status SET DEFAULT 'pending';
+    ALTER TABLE public.meeting_requests
+      ALTER COLUMN expires_at SET DEFAULT (now() + interval '3 days');
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'meetings'
+  ) THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND column_name = 'event_id'
+    ) THEN
+      ALTER TABLE public.meetings ADD COLUMN event_id text NOT NULL DEFAULT 'bsl2025';
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND column_name = 'slot_id'
+    ) THEN
+      ALTER TABLE public.meetings ADD COLUMN slot_id uuid;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND column_name = 'host_id'
+    ) THEN
+      ALTER TABLE public.meetings ADD COLUMN host_id uuid;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND column_name = 'attendee_id'
+    ) THEN
+      ALTER TABLE public.meetings ADD COLUMN attendee_id uuid;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND column_name = 'start_time'
+    ) THEN
+      ALTER TABLE public.meetings ADD COLUMN start_time timestamptz;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND column_name = 'end_time'
+    ) THEN
+      ALTER TABLE public.meetings ADD COLUMN end_time timestamptz;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND column_name = 'attendee_email'
+    ) THEN
+      ALTER TABLE public.meetings ADD COLUMN attendee_email text;
+    END IF;
+
+    UPDATE public.meetings m
+    SET host_id = COALESCE(host_id, s.user_id)
+    FROM public.bsl_speakers s
+    WHERE m.speaker_id = s.id
+      AND m.host_id IS NULL
+      AND s.user_id IS NOT NULL;
+
+    UPDATE public.meetings
+    SET attendee_id = COALESCE(attendee_id, requester_id)
+    WHERE attendee_id IS NULL;
+
+    UPDATE public.meetings
+    SET start_time = COALESCE(start_time, scheduled_at),
+        end_time = COALESCE(end_time, scheduled_at + make_interval(mins => COALESCE(duration_minutes, 15)))
+    WHERE start_time IS NULL OR end_time IS NULL;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND constraint_name = 'meetings_host_id_fkey'
+    ) THEN
+      ALTER TABLE public.meetings
+        ADD CONSTRAINT meetings_host_id_fkey
+        FOREIGN KEY (host_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND constraint_name = 'meetings_attendee_id_fkey'
+    ) THEN
+      ALTER TABLE public.meetings
+        ADD CONSTRAINT meetings_attendee_id_fkey
+        FOREIGN KEY (attendee_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'meetings'
+        AND constraint_name = 'meetings_slot_id_fkey'
+    ) THEN
+      ALTER TABLE public.meetings
+        ADD CONSTRAINT meetings_slot_id_fkey
+        FOREIGN KEY (slot_id) REFERENCES public.meeting_slots(id) ON DELETE SET NULL;
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'user_blocks'
+  ) THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'user_blocks'
+        AND column_name = 'blocker_user_id'
+    ) THEN
+      ALTER TABLE public.user_blocks ADD COLUMN blocker_user_id uuid;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'user_blocks'
+        AND column_name = 'blocked_user_id'
+    ) THEN
+      ALTER TABLE public.user_blocks ADD COLUMN blocked_user_id uuid;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'user_blocks'
+        AND column_name = 'speaker_id'
+    ) THEN
+      ALTER TABLE public.user_blocks ADD COLUMN speaker_id uuid;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'user_blocks'
+        AND column_name = 'blocked_at'
+    ) THEN
+      ALTER TABLE public.user_blocks ADD COLUMN blocked_at timestamptz NOT NULL DEFAULT now();
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'user_blocks'
+        AND column_name = 'is_muted'
+    ) THEN
+      ALTER TABLE public.user_blocks ADD COLUMN is_muted boolean NOT NULL DEFAULT false;
+    END IF;
+
+    UPDATE public.user_blocks ub
+    SET
+      blocker_user_id = COALESCE(ub.blocker_user_id, ub.blocker_id),
+      blocked_user_id = COALESCE(ub.blocked_user_id, ub.blocked_id),
+      blocked_at = COALESCE(ub.blocked_at, ub.created_at)
+    WHERE ub.blocker_user_id IS NULL
+       OR ub.blocked_user_id IS NULL
+       OR ub.blocked_at IS NULL;
+
+    UPDATE public.user_blocks ub
+    SET speaker_id = s.id
+    FROM public.bsl_speakers s
+    WHERE ub.speaker_id IS NULL
+      AND ub.blocker_user_id = s.user_id;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'user_blocks'
+        AND constraint_name = 'user_blocks_blocker_user_id_fkey'
+    ) THEN
+      ALTER TABLE public.user_blocks
+        ADD CONSTRAINT user_blocks_blocker_user_id_fkey
+        FOREIGN KEY (blocker_user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'user_blocks'
+        AND constraint_name = 'user_blocks_blocked_user_id_fkey'
+    ) THEN
+      ALTER TABLE public.user_blocks
+        ADD CONSTRAINT user_blocks_blocked_user_id_fkey
+        FOREIGN KEY (blocked_user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'user_blocks'
+        AND constraint_name = 'user_blocks_speaker_id_fkey'
+    ) THEN
+      ALTER TABLE public.user_blocks
+        ADD CONSTRAINT user_blocks_speaker_id_fkey
+        FOREIGN KEY (speaker_id) REFERENCES public.bsl_speakers(id) ON DELETE CASCADE;
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'meeting_chat_messages'
+  ) THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_chat_messages'
+        AND column_name = 'meeting_id'
+    ) THEN
+      ALTER TABLE public.meeting_chat_messages ADD COLUMN meeting_id uuid;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_chat_messages'
+        AND column_name = 'message_type'
+    ) THEN
+      ALTER TABLE public.meeting_chat_messages ADD COLUMN message_type text NOT NULL DEFAULT 'text';
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_chat_messages'
+        AND column_name = 'read_at'
+    ) THEN
+      ALTER TABLE public.meeting_chat_messages ADD COLUMN read_at timestamptz;
+    END IF;
+
+    UPDATE public.meeting_chat_messages mcm
+    SET meeting_id = COALESCE(mcm.meeting_id, mr.meeting_id)
+    FROM public.meeting_requests mr
+    WHERE mcm.meeting_request_id = mr.id
+      AND mr.meeting_id IS NOT NULL;
+
+    UPDATE public.meeting_chat_messages
+    SET message_type = COALESCE(message_type, 'text')
+    WHERE message_type IS NULL;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.meeting_chat_messages
+      WHERE meeting_id IS NULL
+    ) THEN
+      ALTER TABLE public.meeting_chat_messages
+        ALTER COLUMN meeting_id SET NOT NULL;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.meeting_chat_messages
+      WHERE message_type IS NULL
+    ) THEN
+      ALTER TABLE public.meeting_chat_messages
+        ALTER COLUMN message_type SET NOT NULL;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'meeting_chat_messages'
+        AND constraint_name = 'meeting_chat_messages_meeting_id_fkey'
+    ) THEN
+      ALTER TABLE public.meeting_chat_messages
+        ADD CONSTRAINT meeting_chat_messages_meeting_id_fkey
+        FOREIGN KEY (meeting_id) REFERENCES public.meetings(id) ON DELETE CASCADE;
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'chat_last_seen'
+  ) THEN
+    DROP INDEX IF EXISTS public.idx_chat_last_seen_meeting_user;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'chat_last_seen'
+        AND column_name = 'meeting_id'
+    ) THEN
+      ALTER TABLE public.chat_last_seen ADD COLUMN meeting_id uuid;
+    END IF;
+
+    UPDATE public.chat_last_seen cls
+    SET meeting_id = COALESCE(cls.meeting_id, mr.meeting_id)
+    FROM public.meeting_requests mr
+    WHERE cls.meeting_request_id = mr.id
+      AND mr.meeting_id IS NOT NULL;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.chat_last_seen
+      WHERE meeting_id IS NULL
+    ) THEN
+      ALTER TABLE public.chat_last_seen
+        ALTER COLUMN meeting_id SET NOT NULL;
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM information_schema.table_constraints
+      WHERE table_schema = 'public'
+        AND table_name = 'chat_last_seen'
+        AND constraint_name = 'chat_last_seen_meeting_id_fkey'
+    ) THEN
+      ALTER TABLE public.chat_last_seen
+        ADD CONSTRAINT chat_last_seen_meeting_id_fkey
+        FOREIGN KEY (meeting_id) REFERENCES public.meetings(id) ON DELETE CASCADE;
+    END IF;
   END IF;
 END;
 $$;
@@ -445,7 +1416,45 @@ CREATE INDEX IF NOT EXISTS idx_speed_dating_chats_user ON public.speed_dating_ch
 CREATE INDEX IF NOT EXISTS idx_speed_dating_chats_speaker ON public.speed_dating_chats (speaker_id);
 CREATE INDEX IF NOT EXISTS idx_chat_messages_chat ON public.chat_messages (chat_id);
 CREATE INDEX IF NOT EXISTS idx_meeting_chat_messages_meeting ON public.meeting_chat_messages (meeting_id);
-CREATE INDEX IF NOT EXISTS idx_chat_last_seen_meeting_user ON public.chat_last_seen (meeting_id, user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_last_seen_meeting_user ON public.chat_last_seen (meeting_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_user_agenda_status_user_event ON public.user_agenda_status (user_id, event_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_agenda_status_user_agenda
+  ON public.user_agenda_status (user_id, event_id, agenda_id)
+  WHERE agenda_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_agenda_status_user_meeting
+  ON public.user_agenda_status (user_id, event_id, meeting_id)
+  WHERE meeting_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_agenda_status_user_slot
+  ON public.user_agenda_status (user_id, event_id, slot_time)
+  WHERE slot_time IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.bsl_bookings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  speakerid text NOT NULL,
+  attendeeid text NOT NULL,
+  start timestamptz NOT NULL,
+  "end" timestamptz NOT NULL,
+  status text NOT NULL DEFAULT 'requested',
+  createdat timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.bsl_tickets (
+  ticketid text PRIMARY KEY,
+  userid text NOT NULL,
+  verified boolean NOT NULL DEFAULT false,
+  used boolean NOT NULL DEFAULT false,
+  issuedat timestamptz NOT NULL DEFAULT now(),
+  verifiedat timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS public.bsl_audit (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event text NOT NULL,
+  ref_id text,
+  actor text,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
 DROP VIEW IF EXISTS public."BSL_Bookings";
 DROP VIEW IF EXISTS public."BSL_Tickets";
@@ -490,8 +1499,11 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_agenda ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.meeting_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meeting_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_agenda_status ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_blocks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.speaker_availability ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_request_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.boost_transactions ENABLE ROW LEVEL SECURITY;
@@ -540,6 +1552,27 @@ CREATE POLICY notifications_update_own ON public.notifications
 
 DROP POLICY IF EXISTS notifications_delete_own ON public.notifications;
 CREATE POLICY notifications_delete_own ON public.notifications
+  FOR DELETE USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS meeting_slots_select_public ON public.meeting_slots;
+CREATE POLICY meeting_slots_select_public ON public.meeting_slots
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS user_agenda_status_select_own ON public.user_agenda_status;
+CREATE POLICY user_agenda_status_select_own ON public.user_agenda_status
+  FOR SELECT USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS user_agenda_status_insert_own ON public.user_agenda_status;
+CREATE POLICY user_agenda_status_insert_own ON public.user_agenda_status
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS user_agenda_status_update_own ON public.user_agenda_status;
+CREATE POLICY user_agenda_status_update_own ON public.user_agenda_status
+  FOR UPDATE USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS user_agenda_status_delete_own ON public.user_agenda_status;
+CREATE POLICY user_agenda_status_delete_own ON public.user_agenda_status
   FOR DELETE USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS user_blocks_select_own ON public.user_blocks;
@@ -2373,8 +3406,14 @@ GRANT SELECT, UPDATE, DELETE ON public.notifications TO authenticated;
 GRANT ALL ON public.notifications TO service_role;
 REVOKE INSERT ON public.notifications FROM anon, authenticated;
 
+GRANT SELECT ON public.meeting_slots TO anon, authenticated;
+GRANT ALL ON public.meeting_slots TO service_role;
+
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.meeting_requests TO authenticated;
 GRANT ALL ON public.meeting_requests TO service_role;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_agenda_status TO authenticated;
+GRANT ALL ON public.user_agenda_status TO service_role;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_blocks TO authenticated;
 GRANT ALL ON public.user_blocks TO service_role;
@@ -2418,7 +3457,7 @@ GRANT EXECUTE ON FUNCTION public.can_send_meeting_request(text, text, text) TO a
 GRANT EXECUTE ON FUNCTION public.can_make_meeting_request(text, text, numeric, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.insert_meeting_request(text, text, text, text, text, text, text, text, text, text, numeric, integer, timestamptz) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_meeting_requests_for_speaker(text, text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.generate_weekly_slots(text, date) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.generate_weekly_slots(text, date) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_speaker_available_slots(text, date, integer, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.accept_meeting_request(text, text, timestamptz, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.decline_meeting_request(text, text, text) TO authenticated;

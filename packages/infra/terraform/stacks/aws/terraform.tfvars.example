@@ -9,52 +9,11 @@ route53_zone_lat_name  = "hashpass.lat"
 route53_zone_club_name = "hashpass.club"
 github_pages_domain    = "hashpass.club"
 
-# Build lambda-deployment.zip before apply.
-# Example: ./packages/tools/scripts/package-lambda.sh
-lambda_zip_path         = "../../../../lambda-deployment.zip"
-lambda_source_code_hash = null
-
-# Keep /api mapping to match EXPO_PUBLIC_API_BASE_URL values
-api_mapping_key = "api"
-
-# Directus endpoints by environment
-# dev -> sso-dev.hashpass.co
-# prod -> sso.hashpass.co
-directus_urls = {
-  dev  = "https://sso-dev.hashpass.co"
-  prod = "https://sso.hashpass.co"
-}
-
-# Optional extra env vars injected into Lambda by environment
-lambda_environment_overrides = {
-  dev = {
-    EXPO_PUBLIC_API_BASE_URL = "https://api-dev.hashpass.tech/api"
-    EXPO_PUBLIC_BETTER_AUTH_URL = "https://api-dev.hashpass.tech/api/auth"
-  }
-  prod = {
-    EXPO_PUBLIC_API_BASE_URL = "https://api.hashpass.tech/api"
-    EXPO_PUBLIC_BETTER_AUTH_URL = "https://api.hashpass.tech/api/auth"
-  }
-}
-
-# CORS origins for API Gateway by environment
-api_cors_origins = {
-  dev = [
-    "http://localhost:8081",
-    "https://bsl-dev.hashpass.tech",
-    "https://bsl.hashpass.tech",
-    "https://blockchainsummit-dev.hashpass.lat",
-    "https://blockchainsummit.hashpass.lat"
-  ]
-  prod = [
-    "https://hashpass.tech",
-    "https://www.hashpass.tech",
-    "https://bsl.hashpass.tech",
-    "https://bsl-dev.hashpass.tech",
-    "https://blockchainsummit.hashpass.lat",
-    "https://blockchainsummit-dev.hashpass.lat"
-  ]
-}
+# Source-side CloudFront front door for hashpass.tech. The origin points at the
+# target-account production S3 website endpoint so Amplify can be retired.
+site_custom_domain_name = "hashpass.tech"
+site_www_domain_name    = "www.hashpass.tech"
+site_origin_domain_name = "hashpass-production-site-952191196420-us-east-2.s3-website.us-east-2.amazonaws.com"
 
 # Set true and provide existing Amplify App ID if you want Terraform
 # to bind blockchainsummit(.dev).hashpass.lat to branches automatically.

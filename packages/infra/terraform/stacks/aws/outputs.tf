@@ -1,25 +1,21 @@
-output "api_base_urls" {
-  description = "API base URLs consumed by the frontend"
-  value = {
-    dev  = module.api_dev.api_base_url
-    prod = module.api_prod.api_base_url
-  }
+output "site_cloudfront_distribution_id" {
+  description = "CloudFront distribution ID for the hashpass.tech front door"
+  value       = aws_cloudfront_distribution.site.id
 }
 
-output "api_custom_domains" {
-  description = "Custom API domains"
-  value = {
-    dev  = module.api_dev.custom_domain_name
-    prod = module.api_prod.custom_domain_name
-  }
+output "site_cloudfront_distribution_domain_name" {
+  description = "CloudFront distribution domain name for the hashpass.tech front door"
+  value       = aws_cloudfront_distribution.site.domain_name
 }
 
-output "lambda_functions" {
-  description = "Lambda function names"
-  value = {
-    dev  = module.api_dev.lambda_function_name
-    prod = module.api_prod.lambda_function_name
-  }
+output "site_origin_domain_name" {
+  description = "Origin domain name behind the hashpass.tech CloudFront front door"
+  value       = local.site_origin_domain_name
+}
+
+output "site_acm_certificate_arn" {
+  description = "ACM certificate ARN for the hashpass.tech front door"
+  value       = aws_acm_certificate_validation.site.certificate_arn
 }
 
 output "frontend_domain_association_arn" {

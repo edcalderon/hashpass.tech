@@ -35,7 +35,5 @@ output "custom_domain_target" {
 
 output "api_base_url" {
   description = "Base URL including mapping key"
-  value       = var.enable_custom_domain ? (
-    local.mapping_key == null ? "https://${var.domain_name}" : "https://${var.domain_name}/${local.mapping_key}"
-  ) : aws_apigatewayv2_stage.default.invoke_url
+  value       = var.enable_custom_domain ? "https://${var.domain_name}/api" : "${aws_apigatewayv2_stage.default.invoke_url}/api"
 }

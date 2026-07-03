@@ -13,11 +13,12 @@ The rule for every phase is simple:
 
 HashPass currently spans several AWS delivery paths:
 
-- `hashpass.tech` and `api.hashpass.tech` are still Amplify-backed in the source account
+- `hashpass.tech` is fronted by a source-account CloudFront distribution that points at the target-account static origin
+- `api.hashpass.tech` and `api-dev.hashpass.tech` live on the target-account Lambda + API Gateway path
 - `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` use CodeBuild and CodePipeline in the source account
 - the Android build runner lives on EC2 in the source account
 - the public `hashpass.tech` hosted zone also lives in the source account
-- the new account now has the target hosted zones, static site stack, BSL pipeline, API backend, and Android runner in place, but the public registrar delegation still points at the source account
+- the new account now has the target hosted zones, static site stack, API backend, and Android runner in place, but the public registrar delegation still points at the source account
 
 The new account started empty for these surfaces, which made it suitable for a clean IaC rollout and a low-risk rollback posture. It is now populated in parallel with the source account so we can validate before any registrar flip.
 
@@ -33,12 +34,12 @@ The new account started empty for these surfaces, which made it suitable for a c
 
 The source account currently contains these relevant resources:
 
-- Amplify app `dy8duury54wam` for `hashpass.tech`
-- Lambda functions `hashpass-api-dev` and `hashpass-api-prod`
+- the source CloudFront front door for `hashpass.tech`
 - CodeBuild projects `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`
 - CodePipeline pipelines `bsl-hashpass-dev` and `bsl-hashpass-prod`
 - EC2 runner `hashpass-mobile-release-1`
 - Route53 hosted zone `hashpass.tech`
+- legacy source-account API Gateway and Lambda resources are retired or being removed now that the target API custom domains are live
 
 The hosted zone also carries DNS for `api.hashpass.tech`, `api-dev.hashpass.tech`, `bsl.hashpass.tech`, `bsl-dev.hashpass.tech`, `www.hashpass.tech`, and several legacy or auxiliary records.
 
@@ -51,9 +52,9 @@ The hosted zone also carries DNS for `api.hashpass.tech`, `api-dev.hashpass.tech
 - If CloudFront is unavailable in the new account, use the S3 website fallback first and keep the CloudFront toggle off until AWS verifies the account.
 - The first web surface lands in `packages/infra/terraform/stacks/hashpass-web` and deploys through the shared EC2 worker plus `packages/tools/scripts/build-static-site.sh` and `packages/tools/scripts/deploy-static-site.sh`.
 - That stack now provisions both the production `main` pipeline and the development `develop` pipeline in the target account.
-- The target DNS stack now also creates a dedicated `dev.hashpass.tech` hosted zone so the development site can be isolated from the apex cutover.
+- The target DNS stack now keeps `dev.hashpass.tech` inside the parent `hashpass.tech` hosted zone so the development site can be isolated without a separate child zone.
 - The DNS landing zone lives in `packages/infra/terraform/stacks/hashpass-dns`.
-- The API backend lives in `packages/infra/terraform/stacks/hashpass-api-target` and starts with `enable_custom_domain = false` until the new nameservers are delegated.
+- The API backend lives in `packages/infra/terraform/stacks/hashpass-api-target` and now owns the public custom domains in the target account.
 - Use `pnpm run infra:hashpass-web:plan` and `pnpm run infra:hashpass-web:apply` once the CodeConnections handshake is complete and the target-account `terraform.tfvars` is populated.
 - Keep the source account untouched.
 - Validate the new stack using the S3 website endpoint or a temporary parallel hostname before any DNS cutover.
@@ -84,6 +85,7 @@ The hosted zone also carries DNS for `api.hashpass.tech`, `api-dev.hashpass.tech
 - The `hashpass.tech`, `hashpass.lat`, and `hashpass.club` hosted zones now exist in the target account.
 - Compare records before updating any registrar or alias data.
 - Switch traffic only after the target website, API, and runner paths are validated.
+- Once the source CloudFront front door is verified, remove any remaining legacy source-account API/Lambda leftovers that are no longer needed.
 
 ## Rollback procedure
 
@@ -91,7 +93,7 @@ Rollback should be a traffic flip, not a rebuild.
 
 1. Restore the DNS target back to the source account.
 2. Keep the target stack deployed for debugging.
-3. Leave the source Amplify app, pipelines, and runner intact.
+3. Leave the source CloudFront front door, pipelines, and runner intact.
 4. Re-test the source stack.
 5. Only destroy the target stack after the source has been confirmed healthy again.
 
