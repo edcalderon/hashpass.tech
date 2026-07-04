@@ -1,3 +1,16 @@
+## [1.8.149](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.148...v1.8.149) (2026-07-04)
+
+
+### Bug Fixes
+
+* harden status page and update release tooling ([47ff324](https://github.com/hashpass-tech/hashpass.tech/commit/47ff3241224736d2404bd98d9b4fcff8447b0427))
+* resolve status page typecheck ([f1b36fc](https://github.com/hashpass-tech/hashpass.tech/commit/f1b36fc7d91b7e95ffa79b94723a19ba6ff85fbe))
+* restore status platform import ([87c5fa1](https://github.com/hashpass-tech/hashpass.tech/commit/87c5fa15be95ad54dd7a953610e174d9305aac40))
+
+
+
+
+
 ## [1.8.148](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.147...v1.8.148) (2026-07-03)
 
 
