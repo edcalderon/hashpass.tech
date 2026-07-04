@@ -39,9 +39,11 @@ jest.mock('@hashpass/auth', () => ({
 }));
 
 import { EventApiClient } from '../../lib/api-client';
+import { Platform } from 'react-native';
 
 const envBackup: Record<string, string | undefined> = {};
 const originalFetch = global.fetch;
+const originalPlatformOs = Platform.OS;
 
 const setEnv = (name: string, value?: string) => {
   if (!(name in envBackup)) {
@@ -53,6 +55,15 @@ const setEnv = (name: string, value?: string) => {
   } else {
     delete process.env[name];
   }
+};
+
+const setWindow = (value?: any) => {
+  if (typeof value === 'undefined') {
+    delete (global as typeof globalThis & { window?: any }).window;
+    return;
+  }
+
+  (global as typeof globalThis & { window?: any }).window = value;
 };
 
 const restoreEnv = () => {
@@ -70,13 +81,17 @@ const restoreEnv = () => {
 };
 
 beforeEach(() => {
+  Platform.OS = 'android';
   setEnv('EXPO_PUBLIC_API_BASE_URL', 'https://api.hashpass.tech/api');
   mockAuthSession.mockClear();
+  setWindow(undefined);
 });
 
 afterEach(() => {
   restoreEnv();
   global.fetch = originalFetch;
+  Platform.OS = originalPlatformOs;
+  setWindow(undefined);
 });
 
 describe('EventApiClient credential handling', () => {
@@ -139,6 +154,49 @@ describe('EventApiClient credential handling', () => {
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://api-dev.hashpass.tech/api/status');
+    expect(init).toEqual(expect.objectContaining({
+      method: 'GET',
+      credentials: 'omit',
+    }));
+    expect(mockAuthSession).not.toHaveBeenCalled();
+  });
+
+  it('prefers the injected web runtime API base URL over the fallback remote API', async () => {
+    Platform.OS = 'web';
+    setEnv('EXPO_PUBLIC_API_BASE_URL', undefined);
+    setEnv('EXPO_PUBLIC_EAS_BUILD_PROFILE', 'preview');
+    setEnv('EXPO_PUBLIC_SUPABASE_PROFILE', 'core-development');
+    setWindow({
+      location: {
+        hostname: 'hashpass.tech',
+        origin: 'https://hashpass.tech',
+      },
+      __API_BASE_URL__: 'https://api.hashpass.tech/api',
+    });
+
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => ({ status: 'healthy' }),
+    }));
+
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new EventApiClient();
+    const response = await client.request('status', {
+      skipEventSegment: true,
+      skipAuth: true,
+    });
+
+    expect(response.success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.hashpass.tech/api/status');
     expect(init).toEqual(expect.objectContaining({
       method: 'GET',
       credentials: 'omit',

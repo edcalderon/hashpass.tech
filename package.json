@@ -227,7 +227,7 @@
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.28.5",
-    "@edcalderon/versioning": "^1.5.9",
+    "@edcalderon/versioning": "^1.5.11",
     "@expo/metro-config": "^0.20.17",
     "@lingui/cli": "^5.5.2",
     "@storybook/addon-essentials": "^8.6.14",

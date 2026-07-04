@@ -79,6 +79,31 @@ const resolveFallbackApiBaseUrl = () => {
     : REMOTE_API_BASE_BY_ENV.production;
 };
 
+const resolveWebRuntimeApiBaseUrl = () => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return null;
+  }
+
+  const runtime = (window as typeof window & {
+    __HASHPASS_RUNTIME__?: { apiBaseUrl?: string };
+    __API_BASE_URL__?: string;
+  }).__HASHPASS_RUNTIME__;
+
+  const candidates = [
+    runtime?.apiBaseUrl,
+    (window as typeof window & { __API_BASE_URL__?: string }).__API_BASE_URL__,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeBaseUrl(String(candidate || ''));
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return null;
+};
+
 const resolveRuntimeApiBaseUrl = () => {
   const envBase =
     ((process.env.EXPO_PUBLIC_API_BASE_URL || '') ||
@@ -86,7 +111,7 @@ const resolveRuntimeApiBaseUrl = () => {
       '').trim();
 
   if (!envBase) {
-    return Platform.OS === 'web' ? '' : resolveFallbackApiBaseUrl();
+    return resolveWebRuntimeApiBaseUrl() || resolveFallbackApiBaseUrl();
   }
 
   const normalizedBase = normalizeBaseUrl(envBase);

@@ -23,7 +23,7 @@
 
 * **infra:** use tag-based web worker control ([6d0216c](https://github.com/hashpass-tech/hashpass.tech/commit/6d0216cbaf45cfff49108eaa4af1145d14a897e3))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 

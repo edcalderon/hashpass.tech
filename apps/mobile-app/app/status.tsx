@@ -59,6 +59,58 @@ interface HealthCheck {
   };
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isString = (value: unknown): value is string => typeof value === 'string';
+const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean';
+const isNumber = (value: unknown): value is number => typeof value === 'number';
+
+const hasValidHealthCheckShape = (value: unknown): value is HealthCheck => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const services = value.services;
+  const checks = value.checks;
+  const database = isRecord(services?.database) ? services.database : null;
+  const email = isRecord(services?.email) ? services.email : null;
+  const api = isRecord(services?.api) ? services.api : null;
+  const agenda = isRecord(checks?.agenda) ? checks.agenda : null;
+  const speakers = isRecord(checks?.speakers) ? checks.speakers : null;
+  const bookings = isRecord(checks?.bookings) ? checks.bookings : null;
+  const passes = isRecord(checks?.passes) ? checks.passes : null;
+
+  return (
+    isString(value.status) &&
+    isString(value.timestamp) &&
+    isRecord(services) &&
+    database !== null &&
+    isString(database.status) &&
+    isRecord(database.tables) &&
+    email !== null &&
+    isString(email.status) &&
+    isBoolean(email.configured) &&
+    api !== null &&
+    isString(api.status) &&
+    isRecord(api.endpoints) &&
+    isRecord(checks) &&
+    agenda !== null &&
+    isBoolean(agenda.hasData) &&
+    (isString(agenda.lastUpdated) || agenda.lastUpdated === null) &&
+    isNumber(agenda.itemCount) &&
+    speakers !== null &&
+    isNumber(speakers.count) &&
+    isBoolean(speakers.accessible) &&
+    bookings !== null &&
+    isNumber(bookings.count) &&
+    isBoolean(bookings.accessible) &&
+    passes !== null &&
+    isNumber(passes.count) &&
+    isBoolean(passes.accessible)
+  );
+};
+
 export default function StatusPage() {
   const { isDark, colors } = useTheme();
   const { t } = useTranslation('status');
@@ -80,6 +132,10 @@ export default function StatusPage() {
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch status');
+      }
+
+      if (!hasValidHealthCheckShape(result.data)) {
+        throw new Error('Invalid status payload received');
       }
 
       setHealthCheck(result.data);
