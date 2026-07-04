@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
-import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import LoadingScreen from '../components/LoadingScreen';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation } from '../i18n/i18n';
+import { MaterialIcons } from '../lib/vector-icons';
 
 interface HealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -71,8 +71,8 @@ const hasValidHealthCheckShape = (value: unknown): value is HealthCheck => {
     return false;
   }
 
-  const services = value.services;
-  const checks = value.checks;
+  const services = isRecord(value.services) ? value.services : null;
+  const checks = isRecord(value.checks) ? value.checks : null;
   const database = isRecord(services?.database) ? services.database : null;
   const email = isRecord(services?.email) ? services.email : null;
   const api = isRecord(services?.api) ? services.api : null;
@@ -125,7 +125,7 @@ export default function StatusPage() {
       setError(null);
       
       // Use apiClient with skipEventSegment to access global /api/status endpoint
-      const result = await apiClient.request<HealthCheck>('status', {
+      const result = await apiClient.request('status', {
         skipEventSegment: true,
         skipAuth: true,
       });
