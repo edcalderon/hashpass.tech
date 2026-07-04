@@ -1,3 +1,14 @@
+## [1.8.150](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.149...v1.8.150) (2026-07-04)
+
+
+### Features
+
+* add external status preview to version modal ([ff3e607](https://github.com/hashpass-tech/hashpass.tech/commit/ff3e607dd883842b58656486c1159343bca3a447))
+
+
+
+
+
 ## [1.8.149](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.148...v1.8.149) (2026-07-04)
 
 

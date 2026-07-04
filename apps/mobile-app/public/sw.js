@@ -1,4 +1,4 @@
-const APP_VERSION = '1.8.149';
+const APP_VERSION = '1.8.150';
 const STATIC_CACHE = `hashpass-static-v${APP_VERSION}`;
 const PAGE_CACHE = `hashpass-pages-v${APP_VERSION}`;
 const OFFLINE_URL = '/offline.html';
