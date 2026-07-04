@@ -1,12 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Linking, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
+import { MaterialIcons } from '../lib/vector-icons';
+import { useRouter } from 'expo-router';
 import { versionService } from '../lib/services/version-service';
+import type { VersionInfo } from '../config/version';
 import { t } from '@lingui/macro';
+import ExternalStatusPreview from './ExternalStatusPreview';
 
 const HISTORY_ITEMS_PER_PAGE = 9;
+const EXTERNAL_STATUS_URL = 'https://hashpass.status.cig.technology/';
 
 interface VersionDetailsModalProps {
   visible: boolean;
@@ -33,7 +36,7 @@ export default function VersionDetailsModal({
   const totalHistoryPages = Math.max(1, Math.ceil(versionHistory.length / HISTORY_ITEMS_PER_PAGE));
   const safeHistoryPage = Math.min(historyPage, totalHistoryPages);
 
-  const paginatedVersionHistory = useMemo(() => {
+  const paginatedVersionHistory = useMemo<VersionInfo[]>(() => {
     const start = (safeHistoryPage - 1) * HISTORY_ITEMS_PER_PAGE;
     return versionHistory.slice(start, start + HISTORY_ITEMS_PER_PAGE);
   }, [safeHistoryPage, versionHistory]);
@@ -144,7 +147,7 @@ export default function VersionDetailsModal({
           {versionInfo.features.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'version.features', message: 'New Features' })}</Text>
-              {versionInfo.features.map((feature, index) => (
+              {versionInfo.features.map((feature: string, index: number) => (
                 <View key={index} style={styles.featureItem}>
                   <MaterialIcons name="check-circle" size={16} color="#34A853" />
                   <Text style={styles.featureText}>{feature}</Text>
@@ -157,7 +160,7 @@ export default function VersionDetailsModal({
           {versionInfo.bugfixes.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'version.bugfixes', message: 'Bug Fixes' })}</Text>
-              {versionInfo.bugfixes.map((fix, index) => (
+              {versionInfo.bugfixes.map((fix: string, index: number) => (
                 <View key={index} style={styles.featureItem}>
                   <MaterialIcons name="bug-report" size={16} color="#FF9500" />
                   <Text style={styles.featureText}>{fix}</Text>
@@ -170,7 +173,7 @@ export default function VersionDetailsModal({
           {versionInfo.breakingChanges.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'version.breakingChanges', message: 'Breaking Changes' })}</Text>
-              {versionInfo.breakingChanges.map((change, index) => (
+              {versionInfo.breakingChanges.map((change: string, index: number) => (
                 <View key={index} style={styles.featureItem}>
                   <MaterialIcons name="warning" size={16} color="#FF3B30" />
                   <Text style={styles.featureText}>{change}</Text>
@@ -182,7 +185,7 @@ export default function VersionDetailsModal({
           {/* Version History */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t({ id: 'version.history', message: 'Version History' })}</Text>
-            {paginatedVersionHistory.map((version) => {
+            {paginatedVersionHistory.map((version: VersionInfo) => {
               const tagUrl = buildInfo?.gitRepoUrl 
                 ? `${buildInfo.gitRepoUrl}/releases/tag/v${version.version}`
                 : null;
@@ -296,6 +299,12 @@ export default function VersionDetailsModal({
               </TouchableOpacity>
             </View>
           )}
+
+          {/* External Status Page */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t({ id: 'version.externalStatus', message: 'External Status Page' })}</Text>
+            <ExternalStatusPreview url={EXTERNAL_STATUS_URL} />
+          </View>
         </ScrollView>
       </View>
     </Modal>
