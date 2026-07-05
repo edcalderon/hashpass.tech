@@ -1281,9 +1281,11 @@ export default function AuthScreen() {
             style={[styles.backButton, isDesktopLayout ? styles.backButtonDesktop : null]}
             onPress={() => router.push('/home')}
             accessibilityLabel={t('back', 'Go Back')}
+            accessibilityRole="button"
+            activeOpacity={0.85}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={28} color={isNativeLightMode ? '#1f2125' : '#fff'} />
+            <Ionicons name="arrow-back" size={26} color={isDark ? '#f8f8fb' : '#121212'} />
           </TouchableOpacity>
 
           <ScrollView
@@ -1979,11 +1981,27 @@ const getStyles = (
       position: 'absolute',
       top: 20,
       left: 20,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isDark ? 'rgba(6, 9, 16, 0.72)' : 'rgba(255, 255, 255, 0.88)',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(13,16,24,0.10)',
+      ...(Platform.OS === 'web'
+        ? { boxShadow: isDark ? '0 8px 22px rgba(0,0,0,0.28)' : '0 8px 22px rgba(0,0,0,0.16)' }
+        : {
+          elevation: 3,
+        }),
       zIndex: 1001,
     },
     backButtonDesktop: {
       top: 26,
       left: 26,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
     },
     scrollView: {
       flex: 1,

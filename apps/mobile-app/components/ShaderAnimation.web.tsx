@@ -1,1 +1,1 @@
-export { ShaderAnimation as default } from '../../../packages/ui/src/ShaderAnimation';
+export { default } from './auth/AuthBackgroundScene';

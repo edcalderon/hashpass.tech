@@ -404,3 +404,5 @@ export const AuthBackgroundScene: FC = () => {
     </ErrorBoundary>
   );
 }
+
+export default AuthBackgroundScene;

@@ -23,7 +23,7 @@
 
 * stabilize status and auth startup ([6621bb2](https://github.com/hashpass-tech/hashpass.tech/commit/6621bb2f07a76767184db982d04034d6210829ce))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 
