@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
-import { Pool } from 'pg';
 import { ENV_CONFIG, SSO_CONFIG } from '@hashpass/config';
 import { syncPublicUserRegistry } from '../auth/public-user-registry';
+import { getDatabasePool } from './database-pool';
 
 const normalizeAuthPath = (value?: string | null): string => {
   const trimmed = (value || '/api/auth').trim();
@@ -33,8 +33,6 @@ const DEFAULT_ALLOWED_HOSTS = Array.from(
 );
 const DEFAULT_TRUSTED_ORIGINS = SSO_CONFIG.cors.origins;
 
-let pool: Pool | null = null;
-
 const readEnv = (name: string): string | undefined => {
   const value = process.env[name]?.trim();
   return value || undefined;
@@ -46,60 +44,7 @@ const readListEnv = (name: string): string[] =>
     .map((value) => value.trim())
     .filter(Boolean);
 
-const isTruthyEnv = (value?: string): boolean =>
-  ['1', 'true', 'yes', 'on'].includes((value || '').toLowerCase());
-
-const isDatabaseSslDisabled = (): boolean =>
-  (readEnv('BETTER_AUTH_DATABASE_SSL') || '').toLowerCase() === 'false';
-
-const shouldRejectUnauthorizedDatabaseSsl = (): boolean =>
-  isTruthyEnv(readEnv('BETTER_AUTH_DATABASE_SSL_REJECT_UNAUTHORIZED'));
-
-const normalizeDatabaseConnectionString = (connectionString: string): string => {
-  if (isDatabaseSslDisabled() || shouldRejectUnauthorizedDatabaseSsl()) {
-    return connectionString;
-  }
-
-  try {
-    const url = new URL(connectionString);
-    const sslMode = url.searchParams.get('sslmode')?.toLowerCase();
-
-    if (!sslMode || ['prefer', 'require', 'verify-ca', 'verify-full'].includes(sslMode)) {
-      url.searchParams.set('sslmode', 'no-verify');
-    }
-
-    return url.toString();
-  } catch {
-    return connectionString;
-  }
-};
-
-export const getDatabasePool = (): Pool => {
-  if (pool) return pool;
-
-  const connectionString =
-    readEnv('BETTER_AUTH_DATABASE_URL') ||
-    readEnv('BSL_BETTER_AUTH_DATABASE_URL') ||
-    readEnv('BSL_DATABASE_URL') ||
-    readEnv('DATABASE_URL');
-
-  if (!connectionString) {
-    console.warn(
-      'Better Auth database is not configured. Set BETTER_AUTH_DATABASE_URL or BSL_BETTER_AUTH_DATABASE_URL before using /api/auth.'
-    );
-  }
-
-  pool = new Pool({
-    connectionString: connectionString
-      ? normalizeDatabaseConnectionString(connectionString)
-      : 'postgres://invalid:invalid@localhost:5432/better_auth_missing',
-    ssl: isDatabaseSslDisabled()
-      ? false
-      : { rejectUnauthorized: shouldRejectUnauthorizedDatabaseSsl() },
-  });
-
-  return pool;
-};
+export { getDatabasePool };
 
 const splitName = (name?: string | null) => {
   const trimmed = (name || '').trim();

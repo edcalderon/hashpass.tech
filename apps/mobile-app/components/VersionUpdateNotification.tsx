@@ -130,10 +130,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       width: '100%',
       maxWidth: 360,
       alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.35,
-      shadowRadius: 16,
+      boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.35)',
       elevation: 16,
     },
     iconRow: {

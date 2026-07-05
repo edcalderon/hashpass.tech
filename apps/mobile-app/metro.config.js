@@ -20,8 +20,11 @@ const { withNativeWind } = require('nativewind/metro');
 const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
 const { FileStore } = require('metro-cache');
 const { resolve } = require('metro-resolver');
+const { createRequire } = require('module');
 
 const config = getDefaultConfig(__dirname);
+const workspaceRoot = path.resolve(__dirname, '../..');
+const workspaceRequire = createRequire(path.join(workspaceRoot, 'package.json'));
 
 // Persist Metro's per-file transform cache to a stable directory.
 // On the EC2 runner METRO_CACHE_DIR=/home/runner/.metro-cache (set in the workflow),
@@ -84,12 +87,68 @@ const resolveZustandCommonJs = (moduleName) => {
   return fs.existsSync(candidatePath) ? candidatePath : null;
 };
 
+const resolveWorkspaceNodeModulesPath = (moduleName) => {
+  const normalizedModuleName = moduleName
+    .replace(/^\.\//, '')
+    .replace(/^\/+/, '');
+
+  if (!normalizedModuleName.startsWith('node_modules/')) {
+    return null;
+  }
+
+  const requestedPath = path.join(workspaceRoot, normalizedModuleName);
+  const candidates = [
+    requestedPath,
+    `${requestedPath}.js`,
+    `${requestedPath}.mjs`,
+    `${requestedPath}.cjs`,
+    `${requestedPath}.json`,
+    `${requestedPath}.ts`,
+    `${requestedPath}.tsx`,
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile()) || null;
+};
+
+const singletonModulePrefixes = [
+  'react',
+  'react-dom',
+  'react-native-web',
+  'scheduler',
+];
+
+const resolveSingletonModule = (moduleName) => {
+  const shouldResolveFromApp = singletonModulePrefixes.some(
+    (prefix) => moduleName === prefix || moduleName.startsWith(`${prefix}/`)
+  );
+
+  if (!shouldResolveFromApp) {
+    return null;
+  }
+
+  try {
+    return workspaceRequire.resolve(moduleName);
+  } catch (error) {
+    return null;
+  }
+};
+
 config.watchFolders = [
   path.resolve(__dirname, '../../packages'),
   path.resolve(__dirname, '../../node_modules'),
 ];
 
 const metroResolveRequest = (context, moduleName, platform) => {
+  const workspaceNodeModulePath = resolveWorkspaceNodeModulesPath(moduleName);
+  if (workspaceNodeModulePath) {
+    return { type: 'sourceFile', filePath: workspaceNodeModulePath };
+  }
+
+  const singletonModule = resolveSingletonModule(moduleName);
+  if (singletonModule) {
+    return { type: 'sourceFile', filePath: singletonModule };
+  }
+
   if (
     moduleName === '@lingui/macro' ||
     moduleName.startsWith('@lingui/macro/') ||
@@ -145,6 +204,10 @@ config.resolver = {
   ...config.resolver,
   extraNodeModules: {
     ...(config.resolver?.extraNodeModules || {}),
+    react: path.dirname(workspaceRequire.resolve('react/package.json')),
+    'react-dom': path.dirname(workspaceRequire.resolve('react-dom/package.json')),
+    'react-native-web': path.dirname(workspaceRequire.resolve('react-native-web/package.json')),
+    scheduler: path.dirname(workspaceRequire.resolve('scheduler/package.json')),
     '@lingui/macro': path.resolve(__dirname, 'lib/lingui-macro-shim.ts'),
   },
   resolveRequest: metroResolveRequest,

@@ -1,10 +1,11 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.150",
+  "version": "1.8.151",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "patchedDependencies": {
+      "metro-file-map@0.82.5": "patches/metro-file-map@0.82.5.patch",
       "react-native-css-interop@0.2.1": "patches/react-native-css-interop@0.2.1.patch"
     }
   },

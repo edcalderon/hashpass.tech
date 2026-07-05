@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { versionTracker } from '../lib/version-tracker';
 
@@ -47,7 +47,7 @@ export default function VersionBadge({
   return <BadgeContent />;
 }
 
-const getStyles = (isDark: boolean, colors: any, size: string) => {
+const getStyles = (isDark: boolean, colors: any, size: 'small' | 'medium' | 'large') => {
   const sizeConfig = {
     small: {
       paddingHorizontal: 6,
@@ -81,10 +81,9 @@ const getStyles = (isDark: boolean, colors: any, size: string) => {
       paddingHorizontal: config.paddingHorizontal,
       paddingVertical: config.paddingVertical,
       borderRadius: config.borderRadius,
-      shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      boxShadow: isDark
+        ? '0px 2px 4px rgba(255, 255, 255, 0.1)'
+        : '0px 2px 4px rgba(0, 0, 0, 0.1)',
       elevation: 2,
     },
     icon: {

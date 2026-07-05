@@ -3,7 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
-import VersionInfoDrawer, { VersionStatusState } from './VersionInfoDrawer';
+import VersionInfoDrawer from './VersionInfoDrawer';
+import type { VersionStatusState } from './VersionInfoDrawer';
+
+const STATUS_REQUEST_TIMEOUT_MS = 30000;
+
+const isAbortLikeError = (value: unknown): boolean => {
+  const message = value instanceof Error ? value.message : String(value || '');
+  return /aborted|cancelled|canceled/i.test(message);
+};
 
 interface VersionStatusIndicatorProps {
   compact?: boolean;
@@ -35,14 +43,20 @@ export default function VersionStatusIndicator({
       const response = await apiClient.get('/status', {
         skipEventSegment: true,
         skipAuth: true,
+        timeout: STATUS_REQUEST_TIMEOUT_MS,
       });
 
       if (response.success) {
         setStatus(response.data.status || 'unknown');
-      } else {
+      } else if (!isAbortLikeError(response.error)) {
         setStatus('unhealthy');
+      } else {
+        return;
       }
     } catch (error) {
+      if (isAbortLikeError(error)) {
+        return;
+      }
       console.error('Status check failed:', error);
       setStatus('unhealthy');
     }
@@ -66,7 +80,7 @@ export default function VersionStatusIndicator({
   if (compact) {
     return (
       <VersionInfoDrawer status={status} showStatusIndicator={true}>
-        {(openDrawer) => (
+        {(openDrawer: () => void) => (
           <TouchableOpacity
             style={styles.compactContainer}
             onPress={openDrawer}
@@ -84,7 +98,7 @@ export default function VersionStatusIndicator({
 
   return (
     <VersionInfoDrawer status={status} showStatusIndicator={true}>
-      {(openDrawer) => (
+      {(openDrawer: () => void) => (
         <TouchableOpacity
           style={styles.container}
           onPress={openDrawer}
@@ -144,10 +158,6 @@ const getStyles = (isDark: boolean, colors: any, size: 'small' | 'medium' | 'lar
     width: size === 'small' ? 8 : size === 'large' ? 12 : 10,
     height: size === 'small' ? 8 : size === 'large' ? 12 : 10,
     borderRadius: size === 'small' ? 4 : size === 'large' ? 6 : 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-    elevation: 3,
+    boxShadow: '0px 0px 3px rgba(0, 0, 0, 0.40)',
   },
 });

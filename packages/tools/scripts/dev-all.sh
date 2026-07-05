@@ -106,7 +106,7 @@ echo "Starting mobile app..."
 (
   cd apps/mobile-app
   npm run env:propagate local
-  NODE_OPTIONS='--max-old-space-size=6144' pnpm exec expo start --web --clear --port "${MOBILE_PORT}"
+  EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS='--max-old-space-size=6144' pnpm exec expo start --web --clear --port "${MOBILE_PORT}"
 ) &
 MOBILE_PID=$!
 

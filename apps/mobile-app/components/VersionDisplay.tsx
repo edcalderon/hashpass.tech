@@ -7,6 +7,27 @@ import { apiClient } from '../lib/api-client';
 import VersionInfoDrawer from './VersionInfoDrawer';
 import type { VersionStatusState } from './VersionInfoDrawer';
 
+const STATUS_REQUEST_TIMEOUT_MS = 30000;
+
+const isAbortLikeError = (value: unknown): boolean => {
+  const message = value instanceof Error ? value.message : String(value || '');
+  return /aborted|cancelled|canceled/i.test(message);
+};
+
+function VersionBadge({
+  styles,
+  badgeInfo,
+}: {
+  styles: ReturnType<typeof getStyles>;
+  badgeInfo: { color: string; text: string };
+}) {
+  return (
+    <View style={[styles.versionBadge, { backgroundColor: badgeInfo.color }]}>
+      <Text style={styles.versionBadgeText}>{badgeInfo.text}</Text>
+    </View>
+  );
+}
+
 interface VersionDisplayProps {
   showInSidebar?: boolean;
   compact?: boolean;
@@ -38,24 +59,24 @@ export default function VersionDisplay({
       const response = await apiClient.get('/status', {
         skipEventSegment: true,
         skipAuth: true,
+        timeout: STATUS_REQUEST_TIMEOUT_MS,
       });
 
       if (response.success) {
         setStatus(response.data.status || 'unknown');
-      } else {
+      } else if (!isAbortLikeError(response.error)) {
         setStatus('unhealthy');
+      } else {
+        return;
       }
     } catch (error) {
+      if (isAbortLikeError(error)) {
+        return;
+      }
       console.error('Status check failed:', error);
       setStatus('unhealthy');
     }
   };
-
-  const VersionBadge = () => (
-    <View style={[styles.versionBadge, { backgroundColor: badgeInfo.color }]}>
-      <Text style={styles.versionBadgeText}>{badgeInfo.text}</Text>
-    </View>
-  );
 
   if (compact) {
     return (
@@ -66,7 +87,7 @@ export default function VersionDisplay({
             onPress={openDrawer}
           >
             <Text style={styles.compactText}>v{versionInfo.version}</Text>
-            <VersionBadge />
+            <VersionBadge styles={styles} badgeInfo={badgeInfo} />
           </TouchableOpacity>
         )}
       </VersionInfoDrawer>
@@ -91,7 +112,7 @@ export default function VersionDisplay({
             >
               <View style={styles.sidebarVersionInfo}>
                 <Text style={styles.sidebarVersionText}>v{versionInfo.version}</Text>
-                <VersionBadge />
+                <VersionBadge styles={styles} badgeInfo={badgeInfo} />
               </View>
               <MaterialIcons name="info-outline" size={16} color={colors.text.secondary} />
             </TouchableOpacity>
@@ -111,7 +132,7 @@ export default function VersionDisplay({
           >
             <View style={styles.versionInfo}>
               <Text style={styles.versionText}>v{versionInfo.version}</Text>
-              <VersionBadge />
+              <VersionBadge styles={styles} badgeInfo={badgeInfo} />
             </View>
             <MaterialIcons name="info-outline" size={20} color={colors.text.secondary} />
           </TouchableOpacity>

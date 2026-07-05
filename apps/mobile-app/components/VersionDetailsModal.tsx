@@ -6,10 +6,8 @@ import { useRouter } from 'expo-router';
 import { versionService } from '../lib/services/version-service';
 import type { VersionInfo } from '../config/version';
 import { t } from '@lingui/macro';
-import ExternalStatusPreview from './ExternalStatusPreview';
 
 const HISTORY_ITEMS_PER_PAGE = 9;
-const EXTERNAL_STATUS_URL = 'https://hashpass.status.cig.technology/';
 
 interface VersionDetailsModalProps {
   visible: boolean;
@@ -147,8 +145,8 @@ export default function VersionDetailsModal({
           {versionInfo.features.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'version.features', message: 'New Features' })}</Text>
-              {versionInfo.features.map((feature: string, index: number) => (
-                <View key={index} style={styles.featureItem}>
+              {versionInfo.features.map((feature: string) => (
+                <View key={`${versionInfo.version}-feature-${feature}`} style={styles.featureItem}>
                   <MaterialIcons name="check-circle" size={16} color="#34A853" />
                   <Text style={styles.featureText}>{feature}</Text>
                 </View>
@@ -160,8 +158,8 @@ export default function VersionDetailsModal({
           {versionInfo.bugfixes.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'version.bugfixes', message: 'Bug Fixes' })}</Text>
-              {versionInfo.bugfixes.map((fix: string, index: number) => (
-                <View key={index} style={styles.featureItem}>
+              {versionInfo.bugfixes.map((fix: string) => (
+                <View key={`${versionInfo.version}-bugfix-${fix}`} style={styles.featureItem}>
                   <MaterialIcons name="bug-report" size={16} color="#FF9500" />
                   <Text style={styles.featureText}>{fix}</Text>
                 </View>
@@ -173,8 +171,8 @@ export default function VersionDetailsModal({
           {versionInfo.breakingChanges.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'version.breakingChanges', message: 'Breaking Changes' })}</Text>
-              {versionInfo.breakingChanges.map((change: string, index: number) => (
-                <View key={index} style={styles.featureItem}>
+              {versionInfo.breakingChanges.map((change: string) => (
+                <View key={`${versionInfo.version}-breaking-${change}`} style={styles.featureItem}>
                   <MaterialIcons name="warning" size={16} color="#FF3B30" />
                   <Text style={styles.featureText}>{change}</Text>
                 </View>
@@ -300,11 +298,6 @@ export default function VersionDetailsModal({
             </View>
           )}
 
-          {/* External Status Page */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t({ id: 'version.externalStatus', message: 'External Status Page' })}</Text>
-            <ExternalStatusPreview url={EXTERNAL_STATUS_URL} />
-          </View>
         </ScrollView>
       </View>
     </Modal>
@@ -547,11 +540,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-    elevation: 3,
+    boxShadow: '0px 0px 3px rgba(0, 0, 0, 0.40)',
   },
   statusText: {
     fontSize: 16,

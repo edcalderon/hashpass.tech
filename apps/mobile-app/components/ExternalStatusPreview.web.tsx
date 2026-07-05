@@ -10,8 +10,8 @@ interface ExternalStatusPreviewProps {
 export default function ExternalStatusPreview({ url }: ExternalStatusPreviewProps) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
-  const [expanded, setExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   const openExternalPage = () => {
     Linking.openURL(url).catch((error) => {
@@ -29,9 +29,9 @@ export default function ExternalStatusPreview({ url }: ExternalStatusPreviewProp
     <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.headerText}>
-          <Text style={styles.title}>External Status Page</Text>
+          <Text style={styles.title}>External Monitor</Text>
           <Text style={styles.subtitle}>
-            Expand the live preview below, or open the full tracker in a browser if you want the complete incident view.
+            Expand the live preview below, or open the full tracker in a browser to inspect the whole system status.
           </Text>
         </View>
 
@@ -74,7 +74,9 @@ export default function ExternalStatusPreview({ url }: ExternalStatusPreviewProp
           <iframe
             title="HashPass external status page"
             src={url}
-            loading="lazy"
+            loading="eager"
+            sandbox="allow-scripts allow-forms allow-popups"
+            referrerPolicy="no-referrer"
             onLoad={() => setIsLoading(false)}
             style={{
               border: 0,
@@ -88,7 +90,7 @@ export default function ExternalStatusPreview({ url }: ExternalStatusPreviewProp
       ) : (
         <View style={styles.collapsedBody}>
           <Text style={styles.bodyText}>
-            Preview the external status tracker without leaving this modal.
+            Preview the external status tracker without leaving this page.
           </Text>
           <Text style={styles.noteText}>
             If the preview is blocked by your browser, use the full page link instead.
@@ -97,7 +99,7 @@ export default function ExternalStatusPreview({ url }: ExternalStatusPreviewProp
       )}
 
       <View style={styles.footer}>
-        <Text style={styles.footerLabel}>Leave modal</Text>
+        <Text style={styles.footerLabel}>Public URL</Text>
         <TouchableOpacity
           style={styles.footerLink}
           onPress={openExternalPage}

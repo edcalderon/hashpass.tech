@@ -3,9 +3,15 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, P
 import { useTheme } from '../hooks/useTheme';
 import { useRouter } from 'expo-router';
 import LoadingScreen from '../components/LoadingScreen';
+import ExternalStatusPreview from '../components/ExternalStatusPreview';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation } from '../i18n/i18n';
 import { MaterialIcons } from '../lib/vector-icons';
+
+const EXTERNAL_STATUS_URL = 'https://hashpass.status.cig.technology/';
+const STATUS_REQUEST_TIMEOUT_MS = 30000;
+
+type StatusTab = 'internal' | 'external';
 
 interface HealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -65,6 +71,10 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean';
 const isNumber = (value: unknown): value is number => typeof value === 'number';
+const isAbortLikeError = (value: unknown): value is boolean => {
+  const message = value instanceof Error ? value.message : String(value || '');
+  return /aborted|cancelled|canceled/i.test(message);
+};
 
 const hasValidHealthCheckShape = (value: unknown): value is HealthCheck => {
   if (!isRecord(value)) {
@@ -115,10 +125,12 @@ export default function StatusPage() {
   const { isDark, colors } = useTheme();
   const { t } = useTranslation('status');
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<StatusTab>('internal');
   const [healthCheck, setHealthCheck] = useState<HealthCheck | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const styles = getStyles(isDark, colors);
 
   const fetchStatus = async () => {
     try {
@@ -128,9 +140,13 @@ export default function StatusPage() {
       const result = await apiClient.request('status', {
         skipEventSegment: true,
         skipAuth: true,
+        timeout: STATUS_REQUEST_TIMEOUT_MS,
       });
 
       if (!result.success) {
+        if (isAbortLikeError(result.error)) {
+          return;
+        }
         throw new Error(result.error || 'Failed to fetch status');
       }
 
@@ -140,6 +156,9 @@ export default function StatusPage() {
 
       setHealthCheck(result.data);
     } catch (err: any) {
+      if (isAbortLikeError(err)) {
+        return;
+      }
       console.error('Error fetching status:', err);
       setError(err?.message || 'Failed to fetch status');
     } finally {
@@ -200,17 +219,13 @@ export default function StatusPage() {
     }
   };
 
-  if (loading && !healthCheck) {
-    return <LoadingScreen />;
-  }
-
-  const styles = getStyles(isDark, colors);
-
   return (
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        activeTab === 'internal'
+          ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          : undefined
       }
     >
       <View style={styles.header}>
@@ -225,247 +240,294 @@ export default function StatusPage() {
         <View style={styles.placeholder} />
       </View>
 
-      {error && (
-        <View style={styles.errorContainer}>
-          <MaterialIcons name="error-outline" size={24} color="#FF3B30" />
-          <Text style={styles.errorText}>{error}</Text>
+      <View style={styles.tabContainer}>
+        <View style={styles.tabsWrapper}>
+          <TouchableOpacity
+            style={styles.tab}
+            onPress={() => setActiveTab('internal')}
+            activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === 'internal' }}
+          >
+            <Text style={[styles.tabText, activeTab === 'internal' && styles.activeTabText]}>
+              {t('internalTab', 'Internal Service Info')}
+            </Text>
+            {activeTab === 'internal' && <View style={styles.tabIndicator} />}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.tab}
+            onPress={() => setActiveTab('external')}
+            activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === 'external' }}
+          >
+            <Text style={[styles.tabText, activeTab === 'external' && styles.activeTabText]}>
+              {t('externalTab', 'External Monitor')}
+            </Text>
+            {activeTab === 'external' && <View style={styles.tabIndicator} />}
+          </TouchableOpacity>
         </View>
-      )}
+        <View style={styles.tabDivider} />
+      </View>
 
-      {!healthCheck && !error && !loading && (
-        <View style={styles.errorContainer}>
-          <MaterialIcons name="info-outline" size={24} color={colors.text.secondary} />
-          <Text style={styles.errorText}>{t('noData') || 'No status data available'}</Text>
-        </View>
-      )}
-
-      {healthCheck && (
+      {activeTab === 'internal' ? (
         <>
-          {/* Overall Status */}
-          <View style={styles.section}>
-            <View style={styles.statusHeader}>
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: getStatusColor(healthCheck.status) },
-                ]}
-              >
-                <MaterialIcons
-                  name={getStatusIcon(healthCheck.status) as any}
-                  size={20}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.statusBadgeText}>
-                  {healthCheck.status.toUpperCase()}
-                </Text>
-              </View>
-              <Text style={styles.timestamp}>
-                {t('lastUpdated') || 'Last updated'}: {formatTimestamp(healthCheck.timestamp)}
-              </Text>
+          {loading && !healthCheck && (
+            <View style={styles.section}>
+              <LoadingScreen
+                message={t('loadingStatus', 'Loading internal service status...')}
+                subtitle={t('loadingStatusSubtitle', 'Fetching the latest health checks.')}
+              />
             </View>
-          </View>
+          )}
 
-          {/* Database Status */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('database') || 'Database'}</Text>
-            <View
-              style={[
-                styles.serviceCard,
-                {
-                  borderLeftColor: getStatusColor(
-                    healthCheck.services.database.status
-                  ),
-                },
-              ]}
-            >
-              <View style={styles.serviceHeader}>
-                <MaterialIcons
-                  name={getStatusIcon(healthCheck.services.database.status) as any}
-                  size={20}
-                  color={getStatusColor(healthCheck.services.database.status)}
-                />
-                <Text style={styles.serviceStatus}>
-                  {healthCheck.services.database.status.toUpperCase()}
-                </Text>
-                {healthCheck.services.database.responseTime && (
-                  <Text style={styles.responseTime}>
-                    {healthCheck.services.database.responseTime}ms
+          {error && (
+            <View style={styles.errorContainer}>
+              <MaterialIcons name="error-outline" size={24} color="#FF3B30" />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          {!healthCheck && !error && !loading && (
+            <View style={styles.errorContainer}>
+              <MaterialIcons name="info-outline" size={24} color={colors.text.secondary} />
+              <Text style={styles.errorText}>{t('noData') || 'No status data available'}</Text>
+            </View>
+          )}
+
+          {healthCheck && (
+            <>
+              {/* Overall Status */}
+              <View style={styles.section}>
+                <View style={styles.statusHeader}>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: getStatusColor(healthCheck.status) },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={getStatusIcon(healthCheck.status) as any}
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.statusBadgeText}>
+                      {healthCheck.status.toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={styles.timestamp}>
+                    {t('lastUpdated') || 'Last updated'}: {formatTimestamp(healthCheck.timestamp)}
                   </Text>
-                )}
+                </View>
               </View>
-              <View style={styles.tablesContainer}>
-                {Object.entries(healthCheck.services.database.tables).map(
-                  ([tableName, table]) => (
-                    <View key={tableName} style={styles.tableRow}>
-                      <MaterialIcons
-                        name={
-                          table.accessible
-                            ? ('check-circle' as any)
-                            : ('error' as any)
-                        }
-                        size={16}
-                        color={
-                          table.accessible
-                            ? '#34A853'
-                            : '#FF3B30'
-                        }
-                      />
-                      <Text style={styles.tableName}>{tableName}</Text>
-                      {table.recordCount !== undefined && (
-                        <Text style={styles.tableCount}>
-                          {table.recordCount} records
-                        </Text>
-                      )}
-                      {table.error && (
-                        <Text style={styles.tableError}>{table.error}</Text>
-                      )}
-                    </View>
-                  )
-                )}
-              </View>
-            </View>
-          </View>
 
-          {/* Email Service */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('emailService') || 'Email Service'}</Text>
-            <View
-              style={[
-                styles.serviceCard,
-                {
-                  borderLeftColor: getStatusColor(
-                    healthCheck.services.email.status
-                  ),
-                },
-              ]}
-            >
-              <View style={styles.serviceHeader}>
-                <MaterialIcons
-                  name={getStatusIcon(healthCheck.services.email.status) as any}
-                  size={20}
-                  color={getStatusColor(healthCheck.services.email.status)}
-                />
-                <Text style={styles.serviceStatus}>
-                  {healthCheck.services.email.status
-                    .toUpperCase()
-                    .replace('_', ' ')}
-                </Text>
+              {/* Database Status */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>{t('database') || 'Database'}</Text>
+                <View
+                  style={[
+                    styles.serviceCard,
+                    {
+                      borderLeftColor: getStatusColor(
+                        healthCheck.services.database.status
+                      ),
+                    },
+                  ]}
+                >
+                  <View style={styles.serviceHeader}>
+                    <MaterialIcons
+                      name={getStatusIcon(healthCheck.services.database.status) as any}
+                      size={20}
+                      color={getStatusColor(healthCheck.services.database.status)}
+                    />
+                    <Text style={styles.serviceStatus}>
+                      {healthCheck.services.database.status.toUpperCase()}
+                    </Text>
+                    {healthCheck.services.database.responseTime && (
+                      <Text style={styles.responseTime}>
+                        {healthCheck.services.database.responseTime}ms
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.tablesContainer}>
+                    {Object.entries(healthCheck.services.database.tables).map(
+                      ([tableName, table]) => (
+                        <View key={tableName} style={styles.tableRow}>
+                          <MaterialIcons
+                            name={
+                              table.accessible
+                                ? ('check-circle' as any)
+                                : ('error' as any)
+                            }
+                            size={16}
+                            color={
+                              table.accessible
+                                ? '#34A853'
+                                : '#FF3B30'
+                            }
+                          />
+                          <Text style={styles.tableName}>{tableName}</Text>
+                          {table.recordCount !== undefined && (
+                            <Text style={styles.tableCount}>
+                              {table.recordCount} records
+                            </Text>
+                          )}
+                          {table.error && (
+                            <Text style={styles.tableError}>{table.error}</Text>
+                          )}
+                        </View>
+                      )
+                    )}
+                  </View>
+                </View>
               </View>
-              <Text style={styles.serviceDetail}>
-                {t('configured') || 'Configured'}: {healthCheck.services.email.configured ? (t('yes') || 'Yes') : (t('no') || 'No')}
-              </Text>
-            </View>
-          </View>
 
-          {/* API Endpoints */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('apiEndpoints') || 'API Endpoints'}</Text>
-            <View
-              style={[
-                styles.serviceCard,
-                {
-                  borderLeftColor: getStatusColor(
-                    healthCheck.services.api.status
-                  ),
-                },
-              ]}
-            >
-              <View style={styles.serviceHeader}>
-                <MaterialIcons
-                  name={getStatusIcon(healthCheck.services.api.status) as any}
-                  size={20}
-                  color={getStatusColor(healthCheck.services.api.status)}
-                />
-                <Text style={styles.serviceStatus}>
-                  {healthCheck.services.api.status.toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.endpointsContainer}>
-                {Object.entries(healthCheck.services.api.endpoints).map(
-                  ([endpoint, endpointStatus]) => (
-                    <View key={endpoint} style={styles.endpointRow}>
-                      <MaterialIcons
-                        name={
-                          endpointStatus.accessible
-                            ? ('check-circle' as any)
-                            : ('error' as any)
-                        }
-                        size={16}
-                        color={
-                          endpointStatus.accessible
-                            ? '#34A853'
-                            : '#FF3B30'
-                        }
-                      />
-                      <Text style={styles.endpointName}>{endpoint}</Text>
-                    </View>
-                  )
-                )}
-              </View>
-            </View>
-          </View>
-
-          {/* System Checks */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('systemChecks') || 'System Checks'}</Text>
-            <View style={styles.checksContainer}>
-              <View style={styles.checkCard}>
-                <Text style={styles.checkTitle}>{t('agenda') || 'Agenda'}</Text>
-                <Text style={styles.checkDetail}>
-                  {healthCheck.checks.agenda.hasData ? (t('hasData') || 'Has Data') : (t('noData') || 'No Data')}
-                </Text>
-                <Text style={styles.checkDetail}>
-                  {t('items') || 'Items'}: {healthCheck.checks.agenda.itemCount}
-                </Text>
-                {healthCheck.checks.agenda.lastUpdated && (
-                  <Text style={styles.checkDetail}>
-                    {t('updated') || 'Updated'}: {formatTimestamp(healthCheck.checks.agenda.lastUpdated)}
+              {/* Email Service */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>{t('emailService') || 'Email Service'}</Text>
+                <View
+                  style={[
+                    styles.serviceCard,
+                    {
+                      borderLeftColor: getStatusColor(
+                        healthCheck.services.email.status
+                      ),
+                    },
+                  ]}
+                >
+                  <View style={styles.serviceHeader}>
+                    <MaterialIcons
+                      name={getStatusIcon(healthCheck.services.email.status) as any}
+                      size={20}
+                      color={getStatusColor(healthCheck.services.email.status)}
+                    />
+                    <Text style={styles.serviceStatus}>
+                      {healthCheck.services.email.status
+                        .toUpperCase()
+                        .replace('_', ' ')}
+                    </Text>
+                  </View>
+                  <Text style={styles.serviceDetail}>
+                    {t('configured') || 'Configured'}: {healthCheck.services.email.configured ? (t('yes') || 'Yes') : (t('no') || 'No')}
                   </Text>
-                )}
+                </View>
               </View>
 
-              <View style={styles.checkCard}>
-                <Text style={styles.checkTitle}>{t('speakers') || 'Speakers'}</Text>
-                <Text style={styles.checkDetail}>
-                  {healthCheck.checks.speakers.accessible ? (t('accessible') || 'Accessible') : (t('notAccessible') || 'Not Accessible')}
-                </Text>
-                <Text style={styles.checkDetail}>
-                  {t('count') || 'Count'}: {healthCheck.checks.speakers.count}
-                </Text>
+              {/* API Endpoints */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>{t('apiEndpoints') || 'API Endpoints'}</Text>
+                <View
+                  style={[
+                    styles.serviceCard,
+                    {
+                      borderLeftColor: getStatusColor(
+                        healthCheck.services.api.status
+                      ),
+                    },
+                  ]}
+                >
+                  <View style={styles.serviceHeader}>
+                    <MaterialIcons
+                      name={getStatusIcon(healthCheck.services.api.status) as any}
+                      size={20}
+                      color={getStatusColor(healthCheck.services.api.status)}
+                    />
+                    <Text style={styles.serviceStatus}>
+                      {healthCheck.services.api.status.toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.endpointsContainer}>
+                    {Object.entries(healthCheck.services.api.endpoints).map(
+                      ([endpoint, endpointStatus]) => (
+                        <View key={endpoint} style={styles.endpointRow}>
+                          <MaterialIcons
+                            name={
+                              endpointStatus.accessible
+                                ? ('check-circle' as any)
+                                : ('error' as any)
+                            }
+                            size={16}
+                            color={
+                              endpointStatus.accessible
+                                ? '#34A853'
+                                : '#FF3B30'
+                            }
+                          />
+                          <Text style={styles.endpointName}>{endpoint}</Text>
+                        </View>
+                      )
+                    )}
+                  </View>
+                </View>
               </View>
 
-              <View style={styles.checkCard}>
-                <Text style={styles.checkTitle}>{t('bookings') || 'Bookings'}</Text>
-                <Text style={styles.checkDetail}>
-                  {healthCheck.checks.bookings.accessible ? (t('accessible') || 'Accessible') : (t('notAccessible') || 'Not Accessible')}
-                </Text>
-                <Text style={styles.checkDetail}>
-                  {t('count') || 'Count'}: {healthCheck.checks.bookings.count}
-                </Text>
+              {/* System Checks */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>{t('systemChecks') || 'System Checks'}</Text>
+                <View style={styles.checksContainer}>
+                  <View style={styles.checkCard}>
+                    <Text style={styles.checkTitle}>{t('agenda') || 'Agenda'}</Text>
+                    <Text style={styles.checkDetail}>
+                      {healthCheck.checks.agenda.hasData ? (t('hasData') || 'Has Data') : (t('noData') || 'No Data')}
+                    </Text>
+                    <Text style={styles.checkDetail}>
+                      {t('items') || 'Items'}: {healthCheck.checks.agenda.itemCount}
+                    </Text>
+                    {healthCheck.checks.agenda.lastUpdated && (
+                      <Text style={styles.checkDetail}>
+                        {t('updated') || 'Updated'}: {formatTimestamp(healthCheck.checks.agenda.lastUpdated)}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={styles.checkCard}>
+                    <Text style={styles.checkTitle}>{t('speakers') || 'Speakers'}</Text>
+                    <Text style={styles.checkDetail}>
+                      {healthCheck.checks.speakers.accessible ? (t('accessible') || 'Accessible') : (t('notAccessible') || 'Not Accessible')}
+                    </Text>
+                    <Text style={styles.checkDetail}>
+                      {t('count') || 'Count'}: {healthCheck.checks.speakers.count}
+                    </Text>
+                  </View>
+
+                  <View style={styles.checkCard}>
+                    <Text style={styles.checkTitle}>{t('bookings') || 'Bookings'}</Text>
+                    <Text style={styles.checkDetail}>
+                      {healthCheck.checks.bookings.accessible ? (t('accessible') || 'Accessible') : (t('notAccessible') || 'Not Accessible')}
+                    </Text>
+                    <Text style={styles.checkDetail}>
+                      {t('count') || 'Count'}: {healthCheck.checks.bookings.count}
+                    </Text>
+                  </View>
+
+                  <View style={styles.checkCard}>
+                    <Text style={styles.checkTitle}>{t('passes') || 'Passes'}</Text>
+                    <Text style={styles.checkDetail}>
+                      {healthCheck.checks.passes.accessible ? (t('accessible') || 'Accessible') : (t('notAccessible') || 'Not Accessible')}
+                    </Text>
+                    <Text style={styles.checkDetail}>
+                      {t('count') || 'Count'}: {healthCheck.checks.passes.count}
+                    </Text>
+                  </View>
+                </View>
               </View>
 
-              <View style={styles.checkCard}>
-                <Text style={styles.checkTitle}>{t('passes') || 'Passes'}</Text>
-                <Text style={styles.checkDetail}>
-                  {healthCheck.checks.passes.accessible ? (t('accessible') || 'Accessible') : (t('notAccessible') || 'Not Accessible')}
+              {/* Footer */}
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>
+                  {t('autoRefresh') || 'Status page auto-refreshes every 30 seconds'}
                 </Text>
-                <Text style={styles.checkDetail}>
-                  {t('count') || 'Count'}: {healthCheck.checks.passes.count}
+                <Text style={styles.footerText}>
+                  {t('pullToRefresh') || 'Pull down to refresh manually'}
                 </Text>
               </View>
-            </View>
-          </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              {t('autoRefresh') || 'Status page auto-refreshes every 30 seconds'}
-            </Text>
-            <Text style={styles.footerText}>
-              {t('pullToRefresh') || 'Pull down to refresh manually'}
-            </Text>
-          </View>
+            </>
+          )}
         </>
+      ) : (
+        <View style={styles.section}>
+          <ExternalStatusPreview url={EXTERNAL_STATUS_URL} />
+        </View>
       )}
     </ScrollView>
   );
@@ -486,11 +548,9 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: colors.background.paper,
       borderBottomWidth: 1,
       borderBottomColor: colors.divider,
-      shadowColor: isDark ? '#000' : '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.3 : 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+      boxShadow: isDark
+        ? '0px 2px 8px rgba(0, 0, 0, 0.30)'
+        : '0px 2px 8px rgba(0, 0, 0, 0.10)',
     },
     backButton: {
       padding: 8,
@@ -504,6 +564,47 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontSize: 24,
       fontWeight: '700',
       color: colors.text.primary,
+    },
+    tabContainer: {
+      backgroundColor: colors.background.paper,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+      paddingTop: 8,
+    },
+    tabsWrapper: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+    },
+    tab: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 14,
+      position: 'relative',
+    },
+    tabText: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: colors.text.secondary,
+      textAlign: 'center',
+    },
+    activeTabText: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    tabIndicator: {
+      position: 'absolute',
+      left: '14%',
+      right: '14%',
+      bottom: 0,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: colors.primary,
+    },
+    tabDivider: {
+      height: 1,
+      backgroundColor: colors.divider,
+      marginHorizontal: 20,
     },
     errorContainer: {
       flexDirection: 'row',
@@ -540,11 +641,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       paddingVertical: 8,
       borderRadius: 20,
       gap: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-      elevation: 3,
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.20)',
     },
     statusBadgeText: {
       color: '#FFFFFF',
@@ -569,11 +666,9 @@ const getStyles = (isDark: boolean, colors: any) =>
       padding: 20,
       borderLeftWidth: 4,
       marginBottom: 16,
-      shadowColor: isDark ? '#000' : '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.3 : 0.1,
-      shadowRadius: 8,
-      elevation: 2,
+      boxShadow: isDark
+        ? '0px 2px 10px rgba(0, 0, 0, 0.30)'
+        : '0px 2px 10px rgba(0, 0, 0, 0.10)',
     },
     serviceHeader: {
       flexDirection: 'row',
@@ -666,11 +761,9 @@ const getStyles = (isDark: boolean, colors: any) =>
       padding: 20,
       borderLeftWidth: 4,
       borderLeftColor: colors.primary,
-      shadowColor: isDark ? '#000' : '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.3 : 0.1,
-      shadowRadius: 8,
-      elevation: 2,
+      boxShadow: isDark
+        ? '0px 2px 10px rgba(0, 0, 0, 0.30)'
+        : '0px 2px 10px rgba(0, 0, 0, 0.10)',
     },
     checkTitle: {
       fontSize: 18,

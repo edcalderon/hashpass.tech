@@ -361,6 +361,20 @@ const sw = `
     return;
   }
 
+  // Disable the PWA service worker on local Expo dev servers.
+  // It can intercept Metro bundle requests and break web reloads.
+  if (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  ) {
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+      registrations.forEach(function (registration) {
+        registration.unregister();
+      });
+    });
+    return;
+  }
+
   navigator.serviceWorker.addEventListener('message', function (event) {
     if (event.data && event.data.type === 'VERSION_UPDATE_AVAILABLE') {
       window.dispatchEvent(

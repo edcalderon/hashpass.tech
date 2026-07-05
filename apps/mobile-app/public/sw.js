@@ -1,4 +1,4 @@
-const APP_VERSION = '1.8.150';
+const APP_VERSION = '1.8.151';
 const STATIC_CACHE = `hashpass-static-v${APP_VERSION}`;
 const PAGE_CACHE = `hashpass-pages-v${APP_VERSION}`;
 const OFFLINE_URL = '/offline.html';
@@ -80,6 +80,18 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Never intercept Metro / Expo dev bundle requests.
+  // They are not app assets and should always go straight to network.
+  if (
+    url.pathname.includes('/node_modules/') ||
+    url.pathname.includes('/_expo/') ||
+    url.pathname.includes('/.expo/') ||
+    url.pathname.endsWith('.bundle') ||
+    url.pathname.endsWith('.map')
+  ) {
     return;
   }
 

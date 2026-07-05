@@ -8,6 +8,7 @@ import { getAvailableLocales, useTranslation } from '../i18n/i18n';
 import { useRouter, usePathname } from 'expo-router';
 import Reanimated, { SharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '../lib/vector-icons';
+import { createShadowStyle } from '../lib/utils';
 
 interface ThemeAndLanguageSwitcherProps {
   scrollY?: SharedValue<number>;
@@ -203,11 +204,11 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
           <Animated.View
             style={[
               styles.languageMenu,
+              createShadowStyle('#000000', { width: 0, height: 4 }, isDark ? 0.3 : 0.2, 8, 8),
               {
                 backgroundColor: colors.surface,
                 transform: [{ translateY: menuTranslateY }],
                 opacity: menuOpacity,
-                shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)',
               }
             ]}
           >
@@ -253,7 +254,14 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
         )}
       </View>
 
-      <Animated.View style={[styles.button, styles.buttonSpacing, animatedStyle]}>
+      <Animated.View
+        style={[
+          styles.button,
+          styles.buttonSpacing,
+          createShadowStyle('#000000', { width: 0, height: 2 }, 0.25, 3.84, 5),
+          animatedStyle,
+        ]}
+      >
         <TouchableOpacity
           style={{
             width: '100%',
@@ -262,11 +270,6 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
             alignItems: 'center',
             backgroundColor: colors.primary,
             borderRadius: 25,
-            shadowColor: colors.primary,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
           }}
           onPress={handleThemeToggle}
           activeOpacity={0.8}
@@ -280,7 +283,14 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
       </Animated.View>
 
       {!isOnAuthPage && (
-        <Animated.View style={[styles.button, styles.buttonSpacing, loginAnimatedStyle]}>
+        <Animated.View
+          style={[
+            styles.button,
+            styles.buttonSpacing,
+            createShadowStyle('#000000', { width: 0, height: 2 }, 0.25, 3.84, 5),
+            loginAnimatedStyle,
+          ]}
+        >
           <TouchableOpacity
             style={{
               width: '100%',
@@ -289,11 +299,6 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
               alignItems: 'center',
               backgroundColor: isDark ? colors.secondary : colors.primary,
               borderRadius: 25,
-              shadowColor: isDark ? colors.secondary : colors.primary,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5,
             }}
             onPress={handleLoginPress}
             activeOpacity={0.8}
@@ -341,11 +346,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   buttonSpacing: {
     marginLeft: 10,
@@ -358,10 +358,6 @@ const styles = StyleSheet.create({
     maxWidth: 220,
     borderRadius: 16,
     paddingVertical: 8,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
     zIndex: 1001,
     maxHeight: 420,
   },
