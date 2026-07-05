@@ -1,3 +1,14 @@
+## [1.8.153](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.152...v1.8.153) (2026-07-05)
+
+
+### Bug Fixes
+
+* stabilize status and auth startup ([6621bb2](https://github.com/hashpass-tech/hashpass.tech/commit/6621bb2f07a76767184db982d04034d6210829ce))
+
+
+
+
+
 ## [1.8.152](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.151...v1.8.152) (2026-07-05)
 
 
