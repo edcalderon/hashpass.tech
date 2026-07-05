@@ -24,6 +24,9 @@ describe('status api', () => {
 
     mockQuery
       .mockResolvedValueOnce({
+        rows: [{ ok: 1 }],
+      })
+      .mockResolvedValueOnce({
         rows: [{ updated_at: '2026-06-01T12:34:56.000Z' }],
       })
       .mockResolvedValueOnce({
@@ -91,5 +94,26 @@ describe('status api', () => {
     });
     expect(mockQuery).not.toHaveBeenCalled();
     expect(mockGetDatabasePool).not.toHaveBeenCalled();
+  });
+
+  it('returns degraded health when the database probe fails', async () => {
+    mockHasDatabaseConnectionString.mockReturnValue(true);
+    mockQuery.mockRejectedValueOnce(new Error('connect ETIMEDOUT'));
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../app/api/status+api');
+    const response = await GET(new Request('https://api.hashpass.tech/api/status'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.status).toBe('degraded');
+    expect(body.services.database.status).toBe('unhealthy');
+    expect(body.services.database.tables.connection).toEqual({
+      accessible: false,
+      error: 'connect ETIMEDOUT',
+    });
+    expect(body.services.api.status).toBe('unhealthy');
+    expect(body.services.api.endpoints['/api/status']).toEqual({ accessible: true });
+    expect(mockQuery).toHaveBeenCalledTimes(1);
   });
 });

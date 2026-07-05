@@ -1,115 +1,200 @@
-"use client"
+import React, { FC, useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 
-import React, { FC, useRef, useMemo, Suspense, Component, useState, useEffect } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Plane } from '@react-three/drei'
-import * as THREE from 'three'
-
-const vertexShader = `
-  void main() {
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`
-
-const fragmentShader = `
-  #define TWO_PI 6.2831853072
-  #define PI 3.14159265359
-
-  precision highp float;
-  uniform vec2 resolution;
-  uniform float time;
-
-  void main(void) {
-    vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-    float t = time * 0.05;
-    float lineWidth = 0.002;
-
-    vec3 color = vec3(0.0);
-    for(int j = 0; j < 3; j++){
-      for(int i=0; i < 5; i++){
-        color[j] += lineWidth*float(i*i) / abs(fract(t - 0.01*float(j)+float(i)*0.01)*5.0 - length(uv) + mod(uv.x+uv.y, 0.2));
-      }
-    }
-
-    gl_FragColor = vec4(color[0],color[1],color[2],1.0);
-  }
-`
-
-const RipplePlane: FC = () => {
-  const materialRef = useRef<THREE.ShaderMaterial>(null!)
-  const { viewport, gl, size } = useThree()
-
-  const uniforms = useMemo(() => ({
-    time: { value: 1.0 },
-    resolution: { value: new THREE.Vector2() },
-  }), [])
-
-  useFrame(() => {
-    if (!materialRef.current) return
-    materialRef.current.uniforms.time.value += 0.05
-    const dpr = gl.getPixelRatio()
-    materialRef.current.uniforms.resolution.value.set(size.width * dpr, size.height * dpr)
-  })
-
-  return (
-    <Plane args={[1, 1]} scale={[viewport.width, viewport.height, 1]}>
-      <shaderMaterial
-        ref={materialRef}
-        uniforms={uniforms}
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-      />
-    </Plane>
-  )
-}
-
-class ShaderErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props)
-    this.state = { hasError: false }
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true }
-  }
-  render() {
-    if (this.state.hasError) return null
-    return this.props.children
-  }
-}
+const createLoop = (value: Animated.Value, duration: number) =>
+  Animated.loop(
+    Animated.sequence([
+      Animated.timing(value, {
+        toValue: 1,
+        duration,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: false,
+      }),
+      Animated.timing(value, {
+        toValue: 0,
+        duration,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: false,
+      }),
+    ])
+  );
 
 export const ShaderAnimation: FC = () => {
-  const [mounted, setMounted] = useState(false)
+  const motionA = useRef(new Animated.Value(0)).current;
+  const motionB = useRef(new Animated.Value(0)).current;
+  const motionC = useRef(new Animated.Value(0)).current;
+  const sheen = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    const animations = [
+      createLoop(motionA, 7200),
+      createLoop(motionB, 8800),
+      createLoop(motionC, 9600),
+    ];
+    const sheenAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sheen, {
+          toValue: 1,
+          duration: 5200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+        Animated.timing(sheen, {
+          toValue: 0,
+          duration: 5200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+      ])
+    );
 
-  if (!mounted || typeof window === 'undefined') return null
+    const timers = animations.map((animation, index) =>
+      setTimeout(() => animation.start(), index * 180)
+    );
+    const sheenTimer = setTimeout(() => sheenAnimation.start(), 240);
+
+    return () => {
+      timers.forEach(clearTimeout);
+      clearTimeout(sheenTimer);
+      animations.forEach((animation) => animation.stop());
+      sheenAnimation.stop();
+    };
+  }, [motionA, motionB, motionC, sheen]);
+
+  const blobAStyle = {
+    opacity: motionA.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.28, 0.62],
+    }),
+    transform: [
+      {
+        translateX: motionA.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-120, 84],
+        }),
+      },
+      {
+        translateY: motionA.interpolate({
+          inputRange: [0, 1],
+          outputRange: [24, -76],
+        }),
+      },
+      {
+        scale: motionA.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.96, 1.18],
+        }),
+      },
+    ],
+  };
+
+  const blobBStyle = {
+    opacity: motionB.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.2, 0.45],
+    }),
+    transform: [
+      {
+        translateX: motionB.interpolate({
+          inputRange: [0, 1],
+          outputRange: [88, -92],
+        }),
+      },
+      {
+        translateY: motionB.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-44, 54],
+        }),
+      },
+      {
+        scale: motionB.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 1.2],
+        }),
+      },
+    ],
+  };
+
+  const blobCStyle = {
+    opacity: motionC.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.16, 0.38],
+    }),
+    transform: [
+      {
+        translateX: motionC.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-56, 58],
+        }),
+      },
+      {
+        translateY: motionC.interpolate({
+          inputRange: [0, 1],
+          outputRange: [88, -48],
+        }),
+      },
+      {
+        scale: motionC.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.92, 1.12],
+        }),
+      },
+    ],
+  };
+
+  const sheenStyle = {
+    opacity: sheen.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.08, 0.2],
+    }),
+  };
 
   return (
-    <ShaderErrorBoundary>
-      <Suspense fallback={null}>
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            overflow: 'hidden',
-            pointerEvents: 'none',
-          }}
-        >
-          <Canvas
-            camera={{ position: [0, 0, 15], fov: 50 }}
-            dpr={1}
-            frameloop="always"
-            gl={{ antialias: false, powerPreference: 'high-performance' }}
-          >
-            <RipplePlane />
-          </Canvas>
-        </div>
-      </Suspense>
-    </ShaderErrorBoundary>
-  )
-}
+    <View pointerEvents="none" style={styles.root}>
+      <View style={styles.base} />
+      <Animated.View style={[styles.glow, styles.glowA, blobAStyle]} />
+      <Animated.View style={[styles.glow, styles.glowB, blobBStyle]} />
+      <Animated.View style={[styles.glow, styles.glowC, blobCStyle]} />
+      <Animated.View style={[styles.sheen, sheenStyle]} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  root: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    zIndex: 0,
+  },
+  base: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+  },
+  glow: {
+    position: 'absolute',
+    width: 420,
+    height: 420,
+    borderRadius: 9999,
+  },
+  glowA: {
+    left: -140,
+    top: 120,
+    backgroundColor: 'rgba(255, 92, 92, 0.28)',
+  },
+  glowB: {
+    right: -160,
+    top: 48,
+    backgroundColor: 'rgba(0, 194, 255, 0.24)',
+  },
+  glowC: {
+    left: '34%',
+    bottom: -180,
+    backgroundColor: 'rgba(255, 233, 92, 0.18)',
+  },
+  sheen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+});
+
+export default ShaderAnimation;

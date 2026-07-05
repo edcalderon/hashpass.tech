@@ -19,6 +19,14 @@ const shouldRejectUnauthorizedDatabaseSsl = (): boolean =>
       readEnv('DB_SSL_REJECT_UNAUTHORIZED')
   );
 
+const getDatabaseConnectionTimeoutMillis = (): number => {
+  const configuredTimeout = Number(
+    readEnv('BETTER_AUTH_DATABASE_CONNECTION_TIMEOUT_MS') || readEnv('DB_CONNECTION_TIMEOUT_MS')
+  );
+
+  return Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 5000;
+};
+
 const normalizeDatabaseConnectionString = (connectionString: string): string => {
   if (isDatabaseSslDisabled() || shouldRejectUnauthorizedDatabaseSsl()) {
     return connectionString;
@@ -72,7 +80,7 @@ export const getDatabasePool = (): Pool => {
 
   if (!connectionString) {
     console.warn(
-      'Better Auth database is not configured. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, DATABASE_URL, or DB_HOST/DB_NAME/DB_USER/DB_PASSWORD before using /api/auth.'
+      'Better Auth database is not configured. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, DATABASE_URL, or DB_HOST/DB_NAME/DB_USER/DB_PASSWORD before using /api/auth.'
     );
   }
 
@@ -80,6 +88,7 @@ export const getDatabasePool = (): Pool => {
     connectionString: connectionString
       ? normalizeDatabaseConnectionString(connectionString)
       : 'postgres://invalid:invalid@localhost:5432/better_auth_missing',
+    connectionTimeoutMillis: getDatabaseConnectionTimeoutMillis(),
     ssl: isDatabaseSslDisabled()
       ? false
       : { rejectUnauthorized: shouldRejectUnauthorizedDatabaseSsl() },

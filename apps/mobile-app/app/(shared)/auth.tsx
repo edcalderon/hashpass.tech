@@ -2024,15 +2024,8 @@ const getStyles = (
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
       overflow: 'hidden',
-      ...(Platform.OS === 'web'
-        ? { boxShadow: isDark ? '0 14px 36px rgba(0,0,0,0.45)' : '0 12px 34px rgba(0,0,0,0.12)' }
-        : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.18,
-          shadowRadius: 20,
-          elevation: 6,
-        }),
+      boxShadow: isDark ? '0 14px 36px rgba(0,0,0,0.45)' : '0 12px 34px rgba(0,0,0,0.12)',
+      elevation: 6,
     },
     authCardDesktop: {
       maxWidth: 520,
@@ -2456,15 +2449,8 @@ const getStyles = (
       paddingHorizontal: 16,
       paddingTop: 10,
       paddingBottom: 16,
-      ...(Platform.OS === 'web'
-        ? { boxShadow: '0 -10px 30px rgba(0,0,0,0.25)' }
-        : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -6 },
-          shadowOpacity: 0.2,
-          shadowRadius: 12,
-          elevation: 14,
-        }),
+      boxShadow: '0 -10px 30px rgba(0,0,0,0.25)',
+      elevation: 14,
     },
     countryPickerSheetHandle: {
       alignSelf: 'center',
@@ -2555,15 +2541,8 @@ const getStyles = (
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: '#c81000',
-      ...(Platform.OS === 'web'
-        ? { boxShadow: '0 4px 14px rgba(200, 16, 0, 0.35)' }
-        : {
-          shadowColor: '#c81000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.32,
-          shadowRadius: 8,
-          elevation: 4,
-        }),
+      boxShadow: '0 4px 14px rgba(200, 16, 0, 0.35)',
+      elevation: 4,
     },
     primaryButtonDisabled: {
       opacity: 0.6,
@@ -2621,15 +2600,8 @@ const getStyles = (
       backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#ffffff',
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#d7d7da',
-      ...(Platform.OS === 'web'
-        ? { boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }
-        : {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-          elevation: 3,
-        }),
+      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+      elevation: 3,
     },
     oauthButtonNative: {
       width: '100%',

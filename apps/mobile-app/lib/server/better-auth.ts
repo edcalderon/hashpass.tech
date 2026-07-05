@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { ENV_CONFIG, SSO_CONFIG } from '@hashpass/config';
 import { syncPublicUserRegistry } from '../auth/public-user-registry';
-import { getDatabasePool } from './database-pool';
+import { getDatabasePool, hasDatabaseConnectionString } from './database-pool';
 
 const normalizeAuthPath = (value?: string | null): string => {
   const trimmed = (value || '/api/auth').trim();
@@ -130,54 +130,93 @@ const googleClientSecret =
   readEnv('BETTER_AUTH_GOOGLE_CLIENT_SECRET') || readEnv('GOOGLE_CLIENT_SECRET');
 const configuredBaseURL = normalizeAuthURL(readEnv('BETTER_AUTH_URL'));
 
-export const auth = betterAuth({
-  appName: 'HashPass Auth',
-  basePath: AUTH_BASE_PATH,
-  user: {
-    modelName: 'ba_users',
-  },
-  ...(configuredBaseURL
-    ? { baseURL: configuredBaseURL }
-    : {
-        baseURL: {
-          allowedHosts: [...DEFAULT_ALLOWED_HOSTS, ...readListEnv('BETTER_AUTH_ALLOWED_HOSTS')],
-        },
-      }),
-  database: getDatabasePool(),
-  trustedOrigins: [
-    ...DEFAULT_TRUSTED_ORIGINS,
-    ...readListEnv('BETTER_AUTH_TRUSTED_ORIGINS'),
-  ],
-  socialProviders: {
-    ...(googleClientId && googleClientSecret
-      ? {
-          google: {
-            clientId: googleClientId,
-            clientSecret: googleClientSecret,
-          },
-        }
-      : {}),
-  },
-  session: {
-    expiresIn: 60 * 60 * 24 * 14,
-    updateAge: 60 * 60 * 24,
-    cookieCache: {
-      enabled: true,
-      maxAge: 60 * 5,
-    },
-  },
-  databaseHooks: {
+const createAuthInstance = () =>
+  betterAuth({
+    appName: 'HashPass Auth',
+    basePath: AUTH_BASE_PATH,
     user: {
-      create: {
-        after: async (user, context) => {
-          await syncBetterAuthUser(user, context);
-        },
+      modelName: 'ba_users',
+    },
+    ...(configuredBaseURL
+      ? { baseURL: configuredBaseURL }
+      : {
+          baseURL: {
+            allowedHosts: [...DEFAULT_ALLOWED_HOSTS, ...readListEnv('BETTER_AUTH_ALLOWED_HOSTS')],
+          },
+        }),
+    database: getDatabasePool(),
+    trustedOrigins: [
+      ...DEFAULT_TRUSTED_ORIGINS,
+      ...readListEnv('BETTER_AUTH_TRUSTED_ORIGINS'),
+    ],
+    socialProviders: {
+      ...(googleClientId && googleClientSecret
+        ? {
+            google: {
+              clientId: googleClientId,
+              clientSecret: googleClientSecret,
+            },
+          }
+        : {}),
+    },
+    session: {
+      expiresIn: 60 * 60 * 24 * 14,
+      updateAge: 60 * 60 * 24,
+      cookieCache: {
+        enabled: true,
+        maxAge: 60 * 5,
       },
-      update: {
-        after: async (user, context) => {
-          await syncBetterAuthUser(user, context);
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user, context) => {
+            await syncBetterAuthUser(user, context);
+          },
+        },
+        update: {
+          after: async (user, context) => {
+            await syncBetterAuthUser(user, context);
+          },
         },
       },
     },
-  },
-});
+  });
+
+type BetterAuthInstance = ReturnType<typeof createAuthInstance>;
+
+let authInstance: BetterAuthInstance | null = null;
+
+export const getAuth = (): BetterAuthInstance | null => {
+  if (authInstance) {
+    return authInstance;
+  }
+
+  if (!hasDatabaseConnectionString()) {
+    return null;
+  }
+
+  authInstance = createAuthInstance();
+  return authInstance;
+};
+
+const createMissingAuthHandler = (): BetterAuthInstance['handler'] =>
+  async () =>
+    new Response(
+      JSON.stringify({
+        error:
+          'Better Auth database is not configured in this environment. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, or DATABASE_URL to enable /api/auth.',
+      }),
+      {
+        status: 503,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      }
+    );
+
+export const getAuthHandler = (): BetterAuthInstance['handler'] => {
+  const auth = getAuth();
+  return auth ? auth.handler : createMissingAuthHandler();
+};

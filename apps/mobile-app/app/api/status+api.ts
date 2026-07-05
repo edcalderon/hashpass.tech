@@ -3,6 +3,8 @@ import { getDatabasePool, hasDatabaseConnectionString } from '@/lib/server/datab
 const MISSING_DATABASE_CONFIG_MESSAGE =
   'Database is not configured in this environment. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, DATABASE_URL, or DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD to enable internal status checks.';
 
+const DATABASE_CONNECTION_TIMEOUT_MS = 5000;
+
 export interface HealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: string;
@@ -54,6 +56,27 @@ export interface HealthCheck {
     };
   };
 }
+
+const withTimeout = async <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string
+): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+};
 
 /**
  * Get current system health check
@@ -127,6 +150,35 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
       // does not depend on the public Supabase REST key.
       const dbStartTime = Date.now();
       const database = getDatabasePool();
+      let databaseResponsive = true;
+
+      try {
+        await withTimeout(
+          database.query('SELECT 1 AS ok'),
+          DATABASE_CONNECTION_TIMEOUT_MS,
+          'Database connection timed out'
+        );
+      } catch (error: any) {
+        databaseResponsive = false;
+        healthCheck.services.database.status = 'unhealthy';
+        healthCheck.services.database.tables.connection = {
+          accessible: false,
+          error: error?.message || 'Database connection failed',
+        };
+        healthCheck.services.api.status = 'unhealthy';
+        healthCheck.services.api.endpoints['/api/status'] = {
+          accessible: true,
+        };
+        healthCheck.services.api.endpoints['/api/bslatam/speakers'] = {
+          accessible: false,
+          error: MISSING_DATABASE_CONFIG_MESSAGE,
+        };
+        healthCheck.services.api.endpoints['/api/bslatam/bookings'] = {
+          accessible: false,
+          error: MISSING_DATABASE_CONFIG_MESSAGE,
+        };
+        healthCheck.status = 'degraded';
+      }
 
       const readCount = async (sql: string, params: unknown[] = []) => {
         const result = await database.query(sql, params);
@@ -142,147 +194,149 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
         return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
       };
 
-      // 1. Check event_agenda table
-      try {
-        const latestUpdatedAt = await readLatestUpdatedAt(
-          'SELECT updated_at FROM event_agenda WHERE event_id = $1 ORDER BY updated_at DESC LIMIT 1',
-          [eventId]
-        );
-        const agendaCount = await readCount(
-          'SELECT COUNT(*)::int AS count FROM event_agenda WHERE event_id = $1',
-          [eventId]
-        );
-
-        healthCheck.services.database.tables.event_agenda = {
-          accessible: true,
-          recordCount: agendaCount,
-        };
-        healthCheck.checks.agenda.hasData = agendaCount > 0;
-        healthCheck.checks.agenda.lastUpdated = latestUpdatedAt;
-        healthCheck.checks.agenda.itemCount = agendaCount;
-      } catch (error: any) {
-        healthCheck.services.database.tables.event_agenda = {
-          accessible: false,
-          error: error?.message || 'Unknown error',
-        };
-        healthCheck.status = 'degraded';
-      }
-
-      // 2. Check bsl_speakers table
-      try {
-        const speakersCount = await readCount('SELECT COUNT(*)::int AS count FROM bsl_speakers');
-
-        healthCheck.services.database.tables.bsl_speakers = {
-          accessible: true,
-          recordCount: speakersCount,
-        };
-        healthCheck.checks.speakers.count = speakersCount;
-        healthCheck.checks.speakers.accessible = true;
-      } catch (error: any) {
-        healthCheck.services.database.tables.bsl_speakers = {
-          accessible: false,
-          error: error?.message || 'Unknown error',
-        };
-        healthCheck.checks.speakers.accessible = false;
-        healthCheck.status = 'degraded';
-      }
-
-      // 3. Check bookings - count from BSL_Bookings, meeting_requests, and meetings tables
-      try {
-        let totalBookingsCount = 0;
-        let bookingsAccessible = true;
-        const bookingErrors: string[] = [];
-
-        // Count from BSL_Bookings table
+      if (databaseResponsive) {
+        // 1. Check event_agenda table
         try {
-          const bslBookingsCount = await readCount('SELECT COUNT(*)::int AS count FROM "BSL_Bookings"');
-
-          totalBookingsCount += bslBookingsCount;
-          healthCheck.services.database.tables.BSL_Bookings = {
-            accessible: true,
-            recordCount: bslBookingsCount,
-          };
-        } catch (error: any) {
-          bookingErrors.push(`BSL_Bookings: ${error?.message || 'Unknown error'}`);
-          healthCheck.services.database.tables.BSL_Bookings = {
-            accessible: false,
-            error: error?.message || 'Unknown error',
-          };
-        }
-
-        // Count from meeting_requests table (sent requests)
-        try {
-          const meetingRequestsCount = await readCount(
-            'SELECT COUNT(*)::int AS count FROM meeting_requests'
+          const latestUpdatedAt = await readLatestUpdatedAt(
+            'SELECT updated_at FROM event_agenda WHERE event_id = $1 ORDER BY updated_at DESC LIMIT 1',
+            [eventId]
+          );
+          const agendaCount = await readCount(
+            'SELECT COUNT(*)::int AS count FROM event_agenda WHERE event_id = $1',
+            [eventId]
           );
 
-          totalBookingsCount += meetingRequestsCount;
-          healthCheck.services.database.tables.meeting_requests = {
+          healthCheck.services.database.tables.event_agenda = {
             accessible: true,
-            recordCount: meetingRequestsCount,
+            recordCount: agendaCount,
           };
+          healthCheck.checks.agenda.hasData = agendaCount > 0;
+          healthCheck.checks.agenda.lastUpdated = latestUpdatedAt;
+          healthCheck.checks.agenda.itemCount = agendaCount;
         } catch (error: any) {
-          bookingErrors.push(`meeting_requests: ${error?.message || 'Unknown error'}`);
-          healthCheck.services.database.tables.meeting_requests = {
+          healthCheck.services.database.tables.event_agenda = {
             accessible: false,
             error: error?.message || 'Unknown error',
           };
-        }
-
-        // Count from meetings table (accepted meetings)
-        try {
-          const meetingsCount = await readCount('SELECT COUNT(*)::int AS count FROM meetings');
-
-          totalBookingsCount += meetingsCount;
-          healthCheck.services.database.tables.meetings = {
-            accessible: true,
-            recordCount: meetingsCount,
-          };
-        } catch (error: any) {
-          bookingErrors.push(`meetings: ${error?.message || 'Unknown error'}`);
-          healthCheck.services.database.tables.meetings = {
-            accessible: false,
-            error: error?.message || 'Unknown error',
-          };
-        }
-
-        // Set bookings check status
-        if (bookingErrors.length > 0) {
-          bookingsAccessible = false;
           healthCheck.status = 'degraded';
         }
 
-        healthCheck.checks.bookings.count = totalBookingsCount;
-        healthCheck.checks.bookings.accessible = bookingsAccessible;
-      } catch (error: any) {
-        healthCheck.services.database.tables.BSL_Bookings = {
-          accessible: false,
-          error: error?.message || 'Unknown error',
-        };
-        healthCheck.checks.bookings.accessible = false;
-        healthCheck.status = 'degraded';
-      }
+        // 2. Check bsl_speakers table
+        try {
+          const speakersCount = await readCount('SELECT COUNT(*)::int AS count FROM bsl_speakers');
 
-      // 4. Check passes table
-      try {
-        const passesCount = await readCount(
-          'SELECT COUNT(*)::int AS count FROM passes WHERE event_id = $1',
-          [eventId]
-        );
+          healthCheck.services.database.tables.bsl_speakers = {
+            accessible: true,
+            recordCount: speakersCount,
+          };
+          healthCheck.checks.speakers.count = speakersCount;
+          healthCheck.checks.speakers.accessible = true;
+        } catch (error: any) {
+          healthCheck.services.database.tables.bsl_speakers = {
+            accessible: false,
+            error: error?.message || 'Unknown error',
+          };
+          healthCheck.checks.speakers.accessible = false;
+          healthCheck.status = 'degraded';
+        }
 
-        healthCheck.services.database.tables.passes = {
-          accessible: true,
-          recordCount: passesCount,
-        };
-        healthCheck.checks.passes.count = passesCount;
-        healthCheck.checks.passes.accessible = true;
-      } catch (error: any) {
-        healthCheck.services.database.tables.passes = {
-          accessible: false,
-          error: error?.message || 'Unknown error',
-        };
-        healthCheck.checks.passes.accessible = false;
-        healthCheck.status = 'degraded';
+        // 3. Check bookings - count from BSL_Bookings, meeting_requests, and meetings tables
+        try {
+          let totalBookingsCount = 0;
+          let bookingsAccessible = true;
+          const bookingErrors: string[] = [];
+
+          // Count from BSL_Bookings table
+          try {
+            const bslBookingsCount = await readCount('SELECT COUNT(*)::int AS count FROM "BSL_Bookings"');
+
+            totalBookingsCount += bslBookingsCount;
+            healthCheck.services.database.tables.BSL_Bookings = {
+              accessible: true,
+              recordCount: bslBookingsCount,
+            };
+          } catch (error: any) {
+            bookingErrors.push(`BSL_Bookings: ${error?.message || 'Unknown error'}`);
+            healthCheck.services.database.tables.BSL_Bookings = {
+              accessible: false,
+              error: error?.message || 'Unknown error',
+            };
+          }
+
+          // Count from meeting_requests table (sent requests)
+          try {
+            const meetingRequestsCount = await readCount(
+              'SELECT COUNT(*)::int AS count FROM meeting_requests'
+            );
+
+            totalBookingsCount += meetingRequestsCount;
+            healthCheck.services.database.tables.meeting_requests = {
+              accessible: true,
+              recordCount: meetingRequestsCount,
+            };
+          } catch (error: any) {
+            bookingErrors.push(`meeting_requests: ${error?.message || 'Unknown error'}`);
+            healthCheck.services.database.tables.meeting_requests = {
+              accessible: false,
+              error: error?.message || 'Unknown error',
+            };
+          }
+
+          // Count from meetings table (accepted meetings)
+          try {
+            const meetingsCount = await readCount('SELECT COUNT(*)::int AS count FROM meetings');
+
+            totalBookingsCount += meetingsCount;
+            healthCheck.services.database.tables.meetings = {
+              accessible: true,
+              recordCount: meetingsCount,
+            };
+          } catch (error: any) {
+            bookingErrors.push(`meetings: ${error?.message || 'Unknown error'}`);
+            healthCheck.services.database.tables.meetings = {
+              accessible: false,
+              error: error?.message || 'Unknown error',
+            };
+          }
+
+          // Set bookings check status
+          if (bookingErrors.length > 0) {
+            bookingsAccessible = false;
+            healthCheck.status = 'degraded';
+          }
+
+          healthCheck.checks.bookings.count = totalBookingsCount;
+          healthCheck.checks.bookings.accessible = bookingsAccessible;
+        } catch (error: any) {
+          healthCheck.services.database.tables.BSL_Bookings = {
+            accessible: false,
+            error: error?.message || 'Unknown error',
+          };
+          healthCheck.checks.bookings.accessible = false;
+          healthCheck.status = 'degraded';
+        }
+
+        // 4. Check passes table
+        try {
+          const passesCount = await readCount(
+            'SELECT COUNT(*)::int AS count FROM passes WHERE event_id = $1',
+            [eventId]
+          );
+
+          healthCheck.services.database.tables.passes = {
+            accessible: true,
+            recordCount: passesCount,
+          };
+          healthCheck.checks.passes.count = passesCount;
+          healthCheck.checks.passes.accessible = true;
+        } catch (error: any) {
+          healthCheck.services.database.tables.passes = {
+            accessible: false,
+            error: error?.message || 'Unknown error',
+          };
+          healthCheck.checks.passes.accessible = false;
+          healthCheck.status = 'degraded';
+        }
       }
 
       // Calculate database response time
@@ -295,9 +349,7 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
       );
       if (!allTablesAccessible) {
         healthCheck.services.database.status = 'unhealthy';
-        if (healthCheck.status === 'healthy') {
-          healthCheck.status = 'degraded';
-        }
+        healthCheck.status = 'degraded';
       }
     }
 
@@ -337,10 +389,7 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
     if (databaseConfigMissing) {
       healthCheck.status = 'degraded';
     } else if (healthCheck.services.database.status === 'unhealthy') {
-      const anyTablesAccessible = Object.values(healthCheck.services.database.tables).some(
-        (table) => table.accessible
-      );
-      healthCheck.status = anyTablesAccessible ? 'degraded' : 'unhealthy';
+      healthCheck.status = 'degraded';
     } else if (
       healthCheck.services.database.status === 'healthy' &&
       healthCheck.services.email.status === 'healthy'
@@ -386,12 +435,8 @@ export async function GET(request: Request) {
   try {
     const healthCheck = await getSystemHealthCheck(eventId);
 
-    // Set HTTP status code based on health
-    const httpStatus =
-      healthCheck.status === 'healthy' ? 200 : healthCheck.status === 'degraded' ? 200 : 503;
-
     return new Response(JSON.stringify(healthCheck, null, 2), {
-      status: httpStatus,
+      status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -431,7 +476,7 @@ export async function GET(request: Request) {
     };
 
     return new Response(JSON.stringify(errorHealthCheck, null, 2), {
-      status: 503,
+      status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache, no-store, must-revalidate',

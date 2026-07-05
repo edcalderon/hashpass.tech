@@ -1,5 +1,5 @@
-import { auth } from './better-auth';
+import { getAuthHandler } from './better-auth';
 
-const handler = auth.handler;
+const handler = getAuthHandler();
 
 export { handler as GET, handler as POST };
