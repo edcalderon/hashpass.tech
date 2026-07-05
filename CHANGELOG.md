@@ -1,3 +1,9 @@
+## [1.8.154](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.153...v1.8.154) (2026-07-05)
+
+
+
+
+
 ## [1.8.153](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.152...v1.8.153) (2026-07-05)
 
 
