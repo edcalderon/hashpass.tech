@@ -1,3 +1,14 @@
+## [1.8.159](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.158...v1.8.159) (2026-07-06)
+
+
+### Bug Fixes
+
+* regenerate invalid web patches ([ee08875](https://github.com/hashpass-tech/hashpass.tech/commit/ee0887532ae1c60328a0f74eade57ecf6e4811ff))
+
+
+
+
+
 ## [1.8.158](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.157...v1.8.158) (2026-07-06)
 
 
