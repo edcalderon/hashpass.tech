@@ -1,3 +1,14 @@
+## [1.8.157](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.156...v1.8.157) (2026-07-06)
+
+
+### Bug Fixes
+
+* harden web export and Android blur startup ([62ef16e](https://github.com/hashpass-tech/hashpass.tech/commit/62ef16e39c2876f84f7258ca21d5698af4458265))
+
+
+
+
+
 ## [1.8.156](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.155...v1.8.156) (2026-07-06)
 
 
