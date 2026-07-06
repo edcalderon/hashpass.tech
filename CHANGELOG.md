@@ -1,3 +1,14 @@
+## [1.8.162](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.161...v1.8.162) (2026-07-06)
+
+
+### Bug Fixes
+
+* **auth:** align Google OAuth env aliases and release guidance ([d61ea1e](https://github.com/hashpass-tech/hashpass.tech/commit/d61ea1e8aef693c41d76e2e9acf404629ce2403f))
+
+
+
+
+
 ## [1.8.161](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.160...v1.8.161) (2026-07-06)
 
 

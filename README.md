@@ -17,13 +17,13 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.161)
+## 📋 Latest Changes (v1.8.162)
 
 ### Bug Fixes
 
-* stabilize auth and local dev CORS ([7a6ea38](https://github.com/hashpass-tech/hashpass.tech/commit/7a6ea385f4d2de21a0b6ada25c6c9247d57d140e))
+* **auth:** align Google OAuth env aliases and release guidance ([d61ea1e](https://github.com/hashpass-tech/hashpass.tech/commit/d61ea1e8aef693c41d76e2e9acf404629ce2403f))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
 
 ## Current Status
 
