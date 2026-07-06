@@ -8,6 +8,9 @@ overrides:
   caniuse-lite: 1.0.30001800
 
 patchedDependencies:
+  '@expo/cli@0.24.24':
+    hash: 3za3wr4obwx2n2qmdozpcortny
+    path: patches/@expo__cli@0.24.24.patch
   expo-router@5.1.11:
     hash: mhabwvxp3jcvgfsuxhmzamfpcq
     path: patches/expo-router@5.1.11.patch
@@ -18594,7 +18597,7 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@expo/cli@0.24.24(bufferutil@4.1.0)(utf-8-validate@5.0.10)':
+  '@expo/cli@0.24.24(patch_hash=3za3wr4obwx2n2qmdozpcortny)(bufferutil@4.1.0)(utf-8-validate@5.0.10)':
     dependencies:
       '@0no-co/graphql.web': 1.2.0
       '@babel/runtime': 7.28.6
@@ -26057,7 +26060,7 @@ snapshots:
   expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10):
     dependencies:
       '@babel/runtime': 7.28.6
-      '@expo/cli': 0.24.24(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      '@expo/cli': 0.24.24(patch_hash=3za3wr4obwx2n2qmdozpcortny)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@expo/config': 11.0.13
       '@expo/config-plugins': 10.1.2
       '@expo/fingerprint': 0.13.4

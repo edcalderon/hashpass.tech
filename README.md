@@ -23,7 +23,7 @@
 
 * update patch hashes ([87f73ed](https://github.com/hashpass-tech/hashpass.tech/commit/87f73ed65cca6bb04498b453aa2f8875efda4b77))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 

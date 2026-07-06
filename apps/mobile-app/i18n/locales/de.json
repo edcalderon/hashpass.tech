@@ -100,6 +100,7 @@
   },
   "auth": {
     "title": "Willkommen bei",
+    "welcomeHeading": "Willkommen",
     "subtitle": "Melden Sie sich an, um Ihr digitales Leben freizuschalten.",
     "signInWithGoogle": "Mit Google anmelden",
     "emailPlaceholder": "Geben Sie Ihre E-Mail ein",
@@ -113,7 +114,12 @@
     "magicLinkResendCountdown": "Nicht erhalten? Senden Sie in {seconds}s einen neuen Link.",
     "magicLinkSendAnother": "Neuen Link senden",
     "magicLinkClose": "Schließen",
+    "sendingMagicLink": "Magic Link wird gesendet...",
+    "sendingVerificationCode": "Bestätigungscode wird gesendet...",
+    "verifyingCode": "Code wird überprüft...",
     "openingGoogleSignIn": "Google-Anmeldung wird geöffnet...",
+    "redirectingToGoogle": "Weiterleitung zu Google...",
+    "googleAuthHint": "Bitte warten Sie, bis Ihr Browser die Google-Anmeldung abgeschlossen hat.",
     "privacy": {
       "text": "Durch die Anmeldung stimmen Sie unseren zu",
       "terms": "Nutzungsbedingungen",

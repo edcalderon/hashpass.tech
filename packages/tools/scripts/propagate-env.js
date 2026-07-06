@@ -532,6 +532,9 @@ if (options.isLocal) {
     targetConfig.EXPO_PUBLIC_ROUTER_ORIGIN || 'https://hashpass.tech';
   targetConfig.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN =
     targetConfig.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN || targetConfig.EXPO_PUBLIC_ROUTER_ORIGIN;
+  targetConfig.EXPO_CORS_ALLOWED_ORIGINS =
+    targetConfig.EXPO_CORS_ALLOWED_ORIGINS ||
+    'https://hashpass.tech,https://www.hashpass.tech,chrome-extension://,moz-extension://';
 
   // Local Directus should follow the dev Supabase database profile when available.
   // This keeps the local OAuth callback from crash-looping on stale base DB credentials.

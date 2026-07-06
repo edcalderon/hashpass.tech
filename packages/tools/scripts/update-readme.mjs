@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
@@ -14,74 +13,12 @@ const DEFAULT_REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const DEFAULT_README = 'README.md';
 const DEFAULT_CHANGELOG = 'CHANGELOG.md';
 const DEFAULT_PACKAGE_JSON = 'package.json';
-const DEFAULT_RELEASES_URL = 'https://github.com/hashpass-tech/hashpass.tech/releases';
 
 function resolveVersioningCli(repoRoot = DEFAULT_REPO_ROOT) {
   const packageJsonPath = require.resolve('@edcalderon/versioning/package.json', {
     paths: [repoRoot],
   });
   return path.join(path.dirname(packageJsonPath), 'dist', 'cli.js');
-}
-
-function readPackageJson(repoRoot, relativePath) {
-  const filePath = path.resolve(repoRoot, relativePath);
-  if (!fs.existsSync(filePath)) {
-    return null;
-  }
-
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-}
-
-function getRepoSlug(repoRoot = DEFAULT_REPO_ROOT) {
-  const envSlug = process.env.GITHUB_REPOSITORY?.trim();
-  if (envSlug && envSlug.includes('/')) {
-    return envSlug;
-  }
-
-  const packageJson = readPackageJson(repoRoot, 'package.json');
-  const repositoryUrl = packageJson?.repository?.url;
-  if (typeof repositoryUrl === 'string') {
-    const match = repositoryUrl.match(/github\.com[:/](.+?)(?:\.git)?$/i);
-    if (match?.[1]) {
-      return match[1].replace(/^\/+|\/+$/g, '');
-    }
-  }
-
-  const gitRemote = spawnSync('git', ['remote', 'get-url', 'origin'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-    stdio: 'pipe',
-  });
-
-  if (gitRemote.status === 0) {
-    const remote = String(gitRemote.stdout || '').trim();
-    const match = remote.match(/github\.com[:/](.+?)(?:\.git)?$/i);
-    if (match?.[1]) {
-      return match[1].replace(/^\/+|\/+$/g, '');
-    }
-  }
-
-  return 'hashpass-tech/hashpass.tech';
-}
-
-function getReleasesUrl(repoRoot = DEFAULT_REPO_ROOT) {
-  const slug = getRepoSlug(repoRoot);
-  return slug ? `https://github.com/${slug}/releases` : DEFAULT_RELEASES_URL;
-}
-
-function normalizeGitHubReleasesLink(readmePath, releasesUrl) {
-  const current = fs.readFileSync(readmePath, 'utf8');
-  const next = current.replace(
-    /\[GitHub releases\]\(https:\/\/github\.com\/[^)]+\/releases\)/,
-    `[GitHub releases](${releasesUrl})`
-  );
-
-  if (next !== current) {
-    fs.writeFileSync(readmePath, next);
-    return true;
-  }
-
-  return false;
 }
 
 function runVersioningUpdateReadme({
@@ -138,15 +75,11 @@ export function syncReadme(options = {}) {
     quiet,
   });
 
-  const releasesUrl = getReleasesUrl(repoRoot);
-  const linkUpdated = normalizeGitHubReleasesLink(readmePath, releasesUrl);
-
   if (!quiet) {
     console.log(`✅ README synced from CHANGELOG.md`);
-    console.log(`🔗 GitHub releases link: ${releasesUrl}${linkUpdated ? ' (normalized)' : ''}`);
   }
 
-  return { readmePath, releasesUrl, linkUpdated };
+  return { readmePath };
 }
 
 function parseArgs(argv) {
@@ -220,12 +153,11 @@ function printHelp() {
   console.log([
     'Usage: update-readme [options]',
     '',
-    'Sync README.md from CHANGELOG.md using @edcalderon/versioning, then normalize the',
-    'GitHub releases link to this repository.',
+    'Sync README.md from CHANGELOG.md using @edcalderon/versioning.',
     '',
     'Options:',
     `  --cwd <path>        Working directory containing the README (default: ${DEFAULT_REPO_ROOT})`,
-    `  --repo-root <path>  Repo root used to resolve the versioning package and releases URL`,
+    `  --repo-root <path>  Repo root used to resolve the versioning package`,
     `  --readme <file>     README file path relative to cwd (default: ${DEFAULT_README})`,
     `  --changelog <file>  CHANGELOG file path relative to cwd (default: ${DEFAULT_CHANGELOG})`,
     `  --pkg <file>        package.json path relative to cwd (default: ${DEFAULT_PACKAGE_JSON})`,
@@ -253,4 +185,4 @@ if (path.resolve(process.argv[1] || '') === __filename) {
   main();
 }
 
-export { getReleasesUrl, normalizeGitHubReleasesLink, resolveVersioningCli };
+export { resolveVersioningCli };

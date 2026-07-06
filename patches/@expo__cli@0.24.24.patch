@@ -1,0 +1,73 @@
+diff --git a/build/src/start/server/middleware/CorsMiddleware.js b/build/src/start/server/middleware/CorsMiddleware.js
+index 20c7bd558bd44f02d8ff65035a63f5f019ab021b..99ae397e0d7f0b752f721ee23524223c7747cbb7 100644
+--- a/build/src/start/server/middleware/CorsMiddleware.js
++++ b/build/src/start/server/middleware/CorsMiddleware.js
+@@ -19,6 +19,31 @@ _export(exports, {
+ const DEFAULT_ALLOWED_CORS_HOSTS = [
+     'devtools'
+ ];
++const DEFAULT_ALLOWED_CORS_ORIGINS = [
++    'devtools://devtools'
++];
++const LOCAL_DEV_CORS_ORIGIN_ENV = 'EXPO_CORS_ALLOWED_ORIGINS';
++function readAllowedOriginsFromEnv() {
++    return String(process.env[LOCAL_DEV_CORS_ORIGIN_ENV] || '').split(',').map((value)=>value.trim()).filter(Boolean);
++}
++function matchesAllowedOrigin(origin, allowedOrigin) {
++    if (!allowedOrigin) {
++        return false;
++    }
++    if (allowedOrigin.endsWith('://*')) {
++        return origin.startsWith(allowedOrigin.slice(0, -1));
++    }
++    if (allowedOrigin.endsWith('://')) {
++        return origin.startsWith(allowedOrigin);
++    }
++    if (allowedOrigin.endsWith('*')) {
++        return origin.startsWith(allowedOrigin.slice(0, -1));
++    }
++    return origin === allowedOrigin;
++}
++function isAllowedOrigin(origin, allowedOrigins) {
++    return allowedOrigins.some((allowedOrigin)=>matchesAllowedOrigin(origin, allowedOrigin));
++}
+ const _isLocalHostname = (hostname)=>{
+     if (hostname === 'localhost') {
+         return true;
+@@ -44,12 +69,20 @@ function createCorsMiddleware(exp) {
+     const allowedHosts = [
+         ...DEFAULT_ALLOWED_CORS_HOSTS
+     ];
++    const allowedOrigins = [
++        ...DEFAULT_ALLOWED_CORS_ORIGINS,
++        ...readAllowedOriginsFromEnv()
++    ];
+     // Support for expo-router API routes
+     if ((_exp_extra = exp.extra) == null ? void 0 : (_exp_extra_router = _exp_extra.router) == null ? void 0 : _exp_extra_router.headOrigin) {
+-        allowedHosts.push(new URL(exp.extra.router.headOrigin).host);
++        const headOrigin = new URL(exp.extra.router.headOrigin).origin;
++        allowedHosts.push(new URL(headOrigin).host);
++        allowedOrigins.push(headOrigin);
+     }
+     if ((_exp_extra1 = exp.extra) == null ? void 0 : (_exp_extra_router1 = _exp_extra1.router) == null ? void 0 : _exp_extra_router1.origin) {
+-        allowedHosts.push(new URL(exp.extra.router.origin).host);
++        const routerOrigin = new URL(exp.extra.router.origin).origin;
++        allowedHosts.push(new URL(routerOrigin).host);
++        allowedOrigins.push(routerOrigin);
+     }
+     return (req, res, next)=>{
+         if (typeof req.headers.origin === 'string') {
+@@ -57,10 +90,11 @@ function createCorsMiddleware(exp) {
+             const isSameOrigin = host === req.headers.host;
+             const isLocalhost = _isLocalHostname(hostname);
+             const isAllowedHost = allowedHosts.includes(host) || isLocalhost;
+-            if (!isSameOrigin && !isAllowedHost) {
++            const isAllowedFullOrigin = isAllowedOrigin(req.headers.origin, allowedOrigins);
++            if (!isSameOrigin && !isAllowedHost && !isAllowedFullOrigin) {
+                 next(new Error(`Unauthorized request from ${req.headers.origin}. ` + 'This may happen because of a conflicting browser extension to intercept HTTP requests. ' + 'Disable browser extensions or use incognito mode and try again.'));
+                 return;
+-            } else if (!isLocalhost && isAllowedHost) {
++            } else if (!isLocalhost && (isAllowedHost || isAllowedFullOrigin)) {
+                 // Skipped for localhost to only allow requests from this dev-sever and not escalate
+                 // the cross-origin resource sharing that's allowed beyond the browser's defaults
+                 res.setHeader('Access-Control-Allow-Origin', req.headers.origin);

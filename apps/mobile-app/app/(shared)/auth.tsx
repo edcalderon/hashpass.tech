@@ -461,6 +461,7 @@ export default function AuthScreen() {
 
   const hasNavigatedRef = useRef(false);
   const hasShownOAuthErrorRef = useRef(false);
+  const oauthInFlightRef = useRef(false);
   const authProviderName = authService.getProviderName();
   const isNativeLightMode = !isDark;
   const authLogoSource =
@@ -488,7 +489,11 @@ export default function AuthScreen() {
   const signInWithGoogleLabel = t('signInWithGoogle', 'Sign in with Google');
   const openingGoogleSignInLabel = t('openingGoogleSignIn', 'Opening Google sign-in...');
   const oauthButtonLabel =
-    busyAction === 'oauth' ? openingGoogleSignInLabel : signInWithGoogleLabel;
+    busyAction === 'oauth'
+      ? Platform.OS === 'web'
+        ? t('redirectingToGoogle', 'Redirecting to Google...')
+        : openingGoogleSignInLabel
+      : signInWithGoogleLabel;
   const authActionMessage = useMemo(() => {
     switch (busyAction) {
       case 'magic-link':
@@ -497,6 +502,11 @@ export default function AuthScreen() {
         return t('sendingVerificationCode', 'Sending verification code...');
       case 'otp-verify':
         return t('verifyingCode', 'Verifying code...');
+      case 'oauth':
+        return t(
+          'googleAuthHint',
+          'Please wait while your browser finishes the Google sign-in.'
+        );
       default:
         return '';
     }
@@ -1000,9 +1010,11 @@ export default function AuthScreen() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (isBusy) return;
+    if (isBusy || oauthInFlightRef.current) return;
 
+    oauthInFlightRef.current = true;
     setBusyAction('oauth');
+    let keepOAuthBusy = false;
 
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -1012,6 +1024,7 @@ export default function AuthScreen() {
       const result = await signInWithOAuth('google');
 
       if (result.pending) {
+        keepOAuthBusy = true;
         return;
       }
 
@@ -1028,7 +1041,10 @@ export default function AuthScreen() {
 
       showError(t('authenticationError', 'Authentication Error'), message);
     } finally {
-      setBusyAction(null);
+      if (!keepOAuthBusy) {
+        oauthInFlightRef.current = false;
+        setBusyAction(null);
+      }
     }
   };
 
@@ -1741,7 +1757,7 @@ export default function AuthScreen() {
               <TouchableOpacity
                 style={[
                   styles.oauthButton,
-                  Platform.OS !== 'web' ? styles.oauthButtonNative : null,
+                  styles.oauthButtonNative,
                 ]}
                 onPress={() => void handleGoogleSignIn()}
                 disabled={isBusy}
@@ -1749,37 +1765,28 @@ export default function AuthScreen() {
                 accessibilityLabel={oauthButtonLabel}
                 accessibilityState={{ disabled: isBusy, busy: busyAction === 'oauth' }}
               >
-                {Platform.OS !== 'web' ? (
-                  <View style={styles.oauthButtonContent}>
+                <View style={styles.oauthButtonContent}>
+                  <View style={styles.oauthButtonIconGroup}>
+                    <Ionicons name="logo-google" size={24} color="#4285F4" />
                     {busyAction === 'oauth' ? (
-                      <ActivityIndicator size="small" color={colors.text.primary} />
-                    ) : (
-                      <Ionicons name="logo-google" size={24} color={colors.text.primary} />
-                    )}
-                    <Text
-                      style={[
-                        styles.oauthButtonText,
-                        busyAction === 'oauth' ? styles.oauthButtonTextBusy : null,
-                      ]}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {oauthButtonLabel}
-                    </Text>
+                      <ActivityIndicator size="small" color="#4285F4" />
+                    ) : null}
                   </View>
-                ) : (
-                  <>
-                    {busyAction === 'oauth' ? (
-                      <ActivityIndicator size="small" color={colors.text.primary} />
-                    ) : (
-                      <Ionicons name="logo-google" size={24} color={colors.text.primary} />
-                    )}
-                  </>
-                )}
+                  <Text
+                    style={[
+                      styles.oauthButtonText,
+                      busyAction === 'oauth' ? styles.oauthButtonTextBusy : null,
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {oauthButtonLabel}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
 
-            {Platform.OS !== 'web' && authActionMessage ? (
+            {authActionMessage ? (
               <View style={styles.authActionMessageContainer} dataSet={{ authEnterIgnore: 'true' }}>
                 <Text style={styles.authActionMessage}>{authActionMessage}</Text>
               </View>
@@ -2072,7 +2079,7 @@ const getStyles = (
     authHeaderTitle: {
       fontSize: isDesktopLayout ? 44 : isCompactMobile ? 32 : 38,
       fontWeight: '800',
-      color: isNativeLightMode ? '#121212' : '#f8f8fb',
+      color: colors.text.primary,
       textAlign: 'center',
       letterSpacing: -0.8,
     },
@@ -2080,7 +2087,7 @@ const getStyles = (
       marginTop: 8,
       fontSize: isDesktopLayout ? 24 : isCompactMobile ? 16 : 18,
       lineHeight: isDesktopLayout ? 30 : 24,
-      color: isNativeLightMode ? '#4c4e55' : 'rgba(238,239,247,0.78)',
+      color: colors.text.secondary,
       textAlign: 'center',
     },
     primaryAuthContainer: {
@@ -2642,6 +2649,13 @@ const getStyles = (
       justifyContent: 'center',
       gap: isVeryCompactMobile ? 8 : 10,
       overflow: 'hidden',
+    },
+    oauthButtonIconGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      minWidth: 34,
     },
     oauthButtonText: {
       flex: 1,

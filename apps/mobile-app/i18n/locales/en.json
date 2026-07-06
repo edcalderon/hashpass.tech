@@ -109,6 +109,7 @@
   },
   "auth": {
     "title": "Welcome to",
+    "welcomeHeading": "Welcome",
     "subtitle": "Sign in to unlock your digital life.",
     "signInWithGoogle": "Sign in with Google",
     "emailPlaceholder": "Enter your email",
@@ -122,7 +123,12 @@
     "magicLinkResendCountdown": "Didn't receive it? Send another in {seconds}s.",
     "magicLinkSendAnother": "Send another link",
     "magicLinkClose": "Close",
+    "sendingMagicLink": "Sending magic link...",
+    "sendingVerificationCode": "Sending verification code...",
+    "verifyingCode": "Verifying code...",
     "openingGoogleSignIn": "Opening Google sign-in...",
+    "redirectingToGoogle": "Redirecting to Google...",
+    "googleAuthHint": "Please wait while your browser finishes the Google sign-in.",
     "privacy": {
       "text": "By signing in, you agree to our",
       "terms": "Terms of Service",

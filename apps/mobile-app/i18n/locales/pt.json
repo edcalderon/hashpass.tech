@@ -100,6 +100,7 @@
   },
   "auth": {
     "title": "Bem-vindo ao",
+    "welcomeHeading": "Bem-vindo",
     "subtitle": "Faça login para desbloquear sua vida digital.",
     "signInWithGoogle": "Entrar com Google",
     "emailPlaceholder": "Digite seu email",
@@ -113,7 +114,12 @@
     "magicLinkResendCountdown": "Não recebeu? Envie outro em {seconds}s.",
     "magicLinkSendAnother": "Enviar outro link",
     "magicLinkClose": "Fechar",
+    "sendingMagicLink": "Enviando link mágico...",
+    "sendingVerificationCode": "Enviando código de verificação...",
+    "verifyingCode": "Verificando código...",
     "openingGoogleSignIn": "Abrindo o login do Google...",
+    "redirectingToGoogle": "Redirecionando para o Google...",
+    "googleAuthHint": "Aguarde enquanto o navegador conclui o login do Google.",
     "privacy": {
       "text": "Ao fazer login, você concorda com nossos",
       "terms": "Termos de Serviço",
