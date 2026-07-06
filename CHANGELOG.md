@@ -1,3 +1,14 @@
+## [1.8.160](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.159...v1.8.160) (2026-07-06)
+
+
+### Bug Fixes
+
+* update patch hashes ([87f73ed](https://github.com/hashpass-tech/hashpass.tech/commit/87f73ed65cca6bb04498b453aa2f8875efda4b77))
+
+
+
+
+
 ## [1.8.159](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.158...v1.8.159) (2026-07-06)
 
 
