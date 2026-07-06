@@ -1,6 +1,15 @@
-import { Pool } from 'pg';
+import { createRequire } from 'module';
+import { loadServerEnvFiles } from './load-server-env';
+import {
+  getDatabaseConnectionString as getRawDatabaseConnectionString,
+  getNormalizedDatabaseConnectionString,
+} from './database-config';
+
+type PgModule = typeof import('pg');
+type Pool = InstanceType<PgModule['Pool']>;
 
 let pool: Pool | null = null;
+const nodeRequire = createRequire(__filename);
 
 const readEnv = (name: string): string | undefined => {
   const value = process.env[name]?.trim();
@@ -19,9 +28,6 @@ const shouldRejectUnauthorizedDatabaseSsl = (): boolean =>
       readEnv('DB_SSL_REJECT_UNAUTHORIZED')
   );
 
-const isProductionRuntime = (): boolean =>
-  (readEnv('EXPO_PUBLIC_ENV') || readEnv('NODE_ENV') || '').toLowerCase() === 'production';
-
 const getDatabaseConnectionTimeoutMillis = (): number => {
   const configuredTimeout = Number(
     readEnv('BETTER_AUTH_DATABASE_CONNECTION_TIMEOUT_MS') || readEnv('DB_CONNECTION_TIMEOUT_MS')
@@ -30,71 +36,16 @@ const getDatabaseConnectionTimeoutMillis = (): number => {
   return Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : 5000;
 };
 
-const normalizeDatabaseConnectionString = (connectionString: string): string => {
-  if (isDatabaseSslDisabled() || shouldRejectUnauthorizedDatabaseSsl()) {
-    return connectionString;
-  }
-
-  try {
-    const url = new URL(connectionString);
-    const sslMode = url.searchParams.get('sslmode')?.toLowerCase();
-
-    if (!sslMode || ['prefer', 'require', 'verify-ca', 'verify-full'].includes(sslMode)) {
-      url.searchParams.set('sslmode', 'no-verify');
-    }
-
-    return url.toString();
-  } catch {
-    return connectionString;
-  }
+export const getDatabaseConnectionString = (): string | undefined => {
+  loadServerEnvFiles();
+  return getRawDatabaseConnectionString();
 };
-
-export const getDatabaseConnectionString = (): string | undefined =>
-  readEnv('BETTER_AUTH_DATABASE_URL') ||
-  readEnv('BSL_BETTER_AUTH_DATABASE_URL') ||
-  readEnv('BSL_DATABASE_URL') ||
-  readEnv('DATABASE_URL') ||
-  (isProductionRuntime()
-    ? readEnv('SUPABASE_DB_URL_PROD') ||
-      readEnv('BSL_SUPABASE_DB_URL_PROD') ||
-      readEnv('DATABASE_URL_PROD') ||
-      readEnv('PROD_DB_URL') ||
-      readEnv('PROD_BSL_DB_URL') ||
-      readEnv('SUPABASE_DB_URL')
-    : readEnv('SUPABASE_DB_URL_DEV') ||
-      readEnv('BSL_SUPABASE_DB_URL_DEV') ||
-      readEnv('DATABASE_URL_DEV') ||
-      readEnv('DEV_DB_URL') ||
-      readEnv('DEV_BSL_DB_URL') ||
-      readEnv('SUPABASE_DB_URL') ||
-      readEnv('SUPABASE_DB_URL_PROD') ||
-      readEnv('BSL_SUPABASE_DB_URL_PROD') ||
-      readEnv('DATABASE_URL_PROD') ||
-      readEnv('PROD_DB_URL') ||
-      readEnv('PROD_BSL_DB_URL')) ||
-  (() => {
-    const host = readEnv('DB_HOST');
-    const database = readEnv('DB_NAME');
-    const user = readEnv('DB_USER');
-    const password = readEnv('DB_PASSWORD')?.replace(/^"|"$/g, '');
-
-    if (!host || !database || !user || !password) {
-      return undefined;
-    }
-
-    const url = new URL('postgresql://localhost');
-    url.hostname = host;
-    url.port = readEnv('DB_PORT') || '5432';
-    url.pathname = `/${database}`;
-    url.username = user;
-    url.password = password;
-
-    return url.toString();
-  })();
 
 export const hasDatabaseConnectionString = (): boolean => Boolean(getDatabaseConnectionString());
 
 export const getDatabasePool = (): Pool => {
+  loadServerEnvFiles();
+
   if (pool) return pool;
 
   const connectionString = getDatabaseConnectionString();
@@ -105,9 +56,11 @@ export const getDatabasePool = (): Pool => {
     );
   }
 
-  pool = new Pool({
+  const { Pool: PgPool } = nodeRequire('pg') as PgModule;
+
+  pool = new PgPool({
     connectionString: connectionString
-      ? normalizeDatabaseConnectionString(connectionString)
+      ? getNormalizedDatabaseConnectionString(connectionString)
       : 'postgres://invalid:invalid@localhost:5432/better_auth_missing',
     connectionTimeoutMillis: getDatabaseConnectionTimeoutMillis(),
     ssl: isDatabaseSslDisabled()

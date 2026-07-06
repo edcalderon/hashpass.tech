@@ -4,6 +4,9 @@
   "version": "1.8.156",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
+    "overrides": {
+      "caniuse-lite": "1.0.30001800"
+    },
     "patchedDependencies": {
       "metro-file-map@0.82.5": "patches/metro-file-map@0.82.5.patch",
       "react-native-css-interop@0.2.1": "patches/react-native-css-interop@0.2.1.patch"

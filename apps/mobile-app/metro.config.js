@@ -162,12 +162,26 @@ const metroResolveRequest = (context, moduleName, platform) => {
     };
   }
 
+  if (platform === 'android' && moduleName === 'expo-blur') {
+    return {
+      type: 'sourceFile',
+      filePath: path.resolve(__dirname, 'lib/expo-blur-shim.tsx'),
+    };
+  }
+
   if (
     moduleName === 'jiti' ||
     moduleName === 'jiti/lib/jiti.mjs' ||
     moduleName === 'jiti/lib/jiti.cjs' ||
     moduleName.endsWith('/jiti/lib/jiti.mjs') ||
     moduleName.endsWith('/jiti/lib/jiti.cjs')
+  ) {
+    return { type: 'empty' };
+  }
+
+  if (
+    moduleName === 'pg-native' ||
+    moduleName.endsWith('/pg-native')
   ) {
     return { type: 'empty' };
   }

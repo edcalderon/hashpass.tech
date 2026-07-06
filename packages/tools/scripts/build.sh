@@ -29,6 +29,7 @@ rm -rf web-build out dist/web-build
 echo "[3.2/5] Building web assets..."
 # Set environment to production
 export NODE_ENV=production
+export NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-8192}"
 
 # Build with the web export command
 if ! npx expo export:web; then

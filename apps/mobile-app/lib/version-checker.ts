@@ -90,6 +90,11 @@ export async function checkVersionAndClearCache(forceCheck: boolean = false): Pr
 
     if (currentVersion !== latestVersion && needsUpdate) {
       console.warn('[VersionChecker] ⚠️ Update available:', latestVersion);
+      if (forceCheck) {
+        await clearAllCaches();
+        window.location.reload();
+        return true;
+      }
       window.dispatchEvent(
         new CustomEvent('hashpass:version-update', {
           detail: { currentVersion, latestVersion },

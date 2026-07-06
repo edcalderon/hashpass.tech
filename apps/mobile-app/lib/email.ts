@@ -2,8 +2,7 @@ import nodemailer from 'nodemailer';
 import emails from '../i18n/locales/emails.json';
 import { getEmailAssetUrl } from './s3-service';
 import { supabaseServer } from './supabase-server';
-import { getSystemHealthCheck } from '../app/api/status+api';
-import type { HealthCheck } from '../app/api/status+api';
+import type { HealthCheck } from './server/system-health';
 
 // Default to English if locale is not provided or not supported
 const DEFAULT_LOCALE = 'en';

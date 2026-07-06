@@ -2,7 +2,6 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps } from 'react-native-reanimated';
-import { BlurView } from 'expo-blur';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { Ionicons } from '../../../lib/vector-icons';
 import { useRouter, usePathname, useNavigation as useExpoNavigation } from 'expo-router';
@@ -24,6 +23,7 @@ import { NotificationProvider, useNotifications } from '@contexts/NotificationCo
 import { useEvent } from '@contexts/EventContext';
 import { AnimationProvider, useAnimations } from '../../../providers/AnimationProvider';
 import VersionDisplay from '../../../components/VersionDisplay';
+import SafeBlurView from '../../../components/SafeBlurView';
 import QRScanner from '../../../components/QRScanner';
 import MiniNotificationDropdown from '../../../components/MiniNotificationDropdown';
 import { t } from '@lingui/macro';
@@ -833,7 +833,7 @@ export default function DashboardLayout() {
               />
             ) : (
               <>
-                <BlurView
+                <SafeBlurView
                   intensity={20}
                   tint={isDark ? 'dark' : 'light'}
                   style={StyleSheet.absoluteFill}

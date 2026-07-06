@@ -23,7 +23,7 @@
 
 * resolve mobile event banner icon import ([8f8c711](https://github.com/hashpass-tech/hashpass.tech/commit/8f8c7118959b1f7ef75395f075a030f483397104))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 
