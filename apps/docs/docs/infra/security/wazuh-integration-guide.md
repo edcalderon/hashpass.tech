@@ -21,8 +21,8 @@ This guide outlines how to integrate Wazuh into the HashPass platform to enhance
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
 │  │   Frontend   │  │   API Layer  │  │   Supabase   │     │
 │  │  (Expo/Web)  │  │ (Expo Router)│  │  (Postgres)  │     │
-│  │              │  │  (Lambda/    │  │              │     │
-│  │              │  │   Netlify)   │  │              │     │
+│  │              │  │ (Lambda/API  │  │              │     │
+│  │              │  │  Gateway)    │  │              │     │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘     │
 │         │                  │                  │              │
 │         └──────────────────┼─────────────────┘              │
@@ -68,7 +68,7 @@ Forward application logs, API requests, and security events to Wazuh.
 
 ### 2. **Infrastructure Monitoring**
 
-Monitor AWS infrastructure (Amplify, Lambda, S3, Supabase).
+Monitor AWS infrastructure (source CloudFront front door, Lambda/API Gateway, S3, Supabase).
 
 **Use Cases:**
 - CloudTrail log analysis

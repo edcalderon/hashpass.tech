@@ -23,7 +23,7 @@
 
 * stabilize auth and local dev CORS ([7a6ea38](https://github.com/hashpass-tech/hashpass.tech/commit/7a6ea385f4d2de21a0b6ada25c6c9247d57d140e))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 
@@ -78,7 +78,7 @@ Use `codebase-memory-mcp` first for repo discovery and fast checks.
 - **`apps/directus`** — Directus SSO Docker setup for local auth testing.
 - **`packages/ui`** — Shared design system for mobile and web, including the club theme and shared components.
 - **`packages/`** — Shared packages: `@hashpass/auth`, `@hashpass/config`, `@hashpass/types`, `@hashpass/backend`, `@hashpass/utils`, `@hashpass/ui`, `@hashpass/infra`.
-- **`packages/infra/`** — Infrastructure and deploy assets for Terraform, Lambda, Netlify, Cloudflare, and legacy deployment helpers.
+- **`packages/infra/`** — Infrastructure and deploy assets for Terraform, Lambda, Cloudflare, and AWS/GCP delivery helpers.
 - **`archive/whitelabel-auth/`** — Archived legacy auth monorepo kept for reference only. The active auth package lives in `packages/auth` as `@hashpass/auth`.
 - **`packages/infra/terraform`** — Terraform IaC (GCP, etc.).
 

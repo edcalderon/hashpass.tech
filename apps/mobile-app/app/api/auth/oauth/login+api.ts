@@ -1,4 +1,5 @@
 import { ExpoResponse } from 'expo-router/server';
+import { resolveGoogleOAuthClientId } from '../../../../lib/auth/oauth/google-credentials';
 
 const DIRECTUS_URL =
   process.env.DIRECTUS_URL ||
@@ -12,7 +13,6 @@ const DEFAULT_FRONTEND_ORIGIN =
 const OAUTH_FRONTEND_ORIGIN_COOKIE_NAME = 'oauth_frontend_origin';
 const OAUTH_STATE_COOKIE_NAME = 'oauth_google_state';
 const OAUTH_NATIVE_CALLBACK_COOKIE_NAME = 'oauth_native_callback';
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const LOCAL_ORIGINS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
 
 function isLocalDevRuntime(): boolean {
@@ -120,6 +120,7 @@ export async function GET(request: Request): Promise<Response> {
   const frontendOrigin = resolveFrontendOrigin(request, url.origin);
   const frontendHostname = normalizeHostname(url.hostname);
   const directusHostname = getDirectusHostname(DIRECTUS_URL);
+  const GOOGLE_CLIENT_ID = resolveGoogleOAuthClientId();
 
   console.log('[OAuth Login] Starting OAuth flow via Directus');
   console.log('[OAuth Login] Provider:', provider);

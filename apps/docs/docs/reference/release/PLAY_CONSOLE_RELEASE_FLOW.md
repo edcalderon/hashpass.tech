@@ -2,14 +2,14 @@
 
 This guide covers the Play Console track ladder for HashPass and how it maps to the repo's Android release workflow.
 
-Temporary release posture: the current cycle is internal-first on the development profile. Use `environment=development` for validation, keep alpha gated by the matching internal release on the same tag, and do not publish to production until the release freeze is lifted.
+Temporary release posture: the current cycle is internal-first on the development profile. Use `environment=development` for validation, keep alpha gated by the matching internal release on the same tag, and do not publish to production until the release freeze is lifted. Closed testing can be published directly with `release_status=completed`; only the first alpha upload needs `draft` if Play still treats the app as a draft.
 
 ## Track Matrix
 
 | Track | Play Console purpose | Repo command | Release status | When to use |
 |------|----------------------|--------------|----------------|-------------|
 | Internal | Early QA for trusted testers | `environment=development` | `completed` | Required first step before closed alpha or when you want the fastest smoke test |
-| Closed (`alpha`) | Controlled pre-launch testing | `environment=development --track=alpha` | `draft` for the first upload, then `completed` | Follow the internal track for the same tag before broader pre-launch testing while production is paused |
+| Closed (`alpha`) | Controlled pre-launch testing | `environment=development --track=alpha` | `completed` by default; `draft` only if Play still treats the app as draft | Follow the internal track for the same tag before broader pre-launch testing while production is paused |
 | Open (`beta`) | Broader public testing | `environment=production --track=beta` | `completed` | After production access is granted and you want wider feedback |
 | Production | Public release | `environment=production --track=production` | `completed` | Paused until the release freeze is lifted |
 
@@ -17,8 +17,8 @@ Notes:
 
 - The workflow uses Play API track names (`internal`, `alpha`, `beta`, `production`).
 - In the Play Console UI, open testing maps to the `beta` track.
+- `release_status=completed` is the normal direct-publish path for closed testing and production.
 - `release_status=draft` is only needed for the first closed-testing upload while Play still treats the app as draft.
-- `release_status=completed` is the default for normal releases.
 - Closed alpha is blocked until the matching internal release has already succeeded for the same tag.
 - Production publishing is paused for the current development cycle; do not use the production track until the hold is lifted.
 - Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
@@ -82,10 +82,12 @@ gh workflow run mobile-android-release.yml \
   --ref v<NEW_VERSION> \
   --field environment=development \
   --field track=alpha \
-  --field release_status=draft \
+  --field release_status=completed \
   --field backend=fastlane \
   --field runner=aws-ec2
 ```
+
+If Play Console still shows the app as `Draft`, switch `release_status` to `draft` for that one upload. Once the app leaves draft, keep `completed` and let the workflow publish directly.
 
 For subsequent alpha updates, switch `release_status` back to `completed` once Play no longer treats the app as draft.
 If you use `auto_promote_alpha=true` on the internal run, the workflow will dispatch this alpha step automatically for the same tag.

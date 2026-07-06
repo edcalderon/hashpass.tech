@@ -386,6 +386,8 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     ['BETTER_AUTH_DATABASE_URL', supabaseDatabaseUrl],
     ['BSL_BETTER_AUTH_DATABASE_URL', supabaseDatabaseUrl],
     ['BETTER_AUTH_TRUSTED_ORIGINS', betterAuthTrustedOrigins],
+    ['GOOGLE_CLIENT_ID', betterAuthGoogleClientId],
+    ['GOOGLE_CLIENT_SECRET', betterAuthGoogleClientSecret],
     ['BETTER_AUTH_GOOGLE_CLIENT_ID', betterAuthGoogleClientId],
     ['BETTER_AUTH_GOOGLE_CLIENT_SECRET', betterAuthGoogleClientSecret],
     ['EXPO_PUBLIC_FRONTEND_URL', runtime.frontendUrl],

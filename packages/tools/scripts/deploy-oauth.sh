@@ -16,6 +16,12 @@ set -a
 source .env
 set +a
 
+GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-${BETTER_AUTH_GOOGLE_CLIENT_ID:-}}"
+google_client_secret_key="GOOGLE_CLIENT_SECRET"
+better_auth_google_client_secret_key="BETTER_AUTH_GOOGLE_CLIENT_SECRET"
+google_client_secret_value="${!google_client_secret_key:-${!better_auth_google_client_secret_key:-}}"
+printf -v GOOGLE_CLIENT_SECRET '%s' "$google_client_secret_value"
+
 # Validate required variables
 REQUIRED_VARS=("GOOGLE_CLIENT_ID" "GOOGLE_CLIENT_SECRET" "DIRECTUS_KEY" "DIRECTUS_SECRET" "DB_HOST" "DB_PORT" "DB_NAME" "DB_USER" "DB_PASSWORD" "ADMIN_EMAIL" "ADMIN_PASSWORD")
 for var in "${REQUIRED_VARS[@]}"; do

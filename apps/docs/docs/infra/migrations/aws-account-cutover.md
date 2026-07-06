@@ -1,5 +1,7 @@
 # HashPass AWS Account Migration Playbook
 
+> Status: historical reference. The live web path now runs through the target-account `hashpass.tech` web pipeline and the source-account CloudFront front door, and the current infra docs describe the active state.
+
 This playbook documents the migration from AWS account `058264267235` to AWS account `952191196420`.
 
 The rule for every phase is simple:
@@ -30,7 +32,7 @@ The new account started empty for these surfaces, which made it suitable for a c
 4. Recreate the Android EC2 runner in the new account.
 5. Keep the source account live until the target stack is fully validated.
 
-## Current source-account inventory
+## Historical source-account inventory
 
 The source account currently contains these relevant resources:
 

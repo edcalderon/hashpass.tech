@@ -117,11 +117,11 @@ If you must use Workers, you can proxy API requests to an external backend:
 
 The worker will automatically proxy all `/api/*` requests to the configured backend URL.
 
-### Option 3: Use Netlify or Amplify for API Routes
+### Option 3: Use another platform for API Routes
 
 If you need full API route support, consider using:
 - **Netlify Functions** (free tier available)
-- **AWS Amplify** (free tier available)
+- A custom AWS Lambda/API Gateway backend
 
 Both support Expo Server API routes out of the box.
 

@@ -1,12 +1,13 @@
-# HashPass Multi-Cloud IaC (AWS + GCP)
+# HashPass Terraform IaC (AWS + GCP)
 
-This Terraform setup deploys the production naming convention discussed for HashPass:
+This Terraform setup deploys the live HashPass infra surfaces:
 
-- Frontend (Amplify):
-  - `blockchainsummit.hashpass.lat`
-  - `blockchainsummit-dev.hashpass.lat`
-- Frontend (S3 + CloudFront):
-  - `hashpass.tech` target-account static site pipeline
+- Source CloudFront front door:
+  - `hashpass.tech`
+  - `dev.hashpass.tech`
+- Target-account web origin:
+  - `hashpass.tech` static site pipeline
+  - `dev.hashpass.tech` development pipeline
 - API (AWS Lambda + API Gateway):
   - `api.hashpass.tech`
   - `api-dev.hashpass.tech`
@@ -20,15 +21,15 @@ This Terraform setup deploys the production naming convention discussed for Hash
 
 ## Structure
 
-- `stacks/aws`: source CloudFront front door + optional Amplify domain association + GitHub Pages DNS for `hashpass.club`
+- `stacks/aws`: source CloudFront front door + GitHub Pages DNS for `hashpass.club`
 - `stacks/gcp`: GCP Directus VM(s) + optional Cloud DNS records
 - `stacks/hashpass-dns`: target-account Route 53 hosted zones for the migration cutover
 - `stacks/hashpass-api-target`: target-account API Gateway + Lambda stack for `api.hashpass.tech`
-- `stacks/hashpass-web`: target-account CodePipeline + EC2 worker stack for `hashpass.tech`
+- `stacks/hashpass-web`: target-account CodePipeline + EC2 worker stack for `hashpass.tech` and `dev.hashpass.tech`
 - `stacks/mobile-release`: AWS EC2 self-hosted GitHub Actions runner for mobile Android builds
 - `stacks/mobile-release-target`: isolated target-account Android runner stack used during migration, with its own `hashpass-mobile-release-target` label
 - `modules/aws_expo_router_api`: reusable Lambda + HTTP API + custom domain module
-- `modules/aws_amplify_domain`: reusable Amplify custom domain binding module
+- `modules/aws_amplify_domain`: legacy custom domain binding module retained for archived migration references
 - `modules/aws_static_site_pipeline`: reusable S3 + CloudFront + CodePipeline site module with a custom EC2 build action
 - `modules/gcp_directus_instance`: reusable Directus compute module
 - `modules/aws_github_actions_runner`: reusable EC2 GitHub Actions runner module
@@ -36,7 +37,7 @@ This Terraform setup deploys the production naming convention discussed for Hash
 ## Prerequisites
 
 1. Terraform `>= 1.5`
-2. AWS credentials configured (for Route53, ACM, CloudFront, API Gateway, Lambda, Amplify)
+2. AWS credentials configured (for Route53, ACM, CloudFront, API Gateway, Lambda)
 3. GCP credentials configured (ADC or `GOOGLE_APPLICATION_CREDENTIALS`)
 4. Lambda package built at the configured path:
    - Example: `./packages/tools/scripts/package-lambda.sh`
@@ -70,14 +71,14 @@ Shortcut:
 
 Outputs include:
 
-- the source-account CloudFront distribution/domain for `hashpass.tech`
+- the source-account CloudFront distribution/domain for `hashpass.tech` and `dev.hashpass.tech`
 - the origin domain wired behind the front door
-- domain association metadata if Amplify association is enabled
+- the target-account static origin metadata used by the web pipeline
 
 ### HashPass Web Stack
 
 This stack provisions the target-account replacement for the `hashpass.tech`
-Amplify site. It creates both the production and development pipelines in the
+web origin. It creates both the production and development pipelines in the
 same Terraform state. It creates:
 
 - an S3 bucket for the built site
@@ -131,8 +132,7 @@ The current live layout is:
 - The target `hashpass.tech` hosted zone still carries the static origin used
   by the source CloudFront front door.
 The target web stack still uses a single shared EC2 build worker plus
-CodePipeline, so the build flow stays close to the old Amplify setup without
-depending on CodeBuild. Keep `build_worker_instance_count = 1` unless you
+CodePipeline. Keep `build_worker_instance_count = 1` unless you
 need concurrent dev and prod throughput; a second worker only helps parallel
 queues and increases idle cost. The worker runs the same
 `packages/tools/scripts/build-static-site.sh` and
@@ -173,11 +173,11 @@ includes a periodic stop sweep in addition to the push-triggered monitor so an
 idle worker can still be reclaimed if no later commit arrives. Use GitHub
 Actions to start, monitor, or stop the EC2 instance by tag, and keep direct
 target-account AWS CLI usage for bootstrap or emergency debugging only.
-The target Supabase compatibility layer for the post-Amplify migration lives in
+The target Supabase compatibility layer for the target-account migration lives in
 `packages/tools/scripts/sql/target-bsl-bootstrap.sql`. Apply it before testing
 the new web/API path, and keep future target-side database changes in checked-in
 SQL migrations rather than ad hoc console edits.
-Before deleting the remaining legacy source-account API/Lambda leftovers,
+Before removing the remaining source-account API/Lambda leftovers,
 verify that the source CloudFront front door is serving `https://hashpass.tech`
 from the target origin and that the DNS answers are stable. The source account
 is no longer the public API path; keep the front door only until you are

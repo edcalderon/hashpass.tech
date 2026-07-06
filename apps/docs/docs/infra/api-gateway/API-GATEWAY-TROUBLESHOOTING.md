@@ -6,7 +6,7 @@ If you're getting 404 errors on `https://api.hashpass.tech/api/*`, it usually me
 
 ## ⚠️ CRITICAL: DNS Configuration Issue
 
-**Current Status**: `api.hashpass.tech` should point to the target-account API Gateway custom domain, not CloudFront/S3.
+**Current Status**: `api.hashpass.tech` should point to the target-account API Gateway custom domain.
 
 **Evidence**:
 - DNS resolves to AWS CloudFront IPs (18.155.252.x)
@@ -40,7 +40,7 @@ If you're getting 404 errors on `https://api.hashpass.tech/api/*`, it usually me
 ### 4. Verify DNS Configuration
 - Check Route 53 or your DNS provider
 - Verify `api.hashpass.tech` has a CNAME or A record
-- Should point to API Gateway's domain (not Amplify Hosting)
+   - Should point to API Gateway's domain, not a stale web edge target
 
 ## Step-by-Step Configuration
 
