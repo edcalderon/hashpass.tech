@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity, StatusBar, Image, ImageBackground } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../hooks/useTheme';
 import { useRouter } from 'expo-router';
 import { useTranslation } from '../i18n/i18n';
 import { isMainBranch } from '../lib/event-detector';
 import { getTourBrandAsset, resolveEventImageSource } from '../lib/event-branding';
+import { MaterialIcons } from '../lib/vector-icons';
 import AgendaTracker from './AgendaTracker';
 import SafeLinearGradient from './SafeLinearGradient';
 
