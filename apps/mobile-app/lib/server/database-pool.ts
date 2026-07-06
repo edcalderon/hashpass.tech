@@ -19,6 +19,9 @@ const shouldRejectUnauthorizedDatabaseSsl = (): boolean =>
       readEnv('DB_SSL_REJECT_UNAUTHORIZED')
   );
 
+const isProductionRuntime = (): boolean =>
+  (readEnv('EXPO_PUBLIC_ENV') || readEnv('NODE_ENV') || '').toLowerCase() === 'production';
+
 const getDatabaseConnectionTimeoutMillis = (): number => {
   const configuredTimeout = Number(
     readEnv('BETTER_AUTH_DATABASE_CONNECTION_TIMEOUT_MS') || readEnv('DB_CONNECTION_TIMEOUT_MS')
@@ -51,6 +54,24 @@ export const getDatabaseConnectionString = (): string | undefined =>
   readEnv('BSL_BETTER_AUTH_DATABASE_URL') ||
   readEnv('BSL_DATABASE_URL') ||
   readEnv('DATABASE_URL') ||
+  (isProductionRuntime()
+    ? readEnv('SUPABASE_DB_URL_PROD') ||
+      readEnv('BSL_SUPABASE_DB_URL_PROD') ||
+      readEnv('DATABASE_URL_PROD') ||
+      readEnv('PROD_DB_URL') ||
+      readEnv('PROD_BSL_DB_URL') ||
+      readEnv('SUPABASE_DB_URL')
+    : readEnv('SUPABASE_DB_URL_DEV') ||
+      readEnv('BSL_SUPABASE_DB_URL_DEV') ||
+      readEnv('DATABASE_URL_DEV') ||
+      readEnv('DEV_DB_URL') ||
+      readEnv('DEV_BSL_DB_URL') ||
+      readEnv('SUPABASE_DB_URL') ||
+      readEnv('SUPABASE_DB_URL_PROD') ||
+      readEnv('BSL_SUPABASE_DB_URL_PROD') ||
+      readEnv('DATABASE_URL_PROD') ||
+      readEnv('PROD_DB_URL') ||
+      readEnv('PROD_BSL_DB_URL')) ||
   (() => {
     const host = readEnv('DB_HOST');
     const database = readEnv('DB_NAME');
@@ -80,7 +101,7 @@ export const getDatabasePool = (): Pool => {
 
   if (!connectionString) {
     console.warn(
-      'Better Auth database is not configured. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, DATABASE_URL, or DB_HOST/DB_NAME/DB_USER/DB_PASSWORD before using /api/auth.'
+      'Better Auth database is not configured. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, DATABASE_URL, SUPABASE_DB_URL_DEV, SUPABASE_DB_URL, or DB_HOST/DB_NAME/DB_USER/DB_PASSWORD before using /api/auth.'
     );
   }
 

@@ -6,6 +6,17 @@ describe('database-pool', () => {
     'BSL_BETTER_AUTH_DATABASE_URL',
     'BSL_DATABASE_URL',
     'DATABASE_URL',
+    'SUPABASE_DB_URL',
+    'SUPABASE_DB_URL_DEV',
+    'SUPABASE_DB_URL_PROD',
+    'BSL_SUPABASE_DB_URL_DEV',
+    'BSL_SUPABASE_DB_URL_PROD',
+    'DATABASE_URL_DEV',
+    'DATABASE_URL_PROD',
+    'DEV_DB_URL',
+    'PROD_DB_URL',
+    'DEV_BSL_DB_URL',
+    'PROD_BSL_DB_URL',
     'DB_HOST',
     'DB_PORT',
     'DB_NAME',
@@ -26,6 +37,17 @@ describe('database-pool', () => {
     delete process.env.BSL_BETTER_AUTH_DATABASE_URL;
     delete process.env.BSL_DATABASE_URL;
     delete process.env.DATABASE_URL;
+    delete process.env.SUPABASE_DB_URL;
+    delete process.env.SUPABASE_DB_URL_DEV;
+    delete process.env.SUPABASE_DB_URL_PROD;
+    delete process.env.BSL_SUPABASE_DB_URL_DEV;
+    delete process.env.BSL_SUPABASE_DB_URL_PROD;
+    delete process.env.DATABASE_URL_DEV;
+    delete process.env.DATABASE_URL_PROD;
+    delete process.env.DEV_DB_URL;
+    delete process.env.PROD_DB_URL;
+    delete process.env.DEV_BSL_DB_URL;
+    delete process.env.PROD_BSL_DB_URL;
     delete process.env.DB_HOST;
     delete process.env.DB_PORT;
     delete process.env.DB_NAME;
@@ -62,6 +84,21 @@ describe('database-pool', () => {
     expect(hasDatabaseConnectionString()).toBe(true);
     expect(getDatabaseConnectionString()).toBe(
       'postgresql://dbu:pw@localhost:5432/hashpass'
+    );
+  });
+
+  it('uses SUPABASE_DB_URL_DEV when Better Auth aliases are missing', () => {
+    process.env.SUPABASE_DB_URL_DEV = 'db://' + 'hashpass_dev';
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const {
+      getDatabaseConnectionString,
+      hasDatabaseConnectionString,
+    } = require('../../../lib/server/database-pool');
+
+    expect(hasDatabaseConnectionString()).toBe(true);
+    expect(getDatabaseConnectionString()).toBe(
+      'db://hashpass_dev'
     );
   });
 });

@@ -41,7 +41,7 @@
 
 ```
 Frontend:
-├── hashpass.tech / develop.dy8duury54wam.amplifyapp.com → Amplify App (dy8duury54wam, us-east-2)
+├── hashpass.tech / dev.hashpass.tech → Amplify App (dy8duury54wam, us-east-2)
 └── blockchainsummit.hashpass.lat / blockchainsummit-dev.hashpass.lat → Amplify App (d951nuj7hrqeg, sa-east-1)
 
 Non-Amplify:

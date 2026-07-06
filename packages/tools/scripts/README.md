@@ -3,7 +3,7 @@
 Shared build/deploy scripts used across apps in the monorepo.
 
 Use `packages/tools/scripts/` as the primary location for app-specific and Lambda/deploy scripts (e.g. `package-lambda.sh`, `update-sw-version.mjs`). These scripts resolve the repository root from `packages/tools/scripts/`, so keep path joins rooted at the repo root, not `packages/`.
-Legacy Amplify helpers have been moved to [`archive/amplify/scripts/`](../../archive/amplify/scripts/) and are preserved there as deprecated reference material only.
+Legacy hosting helpers have been moved to [`archive/amplify/scripts/`](../../archive/amplify/scripts/) and are preserved there as deprecated reference material only.
 
 ## Multi-tenant deployment config
 
@@ -13,11 +13,11 @@ Tenant deployment metadata is centralized in:
 
 Current tenants:
 
-- `core` (`hashpass.tech`, Amplify `dy8duury54wam` / `us-east-2`)
-- `club` (`hashpass.club`, Next.js Amplify tenant; app id comes from `HASHPASS_CLUB_AMPLIFY_APP_ID`)
-- `club-dev` (`club-dev.hashpass.tech`, Next.js Amplify tenant; app id comes from `HASHPASS_CLUB_DEV_AMPLIFY_APP_ID`)
+- `core` (`hashpass.tech`, legacy tenant `dy8duury54wam` / `us-east-2`)
+- `club` (`hashpass.club`, Next.js tenant; app id comes from its env var)
+- `club-dev` (`club-dev.hashpass.tech`, Next.js tenant; app id comes from its env var)
 - `bsl` (`bsl.hashpass.tech`, SST/CodeBuild pipeline, `bsl-hashpass-dev-build` / `bsl-hashpass-prod-build`)
-- `blockchainsummit` (`blockchainsummit.hashpass.lat`, legacy Amplify tenant `d951nuj7hrqeg` / `sa-east-1`)
+- `blockchainsummit` (`blockchainsummit.hashpass.lat`, legacy tenant `d951nuj7hrqeg` / `sa-east-1`)
 
 Shared branch cadence:
 
@@ -28,14 +28,14 @@ Release flow:
 
 - `release` / `release:patch` / `release:minor` / `release:major` run the branch-aware version release flow for the repo root
 - `release:promote` promotes a `develop` release onto `main`
-- `release:pipeline` remains the tenant/deploy pipeline for infra and legacy Amplify work
+- `release:pipeline` remains the tenant/deploy pipeline for infra and legacy work
 - `release:dev` / `release:prod` target `core` by default
 - `release:bsl:dev` / `release:bsl:prod` follow the event tenant path and remain available for the historical branch-aware release flow
 - `release:club:web` / `release:club:web:patch` run the club web app patch release flow and emit `club-vX.Y.Z` tags
 - `release:club` / `release:club-dev` target the standalone Next.js app pipelines
-- `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it, including the club tenants once their Amplify app ids are configured
+- `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it, including the club tenants once their app ids are configured
 
-BSL deployment and sync helpers use the `/hashpass/[env]/` SSM namespace. Keep those scripts separate from the Amplify-managed `core` track. The same sync flow also normalizes `/hashpass/[env]/bsl/better-auth/` and keeps `EXPO_PUBLIC_SUPABASE_KEY` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility. `packages/tools/scripts/propagate-env.js` and `packages/tools/scripts/sync-env.js` both resolve the repo root before writing files or syncing AWS state.
+BSL deployment and sync helpers use the `/hashpass/[env]/` SSM namespace. Keep those scripts separate from the legacy `core` track. The same sync flow also normalizes `/hashpass/[env]/bsl/better-auth/` and keeps `EXPO_PUBLIC_SUPABASE_KEY` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility. `packages/tools/scripts/propagate-env.js` and `packages/tools/scripts/sync-env.js` both resolve the repo root before writing files or syncing AWS state.
 
 The branch-aware release flow:
 

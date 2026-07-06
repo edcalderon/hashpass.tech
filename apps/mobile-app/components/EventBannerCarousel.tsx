@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import EventBanner from './EventBanner';
 import LampBrandBanner from './LampBrandBanner';
 import { getAvailableEvents, EventInfo } from '../lib/event-detector';
 import { getLampBrandConfig } from '../lib/event-branding';
+import SafeLinearGradient from './SafeLinearGradient';
 
 interface CarouselSlide {
   type: 'download' | 'event' | 'logo';
@@ -353,7 +353,7 @@ export default function EventBannerCarousel({
                   ]}
                 >
                   {/* Light beam effect at top */}
-                  <LinearGradient
+                  <SafeLinearGradient
                     colors={[
                       hexToRgba(slide.accentColor || '#6FDDFD', 0.48),
                       hexToRgba(slide.accentColor || '#6FDDFD', 0.16),

@@ -9,6 +9,41 @@ jest.mock('react-native', () => ({
   Platform: { OS: 'web' },
 }));
 
+const envBackup: Record<string, string | undefined> = {};
+const previousWindow = globalThis.window;
+
+const setEnv = (name: string, value?: string) => {
+  if (!(name in envBackup)) {
+    envBackup[name] = process.env[name];
+  }
+
+  if (typeof value === 'string') {
+    process.env[name] = value;
+  } else {
+    delete process.env[name];
+  }
+};
+
+afterEach(() => {
+  for (const [name, value] of Object.entries(envBackup)) {
+    if (typeof value === 'string') {
+      process.env[name] = value;
+    } else {
+      delete process.env[name];
+    }
+  }
+
+  for (const key of Object.keys(envBackup)) {
+    delete envBackup[key];
+  }
+
+  if (typeof previousWindow === 'undefined') {
+    delete (globalThis as Record<string, unknown>).window;
+  } else {
+    (globalThis as Record<string, unknown>).window = previousWindow;
+  }
+});
+
 import {
   getSupabaseOAuthRedirectUrl,
   SUPABASE_OAUTH_CALLBACK_PATH,
@@ -60,5 +95,31 @@ describe('getSupabaseOAuthRedirectUrl', () => {
         relayToNative: true,
       })
     ).toBe('https://hashpass.tech/auth/callback?nativeRelay=1&returnTo=%2Fdashboard%2Fexplore');
+  });
+
+  it('keeps localhost callbacks in local development mode', () => {
+    setEnv('EXPO_PUBLIC_ENV', 'local');
+    (globalThis as Record<string, unknown>).window = {
+      location: {
+        origin: 'http://localhost:8081',
+      },
+    };
+
+    expect(getSupabaseOAuthRedirectUrl()).toBe('http://localhost:8081/auth/callback');
+  });
+
+  it('ignores a production-looking browser origin when local dev is active', () => {
+    setEnv('EXPO_PUBLIC_ENV', 'local');
+    (globalThis as Record<string, unknown>).window = {
+      location: {
+        origin: 'https://hashpass.tech',
+      },
+    };
+
+    expect(
+      getSupabaseOAuthRedirectUrl({
+        origin: 'https://hashpass.tech',
+      })
+    ).toBe('http://localhost:8081/auth/callback');
   });
 });

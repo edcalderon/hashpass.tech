@@ -18,7 +18,6 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ThemeAndLanguageSwitcher from '../../components/ThemeAndLanguageSwitcher';
@@ -35,6 +34,7 @@ import {
   getSupabaseOAuthRedirectUrl,
 } from '@hashpass/auth';
 import ShaderAnimation from '../../components/ShaderAnimation';
+import SafeLinearGradient from '../../components/SafeLinearGradient';
 import { getEmailAutocompleteSuggestions } from '../../lib/email-autocomplete';
 import {
   buildCountryDialOptions,
@@ -280,7 +280,7 @@ const DesktopHeroPanel = ({ slides, isDark, styles }: DesktopHeroPanelProps) => 
 
   return (
     <View style={styles.desktopHeroPane}>
-      <LinearGradient
+      <SafeLinearGradient
         colors={heroGradientColors}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 1 }}

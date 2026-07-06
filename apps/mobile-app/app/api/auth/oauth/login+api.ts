@@ -13,6 +13,12 @@ const OAUTH_FRONTEND_ORIGIN_COOKIE_NAME = 'oauth_frontend_origin';
 const OAUTH_STATE_COOKIE_NAME = 'oauth_google_state';
 const OAUTH_NATIVE_CALLBACK_COOKIE_NAME = 'oauth_native_callback';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const LOCAL_ORIGINS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
+
+function isLocalDevRuntime(): boolean {
+  const env = String(process.env.EXPO_PUBLIC_ENV || process.env.NODE_ENV || '').toLowerCase();
+  return ['local', 'development', 'dev', 'staging'].includes(env);
+}
 
 type OAuthReturnCookiePayload = {
   returnTo: string;
@@ -45,15 +51,26 @@ function extractOrigin(rawValue: string | null): string | null {
   }
 }
 
+function isLocalOrigin(origin: string): boolean {
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    return LOCAL_ORIGINS.has(hostname) || hostname.endsWith('.local');
+  } catch {
+    return false;
+  }
+}
+
 function resolveFrontendOrigin(request: Request, fallbackOrigin: string): string {
+  const allowRemoteOrigins = !isLocalDevRuntime();
+
   const refererOrigin = extractOrigin(request.headers.get('referer'));
-  if (refererOrigin) return refererOrigin;
+  if (refererOrigin && (allowRemoteOrigins || isLocalOrigin(refererOrigin))) return refererOrigin;
 
   const originHeader = extractOrigin(request.headers.get('origin'));
-  if (originHeader) return originHeader;
+  if (originHeader && (allowRemoteOrigins || isLocalOrigin(originHeader))) return originHeader;
 
   const configuredOrigin = extractOrigin(DEFAULT_FRONTEND_ORIGIN);
-  if (configuredOrigin) return configuredOrigin;
+  if (configuredOrigin && (allowRemoteOrigins || isLocalOrigin(configuredOrigin))) return configuredOrigin;
 
   return fallbackOrigin;
 }

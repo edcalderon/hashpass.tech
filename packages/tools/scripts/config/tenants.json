@@ -39,7 +39,7 @@
         "region": "us-east-2"
       },
       "frontendUrls": {
-        "development": "https://develop.dy8duury54wam.amplifyapp.com",
+        "development": "https://dev.hashpass.tech",
         "production": "https://hashpass.tech"
       },
       "supabaseRefs": {

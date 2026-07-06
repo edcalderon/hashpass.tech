@@ -11,6 +11,8 @@ type SupabaseOAuthRedirectOptions = {
   relayToNative?: boolean;
 };
 
+const LOCAL_ORIGINS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
+
 const normalizeCallbackPath = (callbackPath?: string) => {
   const trimmed = (callbackPath || SUPABASE_OAUTH_CALLBACK_PATH).trim();
   if (!trimmed) {
@@ -25,41 +27,67 @@ const normalizeOrigin = (origin?: string) => {
   return trimmed;
 };
 
-const resolveWebOrigin = () => {
-  if (typeof window !== 'undefined') {
-    const origin = window.location?.origin;
-    // React Native polyfills window but set location.origin to "null" or a
-    // localhost URL (Metro bundler). Neither is a valid redirect origin for OAuth.
-    const isUnusableOrigin =
-      !origin ||
-      origin === 'null' ||
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+const parseOrigin = (value?: string): string | null => {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return null;
 
-    if (!isUnusableOrigin) {
-      return normalizeOrigin(origin);
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
     }
+    return parsed.origin.replace(/\/$/, '');
+  } catch {
+    return null;
+  }
+};
+
+const isLocalDevRuntime = (): boolean => {
+  const env = String(process.env.EXPO_PUBLIC_ENV || process.env.NODE_ENV || '').toLowerCase();
+  return ['local', 'development', 'dev', 'staging'].includes(env);
+};
+
+const isLocalOrigin = (value?: string | null): boolean => {
+  const origin = parseOrigin(value || undefined);
+  if (!origin) return false;
+
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    return LOCAL_ORIGINS.has(hostname) || hostname.endsWith('.local');
+  } catch {
+    return false;
+  }
+};
+
+export const resolveWebOrigin = () => {
+  const isLocalDev = isLocalDevRuntime();
+  const fallbackLocalOrigin = 'http://localhost:8081';
+  const envCandidates = [
+    typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_SITE_URL : '',
+    typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_FRONTEND_URL : '',
+    typeof process !== 'undefined' ? process.env.SITE_URL : '',
+    typeof process !== 'undefined' ? process.env.FRONTEND_URL : '',
+  ];
+
+  const browserOrigin =
+    typeof window !== 'undefined' ? parseOrigin(window.location?.origin) : null;
+  const explicitEnvOrigin = envCandidates.map(parseOrigin).find(Boolean) || null;
+
+  if (isLocalDev) {
+    const localCandidates = [browserOrigin, explicitEnvOrigin].filter(
+      (candidate): candidate is string => Boolean(candidate) && isLocalOrigin(candidate)
+    );
+
+    return normalizeOrigin(localCandidates[0] || fallbackLocalOrigin);
   }
 
-  // Pick the first env var that is an HTTPS, non-localhost URL.
-  // Localhost values are unusable: Supabase rejects them as emailRedirectTo and
-  // falls back to the dashboard site URL (which may also be localhost).
-  const isUsableHttpsOrigin = (v?: string): boolean => {
-    if (!v) return false;
-    return v.startsWith('https://') && !/localhost|127\.0\.0\.1/.test(v);
-  };
+  const productionCandidates = [
+    browserOrigin,
+    explicitEnvOrigin,
+    parseOrigin('https://hashpass.tech'),
+  ].filter((candidate): candidate is string => Boolean(candidate) && !isLocalOrigin(candidate));
 
-  const envOrigin = typeof process !== 'undefined'
-    ? [
-        process.env.EXPO_PUBLIC_SITE_URL,
-        process.env.EXPO_PUBLIC_FRONTEND_URL,
-        process.env.SITE_URL,
-        process.env.FRONTEND_URL,
-      ].find(isUsableHttpsOrigin) || ''
-    : '';
-
-  // Fall back to production URL when no usable env var is available (dev builds,
-  // CI environments where EXPO_PUBLIC_SITE_URL is not baked in, etc.).
-  return normalizeOrigin(envOrigin || 'https://hashpass.tech');
+  return normalizeOrigin(productionCandidates[0] || 'https://hashpass.tech');
 };
 
 const normalizeScheme = (scheme?: string) => {
@@ -73,7 +101,11 @@ export const getSupabaseOAuthRedirectUrl = (options: SupabaseOAuthRedirectOption
   const relayToNative = Boolean(options.relayToNative);
 
   if (platform === 'web' || relayToNative) {
-    const origin = normalizeOrigin(options.origin || resolveWebOrigin());
+    const explicitOrigin = parseOrigin(options.origin);
+    const origin = isLocalDevRuntime()
+      ? (explicitOrigin && isLocalOrigin(explicitOrigin) ? explicitOrigin : resolveWebOrigin())
+      : explicitOrigin || resolveWebOrigin();
+
     return origin ? `${origin}${callbackPath}` : callbackPath;
   }
 

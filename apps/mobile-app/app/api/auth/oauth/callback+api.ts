@@ -29,9 +29,13 @@ const TRUSTED_FRONTEND_SUFFIXES = [
   '.hashpass.tech',
   '.hashpass.co',
   '.hashpass.lat',
-  '.dy8duury54wam.amplifyapp.com',
-  '.d951nuj7hrqeg.amplifyapp.com',
 ];
+const LOCAL_ORIGINS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
+
+const isLocalDevRuntime = (): boolean => {
+  const env = String(process.env.EXPO_PUBLIC_ENV || process.env.NODE_ENV || '').toLowerCase();
+  return ['local', 'development', 'dev', 'staging'].includes(env);
+};
 const supabaseUrl =
   process.env['EXPO_PUBLIC_SUPABASE_URL'] ||
   '';
@@ -421,6 +425,10 @@ const extractOrigin = (rawValue: string | null): string | null => {
 const isTrustedFrontendOrigin = (origin: string): boolean => {
   try {
     const hostname = new URL(origin).hostname.toLowerCase();
+    if (isLocalDevRuntime()) {
+      return LOCAL_ORIGINS.has(hostname) || hostname.endsWith('.local');
+    }
+
     if (TRUSTED_FRONTEND_HOSTS.has(hostname)) return true;
     return TRUSTED_FRONTEND_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
   } catch {

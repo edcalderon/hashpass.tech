@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity, StatusBar, Image, ImageBackground } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useRouter } from 'expo-router';
@@ -8,6 +7,7 @@ import { useTranslation } from '../i18n/i18n';
 import { isMainBranch } from '../lib/event-detector';
 import { getTourBrandAsset, resolveEventImageSource } from '../lib/event-branding';
 import AgendaTracker from './AgendaTracker';
+import SafeLinearGradient from './SafeLinearGradient';
 
 interface EventBannerProps {
   title: string;
@@ -148,7 +148,7 @@ export default function EventBanner({
           style={styles.heroBackground}
           imageStyle={styles.heroBackgroundImage}
         >
-          <LinearGradient
+          <SafeLinearGradient
             colors={
               isDark
                 ? ['rgba(6, 12, 24, 0.18)', 'rgba(6, 12, 24, 0.72)', 'rgba(6, 12, 24, 0.94)']
@@ -161,7 +161,7 @@ export default function EventBanner({
           />
         </ImageBackground>
       ) : (
-        <LinearGradient
+        <SafeLinearGradient
           colors={
             isArchiveEvent
               ? ['#07111F', '#0B1728', backgroundColor]

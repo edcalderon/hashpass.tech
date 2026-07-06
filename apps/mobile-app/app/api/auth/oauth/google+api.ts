@@ -27,9 +27,13 @@ const TRUSTED_FRONTEND_SUFFIXES = [
   '.hashpass.tech',
   '.hashpass.co',
   '.hashpass.lat',
-  '.dy8duury54wam.amplifyapp.com',
-  '.d951nuj7hrqeg.amplifyapp.com',
 ];
+const LOCAL_ORIGINS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
+
+const isLocalDevRuntime = (): boolean => {
+  const env = String(process.env.EXPO_PUBLIC_ENV || process.env.NODE_ENV || '').toLowerCase();
+  return ['local', 'development', 'dev', 'staging'].includes(env);
+};
 
 type OAuthReturnCookiePayload = {
   returnTo?: string;
@@ -113,6 +117,10 @@ const extractOrigin = (rawValue: string | null): string | null => {
 const isTrustedFrontendOrigin = (origin: string): boolean => {
   try {
     const hostname = new URL(origin).hostname.toLowerCase();
+    if (isLocalDevRuntime()) {
+      return LOCAL_ORIGINS.has(hostname) || hostname.endsWith('.local');
+    }
+
     if (TRUSTED_FRONTEND_HOSTS.has(hostname)) return true;
     return TRUSTED_FRONTEND_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
   } catch {
@@ -461,9 +469,11 @@ export async function GET(request: Request): Promise<Response> {
             // which Chrome Custom Tabs handles as a proper Android intent, triggering
             // WebBrowser.openAuthSessionAsync to close and return the URL to the app.
             const webOrigin =
-              DEFAULT_FRONTEND_ORIGIN || // e.g. https://hashpass.tech from env
+              (isLocalDevRuntime()
+                ? 'http://localhost:8081'
+                : DEFAULT_FRONTEND_ORIGIN) ||
               (isTrustedFrontendOrigin(frontendOrigin) ? frontendOrigin : '') ||
-              'https://hashpass.tech';   // hard fallback (never redirect to api.hashpass.tech)
+              (isLocalDevRuntime() ? 'http://localhost:8081' : 'https://hashpass.tech');
             const webCallbackUrl = new URL('/auth/callback', webOrigin);
             webCallbackUrl.searchParams.set('access_token', tokens.access_token);
             if (tokens.refresh_token) webCallbackUrl.searchParams.set('refresh_token', tokens.refresh_token);

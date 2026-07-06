@@ -12,6 +12,7 @@ import {
   AuthUser,
   IAuthProvider,
 } from '../types';
+import { resolveWebOrigin } from '../supabase-oauth';
 
 type BetterAuthClient = ReturnType<typeof createAuthClient>;
 
@@ -162,7 +163,7 @@ export class BetterAuthProvider implements IAuthProvider {
 
       const storedReturnTo = window.localStorage?.getItem('oauth_return_url') || '/dashboard/explore';
       const returnTo = storedReturnTo.replace(/\/\([^/]+\)/g, '') || '/dashboard/explore';
-      const frontendOrigin = window.location.origin;
+      const frontendOrigin = resolveWebOrigin();
       const callbackURL = `${frontendOrigin}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`;
       const errorCallbackURL = `${frontendOrigin}/auth?error=oauth_failed&message=${encodeURIComponent(
         'Google sign-in failed. Please try again.'

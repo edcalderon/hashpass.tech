@@ -36,7 +36,7 @@ Toda la configuración para migrar de Amplify API a API Gateway + Lambda ha sido
 
 ```
 Frontend (Amplify):
-├── hashpass.tech / develop.dy8duury54wam.amplifyapp.com → App ID: dy8duury54wam (us-east-2)
+├── hashpass.tech / dev.hashpass.tech → App ID: dy8duury54wam (us-east-2)
 └── blockchainsummit.hashpass.lat / blockchainsummit-dev.hashpass.lat → App ID: d951nuj7hrqeg (sa-east-1)
 
 API (API Gateway + Lambda):

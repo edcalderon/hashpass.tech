@@ -271,34 +271,6 @@ async signInWithOAuth(provider: 'google' | 'github' | 'facebook' | 'twitter'): P
         console.debug('No existing Directus cookie session to clear before OAuth:', logoutError);
       }
 
-      // First check if OAuth is available on the server
-      try {
-        let providersResult = await this.apiClient.listAuthProviders();
-        const isRetryableProviderLookupError = (message?: string) => {
-          if (!message) return false;
-          return /networkerror|failed to fetch|network request failed|connection reset/i.test(message);
-        };
-
-        // Directus may still be warming up right after restart; retry once for transient network failures.
-        if (providersResult.error && isRetryableProviderLookupError(providersResult.error.message)) {
-          await new Promise(resolve => setTimeout(resolve, 600));
-          providersResult = await this.apiClient.listAuthProviders();
-        }
-
-        if (providersResult.error) {
-          throw new Error(providersResult.error.message || 'OAuth not configured on server.');
-        }
-        const hasGoogleProvider = providersResult.data?.some((p: any) => p?.name === provider);
-        if (!hasGoogleProvider) {
-          throw new Error(`${provider} provider not configured.`);
-        }
-      } catch (fetchError) {
-        console.error('OAuth availability check failed:', fetchError);
-        return { 
-          error: `Google OAuth is not available on this server. Please contact the administrator to configure Google OAuth or use email/password authentication.`
-        };
-      }
-
       // For web, use our API base URL to start OAuth on the backend host.
       // In staging/prod this is cross-origin (api-*.hashpass.tech) and cannot use window.location.origin.
       const apiBaseUrl = this.resolveOAuthApiBaseUrl();

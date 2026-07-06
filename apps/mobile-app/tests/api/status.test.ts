@@ -83,14 +83,14 @@ describe('status api', () => {
     expect(body.services.database.tables.configuration).toEqual({
       accessible: false,
       error:
-        'Database is not configured in this environment. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, DATABASE_URL, or DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD to enable internal status checks.',
+        'Database is not configured in this environment. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, DATABASE_URL, SUPABASE_DB_URL_DEV, SUPABASE_DB_URL, or DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD to enable internal status checks.',
     });
     expect(body.services.api.status).toBe('unhealthy');
     expect(body.services.api.endpoints['/api/status']).toEqual({ accessible: true });
     expect(body.services.api.endpoints['/api/bslatam/speakers']).toEqual({
       accessible: false,
       error:
-        'Database is not configured in this environment. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, DATABASE_URL, or DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD to enable internal status checks.',
+        'Database is not configured in this environment. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, DATABASE_URL, SUPABASE_DB_URL_DEV, SUPABASE_DB_URL, or DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD to enable internal status checks.',
     });
     expect(mockQuery).not.toHaveBeenCalled();
     expect(mockGetDatabasePool).not.toHaveBeenCalled();
