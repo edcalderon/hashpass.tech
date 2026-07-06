@@ -17,12 +17,11 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.155)
+## 📋 Latest Changes (v1.8.156)
 
 ### Bug Fixes
 
-* harden mobile startup and auth flows ([5cdb763](https://github.com/hashpass-tech/hashpass.tech/commit/5cdb7634c891050e1ea672938a890a7f68b4a373))
-* pass mobile changed-file typecheck ([f338004](https://github.com/hashpass-tech/hashpass.tech/commit/f338004b430555c60b2b179f4390b8435411a232))
+* resolve mobile event banner icon import ([8f8c711](https://github.com/hashpass-tech/hashpass.tech/commit/8f8c7118959b1f7ef75395f075a030f483397104))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
 

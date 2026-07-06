@@ -1,3 +1,14 @@
+## [1.8.156](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.155...v1.8.156) (2026-07-06)
+
+
+### Bug Fixes
+
+* resolve mobile event banner icon import ([8f8c711](https://github.com/hashpass-tech/hashpass.tech/commit/8f8c7118959b1f7ef75395f075a030f483397104))
+
+
+
+
+
 ## [1.8.155](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.154...v1.8.155) (2026-07-06)
 
 
