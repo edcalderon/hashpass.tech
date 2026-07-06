@@ -1,6 +1,6 @@
 import type { AgendaItem, EventConfig, Speaker } from '@hashpass/types';
 
-export type { Speaker, AgendaItem, EventConfig, QuickAccessItem } from '@hashpass/types';
+export type { Speaker, AgendaItem, EventConfig } from '@hashpass/types';
 
 const BSL_API_BASE_PATH = '/api/bslatam';
 const BSL_DATABASE = {
