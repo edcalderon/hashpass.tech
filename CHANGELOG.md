@@ -1,3 +1,14 @@
+## [1.8.161](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.160...v1.8.161) (2026-07-06)
+
+
+### Bug Fixes
+
+* stabilize auth and local dev CORS ([7a6ea38](https://github.com/hashpass-tech/hashpass.tech/commit/7a6ea385f4d2de21a0b6ada25c6c9247d57d140e))
+
+
+
+
+
 ## [1.8.160](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.159...v1.8.160) (2026-07-06)
 
 
