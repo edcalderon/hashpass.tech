@@ -104,9 +104,9 @@ Add to `netlify.toml`:
   status = 200
 ```
 
-### AWS Amplify
+### AWS or Other Static Hosts
 
-Configure build settings to build and deploy Storybook alongside the main app.
+Deploy Storybook to the same static hosting layer you use for the app shell, such as S3 + CloudFront, GitHub Pages, Netlify, or Vercel. The key requirement is a stable public URL for `EXPO_PUBLIC_STORYBOOK_URL`.
 
 ## Troubleshooting
 

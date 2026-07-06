@@ -2,7 +2,7 @@
 
 ## Resumen
 
-Ahora Lambda se actualiza **automáticamente** cuando haces cambios en `main` o `develop` en el repositorio `hashpass.tech`.
+Ahora Lambda se actualiza **automáticamente** cuando haces cambios en `main` o `develop` en el repositorio `hashpass.tech`. El flujo activo despliega `hashpass-api-dev` y `hashpass-api-prod` en el account target; la ruta basada en Amplify quedó archivada.
 
 ## ¿Cómo Funciona?
 
@@ -82,7 +82,7 @@ Este script:
 4. Verifica que Lambda se actualizó:
    ```bash
    aws lambda get-function \
-     --function-name hashpass-api-handler \
+     --function-name hashpass-api-dev \
      --region us-east-1 \
      --query 'Configuration.LastModified'
    ```
@@ -100,7 +100,7 @@ Este script:
 ```bash
 # Ver última modificación
 aws lambda get-function \
-  --function-name hashpass-api-handler \
+  --function-name hashpass-api-dev \
   --region us-east-1 \
   --query 'Configuration.{LastModified:LastModified,Version:Version}' \
   --output table
@@ -113,7 +113,7 @@ curl https://api.hashpass.tech/api/config/versions
 
 ```bash
 # Logs de Lambda
-aws logs tail /aws/lambda/hashpass-api-handler --follow --region us-east-1
+aws logs tail /aws/lambda/hashpass-api-dev --follow --region us-east-1
 
 # Logs del workflow en GitHub Actions
 # (ve a Actions → Click en el workflow → Ver logs)
@@ -130,13 +130,13 @@ aws logs tail /aws/lambda/hashpass-api-handler --follow --region us-east-1
 **Sí**, puedes:
 1. Ir a GitHub → Actions → "Deploy Lambda Function" → "Run workflow"
 2. O ejecutar localmente:
-   ```bash
-   ./packages/tools/scripts/package-lambda.sh
-   aws lambda update-function-code \
-     --function-name hashpass-api-handler \
+    ```bash
+    ./packages/tools/scripts/package-lambda.sh
+    aws lambda update-function-code \
+     --function-name hashpass-api-dev \
      --region us-east-1 \
      --zip-file fileb://lambda-deployment.zip
-   ```
+    ```
 
 ### ¿Qué pasa si el workflow falla?
 
@@ -145,10 +145,10 @@ aws logs tail /aws/lambda/hashpass-api-handler --follow --region us-east-1
 - El despliegue anterior sigue funcionando
 - Puedes reintentar desde GitHub Actions
 
-### ¿Afecta el build de Amplify?
+### ¿Afecta el frontend?
 
 **No**, son completamente independientes:
-- Amplify despliega el frontend
+- El frontend se publica por su propia ruta
 - GitHub Actions despliega Lambda
 - No se bloquean entre sí
 

@@ -22,7 +22,7 @@ Legacy Amplify start-job instructions are archived in
 
 For the Play Console track ladder and the future production publishing checklist, see [PLAY_CONSOLE_RELEASE_FLOW.md](./PLAY_CONSOLE_RELEASE_FLOW.md).
 
-Temporary release posture: while the app is under active development, keep Android releases on the development profile. Use the internal preview step first, then alpha on the same tag after internal succeeds. Production dispatches are paused until the release freeze is lifted.
+Temporary release posture: while the app is under active development, keep Android releases on the development profile. Use the internal preview step first, then alpha on the same tag after internal succeeds. Closed testing can go out with `release_status=completed` by default; only fall back to `draft` when Play still treats the app as draft. Production dispatches are paused until the release freeze is lifted.
 
 Follow this sequence exactly. Order matters.
 
@@ -57,17 +57,16 @@ gh workflow run mobile-android-release.yml \
   --field environment=development \
   --field track=internal \
   --field auto_promote_alpha=true \
-  --field alpha_release_status=draft \
   --field backend=fastlane \
   --field runner=aws-ec2
 ```
 
 This builds a signed AAB on the EC2 runner and submits it to Play via Fastlane on the development profile.
 Use `environment=development` with `track=internal` for the first pass.
-Add `auto_promote_alpha=true` to have the workflow dispatch the matching alpha run automatically after the internal release succeeds. Set `alpha_release_status=draft` only when Play still treats the app as draft.
+Add `auto_promote_alpha=true` to have the workflow dispatch the matching alpha run automatically after the internal release succeeds. Leave `alpha_release_status` at its default `completed` unless Play still treats the app as draft for the first closed-testing release.
 Expo prebuild now enables Android release minification, so Gradle emits a `mapping.txt` file for release builds. The Fastlane lane uploads any Play deobfuscation files it finds in the Android build outputs, such as `mapping.txt` or `native-debug-symbols.zip`, so crash traces stay readable in Play Console. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
 
-For the first closed-testing release, rerun the same tag with `environment=development`, `track=alpha`, and set the release status to draft while the Play Console app is still a draft:
+For the first closed-testing release, rerun the same tag with `environment=development`, `track=alpha`, and keep the release status at `completed` unless Play Console still reports the app as a draft:
 
 ```bash
 gh workflow run mobile-android-release.yml \
@@ -75,12 +74,12 @@ gh workflow run mobile-android-release.yml \
   --ref v<NEW_VERSION> \
   --field environment=development \
   --field track=alpha \
-  --field release_status=draft \
+  --field release_status=completed \
   --field backend=fastlane \
   --field runner=aws-ec2
 ```
 
-The workflow track input maps directly to Play Console tracks. `internal` is the first pass, `alpha` is the closed-testing path requested for Play review prep, and production is paused until the freeze lifts. `release_status` defaults to `completed`, but the Play API requires `draft` for the first closed-testing upload while the app is still in draft.
+The workflow track input maps directly to Play Console tracks. `internal` is the first pass, `alpha` is the closed-testing path requested for Play review prep, and production is paused until the freeze lifts. `release_status` defaults to `completed`, and that is the direct-publish path for closed testing once the app is no longer in draft.
 When you want one-step promotion, keep the first dispatch on `track=internal` and set `auto_promote_alpha=true`; the workflow will queue the alpha release for the same tag after internal succeeds.
 The workflow also matches Expo build credentials by the `ANDROID_UPLOAD_KEY_SHA1` repository variable before exporting the keystore to Fastlane.
 

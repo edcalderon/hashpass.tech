@@ -4,7 +4,7 @@
 
 Este documento explica cómo configurar el despliegue automático de Lambda cuando hay cambios en el repositorio.
 
-> Deprecated: la ruta basada en Amplify es histórica solamente. El archivo y los scripts de referencia viven en `archive/amplify/` y no forman parte del flujo activo.
+> Deprecated: la ruta basada en Amplify es histórica solamente. El archivo y los scripts de referencia viven en `archive/amplify/` y no forman parte del flujo activo. El flujo actual despliega `hashpass-api-dev` y `hashpass-api-prod` en el account target.
 
 ## Opciones de Integración
 
@@ -13,8 +13,8 @@ Este documento explica cómo configurar el despliegue automático de Lambda cuan
 **Ventajas:**
 - ✅ Despliegue automático en cada push a `main` o `develop`
 - ✅ Solo despliega cuando hay cambios en archivos relacionados con API
-- ✅ No afecta el tiempo de build de Amplify
-- ✅ Separación clara entre frontend y backend
+- ✅ No depende del build del frontend
+- ✅ Separación clara entre frontend, API y rutas de despliegue
 - ✅ Logs y notificaciones en GitHub
 
 **Configuración:**
@@ -127,14 +127,14 @@ aws lambda update-function-code \
          │                 │
          ▼                 ▼
 ┌─────────────────┐  ┌─────────────────┐
-│  Amplify Build  │  │ GitHub Actions  │
-│  (Frontend)     │  │  (Lambda API)   │
+│ GitHub Actions  │  │  Account Target  │
+│  (Repo Changes) │  │   Lambda API    │
 └─────────────────┘  └─────────────────┘
          │                 │
          ▼                 ▼
 ┌─────────────────┐  ┌─────────────────┐
-│ hashpass.tech   │  │ Lambda Function │
-│ (Static Files)  │  │  (API Routes)    │
+│  Web Frontend   │  │ Lambda Function │
+│ (CloudFront/S3) │  │  (API Routes)    │
 └─────────────────┘  └─────────────────┘
 ```
 
@@ -148,7 +148,7 @@ aws lambda update-function-code \
 4. **Verificar Lambda** que se actualizó:
    ```bash
    aws lambda get-function \
-     --function-name hashpass-api-handler \
+     --function-name hashpass-api-dev \
      --region us-east-1 \
      --query 'Configuration.LastModified'
    ```
@@ -160,7 +160,7 @@ aws lambda update-function-code \
 curl https://api.hashpass.tech/api/config/versions
 
 # Ver logs de Lambda
-aws logs tail /aws/lambda/hashpass-api-handler --follow --region us-east-1
+aws logs tail /aws/lambda/hashpass-api-dev --follow --region us-east-1
 ```
 
 ## Troubleshooting
@@ -178,9 +178,9 @@ aws logs tail /aws/lambda/hashpass-api-handler --follow --region us-east-1
 3. Verificar que `lambda-deployment.zip` se creó correctamente
 4. Verificar permisos del IAM role
 
-### Build de Amplify falla al desplegar Lambda
+### La ruta legacy falla al desplegar Lambda
 
-1. Verificar que el Amplify service role tiene permisos Lambda
+1. Verificar que el service role legado tiene permisos Lambda
 2. Verificar que AWS credentials están configuradas
 3. Considerar usar GitHub Actions en su lugar (recomendado)
 
@@ -195,4 +195,4 @@ aws logs tail /aws/lambda/hashpass-api-handler --follow --region us-east-1
 
 - [GitHub Actions OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
 - [AWS Lambda Deployment](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-deploy.html)
-- [Amplify Build Settings](https://docs.aws.amazon.com/amplify/latest/userguide/build-settings.html)
+- Ruta histórica: `archive/amplify/README.md`

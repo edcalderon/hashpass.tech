@@ -30,6 +30,7 @@ describe('oauth login api', () => {
     setEnv('EXPO_PUBLIC_FRONTEND_URL', undefined);
     setEnv('FRONTEND_URL', undefined);
     setEnv('GOOGLE_CLIENT_ID', undefined);
+    setEnv('BETTER_AUTH_GOOGLE_CLIENT_ID', undefined);
   });
 
   afterAll(() => {
@@ -59,5 +60,25 @@ describe('oauth login api', () => {
     expect(response.headers.get('location')).toBe(
       'http://localhost:8081/auth?error=invalid_provider&message=Provider+%27bogus%27+is+not+supported'
     );
+  });
+
+  it('uses the Better Auth Google client id alias when the legacy env is missing', async () => {
+    setEnv('BETTER_AUTH_GOOGLE_CLIENT_ID', 'alias-google-client-id');
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../../../app/api/auth/oauth/login+api');
+
+    const response = await GET(
+      new Request('http://localhost:8081/api/auth/oauth/login?provider=google&returnTo=%2Fdashboard%2Fexplore', {
+        headers: {
+          origin: 'https://hashpass.tech',
+          referer: 'https://hashpass.tech/auth',
+        },
+      })
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get('location')).toContain('client_id=alias-google-client-id');
+    expect(response.headers.get('location')).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Fapi%2Fauth%2Foauth%2Fgoogle');
   });
 });

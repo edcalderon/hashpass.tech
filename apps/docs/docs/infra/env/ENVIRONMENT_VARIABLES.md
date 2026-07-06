@@ -21,6 +21,7 @@ This is the current source of truth for the environment variables used by the Ha
 ## Main Production
 
 Main `hashpass.tech` still uses the API-owned Directus OAuth bridge.
+The active web delivery path serves `hashpass.tech` and `dev.hashpass.tech` through the target-account static origin behind the source-account CloudFront front door; Amplify is archival only.
 
 ```bash
 AUTH_PROVIDER=directus

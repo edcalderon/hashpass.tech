@@ -1,27 +1,25 @@
 # HashPass Infra
 
-This workspace package now manages the BSL AWS delivery path, the source-account `hashpass.tech` CloudFront front door, the target-account `hashpass.tech` DNS/API/web stack, and the club Pages build/DNS layer:
+This workspace package now owns the live AWS/GCP delivery surfaces for the monorepo:
 
-- the existing BSL SST pipeline for `bsl.hashpass.tech`
-- the target-account `hashpass.tech` hosted zones and API stack
-- the target-account `hashpass.tech` static site pipeline on S3, fronted by source-account CloudFront for the public hostname; `dev.hashpass.tech` also uses the source-account CloudFront front door so HTTPS stays on during migration
-- the club Pages artifact for `hashpass.club` and `hashpass.club/documentation`
-- the Route53 records for `club.hashpass.tech` and `docs.hashpass.tech`
+- the source-account CloudFront front door for `hashpass.tech` and `dev.hashpass.tech`
+- the target-account `hashpass.tech` hosted zones, static site origin, and API stack
+- the BSL SST delivery path for `bsl.hashpass.tech` and `bsl-dev.hashpass.tech`
+- the GitHub Pages artifact and DNS aliases for `hashpass.club` and `hashpass.club/documentation`
 - the mobile Android self-hosted runner stack for `hashpass-mobile-release`
 - the isolated target-account Android runner stack for `hashpass-mobile-release-target`
 
 The dev and deploy scripts call the SST CLI directly for the BSL path, while the club Pages build uses this package as the static artifact source and GitHub Actions handles publication. `doctor` wraps the upstream `@lsts_tech/infra` readiness checks.
 
-Set `HASHPASS_INFRA_TARGET=club-docs` when you want the legacy SST club front door instead of the BSL stack. The GitHub Pages workflow now publishes the canonical club site and this package only builds the combined static artifact plus DNS records for it.
+Set `HASHPASS_INFRA_TARGET=club-docs` only if you need to inspect the archived SST club front-door target. The active club site is the GitHub Pages artifact assembled from `apps/web-app` and `apps/docs`.
 
 ## What it deploys
 
 - `bsl.hashpass.tech` for production
 - `bsl-dev.hashpass.tech` for development
 - `packages/infra/terraform/stacks/hashpass-dns` as the target-account hosted zone layer that keeps the migration reversible until registrar cutover, with `dev.hashpass.tech` living inside the parent `hashpass.tech` zone
-- `packages/infra/terraform/stacks/hashpass-api-target` as the target-account API Gateway + Lambda layer for `api.hashpass.tech`
-- `apps/mobile-app` as an SST `StaticSite`
-- `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` CodePipeline + EC2 worker stack that publishes the static origin consumed by the source CloudFront front door
+- `packages/infra/terraform/stacks/hashpass-api-target` as the target-account API Gateway + Lambda layer for `api.hashpass.tech` and `api-dev.hashpass.tech`
+- `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` and `dev.hashpass.tech` CodePipeline + EC2 worker stack that publishes the static origins consumed by the source CloudFront front door
 - `hashpass.club` as the canonical club site, with `club.hashpass.tech` and `docs.hashpass.tech` as DNS aliases
 - `apps/web-app` and `apps/docs` assembled into a single combined static artifact for GitHub Pages
 - `packages/infra/terraform/stacks/mobile-release` as the AWS EC2 GitHub Actions runner for mobile Android builds, including its managed public VPC when the account has no default network
@@ -64,10 +62,10 @@ The BSL site build uses `expo export -p web` with the Expo web output set to
 building the API route server tree. The CodeBuild projects are seeded with the
 public Supabase variables from the root `.env` so the export can bundle the
 client correctly. The live BSL projects use `packages/tools/buildspecs/infra-deploy.yml`
-as their CodeBuild buildspec. Both the Amplify and CodeBuild build paths set
-`CI=1` before dependency installation so Husky `prepare` hooks do not run
-against source archives that do not contain `.git` metadata. Production BSL
-should use the BSL-specific variables first:
+as their CodeBuild buildspec. The active CodeBuild path sets `CI=1` before
+dependency installation so Husky `prepare` hooks do not run against source
+archives that do not contain `.git` metadata. Production BSL should use the
+BSL-specific variables first:
 
 - `EXPO_PUBLIC_BSL_SUPABASE_URL_PROD`
 - `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`

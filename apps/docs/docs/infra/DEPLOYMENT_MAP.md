@@ -6,7 +6,8 @@ This is the authoritative reference for which service hosts which domain and how
 
 | Domain | Hosting | Stack | Region | How deployed |
 |--------|---------|-------|--------|--------------|
-| `hashpass.tech` | Source CloudFront + Route53 | Static site from target-account S3 origin | global / us-east-1 | Auto — target web pipeline publishes the origin; source Route53 aliases apex to CloudFront |
+| `hashpass.tech` | Source CloudFront + Route53 | Static site from target-account S3 origin | global / us-east-1 | Auto — the target web pipeline publishes the origin; source Route53 aliases the apex to CloudFront |
+| `dev.hashpass.tech` | Source CloudFront + Route53 | Static site from target-account S3 origin | global / us-east-1 | Auto — the development pipeline publishes the dev origin; the source front door keeps the hostname HTTPS-only |
 | `api.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | **us-east-1** | Auto — target-account Terraform/Lambda deploy |
 | `api-dev.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | us-east-1 | Auto — target-account dev Lambda deploy |
 | `bsl.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `main` |
@@ -17,7 +18,7 @@ This is the authoritative reference for which service hosts which domain and how
 
 The public surface is now split across independent deployment paths:
 
-1. The source-account CloudFront front door serves `hashpass.tech` and aliases the apex to the target-account static origin.
+1. The source-account CloudFront front door serves `hashpass.tech` and `dev.hashpass.tech` and aliases both hostnames to the target-account static origins.
 2. The target-account web pipeline publishes the `hashpass.tech` S3 origin and the `dev.hashpass.tech` development origin.
 3. The target-account Lambda/API Gateway stack serves `api.hashpass.tech` and `api-dev.hashpass.tech`.
 4. The SST Console autodeploy path still serves `bsl.hashpass.tech` (us-east-2).
@@ -36,6 +37,10 @@ terraform -chdir=packages/infra/terraform/stacks/aws plan -var-file=terraform.de
 ```
 
 The target web pipeline publishes the S3 origin that CloudFront serves.
+
+### `dev.hashpass.tech`
+
+The development web surface uses the same front-door pattern as production. The target-account `develop` pipeline publishes the dev S3 origin, and the source-account CloudFront front door keeps the hostname HTTPS-only while the target stack remains the origin of truth.
 
 ### `api.hashpass.tech` / `api-dev.hashpass.tech`
 

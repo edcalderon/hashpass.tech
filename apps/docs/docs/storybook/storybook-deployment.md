@@ -29,7 +29,7 @@ Or add to `netlify.toml`:
   publish = "storybook-static"
 ```
 
-### AWS Amplify / S3
+### S3 + CloudFront or Another Static Host
 
 1. Build Storybook: `npm run build-storybook`
 2. Upload `storybook-static/` to S3 bucket

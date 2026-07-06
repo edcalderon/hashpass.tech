@@ -1,6 +1,10 @@
 import { ExpoResponse } from 'expo-router/server';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 import { fetchDirectus } from '../../../../lib/auth/oauth/directus-fetch';
+import {
+  resolveGoogleOAuthClientId,
+  resolveGoogleOAuthClientSecret,
+} from '../../../../lib/auth/oauth/google-credentials';
 
 /* eslint-disable no-restricted-syntax -- Server-side OAuth callback must call Google and Directus directly. */
 
@@ -8,8 +12,6 @@ const DIRECTUS_URL =
   process.env.DIRECTUS_URL ||
   process.env.EXPO_PUBLIC_DIRECTUS_URL ||
   'https://sso.hashpass.co';
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const DEFAULT_RETURN_TO = '/dashboard/explore';
 const DEFAULT_FRONTEND_ORIGIN =
   process.env.EXPO_PUBLIC_FRONTEND_URL ||
@@ -166,6 +168,8 @@ const createRandomPassword = (): string => {
  */
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
+  const GOOGLE_CLIENT_ID = resolveGoogleOAuthClientId();
+  const googleClientSecret = resolveGoogleOAuthClientSecret();
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   const cookies = request.headers.get('Cookie') || request.headers.get('cookie') || '';
@@ -196,7 +200,7 @@ export async function GET(request: Request): Promise<Response> {
   console.log('[Google OAuth] Return to:', returnTo);
   console.log('[Google OAuth] Frontend origin:', frontendOrigin);
 
-  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+  if (!GOOGLE_CLIENT_ID || !googleClientSecret) {
     const errorUrl = new URL(returnTo, frontendOrigin);
     errorUrl.searchParams.set('error', 'oauth_failed');
     errorUrl.searchParams.set('message', 'Google OAuth client credentials are not configured.');
@@ -242,7 +246,7 @@ export async function GET(request: Request): Promise<Response> {
       body: new URLSearchParams({
         code: code,
         client_id: GOOGLE_CLIENT_ID || '',
-        client_secret: GOOGLE_CLIENT_SECRET || '',
+        client_secret: googleClientSecret || '',
         redirect_uri: `${url.origin}/api/auth/oauth/google`,
         grant_type: 'authorization_code'
       }).toString()

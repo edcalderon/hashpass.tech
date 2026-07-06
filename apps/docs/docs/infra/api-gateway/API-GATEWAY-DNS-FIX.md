@@ -2,12 +2,7 @@
 
 ## Current Problem
 
-`api.hashpass.tech` should point to the target-account API Gateway custom domain, not CloudFront/Amplify. If you're getting 404 errors or redirects, the DNS record is still stale.
-
-**Evidence:**
-- DNS resolves to CloudFront IPs: `18.155.252.x`
-- HTTP response shows: `server: AmazonS3` and `via: CloudFront`
-- Returns 301 redirects instead of API responses
+`api.hashpass.tech` should point to the target-account API Gateway custom domain. If you're getting 404 errors or redirects, the DNS record or API mapping is still stale.
 
 ## Solution Options
 
@@ -80,7 +75,7 @@ curl https://api.hashpass.tech/api/config/versions
 ## Current DNS Status
 
 Based on verification:
-- `api.hashpass.tech` → CloudFront/Amplify Hosting or another stale target ❌
+- `api.hashpass.tech` → stale DNS target or missing API mapping ❌
 - Should be → the API Gateway custom domain ✅
 
 ## Next Steps
