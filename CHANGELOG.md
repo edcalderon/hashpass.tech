@@ -1,3 +1,15 @@
+## [1.8.155](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.154...v1.8.155) (2026-07-06)
+
+
+### Bug Fixes
+
+* harden mobile startup and auth flows ([5cdb763](https://github.com/hashpass-tech/hashpass.tech/commit/5cdb7634c891050e1ea672938a890a7f68b4a373))
+* pass mobile changed-file typecheck ([f338004](https://github.com/hashpass-tech/hashpass.tech/commit/f338004b430555c60b2b179f4390b8435411a232))
+
+
+
+
+
 ## [1.8.154](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.153...v1.8.154) (2026-07-05)
 
 
