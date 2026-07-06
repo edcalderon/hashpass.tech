@@ -23,7 +23,7 @@
 
 * regenerate invalid web patches ([ee08875](https://github.com/hashpass-tech/hashpass.tech/commit/ee0887532ae1c60328a0f74eade57ecf6e4811ff))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 
