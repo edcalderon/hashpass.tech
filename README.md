@@ -24,7 +24,7 @@
 * narrow config type exports ([2ca1495](https://github.com/hashpass-tech/hashpass.tech/commit/2ca1495fc7071af37cb0f12b9b36798068c50914))
 * stabilize auth, status, and dev workflows ([60b9105](https://github.com/hashpass-tech/hashpass.tech/commit/60b91054e919915221567239ced88975f8208aa5))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 

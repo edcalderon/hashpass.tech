@@ -8,10 +8,10 @@
       "caniuse-lite": "1.0.30001800"
     },
     "patchedDependencies": {
-      "expo-router@5.1.11": "patches/expo-router@5.1.11.patch",
       "metro-file-map@0.82.5": "patches/metro-file-map@0.82.5.patch",
-      "react-native-web@0.20.0": "patches/react-native-web@0.20.0.patch",
-      "react-native-css-interop@0.2.1": "patches/react-native-css-interop@0.2.1.patch"
+      "react-native-css-interop@0.2.1": "patches/react-native-css-interop@0.2.1.patch",
+      "expo-router@5.1.11": "patches/expo-router@5.1.11.patch",
+      "react-native-web@0.20.0": "patches/react-native-web@0.20.0.patch"
     }
   },
   "scripts": {
@@ -144,7 +144,6 @@
     "@aws-sdk/s3-request-presigner": "^3.927.0",
     "@babel/core": "^7.25.2",
     "@babel/plugin-transform-react-jsx": "^7.28.6",
-    "babel-preset-expo": "^13.2.5",
     "@expo/vector-icons": "^14.1.0",
     "@expo/webpack-config": "^19.0.1",
     "@lingui/babel-plugin-lingui-macro": "^5.5.2",
@@ -172,6 +171,7 @@
     "autoprefixer": "^10.4.21",
     "babel-plugin-macros": "^3.1.0",
     "babel-plugin-module-resolver": "^5.0.2",
+    "babel-preset-expo": "^13.2.5",
     "bs58": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.8.0",

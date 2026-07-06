@@ -1,10 +1,8 @@
 diff --git a/build/views/Sitemap.js b/build/views/Sitemap.js
-index 0000000..1111111 100644
+index a61428d388e5b8054f9691e72eaaa33b4ac3bc34..98253cf6f04b24bcabb71f8ce1444e06121853e5 100644
 --- a/build/views/Sitemap.js
 +++ b/build/views/Sitemap.js
-@@ -132,15 +132,19 @@ const styles = react_native_1.StyleSheet.create({
-     header: {
-         backgroundColor: '#151718',
+@@ -136,14 +136,21 @@ const styles = react_native_1.StyleSheet.create({
          paddingVertical: 16,
          borderBottomWidth: 1,
          borderColor: '#313538',
@@ -32,3 +30,5 @@ index 0000000..1111111 100644
 +            },
 +        }),
      },
+     headerContent: {
+         flexDirection: 'row',
