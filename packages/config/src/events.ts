@@ -331,7 +331,7 @@ export const EVENTS: Record<string, EventConfig> = {
     website: 'https://blockchainsummit.la/',
     title: 'Blockchain Summit Latam 2025',
     subtitle: 'Universidad EAFIT, Medellín',
-    image: 'https://blockchainsummit.la/wp-content/uploads/2025/09/bsl2025-banner.jpg',
+    image: '/assets/images/bsl2025-hero.svg',
     color: '#2196F3',
     eventStartDate: '2025-11-12T09:00:00-05:00',
     eventEndDate: '2025-11-14T23:59:59-05:00',

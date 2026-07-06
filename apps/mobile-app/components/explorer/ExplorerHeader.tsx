@@ -1,7 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import { useTheme } from '../../hooks/useTheme';
+
+const DEFAULT_LOGO_SOURCE = require('../../assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg');
+const DEFAULT_LOGO_URI = Image.resolveAssetSource(DEFAULT_LOGO_SOURCE)?.uri ?? '';
 
 interface ExplorerHeaderProps {
   title: string;
@@ -16,7 +19,7 @@ export default function ExplorerHeader({
   title, 
   subtitle, 
   date, 
-  logoUri = "https://blockchainsummit.la/wp-content/uploads/2025/09/logo-bsl.svg",
+  logoUri = DEFAULT_LOGO_URI,
   showEventSelector = false,
   children 
 }: ExplorerHeaderProps) {
@@ -83,4 +86,3 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 2,
   },
 });
-

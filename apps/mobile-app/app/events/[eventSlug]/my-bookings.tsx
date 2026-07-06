@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ThemeContextType } from '@/types/theme';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, ScrollView, RefreshControl, Platform } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
@@ -42,12 +40,11 @@ interface Booking {
 export default function MyBookings() {
   const { colors } = useTheme();
   const { user } = useAuth();
-  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadBookings = async (isRefreshing = false) => {
+  const loadBookings = useCallback(async (isRefreshing = false) => {
     if (!user) return;
     
     try {
@@ -75,11 +72,11 @@ export default function MyBookings() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => { 
     loadBookings(); 
-  }, [user]);
+  }, [loadBookings]);
 
   const handleCancelBooking = async (bookingId: string) => {
     try {
@@ -343,11 +340,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.10)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+      },
+    }),
     borderLeftWidth: 4,
   },
   bookingHeader: {

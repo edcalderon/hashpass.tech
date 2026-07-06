@@ -13,6 +13,8 @@ const originalDevOwner = process.env.EXPO_OWNER_DEV;
 const originalReleaseBackend = process.env.MOBILE_RELEASE_BACKEND;
 const originalAndroidVersionCode = process.env.MOBILE_ANDROID_VERSION_CODE;
 const originalExpoUseLocalVersioning = process.env.EXPO_USE_LOCAL_VERSIONING;
+const originalRouterOrigin = process.env.EXPO_PUBLIC_ROUTER_ORIGIN;
+const originalRouterHeadOrigin = process.env.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN;
 
 afterEach(() => {
   if (typeof originalEnv === 'undefined') {
@@ -63,6 +65,18 @@ afterEach(() => {
     process.env.EXPO_USE_LOCAL_VERSIONING = originalExpoUseLocalVersioning;
   }
 
+  if (typeof originalRouterOrigin === 'undefined') {
+    delete process.env.EXPO_PUBLIC_ROUTER_ORIGIN;
+  } else {
+    process.env.EXPO_PUBLIC_ROUTER_ORIGIN = originalRouterOrigin;
+  }
+
+  if (typeof originalRouterHeadOrigin === 'undefined') {
+    delete process.env.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN;
+  } else {
+    process.env.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN = originalRouterHeadOrigin;
+  }
+
   jest.resetModules();
 });
 
@@ -108,5 +122,16 @@ describe('app.config', () => {
 
     expect(resolvedConfig.android.versionCode).toBe(123456);
     expect(resolvedConfig.owner).toBe('hashpasss-team');
+  });
+
+  it('passes through a local router origin allowlist for Expo dev server CORS', () => {
+    process.env.EXPO_PUBLIC_ROUTER_ORIGIN = 'https://hashpass.tech';
+    process.env.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN = 'https://hashpass.tech';
+
+    const appConfigFactory = require('../../app.config.js');
+    const resolvedConfig = appConfigFactory({ config: {} });
+
+    expect(resolvedConfig.extra.router.origin).toBe('https://hashpass.tech');
+    expect(resolvedConfig.extra.router.headOrigin).toBe('https://hashpass.tech');
   });
 });

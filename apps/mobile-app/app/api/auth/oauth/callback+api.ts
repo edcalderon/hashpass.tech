@@ -2,6 +2,7 @@ import { ExpoResponse } from 'expo-router/server';
 import { jwtVerify } from 'jose';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
+import { fetchDirectus } from '../../../../lib/auth/oauth/directus-fetch';
 
 // Support both local and production Directus URLs
 const DIRECTUS_URL =
@@ -239,8 +240,7 @@ const syncDirectusUserToSupabase = async (
   }
 
   try {
-    // eslint-disable-next-line no-restricted-syntax
-    const directusUserResponse = await fetch(`${DIRECTUS_URL}/users/me`, {
+    const directusUserResponse = await fetchDirectus(DIRECTUS_URL, '/users/me', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -561,8 +561,7 @@ const exchangeSessionCookieForJsonTokens = async (
   }
 
   try {
-    // eslint-disable-next-line no-restricted-syntax
-    const refreshResponse = await fetch(`${DIRECTUS_URL}/auth/refresh`, {
+    const refreshResponse = await fetchDirectus(DIRECTUS_URL, '/auth/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -680,10 +679,9 @@ export async function GET(request: Request): Promise<Response> {
     if (hasRefreshTokenCookie) {
       console.log('[OAuth Callback] Found refresh cookie, attempting Directus /auth/refresh...');
       try {
-        // Try to refresh the session using cookies
+        // Try to refresh the session using cookies.
         // This validates the OAuth cookie session and returns short-lived tokens.
-        // eslint-disable-next-line no-restricted-syntax
-        const refreshResponse = await fetch(`${DIRECTUS_URL}/auth/refresh`, {
+        const refreshResponse = await fetchDirectus(DIRECTUS_URL, '/auth/refresh', {
           method: 'POST',
           headers: {
             'Cookie': cookies,

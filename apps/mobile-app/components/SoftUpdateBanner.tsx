@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Linking,
   Animated,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,7 +40,7 @@ export default function SoftUpdateBanner({ latestVersion, storeUrl, storeWebUrl 
         }).start();
       }
     });
-  }, [latestVersion]);
+  }, [latestVersion, slideAnim]);
 
   const dismiss = async () => {
     Animated.timing(slideAnim, {
@@ -109,11 +110,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderLeftWidth: 4,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
     elevation: 8,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.12)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+      },
+    }),
   },
   icon: {
     marginRight: 10,

@@ -23,6 +23,7 @@ const {
 
 const ROOT_DIR = path.resolve(__dirname, '../../../');
 const APPS_DIR = path.join(ROOT_DIR, 'apps');
+const MOBILE_APP_DIR = path.join(APPS_DIR, 'mobile-app');
 const WEB_APP_DIR = path.join(APPS_DIR, 'web-app');
 const DIRECTUS_DIR = path.join(APPS_DIR, 'directus');
 const PROCESS_ENV_OVERRIDE_KEYS = [
@@ -161,6 +162,123 @@ function mergeBySuffix(rootConfig, environment) {
 
 function stripEnvironmentSuffix(value) {
   return String(value || '').replace(/_(DEV|PROD)$/, '');
+}
+
+function getPreferredSupabasePoolerHost() {
+  return 'aws-0-us-east-2.pooler.supabase.com';
+}
+
+function parseDatabaseUrl(connectionString) {
+  if (!connectionString) return null;
+
+  try {
+    const parsed = new URL(String(connectionString).trim());
+    if (parsed.protocol !== 'postgres:' && parsed.protocol !== 'postgresql:') {
+      return null;
+    }
+
+    const host = parsed.hostname;
+    const user = parsed.username ? decodeURIComponent(parsed.username) : '';
+    const password = parsed.password ? decodeURIComponent(parsed.password) : '';
+    const database = parsed.pathname.replace(/^\//, '') || 'postgres';
+    const port = parsed.port || '5432';
+    const sslMode = (parsed.searchParams.get('sslmode') || '').toLowerCase();
+    const hostLooksLikeSupabase = /(?:^|\.)supabase\.(?:co|com)$/i.test(host) || host.includes('pooler.supabase.com');
+    const ssl =
+      sslMode === 'disable'
+        ? false
+        : hostLooksLikeSupabase || ['prefer', 'require', 'verify-ca', 'verify-full', 'no-verify'].includes(sslMode);
+
+    if (!host || !user || !password) {
+      return null;
+    }
+
+    return { host, user, password, database, port, ssl };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSupabaseDatabaseUrl(connectionString) {
+  if (!connectionString) return null;
+
+  try {
+    const parsed = new URL(String(connectionString).trim());
+    if (parsed.protocol !== 'postgres:' && parsed.protocol !== 'postgresql:') {
+      return null;
+    }
+
+    const hostname = parsed.hostname.toLowerCase();
+    const directMatch = hostname.match(/^db\.([^.]+)\.supabase\.co$/);
+
+    if (directMatch) {
+      const projectRef = directMatch[1];
+      return {
+        host: getPreferredSupabasePoolerHost(),
+        user: `postgres.${projectRef}`,
+        password: parsed.password ? decodeURIComponent(parsed.password) : '',
+        database: parsed.pathname.replace(/^\//, '') || 'postgres',
+        port: parsed.port || '5432',
+        ssl: true,
+      };
+    }
+
+    if (hostname.includes('pooler.supabase.com')) {
+      return parseDatabaseUrl(connectionString);
+    }
+
+    return parseDatabaseUrl(connectionString);
+  } catch {
+    return null;
+  }
+}
+
+function buildDatabaseConnectionString(config) {
+  if (!config || !config.host || !config.user || !config.password || !config.database) {
+    return '';
+  }
+
+  const sslMode = config.ssl ? 'no-verify' : 'disable';
+  const query = sslMode ? `?sslmode=${sslMode}` : '';
+  return (
+    `postgresql://${encodeURIComponent(config.user)}:` +
+    `${encodeURIComponent(config.password)}@${config.host}:${config.port}/${encodeURIComponent(config.database)}${query}`
+  );
+}
+
+function resolveLocalDatabaseUrl(rootConfig) {
+  return (
+    rootConfig.SUPABASE_DB_URL_DEV ||
+    rootConfig.DATABASE_URL_DEV ||
+    rootConfig.DEV_DB_URL ||
+    rootConfig.SUPABASE_DB_URL ||
+    rootConfig.DATABASE_URL ||
+    ''
+  );
+}
+
+function applyLocalDirectusDatabaseOverrides(targetConfig, rootConfig) {
+  const localDatabaseUrl = resolveLocalDatabaseUrl(rootConfig);
+  const parsed = normalizeSupabaseDatabaseUrl(localDatabaseUrl);
+
+  if (!parsed) {
+    return;
+  }
+
+  targetConfig.DB_HOST = parsed.host;
+  targetConfig.DB_PORT = parsed.port;
+  targetConfig.DB_NAME = parsed.database;
+  targetConfig.DB_USER = parsed.user;
+  targetConfig.DB_PASSWORD = parsed.password;
+  targetConfig.DB_SSL = parsed.ssl ? 'true' : 'false';
+  targetConfig.DB_SSL_REJECT_UNAUTHORIZED = 'false';
+  targetConfig.DB_SSL__REJECT_UNAUTHORIZED = 'false';
+  targetConfig.BETTER_AUTH_DATABASE_SSL_REJECT_UNAUTHORIZED = 'false';
+  const databaseConnectionString = buildDatabaseConnectionString(parsed);
+  if (databaseConnectionString) {
+    targetConfig.DB_CONNECTION_STRING = databaseConnectionString;
+    targetConfig.DATABASE_URL = databaseConnectionString;
+  }
 }
 
 function resolveTenantSupabaseBindings(runtime) {
@@ -406,6 +524,20 @@ if (!options.isLocal) {
 targetConfig.NODE_ENV = options.environment === 'production' ? 'production' : 'development';
 targetConfig.EXPO_PUBLIC_ENV = options.envArg;
 
+if (options.isLocal) {
+  // Expo's local web server rejects requests whose browser origin is not whitelisted.
+  // Keep the production web origin allowed during local development so tabs, service workers,
+  // or browser extensions on hashpass.tech can still talk to the local dev server.
+  targetConfig.EXPO_PUBLIC_ROUTER_ORIGIN =
+    targetConfig.EXPO_PUBLIC_ROUTER_ORIGIN || 'https://hashpass.tech';
+  targetConfig.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN =
+    targetConfig.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN || targetConfig.EXPO_PUBLIC_ROUTER_ORIGIN;
+
+  // Local Directus should follow the dev Supabase database profile when available.
+  // This keeps the local OAuth callback from crash-looping on stale base DB credentials.
+  applyLocalDirectusDatabaseOverrides(targetConfig, rootConfig);
+}
+
 // Generate .env file content
 const DISCLAIMER = `# ==============================================================================
 # ⚠️ AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
@@ -422,6 +554,16 @@ const envContent = DISCLAIMER + Object.entries(targetConfig)
   .join('\n');
 
 // Write to targets
+const mobileAppEnvPath = path.join(MOBILE_APP_DIR, '.env');
+const mobileAppEnvLocalPath = path.join(MOBILE_APP_DIR, `.env.${options.envArg}`);
+fs.mkdirSync(path.dirname(mobileAppEnvPath), { recursive: true });
+
+console.log(`📝 Writing to ${mobileAppEnvPath}...`);
+fs.writeFileSync(mobileAppEnvPath, envContent);
+
+console.log(`📝 Writing to ${mobileAppEnvLocalPath}...`);
+fs.writeFileSync(mobileAppEnvLocalPath, envContent);
+
 const webAppEnvPath = path.join(WEB_APP_DIR, '.env');
 const webAppEnvLocalPath = path.join(WEB_APP_DIR, `.env.${options.envArg}`);
 fs.mkdirSync(path.dirname(webAppEnvPath), { recursive: true });

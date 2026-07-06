@@ -1,5 +1,6 @@
 import { ExpoResponse } from 'expo-router/server';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
+import { fetchDirectus } from '../../../../lib/auth/oauth/directus-fetch';
 
 /* eslint-disable no-restricted-syntax -- Server-side OAuth callback must call Google and Directus directly. */
 
@@ -285,7 +286,7 @@ export async function GET(request: Request): Promise<Response> {
     
     // Step 3: Get admin token to create/update user in Directus
     console.log('[Google OAuth] Getting admin token for Directus...');
-    const adminLoginResponse = await fetch(`${DIRECTUS_URL}/auth/login`, {
+    const adminLoginResponse = await fetchDirectus(DIRECTUS_URL, '/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -312,8 +313,9 @@ export async function GET(request: Request): Promise<Response> {
     // Now use admin token to check/create user
     try {
       // First, check if user exists
-      const userCheckResponse = await fetch(
-        `${DIRECTUS_URL}/users?filter[email][_eq]=${encodeURIComponent(userEmail)}`,
+      const userCheckResponse = await fetchDirectus(
+        DIRECTUS_URL,
+        `/users?filter[email][_eq]=${encodeURIComponent(userEmail)}`,
         {
           method: 'GET',
           headers: {
@@ -338,7 +340,7 @@ export async function GET(request: Request): Promise<Response> {
       // If user doesn't exist, create them
       if (!userId) {
         console.log('[Google OAuth] Creating new user in Directus...');
-        const createUserResponse = await fetch(`${DIRECTUS_URL}/users`, {
+        const createUserResponse = await fetchDirectus(DIRECTUS_URL, '/users', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${adminToken}`,
@@ -393,7 +395,7 @@ export async function GET(request: Request): Promise<Response> {
         });
 
         console.log('[Google OAuth] Ensuring Directus user can receive API-issued tokens...');
-        const normalizeUserResponse = await fetch(`${DIRECTUS_URL}/users/${userId}`, {
+        const normalizeUserResponse = await fetchDirectus(DIRECTUS_URL, `/users/${userId}`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${adminToken}`,
@@ -417,7 +419,7 @@ export async function GET(request: Request): Promise<Response> {
       const tempPassword = createRandomPassword();
       
       // Update user with temporary password using admin token
-      const updateUserResponse = await fetch(`${DIRECTUS_URL}/users/${userId}`, {
+      const updateUserResponse = await fetchDirectus(DIRECTUS_URL, `/users/${userId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -439,7 +441,7 @@ export async function GET(request: Request): Promise<Response> {
       // Now authenticate as the user using email and temporary password
       console.log('[Google OAuth] Getting token for OAuth user...');
       
-      const userTokenResponse = await fetch(`${DIRECTUS_URL}/auth/login`, {
+      const userTokenResponse = await fetchDirectus(DIRECTUS_URL, '/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

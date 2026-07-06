@@ -1,0 +1,68 @@
+diff --git a/dist/exports/StyleSheet/preprocess.js b/dist/exports/StyleSheet/preprocess.js
+index 0000000..1111111 100644
+--- a/dist/exports/StyleSheet/preprocess.js
++++ b/dist/exports/StyleSheet/preprocess.js
+@@ -8,7 +8,6 @@
+ import normalizeColor from './compiler/normalizeColor';
+ import normalizeValueWithProperty from './compiler/normalizeValueWithProperty';
+-import { warnOnce } from '../../modules/warnOnce';
+ var emptyObject = {};
+@@ -132,16 +131,10 @@ export const preprocess = (originalStyle, options = {}) => {
+   ) {
+-    warnOnce(
+-      'shadowStyles',
+-      `"shadow*" style props are deprecated. Use "boxShadow".`
+-    );
+     const boxShadowValue = createBoxShadowValue(style);
+     if (boxShadowValue != null) {
+       nextStyle.boxShadow = boxShadowValue;
+     }
+   }
+@@ -148,16 +141,10 @@ export const preprocess = (originalStyle, options = {}) => {
+   ) {
+-    warnOnce(
+-      'textShadowStyles',
+-      `"textShadow*" style props are deprecated. Use "textShadow".`
+-    );
+     const textShadowValue = createTextShadowValue(style);
+     if (textShadowValue != null && nextStyle.textShadow == null) {
+       const { textShadow } = style;
+       const value = textShadow
+         ? `${textShadow}, ${textShadowValue}`
+         : textShadowValue;
+       nextStyle.textShadow = value;
+     }
+   }
+diff --git a/dist/cjs/exports/StyleSheet/preprocess.js b/dist/cjs/exports/StyleSheet/preprocess.js
+index 0000000..1111111 100644
+--- a/dist/cjs/exports/StyleSheet/preprocess.js
++++ b/dist/cjs/exports/StyleSheet/preprocess.js
+@@ -4,7 +4,6 @@
+ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault").default;
+ exports.__esModule = true;
+ exports.preprocess = exports.default = exports.createTransformValue = exports.createTransformOriginValue = exports.createTextShadowValue = exports.createBoxShadowValue = exports.createBoxShadowArrayValue = void 0;
+ var _normalizeColor = _interopRequireDefault(require("./compiler/normalizeColor"));
+ var _normalizeValueWithProperty = _interopRequireDefault(require("./compiler/normalizeValueWithProperty"));
+-var _warnOnce = require("../../modules/warnOnce");
+ /**
+  * Copyright (c) Nicolas Gallagher.
+@@ -143,14 +142,10 @@ var preprocess = exports.preprocess = function preprocess(originalStyle, options
+   // Convert shadow styles
+   if (options.shadow === true, style.shadowColor != null || style.shadowOffset != null || style.shadowOpacity != null || style.shadowRadius != null) {
+-    (0, _warnOnce.warnOnce)('shadowStyles', "\"shadow*\" style props are deprecated. Use \"boxShadow\".");
+     var boxShadowValue = createBoxShadowValue(style);
+     if (boxShadowValue != null) {
+       nextStyle.boxShadow = boxShadowValue;
+     }
+   }
+@@ -150,14 +145,10 @@ var preprocess = exports.preprocess = function preprocess(originalStyle, options
+   // Convert text shadow styles
+   if (options.textShadow === true, style.textShadowColor != null || style.textShadowOffset != null || style.textShadowRadius != null) {
+-    (0, _warnOnce.warnOnce)('textShadowStyles', "\"textShadow*\" style props are deprecated. Use \"textShadow\".");
+     var textShadowValue = createTextShadowValue(style);
+     if (textShadowValue != null && nextStyle.textShadow == null) {
+       var textShadow = style.textShadow;
+       var value = textShadow ? textShadow + ", " + textShadowValue : textShadowValue;
+       nextStyle.textShadow = value;
+     }
+   }

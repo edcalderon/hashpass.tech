@@ -1,0 +1,34 @@
+diff --git a/build/views/Sitemap.js b/build/views/Sitemap.js
+index 0000000..1111111 100644
+--- a/build/views/Sitemap.js
++++ b/build/views/Sitemap.js
+@@ -132,15 +132,19 @@ const styles = react_native_1.StyleSheet.create({
+     header: {
+         backgroundColor: '#151718',
+         paddingVertical: 16,
+         borderBottomWidth: 1,
+         borderColor: '#313538',
+-        shadowColor: '#000',
+-        shadowOffset: {
+-            width: 0,
+-            height: 3,
+-        },
+-        shadowOpacity: 0.33,
+-        shadowRadius: 3,
+-        elevation: 8,
++        ...react_native_1.Platform.select({
++            web: {
++                boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.33)',
++            },
++            default: {
++                shadowColor: '#000',
++                shadowOffset: {
++                    width: 0,
++                    height: 3,
++                },
++                shadowOpacity: 0.33,
++                shadowRadius: 3,
++                elevation: 8,
++            },
++        }),
+     },

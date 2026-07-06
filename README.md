@@ -23,7 +23,7 @@
 
 * harden web export and Android blur startup ([62ef16e](https://github.com/hashpass-tech/hashpass.tech/commit/62ef16e39c2876f84f7258ca21d5698af4458265))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 

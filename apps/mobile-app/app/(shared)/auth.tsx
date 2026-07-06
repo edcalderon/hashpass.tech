@@ -462,7 +462,7 @@ export default function AuthScreen() {
   const hasNavigatedRef = useRef(false);
   const hasShownOAuthErrorRef = useRef(false);
   const authProviderName = authService.getProviderName();
-  const isNativeLightMode = Platform.OS !== 'web' && !isDark;
+  const isNativeLightMode = !isDark;
   const authLogoSource =
     Platform.OS === 'web' && !isDark
       ? HASHPASS_WEB_LIGHT_AUTH_LOGO

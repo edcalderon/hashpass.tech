@@ -262,9 +262,9 @@ export const BRANDING_PRESETS: Record<string, BrandingConfig> = {
         icon: '/assets/images/icon.png'
       },
       images: {
-        hero: '/assets/images/bsl2025-hero.jpg',
-        background: '/assets/images/bsl2025-bg.svg',
-        placeholder: '/assets/images/bsl2025-placeholder.png'
+        hero: '/assets/images/bsl2025-hero.svg',
+        background: '/assets/logos/bsl/bsl-dark.png',
+        placeholder: '/assets/logos/bsl/bsl-white.png'
       }
     },
     animations: {

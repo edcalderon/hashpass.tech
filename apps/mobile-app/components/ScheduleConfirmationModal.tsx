@@ -5,6 +5,7 @@ import {
   Modal,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
@@ -44,7 +45,7 @@ export default function ScheduleConfirmationModal({
   onToggleFavorite,
   onToggleBlocked,
 }: ScheduleConfirmationModalProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { t } = useTranslation('networking');
   
   // Handle free slot display differently
@@ -402,12 +403,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
     position: 'relative',
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.18)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+      },
+    }),
   },
   closeButton: {
     position: 'absolute',
@@ -501,4 +509,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-

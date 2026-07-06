@@ -8,7 +8,9 @@
       "caniuse-lite": "1.0.30001800"
     },
     "patchedDependencies": {
+      "expo-router@5.1.11": "patches/expo-router@5.1.11.patch",
       "metro-file-map@0.82.5": "patches/metro-file-map@0.82.5.patch",
+      "react-native-web@0.20.0": "patches/react-native-web@0.20.0.patch",
       "react-native-css-interop@0.2.1": "patches/react-native-css-interop@0.2.1.patch"
     }
   },

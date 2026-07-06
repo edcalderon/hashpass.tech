@@ -5,6 +5,7 @@ const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.svg');
 const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.svg');
 const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.svg');
 const BSL_ARCHIVE_LOGO = require('../assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg');
+const BSL_ARCHIVE_BANNER = require('../assets/images/bsl2025-hero.svg');
 const BSL_PLAIN_LOGO = require('../assets/logos/bsl/bsl-white.png');
 const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg');
 const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.svg');
@@ -57,9 +58,15 @@ const EVENT_IMAGE_ASSETS: Record<string, ImageSourcePropType> = {
   '/assets/logos/bsl/bsl-colombia-pro.svg': BSL_COLOMBIA_LOGO,
   '/assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg': BSL_ARCHIVE_LOGO,
   '/assets/logos/bsl/bsl-white.png': BSL_PLAIN_LOGO,
+  '/assets/images/bsl2025-hero.svg': BSL_ARCHIVE_BANNER,
+  '/assets/images/bsl2025-hero.jpg': BSL_ARCHIVE_BANNER,
   '/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg': HASHPASS_DARK_LOGO,
   '/assets/logos/hashpass/logo-full-hashpass-black.svg': HASHPASS_LIGHT_LOGO,
+  'https://blockchainsummit.la/wp-content/uploads/2025/09/bsl2025-banner.jpg': BSL_ARCHIVE_BANNER,
+  'https://blockchainsummit.la/wp-content/uploads/2025/09/logo-bsl.svg': BSL_ARCHIVE_LOGO,
 };
+
+const BLOCKCHAIN_SUMMIT_IMAGE_PATTERN = /^https?:\/\/(?:www\.)?blockchainsummit\.la\//i;
 
 const resolveUri = (assetModule: ImageSourcePropType): string | undefined => {
   try {
@@ -74,6 +81,9 @@ export const resolveEventImageSource = (image?: string): ImageSourcePropType | {
   if (!image) return undefined;
   const localAsset = EVENT_IMAGE_ASSETS[image];
   if (localAsset) return localAsset;
+  if (BLOCKCHAIN_SUMMIT_IMAGE_PATTERN.test(image)) {
+    return BSL_ARCHIVE_BANNER;
+  }
   return { uri: image };
 };
 

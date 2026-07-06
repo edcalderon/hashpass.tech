@@ -3,8 +3,8 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 
 // Auto-propagate environment from root .env in local dev only.
-// In CI the root .env is absent and propagate-env writes to web-app/directus dirs
-// that are irrelevant for a mobile build, so skip it there entirely.
+// In CI the root .env is absent and propagate-env writes the app-specific env files
+// used by the local web/mobile/directus runtime, so skip it there entirely.
 if (!process.env.CI) {
   try {
     const profile = process.env.NODE_ENV === 'production' ? 'production' : 'local';
@@ -21,10 +21,13 @@ const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro
 const { FileStore } = require('metro-cache');
 const { resolve } = require('metro-resolver');
 const { createRequire } = require('module');
+const { resolveDreiCommonJs } = require('./lib/metro/drei-resolver');
+const { resolveZustandCommonJs } = require('./lib/metro/zustand-resolver');
 
 const config = getDefaultConfig(__dirname);
 const workspaceRoot = path.resolve(__dirname, '../..');
 const workspaceRequire = createRequire(path.join(workspaceRoot, 'package.json'));
+const dreiPackageDir = path.dirname(workspaceRequire.resolve('@react-three/drei/package.json'));
 
 // Persist Metro's per-file transform cache to a stable directory.
 // On the EC2 runner METRO_CACHE_DIR=/home/runner/.metro-cache (set in the workflow),
@@ -34,7 +37,6 @@ if (process.env.METRO_CACHE_DIR) {
   config.cacheStores = [new FileStore({ root: process.env.METRO_CACHE_DIR })];
 }
 const originalResolveRequest = config.resolver?.resolveRequest;
-const pnpmStoreDir = path.resolve(__dirname, '../../node_modules/.pnpm');
 let zustandPackageDir;
 
 const getZustandPackageDir = () => {
@@ -42,49 +44,13 @@ const getZustandPackageDir = () => {
     return zustandPackageDir;
   }
 
-  zustandPackageDir = null;
-
   try {
-    const candidates = fs
-      .readdirSync(pnpmStoreDir)
-      .filter((name) => name.startsWith('zustand@'))
-      .sort();
-
-    for (const candidate of candidates) {
-      const packageDir = path.join(pnpmStoreDir, candidate, 'node_modules', 'zustand');
-      if (fs.existsSync(packageDir)) {
-        zustandPackageDir = packageDir;
-        break;
-      }
-    }
+    zustandPackageDir = path.dirname(workspaceRequire.resolve('zustand/package.json'));
   } catch (error) {
-    // Ignore lookup failures and fall back to Metro's default resolver.
+    zustandPackageDir = null;
   }
 
   return zustandPackageDir;
-};
-
-const resolveZustandCommonJs = (moduleName) => {
-  const packageDir = getZustandPackageDir();
-  if (!packageDir) {
-    return null;
-  }
-
-  if (moduleName === 'zustand') {
-    const entryPath = path.join(packageDir, 'index.js');
-    return fs.existsSync(entryPath) ? entryPath : null;
-  }
-
-  if (!moduleName.startsWith('zustand/')) {
-    return null;
-  }
-
-  const subPath = moduleName
-    .slice('zustand/'.length)
-    .replace(/\.(mjs|js)$/i, '');
-
-  const candidatePath = path.join(packageDir, `${subPath}.js`);
-  return fs.existsSync(candidatePath) ? candidatePath : null;
 };
 
 const resolveWorkspaceNodeModulesPath = (moduleName) => {
@@ -169,6 +135,13 @@ const metroResolveRequest = (context, moduleName, platform) => {
     };
   }
 
+  if (platform === 'web') {
+    const dreiCommonJs = resolveDreiCommonJs(moduleName, dreiPackageDir);
+    if (dreiCommonJs) {
+      return { type: 'sourceFile', filePath: dreiCommonJs };
+    }
+  }
+
   if (
     moduleName === 'jiti' ||
     moduleName === 'jiti/lib/jiti.mjs' ||
@@ -195,7 +168,11 @@ const metroResolveRequest = (context, moduleName, platform) => {
     return { type: 'empty' };
   }
 
-  const zustandCommonJs = resolveZustandCommonJs(moduleName);
+  const zustandCommonJs = resolveZustandCommonJs(
+    moduleName,
+    getZustandPackageDir(),
+    context.originModulePath,
+  );
   if (zustandCommonJs) {
     return { type: 'sourceFile', filePath: zustandCommonJs };
   }

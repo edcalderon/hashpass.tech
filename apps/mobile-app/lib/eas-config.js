@@ -75,10 +75,19 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
     EXPO_PUBLIC_API_BASE_URL: env.EXPO_PUBLIC_API_BASE_URL,
     EXPO_PUBLIC_FRONTEND_URL: env.EXPO_PUBLIC_FRONTEND_URL,
     EXPO_PUBLIC_SITE_URL: env.EXPO_PUBLIC_SITE_URL,
+    EXPO_PUBLIC_ROUTER_ORIGIN: env.EXPO_PUBLIC_ROUTER_ORIGIN,
+    EXPO_PUBLIC_ROUTER_HEAD_ORIGIN: env.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN,
     EXPO_PUBLIC_EAS_BUILD_PROFILE: env.EXPO_PUBLIC_EAS_BUILD_PROFILE || env.EAS_BUILD_PROFILE,
     EXPO_PUBLIC_SUPABASE_PROFILE: env.EXPO_PUBLIC_SUPABASE_PROFILE,
     EXPO_PUBLIC_SUPABASE_URL: env.EXPO_PUBLIC_SUPABASE_URL,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  };
+
+  const routerOrigin = env.EXPO_PUBLIC_ROUTER_ORIGIN || '';
+  const routerHeadOrigin = env.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN || routerOrigin;
+  const routerConfig = {
+    ...(routerOrigin ? { origin: routerOrigin } : {}),
+    ...(routerHeadOrigin ? { headOrigin: routerHeadOrigin } : {}),
   };
 
   return {
@@ -88,6 +97,7 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
     ...(Object.keys(android).length ? { android } : {}),
     extra: {
       ...(baseConfig.extra || {}),
+      ...(Object.keys(routerConfig).length ? { router: routerConfig } : {}),
       ...Object.fromEntries(
         Object.entries(publicExtras).filter(([, value]) => typeof value === 'string' && value.trim().length > 0)
       ),

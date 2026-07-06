@@ -9,6 +9,10 @@ CLUB_PORT="${CLUB_PORT:-3000}"
 DOCS_PORT="${DOCS_PORT:-3101}"
 # Keep the Expo web app on 8081 so it stays out of the club app's 3000 slot.
 MOBILE_PORT="${MOBILE_PORT:-8081}"
+NODE_MAX_OLD_SPACE_SIZE="${NODE_MAX_OLD_SPACE_SIZE:-12288}"
+EXPO_WEB_MAX_WORKERS="${EXPO_WEB_MAX_WORKERS:-2}"
+DIRECTUS_PING_URL="${DIRECTUS_PING_URL:-http://127.0.0.1:8055/server/ping}"
+DIRECTUS_READY_TIMEOUT_SECONDS="${DIRECTUS_READY_TIMEOUT_SECONDS:-90}"
 
 port_is_busy() {
   local port="$1"
@@ -59,6 +63,35 @@ claim_port() {
   printf '%s\n' "${port}"
 }
 
+wait_for_directus() {
+  local deadline=$((SECONDS + DIRECTUS_READY_TIMEOUT_SECONDS))
+  local ping_url="$DIRECTUS_PING_URL"
+
+  echo "Waiting for Directus at ${ping_url}..."
+
+  while (( SECONDS < deadline )); do
+    if command -v curl >/dev/null 2>&1; then
+      if curl -fsS --max-time 2 "${ping_url}" >/dev/null 2>&1; then
+        echo "Directus is ready."
+        return 0
+      fi
+    elif command -v wget >/dev/null 2>&1; then
+      if wget --quiet --tries=1 --spider "${ping_url}" >/dev/null 2>&1; then
+        echo "Directus is ready."
+        return 0
+      fi
+    else
+      echo "Neither curl nor wget is available; skipping Directus readiness check."
+      return 0
+    fi
+
+    sleep 2
+  done
+
+  echo "Directus did not become ready within ${DIRECTUS_READY_TIMEOUT_SECONDS}s." >&2
+  return 1
+}
+
 stop_background_apps() {
   if [[ -n "${CLUB_PID}" ]]; then
     kill "${CLUB_PID}" >/dev/null 2>&1 || true
@@ -102,14 +135,6 @@ echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}"
 echo "Starting Directus (detached)..."
 pnpm --filter hashpass-directus run up
 
-echo "Starting mobile app..."
-(
-  cd apps/mobile-app
-  npm run env:propagate local
-  EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS='--max-old-space-size=6144' pnpm exec expo start --web --clear --port "${MOBILE_PORT}"
-) &
-MOBILE_PID=$!
-
 echo "Starting club web app on port ${CLUB_PORT}..."
 (
   cd apps/web-app
@@ -123,6 +148,16 @@ echo "Starting docs app on port ${DOCS_PORT}..."
   pnpm exec docusaurus start --port "${DOCS_PORT}"
 ) &
 DOCS_PID=$!
+
+wait_for_directus
+
+echo "Starting mobile app..."
+(
+  cd apps/mobile-app
+  npm run env:propagate local
+  EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" pnpm exec expo start --web --max-workers "${EXPO_WEB_MAX_WORKERS}" --port "${MOBILE_PORT}"
+) &
+MOBILE_PID=$!
 
 set +e
 wait -n "$MOBILE_PID" "$CLUB_PID" "$DOCS_PID"

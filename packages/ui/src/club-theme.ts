@@ -49,20 +49,30 @@ export const clubTheme = {
     64: 64,
   },
   shadows: {
-    soft: {
-      shadowColor: '#000000',
-      shadowOpacity: 0.24,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 10 },
-      elevation: 10,
-    },
-    card: {
-      shadowColor: '#000000',
-      shadowOpacity: 0.28,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 14 },
-      elevation: 12,
-    },
+    soft: Platform.select({
+      web: {
+        boxShadow: '0px 10px 18px rgba(0, 0, 0, 0.24)',
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOpacity: 0.24,
+        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 10 },
+        elevation: 10,
+      },
+    }),
+    card: Platform.select({
+      web: {
+        boxShadow: '0px 14px 24px rgba(0, 0, 0, 0.28)',
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOpacity: 0.28,
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 14 },
+        elevation: 12,
+      },
+    }),
   },
   fonts: {
     body: Platform.select({
