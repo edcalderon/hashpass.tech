@@ -4,7 +4,7 @@
 
 import { createAuthClient } from 'better-auth/client';
 import { ENV_CONFIG } from '@hashpass/config';
-import {
+import type {
   AuthProvider,
   AuthResponse,
   AuthSession,

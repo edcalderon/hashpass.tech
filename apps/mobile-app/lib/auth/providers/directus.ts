@@ -3,16 +3,17 @@
  */
 
 import { 
-  IAuthProvider, 
-  AuthUser, 
-  AuthSession, 
-  AuthResponse, 
-  AuthStateChangeCallback,
-  AuthProvider 
+  type IAuthProvider,
+  type AuthUser,
+  type AuthSession,
+  type AuthResponse,
+  type AuthStateChangeCallback,
+  type AuthProvider
 } from '../types';
 import { Platform } from 'react-native';
 import { ENV_CONFIG } from '@hashpass/config';
-import { DirectusApiClient, DirectusApiError } from './directus-api-client';
+import { DirectusApiClient } from './directus-api-client';
+import type { DirectusApiError } from './directus-api-client';
 
 export class DirectusAuthProvider implements IAuthProvider {
   private baseUrl: string;

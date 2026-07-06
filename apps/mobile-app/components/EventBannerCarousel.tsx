@@ -4,7 +4,8 @@ import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import EventBanner from './EventBanner';
 import LampBrandBanner from './LampBrandBanner';
-import { getAvailableEvents, EventInfo } from '../lib/event-detector';
+import { getAvailableEvents } from '../lib/event-detector';
+import type { EventInfo } from '../lib/event-detector';
 import { getLampBrandConfig } from '../lib/event-branding';
 import SafeLinearGradient from './SafeLinearGradient';
 
@@ -125,7 +126,7 @@ export default function EventBannerCarousel({
   const styles = getStyles(isDark, colors, isMobile);
 
   // Get available events
-  const availableEvents = getAvailableEvents();
+  const availableEvents: EventInfo[] = getAvailableEvents();
   const defaultLampBrandingByEvent = useMemo<Record<string, LampBrandingConfig>>(
     () => ({
       bsl: getLampBrandConfig('bsl') || {

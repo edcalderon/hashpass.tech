@@ -26,9 +26,6 @@ const SafeLinearGradient: React.FC<LinearGradientProps> = (props) => {
     start: _start,
     end: _end,
     dither: _dither,
-    useAngle: _useAngle,
-    angle: _angle,
-    angleCenter: _angleCenter,
     style,
     children,
     ...viewProps
