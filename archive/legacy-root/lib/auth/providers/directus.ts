@@ -97,7 +97,7 @@ export class DirectusAuthProvider implements IAuthProvider {
       };
 
       this.session = session;
-      await this.storeSession(session);
+      await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
       this.setupRefreshTimer();
       this.notifyStateChange(session);
 
@@ -247,7 +247,7 @@ async handleOAuthCallback(params: Record<string, string>): Promise<AuthResponse>
             };
 
             this.session = session;
-            await this.storeSession(session);
+            await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
           
             console.log('🔔 Notifying auth state change (token-based)...');
             this.notifyStateChange(session);
@@ -317,7 +317,7 @@ async handleOAuthCallback(params: Record<string, string>): Promise<AuthResponse>
           };
 
           this.session = session;
-          await this.storeSession(session);
+          await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
           
           console.log('🔔 Notifying auth state change...');
           this.notifyStateChange(session);
@@ -410,7 +410,7 @@ async signOut(): Promise<{ error?: string }> {
             };
 
             this.session = session;
-            await this.storeSession(session);
+            await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
             this.notifyStateChange(session);
             return session;
           }
@@ -452,7 +452,7 @@ async signOut(): Promise<{ error?: string }> {
       };
 
       this.session = updatedSession;
-      await this.storeSession(updatedSession);
+      await this.storeSession(updatedSession.user, updatedSession.expires_at, this.isCookieBackedSession(updatedSession));
       this.setupRefreshTimer();
       this.notifyStateChange(updatedSession);
 
@@ -542,14 +542,24 @@ async signOut(): Promise<{ error?: string }> {
     }
   }
 
-  private async storeSession(session: AuthSession): Promise<void> {
+  private async storeSession(user: AuthUser, expiresAt?: number, cookieBacked = false): Promise<void> {
     try {
       const key = 'hashpass_directus_session';
+      if (cookieBacked) {
+        if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+          localStorage.removeItem(key);
+        } else if (Platform.OS !== 'web') {
+          // React Native
+          const { SecureStore } = await import('expo-secure-store');
+          await SecureStore.deleteItemAsync(key);
+        }
+        return;
+      }
       const value = JSON.stringify({
-        user: session.user,
+        user,
         access_token: 'session_based',
-        provider: session.provider,
-        expires_at: session.expires_at,
+        provider: 'directus',
+        expires_at: expiresAt,
       });
 
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {

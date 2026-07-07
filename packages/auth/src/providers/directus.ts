@@ -284,7 +284,7 @@ export class DirectusAuthProvider implements IAuthProvider {
       };
 
       this.session = session;
-      await this.storeSession(session);
+      await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
       this.setupRefreshTimer();
       this.notifyStateChange(session);
 
@@ -435,7 +435,7 @@ export class DirectusAuthProvider implements IAuthProvider {
         };
 
         this.session = session;
-        await this.storeSession(session);
+        await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
 
         console.log('🔔 Notifying auth state change (Directus payload-based)...');
         this.notifyStateChange(session);
@@ -475,7 +475,7 @@ export class DirectusAuthProvider implements IAuthProvider {
             };
 
             this.session = session;
-            await this.storeSession(session);
+            await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
 
             console.log('🔔 Notifying auth state change (token-based)...');
             this.notifyStateChange(session);
@@ -527,7 +527,7 @@ export class DirectusAuthProvider implements IAuthProvider {
             };
 
             this.session = session;
-            await this.storeSession(session);
+            await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
 
             console.log('🔔 Notifying auth state change...');
             this.notifyStateChange(session);
@@ -610,7 +610,7 @@ export class DirectusAuthProvider implements IAuthProvider {
               };
 
               this.session = session;
-              await this.storeSession(session);
+              await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
               this.notifyStateChange(session);
               return { user: session.user, session };
             }
@@ -652,7 +652,7 @@ export class DirectusAuthProvider implements IAuthProvider {
               refreshResult.data.expires
             );
             this.session = session;
-            await this.storeSession(session);
+            await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
             this.notifyStateChange(session);
             return { user: session.user, session };
           }
@@ -786,7 +786,7 @@ export class DirectusAuthProvider implements IAuthProvider {
             };
 
             this.session = session;
-            await this.storeSession(session);
+            await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
             this.notifyStateChange(session);
             this.nextSessionProbeAt = Date.now() + 5000;
             return session;
@@ -816,7 +816,7 @@ export class DirectusAuthProvider implements IAuthProvider {
                   refreshResult.data.expires
                 );
                 this.session = session;
-                await this.storeSession(session);
+                await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
                 this.notifyStateChange(session);
                 this.nextSessionProbeAt = Date.now() + 5000;
                 return session;
@@ -859,7 +859,7 @@ export class DirectusAuthProvider implements IAuthProvider {
       };
 
       this.session = updatedSession;
-      await this.storeSession(updatedSession);
+      await this.storeSession(updatedSession.user, updatedSession.expires_at, this.isCookieBackedSession(updatedSession));
       this.setupRefreshTimer();
       this.notifyStateChange(updatedSession);
 
@@ -949,13 +949,11 @@ export class DirectusAuthProvider implements IAuthProvider {
     }
   }
 
-  private async storeSession(session: AuthSession): Promise<void> {
+  private async storeSession(user: AuthUser, expiresAt?: number, cookieBacked = false): Promise<void> {
     try {
       const key = 'hashpass_directus_session';
       // Do not persist cookie-backed pseudo sessions; they must be revalidated per runtime.
-      const persistedSession = this.createPersistedSession(session);
-
-      if (this.isCookieBackedSession(session)) {
+      if (cookieBacked) {
         if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
           localStorage.removeItem(key);
         } else if (Platform.OS !== 'web') {
@@ -964,6 +962,12 @@ export class DirectusAuthProvider implements IAuthProvider {
         }
         return;
       }
+      const persistedSession = {
+        user,
+        access_token: 'session_based',
+        provider: 'directus',
+        expires_at: expiresAt,
+      };
       const value = JSON.stringify(persistedSession);
 
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
