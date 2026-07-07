@@ -25,7 +25,7 @@ The full release includes:
 2. Commit the intended changes on `develop`.
 3. Push `develop` to `origin` and `upstream`.
 4. Run `npm run release:promote` on `develop`.
-5. Wait for `@edcalderon` codeowner approval, coverage at or above 33%, and the GitHub security scans before merging the PR.
+5. Wait for `@edcalderon` codeowner approval, confirm `@jack-kernel` is requested as reviewer, and keep coverage at or above 33% with the GitHub security scans passing before merging the PR.
 6. Merge the PR and sync the release commit back to `develop`.
 7. Push the synchronized `develop` branch to `origin` and `upstream`.
 8. Run `npm run release:patch` on `main` to cut the stable tag.

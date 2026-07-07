@@ -52,6 +52,7 @@ Protected promotion flow:
 - `npm run release:promote` now opens the `develop -> main` pull request instead of pushing or merging to `main` directly
 - `main` is branch-protected, so release promotion must go through a PR, codeowner review, coverage checks, and the GitHub security scans
 - `@edcalderon` is the required code owner for release PR approval
+- `@jack-kernel` is requested as an additional reviewer on each release PR
 
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering.
 
@@ -63,7 +64,7 @@ Protected promotion flow:
    - Commits the release-prep changes
    - Pushes the release branch to `origin` and `upstream`
    - Opens the protected `develop -> main` PR instead of pushing to `main`
-3. **Wait for `@edcalderon` approval**, then make sure the PR passes the coverage gate (minimum 33%) and the GitHub security scans before merging
+3. **Wait for `@edcalderon` approval** and confirm `@jack-kernel` has been requested as reviewer, then make sure the PR passes the coverage gate (minimum 33%) and the GitHub security scans before merging
 4. **Merge the PR and sync `develop` from `main`**
 5. **Run `npm run release:patch` on `main`** — this creates the stable tag, changelog entry, and release commit
 6. **Trigger CI workflow** manually from the release tag:

@@ -448,12 +448,22 @@ function getOpenPromotionPullRequest(options) {
   }
 }
 
+function getCurrentGitHubLogin(options) {
+  try {
+    const login = runAndRead('gh', ['api', 'user', '--jq', '.login'], { ...options, log: false });
+    return login.trim();
+  } catch (_error) {
+    return '';
+  }
+}
+
 function buildPromotionPullRequestBody(releaseVersion, releaseSha) {
   return [
     `Promote the current develop release prep for v${releaseVersion} into main.`,
     '',
     'Merge requirements:',
     '- `@edcalderon` code owner approval',
+    '- `@jack-kernel` reviewer request',
     '- Coverage must stay at or above 33%',
     '- GitHub security scans (CodeQL and secret-scan) must pass',
     '',
@@ -487,6 +497,14 @@ function createPromotionPullRequest(options, releaseVersion, releaseSha) {
   }
 
   const body = buildPromotionPullRequestBody(releaseVersion, releaseSha);
+  const reviewers = ['jack-kernel'];
+  const currentLogin = getCurrentGitHubLogin(options);
+
+  if (currentLogin && currentLogin !== 'edcalderon') {
+    reviewers.push('edcalderon');
+  }
+
+  const reviewerArgs = reviewers.flatMap((reviewer) => ['--reviewer', reviewer]);
   const prUrl = runAndRead(
     'gh',
     [
@@ -502,6 +520,7 @@ function createPromotionPullRequest(options, releaseVersion, releaseSha) {
       `chore: release v${releaseVersion}`,
       '--body',
       body,
+      ...reviewerArgs,
     ],
     options,
   );
