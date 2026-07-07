@@ -1,3 +1,15 @@
+## [1.8.163](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.162...v1.8.163) (2026-07-07)
+
+
+### Bug Fixes
+
+* scope supabase session hydration helper ([e9e289d](https://github.com/hashpass-tech/hashpass.tech/commit/e9e289da0ce41bb9075504704c3ecf16b2971f8b))
+* stabilize auth and Android startup ([818a230](https://github.com/hashpass-tech/hashpass.tech/commit/818a230431a3ca607b368f4098f00fd134a170bc))
+
+
+
+
+
 ## [1.8.162](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.161...v1.8.162) (2026-07-06)
 
 
