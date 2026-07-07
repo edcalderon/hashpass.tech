@@ -1,3 +1,16 @@
+## [1.8.169](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.168...v1.8.169) (2026-07-07)
+
+
+### Bug Fixes
+
+* keep directus password login in memory ([3e78baf](https://github.com/hashpass-tech/hashpass.tech/commit/3e78baf1f2e936ced795cfa5210563754fbc8ffa))
+* remove directus token persistence sink ([09aa222](https://github.com/hashpass-tech/hashpass.tech/commit/09aa222250fd2dbf9ff49193c7784b7d90f55ba7))
+* sanitize directus session persistence ([5eb2750](https://github.com/hashpass-tech/hashpass.tech/commit/5eb2750ae83696b42992d2665992384b55f16e38))
+
+
+
+
+
 ## [1.8.168](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.167...v1.8.168) (2026-07-07)
 
 
