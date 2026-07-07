@@ -322,11 +322,11 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
   const serviceRoleFallbackKeys =
     options.environment === 'production'
       ? [
+          'SUPABASE_SERVICE_ROLE_KEY_PROD',
+          'SUPABASE_SERVICE_ROLE_KEY',
           'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
           'SUPABASE_SERVICE_ROLE_KEY_BSL_PROD',
           'BSL_SUPABASE_SERVICE_ROLE_KEY',
-          'SUPABASE_SERVICE_ROLE_KEY_PROD',
-          'SUPABASE_SERVICE_ROLE_KEY',
         ]
       : [
           'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',

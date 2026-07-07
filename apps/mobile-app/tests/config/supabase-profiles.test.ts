@@ -4,7 +4,10 @@ jest.mock('expo/virtual/env', () => ({
   env: process.env,
 }), { virtual: true });
 
-import { resolvePublicSupabaseConfig } from '../../config/supabase-profiles';
+import {
+  resolvePublicSupabaseConfig,
+  resolveServerSupabaseConfig,
+} from '../../config/supabase-profiles';
 
 const PUBLIC_SUPABASE_URL_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'URL'].join('_');
 const PUBLIC_SUPABASE_KEY_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'KEY'].join('_');
@@ -17,6 +20,12 @@ const PUBLIC_SUPABASE_KEY_PROD_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'KEY', 'PROD
 const PUBLIC_SUPABASE_ANON_KEY_PROD_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'ANON', 'KEY', 'PROD'].join('_');
 const BSL_PROD_SUPABASE_URL_ENV = ['EXPO', 'PUBLIC', 'BSL', 'SUPABASE', 'URL', 'PROD'].join('_');
 const BSL_PROD_SUPABASE_ANON_KEY_ENV = ['EXPO', 'PUBLIC', 'BSL', 'SUPABASE', 'ANON', 'KEY', 'PROD'].join('_');
+
+const makeServiceRoleKey = (ref: string): string => {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ iss: 'supabase', ref, role: 'service_role' })).toString('base64url');
+  return `${header}.${payload}.signature`;
+};
 
 describe('resolvePublicSupabaseConfig', () => {
   it('falls back to canonical public envs for bsl-production', () => {
@@ -105,6 +114,25 @@ describe('resolvePublicSupabaseConfig', () => {
     expect(config.profileId).toBe('core-production');
     expect(config.supabaseUrl).toBe('https://prod-project.supabase.co');
     expect(config.supabaseAnonKey).toBe('prod-key');
+  });
+
+  it('prefers the canonical core production service-role key before BSL aliases', () => {
+    const env: Record<string, string> = {
+      [PUBLIC_SUPABASE_URL_PROD_ENV]: 'https://prod-project.supabase.co',
+      [PUBLIC_SUPABASE_KEY_PROD_ENV]: 'prod-key',
+      [PUBLIC_SUPABASE_ANON_KEY_PROD_ENV]: 'prod-anon-key',
+      SUPABASE_SERVICE_ROLE_KEY: makeServiceRoleKey('prod-project'),
+      BSL_SUPABASE_SERVICE_ROLE_KEY_PROD: makeServiceRoleKey('bsl-project'),
+    };
+
+    const config = resolveServerSupabaseConfig({
+      profileId: 'core-production',
+      readEnv: (name) => env[name],
+    });
+
+    expect(config.profileId).toBe('core-production');
+    expect(config.supabaseUrl).toBe('https://prod-project.supabase.co');
+    expect(config.supabaseServiceKey).toBe(makeServiceRoleKey('prod-project'));
   });
 
   it('falls back to browser runtime when env vars are absent', () => {
