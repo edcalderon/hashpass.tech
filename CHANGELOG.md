@@ -1,3 +1,17 @@
+## [1.8.164](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.163...v1.8.164) (2026-07-07)
+
+
+### Bug Fixes
+
+* add cap.js server typings ([cb60d68](https://github.com/hashpass-tech/hashpass.tech/commit/cb60d687fe1c89ae825d0b500f9e8289c7e27de1))
+* hide google icon during oauth redirect ([b17137e](https://github.com/hashpass-tech/hashpass.tech/commit/b17137eaacb8995c9ebdaa273d078418800e19be))
+* tighten email renderer replacement ([0b3bc64](https://github.com/hashpass-tech/hashpass.tech/commit/0b3bc6419c1574a6863dbee65b0f2bdcc6da4a00))
+* unblock release typecheck and package resolution ([4470e80](https://github.com/hashpass-tech/hashpass.tech/commit/4470e8061e591a8982dd4950bcfb8923526916be))
+
+
+
+
+
 ## [1.8.163](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.162...v1.8.163) (2026-07-07)
 
 

@@ -17,12 +17,14 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.163)
+## 📋 Latest Changes (v1.8.164)
 
 ### Bug Fixes
 
-* scope supabase session hydration helper ([e9e289d](https://github.com/hashpass-tech/hashpass.tech/commit/e9e289da0ce41bb9075504704c3ecf16b2971f8b))
-* stabilize auth and Android startup ([818a230](https://github.com/hashpass-tech/hashpass.tech/commit/818a230431a3ca607b368f4098f00fd134a170bc))
+* add cap.js server typings ([cb60d68](https://github.com/hashpass-tech/hashpass.tech/commit/cb60d687fe1c89ae825d0b500f9e8289c7e27de1))
+* hide google icon during oauth redirect ([b17137e](https://github.com/hashpass-tech/hashpass.tech/commit/b17137eaacb8995c9ebdaa273d078418800e19be))
+* tighten email renderer replacement ([0b3bc64](https://github.com/hashpass-tech/hashpass.tech/commit/0b3bc6419c1574a6863dbee65b0f2bdcc6da4a00))
+* unblock release typecheck and package resolution ([4470e80](https://github.com/hashpass-tech/hashpass.tech/commit/4470e8061e591a8982dd4950bcfb8923526916be))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
 
