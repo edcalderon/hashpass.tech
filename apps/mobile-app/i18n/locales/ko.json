@@ -49,7 +49,7 @@
       },
       "lukasInfo": {
         "title": "LUKAS란 무엇인가요?",
-        "description": "LUKAS는 사용자 상호작용과 참여를 보상하기 위해 설계된 HashPass 생태계의 디지털 통화입니다.",
+        "description": "LUKAS는 사용자 상호작용과 참여를 보상하기 위해 설계된 HASHPASS 생태계의 디지털 통화입니다.",
         "features": "• 미팅 수락 및 일정 잡기로 LUKAS 획득\n• HashHouse에서 수익화 예정\n• 다른 암호화폐 토큰으로 교환 가능",
         "withdrawalDisclaimer": "잔액이 5 LUKAS를 초과할 때 LUKAS 토큰을 출금할 수 있습니다."
       }
@@ -186,17 +186,17 @@
     "passwordlessUnavailableMessage": "이 환경에 Supabase 비밀번호 없는 로그인이 설정되어 있지 않아 매직 링크 및 OTP 로그인을 사용할 수 없습니다."
   },
   "pwaPrompt": {
-    "installAction": "HashPass 설치",
-    "openAction": "HashPass 앱 열기",
-    "installTitle": "HashPass 설치",
+    "installAction": "HASHPASS 설치",
+    "openAction": "HASHPASS 앱 열기",
+    "installTitle": "HASHPASS 설치",
     "openTitle": "설치된 앱 열기",
-    "installDescription": "HashPass를 PWA로 설치하면 홈 화면에서 앱처럼 바로 실행할 수 있습니다.",
-    "openDescription": "HashPass가 이미 설치되어 있습니다. 최적의 모바일 경험을 위해 앱 모드로 열어 주세요.",
+    "installDescription": "HASHPASS를 PWA로 설치하면 홈 화면에서 앱처럼 바로 실행할 수 있습니다.",
+    "openDescription": "HASHPASS가 이미 설치되어 있습니다. 최적의 모바일 경험을 위해 앱 모드로 열어 주세요.",
     "whatIsThis": "이게 무엇인가요?",
     "close": "설치 안내 닫기",
-    "dialogLabel": "HashPass 설치 안내",
+    "dialogLabel": "HASHPASS 설치 안내",
     "expandCollapsed": "설치 옵션 열기",
-    "infoIntro": "PWA(프로그레시브 웹 앱)는 HashPass를 기기에서 네이티브 앱처럼 동작하게 합니다.",
+    "infoIntro": "PWA(프로그레시브 웹 앱)는 HASHPASS를 기기에서 네이티브 앱처럼 동작하게 합니다.",
     "details": {
       "one": "PWA는 브라우저 기반이지만 앱처럼 동작하는 Progressive Web App입니다.",
       "two": "앱 스토어 다운로드 없이도 홈 화면에서 빠르게 실행할 수 있습니다.",
@@ -213,7 +213,7 @@
     "lastUpdated": "최종 업데이트: 2025년 11월 4일",
     "introduction": {
       "title": "1. 소개",
-      "text": "HashPass(\"우리\", \"저희\", \"회사\")는 귀하의 개인정보 보호에 최선을 다하고 있습니다. 이 개인정보 처리방침은 디지털 이벤트 플랫폼 및 서비스(\"서비스\")를 사용할 때 귀하의 정보를 수집, 사용, 공개 및 보호하는 방법을 설명합니다. 이 개인정보 처리방침을 주의 깊게 읽어주시기 바랍니다. 이 개인정보 처리방침의 약관에 동의하지 않으시면 서비스에 액세스하지 마십시오."
+      "text": "HASHPASS(\"우리\", \"저희\", \"회사\")는 귀하의 개인정보 보호에 최선을 다하고 있습니다. 이 개인정보 처리방침은 디지털 이벤트 플랫폼 및 서비스(\"서비스\")를 사용할 때 귀하의 정보를 수집, 사용, 공개 및 보호하는 방법을 설명합니다. 이 개인정보 처리방침을 주의 깊게 읽어주시기 바랍니다. 이 개인정보 처리방침의 약관에 동의하지 않으시면 서비스에 액세스하지 마십시오."
     },
     "collection": {
       "title": "2. 수집하는 정보",
@@ -253,11 +253,11 @@
     "lastUpdated": "최종 업데이트: 2025년 11월 4일",
     "acceptance": {
       "title": "1. 약관 동의",
-      "text": "HashPass(\"서비스\")에 액세스하고 사용함으로써 귀하는 이 계약의 약관 및 조항에 구속되는 것에 동의합니다. 위 사항을 준수하지 않으려면 이 서비스를 사용하지 마십시오."
+      "text": "HASHPASS(\"서비스\")에 액세스하고 사용함으로써 귀하는 이 계약의 약관 및 조항에 구속되는 것에 동의합니다. 위 사항을 준수하지 않으려면 이 서비스를 사용하지 마십시오."
     },
     "description": {
       "title": "2. 서비스 설명",
-      "text": "HashPass는 이벤트 관리, 패스 관리, 네트워킹 기능 및 관련 서비스를 제공하는 디지털 이벤트 플랫폼입니다. 언제든지 서비스의 일부를 수정, 중단 또는 중단할 권리를 보유합니다."
+      "text": "HASHPASS는 이벤트 관리, 패스 관리, 네트워킹 기능 및 관련 서비스를 제공하는 디지털 이벤트 플랫폼입니다. 언제든지 서비스의 일부를 수정, 중단 또는 중단할 권리를 보유합니다."
     },
     "accounts": {
       "title": "3. 사용자 계정",
@@ -273,7 +273,7 @@
     },
     "intellectual": {
       "title": "6. 지적 재산권",
-      "text": "서비스 및 원본 콘텐츠, 기능은 HashPass의 소유이며 국제 저작권, 상표, 특허, 영업 비밀 및 기타 지적 재산권 법률로 보호됩니다."
+      "text": "서비스 및 원본 콘텐츠, 기능은 HASHPASS의 소유이며 국제 저작권, 상표, 특허, 영업 비밀 및 기타 지적 재산권 법률로 보호됩니다."
     },
     "termination": {
       "title": "7. 종료",
@@ -285,7 +285,7 @@
     },
     "limitation": {
       "title": "9. 책임 제한",
-      "text": "HashPass는 계약 또는 불법 행위에 대한 소송에서 귀하 또는 제3자가 발생한 간접적, 부수적, 특별, 결과적 또는 징벌적 손해를 포함하여 어떤 경우에도 책임을 지지 않습니다."
+      "text": "HASHPASS는 계약 또는 불법 행위에 대한 소송에서 귀하 또는 제3자가 발생한 간접적, 부수적, 특별, 결과적 또는 징벌적 손해를 포함하여 어떤 경우에도 책임을 지지 않습니다."
     },
     "changes": {
       "title": "10. 약관 변경",
@@ -454,7 +454,7 @@
     },
     "account": "계정",
     "signOut": "로그아웃",
-    "version": "HashPass v{version}"
+    "version": "HASHPASS v{version}"
   },
   "nav": {
     "explore": "탐색",

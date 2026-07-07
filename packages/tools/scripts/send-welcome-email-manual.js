@@ -158,7 +158,7 @@ async function sendWelcomeEmail(userId, email, locale = 'en') {
     
     // Send email
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: email,
       subject: translations.subject,
       html: htmlContent,

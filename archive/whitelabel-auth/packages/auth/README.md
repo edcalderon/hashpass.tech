@@ -1,7 +1,7 @@
 # @whitelabel/auth (Archived snapshot)
 
 > Historical documentation for the legacy white-label auth package.
-> The active HashPass implementation lives in [`packages/auth`](../../../../packages/auth).
+> The active HASHPASS implementation lives in [`packages/auth`](../../../../packages/auth).
 
 A reusable, infrastructure-agnostic authentication package implementing a dual-provider architecture with **Supabase as the primary source of truth** and **Directus as the social OAuth provider layer**.
 
@@ -346,7 +346,7 @@ MIT License.
 
 ## Contributing
 
-This is an archived snapshot. For the active HashPass auth implementation,
+This is an archived snapshot. For the active HASHPASS auth implementation,
 see [`../../../../packages/auth`](../../../../packages/auth) and
 [`../../../../docs/AUTH_FLOW.md`](../../../../docs/AUTH_FLOW.md).
 

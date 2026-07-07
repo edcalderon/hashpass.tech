@@ -24,7 +24,7 @@ function loadCapWidget(): Promise<void> {
 import { Image } from 'react-native';
 import { useTranslation, getCurrentLocale } from '../i18n/i18n';
 import { useTheme } from '../hooks/useTheme';
-import { apiClient, getRuntimeApiBaseUrl } from '../lib/api-client';
+import { apiClient } from '../lib/api-client';
 
 type Mode = "light" | "dark";
 
@@ -161,10 +161,10 @@ const Newsletter = ({ mode }: Props) => {
                 };
 
                 const widget = document.createElement('cap-widget');
-                const runtimeApiBaseUrl = getRuntimeApiBaseUrl();
-                const capApiEndpoint = runtimeApiBaseUrl
-                    ? `${runtimeApiBaseUrl.replace(/\/$/, '')}/captcha/`
-                    : `${window.location.origin}/api/captcha/`;
+                // Cap challenge/redeem are Expo Router file routes served from the same
+                // origin as the web app — never from the remote Lambda (api.hashpass.tech).
+                // Always use window.location.origin so the widget hits the correct server.
+                const capApiEndpoint = `${window.location.origin}/api/captcha/`;
                 widget.setAttribute('data-cap-api-endpoint', capApiEndpoint);
                 widget.setAttribute('data-cap-disable-haptics', '');
                 if (CAP_LANG_MAP[locale]) {

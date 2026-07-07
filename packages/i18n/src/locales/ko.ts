@@ -5,17 +5,17 @@ export const ko = {
     docs: '문서',
     getStarted: '시작하기',
     signIn: '로그인',
-    signInWith: 'HashPass로 로그인',
-    scanQr: 'HashPass.tech 앱으로 스캔하세요',
+    signInWith: 'HASHPASS로 로그인',
+    scanQr: 'HASHPASS.tech 앱으로 스캔하세요',
     orContinue: '또는 웹에서 계속',
-    openApp: 'HashPass 열기',
+    openApp: 'HASHPASS 열기',
     downloadApp: '앱 다운로드',
   },
   hero: {
     badge: '멤버십 인프라',
     title: '당신의 클럽.\n커맨드됩니다.',
     subtitle:
-      'HashPass는 초대 전용 클럽, 커뮤니티, 이벤트에 회원 관리, 접근, 갱신을 위한 통합 플랫폼을 제공합니다 — 모바일과 웹 모두에서.',
+      'HASHPASS는 초대 전용 클럽, 커뮤니티, 이벤트에 회원 관리, 접근, 갱신을 위한 통합 플랫폼을 제공합니다 — 모바일과 웹 모두에서.',
     ctaPrimary: '데모 요청',
     ctaSecondary: '운영 탐색',
     scrollDown: '스크롤',
@@ -34,7 +34,7 @@ export const ko = {
   features: {
     eyebrow: '제공 항목',
     title: '클럽에 필요한 모든 것',
-    subtitle: '초대부터 갱신까지, HashPass가 전체 멤버십 라이프사이클을 관리합니다.',
+    subtitle: '초대부터 갱신까지, HASHPASS가 전체 멤버십 라이프사이클을 관리합니다.',
     identity: {
       title: '신원 관리',
       description: '초대, 승인, 복구, 역할 상태가 모두 하나의 통합 모델에 있습니다.',
@@ -73,7 +73,7 @@ export const ko = {
   cta: {
     eyebrow: '시작할 준비가 되셨나요?',
     title: '첫날부터 멤버십을 커맨드하세요.',
-    subtitle: '이미 HashPass를 사용하는 클럽에 합류하세요. 회원 여정의 모든 단계를 위한 하나의 플랫폼.',
+    subtitle: '이미 HASHPASS를 사용하는 클럽에 합류하세요. 회원 여정의 모든 단계를 위한 하나의 플랫폼.',
     primary: '데모 요청',
     secondary: '문서 읽기',
     email: 'hello@hashpass.club',
@@ -91,7 +91,7 @@ export const ko = {
     blog: '블로그',
     privacy: '개인정보',
     terms: '이용약관',
-    copyright: '© {year} HashPass. All rights reserved.',
+    copyright: '© {year} HASHPASS. All rights reserved.',
   },
   theme: { toggle: '테마 전환', dark: '다크', light: '라이트', system: '시스템' },
   lang: { select: '언어', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch' },

@@ -2,7 +2,7 @@
 /* global __dirname, Buffer */
 
 /**
- * HashPass Environment Sync Tool (Hardenened)
+ * HASHPASS Environment Sync Tool (Hardenened)
  * 
  * Sources variables from the root .env to update AWS Lambda configurations.
  * NO HARDCODED SECRETS ALLOWED.

@@ -1,4 +1,4 @@
-# HashPass Infra
+# HASHPASS Infra
 
 This workspace package now owns the live AWS/GCP delivery surfaces for the monorepo:
 

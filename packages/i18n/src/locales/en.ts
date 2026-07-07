@@ -5,17 +5,17 @@ export const en = {
     docs: 'Docs',
     getStarted: 'Get started',
     signIn: 'Sign in',
-    signInWith: 'Sign in with HashPass',
-    scanQr: 'Scan with the HashPass.tech app',
+    signInWith: 'Sign in with HASHPASS',
+    scanQr: 'Scan with the HASHPASS.tech app',
     orContinue: 'or continue on web',
-    openApp: 'Open HashPass',
+    openApp: 'Open HASHPASS',
     downloadApp: 'Download the app',
   },
   hero: {
     badge: 'Membership infrastructure',
     title: 'Your club.\nCommanded.',
     subtitle:
-      'HashPass gives invite-only clubs, communities, and events a unified platform to manage members, access, and renewals — across mobile and web.',
+      'HASHPASS gives invite-only clubs, communities, and events a unified platform to manage members, access, and renewals — across mobile and web.',
     ctaPrimary: 'Request a walkthrough',
     ctaSecondary: 'Explore operations',
     scrollDown: 'Scroll',
@@ -35,7 +35,7 @@ export const en = {
     eyebrow: 'What you get',
     title: 'Everything your club needs',
     subtitle:
-      'From invitations to renewals, HashPass handles the full membership lifecycle so you can focus on building community.',
+      'From invitations to renewals, HASHPASS handles the full membership lifecycle so you can focus on building community.',
     identity: {
       title: 'Identity management',
       description:
@@ -84,7 +84,7 @@ export const en = {
     eyebrow: 'Ready to start?',
     title: 'Command your membership from day one.',
     subtitle:
-      'Join clubs already running on HashPass. One platform for every stage of the member journey.',
+      'Join clubs already running on HASHPASS. One platform for every stage of the member journey.',
     primary: 'Request a walkthrough',
     secondary: 'Read the docs',
     email: 'hello@hashpass.club',
@@ -102,7 +102,7 @@ export const en = {
     blog: 'Blog',
     privacy: 'Privacy',
     terms: 'Terms',
-    copyright: '© {year} HashPass. All rights reserved.',
+    copyright: '© {year} HASHPASS. All rights reserved.',
   },
   theme: {
     toggle: 'Toggle theme',

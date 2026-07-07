@@ -12,7 +12,7 @@ Based on current configuration, emails will use these URLs:
    - URL: `https://hashpass-email-assets.s3.us-east-2.amazonaws.com/emails/assets/images/BSL.svg`
    - Status: ⚠️ Uploaded but not publicly accessible yet (403)
 
-2. **HashPass Logo**
+2. **HASHPASS Logo**
    - URL: `https://hashpass-email-assets.s3.us-east-2.amazonaws.com/emails/assets/images/logo-full-hashpass-white.png`
    - Status: ⚠️ Uploaded but not publicly accessible yet (403)
 
@@ -35,7 +35,7 @@ The email service (`lib/email.ts`) uses this priority:
 The email templates use these placeholders that get automatically replaced:
 
 - `[BSL_LOGO_URL]` → S3 URL for BSL logo
-- `[HASHPASS_LOGO_URL]` → S3 URL for HashPass logo
+- `[HASHPASS_LOGO_URL]` → S3 URL for HASHPASS logo
 - `[VIDEO_URL]` → S3 URL for video (if needed)
 
 ### Testing

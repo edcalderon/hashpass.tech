@@ -42,7 +42,7 @@ Run these commands to check for accidentally committed secrets:
 git diff | grep -i "password\|secret\|key" | grep -v "variable\|description\|TF_VAR"
 
 # Check for specific secrets
-git diff | grep -E "R%.*XwMQXp|HashPass202|GOCSPX-|576459188181"
+git diff | grep -E "R%.*XwMQXp|HASHPASS202|GOCSPX-|576459188181"
 
 # Check .env file is not staged
 git status | grep ".env"

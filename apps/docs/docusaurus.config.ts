@@ -10,8 +10,8 @@ const siteUrl = process.env.HASHPASS_DOCS_URL ?? 'https://hashpass.club';
 const baseUrl = normalizeBaseUrl(process.env.HASHPASS_DOCS_BASE_URL ?? '/');
 
 const config = {
-  title: 'HashPass Docs',
-  tagline: 'Current documentation for HashPass',
+  title: 'HASHPASS Docs',
+  tagline: 'Current documentation for HASHPASS',
   favicon: 'img/logo.svg',
   url: siteUrl,
   baseUrl,
@@ -40,9 +40,9 @@ const config = {
   ],
   themeConfig: {
     navbar: {
-      title: 'HashPass Docs',
+      title: 'HASHPASS Docs',
       logo: {
-        alt: 'HashPass Docs',
+        alt: 'HASHPASS Docs',
         src: 'img/logo.svg',
       },
       items: [
@@ -81,7 +81,7 @@ const config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} HashPass`,
+      copyright: `Copyright © ${new Date().getFullYear()} HASHPASS`,
     },
   },
 };

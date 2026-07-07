@@ -40,7 +40,7 @@
       },
       "lukasInfo": {
         "title": "Was ist LUKAS?",
-        "description": "LUKAS ist die digitale Währung des HashPass-Ökosystems, die entwickelt wurde, um Benutzerinteraktionen und Engagement zu belohnen.",
+        "description": "LUKAS ist die digitale Währung des HASHPASS-Ökosystems, die entwickelt wurde, um Benutzerinteraktionen und Engagement zu belohnen.",
         "features": "• Verdienen Sie LUKAS durch Annahme und Planung von Meetings\n• Wird in HashHouse monetarisiert\n• Tauschbar gegen andere Krypto-Token",
         "withdrawalDisclaimer": "Sie können LUKAS-Token abheben, wenn Ihr Guthaben über 5 LUKAS liegt."
       }
@@ -118,7 +118,7 @@
     "lastUpdated": "Zuletzt aktualisiert: 4. November 2025",
     "introduction": {
       "title": "1. Einführung",
-      "text": "HashPass (\"wir\", \"unser\" oder \"uns\") ist dem Schutz Ihrer Privatsphäre verpflichtet. Diese Datenschutzrichtlinie erklärt, wie wir Ihre Informationen sammeln, verwenden, offenlegen und schützen, wenn Sie unsere digitale Event-Plattform und unsere Dienste (den \"Service\") nutzen. Bitte lesen Sie diese Datenschutzrichtlinie sorgfältig. Wenn Sie den Bedingungen dieser Datenschutzrichtlinie nicht zustimmen, greifen Sie bitte nicht auf den Service zu."
+      "text": "HASHPASS (\"wir\", \"unser\" oder \"uns\") ist dem Schutz Ihrer Privatsphäre verpflichtet. Diese Datenschutzrichtlinie erklärt, wie wir Ihre Informationen sammeln, verwenden, offenlegen und schützen, wenn Sie unsere digitale Event-Plattform und unsere Dienste (den \"Service\") nutzen. Bitte lesen Sie diese Datenschutzrichtlinie sorgfältig. Wenn Sie den Bedingungen dieser Datenschutzrichtlinie nicht zustimmen, greifen Sie bitte nicht auf den Service zu."
     },
     "collection": {
       "title": "2. Informationen, die wir sammeln",
@@ -158,11 +158,11 @@
     "lastUpdated": "Zuletzt aktualisiert: 4. November 2025",
     "acceptance": {
       "title": "1. Annahme der Bedingungen",
-      "text": "Durch den Zugriff auf und die Nutzung von HashPass (\"der Service\") akzeptieren und stimmen Sie zu, an die Bedingungen und Bestimmungen dieser Vereinbarung gebunden zu sein. Wenn Sie nicht zustimmen, sich an das oben Genannte zu halten, verwenden Sie diesen Service bitte nicht."
+      "text": "Durch den Zugriff auf und die Nutzung von HASHPASS (\"der Service\") akzeptieren und stimmen Sie zu, an die Bedingungen und Bestimmungen dieser Vereinbarung gebunden zu sein. Wenn Sie nicht zustimmen, sich an das oben Genannte zu halten, verwenden Sie diesen Service bitte nicht."
     },
     "description": {
       "title": "2. Servicebeschreibung",
-      "text": "HashPass ist eine digitale Event-Plattform, die Event-Management, Pass-Management, Networking-Funktionen und verwandte Dienste bietet. Wir behalten uns das Recht vor, jeden Teil des Service jederzeit zu ändern, auszusetzen oder einzustellen."
+      "text": "HASHPASS ist eine digitale Event-Plattform, die Event-Management, Pass-Management, Networking-Funktionen und verwandte Dienste bietet. Wir behalten uns das Recht vor, jeden Teil des Service jederzeit zu ändern, auszusetzen oder einzustellen."
     },
     "accounts": {
       "title": "3. Benutzerkonten",
@@ -178,7 +178,7 @@
     },
     "intellectual": {
       "title": "6. Geistiges Eigentum",
-      "text": "Der Service und sein ursprünglicher Inhalt, Funktionen und Funktionalität sind Eigentum von HashPass und werden durch internationale Urheberrechts-, Marken-, Patent-, Geschäftsgeheimnis- und andere Gesetze zum geistigen Eigentum geschützt."
+      "text": "Der Service und sein ursprünglicher Inhalt, Funktionen und Funktionalität sind Eigentum von HASHPASS und werden durch internationale Urheberrechts-, Marken-, Patent-, Geschäftsgeheimnis- und andere Gesetze zum geistigen Eigentum geschützt."
     },
     "termination": {
       "title": "7. Kündigung",
@@ -190,7 +190,7 @@
     },
     "limitation": {
       "title": "9. Haftungsbeschränkung",
-      "text": "In keinem Fall haftet HashPass für indirekte, zufällige, besondere, Folge- oder Strafschäden, einschließlich Verlust von Gewinnen, Daten oder Nutzung, die von Ihnen oder einem Dritten entstehen, sei es in einer Vertrags- oder Deliktsklage."
+      "text": "In keinem Fall haftet HASHPASS für indirekte, zufällige, besondere, Folge- oder Strafschäden, einschließlich Verlust von Gewinnen, Daten oder Nutzung, die von Ihnen oder einem Dritten entstehen, sei es in einer Vertrags- oder Deliktsklage."
     },
     "changes": {
       "title": "10. Änderungen der Bedingungen",
@@ -298,7 +298,7 @@
     },
     "account": "Konto",
     "signOut": "Abmelden",
-    "version": "HashPass v{version}"
+    "version": "HASHPASS v{version}"
   },
   "nav": {
     "explore": "Erkunden",

@@ -468,6 +468,7 @@ export default function AuthScreen() {
     Platform.OS === 'web' && !isDark
       ? HASHPASS_WEB_LIGHT_AUTH_LOGO
       : getHashpassFullLogo(isDark);
+  const showAuthBackground = Platform.OS === 'web';
   const { supabaseUrl: publicSupabaseUrl, supabaseAnonKey: publicSupabaseAnonKey } =
     resolvePublicSupabaseConfig();
   const hasSupabasePasswordlessConfig = Boolean(publicSupabaseUrl && publicSupabaseAnonKey);
@@ -1281,7 +1282,7 @@ export default function AuthScreen() {
   if (authLoading) {
     return (
       <SafeAreaView style={[styles.container, styles.centered, styles.containerWeb]}>
-        <ShaderAnimation />
+        {showAuthBackground ? <ShaderAnimation /> : null}
         <Text style={styles.loadingText}>{t('checkingAuth', 'Checking authentication...')}</Text>
       </SafeAreaView>
     );
@@ -1289,7 +1290,7 @@ export default function AuthScreen() {
 
   return (
     <SafeAreaView style={[styles.container, styles.containerWeb]} edges={['top', 'bottom']}>
-      <ShaderAnimation />
+      {showAuthBackground ? <ShaderAnimation /> : null}
       <View style={[styles.layoutShell, isDesktopLayout ? styles.layoutShellDesktop : null]}>
         <View style={[styles.formPane, isDesktopLayout ? styles.formPaneDesktop : null]}>
           <ThemeAndLanguageSwitcher />

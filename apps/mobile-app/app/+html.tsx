@@ -16,11 +16,11 @@ type RootMetadata = {
   viewport?: string;
 };
 
-const DEFAULT_TITLE = 'HashPass | Events, Digital Passes and Networking';
+const DEFAULT_TITLE = 'HASHPASS | Events, Digital Passes and Networking';
 const DEFAULT_DESCRIPTION =
-  'Discover events, manage verified digital passes, build your agenda, and connect with the people who matter through HashPass.';
+  'Discover events, manage verified digital passes, build your agenda, and connect with the people who matter through HASHPASS.';
 const DEFAULT_KEYWORDS =
-  'event app, digital event pass, QR check-in, event networking, event agenda, conference app, blockchain events, HashPass';
+  'event app, digital event pass, QR check-in, event networking, event agenda, conference app, blockchain events, HASHPASS';
 const SITE_URL = 'https://hashpass.tech';
 const SOCIAL_IMAGE_URL = `${SITE_URL}/assets/hashpass-social-card-1200x630.png`;
 
@@ -155,12 +155,12 @@ export default function Root({
         <meta property="og:image:type" content="image/png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="HashPass event platform and digital pass" />
+        <meta property="og:image:alt" content="HASHPASS event platform and digital pass" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={imageUrl} />
-        <meta name="twitter:image:alt" content="HashPass event platform and digital pass" />
+        <meta name="twitter:image:alt" content="HASHPASS event platform and digital pass" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />

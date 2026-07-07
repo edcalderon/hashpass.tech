@@ -1,4 +1,4 @@
-# HashPass Docs
+# HASHPASS Docs
 
 This package contains the Docusaurus docs site and the published documentation source tree.
 

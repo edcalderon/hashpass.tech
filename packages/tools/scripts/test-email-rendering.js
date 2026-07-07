@@ -56,7 +56,7 @@ async function testEmailRendering() {
   console.log('📝 URLs that will be used in emails:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log(`BSL Logo:        ${bslLogoUrl}`);
-  console.log(`HashPass Logo:   ${hashpassLogoUrl}`);
+  console.log(`HASHPASS Logo:   ${hashpassLogoUrl}`);
   console.log(`Video:           ${videoUrl}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
@@ -89,7 +89,7 @@ async function testEmailRendering() {
   if (remainingBsl === 0 && remainingHashpass === 0) {
     console.log('✅ All placeholders replaced successfully\n');
   } else {
-    console.log(`⚠️  Warning: ${remainingBsl} BSL and ${remainingHashpass} HashPass placeholders remaining\n`);
+    console.log(`⚠️  Warning: ${remainingBsl} BSL and ${remainingHashpass} HASHPASS placeholders remaining\n`);
   }
 
   // Verify URLs are in the content
@@ -98,7 +98,7 @@ async function testEmailRendering() {
 
   console.log('🔍 URL Verification:');
   console.log(`   BSL Logo URL in template: ${hasBslUrl ? '✅' : '❌'}`);
-  console.log(`   HashPass Logo URL in template: ${hasHashpassUrl ? '✅' : '❌'}\n`);
+  console.log(`   HASHPASS Logo URL in template: ${hasHashpassUrl ? '✅' : '❌'}\n`);
 
   // Test URL accessibility (if bucket is public)
   console.log('🌐 Testing URL accessibility...\n');

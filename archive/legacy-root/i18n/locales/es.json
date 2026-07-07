@@ -40,7 +40,7 @@
       },
       "lukasInfo": {
         "title": "¿Qué es LUKAS?",
-        "description": "LUKAS es la moneda digital del ecosistema HashPass diseñada para recompensar las interacciones y el compromiso de los usuarios.",
+        "description": "LUKAS es la moneda digital del ecosistema HASHPASS diseñada para recompensar las interacciones y el compromiso de los usuarios.",
         "features": "• Gana LUKAS aceptando y programando reuniones\n• Será monetizado en HashHouse\n• Intercambiable por otros tokens criptográficos",
         "withdrawalDisclaimer": "Puedes retirar tokens LUKAS cuando tu saldo sea superior a 5 LUKAS."
       }
@@ -127,7 +127,7 @@
     "lastUpdated": "Última actualización: 4 de noviembre de 2025",
     "introduction": {
       "title": "1. Introducción",
-      "text": "HashPass (\"nosotros\", \"nuestro\" o \"nos\") se compromete a proteger su privacidad. Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y protegemos su información cuando utiliza nuestra plataforma de eventos digitales y servicios (el \"Servicio\"). Por favor, lea esta política de privacidad cuidadosamente. Si no está de acuerdo con los términos de esta política de privacidad, no acceda al Servicio."
+      "text": "HASHPASS (\"nosotros\", \"nuestro\" o \"nos\") se compromete a proteger su privacidad. Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y protegemos su información cuando utiliza nuestra plataforma de eventos digitales y servicios (el \"Servicio\"). Por favor, lea esta política de privacidad cuidadosamente. Si no está de acuerdo con los términos de esta política de privacidad, no acceda al Servicio."
     },
     "collection": {
       "title": "2. Información que Recopilamos",
@@ -167,11 +167,11 @@
     "lastUpdated": "Última actualización: 4 de noviembre de 2025",
     "acceptance": {
       "title": "1. Aceptación de Términos",
-      "text": "Al acceder y usar HashPass (\"el Servicio\"), acepta y acuerda estar sujeto a los términos y disposiciones de este acuerdo. Si no está de acuerdo en cumplir con lo anterior, no use este servicio."
+      "text": "Al acceder y usar HASHPASS (\"el Servicio\"), acepta y acuerda estar sujeto a los términos y disposiciones de este acuerdo. Si no está de acuerdo en cumplir con lo anterior, no use este servicio."
     },
     "description": {
       "title": "2. Descripción del Servicio",
-      "text": "HashPass es una plataforma de eventos digitales que proporciona gestión de eventos, gestión de pases, características de networking y servicios relacionados. Nos reservamos el derecho de modificar, suspender o discontinuar cualquier parte del Servicio en cualquier momento."
+      "text": "HASHPASS es una plataforma de eventos digitales que proporciona gestión de eventos, gestión de pases, características de networking y servicios relacionados. Nos reservamos el derecho de modificar, suspender o discontinuar cualquier parte del Servicio en cualquier momento."
     },
     "accounts": {
       "title": "3. Cuentas de Usuario",
@@ -187,7 +187,7 @@
     },
     "intellectual": {
       "title": "6. Propiedad Intelectual",
-      "text": "El Servicio y su contenido original, características y funcionalidad son propiedad de HashPass y están protegidos por leyes internacionales de derechos de autor, marcas registradas, patentes, secretos comerciales y otras leyes de propiedad intelectual."
+      "text": "El Servicio y su contenido original, características y funcionalidad son propiedad de HASHPASS y están protegidos por leyes internacionales de derechos de autor, marcas registradas, patentes, secretos comerciales y otras leyes de propiedad intelectual."
     },
     "termination": {
       "title": "7. Terminación",
@@ -199,7 +199,7 @@
     },
     "limitation": {
       "title": "9. Limitación de Responsabilidad",
-      "text": "En ningún caso HashPass será responsable de daños indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo pérdida de ganancias, datos o uso, incurridos por usted o cualquier tercero, ya sea en una acción en contrato o agravio."
+      "text": "En ningún caso HASHPASS será responsable de daños indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo pérdida de ganancias, datos o uso, incurridos por usted o cualquier tercero, ya sea en una acción en contrato o agravio."
     },
     "changes": {
       "title": "10. Cambios a los Términos",
@@ -283,7 +283,7 @@
         "description": "Aprende cómo iniciar sesión y navegar la app",
         "signIn": {
           "title": "Iniciar Sesión en Tu Cuenta",
-          "content": "Para comenzar, necesitarás iniciar sesión en la app HashPass. Abre la app, ingresa tu dirección de correo electrónico, revisa tu correo para un código de inicio de sesión de un solo uso, e ingresa el código para acceder a tu cuenta."
+          "content": "Para comenzar, necesitarás iniciar sesión en la app HASHPASS. Abre la app, ingresa tu dirección de correo electrónico, revisa tu correo para un código de inicio de sesión de un solo uso, e ingresa el código para acceder a tu cuenta."
         },
         "explore": {
           "title": "Explorar Ponentes y Eventos",
@@ -318,7 +318,7 @@
       },
       "tips": {
         "title": "Consejos Profesionales",
-        "description": "Mejores prácticas para usar HashPass",
+        "description": "Mejores prácticas para usar HASHPASS",
         "specificRequests": {
           "title": "Sé Específico en las Solicitudes de Reunión",
           "content": "Los ponentes aprecian saber de qué te gustaría hablar. Sé específico en el mensaje de tu solicitud de reunión para aumentar las posibilidades de aceptación."
@@ -376,7 +376,7 @@
     },
     "account": "Cuenta",
     "signOut": "Salir",
-    "version": "HashPass v{version}"
+    "version": "HASHPASS v{version}"
   },
   "nav": {
     "explore": "Explorar",

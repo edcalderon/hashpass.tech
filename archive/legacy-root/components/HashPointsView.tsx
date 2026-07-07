@@ -37,7 +37,7 @@ const HashPointsView = () => {
       id: 'lukas',
       targetToken: 'LUKAS',
       rate: '100 POINTS = 1 LUKAS',
-      description: 'Swap to native HashPass token',
+      description: 'Swap to native HASHPASS token',
       available: true,
     },
     {

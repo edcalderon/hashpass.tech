@@ -1,6 +1,6 @@
 # API Gateway
 
-Current API Gateway and Lambda setup documentation for the HashPass API routes lives here.
+Current API Gateway and Lambda setup documentation for the HASHPASS API routes lives here.
 
 ## Active Docs
 

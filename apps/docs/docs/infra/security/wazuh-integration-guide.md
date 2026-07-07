@@ -1,4 +1,4 @@
-# Wazuh Integration Guide for HashPass
+# Wazuh Integration Guide for HASHPASS
 
 ## Overview
 
@@ -9,7 +9,7 @@
 - **Vulnerability Detection**: System and application vulnerability scanning
 - **Cloud Security**: AWS, Azure, GCP workload protection
 
-This guide outlines how to integrate Wazuh into the HashPass platform to enhance security monitoring, threat detection, and compliance.
+This guide outlines how to integrate Wazuh into the HASHPASS platform to enhance security monitoring, threat detection, and compliance.
 
 ---
 
@@ -17,7 +17,7 @@ This guide outlines how to integrate Wazuh into the HashPass platform to enhance
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    HashPass Application                      │
+│                    HASHPASS Application                      │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
 │  │   Frontend   │  │   API Layer  │  │   Supabase   │     │
 │  │  (Expo/Web)  │  │ (Expo Router)│  │  (Postgres)  │     │
@@ -133,7 +133,7 @@ Create a library to send security events to Wazuh from your application.
 
 ```typescript
 /**
- * Wazuh API Client for HashPass
+ * Wazuh API Client for HASHPASS
  * Sends security events and logs to Wazuh Manager
  */
 
@@ -594,7 +594,7 @@ WAZUH_ENABLED=true
 
 ### Step 8: Wazuh Rules Configuration
 
-Create custom Wazuh rules for HashPass-specific events.
+Create custom Wazuh rules for HASHPASS-specific events.
 
 **File: `wazuh/rules/hashpass_rules.xml`**
 
@@ -604,13 +604,13 @@ Create custom Wazuh rules for HashPass-specific events.
   <rule id="100100" level="5">
     <decoded_as>json</decoded_as>
     <field name="action">auth_login</field>
-    <description>HashPass: User login successful</description>
+    <description>HASHPASS: User login successful</description>
   </rule>
 
   <rule id="100101" level="10">
     <decoded_as>json</decoded_as>
     <field name="action">auth_login_failed</field>
-    <description>HashPass: Failed login attempt</description>
+    <description>HASHPASS: Failed login attempt</description>
   </rule>
 
   <rule id="100102" level="12">
@@ -620,7 +620,7 @@ Create custom Wazuh rules for HashPass-specific events.
     <same_source_ip />
     <frequency>5</frequency>
     <timeframe>300</timeframe>
-    <description>HashPass: Multiple failed login attempts (possible brute force)</description>
+    <description>HASHPASS: Multiple failed login attempts (possible brute force)</description>
   </rule>
 
   <!-- QR Code Events -->
@@ -628,34 +628,34 @@ Create custom Wazuh rules for HashPass-specific events.
     <decoded_as>json</decoded_as>
     <field name="action">qr_scan</field>
     <field name="scan_status">valid</field>
-    <description>HashPass: Valid QR code scan</description>
+    <description>HASHPASS: Valid QR code scan</description>
   </rule>
 
   <rule id="100201" level="8">
     <decoded_as>json</decoded_as>
     <field name="action">qr_scan</field>
     <field name="scan_status">invalid</field>
-    <description>HashPass: Invalid QR code scan attempt</description>
+    <description>HASHPASS: Invalid QR code scan attempt</description>
   </rule>
 
   <!-- Admin Actions -->
   <rule id="100300" level="5">
     <decoded_as>json</decoded_as>
     <field name="action">admin_</field>
-    <description>HashPass: Admin action performed</description>
+    <description>HASHPASS: Admin action performed</description>
   </rule>
 
   <!-- Security Events -->
   <rule id="100400" level="12">
     <decoded_as>json</decoded_as>
     <field name="action">security_unauthorized_access</field>
-    <description>HashPass: Unauthorized access attempt</description>
+    <description>HASHPASS: Unauthorized access attempt</description>
   </rule>
 
   <rule id="100401" level="12">
     <decoded_as>json</decoded_as>
     <field name="action">security_rate_limit_exceeded</field>
-    <description>HashPass: Rate limit exceeded</description>
+    <description>HASHPASS: Rate limit exceeded</description>
   </rule>
 </group>
 ```
@@ -802,7 +802,7 @@ Create custom dashboards in Wazuh to visualize:
 1. **Deploy Wazuh Infrastructure**: Set up Wazuh Manager and Dashboard
 2. **Configure Environment**: Add Wazuh environment variables
 3. **Implement Logging**: Add Wazuh logging to critical paths
-4. **Create Rules**: Define custom Wazuh rules for HashPass events
+4. **Create Rules**: Define custom Wazuh rules for HASHPASS events
 5. **Set Up Alerts**: Configure email/Slack notifications for critical events
 6. **Monitor**: Review Wazuh dashboard regularly
 7. **Iterate**: Refine rules and alerts based on observed patterns
@@ -822,4 +822,4 @@ Create custom dashboards in Wazuh to visualize:
 
 For issues or questions:
 - Wazuh Community: https://wazuh.com/community
-- HashPass GitHub Issues: https://github.com/hashpass-tech/hashpass.tech/issues
+- HASHPASS GitHub Issues: https://github.com/hashpass-tech/hashpass.tech/issues

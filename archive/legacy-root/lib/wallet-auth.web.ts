@@ -300,7 +300,7 @@ export const authenticateWithEthereum = async (): Promise<{ userId: string; emai
   const siweMessage = new SiweMessage({
     domain,
     address: checksummedAddress, // Use checksummed address
-    statement: 'Sign in with Ethereum to HashPass',
+    statement: 'Sign in with Ethereum to HASHPASS',
     uri: origin,
     version: '1',
     chainId: 1, // Mainnet - adjust as needed

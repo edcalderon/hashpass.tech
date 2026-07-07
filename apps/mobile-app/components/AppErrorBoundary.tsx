@@ -54,7 +54,7 @@ export class AppErrorBoundary extends React.Component<
         }}
       >
         <Text style={{ color: '#FF6B6B', fontSize: 20, fontWeight: '700', marginBottom: 12 }}>
-          HashPass hit a startup error
+          HASHPASS hit a startup error
         </Text>
         <Text style={{ color: '#FFFFFF', fontSize: 14, marginBottom: 16 }}>
           {error.name}: {error.message}

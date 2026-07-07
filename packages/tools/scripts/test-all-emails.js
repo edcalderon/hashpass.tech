@@ -49,7 +49,7 @@ async function runScript(scriptPath, scriptName) {
 
 async function sendAllEmails() {
   log('\n╔══════════════════════════════════════════════════════════════════════╗', 'cyan');
-  log('║          📧 HashPass Email Test Suite - All Emails                  ║', 'cyan');
+  log('║          📧 HASHPASS Email Test Suite - All Emails                  ║', 'cyan');
   log('╚══════════════════════════════════════════════════════════════════════╝', 'cyan');
   
   const fromEmail = process.env.NODEMAILER_FROM_CONTACT || process.env.NODEMAILER_FROM || 'contact@hashpass.tech';

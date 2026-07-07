@@ -1,4 +1,4 @@
-# HashPass Infrastructure Deployment
+# HASHPASS Infrastructure Deployment
 # Optimized for GCP e2-micro (free tier)
 
 This folder contains configuration for self-hosted infrastructure using:

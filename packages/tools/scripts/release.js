@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Branch-aware release orchestrator for HashPass.
+ * Branch-aware release orchestrator for HASHPASS.
  *
  * Behavior:
  * - detects the current branch automatically
@@ -114,6 +114,92 @@ function readJsonVersion(relativePath) {
     throw new Error(`Unable to read version from ${relativePath}`);
   }
   return version;
+}
+
+function parseSemverParts(version) {
+  const normalized = String(version).trim().replace(/^v/, '');
+  const parts = normalized.split('.').map((part) => Number(part));
+
+  if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part) || part < 0)) {
+    throw new Error(`Invalid semantic version: ${version}`);
+  }
+
+  return parts;
+}
+
+function compareSemverVersions(left, right) {
+  const leftParts = parseSemverParts(left);
+  const rightParts = parseSemverParts(right);
+
+  for (let index = 0; index < 3; index += 1) {
+    if (leftParts[index] !== rightParts[index]) {
+      return leftParts[index] - rightParts[index];
+    }
+  }
+
+  return 0;
+}
+
+function getLatestReleaseTagVersion(tagPrefix = 'v') {
+  const output = runAndRead('git', ['tag', '--list', `${tagPrefix}*`, '--sort=-v:refname'], { log: false });
+  const latestTag = output
+    .split('\n')
+    .map((line) => line.trim())
+    .find(Boolean);
+
+  if (!latestTag) {
+    return null;
+  }
+
+  return latestTag.startsWith(tagPrefix) ? latestTag.slice(tagPrefix.length) : latestTag;
+}
+
+function hasLatestReleaseCommit(latestReleaseTag) {
+  const result = spawnSync('git', ['merge-base', '--is-ancestor', latestReleaseTag, 'HEAD'], {
+    cwd: ROOT_DIR,
+    env: process.env,
+    stdio: 'pipe',
+  });
+
+  return result.status === 0;
+}
+
+function ensureBranchIsSyncedWithLatestRelease(options, branch) {
+  if (branch !== 'main' && branch !== 'develop') return;
+
+  const currentVersion = readJsonVersion('package.json');
+  const latestReleaseVersion = getLatestReleaseTagVersion();
+
+  if (!latestReleaseVersion) {
+    return;
+  }
+
+  const latestReleaseTag = `v${latestReleaseVersion}`;
+  const versionComparison = compareSemverVersions(currentVersion, latestReleaseVersion);
+
+  if (versionComparison < 0) {
+    const syncHint =
+      branch === 'develop'
+        ? 'Merge or pull main into develop before releasing.'
+        : 'Pull the latest main release into your main checkout before releasing.';
+
+    throw new Error(
+      `Current ${branch} checkout is behind the latest release tag (${latestReleaseTag}). ` +
+        `package.json is ${currentVersion} but production has ${latestReleaseVersion}. ${syncHint}`
+    );
+  }
+
+  if (!hasLatestReleaseCommit(latestReleaseTag)) {
+    const syncHint =
+      branch === 'develop'
+        ? 'Merge the latest main release commit into develop before releasing.'
+        : 'Pull the latest release commit into main before releasing.';
+
+    throw new Error(
+      `Current ${branch} checkout does not contain the latest release tag (${latestReleaseTag}). ` +
+        `${syncHint}`
+    );
+  }
 }
 
 function syncJsonVersion(relativePath, version) {
@@ -547,6 +633,7 @@ function main() {
     const branch = options.branch || initialBranch;
     const releaseBranch = branch.trim();
 
+    ensureBranchIsSyncedWithLatestRelease(options, releaseBranch);
     ensureCleanGitState(options);
 
     if (releaseBranch !== initialBranch && !isCleanTree()) {

@@ -5,17 +5,17 @@ export const pt = {
     docs: 'Docs',
     getStarted: 'Começar',
     signIn: 'Entrar',
-    signInWith: 'Entrar com HashPass',
-    scanQr: 'Escaneie com o app HashPass.tech',
+    signInWith: 'Entrar com HASHPASS',
+    scanQr: 'Escaneie com o app HASHPASS.tech',
     orContinue: 'ou continuar na web',
-    openApp: 'Abrir HashPass',
+    openApp: 'Abrir HASHPASS',
     downloadApp: 'Baixar o app',
   },
   hero: {
     badge: 'Infraestrutura de membros',
     title: 'Seu clube.\nComandado.',
     subtitle:
-      'HashPass dá a clubes exclusivos, comunidades e eventos uma plataforma unificada para gerenciar membros, acesso e renovações — em mobile e web.',
+      'HASHPASS dá a clubes exclusivos, comunidades e eventos uma plataforma unificada para gerenciar membros, acesso e renovações — em mobile e web.',
     ctaPrimary: 'Solicitar demonstração',
     ctaSecondary: 'Explorar operações',
     scrollDown: 'Rolar',
@@ -35,7 +35,7 @@ export const pt = {
     eyebrow: 'O que você obtém',
     title: 'Tudo o que seu clube precisa',
     subtitle:
-      'De convites a renovações, o HashPass gerencia o ciclo de vida completo do membro.',
+      'De convites a renovações, o HASHPASS gerencia o ciclo de vida completo do membro.',
     identity: {
       title: 'Gerenciamento de identidade',
       description: 'Convites, aprovações, recuperação e funções em um modelo unificado.',
@@ -74,7 +74,7 @@ export const pt = {
   cta: {
     eyebrow: 'Pronto para começar?',
     title: 'Comande seu clube desde o primeiro dia.',
-    subtitle: 'Junte-se aos clubes que já usam HashPass. Uma plataforma para cada etapa da jornada do membro.',
+    subtitle: 'Junte-se aos clubes que já usam HASHPASS. Uma plataforma para cada etapa da jornada do membro.',
     primary: 'Solicitar demonstração',
     secondary: 'Ler a documentação',
     email: 'hello@hashpass.club',
@@ -92,7 +92,7 @@ export const pt = {
     blog: 'Blog',
     privacy: 'Privacidade',
     terms: 'Termos',
-    copyright: '© {year} HashPass. Todos os direitos reservados.',
+    copyright: '© {year} HASHPASS. Todos os direitos reservados.',
   },
   theme: { toggle: 'Alternar tema', dark: 'Escuro', light: 'Claro', system: 'Sistema' },
   lang: { select: 'Idioma', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch' },

@@ -38,7 +38,7 @@ export default function PrivacyPolicyScreen() {
         <Text style={styles.sectionText} selectable={false}>
           {t({ 
             id: 'privacy.introduction.text', 
-            message: 'HashPass ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our digital event platform and services (the "Service"). Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the Service.' 
+            message: 'HASHPASS ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our digital event platform and services (the "Service"). Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the Service.' 
           })}
         </Text>
 

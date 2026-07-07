@@ -9,6 +9,7 @@ import { useRouter, usePathname } from 'expo-router';
 import Reanimated, { SharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '../lib/vector-icons';
 import { createShadowStyle } from '../lib/utils';
+import type { ViewStyle } from 'react-native';
 
 interface ThemeAndLanguageSwitcherProps {
   scrollY?: SharedValue<number>;
@@ -204,7 +205,7 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
           <Animated.View
             style={[
               styles.languageMenu,
-              createShadowStyle('#000000', { width: 0, height: 4 }, isDark ? 0.3 : 0.2, 8, 8),
+              createShadowStyle('#000000', { width: 0, height: 4 }, isDark ? 0.3 : 0.2, 8, 8) as ViewStyle,
               {
                 backgroundColor: colors.surface,
                 transform: [{ translateY: menuTranslateY }],
@@ -254,62 +255,53 @@ const ThemeAndLanguageSwitcher = ({ scrollY, hideAfterScrollY = 30 }: ThemeAndLa
         )}
       </View>
 
-      <Animated.View
+      {/* Shadow wrapper is a static View — elevation + borderRadius work correctly without a transform applied.
+          The inner Animated.View carries the transform. Separating them avoids Android's hardware-layer
+          polygon approximation (which makes circles appear octagonal when elevation + transform coexist). */}
+      <View
         style={[
           styles.button,
           styles.buttonSpacing,
-          createShadowStyle('#000000', { width: 0, height: 2 }, 0.25, 3.84, 5),
-          animatedStyle,
+          createShadowStyle('#000000', { width: 0, height: 2 }, 0.25, 3.84, 5) as ViewStyle,
         ]}
       >
-        <TouchableOpacity
-          style={{
-            width: '100%',
-            height: '100%',
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: colors.primary,
-            borderRadius: 25,
-          }}
-          onPress={handleThemeToggle}
-          activeOpacity={0.8}
-        >
-          <Ionicons
-            name={isDark ? 'sunny' : 'moon'}
-            size={24}
-            color={colors.primaryContrastText}
-          />
-        </TouchableOpacity>
-      </Animated.View>
-
-      {!isOnAuthPage && (
-        <Animated.View
-          style={[
-            styles.button,
-            styles.buttonSpacing,
-            createShadowStyle('#000000', { width: 0, height: 2 }, 0.25, 3.84, 5),
-            loginAnimatedStyle,
-          ]}
-        >
+        <Animated.View style={[styles.buttonAnimatorInner, animatedStyle]}>
           <TouchableOpacity
-            style={{
-              width: '100%',
-              height: '100%',
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: isDark ? colors.secondary : colors.primary,
-              borderRadius: 25,
-            }}
-            onPress={handleLoginPress}
+            style={[styles.buttonInner, { backgroundColor: colors.primary }]}
+            onPress={handleThemeToggle}
             activeOpacity={0.8}
           >
             <Ionicons
-              name="log-in"
+              name={isDark ? 'sunny' : 'moon'}
               size={24}
-              color={isDark ? colors.secondaryContrastText : colors.primaryContrastText}
+              color={colors.primaryContrastText}
             />
           </TouchableOpacity>
         </Animated.View>
+      </View>
+
+      {!isOnAuthPage && (
+        <View
+          style={[
+            styles.button,
+            styles.buttonSpacing,
+            createShadowStyle('#000000', { width: 0, height: 2 }, 0.25, 3.84, 5) as ViewStyle,
+          ]}
+        >
+          <Animated.View style={[styles.buttonAnimatorInner, loginAnimatedStyle]}>
+            <TouchableOpacity
+              style={[styles.buttonInner, { backgroundColor: isDark ? colors.secondary : colors.primary }]}
+              onPress={handleLoginPress}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="log-in"
+                size={24}
+                color={isDark ? colors.secondaryContrastText : colors.primaryContrastText}
+              />
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
       )}
 
       {showLanguageMenu && (
@@ -349,6 +341,19 @@ const styles = StyleSheet.create({
   },
   buttonSpacing: {
     marginLeft: 10,
+  },
+  buttonAnimatorInner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  buttonInner: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 25,
   },
   languageMenu: {
     position: 'absolute',

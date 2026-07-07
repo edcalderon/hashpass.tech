@@ -7,7 +7,7 @@ const meta: Meta = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: 'Complete step-by-step guide for new users to get started with HashPass.',
+        component: 'Complete step-by-step guide for new users to get started with HASHPASS.',
       },
     },
   },
@@ -23,10 +23,10 @@ export const Step1SignIn: Story = {
     <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '32px', marginBottom: '20px' }}>Step 1: Sign In to Your Account</h1>
       <p style={{ fontSize: '18px', lineHeight: '1.6', marginBottom: '30px', color: '#6d6d70' }}>
-        To get started, you'll need to sign in to the HashPass app. Here's how:
+        To get started, you'll need to sign in to the HASHPASS app. Here's how:
       </p>
       <ol style={{ fontSize: '16px', lineHeight: '1.8', paddingLeft: '20px' }}>
-        <li style={{ marginBottom: '12px' }}>Open the HashPass app on your device</li>
+        <li style={{ marginBottom: '12px' }}>Open the HASHPASS app on your device</li>
         <li style={{ marginBottom: '12px' }}>Enter your email address</li>
         <li style={{ marginBottom: '12px' }}>Check your email for a one-time login code</li>
         <li style={{ marginBottom: '12px' }}>Enter the code to access your account</li>

@@ -2,7 +2,7 @@
  * Supabase Storage Provider Implementation
  * 
  * Wraps the existing Supabase storage functionality behind the IStorageProvider interface.
- * Note: HashPass currently uses Cloudinary for images, but this abstraction enables
+ * Note: HASHPASS currently uses Cloudinary for images, but this abstraction enables
  * future use of S3-compatible storage.
  */
 

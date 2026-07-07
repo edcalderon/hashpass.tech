@@ -9,7 +9,7 @@ Generated assets are organized by Play Console upload field:
 - `chromebook/`: four 2560 x 1440 Chromebook screenshots
 - `source/`: original generated conference photography used in the compositions
 
-The final graphics use the repository's HashPass logo, app icon, BSL logo,
+The final graphics use the repository's HASHPASS logo, app icon, BSL logo,
 speaker avatars, and QR asset. The conference source photos contain no
 third-party branding or readable text.
 

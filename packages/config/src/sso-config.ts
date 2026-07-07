@@ -1,4 +1,4 @@
-// SSO Configuration for HashPass using Directus
+// SSO Configuration for HASHPASS using Directus
 // This replaces the old Supabase configuration
 
 // ===========================================
@@ -135,7 +135,7 @@ export const SSO_CONFIG = {
     } as TenantConfig,
     'core': {
       id: 'core',
-      name: 'HashPass',
+      name: 'HASHPASS',
       domain: 'hashpass.tech',
       hostnames: ['dev.hashpass.tech', 'www.hashpass.tech', 'hashpass.co', 'www.hashpass.co'],
       slug: 'main',

@@ -72,7 +72,7 @@ export default function ExternalStatusPreview({ url }: ExternalStatusPreviewProp
             </View>
           )}
           <iframe
-            title="HashPass external status page"
+            title="HASHPASS external status page"
             src={url}
             loading="eager"
             sandbox="allow-scripts allow-forms allow-popups"

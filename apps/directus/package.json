@@ -2,7 +2,7 @@
   "name": "hashpass-directus",
   "version": "1.0.0",
   "private": true,
-  "description": "Directus SSO setup for HashPass local development and testing",
+  "description": "Directus SSO setup for HASHPASS local development and testing",
   "scripts": {
     "dev": "bash ./scripts/compose.sh dev",
     "up": "bash ./scripts/compose.sh up",

@@ -14,7 +14,7 @@ export default function Index() {
     return (
       <LoadingScreen
         fullScreen
-        message="Opening HashPass"
+        message="Opening HASHPASS"
         subtitle={startupStamp}
       />
     );

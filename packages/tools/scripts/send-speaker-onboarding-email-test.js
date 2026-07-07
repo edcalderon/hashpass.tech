@@ -140,7 +140,7 @@ async function sendSpeakerOnboardingEmail(email, locale = 'es') {
     
     // Send email
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: email,
       subject: translations.subject,
       html: htmlContent,

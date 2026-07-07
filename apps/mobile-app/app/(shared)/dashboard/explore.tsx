@@ -23,6 +23,15 @@ import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
 
+type QuickAccessItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  color: string;
+  route: string;
+};
+
 const CopilotView = walkthroughable(View);
 const CopilotText = walkthroughable(Text);
 const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
@@ -177,7 +186,7 @@ export default function ExploreScreen() {
             
             // Mark tutorial as started in database after a short delay to ensure tutorial started
             setTimeout(() => {
-              updateTutorialStep('main', 1).catch(err => console.error('Error updating tutorial step:', err));
+              updateTutorialStep('main', 1).catch((err: unknown) => console.error('Error updating tutorial step:', err));
             }, 500);
           } catch (error) {
             console.error('Error starting tutorial:', error);
@@ -498,7 +507,7 @@ export default function ExploreScreen() {
     }
   };
 
-  const renderQuickAccessItem = (item: any, index: number) => (
+  const renderQuickAccessItem = (item: QuickAccessItem, index: number) => (
     <TouchableOpacity
       key={item.id}
       style={[
@@ -520,9 +529,9 @@ export default function ExploreScreen() {
   );
 
   // Get quick access items based on selected event
-  const getQuickAccessItems = () => {
+  const getQuickAccessItems = (): QuickAccessItem[] => {
     if (!selectedEvent) return [];
-    return getEventQuickAccessItems(selectedEvent.id);
+    return getEventQuickAccessItems(selectedEvent.id) as QuickAccessItem[];
   };
 
   return (
@@ -541,9 +550,9 @@ export default function ExploreScreen() {
         {/* Banner starts from top, nav bar floats on top with blur */}
         {isGlobalExplorer ? (
           /* GLOBAL EXPLORER MODE (hashpass.tech / main tenant) */
-          /* Shows banner for HashPass platform with all events */
+          /* Shows banner for HASHPASS platform with all events */
           <EventBanner 
-            title="HashPass Events"
+            title="HASHPASS Events"
             subtitle="Discover and explore all available events"
             date="Global Event Explorer"
             backgroundColor="#6366f1"

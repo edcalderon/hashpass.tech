@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/web-app/public/logo-full-hashpass-black-cyan.svg" alt="HashPass" width="420" />
+  <img src="apps/web-app/public/logo-full-hashpass-black-cyan.svg" alt="HASHPASS" width="420" />
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
+  HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
 ## 📋 Latest Changes (v1.8.167)
@@ -26,7 +26,7 @@
 
 * align README versioning coverage with release versions ([c999a86](https://github.com/hashpass-tech/hashpass.tech/commit/c999a86a13b6850022d57ce1e42c76c3b48c644c))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 
@@ -77,7 +77,7 @@ Use `codebase-memory-mcp` first for repo discovery and fast checks.
 
 ### Monorepo layout
 
-- **`apps/mobile-app`** — Main Expo Router mobile/PWA app for the existing HashPass product line.
+- **`apps/mobile-app`** — Main Expo Router mobile/PWA app for the existing HASHPASS product line.
 - **`apps/web-app`** — Standalone Next.js app for `hashpass.club` membership management.
 - **`apps/directus`** — Directus SSO Docker setup for local auth testing.
 - **`packages/ui`** — Shared design system for mobile and web, including the club theme and shared components.
@@ -245,7 +245,7 @@ For the main `hashpass.tech` web deployment, use the target-account pipeline and
 
 ## 🤝 Contributing
 
-We welcome contributions of all kinds! Whether you’re fixing bugs, adding features, or improving documentation, your input makes HashPass better for everyone.
+We welcome contributions of all kinds! Whether you’re fixing bugs, adding features, or improving documentation, your input makes HASHPASS better for everyone.
 
 - Check out our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 - Open an issue or pull request on GitHub
@@ -266,11 +266,11 @@ We welcome contributions of all kinds! Whether you’re fixing bugs, adding feat
 The source code in this repository is licensed under the **Apache License 2.0**.
 See [LICENSE](./LICENSE) for the full license text and [NOTICE](./NOTICE) for attribution notices.
 
-The **HashPass** name, **HashPass Tech** name, **HashPass Club** name, logos, icons, domain names (`hashpass.tech`, `hashpass.club`), and all other brand assets are trademarks or brand assets of HashPass Tech and are **not** licensed under the Apache License 2.0.
+The **HASHPASS** name, **HASHPASS Tech** name, **HASHPASS Club** name, logos, icons, domain names (`hashpass.tech`, `hashpass.club`), and all other brand assets are trademarks or brand assets of HASHPASS Tech and are **not** licensed under the Apache License 2.0.
 See [TRADEMARKS.md](./TRADEMARKS.md) for the full trademark policy.
 
-You may fork, modify, and distribute this code under the Apache License 2.0, but you must use a different name and branding for any public or commercial derivative product unless you have prior written permission from HashPass Tech.
+You may fork, modify, and distribute this code under the Apache License 2.0, but you must use a different name and branding for any public or commercial derivative product unless you have prior written permission from HASHPASS Tech.
 
 ---
 
-Together, let’s keep HashPass shipping across mobile, web, docs, and infrastructure.
+Together, let’s keep HASHPASS shipping across mobile, web, docs, and infrastructure.

@@ -1,5 +1,5 @@
 /**
- * Dynamic feature loading system for HashPass white-label platform
+ * Dynamic feature loading system for HASHPASS white-label platform
  * Allows loading features on-demand based on event configuration
  */
 

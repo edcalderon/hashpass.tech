@@ -1,6 +1,6 @@
 # Lambda
 
-Current Lambda deployment playbooks for the HashPass API routes live here.
+Current Lambda deployment playbooks for the HASHPASS API routes live here.
 
 ## Active Docs
 

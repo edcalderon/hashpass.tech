@@ -500,7 +500,7 @@ export default function AuthCallback() {
                             `hashpass://auth/callback?${new URLSearchParams(params as Record<string, string>).toString()}`;
                         console.log('🔁 Native relay fallback: retrying deep link open:', retryDeepLink);
                         setStatus('error');
-                        setMessage('If the HashPass app did not open automatically, tap the button below.');
+                        setMessage('If the HASHPASS app did not open automatically, tap the button below.');
                         setOpenInAppUrl(retryDeepLink);
                         isProcessingRef.current = false;
                         if (typeof window !== 'undefined' && window.sessionStorage) {
@@ -715,7 +715,7 @@ export default function AuthCallback() {
                                     }
                                 }}
                             >
-                                <Text style={styles.openInAppButtonText}>Open in HashPass App</Text>
+                                <Text style={styles.openInAppButtonText}>Open in HASHPASS App</Text>
                             </Pressable>
                         ) : (
                             <Text style={styles.redirectInfo}>Redirecting to login page...</Text>

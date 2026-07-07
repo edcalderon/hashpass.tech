@@ -8,7 +8,7 @@ import {
 } from '@/components/blocks/animated-gallery';
 import { useTheme } from './ThemeProvider';
 
-// ── HashPass-relevant event / club / membership photography ──────────────────
+// ── HASHPASS-relevant event / club / membership photography ──────────────────
 const COL_1 = [
   'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900&auto=format&fit=crop&q=70',
   'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=900&auto=format&fit=crop&q=70',
@@ -79,7 +79,7 @@ export function GallerySection() {
                 <img
                   key={i}
                   src={src}
-                  alt="HashPass event"
+                  alt="HASHPASS event"
                   className="aspect-video block h-auto w-full rounded-xl object-cover shadow-md"
                   loading="lazy"
                 />
@@ -91,7 +91,7 @@ export function GallerySection() {
                 <img
                   key={i}
                   src={src}
-                  alt="HashPass community"
+                  alt="HASHPASS community"
                   className="aspect-video block h-auto w-full rounded-xl object-cover shadow-md"
                   loading="lazy"
                 />
@@ -103,7 +103,7 @@ export function GallerySection() {
                 <img
                   key={i}
                   src={src}
-                  alt="HashPass access"
+                  alt="HASHPASS access"
                   className="aspect-video block h-auto w-full rounded-xl object-cover shadow-md"
                   loading="lazy"
                 />

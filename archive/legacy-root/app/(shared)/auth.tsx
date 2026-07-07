@@ -229,7 +229,7 @@ export default function AuthScreen() {
       >
         <View style={styles.content}>
           <View style={styles.overlay} pointerEvents="none" />
-          <Text style={styles.title}>{t('title', 'Welcome to HashPass')}</Text>
+          <Text style={styles.title}>{t('title', 'Welcome to HASHPASS')}</Text>
           
           {/* Logo */}
           <View style={styles.logoContainer}>            

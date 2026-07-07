@@ -25,7 +25,7 @@ emails/
 - **Purpose**: Early welcome email sent to all users when they first join
 - **Features**:
   - Includes Mux video player with welcome video
-  - BSL and HashPass logo branding
+  - BSL and HASHPASS logo branding
   - Available in English and Spanish
   - Feature highlights grid
   - Call-to-action button

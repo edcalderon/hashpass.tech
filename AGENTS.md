@@ -1,4 +1,4 @@
-# HashPass Agent Instructions
+# HASHPASS Agent Instructions
 
 ## Start Here
 

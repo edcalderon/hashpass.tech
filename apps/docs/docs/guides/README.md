@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Onboarding Guides
 
-These guides document the current HashPass onboarding flows for users and speakers.
+These guides document the current HASHPASS onboarding flows for users and speakers.
 
 ## Available Guides
 

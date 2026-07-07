@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Unified release pipeline for HashPass.
+ * Unified release pipeline for HASHPASS.
  *
  * Pipeline stages:
  * 1) Optional version bump + git commit/tag

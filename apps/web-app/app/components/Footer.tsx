@@ -60,7 +60,7 @@ export function Footer() {
               src={isDark
                 ? '/logo-full-hashpass-white-cyan.svg'
                 : '/logo-full-hashpass-black-cyan.svg'}
-              alt="HashPass"
+              alt="HASHPASS"
               style={{
                 display: 'block',
                 width: 'clamp(70px, 10vw, 120px)',

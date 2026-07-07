@@ -29,7 +29,7 @@ export interface PwaInstallPromptCardProps {
 }
 
 const DEFAULT_DETAILS = [
-  "Adds HashPass to your home screen for one-tap access.",
+  "Adds HASHPASS to your home screen for one-tap access.",
   "Runs full-screen like an app with fewer browser distractions.",
   "Keeps key screens cached for faster loading and better reliability.",
 ];
@@ -39,18 +39,18 @@ const EMPTY_BODY_ITEMS: string[] = [];
 const sanitizeScope = (raw: string) => raw.replace(/[^a-zA-Z0-9_-]/g, "");
 
 export default function PwaInstallPromptCard({
-  appName = "HashPass",
+  appName = "HASHPASS",
   logoSrc,
-  logoAlt = "HashPass logo",
+  logoAlt = "HASHPASS logo",
   logoLayout = "icon",
   primaryIconSrc,
-  primaryIconAlt = "HashPass app icon",
+  primaryIconAlt = "HASHPASS app icon",
   bodyItems = EMPTY_BODY_ITEMS,
   title,
   description,
   details = DEFAULT_DETAILS,
-  infoIntro = "A PWA (Progressive Web App) lets HashPass behave like a native app on your device.",
-  primaryLabel = "Install HashPass",
+  infoIntro = "A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.",
+  primaryLabel = "Install HASHPASS",
   infoLabel = "What is this?",
   closeLabel = "Close install prompt",
   dialogLabel,
@@ -73,7 +73,7 @@ export default function PwaInstallPromptCard({
   const cardTitle = title || `Install ${appName}`;
   const cardDescription =
     description ||
-    "Add HashPass to your phone for a faster, app-like experience.";
+    "Add HASHPASS to your phone for a faster, app-like experience.";
   const dialogAriaLabel = dialogLabel || `${appName} install prompt`;
   const collapseAriaLabel = collapsedLabel || dialogAriaLabel;
   const isOpenVariant = collapsedActionVariant === "open";

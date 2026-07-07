@@ -2,7 +2,7 @@
 
 ## Why It Exists
 
-HashPass supports multiple auth providers (Supabase email/OTP, Google OAuth via Directus, Google SDK on Android, Better Auth for event tenants, Ethereum/Solana wallets). Each provider owns its own internal user table, but none of them are the app's source of truth.
+HASHPASS supports multiple auth providers (Supabase email/OTP, Google OAuth via Directus, Google SDK on Android, Better Auth for event tenants, Ethereum/Solana wallets). Each provider owns its own internal user table, but none of them are the app's source of truth.
 
 `public.user` is the **provider-agnostic source of truth** for every account in the system. It removes vendor lock-in to Supabase `auth.users` and gives us a single place to look up any user regardless of how they authenticated.
 

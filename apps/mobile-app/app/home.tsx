@@ -66,11 +66,11 @@ export default function HomeScreen() {
   );
   
   // Determine footer link behavior based on branch
-  // On main branch: show "HashPass" link to hashpass.tech
+  // On main branch: show "HASHPASS" link to hashpass.tech
   // On event branches (like the BSL On Tour family): show the active event link
   const shouldShowFooterLink = true; // Always show a link
   const footerLinkName = isMainBranch 
-    ? 'HashPass' 
+    ? 'HASHPASS' 
     : (currentEvent?.title || 'Blockchain Summit Latam');
   const footerLinkUrl = isMainBranch 
     ? 'https://hashpass.tech'
@@ -102,7 +102,8 @@ export default function HomeScreen() {
     ],
     opacity: interpolate(bounceAnim.value, [0, 0.5, 1], [0.95, 0.25, 0.95]),
   }));
-  const styles = getStyles(isDark, colors, isMobile, isWebLightMode);
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const styles = getStyles(isDark, colors, isMobile, isWebLightMode, windowWidth);
   const bgAnimation = useSharedValue(0);
   const scrollRef = React.useRef<any>(null);
   const feature1Anim = useSharedValue(0);
@@ -125,7 +126,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const scrollY = useSharedValue(0);
   const buttonAnimation = useSharedValue(0);
-  const { height: windowHeight } = useWindowDimensions();
 
   const featuresRef = React.useRef<View>(null);
   const featuresLayoutRef = React.useRef({ y: 0 });
@@ -177,15 +177,10 @@ export default function HomeScreen() {
       [0, 0.5, 1],
       { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
     );
-    const scale = interpolate(
-      scrollY.value,
-      [0, 250, 400],
-      [0.9, 0.95, 1],
-      { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
-    );
+    // No scale here — individual feature items animate with translateY, and adding a parent
+    // scale on top causes compound distortion of icons and borders during the reveal.
     return {
-      opacity: withTiming(opacity, { duration: 100 }),
-      transform: [{ scale: withTiming(scale, { duration: 100 }) }]
+      opacity: withTiming(opacity, { duration: 150 }),
     };
   });
 
@@ -196,15 +191,8 @@ export default function HomeScreen() {
       [0, 1],
       { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
     );
-    const scale = interpolate(
-      scrollY.value,
-      [300, 500],
-      [0.9, 1],
-      { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
-    );
     return {
-      opacity: withTiming(opacity, { duration: 100 }),
-      transform: [{ scale: withTiming(scale, { duration: 100 }) }]
+      opacity: withTiming(opacity, { duration: 150 }),
     };
   });
 
@@ -349,9 +337,10 @@ export default function HomeScreen() {
             showDotIndicators={true}
             autoPlay={true}
             autoPlayInterval={5000}
-            onEventPress={(event: { routes?: { home?: string } } | null | undefined) => {
-              if (event?.routes?.home) {
-                const route = event.routes.home.replace(/\/+/g, '/'); // Remove any double slashes
+            onEventPress={(event) => {
+              const routeHome = (event as any)?.routes?.home;
+              if (routeHome) {
+                const route = routeHome.replace(/\/+/g, '/'); // Remove any double slashes
                 router.push(route as any);
               }
             }}
@@ -523,9 +512,11 @@ export default function HomeScreen() {
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMode: boolean) => {
-  const logoWidth = isMobile ? 300 : 580;
-  const logoHeight = isMobile ? 150 : 220;
+const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMode: boolean, windowWidth = 375) => {
+  // On narrow native screens, cap logo width so it never overflows with padding
+  const maxLogoWidth = Platform.OS !== 'web' ? Math.min(windowWidth - 48, 300) : (isMobile ? 300 : 580);
+  const logoWidth = isMobile ? maxLogoWidth : 580;
+  const logoHeight = isMobile ? Math.round(logoWidth * 0.5) : 220;
   const taglineOffset = isMobile ? 10 : 18;
 
   return StyleSheet.create({
@@ -537,8 +528,8 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       flex: 1,
     },
     hero: {
-      minHeight: 400,
-      height: isMobile ? 400 : '100%',
+      minHeight: isMobile ? 480 : 520,
+      height: isMobile ? 480 : '100%',
       maxHeight: 1000,
       position: 'relative',
       overflow: 'hidden',
@@ -547,6 +538,11 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       flexDirection: 'column',
       justifyContent: 'space-between',
       paddingBottom: isMobile ? 40 : 60,
+      // Native has no CrystalForgeBackground — provide a subtle gradient-tinted surface
+      // so the logo has visual contrast in both light and dark mode.
+      backgroundColor: Platform.OS !== 'web'
+        ? (isDark ? '#0e1117' : '#f0f0f5')
+        : undefined,
     },
     heroImage: {
       width: '100%',

@@ -2,7 +2,7 @@
 /* global __dirname, Buffer */
 
 /**
- * HashPass Unified Environment Manager
+ * HASHPASS Unified Environment Manager
  *
  * Sources variables from the root .env based on the target environment profile.
  * Profiles are defined by suffixes like _DEV or _PROD.

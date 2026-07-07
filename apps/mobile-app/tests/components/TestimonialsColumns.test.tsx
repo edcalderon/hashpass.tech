@@ -75,7 +75,7 @@ describe('TestimonialsColumn', () => {
       TestimonialsColumn({
         testimonials: [
           {
-            text: 'HashPass keeps the event flow smooth.',
+            text: 'HASHPASS keeps the event flow smooth.',
             wallet: '0x1234567890abcdef1234567890abcdef12345678',
             role: 'Organizer',
           },

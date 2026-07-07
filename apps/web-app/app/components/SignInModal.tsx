@@ -11,7 +11,7 @@ interface SignInModalProps {
   onClose: () => void;
 }
 
-// Encodes a deep-link the HashPass mobile app can handle.
+// Encodes a deep-link the HASHPASS mobile app can handle.
 // hashpass://auth/connect?source=web will open the app's auth flow.
 const QR_VALUE = 'hashpass://auth/connect?source=web&ref=landing';
 const APP_STORE_URL = 'https://apps.apple.com/app/hashpass';
@@ -211,7 +211,7 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
         {/* Logo */}
         <img
           src="/logo-hashpass.svg"
-          alt="HashPass"
+          alt="HASHPASS"
           style={{ width: 48, height: 48, marginBottom: 16 }}
         />
 
@@ -272,7 +272,7 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
             (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
           }}
         >
-          {/* HashPass icon */}
+          {/* HASHPASS icon */}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
             <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.8"/>
             <path d="M8 12h8M12 8v8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>

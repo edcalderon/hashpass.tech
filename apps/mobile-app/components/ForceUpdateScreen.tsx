@@ -48,7 +48,7 @@ export default function ForceUpdateScreen({ minimumVersion, storeUrl, storeWebUr
         </Text>
 
         <Text style={[styles.body, { color: colors.text.secondary }]}>
-          This version of HashPass is no longer supported. Please update to continue.
+          This version of HASHPASS is no longer supported. Please update to continue.
         </Text>
 
         <Text style={[styles.versionHint, { color: colors.text.secondary }]}>

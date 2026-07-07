@@ -62,19 +62,19 @@ export default function LanguageSelector({
   const getWelcomeMessage = () => {
     switch (selectedLanguage) {
       case "en":
-        return "Welcome to HashPass";
+        return "Welcome to HASHPASS";
       case "es":
-        return "Bienvenido a HashPass";
+        return "Bienvenido a HASHPASS";
       case "ko":
         return "해시패스에 오신 것을 환영합니다";
       case "fr":
-        return "Bienvenue sur HashPass";
+        return "Bienvenue sur HASHPASS";
       case "pt":
-        return "Bem-vindo ao HashPass";
+        return "Bem-vindo ao HASHPASS";
       case "de":
-        return "Willkommen bei HashPass";
+        return "Willkommen bei HASHPASS";
       default:
-        return "Welcome to HashPass";
+        return "Welcome to HASHPASS";
     }
   };
 

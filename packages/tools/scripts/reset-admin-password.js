@@ -8,7 +8,7 @@
  *   node scripts/reset-admin-password.js [email] [password]
  * 
  * Example:
- *   node scripts/reset-admin-password.js admin@hashpass.tech HashPass2024!
+ *   node scripts/reset-admin-password.js admin@hashpass.tech HASHPASS2024!
  */
 
 const { Client } = require('pg');

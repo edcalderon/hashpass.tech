@@ -120,7 +120,7 @@ const PWAPrompt = () => {
     return null;
   }
 
-  const buttonText = 'Install HashPass';
+  const buttonText = 'Install HASHPASS';
 
   return (
     <View style={styles.container}>

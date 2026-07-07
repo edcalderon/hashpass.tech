@@ -8,7 +8,7 @@ const ASCII_ART = `
 `;
 
 const WELCOME_MESSAGE = `
-Welcome to HashPass 🚀
+Welcome to HASHPASS 🚀
 
 Interested in joining the team? -> edward@hashpass.tech
 Found a bug? Report it at https://hashpass.tech/support

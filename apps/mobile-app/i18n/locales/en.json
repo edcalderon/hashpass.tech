@@ -49,7 +49,7 @@
       },
       "lukasInfo": {
         "title": "What is LUKAS?",
-        "description": "LUKAS is the digital currency of the HashPass ecosystem designed to reward user interactions and engagement.",
+        "description": "LUKAS is the digital currency of the HASHPASS ecosystem designed to reward user interactions and engagement.",
         "features": "• Earn LUKAS by accepting and scheduling meetings\n• Will be monetized in HashHouse\n• Swappable to other crypto tokens",
         "withdrawalDisclaimer": "You can withdraw LUKAS tokens when your balance is over 5 LUKAS."
       }
@@ -186,17 +186,17 @@
     "passwordlessUnavailableMessage": "Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment."
   },
   "pwaPrompt": {
-    "installAction": "Install HashPass",
-    "openAction": "Open HashPass App",
-    "installTitle": "Install HashPass",
+    "installAction": "Install HASHPASS",
+    "openAction": "Open HASHPASS App",
+    "installTitle": "Install HASHPASS",
     "openTitle": "Open your installed app",
-    "installDescription": "Install HashPass as a PWA to launch it like an app from your home screen.",
-    "openDescription": "HashPass is already installed. Open it in app mode for the best mobile experience.",
+    "installDescription": "Install HASHPASS as a PWA to launch it like an app from your home screen.",
+    "openDescription": "HASHPASS is already installed. Open it in app mode for the best mobile experience.",
     "whatIsThis": "What is this?",
     "close": "Close install prompt",
-    "dialogLabel": "HashPass install prompt",
+    "dialogLabel": "HASHPASS install prompt",
     "expandCollapsed": "Open install options",
-    "infoIntro": "A PWA (Progressive Web App) lets HashPass behave like a native app on your device.",
+    "infoIntro": "A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.",
     "details": {
       "one": "PWA means Progressive Web App: app-like behavior from your browser install.",
       "two": "No app-store download required, but you still get quick home-screen access.",
@@ -213,7 +213,7 @@
     "lastUpdated": "Last Updated: November 4, 2025",
     "introduction": {
       "title": "1. Introduction",
-      "text": "HashPass (\"we,\" \"our,\" or \"us\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our digital event platform and services (the \"Service\"). Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the Service."
+      "text": "HASHPASS (\"we,\" \"our,\" or \"us\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our digital event platform and services (the \"Service\"). Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the Service."
     },
     "collection": {
       "title": "2. Information We Collect",
@@ -253,11 +253,11 @@
     "lastUpdated": "Last Updated: November 4, 2025",
     "acceptance": {
       "title": "1. Acceptance of Terms",
-      "text": "By accessing and using HashPass (\"the Service\"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service."
+      "text": "By accessing and using HASHPASS (\"the Service\"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service."
     },
     "description": {
       "title": "2. Service Description",
-      "text": "HashPass is a digital event platform that provides event management, pass management, networking features, and related services. We reserve the right to modify, suspend, or discontinue any part of the Service at any time."
+      "text": "HASHPASS is a digital event platform that provides event management, pass management, networking features, and related services. We reserve the right to modify, suspend, or discontinue any part of the Service at any time."
     },
     "accounts": {
       "title": "3. User Accounts",
@@ -273,7 +273,7 @@
     },
     "intellectual": {
       "title": "6. Intellectual Property",
-      "text": "The Service and its original content, features, and functionality are owned by HashPass and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws."
+      "text": "The Service and its original content, features, and functionality are owned by HASHPASS and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws."
     },
     "termination": {
       "title": "7. Termination",
@@ -285,7 +285,7 @@
     },
     "limitation": {
       "title": "9. Limitation of Liability",
-      "text": "In no event shall HashPass be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or use, incurred by you or any third party, whether in an action in contract or tort."
+      "text": "In no event shall HASHPASS be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or use, incurred by you or any third party, whether in an action in contract or tort."
     },
     "changes": {
       "title": "10. Changes to Terms",
@@ -430,7 +430,7 @@
         "description": "Learn how to sign in and navigate the app",
         "signIn": {
           "title": "Sign In to Your Account",
-          "content": "To get started, you'll need to sign in to the HashPass app. Open the app, enter your email address, check your email for a one-time login code, and enter the code to access your account."
+          "content": "To get started, you'll need to sign in to the HASHPASS app. Open the app, enter your email address, check your email for a one-time login code, and enter the code to access your account."
         },
         "explore": {
           "title": "Explore Speakers & Events",
@@ -465,7 +465,7 @@
       },
       "tips": {
         "title": "Pro Tips",
-        "description": "Best practices for using HashPass",
+        "description": "Best practices for using HASHPASS",
         "specificRequests": {
           "title": "Be Specific in Meeting Requests",
           "content": "Speakers appreciate knowing what you'd like to discuss. Be specific in your meeting request message to increase the chances of acceptance."
@@ -523,7 +523,7 @@
     },
     "account": "Account",
     "signOut": "Sign Out",
-    "version": "HashPass v{version}"
+    "version": "HASHPASS v{version}"
   },
   "nav": {
     "explore": "Explore",

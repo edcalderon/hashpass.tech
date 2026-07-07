@@ -48,14 +48,14 @@
       "sizes": "1440x2560",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "HashPass secure digital event pass and dynamic QR check-in"
+      "label": "HASHPASS secure digital event pass and dynamic QR check-in"
     },
     {
       "src": "/assets/pwa-screenshot-wide.png",
       "sizes": "2560x1440",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "HashPass event platform dashboard"
+      "label": "HASHPASS event platform dashboard"
     }
   ],
   "shortcuts": [

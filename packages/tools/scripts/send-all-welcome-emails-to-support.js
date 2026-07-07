@@ -225,7 +225,7 @@ async function sendWelcomeEmail(locale = 'en') {
     htmlContent = replaceTemplatePlaceholders(htmlContent, translations, assets, locale);
     
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: SUPPORT_EMAIL,
       cc: CC_EMAILS,
       subject: subject,
@@ -294,7 +294,7 @@ async function sendUserOnboardingEmail(locale = 'en') {
     htmlContent = replaceTemplatePlaceholders(htmlContent, translations, assets, locale);
     
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: SUPPORT_EMAIL,
       subject: subject,
       html: htmlContent,
@@ -362,7 +362,7 @@ async function sendSpeakerOnboardingEmail(locale = 'en') {
     htmlContent = replaceTemplatePlaceholders(htmlContent, translations, assets, locale);
     
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: SUPPORT_EMAIL,
       subject: subject,
       html: htmlContent,

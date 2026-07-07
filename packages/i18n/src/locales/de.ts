@@ -5,17 +5,17 @@ export const de = {
     docs: 'Docs',
     getStarted: 'Loslegen',
     signIn: 'Anmelden',
-    signInWith: 'Mit HashPass anmelden',
-    scanQr: 'Mit der HashPass.tech-App scannen',
+    signInWith: 'Mit HASHPASS anmelden',
+    scanQr: 'Mit der HASHPASS.tech-App scannen',
     orContinue: 'oder im Web fortfahren',
-    openApp: 'HashPass öffnen',
+    openApp: 'HASHPASS öffnen',
     downloadApp: 'App herunterladen',
   },
   hero: {
     badge: 'Mitgliedschafts-Infrastruktur',
     title: 'Dein Club.\nKommandiert.',
     subtitle:
-      'HashPass bietet exklusiven Clubs, Communities und Events eine einheitliche Plattform zur Verwaltung von Mitgliedern, Zugang und Verlängerungen — auf Mobil und Web.',
+      'HASHPASS bietet exklusiven Clubs, Communities und Events eine einheitliche Plattform zur Verwaltung von Mitgliedern, Zugang und Verlängerungen — auf Mobil und Web.',
     ctaPrimary: 'Demo anfragen',
     ctaSecondary: 'Betrieb erkunden',
     scrollDown: 'Scrollen',
@@ -35,7 +35,7 @@ export const de = {
     eyebrow: 'Was du bekommst',
     title: 'Alles, was dein Club braucht',
     subtitle:
-      'Von Einladungen bis zu Verlängerungen — HashPass verwaltet den gesamten Mitgliedschaftslebenszyklus.',
+      'Von Einladungen bis zu Verlängerungen — HASHPASS verwaltet den gesamten Mitgliedschaftslebenszyklus.',
     identity: {
       title: 'Identitätsverwaltung',
       description: 'Einladungen, Genehmigungen, Wiederherstellung und Rollen in einem einheitlichen Modell.',
@@ -74,7 +74,7 @@ export const de = {
   cta: {
     eyebrow: 'Bereit anzufangen?',
     title: 'Kommandiere deine Mitgliedschaft ab Tag eins.',
-    subtitle: 'Schließe dich den Clubs an, die bereits HashPass nutzen. Eine Plattform für jede Phase der Mitgliedschaft.',
+    subtitle: 'Schließe dich den Clubs an, die bereits HASHPASS nutzen. Eine Plattform für jede Phase der Mitgliedschaft.',
     primary: 'Demo anfragen',
     secondary: 'Dokumentation lesen',
     email: 'hello@hashpass.club',
@@ -92,7 +92,7 @@ export const de = {
     blog: 'Blog',
     privacy: 'Datenschutz',
     terms: 'Nutzungsbedingungen',
-    copyright: '© {year} HashPass. Alle Rechte vorbehalten.',
+    copyright: '© {year} HASHPASS. Alle Rechte vorbehalten.',
   },
   theme: { toggle: 'Design umschalten', dark: 'Dunkel', light: 'Hell', system: 'System' },
   lang: { select: 'Sprache', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch' },

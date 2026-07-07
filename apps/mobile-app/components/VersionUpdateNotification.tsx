@@ -59,7 +59,7 @@ export default function VersionUpdateNotification({
           </View>
           <Text style={styles.title}>Update Available</Text>
           <Text style={styles.subtitle}>
-            A new version of HashPass is ready.
+            A new version of HASHPASS is ready.
           </Text>
           <View style={styles.versionRow}>
             <View style={styles.versionChip}>

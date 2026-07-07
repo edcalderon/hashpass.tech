@@ -43,12 +43,12 @@ const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.svg');
 const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.svg');
 const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.svg');
 
-// Main HashPass Logo
+// Main HASHPASS Logo
 const LOGO_SLIDE_BACKGROUND = '#07111F';
 
 const MAIN_HASHPASS_LOGO = {
   id: 'hashpass-main',
-  name: 'HashPass',
+  name: 'HASHPASS',
   darkSrc: HASHPASS_DARK_LOGO,
   lightSrc: HASHPASS_LIGHT_LOGO,
   backgroundColor: LOGO_SLIDE_BACKGROUND,
@@ -159,7 +159,7 @@ export default function EventBannerCarousel({
   // Build slides: event banners + logo slides
   const slides: CarouselSlide[] = [
     // { type: 'download' }, // Temporarily hidden
-    // Add main HashPass logo first
+    // Add main HASHPASS logo first
     {
       type: 'logo' as const,
       logoId: MAIN_HASHPASS_LOGO.id,

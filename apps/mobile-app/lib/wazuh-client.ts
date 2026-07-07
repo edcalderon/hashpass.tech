@@ -1,5 +1,5 @@
 /**
- * Wazuh API Client for HashPass
+ * Wazuh API Client for HASHPASS
  * Sends security events and logs to Wazuh Manager
  */
 
