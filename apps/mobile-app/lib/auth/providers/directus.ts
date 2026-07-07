@@ -595,8 +595,20 @@ async signOut(): Promise<{ error?: string }> {
         return refreshResult.session || null;
       }
 
-      // For OAuth flows, try to check if there's an active server session.
-      if (typeof window !== 'undefined') {
+      // On web, only probe the server during an active OAuth handoff.
+      // Cookie-backed Directus sessions are not persisted locally, so probing on every
+      // page load causes cross-origin noise without improving the restored session state.
+      if (typeof window !== 'undefined' && Platform.OS === 'web') {
+        const oauthInProgress = window.localStorage?.getItem('oauth_in_progress') === 'true';
+        const onCallbackRoute =
+          typeof window.location?.pathname === 'string' &&
+          window.location.pathname.includes('/auth/callback');
+
+        if (!oauthInProgress && !onCallbackRoute) {
+          this.nextSessionProbeAt = Date.now() + 3000;
+          return null;
+        }
+
         try {
           const userResult = await this.apiClient.getCurrentUserWithSession();
 

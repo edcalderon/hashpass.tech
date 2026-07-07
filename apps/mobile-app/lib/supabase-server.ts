@@ -92,7 +92,7 @@ function createMockSupabaseClient(errorMsg: string): ReturnType<typeof createCli
 
 function getSupabaseServer(input?: Request | { hostname?: string; profileId?: string }) {
   // Check if we're in a browser/client environment
-  const isClient = typeof window !== 'undefined';
+  const isClient = typeof window !== 'undefined' && !(input instanceof Request);
 
   // If we're in client environment, this should not be used
   if (isClient) {

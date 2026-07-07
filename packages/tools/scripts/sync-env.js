@@ -271,7 +271,17 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     ['PUBLIC_URL', runtime.directusUrl],
   ];
 
-  canonicalEntries.forEach(([key, value]) => {
+  const environmentSuffix = runtime.environment === 'production' ? '_PROD' : '_DEV';
+  const environmentSupabaseEntries = [
+    [`EXPO_PUBLIC_SUPABASE_URL${environmentSuffix}`, supabaseUrl],
+    [`EXPO_PUBLIC_SUPABASE_KEY${environmentSuffix}`, supabaseKey],
+    [`EXPO_PUBLIC_SUPABASE_ANON_KEY${environmentSuffix}`, supabaseKey],
+    [`SUPABASE_SERVICE_ROLE_KEY${environmentSuffix}`, supabaseServiceRoleKey],
+    [`SUPABASE_DB_URL${environmentSuffix}`, supabaseDatabaseUrl],
+    [`DATABASE_URL${environmentSuffix}`, supabaseDatabaseUrl],
+  ];
+
+  [...canonicalEntries, ...environmentSupabaseEntries].forEach(([key, value]) => {
     if (!value) return;
     targetConfig[key] = value;
   });
@@ -427,11 +437,23 @@ try {
 
   const KEYS_TO_SYNC = [
     'EXPO_PUBLIC_SUPABASE_URL',
+    'EXPO_PUBLIC_SUPABASE_URL_DEV',
+    'EXPO_PUBLIC_SUPABASE_URL_PROD',
     'EXPO_PUBLIC_SUPABASE_KEY',
+    'EXPO_PUBLIC_SUPABASE_KEY_DEV',
+    'EXPO_PUBLIC_SUPABASE_KEY_PROD',
     'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV',
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD',
     'SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY_DEV',
+    'SUPABASE_SERVICE_ROLE_KEY_PROD',
     'SUPABASE_DB_URL',
+    'SUPABASE_DB_URL_DEV',
+    'SUPABASE_DB_URL_PROD',
     'DATABASE_URL',
+    'DATABASE_URL_DEV',
+    'DATABASE_URL_PROD',
     'DIRECTUS_URL',
     'EXPO_PUBLIC_DIRECTUS_URL',
     'DIRECTUS_SECRET',

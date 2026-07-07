@@ -28,9 +28,12 @@ locals {
 
   build_environment = merge(
     {
-      EXPO_PUBLIC_SUPABASE_URL      = var.supabase_url
-      EXPO_PUBLIC_SUPABASE_KEY      = var.supabase_key
-      EXPO_PUBLIC_SUPABASE_ANON_KEY = var.supabase_key
+      EXPO_PUBLIC_SUPABASE_URL           = var.supabase_url
+      EXPO_PUBLIC_SUPABASE_URL_PROD      = var.supabase_url
+      EXPO_PUBLIC_SUPABASE_KEY           = var.supabase_key
+      EXPO_PUBLIC_SUPABASE_KEY_PROD      = var.supabase_key
+      EXPO_PUBLIC_SUPABASE_ANON_KEY      = var.supabase_key
+      EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD = var.supabase_key
     },
     trimspace(var.google_client_id) != "" ? {
       GOOGLE_CLIENT_ID             = trimspace(var.google_client_id)
@@ -41,9 +44,12 @@ locals {
 
   dev_build_environment = merge(
     {
-      EXPO_PUBLIC_SUPABASE_URL      = trimspace(var.supabase_url_dev) != "" ? var.supabase_url_dev : var.supabase_url
-      EXPO_PUBLIC_SUPABASE_KEY      = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
-      EXPO_PUBLIC_SUPABASE_ANON_KEY = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
+      EXPO_PUBLIC_SUPABASE_URL          = trimspace(var.supabase_url_dev) != "" ? var.supabase_url_dev : var.supabase_url
+      EXPO_PUBLIC_SUPABASE_URL_DEV      = trimspace(var.supabase_url_dev) != "" ? var.supabase_url_dev : var.supabase_url
+      EXPO_PUBLIC_SUPABASE_KEY          = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
+      EXPO_PUBLIC_SUPABASE_KEY_DEV      = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
+      EXPO_PUBLIC_SUPABASE_ANON_KEY     = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
+      EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
     },
     trimspace(var.google_client_id) != "" ? {
       GOOGLE_CLIENT_ID             = trimspace(var.google_client_id)

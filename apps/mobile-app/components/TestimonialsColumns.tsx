@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
-import { useTheme } from "../hooks/useTheme";
 import type { ThemeColors } from "../lib/theme";
 
 const avatarStyles = StyleSheet.create({
@@ -58,6 +57,7 @@ const TestimonialsColumn = (props: {
   testimonials: any;
   duration?: number;
 }) => {
+  const { useTheme } = require("../hooks/useTheme") as typeof import("../hooks/useTheme");
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors, isDark);
 

@@ -11,11 +11,12 @@ jest.mock('react-native', () => ({
 
 const mockLogoutSession = jest.fn(async () => ({ data: null, error: null }));
 const mockListAuthProviders = jest.fn(async () => ({ data: [], error: null }));
+const mockGetCurrentUserWithSession = jest.fn();
 const mockDirectusApiClientCtor = jest.fn(() => ({
   logoutSession: mockLogoutSession,
   listAuthProviders: mockListAuthProviders,
   getCurrentUserWithToken: jest.fn(),
-  getCurrentUserWithSession: jest.fn(),
+  getCurrentUserWithSession: mockGetCurrentUserWithSession,
   refreshSessionWithCookies: jest.fn(),
   refreshSessionWithSessionCookies: jest.fn(),
   logoutWithToken: jest.fn(),
@@ -52,6 +53,7 @@ beforeEach(() => {
   jest.resetModules();
   mockLogoutSession.mockClear();
   mockListAuthProviders.mockClear();
+  mockGetCurrentUserWithSession.mockClear();
   mockDirectusApiClientCtor.mockClear();
 
   locationMock.pathname = '/auth';
@@ -96,5 +98,15 @@ describe('Directus OAuth sign-in', () => {
     });
 
     expect(result).toEqual({ error: 'Native auth failed' });
+  });
+
+  it('does not probe Directus cookies on a normal web page load', async () => {
+    const { DirectusAuthProvider } = require('../../../../packages/auth/src/providers/directus');
+
+    const provider = new DirectusAuthProvider('https://sso.hashpass.co');
+    const session = await provider.getSession();
+
+    expect(session).toBeNull();
+    expect(mockGetCurrentUserWithSession).not.toHaveBeenCalled();
   });
 });

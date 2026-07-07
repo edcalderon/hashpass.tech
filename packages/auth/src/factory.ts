@@ -194,6 +194,20 @@ const resolveRuntimeHostname = (hostname?: string | null): string => {
   );
 };
 
+const isDevelopmentHostname = (hostname?: string | null): boolean => {
+  const resolved = normalizeHostname(hostname);
+  if (!resolved) return false;
+
+  return (
+    resolved === 'localhost' ||
+    resolved === '127.0.0.1' ||
+    resolved === '0.0.0.0' ||
+    resolved.endsWith('.local') ||
+    resolved.includes('-dev.') ||
+    resolved.startsWith('dev.')
+  );
+};
+
 const resolveProviderName = (hostname?: string | null): AuthProviderConfig['provider'] => {
   const resolvedHostname = resolveRuntimeHostname(hostname);
   // EXPO_PUBLIC_AUTH_PROVIDER is the bundled (EXPO_PUBLIC_*) form Metro inlines into the
@@ -235,38 +249,100 @@ const resolveSupabaseCredentials = (hostname?: string | null) => {
   const supabaseProfile = firstEnv(['EXPO_PUBLIC_SUPABASE_PROFILE', 'SUPABASE_PROFILE']);
   const isBslProfile = Boolean(supabaseProfile && /^bsl(?:-|$)/i.test(supabaseProfile));
   const isBsl = isBslProfile || ENV_CONFIG.getTenant(resolvedHostname).slug !== 'main';
+  const isDevelopmentHost = isDevelopmentHostname(resolvedHostname);
 
-  const url = isBsl
-    ? firstEnv([
+  const coreUrlEnv = isDevelopmentHost
+    ? [
+        'EXPO_PUBLIC_SUPABASE_URL_DEV',
+        'EXPO_PUBLIC_SUPABASE_URL',
+        'NEXT_PUBLIC_SUPABASE_URL',
+        'EXPO_PUBLIC_SUPABASE_URL_PROD',
+      ]
+    : [
+        'EXPO_PUBLIC_SUPABASE_URL_PROD',
+        'EXPO_PUBLIC_SUPABASE_URL',
+        'NEXT_PUBLIC_SUPABASE_URL',
+        'EXPO_PUBLIC_SUPABASE_URL_DEV',
+      ];
+  const coreKeyEnv = isDevelopmentHost
+    ? [
+        'EXPO_PUBLIC_SUPABASE_KEY_DEV',
+        'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV',
+        'EXPO_PUBLIC_SUPABASE_KEY',
+        'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+        'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+        'EXPO_PUBLIC_SUPABASE_KEY_PROD',
+        'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD',
+      ]
+    : [
+        'EXPO_PUBLIC_SUPABASE_KEY_PROD',
+        'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD',
+        'EXPO_PUBLIC_SUPABASE_KEY',
+        'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+        'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+        'EXPO_PUBLIC_SUPABASE_KEY_DEV',
+        'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV',
+      ];
+  const bslUrlEnv = isDevelopmentHost
+    ? [
+        'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV',
+        'EXPO_PUBLIC_SUPABASE_URL_BSL_DEV',
+        'EXPO_PUBLIC_BSL_SUPABASE_URL',
+        'EXPO_PUBLIC_SUPABASE_URL_DEV',
+        'EXPO_PUBLIC_SUPABASE_URL',
+        'NEXT_PUBLIC_SUPABASE_URL',
+        'EXPO_PUBLIC_BSL_SUPABASE_URL_PROD',
+        'EXPO_PUBLIC_SUPABASE_URL_BSL_PROD',
+      ]
+    : [
         'EXPO_PUBLIC_BSL_SUPABASE_URL_PROD',
         'EXPO_PUBLIC_SUPABASE_URL_BSL_PROD',
         'EXPO_PUBLIC_BSL_SUPABASE_URL',
-        'NEXT_PUBLIC_SUPABASE_URL',
         'EXPO_PUBLIC_SUPABASE_URL_PROD',
         'EXPO_PUBLIC_SUPABASE_URL',
-      ])
-    : firstEnv([
         'NEXT_PUBLIC_SUPABASE_URL',
-        'EXPO_PUBLIC_SUPABASE_URL',
-        'EXPO_PUBLIC_SUPABASE_URL_PROD',
-      ]);
-
-  const anonKey = isBsl
-    ? firstEnv([
+        'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV',
+        'EXPO_PUBLIC_SUPABASE_URL_BSL_DEV',
+      ];
+  const bslKeyEnv = isDevelopmentHost
+    ? [
+        'EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV',
+        'EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV',
+        'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV',
+        'EXPO_PUBLIC_BSL_SUPABASE_KEY',
+        'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY',
+        'EXPO_PUBLIC_SUPABASE_KEY_DEV',
+        'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV',
+        'EXPO_PUBLIC_SUPABASE_KEY',
+        'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+        'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+        'EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD',
+        'EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD',
+        'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD',
+      ]
+    : [
         'EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD',
         'EXPO_PUBLIC_SUPABASE_KEY_BSL_PROD',
         'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_PROD',
         'EXPO_PUBLIC_BSL_SUPABASE_KEY',
-        'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+        'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY',
         'EXPO_PUBLIC_SUPABASE_KEY_PROD',
         'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD',
         'EXPO_PUBLIC_SUPABASE_KEY',
-      ])
-    : firstEnv([
-        'NEXT_PUBLIC_SUPABASE_ANON_KEY',
         'EXPO_PUBLIC_SUPABASE_ANON_KEY',
-        'EXPO_PUBLIC_SUPABASE_KEY',
-      ]);
+        'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+        'EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV',
+        'EXPO_PUBLIC_SUPABASE_KEY_BSL_DEV',
+        'EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY_DEV',
+      ];
+
+  const url = isBsl
+    ? firstEnv(bslUrlEnv)
+    : firstEnv(coreUrlEnv);
+
+  const anonKey = isBsl
+    ? firstEnv(bslKeyEnv)
+    : firstEnv(coreKeyEnv);
 
   return { url: url || '', anonKey: anonKey || '' };
 };

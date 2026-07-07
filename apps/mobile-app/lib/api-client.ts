@@ -124,6 +124,8 @@ const resolveRuntimeApiBaseUrl = () => {
   return normalizedBase;
 };
 
+export const getRuntimeApiBaseUrl = () => resolveRuntimeApiBaseUrl();
+
 export class EventApiClient {
   private baseURL: string;
   private defaultHeaders: Record<string, string>;

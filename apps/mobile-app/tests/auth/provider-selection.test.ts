@@ -96,4 +96,32 @@ describe('resolveAuthProviderConfig', () => {
 
     expect(config.provider).toBe('directus');
   });
+
+  it('prefers core production expo Supabase envs over NEXT_PUBLIC fallbacks', () => {
+    delete process.env.AUTH_PROVIDER;
+    setEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://stale-next.supabase.co');
+    setEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'stale-next-key');
+    setEnv('EXPO_PUBLIC_SUPABASE_URL_PROD', 'https://prod-project.supabase.co');
+    setEnv('EXPO_PUBLIC_SUPABASE_KEY_PROD', 'prod-key');
+    setEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD', 'prod-anon-key');
+
+    const config = resolveAuthProviderConfig({ hostname: 'hashpass.tech' });
+
+    expect(config.supabase?.url).toBe('https://prod-project.supabase.co');
+    expect(config.supabase?.anonKey).toBe('prod-key');
+  });
+
+  it('prefers core development expo Supabase envs over NEXT_PUBLIC fallbacks on localhost', () => {
+    delete process.env.AUTH_PROVIDER;
+    setEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://stale-next.supabase.co');
+    setEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'stale-next-key');
+    setEnv('EXPO_PUBLIC_SUPABASE_URL_DEV', 'https://dev-project.supabase.co');
+    setEnv('EXPO_PUBLIC_SUPABASE_KEY_DEV', 'dev-key');
+    setEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV', 'dev-anon-key');
+
+    const config = resolveAuthProviderConfig({ hostname: 'localhost' });
+
+    expect(config.supabase?.url).toBe('https://dev-project.supabase.co');
+    expect(config.supabase?.anonKey).toBe('dev-key');
+  });
 });

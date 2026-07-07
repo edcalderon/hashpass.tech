@@ -105,7 +105,7 @@ describe('Android release flow', () => {
   it('keeps app.json aligned with the current store version and leaves Expo project linking to app.config.js', () => {
     expect(appJson.version).toBe(rootPackageJson.version);
     expect(appJson.slug).toBe('hash-pass-tech');
-    expect(appJson.android?.versionCode).toBe(10942);
+    expect(appJson.android?.versionCode).toBe(10964);
     expect(appJson.buildNumber).toBeUndefined();
     expect(appJson.extra?.eas?.projectId).toBeUndefined();
     expect(appJson.owner).toBe('hashpasstechs-team');

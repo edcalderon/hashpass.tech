@@ -24,7 +24,7 @@ function loadCapWidget(): Promise<void> {
 import { Image } from 'react-native';
 import { useTranslation, getCurrentLocale } from '../i18n/i18n';
 import { useTheme } from '../hooks/useTheme';
-import { apiClient } from '../lib/api-client';
+import { apiClient, getRuntimeApiBaseUrl } from '../lib/api-client';
 
 type Mode = "light" | "dark";
 
@@ -81,9 +81,31 @@ const Newsletter = ({ mode }: Props) => {
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
     const [capError, setCapError] = useState<string | null>(null);
     const [capRetryKey, setCapRetryKey] = useState(0);
+    const [countdown, setCountdown] = useState<number | null>(null);
 
     // Randomly pick 5 avatars once on mount — stays stable across re-renders
     const [avatarUrls] = useState(() => shuffleAndPick(AVATAR_POOL, 5));
+
+    // 15-second countdown that auto-resets the form after subscribing
+    useEffect(() => {
+        if (!subscribed) {
+            setCountdown(null);
+            return;
+        }
+        setCountdown(9);
+        const id = setInterval(() => {
+            setCountdown(prev => {
+                if (prev === null || prev <= 1) {
+                    clearInterval(id);
+                    setSubscribed(false);
+                    setEmail('');
+                    return null;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(id);
+    }, [subscribed]);
 
     // Wave animation: trigger once when avatar group scrolls into view
     const avatarGroupRef = useRef<HTMLDivElement>(null);
@@ -138,7 +160,11 @@ const Newsletter = ({ mode }: Props) => {
                 };
 
                 const widget = document.createElement('cap-widget');
-                widget.setAttribute('data-cap-api-endpoint', `${window.location.origin}/api/captcha/`);
+                const runtimeApiBaseUrl = getRuntimeApiBaseUrl();
+                const capApiEndpoint = runtimeApiBaseUrl
+                    ? `${runtimeApiBaseUrl.replace(/\/$/, '')}/captcha/`
+                    : `${window.location.origin}/api/captcha/`;
+                widget.setAttribute('data-cap-api-endpoint', capApiEndpoint);
                 widget.setAttribute('data-cap-disable-haptics', '');
                 if (CAP_LANG_MAP[locale]) {
                     widget.setAttribute('data-cap-lang', CAP_LANG_MAP[locale]);
@@ -447,20 +473,40 @@ const Newsletter = ({ mode }: Props) => {
                                     </>
                                 )}
                             </p>
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setSubscribed(false);
-                                    setEmail('');
-                                }}
-                                className='text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors flex items-center group'
-                            >
-                                <span className='group-hover:-translate-x-0.5 transition-transform'>{t('backToForm')}</span>
-                                <svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4 ml-1 transform group-hover:translate-x-0.5 transition-transform' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M14 5l7 7m0 0l-7 7m7-7H3' />
-                                </svg>
-                            </button>
+                            {countdown !== null && (
+                                <div className='flex flex-col items-center gap-3 mt-2'>
+                                    <div className='relative w-12 h-12'>
+                                        <svg className='w-12 h-12 -rotate-90' viewBox='0 0 36 36'>
+                                            <circle cx='18' cy='18' r='15.5' fill='none' stroke='currentColor' strokeWidth='2' className='text-gray-200 dark:text-gray-700' />
+                                            <circle
+                                                cx='18' cy='18' r='15.5' fill='none' stroke='currentColor' strokeWidth='2'
+                                                strokeDasharray={`${2 * Math.PI * 15.5}`}
+                                                strokeDashoffset={`${2 * Math.PI * 15.5 * (1 - countdown / 9)}`}
+                                                strokeLinecap='round'
+                                                className='text-blue-500 dark:text-blue-400 transition-all duration-1000 ease-linear'
+                                            />
+                                        </svg>
+                                        <span className='absolute inset-0 flex items-center justify-center text-sm font-semibold text-gray-600 dark:text-gray-300'>
+                                            {countdown}
+                                        </span>
+                                    </div>
+                                    <p className='text-xs text-gray-400 dark:text-gray-500 tracking-wide'>Auto-returning to form</p>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setSubscribed(false);
+                                            setEmail('');
+                                        }}
+                                        className='text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors flex items-center group'
+                                    >
+                                        <svg xmlns='http://www.w3.org/2000/svg' className='h-4 w-4 mr-1 transform group-hover:-translate-x-0.5 transition-transform' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M10 19l-7-7m0 0l7-7m-7 7h18' />
+                                        </svg>
+                                        <span className='group-hover:translate-x-0.5 transition-transform'>{t('backToForm')}</span>
+                                    </button>
+                                </div>
+                            )}
                         </MotionDiv>
                     )}
                 </AnimatePresence>

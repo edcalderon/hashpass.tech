@@ -211,15 +211,19 @@ create_or_update_codebuild() {
   local bsl_supabase_db_url=""
   local stage_supabase_url_key=""
   local stage_supabase_key_key=""
+  local stage_supabase_anon_key_key=""
   local stage_bsl_supabase_url_key=""
   local stage_bsl_supabase_key_key=""
+  local stage_bsl_supabase_anon_key_key=""
   local stage_bsl_supabase_service_role_key=""
   local stage_bsl_supabase_db_url_key=""
 
   stage_supabase_url_key="EXPO_PUBLIC_SUPABASE_URL${stage_suffix}"
   stage_supabase_key_key="EXPO_PUBLIC_SUPABASE_KEY${stage_suffix}"
+  stage_supabase_anon_key_key="EXPO_PUBLIC_SUPABASE_ANON_KEY${stage_suffix}"
   stage_bsl_supabase_url_key="EXPO_PUBLIC_BSL_SUPABASE_URL${stage_suffix}"
   stage_bsl_supabase_key_key="EXPO_PUBLIC_BSL_SUPABASE_KEY${stage_suffix}"
+  stage_bsl_supabase_anon_key_key="EXPO_PUBLIC_BSL_SUPABASE_ANON_KEY${stage_suffix}"
   stage_bsl_supabase_service_role_key="BSL_SUPABASE_SERVICE_ROLE_KEY${stage_suffix}"
   stage_bsl_supabase_db_url_key="BSL_SUPABASE_DB_URL${stage_suffix}"
 
@@ -232,6 +236,9 @@ create_or_update_codebuild() {
   fi
 
   supabase_anon_key="$(read_env_value "${stage_supabase_key_key}")"
+  if [[ -z "${supabase_anon_key}" ]]; then
+    supabase_anon_key="$(read_env_value "${stage_supabase_anon_key_key}")"
+  fi
   if [[ -z "${supabase_anon_key}" ]]; then
     supabase_anon_key="$(read_env_value EXPO_PUBLIC_SUPABASE_ANON_KEY)"
   fi
@@ -251,6 +258,9 @@ create_or_update_codebuild() {
   fi
 
   bsl_supabase_anon_key="$(read_env_value "${stage_bsl_supabase_key_key}")"
+  if [[ -z "${bsl_supabase_anon_key}" ]]; then
+    bsl_supabase_anon_key="$(read_env_value "${stage_bsl_supabase_anon_key_key}")"
+  fi
   if [[ -z "${bsl_supabase_anon_key}" ]]; then
     bsl_supabase_anon_key="$(read_env_value EXPO_PUBLIC_BSL_SUPABASE_KEY)"
   fi
@@ -275,6 +285,7 @@ create_or_update_codebuild() {
     echo "  - EXPO_PUBLIC_SUPABASE_URL"
     echo "  - NEXT_PUBLIC_SUPABASE_URL"
     echo "  - ${stage_supabase_key_key}"
+    echo "  - ${stage_supabase_anon_key_key}"
     echo "  - EXPO_PUBLIC_SUPABASE_KEY"
     echo "  - EXPO_PUBLIC_SUPABASE_ANON_KEY"
     echo "  - NEXT_PUBLIC_SUPABASE_ANON_KEY"
@@ -289,12 +300,16 @@ create_or_update_codebuild() {
   append_env_var "EXPO_PUBLIC_SUPABASE_PROFILE" "${supabase_profile}"
   append_env_var "SUPABASE_PROFILE" "${supabase_profile}"
   append_env_var "EXPO_PUBLIC_SUPABASE_URL" "${supabase_url}"
+  append_env_var "${stage_supabase_url_key}" "${supabase_url}"
   append_env_var "NEXT_PUBLIC_SUPABASE_URL" "${supabase_url}"
   append_env_var "EXPO_PUBLIC_SUPABASE_KEY" "${supabase_anon_key}"
+  append_env_var "${stage_supabase_key_key}" "${supabase_anon_key}"
   append_env_var "EXPO_PUBLIC_SUPABASE_ANON_KEY" "${supabase_anon_key}"
+  append_env_var "${stage_supabase_anon_key_key}" "${supabase_anon_key}"
   append_env_var "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${supabase_anon_key}"
   append_env_var "${stage_bsl_supabase_url_key}" "${bsl_supabase_url}"
   append_env_var "${stage_bsl_supabase_key_key}" "${bsl_supabase_anon_key}"
+  append_env_var "${stage_bsl_supabase_anon_key_key}" "${bsl_supabase_anon_key}"
   append_env_var "${stage_bsl_supabase_service_role_key}" "${bsl_supabase_service_role_key}"
   append_env_var "${stage_bsl_supabase_db_url_key}" "${bsl_supabase_db_url}"
   append_env_var "EXPO_PUBLIC_BSL_SUPABASE_URL" "${bsl_supabase_url}"

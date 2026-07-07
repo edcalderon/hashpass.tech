@@ -396,7 +396,17 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     ['PUBLIC_URL', runtime.directusUrl],
   ];
 
-  canonicalEntries.forEach(([key, value]) => {
+  const environmentSuffix = options.environment === 'production' ? '_PROD' : '_DEV';
+  const environmentSupabaseEntries = [
+    [`EXPO_PUBLIC_SUPABASE_URL${environmentSuffix}`, supabaseUrl],
+    [`EXPO_PUBLIC_SUPABASE_KEY${environmentSuffix}`, supabaseKey],
+    [`EXPO_PUBLIC_SUPABASE_ANON_KEY${environmentSuffix}`, supabaseKey],
+    [`SUPABASE_SERVICE_ROLE_KEY${environmentSuffix}`, supabaseServiceRoleKey],
+    [`SUPABASE_DB_URL${environmentSuffix}`, supabaseDatabaseUrl],
+    [`DATABASE_URL${environmentSuffix}`, supabaseDatabaseUrl],
+  ];
+
+  [...canonicalEntries, ...environmentSupabaseEntries].forEach(([key, value]) => {
     if (!value) return;
     targetConfig[key] = value;
   });

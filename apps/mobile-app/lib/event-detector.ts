@@ -1,8 +1,8 @@
 // Event Detection Utility
 // This utility detects available events based on the current deployment context
 
-import { EventConfig, EVENTS } from '../config/events';
-import { ENV_CONFIG } from '@hashpass/config';
+import { EVENTS } from '../config/events';
+import type { EventConfig } from '@hashpass/types';
 
 // EventInfo is the UI-focused view of EventConfig
 // It omits backend-specific fields (name, domain) and adds availability flag
@@ -41,6 +41,28 @@ const TENANT_ALIASES: Record<string, string> = {
   bsl2025: 'bsl2025',
 };
 
+const TENANT_HOSTNAME_ALIASES: Record<string, string> = {
+  'hashpass.co': MAIN_EVENT_TENANT_ID,
+  'www.hashpass.co': MAIN_EVENT_TENANT_ID,
+  'hashpass.tech': MAIN_EVENT_TENANT_ID,
+  'www.hashpass.tech': MAIN_EVENT_TENANT_ID,
+  'dev.hashpass.tech': MAIN_EVENT_TENANT_ID,
+  'localhost': MAIN_EVENT_TENANT_ID,
+  '127.0.0.1': MAIN_EVENT_TENANT_ID,
+  '0.0.0.0': MAIN_EVENT_TENANT_ID,
+  'bsl.hashpass.tech': 'bsl',
+  'bsl.hashpass.co': 'bsl',
+  'bsl-dev.hashpass.tech': 'bsl',
+  'bsl-dev.hashpass.co': 'bsl',
+  'bsl2025.hashpass.tech': 'bsl2025',
+  'bsl2025.hashpass.co': 'bsl2025',
+  'blockchainsummit.hashpass.lat': 'bsl2025',
+  'blockchainsummit-dev.hashpass.lat': 'bsl2025',
+  'peru2026.hashpass.tech': 'peru2026',
+  'chile2026.hashpass.tech': 'chile2026',
+  'colombia2026.hashpass.tech': 'colombia2026',
+};
+
 const getEventTourHubId = (eventId: string): string | null => {
   const event = EVENTS[eventId];
   if (!event) return null;
@@ -76,9 +98,10 @@ const sortEventInfos = (events: EventInfo[]): EventInfo[] => {
 };
 
 const getEventTourFamilyIds = (hubEventId: string): string[] => {
-  const family = Object.values(EVENTS)
-    .filter(event => event.eventType === 'whitelabel' && (event.id === hubEventId || event.tour?.hubEventId === hubEventId))
-    .map(event => configToEventInfo(event, true));
+  const allEvents = Object.values(EVENTS) as EventConfig[];
+  const family = allEvents
+    .filter((event: EventConfig) => event.eventType === 'whitelabel' && (event.id === hubEventId || event.tour?.hubEventId === hubEventId))
+    .map((event: EventConfig) => configToEventInfo(event, true));
 
   return sortEventInfos(family).map(event => event.id);
 };
@@ -136,6 +159,17 @@ const normalizeTenantId = (value?: string | null): string | null => {
   return TENANT_ALIASES[token] || token;
 };
 
+const resolveHostnameTenantId = (hostname: string): string | null => {
+  const normalizedHostname = normalizeHostname(hostname);
+  if (!normalizedHostname) return null;
+
+  if (isLocalHostname(normalizedHostname)) {
+    return MAIN_EVENT_TENANT_ID;
+  }
+
+  return TENANT_HOSTNAME_ALIASES[normalizedHostname] || null;
+};
+
 export const getRouteEventIdFromPathname = (pathname?: string): string | null => {
   const normalizedPath = normalizeToken(pathname);
   const match = normalizedPath.match(/^\/events\/([^/]+)/);
@@ -182,9 +216,9 @@ const resolveEventIdsForTenant = (tenantId: string): string[] | null => {
     return familyIds;
   }
 
-  const prefixMatches = Object.values(EVENTS)
-    .filter(event => event.eventType === 'whitelabel' && event.id.startsWith(tenantId))
-    .map(event => event.id);
+  const prefixMatches = (Object.values(EVENTS) as EventConfig[])
+    .filter((event: EventConfig) => event.eventType === 'whitelabel' && event.id.startsWith(tenantId))
+    .map((event: EventConfig) => event.id);
 
   return prefixMatches;
 };
@@ -209,9 +243,9 @@ const buildTenantContext = (
 // Build AVAILABLE_EVENTS from EVENTS config. Tenant filtering happens in
 // getAvailableEvents() so every consumer shares the same env/config policy.
 export const AVAILABLE_EVENTS: EventInfo[] = sortEventInfos(
-  Object.values(EVENTS)
-    .filter(event => event.eventType === 'whitelabel')
-    .map(event => configToEventInfo(event, true))
+  (Object.values(EVENTS) as EventConfig[])
+    .filter((event: EventConfig) => event.eventType === 'whitelabel')
+    .map((event: EventConfig) => configToEventInfo(event, true))
 );
 
 export const getEventTenantContext = (hostname?: string): EventTenantContext => {
@@ -222,14 +256,14 @@ export const getEventTenantContext = (hostname?: string): EventTenantContext => 
     return buildTenantContext('custom', 'env-event-ids', normalizedHostname, eventIdsFromEnv);
   }
 
+  const configTenantId = resolveHostnameTenantId(normalizedHostname);
+  if (configTenantId && configTenantId !== MAIN_EVENT_TENANT_ID) {
+    return buildTenantContext(configTenantId, 'config', normalizedHostname);
+  }
+
   const envTenantId = normalizeTenantId(readEventTenantEnv());
   if (envTenantId) {
     return buildTenantContext(envTenantId, 'env-tenant', normalizedHostname);
-  }
-
-  const configTenantId = normalizeTenantId(ENV_CONFIG.getTenant(normalizedHostname).slug);
-  if (configTenantId && configTenantId !== MAIN_EVENT_TENANT_ID) {
-    return buildTenantContext(configTenantId, 'config', normalizedHostname);
   }
 
   return buildTenantContext(MAIN_EVENT_TENANT_ID, 'default', normalizedHostname);

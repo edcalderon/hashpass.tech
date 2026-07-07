@@ -1,14 +1,39 @@
 /// <reference types="jest" />
 
 import React from 'react';
-import TestimonialsColumn from '../../components/TestimonialsColumns';
 
 jest.mock('react-native', () => ({
+  AccessibilityInfo: {
+    addEventListener: jest.fn(() => ({ remove: jest.fn() })),
+    isReduceMotionEnabled: jest.fn(() => Promise.resolve(false)),
+  },
+  AppState: {
+    currentState: 'active',
+    addEventListener: jest.fn(() => ({ remove: jest.fn() })),
+    removeEventListener: jest.fn(),
+  },
+  Dimensions: {
+    get: jest.fn(() => ({ width: 1024, height: 768, scale: 1, fontScale: 1 })),
+    addEventListener: jest.fn(() => ({ remove: jest.fn() })),
+    removeEventListener: jest.fn(),
+  },
+  I18nManager: {
+    isRTL: false,
+  },
+  PixelRatio: {
+    get: () => 1,
+  },
+  Platform: {
+    OS: 'web',
+    select: (options: Record<string, unknown>) => options.web ?? options.default,
+  },
   View: 'View',
   Text: 'Text',
   Image: 'Image',
   Appearance: {
     getColorScheme: () => 'light',
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
     addChangeListener: jest.fn(),
     removeChangeListener: jest.fn(),
   },
@@ -33,7 +58,7 @@ jest.mock('../../hooks/useTheme', () => ({
 
 describe('TestimonialsColumn', () => {
   beforeEach(() => {
-    jest.spyOn(React, 'useState').mockImplementation((initial) => [initial, jest.fn()]);
+    jest.spyOn(React, 'useState').mockImplementation(((initial: unknown) => [initial, jest.fn()]) as any);
     jest.spyOn(React, 'useEffect').mockImplementation(() => undefined);
     jest.spyOn(React, 'useMemo').mockImplementation((factory) => factory());
   });
@@ -43,6 +68,9 @@ describe('TestimonialsColumn', () => {
   });
 
   it('renders avatars without relying on out-of-scope styles', () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const TestimonialsColumn = require('../../components/TestimonialsColumns').default;
+
     expect(() =>
       TestimonialsColumn({
         testimonials: [

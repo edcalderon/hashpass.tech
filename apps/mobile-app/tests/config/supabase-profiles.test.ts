@@ -1,9 +1,20 @@
 /// <reference types="jest" />
+jest.mock('expo/virtual/env', () => ({
+  __esModule: true,
+  env: process.env,
+}), { virtual: true });
+
 import { resolvePublicSupabaseConfig } from '../../config/supabase-profiles';
 
 const PUBLIC_SUPABASE_URL_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'URL'].join('_');
 const PUBLIC_SUPABASE_KEY_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'KEY'].join('_');
 const PUBLIC_SUPABASE_ANON_KEY_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'ANON', 'KEY'].join('_');
+const PUBLIC_SUPABASE_URL_DEV_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'URL', 'DEV'].join('_');
+const PUBLIC_SUPABASE_KEY_DEV_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'KEY', 'DEV'].join('_');
+const PUBLIC_SUPABASE_ANON_KEY_DEV_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'ANON', 'KEY', 'DEV'].join('_');
+const PUBLIC_SUPABASE_URL_PROD_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'URL', 'PROD'].join('_');
+const PUBLIC_SUPABASE_KEY_PROD_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'KEY', 'PROD'].join('_');
+const PUBLIC_SUPABASE_ANON_KEY_PROD_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'ANON', 'KEY', 'PROD'].join('_');
 const BSL_PROD_SUPABASE_URL_ENV = ['EXPO', 'PUBLIC', 'BSL', 'SUPABASE', 'URL', 'PROD'].join('_');
 const BSL_PROD_SUPABASE_ANON_KEY_ENV = ['EXPO', 'PUBLIC', 'BSL', 'SUPABASE', 'ANON', 'KEY', 'PROD'].join('_');
 
@@ -54,6 +65,46 @@ describe('resolvePublicSupabaseConfig', () => {
 
     expect(config.supabaseUrl).toBe('https://generic-project.supabase.co');
     expect(config.supabaseAnonKey).toBe('anon1');
+  });
+
+  it('prefers core development expo envs over NEXT_PUBLIC fallbacks', () => {
+    const env: Record<string, string> = {
+      [PUBLIC_SUPABASE_URL_DEV_ENV]: 'https://dev-project.supabase.co',
+      [PUBLIC_SUPABASE_KEY_DEV_ENV]: 'dev-key',
+      [PUBLIC_SUPABASE_ANON_KEY_DEV_ENV]: 'dev-anon-key',
+      [PUBLIC_SUPABASE_URL_ENV]: 'https://generic-project.supabase.co',
+      [PUBLIC_SUPABASE_KEY_ENV]: 'generic',
+      [PUBLIC_SUPABASE_ANON_KEY_ENV]: 'generic-anon-key',
+    };
+
+    const config = resolvePublicSupabaseConfig({
+      profileId: 'core-development',
+      readEnv: (name) => env[name],
+    });
+
+    expect(config.profileId).toBe('core-development');
+    expect(config.supabaseUrl).toBe('https://dev-project.supabase.co');
+    expect(config.supabaseAnonKey).toBe('dev-key');
+  });
+
+  it('prefers core production expo envs over NEXT_PUBLIC fallbacks', () => {
+    const env: Record<string, string> = {
+      [PUBLIC_SUPABASE_URL_PROD_ENV]: 'https://prod-project.supabase.co',
+      [PUBLIC_SUPABASE_KEY_PROD_ENV]: 'prod-key',
+      [PUBLIC_SUPABASE_ANON_KEY_PROD_ENV]: 'prod-anon-key',
+      [PUBLIC_SUPABASE_URL_ENV]: 'https://generic-project.supabase.co',
+      [PUBLIC_SUPABASE_KEY_ENV]: 'generic',
+      [PUBLIC_SUPABASE_ANON_KEY_ENV]: 'generic-anon-key',
+    };
+
+    const config = resolvePublicSupabaseConfig({
+      profileId: 'core-production',
+      readEnv: (name) => env[name],
+    });
+
+    expect(config.profileId).toBe('core-production');
+    expect(config.supabaseUrl).toBe('https://prod-project.supabase.co');
+    expect(config.supabaseAnonKey).toBe('prod-key');
   });
 
   it('falls back to browser runtime when env vars are absent', () => {

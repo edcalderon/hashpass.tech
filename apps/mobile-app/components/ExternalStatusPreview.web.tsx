@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '../lib/vector-icons';
-import { useTheme } from '../hooks/useTheme';
 
 interface ExternalStatusPreviewProps {
   url: string;
 }
 
 export default function ExternalStatusPreview({ url }: ExternalStatusPreviewProps) {
+  const { useTheme } = require('../hooks/useTheme') as typeof import('../hooks/useTheme');
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [expanded, setExpanded] = useState(true);

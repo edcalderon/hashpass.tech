@@ -47,7 +47,9 @@ export function renderTemplate(
   } satisfies Required<TemplateVars>;
 
   for (const [key, value] of Object.entries(resolved)) {
-    html = html.split(`{{${key.toUpperCase()}}}`).join(String(value ?? ''));
+    // Convert camelCase keys to UPPER_SNAKE_CASE to match {{APP_URL}}-style placeholders
+    const placeholder = key.replace(/([A-Z])/g, '_$1').toUpperCase();
+    html = html.split(`{{${placeholder}}}`).join(String(value ?? ''));
   }
 
   return html;

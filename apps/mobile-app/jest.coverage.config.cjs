@@ -1,5 +1,6 @@
 module.exports = {
   preset: 'jest-expo',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.cjs'],
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['json-summary', 'lcov', 'text'],

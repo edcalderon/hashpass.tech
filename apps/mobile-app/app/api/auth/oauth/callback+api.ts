@@ -474,6 +474,31 @@ const buildNativeCallbackResponse = (
 const exchangeSessionCookieForJsonTokens = async (
   cookieHeader: string
 ): Promise<{ access_token?: string; refresh_token?: string } | null> => {
+  try {
+    const refreshResponse = await fetchDirectus(DIRECTUS_URL, '/auth/refresh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': cookieHeader,
+      },
+      body: JSON.stringify({ mode: 'json' }),
+    });
+
+    if (refreshResponse.ok) {
+      const refreshData = await refreshResponse.json().catch(() => ({}));
+      const tokens = refreshData?.data || refreshData;
+
+      if (tokens?.access_token) {
+        return tokens;
+      }
+    }
+  } catch (error) {
+    console.warn(
+      '[OAuth Callback] Directus cookie refresh probe failed:',
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+
   if (!directusSecret) {
     return null;
   }
