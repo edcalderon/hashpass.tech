@@ -1,3 +1,14 @@
+## [1.8.167](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.166...v1.8.167) (2026-07-07)
+
+
+### Bug Fixes
+
+* align README versioning coverage with release versions ([c999a86](https://github.com/hashpass-tech/hashpass.tech/commit/c999a86a13b6850022d57ce1e42c76c3b48c644c))
+
+
+
+
+
 ## [1.8.166](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.165...v1.8.166) (2026-07-07)
 
 
