@@ -284,7 +284,6 @@ export class DirectusAuthProvider implements IAuthProvider {
       };
 
       this.session = session;
-      await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
       this.setupRefreshTimer();
       this.notifyStateChange(session);
 
