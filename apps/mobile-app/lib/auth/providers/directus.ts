@@ -112,6 +112,15 @@ export class DirectusAuthProvider implements IAuthProvider {
     };
   }
 
+  private createPersistedSession(session: AuthSession): AuthSession {
+    return {
+      user: session.user,
+      access_token: this.isCookieBackedSession(session) ? session.access_token : 'session_based',
+      provider: session.provider,
+      expires_at: session.expires_at,
+    };
+  }
+
   private pushOAuthFailure(
     failures: Array<{ stage: string; message: string; status?: number; code?: string }>,
     stage: string,
@@ -789,6 +798,7 @@ async signOut(): Promise<{ error?: string }> {
     try {
       const key = 'hashpass_directus_session';
       // Do not persist cookie-backed pseudo sessions; they must be revalidated per runtime.
+      const persistedSession = this.createPersistedSession(session);
       if (this.isCookieBackedSession(session)) {
         if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
           localStorage.removeItem(key);
@@ -798,7 +808,7 @@ async signOut(): Promise<{ error?: string }> {
         }
         return;
       }
-      const value = JSON.stringify(session);
+      const value = JSON.stringify(persistedSession);
 
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(key, value);

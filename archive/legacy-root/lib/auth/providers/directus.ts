@@ -545,7 +545,12 @@ async signOut(): Promise<{ error?: string }> {
   private async storeSession(session: AuthSession): Promise<void> {
     try {
       const key = 'hashpass_directus_session';
-      const value = JSON.stringify(session);
+      const value = JSON.stringify({
+        user: session.user,
+        access_token: 'session_based',
+        provider: session.provider,
+        expires_at: session.expires_at,
+      });
 
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(key, value);
