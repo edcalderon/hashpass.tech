@@ -50,6 +50,7 @@ type SupabaseSessionBridge = {
 type DirectusSupabaseSyncResult = {
   email: string;
   bridge: SupabaseSessionBridge | null;
+  user: DirectusOAuthUser | null;
 };
 
 const normalizeEmail = (value: string | null | undefined): string => value?.trim().toLowerCase() || '';
@@ -183,6 +184,17 @@ const appendSupabaseBridgeToFragment = (
   fragment.set('sb_email', bridge.email);
 };
 
+const appendDirectusUserToFragment = (
+  fragment: URLSearchParams,
+  user: DirectusOAuthUser | null
+) => {
+  if (!user) {
+    return;
+  }
+
+  fragment.set('directus_user', JSON.stringify(user));
+};
+
 const syncDirectusUserToSupabase = async (
   request: Request,
   accessToken: string
@@ -192,6 +204,7 @@ const syncDirectusUserToSupabase = async (
   }
 
   const client = getSupabaseServerForRequest(request) as SupabaseClient;
+  let syncResultBase: DirectusSupabaseSyncResult | null = null;
 
   try {
     const directusUserResponse = await fetchDirectus(DIRECTUS_URL, '/users/me', {
@@ -219,6 +232,12 @@ const syncDirectusUserToSupabase = async (
       console.warn('[OAuth Callback] Supabase sync skipped: Directus OAuth user has no email.');
       return null;
     }
+
+    syncResultBase = {
+      email,
+      bridge: null,
+      user: directusUser,
+    };
 
     const fullName = `${directusUser.first_name || ''} ${directusUser.last_name || ''}`.trim();
     const desiredMetadata: Record<string, string> = {
@@ -262,7 +281,7 @@ const syncDirectusUserToSupabase = async (
     if (!createResult.error && createResult.data?.user) {
       console.log('[OAuth Callback] ✅ Synced Directus OAuth user into Supabase:', email);
       const bridge = await issueSupabaseSessionBridge(client, email);
-      return { email, bridge };
+      return { ...syncResultBase, bridge };
     }
 
     const createErrorMessage = createResult.error?.message || '';
@@ -271,14 +290,14 @@ const syncDirectusUserToSupabase = async (
         '[OAuth Callback] Supabase sync createUser failed:',
         createErrorMessage || 'Unknown createUser error'
       );
-      return { email, bridge: null };
+      return { ...syncResultBase, bridge: null };
     }
 
     const existingUser = await findSupabaseUserByEmail(client, email);
     if (!existingUser) {
       console.warn('[OAuth Callback] Supabase sync: user already exists but could not be located for metadata update.');
       const bridge = await issueSupabaseSessionBridge(client, email);
-      return { email, bridge };
+      return { ...syncResultBase, bridge };
     }
 
     const existingMetadata = (existingUser.user_metadata || {}) as Record<string, any>;
@@ -304,18 +323,18 @@ const syncDirectusUserToSupabase = async (
         updateResult.error.message
       );
       const bridge = await issueSupabaseSessionBridge(client, email);
-      return { email, bridge };
+      return { ...syncResultBase, bridge };
     }
 
     console.log('[OAuth Callback] ✅ Updated existing Supabase user with Directus metadata:', email);
     const bridge = await issueSupabaseSessionBridge(client, email);
-    return { email, bridge };
+    return { ...syncResultBase, bridge };
   } catch (error) {
     console.warn(
       '[OAuth Callback] Supabase sync failed unexpectedly:',
       error instanceof Error ? error.message : String(error)
     );
-    return null;
+    return syncResultBase;
   }
 };
 
@@ -632,6 +651,7 @@ export async function GET(request: Request): Promise<Response> {
       ...(urlRefreshToken && { refresh_token: urlRefreshToken })
     });
     appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
+    appendDirectusUserToFragment(fragment, syncResult?.user || null);
 
     if (nativeCallbackCookie) {
       const nativeResponse = buildNativeCallbackResponse(nativeCallbackCookie, finalReturnTo, fragment);
@@ -680,6 +700,7 @@ export async function GET(request: Request): Promise<Response> {
                 ...(tokens.refresh_token && { refresh_token: tokens.refresh_token })
               });
               appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
+              appendDirectusUserToFragment(fragment, syncResult?.user || null);
 
               if (nativeCallbackCookie) {
                 const nativeResponse = buildNativeCallbackResponse(nativeCallbackCookie, finalReturnTo, fragment);
@@ -744,6 +765,7 @@ export async function GET(request: Request): Promise<Response> {
           ...(exchangedTokens.refresh_token && { refresh_token: exchangedTokens.refresh_token })
         });
         appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
+        appendDirectusUserToFragment(fragment, syncResult?.user || null);
 
         if (nativeCallbackCookie) {
           const nativeResponse = buildNativeCallbackResponse(nativeCallbackCookie, finalReturnTo, fragment);

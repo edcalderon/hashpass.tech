@@ -32,6 +32,7 @@ import { showConsoleWelcome } from '../lib/console-welcome';
 import LoadingScreen from '../components/LoadingScreen';
 import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppErrorBoundary';
 import { configureNativeGoogleSignin } from '../lib/native-google-signin';
+import { hasRecentAuthSuccess } from '../lib/auth/recent-auth';
 import packageJson from '../package.json';
 
 const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
@@ -92,8 +93,6 @@ function ThemedContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [versionUpdate, setVersionUpdate] = useState<{ currentVersion: string; latestVersion: string } | null>(null);
   const [lastRedirectTime, setLastRedirectTime] = useState(0);
-  const AUTH_RECENT_SUCCESS_KEY = 'auth_recent_success_at';
-  const AUTH_REDIRECT_GRACE_MS = 12000;
 
   // Check version on first load (web only) and initialize console welcome
   useEffect(() => {
@@ -229,26 +228,7 @@ function ThemedContent() {
   // Handle auth redirection with session verification
   useEffect(() => {
     const shouldDelayRedirectForRecentAuth = () => {
-      if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.sessionStorage) {
-        return false;
-      }
-
-      const rawTimestamp = window.sessionStorage.getItem(AUTH_RECENT_SUCCESS_KEY);
-      if (!rawTimestamp) return false;
-
-      const timestamp = Number(rawTimestamp);
-      if (!Number.isFinite(timestamp)) {
-        window.sessionStorage.removeItem(AUTH_RECENT_SUCCESS_KEY);
-        return false;
-      }
-
-      const age = Date.now() - timestamp;
-      if (age > AUTH_REDIRECT_GRACE_MS) {
-        window.sessionStorage.removeItem(AUTH_RECENT_SUCCESS_KEY);
-        return false;
-      }
-
-      return true;
+      return hasRecentAuthSuccess();
     };
 
     const triggerAuthRecheck = () => {

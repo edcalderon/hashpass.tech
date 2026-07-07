@@ -98,6 +98,28 @@ export class DirectusAuthProvider implements IAuthProvider {
     };
   }
 
+  private parseDirectusUserPayload(value: string | null | undefined): Record<string, any> | null {
+    if (typeof value !== 'string' || !value.trim()) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return null;
+      }
+
+      const candidate = parsed as Record<string, any>;
+      if (candidate.data && typeof candidate.data === 'object' && !Array.isArray(candidate.data)) {
+        return candidate.data as Record<string, any>;
+      }
+
+      return candidate;
+    } catch {
+      return null;
+    }
+  }
+
   private buildSessionFromToken(
     userData: Record<string, any>,
     accessToken: string,
@@ -356,6 +378,7 @@ export class DirectusAuthProvider implements IAuthProvider {
         code: params.code || urlParams.get('code'),
         session_token: params.session_token || urlParams.get('session_token'),
         user: params.user || urlParams.get('user'),
+        directus_user: params.directus_user || urlParams.get('directus_user') || hashParams.get('directus_user'),
         token: params.token || urlParams.get('token'),
         refresh_token: params.refresh_token || urlParams.get('refresh_token') || hashParams.get('refresh_token'),
         oauth_success: params.oauth_success || urlParams.get('oauth_success') || hashParams.get('oauth_success'),
@@ -385,7 +408,33 @@ export class DirectusAuthProvider implements IAuthProvider {
       }
 
       // Try using access token if available (either access_token or token)
-      const token = authData.access_token || authData.token;
+      const token = authData.access_token || authData.token || authData.session_token;
+      const directusUser = this.parseDirectusUserPayload(authData.directus_user);
+      if (directusUser) {
+        console.log('🔄 Found Directus user payload in OAuth callback; skipping /users/me lookup.');
+
+        const normalizedUserData = {
+          ...directusUser,
+          email: directusUser.email || authData.email || this.session?.user?.email,
+        };
+
+        const session: AuthSession = {
+          user: this.mapDirectusUser(normalizedUserData),
+          access_token: token || 'oauth_session',
+          refresh_token: authData.refresh_token || undefined,
+          expires_at: authData.expires_in ? Date.now() + (parseInt(authData.expires_in, 10) * 1000) : undefined,
+        };
+
+        this.session = session;
+        await this.storeSession(session);
+
+        console.log('🔔 Notifying auth state change (Directus payload-based)...');
+        this.notifyStateChange(session);
+        console.log('✅ Auth state change notification sent (Directus payload-based)');
+
+        return { user: session.user, session };
+      }
+
       if (token) {
         console.log('🔄 Found access token, attempting authentication...');
         console.log('🔍 Token details:', {

@@ -27,7 +27,7 @@
 * **tests:** align README versioning test with dev suffix ([8350bba](https://github.com/hashpass-tech/hashpass.tech/commit/8350bbaa236358d41045744959b754fd412785dc))
 * **tests:** avoid CodeQL alert in versioning test ([a30f888](https://github.com/hashpass-tech/hashpass.tech/commit/a30f8886dd9c1aa849bdd126b34b0c494115673d))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 

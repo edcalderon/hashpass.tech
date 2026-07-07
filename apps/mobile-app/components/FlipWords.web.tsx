@@ -39,7 +39,7 @@ const FlipWords = ({
           minHeight: reservedHeight,
           alignItems: "center",
           justifyContent: "center",
-          overflow: "hidden",
+          overflow: "visible",
           position: "relative",
           paddingLeft: 8,
           paddingRight: 8,

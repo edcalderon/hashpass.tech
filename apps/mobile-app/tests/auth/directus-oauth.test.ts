@@ -11,11 +11,12 @@ jest.mock('react-native', () => ({
 
 const mockLogoutSession = jest.fn(async () => ({ data: null, error: null }));
 const mockListAuthProviders = jest.fn(async () => ({ data: [], error: null }));
+const mockGetCurrentUserWithToken = jest.fn();
 const mockGetCurrentUserWithSession = jest.fn();
 const mockDirectusApiClientCtor = jest.fn(() => ({
   logoutSession: mockLogoutSession,
   listAuthProviders: mockListAuthProviders,
-  getCurrentUserWithToken: jest.fn(),
+  getCurrentUserWithToken: mockGetCurrentUserWithToken,
   getCurrentUserWithSession: mockGetCurrentUserWithSession,
   refreshSessionWithCookies: jest.fn(),
   refreshSessionWithSessionCookies: jest.fn(),
@@ -53,6 +54,7 @@ beforeEach(() => {
   jest.resetModules();
   mockLogoutSession.mockClear();
   mockListAuthProviders.mockClear();
+  mockGetCurrentUserWithToken.mockClear();
   mockGetCurrentUserWithSession.mockClear();
   mockDirectusApiClientCtor.mockClear();
 
@@ -107,6 +109,30 @@ describe('Directus OAuth sign-in', () => {
     const session = await provider.getSession();
 
     expect(session).toBeNull();
+    expect(mockGetCurrentUserWithSession).not.toHaveBeenCalled();
+  });
+
+  it('uses Directus user payload from the OAuth callback instead of calling /users/me', async () => {
+    const { DirectusAuthProvider } = require('../../../../packages/auth/src/providers/directus');
+
+    const provider = new DirectusAuthProvider('https://sso.hashpass.co');
+    const directusUser = {
+      id: 'directus-user-123',
+      email: 'ada@hashpass.tech',
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+      status: 'active',
+    };
+
+    const result = await provider.handleOAuthCallback({
+      access_token: 'access123',
+      refresh_token: 'refresh456',
+      directus_user: JSON.stringify(directusUser),
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.session?.user.email).toBe('ada@hashpass.tech');
+    expect(mockGetCurrentUserWithToken).not.toHaveBeenCalled();
     expect(mockGetCurrentUserWithSession).not.toHaveBeenCalled();
   });
 });
