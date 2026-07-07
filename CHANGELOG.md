@@ -1,3 +1,14 @@
+## [1.8.165](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.164...v1.8.165) (2026-07-07)
+
+
+### Features
+
+* add Codecov coverage tracking ([208d1c1](https://github.com/hashpass-tech/hashpass.tech/commit/208d1c1f81a14c557d53334ce50d8e511dfb8889))
+
+
+
+
+
 ## [1.8.164](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.163...v1.8.164) (2026-07-07)
 
 
