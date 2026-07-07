@@ -61,6 +61,44 @@ export const createSessionFromUrl = async (url: string): Promise<{
   console.log('🔍 URL contains #access_token=', url.includes('#access_token='));
   
   try {
+    const hydrateSessionUser = async (session: Session | null): Promise<{
+      session: Session | null;
+      user: User | null;
+    }> => {
+      if (!session) {
+        return { session: null, user: null };
+      }
+
+      if (session.user) {
+        return { session, user: session.user };
+      }
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const hydratedSession = {
+            ...session,
+            user,
+          } as Session;
+
+          return { session: hydratedSession, user };
+        }
+      } catch (userError) {
+        console.warn('⚠️ Failed to hydrate Supabase session user:', userError);
+      }
+
+      try {
+        const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+        if (refreshedSession?.user) {
+          return { session: refreshedSession, user: refreshedSession.user };
+        }
+      } catch (sessionError) {
+        console.warn('⚠️ Failed to re-read Supabase session after auth callback:', sessionError);
+      }
+
+      return { session, user: null };
+    };
+
     // Parse URL parameters (QueryParams.getQueryParams handles both query string and hash)
     const { params, errorCode } = QueryParams.getQueryParams(url);
     const hasAuthParams = Boolean(params.access_token || params.code || params.refresh_token || errorCode);
@@ -71,7 +109,15 @@ export const createSessionFromUrl = async (url: string): Promise<{
       const { data: { session: existingSession } } = await supabase.auth.getSession();
       if (existingSession && existingSession.user) {
         console.log('✅ Session already exists, returning it');
-        return { session: existingSession, user: null, error: null };
+        return { session: existingSession, user: existingSession.user, error: null };
+      }
+
+      if (existingSession) {
+        const hydrated = await hydrateSessionUser(existingSession);
+        if (hydrated.user) {
+          console.log('✅ Session already exists and user was hydrated from Supabase');
+          return { session: hydrated.session, user: hydrated.user, error: null };
+        }
       }
     } else {
       console.log('ℹ️ Auth payload detected in callback URL, forcing explicit session processing.');
@@ -122,14 +168,16 @@ export const createSessionFromUrl = async (url: string): Promise<{
         const { data: { session: fallbackSession } } = await supabase.auth.getSession();
         if (fallbackSession) {
           console.log('✅ Session exists despite setSession error');
-          return { session: fallbackSession, user: null, error: null };
+          const hydrated = await hydrateSessionUser(fallbackSession);
+          return { session: hydrated.session, user: hydrated.user, error: null };
         }
         
         throw error;
       }
 
       console.log('✅ Session created successfully with tokens');
-      return { session: data.session, user: null, error: null };
+      const hydrated = await hydrateSessionUser(data.session);
+      return { session: hydrated.session, user: hydrated.user, error: null };
     }
 
     // Method 2: Authorization code exchange
@@ -152,7 +200,8 @@ export const createSessionFromUrl = async (url: string): Promise<{
           const { data: { session: fallbackSession } } = await supabase.auth.getSession();
           if (fallbackSession) {
             console.log('✅ Session exists despite exchangeCodeForSession error');
-            return { session: fallbackSession, user: null, error: null };
+            const hydrated = await hydrateSessionUser(fallbackSession);
+            return { session: hydrated.session, user: hydrated.user, error: null };
           }
           
           throw error;
@@ -164,15 +213,17 @@ export const createSessionFromUrl = async (url: string): Promise<{
         }
         
         console.log('✅ Session created successfully via code exchange');
-        console.log('👤 User ID:', data.session.user.id);
-        return { session: data.session, user: null, error: null };
+        console.log('👤 User ID:', data.session.user?.id || '(pending hydration)');
+        const hydrated = await hydrateSessionUser(data.session);
+        return { session: hydrated.session, user: hydrated.user, error: null };
       } catch (exchangeError: any) {
         console.error('❌ Code exchange exception:', exchangeError);
         // Try one more time with getSession as fallback
         const { data: { session: retrySession } } = await supabase.auth.getSession();
         if (retrySession) {
           console.log('✅ Found session on retry after code exchange error');
-          return { session: retrySession, user: null, error: null };
+          const hydrated = await hydrateSessionUser(retrySession);
+          return { session: hydrated.session, user: hydrated.user, error: null };
         }
         throw exchangeError;
       }
@@ -181,7 +232,8 @@ export const createSessionFromUrl = async (url: string): Promise<{
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
-      return { session, user: null, error: null };
+      const hydrated = await hydrateSessionUser(session);
+      return { session: hydrated.session, user: hydrated.user, error: null };
     }
 
     return { session: null, user: null, error: null };
@@ -193,7 +245,8 @@ export const createSessionFromUrl = async (url: string): Promise<{
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        return { session, user: null, error: null };
+        const hydrated = await hydrateSessionUser(session);
+        return { session: hydrated.session, user: hydrated.user, error: null };
       }
     } catch (fallbackError) {
       console.error('❌ Fallback session check failed:', fallbackError);

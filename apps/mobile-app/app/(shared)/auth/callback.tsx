@@ -6,7 +6,7 @@ import { useToastHelpers } from '@contexts/ToastContext';
 import { useTranslation } from '../../../i18n/i18n';
 import { Check, AlertCircle } from 'lucide-react-native';
 import { authService, SUPABASE_OAUTH_CALLBACK_PATH, SUPABASE_OAUTH_NATIVE_SCHEME } from '@hashpass/auth';
-import { createSessionFromUrl } from '../../../lib/supabase';
+import { createSessionFromUrl, supabase } from '../../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../../config/supabase-profiles';
 
 type CallbackHashError = {
@@ -526,15 +526,23 @@ export default function AuthCallback() {
                                 .join('&')}`;
 
                     const sessionResult = await createSessionFromUrl(currentUrl);
+                    const resolvedUser =
+                        sessionResult.user ||
+                        sessionResult.session?.user ||
+                        (await supabase.auth.getUser().then(({ data }) => data.user).catch(() => null));
+                    const resolvedSession =
+                        sessionResult.session && resolvedUser && !sessionResult.session.user
+                            ? { ...sessionResult.session, user: resolvedUser }
+                            : sessionResult.session;
 
-                    if (sessionResult.error || !sessionResult.session?.user) {
+                    if (sessionResult.error || !resolvedSession?.user) {
                         throw new Error(
                             sessionResult.error?.message ||
                             'Authentication completed but no Supabase session was established.'
                         );
                     }
 
-                    console.log('✅ Supabase passwordless callback successful:', sessionResult.session.user.email);
+                    console.log('✅ Supabase passwordless callback successful:', resolvedSession.user.email);
                     setStatus('success');
                     setMessage(t('authenticationSuccessful', '✅ Authentication successful!'));
 

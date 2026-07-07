@@ -23,7 +23,7 @@
 
 * **auth:** align Google OAuth env aliases and release guidance ([d61ea1e](https://github.com/hashpass-tech/hashpass.tech/commit/d61ea1e8aef693c41d76e2e9acf404629ce2403f))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 

@@ -20,6 +20,7 @@ jest.mock('expo-auth-session/build/QueryParams', () => ({
 const mockCreateClient = jest.fn(() => ({
   auth: {
     getSession: jest.fn(async () => ({ data: { session: null }, error: null })),
+    getUser: jest.fn(async () => ({ data: { user: null }, error: null })),
     onAuthStateChange: jest.fn(() => ({
       data: {
         subscription: {
@@ -208,5 +209,63 @@ describe('web Supabase client initialization', () => {
     expect(result.error).toBeNull();
     expect(result.session?.access_token).toBe('access-token');
     expect(result.session?.user.email).toBe('user@example.com');
+  });
+
+  it('hydrates the user from the Supabase client when the exchange response omits it', async () => {
+    const queryParams = require('expo-auth-session/build/QueryParams');
+    queryParams.getQueryParams.mockReturnValueOnce({
+      params: { code: 'oauth-code-123' },
+      errorCode: null,
+    });
+
+    require('../../lib/supabase');
+    const { createSessionFromUrl } = require('../../lib/supabase');
+
+    const clientInstance = mockCreateClient.mock.results[0]?.value as {
+      auth: {
+        exchangeCodeForSession: jest.Mock;
+        getUser: jest.Mock;
+      };
+    };
+
+    clientInstance.auth.exchangeCodeForSession.mockResolvedValueOnce({
+      data: {
+        session: {
+          access_token: 'access-token',
+          refresh_token: 'refresh-token',
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+        },
+      },
+      error: null,
+    });
+
+    clientInstance.auth.getUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'user-456',
+          email: 'hydrated@example.com',
+          role: 'authenticated',
+          user_metadata: {},
+          app_metadata: {},
+          aud: 'authenticated',
+          confirmation_sent_at: null,
+          confirmed_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          phone: null,
+          phone_confirmed_at: null,
+          email_confirmed_at: null,
+          last_sign_in_at: new Date().toISOString(),
+        },
+      },
+      error: null,
+    });
+
+    const result = await createSessionFromUrl('hashpass://auth/callback?code=oauth-code-123');
+
+    expect(clientInstance.auth.exchangeCodeForSession).toHaveBeenCalledWith('oauth-code-123');
+    expect(clientInstance.auth.getUser).toHaveBeenCalled();
+    expect(result.error).toBeNull();
+    expect(result.session?.user.email).toBe('hydrated@example.com');
   });
 });

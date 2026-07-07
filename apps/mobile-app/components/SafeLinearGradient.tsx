@@ -11,6 +11,13 @@ const hasNativeLinearGradient = (): boolean => {
     return true;
   }
 
+  // Android release builds have been crashing on native gradient view manager
+  // resolution even when the module is installed. Use a plain View fallback
+  // there until the native bridge is confirmed stable.
+  if (Platform.OS === 'android') {
+    return false;
+  }
+
   const getViewManagerConfig = UIManager.getViewManagerConfig?.bind(UIManager);
   if (typeof getViewManagerConfig !== 'function') {
     return false;

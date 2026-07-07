@@ -12,6 +12,10 @@ const DIRECTUS_URL =
   process.env.DIRECTUS_URL ||
   process.env.EXPO_PUBLIC_DIRECTUS_URL ||
   'https://sso.hashpass.co';
+const DIRECTUS_STATIC_TOKEN =
+  process.env.DIRECTUS_TOKEN ||
+  process.env.EXPO_PUBLIC_DIRECTUS_TOKEN ||
+  '';
 const DEFAULT_RETURN_TO = '/dashboard/explore';
 const DEFAULT_FRONTEND_ORIGIN =
   process.env.EXPO_PUBLIC_FRONTEND_URL ||
@@ -161,6 +165,51 @@ const createRandomPassword = (): string => {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
 };
 
+const resolveDirectusAdminToken = async (): Promise<string> => {
+  const staticToken = DIRECTUS_STATIC_TOKEN.trim();
+  if (staticToken) {
+    console.log('[Google OAuth] Using configured Directus static token for admin operations.');
+    return staticToken;
+  }
+
+  console.log('[Google OAuth] Getting admin token for Directus...');
+  let adminLoginResponse: Response;
+  try {
+    adminLoginResponse = await fetchDirectus(DIRECTUS_URL, '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: process.env.ADMIN_EMAIL || 'admin@hashpass.tech',
+        password: process.env.ADMIN_PASSWORD || ''
+      })
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/fetch failed|networkerror|failed to fetch/i.test(message)) {
+      throw new Error(
+        'Directus auth server could not be reached from the API bridge. Set DIRECTUS_TOKEN or check AWS egress and DIRECTUS_URL.'
+      );
+    }
+
+    throw error;
+  }
+
+  if (!adminLoginResponse.ok) {
+    const adminError = await adminLoginResponse.text();
+    console.error('[Google OAuth] Failed to get admin token:', adminLoginResponse.status, adminError.substring(0, 200));
+    throw new Error('Failed to authenticate as admin');
+  }
+
+  const adminAuth = await adminLoginResponse.json();
+  const adminToken = adminAuth.data?.access_token;
+
+  if (!adminToken) {
+    throw new Error('No admin token received');
+  }
+
+  return adminToken;
+};
+
 /**
  * Direct Google OAuth handler
  * This endpoint receives the authorization code from Google and exchanges it for tokens
@@ -289,28 +338,7 @@ export async function GET(request: Request): Promise<Response> {
     console.log('[Google OAuth] User name from Google:', userName);
     
     // Step 3: Get admin token to create/update user in Directus
-    console.log('[Google OAuth] Getting admin token for Directus...');
-    const adminLoginResponse = await fetchDirectus(DIRECTUS_URL, '/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: process.env.ADMIN_EMAIL || 'admin@hashpass.tech',
-        password: process.env.ADMIN_PASSWORD || ''
-      })
-    });
-    
-    if (!adminLoginResponse.ok) {
-      const adminError = await adminLoginResponse.text();
-      console.error('[Google OAuth] Failed to get admin token:', adminLoginResponse.status, adminError.substring(0, 200));
-      throw new Error('Failed to authenticate as admin');
-    }
-    
-    const adminAuth = await adminLoginResponse.json();
-    const adminToken = adminAuth.data?.access_token;
-    
-    if (!adminToken) {
-      throw new Error('No admin token received');
-    }
+    const adminToken = await resolveDirectusAdminToken();
     
     console.log('[Google OAuth] Got admin token, creating/checking user...');
     
