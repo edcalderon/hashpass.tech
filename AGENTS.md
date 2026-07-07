@@ -24,11 +24,11 @@ The full release includes:
 1. Validate the current task changes.
 2. Commit the intended changes on `develop`.
 3. Push `develop` to `origin` and `upstream`.
-4. Fast-forward or merge `develop` into `main`.
-5. Run `npm run release:patch` on `main`.
-6. Push `main` and the release tag to `origin`, then `upstream`.
-7. Merge the release commit from `main` back into `develop`.
-8. Push the synchronized `develop` branch to `origin` and `upstream`.
+4. Run `npm run release:promote` on `develop`.
+5. Wait for `@edcalderon` codeowner approval, coverage at or above 33%, and the GitHub security scans before merging the PR.
+6. Merge the PR and sync the release commit back to `develop`.
+7. Push the synchronized `develop` branch to `origin` and `upstream`.
+8. Run `npm run release:patch` on `main` to cut the stable tag.
 9. Trigger the Android release workflow from the new version tag.
 10. Verify the Android workflow and the web deployment checks.
 
@@ -44,7 +44,8 @@ The Husky pre-commit hook runs the README sync guard, so a stale changelog/READM
   - `npm run release:patch`
   - `npm run release:minor`
   - `npm run release:major`
-- The release script is responsible for syncing version fields, creating the commit, tagging the release, and pushing `origin/main`.
+- The release script is responsible for syncing version fields, creating the commit, tagging the release, and pushing the release branch.
+- `npm run release:promote` prepares the protected `develop -> main` PR instead of direct-pushing to `main`.
 - Never reuse or move an existing release tag.
 - If the requested version already exists or its Android `versionCode` has shipped, create the next patch version.
 

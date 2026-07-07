@@ -12,7 +12,16 @@
     "successMessage": "Hemos enviado un correo de confirmación a",
     "successMessageEmail": "Revisa tu bandeja de entrada para más detalles.",
     "sendAnother": "Enviar otro",
-    "backToForm": "Volver al formulario"
+    "backToForm": "Volver al formulario",
+    "alreadySubscribed": "Este correo ya está suscrito a nuestro boletín.",
+    "errorRequired": "El correo es obligatorio",
+    "errorInvalidEmail": "Por favor ingresa un correo válido",
+    "errorCaptchaRequired": "Por favor completa la verificación de seguridad",
+    "errorCaptchaExpired": "Verificación expirada. Por favor resuélvela de nuevo.",
+    "errorFailed": "No se pudo suscribir. Inténtalo de nuevo.",
+    "autoReturning": "Volviendo al formulario automáticamente",
+    "capError": "Verificación de seguridad fallida. Reintenta.",
+    "capRetry": "Reintentar"
   },
   "wallet": {
     "digitalWalletTitle": "Billetera de Boletos Digitales",

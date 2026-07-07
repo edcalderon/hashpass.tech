@@ -8,7 +8,7 @@
  * - runs versioning preflight checks
  * - bumps patch/minor/major with branch-aware build handling
  * - commits changelog/version updates and tags the release
- * - optionally promotes a develop release onto main
+ * - optionally opens a develop -> main promotion PR
  */
 
 const { spawnSync } = require('child_process');
@@ -133,6 +133,7 @@ function parseArgs(argv) {
     bump: 'patch',
     branch: '',
     promote: false,
+    promoteOnly: false,
     push: true,
     allowDirty: false,
     dryRun: false,
@@ -203,6 +204,11 @@ function parseArgs(argv) {
 
     if (arg === '--promote' || arg === '--promote-to-main') {
       options.promote = true;
+      continue;
+    }
+
+    if (arg === '--promote-only') {
+      options.promoteOnly = true;
       continue;
     }
 
@@ -295,8 +301,9 @@ function printUsage() {
       'Options:',
       '  --branch <name>           Override the detected branch',
       '  --target-branch <name>    Alias for --branch',
-      '  --promote                 Promote a develop release onto main after bumping',
+      '  --promote                 Prepare a develop -> main promotion PR',
       '  --promote-to-main         Alias for --promote',
+      '  --promote-only            Alias for the promotion PR prep path',
       '  --no-push                 Skip git push',
       '  --allow-dirty             Allow a dirty working tree',
       '  --dry-run                 Print planned commands without running them',
@@ -312,12 +319,12 @@ function printUsage() {
       'Examples:',
       '  npm run release -- patch',
       '  npm run release:minor',
-      '  npm run release -- patch --branch develop --promote',
       '  npm run release:promote',
+      '  npm run release -- patch --branch main',
       '  npm run release -- major --branch main',
       '',
       'Promote flow:',
-      '  develop release -> main sync -> develop fast-forward + dev re-release',
+      '  develop prep -> PR to main -> codeowner approval -> merge -> main release',
     ].join('\n')
   );
 }
@@ -398,6 +405,7 @@ function getExactTagForHead(options) {
 function runGitPush(options, branch) {
   if (!options.push || options.noCommit || options.dryRun) return;
   runInherit('git', ['push', 'origin', branch, '--follow-tags'], options);
+  runInherit('git', ['push', 'upstream', branch, '--follow-tags'], options);
 }
 
 function runGitCommit(options, version) {
@@ -414,39 +422,93 @@ function runGitTag(options, version) {
   runInherit('git', ['tag', '-a', `v${version}`, '-m', tagMessage], options);
 }
 
-function promoteDevelopToMain(options, releaseBranch, releaseSha) {
-  if (!options.promote) return;
+function runPromotionCommit(options, message) {
+  if (options.noCommit || options.dryRun) return;
 
-  if (releaseBranch !== 'develop') {
-    throw new Error('--promote is only supported when releasing from develop.');
+  runInherit('git', ['add', '.'], options);
+  runInherit('git', ['commit', '-m', message], options);
+}
+
+function getOpenPromotionPullRequest(options) {
+  const output = runAndRead(
+    'gh',
+    ['pr', 'list', '--repo', 'hashpass-tech/hashpass.tech', '--base', 'main', '--head', 'develop', '--state', 'open', '--json', 'number,title,url'],
+    { ...options, log: false },
+  );
+
+  if (!output) {
+    return null;
   }
 
-  if (options.noCommit) {
-    throw new Error('--promote requires a committed release. Drop --no-commit.');
+  try {
+    const prs = JSON.parse(output);
+    return Array.isArray(prs) && prs.length > 0 ? prs[0] : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function buildPromotionPullRequestBody(releaseVersion, releaseSha) {
+  return [
+    `Promote the current develop release prep for v${releaseVersion} into main.`,
+    '',
+    'Merge requirements:',
+    '- `@edcalderon` code owner approval',
+    '- Coverage must stay at or above 33%',
+    '- GitHub security scans (CodeQL and secret-scan) must pass',
+    '',
+    `Release commit: ${releaseSha}`,
+    releaseVersion ? `Release version: v${releaseVersion}` : 'Release version: pending main release',
+    '',
+    'This PR must stay on the develop -> main path. Do not rebase from a feature branch or a stale branch.',
+  ].join('\n');
+}
+
+function createPromotionPullRequest(options, releaseVersion, releaseSha) {
+  if (!options.promote) return;
+
+  if (releaseVersion && typeof releaseVersion !== 'string') {
+    throw new Error('Invalid release version for promotion PR creation.');
+  }
+
+  const existingPr = getOpenPromotionPullRequest(options);
+  if (existingPr) {
+    console.log(`ℹ️ Promotion PR already open: ${existingPr.url}`);
+    return existingPr;
   }
 
   if (options.dryRun) {
-    console.log('$ git fetch origin main');
-    console.log('$ git switch main');
-    console.log(`$ git merge ${releaseSha || '<release-sha>'}`);
-    console.log('$ git push origin main');
-    return;
+    console.log(
+      '$ gh pr create --repo hashpass-tech/hashpass.tech --base main --head develop --title "chore: release v' +
+        releaseVersion +
+        '" --body "<promotion-body>"',
+    );
+    return { url: '' };
   }
 
-  runInherit('git', ['fetch', 'origin', 'main'], options);
-  switchBranch('main', options);
+  const body = buildPromotionPullRequestBody(releaseVersion, releaseSha);
+  const prUrl = runAndRead(
+    'gh',
+    [
+      'pr',
+      'create',
+      '--repo',
+      'hashpass-tech/hashpass.tech',
+      '--base',
+      'main',
+      '--head',
+      'develop',
+      '--title',
+      `chore: release v${releaseVersion}`,
+      '--body',
+      body,
+    ],
+    options,
+  );
 
-  const isAncestorResult = spawnSync('git', ['merge-base', '--is-ancestor', 'origin/main', releaseSha], {
-    cwd: ROOT_DIR,
-    env: process.env,
-    stdio: 'ignore',
-  });
-  const mergeArgs = isAncestorResult.status === 0
-    ? ['merge', '--ff-only', releaseSha]
-    : ['merge', '--no-ff', '--no-edit', releaseSha];
-
-  runInherit('git', mergeArgs, options);
-  runGitPush(options, 'main');
+  const url = prUrl.trim();
+  console.log(`✅ Created promotion PR: ${url}`);
+  return { url };
 }
 
 function main() {
@@ -476,8 +538,8 @@ function main() {
 
     if (releaseBranch !== initialBranch) {
       switchBranch(releaseBranch, options);
-      currentBranch = releaseBranch;
-    }
+    currentBranch = releaseBranch;
+  }
 
     console.log('');
     console.log('Release plan');
@@ -490,10 +552,14 @@ function main() {
 
     runPreflight(options);
     let releaseVersion = '';
-    if (releaseBranch === 'main') {
+    if (options.promote && releaseBranch === 'develop') {
+      releaseVersion = readJsonVersion('package.json');
+      runPromotionCommit(options, `chore: promote develop changes for v${releaseVersion}`);
+    } else if (releaseBranch === 'main') {
       releaseVersion = runMainRelease(options, releaseBranch);
     } else {
       runRelease(options, releaseBranch);
+      releaseVersion = readJsonVersion('package.json');
     }
 
     if (releaseBranch === 'main') {
@@ -508,12 +574,17 @@ function main() {
       runGitPush(options, releaseBranch);
     }
 
-    let developSync = null;
+    let promotionPr = null;
     if (options.promote) {
-      promoteDevelopToMain(options, releaseBranch, releaseSha);
-      currentBranch = 'main';
-      developSync = syncDevelopAfterPromote(options);
-      currentBranch = 'develop';
+      if (releaseBranch !== 'develop') {
+        throw new Error('--promote is only supported when releasing from develop.');
+      }
+
+      if (options.noCommit) {
+        throw new Error('--promote requires a committed release. Drop --no-commit.');
+      }
+
+      promotionPr = createPromotionPullRequest(options, releaseVersion, releaseSha);
     }
 
     if (currentBranch !== initialBranch) {
@@ -531,9 +602,8 @@ function main() {
     console.log(`  Branch: ${releaseBranch}`);
     if (releaseTag) console.log(`  Tag:    ${releaseTag}`);
     console.log(`  SHA:    ${releaseSha}`);
-    if (developSync?.developTag) {
-      console.log(`  Develop sync tag: ${developSync.developTag}`);
-      console.log(`  Develop sync SHA: ${developSync.developSha}`);
+    if (promotionPr?.url) {
+      console.log(`  Promotion PR: ${promotionPr.url}`);
     }
   } catch (error) {
     console.error(`Release failed: ${error.message}`);

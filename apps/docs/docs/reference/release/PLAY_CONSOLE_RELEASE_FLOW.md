@@ -4,6 +4,8 @@ This guide covers the Play Console track ladder for HashPass and how it maps to 
 
 Temporary release posture: the current cycle is internal-first on the development profile. Use `environment=development` for validation, keep alpha gated by the matching internal release on the same tag, and do not publish to production until the release freeze is lifted. Closed testing can be published directly with `release_status=completed`; only the first alpha upload needs `draft` if Play still treats the app as a draft.
 
+Release tags are created on `develop` and then promoted to `main` through the protected PR flow documented in [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md). Do not cut Android releases from a stale feature branch or before the release PR has been approved and merged.
+
 ## Track Matrix
 
 | Track | Play Console purpose | Repo command | Release status | When to use |

@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 const mobileAppRoot = path.resolve(__dirname, '../../');
@@ -9,41 +10,55 @@ const readJson = (relativePath: string) =>
 const rootPackageJson = readJson('../../package.json') as Record<string, any>;
 const appJson = readJson('app.json').expo as Record<string, any>;
 
-const TEST_ENV_KEYS = [
-  'EAS_BUILD_PROFILE',
-  'EXPO_PUBLIC_EAS_BUILD_PROFILE',
-  'EAS_PROJECT_ID',
-  'EXPO_PUBLIC_EAS_PROJECT_ID',
-  'EAS_PROJECT_ID_DEV',
-  'EXPO_PUBLIC_EAS_PROJECT_ID_DEV',
-  'EXPO_OWNER',
-  'EXPO_OWNER_DEV',
-] as const;
+function createReleaseTestEnv(profile: 'production' | 'preview') {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hashpass-release-flow-'));
+  const rootEnvPath = path.join(tempDir, '.env');
+  const mobileEnvPath = path.join(tempDir, 'mobile.env');
 
-function setEnv(entries: Partial<Record<(typeof TEST_ENV_KEYS)[number], string | undefined>>) {
-  for (const [key, value] of Object.entries(entries)) {
-    if (value === undefined) {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
+  fs.writeFileSync(rootEnvPath, '', 'utf8');
+  fs.writeFileSync(mobileEnvPath, '', 'utf8');
+
+  const isProduction = profile === 'production';
+
+  return {
+    tempDir,
+    rootEnvPath,
+    mobileEnvPath,
+    baseEnv: (isProduction
+      ? {
+          EAS_PROJECT_ID: 'f710aa31-82ef-4ee3-82a3-068b0fad04dc',
+          EXPO_PUBLIC_EAS_PROJECT_ID: 'f710aa31-82ef-4ee3-82a3-068b0fad04dc',
+          EXPO_TOKEN: 'prodtok',
+          EXPO_OWNER: 'hashpasss-team',
+        }
+      : {
+          EAS_PROJECT_ID_DEV: 'b07c6fde-24ef-434a-8329-761815afe901',
+          EXPO_PUBLIC_EAS_PROJECT_ID_DEV: 'b07c6fde-24ef-434a-8329-761815afe901',
+          EXPO_TOKEN_DEV: 'devtok1',
+          EXPO_OWNER_DEV: 'hashpasstechs-team',
+        }) as Record<string, string>,
+  };
+}
+
+function resolveExpectedAndroidVersionCode(version: string) {
+  const [major, minor, patch] = version.split('.').map(Number);
+  return major * 10000 + minor * 100 + patch;
 }
 
 function loadExpoConfig(profile: 'production' | 'preview') {
-  const previousEnv = Object.fromEntries(TEST_ENV_KEYS.map((key) => [key, process.env[key]])) as Record<
-    (typeof TEST_ENV_KEYS)[number],
-    string | undefined
-  >;
+  const testEnv = createReleaseTestEnv(profile);
 
   jest.resetModules();
 
   try {
     const { buildEnv } = require('../../../../packages/tools/scripts/run-mobile-eas.js') as {
-      buildEnv: (options?: { profile?: string; easArgs?: string[]; baseEnv?: Record<string, string> }) => Record<
-        string,
-        any
-      >;
+      buildEnv: (options?: {
+        profile?: string;
+        easArgs?: string[];
+        baseEnv?: Record<string, string>;
+        rootEnvPath?: string;
+        mobileEnvPath?: string;
+      }) => Record<string, any>;
     };
     const { buildExpoConfig } = require('../../lib/eas-config.js') as {
       buildExpoConfig: (options?: { baseConfig?: Record<string, any>; env?: NodeJS.ProcessEnv }) => Record<
@@ -55,7 +70,9 @@ function loadExpoConfig(profile: 'production' | 'preview') {
     const env = buildEnv({
       profile,
       easArgs: ['build', '--platform', 'android', '--profile', profile],
-      baseEnv: {},
+      baseEnv: testEnv.baseEnv,
+      rootEnvPath: testEnv.rootEnvPath,
+      mobileEnvPath: testEnv.mobileEnvPath,
     }) as NodeJS.ProcessEnv;
 
     return {
@@ -63,7 +80,7 @@ function loadExpoConfig(profile: 'production' | 'preview') {
       appConfig: buildExpoConfig({ baseConfig: appJson, env }),
     };
   } finally {
-    setEnv(previousEnv);
+    fs.rmSync(testEnv.tempDir, { recursive: true, force: true });
     jest.resetModules();
   }
 }
@@ -105,7 +122,7 @@ describe('Android release flow', () => {
   it('keeps app.json aligned with the current store version and leaves Expo project linking to app.config.js', () => {
     expect(appJson.version).toBe(rootPackageJson.version);
     expect(appJson.slug).toBe('hash-pass-tech');
-    expect(appJson.android?.versionCode).toBe(10964);
+    expect(appJson.android?.versionCode).toBe(resolveExpectedAndroidVersionCode(rootPackageJson.version));
     expect(appJson.buildNumber).toBeUndefined();
     expect(appJson.extra?.eas?.projectId).toBeUndefined();
     expect(appJson.owner).toBe('hashpasstechs-team');
@@ -133,16 +150,28 @@ describe('Android release flow', () => {
 
   it('publishes the preview Expo aliases through the mobile EAS wrapper', () => {
     const { buildEnv } = require('../../../../packages/tools/scripts/run-mobile-eas.js') as {
-      buildEnv: (options?: { profile?: string; easArgs?: string[]; baseEnv?: Record<string, string> }) => Record<
-        string,
-        any
-      >;
+      buildEnv: (options?: {
+        profile?: string;
+        easArgs?: string[];
+        baseEnv?: Record<string, string>;
+        rootEnvPath?: string;
+        mobileEnvPath?: string;
+      }) => Record<string, any>;
     };
-    const env = buildEnv({
-      profile: 'preview',
-      easArgs: ['build', '--platform', 'android', '--profile', 'preview'],
-      baseEnv: {},
-    });
+    const testEnv = createReleaseTestEnv('preview');
+    let env = {} as Record<string, any>;
+
+    try {
+      env = buildEnv({
+        profile: 'preview',
+        easArgs: ['build', '--platform', 'android', '--profile', 'preview'],
+        baseEnv: testEnv.baseEnv,
+        rootEnvPath: testEnv.rootEnvPath,
+        mobileEnvPath: testEnv.mobileEnvPath,
+      });
+    } finally {
+      fs.rmSync(testEnv.tempDir, { recursive: true, force: true });
+    }
 
     expect(env.EAS_BUILD_PROFILE).toBe('preview');
     expect(env.EXPO_PUBLIC_EAS_BUILD_PROFILE).toBe('preview');

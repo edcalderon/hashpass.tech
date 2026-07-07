@@ -23,11 +23,12 @@ Shared branch cadence:
 
 - `develop` for development
 - `main` for production
+- Release promotion is `develop -> main` through a protected PR, not a direct push.
 
 Release flow:
 
 - `release` / `release:patch` / `release:minor` / `release:major` run the branch-aware version release flow for the repo root
-- `release:promote` promotes a `develop` release onto `main`
+- `release:promote` prepares the protected `develop -> main` promotion PR
 - `release:pipeline` remains the tenant/deploy pipeline for infra and legacy work
 - `release:dev` / `release:prod` target `core` by default
 - `release:bsl:dev` / `release:bsl:prod` follow the event tenant path and remain available for the historical branch-aware release flow
@@ -44,8 +45,8 @@ The branch-aware release flow:
 - Uses `@edcalderon/versioning` to create the changelog, version commit, and git tag
 - Uses the repo-owned `update-readme` wrapper so the latest-changes block and GitHub releases link stay on this repository
 - `pnpm run readme:check` is the Husky pre-commit guard that blocks stale README/changelog pairs before a release commit lands
-- Pushes the current branch with `--follow-tags`
-- Can optionally promote a `develop` release to `main`
+- Pushes the current branch with `--follow-tags` to both `origin` and `upstream`
+- Can optionally prepare a `develop -> main` promotion PR instead of pushing to `main`
 
 Mobile Android releases now reuse the same backend switch:
 

@@ -12,7 +12,16 @@
     "successMessage": "We have sent a confirmation email to",
     "successMessageEmail": "Check your inbox for more details.",
     "sendAnother": "Send Another",
-    "backToForm": "Back to Form"
+    "backToForm": "Back to Form",
+    "alreadySubscribed": "This email is already subscribed to our newsletter.",
+    "errorRequired": "Email is required",
+    "errorInvalidEmail": "Please enter a valid email address",
+    "errorCaptchaRequired": "Please complete the security check",
+    "errorCaptchaExpired": "Security check expired. Please solve it again.",
+    "errorFailed": "Failed to subscribe. Please try again.",
+    "autoReturning": "Auto-returning to form",
+    "capError": "Security check failed. Please retry.",
+    "capRetry": "Retry"
   },
   "wallet": {
     "digitalWalletTitle": "Digital Ticket Wallet",

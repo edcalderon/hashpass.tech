@@ -44,21 +44,29 @@ The script:
 - Runs the repo README sync wrapper so the latest-changes block and GitHub releases link stay aligned with this repo
 - Creates git commit with proper message
 - Creates version tag
-- Pushes to origin/main with tag
+- Pushes the release branch and tag to origin and upstream
 - Ensures versions stay in sync across the monorepo
+
+Protected promotion flow:
+
+- `npm run release:promote` now opens the `develop -> main` pull request instead of pushing or merging to `main` directly
+- `main` is branch-protected, so release promotion must go through a PR, codeowner review, coverage checks, and the GitHub security scans
+- `@edcalderon` is the required code owner for release PR approval
 
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering.
 
 ### Mobile Android Release Workflow
 **Temporary release posture:** while the app is under active development, keep Android publishing internal-first. Use `environment=development` with `track=internal` for the first pass, then rerun the same tag with `track=alpha` after the internal release succeeds. Production dispatches are paused for now.
 
-1. **Create commit** with your changes
-2. **Push to origin/main** (hashpass-tech/hashpass.tech)
-3. **Run `npm run release:patch`** — this:
-   - Bumps version
-   - Creates tag
-   - Pushes to origin/main
-4. **Trigger CI workflow** manually:
+1. **Create and validate the commit on `develop`**
+2. **Run `npm run release:promote`** on `develop` — this:
+   - Commits the release-prep changes
+   - Pushes the release branch to `origin` and `upstream`
+   - Opens the protected `develop -> main` PR instead of pushing to `main`
+3. **Wait for `@edcalderon` approval**, then make sure the PR passes the coverage gate (minimum 33%) and the GitHub security scans before merging
+4. **Merge the PR and sync `develop` from `main`**
+5. **Run `npm run release:patch` on `main`** — this creates the stable tag, changelog entry, and release commit
+6. **Trigger CI workflow** manually from the release tag:
    ```bash
    gh workflow run mobile-android-release.yml \
      --repo hashpass-tech/hashpass.tech \
@@ -78,9 +86,9 @@ The script:
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
    The Fastlane lane also uploads any deobfuscation files it finds in the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` is present. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
    For the current internal/alpha path and the future production checklist, see `apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md`.
-5. **Push to edcalderon fork** after version bump (for backup):
+7. **Verify the `upstream` fork** after the release is merged and synchronized. The release script now mirrors the release branch automatically; re-run this only if you need to reseed the backup fork manually:
    ```bash
-   git push upstream main <TAG_NAME>
+   git push upstream develop <TAG_NAME>
    ```
 
 **Android CI memory tuning:** See `apps/docs/docs/infra/ANDROID_CI_MEMORY.md` before touching `NODE_OPTIONS` or `GRADLE_MB` in the workflow — wrong values cause silent SIGTERM or Metro OOM.

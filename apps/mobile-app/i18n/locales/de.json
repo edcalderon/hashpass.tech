@@ -12,7 +12,16 @@
     "successMessage": "Wir haben eine Bestätigungs-E-Mail an gesendet",
     "successMessageEmail": "Überprüfen Sie Ihr Postfach für weitere Details.",
     "sendAnother": "Weitere senden",
-    "backToForm": "Zurück zum Formular"
+    "backToForm": "Zurück zum Formular",
+    "alreadySubscribed": "Diese E-Mail ist bereits für unseren Newsletter angemeldet.",
+    "errorRequired": "E-Mail ist erforderlich",
+    "errorInvalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "errorCaptchaRequired": "Bitte schließen Sie die Sicherheitsprüfung ab",
+    "errorCaptchaExpired": "Sicherheitsprüfung abgelaufen. Bitte erneut lösen.",
+    "errorFailed": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "autoReturning": "Automatische Rückkehr zum Formular",
+    "capError": "Sicherheitsprüfung fehlgeschlagen. Bitte wiederholen.",
+    "capRetry": "Wiederholen"
   },
   "wallet": {
     "digitalWalletTitle": "Digitale Ticket-Brieftasche",
