@@ -47,7 +47,7 @@ export function renderTemplate(
   } satisfies Required<TemplateVars>;
 
   for (const [key, value] of Object.entries(resolved)) {
-    html = html.split(`{{${key.toUpperCase()}}}`).join(value ?? '');
+    html = html.split(`{{${key.toUpperCase()}}}`).join(String(value ?? ''));
   }
 
   return html;
