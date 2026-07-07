@@ -59,46 +59,46 @@ export const createSessionFromUrl = async (url: string): Promise<{
   console.log('🔍 URL contains hash:', url.includes('#'));
   console.log('🔍 URL contains ?code=', url.includes('?code=') || url.includes('&code=') || url.includes('#code='));
   console.log('🔍 URL contains #access_token=', url.includes('#access_token='));
-  
+
+  const hydrateSessionUser = async (session: Session | null): Promise<{
+    session: Session | null;
+    user: User | null;
+  }> => {
+    if (!session) {
+      return { session: null, user: null };
+    }
+
+    if (session.user) {
+      return { session, user: session.user };
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const hydratedSession = {
+          ...session,
+          user,
+        } as Session;
+
+        return { session: hydratedSession, user };
+      }
+    } catch (userError) {
+      console.warn('⚠️ Failed to hydrate Supabase session user:', userError);
+    }
+
+    try {
+      const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+      if (refreshedSession?.user) {
+        return { session: refreshedSession, user: refreshedSession.user };
+      }
+    } catch (sessionError) {
+      console.warn('⚠️ Failed to re-read Supabase session after auth callback:', sessionError);
+    }
+
+    return { session, user: null };
+  };
+
   try {
-    const hydrateSessionUser = async (session: Session | null): Promise<{
-      session: Session | null;
-      user: User | null;
-    }> => {
-      if (!session) {
-        return { session: null, user: null };
-      }
-
-      if (session.user) {
-        return { session, user: session.user };
-      }
-
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const hydratedSession = {
-            ...session,
-            user,
-          } as Session;
-
-          return { session: hydratedSession, user };
-        }
-      } catch (userError) {
-        console.warn('⚠️ Failed to hydrate Supabase session user:', userError);
-      }
-
-      try {
-        const { data: { session: refreshedSession } } = await supabase.auth.getSession();
-        if (refreshedSession?.user) {
-          return { session: refreshedSession, user: refreshedSession.user };
-        }
-      } catch (sessionError) {
-        console.warn('⚠️ Failed to re-read Supabase session after auth callback:', sessionError);
-      }
-
-      return { session, user: null };
-    };
-
     // Parse URL parameters (QueryParams.getQueryParams handles both query string and hash)
     const { params, errorCode } = QueryParams.getQueryParams(url);
     const hasAuthParams = Boolean(params.access_token || params.code || params.refresh_token || errorCode);
