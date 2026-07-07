@@ -125,7 +125,7 @@ services:
       # CORS (Allow your frontend domains)
       # ===========================================
       CORS_ENABLED: "true"
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://hashpass.co,https://www.hashpass.co,https://sso.hashpass.co,https://sso-dev.hashpass.co,https://bsl.hashpass.tech,https://bsl-dev.hashpass.tech,https://blockchainsummit.hashpass.lat,https://blockchainsummit-dev.hashpass.lat,https://api-dev.hashpass.tech,https://api.hashpass.tech,http://localhost:8081}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://hashpass.tech,https://www.hashpass.tech,https://hashpass.co,https://www.hashpass.co,https://sso.hashpass.co,https://sso-dev.hashpass.co,https://bsl.hashpass.tech,https://bsl-dev.hashpass.tech,https://blockchainsummit.hashpass.lat,https://blockchainsummit-dev.hashpass.lat,https://api-dev.hashpass.tech,https://api.hashpass.tech,http://localhost:8081}
       CORS_CREDENTIALS: "true"
       CORS_ALLOWED_HEADERS: "${CORS_ALLOWED_HEADERS:-Content-Type,Authorization,Cache-Control,Pragma,Expires}"
 

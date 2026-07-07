@@ -34,9 +34,9 @@ done
 echo "✅ All required variables loaded from .env"
 echo "📋 Using Google Client ID: ${GOOGLE_CLIENT_ID:0:20}..."
 
-# Copy deployment files to server
+# Copy the current Directus compose file to the server
 echo "📁 Copying deployment files to server..."
-gcloud compute scp deploy/docker-compose.yml hashpass-sso:/opt/hashpass/ --zone=us-central1-a
+gcloud compute scp apps/directus/docker-compose.yml hashpass-sso:/opt/hashpass/docker-compose.yml --zone=us-central1-a
 
 # Copy .env file to server (without exposing in command history)
 echo "🔐 Copying .env file to server..."

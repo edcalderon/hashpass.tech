@@ -13,6 +13,7 @@ import { ToastProvider } from '@contexts/ToastContext';
 import { ScrollProvider } from '@contexts/ScrollContext';
 import { NotificationProvider } from '@contexts/NotificationContext';
 import { BalanceProvider } from '@contexts/BalanceContext';
+import { AnimationLevelProvider } from '@contexts/AnimationLevelContext';
 import { useTheme, useThemeProvider } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { authService } from '@hashpass/auth';
@@ -62,13 +63,15 @@ export default function RootLayout() {
                   <I18nProvider>
                     <NotificationProvider>
                       <BalanceProvider>
-                        <ToastProvider>
-                          <ScrollProvider>
-                            <CopilotProvider overlay="view">
-                              <ThemedContent />
-                            </CopilotProvider>
-                          </ScrollProvider>
-                        </ToastProvider>
+                        <AnimationLevelProvider>
+                          <ToastProvider>
+                            <ScrollProvider>
+                              <CopilotProvider overlay="view">
+                                <ThemedContent />
+                              </CopilotProvider>
+                            </ScrollProvider>
+                          </ToastProvider>
+                        </AnimationLevelProvider>
                       </BalanceProvider>
                     </NotificationProvider>
                   </I18nProvider>

@@ -23,7 +23,7 @@ import Animated, {
 
 // Import components using relative paths
 import Features from '../components/Features';
-import ThemeAndLanguageSwitcher from '../components/ThemeAndLanguageSwitcher';
+import QuickSettingsPanel from '../components/QuickSettingsPanel';
 import BackToTop from '../components/BackToTop';
 import Testimonials from '../components/Testimonials';
 import { InteractiveHoverButton } from '../components/InteractiveHoverButton';
@@ -35,6 +35,7 @@ import CrystalForgeBackground from '../components/CrystalForgeBackground';
 import AnimatedGradientBackground from '../components/AnimatedGradientBackground';
 import { Svg, Path } from 'react-native-svg';
 import { getHashpassFullLogo, getHashpassFooterLogo } from '../lib/hashpass-logo';
+import { useAnimationLevel } from '../contexts/AnimationLevelContext';
 
 // Import git info to check branch
 let gitInfo: { gitBranch?: string } = {};
@@ -76,51 +77,68 @@ export default function HomeScreen() {
     ? 'https://hashpass.tech'
     : (currentEvent?.website || null);
 
-  // Animation for the scroll down arrow
-  const bounceAnim = useSharedValue(0);
+  const { animationLevel } = useAnimationLevel();
+  // Encode as a SharedValue so Reanimated worklets can read it on the UI thread.
+  // 2 = full, 1 = reduced, 0 = none
+  const animLevelNum = useSharedValue(animationLevel === 'full' ? 2 : animationLevel === 'reduced' ? 1 : 0);
 
   useEffect(() => {
+    animLevelNum.value = animationLevel === 'full' ? 2 : animationLevel === 'reduced' ? 1 : 0;
+  }, [animationLevel, animLevelNum]);
+
+  // Animation for the scroll down arrow
+  const bounceAnim = useSharedValue(0.75);
+
+  useEffect(() => {
+    if (animationLevel !== 'full') {
+      bounceAnim.value = 0.75; // Static — visible but not bouncing
+      return;
+    }
     bounceAnim.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
         withTiming(0.5, { duration: 1000, easing: Easing.inOut(Easing.ease) })
       ),
-      -1, // Infinite repeat
-      true // Reverse the animation on each iteration
+      -1,
+      true
     );
-  }, [bounceAnim]);
+  }, [bounceAnim, animationLevel]);
 
   const arrowAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(bounceAnim.value, [0, 1], [0, 6]) },
-    ],
+    transform: [{ translateY: interpolate(bounceAnim.value, [0, 1], [0, 6]) }],
     opacity: interpolate(bounceAnim.value, [0, 0.5, 1], [0.45, 1, 0.45]),
   }));
   const wheelAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(bounceAnim.value, [0, 1], [0, 8]) },
-    ],
+    transform: [{ translateY: interpolate(bounceAnim.value, [0, 1], [0, 8]) }],
     opacity: interpolate(bounceAnim.value, [0, 0.5, 1], [0.95, 0.25, 0.95]),
   }));
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const styles = getStyles(isDark, colors, isMobile, isWebLightMode, windowWidth);
-  const bgAnimation = useSharedValue(0);
+  const bgAnimation = useSharedValue(animationLevel === 'none' ? 1 : 0);
   const scrollRef = React.useRef<any>(null);
-  const feature1Anim = useSharedValue(0);
-  const feature2Anim = useSharedValue(0);
-  const feature3Anim = useSharedValue(0);
-
+  const feature1Anim = useSharedValue(animationLevel === 'none' ? 1 : 0);
+  const feature2Anim = useSharedValue(animationLevel === 'none' ? 1 : 0);
+  const feature3Anim = useSharedValue(animationLevel === 'none' ? 1 : 0);
 
   useEffect(() => {
-    bgAnimation.value = withTiming(1, { duration: 300 });
-  }, [bgAnimation, isDark]);
+    if (animationLevel === 'none') {
+      bgAnimation.value = 1;
+      feature1Anim.value = 1;
+      feature2Anim.value = 1;
+      feature3Anim.value = 1;
+    } else {
+      bgAnimation.value = withTiming(1, { duration: animationLevel === 'full' ? 300 : 120 });
+    }
+  }, [bgAnimation, isDark, animationLevel, feature1Anim, feature2Anim, feature3Anim]);
 
   const animatedBackground = useAnimatedStyle(() => ({
     opacity: bgAnimation.value,
+    // Always use withTiming — duration 0 gives an instant snap for 'none' mode
+    // while still keeping a consistent return type for the Reanimated style engine
     backgroundColor: withTiming(
       isDark ? '#121212' : '#FFFFFF',
-      { duration: 300 }
-    )
+      { duration: animLevelNum.value === 0 ? 0 : 300 }
+    ),
   }));
 
   const router = useRouter();
@@ -149,7 +167,6 @@ export default function HomeScreen() {
     }
   };
 
-
   useEffect(() => {
     if (user) {
       setUserName(user.email || user.user_metadata?.full_name || user.id);
@@ -159,54 +176,52 @@ export default function HomeScreen() {
   }, [user]);
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
+    // none: hero always fully visible (no fade-out on scroll)
+    if (animLevelNum.value === 0) return { opacity: 1 };
     const opacity = interpolate(
-      scrollY.value,
-      [0, 100],
-      [1, 0],
+      scrollY.value, [0, 100], [1, 0],
       { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
     );
-    return {
-      opacity: withTiming(opacity, { duration: 100 })
-    };
+    return { opacity: withTiming(opacity, { duration: animLevelNum.value === 1 ? 50 : 100 }) };
   });
 
   const featuresAnimatedStyle = useAnimatedStyle(() => {
+    // none/reduced: immediately visible
+    if (animLevelNum.value < 2) return { opacity: 1 };
     const opacity = interpolate(
-      scrollY.value,
-      [0, 250, 400],
-      [0, 0.5, 1],
+      scrollY.value, [0, 250, 400], [0, 0.5, 1],
       { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
     );
-    // No scale here — individual feature items animate with translateY, and adding a parent
-    // scale on top causes compound distortion of icons and borders during the reveal.
-    return {
-      opacity: withTiming(opacity, { duration: 150 }),
-    };
+    return { opacity: withTiming(opacity, { duration: 150 }) };
   });
 
   const ctaAnimatedStyle = useAnimatedStyle(() => {
+    // none/reduced: immediately visible
+    if (animLevelNum.value < 2) return { opacity: 1 };
     const opacity = interpolate(
-      scrollY.value,
-      [300, 500],
-      [0, 1],
+      scrollY.value, [300, 500], [0, 1],
       { extrapolateLeft: Extrapolation.CLAMP, extrapolateRight: Extrapolation.CLAMP }
     );
-    return {
-      opacity: withTiming(opacity, { duration: 150 }),
-    };
+    return { opacity: withTiming(opacity, { duration: 150 }) };
   });
 
-  // Animate features based on scroll position
+  // Animate feature cards on scroll (staggered for full, instant for reduced/none)
   useAnimatedReaction(
     () => scrollY.value,
     (currentScrollY) => {
-      // Start animating when the features section comes into view
+      if (animLevelNum.value === 0) {
+        feature1Anim.value = 1;
+        feature2Anim.value = 1;
+        feature3Anim.value = 1;
+        return;
+      }
+      const dur = animLevelNum.value === 1 ? 150 : 500;
       if (currentScrollY > 150) {
-        feature1Anim.value = withTiming(1, { duration: 500 });
-        feature2Anim.value = withDelay(200, withTiming(1, { duration: 500 }));
-        feature3Anim.value = withDelay(400, withTiming(1, { duration: 500 }));
-      } else {
-        // Reset animations when scrolling back up
+        feature1Anim.value = withTiming(1, { duration: dur });
+        feature2Anim.value = withDelay(animLevelNum.value === 1 ? 0 : 200, withTiming(1, { duration: dur }));
+        feature3Anim.value = withDelay(animLevelNum.value === 1 ? 0 : 400, withTiming(1, { duration: dur }));
+      } else if (animLevelNum.value === 2) {
+        // Only reset in full mode so cards don't disappear when scrolling back
         feature1Anim.value = 0;
         feature2Anim.value = 0;
         feature3Anim.value = 0;
@@ -215,33 +230,27 @@ export default function HomeScreen() {
     []
   );
 
-  // Animated styles for each feature
-  const feature1Style = useAnimatedStyle(() => ({
-    opacity: feature1Anim.value,
-    transform: [
-      {
-        translateY: withTiming((1 - feature1Anim.value) * 30, { duration: 500 })
-      }
-    ],
-  }));
-
-  const feature2Style = useAnimatedStyle(() => ({
-    opacity: feature2Anim.value,
-    transform: [
-      {
-        translateY: withTiming((1 - feature2Anim.value) * 30, { duration: 500 })
-      }
-    ],
-  }));
-
-  const feature3Style = useAnimatedStyle(() => ({
-    opacity: feature3Anim.value,
-    transform: [
-      {
-        translateY: withTiming((1 - feature3Anim.value) * 30, { duration: 500 })
-      }
-    ],
-  }));
+  const feature1Style = useAnimatedStyle(() => {
+    if (animLevelNum.value === 0) return { opacity: 1, transform: [{ translateY: 0 }] };
+    return {
+      opacity: feature1Anim.value,
+      transform: [{ translateY: withTiming((1 - feature1Anim.value) * 30, { duration: 500 }) }],
+    };
+  });
+  const feature2Style = useAnimatedStyle(() => {
+    if (animLevelNum.value === 0) return { opacity: 1, transform: [{ translateY: 0 }] };
+    return {
+      opacity: feature2Anim.value,
+      transform: [{ translateY: withTiming((1 - feature2Anim.value) * 30, { duration: 500 }) }],
+    };
+  });
+  const feature3Style = useAnimatedStyle(() => {
+    if (animLevelNum.value === 0) return { opacity: 1, transform: [{ translateY: 0 }] };
+    return {
+      opacity: feature3Anim.value,
+      transform: [{ translateY: withTiming((1 - feature3Anim.value) * 30, { duration: 500 }) }],
+    };
+  });
 
   const words: string[] = t('taglineFlipList').split(',');
 
@@ -249,7 +258,7 @@ export default function HomeScreen() {
     <Animated.View style={[styles.container, animatedBackground]}>
 
       <BackToTop scrollY={scrollY} scrollRef={scrollRef} colors={colors} />
-      <ThemeAndLanguageSwitcher scrollY={scrollY} />
+      <QuickSettingsPanel scrollY={scrollY} />
 
       <Animated.ScrollView
         ref={scrollRef}
@@ -259,11 +268,13 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <CrystalForgeBackground
-            isDarkMode={isDark}
-            enableClickSpawn={!isMobile}
-            maxCrystals={isMobile ? 20 : 36}
-          />
+          {animationLevel === 'full' && (
+            <CrystalForgeBackground
+              isDarkMode={isDark}
+              enableClickSpawn={!isMobile}
+              maxCrystals={isMobile ? 20 : 36}
+            />
+          )}
           <Animated.View style={[styles.heroTextContainer, headerAnimatedStyle]}>
             <View style={styles.logoStack}>
               <Image
@@ -272,7 +283,11 @@ export default function HomeScreen() {
                 resizeMode="contain"
               />
               <View style={styles.taglineContainer} pointerEvents="none">
-                <FlipWords words={words} textStyle={styles.tagline} />
+                {animationLevel === 'full' ? (
+                  <FlipWords words={words} textStyle={styles.tagline} />
+                ) : (
+                  <Text style={styles.tagline}>{words[0]}</Text>
+                )}
               </View>
             </View>
           </Animated.View>

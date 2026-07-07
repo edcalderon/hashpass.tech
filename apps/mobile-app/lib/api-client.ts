@@ -30,6 +30,7 @@ export interface ApiRequestOptions {
   endpoint?: string;
   params?: Record<string, any>;
   skipEventSegment?: boolean; // Skip event-specific segment for global endpoints
+  apiSegment?: string;       // Explicit URL segment override (bypasses getCurrentEvent detection)
   skipAuth?: boolean; // Skip attaching Authorization for public endpoints
 }
 
@@ -198,22 +199,21 @@ export class EventApiClient {
     
     let baseUrl: string;
     if (runtimeBaseUrl) {
-      // If skipEventSegment is true, use the base URL directly (for global endpoints)
-      if (options.skipEventSegment) {
+      if (options.apiSegment) {
+        // Caller explicitly knows the correct URL segment — use it directly.
+        // Needed when getCurrentEvent() can't detect the event (e.g. native app context).
+        baseUrl = `${runtimeBaseUrl}/${options.apiSegment}`;
+      } else if (options.skipEventSegment) {
         baseUrl = runtimeBaseUrl;
       } else {
-        // If we have an env base URL (e.g., https://api.hashpass.tech/api/), append event-specific segment
         const eventSegment = this.getEventApiSegment(event);
         baseUrl = `${runtimeBaseUrl}/${eventSegment}`;
       }
     } else {
-      // No envBase - check if we should skip event segment
       if (options.skipEventSegment) {
-        // For global endpoints, use just /api without event segment
         baseUrl = '/api';
       } else {
-      // Fallback to event config or constructor default
-      baseUrl = event?.api?.basePath || this.baseURL;
+        baseUrl = event?.api?.basePath || this.baseURL;
       }
     }
     

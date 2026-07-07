@@ -123,6 +123,7 @@
     "signInWithGoogle": "Google로 로그인",
     "emailPlaceholder": "이메일을 입력하세요",
     "emailRequired": "이메일은 필수입니다",
+    "emailAutocompleteTitle": "추천 항목",
     "magicLink": "매직 링크",
     "otpCode": "OTP 코드",
     "sendMagicLink": "매직 링크 보내기",
@@ -134,6 +135,8 @@
     "magicLinkClose": "닫기",
     "sendingMagicLink": "매직 링크를 보내는 중...",
     "sendingVerificationCode": "인증 코드를 보내는 중...",
+    "sendingEmail": "이메일 전송 중...",
+    "sendingOtpCode": "OTP 코드 전송 중...",
     "verifyingCode": "코드를 확인하는 중...",
     "openingGoogleSignIn": "Google 로그인을 여는 중...",
     "redirectingToGoogle": "Google로 이동하는 중...",
@@ -450,7 +453,15 @@
       "darkMode": "다크 모드",
       "notifications": "알림",
       "biometricAuthentication": "생체 인증",
-      "animations": "애니메이션"
+      "animations": "애니메이션",
+      "animationsFull": "전체",
+      "animationsReduced": "감소",
+      "animationsNone": "없음",
+      "appearance": "외관",
+      "signIn": "로그인",
+      "themeDark": "다크",
+      "themeAuto": "자동",
+      "themeLight": "라이트"
     },
     "account": "계정",
     "signOut": "로그아웃",
@@ -475,7 +486,9 @@
     "banner": {
       "title": "블록체인 서밋 라탐 2025",
       "subtitle": "2025년 11월 12-14일 • Universidad EAFIT, 메데진",
-      "date": "2025년 11월 12-14일"
+      "date": "2025년 11월 12-14일",
+      "exploreAllEvents": "모든 이벤트 탐색",
+      "exploreMoreEvents": "더 많은 이벤트 탐색"
     },
     "selectEvent": "이벤트 선택",
     "yourPasses": "나의 패스",

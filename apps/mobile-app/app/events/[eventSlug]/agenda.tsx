@@ -119,6 +119,9 @@ export default function BSL2025AgendaScreen() {
   }>({ visible: false, agendaItem: null, startTime: null });
   const [isConfirming, setIsConfirming] = useState(false);
   const eventId = event?.id || 'bsl';
+  // Derive URL segment from event config so native requests use the correct path
+  // e.g. event.api.basePath = '/api/bslatam' → apiSegment = 'bslatam'
+  const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
   const eventDateLabel = event?.eventDateString || event?.subtitle || 'Tour 2026';
   const eventLocationLabel = event?.tour?.city && event?.tour?.country
     ? `${event.tour.city}, ${event.tour.country}`
@@ -200,8 +203,8 @@ export default function BSL2025AgendaScreen() {
         try {
           // Try to fetch agenda directly first
           console.log('🌐 Fetching agenda data...');
-          const response = await apiClient.request('agenda');
-          
+          const response = await apiClient.request('agenda', { apiSegment });
+
           // Handle the API response format: { data: [...] }
           let agendaData = [];
           
@@ -241,12 +244,12 @@ export default function BSL2025AgendaScreen() {
         // If we get here but no data, try with status endpoint
         console.log('ℹ️ No data in direct response, trying status endpoint...');
         try {
-          const statusResponse = await apiClient.request('status');
+          const statusResponse = await apiClient.request('status', { apiSegment });
           // Handle status response format: { data: { hasData: true } }
           const statusData = statusResponse?.data || {};
-          
+
           if (statusData?.hasData) {
-            const agendaResponse = await apiClient.request('agenda');
+            const agendaResponse = await apiClient.request('agenda', { apiSegment });
             let agendaItems = [];
             
             // Handle agenda response format: { data: [...] }
@@ -333,7 +336,8 @@ export default function BSL2025AgendaScreen() {
       const refreshAgenda = async () => {
         try {
           const response = await apiClient.request('agenda', {
-            params: { eventId }
+            params: { eventId },
+            apiSegment,
           });
           if (response.success && response.data) {
             let agendaData: any[] = [];
