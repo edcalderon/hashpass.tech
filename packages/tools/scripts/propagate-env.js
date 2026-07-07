@@ -319,19 +319,42 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     'EXPO_PUBLIC_SUPABASE_KEY_DEV',
     'EXPO_PUBLIC_SUPABASE_KEY_PROD',
   ]);
-  const supabaseServiceRoleKey = resolveBoundValue(supabaseBindings.serviceRoleKey, [
-    'SUPABASE_SERVICE_ROLE_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY_DEV',
-    'SUPABASE_SERVICE_ROLE_KEY_PROD',
-  ]);
-  const supabaseDatabaseUrl = resolveBoundValue(supabaseBindings.databaseUrl, [
-    'SUPABASE_DB_URL',
-    'SUPABASE_DB_URL_DEV',
-    'SUPABASE_DB_URL_PROD',
-    'DATABASE_URL',
-    'DATABASE_URL_DEV',
-    'DATABASE_URL_PROD',
-  ]);
+  const serviceRoleFallbackKeys =
+    options.environment === 'production'
+      ? [
+          'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
+          'SUPABASE_SERVICE_ROLE_KEY_BSL_PROD',
+          'BSL_SUPABASE_SERVICE_ROLE_KEY',
+          'SUPABASE_SERVICE_ROLE_KEY_PROD',
+          'SUPABASE_SERVICE_ROLE_KEY',
+        ]
+      : [
+          'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',
+          'SUPABASE_SERVICE_ROLE_KEY_BSL_DEV',
+          'BSL_SUPABASE_SERVICE_ROLE_KEY',
+          'SUPABASE_SERVICE_ROLE_KEY_DEV',
+          'SUPABASE_SERVICE_ROLE_KEY',
+        ];
+  const databaseFallbackKeys =
+    options.environment === 'production'
+      ? [
+          'BSL_SUPABASE_DB_URL_PROD',
+          'SUPABASE_DB_URL_BSL_PROD',
+          'BSL_SUPABASE_DB_URL',
+          'SUPABASE_DB_URL_PROD',
+          'DATABASE_URL_PROD',
+          'DATABASE_URL',
+        ]
+      : [
+          'BSL_SUPABASE_DB_URL_DEV',
+          'SUPABASE_DB_URL_BSL_DEV',
+          'BSL_SUPABASE_DB_URL',
+          'SUPABASE_DB_URL_DEV',
+          'DATABASE_URL_DEV',
+          'DATABASE_URL',
+        ];
+  const supabaseServiceRoleKey = resolveBoundValue(supabaseBindings.serviceRoleKey, serviceRoleFallbackKeys);
+  const supabaseDatabaseUrl = resolveBoundValue(supabaseBindings.databaseUrl, databaseFallbackKeys);
   const betterAuthUrl = runtime.apiBaseUrl
     ? `${String(runtime.apiBaseUrl).trim().replace(/\/$/, '')}/auth`
     : '';
@@ -402,8 +425,13 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     [`EXPO_PUBLIC_SUPABASE_KEY${environmentSuffix}`, supabaseKey],
     [`EXPO_PUBLIC_SUPABASE_ANON_KEY${environmentSuffix}`, supabaseKey],
     [`SUPABASE_SERVICE_ROLE_KEY${environmentSuffix}`, supabaseServiceRoleKey],
+    [`BSL_SUPABASE_SERVICE_ROLE_KEY${environmentSuffix}`, supabaseServiceRoleKey],
+    [`SUPABASE_SERVICE_ROLE_KEY_BSL${environmentSuffix}`, supabaseServiceRoleKey],
     [`SUPABASE_DB_URL${environmentSuffix}`, supabaseDatabaseUrl],
+    [`BSL_SUPABASE_DB_URL${environmentSuffix}`, supabaseDatabaseUrl],
+    [`SUPABASE_DB_URL_BSL${environmentSuffix}`, supabaseDatabaseUrl],
     [`DATABASE_URL${environmentSuffix}`, supabaseDatabaseUrl],
+    [`DATABASE_URL_BSL${environmentSuffix}`, supabaseDatabaseUrl],
   ];
 
   [...canonicalEntries, ...environmentSupabaseEntries].forEach(([key, value]) => {

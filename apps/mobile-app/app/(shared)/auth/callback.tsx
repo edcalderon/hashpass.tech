@@ -8,19 +8,11 @@ import { Check, AlertCircle } from 'lucide-react-native';
 import { authService, SUPABASE_OAUTH_CALLBACK_PATH, SUPABASE_OAUTH_NATIVE_SCHEME } from '@hashpass/auth';
 import { createSessionFromUrl, supabase } from '../../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../../config/supabase-profiles';
+import { markRecentAuthSuccess } from '../../../lib/auth/recent-auth';
 
 type CallbackHashError = {
     code: string;
     message: string;
-};
-
-const AUTH_RECENT_SUCCESS_KEY = 'auth_recent_success_at';
-
-const markRecentAuthSuccess = () => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.sessionStorage) {
-        return;
-    }
-    window.sessionStorage.setItem(AUTH_RECENT_SUCCESS_KEY, Date.now().toString());
 };
 
 const normalizeCallbackHashError = (rawCode: string | null, rawMessage: string | null): CallbackHashError => {
@@ -529,7 +521,7 @@ export default function AuthCallback() {
                     const resolvedUser =
                         sessionResult.user ||
                         sessionResult.session?.user ||
-                        (await supabase.auth.getUser().then(({ data }) => data.user).catch(() => null));
+                        (await supabase.auth.getUser().then((result: { data: { user: any } }) => result.data.user).catch(() => null));
                     const resolvedSession =
                         sessionResult.session && resolvedUser && !sessionResult.session.user
                             ? { ...sessionResult.session, user: resolvedUser }

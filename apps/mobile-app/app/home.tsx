@@ -590,11 +590,10 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       alignSelf: 'center',
       alignItems: 'center',
       justifyContent: 'center',
-      // Fixed height so the FlipWords animation (enter, exit, word-flip) never
-      // shifts the logo above it. A little more vertical room prevents the
-      // glyph edges from clipping when the word scales in on web.
-      height: isMobile ? 42 : 72,
-      overflow: 'hidden',
+      // On web the FlipWords exit uses scale:2 + translate — needs overflow
+      // visible and extra height so the word flies out without a rectangular clip.
+      height: Platform.OS === 'web' ? (isMobile ? 80 : 160) : (isMobile ? 42 : 72),
+      overflow: Platform.OS === 'web' ? 'visible' : 'hidden',
     },
     tagline: {
       fontSize: isMobile ? 18 : 34,

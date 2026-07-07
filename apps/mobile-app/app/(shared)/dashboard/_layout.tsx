@@ -26,6 +26,7 @@ import VersionDisplay from '../../../components/VersionDisplay';
 import SafeBlurView from '../../../components/SafeBlurView';
 import QRScanner from '../../../components/QRScanner';
 import MiniNotificationDropdown from '../../../components/MiniNotificationDropdown';
+import { hasRecentAuthSuccess } from '../../../lib/auth/recent-auth';
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
 
@@ -663,32 +664,11 @@ export default function DashboardLayout() {
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const styles = getStyles(isDark, colors, isMobile, insets);
-  const AUTH_RECENT_SUCCESS_KEY = 'auth_recent_success_at';
-  const AUTH_REDIRECT_GRACE_MS = 12000;
 
   // Verify user is logged in before allowing dashboard access (provider-agnostic)
   React.useEffect(() => {
     const shouldDelayRedirectForRecentAuth = () => {
-      if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.sessionStorage) {
-        return false;
-      }
-
-      const rawTimestamp = window.sessionStorage.getItem(AUTH_RECENT_SUCCESS_KEY);
-      if (!rawTimestamp) return false;
-
-      const timestamp = Number(rawTimestamp);
-      if (!Number.isFinite(timestamp)) {
-        window.sessionStorage.removeItem(AUTH_RECENT_SUCCESS_KEY);
-        return false;
-      }
-
-      const age = Date.now() - timestamp;
-      if (age > AUTH_REDIRECT_GRACE_MS) {
-        window.sessionStorage.removeItem(AUTH_RECENT_SUCCESS_KEY);
-        return false;
-      }
-
-      return true;
+      return hasRecentAuthSuccess();
     };
 
     if (!authLoading && !isLoggedIn) {
@@ -703,7 +683,7 @@ export default function DashboardLayout() {
       console.warn('⚠️ Not authenticated in dashboard, redirecting to auth');
       router.replace('/(shared)/auth' as any);
     }
-  }, [authLoading, isLoggedIn, router, AUTH_RECENT_SUCCESS_KEY, AUTH_REDIRECT_GRACE_MS]);
+  }, [authLoading, isLoggedIn, router]);
 
   // Header component for the drawer screens
   const Header = () => {

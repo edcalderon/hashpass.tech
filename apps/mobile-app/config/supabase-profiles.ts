@@ -258,12 +258,13 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_ANON_KEY',
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
     ],
-    // BSL_SUPABASE_SERVICE_ROLE_KEY is tried before SUPABASE_SERVICE_ROLE_KEY because the
-    // Lambda currently uses mnnqryrdlhddorqsrtbn.supabase.co (the BSL project) for all
-    // tenants. SUPABASE_SERVICE_ROLE_KEY may be stale or for a different project.
+    // Prefer the BSL-backed production key aliases first because production Lambda is
+    // currently bound to the BSL project. Keep the canonical prod key as a fallback so
+    // older deployments still work during rollout.
     serviceRoleEnv: [
-      'SUPABASE_SERVICE_ROLE_KEY_PROD',
       'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
+      'SUPABASE_SERVICE_ROLE_KEY_BSL_PROD',
+      'SUPABASE_SERVICE_ROLE_KEY_PROD',
       'BSL_SUPABASE_SERVICE_ROLE_KEY',
       'SUPABASE_SERVICE_ROLE_KEY',
     ],

@@ -308,9 +308,15 @@ export const useAuth = () => {
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────
       // When enabled, uses the system account picker with no browser popup.
       // Disabled → falls through to the WebBrowser block below (unchanged).
+      //
+      // Important: this shortcut is only safe for the Supabase provider. Directus
+      // already returns a native oauthUrl and expects the browser-based callback
+      // flow so it can complete the session exchange consistently on mobile.
+      const providerName = authService.getProviderName();
       const nativeGoogleEnabled =
         Platform.OS !== 'web' &&
         provider === 'google' &&
+        providerName === 'supabase' &&
         process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true';
 
       if (nativeGoogleEnabled) {
@@ -335,6 +341,13 @@ export const useAuth = () => {
             throw err;
           }
         }
+      } else if (
+        Platform.OS !== 'web' &&
+        provider === 'google' &&
+        providerName === 'directus' &&
+        process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true'
+      ) {
+        console.log('[useAuth] Skipping native Google SDK for Directus; using browser OAuth flow.');
       }
       // ── End native Google Sign-In ───────────────────────────────────────────────
 
