@@ -11,6 +11,7 @@ import {
 } from '../lib/native-google-signin';
 import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config';
 import { mergeOAuthFragmentParams } from '../lib/auth/oauth/callback-params';
+import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
 let oauthHashProcessingPromise: Promise<void> | null = null;
@@ -268,7 +269,7 @@ export const useAuth = () => {
   const signOut = useCallback(async () => {
     // Clear native Google Sign-In cache so the account picker always shows on next login.
     // Must run before app sign-out to avoid the SDK being in a bad state.
-    if (shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)) {
+    if (shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId())) {
       await clearNativeGoogleAccount();
     }
 
@@ -318,10 +319,11 @@ export const useAuth = () => {
       // already returns a native oauthUrl and expects the browser-based callback
       // flow so it can complete the session exchange consistently on mobile.
       const providerName = authService.getProviderName();
+      const googleWebClientId = resolveGoogleOAuthClientId();
       const nativeGoogleEnabled =
         provider === 'google' &&
         providerName === 'supabase' &&
-        shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
+        shouldUseNativeGoogleSignin(googleWebClientId);
 
       if (nativeGoogleEnabled) {
         try {
@@ -349,7 +351,7 @@ export const useAuth = () => {
         Platform.OS !== 'web' &&
         provider === 'google' &&
         providerName === 'directus' &&
-        shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)
+        shouldUseNativeGoogleSignin(googleWebClientId)
       ) {
         console.log('[useAuth] Skipping native Google SDK for Directus; using browser OAuth flow.');
       }

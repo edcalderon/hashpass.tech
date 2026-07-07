@@ -35,6 +35,7 @@ import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppEr
 import { configureNativeGoogleSignin } from '../lib/native-google-signin';
 import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config';
 import { hasRecentAuthSuccess } from '../lib/auth/recent-auth';
+import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import packageJson from '../package.json';
 
 const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
@@ -144,15 +145,16 @@ function ThemedContent() {
 
   // Configure native Google Sign-In SDK once on startup (native only, feature-flagged)
   useEffect(() => {
+    const googleWebClientId = resolveGoogleOAuthClientId();
     const nativeGoogleFlag = process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN ?? '(default:true)';
-    const nativeEnabled = shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
+    const nativeEnabled = shouldUseNativeGoogleSignin(googleWebClientId);
     console.log(
       `[GoogleSignin] native enabled=${nativeEnabled}`,
       `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=${nativeGoogleFlag}`,
-      `webClientId=${process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '(unset)'}`,
+      `webClientId=${googleWebClientId || '(unset)'}`,
     );
     if (!nativeEnabled) return;
-    void configureNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
+    void configureNativeGoogleSignin(googleWebClientId);
   }, []);
 
   // Ensure new Directus users get default passes created

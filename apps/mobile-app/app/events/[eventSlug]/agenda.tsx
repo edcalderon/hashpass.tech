@@ -8,11 +8,13 @@ import EventBanner from '../../../components/EventBanner';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { apiClient } from '@/lib/api-client';
 import { 
-  AgendaType,
   getAgendaTypeColor,
   parseEventISO,
   formatTimeRange,
-  AgendaItem
+} from '../../../types/agenda';
+import type {
+  AgendaType,
+  AgendaItem,
 } from '../../../types/agenda';
 import { EVENTS } from '../../../config/events';
 import { useAuth } from '../../../hooks/useAuth';
@@ -49,7 +51,7 @@ const customAgendaFilterLogic = (
           }
           break;
         case 'speakers':
-          if (value.length > 0 && !item.speakers?.some(speakerId => 
+          if (value.length > 0 && !item.speakers?.some((speakerId: string) => 
             value.includes(speakerId)
           )) {
             return false;
@@ -69,7 +71,7 @@ const customAgendaFilterLogic = (
       const matchesDescription = item.description?.toLowerCase().includes(query) ?? false;
       
       // Since we only have speaker IDs, we can only match against the ID itself
-      const matchesSpeaker = item.speakers?.some(speakerId => 
+      const matchesSpeaker = item.speakers?.some((speakerId: string) => 
         speakerId.toLowerCase().includes(query)
       ) ?? false;
       
@@ -765,11 +767,11 @@ export default function BSL2025AgendaScreen() {
             
             // Clear URL parameters after scrolling to prevent re-triggering
             setTimeout(() => {
-              router.replace(`/events/${eventId}/agenda`, { scroll: false });
+              router.replace(`/events/${eventId}/agenda`);
             }, 1000);
           },
-          (error) => {
-            console.error(`[Scroll] Error measuring session layout (attempt ${attemptNumber}):`, error);
+          () => {
+            console.error(`[Scroll] Error measuring session layout (attempt ${attemptNumber})`);
             if (attemptNumber < maxAttempts) {
               // Retry with exponential backoff
               setTimeout(() => attemptScroll(attemptNumber + 1, maxAttempts), 300 * attemptNumber);
@@ -823,7 +825,7 @@ export default function BSL2025AgendaScreen() {
   const findSpeakerId = (speakerName: string): string | null => {
     // Try to find speaker in the event speakers data first
     if (event?.speakers) {
-      const speaker = event.speakers.find(s => 
+      const speaker = event.speakers.find((s: { name: string; id?: string }) => 
         s.name.toLowerCase().includes(speakerName.toLowerCase()) ||
         speakerName.toLowerCase().includes(s.name.toLowerCase())
       );
@@ -1222,7 +1224,7 @@ export default function BSL2025AgendaScreen() {
             <View style={styles.speakersContainer}>
               <MaterialIcons name="people" size={16} color={colors.text.secondary} />
               <View style={styles.speakersList}>
-                {item.speakers.map((speaker, index) => {
+                {item.speakers.map((speaker: string, index: number) => {
                   const speakerId = findSpeakerId(speaker);
                   const isClickable = speakerId !== null;
                   return (
@@ -1329,7 +1331,7 @@ export default function BSL2025AgendaScreen() {
                     // This prevents the scrolling effect from interfering with manual tab selection
                     if (params.session || params.scrollTo) {
                       handledSessionRef.current = null; // Reset session ref
-                      router.replace(`/events/${eventId}/agenda`, { scroll: false });
+                      router.replace(`/events/${eventId}/agenda`);
                     }
                     setActiveTab(dayKey);
                   }}
@@ -1501,7 +1503,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     textAlign: 'center',
     width: '100%',
     overflow: 'hidden',
-    textOverflow: 'ellipsis',
     paddingHorizontal: 2, // Reduced padding
     height: 16, // Reduced height
     lineHeight: 14, // Adjusted line height

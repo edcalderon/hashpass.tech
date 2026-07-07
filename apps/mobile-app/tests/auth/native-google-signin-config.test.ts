@@ -48,6 +48,8 @@ describe('shouldUseNativeGoogleSignin', () => {
     jest.resetModules();
     setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', undefined);
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', undefined);
+    setEnv('GOOGLE_CLIENT_ID', undefined);
+    setEnv('BETTER_AUTH_GOOGLE_CLIENT_ID', undefined);
   });
 
   afterEach(() => {
@@ -60,6 +62,13 @@ describe('shouldUseNativeGoogleSignin', () => {
 
     const shouldUseNativeGoogleSignin = loadHelper('android');
     expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(true);
+  });
+
+  it('defaults to enabled on native when only the shared GOOGLE_CLIENT_ID exists', () => {
+    setEnv('GOOGLE_CLIENT_ID', 'shared-google-client-id');
+
+    const shouldUseNativeGoogleSignin = loadHelper('android');
+    expect(shouldUseNativeGoogleSignin(undefined)).toBe(true);
   });
 
   it('can be disabled explicitly on native builds', () => {

@@ -352,8 +352,8 @@ export default function HomeScreen() {
             showDotIndicators={true}
             autoPlay={true}
             autoPlayInterval={5000}
-            onEventPress={(event) => {
-              const routeHome = (event as any)?.routes?.home;
+            onEventPress={(event: { routes?: { home?: string } } | null | undefined) => {
+              const routeHome = event?.routes?.home;
               if (routeHome) {
                 const route = routeHome.replace(/\/+/g, '/'); // Remove any double slashes
                 router.push(route as any);
