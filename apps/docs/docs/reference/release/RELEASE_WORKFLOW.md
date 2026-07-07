@@ -14,6 +14,7 @@ The repository now treats `develop` as the only release source branch. Promotion
 - `npm run release:promote` now opens a GitHub PR from `develop` to `main`
 - Direct pushes to `main` are blocked by branch protection
 - Release PRs require `@edcalderon` codeowner approval
+- Release PRs also request `@jack-kernel` as an additional reviewer
 - Release PRs must pass the coverage gate and GitHub security scans before merge
 
 ### Required checks before merge
@@ -65,6 +66,7 @@ This script:
 The PR body should make the required checks obvious:
 
 - `@edcalderon` approval is required
+- `@jack-kernel` is requested as reviewer
 - Coverage must stay at or above 33%
 - GitHub security scans must pass
 
