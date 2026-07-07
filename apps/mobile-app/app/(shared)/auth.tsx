@@ -486,10 +486,11 @@ export default function AuthScreen() {
     isNativeLightMode
   );
   const isBusy = busyAction !== null;
+  const isOAuthRedirecting = busyAction === 'oauth';
   const signInWithGoogleLabel = t('signInWithGoogle', 'Sign in with Google');
   const openingGoogleSignInLabel = t('openingGoogleSignIn', 'Opening Google sign-in...');
   const oauthButtonLabel =
-    busyAction === 'oauth'
+    isOAuthRedirecting
       ? Platform.OS === 'web'
         ? t('redirectingToGoogle', 'Redirecting to Google...')
         : openingGoogleSignInLabel
@@ -1763,19 +1764,20 @@ export default function AuthScreen() {
                 disabled={isBusy}
                 accessibilityRole="button"
                 accessibilityLabel={oauthButtonLabel}
-                accessibilityState={{ disabled: isBusy, busy: busyAction === 'oauth' }}
+                accessibilityState={{ disabled: isBusy, busy: isOAuthRedirecting }}
               >
                 <View style={styles.oauthButtonContent}>
                   <View style={styles.oauthButtonIconGroup}>
-                    <Ionicons name="logo-google" size={24} color="#4285F4" />
-                    {busyAction === 'oauth' ? (
+                    {isOAuthRedirecting ? (
                       <ActivityIndicator size="small" color="#4285F4" />
-                    ) : null}
+                    ) : (
+                      <Ionicons name="logo-google" size={24} color="#4285F4" />
+                    )}
                   </View>
                   <Text
                     style={[
                       styles.oauthButtonText,
-                      busyAction === 'oauth' ? styles.oauthButtonTextBusy : null,
+                      isOAuthRedirecting ? styles.oauthButtonTextBusy : null,
                     ]}
                     numberOfLines={1}
                     ellipsizeMode="tail"

@@ -24,7 +24,7 @@
 * scope supabase session hydration helper ([e9e289d](https://github.com/hashpass-tech/hashpass.tech/commit/e9e289da0ce41bb9075504704c3ecf16b2971f8b))
 * stabilize auth and Android startup ([818a230](https://github.com/hashpass-tech/hashpass.tech/commit/818a230431a3ca607b368f4098f00fd134a170bc))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 
