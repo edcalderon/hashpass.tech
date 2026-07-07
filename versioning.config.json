@@ -26,6 +26,7 @@
         "CLAUDE.md",
         "LICENSE",
         "README.md",
+        "AGENTS.md",
         "TRADEMARKS.md",
         "SECURITY.md",
         "app.json",
@@ -47,6 +48,7 @@
         "tsconfig.paths.json",
         "turbo.json",
         "versioning.config.json",
+        "codecov.yml",
         "wrangler.jsonc",
         "wrangler.toml",
         "wrangler.toml.example"

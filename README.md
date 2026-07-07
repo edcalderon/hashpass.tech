@@ -26,7 +26,7 @@
 
 * add Codecov coverage tracking ([208d1c1](https://github.com/hashpass-tech/hashpass.tech/commit/208d1c1f81a14c557d53334ce50d8e511dfb8889))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 
@@ -38,8 +38,8 @@ For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub release
 - `apps/docs` is the active Docusaurus documentation source of truth.
 - `archive/docs` stores historical docs, migration notes, and retired playbooks.
 - `main` now backs the production `hashpass.tech` web deployment while the archived Amplify helpers remain available under `archive/amplify/`.
-- `develop` is the integration branch for ongoing work across mobile, web, docs, and infra.
-- Code coverage is tracked with Codecov from the `apps/mobile-app` Jest coverage report. Each GitHub repository needs its own `CODECOV_TOKEN` secret unless Codecov has been configured to treat both repos as the same project.
+- `develop` is the integration branch for ongoing work across mobile, web, docs, and infra, and release promotion from `develop` to `main` now happens through a protected PR.
+- Code coverage is tracked with Codecov from the `apps/mobile-app` Jest coverage report. Release PRs require `@edcalderon` approval, a minimum 33% coverage gate, and the GitHub security scans before merge. Each GitHub repository needs its own `CODECOV_TOKEN` secret unless Codecov has been configured to treat both repos as the same project.
 - `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` stay on the SST/CodeBuild release path.
 - `hashpass.club` publishes through GitHub Pages from the `club-v*` release workflow.
 - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases for the canonical club site.
@@ -162,6 +162,7 @@ Deployment split:
 - Temporary release posture: keep Android publishing on the development profile for now. Use `pnpm run android:release:dev` for internal testing, then `pnpm run android:release:alpha` after the same tag succeeds internally. Leave production paused until the release freeze is lifted.
 - The workflow accepts `environment=development` with `track=internal` for the first pass and `track=alpha` after internal succeeds. If you want the workflow to auto-dispatch alpha after internal, set `auto_promote_alpha=true` and, when needed, `alpha_release_status=draft`. Production dispatches are paused during the freeze.
 - The auto-dispatched alpha run uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle.
+- The release promotion command `npm run release:promote` prepares the `develop -> main` PR, so do not direct-push release commits to `main`.
 - Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
 - The Fastlane release lane automatically uploads any Play deobfuscation files it finds in the Android build outputs (`mapping.txt` or `native-debug-symbols.zip`), so future crash traces stay readable in Play Console. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
 - The full Play Console ladder and production publish checklist live in [apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md](apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md).

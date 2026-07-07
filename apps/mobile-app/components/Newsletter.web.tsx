@@ -76,6 +76,7 @@ const Newsletter = ({ mode }: Props) => {
     const [email, setEmail] = useState('');
     const [subscribed, setSubscribed] = useState(false);
     const [error, setError] = useState('');
+    const [infoMessage, setInfoMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [subscribers, setSubscribers] = useState(1000);
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -182,7 +183,7 @@ const Newsletter = ({ mode }: Props) => {
                 onCapError = (e: Event) => {
                     const msg = (e as CustomEvent<{ message?: string }>).detail?.message;
                     console.error('[cap-widget] error event:', msg || e);
-                    setCapError('Security check failed. Please retry.');
+                    setCapError(t('capError'));
                 };
 
                 widget.addEventListener('solve', onSolve);
@@ -194,13 +195,13 @@ const Newsletter = ({ mode }: Props) => {
             } catch (err) {
                 if (!cancelled) {
                     console.error('[cap-widget] mount failed:', err);
-                    setCapError('Security check failed to load.');
+                    setCapError(t('capError'));
                 }
             }
         }).catch((err) => {
             if (!cancelled) {
                 console.error('[cap-widget] import failed:', err);
-                setCapError('Security check could not be loaded.');
+                setCapError(t('capError'));
             }
         });
 
@@ -220,19 +221,20 @@ const Newsletter = ({ mode }: Props) => {
 
     const handleSubscribe = async () => {
         setError('');
+        setInfoMessage('');
 
         if (!email.trim()) {
-            setError('Email is required');
+            setError(t('errorRequired'));
             return;
         }
 
         if (!isEmailValid) {
-            setError('Please enter a valid email address');
+            setError(t('errorInvalidEmail'));
             return;
         }
 
         if (!captchaToken) {
-            setError('Please wait for the security check to complete.');
+            setError(t('errorCaptchaRequired'));
             return;
         }
 
@@ -256,12 +258,10 @@ const Newsletter = ({ mode }: Props) => {
             });
 
             if (!response.success) {
-                const errorMessage = response.error || '';
-                if (errorMessage.toLowerCase().includes('already subscribed')) {
-                    setSubscribed(true);
+                if ((response as any).alreadySubscribed) {
+                    setInfoMessage(t('alreadySubscribed'));
                 } else {
-                    setError(errorMessage || 'Failed to subscribe. Please try again.');
-                    // Reset captcha if the server says the security check expired
+                    setError(response.error || t('errorFailed'));
                     if ((response as any).captchaExpired) {
                         setCaptchaToken(null);
                         setCapRetryKey(k => k + 1);
@@ -274,16 +274,7 @@ const Newsletter = ({ mode }: Props) => {
             setSubscribers(s => s + 1);
         } catch (err) {
             console.error('Subscription error:', err);
-            const errorMessage = err instanceof Error ? err.message : 'Failed to subscribe. Please try again.';
-            if (errorMessage.toLowerCase().includes('already subscribed')) {
-                setSubscribed(true);
-            } else {
-                setError(errorMessage);
-                if (errorMessage.toLowerCase().includes('security check') || errorMessage.toLowerCase().includes('captcha')) {
-                    setCaptchaToken(null);
-                    setCapRetryKey(k => k + 1);
-                }
-            }
+            setError(err instanceof Error ? err.message : t('errorFailed'));
         } finally {
             setIsLoading(false);
             // Always reset the captcha widget after a submit so the user gets a
@@ -368,6 +359,7 @@ const Newsletter = ({ mode }: Props) => {
                                             onChange={(e) => {
                                                 setEmail(e.target.value);
                                                 if (error) setError('');
+                                                if (infoMessage) setInfoMessage('');
                                             }}
                                             placeholder={t('emailPlaceholder')}
                                             className='w-full px-4 py-3 pl-10 text-sm sm:text-base rounded-full bg-transparent outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-white dark:text-white text-gray-600 dark:text-gray-300'
@@ -382,10 +374,18 @@ const Newsletter = ({ mode }: Props) => {
                                     </div>
                                     {error && (
                                         <p className='mt-1.5 text-xs text-red-500 dark:text-red-400 flex items-center'>
-                                            <svg xmlns='http://www.w3.org/2000/svg' className='h-3.5 w-3.5 mr-1' viewBox='0 0 20 20' fill='currentColor'>
+                                            <svg xmlns='http://www.w3.org/2000/svg' className='h-3.5 w-3.5 mr-1 shrink-0' viewBox='0 0 20 20' fill='currentColor'>
                                                 <path fillRule='evenodd' d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2z' clipRule='evenodd' />
                                             </svg>
                                             {error}
+                                        </p>
+                                    )}
+                                    {infoMessage && (
+                                        <p className='mt-1.5 text-xs text-emerald-600 dark:text-emerald-400 flex items-center'>
+                                            <svg xmlns='http://www.w3.org/2000/svg' className='h-3.5 w-3.5 mr-1 shrink-0' viewBox='0 0 20 20' fill='currentColor'>
+                                                <path fillRule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clipRule='evenodd' />
+                                            </svg>
+                                            {infoMessage}
                                         </p>
                                     )}
                                 </div>
@@ -409,7 +409,7 @@ const Newsletter = ({ mode }: Props) => {
                                                     }}
                                                     className="underline font-medium hover:no-underline"
                                                 >
-                                                    Retry
+                                                    {t('capRetry')}
                                                 </button>
                                             </div>
                                         )}
@@ -490,7 +490,7 @@ const Newsletter = ({ mode }: Props) => {
                                             {countdown}
                                         </span>
                                     </div>
-                                    <p className='text-xs text-gray-400 dark:text-gray-500 tracking-wide'>Auto-returning to form</p>
+                                    <p className='text-xs text-gray-400 dark:text-gray-500 tracking-wide'>{t('autoReturning')}</p>
                                     <button
                                         type="button"
                                         onClick={(e) => {

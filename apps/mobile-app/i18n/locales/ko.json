@@ -12,7 +12,16 @@
     "successMessage": "로 확인 이메일을 보냈습니다.",
     "successMessageEmail": "받은 편지함을 확인해주세요.",
     "sendAnother": "다시 보내기",
-    "backToForm": "폼으로 돌아가기"
+    "backToForm": "폼으로 돌아가기",
+    "alreadySubscribed": "이 이메일은 이미 뉴스레터를 구독 중입니다.",
+    "errorRequired": "이메일이 필요합니다",
+    "errorInvalidEmail": "유효한 이메일 주소를 입력해 주세요",
+    "errorCaptchaRequired": "보안 확인을 완료해 주세요",
+    "errorCaptchaExpired": "보안 확인이 만료되었습니다. 다시 해결해 주세요.",
+    "errorFailed": "구독에 실패했습니다. 다시 시도해 주세요.",
+    "autoReturning": "폼으로 자동 이동",
+    "capError": "보안 확인 실패. 다시 시도해 주세요.",
+    "capRetry": "재시도"
   },
   "wallet": {
     "digitalWalletTitle": "디지털 티켓 지갑",

@@ -1,6 +1,6 @@
 # Guía de Versionado (Legacy)
 
-> **Updated workflow**: See [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md) for the current release process. The canonical command is `npm run release:patch` (not `version:bump`).
+> **Updated workflow**: See [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md) for the current release process. The canonical command is `npm run release:patch` (not `version:bump`), and promotion to `main` now happens through a protected PR created by `npm run release:promote`.
 
 ---
 

@@ -12,7 +12,16 @@
     "successMessage": "Nous avons envoyé un email de confirmation à",
     "successMessageEmail": "Vérifiez votre boîte de réception pour plus de détails.",
     "sendAnother": "Envoyer un autre",
-    "backToForm": "Retour au formulaire"
+    "backToForm": "Retour au formulaire",
+    "alreadySubscribed": "Cet email est déjà abonné à notre newsletter.",
+    "errorRequired": "L'email est requis",
+    "errorInvalidEmail": "Veuillez saisir une adresse email valide",
+    "errorCaptchaRequired": "Veuillez compléter la vérification de sécurité",
+    "errorCaptchaExpired": "Vérification expirée. Veuillez la résoudre à nouveau.",
+    "errorFailed": "Impossible de s'abonner. Veuillez réessayer.",
+    "autoReturning": "Retour automatique au formulaire",
+    "capError": "Vérification de sécurité échouée. Réessayez.",
+    "capRetry": "Réessayer"
   },
   "wallet": {
     "digitalWalletTitle": "Portefeuille de billets numériques",

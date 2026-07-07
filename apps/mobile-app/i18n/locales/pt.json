@@ -12,7 +12,16 @@
     "successMessage": "Enviamos um email de confirmação para",
     "successMessageEmail": "Verifique sua caixa de entrada para mais detalhes.",
     "sendAnother": "Enviar outro",
-    "backToForm": "Voltar ao formulário"
+    "backToForm": "Voltar ao formulário",
+    "alreadySubscribed": "Este email já está inscrito na nossa newsletter.",
+    "errorRequired": "Email é obrigatório",
+    "errorInvalidEmail": "Por favor insira um endereço de email válido",
+    "errorCaptchaRequired": "Por favor complete a verificação de segurança",
+    "errorCaptchaExpired": "Verificação expirada. Por favor resolva novamente.",
+    "errorFailed": "Falha ao assinar. Por favor tente novamente.",
+    "autoReturning": "Retornando automaticamente ao formulário",
+    "capError": "Verificação de segurança falhou. Tente novamente.",
+    "capRetry": "Tentar novamente"
   },
   "wallet": {
     "digitalWalletTitle": "Carteira de ingressos digitais",

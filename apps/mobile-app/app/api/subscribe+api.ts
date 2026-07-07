@@ -6,183 +6,116 @@ import { generateUnsubscribeToken } from '@/lib/unsubscribe-token';
 export async function POST(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
   try {
-    // Ensure the request has a JSON content-type
     if (request.headers.get('content-type') !== 'application/json') {
-      return new Response(
-        JSON.stringify({ error: 'Content-Type must be application/json' }),
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return json({ error: 'Content-Type must be application/json' }, 400);
     }
 
     const body = await request.json().catch(() => ({}));
-    const email = body?.email?.trim();
-    const locale = body?.locale || 'en';
+    const email: string = (body?.email ?? '').trim();
+    const locale: string = body?.locale || 'en';
     const captchaToken: string | undefined = body?.captchaToken;
+    // Native clients send source:'native' or omit captchaToken entirely
+    const isNative: boolean = body?.source === 'native' || !captchaToken;
 
-    // Verify captcha token (required)
-    if (!captchaToken) {
-      return new Response(
-        JSON.stringify({ error: 'Captcha verification required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    let captchaResult: { success: boolean };
-    try {
-      captchaResult = await cap.validateToken(captchaToken);
-      console.log('[subscribe] captcha validateToken result:', captchaResult);
-    } catch (err: any) {
-      console.error('[subscribe] captcha validateToken threw:', err?.message || err);
-      captchaResult = { success: false };
-    }
-    if (!captchaResult.success) {
-      return new Response(
-        JSON.stringify({ error: 'Security check expired. Please solve the captcha again.', captchaExpired: true }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!email) {
-      return new Response(
-        JSON.stringify({ error: 'Email is required' }),
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    // Basic email validation
+    if (!email) return json({ error: 'Email is required' }, 400);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(
-        JSON.stringify({ error: 'Please enter a valid email address' }),
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return json({ error: 'Please enter a valid email address' }, 400);
     }
 
-    const { data: existingSubscriber, error: fetchError } = await supabase
+    // Check duplicate BEFORE captcha so already-subscribed users always get
+    // the correct message, whether on web or native.
+    const { data: existing, error: fetchError } = await supabase
       .from('newsletter_subscribers')
       .select('email')
       .eq('email', email)
       .maybeSingle();
 
     if (fetchError) {
-      console.error('Error checking for existing subscriber:', fetchError);
+      console.error('[subscribe] duplicate check error:', fetchError);
       throw new Error('Failed to check subscription status');
     }
 
-    if (existingSubscriber) {
-      return new Response(
-        JSON.stringify({ error: 'This email is already subscribed' }),
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+    if (existing) {
+      return json({ error: 'This email is already subscribed', alreadySubscribed: true }, 400);
+    }
+
+    // Captcha required on web only
+    if (!isNative) {
+      let captchaResult: { success: boolean };
+      try {
+        captchaResult = await cap.validateToken(captchaToken!);
+        console.log('[subscribe] captcha validateToken result:', captchaResult);
+      } catch (err: any) {
+        console.error('[subscribe] captcha validateToken threw:', err?.message || err);
+        captchaResult = { success: false };
+      }
+      if (!captchaResult.success) {
+        return json({ error: 'Security check expired. Please solve the captcha again.', captchaExpired: true }, 400);
+      }
     }
 
     const { data, error: insertError } = await supabase
       .from('newsletter_subscribers')
-      .insert([{
-        email,
-        subscribed_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        email_sent: false,
-      }])
+      .insert([{ email, subscribed_at: new Date().toISOString(), created_at: new Date().toISOString(), email_sent: false }])
       .select();
 
     if (insertError) {
-      console.error('Supabase insert error:', insertError);
+      console.error('[subscribe] insert error:', insertError);
+      if (insertError.code === '23505') {
+        return json({ error: 'This email is already subscribed', alreadySubscribed: true }, 400);
+      }
       throw new Error('Failed to save subscription');
     }
 
     const subscriberId = data?.[0]?.id;
-
-    // Build a signed unsubscribe URL so the recipient can opt out with one click
-    const unsubscribeToken = generateUnsubscribeToken(email);
     const origin = new URL(request.url).origin;
-    const unsubscribeUrl = `${origin}/api/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+    const unsubscribeUrl = `${origin}/api/unsubscribe?token=${encodeURIComponent(generateUnsubscribeToken(email))}`;
 
-    // Send confirmation email and update email_sent flag
     let emailSent = false;
     try {
-      const emailResult = await sendSubscriptionConfirmation(email, locale, unsubscribeUrl);
-      emailSent = emailResult.success;
-      if (!emailResult.success) {
-        console.warn('[subscribe] confirmation email failed:', emailResult.error);
-      } else {
-        console.log('[subscribe] confirmation email sent to', email);
-      }
+      const result = await sendSubscriptionConfirmation(email, locale, unsubscribeUrl);
+      emailSent = result.success;
+      if (!result.success) console.warn('[subscribe] email failed:', result.error);
+      else console.log('[subscribe] email sent to', email);
     } catch (emailError) {
       console.error('[subscribe] email threw:', emailError);
     }
 
-    // Record whether the email was actually delivered
-    // (requires email_sent column: ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS email_sent boolean NOT NULL DEFAULT false)
     if (subscriberId) {
       await supabase
         .from('newsletter_subscribers')
         .update({ email_sent: emailSent })
         .eq('id', subscriberId)
-        .then((result: { error?: { message?: string } }) => {
-          const { error } = result;
-          if (error) console.warn('[subscribe] email_sent update failed:', error.message);
+        .then(({ error: e }: { error?: { message?: string } | null }) => {
+          if (e) console.warn('[subscribe] email_sent update failed:', e.message);
         });
     }
 
-    return new Response(
-      JSON.stringify({
-        message: emailSent
-          ? 'Successfully subscribed! Please check your email for confirmation.'
-          : 'Successfully subscribed! (confirmation email could not be sent)',
-        subscription: data?.[0] || null,
-        emailSent,
-      }),
-      {
-        status: 201,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    return json({
+      success: true,
+      message: emailSent
+        ? 'Successfully subscribed! Please check your email for confirmation.'
+        : 'Successfully subscribed! (confirmation email could not be sent)',
+      emailSent,
+    }, 201);
   } catch (error) {
-    // Log stack trace for server-side debugging, don't expose to client
     if (error instanceof Error && error.stack) {
-      console.error('Subscription error:', error.stack);
+      console.error('[subscribe] unhandled error:', error.stack);
     } else {
-      console.error('Subscription error:', error);
+      console.error('[subscribe] unhandled error:', error);
     }
-    
-    // Determine appropriate status code
-    const statusCode = error instanceof Error && 'statusCode' in error 
-      ? (error as any).statusCode 
-      : 500;
-      
-    // Get user-friendly error message
     let errorMessage = 'An unexpected error occurred';
     if (error instanceof Error) {
-      if (error.message.includes('duplicate key')) {
-        errorMessage = 'This email is already subscribed';
-      } else if (error.message.includes('connection')) {
-        errorMessage = 'Unable to connect to the database';
-      } else {
-        errorMessage = error.message || errorMessage;
-      }
+      if (error.message.includes('duplicate key')) errorMessage = 'This email is already subscribed';
+      else errorMessage = error.message;
     }
-    
-    return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        code: statusCode
-      }),
-      { 
-        status: statusCode,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    return json({ error: errorMessage }, 500);
   }
+}
+
+function json(body: object, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
