@@ -20,13 +20,14 @@
   HashPass is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.165)
+## 📋 Latest Changes (v1.8.166)
 
-### Features
+### Bug Fixes
 
-* add Codecov coverage tracking ([208d1c1](https://github.com/hashpass-tech/hashpass.tech/commit/208d1c1f81a14c557d53334ce50d8e511dfb8889))
+* **tests:** align README versioning test with dev suffix ([8350bba](https://github.com/hashpass-tech/hashpass.tech/commit/8350bbaa236358d41045744959b754fd412785dc))
+* **tests:** avoid CodeQL alert in versioning test ([a30f888](https://github.com/hashpass-tech/hashpass.tech/commit/a30f8886dd9c1aa849bdd126b34b0c494115673d))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
 
 ## Current Status
 

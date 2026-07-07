@@ -1,3 +1,15 @@
+## [1.8.166](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.165...v1.8.166) (2026-07-07)
+
+
+### Bug Fixes
+
+* **tests:** align README versioning test with dev suffix ([8350bba](https://github.com/hashpass-tech/hashpass.tech/commit/8350bbaa236358d41045744959b754fd412785dc))
+* **tests:** avoid CodeQL alert in versioning test ([a30f888](https://github.com/hashpass-tech/hashpass.tech/commit/a30f8886dd9c1aa849bdd126b34b0c494115673d))
+
+
+
+
+
 
 
 ## [1.8.165](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.164...v1.8.165) (2026-07-07)
