@@ -28,7 +28,11 @@ describe('README versioning sync', () => {
     expect(changelogVersion).toBe(rootPackageJson.version);
     expect(mobileAppJson.version).toBe(rootPackageJson.version);
     expect(productionVersion.version).toBe(rootPackageJson.version);
-    expect(developmentVersion.version).toBe(rootPackageJson.version);
+    const developmentVersionPattern = new RegExp(
+      `^${rootPackageJson.version.replace(/\./g, '\\.')}-dev\\.\\d+$`,
+    );
+
+    expect(developmentVersion.version).toMatch(developmentVersionPattern);
     expect(readme).toContain(
       'https://img.shields.io/github/v/tag/hashpass-tech/hashpass.tech?label=tracked%20version',
     );
