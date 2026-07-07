@@ -38,6 +38,7 @@
     "ios": "pnpm --filter hashpass-mobile-app ios",
     "web": "pnpm --filter hashpass-mobile-app web",
     "test": "pnpm --dir apps/mobile-app test",
+    "test:coverage": "pnpm --dir apps/mobile-app test:coverage",
     "env:propagate": "node packages/tools/scripts/propagate-env.js",
     "env:sync": "node packages/tools/scripts/sync-env.js",
     "typecheck": "node packages/tools/scripts/typecheck-changed.mjs",

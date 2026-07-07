@@ -1,0 +1,20 @@
+module.exports = {
+  preset: 'jest-expo',
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  coverageReporters: ['json-summary', 'lcov', 'text'],
+  collectCoverageFrom: [
+    'app/**/*.{ts,tsx}',
+    'components/**/*.{ts,tsx}',
+    'contexts/**/*.{ts,tsx}',
+    'hooks/**/*.{ts,tsx}',
+    'lib/**/*.{ts,tsx}',
+    'providers/**/*.{ts,tsx}',
+    'navigation/**/*.{ts,tsx}',
+    'config/**/*.{ts,tsx}',
+    '!**/*.d.ts',
+    '!**/*.test.{ts,tsx}',
+    '!**/*.spec.{ts,tsx}',
+  ],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/.expo/'],
+};

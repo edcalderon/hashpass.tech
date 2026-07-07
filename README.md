@@ -7,6 +7,9 @@
   <img alt="Apps" src="https://img.shields.io/badge/apps-mobile%20%2B%20web-0ea5e9?style=flat-square" />
   <img alt="Docs" src="https://img.shields.io/badge/docs-Docusaurus-3b82f6?style=flat-square" />
   <img alt="Tracked version" src="https://img.shields.io/github/v/tag/hashpass-tech/hashpass.tech?label=tracked%20version&style=flat-square&color=0ea5e9&sort=semver" />
+  <a href="https://codecov.io/gh/hashpass-tech/hashpass.tech">
+    <img alt="Coverage" src="https://codecov.io/gh/hashpass-tech/hashpass.tech/branch/main/graph/badge.svg" />
+  </a>
   <img alt="Release" src="https://img.shields.io/badge/release-patch-8b5cf6?style=flat-square" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8.3-3178c6?style=flat-square&logo=typescript&logoColor=white" />
   <img alt="Node.js" src="https://img.shields.io/badge/Node.js-22.22.0%2B-339933?style=flat-square&logo=node.js&logoColor=white" />
@@ -26,7 +29,7 @@
 * tighten email renderer replacement ([0b3bc64](https://github.com/hashpass-tech/hashpass.tech/commit/0b3bc6419c1574a6863dbee65b0f2bdcc6da4a00))
 * unblock release typecheck and package resolution ([4470e80](https://github.com/hashpass-tech/hashpass.tech/commit/4470e8061e591a8982dd4950bcfb8923526916be))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 
@@ -39,6 +42,7 @@ For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub release
 - `archive/docs` stores historical docs, migration notes, and retired playbooks.
 - `main` now backs the production `hashpass.tech` web deployment while the archived Amplify helpers remain available under `archive/amplify/`.
 - `develop` is the integration branch for ongoing work across mobile, web, docs, and infra.
+- Code coverage is tracked with Codecov from the `apps/mobile-app` Jest coverage report. Each GitHub repository needs its own `CODECOV_TOKEN` secret unless Codecov has been configured to treat both repos as the same project.
 - `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` stay on the SST/CodeBuild release path.
 - `hashpass.club` publishes through GitHub Pages from the `club-v*` release workflow.
 - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases for the canonical club site.

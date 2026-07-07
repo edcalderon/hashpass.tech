@@ -30,7 +30,8 @@
     "postbuild:web": "mkdir -p dist/config && cp config/versions.json dist/config/versions.json 2>/dev/null || true && if [ -f dist/server/index.html ] && [ ! -f dist/client/index.html ]; then mkdir -p dist/client && cp dist/server/index.html dist/client/index.html; fi && cp public/sw.js dist/sw.js 2>/dev/null || true && node scripts/patch-web-seo.mjs",
     "postbuild:static": "if [ -d dist/server ]; then cp -R dist/server/. dist/; fi && if [ -d dist/client/_expo ]; then mkdir -p dist/_expo && cp -R dist/client/_expo/. dist/_expo/; fi && if [ -d dist/client/assets ]; then mkdir -p dist/assets && cp -R dist/client/assets/. dist/assets/; fi && mkdir -p dist/config && cp config/versions.json dist/config/versions.json 2>/dev/null || true && if [ -f dist/server/index.html ] && [ ! -f dist/client/index.html ]; then mkdir -p dist/client && cp dist/server/index.html dist/client/index.html; fi && cp public/sw.js dist/sw.js 2>/dev/null || true && node scripts/patch-web-seo.mjs",
     "lint": "expo lint",
-    "test": "jest --watchAll"
+    "test": "jest --watchAll",
+    "test:coverage": "jest --config jest.coverage.config.cjs --runInBand"
   },
   "dependencies": {
     "@adraffy/ens-normalize": "^1.11.1",
