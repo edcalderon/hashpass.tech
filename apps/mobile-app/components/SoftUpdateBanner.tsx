@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// @ts-ignore — Expo SDK 53 type definitions lag behind; named export works at runtime
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 
 const DISMISSED_KEY = 'soft_update_dismissed_version';
@@ -23,137 +22,189 @@ type Props = {
 };
 
 export default function SoftUpdateBanner({ latestVersion, storeUrl, storeWebUrl }: Props) {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
-  const slideAnim = React.useRef(new Animated.Value(120)).current;
+  const slideAnim = useRef(new Animated.Value(100)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     AsyncStorage.getItem(DISMISSED_KEY).then((dismissed) => {
       if (dismissed !== latestVersion) {
         setVisible(true);
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 60,
-          friction: 10,
-        }).start();
+        Animated.parallel([
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 65,
+            friction: 11,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 1,
+            duration: 220,
+            useNativeDriver: true,
+          }),
+        ]).start();
       }
     });
-  }, [latestVersion, slideAnim]);
+  }, [latestVersion, slideAnim, opacityAnim]);
 
   const dismiss = async () => {
-    Animated.timing(slideAnim, {
-      toValue: 120,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setVisible(false));
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 100,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setVisible(false));
     await AsyncStorage.setItem(DISMISSED_KEY, latestVersion);
   };
 
   const openStore = async () => {
-    const primary = storeUrl;
-    const fallback = storeWebUrl;
-
-    if (primary) {
-      const canOpen = await Linking.canOpenURL(primary).catch(() => false);
+    if (storeUrl) {
+      const canOpen = await Linking.canOpenURL(storeUrl).catch(() => false);
       if (canOpen) {
-        await Linking.openURL(primary).catch(() => null);
+        await Linking.openURL(storeUrl).catch(() => null);
+        dismiss();
         return;
       }
     }
-    if (fallback) {
-      await Linking.openURL(fallback).catch(() => null);
+    if (storeWebUrl) {
+      await Linking.openURL(storeWebUrl).catch(() => null);
     }
     dismiss();
   };
 
   if (!visible) return null;
 
-  const bannerBg = isDark ? '#1C1C3A' : '#EEF2FF';
-  const borderColor = isDark ? '#3730A3' : '#6366F1';
+  const bg = isDark ? 'rgba(18, 18, 30, 0.97)' : 'rgba(255, 255, 255, 0.97)';
+  const borderCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+  const labelCol = isDark ? '#e4e4f0' : '#111';
+  const subCol = isDark ? '#9898b0' : '#6b7280';
 
   return (
     <Animated.View
       style={[
-        styles.container,
-        { backgroundColor: bannerBg, borderLeftColor: borderColor, bottom: insets.bottom + 12 },
-        { transform: [{ translateY: slideAnim }] },
+        styles.wrapper,
+        { bottom: insets.bottom + 16 },
+        { transform: [{ translateY: slideAnim }], opacity: opacityAnim },
       ]}
+      pointerEvents="box-none"
     >
-      <MaterialIcons name="update" size={22} color={colors.primary} style={styles.icon} />
-      <View style={styles.textArea}>
-        <Text style={[styles.title, { color: colors.text.primary }]}>Update Available</Text>
-        <Text style={[styles.body, { color: colors.text.secondary }]}>
-          Version {latestVersion} is ready to install.
-        </Text>
+      <View style={[styles.pill, { backgroundColor: bg, borderColor: borderCol }]}>
+        {/* icon */}
+        <View style={styles.iconWrap}>
+          <Ionicons name="arrow-down-circle" size={20} color="#6366f1" />
+        </View>
+
+        {/* text */}
+        <View style={styles.textWrap}>
+          <Text style={[styles.label, { color: labelCol }]} numberOfLines={1}>
+            v{latestVersion} available
+          </Text>
+          <Text style={[styles.sub, { color: subCol }]} numberOfLines={1}>
+            Update on Play Store
+          </Text>
+        </View>
+
+        {/* update button */}
+        <TouchableOpacity
+          onPress={openStore}
+          activeOpacity={0.78}
+          style={styles.updateBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+        >
+          <Text style={styles.updateBtnText}>Update</Text>
+        </TouchableOpacity>
+
+        {/* divider */}
+        <View style={[styles.divider, { backgroundColor: borderCol }]} />
+
+        {/* dismiss */}
+        <TouchableOpacity
+          onPress={dismiss}
+          activeOpacity={0.7}
+          style={styles.closeBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="close" size={16} color={subCol} />
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={openStore} style={[styles.updateBtn, { backgroundColor: colors.primary }]}>
-        <Text style={styles.updateBtnText}>Update</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={dismiss} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <MaterialIcons name="close" size={18} color={colors.text.secondary} />
-      </TouchableOpacity>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     position: 'absolute',
-    left: 12,
-    right: 12,
+    left: 14,
+    right: 14,
     zIndex: 1000,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    paddingHorizontal: 16,
-    borderLeftWidth: 4,
-    borderRadius: 12,
-    elevation: 8,
     ...Platform.select({
-      web: {
-        boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.12)',
-      },
-      default: {
+      ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.18,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 10,
       },
     }),
   },
-  icon: {
-    marginRight: 10,
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  iconWrap: {
     flexShrink: 0,
   },
-  textArea: {
+  textWrap: {
     flex: 1,
-    marginRight: 8,
+    minWidth: 0,
   },
-  title: {
-    fontSize: 14,
+  label: {
+    fontSize: 13,
     fontWeight: '700',
-    marginBottom: 1,
+    letterSpacing: -0.2,
   },
-  body: {
-    fontSize: 12,
-    lineHeight: 16,
+  sub: {
+    fontSize: 11,
+    marginTop: 1,
   },
   updateBtn: {
+    backgroundColor: '#6366f1',
     paddingVertical: 6,
     paddingHorizontal: 14,
-    borderRadius: 8,
-    marginRight: 8,
+    borderRadius: 10,
     flexShrink: 0,
   },
   updateBtnText: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontSize: 13,
     fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  divider: {
+    width: 1,
+    height: 20,
+    flexShrink: 0,
   },
   closeBtn: {
     flexShrink: 0,
-    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 24,
+    height: 24,
   },
 });

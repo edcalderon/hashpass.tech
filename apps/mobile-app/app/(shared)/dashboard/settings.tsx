@@ -14,11 +14,13 @@ import * as Haptics from 'expo-haptics';
 import { t } from '@lingui/macro';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
 import { useAuth } from '../../../hooks/useAuth';
+import { authService } from '@hashpass/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../../../lib/api-client';
 import { buildEventPath } from '../../../lib/event-path';
 import VersionDetailsModal from '../../../components/VersionDetailsModal';
 import { clearNativeGoogleAccount } from '../../../lib/native-google-signin';
+import { shouldUseNativeGoogleSignin } from '../../../lib/native-google-signin-config';
 
 export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
@@ -105,8 +107,12 @@ export default function SettingsScreen() {
     return lang ? lang.nativeName : 'English';
   };
 
+  const isNativeGoogleSigninActive =
+    shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) &&
+    authService.getProviderName() === 'supabase';
+
   const clearGoogleAccount = async () => {
-    if (Platform.OS === 'web' || process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN !== 'true') return;
+    if (!isNativeGoogleSigninActive) return;
     await clearNativeGoogleAccount();
   };
 
@@ -511,7 +517,7 @@ export default function SettingsScreen() {
             showChevron: true,
           })}
 
-          {Platform.OS !== 'web' && process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true' && renderSettingItem({
+          {isNativeGoogleSigninActive && renderSettingItem({
             icon: 'logo-google',
             title: tSettings('resetGoogleAccount', 'Reset Google Account'),
             subtitle: tSettings('resetGoogleAccountSubtitle', 'Force account picker on next Google sign-in'),

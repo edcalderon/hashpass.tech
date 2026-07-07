@@ -26,7 +26,7 @@
 
 * restore native HashPass logo contrast ([b33877c](https://github.com/hashpass-tech/hashpass.tech/commit/b33877cd8679895fffb4f391ad1b256d426a4012))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 

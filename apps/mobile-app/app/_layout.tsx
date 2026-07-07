@@ -32,6 +32,7 @@ import { showConsoleWelcome } from '../lib/console-welcome';
 import LoadingScreen from '../components/LoadingScreen';
 import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppErrorBoundary';
 import { configureNativeGoogleSignin } from '../lib/native-google-signin';
+import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config';
 import { hasRecentAuthSuccess } from '../lib/auth/recent-auth';
 import packageJson from '../package.json';
 
@@ -138,15 +139,13 @@ function ThemedContent() {
     }
   }, []);
 
-  // Configure native Google Sign-In SDK once on startup (Android only, feature-flagged)
+  // Configure native Google Sign-In SDK once on startup (native only, feature-flagged)
   useEffect(() => {
-    const nativeEnabled =
-      Platform.OS !== 'web' &&
-      process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN === 'true' &&
-      !!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    const nativeGoogleFlag = process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN ?? '(default:true)';
+    const nativeEnabled = shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
     console.log(
       `[GoogleSignin] native enabled=${nativeEnabled}`,
-      `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=${process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN}`,
+      `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=${nativeGoogleFlag}`,
       `webClientId=${process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '(unset)'}`,
     );
     if (!nativeEnabled) return;

@@ -112,6 +112,15 @@ export class DirectusAuthProvider implements IAuthProvider {
     };
   }
 
+  private createPersistedSession(session: AuthSession): AuthSession {
+    return {
+      user: session.user,
+      access_token: this.isCookieBackedSession(session) ? session.access_token : 'session_based',
+      provider: session.provider,
+      expires_at: session.expires_at,
+    };
+  }
+
   private pushOAuthFailure(
     failures: Array<{ stage: string; message: string; status?: number; code?: string }>,
     stage: string,
@@ -244,7 +253,6 @@ export class DirectusAuthProvider implements IAuthProvider {
       };
 
       this.session = session;
-      await this.storeSession(session);
       this.setupRefreshTimer();
       this.notifyStateChange(session);
 
@@ -395,7 +403,7 @@ async handleOAuthCallback(codeOrParams: string | Record<string, string>, state?:
           };
 
           this.session = session;
-          await this.storeSession(session);
+          await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
         
           console.log('🔔 Notifying auth state change (token-based)...');
           this.notifyStateChange(session);
@@ -444,7 +452,7 @@ async handleOAuthCallback(codeOrParams: string | Record<string, string>, state?:
         };
 
         this.session = session;
-        await this.storeSession(session);
+        await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
 
         console.log('🔔 Notifying auth state change...');
         this.notifyStateChange(session);
@@ -488,7 +496,7 @@ async handleOAuthCallback(codeOrParams: string | Record<string, string>, state?:
             refreshResult.data.expires
           );
           this.session = session;
-          await this.storeSession(session);
+          await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
           this.notifyStateChange(session);
           return { user: session.user, session };
         }
@@ -622,7 +630,7 @@ async signOut(): Promise<{ error?: string }> {
             };
 
             this.session = session;
-            await this.storeSession(session);
+            await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
             this.notifyStateChange(session);
             this.nextSessionProbeAt = Date.now() + 5000;
             return session;
@@ -652,7 +660,7 @@ async signOut(): Promise<{ error?: string }> {
                   refreshResult.data.expires
                 );
                 this.session = session;
-                await this.storeSession(session);
+                await this.storeSession(session.user, session.expires_at, this.isCookieBackedSession(session));
                 this.notifyStateChange(session);
                 this.nextSessionProbeAt = Date.now() + 5000;
                 return session;
@@ -695,7 +703,7 @@ async signOut(): Promise<{ error?: string }> {
       };
 
       this.session = updatedSession;
-      await this.storeSession(updatedSession);
+      await this.storeSession(updatedSession.user, updatedSession.expires_at, this.isCookieBackedSession(updatedSession));
       this.setupRefreshTimer();
       this.notifyStateChange(updatedSession);
 
@@ -785,11 +793,11 @@ async signOut(): Promise<{ error?: string }> {
     }
   }
 
-  private async storeSession(session: AuthSession): Promise<void> {
+  private async storeSession(user: AuthUser, expiresAt?: number, cookieBacked = false): Promise<void> {
     try {
       const key = 'hashpass_directus_session';
       // Do not persist cookie-backed pseudo sessions; they must be revalidated per runtime.
-      if (this.isCookieBackedSession(session)) {
+      if (cookieBacked) {
         if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
           localStorage.removeItem(key);
         } else if (Platform.OS !== 'web') {
@@ -798,7 +806,13 @@ async signOut(): Promise<{ error?: string }> {
         }
         return;
       }
-      const value = JSON.stringify(session);
+      const persistedSession = {
+        user,
+        access_token: 'session_based',
+        provider: 'directus',
+        expires_at: expiresAt,
+      };
+      const value = JSON.stringify(persistedSession);
 
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(key, value);
