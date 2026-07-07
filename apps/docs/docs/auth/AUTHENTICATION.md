@@ -1,6 +1,6 @@
 # Authentication
 
-HashPass uses a provider-agnostic auth layer in code. The current production Google sign-in path goes through the API-owned Directus OAuth bridge described in [AUTH_FLOW.md](AUTH_FLOW.md).
+HASHPASS uses a provider-agnostic auth layer in code. The current production Google sign-in path goes through the API-owned Directus OAuth bridge described in [AUTH_FLOW.md](AUTH_FLOW.md).
 
 ## What Happens In Production
 

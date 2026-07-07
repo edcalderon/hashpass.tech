@@ -1,6 +1,6 @@
 # Play Console Release Flow
 
-This guide covers the Play Console track ladder for HashPass and how it maps to the repo's Android release workflow.
+This guide covers the Play Console track ladder for HASHPASS and how it maps to the repo's Android release workflow.
 
 Temporary release posture: the current cycle is internal-first on the development profile. Use `environment=development` for validation, keep alpha gated by the matching internal release on the same tag, and do not publish to production until the release freeze is lifted. Closed testing can be published directly with `release_status=completed`; only the first alpha upload needs `draft` if Play still treats the app as a draft.
 

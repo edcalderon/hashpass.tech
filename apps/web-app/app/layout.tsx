@@ -23,13 +23,13 @@ const SOCIAL_IMAGE_PATH = '/og-image.png';
 
 export const metadata: Metadata = {
   metadataBase: new URL(CANONICAL_SITE_URL),
-  applicationName: 'HashPass Club',
+  applicationName: 'HASHPASS Club',
   title: {
     default: 'hashpass.club — Membership management',
     template: '%s | hashpass.club',
   },
   description:
-    'HashPass gives invite-only clubs, communities, and events a unified platform to manage members, access, and renewals across mobile and web.',
+    'HASHPASS gives invite-only clubs, communities, and events a unified platform to manage members, access, and renewals across mobile and web.',
   keywords: ['membership', 'club management', 'NFT tickets', 'blockchain', 'community'],
   alternates: {
     canonical: CANONICAL_SITE_URL,
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: 'HashPass Club',
+    title: 'HASHPASS Club',
   },
   formatDetection: {
     telephone: false,
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
         url: SOCIAL_IMAGE_PATH,
         width: 1200,
         height: 630,
-        alt: 'HashPass Club membership management platform',
+        alt: 'HASHPASS Club membership management platform',
       },
     ],
   },

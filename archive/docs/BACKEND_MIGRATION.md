@@ -1,4 +1,4 @@
-# HashPass Backend Migration Guide
+# HASHPASS Backend Migration Guide
 
 ## Overview
 

@@ -1,5 +1,5 @@
 /**
- * Feature definitions for the HashPass white-label platform
+ * Feature definitions for the HASHPASS white-label platform
  * Defines available features and their configurations
  */
 

@@ -26,7 +26,7 @@ export const Step1SignIn: Story = {
         Access your speaker dashboard:
       </p>
       <ol style={{ fontSize: '16px', lineHeight: '1.8', paddingLeft: '20px' }}>
-        <li style={{ marginBottom: '12px' }}>Open the HashPass app</li>
+        <li style={{ marginBottom: '12px' }}>Open the HASHPASS app</li>
         <li style={{ marginBottom: '12px' }}>Enter your registered email address</li>
         <li style={{ marginBottom: '12px' }}>Check your email for the one-time login code</li>
         <li style={{ marginBottom: '12px' }}>Enter the code to access your speaker account</li>

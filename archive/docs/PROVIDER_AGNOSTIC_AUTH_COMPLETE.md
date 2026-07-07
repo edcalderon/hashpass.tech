@@ -4,7 +4,7 @@
 
 ## ✅ Successfully Implemented
 
-HashPass now has a **provider-agnostic authentication system** that supports multiple auth providers with seamless switching via environment variables only!
+HASHPASS now has a **provider-agnostic authentication system** that supports multiple auth providers with seamless switching via environment variables only!
 
 ## 🏗️ Architecture Overview
 
@@ -170,6 +170,6 @@ AUTH0_CLIENT_ID=your-client-id
 
 ## 🎊 Mission Accomplished
 
-The HashPass platform now has a **truly provider-agnostic authentication system** that can switch between Directus, Supabase, or any future provider with just environment variable changes. 
+The HASHPASS platform now has a **truly provider-agnostic authentication system** that can switch between Directus, Supabase, or any future provider with just environment variable changes. 
 
 ✨ **The system is production-ready and eliminates all breaking changes when switching authentication providers!** ✨

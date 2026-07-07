@@ -407,7 +407,7 @@ export async function sendSubscriptionConfirmation(
     const year = new Date().getFullYear();
     
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: email,
       subject: content.subject,
       html: `
@@ -496,7 +496,7 @@ export async function sendBookingEmail(
       ${payload.start ? `<p>Fecha y hora: ${payload.start}</p>` : ''}
       ${payload.location ? `<p>Ubicación: ${payload.location}</p>` : ''}
     `;
-    const info = await transporter.sendMail({ from: `HashPass <${process.env.NODEMAILER_FROM}>`, to, subject, html });
+    const info = await transporter.sendMail({ from: `HASHPASS <${process.env.NODEMAILER_FROM}>`, to, subject, html });
     return { success: true, messageId: info.messageId };
   } catch (e: any) {
     return { success: false, error: e?.message || 'Email failed' };
@@ -661,7 +661,7 @@ export async function sendUserOnboardingEmail(
     }
 
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: email,
       subject: subject,
       html: htmlContent,
@@ -857,7 +857,7 @@ export async function sendWelcomeEmail(
     }
 
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: email,
       subject: subject,
       html: htmlContent,
@@ -1047,7 +1047,7 @@ export async function sendSpeakerOnboardingEmail(
     }
 
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: email,
       subject: subject,
       html: htmlContent,
@@ -1489,7 +1489,7 @@ export async function sendTroubleshootingEmail(
     }
 
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: email,
       subject: subject,
       html: htmlContent,

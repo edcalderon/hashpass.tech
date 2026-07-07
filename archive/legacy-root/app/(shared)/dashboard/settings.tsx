@@ -543,7 +543,7 @@ export default function SettingsScreen() {
           {renderSettingItem({
             icon: 'information-circle-outline',
             title: 'App Version',
-            subtitle: `HashPass v${version}`,
+            subtitle: `HASHPASS v${version}`,
           })}
 
           {renderSettingItem({

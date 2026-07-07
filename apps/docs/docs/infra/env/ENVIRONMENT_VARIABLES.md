@@ -1,6 +1,6 @@
 # Environment Variables Reference
 
-This is the current source of truth for the environment variables used by the HashPass mobile app, the `hashpass.club` static Next.js app, the shared sync scripts, and AWS Parameter Store.
+This is the current source of truth for the environment variables used by the HASHPASS mobile app, the `hashpass.club` static Next.js app, the shared sync scripts, and AWS Parameter Store.
 
 ## How Values Flow
 
@@ -62,7 +62,7 @@ Recommended values for the current club app:
 
 ```bash
 NEXT_PUBLIC_SITE_URL=https://hashpass.club
-NEXT_PUBLIC_APP_NAME=HashPass Club
+NEXT_PUBLIC_APP_NAME=HASHPASS Club
 NEXT_PUBLIC_SUPPORT_EMAIL=hello@hashpass.club
 ```
 

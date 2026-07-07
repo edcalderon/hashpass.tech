@@ -1,12 +1,12 @@
-# CoFHE Integration Analysis for HashPass
+# CoFHE Integration Analysis for HASHPASS
 
 ## Executive Summary
 
-CoFHE (Co-processor for Fully Homomorphic Encryption) offers powerful privacy-preserving computation capabilities that can significantly enhance HashPass's blockchain-powered event ticket platform. This document analyzes how CoFHE components can be integrated into HashPass to enable privacy-preserving features while maintaining the platform's security and transparency goals.
+CoFHE (Co-processor for Fully Homomorphic Encryption) offers powerful privacy-preserving computation capabilities that can significantly enhance HASHPASS's blockchain-powered event ticket platform. This document analyzes how CoFHE components can be integrated into HASHPASS to enable privacy-preserving features while maintaining the platform's security and transparency goals.
 
 ---
 
-## Current HashPass Architecture
+## Current HASHPASS Architecture
 
 ### Key Components
 - **Blockchain Integration**: Ethereum & Solana wallet authentication
@@ -31,7 +31,7 @@ CoFHE (Co-processor for Fully Homomorphic Encryption) offers powerful privacy-pr
 
 **What it does**: Client-side encryption, permit management, and decryption
 
-**HashPass Use Cases**:
+**HASHPASS Use Cases**:
 
 #### A. **Encrypted Pass Data**
 - Encrypt sensitive pass metadata (VIP status, special perks, boost amounts)
@@ -76,7 +76,7 @@ export class EncryptedPassService {
 
 **What it does**: Smart contract operations on encrypted data
 
-**HashPass Use Cases**:
+**HASHPASS Use Cases**:
 
 #### A. **Encrypted Pass Validation on Blockchain**
 - Store encrypted pass data on-chain
@@ -88,7 +88,7 @@ export class EncryptedPassService {
 // contracts/EncryptedPassValidator.sol (new file)
 import { FHE } from "@cofhe/fhe.sol";
 
-contract HashPassValidator {
+contract HASHPASSValidator {
     using FHE for EncryptedUint256;
     
     function validateEncryptedPass(
@@ -120,7 +120,7 @@ contract HashPassValidator {
 
 **What it does**: Gateway for FHE operations, validates requests, manages permissions
 
-**HashPass Use Cases**:
+**HASHPASS Use Cases**:
 
 #### A. **FHE Operation Request Management**
 - Manage encryption/decryption requests for passes
@@ -154,7 +154,7 @@ export class FHETaskManager {
 
 **What it does**: Coordinates request queues, manages on-chain/off-chain communication
 
-**HashPass Use Cases**:
+**HASHPASS Use Cases**:
 
 #### A. **Batch FHE Operations**
 - Aggregate multiple pass validations
@@ -172,7 +172,7 @@ export class FHETaskManager {
 
 **What it does**: Executes FHE operations, maintains encrypted state
 
-**HashPass Use Cases**:
+**HASHPASS Use Cases**:
 
 #### A. **Off-Chain FHE Processing**
 - Execute complex FHE operations (analytics, matching)
@@ -186,7 +186,7 @@ export class FHETaskManager {
 
 **Architecture**:
 ```
-HashPass Frontend
+HASHPASS Frontend
     ↓
 Task Manager (validates & queues)
     ↓
@@ -205,7 +205,7 @@ Return encrypted/decrypted results
 
 **What it does**: Distributed decryption via multi-party computation
 
-**HashPass Use Cases**:
+**HASHPASS Use Cases**:
 
 #### A. **Secure Pass Decryption**
 - Decrypt passes only when needed (e.g., at event entry)
@@ -232,7 +232,7 @@ Return encrypted/decrypted results
 
 **What it does**: Maintains references to encrypted values, handles access control
 
-**HashPass Use Cases**:
+**HASHPASS Use Cases**:
 
 #### A. **Encrypted Data Registry**
 - Track all encrypted pass data
@@ -259,7 +259,7 @@ CREATE TABLE ciphertext_registry (
 
 ---
 
-## Specific Use Cases for HashPass
+## Specific Use Cases for HASHPASS
 
 ### Use Case 1: Privacy-Preserving Pass Validation
 
@@ -451,7 +451,7 @@ CREATE TABLE ciphertext_registry (
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    HashPass Frontend                    │
+│                    HASHPASS Frontend                    │
 │  (React Native/Expo - TypeScript)                       │
 └────────────────────┬────────────────────────────────────┘
                      │
@@ -624,12 +624,12 @@ export async function validateEncryptedPass(
 ### Example 3: Smart Contract Integration
 
 ```solidity
-// contracts/HashPassFHE.sol
+// contracts/HASHPASSFHE.sol
 pragma solidity ^0.8.0;
 
 import {FHE} from "@cofhe/fhe.sol";
 
-contract HashPassValidator {
+contract HASHPASSValidator {
     using FHE for EncryptedUint256;
     
     mapping(bytes32 => EncryptedPass) public encryptedPasses;
@@ -675,7 +675,7 @@ contract HashPassValidator {
 - ✅ **Analytics**: Get insights without seeing individual data
 - ✅ **Security**: Reduced risk of data breaches
 
-### For HashPass Platform
+### For HASHPASS Platform
 - ✅ **Differentiation**: Unique privacy-preserving features
 - ✅ **Trust**: Enhanced security and privacy reputation
 - ✅ **Scalability**: Enable new privacy-preserving features
@@ -718,19 +718,19 @@ contract HashPassValidator {
 
 - CoFHE Documentation: [Link to CoFHE docs]
 - FHE Best Practices: [Link to FHE guides]
-- HashPass Architecture: See `/docs/` directory
+- HASHPASS Architecture: See `/docs/` directory
 - Supabase RLS: See existing migrations
 
 ---
 
 ## Conclusion
 
-CoFHE offers powerful capabilities that align perfectly with HashPass's mission of secure, privacy-preserving event management. By integrating CoFHE components, HashPass can:
+CoFHE offers powerful capabilities that align perfectly with HASHPASS's mission of secure, privacy-preserving event management. By integrating CoFHE components, HASHPASS can:
 
 1. **Protect User Privacy**: Encrypt sensitive data while enabling functionality
 2. **Enable New Features**: Privacy-preserving analytics, matching, and validation
 3. **Maintain Security**: Blockchain-backed security with encryption
 4. **Comply with Regulations**: GDPR and privacy law compliance
 
-The integration should be done in phases, starting with foundational components and gradually adding advanced features. The modular architecture of CoFHE makes it well-suited for incremental integration into HashPass's existing system.
+The integration should be done in phases, starting with foundational components and gradually adding advanced features. The modular architecture of CoFHE makes it well-suited for incremental integration into HASHPASS's existing system.
 

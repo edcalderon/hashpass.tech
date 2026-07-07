@@ -1,5 +1,5 @@
 /**
- * Event-aware API client for HashPass white-label platform
+ * Event-aware API client for HASHPASS white-label platform
  * Automatically handles event-specific API endpoints and configurations
  */
 

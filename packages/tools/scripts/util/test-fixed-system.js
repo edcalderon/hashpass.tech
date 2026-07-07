@@ -38,7 +38,7 @@ async function testSystem() {
         p_speaker_id: '550e8400-e29b-41d4-a716-446655440001',
         p_speaker_name: 'Claudia Restrepo',
         p_requester_name: 'Edward Calderon',
-        p_requester_company: 'HashPass',
+        p_requester_company: 'HASHPASS',
         p_requester_title: 'CEO',
         p_requester_ticket_type: 'business',
         p_meeting_type: 'networking',

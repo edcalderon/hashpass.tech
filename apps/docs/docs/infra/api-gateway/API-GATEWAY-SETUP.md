@@ -1,6 +1,6 @@
 # API Gateway + Lambda Setup Guide
 
-Complete step-by-step guide to set up API Gateway with Lambda for HashPass API routes.
+Complete step-by-step guide to set up API Gateway with Lambda for HASHPASS API routes.
 
 ## Prerequisites
 
@@ -77,7 +77,7 @@ aws lambda create-function \
 ```bash
 aws apigateway create-rest-api \
   --name hashpassApi \
-  --description "HashPass API Gateway" \
+  --description "HASHPASS API Gateway" \
   --region us-east-1
 ```
 

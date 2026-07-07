@@ -164,7 +164,7 @@ export function Navbar() {
                 : isDark
                   ? '/logo-full-hashpass-white-cyan.svg'
                   : '/logo-full-hashpass-black-cyan.svg'}
-              alt="HashPass"
+              alt="HASHPASS"
               style={{
                 display: 'block',
                 width: 'clamp(80px, 12vw, 140px)',

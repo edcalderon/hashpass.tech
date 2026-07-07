@@ -63,11 +63,11 @@ export default function HomeScreen() {
   );
   
   // Determine footer link behavior based on branch
-  // On main branch: show "HashPass" link to hashpass.tech
+  // On main branch: show "HASHPASS" link to hashpass.tech
   // On event branches (like bsl2025): show event link
   const shouldShowFooterLink = true; // Always show a link
   const footerLinkName = isMainBranch 
-    ? 'HashPass' 
+    ? 'HASHPASS' 
     : (currentEvent?.title || '');
   const footerLinkUrl = isMainBranch 
     ? 'https://hashpass.tech'

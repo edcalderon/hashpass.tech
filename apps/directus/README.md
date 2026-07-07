@@ -1,4 +1,4 @@
-# HashPass Directus SSO (Local Testing)
+# HASHPASS Directus SSO (Local Testing)
 
 This app runs **Directus** for local auth/SSO testing. It does not contain application code—only Docker Compose and env configuration.
 

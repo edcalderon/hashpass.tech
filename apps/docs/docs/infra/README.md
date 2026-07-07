@@ -1,6 +1,6 @@
 # Infra Docs
 
-Current infrastructure documentation for HashPass lives here. These pages describe the live target-account `hashpass.tech` web stack, the `dev.hashpass.tech` development front door, the API/Lambda path, the BSL release pipeline, and the mobile Android runner layout.
+Current infrastructure documentation for HASHPASS lives here. These pages describe the live target-account `hashpass.tech` web stack, the `dev.hashpass.tech` development front door, the API/Lambda path, the BSL release pipeline, and the mobile Android runner layout.
 
 ## Active Docs
 

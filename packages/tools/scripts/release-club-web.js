@@ -244,7 +244,7 @@ function runGitCommit(options, version) {
 function runGitTag(options, version) {
   if (options.noCommit || options.noTag || options.dryRun) return;
 
-  runInherit('git', ['tag', '-a', `${TAG_PREFIX}${version}`, '-m', `HashPass Club web v${version}`], options);
+  runInherit('git', ['tag', '-a', `${TAG_PREFIX}${version}`, '-m', `HASHPASS Club web v${version}`], options);
 }
 
 function runGitPublish(options, version) {

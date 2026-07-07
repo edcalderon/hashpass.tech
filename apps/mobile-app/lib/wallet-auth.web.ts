@@ -108,10 +108,10 @@ export const signEthereumMessage = async (message: string, address: string): Pro
   console.log('   Browser:', navigator.userAgent.includes('Firefox') ? 'Firefox' : 'Other');
   console.log('   Provider:', ethereum?.isMetaMask ? 'MetaMask' : 'Other');
   
+  // Keep the normalized address available for the Firefox fallback path below.
+  const normalizedAddress = address.toLowerCase();
+
   try {
-    // Ensure we're using the correct address format
-    const normalizedAddress = address.toLowerCase();
-    
     // For Firefox, sometimes we need to ensure the provider is ready
     // Check if provider has the request method
     if (!ethereum.request) {
@@ -300,7 +300,7 @@ export const authenticateWithEthereum = async (): Promise<{ userId: string; emai
   const siweMessage = new SiweMessage({
     domain,
     address: checksummedAddress, // Use checksummed address
-    statement: 'Sign in with Ethereum to HashPass',
+    statement: 'Sign in with Ethereum to HASHPASS',
     uri: origin,
     version: '1',
     chainId: 1, // Mainnet - adjust as needed
@@ -432,4 +432,3 @@ export const isEthereumWalletAvailable = (): boolean => {
 export const isSolanaWalletAvailable = (): boolean => {
   return typeof window !== 'undefined' && (!!(window as any).solana || !!(window as any).solflare);
 };
-

@@ -5,17 +5,17 @@ export const fr = {
     docs: 'Docs',
     getStarted: 'Commencer',
     signIn: 'Se connecter',
-    signInWith: 'Se connecter avec HashPass',
-    scanQr: 'Scannez avec l\'app HashPass.tech',
+    signInWith: 'Se connecter avec HASHPASS',
+    scanQr: 'Scannez avec l\'app HASHPASS.tech',
     orContinue: 'ou continuer sur le web',
-    openApp: 'Ouvrir HashPass',
+    openApp: 'Ouvrir HASHPASS',
     downloadApp: 'Télécharger l\'app',
   },
   hero: {
     badge: 'Infrastructure d\'adhésion',
     title: 'Votre club.\nCommandé.',
     subtitle:
-      'HashPass donne aux clubs sur invitation, communautés et événements une plateforme unifiée pour gérer les membres, les accès et les renouvellements — sur mobile et web.',
+      'HASHPASS donne aux clubs sur invitation, communautés et événements une plateforme unifiée pour gérer les membres, les accès et les renouvellements — sur mobile et web.',
     ctaPrimary: 'Demander une démo',
     ctaSecondary: 'Explorer les opérations',
     scrollDown: 'Défiler',
@@ -35,7 +35,7 @@ export const fr = {
     eyebrow: 'Ce que vous obtenez',
     title: 'Tout ce dont votre club a besoin',
     subtitle:
-      'Des invitations aux renouvellements, HashPass gère le cycle de vie complet de l\'adhésion.',
+      'Des invitations aux renouvellements, HASHPASS gère le cycle de vie complet de l\'adhésion.',
     identity: {
       title: 'Gestion des identités',
       description: 'Invitations, approbations, récupération et rôles dans un modèle unifié.',
@@ -74,7 +74,7 @@ export const fr = {
   cta: {
     eyebrow: 'Prêt à commencer ?',
     title: 'Commandez votre adhésion dès le premier jour.',
-    subtitle: 'Rejoignez les clubs qui utilisent déjà HashPass. Une plateforme pour chaque étape du parcours membre.',
+    subtitle: 'Rejoignez les clubs qui utilisent déjà HASHPASS. Une plateforme pour chaque étape du parcours membre.',
     primary: 'Demander une démo',
     secondary: 'Lire la documentation',
     email: 'hello@hashpass.club',
@@ -92,7 +92,7 @@ export const fr = {
     blog: 'Blog',
     privacy: 'Confidentialité',
     terms: 'Conditions',
-    copyright: '© {year} HashPass. Tous droits réservés.',
+    copyright: '© {year} HASHPASS. Tous droits réservés.',
   },
   theme: { toggle: 'Changer de thème', dark: 'Sombre', light: 'Clair', system: 'Système' },
   lang: { select: 'Langue', en: 'English', es: 'Español', ko: '한국어', fr: 'Français', pt: 'Português', de: 'Deutsch' },

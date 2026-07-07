@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Infra-focused release pipeline for HashPass.
+ * Infra-focused release pipeline for HASHPASS.
  *
  * This is intentionally independent from the legacy release pipeline.
  * It reuses the shared version updater for the version bump / commit / tag /

@@ -132,7 +132,7 @@ const configuredBaseURL = normalizeAuthURL(readEnv('BETTER_AUTH_URL'));
 
 const createAuthInstance = () =>
   betterAuth({
-    appName: 'HashPass Auth',
+    appName: 'HASHPASS Auth',
     basePath: AUTH_BASE_PATH,
     user: {
       modelName: 'ba_users',

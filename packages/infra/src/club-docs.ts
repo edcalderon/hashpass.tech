@@ -7,7 +7,7 @@ export const CLUB_SITE_ALIASES = [
 
 export const CLUB_SITE_ENV = {
   NEXT_PUBLIC_SITE_URL: "https://hashpass.club",
-  NEXT_PUBLIC_APP_NAME: "HashPass Club",
+  NEXT_PUBLIC_APP_NAME: "HASHPASS Club",
   NEXT_PUBLIC_SUPPORT_EMAIL: "hello@hashpass.club",
   HASHPASS_DOCS_URL: "https://hashpass.club",
   HASHPASS_DOCS_BASE_URL: "/documentation/",

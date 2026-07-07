@@ -1,4 +1,4 @@
-// Version Configuration for BSL 2025 HashPass App
+// Version Configuration for BSL 2025 HASHPASS App
 // Semantic Versioning: MAJOR.MINOR.PATCH
 
 import packageJson from '../package.json';
@@ -28,8 +28,8 @@ export const CURRENT_VERSION: VersionInfo = {
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [],
   bugfixes: [
-    'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-    'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+    'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+    'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
     'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
   ],
   breakingChanges: [],
@@ -65,8 +65,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -82,8 +82,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -99,8 +99,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -116,8 +116,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -133,8 +133,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -150,8 +150,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -167,8 +167,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -184,8 +184,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -201,8 +201,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -218,8 +218,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -235,8 +235,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -252,8 +252,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -269,8 +269,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -286,8 +286,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -303,8 +303,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -320,8 +320,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -337,8 +337,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -354,8 +354,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -371,8 +371,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -388,8 +388,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -405,8 +405,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -422,8 +422,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -439,8 +439,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -456,8 +456,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -473,8 +473,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -490,8 +490,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -507,8 +507,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -524,8 +524,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -541,8 +541,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -558,8 +558,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -575,8 +575,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -592,8 +592,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -609,8 +609,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -626,8 +626,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -643,8 +643,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -660,8 +660,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -677,8 +677,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -694,8 +694,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -711,8 +711,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -728,8 +728,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -745,8 +745,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -762,8 +762,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -779,8 +779,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -796,8 +796,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -813,8 +813,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -830,8 +830,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -847,8 +847,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -864,8 +864,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -881,8 +881,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -898,8 +898,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -915,8 +915,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -932,8 +932,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -949,8 +949,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -966,8 +966,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -983,8 +983,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1000,8 +1000,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1017,8 +1017,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1034,8 +1034,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1051,8 +1051,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1068,8 +1068,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1085,8 +1085,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1102,8 +1102,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1119,8 +1119,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1136,8 +1136,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1153,8 +1153,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1170,8 +1170,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1187,8 +1187,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1204,8 +1204,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1221,8 +1221,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1238,8 +1238,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1255,8 +1255,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1272,8 +1272,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1289,8 +1289,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1306,8 +1306,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1323,8 +1323,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1340,8 +1340,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1357,8 +1357,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1374,8 +1374,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1391,8 +1391,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1408,8 +1408,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1425,8 +1425,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1442,8 +1442,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1459,8 +1459,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1476,8 +1476,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1493,8 +1493,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1510,8 +1510,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1527,8 +1527,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1544,8 +1544,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1561,8 +1561,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1578,8 +1578,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1595,8 +1595,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1612,8 +1612,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1629,8 +1629,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1646,8 +1646,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1663,8 +1663,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1680,8 +1680,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1697,8 +1697,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1714,8 +1714,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1731,8 +1731,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1748,8 +1748,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1765,8 +1765,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1782,8 +1782,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1799,8 +1799,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1816,8 +1816,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1833,8 +1833,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1850,8 +1850,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1867,8 +1867,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1884,8 +1884,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1901,8 +1901,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1918,8 +1918,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1935,8 +1935,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1952,8 +1952,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1969,8 +1969,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -1986,8 +1986,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2003,8 +2003,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2020,8 +2020,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2037,8 +2037,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2054,8 +2054,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2071,8 +2071,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2088,8 +2088,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2105,8 +2105,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2122,8 +2122,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2139,8 +2139,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2156,8 +2156,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2173,8 +2173,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2190,8 +2190,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2207,8 +2207,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2224,8 +2224,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2241,8 +2241,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2258,8 +2258,8 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Removed the black native light-mode auth panel so the HashPass logo sits directly on the card',
-      'Selected the correct HashPass logo asset for light and dark auth surfaces on web and native',
+      'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
+      'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
       'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
     ],
     breakingChanges: [],
@@ -2404,9 +2404,9 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Replaced the default Expo launcher icon with the HashPass brand mark',
+      'Replaced the default Expo launcher icon with the HASHPASS brand mark',
       'Renamed the installed app and web install surfaces to HASHPASS',
-      'Aligned Android adaptive icon and PWA install metadata with the HashPass brand'
+      'Aligned Android adaptive icon and PWA install metadata with the HASHPASS brand'
     ],
     breakingChanges: [],
     notes: 'Version 1.8.28 release'
@@ -2421,9 +2421,9 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Replaced the default Expo launcher icon with the HashPass brand mark',
+      'Replaced the default Expo launcher icon with the HASHPASS brand mark',
       'Renamed the installed app and web install surfaces to HASHPASS',
-      'Aligned Android adaptive icon and PWA install metadata with the HashPass brand'
+      'Aligned Android adaptive icon and PWA install metadata with the HASHPASS brand'
     ],
     breakingChanges: [],
     notes: 'Version 1.8.27 release'
@@ -2438,9 +2438,9 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Replaced the default Expo launcher icon with the HashPass brand mark',
+      'Replaced the default Expo launcher icon with the HASHPASS brand mark',
       'Renamed the installed app and web install surfaces to HASHPASS',
-      'Aligned Android adaptive icon and PWA install metadata with the HashPass brand'
+      'Aligned Android adaptive icon and PWA install metadata with the HASHPASS brand'
     ],
     breakingChanges: [],
     notes: 'Version 1.8.26 release'
@@ -2455,9 +2455,9 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Replaced the default Expo launcher icon with the HashPass brand mark',
+      'Replaced the default Expo launcher icon with the HASHPASS brand mark',
       'Renamed the installed app and web install surfaces to HASHPASS',
-      'Aligned Android adaptive icon and PWA install metadata with the HashPass brand'
+      'Aligned Android adaptive icon and PWA install metadata with the HASHPASS brand'
     ],
     breakingChanges: [],
     notes: 'Version 1.8.25 release'
@@ -2472,9 +2472,9 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Replaced the default Expo launcher icon with the HashPass brand mark',
+      'Replaced the default Expo launcher icon with the HASHPASS brand mark',
       'Renamed the installed app and web install surfaces to HASHPASS',
-      'Aligned Android adaptive icon and PWA install metadata with the HashPass brand'
+      'Aligned Android adaptive icon and PWA install metadata with the HASHPASS brand'
     ],
     breakingChanges: [],
     notes: 'Version 1.8.24 release'
@@ -2489,9 +2489,9 @@ export const VERSION_HISTORY: VersionHistory = {
       // No new features
     ],
     bugfixes: [
-      'Replaced the default Expo launcher icon with the HashPass brand mark',
+      'Replaced the default Expo launcher icon with the HASHPASS brand mark',
       'Renamed the installed app and web install surfaces to HASHPASS',
-      'Aligned Android adaptive icon and PWA install metadata with the HashPass brand'
+      'Aligned Android adaptive icon and PWA install metadata with the HASHPASS brand'
     ],
     breakingChanges: [],
     notes: 'Android launcher branding refresh: HASHPASS name and icon'
@@ -5674,7 +5674,7 @@ export const VERSION_HISTORY: VersionHistory = {
     releaseType: 'beta',
     environment: 'development',
     features: [
-      'HashPass logo clickable with zoom animation - navigates to home page',
+      'HASHPASS logo clickable with zoom animation - navigates to home page',
       'Mouse wheel scroll support for Quick Access section on explore page',
       'Snap-to-interval scrolling for Quick Access cards matching networking center behavior'
     ],
@@ -5682,7 +5682,7 @@ export const VERSION_HISTORY: VersionHistory = {
       'Fixed admin status check error (PGRST116) - multiple rows returned issue',
       'Fixed QR code authentication error - wait for auth to finish loading',
       'Fixed arrow button scrolling on small viewports in Quick Access section',
-      'Fixed HashPass logo card background to not be affected by sidebar animation'
+      'Fixed HASHPASS logo card background to not be affected by sidebar animation'
     ],
     breakingChanges: [],
     notes: 'Version 1.4.8 release'
@@ -5694,7 +5694,7 @@ export const VERSION_HISTORY: VersionHistory = {
     releaseType: 'beta',
     environment: 'development',
     features: [
-      'HashPass logo clickable with zoom animation - navigates to home page',
+      'HASHPASS logo clickable with zoom animation - navigates to home page',
       'Mouse wheel scroll support for Quick Access section on explore page',
       'Snap-to-interval scrolling for Quick Access cards matching networking center behavior'
     ],
@@ -5702,7 +5702,7 @@ export const VERSION_HISTORY: VersionHistory = {
       'Fixed admin status check error (PGRST116) - multiple rows returned issue',
       'Fixed QR code authentication error - wait for auth to finish loading',
       'Fixed arrow button scrolling on small viewports in Quick Access section',
-      'Fixed HashPass logo card background to not be affected by sidebar animation'
+      'Fixed HASHPASS logo card background to not be affected by sidebar animation'
     ],
     breakingChanges: [],
     notes: 'Version 1.4.7 release'
@@ -5714,7 +5714,7 @@ export const VERSION_HISTORY: VersionHistory = {
     releaseType: 'beta',
     environment: 'development',
     features: [
-      'HashPass logo clickable with zoom animation - navigates to home page',
+      'HASHPASS logo clickable with zoom animation - navigates to home page',
       'Mouse wheel scroll support for Quick Access section on explore page',
       'Snap-to-interval scrolling for Quick Access cards matching networking center behavior'
     ],
@@ -5722,7 +5722,7 @@ export const VERSION_HISTORY: VersionHistory = {
       'Fixed admin status check error (PGRST116) - multiple rows returned issue',
       'Fixed QR code authentication error - wait for auth to finish loading',
       'Fixed arrow button scrolling on small viewports in Quick Access section',
-      'Fixed HashPass logo card background to not be affected by sidebar animation'
+      'Fixed HASHPASS logo card background to not be affected by sidebar animation'
     ],
     breakingChanges: [],
     notes: 'Version 1.4.6 release'
@@ -5734,7 +5734,7 @@ export const VERSION_HISTORY: VersionHistory = {
     releaseType: 'beta',
     environment: 'development',
     features: [
-      'HashPass logo clickable with zoom animation - navigates to home page',
+      'HASHPASS logo clickable with zoom animation - navigates to home page',
       'Mouse wheel scroll support for Quick Access section on explore page',
       'Snap-to-interval scrolling for Quick Access cards matching networking center behavior'
     ],
@@ -5742,7 +5742,7 @@ export const VERSION_HISTORY: VersionHistory = {
       'Fixed admin status check error (PGRST116) - multiple rows returned issue',
       'Fixed QR code authentication error - wait for auth to finish loading',
       'Fixed arrow button scrolling on small viewports in Quick Access section',
-      'Fixed HashPass logo card background to not be affected by sidebar animation'
+      'Fixed HASHPASS logo card background to not be affected by sidebar animation'
     ],
     breakingChanges: [],
     notes: 'Version 1.4.4 release'
@@ -5754,7 +5754,7 @@ export const VERSION_HISTORY: VersionHistory = {
     releaseType: 'beta',
     environment: 'development',
     features: [
-      'HashPass logo clickable with zoom animation - navigates to home page',
+      'HASHPASS logo clickable with zoom animation - navigates to home page',
       'Mouse wheel scroll support for Quick Access section on explore page',
       'Snap-to-interval scrolling for Quick Access cards matching networking center behavior'
     ],
@@ -5762,7 +5762,7 @@ export const VERSION_HISTORY: VersionHistory = {
       'Fixed admin status check error (PGRST116) - multiple rows returned issue',
       'Fixed QR code authentication error - wait for auth to finish loading',
       'Fixed arrow button scrolling on small viewports in Quick Access section',
-      'Fixed HashPass logo card background to not be affected by sidebar animation'
+      'Fixed HASHPASS logo card background to not be affected by sidebar animation'
     ],
     breakingChanges: [],
     notes: 'Version 1.4.3 release'
@@ -5774,7 +5774,7 @@ export const VERSION_HISTORY: VersionHistory = {
     releaseType: 'beta',
     environment: 'development',
     features: [
-      'HashPass logo clickable with zoom animation - navigates to home page',
+      'HASHPASS logo clickable with zoom animation - navigates to home page',
       'Mouse wheel scroll support for Quick Access section on explore page',
       'Snap-to-interval scrolling for Quick Access cards matching networking center behavior'
     ],
@@ -5782,7 +5782,7 @@ export const VERSION_HISTORY: VersionHistory = {
       'Fixed admin status check error (PGRST116) - multiple rows returned issue',
       'Fixed QR code authentication error - wait for auth to finish loading',
       'Fixed arrow button scrolling on small viewports in Quick Access section',
-      'Fixed HashPass logo card background to not be affected by sidebar animation'
+      'Fixed HASHPASS logo card background to not be affected by sidebar animation'
     ],
     breakingChanges: [],
     notes: 'Version 1.4.2 release - UI improvements and bug fixes'

@@ -218,7 +218,7 @@ export async function POST(request: Request) {
       });
 
       const mailOptions = {
-        from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+        from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
         to: email.trim(),
         subject: 'Your Login Code',
         html: `
@@ -232,7 +232,7 @@ export async function POST(request: Request) {
             <p style="color: #6b7280; font-size: 14px;">If you didn't request this code, you can safely ignore this email.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
             <p style="font-size: 12px; color: #6b7280;">
-              © ${new Date().getFullYear()} HashPass. All rights reserved.
+              © ${new Date().getFullYear()} HASHPASS. All rights reserved.
             </p>
           </div>
         `,

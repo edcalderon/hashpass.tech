@@ -65,9 +65,9 @@ export async function POST(request: Request) {
     });
 
     const mailOptions = {
-      from: `HashPass <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
       to: email.trim(),
-      subject: 'Your HashPass Account Has Been Deleted',
+      subject: 'Your HASHPASS Account Has Been Deleted',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
           <div style="background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
               <p style="margin: 0 0 20px;">Hello ${displayName},</p>
               
               <p style="margin: 0 0 20px;">
-                This email confirms that your HashPass account has been successfully deleted on <strong>${deletionDate}</strong>.
+                This email confirms that your HASHPASS account has been successfully deleted on <strong>${deletionDate}</strong>.
               </p>
               
               <div style="background-color: #fef2f2; border-left: 4px solid #F44336; padding: 16px; margin: 20px 0; border-radius: 4px;">
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
                   This is an automated message. Please do not reply to this email.
                 </p>
                 <p style="margin: 8px 0 0; font-size: 12px; color: #9ca3af;">
-                  © ${new Date().getFullYear()} HashPass. All rights reserved.
+                  © ${new Date().getFullYear()} HASHPASS. All rights reserved.
                 </p>
               </div>
             </div>
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
 
 Hello ${displayName},
 
-This email confirms that your HashPass account has been successfully deleted on ${deletionDate}.
+This email confirms that your HASHPASS account has been successfully deleted on ${deletionDate}.
 
 What was deleted:
 - Your user profile and account information
@@ -136,7 +136,7 @@ We're sorry to see you go. If you change your mind, you can create a new account
 
 This is an automated message. Please do not reply to this email.
 
-© ${new Date().getFullYear()} HashPass. All rights reserved.`,
+© ${new Date().getFullYear()} HASHPASS. All rights reserved.`,
     };
 
     try {

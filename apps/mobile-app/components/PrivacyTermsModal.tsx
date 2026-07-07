@@ -42,7 +42,7 @@ export default function PrivacyTermsModal({ visible, type, onClose }: PrivacyTer
           <Text style={styles.sectionText} selectable={false}>
             {t({ 
               id: 'privacy.introduction.text', 
-              message: 'HashPass ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our digital event platform and services (the "Service"). Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the Service.' 
+              message: 'HASHPASS ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our digital event platform and services (the "Service"). Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the Service.' 
             })}
           </Text>
 
@@ -140,7 +140,7 @@ export default function PrivacyTermsModal({ visible, type, onClose }: PrivacyTer
           <Text style={styles.sectionText} selectable={false}>
             {t({ 
               id: 'terms.acceptance.text', 
-              message: 'By accessing and using HashPass ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.' 
+              message: 'By accessing and using HASHPASS ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.' 
             })}
           </Text>
 
@@ -150,7 +150,7 @@ export default function PrivacyTermsModal({ visible, type, onClose }: PrivacyTer
           <Text style={styles.sectionText} selectable={false}>
             {t({ 
               id: 'terms.description.text', 
-              message: 'HashPass is a digital event platform that provides event management, pass management, networking features, and related services. We reserve the right to modify, suspend, or discontinue any part of the Service at any time.' 
+              message: 'HASHPASS is a digital event platform that provides event management, pass management, networking features, and related services. We reserve the right to modify, suspend, or discontinue any part of the Service at any time.' 
             })}
           </Text>
 
@@ -190,7 +190,7 @@ export default function PrivacyTermsModal({ visible, type, onClose }: PrivacyTer
           <Text style={styles.sectionText} selectable={false}>
             {t({ 
               id: 'terms.intellectual.text', 
-              message: 'The Service and its original content, features, and functionality are owned by HashPass and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.' 
+              message: 'The Service and its original content, features, and functionality are owned by HASHPASS and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.' 
             })}
           </Text>
 
@@ -220,7 +220,7 @@ export default function PrivacyTermsModal({ visible, type, onClose }: PrivacyTer
           <Text style={styles.sectionText} selectable={false}>
             {t({ 
               id: 'terms.limitation.text', 
-              message: 'In no event shall HashPass be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or use, incurred by you or any third party, whether in an action in contract or tort.' 
+              message: 'In no event shall HASHPASS be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or use, incurred by you or any third party, whether in an action in contract or tort.' 
             })}
           </Text>
 

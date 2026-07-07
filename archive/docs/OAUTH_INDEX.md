@@ -1,4 +1,4 @@
-# HashPass OAuth Testing Index
+# HASHPASS OAuth Testing Index
 
 > Historical setup note: the current production flow is documented in [AUTH_FLOW.md](AUTH_FLOW.md). This index keeps the older local-testing guides reachable, but they are not the source of truth for production auth.
 

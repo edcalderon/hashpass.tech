@@ -489,9 +489,9 @@ export default function ExploreScreen() {
         {/* Banner starts from top, nav bar floats on top with blur */}
         {isGlobalExplorer ? (
           /* GLOBAL EXPLORER MODE (main branch - hashpass.tech) */
-          /* Shows banner for HashPass platform with all events */
+          /* Shows banner for HASHPASS platform with all events */
           <EventBanner 
-            title="HashPass Events"
+            title="HASHPASS Events"
             subtitle="Discover and explore all available events"
             date="Global Event Explorer"
             backgroundColor="#6366f1"

@@ -171,7 +171,7 @@ const BlockchainTokensView = () => {
       balance: isLoadingBalance && !refreshingToken ? '...' : lukasBalance.toFixed(2),
       usdValue: '0.00',
       network: 'Native',
-      description: 'Native token of HashPass ecosystem',
+      description: 'Native token of HASHPASS ecosystem',
       color: '#8b5cf6',
       icon: '💎',
     },
@@ -181,7 +181,7 @@ const BlockchainTokensView = () => {
       balance: '0.00',
       usdValue: '0.00',
       network: 'Pegged',
-      description: 'Pegged to Colombian Peso, backed by HashPass merchants',
+      description: 'Pegged to Colombian Peso, backed by HASHPASS merchants',
       color: '#10b981',
       icon: '🇨🇴',
     },
@@ -659,7 +659,7 @@ const BlockchainTokensView = () => {
                   marginBottom: 20,
                 }}
               >
-                {t('tokens.lukasInfo.description', 'LUKAS is the digital currency of the HashPass ecosystem designed to reward user interactions and engagement.')}
+                {t('tokens.lukasInfo.description', 'LUKAS is the digital currency of the HASHPASS ecosystem designed to reward user interactions and engagement.')}
               </Text>
 
               <View

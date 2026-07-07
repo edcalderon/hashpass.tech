@@ -2,7 +2,7 @@
 
 ## Overview
 
-HashPass supports two passwordless sign-in methods via Supabase:
+HASHPASS supports two passwordless sign-in methods via Supabase:
 
 | Method | How it works |
 |--------|-------------|
@@ -42,7 +42,7 @@ Native app
   Chrome Custom Tabs passes Intent to Android system
         │
         ▼
-  HashPass native app opens
+  HASHPASS native app opens
         │
         ▼
   Native callback: params.code present → createSessionFromUrl()
@@ -63,7 +63,7 @@ The web callback detects Android via user agent and switches between formats:
 
 - The **PKCE code verifier** is stored in native AsyncStorage. The web callback page cannot exchange the code — it must relay to the native app.
 - `auth_signin_method` is set in native AsyncStorage (not the web browser's localStorage). The web callback cannot read it, so it detects the magic link by checking for a `code` param + `nativeRelay=1`.
-- If the native relay fires but the app does not open (e.g., not installed), the web callback shows an "Open in HashPass App" button for a manual retry.
+- If the native relay fires but the app does not open (e.g., not installed), the web callback shows an "Open in HASHPASS App" button for a manual retry.
 
 ## OTP Code Flow
 

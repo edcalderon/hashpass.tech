@@ -91,7 +91,7 @@ async function sendTestSpeakerOnboardingEmail(locale = 'en') {
     
     if (hashpassLogoBase64) {
       hashpassLogoUrl = hashpassLogoBase64;
-      console.log('   🖼️  Using embedded HashPass logo (base64)');
+      console.log('   🖼️  Using embedded HASHPASS logo (base64)');
     } else {
       hashpassLogoUrl = getEmailAssetUrl('images/logo-full-hashpass-white.png');
     }
@@ -153,8 +153,8 @@ async function sendTestSpeakerOnboardingEmail(locale = 'en') {
 
   // Email subject based on locale
   const subjects = {
-    en: '🎤 Welcome to HashPass - Speaker Guide',
-    es: '🎤 ¡Bienvenido a HashPass - Guía para Ponentes!'
+    en: '🎤 Welcome to HASHPASS - Speaker Guide',
+    es: '🎤 ¡Bienvenido a HASHPASS - Guía para Ponentes!'
   };
 
   const subject = subjects[locale] || subjects.en;
@@ -163,7 +163,7 @@ async function sendTestSpeakerOnboardingEmail(locale = 'en') {
   try {
     console.log('   📤 Sending...');
     const info = await transporter.sendMail({
-      from: `HashPass <${fromEmail}>`,
+      from: `HASHPASS <${fromEmail}>`,
       to: toEmail,
       subject: subject,
       html: htmlContent,

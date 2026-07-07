@@ -1,6 +1,6 @@
 # Auth Docs
 
-Current auth documentation for HashPass lives here.
+Current auth documentation for HASHPASS lives here.
 
 ## Active Docs
 

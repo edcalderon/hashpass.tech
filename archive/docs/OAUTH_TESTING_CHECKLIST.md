@@ -1,4 +1,4 @@
-# HashPass OAuth Local Testing Checklist
+# HASHPASS OAuth Local Testing Checklist
 
 > Historical note: the current production flow is documented in [AUTH_FLOW.md](AUTH_FLOW.md). This checklist is preserved for the older local Directus-first setup and is not current production guidance.
 

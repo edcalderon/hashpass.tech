@@ -85,10 +85,10 @@ async function sendTestWelcomeEmail(locale = 'en') {
   
   if (hashpassLogoBase64) {
     hashpassLogoUrl = hashpassLogoBase64;
-    console.log('🖼️  Using embedded HashPass logo (base64)');
+    console.log('🖼️  Using embedded HASHPASS logo (base64)');
   } else {
     hashpassLogoUrl = getEmailAssetUrl('images/logo-full-hashpass-white.png');
-    console.log('🖼️  Using HashPass logo URL:', hashpassLogoUrl.substring(0, 80) + '...');
+    console.log('🖼️  Using HASHPASS logo URL:', hashpassLogoUrl.substring(0, 80) + '...');
   }
   
   const videoUrl = getEmailAssetUrl('videos/BSL_2025_환영_ES_en.mp4');
@@ -127,8 +127,8 @@ async function sendTestWelcomeEmail(locale = 'en') {
 
   // Email subject based on locale
   const subjects = {
-    en: '🎉 Welcome to BSL 2025 - HashPass',
-    es: '🎉 ¡Bienvenido a BSL 2025 - HashPass!'
+    en: '🎉 Welcome to BSL 2025 - HASHPASS',
+    es: '🎉 ¡Bienvenido a BSL 2025 - HASHPASS!'
   };
 
   const subject = subjects[locale] || subjects.en;
@@ -137,7 +137,7 @@ async function sendTestWelcomeEmail(locale = 'en') {
   try {
     console.log('   📤 Sending...');
     const info = await transporter.sendMail({
-      from: `HashPass <${fromEmail}>`,
+      from: `HASHPASS <${fromEmail}>`,
       to: toEmail,
       subject: subject,
       html: htmlContent,

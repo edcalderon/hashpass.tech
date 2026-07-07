@@ -1,4 +1,4 @@
-// SSO Configuration for HashPass using Directus
+// SSO Configuration for HASHPASS using Directus
 // This replaces the old Supabase configuration
 
 // ===========================================

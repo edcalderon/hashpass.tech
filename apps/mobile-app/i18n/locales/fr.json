@@ -49,7 +49,7 @@
       },
       "lukasInfo": {
         "title": "Qu'est-ce que LUKAS ?",
-        "description": "LUKAS est la monnaie numérique de l'écosystème HashPass conçue pour récompenser les interactions et l'engagement des utilisateurs.",
+        "description": "LUKAS est la monnaie numérique de l'écosystème HASHPASS conçue pour récompenser les interactions et l'engagement des utilisateurs.",
         "features": "• Gagnez des LUKAS en acceptant et en planifiant des réunions\n• Sera monétisé dans HashHouse\n• Échangeable contre d'autres tokens crypto",
         "withdrawalDisclaimer": "Vous pouvez retirer des tokens LUKAS lorsque votre solde dépasse 5 LUKAS."
       }
@@ -177,17 +177,17 @@
     "passwordlessUnavailableMessage": "La connexion par lien magique et OTP n'est pas disponible car le mode sans mot de passe de Supabase n'est pas configuré pour cet environnement."
   },
   "pwaPrompt": {
-    "installAction": "Installer HashPass",
-    "openAction": "Ouvrir l'app HashPass",
-    "installTitle": "Installer HashPass",
+    "installAction": "Installer HASHPASS",
+    "openAction": "Ouvrir l'app HASHPASS",
+    "installTitle": "Installer HASHPASS",
     "openTitle": "Ouvrir votre app installée",
-    "installDescription": "Installez HashPass en PWA pour la lancer comme une app depuis votre écran d'accueil.",
-    "openDescription": "HashPass est déjà installée. Ouvrez-la en mode app pour la meilleure expérience mobile.",
+    "installDescription": "Installez HASHPASS en PWA pour la lancer comme une app depuis votre écran d'accueil.",
+    "openDescription": "HASHPASS est déjà installée. Ouvrez-la en mode app pour la meilleure expérience mobile.",
     "whatIsThis": "Qu'est-ce que c'est ?",
     "close": "Fermer l'invite d'installation",
-    "dialogLabel": "Invite d'installation HashPass",
+    "dialogLabel": "Invite d'installation HASHPASS",
     "expandCollapsed": "Ouvrir les options d'installation",
-    "infoIntro": "Une PWA (Progressive Web App) permet à HashPass de se comporter comme une application native sur votre appareil.",
+    "infoIntro": "Une PWA (Progressive Web App) permet à HASHPASS de se comporter comme une application native sur votre appareil.",
     "details": {
       "one": "PWA signifie Progressive Web App : un comportement d'app depuis votre navigateur.",
       "two": "Aucun téléchargement depuis un store n'est requis, tout en gardant un accès rapide depuis l'écran d'accueil.",
@@ -204,7 +204,7 @@
     "lastUpdated": "Dernière mise à jour : 4 novembre 2025",
     "introduction": {
       "title": "1. Introduction",
-      "text": "HashPass (\"nous\", \"notre\" ou \"nos\") s'engage à protéger votre vie privée. Cette politique de confidentialité explique comment nous collectons, utilisons, divulguons et protégeons vos informations lorsque vous utilisez notre plateforme d'événements numériques et nos services (le \"Service\"). Veuillez lire attentivement cette politique de confidentialité. Si vous n'êtes pas d'accord avec les termes de cette politique de confidentialité, veuillez ne pas accéder au Service."
+      "text": "HASHPASS (\"nous\", \"notre\" ou \"nos\") s'engage à protéger votre vie privée. Cette politique de confidentialité explique comment nous collectons, utilisons, divulguons et protégeons vos informations lorsque vous utilisez notre plateforme d'événements numériques et nos services (le \"Service\"). Veuillez lire attentivement cette politique de confidentialité. Si vous n'êtes pas d'accord avec les termes de cette politique de confidentialité, veuillez ne pas accéder au Service."
     },
     "collection": {
       "title": "2. Informations que nous collectons",
@@ -244,11 +244,11 @@
     "lastUpdated": "Dernière mise à jour : 4 novembre 2025",
     "acceptance": {
       "title": "1. Acceptation des conditions",
-      "text": "En accédant et en utilisant HashPass (\"le Service\"), vous acceptez et convenez d'être lié par les termes et dispositions de cet accord. Si vous n'acceptez pas de respecter ce qui précède, veuillez ne pas utiliser ce service."
+      "text": "En accédant et en utilisant HASHPASS (\"le Service\"), vous acceptez et convenez d'être lié par les termes et dispositions de cet accord. Si vous n'acceptez pas de respecter ce qui précède, veuillez ne pas utiliser ce service."
     },
     "description": {
       "title": "2. Description du service",
-      "text": "HashPass est une plateforme d'événements numériques qui fournit la gestion d'événements, la gestion de passes, des fonctionnalités de réseautage et des services connexes. Nous nous réservons le droit de modifier, suspendre ou interrompre toute partie du Service à tout moment."
+      "text": "HASHPASS est une plateforme d'événements numériques qui fournit la gestion d'événements, la gestion de passes, des fonctionnalités de réseautage et des services connexes. Nous nous réservons le droit de modifier, suspendre ou interrompre toute partie du Service à tout moment."
     },
     "accounts": {
       "title": "3. Comptes utilisateur",
@@ -264,7 +264,7 @@
     },
     "intellectual": {
       "title": "6. Propriété intellectuelle",
-      "text": "Le Service et son contenu original, ses fonctionnalités et sa fonctionnalité sont la propriété de HashPass et sont protégés par les lois internationales sur le droit d'auteur, les marques de commerce, les brevets, les secrets commerciaux et autres lois sur la propriété intellectuelle."
+      "text": "Le Service et son contenu original, ses fonctionnalités et sa fonctionnalité sont la propriété de HASHPASS et sont protégés par les lois internationales sur le droit d'auteur, les marques de commerce, les brevets, les secrets commerciaux et autres lois sur la propriété intellectuelle."
     },
     "termination": {
       "title": "7. Résiliation",
@@ -276,7 +276,7 @@
     },
     "limitation": {
       "title": "9. Limitation de responsabilité",
-      "text": "En aucun cas HashPass ne sera responsable des dommages indirects, accessoires, spéciaux, consécutifs ou punitifs, y compris la perte de profits, de données ou d'utilisation, subis par vous ou tout tiers, que ce soit dans une action en contrat ou en délit."
+      "text": "En aucun cas HASHPASS ne sera responsable des dommages indirects, accessoires, spéciaux, consécutifs ou punitifs, y compris la perte de profits, de données ou d'utilisation, subis par vous ou tout tiers, que ce soit dans une action en contrat ou en délit."
     },
     "changes": {
       "title": "10. Modifications des conditions",
@@ -385,7 +385,7 @@
     },
     "account": "Compte",
     "signOut": "Se déconnecter",
-    "version": "HashPass v{version}"
+    "version": "HASHPASS v{version}"
   },
   "nav": {
     "explore": "Explorer",

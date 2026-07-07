@@ -267,7 +267,7 @@ const PWAPrompt = () => {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={t('dialogLabel', 'HashPass install prompt')}
+        aria-label={t('dialogLabel', 'HASHPASS install prompt')}
         tabIndex={-1}
         style={{
           position: 'fixed',
@@ -293,21 +293,21 @@ const PWAPrompt = () => {
       >
         <div onClick={(event) => event.stopPropagation()}>
           <PwaInstallPromptCard
-            appName="HashPass"
+            appName="HASHPASS"
             logoSrc={logoSrc}
             logoLayout="icon"
             primaryIconSrc={primaryIconSrc}
             primaryLabel={t('close', 'Close install prompt')}
-            title={t('installTitle', 'Install HashPass')}
+            title={t('installTitle', 'Install HASHPASS')}
             description={t(
               'installDescription',
-              'Install HashPass as a PWA to launch it like an app from your home screen.'
+              'Install HASHPASS as a PWA to launch it like an app from your home screen.'
             )}
             bodyItems={installInstructions}
-            dialogLabel={t('dialogLabel', 'HashPass install prompt')}
+            dialogLabel={t('dialogLabel', 'HASHPASS install prompt')}
             closeLabel={t('close', 'Close install prompt')}
             infoLabel={t('whatIsThis', 'What is this?')}
-            infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HashPass behave like a native app on your device.')}
+            infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.')}
             showInfoToggle={false}
             collapsed={false}
             onPrimaryAction={closeInstallHelpModal}
@@ -324,7 +324,7 @@ const PWAPrompt = () => {
 
   const isOpenAppMode = isInstalled && !isStandaloneMode;
   const collapsedLabel = isOpenAppMode
-    ? t('openAction', 'Open HashPass App')
+    ? t('openAction', 'Open HASHPASS App')
     : t('expandCollapsed', 'Open install options');
 
   const detailsWithCheckbox = !isCollapsed && !isOpenAppMode
@@ -350,25 +350,25 @@ const PWAPrompt = () => {
     }}>
       <PwaInstallPromptCard
         className={`hp-pwa-floating${isCollapsed ? ' hp-pwa-collapsed-state' : ''}`}
-        appName="HashPass"
+        appName="HASHPASS"
         logoSrc={logoSrc}
         logoLayout="icon"
         primaryIconSrc={primaryIconSrc}
-        primaryLabel={isOpenAppMode ? t('openAction', 'Open HashPass App') : t('installAction', 'Install HashPass')}
-        title={isOpenAppMode ? t('openTitle', 'Open your installed app') : t('installTitle', 'Install HashPass')}
+        primaryLabel={isOpenAppMode ? t('openAction', 'Open HASHPASS App') : t('installAction', 'Install HASHPASS')}
+        title={isOpenAppMode ? t('openTitle', 'Open your installed app') : t('installTitle', 'Install HASHPASS')}
         description={
           isOpenAppMode
-            ? t('openDescription', 'HashPass is already installed. Open it in app mode for the best mobile experience.')
-            : t('installDescription', 'Install HashPass as a PWA to launch it like an app from your home screen.')
+            ? t('openDescription', 'HASHPASS is already installed. Open it in app mode for the best mobile experience.')
+            : t('installDescription', 'Install HASHPASS as a PWA to launch it like an app from your home screen.')
         }
         dialogLabel={
           isOpenAppMode
             ? t('openTitle', 'Open your installed app')
-            : t('dialogLabel', 'HashPass install prompt')
+            : t('dialogLabel', 'HASHPASS install prompt')
         }
         closeLabel={t('close', 'Close install prompt')}
         infoLabel={t('whatIsThis', 'What is this?')}
-        infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HashPass behave like a native app on your device.')}
+        infoIntro={t('infoIntro', 'A PWA (Progressive Web App) lets HASHPASS behave like a native app on your device.')}
         details={detailsWithCheckbox}
         showInfoToggle={!isOpenAppMode}
         collapsed={isCollapsed}

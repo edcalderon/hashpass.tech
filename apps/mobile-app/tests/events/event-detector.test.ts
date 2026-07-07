@@ -41,7 +41,7 @@ afterEach(() => {
 });
 
 describe('event tenant detection', () => {
-  it('treats hashpass.tech as the global HashPass event explorer', () => {
+  it('treats hashpass.tech as the global HASHPASS event explorer', () => {
     const tenant = getEventTenantContext('hashpass.tech');
     const events = getAvailableEvents('hashpass.tech').map(event => event.id);
 

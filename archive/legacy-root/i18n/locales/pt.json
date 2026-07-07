@@ -40,7 +40,7 @@
       },
       "lukasInfo": {
         "title": "O que é LUKAS?",
-        "description": "LUKAS é a moeda digital do ecossistema HashPass projetada para recompensar interações e engajamento dos usuários.",
+        "description": "LUKAS é a moeda digital do ecossistema HASHPASS projetada para recompensar interações e engajamento dos usuários.",
         "features": "• Ganhe LUKAS aceitando e agendando reuniões\n• Será monetizado no HashHouse\n• Trocável por outros tokens criptográficos",
         "withdrawalDisclaimer": "Você pode sacar tokens LUKAS quando seu saldo for superior a 5 LUKAS."
       }
@@ -118,7 +118,7 @@
     "lastUpdated": "Última atualização: 4 de novembro de 2025",
     "introduction": {
       "title": "1. Introdução",
-      "text": "HashPass (\"nós\", \"nosso\" ou \"nos\") está comprometido em proteger sua privacidade. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações quando você usa nossa plataforma de eventos digitais e serviços (o \"Serviço\"). Por favor, leia esta política de privacidade com atenção. Se você não concordar com os termos desta política de privacidade, não acesse o Serviço."
+      "text": "HASHPASS (\"nós\", \"nosso\" ou \"nos\") está comprometido em proteger sua privacidade. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações quando você usa nossa plataforma de eventos digitais e serviços (o \"Serviço\"). Por favor, leia esta política de privacidade com atenção. Se você não concordar com os termos desta política de privacidade, não acesse o Serviço."
     },
     "collection": {
       "title": "2. Informações que coletamos",
@@ -158,11 +158,11 @@
     "lastUpdated": "Última atualização: 4 de novembro de 2025",
     "acceptance": {
       "title": "1. Aceitação dos termos",
-      "text": "Ao acessar e usar HashPass (\"o Serviço\"), você aceita e concorda em estar vinculado aos termos e disposições deste acordo. Se você não concordar em cumprir o acima, não use este serviço."
+      "text": "Ao acessar e usar HASHPASS (\"o Serviço\"), você aceita e concorda em estar vinculado aos termos e disposições deste acordo. Se você não concordar em cumprir o acima, não use este serviço."
     },
     "description": {
       "title": "2. Descrição do serviço",
-      "text": "HashPass é uma plataforma de eventos digitais que fornece gerenciamento de eventos, gerenciamento de passes, recursos de networking e serviços relacionados. Reservamo-nos o direito de modificar, suspender ou descontinuar qualquer parte do Serviço a qualquer momento."
+      "text": "HASHPASS é uma plataforma de eventos digitais que fornece gerenciamento de eventos, gerenciamento de passes, recursos de networking e serviços relacionados. Reservamo-nos o direito de modificar, suspender ou descontinuar qualquer parte do Serviço a qualquer momento."
     },
     "accounts": {
       "title": "3. Contas de usuário",
@@ -178,7 +178,7 @@
     },
     "intellectual": {
       "title": "6. Propriedade intelectual",
-      "text": "O Serviço e seu conteúdo original, recursos e funcionalidade são de propriedade do HashPass e são protegidos por leis internacionais de direitos autorais, marcas registradas, patentes, segredos comerciais e outras leis de propriedade intelectual."
+      "text": "O Serviço e seu conteúdo original, recursos e funcionalidade são de propriedade do HASHPASS e são protegidos por leis internacionais de direitos autorais, marcas registradas, patentes, segredos comerciais e outras leis de propriedade intelectual."
     },
     "termination": {
       "title": "7. Rescisão",
@@ -190,7 +190,7 @@
     },
     "limitation": {
       "title": "9. Limitação de responsabilidade",
-      "text": "Em nenhum caso o HashPass será responsável por quaisquer danos indiretos, incidentais, especiais, consequenciais ou punitivos, incluindo perda de lucros, dados ou uso, incorridos por você ou qualquer terceiro, seja em uma ação em contrato ou delito."
+      "text": "Em nenhum caso o HASHPASS será responsável por quaisquer danos indiretos, incidentais, especiais, consequenciais ou punitivos, incluindo perda de lucros, dados ou uso, incorridos por você ou qualquer terceiro, seja em uma ação em contrato ou delito."
     },
     "changes": {
       "title": "10. Alterações nos termos",
@@ -298,7 +298,7 @@
     },
     "account": "Conta",
     "signOut": "Sair",
-    "version": "HashPass v{version}"
+    "version": "HASHPASS v{version}"
   },
   "nav": {
     "explore": "Explorar",

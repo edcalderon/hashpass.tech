@@ -1,6 +1,6 @@
-# HashPass Terraform IaC (AWS + GCP)
+# HASHPASS Terraform IaC (AWS + GCP)
 
-This Terraform setup deploys the live HashPass infra surfaces:
+This Terraform setup deploys the live HASHPASS infra surfaces:
 
 - Source CloudFront front door:
   - `hashpass.tech`
@@ -75,7 +75,7 @@ Outputs include:
 - the origin domain wired behind the front door
 - the target-account static origin metadata used by the web pipeline
 
-### HashPass Web Stack
+### HASHPASS Web Stack
 
 This stack provisions the target-account replacement for the `hashpass.tech`
 web origin. It creates both the production and development pipelines in the
@@ -188,7 +188,7 @@ gh workflow run hashpass-web-pipeline-monitor.yml -f mode=monitor
 gh workflow run hashpass-web-pipeline-monitor.yml -f mode=stop
 ```
 
-### HashPass DNS Stack
+### HASHPASS DNS Stack
 
 This stack creates the target-account hosted zones for the migration. It now
 leaves `dev.hashpass.tech` inside the parent `hashpass.tech` zone instead of
@@ -215,7 +215,7 @@ Outputs include:
 - hosted zone IDs for `hashpass.tech`, `hashpass.lat`, and `hashpass.club`
 - nameserver sets for later registrar delegation
 
-### HashPass API Stack
+### HASHPASS API Stack
 
 This stack provisions the target-account Lambda + API Gateway pair for
 `api.hashpass.tech` and `api-dev.hashpass.tech`.

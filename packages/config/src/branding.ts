@@ -1,5 +1,5 @@
 /**
- * Branding configurations for HashPass white-label platform
+ * Branding configurations for HASHPASS white-label platform
  * Defines visual identity and styling for different events
  */
 

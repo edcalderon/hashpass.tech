@@ -1,6 +1,6 @@
-# HashPass Environment Strategy & Management
+# HASHPASS Environment Strategy & Management
 
-This document outlines the standardized approach for managing environment variables, configurations, and secrets across the HashPass project.
+This document outlines the standardized approach for managing environment variables, configurations, and secrets across the HASHPASS project.
 
 ## 1. Environment Profiles
 

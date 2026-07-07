@@ -303,7 +303,7 @@ function ThemedContent() {
     return (
       <LoadingScreen
         fullScreen
-        message="Starting HashPass"
+        message="Starting HASHPASS"
         subtitle={startupStamp}
       />
     );

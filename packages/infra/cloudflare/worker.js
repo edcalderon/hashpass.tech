@@ -1,5 +1,5 @@
 /**
- * Cloudflare Worker for HashPass
+ * Cloudflare Worker for HASHPASS
  * Handles static file serving, API routes, SPA routing, and Cloudflare Access JWT validation
  *
  * IMPORTANT: API routes in Metro format cannot be executed directly in Workers.
@@ -126,12 +126,12 @@ export default {
         return new Response(`<!DOCTYPE html>
 <html>
 <head>
-  <title>HashPass</title>
+  <title>HASHPASS</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-  <h1>HashPass</h1>
+  <h1>HASHPASS</h1>
   <p>Loading...</p>
   <p>If assets are not loading, ensure ASSETS binding is configured in wrangler.toml</p>
   <p>Path: ${pathname}</p>

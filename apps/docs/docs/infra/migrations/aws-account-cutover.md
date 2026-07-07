@@ -1,4 +1,4 @@
-# HashPass AWS Account Migration Playbook
+# HASHPASS AWS Account Migration Playbook
 
 > Status: historical reference. The live web path now runs through the target-account `hashpass.tech` web pipeline and the source-account CloudFront front door, and the current infra docs describe the active state.
 
@@ -13,7 +13,7 @@ The rule for every phase is simple:
 
 ## Why this exists
 
-HashPass currently spans several AWS delivery paths:
+HASHPASS currently spans several AWS delivery paths:
 
 - `hashpass.tech` is fronted by a source-account CloudFront distribution that points at the target-account static origin
 - `api.hashpass.tech` and `api-dev.hashpass.tech` live on the target-account Lambda + API Gateway path

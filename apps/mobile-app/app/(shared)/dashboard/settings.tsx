@@ -566,7 +566,7 @@ export default function SettingsScreen() {
           {renderSettingItem({
             icon: 'information-circle-outline',
             title: tSettings('appVersion', 'App Version'),
-            subtitle: `HashPass v${version}`,
+            subtitle: `HASHPASS v${version}`,
             onPress: () => setShowVersionModal(true),
             showChevron: true,
           })}

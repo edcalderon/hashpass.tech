@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * HashPass Deployment Auditor & Consistency Tool
+ * HASHPASS Deployment Auditor & Consistency Tool
  *
  * Multi-tenant mode:
  * - Shared code/release cadence (`develop` / `main`)

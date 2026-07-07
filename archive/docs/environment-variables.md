@@ -1,6 +1,6 @@
 # Environment Variables
 
-This document lists all environment variables required for the HashPass application.
+This document lists all environment variables required for the HASHPASS application.
 
 ## Supabase Configuration
 

@@ -12,21 +12,21 @@ export default function Root({ children, metadata }: { children: ReactNode, meta
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <title>{metadata?.title || "HashPass"}</title>
+        <title>{metadata?.title || "HASHPASS"}</title>
         <meta name="viewport" content={metadata?.viewport || "width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no, viewport-fit=cover"} />
         <meta name="description" content={metadata?.description || "YOUR EVENT - YOUR COMMUNITY - YOUR BENEFITS"} />
         <meta name="keywords" content={metadata?.keywords || "community, event, benefits, security, encryption, digital security, password protection, blockchain, wallet, loyalty"} />
-        <meta name="author" content="HashPass" />
-        <meta name="publisher" content="HashPass" />
+        <meta name="author" content="HASHPASS" />
+        <meta name="publisher" content="HASHPASS" />
         <meta name="robots" content="index, follow" />
         <meta name="camera" content="required" />
-        <meta property="og:title" content={metadata?.title || "HashPass - YOUR EVENT - YOUR COMMUNITY - YOUR BENEFITS"} />
+        <meta property="og:title" content={metadata?.title || "HASHPASS - YOUR EVENT - YOUR COMMUNITY - YOUR BENEFITS"} />
         <meta property="og:description" content={metadata?.description || "YOUR EVENT - YOUR COMMUNITY - YOUR BENEFITS"} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://hashpass.tech" />
         <meta property="og:image" content="/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={metadata?.title || "HashPass - YOUR EVENT - YOUR COMMUNITY - YOUR BENEFITS"} />
+        <meta name="twitter:title" content={metadata?.title || "HASHPASS - YOUR EVENT - YOUR COMMUNITY - YOUR BENEFITS"} />
         <meta name="twitter:description" content={metadata?.description || "YOUR EVENT - YOUR COMMUNITY - YOUR BENEFITS"} />
         <meta name="twitter:image" content="/twitter-image.png" />
         <meta name="theme-color" content="#000000" />

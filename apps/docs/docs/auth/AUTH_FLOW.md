@@ -2,7 +2,7 @@
 
 ## Current Main Production Flow
 
-HashPass main production (`https://hashpass.tech`) now uses a Directus-owned OAuth session flow through the API bridge. The browser starts on the frontend, hands off to Directus for Google, and then returns through the API callback.
+HASHPASS main production (`https://hashpass.tech`) now uses a Directus-owned OAuth session flow through the API bridge. The browser starts on the frontend, hands off to Directus for Google, and then returns through the API callback.
 
 1. The frontend calls `GET /api/auth/oauth/login?provider=google&returnTo=...`.
 2. The API stores `oauth_return_to`, `oauth_frontend_origin`, and optional `oauth_native_callback` cookies.
@@ -68,7 +68,7 @@ pnpm exec @better-auth/cli migrate --config apps/mobile-app/lib/server/better-au
 
 ## OTP (One-Time Password) Flow — Native Mobile
 
-HashPass native uses a 6-digit OTP code instead of magic links. The Lambda generates a token via Supabase Admin API, stores a mapping, and sends the code via custom email or SMS.
+HASHPASS native uses a 6-digit OTP code instead of magic links. The Lambda generates a token via Supabase Admin API, stores a mapping, and sends the code via custom email or SMS.
 
 ### Send (`POST /api/auth/otp`)
 

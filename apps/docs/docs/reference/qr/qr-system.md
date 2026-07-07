@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the comprehensive QR code system implemented for Hashpass. The system provides dynamic QR code generation, double-spend prevention, admin controls, and is designed to be agnostic for future wallet crypto transfers.
+This document describes the comprehensive QR code system implemented for HASHPASS. The system provides dynamic QR code generation, double-spend prevention, admin controls, and is designed to be agnostic for future wallet crypto transfers.
 
 ## Features
 

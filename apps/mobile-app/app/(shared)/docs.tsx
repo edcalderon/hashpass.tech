@@ -40,7 +40,7 @@ export default function DocsScreen() {
       sections: [
         {
           title: t({ id: 'index.docs.gettingStarted.signIn.title', message: 'Sign In to Your Account' }),
-          content: t({ id: 'index.docs.gettingStarted.signIn.content', message: 'To get started, you\'ll need to sign in to the HashPass app. Open the app, enter your email address, check your email for a one-time login code, and enter the code to access your account.' }),
+          content: t({ id: 'index.docs.gettingStarted.signIn.content', message: 'To get started, you\'ll need to sign in to the HASHPASS app. Open the app, enter your email address, check your email for a one-time login code, and enter the code to access your account.' }),
         },
         {
           title: t({ id: 'index.docs.gettingStarted.explore.title', message: 'Explore Speakers & Events' }),
@@ -82,7 +82,7 @@ export default function DocsScreen() {
     {
       id: 'tips',
       title: t({ id: 'index.docs.tips.title', message: 'Pro Tips' }),
-      description: t({ id: 'index.docs.tips.description', message: 'Best practices for using HashPass' }),
+      description: t({ id: 'index.docs.tips.description', message: 'Best practices for using HASHPASS' }),
       sections: [
         {
           title: t({ id: 'index.docs.tips.specificRequests.title', message: 'Be Specific in Meeting Requests' }),

@@ -297,7 +297,7 @@ export const getCurrentEvent = (eventId?: string, hostname?: string): EventInfo 
     return tenantEvent || availableEvents[0] || null;
   }
 
-  // Core HashPass domains should not inherit an event-specific tenant.
+  // Core HASHPASS domains should not inherit an event-specific tenant.
   return EVENTS.default ? configToEventInfo(EVENTS.default, true) : null;
 };
 

@@ -50,7 +50,7 @@
     "club": {
       "label": "hashpass.club",
       "appType": "next",
-      "appName": "HashPass Club",
+      "appName": "HASHPASS Club",
       "supportEmail": "hello@hashpass.club",
       "amplify": {
         "appIdEnv": "HASHPASS_CLUB_AMPLIFY_APP_ID",
@@ -64,7 +64,7 @@
     "club-dev": {
       "label": "hashpass.club (dev)",
       "appType": "next",
-      "appName": "HashPass Club",
+      "appName": "HASHPASS Club",
       "supportEmail": "hello@hashpass.club",
       "amplify": {
         "appIdEnv": "HASHPASS_CLUB_DEV_AMPLIFY_APP_ID",

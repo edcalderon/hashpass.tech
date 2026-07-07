@@ -320,9 +320,11 @@ function main() {
   const baseCommit = resolveBaseCommit(options.base || '');
   // apps/web-app uses its own Next.js tsconfig; skip it here to avoid false positives
   // when web-app files are untracked or changed alongside mobile/packages work.
+  // Archive trees are historical reference material and are intentionally excluded
+  // so they do not block active app release preflight.
   const changedFiles = getChangedFiles(baseCommit)
     .filter(isTypeScriptFile)
-    .filter(f => !f.startsWith('apps/web-app/') && !f.startsWith('apps/docs/'));
+    .filter(f => !f.startsWith('apps/web-app/') && !f.startsWith('apps/docs/') && !f.startsWith('archive/'));
   const localSpecifierMatchers = loadLocalSpecifierMatchers(MOBILE_APP_TSCONFIG);
 
   if (changedFiles.length === 0) {

@@ -1,6 +1,6 @@
 /**
  * Integration tests for @whitelabel/auth
- * Tests the provider-agnostic architecture with HashPass-like flows
+ * Tests the provider-agnostic architecture with HASHPASS-like flows
  * @whitelabel/auth
  */
 

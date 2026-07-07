@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, FC, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { Platform } from 'react-native';
 import { createFragmentShader } from './auth-background-shader';
 
 const useIsMobile = () => {
@@ -217,7 +218,7 @@ const AuthBackgroundSceneInner: FC<{ amount: number; isMobile: boolean; isDark: 
       material.dispose();
       renderer.dispose();
     };
-  }, [animationState, isMobile]);
+  }, [animationState, fragmentShader, isMobile]);
 
   return (
     <div
@@ -255,7 +256,7 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
   }
 }
 
-export const AuthBackgroundScene: FC<{ isDark?: boolean }> = ({ isDark = false }) => {
+const AuthBackgroundSceneContent: FC<{ isDark?: boolean }> = ({ isDark = false }) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -274,6 +275,14 @@ export const AuthBackgroundScene: FC<{ isDark?: boolean }> = ({ isDark = false }
       <AuthBackgroundSceneInner amount={amount} isMobile={isMobile} isDark={isDark} />
     </ErrorBoundary>
   );
+};
+
+export const AuthBackgroundScene: FC<{ isDark?: boolean }> = (props) => {
+  if (Platform.OS !== 'web') {
+    return null;
+  }
+
+  return <AuthBackgroundSceneContent {...props} />;
 };
 
 export default AuthBackgroundScene;
