@@ -37,13 +37,14 @@ export function renderTemplate(
   const templatePath = path.join(TEMPLATES_DIR, template, `${safeLocale}.html`);
   let html = fs.readFileSync(templatePath, 'utf-8');
 
-  const resolved: Required<TemplateVars> = {
+  const resolved = {
+    ...vars,
     year: String(new Date().getFullYear()),
     appUrl: 'https://hashpass.tech',
     supportEmail: 'support@hashpass.tech',
     userName: '',
-    ...vars,
-  };
+    unsubscribeUrl: vars.unsubscribeUrl ?? '',
+  } satisfies Required<TemplateVars>;
 
   for (const [key, value] of Object.entries(resolved)) {
     html = html.split(`{{${key.toUpperCase()}}}`).join(value ?? '');

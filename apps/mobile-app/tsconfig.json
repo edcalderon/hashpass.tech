@@ -21,6 +21,8 @@
       "@hashpass/types/*": ["../../packages/types/src/*"],
       "@hashpass/backend": ["../../packages/backend/src"],
       "@hashpass/backend/*": ["../../packages/backend/src/*"],
+      "@hashpass/emails": ["../../packages/emails/src"],
+      "@hashpass/emails/*": ["../../packages/emails/src/*"],
       "@hashpass/utils": ["../../packages/utils/src"],
       "@hashpass/utils/*": ["../../packages/utils/src/*"],
       "@hashpass/ui": ["../../packages/ui/src"],

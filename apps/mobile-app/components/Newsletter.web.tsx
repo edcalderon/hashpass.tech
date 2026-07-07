@@ -33,6 +33,7 @@ interface Props {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MotionDiv = motion.div as React.ComponentType<any>;
 
 // Diverse pool: women, men, different ethnicities, plus a couple brand-style gradient avatars
 const AVATAR_POOL = [
@@ -86,7 +87,7 @@ const Newsletter = ({ mode }: Props) => {
 
     // Wave animation: trigger once when avatar group scrolls into view
     const avatarGroupRef = useRef<HTMLDivElement>(null);
-    const isInView = useInView(avatarGroupRef, { once: true, amount: 0.6 });
+    const isInView = useInView(avatarGroupRef as React.RefObject<Element>, { once: true, amount: 0.6 });
 
     // Container div where we'll imperatively mount cap-widget
     const capContainerRef = useRef<HTMLDivElement>(null);
@@ -273,7 +274,7 @@ const Newsletter = ({ mode }: Props) => {
             >
                 <AnimatePresence>
                     {!subscribed ? (
-                        <motion.div
+                        <MotionDiv
                             key="form"
                             initial={{ opacity: 1, scale: 1 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -297,7 +298,7 @@ const Newsletter = ({ mode }: Props) => {
                             >
                                 <div className='flex relative'>
                                     {avatarUrls.map((url, index) => (
-                                        <motion.div
+                                        <MotionDiv
                                             key={index}
                                             className='relative rounded-full overflow-hidden border-2 border-white dark:border-gray-800'
                                             style={{
@@ -321,7 +322,7 @@ const Newsletter = ({ mode }: Props) => {
                                                 style={{ width: '100%', height: '100%' }}
                                                 resizeMode='cover'
                                             />
-                                        </motion.div>
+                                        </MotionDiv>
                                     ))}
                                 </div>
                                 <span className='ml-3 text-sm text-gray-500 dark:text-gray-400'>
@@ -418,9 +419,9 @@ const Newsletter = ({ mode }: Props) => {
                             <p className='text-xs text-center text-gray-400 dark:text-gray-500 mt-4 px-4'>
                                 {t('privacy')}
                             </p>
-                        </motion.div>
+                        </MotionDiv>
                     ) : (
-                        <motion.div
+                        <MotionDiv
                             key="success"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -460,7 +461,7 @@ const Newsletter = ({ mode }: Props) => {
                                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M14 5l7 7m0 0l-7 7m7-7H3' />
                                 </svg>
                             </button>
-                        </motion.div>
+                        </MotionDiv>
                     )}
                 </AnimatePresence>
             </div>

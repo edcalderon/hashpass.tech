@@ -30,7 +30,7 @@ export function getSupabaseServerEnv(input?: Request | { hostname?: string; prof
 }
 
 // Lazy initialization - only create clients when actually used
-const supabaseServerClients = new Map<string, ReturnType<typeof createClient>>();
+const supabaseServerClients = new Map<string, any>();
 
 function createMockSupabaseClient(errorMsg: string): ReturnType<typeof createClient> {
   // Create a mock chainable object that simulates Supabase query API.

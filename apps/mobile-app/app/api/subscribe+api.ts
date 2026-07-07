@@ -130,7 +130,8 @@ export async function POST(request: Request) {
         .from('newsletter_subscribers')
         .update({ email_sent: emailSent })
         .eq('id', subscriberId)
-        .then(({ error }) => {
+        .then((result: { error?: { message?: string } }) => {
+          const { error } = result;
           if (error) console.warn('[subscribe] email_sent update failed:', error.message);
         });
     }
