@@ -225,7 +225,7 @@ const PROFILES: SupabaseProfile[] = [
     id: 'core-development',
     tenant: 'core',
     environment: 'development',
-    hosts: ['localhost', '127.0.0.1', 'api-dev.hashpass.tech'],
+    hosts: ['localhost', '127.0.0.1', 'dev.hashpass.tech', 'api-dev.hashpass.tech'],
     publicUrlEnv: [
       'EXPO_PUBLIC_SUPABASE_URL_DEV',
       'NEXT_PUBLIC_SUPABASE_URL',
@@ -238,7 +238,7 @@ const PROFILES: SupabaseProfile[] = [
       'EXPO_PUBLIC_SUPABASE_KEY',
       'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     ],
-    serviceRoleEnv: ['SUPABASE_SERVICE_ROLE_KEY_DEV', 'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV', 'BSL_SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_ROLE_KEY'],
+    serviceRoleEnv: ['SUPABASE_SERVICE_ROLE_KEY_DEV', 'SUPABASE_SERVICE_ROLE_KEY'],
     dbUrlEnv: ['SUPABASE_DB_URL_DEV', 'DATABASE_URL_DEV', 'DEV_DB_URL'],
   },
   {

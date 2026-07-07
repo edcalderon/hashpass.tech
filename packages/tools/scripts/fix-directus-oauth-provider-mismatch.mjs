@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * Fix Directus OAuth provider mismatches that cause INVALID_CREDENTIALS
- * during /auth/login/google/callback.
+ * Fix Directus OAuth provider mismatches that cause INVALID_PROVIDER /
+ * INVALID_CREDENTIALS during /auth/login/google/callback.
  *
- * It updates end-user records created with provider=default to provider=google
- * when they match the configured DEFAULT_ROLE_ID and already have an external_identifier.
+ * Directus expects Google-linked users to have:
+ * - provider = google
+ * - external_identifier = the Google email address
+ *
+ * This script updates end-user records created with provider=default when
+ * they match the configured DEFAULT_ROLE_ID.
  *
  * Usage:
  *   set -a; source .env; set +a
@@ -18,16 +22,16 @@ const DIRECTUS_URL =
   process.env.EXPO_PUBLIC_DIRECTUS_URL ||
   'http://localhost:8055';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.DIRECTUS_ADMIN_EMAIL;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-const DEFAULT_ROLE_ID = process.env.DEFAULT_ROLE_ID;
+const directusAdminEmail = process.env.ADMIN_EMAIL || process.env.DIRECTUS_ADMIN_EMAIL;
+const directusAdminPassword = process.env.ADMIN_PASSWORD;
+const defaultRoleId = process.env.DEFAULT_ROLE_ID;
 const TARGET_PROVIDER = process.env.TARGET_OAUTH_PROVIDER || 'google';
 const DRY_RUN = process.argv.includes('--dry-run');
 
 const required = [
-  ['ADMIN_EMAIL or DIRECTUS_ADMIN_EMAIL', ADMIN_EMAIL],
-  ['ADMIN_PASSWORD', ADMIN_PASSWORD],
-  ['DEFAULT_ROLE_ID', DEFAULT_ROLE_ID],
+  ['ADMIN_EMAIL or DIRECTUS_ADMIN_EMAIL', directusAdminEmail],
+  ['ADMIN_PASSWORD', directusAdminPassword],
+  ['DEFAULT_ROLE_ID', defaultRoleId],
 ];
 
 for (const [name, value] of required) {
@@ -58,8 +62,8 @@ async function login() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
+      email: directusAdminEmail,
+      password: directusAdminPassword,
     }),
   });
 
@@ -70,25 +74,36 @@ async function getMismatchedUsers(adminToken) {
   const url = new URL('/users', DIRECTUS_URL);
   url.searchParams.set('fields', 'id,email,provider,role,external_identifier');
   url.searchParams.set('limit', '500');
-  url.searchParams.set('filter[role][_eq]', DEFAULT_ROLE_ID);
-  url.searchParams.set('filter[provider][_eq]', 'default');
-  url.searchParams.set('filter[external_identifier][_nnull]', 'true');
+  url.searchParams.set('filter[role][_eq]', defaultRoleId);
 
   const payload = await requestJson(url.toString(), {
     headers: { Authorization: `Bearer ${adminToken}` },
   });
 
-  return payload?.data || [];
+  const users = payload?.data || [];
+
+  return users.filter((user) => {
+    if (!user || typeof user.email !== 'string') return false;
+
+    if (user.provider === 'default') {
+      return true;
+    }
+
+    return user.provider === TARGET_PROVIDER && user.external_identifier !== user.email;
+  });
 }
 
-async function patchUserProvider(adminToken, userId) {
-  await requestJson(`${DIRECTUS_URL}/users/${userId}`, {
+async function patchUserProvider(adminToken, user) {
+  await requestJson(`${DIRECTUS_URL}/users/${user.id}`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${adminToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ provider: TARGET_PROVIDER }),
+    body: JSON.stringify({
+      provider: TARGET_PROVIDER,
+      external_identifier: user.email,
+    }),
   });
 }
 
@@ -104,9 +119,12 @@ async function main() {
   if (users.length === 0) return;
 
   for (const user of users) {
-    console.log(`- ${user.email} (${user.id}) provider=${user.provider} -> ${TARGET_PROVIDER}`);
+    console.log(
+      `- ${user.email} (${user.id}) provider=${user.provider} -> ${TARGET_PROVIDER}, ` +
+      `external_identifier -> ${user.email}`
+    );
     if (!DRY_RUN) {
-      await patchUserProvider(adminToken, user.id);
+      await patchUserProvider(adminToken, user);
     }
   }
 
@@ -121,4 +139,3 @@ main().catch((error) => {
   console.error('Provider mismatch fix failed:', error instanceof Error ? error.message : String(error));
   process.exit(1);
 });
-

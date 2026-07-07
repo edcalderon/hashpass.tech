@@ -85,4 +85,16 @@ describe('Directus OAuth sign-in', () => {
       'https://api.hashpass.tech/api/auth/oauth/login?provider=google&returnTo=%2Fdashboard%2Fexplore'
     );
   });
+
+  it('returns explicit OAuth errors from native callback URLs', async () => {
+    const { DirectusAuthProvider } = require('../../../../packages/auth/src/providers/directus');
+
+    const provider = new DirectusAuthProvider('https://sso.hashpass.co');
+    const result = await provider.handleOAuthCallback({
+      error: 'oauth_failed',
+      message: 'Native auth failed',
+    });
+
+    expect(result).toEqual({ error: 'Native auth failed' });
+  });
 });

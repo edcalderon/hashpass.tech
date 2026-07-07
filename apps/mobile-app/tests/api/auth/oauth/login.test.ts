@@ -62,9 +62,7 @@ describe('oauth login api', () => {
     );
   });
 
-  it('uses the Better Auth Google client id alias when the legacy env is missing', async () => {
-    setEnv('BETTER_AUTH_GOOGLE_CLIENT_ID', 'alias-google-client-id');
-
+  it('routes Google sign-in through Directus without a Google-specific bootstrap', async () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { GET } = require('../../../../app/api/auth/oauth/login+api');
 
@@ -78,7 +76,30 @@ describe('oauth login api', () => {
     );
 
     expect(response.status).toBe(302);
-    expect(response.headers.get('location')).toContain('client_id=alias-google-client-id');
-    expect(response.headers.get('location')).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Fapi%2Fauth%2Foauth%2Fgoogle');
+    expect(response.headers.get('location')).toBe(
+      'https://sso.hashpass.co/auth/login/google?redirect=http%3A%2F%2Flocalhost%3A8081%2Fapi%2Fauth%2Foauth%2Fcallback&mode=session'
+    );
+    expect(response.headers.get('location')).not.toContain('client_id=');
+  });
+
+  it('derives the real frontend origin when the request lands on api.hashpass.tech', async () => {
+    setEnv('EXPO_PUBLIC_ENV', 'production');
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../../../app/api/auth/oauth/login+api');
+
+    const response = await GET(
+      new Request('https://api.hashpass.tech/api/auth/oauth/login?provider=bogus', {
+        headers: {
+          origin: 'https://api.hashpass.tech',
+          referer: 'https://api.hashpass.tech/auth',
+        },
+      })
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get('location')).toBe(
+      'https://hashpass.tech/auth?error=invalid_provider&message=Provider+%27bogus%27+is+not+supported'
+    );
   });
 });

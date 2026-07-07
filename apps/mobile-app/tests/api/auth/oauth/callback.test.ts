@@ -9,7 +9,7 @@ jest.mock('expo-router/server', () => ({
   ExpoResponse: class ExpoResponse extends Response {},
 }));
 
-describe('google oauth api', () => {
+describe('oauth callback api', () => {
   const envBackup: Record<string, string | undefined> = {};
 
   const setEnv = (name: string, value?: string) => {
@@ -26,11 +26,9 @@ describe('google oauth api', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    setEnv('EXPO_PUBLIC_ENV', 'local');
+    setEnv('EXPO_PUBLIC_ENV', 'production');
     setEnv('EXPO_PUBLIC_FRONTEND_URL', undefined);
     setEnv('FRONTEND_URL', undefined);
-    setEnv('GOOGLE_CLIENT_ID', undefined);
-    setEnv('GOOGLE_CLIENT_SECRET', undefined);
   });
 
   afterAll(() => {
@@ -43,45 +41,45 @@ describe('google oauth api', () => {
     }
   });
 
-  it('falls back to localhost in local development when Google OAuth is not configured', async () => {
+  it('redirects oauth failures away from api.hashpass.tech', async () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
-    const { GET } = require('../../../../app/api/auth/oauth/google+api');
+    const { GET } = require('../../../../app/api/auth/oauth/callback+api');
 
     const response = await GET(
-      new Request('http://localhost:8081/api/auth/oauth/google', {
-        headers: {
-          origin: 'https://hashpass.tech',
-          referer: 'https://hashpass.tech/auth',
-          cookie: 'oauth_return_to=%7B%22returnTo%22%3A%22%2Fdashboard%2Fexplore%22%7D',
-        },
-      })
-    );
-
-    expect(response.status).toBe(302);
-    expect(response.headers.get('location')).toBe(
-      'http://localhost:8081/dashboard/explore?error=oauth_failed&message=Google+OAuth+client+credentials+are+not+configured.'
-    );
-  });
-
-  it('redirects api-host Google OAuth failures back to the public frontend', async () => {
-    setEnv('EXPO_PUBLIC_ENV', 'production');
-
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const { GET } = require('../../../../app/api/auth/oauth/google+api');
-
-    const response = await GET(
-      new Request('https://api.hashpass.tech/api/auth/oauth/google', {
+      new Request('https://api.hashpass.tech/api/auth/oauth/callback?error=access_denied&message=broken', {
         headers: {
           origin: 'https://api.hashpass.tech',
           referer: 'https://api.hashpass.tech/auth',
-          cookie: 'oauth_return_to=%7B%22returnTo%22%3A%22%2Fdashboard%2Fexplore%22%7D',
         },
       })
     );
 
     expect(response.status).toBe(302);
     expect(response.headers.get('location')).toBe(
-      'https://hashpass.tech/dashboard/explore?error=oauth_failed&message=Google+OAuth+client+credentials+are+not+configured.'
+      'https://hashpass.tech/auth?error=oauth_failed&message=Authentication+could+not+be+completed.+broken+Redirecting+to+login.'
+    );
+  });
+
+  it('returns native OAuth callbacks to the app scheme when native_callback is present', async () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../../../app/api/auth/oauth/callback+api');
+
+    const response = await GET(
+      new Request(
+        'https://api.hashpass.tech/api/auth/oauth/callback?access_token=access123&refresh_token=refresh456',
+        {
+          headers: {
+            cookie: 'oauth_native_callback=hashpass%3A%2F%2Fauth%2Fcallback; oauth_return_to=%7B%22returnTo%22%3A%22%2Fdashboard%2Fexplore%22%7D',
+            origin: 'https://api.hashpass.tech',
+            referer: 'https://api.hashpass.tech/auth',
+          },
+        }
+      )
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get('location')).toBe(
+      'hashpass://auth/callback?returnTo=%2Fdashboard%2Fexplore&access_token=access123&refresh_token=refresh456'
     );
   });
 });

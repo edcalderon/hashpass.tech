@@ -361,11 +361,20 @@ const sw = `
     return;
   }
 
-  // Disable the PWA service worker on local Expo dev servers.
-  // It can intercept Metro bundle requests and break web reloads.
+  var hostname = String(window.location.hostname || '').toLowerCase();
+  var isApiHost =
+    hostname === 'api.hashpass.tech' ||
+    hostname === 'api-dev.hashpass.tech' ||
+    hostname.startsWith('api.') ||
+    hostname.startsWith('api-');
+
+  // Disable the PWA service worker on local Expo dev servers and API hosts.
+  // Local dev can intercept Metro bundle requests, and API hosts should never
+  // register the app shell service worker in the first place.
   if (
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1'
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    isApiHost
   ) {
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
       registrations.forEach(function (registration) {

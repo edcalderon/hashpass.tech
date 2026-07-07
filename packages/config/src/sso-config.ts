@@ -137,7 +137,7 @@ export const SSO_CONFIG = {
       id: 'core',
       name: 'HashPass',
       domain: 'hashpass.tech',
-      hostnames: ['www.hashpass.tech', 'hashpass.co', 'www.hashpass.co'],
+      hostnames: ['dev.hashpass.tech', 'www.hashpass.tech', 'hashpass.co', 'www.hashpass.co'],
       slug: 'main',
       authProvider: 'directus',
       apiBaseUrl: 'https://api.hashpass.tech/api',

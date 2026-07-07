@@ -1,8 +1,10 @@
 import { ExpoResponse } from 'expo-router/server';
 import { jwtVerify } from 'jose';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { type SupabaseClient } from '@supabase/supabase-js';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 import { fetchDirectus } from '../../../../lib/auth/oauth/directus-fetch';
+import { resolveFrontendOrigin } from '../../../../lib/auth/oauth/frontend-origin';
+import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 
 // Support both local and production Directus URLs
 const DIRECTUS_URL =
@@ -15,33 +17,10 @@ const directusSecret =
 const DIRECTUS_SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'directus_session_token';
 const DIRECTUS_REFRESH_COOKIE_NAME = process.env.REFRESH_TOKEN_COOKIE_NAME || 'directus_refresh_token';
 const OAUTH_FRONTEND_ORIGIN_COOKIE_NAME = 'oauth_frontend_origin';
+const OAUTH_NATIVE_CALLBACK_COOKIE_NAME = 'oauth_native_callback';
 const DEFAULT_FRONTEND_ORIGIN =
   process.env.EXPO_PUBLIC_FRONTEND_URL ||
   process.env.FRONTEND_URL ||
-  '';
-const TRUSTED_FRONTEND_HOSTS = new Set([
-  'localhost',
-  '127.0.0.1',
-  'hashpass.tech',
-  'hashpass.co',
-  'hashpass.lat',
-]);
-const TRUSTED_FRONTEND_SUFFIXES = [
-  '.hashpass.tech',
-  '.hashpass.co',
-  '.hashpass.lat',
-];
-const LOCAL_ORIGINS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
-
-const isLocalDevRuntime = (): boolean => {
-  const env = String(process.env.EXPO_PUBLIC_ENV || process.env.NODE_ENV || '').toLowerCase();
-  return ['local', 'development', 'dev', 'staging'].includes(env);
-};
-const supabaseUrl =
-  process.env['EXPO_PUBLIC_SUPABASE_URL'] ||
-  '';
-const supabaseServiceRoleKey =
-  process.env['SUPABASE_SERVICE_ROLE_KEY'] ||
   '';
 const DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED =
   (process.env.DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED || 'true').toLowerCase() !== 'false';
@@ -73,8 +52,6 @@ type DirectusSupabaseSyncResult = {
   bridge: SupabaseSessionBridge | null;
 };
 
-let supabaseAdminClient: SupabaseClient | null = null;
-
 const normalizeEmail = (value: string | null | undefined): string => value?.trim().toLowerCase() || '';
 const DEFAULT_RETURN_TO = '/dashboard/explore';
 
@@ -98,23 +75,6 @@ const normalizeReturnToPath = (value: string | null | undefined): string => {
   }
 
   return normalized;
-};
-
-const getSupabaseAdminClient = (): SupabaseClient | null => {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    return null;
-  }
-
-  if (!supabaseAdminClient) {
-    supabaseAdminClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
-  }
-
-  return supabaseAdminClient;
 };
 
 const isDuplicateSupabaseUserError = (errorMessage: string): boolean =>
@@ -231,13 +191,7 @@ const syncDirectusUserToSupabase = async (
     return null;
   }
 
-  const client = getSupabaseAdminClient();
-  if (!client) {
-    console.warn(
-      '[OAuth Callback] Supabase sync skipped: EXPO_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing.'
-    );
-    return null;
-  }
+  const client = getSupabaseServerForRequest(request) as SupabaseClient;
 
   try {
     const directusUserResponse = await fetchDirectus(DIRECTUS_URL, '/users/me', {
@@ -408,62 +362,6 @@ const parseOAuthReturnCookie = (rawCookieValue: string | null): OAuthReturnCooki
   return { returnTo: rawCookieValue };
 };
 
-const extractOrigin = (rawValue: string | null): string | null => {
-  if (!rawValue) return null;
-
-  try {
-    const parsed = new URL(rawValue);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return null;
-    }
-    return parsed.origin;
-  } catch {
-    return null;
-  }
-};
-
-const isTrustedFrontendOrigin = (origin: string): boolean => {
-  try {
-    const hostname = new URL(origin).hostname.toLowerCase();
-    if (isLocalDevRuntime()) {
-      return LOCAL_ORIGINS.has(hostname) || hostname.endsWith('.local');
-    }
-
-    if (TRUSTED_FRONTEND_HOSTS.has(hostname)) return true;
-    return TRUSTED_FRONTEND_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
-  } catch {
-    return false;
-  }
-};
-
-const resolveFrontendOrigin = (
-  request: Request,
-  cookieHeader: string,
-  queryFrontendOrigin: string | null,
-  returnCookieFrontendOrigin: string | undefined,
-  fallbackOrigin: string
-): string => {
-  const queryOrigin = extractOrigin(queryFrontendOrigin);
-  if (queryOrigin && isTrustedFrontendOrigin(queryOrigin)) return queryOrigin;
-
-  const cookiePayloadOrigin = extractOrigin(returnCookieFrontendOrigin || null);
-  if (cookiePayloadOrigin && isTrustedFrontendOrigin(cookiePayloadOrigin)) return cookiePayloadOrigin;
-
-  const cookieOrigin = extractOrigin(getCookieValue(cookieHeader, OAUTH_FRONTEND_ORIGIN_COOKIE_NAME));
-  if (cookieOrigin && isTrustedFrontendOrigin(cookieOrigin)) return cookieOrigin;
-
-  const configuredOrigin = extractOrigin(DEFAULT_FRONTEND_ORIGIN);
-  if (configuredOrigin && isTrustedFrontendOrigin(configuredOrigin)) return configuredOrigin;
-
-  const refererOrigin = extractOrigin(request.headers.get('referer'));
-  if (refererOrigin && isTrustedFrontendOrigin(refererOrigin)) return refererOrigin;
-
-  const originHeader = extractOrigin(request.headers.get('origin'));
-  if (originHeader && isTrustedFrontendOrigin(originHeader)) return originHeader;
-
-  return fallbackOrigin;
-};
-
 const hasCookie = (cookieHeader: string, cookieName: string): boolean =>
   getCookieValue(cookieHeader, cookieName) !== null;
 
@@ -526,6 +424,48 @@ const buildClientCallbackBridgeResponse = (
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  });
+};
+
+const buildNativeCallbackUrl = (
+  nativeCallback: string,
+  returnTo: string,
+  params: URLSearchParams
+): string | null => {
+  try {
+    const callbackUrl = new URL(nativeCallback);
+
+    if (returnTo) {
+      callbackUrl.searchParams.set('returnTo', returnTo);
+    }
+
+    params.forEach((value, key) => {
+      callbackUrl.searchParams.set(key, value);
+    });
+
+    return callbackUrl.toString();
+  } catch {
+    return null;
+  }
+};
+
+const buildNativeCallbackResponse = (
+  nativeCallback: string,
+  returnTo: string,
+  params: URLSearchParams
+): Response | null => {
+  const targetUrl = buildNativeCallbackUrl(nativeCallback, returnTo, params);
+
+  if (!targetUrl) {
+    return null;
+  }
+
+  return new ExpoResponse(null, {
+    status: 302,
+    headers: {
+      Location: targetUrl,
       'Cache-Control': 'no-store',
     },
   });
@@ -615,13 +555,19 @@ export async function GET(request: Request): Promise<Response> {
   const cookies = request.headers.get('Cookie') || request.headers.get('cookie') || '';
   const returnToCookie = parseOAuthReturnCookie(getCookieValue(cookies, 'oauth_return_to'));
   const finalReturnTo = normalizeReturnToPath(returnToCookie.returnTo || returnTo);
-  const frontendOrigin = resolveFrontendOrigin(
+  const nativeCallbackCookie = getCookieValue(cookies, OAUTH_NATIVE_CALLBACK_COOKIE_NAME);
+  const frontendOrigin = resolveFrontendOrigin({
     request,
-    cookies,
-    frontendOriginQuery,
-    returnToCookie.frontendOrigin,
-    url.origin
-  );
+    candidates: [
+      frontendOriginQuery,
+      returnToCookie.frontendOrigin,
+      getCookieValue(cookies, OAUTH_FRONTEND_ORIGIN_COOKIE_NAME),
+      DEFAULT_FRONTEND_ORIGIN,
+      request.headers.get('referer'),
+      request.headers.get('origin'),
+    ],
+    fallbackOrigin: url.origin,
+  });
   const hasRefreshTokenCookie = hasCookie(cookies, DIRECTUS_REFRESH_COOKIE_NAME);
   const hasSessionTokenCookie = hasCookie(cookies, DIRECTUS_SESSION_COOKIE_NAME);
 
@@ -662,6 +608,13 @@ export async function GET(request: Request): Promise<Response> {
     });
     appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
 
+    if (nativeCallbackCookie) {
+      const nativeResponse = buildNativeCallbackResponse(nativeCallbackCookie, finalReturnTo, fragment);
+      if (nativeResponse) {
+        return nativeResponse;
+      }
+    }
+
     return new ExpoResponse(null, {
       status: 302,
       headers: {
@@ -690,24 +643,31 @@ export async function GET(request: Request): Promise<Response> {
           body: JSON.stringify({ mode: 'json' })
         });
 
-        if (refreshResponse.ok) {
-          const refreshData = await refreshResponse.json();
-          const tokens = refreshData.data || refreshData;
+          if (refreshResponse.ok) {
+            const refreshData = await refreshResponse.json();
+            const tokens = refreshData.data || refreshData;
 
-          if (tokens.access_token) {
-            console.log('[OAuth Callback] ✅ Got tokens from refresh endpoint');
-            const syncResult = await syncDirectusUserToSupabase(request, tokens.access_token);
-            const fragment = new URLSearchParams({
-              access_token: tokens.access_token,
-              ...(tokens.refresh_token && { refresh_token: tokens.refresh_token })
-            });
-            appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
+            if (tokens.access_token) {
+              console.log('[OAuth Callback] ✅ Got tokens from refresh endpoint');
+              const syncResult = await syncDirectusUserToSupabase(request, tokens.access_token);
+              const fragment = new URLSearchParams({
+                access_token: tokens.access_token,
+                ...(tokens.refresh_token && { refresh_token: tokens.refresh_token })
+              });
+              appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
 
-            return new ExpoResponse(null, {
-              status: 302,
-              headers: {
-                'Location': buildRedirectWithFragment(frontendOrigin, finalReturnTo, fragment),
-                'Cache-Control': 'no-store'
+              if (nativeCallbackCookie) {
+                const nativeResponse = buildNativeCallbackResponse(nativeCallbackCookie, finalReturnTo, fragment);
+                if (nativeResponse) {
+                  return nativeResponse;
+                }
+              }
+
+              return new ExpoResponse(null, {
+                status: 302,
+                headers: {
+                  'Location': buildRedirectWithFragment(frontendOrigin, finalReturnTo, fragment),
+                  'Cache-Control': 'no-store'
               }
             });
           }
@@ -722,6 +682,19 @@ export async function GET(request: Request): Promise<Response> {
             console.warn(
               '[OAuth Callback] Refresh cookie is scoped away from callback route; using hash-preserving client callback handoff.'
             );
+            if (nativeCallbackCookie) {
+              const nativeResponse = buildNativeCallbackResponse(
+                nativeCallbackCookie,
+                finalReturnTo,
+                new URLSearchParams({
+                  error: 'oauth_failed',
+                  message: 'Directus session cookies were not available on the callback route.',
+                })
+              );
+              if (nativeResponse) {
+                return nativeResponse;
+              }
+            }
             return buildClientCallbackBridgeResponse(frontendOrigin, finalReturnTo);
           } else {
             failureReason = compactBody
@@ -747,6 +720,13 @@ export async function GET(request: Request): Promise<Response> {
         });
         appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
 
+        if (nativeCallbackCookie) {
+          const nativeResponse = buildNativeCallbackResponse(nativeCallbackCookie, finalReturnTo, fragment);
+          if (nativeResponse) {
+            return nativeResponse;
+          }
+        }
+
         return new ExpoResponse(null, {
           status: 302,
           headers: {
@@ -758,11 +738,37 @@ export async function GET(request: Request): Promise<Response> {
 
       // Fallback to client-side session completion when token exchange is unavailable.
       console.log('[OAuth Callback] Session cookie detected; using hash-preserving client callback handoff.');
+      if (nativeCallbackCookie) {
+        const nativeResponse = buildNativeCallbackResponse(
+          nativeCallbackCookie,
+          finalReturnTo,
+          new URLSearchParams({
+            error: 'oauth_failed',
+            message: 'Directus session cookie could not be exchanged for tokens.',
+          })
+        );
+        if (nativeResponse) {
+          return nativeResponse;
+        }
+      }
       return buildClientCallbackBridgeResponse(frontendOrigin, finalReturnTo);
     } else {
       // On localhost, refresh cookie can be scoped to /auth/refresh and won't be visible here.
       // Continue client-side so browser can call Directus directly with credentials.
       console.log('[OAuth Callback] No auth cookies visible on callback route; using hash-preserving client callback handoff.');
+      if (nativeCallbackCookie) {
+        const nativeResponse = buildNativeCallbackResponse(
+          nativeCallbackCookie,
+          finalReturnTo,
+          new URLSearchParams({
+            error: 'oauth_failed',
+            message: 'No Directus session was returned after OAuth callback.',
+          })
+        );
+        if (nativeResponse) {
+          return nativeResponse;
+        }
+      }
       return buildClientCallbackBridgeResponse(frontendOrigin, finalReturnTo);
     }
   }
@@ -771,11 +777,37 @@ export async function GET(request: Request): Promise<Response> {
   // Hand off to the frontend callback so client-side auth can finalize the session.
   if (!reason && !error) {
     console.warn('[OAuth Callback] No server-visible tokens/session. Handing off to frontend callback with hash-preserving bridge.');
+    if (nativeCallbackCookie) {
+      const nativeResponse = buildNativeCallbackResponse(
+        nativeCallbackCookie,
+        finalReturnTo,
+        new URLSearchParams({
+          error: 'oauth_failed',
+          message: 'No Directus session was returned after OAuth callback.',
+        })
+      );
+      if (nativeResponse) {
+        return nativeResponse;
+      }
+    }
     return buildClientCallbackBridgeResponse(frontendOrigin, finalReturnTo);
   }
 
   // Failed - redirect to auth page with error  
   console.error('[OAuth Callback] ❌ Failed to obtain tokens from Directus');
+  if (nativeCallbackCookie) {
+    const nativeResponse = buildNativeCallbackResponse(
+      nativeCallbackCookie,
+      finalReturnTo,
+      new URLSearchParams({
+        error: 'oauth_failed',
+        message: `Authentication could not be completed. ${failureReason} Redirecting to login.`,
+      })
+    );
+    if (nativeResponse) {
+      return nativeResponse;
+    }
+  }
   const errorUrl = new URL('/auth', frontendOrigin);
   errorUrl.searchParams.set('error', 'oauth_failed');
   errorUrl.searchParams.set('message', `Authentication could not be completed. ${failureReason} Redirecting to login.`);

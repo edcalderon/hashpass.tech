@@ -1,102 +1,273 @@
 'use client'
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
+
+// Load cap-widget from CDN so Metro never tries to bundle the browser-only package.
+// Uses customElements.whenDefined so callers don't have to guess when it's ready.
+function loadCapWidget(): Promise<void> {
+    if (typeof window === 'undefined') return Promise.reject(new Error('SSR'));
+    if (customElements.get('cap-widget')) return Promise.resolve();
+    const existing = document.querySelector('script[data-cap-widget]');
+    if (existing) return customElements.whenDefined('cap-widget').then(() => undefined);
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = 'https://unpkg.com/@cap.js/widget@0.1.56';
+        script.dataset.capWidget = '';
+        script.addEventListener('load', () =>
+            customElements.whenDefined('cap-widget').then(() => resolve()).catch(reject)
+        );
+        script.addEventListener('error', () => reject(new Error('Failed to load security check script')));
+        document.head.appendChild(script);
+    });
+}
 import { Image } from 'react-native';
 import { useTranslation, getCurrentLocale } from '../i18n/i18n';
 import { useTheme } from '../hooks/useTheme';
 import { apiClient } from '../lib/api-client';
+
 type Mode = "light" | "dark";
 
 interface Props {
     mode: Mode;
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Diverse pool: women, men, different ethnicities, plus a couple brand-style gradient avatars
+const AVATAR_POOL = [
+    // Women
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200&auto=format&fit=crop',
+    // Men
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1463453091185-61582044d556?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200&auto=format&fit=crop',
+    // Brand / abstract (colorful tech-style faces)
+    'https://images.unsplash.com/photo-1561037404-61cd46aa615b?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?q=80&w=200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1654110455429-cf322b40a906?q=80&w=200&auto=format&fit=crop',
+];
+
+function shuffleAndPick<T>(arr: T[], n: number): T[] {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, n);
+}
+
 const Newsletter = ({ mode }: Props) => {
     const { t } = useTranslation('newsletter');
+    const { isDark } = useTheme();
+
     const [email, setEmail] = useState('');
     const [subscribed, setSubscribed] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [subscribers, setSubscribers] = useState(1000);
-    const { isDark } = useTheme();
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const [capError, setCapError] = useState<string | null>(null);
+    const [capRetryKey, setCapRetryKey] = useState(0);
 
-    const validateEmail = (email: string) => {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
-    };
+    // Randomly pick 5 avatars once on mount — stays stable across re-renders
+    const [avatarUrls] = useState(() => shuffleAndPick(AVATAR_POOL, 5));
 
-    const imageUrls = [
-        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-        'https://images.unsplash.com/photo-1654110455429-cf322b40a906?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-        'https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-        'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-        'https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?q=80&w=1780&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    ];
+    // Wave animation: trigger once when avatar group scrolls into view
+    const avatarGroupRef = useRef<HTMLDivElement>(null);
+    const isInView = useInView(avatarGroupRef, { once: true, amount: 0.6 });
 
-    const zIndices = [5, 4, 3, 2, 1];
+    // Container div where we'll imperatively mount cap-widget
+    const capContainerRef = useRef<HTMLDivElement>(null);
+    const capWidgetRef = useRef<HTMLElement | null>(null);
+
+    const isEmailValid = EMAIL_RE.test(email.trim());
+
+    // Mount / unmount cap-widget imperatively when email becomes valid / invalid.
+    // Setting the api-endpoint attribute BEFORE appendChild guarantees connectedCallback
+    // reads it correctly — avoids the "Missing API endpoint" race condition.
+    useEffect(() => {
+        if (!isEmailValid) {
+            if (capWidgetRef.current) {
+                capWidgetRef.current.remove();
+                capWidgetRef.current = null;
+            }
+            setCaptchaToken(null);
+            setCapError(null);
+            return;
+        }
+
+        if (capWidgetRef.current) return;
+
+        let cancelled = false;
+        setCapError(null);
+
+        // Store listeners so the outer cleanup can remove them
+        let onSolve: ((e: Event) => void) | null = null;
+        let onReset: (() => void) | null = null;
+        let onCapError: ((e: Event) => void) | null = null;
+
+        loadCapWidget().then(() => {
+            if (cancelled || capWidgetRef.current || !capContainerRef.current) return;
+
+            try {
+                const locale = getCurrentLocale();
+                // Map app locales to cap's built-in language pack keys.
+                // Korean is not in cap's pack — fall back to explicit i18n attributes.
+                const CAP_LANG_MAP: Record<string, string> = {
+                    es: 'es', fr: 'fr', de: 'de', pt: 'pt',
+                    ru: 'ru', ja: 'ja', ar: 'ar', hi: 'hi',
+                };
+                const KO_I18N: Record<string, string> = {
+                    'initial-state': '사람임을 확인하세요',
+                    'verifying-label': '확인 중...',
+                    'solved-label': '사람입니다',
+                    'error-label': '오류. 다시 시도하세요.',
+                };
+
+                const widget = document.createElement('cap-widget');
+                widget.setAttribute('data-cap-api-endpoint', `${window.location.origin}/api/captcha/`);
+                widget.setAttribute('data-cap-disable-haptics', '');
+                if (CAP_LANG_MAP[locale]) {
+                    widget.setAttribute('data-cap-lang', CAP_LANG_MAP[locale]);
+                } else if (locale === 'ko') {
+                    for (const [key, val] of Object.entries(KO_I18N)) {
+                        widget.setAttribute(`data-cap-i18n-${key}`, val);
+                    }
+                }
+
+                onSolve = (e: Event) => {
+                    const token = (e as CustomEvent<{ token: string }>).detail?.token;
+                    if (token) setCaptchaToken(token);
+                };
+                onReset = () => setCaptchaToken(null);
+                onCapError = (e: Event) => {
+                    const msg = (e as CustomEvent<{ message?: string }>).detail?.message;
+                    console.error('[cap-widget] error event:', msg || e);
+                    setCapError('Security check failed. Please retry.');
+                };
+
+                widget.addEventListener('solve', onSolve);
+                widget.addEventListener('reset', onReset);
+                widget.addEventListener('error', onCapError);
+
+                capWidgetRef.current = widget;
+                capContainerRef.current.appendChild(widget);
+            } catch (err) {
+                if (!cancelled) {
+                    console.error('[cap-widget] mount failed:', err);
+                    setCapError('Security check failed to load.');
+                }
+            }
+        }).catch((err) => {
+            if (!cancelled) {
+                console.error('[cap-widget] import failed:', err);
+                setCapError('Security check could not be loaded.');
+            }
+        });
+
+        return () => {
+            cancelled = true;
+            const w = capWidgetRef.current;
+            if (w) {
+                if (onSolve) w.removeEventListener('solve', onSolve);
+                if (onReset) w.removeEventListener('reset', onReset);
+                if (onCapError) w.removeEventListener('error', onCapError);
+                w.remove();
+                capWidgetRef.current = null;
+            }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isEmailValid, capRetryKey]);
 
     const handleSubscribe = async () => {
         setError('');
 
-        if (!email) {
+        if (!email.trim()) {
             setError('Email is required');
             return;
         }
 
-        if (!validateEmail(email)) {
+        if (!isEmailValid) {
             setError('Please enter a valid email address');
+            return;
+        }
+
+        if (!captchaToken) {
+            setError('Please wait for the security check to complete.');
             return;
         }
 
         setIsLoading(true);
 
+        // Capture and immediately clear the token — it's single-use.
+        // Clearing before the request prevents a second submit reusing the
+        // same (now-consumed) token if the endpoint fails and the user retries.
+        const tokenToSubmit = captchaToken;
+        setCaptchaToken(null);
+
         try {
             const locale = getCurrentLocale();
-            
-            // Use the API client which already points to the .co domain
-            // Subscribe is a global endpoint, not event-specific, so skip the event segment
+
             const response = await apiClient.post('/subscribe', {
                 email,
-                locale
+                locale,
+                captchaToken: tokenToSubmit,
             }, {
                 skipEventSegment: true
             });
 
             if (!response.success) {
-                // Check if the error is "already subscribed" - treat this as a success
                 const errorMessage = response.error || '';
                 if (errorMessage.toLowerCase().includes('already subscribed')) {
-                    // Show success message for already subscribed users
                     setSubscribed(true);
-                    // Don't increment subscriber count since they're already subscribed
                 } else {
-                    // Show error for other cases
                     setError(errorMessage || 'Failed to subscribe. Please try again.');
+                    // Reset captcha if the server says the security check expired
+                    if ((response as any).captchaExpired) {
+                        setCaptchaToken(null);
+                        setCapRetryKey(k => k + 1);
+                    }
                 }
                 return;
             }
 
-            // Success case - new subscription
             setSubscribed(true);
-            setSubscribers(subscribers + 1);
-        } catch (error) {
-            console.error('Subscription error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Failed to subscribe. Please try again.';
-            
-            // Check if error is about already being subscribed
+            setSubscribers(s => s + 1);
+        } catch (err) {
+            console.error('Subscription error:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Failed to subscribe. Please try again.';
             if (errorMessage.toLowerCase().includes('already subscribed')) {
                 setSubscribed(true);
             } else {
                 setError(errorMessage);
+                if (errorMessage.toLowerCase().includes('security check') || errorMessage.toLowerCase().includes('captcha')) {
+                    setCaptchaToken(null);
+                    setCapRetryKey(k => k + 1);
+                }
             }
         } finally {
             setIsLoading(false);
+            // Always reset the captcha widget after a submit so the user gets a
+            // fresh challenge on retry (the old token was consumed by the attempt).
+            setCapRetryKey(k => k + 1);
         }
     };
 
     return (
         <div className='flex justify-center items-center py-8 md:py-20 px-4 w-full'>
-            <div 
+            <div
                 className="w-full max-w-md rounded-xl p-6 overflow-hidden z-50 transition-all duration-300"
                 style={{ backgroundColor: mode === "dark" ? 'transparent' : '#FFFFFF' }}
             >
@@ -119,18 +290,30 @@ const Newsletter = ({ mode }: Props) => {
                                 </p>
                             </div>
 
-                            <div className='flex justify-center items-center mb-6 relative h-12 w-full'>
+                            {/* Avatar group — wave animation triggers once on scroll into view */}
+                            <div
+                                ref={avatarGroupRef}
+                                className='flex justify-center items-center mb-6 relative h-12 w-full'
+                            >
                                 <div className='flex relative'>
-                                    {imageUrls.map((url, index) => (
-                                        <div
+                                    {avatarUrls.map((url, index) => (
+                                        <motion.div
                                             key={index}
-                                            className='relative rounded-full overflow-hidden border-2 border-white dark:border-gray-800 transition-transform hover:scale-110'
+                                            className='relative rounded-full overflow-hidden border-2 border-white dark:border-gray-800'
                                             style={{
                                                 width: 40,
                                                 height: 40,
                                                 marginLeft: index > 0 ? -10 : 0,
-                                                zIndex: zIndices[index]
+                                                zIndex: avatarUrls.length - index,
                                             }}
+                                            // Wave: bounce up then back down, staggered per avatar
+                                            animate={isInView ? { y: [0, -10, 2, 0] } : { y: 0 }}
+                                            transition={{
+                                                delay: index * 0.1,
+                                                duration: 0.5,
+                                                ease: 'easeInOut',
+                                            }}
+                                            whileHover={{ scale: 1.15, y: -4, zIndex: 10 }}
                                         >
                                             <Image
                                                 source={{ uri: url }}
@@ -138,7 +321,7 @@ const Newsletter = ({ mode }: Props) => {
                                                 style={{ width: '100%', height: '100%' }}
                                                 resizeMode='cover'
                                             />
-                                        </div>
+                                        </motion.div>
                                     ))}
                                 </div>
                                 <span className='ml-3 text-sm text-gray-500 dark:text-gray-400'>
@@ -160,7 +343,7 @@ const Newsletter = ({ mode }: Props) => {
                                                 if (error) setError('');
                                             }}
                                             placeholder={t('emailPlaceholder')}
-                                            className='w-full px-4 py-3 pl-10 text-sm sm:text-base rounded-full  bg-transparent outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-white dark:text-white text-gray-600 dark:text-gray-300'
+                                            className='w-full px-4 py-3 pl-10 text-sm sm:text-base rounded-full bg-transparent outline-none transition-all duration-200 placeholder-gray-400 dark:placeholder-white dark:text-white text-gray-600 dark:text-gray-300'
                                             disabled={isLoading}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
@@ -179,13 +362,40 @@ const Newsletter = ({ mode }: Props) => {
                                         </p>
                                     )}
                                 </div>
+
+                                {/* Cap proof-of-work widget — mounts imperatively when email is valid */}
+                                {isEmailValid && (
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div ref={capContainerRef} className="flex justify-center" />
+                                        {capError && (
+                                            <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                </svg>
+                                                <span>{capError}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCapError(null);
+                                                        setCaptchaToken(null);
+                                                        setCapRetryKey(k => k + 1);
+                                                    }}
+                                                    className="underline font-medium hover:no-underline"
+                                                >
+                                                    Retry
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <button
                                     type="button"
                                     onClick={(e) => {
                                         e.preventDefault();
                                         handleSubscribe();
                                     }}
-                                    disabled={isLoading}
+                                    disabled={isLoading || (isEmailValid && !captchaToken)}
                                     className={`w-full rounded-full font-medium py-3 px-6 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:hover:shadow-none ${isDark
                                             ? 'bg-cyan-700 hover:bg-cyan-700 text-white hover:shadow-cyan-900/50'
                                             : 'bg-red-700 hover:bg-red-600 text-white hover:shadow-red-500/20'
@@ -200,9 +410,7 @@ const Newsletter = ({ mode }: Props) => {
                                             <span>{t('processing')}</span>
                                         </>
                                     ) : (
-                                        <>
-                                            <span>{t('subscribe')}</span>
-                                        </>
+                                        <span>{t('subscribe')}</span>
                                     )}
                                 </button>
                             </div>

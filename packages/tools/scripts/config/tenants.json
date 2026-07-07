@@ -24,8 +24,8 @@
     "lambda": {
       "region": "us-east-1",
       "functions": {
-        "development": "hashpass-api-dev",
-        "production": "hashpass-api-prod"
+        "development": "hashpass-dev-expo-router-api",
+        "production": "hashpass-prod-expo-router-api"
       }
     },
     "headersFile": "packages/infra/terraform/stacks/aws/custom-headers.blockchainsummit.yml"

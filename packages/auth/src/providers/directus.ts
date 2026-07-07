@@ -303,11 +303,11 @@ export class DirectusAuthProvider implements IAuthProvider {
         // Return pending state since this is a redirect
         return { pending: true };
       } else {
-        // Native: open OAuth through the API relay (/api/auth/oauth/login) so it uses
-        // the direct Google path (GOOGLE_CLIENT_ID) without needing Directus to have
-        // Google OAuth configured. We use the same apiBaseUrl as the web path so the
-        // request hits the Lambda at api.hashpass.tech — NOT the Amplify static host at
-        // hashpass.tech, which serves index.html for all unknown paths.
+        // Native: open OAuth through the API relay (/api/auth/oauth/login) so the
+        // backend owns the provider redirect and the callback can hand the result back
+        // to the app via the native scheme. We use the same apiBaseUrl as the web path
+        // so the request hits the Lambda at api.hashpass.tech — NOT the Amplify static
+        // host at hashpass.tech, which serves index.html for all unknown paths.
         const apiBaseUrl = this.resolveOAuthApiBaseUrl(); // e.g. https://api.hashpass.tech/api
         const nativeCallback = `hashpass://auth/callback`;
         const oauthUrl =
@@ -362,6 +362,8 @@ export class DirectusAuthProvider implements IAuthProvider {
         user_id: params.user_id || urlParams.get('user_id') || hashParams.get('user_id'),
         email: params.email || urlParams.get('email') || hashParams.get('email'),
         reason: params.reason || urlParams.get('reason'),
+        error: params.error || urlParams.get('error'),
+        message: params.message || urlParams.get('message'),
       };
 
       // Log only string representations to avoid native Hermes exceptions with objects
@@ -374,6 +376,12 @@ export class DirectusAuthProvider implements IAuthProvider {
       if (authData.reason) {
         console.error('❌ Directus OAuth callback returned explicit failure reason:', authData.reason);
         return { error: this.mapDirectusOAuthReason(String(authData.reason)) };
+      }
+
+      const callbackError = authData.message || authData.reason || authData.error;
+      if (callbackError && !authData.access_token && !authData.token && !authData.session_token) {
+        console.error('❌ Directus OAuth callback returned an error response:', callbackError);
+        return { error: String(callbackError) };
       }
 
       // Try using access token if available (either access_token or token)

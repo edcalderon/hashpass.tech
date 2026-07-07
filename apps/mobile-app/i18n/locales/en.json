@@ -411,10 +411,10 @@
       "subtitle": "Complete guides and troubleshooting",
       "needHelp": "Need more help?",
       "contactSupport": "Contact Support",
-      "viewStorybook": "View Full Interactive Documentation",
+      "viewStorybook": "See Full Documentation",
       "interactiveDocs": {
-        "title": "Interactive Documentation",
-        "description": "Explore step-by-step guides with interactive examples"
+        "title": "Full Documentation",
+        "description": "Open the full documentation site for guides, references, and examples"
       },
       "gettingStarted": {
         "title": "Getting Started",

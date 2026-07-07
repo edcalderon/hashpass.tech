@@ -12,8 +12,8 @@
 ### API auth routes
 
 - `app/api/auth/oauth/login+api.ts` -> `/api/auth/oauth/login`
-- `app/api/auth/oauth/google+api.ts` -> `/api/auth/oauth/google`
-- `app/api/auth/oauth/callback+api.ts` -> legacy compatibility callback used by older flows and tests
+- `app/api/auth/oauth/callback+api.ts` -> `/api/auth/oauth/callback`
+- `app/api/auth/oauth/google+api.ts` -> legacy compatibility callback for older Google links
 
 ## Current Production Flow
 
@@ -22,13 +22,14 @@ Production Google sign-in starts at `/api/auth/oauth/login?provider=google`.
 The API:
 
 1. Validates the `returnTo` path.
-2. Stores OAuth state and return-target cookies.
-3. Redirects to Google with `redirect_uri=https://api.hashpass.tech/api/auth/oauth/google`.
-4. Exchanges the Google code server-side.
-5. Logs into Directus as the configured admin user.
-6. Returns the Directus user tokens to the frontend in the URL fragment.
+2. Stores return-target, frontend-origin, and optional native callback cookies.
+3. Redirects to Directus with `redirect=https://api.hashpass.tech/api/auth/oauth/callback&mode=session`.
+4. Lets Directus complete the Google handshake and return to `/api/auth/oauth/callback`.
+5. Resolves the Directus response and returns either:
+   - a web fragment redirect with the Directus tokens, or
+   - a native `hashpass://auth/callback?...` redirect for the mobile app.
 
-The frontend then reads the fragment and hydrates the active session.
+The frontend or native app then reads the returned tokens and hydrates the active session.
 
 ## Why `/auth/callback` Still Exists
 
@@ -37,6 +38,7 @@ The frontend callback route is still useful because it:
 - normalizes token delivery on the client
 - preserves compatibility with older local flows
 - handles trailing-slash redirects from static hosting
+- returns native app redirects when `native_callback` is present
 
 ## Multi-Origin Support
 

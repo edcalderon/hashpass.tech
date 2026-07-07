@@ -1,8 +1,22 @@
 import nodemailer from 'nodemailer';
+import { config as loadDotenv } from 'dotenv';
+import * as fsDotenv from 'fs';
+import * as pathDotenv from 'path';
+import { renderTemplate, getSubject } from '@hashpass/emails';
 import emails from '../i18n/locales/emails.json';
 import { getEmailAssetUrl } from './s3-service';
 import { supabaseServer } from './supabase-server';
 import type { HealthCheck } from './server/system-health';
+
+// Load .env.local before reading NODEMAILER_* vars — Metro/Expo may not inject
+// non-EXPO_PUBLIC_ vars at bundle time, so we need runtime dotenv loading.
+if (typeof process !== 'undefined' && typeof window === 'undefined') {
+  const cwd = process.cwd();
+  for (const candidate of ['.env.local', '.env', '../../.env.local', '../../.env']) {
+    const p = pathDotenv.resolve(cwd, candidate);
+    if (fsDotenv.existsSync(p)) loadDotenv({ path: p, override: false });
+  }
+}
 
 // Default to English if locale is not provided or not supported
 const DEFAULT_LOCALE = 'en';
@@ -86,6 +100,7 @@ if (missingVars.length > 0) {
 }
 
 const emailEnabled = missingVars.length === 0;
+console.log('[email] enabled:', emailEnabled, missingVars.length ? `(missing: ${missingVars.join(', ')})` : '');
 
 const smtpHost = process.env.NODEMAILER_HOST || '';
 const isBrevo = smtpHost.includes('brevo.com') || smtpHost.includes('sendinblue.com');
@@ -385,7 +400,8 @@ export async function sendWelcomeEmailToNewUser(
 
 export async function sendSubscriptionConfirmation(
   email: string,
-  locale: string = DEFAULT_LOCALE
+  locale: string = DEFAULT_LOCALE,
+  unsubscribeUrl?: string
 ): Promise<{ success: boolean; error?: string; messageId?: string }> {
   if (!emailEnabled) {
     console.warn('Email functionality is disabled due to missing configuration');
@@ -403,37 +419,19 @@ export async function sendSubscriptionConfirmation(
   }
 
   try {
-    const content = getEmailContent('subscriptionConfirmation', locale);
-    const year = new Date().getFullYear();
-    
+    const subject = getSubject('newsletter-welcome', locale);
+    const html = renderTemplate('newsletter-welcome', locale, {
+      appUrl: 'https://hashpass.tech',
+      supportEmail: process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech',
+      unsubscribeUrl,
+    });
+
     const mailOptions = {
       from: `HashPass <${process.env.NODEMAILER_FROM}>`,
       to: email,
-      subject: content.subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #4f46e5;">${content.html.header}</h2>
-          <p>${content.html.greeting}</p>
-          <p>${content.html.body}</p>
-          <p>${content.html.footer}</p>
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-          <p style="font-size: 12px; color: #6b7280;">
-            ${content.html.copyright.replace('{year}', year.toString())}<br>
-            <a href="${content.html.website}" style="color: #4f46e5; text-decoration: none;">${content.html.website.replace('https://', '')}</a>
-          </p>
-        </div>
-      `,
-      text: `${content.html.header}
-
-${content.html.greeting}
-
-${content.html.body}
-
-${content.html.footer}
-
----
-${content.html.copyright.replace('{year}', year.toString())}
-${content.html.website}`,
+      subject,
+      html,
+      text: `Welcome to the HashPass Newsletter!\n\nhashpass.tech`,
     };
 
     if (!transporter) {
@@ -748,125 +746,26 @@ export async function sendWelcomeEmail(
       }
     }
     
-    const fs = require('fs');
-    const path = require('path');
-    
     // Validate and normalize locale
     const normalizedLocale = SUPPORTED_LOCALES.includes(locale) ? locale : DEFAULT_LOCALE;
     if (normalizedLocale !== locale) {
       console.warn(`[sendWelcomeEmail] Invalid locale '${locale}', using '${normalizedLocale}' instead`);
     }
-    
+
     console.log(`[sendWelcomeEmail] Preparing welcome email for ${email} with locale: ${normalizedLocale}`);
     
-    // Get translations for the locale
-    const translations = getEmailContent('welcome', normalizedLocale);
-    const subject = translations.subject;
-    
-    let htmlContent: string;
-    try {
-      // Load unified template
-      const templatePath = path.join(process.cwd(), 'emails', 'templates', 'welcome.html');
-      htmlContent = fs.readFileSync(templatePath, 'utf-8');
-      
-      // Helper function to convert image to base64 data URI
-      const imageToBase64 = (filePath: string, mimeType: string): string | null => {
-        try {
-          if (fs.existsSync(filePath)) {
-            const imageBuffer = fs.readFileSync(filePath);
-            const base64 = imageBuffer.toString('base64');
-            return `data:${mimeType};base64,${base64}`;
-          }
-        } catch (error) {
-          console.warn(`Could not load image from ${filePath}:`, error);
-        }
-        return null;
-      };
-      
-      // Get logo URLs (base64 preferred for email compatibility, S3 as fallback)
-      let bslLogoUrl: string;
-      let hashpassLogoUrl: string;
-      
-      // Try base64 first for better email client compatibility
-      const bslLogoPath = path.join(process.cwd(), 'emails', 'assets', 'images', 'BSL.svg');
-      const hashpassLogoPath = path.join(process.cwd(), 'emails', 'assets', 'images', 'logo-full-hashpass-white.png');
-      
-      const bslLogoBase64 = imageToBase64(bslLogoPath, 'image/svg+xml');
-      const hashpassLogoBase64 = imageToBase64(hashpassLogoPath, 'image/png');
-      
-      // Use base64 if available, otherwise fallback to S3 URL
-      bslLogoUrl = bslLogoBase64 || getEmailAssetUrl('images/BSL.svg');
-      hashpassLogoUrl = hashpassLogoBase64 || getEmailAssetUrl('images/logo-full-hashpass-white.png');
-      
-      // Log which method is being used
-      if (bslLogoBase64) {
-        console.log('✅ Using base64 for BSL logo (better email compatibility)');
-      } else {
-        console.log('⚠️ Using S3 URL for BSL logo (fallback):', bslLogoUrl);
-      }
-      
-      // Video URLs - Mux player, thumbnail, GIF preview, and poster (kept for video link)
-      // Select video ID based on normalized locale: Spanish uses different video, others use default
-      const muxVideoId = normalizedLocale === 'es' 
-        ? 'cHHvJcBJEdt8YnWTbo7cFUxNYOMrwIt02EB7vL02ixmd4'  // Spanish version
-        : 'iesctpn00OXTQrYmY02J8JvjNmbNoDDKjzm7qr76lCKEI'; // Default for other languages
-      
-      console.log(`[sendWelcomeEmail] Using video ID ${muxVideoId} for locale ${normalizedLocale}`);
-      
-      // Generate GIF from Mux video (animated preview of first 3 seconds)
-      const videoGifUrl = `https://image.mux.com/${muxVideoId}/animated.gif?width=600&fps=15&start=0&end=3`;
-      const videoThumbnailUrl = `https://image.mux.com/${muxVideoId}/thumbnail.png?width=600&height=1067&time=11`;
-      const videoPosterUrl = `https://image.mux.com/${muxVideoId}/thumbnail.jpg?width=600&height=1067&time=11`;
-      
-      // Add poster image to Mux player URL
-      const videoTitle = normalizedLocale === 'es' 
-        ? 'BSL_2025_Bienvenido_ES'
-        : 'BSL_2025_Welcome';
-      const videoUrl = `https://player.mux.com/${muxVideoId}?metadata-video-title=${encodeURIComponent(videoTitle)}&video-title=${encodeURIComponent(videoTitle)}&poster=${encodeURIComponent(videoPosterUrl)}`;
-      
-      // Prepare assets object
-      const assets = {
-        bslLogoUrl,
-        hashpassLogoUrl,
-        videoUrl,
-        videoThumbnailUrl,
-        videoGifUrl, // Use Mux animated GIF generated from the appropriate video based on locale
-        videoPosterUrl,
-        appUrl: 'https://bsl.hashpass.tech'
-      };
-      
-      // Replace placeholders with translations and assets (use normalized locale)
-      htmlContent = replaceTemplatePlaceholders(htmlContent, translations, assets, normalizedLocale);
-      
-      // Debug: Check if any placeholders remain (only in development)
-      if (process.env.NODE_ENV !== 'production') {
-        const remainingPlaceholders = htmlContent.match(/\[([A-Z_]+)\]/g);
-        if (remainingPlaceholders && remainingPlaceholders.length > 0) {
-          const uniquePlaceholders = [...new Set(remainingPlaceholders)];
-          console.warn('⚠️ Unreplaced placeholders found:', uniquePlaceholders.slice(0, 20));
-          console.warn('Available translation keys:', Object.keys(translations.html).slice(0, 20));
-        } else {
-          console.log('✅ All placeholders replaced successfully');
-        }
-      }
-      
-    } catch (error) {
-      // Fallback to inline HTML if file doesn't exist
-      console.warn('Could not load welcome email template file, using fallback');
-      htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #667eea;">${translations.html.title}</h2>
-          <p>${translations.html.subtitle}</p>
-        </div>
-      `;
-    }
+    const subject = getSubject('app-welcome', normalizedLocale);
+    const htmlContent = renderTemplate('app-welcome', normalizedLocale, {
+      appUrl: 'https://hashpass.tech',
+      supportEmail: process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech',
+    });
 
     const mailOptions = {
       from: `HashPass <${process.env.NODEMAILER_FROM}>`,
       to: email,
-      subject: subject,
+      subject,
       html: htmlContent,
-      text: `${translations.html.title}\n\n${translations.html.subtitle}\n\n${translations.html.ctaButton}`,
+      text: `Welcome to HashPass!\n\nhashpass.tech`,
     };
 
     const info = await transporter.sendMail(mailOptions);

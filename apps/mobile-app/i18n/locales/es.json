@@ -411,10 +411,10 @@
       "subtitle": "Guías completas y solución de problemas",
       "needHelp": "¿Necesitas más ayuda?",
       "contactSupport": "Contactar Soporte",
-      "viewStorybook": "Ver Documentación Interactiva Completa",
+      "viewStorybook": "Ver Documentación Completa",
       "interactiveDocs": {
-        "title": "Documentación Interactiva",
-        "description": "Explora guías paso a paso con ejemplos interactivos"
+        "title": "Documentación Completa",
+        "description": "Abre el sitio completo de documentación con guías, referencias y ejemplos"
       },
       "gettingStarted": {
         "title": "Comenzar",

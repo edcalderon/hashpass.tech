@@ -1,7 +1,10 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { sendSubscriptionConfirmation } from '@/lib/email';
+import cap from '@/lib/cap-instance';
+import { generateUnsubscribeToken } from '@/lib/unsubscribe-token';
 
 export async function POST(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   try {
     // Ensure the request has a JSON content-type
     if (request.headers.get('content-type') !== 'application/json') {
@@ -16,7 +19,31 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const email = body?.email?.trim();
-    const locale = body?.locale || 'en'; // Default to English if locale not provided
+    const locale = body?.locale || 'en';
+    const captchaToken: string | undefined = body?.captchaToken;
+
+    // Verify captcha token (required)
+    if (!captchaToken) {
+      return new Response(
+        JSON.stringify({ error: 'Captcha verification required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    let captchaResult: { success: boolean };
+    try {
+      captchaResult = await cap.validateToken(captchaToken);
+      console.log('[subscribe] captcha validateToken result:', captchaResult);
+    } catch (err: any) {
+      console.error('[subscribe] captcha validateToken threw:', err?.message || err);
+      captchaResult = { success: false };
+    }
+    if (!captchaResult.success) {
+      return new Response(
+        JSON.stringify({ error: 'Security check expired. Please solve the captcha again.', captchaExpired: true }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!email) {
       return new Response(
@@ -62,10 +89,11 @@ export async function POST(request: Request) {
 
     const { data, error: insertError } = await supabase
       .from('newsletter_subscribers')
-      .insert([{ 
-        email, 
-        subscribed_at: new Date().toISOString(), 
-        created_at: new Date().toISOString() 
+      .insert([{
+        email,
+        subscribed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        email_sent: false,
       }])
       .select();
 
@@ -74,57 +102,52 @@ export async function POST(request: Request) {
       throw new Error('Failed to save subscription');
     }
 
-    // Send confirmation email
-    let emailResult;
+    const subscriberId = data?.[0]?.id;
+
+    // Build a signed unsubscribe URL so the recipient can opt out with one click
+    const unsubscribeToken = generateUnsubscribeToken(email);
+    const origin = new URL(request.url).origin;
+    const unsubscribeUrl = `${origin}/api/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+
+    // Send confirmation email and update email_sent flag
+    let emailSent = false;
     try {
-      emailResult = await sendSubscriptionConfirmation(email, locale);
-      
+      const emailResult = await sendSubscriptionConfirmation(email, locale, unsubscribeUrl);
+      emailSent = emailResult.success;
       if (!emailResult.success) {
-        console.warn('Email notification warning:', emailResult.error);
-        // Continue with success response but indicate email wasn't sent
-        return new Response(
-          JSON.stringify({ 
-            message: 'Successfully subscribed! However, we encountered an issue sending your confirmation email.',
-            warning: emailResult.error,
-            subscription: data?.[0] || null,
-            emailSent: false
-          }),
-          { 
-            status: 201,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
+        console.warn('[subscribe] confirmation email failed:', emailResult.error);
+      } else {
+        console.log('[subscribe] confirmation email sent to', email);
       }
-      
-      // Success case with email sent
-      return new Response(
-        JSON.stringify({ 
-          message: 'Successfully subscribed! Please check your email for confirmation.', 
-          subscription: data?.[0] || null,
-          emailSent: true
-        }),
-        { 
-          status: 201,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-      
     } catch (emailError) {
-      console.error('Email sending error:', emailError);
-      // Still return success since subscription was saved, but indicate email failed
-      return new Response(
-        JSON.stringify({ 
-          message: 'Successfully subscribed! However, we encountered an issue sending your confirmation email.',
-          warning: 'Could not send confirmation email',
-          subscription: data?.[0] || null,
-          emailSent: false
-        }),
-        { 
-          status: 201,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      console.error('[subscribe] email threw:', emailError);
     }
+
+    // Record whether the email was actually delivered
+    // (requires email_sent column: ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS email_sent boolean NOT NULL DEFAULT false)
+    if (subscriberId) {
+      await supabase
+        .from('newsletter_subscribers')
+        .update({ email_sent: emailSent })
+        .eq('id', subscriberId)
+        .then(({ error }) => {
+          if (error) console.warn('[subscribe] email_sent update failed:', error.message);
+        });
+    }
+
+    return new Response(
+      JSON.stringify({
+        message: emailSent
+          ? 'Successfully subscribed! Please check your email for confirmation.'
+          : 'Successfully subscribed! (confirmation email could not be sent)',
+        subscription: data?.[0] || null,
+        emailSent,
+      }),
+      {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
     // Log stack trace for server-side debugging, don't expose to client
     if (error instanceof Error && error.stack) {

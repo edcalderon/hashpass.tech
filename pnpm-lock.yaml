@@ -467,6 +467,9 @@ importers:
       '@babel/plugin-transform-react-jsx':
         specifier: ^7.28.6
         version: 7.28.6(@babel/core@7.29.0)
+      '@cap.js/server':
+        specifier: ^4.0.5
+        version: 4.0.5
       '@emotion/is-prop-valid':
         specifier: ^1.4.0
         version: 1.4.0
@@ -485,6 +488,9 @@ importers:
       '@hashpass/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@hashpass/emails':
+        specifier: workspace:*
+        version: link:../../packages/emails
       '@hashpass/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -1050,6 +1056,12 @@ importers:
     devDependencies:
       typescript:
         specifier: ~5.8.3
+        version: 5.8.3
+
+  packages/emails:
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
         version: 5.8.3
 
   packages/i18n:
@@ -2281,6 +2293,9 @@ packages:
 
   '@better-fetch/fetch@1.1.21':
     resolution: {integrity: sha512-/ImESw0sskqlVR94jB+5+Pxjf+xBwDZF/N5+y2/q4EqD7IARUTSpPfIo8uf39SYpCxyOCtbyYpUrZ3F/k0zT4A==}
+
+  '@cap.js/server@4.0.5':
+    resolution: {integrity: sha512-S902YIyGyiriNaexfqTzMy5ixxSb3/jYSJwr2gAY9d7XXoYftcifgij/11pjuiU72Ogm6XKZOggDB2DtjRMyww==}
 
   '@changesets/apply-release-plan@7.0.14':
     resolution: {integrity: sha512-ddBvf9PHdy2YY0OUiEl3TV78mH9sckndJR14QAt87KLEbIov81XO0q0QAmvooBxXlqRRP8I9B7XOzZwQG7JkWA==}
@@ -17074,6 +17089,8 @@ snapshots:
       '@noble/hashes': 2.2.0
 
   '@better-fetch/fetch@1.1.21': {}
+
+  '@cap.js/server@4.0.5': {}
 
   '@changesets/apply-release-plan@7.0.14':
     dependencies:

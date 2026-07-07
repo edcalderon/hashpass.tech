@@ -78,8 +78,8 @@ This covers:
 
 Every server-side auth route calls `syncPublicUserRegistry(request, input)` from `lib/auth/public-user-registry.ts` after a successful authentication. This covers:
 - `POST /api/auth/otp/verify` — OTP verification
-- `GET /api/auth/oauth/google` — Directus Google OAuth callback
-- `POST /api/auth/oauth/callback` — legacy OAuth callback
+- `GET /api/auth/oauth/callback` — primary OAuth callback and sync point
+- `GET /api/auth/oauth/google` — legacy compatibility callback for older links
 - `POST /api/auth/wallet/ethereum` — Ethereum wallet auth
 - `POST /api/auth/wallet/solana` — Solana wallet auth
 - Better Auth Google callback (`lib/server/better-auth.ts` `databaseHooks.user.*`)
@@ -157,8 +157,8 @@ Because every user is already in `public.user` with `provider_ids` tracking all 
 | `apps/mobile-app/lib/auth/public-user-registry.ts` | `syncPublicUserRegistry()` — TypeScript API |
 | `apps/mobile-app/lib/server/better-auth.ts` | Syncs Better Auth users via `databaseHooks`; uses `modelName: 'ba_users'` |
 | `apps/mobile-app/app/api/auth/otp/verify+api.ts` | Calls sync after OTP auth |
-| `apps/mobile-app/app/api/auth/oauth/google+api.ts` | Calls sync after Google OAuth |
 | `apps/mobile-app/app/api/auth/oauth/callback+api.ts` | Calls sync after OAuth callback |
+| `apps/mobile-app/app/api/auth/oauth/google+api.ts` | Legacy compatibility route for older Google OAuth callbacks |
 | `apps/mobile-app/app/api/auth/delete-account+api.ts` | Deletes from `public.user` on account deletion |
 
 ## Applying the Migrations

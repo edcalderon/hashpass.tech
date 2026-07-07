@@ -1,42 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
-import { config as loadDotenv } from 'dotenv';
-import * as fs from 'fs';
-import * as path from 'path';
 import {
   hostnameFromRequest,
   resolveServerSupabaseConfig,
   type ServerSupabaseConfig,
 } from '../config/supabase-profiles';
+import { loadServerEnvFiles } from './server/load-server-env';
 
 // This client is specifically for server-side operations
 // Only use this in API routes/server-side code
 // DO NOT import this in client-side components - use lib/supabase.ts instead
-
-let envLoaded = false;
-
-function loadServerEnvFiles() {
-  if (envLoaded || typeof process === 'undefined' || typeof window !== 'undefined') return;
-
-  const cwd = process.cwd();
-  const candidates = [
-    path.resolve(cwd, '.env.local'),
-    path.resolve(cwd, '.env'),
-    path.resolve(cwd, '..', '.env.local'),
-    path.resolve(cwd, '..', '.env'),
-    path.resolve(cwd, '..', '..', '.env.local'),
-    path.resolve(cwd, '..', '..', '.env'),
-    path.resolve(cwd, '..', '..', '..', '.env.local'),
-    path.resolve(cwd, '..', '..', '..', '.env'),
-  ];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      loadDotenv({ path: candidate, override: false, quiet: true });
-    }
-  }
-
-  envLoaded = true;
-}
 
 export function getSupabaseServerEnv(input?: Request | { hostname?: string; profileId?: string }): ServerSupabaseConfig & {
   selectedProfile: string;

@@ -1,6 +1,6 @@
 # Directus OAuth Authentication Edge Cases & Pitfalls
 
-> Current production Google sign-in uses the API-owned OAuth bridge documented in [../../docs/AUTH_FLOW.md](../../docs/AUTH_FLOW.md). This document keeps the Directus-specific edge cases that still matter when the bridge provisions users in Directus.
+> Current production Google sign-in uses the API-owned Directus OAuth bridge documented in [../../docs/AUTH_FLOW.md](../../docs/AUTH_FLOW.md). This document keeps the Directus-specific edge cases that still matter when the bridge provisions users in Directus.
 
 This document outlines common integration edge cases, permission misconfigurations, and silent failures when integrating Directus user provisioning with modern frontend applications (like Expo Web/React Native). These details were discovered during staging deployments.
 
@@ -25,15 +25,15 @@ The default SSO/Auth role MUST be granted Read/Update permissions on `directus_u
 
 *Note: The `@hashpass/auth` library has been hardened to specifically trap `403 FORBIDDEN` errors during session lookup and explicitly broadcast a permissions-failure message rather than a generic 401.*
 
-## 2. Cross-Domain Cookie Loss (Redirect URI Mismatch)
+## 2. Cross-Domain Cookie Loss (Legacy Redirect URI Mismatch)
 
 ### The Issue
 Directus traditionally relies on `SameSite=Lax` or `Strict` cookies to establish OAuth sessions. If the frontend app sits on a completely different domain (e.g., `blockchainsummit-dev.hashpass.lat` vs `sso-dev.hashpass.co`), the browser blocks Directus from writing the `refresh_token` session cookie during the OAuth cross-site 302 redirect callback.
 
 ### The Fix
-To bypass the cross-domain limitation, we utilize a serverless `login+api.ts` proxy (AWS Lambda) that initiates Google OAuth, handles the callback server-side, provisions the Directus user, and then redirects back to the frontend with the `access_token` securely appended as a URL `#hash` parameter. The frontend captures this hash and initializes the in-memory session.
+The current production path uses the serverless `login+api.ts` proxy to redirect into Directus, which then completes Google OAuth and returns to `/api/auth/oauth/callback`. The callback route finalizes the session and redirects back to the frontend or the native app.
 
-**Pitfall:** This custom redirect URI (`https://api.hashpass.tech/api/auth/oauth/google` in production, plus the equivalent dev URI) MUST be explicitly registered inside the Google Cloud Console under the "Authorized redirect URIs". If it isn't, Google will throw a `400: redirect_uri_mismatch` error immediately upon clicking "Sign in with Google".
+**Legacy pitfall:** older links that still hit `https://api.hashpass.tech/api/auth/oauth/google` depend on the old Google callback handler and should be treated as compatibility-only, not the primary flow.
 
 ## 3. Expo Router Race Conditions (False Redirect Loops)
 

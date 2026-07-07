@@ -1,6 +1,7 @@
 import { ExpoResponse } from 'expo-router/server';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 import { fetchDirectus } from '../../../../lib/auth/oauth/directus-fetch';
+import { resolveFrontendOrigin } from '../../../../lib/auth/oauth/frontend-origin';
 import {
   resolveGoogleOAuthClientId,
   resolveGoogleOAuthClientSecret,
@@ -21,26 +22,9 @@ const DEFAULT_FRONTEND_ORIGIN =
   process.env.EXPO_PUBLIC_FRONTEND_URL ||
   process.env.FRONTEND_URL ||
   '';
+const OAUTH_FRONTEND_ORIGIN_COOKIE_NAME = 'oauth_frontend_origin';
 const OAUTH_STATE_COOKIE_NAME = 'oauth_google_state';
 const OAUTH_NATIVE_CALLBACK_COOKIE_NAME = 'oauth_native_callback';
-const TRUSTED_FRONTEND_HOSTS = new Set([
-  'localhost',
-  '127.0.0.1',
-  'hashpass.tech',
-  'hashpass.co',
-  'hashpass.lat',
-]);
-const TRUSTED_FRONTEND_SUFFIXES = [
-  '.hashpass.tech',
-  '.hashpass.co',
-  '.hashpass.lat',
-];
-const LOCAL_ORIGINS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
-
-const isLocalDevRuntime = (): boolean => {
-  const env = String(process.env.EXPO_PUBLIC_ENV || process.env.NODE_ENV || '').toLowerCase();
-  return ['local', 'development', 'dev', 'staging'].includes(env);
-};
 
 type OAuthReturnCookiePayload = {
   returnTo?: string;
@@ -105,54 +89,6 @@ const parseOAuthReturnCookie = (rawCookieValue: string | null): OAuthReturnCooki
   }
 
   return { returnTo: rawCookieValue };
-};
-
-const extractOrigin = (rawValue: string | null): string | null => {
-  if (!rawValue) return null;
-
-  try {
-    const parsed = new URL(rawValue);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return null;
-    }
-    return parsed.origin;
-  } catch {
-    return null;
-  }
-};
-
-const isTrustedFrontendOrigin = (origin: string): boolean => {
-  try {
-    const hostname = new URL(origin).hostname.toLowerCase();
-    if (isLocalDevRuntime()) {
-      return LOCAL_ORIGINS.has(hostname) || hostname.endsWith('.local');
-    }
-
-    if (TRUSTED_FRONTEND_HOSTS.has(hostname)) return true;
-    return TRUSTED_FRONTEND_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
-  } catch {
-    return false;
-  }
-};
-
-const resolveFrontendOrigin = (
-  request: Request,
-  returnCookieFrontendOrigin: string | undefined,
-  fallbackOrigin: string
-): string => {
-  const cookiePayloadOrigin = extractOrigin(returnCookieFrontendOrigin || null);
-  if (cookiePayloadOrigin && isTrustedFrontendOrigin(cookiePayloadOrigin)) return cookiePayloadOrigin;
-
-  const configuredOrigin = extractOrigin(DEFAULT_FRONTEND_ORIGIN);
-  if (configuredOrigin && isTrustedFrontendOrigin(configuredOrigin)) return configuredOrigin;
-
-  const refererOrigin = extractOrigin(request.headers.get('referer'));
-  if (refererOrigin && isTrustedFrontendOrigin(refererOrigin)) return refererOrigin;
-
-  const originHeader = extractOrigin(request.headers.get('origin'));
-  if (originHeader && isTrustedFrontendOrigin(originHeader)) return originHeader;
-
-  return fallbackOrigin;
 };
 
 const createRandomPassword = (): string => {
@@ -224,7 +160,17 @@ export async function GET(request: Request): Promise<Response> {
   const cookies = request.headers.get('Cookie') || request.headers.get('cookie') || '';
   const returnCookie = parseOAuthReturnCookie(getCookieValue(cookies, 'oauth_return_to'));
   const returnTo = normalizeReturnToPath(returnCookie.returnTo);
-  const frontendOrigin = resolveFrontendOrigin(request, returnCookie.frontendOrigin, url.origin);
+  const frontendOrigin = resolveFrontendOrigin({
+    request,
+    candidates: [
+      returnCookie.frontendOrigin,
+      getCookieValue(cookies, OAUTH_FRONTEND_ORIGIN_COOKIE_NAME),
+      DEFAULT_FRONTEND_ORIGIN,
+      request.headers.get('referer'),
+      request.headers.get('origin'),
+    ],
+    fallbackOrigin: url.origin,
+  });
   const expectedState = getCookieValue(cookies, OAUTH_STATE_COOKIE_NAME);
 
   // Extract native_callback from the state parameter first — this is the reliable path
@@ -503,11 +449,9 @@ export async function GET(request: Request): Promise<Response> {
             // which Chrome Custom Tabs handles as a proper Android intent, triggering
             // WebBrowser.openAuthSessionAsync to close and return the URL to the app.
             const webOrigin =
-              (isLocalDevRuntime()
-                ? 'http://localhost:8081'
-                : DEFAULT_FRONTEND_ORIGIN) ||
-              (isTrustedFrontendOrigin(frontendOrigin) ? frontendOrigin : '') ||
-              (isLocalDevRuntime() ? 'http://localhost:8081' : 'https://hashpass.tech');
+              frontendOrigin ||
+              DEFAULT_FRONTEND_ORIGIN ||
+              'https://hashpass.tech';
             const webCallbackUrl = new URL('/auth/callback', webOrigin);
             webCallbackUrl.searchParams.set('access_token', tokens.access_token);
             if (tokens.refresh_token) webCallbackUrl.searchParams.set('refresh_token', tokens.refresh_token);

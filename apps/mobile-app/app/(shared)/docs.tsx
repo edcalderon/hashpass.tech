@@ -7,6 +7,25 @@ import { useTheme } from '../../hooks/useTheme';
 import { t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
 
+const DEFAULT_PROD_DOCS_URL = 'https://hashpass.tech/docs';
+const DEFAULT_LOCAL_DOCS_URL = 'http://localhost:3101/';
+
+function getDocumentationUrl() {
+  if (typeof window === 'undefined') {
+    return DEFAULT_PROD_DOCS_URL;
+  }
+
+  const explicitUrl = process.env.EXPO_PUBLIC_DOCS_URL?.trim();
+  if (explicitUrl) {
+    return explicitUrl;
+  }
+
+  const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+  return isLocalHost
+    ? (process.env.EXPO_PUBLIC_DOCS_LOCAL_URL?.trim() || DEFAULT_LOCAL_DOCS_URL)
+    : DEFAULT_PROD_DOCS_URL;
+}
+
 export default function DocsScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
@@ -130,38 +149,28 @@ export default function DocsScreen() {
           </View>
         ))}
 
-        {/* Interactive Documentation Section */}
+        {/* Full Documentation Section */}
         {Platform.OS === 'web' && (
           <View style={styles.documentationSection}>
             <Text style={styles.documentationTitle} selectable={false}>
-              {t({ id: 'index.docs.interactiveDocs.title', message: 'Interactive Documentation' })}
+              {t({ id: 'index.docs.interactiveDocs.title', message: 'Full Documentation' })}
             </Text>
             <Text style={styles.documentationDescription} selectable={false}>
-              {t({ id: 'index.docs.interactiveDocs.description', message: 'Explore step-by-step guides with interactive examples' })}
+              {t({ id: 'index.docs.interactiveDocs.description', message: 'Open the full documentation site for guides, references, and examples' })}
             </Text>
             <TouchableOpacity
               onPress={() => {
-                // Open Storybook documentation
-                // In production, use relative path to static Storybook build
-                // In development, use the Storybook dev server URL
-                let storybookUrl: string;
                 if (typeof window !== 'undefined') {
-                  if (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost') {
-                    // Production: use relative path to static Storybook build
-                    storybookUrl = '/storybook';
-                  } else {
-                    // Development: use Storybook dev server
-                    storybookUrl = process.env.EXPO_PUBLIC_STORYBOOK_URL || 'http://localhost:6006';
-                  }
-                  window.open(storybookUrl, '_blank');
+                  const docsUrl = getDocumentationUrl();
+                  window.open(docsUrl, '_blank', 'noopener,noreferrer');
                 }
               }}
               style={styles.documentationButton}
             >
               <Ionicons name="book-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-          <Text style={styles.documentationButtonText} selectable={false}>
-            {t({ id: 'index.docs.viewStorybook', message: 'View Full Interactive Documentation' })}
-          </Text>
+              <Text style={styles.documentationButtonText} selectable={false}>
+                {t({ id: 'index.docs.viewStorybook', message: 'See Full Documentation' })}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -349,4 +358,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontWeight: '600',
   },
 });
-
