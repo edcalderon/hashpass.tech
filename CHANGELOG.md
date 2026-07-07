@@ -1,3 +1,14 @@
+## [1.8.168](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.167...v1.8.168) (2026-07-07)
+
+
+### Bug Fixes
+
+* restore native HashPass logo contrast ([b33877c](https://github.com/hashpass-tech/hashpass.tech/commit/b33877cd8679895fffb4f391ad1b256d426a4012))
+
+
+
+
+
 ## [1.8.167](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.166...v1.8.167) (2026-07-07)
 
 
