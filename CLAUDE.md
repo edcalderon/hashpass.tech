@@ -65,8 +65,8 @@ Protected promotion flow:
    - Pushes the release branch to `origin` and `upstream`
    - Opens the protected `develop -> main` PR instead of pushing to `main`
 3. **Wait for `@edcalderon` codeowner approval**, then make sure the PR passes the coverage gate (minimum 33%) and the GitHub security scans before merging
-4. **Merge the PR and sync `develop` from `main`**
-5. **Run `npm run release:patch` on `main`** — this creates the stable tag, changelog entry, and release commit
+4. **Merge the PR and sync `develop` from `main`.** Before proceeding to step 5/6, re-check `gh pr list --repo hashpass-tech/hashpass.tech --base main --state open` — if any commits landed on `develop` after `release:promote` ran (docs fixes, follow-up commits, etc.), a second small promotion PR may exist and must also be merged first. Do not dispatch the mobile workflow while any promotion PR for this release is still open, even a trivial one. See `apps/docs/docs/reference/release/RELEASE_WORKFLOW.md`'s "Canonical Order" section for the full checklist and the 2026-07-08 incident that prompted this.
+5. **Run `npm run release:patch` on `main`** — this creates the stable tag, changelog entry, and release commit. This pushes directly to `main`; that push is not blocked by branch protection (only the promotion PR's code diff requires review/coverage/security checks) — confirmed 2026-07-08.
 6. **Trigger CI workflow** manually from the release tag:
    ```bash
    gh workflow run mobile-android-release.yml \
