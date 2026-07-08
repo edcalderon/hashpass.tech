@@ -187,6 +187,10 @@
     "tagPrefix": "v",
     "allowBuildMetadata": true,
     "checkReleaseFloor": true,
+    "packages": [
+      "apps/mobile-app",
+      "packages/infra/lambda"
+    ],
     "metadataFiles": [
       "apps/mobile-app/config/version.production.json"
     ]
