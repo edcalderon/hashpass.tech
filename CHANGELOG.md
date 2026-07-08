@@ -1,3 +1,15 @@
+## [1.8.178](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.177...v1.8.178) (2026-07-08)
+
+
+### Bug Fixes
+
+* **auth:** make Better Auth the primary Google sign-in path on web and native ([075fc15](https://github.com/hashpass-tech/hashpass.tech/commit/075fc1527122f56ca3726bcde58cfafde552f645))
+* **dev:** reduce metro local watch graph ([046cba2](https://github.com/hashpass-tech/hashpass.tech/commit/046cba2d416fedc24dc1c7d6eae92d80de5f0da2))
+
+
+
+
+
 ## [1.8.177](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.176...v1.8.177) (2026-07-08)
 
 
