@@ -1,3 +1,9 @@
+## [1.8.170](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.169...v1.8.170) (2026-07-08)
+
+### Released
+
+* Promote develop release prep into main, including auth/OAuth fixes, mobile stability updates, dashboard polish, release tooling improvements, and coverage/test updates.
+
 ## [1.8.169](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.168...v1.8.169) (2026-07-07)
 
 

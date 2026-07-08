@@ -20,13 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.169)
+## 📋 Latest Changes (v1.8.170)
 
-### Bug Fixes
+### Released
 
-* keep directus password login in memory ([3e78baf](https://github.com/hashpass-tech/hashpass.tech/commit/3e78baf1f2e936ced795cfa5210563754fbc8ffa))
-* remove directus token persistence sink ([09aa222](https://github.com/hashpass-tech/hashpass.tech/commit/09aa222250fd2dbf9ff49193c7784b7d90f55ba7))
-* sanitize directus session persistence ([5eb2750](https://github.com/hashpass-tech/hashpass.tech/commit/5eb2750ae83696b42992d2665992384b55f16e38))
+* Promote develop release prep into main, including auth/OAuth fixes, mobile stability updates, dashboard polish, release tooling improvements, and coverage/test updates.
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
