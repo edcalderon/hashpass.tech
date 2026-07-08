@@ -194,8 +194,9 @@ const metroResolveRequest = (context, moduleName, platform) => {
 // Exclude paths that Metro should never bundle or watch.
 // This reduces the in-memory Haste file graph and cuts peak heap usage.
 const blockListPatterns = [
-  // Nested node_modules inside any package — resolved from root by hoisting
-  /.*\/node_modules\/.*\/node_modules\/.*/,
+  // Nested node_modules inside any package — resolved from root by hoisting.
+  // Do not block pnpm's virtual store; Metro still needs to hash files there.
+  /.*\/node_modules\/(?!\.pnpm\/).*\/node_modules\/.*/,
   // Build artefacts inside workspace packages
   /.*\/packages\/.*\/dist\/.*/,
   /.*\/packages\/.*\/build\/.*/,
