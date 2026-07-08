@@ -73,10 +73,19 @@ echo "4. Installing dependencies..."
 cd "$PACKAGE_DIR"
 npm install --production --verbose
 
+if [ ! -f "$PACKAGE_DIR/node_modules/pg/package.json" ]; then
+  echo "❌ Lambda package is missing the pg dependency required by Better Auth."
+  echo "   Expected:"
+  echo "   - $PACKAGE_DIR/node_modules/pg/package.json"
+  echo "   Check packages/infra/lambda/package.json before deploying."
+  exit 1
+fi
+
 # Create deployment package
 echo "5. Creating deployment zip..."
 # Zip contents of package directory, not the directory itself
 cd "$PACKAGE_DIR"
+rm -f "$PROJECT_ROOT/lambda-deployment.zip"
 zip -r "$PROJECT_ROOT/lambda-deployment.zip" . -x "*.git*" "*.DS_Store*" "*.map" > /dev/null
 cd "$PROJECT_ROOT"
 

@@ -1,15 +1,13 @@
-import { createRequire } from 'module';
+import { Pool as PgPool } from 'pg';
 import { loadServerEnvFiles } from './load-server-env';
 import {
-  getDatabaseConnectionString as getRawDatabaseConnectionString,
+  getRawDatabaseConnectionString,
   getNormalizedDatabaseConnectionString,
 } from './database-config';
 
-type PgModule = typeof import('pg');
-type Pool = InstanceType<PgModule['Pool']>;
+type Pool = InstanceType<typeof PgPool>;
 
 let pool: Pool | null = null;
-const nodeRequire = createRequire(__filename);
 
 const readEnv = (name: string): string | undefined => {
   const value = process.env[name]?.trim();
@@ -55,8 +53,6 @@ export const getDatabasePool = (): Pool => {
       'Better Auth database is not configured. Set BETTER_AUTH_DATABASE_URL, BSL_BETTER_AUTH_DATABASE_URL, BSL_DATABASE_URL, DATABASE_URL, SUPABASE_DB_URL_DEV, SUPABASE_DB_URL, or DB_HOST/DB_NAME/DB_USER/DB_PASSWORD before using /api/auth.'
     );
   }
-
-  const { Pool: PgPool } = nodeRequire('pg') as PgModule;
 
   pool = new PgPool({
     connectionString: connectionString
