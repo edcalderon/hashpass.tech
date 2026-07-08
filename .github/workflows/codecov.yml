@@ -46,4 +46,5 @@ jobs:
           files: ./apps/mobile-app/coverage/lcov.info
           fail_ci_if_error: true
           verbose: true
+          version: v11.2.8
           token: ${{ env.CODECOV_TOKEN }}
