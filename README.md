@@ -27,7 +27,7 @@
 * allow promotion PR without extra release-prep diff ([5286de7](https://github.com/hashpass-tech/hashpass.tech/commit/5286de701746edbf3ab46a223c41bbf6d0a3a880))
 * prevent stale API deploys and native bundle async import ([d8ec835](https://github.com/hashpass-tech/hashpass.tech/commit/d8ec8350aac94784744883cc86789c337d777764))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 

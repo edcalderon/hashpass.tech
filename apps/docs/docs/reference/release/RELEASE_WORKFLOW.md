@@ -49,6 +49,8 @@ Follow this sequence exactly. Order matters.
 
 Create and validate the change on `develop`. Do not branch release work from a stale feature branch.
 
+For Android-impacting changes, run the local bundle preflight in [Android CI Memory And Local Bundle Checks](../../infra/ANDROID_CI_MEMORY.md#local-android-bundle-preflight) before opening the promotion PR. This catches `:app:createBundleReleaseJsAndAssets` failures, including Metro `async-require.js` errors, before the EC2 runner spends a release attempt.
+
 ### Step 2 — Prepare the promotion PR
 
 Use the promotion command on `develop` so the release-prep commit and protected PR stay in one flow:
