@@ -2,10 +2,10 @@
 
 ## Current Main Google Flow (as of 2026-07-08)
 
-**Better Auth is now the default web Google sign-in path for every tenant** — both
-`hashpass.tech` (core) and the BSL event tenants. Supabase is only used as a
-last-resort fallback if Better Auth's own request fails outright, and the
-Directus OAuth bridge is effectively unused for Google (see
+**Better Auth is now the only web Google sign-in path for every tenant** — both
+`hashpass.tech` (core) and the BSL event tenants. The browser never starts
+Supabase Google OAuth directly, and the Directus OAuth bridge is effectively
+unused for Google (see
 ["Do we still need Directus?"](#do-we-still-need-directus) below). This
 replaces the short-lived "Supabase-first" design from earlier the same day —
 that design made Google's account picker show the raw Supabase project URL
@@ -13,7 +13,7 @@ that design made Google's account picker show the raw Supabase project URL
 two divergent Google identities for the same user (`ba_users` vs
 `auth.users`), depending on which host happened to resolve.
 
-### Web: Better Auth first, Supabase as fallback
+### Web: Better Auth only
 
 1. `useAuth.signInWithOAuth('google')` on web always constructs/reuses a
    `BetterAuthProvider` (from `@hashpass/auth`) and calls
@@ -38,21 +38,23 @@ two divergent Google identities for the same user (`ba_users` vs
    callback handler (since that's still core's resolved provider) against an
    empty params object and fail with a misleading "Directus did not create a
    valid session" error.
-5. Only if step 1/2 itself throws or returns an error does the code fall back
-   to the old direct `supabase.auth.signInWithOAuth({ provider: 'google' })`
-   call, which still works if Supabase's Google provider is enabled for the
-   resolved project.
+5. If Better Auth cannot start or complete the flow, the app reports the
+   Better Auth error and returns to the login screen. It does not redirect to
+   Supabase's `/auth/v1/authorize` endpoint.
 
-### Native: unchanged
+### Native: Better Auth first, Supabase ID-token fallback
 
-Native (Android) still uses the Google Sign-In SDK + `supabase.auth.signInWithIdToken()`
-path described below in [Native Google Sign-In SDK Flow](#native-google-sign-in-sdk-flow-android) —
-that flow was not touched by the Better Auth change.
+Native (Android) still starts with the Google Sign-In SDK account picker, then
+exchanges the returned ID token with Better Auth first. Supabase
+`signInWithIdToken()` remains a native-only compatibility fallback, described
+below in [Native Google Sign-In SDK Flow](#native-google-sign-in-sdk-flow-android).
 
-## Do we still need Directus? {#do-we-still-need-directus}
+<a id="do-we-still-need-directus"></a>
+
+## Do We Still Need Directus?
 
 **Decision: keep it for now, but it's not being used as auth or CMS today.**
-Tracked as a pending follow-up in [`.agents/pending/directus-usage-and-flow.md`](../../../../.agents/pending/directus-usage-and-flow.md)
+Tracked as a pending follow-up in `.agents/pending/directus-usage-and-flow.md`
 — that task covers verifying the one place it could still be silently
 load-bearing (server-side token verification on a few API routes), checking
 for Directus-only user accounts, and evaluating whether to formally
@@ -66,8 +68,8 @@ a real sign-in:
 - Email/OTP sign-in on web talks to Supabase directly
   (`supabase.auth.signInWithOtp`) or the custom `/api/auth/otp` +
   `/api/auth/otp/verify` REST endpoints — neither goes through `authService`.
-- Web Google sign-in now goes through Better Auth first, Supabase second (see
-  above) — Directus is never attempted for `provider === 'google'` on web.
+- Web Google sign-in now goes through Better Auth only (see above) — Directus
+  is never attempted for `provider === 'google'` on web.
 - No UI screen calls `authService.signInWithEmailAndPassword` (Directus's
   password flow) or offers github/facebook/twitter buttons.
 - The only remaining code path that branches on `providerName === 'directus'`
@@ -110,23 +112,19 @@ For the Better Auth Google flow (now the default for every tenant on web):
   URI for **every** environment that uses it — e.g.
   `https://api.hashpass.tech/api/auth/callback/google` for production and
   `http://localhost:8081/api/auth/callback/google` for local web dev. This is
-  separate from, and in addition to, whatever redirect URI Supabase's own
-  Google provider uses (`https://<project-ref>.supabase.co/auth/v1/callback`)
-  — both need to be registered on the same OAuth Client if Supabase is kept as
-  the fallback.
+  separate from any legacy Supabase redirect URI; the web Google flow no longer
+  depends on Supabase's Google provider being enabled.
 - `packages/config/src/sso-config.ts`'s `SSO_CONFIG.cors.origins` (Better
   Auth's `trustedOrigins`) must include the actual frontend origin(s) —
   `https://hashpass.tech`, `https://www.hashpass.tech`, `https://dev.hashpass.tech`
   were missing until 2026-07-08 and would have made Better Auth reject
   requests from the production core domain.
 
-Supabase fallback (only reached if Better Auth's own request errors):
+Supabase compatibility paths (email/OTP and native fallback only):
 
 - `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` (or the active
   profile-specific equivalents)
-- Supabase Google provider enabled in that Supabase project's dashboard — this
-  is a per-project Dashboard toggle, not something set via code or env vars
-- Supabase redirect allow-list entries for each frontend callback
+- Supabase redirect allow-list entries for passwordless callbacks
 
 The Directus bridge (`/api/auth/oauth/login` → Directus → `/api/auth/oauth/callback`)
 still exists in the tree for compatibility but is not reachable from the
@@ -142,7 +140,9 @@ Google sign-in button anymore — see ["Do we still need Directus?"](#do-we-stil
 - `apps/mobile-app/app/api/auth/[...auth]+api.ts` — Better Auth's catch-all handler
 - `apps/mobile-app/app/api/auth/oauth/login+api.ts` / `callback+api.ts` — Directus bridge (rarely reached now)
 
-## Schema migration {#schema-migration}
+<a id="schema-migration"></a>
+
+## Schema Migration
 
 Better Auth's core tables (`ba_users`, `session`, `account`, `verification`)
 are **not** created by any file under `db/migrations/` — that folder only
@@ -280,13 +280,11 @@ If Play Services are unavailable or the user cancels, the flow falls through to 
 
 ## Troubleshooting
 
-### Web Google sign-in falls back to Supabase (account picker shows a `*.supabase.co` domain instead of your own)
+### Web Google sign-in returns a Better Auth error before Google opens
 
-This means Better Auth's own attempt failed silently and the code fell through
-to the Supabase fallback (by design — check the browser console for
-`[useAuth] Better Auth Google sign-in failed/threw, falling back to Supabase: ...`).
-Diagnose in this order — each was an actual bug found and fixed on 2026-07-08,
-and any one of them alone reproduces this exact symptom:
+This means Better Auth's own attempt failed before it could return Google's
+authorize URL. Diagnose in this order — each was an actual bug found and fixed
+on 2026-07-08, and any one of them alone can stop the flow:
 
 1. **`curl <apiBase>/api/auth/get-session`** — if it 500s with
    `z.coerce.boolean(...).meta is not a function` (or a minified variant like
@@ -311,9 +309,7 @@ and any one of them alone reproduces this exact symptom:
    authorized redirect URI for that host. This is a per-environment,
    per-domain manual step in Google Cloud Console — nothing in the repo can
    fix it. Both the local dev port and the production `api.hashpass.tech`
-   callback need to be registered on the same OAuth Client if Supabase is kept
-   as fallback (which also needs the Supabase project's own callback
-   registered separately).
+   callback need to be registered on the same OAuth Client.
 
 ### "Directus did not create a valid session" after a successful Google consent screen
 
@@ -329,7 +325,7 @@ involved.
 
 ### Other
 
-- If Supabase redirects back but no session is created (fallback path only), verify the Supabase Google provider is enabled and the callback URL is in Supabase Allowed Redirect URLs. Note: "provider is not enabled" (`validation_failed`) is a per-project Supabase Dashboard toggle, not a code or env issue.
+- If the browser lands on a Supabase `/auth/v1/authorize?provider=google` URL, web Google has regressed into the removed fallback path. The correct web path starts at `/api/auth/sign-in/social` and returns through `/api/auth/callback/google`.
 - If the browser lands on `/dashboard/explore?error=oauth_failed...`, check the API Lambda logs for the callback request ID.
 - For `DEVELOPER_ERROR` on Android Google Sign-In: verify the SHA-1 in the GCP Android OAuth client is the **App signing key** SHA-1 from Play Console (not the upload key).
 - If the system account picker is skipped and the previous account is reused: the user should tap **Reset Google Account** in Settings → Security, or sign out and back in.

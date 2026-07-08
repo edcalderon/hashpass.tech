@@ -122,6 +122,8 @@ export const getDatabaseConnectionString = (): string | undefined => {
   );
 };
 
+export const getRawDatabaseConnectionString = getDatabaseConnectionString;
+
 export const hasDatabaseConnectionString = (): boolean => Boolean(getDatabaseConnectionString());
 
 export const getNormalizedDatabaseConnectionString = (

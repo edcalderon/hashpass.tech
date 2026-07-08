@@ -384,7 +384,7 @@ describe('useAuth native Google sign-in', () => {
     expect(mockOpenAuthSessionAsync).not.toHaveBeenCalled();
   });
 
-  it('falls back to Supabase OAuth on web only when Better Auth itself fails to start the flow', async () => {
+  it('does not fall back to Supabase OAuth on web when Better Auth fails to start the flow', async () => {
     const mockDirectusAuthService = {
       ...mockAuthService,
       getProviderName: jest.fn(() => 'directus'),
@@ -469,17 +469,13 @@ describe('useAuth native Google sign-in', () => {
 
     expect(capturedHook).toBeTruthy();
 
-    await testAct(async () => {
-      await capturedHook.signInWithOAuth('google');
-    });
+    await expect(
+      testAct(async () => {
+        await capturedHook.signInWithOAuth('google');
+      })
+    ).rejects.toThrow('Better Auth is not configured for Google on this host.');
 
-    expect(mockBetterAuthSignInWithOAuth).toHaveBeenCalledWith('google');
-    expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith({
-      provider: 'google',
-      options: {
-        redirectTo: 'http://localhost:8081/auth/callback',
-      },
-    });
+    expect(mockSupabase.auth.signInWithOAuth).not.toHaveBeenCalled();
     expect(mockDirectusAuthService.signInWithOAuth).not.toHaveBeenCalled();
   });
 

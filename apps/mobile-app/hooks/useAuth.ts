@@ -338,7 +338,7 @@ export const useAuth = () => {
         providerName !== 'better-auth' &&
         hasPublicSupabaseAuthConfig();
 
-      const clearStaleProviderSession = async (skipProviders: 'better-auth' | 'supabase' | Array<'better-auth' | 'supabase'>) => {
+      const clearStaleProviderSession = async (skipProviders: 'better-auth' | 'supabase' | ('better-auth' | 'supabase')[]) => {
         const skipList = Array.isArray(skipProviders) ? skipProviders : [skipProviders];
         if (skipList.includes(providerName as 'better-auth' | 'supabase')) {
           return;
@@ -353,47 +353,25 @@ export const useAuth = () => {
         }
       };
 
-      // ── Web Google Sign-In: Better Auth first, Supabase as last-resort fallback ──
+      // ── Web Google Sign-In: Better Auth only ───────────────────────────────────
       // Better Auth is the canonical social-login backend for both core
       // (hashpass.tech) and BSL tenants. Never call Supabase's OAuth directly as
       // the primary path — that produced two divergent Google identities for the
       // same user (one under Better Auth's ba_users, one under Supabase auth.users)
-      // depending on which host happened to be resolved. Supabase is only used if
-      // Better Auth itself fails to even start the flow (e.g. misconfiguration).
+      // depending on which host happened to be resolved.
       if (Platform.OS === 'web' && provider === 'google') {
         await clearStaleProviderSession('better-auth');
 
         const betterAuthGoogle: IAuthProvider =
           providerName === 'better-auth' ? authService : getGoogleBetterAuthProvider();
 
-        try {
-          const result = await betterAuthGoogle.signInWithOAuth!('google');
-          if (!result.error) {
-            return result;
-          }
-          console.warn('[useAuth] Better Auth Google sign-in failed, falling back to Supabase:', result.error);
-        } catch (betterAuthError) {
-          console.warn('[useAuth] Better Auth Google sign-in threw, falling back to Supabase:', betterAuthError);
+        const result = await betterAuthGoogle.signInWithOAuth!('google');
+        if (result.error) {
+          throw new Error(result.error);
         }
 
-        if (hasPublicSupabaseAuthConfig()) {
-          await clearStaleProviderSession('supabase');
-
-          const { error: signInError } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: getSupabaseOAuthRedirectUrl(),
-            },
-          });
-
-          if (signInError) throw signInError;
-          return { pending: true };
-        }
-
-        throw new Error('Google sign-in is not available right now. Please try again later.');
+        return result;
       }
-
-      const clearNonSupabaseProviderSession = () => clearStaleProviderSession('supabase');
 
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────
       // Use the system account picker to get an ID token, then exchange it with
