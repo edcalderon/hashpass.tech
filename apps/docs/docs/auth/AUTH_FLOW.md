@@ -51,8 +51,17 @@ that flow was not touched by the Better Auth change.
 
 ## Do we still need Directus? {#do-we-still-need-directus}
 
-**Effectively no, for authentication.** As of this writing, nothing in the
-running app actually reaches Directus for a real sign-in:
+**Decision: keep it for now, but it's not being used as auth or CMS today.**
+Tracked as a pending follow-up in [`.agents/pending/directus-usage-and-flow.md`](../../../../.agents/pending/directus-usage-and-flow.md)
+— that task covers verifying the one place it could still be silently
+load-bearing (server-side token verification on a few API routes), checking
+for Directus-only user accounts, and evaluating whether to formally
+deprecate it, repurpose it as a CMS, or leave it as-is. It also has a section
+evaluating self-hosted alternatives (PocketBase, self-hosted Supabase, etc.)
+in case Supabase itself is ever reconsidered.
+
+As of this writing, nothing in the running app actually reaches Directus for
+a real sign-in:
 
 - Email/OTP sign-in on web talks to Supabase directly
   (`supabase.auth.signInWithOtp`) or the custom `/api/auth/otp` +
