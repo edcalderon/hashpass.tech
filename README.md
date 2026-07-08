@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.172)
+## 📋 Latest Changes (v1.8.173)
 
 ### Bug Fixes
 
-* unblock android release bundle ([8419d2b](https://github.com/hashpass-tech/hashpass.tech/commit/8419d2beda7a99fb4f3cc5f8fa9e750946c5a5fb))
+* allow pnpm metro files in android bundle ([f379552](https://github.com/hashpass-tech/hashpass.tech/commit/f3795521fc86285c1da2215654b7dd19390cf270))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

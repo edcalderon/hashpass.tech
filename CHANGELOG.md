@@ -1,3 +1,14 @@
+## [1.8.173](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.172...v1.8.173) (2026-07-08)
+
+
+### Bug Fixes
+
+* allow pnpm metro files in android bundle ([f379552](https://github.com/hashpass-tech/hashpass.tech/commit/f3795521fc86285c1da2215654b7dd19390cf270))
+
+
+
+
+
 ## [1.8.172](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.171...v1.8.172) (2026-07-08)
 
 
