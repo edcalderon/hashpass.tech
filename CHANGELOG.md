@@ -1,3 +1,14 @@
+## [1.8.174](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.173...v1.8.174) (2026-07-08)
+
+
+### Bug Fixes
+
+* narrow release guard to release-tracked files ([e7427c2](https://github.com/hashpass-tech/hashpass.tech/commit/e7427c22ebc1109ea6e4f259720a4e217cb7cfee))
+
+
+
+
+
 ## [1.8.173](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.172...v1.8.173) (2026-07-08)
 
 
