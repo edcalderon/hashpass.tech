@@ -1,3 +1,16 @@
+## [1.8.177](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.176...v1.8.177) (2026-07-08)
+
+
+### Bug Fixes
+
+* **auth:** clear stale provider session before google oauth ([bda078b](https://github.com/hashpass-tech/hashpass.tech/commit/bda078bd3bfdb729046d81ae0760459037190109))
+* **auth:** reuse supabase client singleton ([5f905f1](https://github.com/hashpass-tech/hashpass.tech/commit/5f905f14055242b39f6f89aab3055d0310e1a2a3))
+* **auth:** route google sign-in through supabase ([e503fe2](https://github.com/hashpass-tech/hashpass.tech/commit/e503fe27b48d98aa8fe35515db170740074fe09e))
+
+
+
+
+
 ## [1.8.176](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.175...v1.8.176) (2026-07-08)
 
 

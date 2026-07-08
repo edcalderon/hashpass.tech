@@ -20,16 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.176)
+## 📋 Latest Changes (v1.8.177)
 
 ### Bug Fixes
 
-* **auth:** restore Supabase provider guard on native Google sign-in ([090e90f](https://github.com/hashpass-tech/hashpass.tech/commit/090e90faa98af98c64e32ef902d615bf98551da3))
-
-
-### Features
-
-* **infra:** inject GA_MEASUREMENT_ID into web CodePipeline build environment ([f871bb9](https://github.com/hashpass-tech/hashpass.tech/commit/f871bb914c509f78f4ec2a784d544cbbc49df932))
+* **auth:** clear stale provider session before google oauth ([bda078b](https://github.com/hashpass-tech/hashpass.tech/commit/bda078bd3bfdb729046d81ae0760459037190109))
+* **auth:** reuse supabase client singleton ([5f905f1](https://github.com/hashpass-tech/hashpass.tech/commit/5f905f14055242b39f6f89aab3055d0310e1a2a3))
+* **auth:** route google sign-in through supabase ([e503fe2](https://github.com/hashpass-tech/hashpass.tech/commit/e503fe27b48d98aa8fe35515db170740074fe09e))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
