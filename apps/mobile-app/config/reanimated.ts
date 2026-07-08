@@ -2,6 +2,7 @@
 // Only import react-native-reanimated in browser/native environments (not SSR)
 if (typeof window !== 'undefined') {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require('react-native-reanimated');
 
     // @ts-ignore
@@ -9,6 +10,7 @@ if (typeof window !== 'undefined') {
 
     try {
       if (typeof document === 'undefined') {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { enableLayoutAnimations } = require('react-native-reanimated');
         enableLayoutAnimations(true);
       }
