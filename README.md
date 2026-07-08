@@ -104,9 +104,9 @@ Use `codebase-memory-mcp` first for repo discovery and fast checks.
 
 ### Authentication
 
-Main `hashpass.tech` Google sign-in uses the API-owned Directus OAuth bridge documented in [apps/docs/docs/auth/AUTH_FLOW.md](apps/docs/docs/auth/AUTH_FLOW.md). BSL (`bsl.hashpass.tech`) uses Better Auth at `https://api.hashpass.tech/api/auth`, with its AWS SSM parameters normalized under `/hashpass/[env]/bsl/better-auth/` by `packages/tools/scripts/util/setup-parameters.sh sync`.
+Main `hashpass.tech` Google sign-in uses Supabase directly on web and native when public Supabase config is available. The API-owned Directus OAuth bridge remains the fallback and compatibility path documented in [apps/docs/docs/auth/AUTH_FLOW.md](apps/docs/docs/auth/AUTH_FLOW.md). BSL (`bsl.hashpass.tech`) uses Better Auth at `https://api.hashpass.tech/api/auth`, with its AWS SSM parameters normalized under `/hashpass/[env]/bsl/better-auth/` by `packages/tools/scripts/util/setup-parameters.sh sync`.
 
-The **Android native app** uses the `@react-native-google-signin/google-signin` SDK (no browser popup) when `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=true` is baked into the bundle. The GCP Android OAuth client must be registered with the **App signing key** SHA-1 from Play Console (not the upload key). See [Native Google Sign-In SDK Flow](apps/docs/docs/auth/AUTH_FLOW.md#native-google-sign-in-sdk-flow-android) for full details.
+The **Android native app** uses the `@react-native-google-signin/google-signin` SDK (no browser popup) when Supabase public config exists and `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=true` is baked into the bundle. The GCP Android OAuth client must be registered with the **App signing key** SHA-1 from Play Console (not the upload key). See [Native Google Sign-In SDK Flow](apps/docs/docs/auth/AUTH_FLOW.md#native-google-sign-in-sdk-flow-android) for full details.
 
 Use **pnpm** and **Turborepo** at the repo root:
 

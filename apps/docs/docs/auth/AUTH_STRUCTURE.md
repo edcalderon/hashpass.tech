@@ -15,9 +15,20 @@
 - `app/api/auth/oauth/callback+api.ts` -> `/api/auth/oauth/callback`
 - `app/api/auth/oauth/google+api.ts` -> legacy compatibility callback for older Google links
 
-## Current Production Flow
+## Current Main Google Flow
 
-Production Google sign-in starts at `/api/auth/oauth/login?provider=google`.
+Main Google sign-in starts in `apps/mobile-app/hooks/useAuth.ts` through `signInWithOAuth('google')`.
+
+When public Supabase config is available, the app does not call the Directus OAuth login proxy:
+
+1. Web calls `supabase.auth.signInWithOAuth({ provider: 'google' })`.
+2. Supabase redirects back to `/auth/callback`.
+3. `app/(shared)/auth/callback.tsx` calls `createSessionFromUrl()` to exchange the Supabase PKCE code, URL tokens, or token hash.
+4. Native uses `@react-native-google-signin/google-signin` and exchanges the Google ID token with `supabase.auth.signInWithIdToken()`.
+
+## Directus Fallback Flow
+
+When public Supabase config is unavailable, Google sign-in can still fall back to `/api/auth/oauth/login?provider=google`.
 
 The API:
 
@@ -37,6 +48,7 @@ The frontend callback route is still useful because it:
 
 - normalizes token delivery on the client
 - preserves compatibility with older local flows
+- exchanges Supabase PKCE and token-hash callbacks
 - handles trailing-slash redirects from static hosting
 - returns native app redirects when `native_callback` is present
 
@@ -45,7 +57,9 @@ The frontend callback route is still useful because it:
 The auth flow accepts multiple trusted frontend origins through environment configuration and runtime checks. The production path is currently centered on:
 
 - `https://hashpass.tech`
+- `https://dev.hashpass.tech`
 - `https://api.hashpass.tech`
 - `https://sso.hashpass.co`
+- `http://localhost:8081` for local web development
 
 For the latest operational flow and troubleshooting notes, see [AUTH_FLOW.md](AUTH_FLOW.md).
