@@ -1,3 +1,14 @@
+## [1.8.175](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.174...v1.8.175) (2026-07-08)
+
+
+### Bug Fixes
+
+* improve native settings and Google auth ([caf10e8](https://github.com/hashpass-tech/hashpass.tech/commit/caf10e8e6314a4f695f7613730e4dc12ab0bf454))
+
+
+
+
+
 ## [1.8.174](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.173...v1.8.174) (2026-07-08)
 
 
