@@ -17,6 +17,7 @@ const versioningConfigPath = path.join(projectRoot, 'versioning.config.json');
 const VERSION_FILES = [
   'package.json',
   'apps/mobile-app/package.json',
+  'packages/infra/lambda/package.json',
   'apps/mobile-app/config/version.production.json',
   'apps/mobile-app/config/version.development.json',
   'app.json',
