@@ -788,6 +788,17 @@
     "autoRefresh": "Die Statusseite wird alle 30 Sekunden automatisch aktualisiert",
     "pullToRefresh": "Ziehen Sie nach unten, um manuell zu aktualisieren"
   },
+  "cookies": {
+    "consentTitle": "Cookie-Einstellungen",
+    "consentBodyGDPR": "Das EU-Recht (DSGVO) erfordert Ihre Zustimmung, bevor wir Analyse-Cookies setzen können. Wir verwenden Google Analytics, um zu verstehen, wie diese Website genutzt wird.",
+    "consentBodyLGPD": "Das brasilianische Recht (LGPD) erfordert Ihre Zustimmung, bevor wir Analyse-Cookies setzen können. Wir verwenden Google Analytics, um zu verstehen, wie diese Website genutzt wird.",
+    "consentBodyCCPA": "Das US-Datenschutzrecht (CCPA) gibt Ihnen das Recht, dem Analyse-Tracking zu widersprechen. Wir verwenden Google Analytics, um zu verstehen, wie diese Website genutzt wird.",
+    "consentBodyPIPEDA": "Das kanadische Recht (PIPEDA) erfordert Ihre Zustimmung, bevor wir Analyse-Cookies setzen können. Wir verwenden Google Analytics, um zu verstehen, wie diese Website genutzt wird.",
+    "consentBodyDefault": "Wir verwenden Google Analytics, um zu verstehen, wie diese Website genutzt wird. Bitte teilen Sie uns mit, ob Sie Analyse-Cookies zustimmen.",
+    "consentPrivacy": "Datenschutzrichtlinie",
+    "consentDecline": "Ablehnen",
+    "consentAccept": "Akzeptieren"
+  },
   "version": {
     "title": "Versionsinformationen",
     "current": "Aktuelle Version",
@@ -802,6 +813,15 @@
     "breakingChanges": "Wichtige Änderungen",
     "history": "Versionsverlauf",
     "status": "Systemstatus",
-    "statusSummary": "Klicken Sie, um detaillierte Systemstatus- und Service-Health-Informationen anzuzeigen."
+    "statusSummary": "Klicken Sie, um detaillierte Systemstatus- und Service-Health-Informationen anzuzeigen.",
+    "updateAvailable": "Update Verfügbar",
+    "updateSubtitle": "Eine neue Version von HASHPASS ist zur Installation bereit.",
+    "updateCurrentLabel": "Aktuell",
+    "updateLatestLabel": "Neueste",
+    "updateNewBadge": "NEU",
+    "updateLater": "Später",
+    "updateNow": "Jetzt Aktualisieren",
+    "updateClearing": "Cache wird geleert…",
+    "updateReloading": "Wird neu geladen…"
   }
 }

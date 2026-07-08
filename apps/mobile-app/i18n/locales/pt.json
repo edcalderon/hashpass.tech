@@ -788,6 +788,17 @@
     "autoRefresh": "A página de status é atualizada automaticamente a cada 30 segundos",
     "pullToRefresh": "Puxe para baixo para atualizar manualmente"
   },
+  "cookies": {
+    "consentTitle": "Preferências de cookies",
+    "consentBodyGDPR": "A lei europeia (RGPD) exige seu consentimento antes de podermos definir cookies de análise. Usamos o Google Analytics para entender como este site é utilizado.",
+    "consentBodyLGPD": "A lei brasileira (LGPD) exige seu consentimento antes de podermos definir cookies de análise. Usamos o Google Analytics para entender como este site é utilizado.",
+    "consentBodyCCPA": "A lei de privacidade dos EUA (CCPA) dá a você o direito de recusar o rastreamento analítico. Usamos o Google Analytics para entender como este site é utilizado.",
+    "consentBodyPIPEDA": "A lei canadense (PIPEDA) exige seu consentimento antes de podermos definir cookies de análise. Usamos o Google Analytics para entender como este site é utilizado.",
+    "consentBodyDefault": "Usamos o Google Analytics para entender como este site é utilizado. Por favor, indique se você consente com os cookies de análise.",
+    "consentPrivacy": "Política de Privacidade",
+    "consentDecline": "Recusar",
+    "consentAccept": "Aceitar"
+  },
   "version": {
     "title": "Informações da Versão",
     "current": "Versão Atual",
@@ -802,6 +813,15 @@
     "breakingChanges": "Mudanças Importantes",
     "history": "Histórico de Versões",
     "status": "Status do Sistema",
-    "statusSummary": "Clique para ver o status detalhado do sistema e informações de saúde dos serviços."
+    "statusSummary": "Clique para ver o status detalhado do sistema e informações de saúde dos serviços.",
+    "updateAvailable": "Atualização Disponível",
+    "updateSubtitle": "Uma nova versão do HASHPASS está pronta para instalar.",
+    "updateCurrentLabel": "Atual",
+    "updateLatestLabel": "Mais Recente",
+    "updateNewBadge": "NOVO",
+    "updateLater": "Mais tarde",
+    "updateNow": "Atualizar Agora",
+    "updateClearing": "Limpando cache…",
+    "updateReloading": "Recarregando…"
   }
 }

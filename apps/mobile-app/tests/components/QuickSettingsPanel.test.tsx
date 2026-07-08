@@ -128,6 +128,7 @@ const loadQuickSettingsPanel = (options: MockRenderOptions = {}) => {
       FlatList: 'FlatList',
       Image: 'Image',
       ImageBackground: 'ImageBackground',
+      Modal: 'Modal',
       Easing: {
         cubic: 'cubic',
         out: (value: unknown) => value,
@@ -359,5 +360,22 @@ describe('QuickSettingsPanel', () => {
         }),
       ])
     );
+  });
+
+  it('renders the settings sheet inside a modal on native so background scrolling cannot bleed through', async () => {
+    const { renderer, act } = loadQuickSettingsPanel({
+      width: 375,
+      pathname: '/dashboard/explore',
+      platform: 'android',
+    });
+
+    const root = renderer.root;
+    const settingsButton = root.findByProps({ accessibilityLabel: 'Quick Settings' });
+
+    await act(async () => {
+      settingsButton.props.onPress();
+    });
+
+    expect(root.findAllByType('Modal')).toHaveLength(1);
   });
 });

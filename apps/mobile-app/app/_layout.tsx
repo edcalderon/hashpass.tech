@@ -21,6 +21,7 @@ import { supabase } from '../lib/supabase';
 import { passSystemService } from '../lib/pass-system';
 import "./global.css";
 import PWAPrompt from '../components/PWAPrompt';
+import CookieConsentBanner from '../components/CookieConsentBanner';
 import VersionUpdateNotification from '../components/VersionUpdateNotification';
 import ForceUpdateScreen from '../components/ForceUpdateScreen';
 import SoftUpdateBanner from '../components/SoftUpdateBanner';
@@ -380,6 +381,7 @@ function ThemedContent() {
         <Stack.Screen name="events/[eventSlug]/my-bookings" options={{ headerShown: false }} />
       </Stack>
       <PWAPrompt />
+      <CookieConsentBanner />
       {versionUpdate && (
         <VersionUpdateNotification
           currentVersion={versionUpdate.currentVersion}

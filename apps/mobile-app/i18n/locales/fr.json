@@ -788,6 +788,17 @@
     "autoRefresh": "La page d'état se met à jour automatiquement toutes les 30 secondes",
     "pullToRefresh": "Tirez vers le bas pour actualiser manuellement"
   },
+  "cookies": {
+    "consentTitle": "Préférences de cookies",
+    "consentBodyGDPR": "La loi européenne (RGPD) exige votre consentement avant de pouvoir déposer des cookies d'analyse. Nous utilisons Google Analytics pour comprendre comment ce site est utilisé.",
+    "consentBodyLGPD": "La loi brésilienne (LGPD) exige votre consentement avant de pouvoir déposer des cookies d'analyse. Nous utilisons Google Analytics pour comprendre comment ce site est utilisé.",
+    "consentBodyCCPA": "La loi américaine sur la confidentialité (CCPA) vous donne le droit de refuser le suivi analytique. Nous utilisons Google Analytics pour comprendre comment ce site est utilisé.",
+    "consentBodyPIPEDA": "La loi canadienne (LPRPDE) exige votre consentement avant de pouvoir déposer des cookies d'analyse. Nous utilisons Google Analytics pour comprendre comment ce site est utilisé.",
+    "consentBodyDefault": "Nous utilisons Google Analytics pour comprendre comment ce site est utilisé. Veuillez nous indiquer si vous consentez aux cookies d'analyse.",
+    "consentPrivacy": "Politique de confidentialité",
+    "consentDecline": "Refuser",
+    "consentAccept": "Accepter"
+  },
   "version": {
     "title": "Informations sur la Version",
     "current": "Version Actuelle",
@@ -802,6 +813,15 @@
     "breakingChanges": "Changements Importants",
     "history": "Historique des Versions",
     "status": "État du Système",
-    "statusSummary": "Cliquez pour voir l'état détaillé du système et les informations de santé des services."
+    "statusSummary": "Cliquez pour voir l'état détaillé du système et les informations de santé des services.",
+    "updateAvailable": "Mise à Jour Disponible",
+    "updateSubtitle": "Une nouvelle version de HASHPASS est prête à être installée.",
+    "updateCurrentLabel": "Actuelle",
+    "updateLatestLabel": "Dernière",
+    "updateNewBadge": "NOUVEAU",
+    "updateLater": "Plus tard",
+    "updateNow": "Mettre à Jour",
+    "updateClearing": "Effacement du cache…",
+    "updateReloading": "Rechargement…"
   }
 }

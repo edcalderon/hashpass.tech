@@ -380,6 +380,13 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
   const betterAuthGoogleClientId = targetConfig.BETTER_AUTH_GOOGLE_CLIENT_ID || targetConfig.GOOGLE_CLIENT_ID || '';
   const betterAuthGoogleClientSecret =
     targetConfig.BETTER_AUTH_GOOGLE_CLIENT_SECRET || targetConfig.GOOGLE_CLIENT_SECRET || '';
+  const nativeGoogleSignin = String(targetConfig.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || '').trim() || 'true';
+  const googleWebClientId = String(
+    targetConfig.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+      betterAuthGoogleClientId ||
+      targetConfig.GOOGLE_CLIENT_ID ||
+      ''
+  ).trim();
   const eventTenantByRuntimeTenant = {
     core: 'main',
     bsl: 'bsl',
@@ -413,6 +420,8 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     ['GOOGLE_CLIENT_SECRET', betterAuthGoogleClientSecret],
     ['BETTER_AUTH_GOOGLE_CLIENT_ID', betterAuthGoogleClientId],
     ['BETTER_AUTH_GOOGLE_CLIENT_SECRET', betterAuthGoogleClientSecret],
+    ['EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', nativeGoogleSignin],
+    ['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', googleWebClientId],
     ['EXPO_PUBLIC_FRONTEND_URL', runtime.frontendUrl],
     ['EXPO_PUBLIC_EVENT_TENANT', eventTenant],
     ['FRONTEND_URL', runtime.frontendUrl],

@@ -1141,6 +1141,17 @@
     "autoRefresh": "La página de estado se actualiza automáticamente cada 30 segundos",
     "pullToRefresh": "Desliza hacia abajo para actualizar manualmente"
   },
+  "cookies": {
+    "consentTitle": "Preferencias de cookies",
+    "consentBodyGDPR": "La ley europea (RGPD) requiere tu consentimiento antes de poder establecer cookies de análisis. Usamos Google Analytics para entender cómo se utiliza este sitio.",
+    "consentBodyLGPD": "La ley brasileña (LGPD) requiere tu consentimiento antes de poder establecer cookies de análisis. Usamos Google Analytics para entender cómo se utiliza este sitio.",
+    "consentBodyCCPA": "La ley de privacidad de EE.UU. (CCPA) te da el derecho de optar por no participar en el seguimiento analítico. Usamos Google Analytics para entender cómo se utiliza este sitio.",
+    "consentBodyPIPEDA": "La ley canadiense (PIPEDA) requiere tu consentimiento antes de poder establecer cookies de análisis. Usamos Google Analytics para entender cómo se utiliza este sitio.",
+    "consentBodyDefault": "Usamos Google Analytics para entender cómo se utiliza este sitio. Por favor indícanos si consientes el uso de cookies de análisis.",
+    "consentPrivacy": "Política de privacidad",
+    "consentDecline": "Rechazar",
+    "consentAccept": "Aceptar"
+  },
   "version": {
     "title": "Información de Versión",
     "current": "Versión Actual",
@@ -1155,6 +1166,15 @@
     "breakingChanges": "Cambios Importantes",
     "history": "Historial de Versiones",
     "status": "Estado del Sistema",
-    "statusSummary": "Haz clic para ver el estado detallado del sistema e información de salud de los servicios."
+    "statusSummary": "Haz clic para ver el estado detallado del sistema e información de salud de los servicios.",
+    "updateAvailable": "Actualización Disponible",
+    "updateSubtitle": "Una nueva versión de HASHPASS está lista para instalar.",
+    "updateCurrentLabel": "Actual",
+    "updateLatestLabel": "Última",
+    "updateNewBadge": "NUEVO",
+    "updateLater": "Más tarde",
+    "updateNow": "Actualizar Ahora",
+    "updateClearing": "Limpiando caché…",
+    "updateReloading": "Recargando…"
   }
 }
