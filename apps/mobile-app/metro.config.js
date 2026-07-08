@@ -24,10 +24,25 @@ const { createRequire } = require('module');
 const { resolveDreiCommonJs } = require('./lib/metro/drei-resolver');
 const { resolveZustandCommonJs } = require('./lib/metro/zustand-resolver');
 
-const config = getDefaultConfig(__dirname);
 const workspaceRoot = path.resolve(__dirname, '../..');
 const workspaceRequire = createRequire(path.join(workspaceRoot, 'package.json'));
 const dreiPackageDir = path.dirname(workspaceRequire.resolve('@react-three/drei/package.json'));
+const config = getDefaultConfig(__dirname);
+
+const runtimeWorkspacePackages = [
+  'auth',
+  'backend',
+  'config',
+  'emails',
+  'i18n',
+  'types',
+  'ui',
+  'utils',
+];
+
+const runtimeWorkspacePackageFolders = runtimeWorkspacePackages.map((packageName) =>
+  path.resolve(workspaceRoot, 'packages', packageName)
+);
 
 // Persist Metro's per-file transform cache to a stable directory.
 // On the EC2 runner METRO_CACHE_DIR=/home/runner/.metro-cache (set in the workflow),
@@ -46,7 +61,7 @@ const getZustandPackageDir = () => {
 
   try {
     zustandPackageDir = path.dirname(workspaceRequire.resolve('zustand/package.json'));
-  } catch (error) {
+  } catch {
     zustandPackageDir = null;
   }
 
@@ -94,14 +109,14 @@ const resolveSingletonModule = (moduleName) => {
 
   try {
     return workspaceRequire.resolve(moduleName);
-  } catch (error) {
+  } catch {
     return null;
   }
 };
 
 config.watchFolders = [
-  path.resolve(__dirname, '../../packages'),
-  path.resolve(__dirname, '../../node_modules'),
+  ...runtimeWorkspacePackageFolders,
+  path.resolve(workspaceRoot, 'node_modules'),
 ];
 
 const metroResolveRequest = (context, moduleName, platform) => {
@@ -194,13 +209,26 @@ const metroResolveRequest = (context, moduleName, platform) => {
 // Exclude paths that Metro should never bundle or watch.
 // This reduces the in-memory Haste file graph and cuts peak heap usage.
 const blockListPatterns = [
+  // Local app outputs and test-only files are not part of the runtime graph.
+  /.*\/apps\/mobile-app\/\.expo\/.*/,
+  /.*\/apps\/mobile-app\/\.metro\/.*/,
+  /.*\/apps\/mobile-app\/coverage\/.*/,
+  /.*\/apps\/mobile-app\/dist\/.*/,
+  /.*\/apps\/mobile-app\/tests\/.*/,
+  /.*\/apps\/mobile-app\/assets\/store\/.*/,
   // Nested node_modules inside any package — resolved from root by hoisting.
   // Do not block pnpm's virtual store; Metro still needs to hash files there.
   /.*\/node_modules\/(?!\.pnpm\/).*\/node_modules\/.*/,
   // Build artefacts inside workspace packages
   /.*\/packages\/.*\/dist\/.*/,
   /.*\/packages\/.*\/build\/.*/,
+  /.*\/packages\/.*\/coverage\/.*/,
   /.*\/packages\/.*\/\.turbo\/.*/,
+  // Local infra tooling can be multiple GB and is never needed by the mobile app.
+  /.*\/packages\/infra\/\.sst\/.*/,
+  /.*\/packages\/infra\/terraform\/.*\/\.terraform\/.*/,
+  /.*\/packages\/infra\/terraform\/.*\/\.terragrunt-cache\/.*/,
+  /.*\/packages\/infra\/terraform\/.*\/terraform\.tfstate.*/,
   // Docs app — large markdown/mdx tree not needed at runtime
   /.*\/apps\/docs\/.*/,
   // CI/test artefacts in workspace root
