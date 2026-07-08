@@ -10,11 +10,11 @@ The repository now treats `develop` as the only release source branch. Promotion
 
 ### What changed
 
-- `npm run release:patch` still creates the version bump, changelog entry, tag, and release commit on `develop`
-- `npm run release:promote` now opens a GitHub PR from `develop` to `main`
-- Direct pushes to `main` are blocked by branch protection
+- `npm run release:promote` opens a GitHub PR from `develop` to `main` for the actual **code** changes
 - Release PRs currently require `@edcalderon` codeowner approval
 - Release PRs must pass the coverage gate and GitHub security scans before merge
+- **Code changes must go through that PR — but `npm run release:patch` run directly on `main` (Step 4 below) does push straight to `main`, and that push is *not* blocked.** Confirmed 2026-07-08: `release:patch`'s version-bump/changelog/tag commit pushed to `origin main` and `upstream main` with no rejection. Branch protection here gates the PR-review/coverage/security requirements for the promotion PR's code diff — it does not block every push to `main` outright. Don't assume `release:patch` on `main` needs its own PR; it doesn't, and there is currently no automated job that creates the tag any other way (no CI runs on merge-to-main to do this for you).
+- If you're ever unsure whether a given push to `main` will be accepted, the safe way to find out is to just run the actual `npm run release:*` command — don't hand-rewrite what it would do with raw `git`/`gh` commands to "test" the protection first.
 
 ### Required checks before merge
 
@@ -68,6 +68,10 @@ This script:
 
 `npm run release:patch -- --promote` is the same promotion prep path if you prefer to call the release script directly.
 
+**If there's nothing version-relevant to bump**, the script logs `No promotion file changes to commit; using the current HEAD for the promotion PR` and opens the PR against whatever is already on `develop` — this is normal, not an error, when the develop commits since the last release are all feature/doc work with no version-file changes of their own. The PR title still shows the next predicted version; the actual `package.json`/`CHANGELOG.md` bump only happens in Step 4.
+
+If the PR-creation step itself fails on something transient (seen 2026-07-08: `gh pr create` returning `HTTP 502: 502 Bad Gateway`), re-run `npm run release:promote` again rather than hand-issuing the `gh pr create` command it logged — check `git log`/`git status` first to confirm the commit+push already succeeded so you don't duplicate them, but let the script redo the PR-creation call itself.
+
 The PR body should make the actual release contents obvious:
 
 - Auto-generated release summary pulled from the version metadata / changelog first
@@ -87,6 +91,10 @@ npm run release:patch
 ```
 
 Run this on `main` after the PR merges. This is the stable version bump, changelog entry, git tag, and release commit that the Android workflow and web deployment use.
+
+**This is the one step that pushes directly to `main`** — see the note in "What changed" above. There's no PR for this specific commit; that's expected.
+
+If you keep `main` checked out in a separate git worktree (common local setup here — `hashpass.tech-main` alongside the primary `hashpass.tech` checkout on `develop`), run the command from that worktree directly. `git checkout main` will fail with `'main' is already used by worktree at ...` if you try to switch to it from the `develop` checkout — that's not an error to work around, it just means you should `cd` into the other worktree (or use `git -C <path> ...` for individual commands) instead of trying to check out `main` in place.
 
 ### Step 5 — Trigger the Android CI
 
