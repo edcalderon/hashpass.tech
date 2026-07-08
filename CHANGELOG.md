@@ -1,3 +1,15 @@
+## [1.8.171](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.170...v1.8.171) (2026-07-08)
+
+
+### Bug Fixes
+
+* allow promotion PR without extra release-prep diff ([5286de7](https://github.com/hashpass-tech/hashpass.tech/commit/5286de701746edbf3ab46a223c41bbf6d0a3a880))
+* prevent stale API deploys and native bundle async import ([d8ec835](https://github.com/hashpass-tech/hashpass.tech/commit/d8ec8350aac94784744883cc86789c337d777764))
+
+
+
+
+
 ## [1.8.170](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.169...v1.8.170) (2026-07-08)
 
 ### Released
