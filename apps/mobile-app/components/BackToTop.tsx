@@ -14,6 +14,8 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -27,7 +29,8 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../hooks/useTheme';
 import { useLanguage } from '../providers/LanguageProvider';
 import { getAvailableLocales, useTranslation } from '../i18n/i18n';
-import { AnimationLevel, useAnimationLevel } from '../contexts/AnimationLevelContext';
+import { useAnimationLevel } from '../contexts/AnimationLevelContext';
+import type { AnimationLevel } from '../contexts/AnimationLevelContext';
 import { createShadowStyle } from '../lib/utils';
 import type { ThemeMode } from '../types/theme';
 import type { ViewStyle } from 'react-native';
@@ -183,94 +186,118 @@ const BackToTop: React.FC<Props> = ({ scrollY, scrollRef, colors }) => {
     { value: 'none', label: t('settings.animationsNone') || 'Off', Icon: PauseIcon },
   ];
 
+  const panel = (
+    <Animated.View
+      style={[
+        pStyles.panel,
+        {
+          backgroundColor: bg,
+          borderColor: borderCol,
+          opacity: panelOpacity,
+          transform: [{ translateX: panelTranslateX }, { scale: panelScale }],
+        },
+        createShadowStyle('#000', { width: 0, height: 8 }, isDark ? 0.38 : 0.12, 20, 16) as ViewStyle,
+      ]}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
+        {/* Appearance */}
+        <SectionLabel label={t('settings.appearance') || 'Appearance'} isDark={isDark} colors={colors} />
+        <PillGroup<ThemeMode>
+          options={themeOptions}
+          value={theme}
+          onChange={(v) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTheme(v); }}
+          colors={colors}
+          isDark={isDark}
+        />
+
+        <Divider isDark={isDark} />
+
+        {/* Language */}
+        <SectionLabel label={t('settings.language') || 'Language'} isDark={isDark} colors={colors} />
+        {availableLocales.map((lang: LocaleOption) => {
+          const active = lang.code === locale;
+          return (
+            <TouchableOpacity
+              key={lang.code}
+              style={[
+                pStyles.langRow,
+                active && { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderRadius: 10 },
+              ]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocale(lang.code); }}
+              activeOpacity={0.7}
+            >
+              <Text style={pStyles.flag}>{getFlagEmoji(lang.code)}</Text>
+              <Text style={[pStyles.langName, { color: colors.text.primary }]}>
+                {t(`languages.${lang.name}`)}
+              </Text>
+              <View
+                style={[
+                  pStyles.langBadge,
+                  {
+                    backgroundColor: active ? colors.primary : 'transparent',
+                    borderColor: active ? colors.primary : isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)',
+                  },
+                ]}
+              >
+                {active ? (
+                  <CheckIcon size={12} color={colors.primaryContrastText} strokeWidth={2.5} />
+                ) : (
+                  <Text style={[pStyles.langCode, { color: colors.text.secondary }]}>
+                    {lang.code.toUpperCase()}
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+
+        <Divider isDark={isDark} />
+
+        {/* Animations */}
+        <SectionLabel label={t('settings.animations') || 'Animations'} isDark={isDark} colors={colors} />
+        <PillGroup<AnimationLevel>
+          options={animOptions}
+          value={animationLevel}
+          onChange={(v) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAnimationLevel(v); }}
+          colors={colors}
+          isDark={isDark}
+        />
+      </ScrollView>
+    </Animated.View>
+  );
+
   return (
     <Reanimated.View style={[styles.stack, stackStyle]}>
       {/* Backdrop — closes panel on outside tap */}
-      {panelOpen && (
+      {panelOpen && Platform.OS === 'web' && (
         <TouchableWithoutFeedback onPress={closePanel}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
       )}
 
       {/* Settings panel — renders to the left of the button stack */}
-      {panelOpen && (
-        <Animated.View
-          style={[
-            pStyles.panel,
-            {
-              backgroundColor: bg,
-              borderColor: borderCol,
-              opacity: panelOpacity,
-              transform: [{ translateX: panelTranslateX }, { scale: panelScale }],
-            },
-            createShadowStyle('#000', { width: 0, height: 8 }, isDark ? 0.38 : 0.12, 20, 16) as ViewStyle,
-          ]}
+      {panelOpen && Platform.OS === 'web' && panel}
+      {panelOpen && Platform.OS !== 'web' && (
+        <Modal
+          transparent
+          visible={panelOpen}
+          animationType="none"
+          presentationStyle="overFullScreen"
+          statusBarTranslucent
+          onRequestClose={closePanel}
         >
-          <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
-            {/* Appearance */}
-            <SectionLabel label={t('settings.appearance') || 'Appearance'} isDark={isDark} colors={colors} />
-            <PillGroup<ThemeMode>
-              options={themeOptions}
-              value={theme}
-              onChange={(v) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTheme(v); }}
-              colors={colors}
-              isDark={isDark}
-            />
-
-            <Divider isDark={isDark} />
-
-            {/* Language */}
-            <SectionLabel label={t('settings.language') || 'Language'} isDark={isDark} colors={colors} />
-            {availableLocales.map((lang: LocaleOption) => {
-              const active = lang.code === locale;
-              return (
-                <TouchableOpacity
-                  key={lang.code}
-                  style={[
-                    pStyles.langRow,
-                    active && { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderRadius: 10 },
-                  ]}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocale(lang.code); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={pStyles.flag}>{getFlagEmoji(lang.code)}</Text>
-                  <Text style={[pStyles.langName, { color: colors.text.primary }]}>
-                    {t(`languages.${lang.name}`)}
-                  </Text>
-                  <View
-                    style={[
-                      pStyles.langBadge,
-                      {
-                        backgroundColor: active ? colors.primary : 'transparent',
-                        borderColor: active ? colors.primary : isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)',
-                      },
-                    ]}
-                  >
-                    {active ? (
-                      <CheckIcon size={12} color={colors.primaryContrastText} strokeWidth={2.5} />
-                    ) : (
-                      <Text style={[pStyles.langCode, { color: colors.text.secondary }]}>
-                        {lang.code.toUpperCase()}
-                      </Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-
-            <Divider isDark={isDark} />
-
-            {/* Animations */}
-            <SectionLabel label={t('settings.animations') || 'Animations'} isDark={isDark} colors={colors} />
-            <PillGroup<AnimationLevel>
-              options={animOptions}
-              value={animationLevel}
-              onChange={(v) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAnimationLevel(v); }}
-              colors={colors}
-              isDark={isDark}
-            />
-          </ScrollView>
-        </Animated.View>
+          <View style={styles.modalRoot}>
+            <TouchableWithoutFeedback onPress={closePanel}>
+              <View style={styles.modalBackdrop} />
+            </TouchableWithoutFeedback>
+            {panel}
+          </View>
+        </Modal>
       )}
 
       {/* ── Button 1: Back to top ── */}
@@ -343,6 +370,12 @@ const styles = StyleSheet.create({
     right: -2000,
     bottom: -2000,
     zIndex: -1,
+  },
+  modalRoot: {
+    flex: 1,
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
   },
   btnWrap: {
     marginBottom: 12,

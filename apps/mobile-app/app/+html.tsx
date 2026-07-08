@@ -57,6 +57,13 @@ export default function Root({
     };
   };
 
+  // G_TAG_KEY is the canonical env var; EXPO_PUBLIC_GA_MEASUREMENT_ID is the
+  // propagated form used when the script runs in SSR/static build context.
+  const gaMeasurementId =
+    readBuildEnv('EXPO_PUBLIC_GA_MEASUREMENT_ID') ||
+    readBuildEnv('G_TAG_KEY') ||
+    '';
+
   const activeSupabaseProfileId = (readBuildEnv('EXPO_PUBLIC_SUPABASE_PROFILE') ||
     readBuildEnv('SUPABASE_PROFILE') ||
     'core-production') as SupabaseProfileId;
@@ -116,6 +123,45 @@ export default function Root({
   return (
     <html lang="en" dir="ltr">
       <head>
+        {/* Google Analytics 4 — only injected when EXPO_PUBLIC_GA_MEASUREMENT_ID is set.
+            Empty in local dev (see root .env); populated from _PROD override in production. */}
+        {gaMeasurementId ? (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
+            />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: [
+                  'window.dataLayer = window.dataLayer || [];',
+                  'function gtag(){dataLayer.push(arguments);}',
+                  '(function() {',
+                  '  var h = (typeof window !== "undefined" ? window.location.hostname : "").toLowerCase();',
+                  '  var isLocal = h === "localhost" || h === "127.0.0.1" || h.endsWith(".local");',
+                  '  var isApi = h === "api.hashpass.tech" || h === "api-dev.hashpass.tech";',
+                  '  if (isLocal || isApi) { window["ga-disable-' + gaMeasurementId + '"] = true; return; }',
+                  // Consent Mode v2 — all denied by default until the client-side
+                  // CookieConsentBanner updates them after checking EU jurisdiction + user preference.
+                  "  gtag('consent', 'default', {",
+                  "    analytics_storage: 'denied',",
+                  "    ad_storage: 'denied',",
+                  "    ad_user_data: 'denied',",
+                  "    ad_personalization: 'denied',",
+                  '    wait_for_update: 600,',
+                  '  });',
+                  "  gtag('js', new Date());",
+                  `  gtag('config', ${JSON.stringify(gaMeasurementId)}, {`,
+                  '    anonymize_ip: true,',
+                  "    cookie_flags: 'SameSite=Lax;Secure',",
+                  '  });',
+                  '})();',
+                ].join('\n'),
+              }}
+            />
+          </>
+        ) : null}
+
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <title>{title}</title>

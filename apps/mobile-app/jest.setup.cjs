@@ -31,6 +31,7 @@ jest.mock('react-native', () => ({
   FlatList: 'FlatList',
   Image: 'Image',
   ImageBackground: 'ImageBackground',
+  Modal: 'Modal',
   Linking: {
     openURL: jest.fn(),
   },

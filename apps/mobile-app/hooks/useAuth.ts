@@ -305,24 +305,13 @@ export const useAuth = () => {
         throw new Error('OAuth not supported by current auth provider');
       }
 
-      const result = await authService.signInWithOAuth(provider);
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────
       // When enabled, uses the system account picker with no browser popup.
-      // Disabled → falls through to the WebBrowser block below (unchanged).
-      //
-      // Important: this shortcut is only safe for the Supabase provider. Directus
-      // already returns a native oauthUrl and expects the browser-based callback
-      // flow so it can complete the session exchange consistently on mobile.
-      const providerName = authService.getProviderName();
+      // Disabled or unavailable → falls through to the provider OAuth flow below.
       const googleWebClientId = resolveGoogleOAuthClientId();
       const nativeGoogleEnabled =
         provider === 'google' &&
-        providerName === 'supabase' &&
+        Platform.OS !== 'web' &&
         shouldUseNativeGoogleSignin(googleWebClientId);
 
       if (nativeGoogleEnabled) {
@@ -342,20 +331,19 @@ export const useAuth = () => {
           }
           if (err.code === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
             console.warn('[useAuth] Play Services unavailable, falling back to browser OAuth');
-            // fall through to WebBrowser block below
+            // fall through to provider-specific OAuth flow below
           } else {
             throw err;
           }
         }
-      } else if (
-        Platform.OS !== 'web' &&
-        provider === 'google' &&
-        providerName === 'directus' &&
-        shouldUseNativeGoogleSignin(googleWebClientId)
-      ) {
-        console.log('[useAuth] Skipping native Google SDK for Directus; using browser OAuth flow.');
       }
       // ── End native Google Sign-In ───────────────────────────────────────────────
+
+      const result = await authService.signInWithOAuth(provider);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
       // On native, the provider returns a URL to open in the system browser
       if (Platform.OS !== 'web' && result.oauthUrl) {

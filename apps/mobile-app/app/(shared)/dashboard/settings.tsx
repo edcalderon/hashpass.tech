@@ -14,7 +14,6 @@ import * as Haptics from 'expo-haptics';
 import { t } from '@lingui/macro';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
 import { useAuth } from '../../../hooks/useAuth';
-import { authService } from '@hashpass/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../../../lib/api-client';
 import { buildEventPath } from '../../../lib/event-path';
@@ -108,9 +107,7 @@ export default function SettingsScreen() {
     return lang ? lang.nativeName : 'English';
   };
 
-  const isNativeGoogleSigninActive =
-    shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId()) &&
-    authService.getProviderName() === 'supabase';
+  const isNativeGoogleSigninActive = shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());
 
   const clearGoogleAccount = async () => {
     if (!isNativeGoogleSigninActive) return;

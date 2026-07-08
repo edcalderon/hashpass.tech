@@ -35,7 +35,7 @@ export default function PrivacyPolicyScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.lastUpdated} selectable={false}>
-          {t({ id: 'privacy.lastUpdated', message: 'Last Updated: November 4, 2025' })}
+          {t({ id: 'privacy.lastUpdated', message: 'Last Updated: July 8, 2026' })}
         </Text>
 
         <Text style={styles.sectionTitle} selectable={false}>
@@ -102,29 +102,39 @@ export default function PrivacyPolicyScreen() {
           {t({ id: 'privacy.cookies.title', message: '7. Cookies and Tracking' })}
         </Text>
         <Text style={styles.sectionText} selectable={false}>
-          {t({ 
-            id: 'privacy.cookies.text', 
-            message: 'We use cookies and similar tracking technologies to track activity on our Service and hold certain information. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.' 
+          {t({
+            id: 'privacy.cookies.text',
+            message: 'We use cookies and similar tracking technologies to maintain your session, remember preferences, and analyze usage of our Service. Cookies we use include:\n\n• Essential cookies: required for authentication and security (session tokens, CSRF tokens).\n• Analytics cookies: set by Google Analytics to measure how visitors interact with our website (see Section 8).\n\nYou can instruct your browser to refuse all cookies or to notify you when a cookie is being sent. Disabling essential cookies will prevent you from signing in.'
           })}
         </Text>
 
         <Text style={styles.sectionTitle} selectable={false}>
-          {t({ id: 'privacy.changes.title', message: '8. Changes to This Privacy Policy' })}
+          {t({ id: 'privacy.analytics.title', message: '8. Analytics Services (Google Analytics)' })}
         </Text>
         <Text style={styles.sectionText} selectable={false}>
-          {t({ 
-            id: 'privacy.changes.text', 
-            message: 'We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.' 
+          {t({
+            id: 'privacy.analytics.text',
+            message: 'We use Google Analytics 4 (GA4), a web analytics service provided by Google LLC ("Google"), to help us understand how visitors use our website.\n\nWhat Google Analytics collects:\n• Pages visited and time spent on each page\n• Browser type, operating system, and device type\n• Approximate geographic location (country/city level)\n• Referral source (how you arrived at our site)\n• Events and interactions (e.g. button clicks, form submissions)\n\nIP anonymization: We have enabled IP anonymization (anonymize_ip: true), so your full IP address is never stored or processed by Google.\n\nData transfer: Google processes analytics data on servers located in the United States. Google LLC is certified under the EU–US Data Privacy Framework, providing adequate safeguards for data transfers from the European Economic Area.\n\nData retention: Analytics data is retained for 14 months, after which it is automatically deleted.\n\nYour choices:\n• Browser opt-out: Install the Google Analytics Opt-out Browser Add-on at https://tools.google.com/dlpage/gaoptout\n• Do Not Track: We honor browser Do Not Track signals — when DNT is enabled, no analytics data is collected.\n\nGoogle\'s privacy policy is available at https://policies.google.com/privacy'
           })}
         </Text>
 
         <Text style={styles.sectionTitle} selectable={false}>
-          {t({ id: 'privacy.contact.title', message: '9. Contact Us' })}
+          {t({ id: 'privacy.changes.title', message: '9. Changes to This Privacy Policy' })}
         </Text>
         <Text style={styles.sectionText} selectable={false}>
-          {t({ 
-            id: 'privacy.contact.text', 
-            message: 'If you have any questions about this Privacy Policy, please contact us at:\n\nEmail: privacy@hashpass.tech\nWebsite: https://hashpass.tech' 
+          {t({
+            id: 'privacy.changes.text',
+            message: 'We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.'
+          })}
+        </Text>
+
+        <Text style={styles.sectionTitle} selectable={false}>
+          {t({ id: 'privacy.contact.title', message: '10. Contact Us' })}
+        </Text>
+        <Text style={styles.sectionText} selectable={false}>
+          {t({
+            id: 'privacy.contact.text',
+            message: 'If you have any questions about this Privacy Policy, please contact us at:\n\nEmail: privacy@hashpass.tech\nWebsite: https://hashpass.tech'
           })}
         </Text>
       </ScrollView>

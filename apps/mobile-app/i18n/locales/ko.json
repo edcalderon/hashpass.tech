@@ -1072,6 +1072,17 @@
     "autoRefresh": "상태 페이지가 30초마다 자동으로 새로고침됩니다",
     "pullToRefresh": "아래로 당겨서 수동으로 새로고침"
   },
+  "cookies": {
+    "consentTitle": "쿠키 설정",
+    "consentBodyGDPR": "EU 법(GDPR)에 따라 분석 쿠키를 설정하기 전에 동의가 필요합니다. Google Analytics를 사용하여 이 사이트의 이용 방식을 파악합니다.",
+    "consentBodyLGPD": "브라질 법(LGPD)에 따라 분석 쿠키를 설정하기 전에 동의가 필요합니다. Google Analytics를 사용하여 이 사이트의 이용 방식을 파악합니다.",
+    "consentBodyCCPA": "미국 개인정보보호법(CCPA)에 따라 분석 추적에서 탈퇴할 권리가 있습니다. Google Analytics를 사용하여 이 사이트의 이용 방식을 파악합니다.",
+    "consentBodyPIPEDA": "캐나다 법(PIPEDA)에 따라 분석 쿠키를 설정하기 전에 동의가 필요합니다. Google Analytics를 사용하여 이 사이트의 이용 방식을 파악합니다.",
+    "consentBodyDefault": "Google Analytics를 사용하여 이 사이트의 이용 방식을 파악합니다. 분석 쿠키 사용에 동의하시겠습니까?",
+    "consentPrivacy": "개인정보 처리방침",
+    "consentDecline": "거부",
+    "consentAccept": "수락"
+  },
   "version": {
     "title": "버전 정보",
     "current": "현재 버전",
@@ -1086,6 +1097,15 @@
     "breakingChanges": "주요 변경 사항",
     "history": "버전 기록",
     "status": "시스템 상태",
-    "statusSummary": "자세한 시스템 상태 및 서비스 상태 정보를 보려면 클릭하세요."
+    "statusSummary": "자세한 시스템 상태 및 서비스 상태 정보를 보려면 클릭하세요.",
+    "updateAvailable": "업데이트 가능",
+    "updateSubtitle": "새로운 HASHPASS 버전을 설치할 준비가 되었습니다.",
+    "updateCurrentLabel": "현재",
+    "updateLatestLabel": "최신",
+    "updateNewBadge": "NEW",
+    "updateLater": "나중에",
+    "updateNow": "지금 업데이트",
+    "updateClearing": "캐시 삭제 중…",
+    "updateReloading": "다시 로드 중…"
   }
 }

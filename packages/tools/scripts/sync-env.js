@@ -32,6 +32,8 @@ const PROCESS_ENV_OVERRIDE_KEYS = [
   'BETTER_AUTH_GOOGLE_CLIENT_ID_PROD',
   'BETTER_AUTH_GOOGLE_CLIENT_SECRET_DEV',
   'BETTER_AUTH_GOOGLE_CLIENT_SECRET_PROD',
+  'EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN',
+  'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
   'BETTER_AUTH_DATABASE_URL',
   'BETTER_AUTH_DATABASE_URL_DEV',
   'BETTER_AUTH_DATABASE_URL_PROD',
@@ -255,6 +257,13 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     'GOOGLE_CLIENT_SECRET_DEV',
     'GOOGLE_CLIENT_SECRET_PROD',
   ]);
+  const nativeGoogleSignin = String(targetConfig.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || '').trim() || 'true';
+  const googleWebClientId = String(
+    targetConfig.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+      betterAuthGoogleClientId ||
+      targetConfig.GOOGLE_CLIENT_ID ||
+      ''
+  ).trim();
   const eventTenantByRuntimeTenant = {
     core: 'main',
     bsl: 'bsl',
@@ -288,6 +297,8 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     ['GOOGLE_CLIENT_SECRET', betterAuthGoogleClientSecret],
     ['BETTER_AUTH_GOOGLE_CLIENT_ID', betterAuthGoogleClientId],
     ['BETTER_AUTH_GOOGLE_CLIENT_SECRET', betterAuthGoogleClientSecret],
+    ['EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', nativeGoogleSignin],
+    ['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', googleWebClientId],
     ['EXPO_PUBLIC_FRONTEND_URL', runtime.frontendUrl],
     ['EXPO_PUBLIC_EVENT_TENANT', eventTenant],
     ['FRONTEND_URL', runtime.frontendUrl],
@@ -525,6 +536,8 @@ try {
     'BETTER_AUTH_ALLOWED_HOSTS',
     'BETTER_AUTH_GOOGLE_CLIENT_ID',
     'BETTER_AUTH_GOOGLE_CLIENT_SECRET',
+    'EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN',
+    'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
     'DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED',
     'DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED',
     // OTP / transactional email + SMS delivery configuration
