@@ -1,6 +1,6 @@
-# Android CI Memory Budget
+# Android CI Memory And Local Bundle Checks
 
-> **Last updated:** v1.8.132 (2026-06-24)
+> **Last updated:** 2026-07-08
 > **EC2 instance:** t3a.large — 7842 MiB usable RAM
 
 ## Current Safe Allocation
@@ -28,6 +28,47 @@ Metro does all the heavy JS bundling. The app has hundreds of API route files �
 | v1.8.129 | SIGTERM after ~7 s of Gradle ("The operation was canceled") | Same stop-runner 403 bug — one run's stop-runner killed the next queued run's Gradle after EC2 shutdown propagated SIGTERM | Same fix as above |
 | v1.8.129 (earlier attempt) | SIGTERM from OS OOM killer | `NODE_OPTIONS=3584m` + Gradle `4096m` = 7680 MiB; left no room for OS → kernel killed Gradle with SIGTERM | Reduced both values |
 | v1.8.131 | `FATAL ERROR: JavaScript heap out of memory` at 2036/2048 MiB | Over-correction left Node at only 2048m while Gradle got 3072m; Metro peaked above 2 GiB during bundle | Swap: Node=3072m, Gradle=2048m (same 5632 MiB total) |
+| v1.8.170 | `Unable to resolve module ... @expo/metro-config/build/async-require.js` from `lib/supabase.ts` | Android Metro rewrote native-reachable `import()` to Expo's async-require helper, but that helper is not present in the release bundle graph | Replaced native lazy `import()` with lazy `require()` |
+| v1.8.171 | Same `async-require.js` failure from `components/CrystalForgeBackground.tsx` | A web-only Three.js background was imported by a cross-platform route, so Android parsed its web dynamic imports | Added native stubs for web-only components and removed native-reachable auth dynamic imports |
+
+## Local Android Bundle Preflight
+
+Run this before dispatching a Play build when the previous failure was in `:app:createBundleReleaseJsAndAssets`. It validates the Android Metro bundle and Expo Router API export without requiring a local Play upload or signing secrets.
+
+```bash
+cd apps/mobile-app
+rm -rf /tmp/hashpass-android-assets /tmp/hashpass-index.android.bundle /tmp/hashpass-index.android.map
+
+NODE_ENV=production \
+EXPO_NO_METRO_WORKSPACE_ROOT=1 \
+NODE_OPTIONS="--max-old-space-size=12288" \
+pnpm exec expo export:embed \
+  --platform android \
+  --dev false \
+  --minify false \
+  --entry-file index.js \
+  --bundle-output /tmp/hashpass-index.android.bundle \
+  --sourcemap-output /tmp/hashpass-index.android.map \
+  --assets-dest /tmp/hashpass-android-assets \
+  --max-workers 2 \
+  --reset-cache
+```
+
+Expected success output includes:
+
+```text
+Android Bundled ... index.js
+Done writing bundle output
+Done writing sourcemap output
+```
+
+If this command fails with `@expo/metro-config/build/async-require.js`, search native-reachable code for `import(`. Android cannot safely parse those dynamic imports in app code. Prefer one of these fixes:
+
+- Move web-only code behind a `.web.tsx` file and add a `.native.tsx` stub.
+- Replace native lazy dynamic imports with lazy `require()` guarded by `Platform.OS !== 'web'`.
+- Keep dynamic `import()` only in server routes or true web-only files.
+
+This preflight is not a full Fastlane release. A full local `bundleRelease` also requires a JDK with `javac`, Android SDK, Ruby/Bundler/Fastlane, and signing credentials.
 
 ## Diagnosing Future Failures
 
@@ -45,6 +86,14 @@ java.lang.OutOfMemoryError: Java heap space
 Fix: raise `GRADLE_MB`, lower `NODE_OPTIONS` by the same amount.
 
 **SIGTERM / "runner has received a shutdown signal"** — the EC2 instance was stopped while a build was running. Check the stop-runner step log for a 403 error on `gh api`. The current fix uses the workflow runs API; if that also returns an error, the script defaults to `exit 0` (skip stop, rely on the 600 s idle watchdog instead).
+
+**Metro `async-require.js` resolution failure** — look for this in `createBundleReleaseJsAndAssets`:
+
+```text
+Error: Unable to resolve module ... @expo/metro-config/build/async-require.js
+```
+
+Fix: run the local Android bundle preflight above, then remove dynamic `import()` from the source file named in the error.
 
 ## Scaling Up
 
@@ -71,3 +120,4 @@ And update `NODE_OPTIONS` to `--max-old-space-size=6144` in the job-level `env:`
 
 - `.github/workflows/mobile-android-release.yml` — `NODE_OPTIONS` (job `env:` block), "Tune build memory limits" step, "Configure Gradle" step
 - `apps/mobile-app/metro.config.js` — Metro cache dir (`METRO_CACHE_DIR` env)
+- `apps/mobile-app/components/*.native.tsx` — native stubs for web-only components that would otherwise pull browser/Three.js code into Android

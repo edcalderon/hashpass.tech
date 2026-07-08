@@ -51,6 +51,18 @@ function runVersioningUpdateReadme({
   }
 }
 
+function normalizeReadmeFooter(readmePath) {
+  const content = fs.readFileSync(readmePath, 'utf8');
+  const normalized = content.replace(
+    /For full version history, see \[CHANGELOG\.md\]\(\.\/CHANGELOG\.md\) and \[GitHub releases\]\(https:\/\/github\.com\/hashpass-tech\/hashpass\.tech\/releases\)/g,
+    'For full version history, see [CHANGELOG.md](./CHANGELOG.md)'
+  );
+
+  if (normalized !== content) {
+    fs.writeFileSync(readmePath, normalized);
+  }
+}
+
 export function syncReadme(options = {}) {
   const {
     cwd = DEFAULT_REPO_ROOT,
@@ -74,6 +86,7 @@ export function syncReadme(options = {}) {
     pkg,
     quiet,
   });
+  normalizeReadmeFooter(readmePath);
 
   if (!quiet) {
     console.log(`✅ README synced from CHANGELOG.md`);

@@ -78,7 +78,7 @@ function main() {
     const actualReadme = readIndexedFile('README.md');
 
     if (expectedReadme === actualReadme) {
-      console.log('✅ README is in sync with CHANGELOG.md and the repo release link.');
+      console.log('✅ README is in sync with CHANGELOG.md.');
       return;
     }
 

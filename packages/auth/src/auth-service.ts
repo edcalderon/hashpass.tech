@@ -6,6 +6,8 @@ import type { IAuthProvider, ApiAuthResponse, AuthUser, AuthSession } from './ty
 import { createAuthProviderFromEnv, resolveAuthProviderConfig } from './factory';
 import { DirectusApiClient } from './providers/directus-api-client';
 
+type SupabaseJsModule = typeof import('@supabase/supabase-js');
+
 let authInstance: IAuthProvider | null = null;
 
 export function getAuthService(): IAuthProvider {
@@ -103,7 +105,11 @@ export async function verifyUserToken(
       return { user, error: null };
     }
     if (providerName === 'supabase') {
-      const { createClient } = await import('@supabase/supabase-js');
+      // Metro rewrites import() through Expo's async-require helper in native
+      // release bundles. Use lazy require so server-only token verification can
+      // remain lazy without breaking Android bundling.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { createClient } = require('@supabase/supabase-js') as SupabaseJsModule;
       const supabase = createClient(
         providerConfig.supabase?.url || '',
         providerConfig.supabase?.anonKey || ''

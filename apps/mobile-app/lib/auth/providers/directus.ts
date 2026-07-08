@@ -15,6 +15,20 @@ import { ENV_CONFIG } from '@hashpass/config';
 import { DirectusApiClient } from './directus-api-client';
 import type { DirectusApiError } from './directus-api-client';
 
+type SecureStoreModule = typeof import('expo-secure-store');
+
+let secureStoreModule: SecureStoreModule | null = null;
+
+const getSecureStore = (): SecureStoreModule => {
+  if (!secureStoreModule) {
+    // Keep native storage lazy without using import(), which Metro rewrites
+    // through Expo's async-require helper during Android release bundling.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    secureStoreModule = require('expo-secure-store') as SecureStoreModule;
+  }
+  return secureStoreModule;
+};
+
 export class DirectusAuthProvider implements IAuthProvider {
   private baseUrl: string;
   private apiClient: DirectusApiClient;
@@ -781,8 +795,7 @@ async signOut(): Promise<{ error?: string }> {
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         stored = localStorage.getItem(key);
       } else if (Platform.OS !== 'web') {
-        // React Native
-        const SecureStore = await import('expo-secure-store');
+        const SecureStore = getSecureStore();
         stored = await SecureStore.getItemAsync(key);
       }
 
@@ -801,7 +814,7 @@ async signOut(): Promise<{ error?: string }> {
         if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
           localStorage.removeItem(key);
         } else if (Platform.OS !== 'web') {
-          const SecureStore = await import('expo-secure-store');
+          const SecureStore = getSecureStore();
           await SecureStore.deleteItemAsync(key);
         }
         return;
@@ -817,8 +830,7 @@ async signOut(): Promise<{ error?: string }> {
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(key, value);
       } else if (Platform.OS !== 'web') {
-        // React Native
-        const SecureStore = await import('expo-secure-store');
+        const SecureStore = getSecureStore();
         await SecureStore.setItemAsync(key, value);
       }
     } catch (error) {
@@ -833,8 +845,7 @@ async signOut(): Promise<{ error?: string }> {
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         localStorage.removeItem(key);
       } else if (Platform.OS !== 'web') {
-        // React Native
-        const SecureStore = await import('expo-secure-store');
+        const SecureStore = getSecureStore();
         await SecureStore.deleteItemAsync(key);
       }
     } catch (error) {
