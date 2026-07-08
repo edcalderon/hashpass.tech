@@ -30,6 +30,7 @@ Metro does all the heavy JS bundling. The app has hundreds of API route files â€
 | v1.8.131 | `FATAL ERROR: JavaScript heap out of memory` at 2036/2048 MiB | Over-correction left Node at only 2048m while Gradle got 3072m; Metro peaked above 2 GiB during bundle | Swap: Node=3072m, Gradle=2048m (same 5632 MiB total) |
 | v1.8.170 | `Unable to resolve module ... @expo/metro-config/build/async-require.js` from `lib/supabase.ts` | Android Metro rewrote native-reachable `import()` to Expo's async-require helper, but that helper is not present in the release bundle graph | Replaced native lazy `import()` with lazy `require()` |
 | v1.8.171 | Same `async-require.js` failure from `components/CrystalForgeBackground.tsx` | A web-only Three.js background was imported by a cross-platform route, so Android parsed its web dynamic imports | Added native stubs for web-only components and removed native-reachable auth dynamic imports |
+| v1.8.172 | `Failed to get the SHA-1 for ... node_modules/.pnpm/metro-runtime.../require.js` | Metro resolved a pnpm virtual-store file, then the broad nested `node_modules` blocklist excluded that same file from the Haste graph | Narrowed the blocklist so real nested dependency trees are skipped but `node_modules/.pnpm/...` stays hashable |
 
 ## Local Android Bundle Preflight
 
@@ -94,6 +95,15 @@ Error: Unable to resolve module ... @expo/metro-config/build/async-require.js
 ```
 
 Fix: run the local Android bundle preflight above, then remove dynamic `import()` from the source file named in the error.
+
+**Metro SHA-1 failure for `node_modules/.pnpm`** â€” look for this in `createBundleReleaseJsAndAssets`:
+
+```text
+Error: Failed to get the SHA-1 for:
+.../node_modules/.pnpm/metro-runtime.../node_modules/metro-runtime/src/polyfills/require.js
+```
+
+Fix: check `apps/mobile-app/metro.config.js`. `watchFolders` must include the workspace dependency root, and `blockList` must not match pnpm virtual-store paths under `node_modules/.pnpm/`.
 
 ## Scaling Up
 
