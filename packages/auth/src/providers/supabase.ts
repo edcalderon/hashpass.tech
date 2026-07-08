@@ -54,8 +54,13 @@ export class SupabaseAuthProvider implements IAuthProvider {
   private currentSession: AuthSession | null = null;
   private stateChangeCallbacks: AuthStateChangeCallback[] = [];
 
-  constructor(url: string, anonKey: string) {
-    this.supabase = createClient(url, anonKey);
+  constructor(url: string, anonKey: string, existingClient?: SupabaseClient) {
+    // Reuse an existing client when the host app already maintains a
+    // Supabase singleton (e.g. apps/mobile-app/lib/supabase.ts). Creating a
+    // second createClient() against the same project ref triggers GoTrueClient's
+    // "Multiple GoTrueClient instances" warning and can race on session refresh
+    // since both clients read/write the same storage key.
+    this.supabase = existingClient ?? createClient(url, anonKey);
     this.initializeSession();
   }
 

@@ -106,7 +106,7 @@ describe('native auth provider fallback', () => {
     const provider = createAuthProviderFromEnv();
 
     expect(provider.getProviderName()).toBe('supabase');
-    expect(mockSupabaseProviderCtor).toHaveBeenCalledWith('https://example.supabase.co', 'anon-key');
+    expect(mockSupabaseProviderCtor).toHaveBeenCalledWith('https://example.supabase.co', 'anon-key', undefined);
 
     const result = await provider.signInWithOAuth('google');
 

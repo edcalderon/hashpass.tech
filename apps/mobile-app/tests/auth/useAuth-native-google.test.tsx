@@ -125,6 +125,10 @@ describe('useAuth native Google sign-in', () => {
         getSupabaseOAuthRedirectUrl: jest.fn(() => 'myapp://auth/callback'),
       }));
 
+      jest.doMock('@hashpass/auth/auth-dependencies', () => ({
+        configureAuthService: jest.fn(),
+      }));
+
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
@@ -214,6 +218,10 @@ describe('useAuth native Google sign-in', () => {
         getSupabaseOAuthRedirectUrl: jest.fn(() => 'myapp://auth/callback'),
       }));
 
+      jest.doMock('@hashpass/auth/auth-dependencies', () => ({
+        configureAuthService: jest.fn(),
+      }));
+
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
@@ -298,6 +306,10 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('@hashpass/auth', () => ({
         authService: mockDirectusAuthService,
         getSupabaseOAuthRedirectUrl: jest.fn(() => 'http://localhost:8081/auth/callback'),
+      }));
+
+      jest.doMock('@hashpass/auth/auth-dependencies', () => ({
+        configureAuthService: jest.fn(),
       }));
 
       jest.doMock('../../lib/supabase', () => ({

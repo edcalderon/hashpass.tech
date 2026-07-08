@@ -2,22 +2,47 @@
  * Main authentication service - Provider agnostic
  */
 
-import type { IAuthProvider, ApiAuthResponse, AuthUser, AuthSession } from './types';
+import type { IAuthProvider, ApiAuthResponse } from './types';
 import { createAuthProviderFromEnv, resolveAuthProviderConfig } from './factory';
 import { DirectusApiClient } from './providers/directus-api-client';
+import { getInjectedSupabaseClient, onAuthServiceConfigured } from './auth-dependencies';
 
 type SupabaseJsModule = typeof import('@supabase/supabase-js');
 
 let authInstance: IAuthProvider | null = null;
 
+onAuthServiceConfigured(() => {
+  authInstance = null;
+});
+
 export function getAuthService(): IAuthProvider {
   if (!authInstance) {
-    authInstance = createAuthProviderFromEnv();
+    authInstance = createAuthProviderFromEnv({ supabaseClient: getInjectedSupabaseClient() });
   }
   return authInstance;
 }
 
-export const authService = getAuthService();
+// Lazy singleton: constructing eagerly at module-import time is what caused
+// the duplicate-GoTrueClient bug (this module has no way to know yet whether
+// the host app registered a client via configureAuthService()). Every
+// property access resolves and auto-binds against the real instance, so
+// `authService.signOut()` etc. behave exactly as if `authService` were the
+// instance itself.
+export const authService: IAuthProvider = new Proxy({} as IAuthProvider, {
+  get(_target, prop, _receiver) {
+    const instance = getAuthService() as unknown as Record<PropertyKey, unknown>;
+    const value = instance[prop as keyof typeof instance];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
+  set(_target, prop, value) {
+    const instance = getAuthService() as unknown as Record<PropertyKey, unknown>;
+    instance[prop as keyof typeof instance] = value;
+    return true;
+  },
+  has(_target, prop) {
+    return prop in (getAuthService() as unknown as object);
+  },
+});
 
 const normalizeHostname = (value?: string | null): string => {
   const raw = (value || '').trim().toLowerCase();
@@ -162,6 +187,8 @@ async function verifyBetterAuthRequest(
 
   try {
     const sessionUrl = new URL(`${basePath.replace(/\/$/, '')}/get-session`, origin);
+    // Server-side Better Auth verification must call the auth endpoint directly.
+    // eslint-disable-next-line no-restricted-syntax
     const response = await fetch(sessionUrl.toString(), {
       method: 'GET',
       headers: {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { authService, getSupabaseOAuthRedirectUrl } from '@hashpass/auth';
 import type { AuthSession, AuthUser } from '@hashpass/auth';
+import { configureAuthService } from '@hashpass/auth/auth-dependencies';
 import { createSessionFromUrl, supabase } from '../lib/supabase';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -13,6 +14,14 @@ import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config'
 import { mergeOAuthFragmentParams } from '../lib/auth/oauth/callback-params';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
+
+// Reuse the app's Supabase singleton (lib/supabase.ts) instead of letting
+// @hashpass/auth build a second GoTrueClient against the same project.
+// Two independent clients sharing one storage key ("Multiple GoTrueClient
+// instances" warning) can race on session refresh and cause intermittent
+// unexpected sign-outs. authService resolves lazily, so this only needs to
+// run before the first call below — it does not need to win an import race.
+configureAuthService({ supabaseClient: supabase });
 
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
 let oauthHashProcessingPromise: Promise<void> | null = null;
