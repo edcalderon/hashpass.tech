@@ -33,6 +33,9 @@ export const SSO_CONFIG = {
   // CORS settings
   cors: {
     origins: [
+      'https://hashpass.tech',
+      'https://www.hashpass.tech',
+      'https://dev.hashpass.tech',
       'https://hashpass.co',
       'https://www.hashpass.co',
       'https://bsl2025.hashpass.co',

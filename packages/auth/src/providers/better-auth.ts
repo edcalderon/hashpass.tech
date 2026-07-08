@@ -189,6 +189,38 @@ export class BetterAuthProvider implements IAuthProvider {
     }
   }
 
+  /**
+   * Native sign-in: exchange an ID token obtained by a native SDK (e.g.
+   * @react-native-google-signin/google-signin) directly, with no browser
+   * redirect. Better Auth verifies the token's signature/audience against
+   * its configured provider client ID — see
+   * https://www.better-auth.com/docs/concepts/oauth#sign-in-with-id-token
+   */
+  async signInWithIdToken(provider: 'google', idToken: string): Promise<AuthResponse> {
+    try {
+      this.currentSession = null;
+      this.notifyStateChange(null);
+
+      const result = await (this.getClient() as any).signIn.social({
+        provider,
+        idToken: { token: idToken },
+      });
+
+      if (result?.error) {
+        return { error: result.error.message || result.error.statusText || 'Google sign-in failed.' };
+      }
+
+      const session = await this.getSession({ force: true });
+      if (!session) {
+        return { error: 'Authentication completed but no Better Auth session was found.' };
+      }
+
+      return { user: session.user, session };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'OAuth sign-in failed' };
+    }
+  }
+
   async handleOAuthCallback(): Promise<AuthResponse> {
     const session = await this.getSession({ force: true });
 

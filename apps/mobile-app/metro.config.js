@@ -216,9 +216,15 @@ const blockListPatterns = [
   /.*\/apps\/mobile-app\/dist\/.*/,
   /.*\/apps\/mobile-app\/tests\/.*/,
   /.*\/apps\/mobile-app\/assets\/store\/.*/,
-  // Nested node_modules inside any package — resolved from root by hoisting.
-  // Do not block pnpm's virtual store; Metro still needs to hash files there.
-  /.*\/node_modules\/(?!\.pnpm\/).*\/node_modules\/.*/,
+  // Nested node_modules inside most packages are redundant hoisting artifacts
+  // resolvable from root, so block them to shrink the Haste file graph. Do not
+  // block pnpm's virtual store (Metro still needs to hash files there), and do
+  // not block better-auth/better-call/@better-auth's own nested node_modules —
+  // pnpm deliberately does NOT hoist their zod@4 dependency (root has zod@3,
+  // which lacks the .meta() API better-auth's server code calls), so blocking
+  // it here made Metro fall back to the mismatched root zod and crash every
+  // /api/auth/* request with "z.coerce.boolean(...).meta is not a function".
+  /.*\/node_modules\/(?!\.pnpm\/)(?!better-auth\/)(?!better-call\/)(?!@better-auth\/).*\/node_modules\/.*/,
   // Build artefacts inside workspace packages
   /.*\/packages\/.*\/dist\/.*/,
   /.*\/packages\/.*\/build\/.*/,
