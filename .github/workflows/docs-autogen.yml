@@ -206,5 +206,5 @@ jobs:
         with:
           title: 'CLAUDE.md accuracy review — ${{ needs.classify.outputs.changed_areas }}'
           content-filepath: /tmp/claude-audit.md
-          labels: documentation,claude-md,priority: high
+          labels: 'documentation,claude-md,priority: high'
           assignees: edcalderon
