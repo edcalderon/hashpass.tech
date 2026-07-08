@@ -316,9 +316,29 @@ export const useAuth = () => {
   const signInWithOAuth = useCallback(async (provider: 'google' | 'github' | 'facebook' | 'twitter') => {
     try {
       const googleWebClientId = resolveGoogleOAuthClientId();
-      const supabaseGoogleEnabled = provider === 'google' && hasPublicSupabaseAuthConfig();
+      const providerName = authService.getProviderName();
+      const supabaseGoogleEnabled =
+        provider === 'google' &&
+        providerName !== 'better-auth' &&
+        hasPublicSupabaseAuthConfig();
+
+      const clearNonSupabaseProviderSession = async () => {
+        if (providerName === 'supabase') {
+          return;
+        }
+
+        try {
+          await authService.signOut();
+        } catch (clearError) {
+          console.warn('[useAuth] Failed to clear previous provider session before Supabase Google sign-in:', clearError);
+        } finally {
+          sessionBootstrapPromise = Promise.resolve(null);
+        }
+      };
 
       if (Platform.OS === 'web' && supabaseGoogleEnabled) {
+        await clearNonSupabaseProviderSession();
+
         const { error: signInError } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
@@ -343,6 +363,7 @@ export const useAuth = () => {
       if (nativeGoogleEnabled) {
         try {
           const { idToken } = await signInWithNativeGoogleAccount();
+          await clearNonSupabaseProviderSession();
 
           const { error: signInError } = await supabase.auth.signInWithIdToken({
             provider: 'google',

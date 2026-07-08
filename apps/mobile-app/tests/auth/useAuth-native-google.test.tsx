@@ -92,6 +92,7 @@ describe('useAuth native Google sign-in', () => {
     mockAuthService.getProviderName.mockClear();
     mockAuthService.getSession.mockClear();
     mockAuthService.onAuthStateChange.mockClear();
+    mockAuthService.signOut.mockClear();
     mockSignInWithNativeGoogleAccount.mockClear();
     mockOpenAuthSessionAsync.mockClear();
     mockSupabase.auth.signInWithOAuth.mockClear();
@@ -185,6 +186,7 @@ describe('useAuth native Google sign-in', () => {
 
     expect(mockSignInWithNativeGoogleAccount).toHaveBeenCalledTimes(1);
     expect(mockAuthService.signInWithOAuth).not.toHaveBeenCalled();
+    expect(mockAuthService.signOut).not.toHaveBeenCalled();
     expect(mockOpenAuthSessionAsync).not.toHaveBeenCalled();
     expect(mockSupabase.auth.signInWithIdToken).toHaveBeenCalledWith({
       provider: 'google',
@@ -277,6 +279,7 @@ describe('useAuth native Google sign-in', () => {
     });
 
     expect(mockSignInWithNativeGoogleAccount).toHaveBeenCalledTimes(1);
+    expect(mockDirectusAuthService.signOut).toHaveBeenCalledTimes(1);
     expect(mockDirectusAuthService.signInWithOAuth).not.toHaveBeenCalled();
     expect(mockOpenAuthSessionAsync).not.toHaveBeenCalled();
     expect(mockSupabase.auth.signInWithIdToken).toHaveBeenCalledWith({
@@ -372,8 +375,97 @@ describe('useAuth native Google sign-in', () => {
         redirectTo: 'http://localhost:8081/auth/callback',
       },
     });
+    expect(mockDirectusAuthService.signOut).toHaveBeenCalledTimes(1);
     expect(mockDirectusAuthService.signInWithOAuth).not.toHaveBeenCalled();
     expect(mockSignInWithNativeGoogleAccount).not.toHaveBeenCalled();
     expect(mockOpenAuthSessionAsync).not.toHaveBeenCalled();
+  });
+
+  it('does not bypass Better Auth tenant Google OAuth on web', async () => {
+    const mockBetterAuthService = {
+      ...mockAuthService,
+      getProviderName: jest.fn(() => 'better-auth'),
+      signOut: jest.fn(async () => undefined),
+      signInWithOAuth: jest.fn(async () => ({
+        pending: true,
+        oauthUrl: 'https://api.hashpass.tech/api/auth/sign-in/social?provider=google',
+      })),
+    };
+
+    let capturedHook: any = null;
+    let testAct: any = null;
+
+    jest.isolateModules(() => {
+      jest.doMock('react-native', () => ({
+        Platform: { OS: 'web' },
+      }));
+
+      jest.doMock('@hashpass/auth', () => ({
+        authService: mockBetterAuthService,
+        getSupabaseOAuthRedirectUrl: jest.fn(() => 'http://localhost:8081/auth/callback'),
+      }));
+
+      jest.doMock('@hashpass/auth/auth-dependencies', () => ({
+        configureAuthService: jest.fn(),
+      }));
+
+      jest.doMock('../../lib/supabase', () => ({
+        supabase: mockSupabase,
+        createSessionFromUrl: jest.fn(),
+      }));
+
+      jest.doMock('../../config/supabase-profiles', () => ({
+        resolvePublicSupabaseConfig: jest.fn(() => ({
+          supabaseUrl: 'https://example.supabase.co',
+          supabaseAnonKey: 'anon-key',
+        })),
+      }));
+
+      jest.doMock('../../lib/native-google-signin', () => ({
+        clearNativeGoogleAccount: jest.fn(),
+        nativeGoogleSigninStatusCodes: {
+          SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+          PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+        },
+        signInWithNativeGoogleAccount: mockSignInWithNativeGoogleAccount,
+      }));
+
+      jest.doMock('../../lib/auth/oauth/callback-params', () => ({
+        mergeOAuthFragmentParams: jest.fn((params: URLSearchParams, extras: Record<string, string>) => ({
+          ...Object.fromEntries(params.entries()),
+          ...extras,
+        })),
+      }));
+
+      jest.doMock('expo-web-browser', () => ({
+        __esModule: true,
+        openAuthSessionAsync: mockOpenAuthSessionAsync,
+      }));
+
+      const React = require('react');
+      const TestRenderer = require('react-test-renderer');
+      const { useAuth } = require('../../hooks/useAuth');
+      testAct = TestRenderer.act;
+
+      const Harness = () => {
+        capturedHook = useAuth();
+        return null;
+      };
+
+      TestRenderer.act(() => {
+        TestRenderer.create(React.createElement(Harness));
+      });
+    });
+
+    expect(capturedHook).toBeTruthy();
+
+    await testAct(async () => {
+      await capturedHook.signInWithOAuth('google');
+    });
+
+    expect(mockBetterAuthService.signInWithOAuth).toHaveBeenCalledWith('google');
+    expect(mockBetterAuthService.signOut).not.toHaveBeenCalled();
+    expect(mockSupabase.auth.signInWithOAuth).not.toHaveBeenCalled();
+    expect(mockSignInWithNativeGoogleAccount).not.toHaveBeenCalled();
   });
 });
