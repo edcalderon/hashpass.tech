@@ -79,6 +79,26 @@ describe('oauth callback api', () => {
     );
   });
 
+  it('explains invalid provider failures clearly in local development', async () => {
+    setEnv('EXPO_PUBLIC_ENV', 'local');
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../../../app/api/auth/oauth/callback+api');
+
+    const response = await GET(
+      new Request('http://localhost:8081/api/auth/oauth/callback?reason=INVALID_PROVIDER', {
+        headers: {
+          origin: 'http://localhost:8081',
+          referer: 'http://localhost:8081/auth',
+        },
+      })
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get('location')).toContain(
+      'http://localhost:8081/auth?error=oauth_failed&message=Authentication+could+not+be+completed.+Google+OAuth+is+not+configured+for+local+Directus+auth.'
+    );
+  });
+
   it('returns native OAuth callbacks to the app scheme when native_callback is present', async () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const directusUser = {

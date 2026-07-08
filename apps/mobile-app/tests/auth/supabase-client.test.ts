@@ -268,4 +268,60 @@ describe('web Supabase client initialization', () => {
     expect(result.error).toBeNull();
     expect(result.session?.user.email).toBe('hydrated@example.com');
   });
+
+  it('verifies a token_hash magic link when the callback URL uses Supabase email OTP verification', async () => {
+    const queryParams = require('expo-auth-session/build/QueryParams');
+    queryParams.getQueryParams.mockReturnValueOnce({
+      params: {
+        token_hash: 'magic-hash-123',
+        type: 'magiclink',
+      },
+      errorCode: null,
+    });
+
+    require('../../lib/supabase');
+    const { createSessionFromUrl } = require('../../lib/supabase');
+
+    const clientInstance = mockCreateClient.mock.results[0]?.value as {
+      auth: {
+        verifyOtp: jest.Mock;
+      };
+    };
+
+    clientInstance.auth.verifyOtp.mockResolvedValueOnce({
+      data: {
+        session: {
+          access_token: 'access-token',
+          refresh_token: 'refresh-token',
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+          user: {
+            id: 'user-789',
+            email: 'magic@example.com',
+            role: 'authenticated',
+            user_metadata: {},
+            app_metadata: {},
+            aud: 'authenticated',
+            confirmation_sent_at: null,
+            confirmed_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            phone: null,
+            phone_confirmed_at: null,
+            email_confirmed_at: null,
+            last_sign_in_at: new Date().toISOString(),
+          },
+        },
+      },
+      error: null,
+    });
+
+    const result = await createSessionFromUrl('hashpass://auth/callback?token_hash=magic-hash-123&type=magiclink');
+
+    expect(clientInstance.auth.verifyOtp).toHaveBeenCalledWith({
+      token_hash: 'magic-hash-123',
+      type: 'magiclink',
+    });
+    expect(result.error).toBeNull();
+    expect(result.session?.user.email).toBe('magic@example.com');
+  });
 });

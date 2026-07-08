@@ -62,17 +62,9 @@ export async function GET(request: Request): Promise<Response> {
     fallbackOrigin: url.origin,
   });
 
-  console.log('[OAuth Login] Starting OAuth flow via Directus');
-  console.log('[OAuth Login] Provider:', provider);
-  console.log('[OAuth Login] Return to:', returnTo);
-  console.log('[OAuth Login] Frontend origin:', frontendOrigin);
-  if (nativeCallback) {
-    console.log('[OAuth Login] Native callback requested:', nativeCallback);
-  }
-
   const validProviders = ['google', 'discord', 'github'];
   if (!validProviders.includes(provider)) {
-    console.error('[OAuth Login] Invalid provider:', provider);
+    console.warn('[OAuth Login] Invalid provider:', provider);
     const errorUrl = new URL('/auth', frontendOrigin);
     errorUrl.searchParams.set('error', 'invalid_provider');
     errorUrl.searchParams.set('message', `Provider '${provider}' is not supported`);
@@ -107,8 +99,6 @@ export async function GET(request: Request): Promise<Response> {
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   directusOAuthUrl.searchParams.set('redirect', callbackUrl.toString());
   directusOAuthUrl.searchParams.set('mode', 'session');
-
-  console.log('[OAuth Login] Redirecting to Directus OAuth:', directusOAuthUrl.toString());
 
   const headers = new Headers();
   headers.set('Location', directusOAuthUrl.toString());

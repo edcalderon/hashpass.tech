@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { authService, getSupabaseOAuthRedirectUrl } from '@hashpass/auth';
 import type { AuthSession, AuthUser } from '@hashpass/auth';
+import { configureAuthService } from '@hashpass/auth/auth-dependencies';
 import { createSessionFromUrl, supabase } from '../lib/supabase';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -12,6 +13,15 @@ import {
 import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config';
 import { mergeOAuthFragmentParams } from '../lib/auth/oauth/callback-params';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
+import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
+
+// Reuse the app's Supabase singleton (lib/supabase.ts) instead of letting
+// @hashpass/auth build a second GoTrueClient against the same project.
+// Two independent clients sharing one storage key ("Multiple GoTrueClient
+// instances" warning) can race on session refresh and cause intermittent
+// unexpected sign-outs. authService resolves lazily, so this only needs to
+// run before the first call below — it does not need to win an import race.
+configureAuthService({ supabaseClient: supabase });
 
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
 let oauthHashProcessingPromise: Promise<void> | null = null;
@@ -75,6 +85,11 @@ const mapSupabaseUserToAuthUser = (supabaseUser: any): AuthUser => ({
   user_metadata: supabaseUser.user_metadata,
   created_at: supabaseUser.created_at,
 });
+
+const hasPublicSupabaseAuthConfig = (): boolean => {
+  const { supabaseUrl, supabaseAnonKey } = resolvePublicSupabaseConfig();
+  return Boolean(supabaseUrl && supabaseAnonKey);
+};
 
 export const useAuth = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -140,7 +155,6 @@ export const useAuth = () => {
                     supabaseBridgeType,
                     bridgeEmail
                   );
-                  console.log('[useAuth] ✅ Supabase dual-session bridge established.');
                 } catch (bridgeError: any) {
                   console.warn(
                     '[useAuth] ⚠️ Supabase dual-session bridge failed:',
@@ -301,26 +315,55 @@ export const useAuth = () => {
 
   const signInWithOAuth = useCallback(async (provider: 'google' | 'github' | 'facebook' | 'twitter') => {
     try {
-      if (!authService.signInWithOAuth) {
-        throw new Error('OAuth not supported by current auth provider');
+      const googleWebClientId = resolveGoogleOAuthClientId();
+      const providerName = authService.getProviderName();
+      const supabaseGoogleEnabled =
+        provider === 'google' &&
+        providerName !== 'better-auth' &&
+        hasPublicSupabaseAuthConfig();
+
+      const clearNonSupabaseProviderSession = async () => {
+        if (providerName === 'supabase') {
+          return;
+        }
+
+        try {
+          await authService.signOut();
+        } catch (clearError) {
+          console.warn('[useAuth] Failed to clear previous provider session before Supabase Google sign-in:', clearError);
+        } finally {
+          sessionBootstrapPromise = Promise.resolve(null);
+        }
+      };
+
+      if (Platform.OS === 'web' && supabaseGoogleEnabled) {
+        await clearNonSupabaseProviderSession();
+
+        const { error: signInError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: getSupabaseOAuthRedirectUrl(),
+          },
+        });
+
+        if (signInError) throw signInError;
+        return { pending: true };
       }
 
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────
-      // When enabled, uses the system account picker with no browser popup.
-      // Only safe for the Supabase provider — Directus expects the browser-based
-      // callback flow to complete its session exchange.
+      // When Supabase is configured, use the system account picker and create the
+      // Supabase session directly even if the app's primary provider is Directus.
       // Disabled or unavailable → falls through to the provider OAuth flow below.
-      const googleWebClientId = resolveGoogleOAuthClientId();
-      const providerName = authService.getProviderName();
       const nativeGoogleEnabled =
         provider === 'google' &&
         Platform.OS !== 'web' &&
-        providerName === 'supabase' &&
+        supabaseGoogleEnabled &&
         shouldUseNativeGoogleSignin(googleWebClientId);
 
       if (nativeGoogleEnabled) {
         try {
           const { idToken } = await signInWithNativeGoogleAccount();
+          await clearNonSupabaseProviderSession();
 
           const { error: signInError } = await supabase.auth.signInWithIdToken({
             provider: 'google',
@@ -329,7 +372,6 @@ export const useAuth = () => {
           if (signInError) throw signInError;
           return { pending: true };
         } catch (err: any) {
-          console.log('[GoogleSignin] error code:', err?.code, 'message:', err?.message);
           if (err.code === nativeGoogleSigninStatusCodes.SIGN_IN_CANCELLED) {
             return { pending: false };
           }
@@ -340,15 +382,12 @@ export const useAuth = () => {
             throw err;
           }
         }
-      } else if (
-        Platform.OS !== 'web' &&
-        provider === 'google' &&
-        providerName === 'directus' &&
-        shouldUseNativeGoogleSignin(googleWebClientId)
-      ) {
-        console.log('[useAuth] Skipping native Google SDK for Directus; using browser OAuth flow.');
       }
       // ── End native Google Sign-In ───────────────────────────────────────────────
+
+      if (!authService.signInWithOAuth) {
+        throw new Error('OAuth not supported by current auth provider');
+      }
 
       const result = await authService.signInWithOAuth(provider);
 

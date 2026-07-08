@@ -20,12 +20,13 @@ if (Platform.OS === 'web') {
   let asyncStorage: any = null;
   const loadAsyncStorage = () => {
     if (!asyncStorage) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const AsyncStorageModule = require('@react-native-async-storage/async-storage');
       asyncStorage = AsyncStorageModule.default ?? AsyncStorageModule;
     }
     return asyncStorage;
   };
-  
+
   storage = {
     getItem: async (key: string) => {
       const AsyncStorage = loadAsyncStorage();
@@ -42,6 +43,41 @@ if (Platform.OS === 'web') {
   };
 }
 
+type SupabaseEmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email';
+
+const SUPABASE_EMAIL_OTP_FALLBACK_TYPES: SupabaseEmailOtpType[] = [
+  'magiclink',
+  'email',
+  'signup',
+  'invite',
+  'recovery',
+  'email_change',
+];
+
+const normalizeSupabaseEmailOtpType = (rawType: string | null | undefined): SupabaseEmailOtpType => {
+  const normalized = (rawType || 'magiclink').trim().toLowerCase();
+
+  switch (normalized) {
+    case 'email':
+    case 'signup':
+    case 'invite':
+    case 'recovery':
+    case 'email_change':
+      return normalized;
+    default:
+      return 'magiclink';
+  }
+};
+
+const getSupabaseEmailOtpTypeCandidates = (rawType: string | null | undefined): SupabaseEmailOtpType[] => {
+  const candidates = [
+    normalizeSupabaseEmailOtpType(rawType),
+    ...SUPABASE_EMAIL_OTP_FALLBACK_TYPES,
+  ];
+
+  return candidates.filter((candidate, index) => candidates.indexOf(candidate) === index);
+};
+
 
 /**
  * Creates a session from a URL, typically after OAuth redirect
@@ -53,12 +89,6 @@ export const createSessionFromUrl = async (url: string): Promise<{
   user: User | null;
   error: Error | null;
 }> => {
-  console.log('🔍 Creating session from URL:', url.substring(0, 100) + '...');
-  console.log('🔍 Full URL length:', url.length);
-  console.log('🔍 URL contains hash:', url.includes('#'));
-  console.log('🔍 URL contains ?code=', url.includes('?code=') || url.includes('&code=') || url.includes('#code='));
-  console.log('🔍 URL contains #access_token=', url.includes('#access_token='));
-
   const hydrateSessionUser = async (session: Session | null): Promise<{
     session: Session | null;
     user: User | null;
@@ -100,37 +130,30 @@ export const createSessionFromUrl = async (url: string): Promise<{
   try {
     // Parse URL parameters (QueryParams.getQueryParams handles both query string and hash)
     const { params, errorCode } = QueryParams.getQueryParams(url);
-    const hasAuthParams = Boolean(params.access_token || params.code || params.refresh_token || errorCode);
+    const hasAuthParams = Boolean(
+      params.access_token ||
+      params.code ||
+      params.refresh_token ||
+      params.token_hash ||
+      params.token ||
+      errorCode
+    );
 
     // If callback URL does not include auth payload, return existing session if available.
     // When tokens/code exist, we must process them explicitly to avoid stale auth state.
     if (!hasAuthParams) {
       const { data: { session: existingSession } } = await supabase.auth.getSession();
       if (existingSession && existingSession.user) {
-        console.log('✅ Session already exists, returning it');
         return { session: existingSession, user: existingSession.user, error: null };
       }
 
       if (existingSession) {
         const hydrated = await hydrateSessionUser(existingSession);
         if (hydrated.user) {
-          console.log('✅ Session already exists and user was hydrated from Supabase');
           return { session: hydrated.session, user: hydrated.user, error: null };
         }
       }
-    } else {
-      console.log('ℹ️ Auth payload detected in callback URL, forcing explicit session processing.');
     }
-    
-    console.log('📋 URL params parsed:', {
-      hasAccessToken: !!params.access_token,
-      hasRefreshToken: !!params.refresh_token,
-      hasCode: !!params.code,
-      errorCode,
-      paramsKeys: Object.keys(params),
-      codeLength: params.code ? String(params.code).length : 0,
-      accessTokenLength: params.access_token ? String(params.access_token).length : 0,
-    });
 
     // Handle OAuth errors
     if (errorCode) {
@@ -138,10 +161,8 @@ export const createSessionFromUrl = async (url: string): Promise<{
       
       // Handle specific error cases that might still have valid sessions
       if (errorCode === 'server_error' || errorCode.includes('email')) {
-        console.log('ℹ️ Checking for existing session despite error...');
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          console.log('✅ Found existing session despite error');
           return { session, user: null, error: null };
         }
       }
@@ -150,11 +171,13 @@ export const createSessionFromUrl = async (url: string): Promise<{
     }
 
     const { access_token, refresh_token, code } = params;
+    const token_hash = typeof params.token_hash === 'string' ? params.token_hash.trim() : '';
+    const token = typeof params.token === 'string' ? params.token.trim() : '';
+    const otpType = typeof params.type === 'string' ? params.type : null;
+    const otpEmail = typeof params.email === 'string' ? params.email.trim().toLowerCase() : '';
 
     // Method 1: Direct token setting (preferred)
     if (access_token) {
-      console.log('🎫 Setting session with access token...');
-      
       const { data, error } = await supabase.auth.setSession({
         access_token,
         refresh_token: refresh_token || '',
@@ -166,7 +189,6 @@ export const createSessionFromUrl = async (url: string): Promise<{
         // Check if session was created despite error
         const { data: { session: fallbackSession } } = await supabase.auth.getSession();
         if (fallbackSession) {
-          console.log('✅ Session exists despite setSession error');
           const hydrated = await hydrateSessionUser(fallbackSession);
           return { session: hydrated.session, user: hydrated.user, error: null };
         }
@@ -174,16 +196,53 @@ export const createSessionFromUrl = async (url: string): Promise<{
         throw error;
       }
 
-      console.log('✅ Session created successfully with tokens');
       const hydrated = await hydrateSessionUser(data.session);
       return { session: hydrated.session, user: hydrated.user, error: null };
     }
 
-    // Method 2: Authorization code exchange
+    // Method 2: Email OTP / magic link verification
+    if (token_hash || (token && otpEmail)) {
+      const verificationTypes = getSupabaseEmailOtpTypeCandidates(otpType);
+      let lastVerificationError: Error | null = null;
+
+      for (const verificationType of verificationTypes) {
+        try {
+          const verifyParams = token_hash
+            ? { token_hash, type: verificationType }
+            : { email: otpEmail, token, type: verificationType };
+
+          const { data, error } = await supabase.auth.verifyOtp(verifyParams as any);
+
+          if (error) {
+            lastVerificationError = error;
+            console.warn(
+              `⚠️ Supabase email OTP verification failed for type "${verificationType}":`,
+              error.message
+            );
+            continue;
+          }
+
+          if (!data?.session) {
+            lastVerificationError = new Error('No session returned from email OTP verification');
+            continue;
+          }
+
+          const hydrated = await hydrateSessionUser(data.session);
+          return { session: hydrated.session, user: hydrated.user, error: null };
+        } catch (verifyError: any) {
+          lastVerificationError = verifyError instanceof Error
+            ? verifyError
+            : new Error(String(verifyError));
+        }
+      }
+
+      if (lastVerificationError) {
+        throw lastVerificationError;
+      }
+    }
+
+    // Method 3: Authorization code exchange
     if (code) {
-      console.log('🔄 Exchanging authorization code for session...');
-      console.log('📝 Code (first 20 chars):', code.substring(0, 20) + '...');
-      
       try {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         
@@ -198,7 +257,6 @@ export const createSessionFromUrl = async (url: string): Promise<{
           // Check if session was created despite error
           const { data: { session: fallbackSession } } = await supabase.auth.getSession();
           if (fallbackSession) {
-            console.log('✅ Session exists despite exchangeCodeForSession error');
             const hydrated = await hydrateSessionUser(fallbackSession);
             return { session: hydrated.session, user: hydrated.user, error: null };
           }
@@ -211,8 +269,6 @@ export const createSessionFromUrl = async (url: string): Promise<{
           throw new Error('No session returned from code exchange');
         }
         
-        console.log('✅ Session created successfully via code exchange');
-        console.log('👤 User ID:', data.session.user?.id || '(pending hydration)');
         const hydrated = await hydrateSessionUser(data.session);
         return { session: hydrated.session, user: hydrated.user, error: null };
       } catch (exchangeError: any) {
@@ -220,7 +276,6 @@ export const createSessionFromUrl = async (url: string): Promise<{
         // Try one more time with getSession as fallback
         const { data: { session: retrySession } } = await supabase.auth.getSession();
         if (retrySession) {
-          console.log('✅ Found session on retry after code exchange error');
           const hydrated = await hydrateSessionUser(retrySession);
           return { session: hydrated.session, user: hydrated.user, error: null };
         }
@@ -494,11 +549,6 @@ const initializeSupabase = () => {
         const isAuthEndpoint = urlString.includes('/auth/v1/') || urlString.includes('auth.hashpass.co');
         // OAuth authorize endpoints are constructed by Supabase - don't modify URL but ensure header
         const isAuthorizeEndpoint = urlString.includes('/auth/v1/authorize');
-        // Verify endpoints need apikey as query param for custom domains
-        const isVerifyEndpoint = urlString.includes('/auth/v1/verify');
-        // Token exchange endpoint (for code exchange) needs apikey
-        const isTokenEndpoint = urlString.includes('/auth/v1/token');
-        
         // Ensure apikey header is always present for Supabase API requests
         // This is critical for custom auth domains
         if (!headers.has('apikey') && supabaseAnonKey) {
@@ -563,18 +613,6 @@ const initializeSupabase = () => {
             // If URL parsing fails, continue with original input
             console.warn('Failed to parse URL for apikey query param:', e);
           }
-        }
-        
-        // Log for debugging auth endpoints (can be removed in production)
-        if (isAuthEndpoint && typeof console !== 'undefined' && console.log) {
-          console.log(`🔐 Supabase auth request: ${urlString.substring(0, 100)}`, {
-            hasApikeyHeader: headers.has('apikey'),
-            hasApikeyInUrl: typeof finalInput === 'string' ? finalInput.includes('apikey=') : 
-                           finalInput instanceof URL ? finalInput.searchParams.has('apikey') : false,
-            isAuthorize: isAuthorizeEndpoint,
-            isVerify: isVerifyEndpoint,
-            isToken: isTokenEndpoint
-          });
         }
         
         // When finalInput is a Request object, don't override its headers
@@ -654,11 +692,6 @@ const initializeSupabase = () => {
           const isAuthEndpoint = urlString.includes('/auth/v1/') || urlString.includes('auth.hashpass.co');
           // OAuth authorize endpoints should not have URL modified (they handle redirects)
           const isAuthorizeEndpoint = urlString.includes('/auth/v1/authorize');
-          // Verify endpoints need apikey as query param for custom domains
-          const isVerifyEndpoint = urlString.includes('/auth/v1/verify');
-          // Token exchange endpoint (for code exchange) needs apikey
-          const isTokenEndpoint = urlString.includes('/auth/v1/token');
-          
           // Ensure apikey header is always present
           if (!headers.has('apikey') && supabaseAnonKey) {
             headers.set('apikey', supabaseAnonKey);
@@ -716,18 +749,6 @@ const initializeSupabase = () => {
             } catch {
               // Ignore URL parsing errors
             }
-          }
-          
-          // Log for debugging auth endpoints (can be removed in production)
-          if (isAuthEndpoint && typeof console !== 'undefined' && console.log) {
-            console.log(`🔐 Supabase auth request (fallback): ${urlString.substring(0, 100)}`, {
-              hasApikeyHeader: headers.has('apikey'),
-              hasApikeyInUrl: typeof finalInput === 'string' ? finalInput.includes('apikey=') : 
-                             finalInput instanceof URL ? finalInput.searchParams.has('apikey') : false,
-              isAuthorize: isAuthorizeEndpoint,
-              isVerify: isVerifyEndpoint,
-              isToken: isTokenEndpoint
-            });
           }
           
           // When finalInput is a Request object, don't override its headers

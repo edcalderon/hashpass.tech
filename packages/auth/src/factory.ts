@@ -3,6 +3,7 @@
  */
 
 import type { IAuthProvider, AuthProviderConfig } from './types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { DirectusAuthProvider } from './providers/directus';
 import { SupabaseAuthProvider } from './providers/supabase';
 import { BetterAuthProvider } from './providers/better-auth';
@@ -11,6 +12,11 @@ import { Platform } from 'react-native';
 
 type AuthProviderRuntimeOptions = {
   hostname?: string | null;
+};
+
+type AuthProviderRuntimeDependencies = {
+  /** Reuse an already-constructed Supabase client instead of creating a new one. */
+  supabaseClient?: SupabaseClient;
 };
 
 const envValue = (name: string): string | undefined => {
@@ -378,7 +384,10 @@ export function resolveAuthProviderConfig(
 /**
  * Create an authentication provider based on configuration
  */
-export function createAuthProvider(config: AuthProviderConfig): IAuthProvider {
+export function createAuthProvider(
+  config: AuthProviderConfig,
+  dependencies: AuthProviderRuntimeDependencies = {}
+): IAuthProvider {
   switch (config.provider) {
     case 'directus':
       if (!config.directus?.url) {
@@ -390,7 +399,7 @@ export function createAuthProvider(config: AuthProviderConfig): IAuthProvider {
       if (!config.supabase?.url || !config.supabase?.anonKey) {
         throw new Error('Supabase URL and anonymous key are required');
       }
-      return new SupabaseAuthProvider(config.supabase.url, config.supabase.anonKey);
+      return new SupabaseAuthProvider(config.supabase.url, config.supabase.anonKey, dependencies.supabaseClient);
 
     case 'better-auth':
       return new BetterAuthProvider(config.betterAuth);
@@ -406,6 +415,8 @@ export function createAuthProvider(config: AuthProviderConfig): IAuthProvider {
 /**
  * Create auth provider from environment variables
  */
-export function createAuthProviderFromEnv(options: AuthProviderRuntimeOptions = {}): IAuthProvider {
-  return createAuthProvider(resolveAuthProviderConfig(options));
+export function createAuthProviderFromEnv(
+  options: AuthProviderRuntimeOptions & AuthProviderRuntimeDependencies = {}
+): IAuthProvider {
+  return createAuthProvider(resolveAuthProviderConfig(options), { supabaseClient: options.supabaseClient });
 }

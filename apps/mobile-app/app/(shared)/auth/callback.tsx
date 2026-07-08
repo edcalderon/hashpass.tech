@@ -273,17 +273,25 @@ export default function AuthCallback() {
 
     const hasOAuthPayloadInUrl = () => {
         if (Platform.OS !== 'web' || typeof window === 'undefined') {
-            return Boolean(params.code || params.access_token || params.oauth_success);
+            return Boolean(params.code || params.access_token || params.token_hash || params.token || params.oauth_success);
         }
 
         const url = window.location.href;
         return (
             url.includes('#access_token=') ||
             url.includes('#oauth_success=') ||
+            url.includes('#token_hash=') ||
+            url.includes('#token=') ||
             url.includes('#code=') ||
             url.includes('?code=') ||
             url.includes('&code=') ||
+            url.includes('?token_hash=') ||
+            url.includes('&token_hash=') ||
+            url.includes('?token=') ||
+            url.includes('&token=') ||
             url.includes('access_token=') ||
+            url.includes('token_hash=') ||
+            url.includes('token=') ||
             url.includes('oauth_success=')
         );
     };
@@ -297,16 +305,13 @@ export default function AuthCallback() {
         if (rawReturnTo) {
             try {
                 const normalizedPath = normalizeRedirectPath(rawReturnTo);
-                console.log('📍 Using returnTo path:', normalizedPath);
                 return normalizedPath;
             } catch (e) {
                 console.warn('Failed to decode returnTo parameter:', e);
             }
         }
         // Default to dashboard explore
-        const defaultPath = '/dashboard/explore';
-        console.log('📍 Using default redirect path:', defaultPath);
-        return defaultPath;
+        return '/dashboard/explore';
     };
     
     // Safe navigation function - use router instead of window.location to prevent full page reload
@@ -320,7 +325,6 @@ export default function AuthCallback() {
         }
 
         const targetRouterPath = mapToRouterPath(targetPublicPath);
-        console.log('🚀 safeNavigate called with path:', targetPublicPath, 'routerPath:', targetRouterPath);
         
         // Mark as navigated BEFORE navigation to prevent re-processing
         hasNavigatedRef.current = true;
@@ -343,7 +347,6 @@ export default function AuthCallback() {
             
             // Immediate fallback to window.location if router fails
             if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                console.log('🔄 Falling back to window.location...');
                 window.location.replace(targetPublicPath);
             }
         }
@@ -354,7 +357,6 @@ export default function AuthCallback() {
                 const currentPath = window.location.pathname;
                 if (!currentPath.includes('/auth/callback')) {
                     window.sessionStorage.removeItem('auth_callback_processed');
-                    console.log('🧹 Cleared sessionStorage flag after navigation');
                 }
             }
         }, 2000);
@@ -370,7 +372,6 @@ export default function AuthCallback() {
             // (Android Chrome may change the URL when handling a custom scheme, causing a re-render)
             if (isProcessingRef.current) return;
             isProcessingRef.current = true;
-            console.log('🔁 Native auth relay detected, forwarding to the app callback...');
             window.location.replace(nativeRelayUrl);
             return;
         }
@@ -383,7 +384,6 @@ export default function AuthCallback() {
                 setHasNavigated(false);
                 hasNavigatedRef.current = false;
             } else {
-                console.log('⏭️ Callback already processed (sessionStorage), redirecting...');
                 hasNavigatedRef.current = true;
                 safeNavigate(getRedirectPath());
                 return;
@@ -392,7 +392,6 @@ export default function AuthCallback() {
         
         // CRITICAL: Prevent useEffect from running multiple times
         if (hasNavigatedRef.current || isProcessingRef.current) {
-            console.log('⏭️ Already processing or navigated, skipping useEffect');
             return;
         }
         
@@ -402,7 +401,6 @@ export default function AuthCallback() {
         const handleAuthCallback = async () => {
             // Triple-check guard (in case of race condition or re-render)
             if (hasNavigatedRef.current || isProcessingRef.current || executed || getHasNavigated()) {
-                console.log('⏭️ Already processing or navigated, skipping handler');
                 return;
             }
             
@@ -412,9 +410,6 @@ export default function AuthCallback() {
             try {
                 setStatus('processing');
                 setMessage(t('processingAuthentication', 'Processing authentication...'));
-                
-                console.log('🔄 OAuth callback started');
-                console.log('📋 Callback params:', params);
 
                 const hashAuthError = getHashAuthError();
                 if (hashAuthError) {
@@ -458,7 +453,14 @@ export default function AuthCallback() {
                     hashUrlParams?.get('access_token') && hashUrlParams?.get('type') === 'magiclink'
                 );
 
-                const isPasswordlessMethod = signInMethod === 'magic_link' || signInMethod === 'otp_code' || isNativePasswordlessCode || isWebPasswordlessCode || isImplicitMagicLink;
+                const isPasswordlessMethod =
+                    signInMethod === 'magic_link' ||
+                    signInMethod === 'otp_code' ||
+                    isNativePasswordlessCode ||
+                    isWebPasswordlessCode ||
+                    isImplicitMagicLink ||
+                    Boolean(params.token_hash) ||
+                    Boolean(params.token && params.email);
 
                 if (isPasswordlessMethod && !isPasswordlessSupported) {
                     console.warn('⚠️ Passwordless callback blocked due to provider mismatch:', {
@@ -485,8 +487,6 @@ export default function AuthCallback() {
                 }
 
                 if (isPasswordlessMethod && isPasswordlessSupported) {
-                    console.log('🔄 Processing Supabase passwordless callback...');
-
                     // On web: if the code/token was generated by the native app (nativeRelay=1), the
                     // PKCE code_verifier (or session state) is in the native app's AsyncStorage —
                     // not in Chrome's storage. We cannot exchange the code here. Re-attempt relay.
@@ -498,7 +498,6 @@ export default function AuthCallback() {
                     if (isNativeRelayFallback) {
                         const retryDeepLink = nativeRelayUrl ||
                             `hashpass://auth/callback?${new URLSearchParams(params as Record<string, string>).toString()}`;
-                        console.log('🔁 Native relay fallback: retrying deep link open:', retryDeepLink);
                         setStatus('error');
                         setMessage('If the HASHPASS app did not open automatically, tap the button below.');
                         setOpenInAppUrl(retryDeepLink);
@@ -534,7 +533,6 @@ export default function AuthCallback() {
                         );
                     }
 
-                    console.log('✅ Supabase passwordless callback successful:', resolvedSession.user.email);
                     setStatus('success');
                     setMessage(t('authenticationSuccessful', '✅ Authentication successful!'));
 
@@ -563,15 +561,7 @@ export default function AuthCallback() {
                     return;
                 }
                 
-                // Check if URL has auth tokens/code before processing
-                const hasAuthData = hasOAuthPayloadInUrl();
-                
-                if (!hasAuthData) {
-                    console.log('ℹ️ No OAuth params in URL, attempting cookie-based session completion...');
-                }
-                
                 // Use provider-agnostic OAuth callback handler
-                console.log('🔄 Processing OAuth callback with provider-agnostic handler...');
                 let result = await handleOAuthCallback(params as Record<string, string>);
 
                 // Retry once for transient cookie/session propagation delays.
@@ -587,7 +577,6 @@ export default function AuthCallback() {
                 }
                 
                 if (result.user) {
-                    console.log('✅ OAuth callback successful:', result.user);
                     setStatus('success');
                     setMessage(t('authenticationSuccessful', '✅ Authentication successful!'));
                     if (!hasShownSuccessToastRef.current) {
@@ -598,9 +587,7 @@ export default function AuthCallback() {
                         );
                     }
                     
-                    console.log('🚀 Starting navigation to dashboard...');
                     const redirectPath = getRedirectPath();
-                    console.log('📍 Redirect path determined:', redirectPath);
 
                     // Clean callback URL only after OAuth payload has been processed.
                     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -608,7 +595,6 @@ export default function AuthCallback() {
                         window.history.replaceState({}, '', cleanUrl);
                         window.localStorage.removeItem('oauth_in_progress');
                         window.localStorage.removeItem('auth_signin_method');
-                        console.log('🧹 Cleaned URL after successful OAuth processing');
                     }
                     
                     markRecentAuthSuccess();
@@ -619,18 +605,15 @@ export default function AuthCallback() {
                     // Wait for auth state to update before navigating
                     let attempts = 0;
                     const waitForAuthState = () => {
-                        console.log('🔍 Checking auth state for navigation...');
                         attempts++;
                         
                         // Try navigation after a reasonable wait or max attempts
                         if (attempts >= 5) {
-                            console.log('🚀 Max attempts reached, proceeding with navigation');
                             safeNavigate(redirectPath);
                             return;
                         }
                         
                         setTimeout(() => {
-                            console.log('🚀 Attempting navigation (attempt', attempts + 1, ')');
                             safeNavigate(redirectPath);
                         }, attempts * 200); // Incremental delay
                     };

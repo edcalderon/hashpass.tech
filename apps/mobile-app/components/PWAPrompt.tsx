@@ -66,7 +66,6 @@ const PWAPrompt = () => {
       installEvent.preventDefault();
       // Capture the event for later use
       setDeferredPrompt(installEvent);
-      console.log('[PWAPrompt] beforeinstallprompt event captured');
       if (!isStoredCollapsed) {
         setShowPrompt(true);
       }
@@ -74,9 +73,6 @@ const PWAPrompt = () => {
 
     void checkStatus();
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
-
-    // Log when we're ready to listen for install prompt
-    console.log('[PWAPrompt] Listening for beforeinstallprompt event');
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -149,28 +145,21 @@ const PWAPrompt = () => {
   };
 
   const installPWA = async () => {
-    console.log('[PWAPrompt] Install clicked, deferredPrompt:', !!deferredPrompt);
-
     if (deferredPrompt) {
       try {
-        console.log('[PWAPrompt] Showing native install prompt...');
         // Show the install prompt
         await deferredPrompt.prompt();
 
         // Wait for user choice
         const choiceResult = await deferredPrompt.userChoice;
-        console.log('[PWAPrompt] User choice:', choiceResult.outcome);
 
         if (choiceResult.outcome === 'accepted') {
-          console.log('[PWAPrompt] Installation accepted');
           if (Platform.OS === 'web' && typeof window !== 'undefined') {
             window.localStorage.setItem('pwa-installed', 'true');
             window.localStorage.removeItem(COLLAPSE_KEY);
           }
           setShowPrompt(false);
           setIsCollapsed(false);
-        } else {
-          console.log('[PWAPrompt] Installation dismissed');
         }
 
         setDeferredPrompt(null);
@@ -182,7 +171,6 @@ const PWAPrompt = () => {
     }
 
     // Fallback: show install modal info card instead of alert
-    console.log('[PWAPrompt] Native prompt not available, showing installation instructions');
     setShowInstallHelpModal(true);
   };
 
@@ -226,7 +214,6 @@ const PWAPrompt = () => {
       window.sessionStorage.setItem(DONT_SHOW_AGAIN_KEY, 'true');
       setDontShowAgain(true);
       setShowPrompt(false);
-      console.log('[PWAPrompt] "Don\'t show again" enabled until page reload');
     }
   };
 

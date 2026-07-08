@@ -5,9 +5,10 @@ name: Docs threshold guard (PR)
 #   - skip / minor   → passes silently (no docs required)
 #   - significant    → posts an advisory comment and passes
 #   - critical       → posts a blocking comment and FAILS the check
-#                      until a docs/auto-* or docs/manual-* branch is
-#                      merged alongside, or the PR label 'docs-exempt'
-#                      is applied by a maintainer.
+#                      until the PR includes manual docs updates, a
+#                      docs/auto-* or docs/manual-* branch is merged
+#                      alongside, or the PR label 'docs-exempt' is
+#                      applied by a maintainer.
 
 on:
   pull_request:
@@ -68,10 +69,26 @@ jobs:
             echo "exempt=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # ── Check if this PR already contains manual documentation updates ─────
+      - name: Check for in-branch docs updates
+        id: manual-docs
+        if: steps.classify.outputs.tier == 'critical' && steps.exempt.outputs.exempt != 'true'
+        run: |
+          if grep -Eq '^(apps/docs/docs/.*\.(md|mdx)|README\.md|CLAUDE\.md)$' /tmp/pr_files.txt; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "Manual documentation updates were found in this PR."
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No manual documentation updates were found in this PR."
+          fi
+
       # ── Check if a companion docs branch/PR already exists ──────────────────
       - name: Check for companion docs PR
         id: companion
-        if: steps.classify.outputs.tier == 'critical' && steps.exempt.outputs.exempt != 'true'
+        if: |
+          steps.classify.outputs.tier == 'critical' &&
+          steps.exempt.outputs.exempt != 'true' &&
+          steps.manual-docs.outputs.present != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -85,6 +102,27 @@ jobs:
           echo "companion_count=$DOCS_PRS" >> "$GITHUB_OUTPUT"
           echo "Found $DOCS_PRS companion docs PR(s)."
 
+      # ── Resolve whether the docs requirement is satisfied ──────────────────
+      - name: Resolve docs requirement
+        id: docs
+        run: |
+          TIER='${{ steps.classify.outputs.tier }}'
+          EXEMPT='${{ steps.exempt.outputs.exempt }}'
+          MANUAL_DOCS='${{ steps.manual-docs.outputs.present }}'
+          COMPANION_COUNT='${{ steps.companion.outputs.companion_count }}'
+
+          if [ "$TIER" != "critical" ] ||
+            [ "$EXEMPT" = "true" ] ||
+            [ "$MANUAL_DOCS" = "true" ] ||
+            { [ -n "$COMPANION_COUNT" ] && [ "$COMPANION_COUNT" != "0" ]; }; then
+            echo "satisfied=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "satisfied=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "manual_docs=${MANUAL_DOCS:-false}" >> "$GITHUB_OUTPUT"
+          echo "companion_count=${COMPANION_COUNT:-0}" >> "$GITHUB_OUTPUT"
+
       # ── Post / update PR comment ─────────────────────────────────────────────
       - name: Post threshold comment
         if: steps.classify.outputs.tier != 'skip'
@@ -95,13 +133,17 @@ jobs:
             ## Docs threshold check — `${{ steps.classify.outputs.tier }}`
 
             **Changed areas:** `${{ steps.classify.outputs.changed_areas }}`
+            **Manual docs in this PR:** `${{ steps.docs.outputs.manual_docs }}`
+            **Companion docs PRs:** `${{ steps.docs.outputs.companion_count }}`
             ${{ steps.classify.outputs.needs_claude_md_review == 'true' && '**⚠️ CLAUDE.md may need a review pass** — critical infra or auth paths changed.' || '' }}
 
             ---
 
-            ${{ steps.classify.outputs.tier == 'critical' && '### 🚨 Action required' || '### ℹ️ Advisory' }}
+            ${{ steps.classify.outputs.tier == 'critical' && steps.docs.outputs.satisfied == 'true' && '### ✅ Documentation requirement satisfied' || steps.classify.outputs.tier == 'critical' && '### 🚨 Action required' || '### ℹ️ Advisory' }}
 
-            ${{ steps.classify.outputs.tier == 'critical'
+            ${{ steps.classify.outputs.tier == 'critical' && steps.docs.outputs.satisfied == 'true'
+              && format('This PR touches **critical subsystems** (`{0}`). Documentation updates were detected in this PR or in a companion docs PR, so the docs threshold is satisfied.', steps.classify.outputs.changed_areas)
+              || steps.classify.outputs.tier == 'critical'
               && format('This PR touches **critical subsystems** (`{0}`). Documentation must be updated before merge.
 
             **Options:**
@@ -114,8 +156,7 @@ jobs:
       - name: Fail on critical with no companion docs
         if: |
           steps.classify.outputs.tier == 'critical' &&
-          steps.exempt.outputs.exempt != 'true' &&
-          (steps.companion.outputs.companion_count == '' || steps.companion.outputs.companion_count == '0')
+          steps.docs.outputs.satisfied != 'true'
         run: |
           echo ""
           echo "╔══════════════════════════════════════════════════════════╗"
@@ -130,10 +171,6 @@ jobs:
 
       - name: Pass — tier is ${{ steps.classify.outputs.tier }}
         if: |
-          steps.classify.outputs.tier == 'skip' ||
-          steps.classify.outputs.tier == 'minor' ||
-          steps.classify.outputs.tier == 'significant' ||
-          steps.exempt.outputs.exempt == 'true' ||
-          (steps.companion.outputs.companion_count != '' && steps.companion.outputs.companion_count != '0')
+          steps.docs.outputs.satisfied == 'true'
         run: |
           echo "✓ Docs threshold check passed (tier=${{ steps.classify.outputs.tier }})"

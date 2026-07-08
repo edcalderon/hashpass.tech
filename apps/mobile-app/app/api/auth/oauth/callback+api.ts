@@ -3,7 +3,7 @@ import { jwtVerify } from 'jose';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 import { fetchDirectus } from '../../../../lib/auth/oauth/directus-fetch';
-import { resolveFrontendOrigin } from '../../../../lib/auth/oauth/frontend-origin';
+import { resolveFrontendOrigin, isLocalOrigin } from '../../../../lib/auth/oauth/frontend-origin';
 import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 
 // Support both local and production Directus URLs
@@ -279,7 +279,6 @@ const syncDirectusUserToSupabase = async (
     });
 
     if (!createResult.error && createResult.data?.user) {
-      console.log('[OAuth Callback] ✅ Synced Directus OAuth user into Supabase:', email);
       const bridge = await issueSupabaseSessionBridge(client, email);
       return { ...syncResultBase, bridge };
     }
@@ -326,7 +325,6 @@ const syncDirectusUserToSupabase = async (
       return { ...syncResultBase, bridge };
     }
 
-    console.log('[OAuth Callback] ✅ Updated existing Supabase user with Directus metadata:', email);
     const bridge = await issueSupabaseSessionBridge(client, email);
     return { ...syncResultBase, bridge };
   } catch (error) {
@@ -446,6 +444,25 @@ const buildClientCallbackBridgeResponse = (
       'Cache-Control': 'no-store',
     },
   });
+};
+
+const describeDirectusOAuthFailure = (reason: string, frontendOrigin: string): string => {
+  const normalized = reason.trim().toUpperCase();
+  const isLocalFrontend = isLocalOrigin(frontendOrigin);
+
+  switch (normalized) {
+    case 'INVALID_PROVIDER':
+    case 'INVALID_PROVIDER_CONFIG':
+      return isLocalFrontend
+        ? 'Google OAuth is not configured for local Directus auth. Use the Supabase local profile or enable Google in Directus.'
+        : 'Google OAuth provider is not configured correctly in Directus. Please contact support.';
+    case 'INVALID_CREDENTIALS':
+      return 'Directus rejected the Google OAuth callback credentials before creating a session. Please sign in again.';
+    case 'INVALID_TOKEN':
+      return 'Google returned an invalid or expired authorization token. Please sign in again.';
+    default:
+      return reason;
+  }
 };
 
 const buildNativeCallbackUrl = (
@@ -617,11 +634,6 @@ export async function GET(request: Request): Promise<Response> {
   const hasRefreshTokenCookie = hasCookie(cookies, DIRECTUS_REFRESH_COOKIE_NAME);
   const hasSessionTokenCookie = hasCookie(cookies, DIRECTUS_SESSION_COOKIE_NAME);
 
-  console.log('[OAuth Callback] Processing callback from Directus');
-  console.log('[OAuth Callback] Return to:', finalReturnTo);
-  console.log('[OAuth Callback] Frontend origin:', frontendOrigin);
-  console.log('[OAuth Callback] Directus URL:', DIRECTUS_URL);
-
   // Check if we received tokens directly in URL from Directus
   // Some OAuth flows pass tokens in the URL fragment
   const urlAccessToken = url.searchParams.get('access_token');
@@ -629,23 +641,9 @@ export async function GET(request: Request): Promise<Response> {
   const error = url.searchParams.get('error');
   const message = url.searchParams.get('message');
 
-  console.log('[OAuth Callback] Received parameters:', Object.fromEntries(url.searchParams.entries()));
-
-  console.log('[OAuth Callback] Received from Directus:', {
-    hasAccessToken: !!urlAccessToken,
-    hasRefreshToken: !!urlRefreshToken,
-    hasRefreshTokenCookie,
-    hasSessionTokenCookie,
-    error,
-    reason: url.searchParams.get('reason'),
-    message,
-    fullUrl: url.toString().substring(0, 100) + '...'
-  });
-
   const reason = url.searchParams.get('reason');
 
   if (urlAccessToken) {
-    console.log('[OAuth Callback] ✅ Found tokens in URL');
     const syncResult = await syncDirectusUserToSupabase(request, urlAccessToken);
     // Redirect with tokens in URL fragment so client can store them
     const fragment = new URLSearchParams({
@@ -674,10 +672,8 @@ export async function GET(request: Request): Promise<Response> {
   // If Directus returned an error or reason, we should stop here
   if (reason || error) {
     failureReason = message || reason || error || 'Unknown authentication error';
-    console.error('[OAuth Callback] ❌ Directus returned error:', failureReason);
   } else if (cookies) {
     if (hasRefreshTokenCookie) {
-      console.log('[OAuth Callback] Found refresh cookie, attempting Directus /auth/refresh...');
       try {
         // Try to refresh the session using cookies.
         // This validates the OAuth cookie session and returns short-lived tokens.
@@ -695,7 +691,6 @@ export async function GET(request: Request): Promise<Response> {
             const tokens = refreshData.data || refreshData;
 
             if (tokens.access_token) {
-              console.log('[OAuth Callback] ✅ Got tokens from refresh endpoint');
               const syncResult = await syncDirectusUserToSupabase(request, tokens.access_token);
               const fragment = new URLSearchParams({
                 access_token: tokens.access_token,
@@ -749,7 +744,6 @@ export async function GET(request: Request): Promise<Response> {
               ? `Directus /auth/refresh returned ${refreshResponse.status}: ${compactBody}`
               : `Directus /auth/refresh returned ${refreshResponse.status}.`;
           }
-          console.log('[OAuth Callback] Refresh failed:', failureReason);
         }
       } catch (error) {
         failureReason = error instanceof Error ? error.message : String(error);
@@ -760,7 +754,6 @@ export async function GET(request: Request): Promise<Response> {
       // Attempt server-side token exchange to avoid client-side cookie race/cors issues.
       const exchangedTokens = await exchangeSessionCookieForJsonTokens(cookies);
       if (exchangedTokens?.access_token) {
-        console.log('[OAuth Callback] ✅ Exchanged session cookie for JSON tokens.');
         const syncResult = await syncDirectusUserToSupabase(request, exchangedTokens.access_token);
         const fragment = new URLSearchParams({
           access_token: exchangedTokens.access_token,
@@ -786,7 +779,6 @@ export async function GET(request: Request): Promise<Response> {
       }
 
       // Fallback to client-side session completion when token exchange is unavailable.
-      console.log('[OAuth Callback] Session cookie detected; using hash-preserving client callback handoff.');
       if (nativeCallbackCookie) {
         const nativeResponse = buildNativeCallbackResponse(
           nativeCallbackCookie,
@@ -804,7 +796,6 @@ export async function GET(request: Request): Promise<Response> {
     } else {
       // On localhost, refresh cookie can be scoped to /auth/refresh and won't be visible here.
       // Continue client-side so browser can call Directus directly with credentials.
-      console.log('[OAuth Callback] No auth cookies visible on callback route; using hash-preserving client callback handoff.');
       if (nativeCallbackCookie) {
         const nativeResponse = buildNativeCallbackResponse(
           nativeCallbackCookie,
@@ -843,14 +834,14 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   // Failed - redirect to auth page with error  
-  console.error('[OAuth Callback] ❌ Failed to obtain tokens from Directus');
+  const userFacingFailureReason = describeDirectusOAuthFailure(failureReason, frontendOrigin);
   if (nativeCallbackCookie) {
     const nativeResponse = buildNativeCallbackResponse(
       nativeCallbackCookie,
       finalReturnTo,
       new URLSearchParams({
         error: 'oauth_failed',
-        message: `Authentication could not be completed. ${failureReason} Redirecting to login.`,
+        message: `Authentication could not be completed. ${userFacingFailureReason} Redirecting to login.`,
       })
     );
     if (nativeResponse) {
@@ -859,7 +850,10 @@ export async function GET(request: Request): Promise<Response> {
   }
   const errorUrl = new URL('/auth', frontendOrigin);
   errorUrl.searchParams.set('error', 'oauth_failed');
-  errorUrl.searchParams.set('message', `Authentication could not be completed. ${failureReason} Redirecting to login.`);
+  errorUrl.searchParams.set(
+    'message',
+    `Authentication could not be completed. ${userFacingFailureReason} Redirecting to login.`
+  );
 
   return new ExpoResponse(null, {
     status: 302,

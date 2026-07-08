@@ -17,7 +17,6 @@ import { AnimationLevelProvider } from '@contexts/AnimationLevelContext';
 import { useTheme, useThemeProvider } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { authService } from '@hashpass/auth';
-import { supabase } from '../lib/supabase';
 import { passSystemService } from '../lib/pass-system';
 import "./global.css";
 import PWAPrompt from '../components/PWAPrompt';
@@ -29,8 +28,7 @@ import { useNativeUpdateCheck } from '../hooks/useNativeUpdateCheck';
 import * as SplashScreen from 'expo-splash-screen';
 import { I18nProvider } from '../providers/I18nProvider';
 import { CopilotProvider } from 'react-native-copilot';
-import { checkVersionOnStart, clearAuthCache } from '../lib/version-checker';
-import { showConsoleWelcome } from '../lib/console-welcome';
+import { checkVersionOnStart } from '../lib/version-checker';
 import LoadingScreen from '../components/LoadingScreen';
 import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppErrorBoundary';
 import { configureNativeGoogleSignin } from '../lib/native-google-signin';
@@ -103,9 +101,6 @@ function ThemedContent() {
   // Check version on first load (web only) and initialize console welcome
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      // Initialize console welcome message
-      showConsoleWelcome();
-
       // Check version immediately
       checkVersionOnStart().catch((error: unknown) => {
         console.error('Version check failed:', error);
@@ -114,7 +109,6 @@ function ThemedContent() {
       // Listen for version update messages from service worker
       const handleServiceWorkerMessage = (event: MessageEvent) => {
         if (event.data && event.data.type === 'VERSION_UPDATE_AVAILABLE') {
-          console.log('📦 Version update available (SW):', event.data);
           setVersionUpdate({
             currentVersion: event.data.currentVersion,
             latestVersion: event.data.latestVersion,
@@ -126,7 +120,6 @@ function ThemedContent() {
       const handleVersionUpdateEvent = (event: Event) => {
         const e = event as CustomEvent<{ currentVersion: string; latestVersion: string }>;
         if (e.detail) {
-          console.log('📦 Version update available (checker):', e.detail);
           setVersionUpdate({
             currentVersion: e.detail.currentVersion,
             latestVersion: e.detail.latestVersion,
@@ -147,13 +140,7 @@ function ThemedContent() {
   // Configure native Google Sign-In SDK once on startup (native only, feature-flagged)
   useEffect(() => {
     const googleWebClientId = resolveGoogleOAuthClientId();
-    const nativeGoogleFlag = process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN ?? '(default:true)';
     const nativeEnabled = shouldUseNativeGoogleSignin(googleWebClientId);
-    console.log(
-      `[GoogleSignin] native enabled=${nativeEnabled}`,
-      `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=${nativeGoogleFlag}`,
-      `webClientId=${googleWebClientId || '(unset)'}`,
-    );
     if (!nativeEnabled) return;
     void configureNativeGoogleSignin(googleWebClientId);
   }, []);
@@ -166,11 +153,8 @@ function ThemedContent() {
           // Check if user has a pass for the current event
           const passInfo = await passSystemService.getUserPassInfo(user.id);
           if (!passInfo) {
-            console.log('🎫 No pass found for user, creating default pass...');
             const passId = await passSystemService.createDefaultPass(user.id, 'general');
-            if (passId) {
-              console.log('✅ Default pass created successfully:', passId);
-            } else {
+            if (!passId) {
               console.warn('⚠️ Failed to create default pass');
             }
           }
@@ -237,16 +221,13 @@ function ThemedContent() {
     };
 
     const triggerAuthRecheck = () => {
-      authService.getSession().catch((error: unknown) => {
-        console.debug('Auth recheck during redirect grace failed:', error);
-      });
+      authService.getSession().catch(() => {});
     };
 
     if (isReady && !isLoading) {
       // Don't redirect if we're in the middle of an auth callback
       const isAuthCallback = pathname === '/(shared)/auth/callback';
       if (isAuthCallback) {
-        console.log('⏸️ In auth callback, skipping redirect check');
         return;
       }
 
@@ -260,13 +241,11 @@ function ThemedContent() {
 
       if (isCallbackRoute) {
         // Don't redirect during callback processing - let the callback handler manage navigation
-        console.log('🔄 On callback route, skipping session check to allow OAuth processing');
         return;
       }
 
       if (isDashboardRoute && !isLoggedIn) {
         if (shouldDelayRedirectForRecentAuth()) {
-          console.log('⏳ Recent auth success detected; delaying dashboard redirect and rechecking session.');
           triggerAuthRecheck();
           return;
         }
@@ -284,7 +263,6 @@ function ThemedContent() {
         router.replace('/(shared)/auth' as any);
       } else if (!isLoggedIn && !isAuthFlow && !isEventPublic && !isHomePage && !isPublicPage) {
         if (shouldDelayRedirectForRecentAuth()) {
-          console.log('⏳ Recent auth success detected; delaying general redirect and rechecking session.');
           triggerAuthRecheck();
           return;
         }
@@ -364,21 +342,6 @@ function ThemedContent() {
             headerShown: false
           }}
         />
-        <Stack.Screen
-          name="(shared)/dashboard/qr-view"
-          options={{
-            headerShown: false
-          }}
-        />
-        <Stack.Screen
-          name="(shared)/dashboard/pass-details"
-          options={{
-            headerShown: false
-          }}
-        />
-        {/* Dynamic Event routes */}
-        <Stack.Screen name="events/[eventSlug]/home" options={{ headerShown: false }} />
-        <Stack.Screen name="events/[eventSlug]/my-bookings" options={{ headerShown: false }} />
       </Stack>
       <PWAPrompt />
       <CookieConsentBanner />

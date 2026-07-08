@@ -12,7 +12,6 @@ export async function configureNativeGoogleSignin(webClientId?: string | null): 
       webClientId,
       offlineAccess: false,
     });
-    console.log('[GoogleSignin] configure() done');
   } catch (error) {
     console.warn('[GoogleSignin] configure() failed:', error);
   }
@@ -30,12 +29,6 @@ export async function signInWithNativeGoogleAccount(): Promise<{ idToken: string
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
   const response = await GoogleSignin.signIn();
-  console.log(
-    '[GoogleSignin] signIn response type:',
-    (response as any)?.type,
-    'keys:',
-    Object.keys(response ?? {})
-  );
 
   const idToken =
     (response as any)?.data?.idToken ??

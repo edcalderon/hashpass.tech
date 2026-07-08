@@ -1,8 +1,22 @@
 # Authentication Flow
 
-## Current Main Production Flow
+## Current Main Google Flow
 
-HASHPASS main production (`https://hashpass.tech`) now uses a Directus-owned OAuth session flow through the API bridge. The browser starts on the frontend, hands off to Directus for Google, and then returns through the API callback.
+HASHPASS starts Google sign-in from `useAuth.signInWithOAuth('google')`. When public Supabase config is available, Supabase owns the Google session on both web and native.
+
+### Preferred Supabase flow
+
+1. The frontend resolves public Supabase config from environment variables or `window.__HASHPASS_RUNTIME__`.
+2. Web calls `supabase.auth.signInWithOAuth({ provider: 'google', redirectTo: '<origin>/auth/callback' })`.
+3. Supabase performs the Google OAuth handshake and redirects back to `/auth/callback`.
+4. The callback exchanges the Supabase PKCE `code`, URL tokens, or email token hash with `createSessionFromUrl()`.
+5. The Supabase session is hydrated locally and the user is routed to the requested dashboard path.
+
+This is the expected path for local web development and production web when `EXPO_PUBLIC_SUPABASE_URL` plus a public anon key are present. It prevents Google sign-in from hitting Directus `/auth/login/google` in environments where Directus does not have a Google provider configured.
+
+### Directus OAuth bridge fallback
+
+The Directus bridge remains available for compatibility and for environments that intentionally do not expose public Supabase auth config. In that fallback flow:
 
 1. The frontend calls `GET /api/auth/oauth/login?provider=google&returnTo=...`.
 2. The API stores `oauth_return_to`, `oauth_frontend_origin`, and optional `oauth_native_callback` cookies.
@@ -13,16 +27,28 @@ HASHPASS main production (`https://hashpass.tech`) now uses a Directus-owned OAu
 6. Web returns to the requested frontend path with `#access_token=...&refresh_token=...`.
 7. Native returns to `hashpass://auth/callback?...` when `native_callback` is present, so the app can complete the session bootstrap directly.
 
-## Why This Exists
+## Why The Directus Bridge Still Exists
 
 This bridge avoids the production cookie problem between:
 
 - Frontend: `https://hashpass.tech`
 - Directus: `https://sso.hashpass.co`
 
-Cross-site Directus cookies were not reliable enough for the production browser flow, so the OAuth login still runs through the API domain instead of linking the frontend directly to Directus.
+Cross-site Directus cookies were not reliable enough for the production browser flow, so any Directus fallback login runs through the API domain instead of linking the frontend directly to Directus.
 
 ## Production Requirements
+
+For the preferred Supabase Google flow:
+
+- `EXPO_PUBLIC_SUPABASE_URL` or the active profile-specific Supabase URL
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY` / `EXPO_PUBLIC_SUPABASE_KEY` or the active profile-specific public key
+- Supabase Google provider enabled in the Supabase dashboard
+- Supabase redirect allow-list entries for each frontend callback, for example:
+  - `https://hashpass.tech/auth/callback`
+  - `https://dev.hashpass.tech/auth/callback`
+  - `http://localhost:8081/auth/callback`
+
+For the Directus fallback bridge:
 
 - `DIRECTUS_URL`
 - `EXPO_PUBLIC_FRONTEND_URL`
@@ -33,6 +59,9 @@ If you still use the legacy compatibility route (`/api/auth/oauth/google`), it r
 
 ## Relevant Routes
 
+- `apps/mobile-app/hooks/useAuth.ts`
+- `apps/mobile-app/lib/supabase.ts`
+- `packages/auth/src/providers/supabase.ts`
 - `apps/mobile-app/app/api/auth/[...auth]+api.ts`
 - `apps/mobile-app/app/api/auth/oauth/login+api.ts`
 - `apps/mobile-app/app/api/auth/oauth/callback+api.ts`
@@ -41,7 +70,7 @@ If you still use the legacy compatibility route (`/api/auth/oauth/google`), it r
 
 ## Event Better Auth Flow
 
-Event tenants (`https://bsl.hashpass.tech` and `https://bsl-dev.hashpass.tech`) use Better Auth for Google social login. Main `hashpass.tech` remains on Directus.
+Event tenants (`https://bsl.hashpass.tech` and `https://bsl-dev.hashpass.tech`) use Better Auth for Google social login. Main `hashpass.tech` uses Supabase Google when public Supabase config is available, with Directus bridge support kept for fallback and compatibility.
 
 1. Domain-aware auth selection resolves event tenants to `better-auth`.
 2. The frontend calls Better Auth at `EXPO_PUBLIC_BETTER_AUTH_URL`, normally `https://api.hashpass.tech/api/auth` in production, while the browser runtime exposes public Supabase values through `window.__HASHPASS_RUNTIME__` for client-side helpers.
@@ -105,14 +134,14 @@ HASHPASS native uses a 6-digit OTP code instead of magic links. The Lambda gener
 
 ## Native Google Sign-In SDK Flow (Android)
 
-Android builds use the [`@react-native-google-signin/google-signin`](https://github.com/react-native-google-signin/google-signin) SDK (v16) instead of a browser popup when `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=true` is baked into the bundle at build time.
+Android builds use the [`@react-native-google-signin/google-signin`](https://github.com/react-native-google-signin/google-signin) SDK (v16) instead of a browser popup when public Supabase config exists and `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=true` is baked into the bundle at build time.
 
 ### How it works
 
 ```
 Android native app
   └─ signInWithOAuth('google') called
-        │  (nativeGoogleEnabled=true)
+        │  (nativeGoogleEnabled=true and Supabase public config is present)
         ▼
   GoogleSignin.hasPlayServices()
         ▼
@@ -161,7 +190,9 @@ If Play Services are unavailable or the user cancels, the flow falls through to 
 
 ## Troubleshooting
 
-- If login fails before Google opens, check the API route response from `/api/auth/oauth/login`.
+- If local web Google returns `INVALID_PROVIDER`, the request reached the Directus fallback. Verify the active runtime exposes `EXPO_PUBLIC_SUPABASE_URL` plus a public anon key, or configure Google in Directus for that environment.
+- If Supabase redirects back but no session is created, verify the Supabase Google provider is enabled and the callback URL is in Supabase Allowed Redirect URLs.
+- If login fails before Google opens in the Directus fallback, check the API route response from `/api/auth/oauth/login`.
 - If Google returns an error, check the `state` cookie and the Google redirect URI registered in Google Cloud Console.
 - If the API callback fails with `Failed to authenticate as admin`, verify the Directus admin row is local and the password matches the production env.
 - If the browser lands on `/dashboard/explore?error=oauth_failed...`, check the API Lambda logs for the callback request ID.
