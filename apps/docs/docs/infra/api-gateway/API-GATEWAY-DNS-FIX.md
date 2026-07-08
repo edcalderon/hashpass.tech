@@ -1,5 +1,7 @@
 # Fix: api.hashpass.tech DNS Configuration
 
+Manual recovery reference only. Normal releases should use the target-account web pipeline and should fail if `/api/config/versions` is stale.
+
 ## Current Problem
 
 `api.hashpass.tech` should point to the target-account API Gateway custom domain. If you're getting 404 errors or redirects, the DNS record or API mapping is still stale.

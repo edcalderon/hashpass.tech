@@ -106,6 +106,16 @@ function isCleanTree() {
   return output.trim().length === 0;
 }
 
+function hasStagedChanges() {
+  const result = spawnSync('git', ['diff', '--cached', '--quiet'], {
+    cwd: ROOT_DIR,
+    env: process.env,
+    stdio: 'pipe',
+  });
+
+  return result.status !== 0;
+}
+
 function readJsonVersion(relativePath) {
   const filePath = path.join(ROOT_DIR, relativePath);
   const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -517,6 +527,11 @@ function runPromotionCommit(options, message) {
   if (options.noCommit || options.dryRun) return;
 
   runInherit('git', ['add', '.'], options);
+  if (!hasStagedChanges()) {
+    console.log('No promotion file changes to commit; using the current HEAD for the promotion PR.');
+    return;
+  }
+
   runInherit('git', ['commit', '-m', message], options);
 }
 
@@ -639,13 +654,8 @@ function createPromotionPullRequest(options, releaseVersion, releaseSha, baseRel
     buildPromotionChangeSummary(baseReleaseVersion),
     baseReleaseVersion,
   );
-  const reviewers = ['jack-kernel'];
   const currentLogin = getCurrentGitHubLogin(options);
-
-  if (currentLogin && currentLogin !== 'edcalderon') {
-    reviewers.push('edcalderon');
-  }
-
+  const reviewers = currentLogin && currentLogin === 'edcalderon' ? [] : ['edcalderon'];
   const reviewerArgs = reviewers.flatMap((reviewer) => ['--add-reviewer', reviewer]);
   const title = `chore: release v${releaseVersion}`;
   const existingPr = getOpenPromotionPullRequest(options);

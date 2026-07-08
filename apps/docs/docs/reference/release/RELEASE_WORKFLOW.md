@@ -13,8 +13,7 @@ The repository now treats `develop` as the only release source branch. Promotion
 - `npm run release:patch` still creates the version bump, changelog entry, tag, and release commit on `develop`
 - `npm run release:promote` now opens a GitHub PR from `develop` to `main`
 - Direct pushes to `main` are blocked by branch protection
-- Release PRs require `@edcalderon` codeowner approval
-- Release PRs also request `@jack-kernel` as an additional reviewer
+- Release PRs currently require `@edcalderon` codeowner approval
 - Release PRs must pass the coverage gate and GitHub security scans before merge
 
 ### Required checks before merge
@@ -29,6 +28,10 @@ The web app deploys through the target-account pipeline and CloudFront front doo
 
 1. GitHub Actions runs the target-account web checks and deploy orchestration.
 2. The target pipeline rebuilds and publishes `hashpass.tech` and `dev.hashpass.tech`.
+3. The deploy helper packages the Expo Router API and updates the matching Lambda:
+   - `main` updates `hashpass-prod-expo-router-api`
+   - `develop` updates `hashpass-dev-expo-router-api`
+4. The deploy helper verifies `/api/config/versions` against the release version. A stale API version fails the deploy.
 
 Both paths are automatic and typically take a few minutes. No manual action is needed for web-only changes after the merge.
 
@@ -63,12 +66,11 @@ This script:
 
 `npm run release:patch -- --promote` is the same promotion prep path if you prefer to call the release script directly.
 
-The PR body should make the required checks obvious:
+The PR body should make the actual release contents obvious:
 
-- `@edcalderon` approval is required
-- `@jack-kernel` is requested as reviewer
-- Coverage must stay at or above 33%
-- GitHub security scans must pass
+- Files changed since the previous release
+- Release version, base version, release commit, and source branch
+- Protected `develop -> main` path reminder
 
 ### Step 3 — Merge the release PR
 
@@ -148,7 +150,7 @@ Versions follow `MAJOR.MINOR.PATCH` (semver) and `versionCode` is derived from t
 | What | When rebuilt | Where |
 |------|-------------|-------|
 | Web static bundle | Every target web release | `hashpass.tech`, `dev.hashpass.tech` |
-| Lambda API routes | Every SST deploy | `api.hashpass.tech` |
+| Lambda API routes | Every target web/API deploy | `api.hashpass.tech`, `api-dev.hashpass.tech` |
 | Android APK/AAB | Manual CI trigger on release tag | Play Store |
 
-The Lambda environment variables (secrets, Supabase keys, etc.) are **not** updated by a deploy. They must be updated separately in the AWS Lambda console if changed.
+The Lambda environment variables (secrets, Supabase keys, etc.) are **not** updated by a static deploy. Update them with `node packages/tools/scripts/sync-env.js production --tenant core` or the AWS Lambda console before releasing if secrets changed.

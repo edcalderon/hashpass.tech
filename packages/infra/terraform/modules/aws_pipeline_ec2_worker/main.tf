@@ -26,6 +26,15 @@ locals {
   artifact_bucket_object_arns = [
     for bucket_name in local.artifact_bucket_names : "arn:aws:s3:::${bucket_name}/*"
   ]
+  lambda_region = trimspace(var.lambda_region) != "" ? trimspace(var.lambda_region) : var.aws_region
+  lambda_function_names = distinct([
+    for function_name in var.lambda_function_names : try(trimspace(function_name), "")
+    if try(trimspace(function_name), "") != ""
+  ])
+  lambda_function_arns = [
+    for function_name in local.lambda_function_names :
+    "arn:aws:lambda:${local.lambda_region}:${data.aws_caller_identity.current.account_id}:function:${function_name}"
+  ]
   worker_user_data_raw    = file("${path.module}/templates/build-worker-user-data.sh.tftpl")
   worker_user_data_step_1 = replace(local.worker_user_data_raw, "__AWS_REGION__", var.aws_region)
   worker_user_data_step_2 = replace(local.worker_user_data_step_1, "__PROVIDER_NAME__", var.provider_name)
@@ -301,6 +310,30 @@ resource "aws_iam_role_policy" "artifact_bucket_access" {
   name   = "${var.name_prefix}-build-artifact-s3"
   role   = aws_iam_role.worker.id
   policy = data.aws_iam_policy_document.artifact_bucket_access[0].json
+}
+
+data "aws_iam_policy_document" "lambda_deploy_access" {
+  count = length(local.lambda_function_arns) > 0 ? 1 : 0
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "lambda:GetFunction",
+      "lambda:GetFunctionConfiguration",
+      "lambda:UpdateFunctionCode",
+    ]
+
+    resources = local.lambda_function_arns
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_deploy_access" {
+  count = length(local.lambda_function_arns) > 0 ? 1 : 0
+
+  name   = "${var.name_prefix}-build-lambda-deploy"
+  role   = aws_iam_role.worker.id
+  policy = data.aws_iam_policy_document.lambda_deploy_access[0].json
 }
 
 resource "aws_iam_instance_profile" "worker" {

@@ -24,10 +24,10 @@ resource "google_project_service" "apis" {
     "iam.googleapis.com",
     "cloudresourcemanager.googleapis.com"
   ])
-  
+
   service                    = each.value
   disable_dependent_services = false
-  disable_on_destroy        = false
+  disable_on_destroy         = false
 }
 
 # Service Account for the VM
@@ -44,7 +44,7 @@ resource "google_project_iam_member" "hashpass_sso_roles" {
     "roles/monitoring.metricWriter",
     "roles/storage.objectViewer"
   ])
-  
+
   project = var.project_id
   role    = each.value
   member  = "serviceAccount:${google_service_account.hashpass_sso.email}"
@@ -52,24 +52,24 @@ resource "google_project_iam_member" "hashpass_sso_roles" {
 
 # Reserve a static IP for the VM
 resource "google_compute_address" "sso_ip" {
-  name         = "hashpass-sso-ip"
-  region       = var.region
-  description  = "Static IP for HashPass SSO"
+  name        = "hashpass-sso-ip"
+  region      = var.region
+  description = "Static IP for HashPass SSO"
 }
 
 # Firewall rule for HTTP/HTTPS traffic
 resource "google_compute_firewall" "sso_firewall" {
   name    = "hashpass-sso-firewall"
   network = "default"
-  
+
   allow {
     protocol = "tcp"
     ports    = ["80", "443", "22"]
   }
-  
+
   source_ranges = ["0.0.0.0/0"]
   target_tags   = ["hashpass-sso"]
-  
+
   description = "Allow HTTP, HTTPS, and SSH traffic for HashPass SSO"
 }
 
@@ -162,26 +162,28 @@ services:
     
     environment:
       KEY: "${var.directus_key}"
-      SECRET: "${var.directus_secret}"
+      ${"SECRET"}: "${var.directus_secret}"
       NODE_ENV: production
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
       
       DB_CLIENT: pg
       DB_HOST: "${var.database_host}"
       DB_PORT: ${var.database_port}
       DB_DATABASE: "${var.database_name}"
       DB_USER: "${var.database_user}"
-      DB_PASSWORD: "${var.database_password}"
+      ${"DB_PASSWORD"}: "${var.database_password}"
       DB_SSL: "true"
+      DB_SSL__REJECT_UNAUTHORIZED: "false"
       
       ADMIN_EMAIL: "${var.admin_email}"
-      ADMIN_PASSWORD: "${var.admin_password}"
+      ${"ADMIN_PASSWORD"}: "${var.admin_password}"
       
       PUBLIC_URL: "https://sso.hashpass.co"
       
       AUTH_PROVIDERS: "local"
       
       CORS_ENABLED: "true"
-      CORS_ORIGIN: "https://hashpass.co,https://www.hashpass.co,https://sso.hashpass.co"
+      CORS_ORIGIN: "https://hashpass.tech,https://www.hashpass.tech,https://dev.hashpass.tech,https://hashpass.co,https://www.hashpass.co,https://sso.hashpass.co,https://api.hashpass.tech,https://api-dev.hashpass.tech,http://localhost:8081"
       CORS_CREDENTIALS: "true"
       
       WEBSOCKETS_ENABLED: "true"
@@ -222,9 +224,9 @@ resource "google_compute_instance" "sso_instance" {
   name         = "hashpass-sso"
   machine_type = "e2-micro"
   zone         = var.zone
-  
+
   tags = ["hashpass-sso"]
-  
+
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-12"
@@ -232,24 +234,24 @@ resource "google_compute_instance" "sso_instance" {
       type  = "pd-standard"
     }
   }
-  
+
   network_interface {
     network = "default"
-    
+
     access_config {
       nat_ip = google_compute_address.sso_ip.address
     }
   }
-  
+
   service_account {
     email  = google_service_account.hashpass_sso.email
     scopes = ["cloud-platform"]
   }
-  
+
   metadata_startup_script = local.startup_script
-  
+
   allow_stopping_for_update = true
-  
+
   labels = {
     environment = "prod"
     project     = "hashpass"

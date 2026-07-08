@@ -4,19 +4,16 @@
 
 If you're getting 404 errors on `https://api.hashpass.tech/api/*`, it usually means the custom domain, API mapping, or Lambda deployment is out of sync in the target account.
 
-## ⚠️ CRITICAL: DNS Configuration Issue
+## Current State
 
-**Current Status**: `api.hashpass.tech` should point to the target-account API Gateway custom domain.
+`api.hashpass.tech` and `api-dev.hashpass.tech` should point to the target-account API Gateway custom domains.
 
-**Evidence**:
-- DNS resolves to AWS CloudFront IPs (18.155.252.x)
-- HTTP response shows `server: AmazonS3` and `via: CloudFront`
-- Returns 301 redirects instead of API responses
+Active Lambda names:
 
-**Solution**: You need to either:
-1. **Change DNS to point to API Gateway** (if API Gateway is configured)
-2. **Configure API Gateway and update DNS** (if not configured yet)
-3. **Use a different subdomain** for API Gateway (e.g., `api-gateway.hashpass.tech`)
+- Production: `hashpass-prod-expo-router-api`
+- Development: `hashpass-dev-expo-router-api`
+
+The target web deploy helper updates these functions and verifies `/api/config/versions` after each deploy. If the endpoint reports an older release than `package.json`, the deploy is stale and must be treated as failed.
 
 ## Quick Checklist
 
@@ -27,7 +24,7 @@ If you're getting 404 errors on `https://api.hashpass.tech/api/*`, it usually me
 
 ### 2. Verify Lambda Function is Deployed
 - Go to AWS Lambda Console
-- Check if function `hashpass-api-prod` or `hashpass-api-dev` exists
+- Check if function `hashpass-prod-expo-router-api` or `hashpass-dev-expo-router-api` exists
 - Verify it's deployed and has the latest code
 - Check CloudWatch logs for errors
 
@@ -47,7 +44,7 @@ If you're getting 404 errors on `https://api.hashpass.tech/api/*`, it usually me
 ### Step 1: Create/Update Lambda Function
 
 1. **Go to AWS Lambda Console**
-2. **Create or update function `hashpass-api-prod` or `hashpass-api-dev`:**
+2. **Create or update function `hashpass-prod-expo-router-api` or `hashpass-dev-expo-router-api`:**
    - Runtime: Node.js 18.x or 20.x
    - Handler: `index.handler` or `handler.handler`
    - Timeout: 30 seconds (or more)

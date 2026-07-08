@@ -14,30 +14,29 @@ if (Platform.OS === 'web') {
     removeItem: async (_key: string) => {},
   };
 } else {
-  // For native (iOS, Android), use lazy initialization with dynamic import
-  // This prevents AsyncStorage from being evaluated in Node.js environments
-  // if it has top-level dependencies on browser globals.
-  // Initialize with a proxy that loads AsyncStorage on first access
+  // Keep this native-only path lazy without using dynamic import. Metro rewrites
+  // dynamic import() through Expo's async-require helper, which is not present
+  // in Android release bundles for this SDK combination.
   let asyncStorage: any = null;
-  const loadAsyncStorage = async () => {
+  const loadAsyncStorage = () => {
     if (!asyncStorage) {
-      const AsyncStorageModule = await import('@react-native-async-storage/async-storage');
-      asyncStorage = AsyncStorageModule.default;
+      const AsyncStorageModule = require('@react-native-async-storage/async-storage');
+      asyncStorage = AsyncStorageModule.default ?? AsyncStorageModule;
     }
     return asyncStorage;
   };
   
   storage = {
     getItem: async (key: string) => {
-      const AsyncStorage = await loadAsyncStorage();
+      const AsyncStorage = loadAsyncStorage();
       return AsyncStorage.getItem(key);
     },
     setItem: async (key: string, value: string) => {
-      const AsyncStorage = await loadAsyncStorage();
+      const AsyncStorage = loadAsyncStorage();
       return AsyncStorage.setItem(key, value);
     },
     removeItem: async (key: string) => {
-      const AsyncStorage = await loadAsyncStorage();
+      const AsyncStorage = loadAsyncStorage();
       return AsyncStorage.removeItem(key);
     },
   };

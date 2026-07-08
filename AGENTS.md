@@ -25,14 +25,15 @@ The full release includes:
 2. Commit the intended changes on `develop`.
 3. Push `develop` to `origin` and `upstream`.
 4. Run `npm run release:promote` on `develop`.
-5. Wait for `@edcalderon` codeowner approval, confirm `@jack-kernel` is requested as reviewer, and keep coverage at or above 33% with the GitHub security scans passing before merging the PR.
+5. Wait for `@edcalderon` codeowner approval, and keep coverage at or above 33% with the GitHub security scans passing before merging the PR.
 6. Merge the PR and sync the release commit back to `develop`.
 7. Push the synchronized `develop` branch to `origin` and `upstream`.
 8. Run `npm run release:patch` on `main` to cut the stable tag.
 9. Trigger the Android release workflow from the new version tag.
-10. Verify the Android workflow and the web deployment checks.
+10. Verify the Android workflow and the web/API deployment checks, including the API version endpoint guard.
 
 Do not report a deployment as complete while a required push, branch sync, release workflow, or deployment check is pending or failed.
+Do not report the web deployment as complete if `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions` still reports an older version than the release.
 Do not hand-edit release artifacts or perform a release by hand; the release scripts own the version bump, changelog, README sync, tag, and push sequence.
 The Husky pre-commit hook runs the README sync guard, so a stale changelog/README pair should be fixed with `npm run update-readme` before committing.
 

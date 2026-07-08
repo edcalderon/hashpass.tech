@@ -62,11 +62,11 @@ module "directus" {
   create_service_account = var.create_service_accounts
   service_account_email  = var.create_service_accounts ? null : lookup(var.existing_service_account_emails, each.value, null)
 
-  startup_repository_url = var.startup_repository_url
-  startup_repository_ref = var.startup_repository_ref
-  directus_compose_path  = var.directus_compose_path
+  startup_repository_url  = var.startup_repository_url
+  startup_repository_ref  = var.startup_repository_ref
+  directus_compose_path   = var.directus_compose_path
   directus_compose_inline = contains(keys(var.directus_compose_file_paths), each.value) ? file(var.directus_compose_file_paths[each.value]) : lookup(var.directus_compose_inline, each.value, null)
-  directus_env_file_path = var.directus_env_file_path
+  directus_env_file_path  = var.directus_env_file_path
 
   network                = var.network
   firewall_source_ranges = var.firewall_source_ranges

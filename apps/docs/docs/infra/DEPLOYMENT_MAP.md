@@ -8,8 +8,8 @@ This is the authoritative reference for which service hosts which domain and how
 |--------|---------|-------|--------|--------------|
 | `hashpass.tech` | Source CloudFront + Route53 | Static site from target-account S3 origin | global / us-east-1 | Auto — the target web pipeline publishes the origin; source Route53 aliases the apex to CloudFront |
 | `dev.hashpass.tech` | Source CloudFront + Route53 | Static site from target-account S3 origin | global / us-east-1 | Auto — the development pipeline publishes the dev origin; the source front door keeps the hostname HTTPS-only |
-| `api.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | **us-east-1** | Auto — target-account Terraform/Lambda deploy |
-| `api-dev.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | us-east-1 | Auto — target-account dev Lambda deploy |
+| `api.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | **us-east-1** | Auto — target web pipeline deploys `hashpass-prod-expo-router-api` and verifies `/api/config/versions` |
+| `api-dev.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | us-east-1 | Auto — target dev web pipeline deploys `hashpass-dev-expo-router-api` and verifies `/api/config/versions` |
 | `bsl.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `main` |
 | `bsl-dev.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `develop` |
 | `hashpass.club` | GitHub Pages | Next.js static | CDN | Auto — `deploy-club-docs.yml` on push to `main` |
@@ -20,7 +20,7 @@ The public surface is now split across independent deployment paths:
 
 1. The source-account CloudFront front door serves `hashpass.tech` and `dev.hashpass.tech` and aliases both hostnames to the target-account static origins.
 2. The target-account web pipeline publishes the `hashpass.tech` S3 origin and the `dev.hashpass.tech` development origin.
-3. The target-account Lambda/API Gateway stack serves `api.hashpass.tech` and `api-dev.hashpass.tech`.
+3. The same target web deploy helper packages the Expo Router API, updates the matching Lambda, and fails if the public API version endpoint is stale.
 4. The SST Console autodeploy path still serves `bsl.hashpass.tech` (us-east-2).
 
 These are completely independent. A failure in one does not affect the other. Check the correct dashboard when debugging.
@@ -44,11 +44,16 @@ The development web surface uses the same front-door pattern as production. The 
 
 ### `api.hashpass.tech` / `api-dev.hashpass.tech`
 
-The API lives in the target-account Lambda + API Gateway stack, not Amplify. Use the target Terraform stack or the repo sync scripts that update the Lambda environment directly.
+The API lives in the target-account Lambda + API Gateway stack, not Amplify. The active web deploy helper packages the API with `packages/tools/scripts/package-lambda.sh`, updates the Lambda code, waits for the update, and verifies the public version endpoint.
 
 **Lambda names:**
-- Production: `hashpass-api-prod` (us-east-1)
-- Development: `hashpass-api-dev` (us-east-1)
+- Production: `hashpass-prod-expo-router-api` (us-east-1)
+- Development: `hashpass-dev-expo-router-api` (us-east-1)
+
+**Version guard:**
+- Production must return the release version from `https://api.hashpass.tech/api/config/versions`.
+- Development must return the release version from `https://api-dev.hashpass.tech/api/config/versions`.
+- A deploy that leaves either endpoint stale is failed and must not be reported as complete.
 
 ### `bsl.hashpass.tech` (SST)
 
@@ -87,22 +92,22 @@ Android CI builds with `--field environment=development` embed `EXPO_PUBLIC_SUPA
 
 | CI field | Supabase profile | API Lambda |
 |----------|-----------------|------------|
-| `environment=development` | `core-development` | `hashpass-api-dev` (us-east-1) |
-| `environment=production` | `core-production` | `hashpass-api-prod` (us-east-1) |
+| `environment=development` | `core-development` | `hashpass-dev-expo-router-api` (us-east-1) |
+| `environment=production` | `core-production` | `hashpass-prod-expo-router-api` (us-east-1) |
 
-**Keep the Lambdas in sync:** `hashpass-api-dev` is updated through the target-account deploy path. Always merge `main` → `develop` and redeploy after every release so dev builds don't run stale server code.
+**Keep the Lambdas in sync:** `hashpass-dev-expo-router-api` is updated through the target-account deploy path. Always merge `main` → `develop` and redeploy after every release so dev builds don't run stale server code.
 
 If you need to fast-sync `api-dev` with `api-prod` without a full build (e.g. after a hotfix):
 ```bash
-aws lambda get-function --function-name hashpass-api-prod --region us-east-1 \
+aws lambda get-function --function-name hashpass-prod-expo-router-api --region us-east-1 \
   --query 'Code.Location' --output text | xargs curl -s -o /tmp/lambda-prod.zip
-aws lambda update-function-code --function-name hashpass-api-dev \
+aws lambda update-function-code --function-name hashpass-dev-expo-router-api \
   --region us-east-1 --zip-file fileb:///tmp/lambda-prod.zip
 ```
 
 ## Lambda Environment Variables
 
-Both `hashpass-api-prod` and `hashpass-api-dev` use `hostnameFromRequest()` to select a Supabase profile from the request's `Origin` / `Referer` / `Host` header. See `apps/mobile-app/config/supabase-profiles.ts` for the host→profile mapping:
+Both `hashpass-prod-expo-router-api` and `hashpass-dev-expo-router-api` use `hostnameFromRequest()` to select a Supabase profile from the request's `Origin` / `Referer` / `Host` header. See `apps/mobile-app/config/supabase-profiles.ts` for the host→profile mapping:
 
 - `api.hashpass.tech` → `core-production`
 - `api-dev.hashpass.tech` → `core-development`
@@ -112,13 +117,13 @@ All secrets (Supabase service keys, SMTP credentials, OAuth secrets) are configu
 ```bash
 # Production
 aws lambda update-function-configuration \
-  --function-name hashpass-api-prod \
+  --function-name hashpass-prod-expo-router-api \
   --region us-east-1 \
   --environment "Variables={KEY=value,...}"
 
 # Development
 aws lambda update-function-configuration \
-  --function-name hashpass-api-dev \
+  --function-name hashpass-dev-expo-router-api \
   --region us-east-1 \
   --environment "Variables={KEY=value,...}"
 ```

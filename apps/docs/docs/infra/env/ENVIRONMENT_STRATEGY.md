@@ -15,6 +15,7 @@ We use a strictly standardized set of environment profiles to ensure consistency
 > Deployment split:
 > - `hashpass.tech` / `core` is served through the source-account CloudFront front door, which points at the target-account static origin while the legacy Amplify app is retired.
 > - `dev.hashpass.tech` uses the same front-door pattern for the development pipeline so the public dev hostname stays HTTPS-only.
+> - The target web pipeline also packages and updates the Expo Router API Lambda, then verifies `/api/config/versions` so stale API code fails the deploy.
 > - `hashpass.club` is the standalone static Next.js app in `apps/web-app`; `packages/infra` assembles it together with `apps/docs` into a single Pages artifact and serves it at `https://hashpass.club`.
 > - `https://hashpass.club/documentation/` serves the Docusaurus build from `apps/docs`.
 > - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases that canonicalize to the GitHub Pages origin.
@@ -54,10 +55,10 @@ npm run env:propagate [local|dev|production]
 ### B. `sync-env.js` (Root → AWS Lambda)
 Resolves the repository root from `packages/tools/scripts/` and synchronizes critical environment variables directly to AWS Lambda functions.
 ```bash
-# Syncs _DEV overrides to hashpass-api-dev
+# Syncs _DEV overrides to hashpass-dev-expo-router-api
 node packages/tools/scripts/sync-env.js dev
 
-# Syncs _PROD overrides to hashpass-api-prod
+# Syncs _PROD overrides to hashpass-prod-expo-router-api
 node packages/tools/scripts/sync-env.js production
 ```
 - **Security Rule**: `local` profile is blocked from syncing to AWS.

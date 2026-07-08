@@ -61,6 +61,36 @@ variable "google_client_id" {
   default     = ""
 }
 
+variable "lambda_region" {
+  description = "AWS region containing the Expo Router API Lambda functions"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "lambda_function_name" {
+  description = "Production Expo Router API Lambda function name updated by the web pipeline"
+  type        = string
+  default     = "hashpass-prod-expo-router-api"
+}
+
+variable "dev_lambda_function_name" {
+  description = "Development Expo Router API Lambda function name updated by the web pipeline"
+  type        = string
+  default     = "hashpass-dev-expo-router-api"
+}
+
+variable "api_version_url" {
+  description = "Production API version endpoint verified after the web pipeline updates the Lambda"
+  type        = string
+  default     = "https://api.hashpass.tech/api/config/versions"
+}
+
+variable "dev_api_version_url" {
+  description = "Development API version endpoint verified after the web pipeline updates the Lambda"
+  type        = string
+  default     = "https://api-dev.hashpass.tech/api/config/versions"
+}
+
 variable "enable_cloudfront" {
   description = "Whether to create CloudFront in the target account. Disable while the account cannot create new CloudFront resources."
   type        = bool
