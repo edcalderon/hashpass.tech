@@ -21,6 +21,7 @@ import { buildEventPath } from '../../../lib/event-path';
 import VersionDetailsModal from '../../../components/VersionDetailsModal';
 import { clearNativeGoogleAccount } from '../../../lib/native-google-signin';
 import { shouldUseNativeGoogleSignin } from '../../../lib/native-google-signin-config';
+import { resolveGoogleOAuthClientId } from '../../../lib/auth/oauth/google-credentials';
 
 export default function SettingsScreen() {
   const [notifications, setNotifications] = useState(true);
@@ -108,7 +109,7 @@ export default function SettingsScreen() {
   };
 
   const isNativeGoogleSigninActive =
-    shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) &&
+    shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId()) &&
     authService.getProviderName() === 'supabase';
 
   const clearGoogleAccount = async () => {

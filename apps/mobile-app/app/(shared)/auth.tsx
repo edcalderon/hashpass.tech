@@ -20,7 +20,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import ThemeAndLanguageSwitcher from '../../components/ThemeAndLanguageSwitcher';
+import QuickSettingsPanel from '../../components/QuickSettingsPanel';
 import { useTheme } from '../../hooks/useTheme';
 import { useToastHelpers } from '@contexts/ToastContext';
 import PrivacyTermsModal from '../../components/PrivacyTermsModal';
@@ -45,6 +45,7 @@ import { Ionicons } from '../../lib/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { resolvePublicSupabaseConfig } from '../../config/supabase-profiles';
 import { getHashpassFullLogo } from '../../lib/hashpass-logo';
+import { useAnimationLevel } from '../../contexts/AnimationLevelContext';
 
 const HASHPASS_WEB_LIGHT_AUTH_LOGO = require('../../assets/logos/hashpass/logo-full-hashpass-white.svg');
 
@@ -167,6 +168,7 @@ type DesktopHeroPanelProps = {
   slides: HeroSlide[];
   isDark: boolean;
   styles: any;
+  animationLevel: 'full' | 'reduced' | 'none';
 };
 
 const createFloatingLoop = (
@@ -191,36 +193,45 @@ const createFloatingLoop = (
     ])
   );
 
-const DesktopHeroPanel = ({ slides, isDark, styles }: DesktopHeroPanelProps) => {
+const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHeroPanelProps) => {
   const useNativeDriver = Platform.OS !== 'web';
   const blobOne = useRef(new Animated.Value(0)).current;
   const blobTwo = useRef(new Animated.Value(0)).current;
   const blobThree = useRef(new Animated.Value(0)).current;
-  const contentEntrance = useRef(new Animated.Value(0)).current;
+  const contentEntrance = useRef(new Animated.Value(animationLevel === 'none' ? 1 : 0)).current;
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const heroGradientColors = isDark
     ? (['#030a12', '#0a1f31', '#13415e'] as const)
     : (['#ffffff', '#fff9f8', '#fff1ee'] as const);
 
   useEffect(() => {
-    const blobAnimations = [
-      createFloatingLoop(blobOne, 6200, useNativeDriver),
-      createFloatingLoop(blobTwo, 7600, useNativeDriver),
-      createFloatingLoop(blobThree, 9400, useNativeDriver),
-    ];
+    if (animationLevel === 'none') {
+      // Skip all blob and entrance animations — show content immediately
+      contentEntrance.setValue(1);
+      return;
+    }
+
+    const blobAnimations = animationLevel === 'full'
+      ? [
+          createFloatingLoop(blobOne, 6200, useNativeDriver),
+          createFloatingLoop(blobTwo, 7600, useNativeDriver),
+          createFloatingLoop(blobThree, 9400, useNativeDriver),
+        ]
+      : [];
 
     const blobTimers = blobAnimations.map((animation, index) =>
       setTimeout(() => animation.start(), index * 420)
     );
 
     contentEntrance.setValue(0);
+    const revealDuration = animationLevel === 'reduced' ? 250 : 820;
     const revealAnimation = Animated.timing(contentEntrance, {
       toValue: 1,
-      duration: 820,
+      duration: revealDuration,
       easing: Easing.out(Easing.cubic),
       useNativeDriver,
     });
-    const revealTimer = setTimeout(() => revealAnimation.start(), 120);
+    const revealTimer = setTimeout(() => revealAnimation.start(), animationLevel === 'reduced' ? 0 : 120);
 
     return () => {
       blobTimers.forEach(clearTimeout);
@@ -228,7 +239,7 @@ const DesktopHeroPanel = ({ slides, isDark, styles }: DesktopHeroPanelProps) => 
       blobAnimations.forEach((animation) => animation.stop());
       revealAnimation.stop();
     };
-  }, [blobOne, blobThree, blobTwo, contentEntrance, useNativeDriver]);
+  }, [blobOne, blobThree, blobTwo, contentEntrance, useNativeDriver, animationLevel]);
 
   const blobOneTranslateX = blobOne.interpolate({
     inputRange: [0, 1],
@@ -370,7 +381,8 @@ export default function AuthScreen() {
   const isCompactMobile = !isDesktopLayout && windowWidth <= 420;
   const isVeryCompactMobile = !isDesktopLayout && windowWidth <= 360;
   const useNativeDriver = Platform.OS !== 'web';
-  const formEntrance = useRef(new Animated.Value(0)).current;
+  const { animationLevel } = useAnimationLevel();
+  const formEntrance = useRef(new Animated.Value(animationLevel === 'none' ? 1 : 0)).current;
 
   const rawReturnTo = Array.isArray(params.returnTo) ? params.returnTo[0] : params.returnTo;
   const rawAuthError = Array.isArray(params.error) ? params.error[0] : params.error;
@@ -468,7 +480,8 @@ export default function AuthScreen() {
     Platform.OS === 'web' && !isDark
       ? HASHPASS_WEB_LIGHT_AUTH_LOGO
       : getHashpassFullLogo(isDark);
-  const showAuthBackground = Platform.OS === 'web';
+  // WebGL shader background: web-only, and disabled for reduced/none to save GPU
+  const showAuthBackground = Platform.OS === 'web' && animationLevel === 'full';
   const { supabaseUrl: publicSupabaseUrl, supabaseAnonKey: publicSupabaseAnonKey } =
     resolvePublicSupabaseConfig();
   const hasSupabasePasswordlessConfig = Boolean(publicSupabaseUrl && publicSupabaseAnonKey);
@@ -647,17 +660,21 @@ export default function AuthScreen() {
   }, [isPasswordlessSupported, passwordlessUnavailableMessage, rawAuthError, rawAuthMessage, showError, t]);
 
   useEffect(() => {
+    if (animationLevel === 'none') {
+      formEntrance.setValue(1);
+      return;
+    }
     formEntrance.setValue(0);
     const formReveal = Animated.timing(formEntrance, {
       toValue: 1,
-      duration: 560,
+      duration: animationLevel === 'reduced' ? 180 : 560,
       easing: Easing.out(Easing.cubic),
       useNativeDriver,
     });
 
     formReveal.start();
     return () => formReveal.stop();
-  }, [formEntrance, isDesktopLayout, useNativeDriver]);
+  }, [formEntrance, isDesktopLayout, useNativeDriver, animationLevel]);
 
   const validateEmailOrShowError = useCallback((): string | null => {
     const normalized = email.trim().toLowerCase();
@@ -1293,7 +1310,7 @@ export default function AuthScreen() {
       {showAuthBackground ? <ShaderAnimation /> : null}
       <View style={[styles.layoutShell, isDesktopLayout ? styles.layoutShellDesktop : null]}>
         <View style={[styles.formPane, isDesktopLayout ? styles.formPaneDesktop : null]}>
-          <ThemeAndLanguageSwitcher />
+          <QuickSettingsPanel />
 
           <TouchableOpacity
             style={[styles.backButton, isDesktopLayout ? styles.backButtonDesktop : null]}
@@ -1733,17 +1750,26 @@ export default function AuthScreen() {
                     onPress={handlePrimaryEmailAction}
                     disabled={isBusy}
                   >
-                    {isBusy && busyAction !== 'oauth' ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
+                    <View style={styles.primaryButtonContent}>
+                      {(isBusy && busyAction !== 'oauth') ? (
+                        <View style={styles.primaryButtonIconGroup}>
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        </View>
+                      ) : null}
                       <Text style={styles.primaryButtonText}>
-                        {emailAuthMethod === 'magic-link'
-                          ? t('sendMagicLink', 'Send Magic Link')
-                          : otpSent
-                            ? t('verifyCode', 'Verify Code')
-                            : t('sendCode', 'Send Code')}
+                        {busyAction === 'magic-link'
+                          ? t('sendingEmail', 'Sending email...')
+                          : busyAction === 'otp-send'
+                            ? t('sendingOtpCode', 'Sending OTP code...')
+                            : busyAction === 'otp-verify'
+                              ? t('verifyingCode', 'Verifying code...')
+                              : emailAuthMethod === 'magic-link'
+                                ? t('sendMagicLink', 'Send Magic Link')
+                                : otpSent
+                                  ? t('verifyCode', 'Verify Code')
+                                  : t('sendCode', 'Send Code')}
                       </Text>
-                    )}
+                    </View>
                   </TouchableOpacity>
                 </>
               )}
@@ -1824,6 +1850,7 @@ export default function AuthScreen() {
             slides={heroSlides}
             isDark={isDark}
             styles={styles}
+            animationLevel={animationLevel}
           />
         ) : null}
       </View>
@@ -2574,6 +2601,21 @@ const getStyles = (
     },
     primaryButtonDisabled: {
       opacity: 0.6,
+    },
+    primaryButtonContent: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      overflow: 'hidden',
+    },
+    primaryButtonIconGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 20,
     },
     primaryButtonText: {
       fontSize: 20,

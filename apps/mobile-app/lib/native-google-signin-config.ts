@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { resolveGoogleOAuthClientId } from './auth/oauth/google-credentials';
 
 const parseBooleanFlag = (value: string | undefined): boolean | null => {
   if (typeof value !== 'string') {
@@ -26,7 +27,8 @@ export const shouldUseNativeGoogleSignin = (webClientId?: string | null): boolea
     return false;
   }
 
-  if (!webClientId || !webClientId.trim()) {
+  const resolvedWebClientId = (webClientId || resolveGoogleOAuthClientId()).trim();
+  if (!resolvedWebClientId) {
     return false;
   }
 

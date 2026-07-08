@@ -53,6 +53,7 @@ Protected promotion flow:
 - `main` is branch-protected, so release promotion must go through a PR, codeowner review, coverage checks, and the GitHub security scans
 - `@edcalderon` is the required code owner for release PR approval
 - `@jack-kernel` is requested as an additional reviewer on each release PR
+- The promotion PR body is diff-driven: it derives the next patch version from the latest release tag when the branch is still on the released semver, then lists the actual files changed since the previous release instead of repeating the merge checklist in the description
 
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering.
 

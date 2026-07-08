@@ -71,6 +71,7 @@ const MySchedule = () => {
   const { user } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
+  const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
   const { showError, showSuccess, showWarning } = useToastHelpers();
   const { t } = useTranslation('networking');
   const navigation = useNavigation();
@@ -207,7 +208,8 @@ const MySchedule = () => {
       try {
         // Use apiClient to ensure correct base URL from env vars
         const response = await apiClient.request('agenda', {
-          params: { eventId }
+          params: { eventId },
+          apiSegment,
         });
         // apiClient returns { data, success, error }
         // Handle different response formats

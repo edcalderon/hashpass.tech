@@ -28,7 +28,7 @@
 * remove directus token persistence sink ([09aa222](https://github.com/hashpass-tech/hashpass.tech/commit/09aa222250fd2dbf9ff49193c7784b7d90f55ba7))
 * sanitize directus session persistence ([5eb2750](https://github.com/hashpass-tech/hashpass.tech/commit/5eb2750ae83696b42992d2665992384b55f16e38))
 
-For full version history, see [CHANGELOG.md](./CHANGELOG.md) and [GitHub releases](https://github.com/hashpass-tech/hashpass.tech/releases)
+For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
 ## Current Status
 

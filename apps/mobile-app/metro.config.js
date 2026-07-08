@@ -191,8 +191,27 @@ const metroResolveRequest = (context, moduleName, platform) => {
   return resolve(context, normalizedModuleName, platform);
 };
 
+// Exclude paths that Metro should never bundle or watch.
+// This reduces the in-memory Haste file graph and cuts peak heap usage.
+const blockListPatterns = [
+  // Nested node_modules inside any package — resolved from root by hoisting
+  /.*\/node_modules\/.*\/node_modules\/.*/,
+  // Build artefacts inside workspace packages
+  /.*\/packages\/.*\/dist\/.*/,
+  /.*\/packages\/.*\/build\/.*/,
+  /.*\/packages\/.*\/\.turbo\/.*/,
+  // Docs app — large markdown/mdx tree not needed at runtime
+  /.*\/apps\/docs\/.*/,
+  // CI/test artefacts in workspace root
+  /.*\/\.git\/.*/,
+  /.*\/coverage\/.*/,
+  /.*\/storybook-static\/.*/,
+  /.*\/archive\/.*/,
+];
+
 config.resolver = {
   ...config.resolver,
+  blockList: blockListPatterns,
   extraNodeModules: {
     ...(config.resolver?.extraNodeModules || {}),
     react: path.dirname(workspaceRequire.resolve('react/package.json')),
