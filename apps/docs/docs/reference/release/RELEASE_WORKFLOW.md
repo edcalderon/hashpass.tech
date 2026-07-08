@@ -1,5 +1,25 @@
 # Release Workflow
 
+## Canonical Order — Follow This Exactly, Don't Skip Ahead
+
+This is the one sequence that matters. Every step in this doc below expands
+on one of these — but the ordering itself, and never skipping a step, is
+what actually prevents releases from going out inconsistent. **The mistake
+made on 2026-07-08 that prompted writing this section explicitly: the
+mobile Android workflow was dispatched from a release tag *before* the
+promotion PR carrying a doc-only commit had been merged** — the tag itself
+was fine (created from `main` after the *first* promotion PR merged), but
+a second, smaller PR was left open and forgotten while later steps
+proceeded. Nothing broke, but it violated the intended order and had to be
+caught after the fact. Don't let that happen again:
+
+1. **Work on `develop`.** Commit and push everything there first — code, docs, config, everything.
+2. **Open the promotion PR:** `npm run release:promote` (develop → main).
+3. **Merge that PR before doing anything else.** Do not proceed to step 4, and *especially* do not dispatch the mobile workflow, while any promotion PR for this release is still open — even a trivial doc-only one opened as a follow-up. Check with `gh pr view <N> --json state,mergedAt` if there's any doubt. If a second small PR gets opened after the first because of edits made after the promote ran, merge that one too before moving on — don't accumulate open PRs across steps.
+4. **Cut the stable release on `main`:** `npm run release:patch`, run on `main` (see the worktree note below if `main` lives in a separate checkout).
+5. **Verify `develop` and `main` actually match, and that production reflects it.** At minimum: `git log main..develop` and `git log develop..main` should both be empty after syncing; hit the live production API directly (e.g. `curl https://api.hashpass.tech/api/auth/get-session`) to confirm the deploy that's supposed to have gone out actually did, rather than assuming a push to `main` means production is now correct. Sync `develop` from `main` (`git merge main` on develop) so both branches carry the release commit.
+6. **Only now, release to mobile** — dispatch `mobile-android-release.yml` against the tag created in step 4.
+
 ## The Golden Rule: Never Manually Edit Version Numbers
 
 All version fields (`package.json`, `app.json`, `apps/mobile-app/config/version.ts`, Android `versionCode`, etc.) must stay in sync. The release scripts handle this automatically. Manual edits cause version skipping and ordering bugs.
