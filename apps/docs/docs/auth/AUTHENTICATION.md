@@ -1,60 +1,59 @@
 # Authentication
 
-HASHPASS uses a provider-agnostic auth layer in code. Main Google sign-in prefers Supabase on web and native when public Supabase config is available; the API-owned Directus OAuth bridge remains the fallback path described in [AUTH_FLOW.md](AUTH_FLOW.md).
+HASHPASS uses a provider-agnostic auth layer in code, but as of 2026-07-08 **web Google sign-in has one canonical path for every tenant: Better Auth first, Supabase as a last-resort fallback.** The Directus OAuth bridge described lower in this doc still exists in the tree but is not reachable from the Google button anymore — see [AUTH_FLOW.md § Do we still need Directus?](AUTH_FLOW.md#do-we-still-need-directus).
 
 ## What Happens In Production
 
 1. The app calls `useAuth.signInWithOAuth('google')`.
-2. If public Supabase config is present:
-   - web calls `supabase.auth.signInWithOAuth()` and returns to `/auth/callback`
-   - native uses the Google Sign-In SDK and exchanges the ID token with `supabase.auth.signInWithIdToken()`
-3. The callback/session helper exchanges the Supabase PKCE code, URL tokens, or token hash and hydrates the Supabase session.
-4. If public Supabase config is missing, the app falls back to `/api/auth/oauth/login?provider=google`, where the API-owned Directus bridge validates the request, stores callback cookies, and redirects to Directus.
-5. Directus fallback callbacks return through `/api/auth/oauth/callback`, where the API resolves the Directus response, syncs the public user registry, and redirects with session data.
+2. **Web:** always tries Better Auth first — `signIn.social({ provider: 'google', ... })` against `<apiBase>/api/auth`, redirecting to Google with `redirect_uri=<apiBase>/api/auth/callback/google`. Better Auth's own server exchanges the code and sets a session cookie, then redirects to `/auth/callback`. Only if this itself errors does the code fall back to `supabase.auth.signInWithOAuth()`.
+3. **Native:** unchanged — uses the Google Sign-In SDK and exchanges the ID token with `supabase.auth.signInWithIdToken()`.
+4. The callback route (`/auth/callback`) checks for a live Better Auth session first (via a `localStorage` marker set before the redirect), then falls back to the tenant's resolved provider (`authService`) only if that marker isn't present — see [AUTH_FLOW.md](AUTH_FLOW.md) for the full sequence.
+5. The Directus bridge (`/api/auth/oauth/login` → Directus → `/api/auth/oauth/callback`) is unchanged in code but is not called by the Google button in any current flow.
 
 ## Why This Design
 
-- Supabase is the active session owner for passwordless auth, local web Google auth, and native SDK Google auth.
-- The Directus bridge stays available for compatibility and for deployments that intentionally do not expose public Supabase auth config.
-- Directus browser cookies were not reliable enough for the old production redirect flow, so fallback Directus OAuth still runs through the API bridge.
-- BSL event tenants use Better Auth for Google login and share the API Gateway-backed `https://api.hashpass.tech/api/auth` endpoint in production.
-- Browser-only helpers resolve public Supabase config from `window.__HASHPASS_RUNTIME__` when static bundle env lookups are incomplete, so the redirect URL does not need to carry the anon key.
+- A single Better Auth backend for Google avoids two divergent user identities (Better Auth's `ba_users` vs Supabase's `auth.users`) depending on which tenant/host resolved — that was happening under the brief Supabase-first design earlier the same day.
+- Better Auth's account picker shows your own domain (`api.hashpass.tech`) instead of a raw Supabase project ref, which also fixes a real UX/trust concern on the consent screen.
+- Supabase remains the active session owner for passwordless email/OTP auth (unrelated to this change) and as the Google fallback if Better Auth itself is misconfigured for a given environment.
+- Directus never reliably held browser cookies across the frontend/Directus origin split in production, which is why even its own bridge always ran through the API domain rather than linking the frontend to Directus directly — this is now largely moot since nothing calls it for Google anymore.
 
 ## Required Environment
 
-Preferred Supabase Google path:
+Better Auth Google path (default for every tenant on web):
+
+```bash
+BETTER_AUTH_SECRET=<...>
+BETTER_AUTH_URL=https://api.hashpass.tech/api/auth
+EXPO_PUBLIC_BETTER_AUTH_URL=https://api.hashpass.tech/api/auth
+BETTER_AUTH_DATABASE_URL=<...>            # or DATABASE_URL / DATABASE_URL_PROD
+BETTER_AUTH_GOOGLE_CLIENT_ID=<...>        # or GOOGLE_CLIENT_ID
+BETTER_AUTH_GOOGLE_CLIENT_SECRET=<...>    # or GOOGLE_CLIENT_SECRET
+```
+
+Google Cloud Console must have `<apiBase>/api/auth/callback/google` registered as an authorized redirect URI for every environment (`https://api.hashpass.tech/...` and `http://localhost:8081/...` are separate entries on the same OAuth Client).
+
+Supabase fallback path (only reached if Better Auth's request itself fails):
 
 ```bash
 EXPO_PUBLIC_SUPABASE_URL=<SUPABASE_URL>
 EXPO_PUBLIC_SUPABASE_ANON_KEY=<SUPABASE_ANON_KEY>
-EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<GOOGLE_WEB_CLIENT_ID>
-EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=true
 ```
 
-Directus fallback path:
+Supabase's own Google provider must be enabled in that project's Dashboard, and each frontend `/auth/callback` URL must be in its Allowed Redirect URLs, for the fallback to actually work when reached.
 
-```bash
-AUTH_PROVIDER=directus
-DIRECTUS_URL=<DIRECTUS_URL>
-EXPO_PUBLIC_FRONTEND_URL=https://hashpass.tech
-```
-
-Supabase must have the Google provider enabled and each frontend `/auth/callback` URL in its Allowed Redirect URLs. Directus itself only needs a Google OAuth provider when the Directus fallback bridge is used. If the Directus-to-Supabase sync bridge is enabled, the API also needs `EXPO_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
-
-For the BSL event tenants, see [AUTH_FLOW.md](AUTH_FLOW.md) for the Better Auth variables and AWS SSM namespace.
+See [AUTH_FLOW.md](AUTH_FLOW.md) for the full requirements list, the schema-migration steps, and troubleshooting for each of the three infra bugs found and fixed on 2026-07-08 (Metro bundler blocking Better Auth's own `zod` dependency, `allowedHosts` not matching `host:port`, and Better Auth's database tables never having been migrated on a given environment).
 
 ## Related Code
 
-- `apps/mobile-app/app/api/auth/oauth/login+api.ts`
-- `apps/mobile-app/app/api/auth/oauth/callback+api.ts`
+- `apps/mobile-app/hooks/useAuth.ts` — `signInWithOAuth('google')` and `handleOAuthCallback` (Better-Auth-first routing)
+- `packages/auth/src/providers/better-auth.ts` — `BetterAuthProvider`
+- `apps/mobile-app/lib/server/better-auth.ts` — server-side Better Auth config
 - `apps/mobile-app/app/(shared)/auth/callback.tsx`
-- `apps/mobile-app/hooks/useAuth.ts`
-- `apps/mobile-app/lib/supabase.ts`
-- `packages/auth/src/providers/supabase.ts`
-- `apps/mobile-app/app/api/auth/oauth/google+api.ts` (legacy compatibility only)
+- `apps/mobile-app/lib/supabase.ts` — fallback path only
+- `apps/mobile-app/app/api/auth/oauth/login+api.ts` / `callback+api.ts` — Directus bridge (not reachable from the Google button anymore)
 
 ## Notes
 
-- Supabase is the expected browser Google path whenever public Supabase config is present.
-- The browser no longer depends on a Directus session cookie to finish Google sign-in.
-- Historical Directus-first guides should be treated as reference material only if they mention the old `/api/auth/oauth/google` admin bootstrap.
+- Better Auth is the expected browser Google path for every tenant now, not just BSL events.
+- The browser no longer depends on a Directus session cookie to finish Google sign-in — it never did reliably, and now doesn't even try to for Google.
+- Historical Directus-first guides should be treated as reference material only.

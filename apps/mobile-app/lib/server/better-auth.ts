@@ -23,6 +23,14 @@ const DEFAULT_ALLOWED_HOSTS = Array.from(
   new Set([
     'localhost',
     '127.0.0.1',
+    // Better Auth matches the raw Host header, which includes the port for
+    // non-default ports — bare 'localhost' does not match 'localhost:8081'.
+    // Without these, every local /api/auth/* request 500s with "Host ...
+    // is not in the allowed hosts list", even though 'localhost' is listed.
+    'localhost:8081',
+    '127.0.0.1:8081',
+    'localhost:19006',
+    'localhost:3000',
     'api.hashpass.tech',
     'api-dev.hashpass.tech',
     ...Object.values(SSO_CONFIG.tenants).flatMap((tenant) => {

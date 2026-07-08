@@ -2109,7 +2109,12 @@ const getStyles = (
     authHeaderTitle: {
       fontSize: isDesktopLayout ? 44 : isCompactMobile ? 32 : 38,
       fontWeight: '800',
-      color: colors.text.primary,
+      // Fixed light color, not theme-dependent: this heading always sits on
+      // the dark ShaderAnimation/hero background (both light and dark mode),
+      // so following colors.text.primary made it near-invisible in light
+      // mode, where that token resolves to a dark color meant for the page's
+      // light background elsewhere.
+      color: '#ffffff',
       textAlign: 'center',
       letterSpacing: -0.8,
     },
@@ -2117,7 +2122,7 @@ const getStyles = (
       marginTop: 8,
       fontSize: isDesktopLayout ? 24 : isCompactMobile ? 16 : 18,
       lineHeight: isDesktopLayout ? 30 : 24,
-      color: colors.text.secondary,
+      color: 'rgba(255, 255, 255, 0.82)',
       textAlign: 'center',
     },
     primaryAuthContainer: {

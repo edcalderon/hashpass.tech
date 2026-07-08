@@ -15,20 +15,21 @@
 - `app/api/auth/oauth/callback+api.ts` -> `/api/auth/oauth/callback`
 - `app/api/auth/oauth/google+api.ts` -> legacy compatibility callback for older Google links
 
-## Current Main Google Flow
+## Current Main Google Flow (updated 2026-07-08)
 
 Main Google sign-in starts in `apps/mobile-app/hooks/useAuth.ts` through `signInWithOAuth('google')`.
 
-When public Supabase config is available, the app does not call the Directus OAuth login proxy:
+**Web now always tries Better Auth first, for every tenant** (not just BSL events) — see [AUTH_FLOW.md](AUTH_FLOW.md#current-main-google-flow-as-of-2026-07-08) for the full sequence:
 
-1. Web calls `supabase.auth.signInWithOAuth({ provider: 'google' })`.
-2. Supabase redirects back to `/auth/callback`.
-3. `app/(shared)/auth/callback.tsx` calls `createSessionFromUrl()` to exchange the Supabase PKCE code, URL tokens, or token hash.
-4. Native uses `@react-native-google-signin/google-signin` and exchanges the Google ID token with `supabase.auth.signInWithIdToken()`.
+1. Web calls Better Auth's `signIn.social({ provider: 'google' })`, which redirects to Google with `redirect_uri=<apiBase>/api/auth/callback/google`.
+2. Better Auth's own server exchanges the code, sets a session cookie, and redirects back to `/auth/callback`.
+3. `app/(shared)/auth/callback.tsx` checks for a live Better Auth session first (via a `localStorage` marker set before the redirect) before falling back to the tenant's resolved provider.
+4. Only if Better Auth's own request errors does the code fall back to `supabase.auth.signInWithOAuth({ provider: 'google' })`, which then follows the old `createSessionFromUrl()` PKCE-exchange path described below.
+5. Native uses `@react-native-google-signin/google-signin` and exchanges the Google ID token with `supabase.auth.signInWithIdToken()` — unchanged by this update.
 
-## Directus Fallback Flow
+## Directus Fallback Flow (not reachable from the Google button)
 
-When public Supabase config is unavailable, Google sign-in can still fall back to `/api/auth/oauth/login?provider=google`.
+This bridge still exists in the tree but nothing calls it for `provider=google` anymore — see [AUTH_FLOW.md § Do we still need Directus?](AUTH_FLOW.md#do-we-still-need-directus). Left here for reference in case a non-Google provider is ever wired up, or Google sign-in ever falls all the way through both Better Auth and Supabase:
 
 The API:
 
