@@ -1,3 +1,15 @@
+## [1.8.179](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.178...v1.8.179) (2026-07-08)
+
+
+### Bug Fixes
+
+* **auth:** route web Google through Better Auth only ([4c98aea](https://github.com/hashpass-tech/hashpass.tech/commit/4c98aea80bb0c1ad2676d17c2964b0b353e1607a))
+* **infra:** add missing pg dependency to the Lambda deployment package ([f17a591](https://github.com/hashpass-tech/hashpass.tech/commit/f17a5910ba358ac86df9878141b723fb3e5ab644))
+
+
+
+
+
 ## [1.8.178](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.177...v1.8.178) (2026-07-08)
 
 
