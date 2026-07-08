@@ -70,7 +70,9 @@ This script:
 
 The PR body should make the actual release contents obvious:
 
-- Files changed since the previous release
+- Auto-generated release summary pulled from the version metadata / changelog first
+- Auto-generated implementation bullets for docs, release tooling, and sync changes
+- Changed files folded into a collapsible details block for support/debugging
 - Release version, base version, release commit, and source branch
 - Protected `develop -> main` path reminder
 

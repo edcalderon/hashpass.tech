@@ -52,7 +52,7 @@ Protected promotion flow:
 - `npm run release:promote` now opens the `develop -> main` pull request instead of pushing or merging to `main` directly
 - `main` is branch-protected, so release promotion must go through a PR, codeowner review, coverage checks, and the GitHub security scans
 - `@edcalderon` is the current required code owner for release PR approval
-- The promotion PR body is diff-driven: it derives the next patch version from the latest release tag when the branch is still on the released semver, then lists the actual files changed since the previous release instead of repeating the merge checklist in the description
+- The promotion PR body is release-note driven: it derives the next patch version from the latest release tag when the branch is still on the released semver, then surfaces the readable release summary from version metadata/changelog first, adds auto-generated implementation bullets for docs/release/tooling changes, and keeps changed files tucked into a collapsible details block
 
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering.
 

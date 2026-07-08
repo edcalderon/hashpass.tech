@@ -582,25 +582,101 @@ function resolvePromotionVersion(currentVersion, latestReleaseVersion) {
   return incrementPatchVersion(normalizedLatest);
 }
 
-function buildPromotionChangeSummary(baseReleaseVersion) {
-  const normalizedBase = String(baseReleaseVersion || '').trim().replace(/^v/, '');
-  if (!normalizedBase) {
-    return '_Unable to determine the previous release base for this promotion._';
+function normalizeReleaseText(value) {
+  return String(value || '')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseQuotedLine(value) {
+  const match = String(value || '')
+    .trim()
+    .match(/^(['"])(.*)\1,?$/);
+
+  if (!match) return '';
+
+  return match[2]
+    .replace(/\\(['"])/g, '$1')
+    .trim();
+}
+
+function extractVersionArray(block, key) {
+  const match = String(block || '').match(new RegExp(`${key}:\\s*\\[([\\s\\S]*?)\\],`));
+  if (!match) return [];
+
+  return match[1]
+    .split('\n')
+    .map((line) => parseQuotedLine(line))
+    .map((line) => normalizeReleaseText(line))
+    .filter(Boolean);
+}
+
+function extractVersionString(block, key) {
+  const match = String(block || '').match(new RegExp(`${key}:\\s*(['"])(.*)\\1,`));
+  if (!match) return '';
+
+  return normalizeReleaseText(match[2].replace(/\\(['"])/g, '$1'));
+}
+
+function readPromotionVersionInfo() {
+  const versionPath = path.join(ROOT_DIR, 'apps/mobile-app/config/version.ts');
+  if (!fs.existsSync(versionPath)) {
+    return null;
   }
 
-  const output = runAndRead(
-    'git',
-    ['diff', '--name-only', '--diff-filter=ACMRTUXB', `v${normalizedBase}..HEAD`],
-    { log: false },
-  );
+  const content = fs.readFileSync(versionPath, 'utf8');
+  const currentVersionMatch = content.match(/export const CURRENT_VERSION: VersionInfo = \{([\s\S]*?)\n\};/);
 
-  const files = output
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
+  if (!currentVersionMatch) {
+    return null;
+  }
+
+  const block = currentVersionMatch[1];
+  return {
+    notes: extractVersionString(block, 'notes'),
+    features: extractVersionArray(block, 'features'),
+    bugfixes: extractVersionArray(block, 'bugfixes'),
+    breakingChanges: extractVersionArray(block, 'breakingChanges'),
+  };
+}
+
+function formatPromotionSummarySections(versionInfo) {
+  if (!versionInfo) return '';
+
+  const sections = [];
+  const notes = normalizeReleaseText(versionInfo.notes);
+  const releaseNotesPattern = /^Version\s+\d+\.\d+\.\d+\s+release$/i;
+
+  if (notes && !releaseNotesPattern.test(notes)) {
+    sections.push(`#### Overview\n- ${notes}`);
+  }
+
+  const orderedSections = [
+    ['Features', versionInfo.features],
+    ['Bug Fixes', versionInfo.bugfixes],
+    ['Breaking Changes', versionInfo.breakingChanges],
+  ];
+
+  for (const [title, items] of orderedSections) {
+    if (!Array.isArray(items) || items.length === 0) {
+      continue;
+    }
+
+    sections.push(
+      `#### ${title}\n${items.map((item) => `- ${normalizeReleaseText(item)}`).join('\n')}`,
+    );
+  }
+
+  return sections.join('\n\n').trim();
+}
+
+function buildPromotionFileDetails(baseReleaseVersion) {
+  const files = getPromotionChangedFiles(baseReleaseVersion);
 
   if (files.length === 0) {
-    return `_No file changes were detected since v${normalizedBase}._`;
+    const normalizedBase = String(baseReleaseVersion || '').trim().replace(/^v/, '');
+    return normalizedBase ? `_No file changes were detected since v${normalizedBase}._` : '';
   }
 
   const maxItems = 20;
@@ -611,7 +687,118 @@ function buildPromotionChangeSummary(baseReleaseVersion) {
     visibleFiles.push(`- _and ${remaining} more file(s)_`);
   }
 
-  return visibleFiles.join('\n');
+  return [
+    '<details>',
+    `<summary>Changed files (${files.length})</summary>`,
+    '',
+    ...visibleFiles,
+    '',
+    '</details>',
+  ].join('\n');
+}
+
+function getPromotionChangedFiles(baseReleaseVersion) {
+  const normalizedBase = String(baseReleaseVersion || '').trim().replace(/^v/, '');
+  if (!normalizedBase) {
+    return [];
+  }
+
+  const output = runAndRead(
+    'git',
+    ['diff', '--name-only', '--diff-filter=ACMRTUXB', `v${normalizedBase}..HEAD`],
+    { log: false },
+  );
+
+  return output
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function buildPromotionFileHighlights(files) {
+  const normalizedFiles = Array.isArray(files)
+    ? files.map((file) => String(file || '').trim()).filter(Boolean)
+    : [];
+
+  if (normalizedFiles.length === 0) {
+    return '';
+  }
+
+  const bullets = [];
+  const hasFile = (matchers) => normalizedFiles.some((file) => matchers.some((matcher) => matcher(file)));
+
+  const docsMatchers = [
+    (file) => file === 'CLAUDE.md',
+    (file) => file === 'README.md',
+    (file) => file === 'packages/tools/scripts/README.md',
+    (file) => file === 'apps/docs/docs/reference/release/RELEASE_WORKFLOW.md',
+    (file) => file.startsWith('apps/docs/docs/'),
+  ];
+  if (hasFile(docsMatchers)) {
+    bullets.push(
+      'Updated release docs and CLAUDE guidance so the protected promotion flow now describes the readable PR body and release path instead of a raw checklist.',
+    );
+  }
+
+  const releaseToolingMatchers = [
+    (file) => file === 'packages/tools/scripts/release.js',
+    (file) => file === 'packages/tools/scripts/release.test.js',
+  ];
+  if (hasFile(releaseToolingMatchers)) {
+    bullets.push(
+      'Reworked the promotion PR generator and its coverage so release notes, bug fixes, and file details are rendered in a changelog-style summary.',
+    );
+  }
+
+  const syncMatchers = [
+    (file) => file === 'packages/tools/scripts/update-version.mjs',
+    (file) => file === 'packages/tools/scripts/update-readme.mjs',
+    (file) => file === 'packages/tools/scripts/check-readme-sync.mjs',
+    (file) => file === 'CHANGELOG.md',
+  ];
+  if (hasFile(syncMatchers)) {
+    bullets.push(
+      'Kept versioning, changelog, and README sync aligned with the release patch workflow.',
+    );
+  }
+
+  const mobileMatchers = [
+    (file) => file.startsWith('apps/mobile-app/'),
+  ];
+  if (hasFile(mobileMatchers)) {
+    bullets.push('Synced mobile app release metadata, version history, and runtime behavior changes.');
+  }
+
+  const workflowMatchers = [
+    (file) => file.startsWith('.github/workflows/'),
+    (file) => file.startsWith('.github/scripts/'),
+    (file) => file.startsWith('packages/infra/'),
+  ];
+  if (hasFile(workflowMatchers)) {
+    bullets.push(
+      'Adjusted workflow and release automation to keep the protected develop -> main path consistent.',
+    );
+  }
+
+  return bullets.length > 0
+    ? [`#### Implementation changes`, bullets.map((bullet) => `- ${bullet}`).join('\n')].join('\n')
+    : '';
+}
+
+function buildPromotionChangeSummary(baseReleaseVersion, releaseVersion) {
+  const releaseInfo = readPromotionVersionInfo();
+  const summary = formatPromotionSummarySections(releaseInfo);
+  const files = getPromotionChangedFiles(baseReleaseVersion);
+  const fileHighlights = buildPromotionFileHighlights(files);
+  const fileDetails = buildPromotionFileDetails(baseReleaseVersion);
+
+  const blocks = [summary, fileHighlights, fileDetails].filter(Boolean);
+
+  if (blocks.length > 0) {
+    return blocks.join('\n\n');
+  }
+
+  return fileDetails || '_No change summary is available._';
 }
 
 function buildPromotionPullRequestBody(releaseVersion, releaseSha, changeSummary, baseReleaseVersion) {
@@ -651,7 +838,7 @@ function createPromotionPullRequest(options, releaseVersion, releaseSha, baseRel
   const body = buildPromotionPullRequestBody(
     releaseVersion,
     releaseSha,
-    buildPromotionChangeSummary(baseReleaseVersion),
+    buildPromotionChangeSummary(baseReleaseVersion, releaseVersion),
     baseReleaseVersion,
   );
   const currentLogin = getCurrentGitHubLogin(options);
@@ -853,6 +1040,9 @@ if (require.main === module) {
 
 module.exports = {
   buildPromotionPullRequestBody,
+  buildPromotionChangeSummary,
+  buildPromotionFileHighlights,
+  formatPromotionSummarySections,
   incrementPatchVersion,
   resolvePromotionVersion,
 };
