@@ -176,8 +176,10 @@ when both the dev and production pipelines are idle. If the repo variable is
 not set yet, you can pass the same role ARN as the manual
 `aws_web_pipeline_role_arn` workflow dispatch input.
 That workflow is the normal control plane for the worker lifecycle. It now
-includes a periodic stop sweep in addition to the push-triggered monitor so an
-idle worker can still be reclaimed if no later commit arrives. Use GitHub
+includes a periodic stop sweep in addition to the push-triggered monitor, and
+uses a 30 second idle grace check before stopping the worker so queued pipeline
+activity still has a chance to appear without adding unnecessary release delay.
+Use GitHub
 Actions to start, monitor, or stop the EC2 instance by tag, and keep direct
 target-account AWS CLI usage for bootstrap or emergency debugging only.
 The target Supabase compatibility layer for the target-account migration lives in

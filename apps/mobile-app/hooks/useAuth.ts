@@ -307,11 +307,15 @@ export const useAuth = () => {
 
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────
       // When enabled, uses the system account picker with no browser popup.
+      // Only safe for the Supabase provider — Directus expects the browser-based
+      // callback flow to complete its session exchange.
       // Disabled or unavailable → falls through to the provider OAuth flow below.
       const googleWebClientId = resolveGoogleOAuthClientId();
+      const providerName = authService.getProviderName();
       const nativeGoogleEnabled =
         provider === 'google' &&
         Platform.OS !== 'web' &&
+        providerName === 'supabase' &&
         shouldUseNativeGoogleSignin(googleWebClientId);
 
       if (nativeGoogleEnabled) {
@@ -336,6 +340,13 @@ export const useAuth = () => {
             throw err;
           }
         }
+      } else if (
+        Platform.OS !== 'web' &&
+        provider === 'google' &&
+        providerName === 'directus' &&
+        shouldUseNativeGoogleSignin(googleWebClientId)
+      ) {
+        console.log('[useAuth] Skipping native Google SDK for Directus; using browser OAuth flow.');
       }
       // ── End native Google Sign-In ───────────────────────────────────────────────
 

@@ -61,6 +61,12 @@ variable "google_client_id" {
   default     = ""
 }
 
+variable "ga_measurement_id" {
+  description = "Google Analytics 4 measurement ID baked into the web build"
+  type        = string
+  default     = "G-2JCRQCH0R1"
+}
+
 variable "lambda_region" {
   description = "AWS region containing the Expo Router API Lambda functions"
   type        = string

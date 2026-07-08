@@ -54,8 +54,8 @@ jobs:
       WEB_PIPELINE_NAMES: ${{ vars.WEB_PIPELINE_NAMES || 'hashpass-dev-site,hashpass-production-site' }}
       WEB_PIPELINE_PROJECT_TAG: ${{ vars.WEB_PIPELINE_PROJECT_TAG || 'hashpass' }}
       WEB_PIPELINE_SERVICE_TAG: ${{ vars.WEB_PIPELINE_SERVICE_TAG || 'pipeline-build-worker' }}
-      WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '90' }}
-      WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '600' }}
+      WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '30' }}
+      WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '180' }}
       WEB_PIPELINE_POLL_SECONDS: ${{ vars.WEB_PIPELINE_POLL_SECONDS || '20' }}
       WEB_PIPELINE_MODE: ${{ github.event_name == 'schedule' && 'stop' || github.event_name == 'workflow_dispatch' && inputs.mode || 'monitor' }}
     steps:

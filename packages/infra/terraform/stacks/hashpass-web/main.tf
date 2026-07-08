@@ -46,6 +46,9 @@ locals {
       GOOGLE_CLIENT_ID             = trimspace(var.google_client_id)
       BETTER_AUTH_GOOGLE_CLIENT_ID = trimspace(var.google_client_id)
     } : {},
+    trimspace(var.ga_measurement_id) != "" ? {
+      EXPO_PUBLIC_GA_MEASUREMENT_ID_PROD = trimspace(var.ga_measurement_id)
+    } : {},
     var.build_environment_overrides
   )
 
@@ -64,6 +67,9 @@ locals {
     trimspace(var.google_client_id) != "" ? {
       GOOGLE_CLIENT_ID             = trimspace(var.google_client_id)
       BETTER_AUTH_GOOGLE_CLIENT_ID = trimspace(var.google_client_id)
+    } : {},
+    trimspace(var.ga_measurement_id) != "" ? {
+      EXPO_PUBLIC_GA_MEASUREMENT_ID_PROD = trimspace(var.ga_measurement_id)
     } : {},
     var.build_environment_overrides
   )

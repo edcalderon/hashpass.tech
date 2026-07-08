@@ -8,9 +8,9 @@ jest.mock('expo/virtual/env', () => ({
 const mockAuthService = {
   signInWithOAuth: jest.fn(async () => ({
     pending: true,
-    oauthUrl: 'https://example.directus/oauth',
+    oauthUrl: 'https://example.supabase.co/auth/v1/authorize',
   })),
-  getProviderName: jest.fn(() => 'directus'),
+  getProviderName: jest.fn(() => 'supabase'),
   handleOAuthCallback: jest.fn(),
   signInWithEmailAndPassword: jest.fn(),
   signOut: jest.fn(),
@@ -171,5 +171,88 @@ describe('useAuth native Google sign-in', () => {
       provider: 'google',
       token: 'native-id-token',
     });
+  });
+
+  it('skips native SDK for Directus provider and falls through to browser OAuth', async () => {
+    setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
+    setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');
+
+    const mockDirectusAuthService = {
+      ...mockAuthService,
+      getProviderName: jest.fn(() => 'directus'),
+      signInWithOAuth: jest.fn(async () => ({
+        pending: true,
+        oauthUrl: 'https://example.directus/auth/login/google?redirect=...',
+      })),
+    };
+
+    let capturedHook: any = null;
+    let testAct: any = null;
+
+    jest.isolateModules(() => {
+      jest.doMock('react-native', () => ({
+        Platform: { OS: 'android' },
+      }));
+
+      jest.doMock('@hashpass/auth', () => ({
+        authService: mockDirectusAuthService,
+        getSupabaseOAuthRedirectUrl: jest.fn(() => 'myapp://auth/callback'),
+      }));
+
+      jest.doMock('../../lib/supabase', () => ({
+        supabase: mockSupabase,
+        createSessionFromUrl: jest.fn(),
+      }));
+
+      jest.doMock('../../lib/native-google-signin', () => ({
+        clearNativeGoogleAccount: jest.fn(),
+        nativeGoogleSigninStatusCodes: {
+          SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+          PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+        },
+        signInWithNativeGoogleAccount: mockSignInWithNativeGoogleAccount,
+      }));
+
+      jest.doMock('../../lib/auth/oauth/callback-params', () => ({
+        mergeOAuthFragmentParams: jest.fn((params: URLSearchParams, extras: Record<string, string>) => ({
+          ...Object.fromEntries(params.entries()),
+          ...extras,
+        })),
+      }));
+
+      jest.doMock('expo-web-browser', () => ({
+        __esModule: true,
+        openAuthSessionAsync: mockOpenAuthSessionAsync.mockResolvedValueOnce({ type: 'cancel' }),
+      }));
+
+      const React = require('react');
+      const TestRenderer = require('react-test-renderer');
+      const { useAuth } = require('../../hooks/useAuth');
+      testAct = TestRenderer.act;
+
+      const Harness = () => {
+        capturedHook = useAuth();
+        return null;
+      };
+
+      TestRenderer.act(() => {
+        TestRenderer.create(React.createElement(Harness));
+      });
+    });
+
+    expect(capturedHook).toBeTruthy();
+
+    await testAct(async () => {
+      try {
+        await capturedHook.signInWithOAuth('google');
+      } catch {
+        // browser cancel throws — acceptable in this test
+      }
+    });
+
+    // Native SDK must NOT fire for Directus; browser OAuth must be used instead
+    expect(mockSignInWithNativeGoogleAccount).not.toHaveBeenCalled();
+    expect(mockDirectusAuthService.signInWithOAuth).toHaveBeenCalledWith('google');
+    expect(mockSupabase.auth.signInWithIdToken).not.toHaveBeenCalled();
   });
 });
