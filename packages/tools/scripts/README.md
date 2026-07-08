@@ -122,8 +122,12 @@ The static site build helper installs the project dependencies, resolves the pin
 The worker also retries the source artifact download once the CodePipeline job starts, then verifies the archive exists before unzipping it. If the build helper is missing from a source archive, the worker falls back to the same inline pnpm build flow so the pipeline remains usable even when the archive is incomplete.
 The web pipeline monitor script keeps the shared EC2 worker warm while either
 `hashpass-dev-site` or `hashpass-production-site` is active, then stops the
-worker after a quiet grace period once both pipelines are idle. It is designed
-to pair with the GitHub Actions OIDC role emitted by the `hashpass-web` stack.
+worker after a 30 second quiet grace period once both pipelines are idle. It is
+designed to pair with the GitHub Actions OIDC role emitted by the
+`hashpass-web` stack.
+On monitor runs, the worker waits up to 180 seconds for CodePipeline activity
+to appear after startup; if nothing starts, it performs the same 30 second idle
+grace check and shuts the worker back down.
 The workflow now also runs a periodic stop sweep so an idle worker can still be
 reclaimed even if no new push arrives after the final build.
 Use `.github/workflows/hashpass-web-pipeline-monitor.yml` as the normal

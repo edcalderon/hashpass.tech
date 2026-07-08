@@ -116,7 +116,7 @@ Rollback should be a traffic flip, not a rebuild.
 - Use `TARGET_AWS_ACCOUNT_ID` when you need scripts to assert the destination account explicitly.
 - Build the target static site with `pnpm run deploy:web:s3` for a local dry run, or let the new EC2 worker perform the same build and S3 sync inside AWS.
 - Keep `dev.hashpass.tech` on the CloudFront front door while the migration is in flight; use the S3 website endpoint only as the origin behind that distribution.
-- Use `.github/workflows/hashpass-web-pipeline-monitor.yml` for day-to-day control of the web worker. Set `AWS_WEB_PIPELINE_ROLE_ARN` from the Terraform output and dispatch the workflow with `mode=monitor` or `mode=stop` instead of using ad hoc target-account AWS CLI calls, unless you are debugging a failure. The workflow also runs a periodic stop sweep so idle workers get reclaimed even if the final build finished without another push.
+- Use `.github/workflows/hashpass-web-pipeline-monitor.yml` for day-to-day control of the web worker. Set `AWS_WEB_PIPELINE_ROLE_ARN` from the Terraform output and dispatch the workflow with `mode=monitor` or `mode=stop` instead of using ad hoc target-account AWS CLI calls, unless you are debugging a failure. The workflow also runs a periodic stop sweep and uses a 30 second idle grace check so idle workers get reclaimed quickly even if the final build finished without another push.
 - If the GitHub repo variable is missing during bootstrap, pass the same role ARN through the manual `aws_web_pipeline_role_arn` workflow dispatch input and then save it as the repo variable after the first successful run.
 - The target Supabase compatibility layer lives in
   `packages/tools/scripts/sql/target-bsl-bootstrap.sql`. Apply that script once
