@@ -1,3 +1,19 @@
+## [1.8.176](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.175...v1.8.176) (2026-07-08)
+
+
+### Bug Fixes
+
+* **auth:** restore Supabase provider guard on native Google sign-in ([090e90f](https://github.com/hashpass-tech/hashpass.tech/commit/090e90faa98af98c64e32ef902d615bf98551da3))
+
+
+### Features
+
+* **infra:** inject GA_MEASUREMENT_ID into web CodePipeline build environment ([f871bb9](https://github.com/hashpass-tech/hashpass.tech/commit/f871bb914c509f78f4ec2a784d544cbbc49df932))
+
+
+
+
+
 ## [1.8.175](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.174...v1.8.175) (2026-07-08)
 
 
