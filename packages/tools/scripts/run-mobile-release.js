@@ -234,7 +234,7 @@ function main(argv = process.argv.slice(2)) {
         'Defaults to a production-profile release using fastlane, but the current freeze expects development/internal or development/alpha releases.',
         'Use --env development to target the development Expo account and internal preview profile while production is paused.',
         'Use --backend fastlane with --promote-to alpha, --env development, and --track internal to promote the internal Play release into closed testing.',
-        'Use --release-status draft when the Play app is still in draft for the first closed-testing upload.',
+        'Release status defaults to completed; use --release-status draft only if Play rejects completed because the app itself is still in draft.',
         'Use --backend eas only if you explicitly want the managed Expo build path.',
         'Use --backend fastlane to build locally with Expo prebuild + fastlane supply.',
       ].join('\n'),
