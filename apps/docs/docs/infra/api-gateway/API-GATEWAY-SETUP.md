@@ -1,6 +1,8 @@
 # API Gateway + Lambda Setup Guide
 
-Complete step-by-step guide to set up API Gateway with Lambda for HASHPASS API routes.
+Historical/manual reference for setting up API Gateway with Lambda for HASHPASS API routes.
+
+Do not use this as the normal release flow. The active API deploy path is the target-account web pipeline documented in `../DEPLOYMENT_MAP.md`; it packages the Expo Router API, updates the configured Lambda, and verifies `/api/config/versions`.
 
 ## Prerequisites
 

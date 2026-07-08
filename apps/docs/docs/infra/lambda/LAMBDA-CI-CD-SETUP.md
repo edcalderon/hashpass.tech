@@ -1,198 +1,63 @@
-# Lambda CI/CD Setup Guide
+# Lambda CI/CD Setup
 
-## Overview
+The old Amplify and standalone `deploy-lambda.yml` setup paths are retired. The active setup is part of the target-account `hashpass-web` Terraform stack.
 
-Este documento explica cómo configurar el despliegue automático de Lambda cuando hay cambios en el repositorio.
+## Active Stack
 
-> Deprecated: la ruta basada en Amplify es histórica solamente. El archivo y los scripts de referencia viven en `archive/amplify/` y no forman parte del flujo activo. El flujo actual despliega `hashpass-api-dev` y `hashpass-api-prod` en el account target.
+Use `packages/infra/terraform/stacks/hashpass-web`.
 
-## Opciones de Integración
+Relevant variables:
 
-### Opción 1: GitHub Actions (Recomendado) ✅
+- `lambda_region`: defaults to `us-east-1`
+- `lambda_function_name`: defaults to `hashpass-prod-expo-router-api`
+- `dev_lambda_function_name`: defaults to `hashpass-dev-expo-router-api`
+- `api_version_url`: defaults to `https://api.hashpass.tech/api/config/versions`
+- `dev_api_version_url`: defaults to `https://api-dev.hashpass.tech/api/config/versions`
 
-**Ventajas:**
-- ✅ Despliegue automático en cada push a `main` o `develop`
-- ✅ Solo despliega cuando hay cambios en archivos relacionados con API
-- ✅ No depende del build del frontend
-- ✅ Separación clara entre frontend, API y rutas de despliegue
-- ✅ Logs y notificaciones en GitHub
+The stack passes these values into the EC2 build worker as:
 
-**Configuración:**
+- `SITE_LAMBDA_FUNCTION_NAME`
+- `SITE_LAMBDA_REGION`
+- `SITE_API_VERSION_URL`
 
-1. **Crear IAM Role para GitHub Actions (OIDC)**
+## Worker Permissions
 
-   ```bash
-   # Crear role con trust policy para GitHub Actions
-   aws iam create-role \
-     --role-name GitHubActions-LambdaDeploy \
-     --assume-role-policy-document '{
-       "Version": "2012-10-17",
-       "Statement": [
-         {
-           "Effect": "Allow",
-           "Principal": {
-             "Federated": "arn:aws:iam::<AWS_ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com"
-           },
-           "Action": "sts:AssumeRoleWithWebIdentity",
-           "Condition": {
-             "StringEquals": {
-               "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-             },
-             "StringLike": {
-               "token.actions.githubusercontent.com:sub": "repo:hashpass-tech/hashpass.tech:*"
-             }
-           }
-         }
-       ]
-     }'
-   
-   # Attach policy para Lambda
-   aws iam attach-role-policy \
-     --role-name GitHubActions-LambdaDeploy \
-     --policy-arn arn:aws:iam::aws:policy/AWSLambda_FullAccess
-   ```
+The `aws_pipeline_ec2_worker` module grants the build worker permission to:
 
-2. **Configurar GitHub Secrets**
+- read the configured Lambda functions
+- update Lambda code
+- wait for the Lambda update to complete
 
-   En GitHub → Settings → Secrets and variables → Actions:
-   - Agregar `AWS_ROLE_ARN`: `arn:aws:iam::<AWS_ACCOUNT_ID>:role/GitHubActions-LambdaDeploy`
+Do not give the worker broad Lambda permissions. Add function names to the Terraform variables instead.
 
-3. **El workflow ya está configurado**
+## Deployment Contract
 
-   El archivo `.github/workflows/deploy-lambda.yml` está listo y se activará automáticamente cuando:
-   - Haya cambios en `apps/mobile-app/app/api/**`
-   - Haya cambios en `packages/infra/lambda/**`
-   - Haya cambios en `packages/tools/scripts/package-lambda.sh`
-   - Haya cambios en `package.json` o `package-lock.json`
-   - Push a `main` o `develop`
+The target web deploy helper must:
 
-### Opción 2: Integrar en Amplify Build (Histórica)
+1. build the static web app
+2. publish the static assets
+3. package the Expo Router API
+4. update the environment-specific Lambda
+5. verify the public API version endpoint
 
-**Ventajas:**
-- ✅ Todo en un solo lugar
-- ✅ Frontend y API siempre sincronizados
+If the version endpoint is stale, the deploy fails and the release is not complete.
 
-**Desventajas:**
-- ⚠️ Builds más lentos
-- ⚠️ Requiere permisos Lambda en Amplify service role
-- ⚠️ Despliega Lambda incluso si solo cambió el frontend
+## Environment Updates
 
-**Configuración:**
-
-1. **Agregar permisos Lambda al Amplify service role**
-
-   ```bash
-   aws iam attach-role-policy \
-     --role-name amplify-hashpasstech-dev-96465-authRole \
-     --policy-arn arn:aws:iam::aws:policy/AWSLambda_FullAccess
-   ```
-
-2. **Referencia histórica en `archive/amplify/config/amplify.yml`:**
-
-   ```yaml
-   post_build:
-     commands:
-       - echo "Packaging Lambda function..."
-       - ./packages/tools/scripts/package-lambda.sh || echo "Lambda packaging skipped"
-       - |
-         if [ -f lambda-deployment.zip ]; then
-           echo "Deploying Lambda function..."
-           aws lambda update-function-code \
-             --function-name hashpass-api-handler \
-             --region us-east-1 \
-             --zip-file fileb://lambda-deployment.zip || echo "Lambda deployment skipped"
-         fi
-   ```
-
-### Opción 3: Despliegue Manual
-
-Para despliegues manuales cuando sea necesario:
+Lambda code deploys do not update secrets. Use the environment sync path when keys or URLs change:
 
 ```bash
-./packages/tools/scripts/package-lambda.sh
-aws lambda update-function-code \
-  --function-name hashpass-api-handler \
-  --region us-east-1 \
-  --zip-file fileb://lambda-deployment.zip
+node packages/tools/scripts/sync-env.js production --tenant core
+node packages/tools/scripts/sync-env.js dev --tenant core
 ```
 
-## Flujo Actual (Recomendado)
-
-```
-┌─────────────────┐
-│  Push to main   │
-└────────┬────────┘
-         │
-         ├─────────────────┐
-         │                 │
-         ▼                 ▼
-┌─────────────────┐  ┌─────────────────┐
-│ GitHub Actions  │  │  Account Target  │
-│  (Repo Changes) │  │   Lambda API    │
-└─────────────────┘  └─────────────────┘
-         │                 │
-         ▼                 ▼
-┌─────────────────┐  ┌─────────────────┐
-│  Web Frontend   │  │ Lambda Function │
-│ (CloudFront/S3) │  │  (API Routes)    │
-└─────────────────┘  └─────────────────┘
-```
-
-## Verificación
-
-### Verificar que el workflow funciona:
-
-1. **Hacer un cambio en `apps/mobile-app/app/api/` o `packages/infra/lambda/`**
-2. **Commit y push a `main`**
-3. **Verificar en GitHub Actions** que el workflow se ejecutó
-4. **Verificar Lambda** que se actualizó:
-   ```bash
-   aws lambda get-function \
-     --function-name hashpass-api-dev \
-     --region us-east-1 \
-     --query 'Configuration.LastModified'
-   ```
-
-### Verificar despliegue:
+If local credentials cannot assume the target account role, update the Lambda environment in AWS Console and verify:
 
 ```bash
-# Probar API
-curl https://api.hashpass.tech/api/config/versions
-
-# Ver logs de Lambda
-aws logs tail /aws/lambda/hashpass-api-dev --follow --region us-east-1
+curl -fsS https://api.hashpass.tech/api/config/versions
+curl -fsS https://api-dev.hashpass.tech/api/config/versions
 ```
 
-## Troubleshooting
+## Historical References
 
-### GitHub Actions falla con "Access Denied"
-
-1. Verificar que el IAM role existe y tiene los permisos correctos
-2. Verificar que `AWS_ROLE_ARN` está configurado en GitHub Secrets
-3. Verificar que el OIDC provider está configurado en AWS
-
-### Lambda no se actualiza
-
-1. Verificar que el workflow se ejecutó (GitHub Actions)
-2. Verificar logs del workflow
-3. Verificar que `lambda-deployment.zip` se creó correctamente
-4. Verificar permisos del IAM role
-
-### La ruta legacy falla al desplegar Lambda
-
-1. Verificar que el service role legado tiene permisos Lambda
-2. Verificar que AWS credentials están configuradas
-3. Considerar usar GitHub Actions en su lugar (recomendado)
-
-## Próximos Pasos
-
-1. ✅ **Configurar IAM Role para GitHub Actions** (si no existe)
-2. ✅ **Agregar `AWS_ROLE_ARN` a GitHub Secrets**
-3. ✅ **Hacer un cambio de prueba y verificar despliegue**
-4. ✅ **Monitorear primeros despliegues**
-
-## Referencias
-
-- [GitHub Actions OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
-- [AWS Lambda Deployment](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-deploy.html)
-- Ruta histórica: `archive/amplify/README.md`
+Amplify-era helpers live under `archive/amplify/`. Treat them as migration history only, not as current release instructions.

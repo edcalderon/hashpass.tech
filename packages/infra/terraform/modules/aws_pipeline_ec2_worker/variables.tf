@@ -64,6 +64,18 @@ variable "artifact_bucket_names" {
   default     = []
 }
 
+variable "lambda_function_names" {
+  description = "Optional Lambda function names the worker can update during direct deployments"
+  type        = list(string)
+  default     = []
+}
+
+variable "lambda_region" {
+  description = "AWS region containing the Lambda functions updated by the worker"
+  type        = string
+  default     = ""
+}
+
 variable "root_volume_size_gb" {
   description = "Root EBS volume size in GB"
   type        = number

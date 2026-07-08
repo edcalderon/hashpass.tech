@@ -28,7 +28,7 @@ Shared branch cadence:
 Release flow:
 
 - `release` / `release:patch` / `release:minor` / `release:major` run the branch-aware version release flow for the repo root
-- `release:promote` prepares the protected `develop -> main` promotion PR. The script derives the next patch version from the latest release tag when needed, then fills the PR body with the actual files changed since the previous release plus release metadata. Repository protections still enforce the required reviews, coverage, and security checks.
+- `release:promote` prepares the protected `develop -> main` promotion PR. The script derives the next patch version from the latest release tag when needed, then fills the PR body with the actual files changed since the previous release plus release metadata. Repository protections still enforce the current `@edcalderon` codeowner review, coverage, and security checks.
 - `release:pipeline` remains the tenant/deploy pipeline for infra and legacy work
 - `release:dev` / `release:prod` target `core` by default
 - `release:bsl:dev` / `release:bsl:prod` follow the event tenant path and remain available for the historical branch-aware release flow
@@ -116,6 +116,7 @@ Infra helpers derive the AWS account from active credentials unless `TARGET_AWS_
 See `apps/docs/docs/infra/INFRA_NAMING_GUIDE.md` for the naming convention used by the new BSL infra resources.
 
 The static site deploy helper expects `SITE_BUCKET_NAME` and, optionally, `SITE_CLOUDFRONT_DISTRIBUTION_ID`. It syncs the built `dist/client` tree to S3, reapplies no-cache headers to HTML and manifest assets, and creates a CloudFront invalidation when a distribution ID is present.
+When `SITE_LAMBDA_FUNCTION_NAME`, `SITE_LAMBDA_REGION`, and `SITE_API_VERSION_URL` are set, the same helper packages the Expo Router API, updates the configured Lambda, waits for the Lambda update, and verifies that the public `/api/config/versions` response matches `package.json`. This is the guard that prevents `hashpass.tech` from deploying with stale API code.
 If only `SITE_CLOUDFRONT_DOMAIN_NAME` is available, the helper resolves the distribution ID at runtime with `aws cloudfront list-distributions` and then invalidates the matching distribution. That keeps the target web pipeline usable without feeding Terraform a self-referential distribution ID.
 The static site build helper installs the project dependencies, resolves the pinned pnpm version from the repo root, and produces the `dist/client` tree that the deploy helper consumes. It also resets the workspace-local Expo / Metro cache before export so the EC2 worker cannot reuse stale absolute paths from a previous job. The shared EC2 CodePipeline worker now runs the build helper directly before invoking the deploy helper in direct mode.
 The worker also retries the source artifact download once the CodePipeline job starts, then verifies the archive exists before unzipping it. If the build helper is missing from a source archive, the worker falls back to the same inline pnpm build flow so the pipeline remains usable even when the archive is incomplete.

@@ -1,177 +1,65 @@
-# Lambda CI/CD - Quick Start
+# Lambda Deployment Quick Start
 
-## Resumen
+The active HASHPASS API deploy path is the target-account web pipeline. It is not Amplify and it is not the old standalone `deploy-lambda.yml` workflow.
 
-Ahora Lambda se actualiza **automáticamente** cuando haces cambios en `main` o `develop` en el repositorio `hashpass.tech`. El flujo activo despliega `hashpass-api-dev` y `hashpass-api-prod` en el account target; la ruta basada en Amplify quedó archivada.
+## Current Flow
 
-## ¿Cómo Funciona?
+1. `main` or `develop` triggers the target web pipeline.
+2. The worker runs `packages/tools/scripts/build-static-site.sh`.
+3. The worker runs `packages/tools/scripts/deploy-static-site.sh`.
+4. The deploy helper syncs the static site to S3 and invalidates CloudFront when configured.
+5. The deploy helper runs `packages/tools/scripts/package-lambda.sh`.
+6. The deploy helper updates the configured Expo Router API Lambda.
+7. The deploy helper verifies `/api/config/versions` against `package.json`.
 
-### Flujo Automático
+If the API version endpoint is stale, the deploy fails.
 
-```
-┌─────────────────────┐
-│  Push a main/develop│
-│  (cambios en API)   │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  GitHub Actions     │
-│  Detecta cambios    │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  Build & Package    │
-│  Lambda function    │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│  Deploy a Lambda    │
-│  Automáticamente    │
-└─────────────────────┘
-```
+## Lambda Names
 
-### ¿Cuándo se Despliega?
+| Environment | Branch | Function | Version check |
+|-------------|--------|----------|---------------|
+| Production | `main` | `hashpass-prod-expo-router-api` | `https://api.hashpass.tech/api/config/versions` |
+| Development | `develop` | `hashpass-dev-expo-router-api` | `https://api-dev.hashpass.tech/api/config/versions` |
 
-El workflow se activa cuando hay cambios en:
-- ✅ `apps/mobile-app/app/api/**` - Cualquier archivo de API
-- ✅ `packages/infra/lambda/**` - Archivos de Lambda
-- ✅ `packages/tools/scripts/package-lambda.sh` - Script de empaquetado
-- ✅ `package.json` o `package-lock.json` - Dependencias
+## Manual Emergency Deploy
 
-**No se despliega** si solo cambias:
-- ❌ Frontend (componentes React)
-- ❌ Estilos CSS
-- ❌ Documentación
-- ❌ Otros archivos no relacionados con API
-
-## Setup Inicial (Una Vez)
-
-### Paso 1: Crear IAM Role
+Use this only for break-glass recovery. Normal releases should go through `npm run release:promote`, PR merge, and the target web pipeline.
 
 ```bash
-./packages/tools/scripts/setup-github-actions-role.sh
-```
+./packages/tools/scripts/package-lambda.sh
 
-Este script:
-- ✅ Crea OIDC provider para GitHub (si no existe)
-- ✅ Crea IAM role con permisos Lambda
-- ✅ Te da el ARN del role
-
-### Paso 2: Configurar GitHub Secret
-
-1. Ve a GitHub → **Settings** → **Secrets and variables** → **Actions**
-2. Click **New repository secret**
-3. Agregar:
-   - **Name**: `AWS_ROLE_ARN`
-   - **Value**: El ARN que te dio el script (ej: `arn:aws:iam::<AWS_ACCOUNT_ID>:role/GitHubActions-LambdaDeploy`)
-4. Click **Add secret**
-
-### Paso 3: Probar
-
-1. Haz un cambio pequeño en `apps/mobile-app/app/api/` (ej: agregar un comentario)
-2. Commit y push:
-   ```bash
-   git add apps/mobile-app/app/api/
-   git commit -m "test: trigger Lambda deployment"
-   git push origin main
-   ```
-3. Ve a GitHub → **Actions** → Verifica que el workflow se ejecutó
-4. Verifica que Lambda se actualizó:
-   ```bash
-   aws lambda get-function \
-     --function-name hashpass-api-dev \
-     --region us-east-1 \
-     --query 'Configuration.LastModified'
-   ```
-
-## Verificación
-
-### Ver Workflow en GitHub
-
-1. Ve a: `https://github.com/hashpass-tech/hashpass.tech/actions`
-2. Deberías ver "Deploy Lambda Function" en la lista
-3. Click para ver detalles del despliegue
-
-### Verificar Lambda Actualizado
-
-```bash
-# Ver última modificación
-aws lambda get-function \
-  --function-name hashpass-api-dev \
+aws lambda update-function-code \
+  --function-name hashpass-prod-expo-router-api \
   --region us-east-1 \
-  --query 'Configuration.{LastModified:LastModified,Version:Version}' \
-  --output table
+  --zip-file fileb://lambda-deployment.zip
 
-# Probar API
-curl https://api.hashpass.tech/api/config/versions
+curl -fsS https://api.hashpass.tech/api/config/versions
 ```
 
-### Ver Logs
+For development:
 
 ```bash
-# Logs de Lambda
-aws logs tail /aws/lambda/hashpass-api-dev --follow --region us-east-1
+aws lambda update-function-code \
+  --function-name hashpass-dev-expo-router-api \
+  --region us-east-1 \
+  --zip-file fileb://lambda-deployment.zip
 
-# Logs del workflow en GitHub Actions
-# (ve a Actions → Click en el workflow → Ver logs)
+curl -fsS https://api-dev.hashpass.tech/api/config/versions
 ```
 
-## Preguntas Frecuentes
+## Environment Variables
 
-### ¿Se despliega en cada push?
+Static deploys update Lambda code only. They do not rotate Supabase keys, OAuth secrets, SMTP credentials, or database URLs.
 
-**No**, solo cuando hay cambios en archivos relacionados con API. Si solo cambias el frontend, Lambda no se despliega.
+When secrets change, update Lambda configuration before release:
 
-### ¿Puedo desplegar manualmente?
+```bash
+node packages/tools/scripts/sync-env.js production --tenant core
+node packages/tools/scripts/sync-env.js dev --tenant core
+```
 
-**Sí**, puedes:
-1. Ir a GitHub → Actions → "Deploy Lambda Function" → "Run workflow"
-2. O ejecutar localmente:
-    ```bash
-    ./packages/tools/scripts/package-lambda.sh
-    aws lambda update-function-code \
-     --function-name hashpass-api-dev \
-     --region us-east-1 \
-     --zip-file fileb://lambda-deployment.zip
-    ```
+If the sync script cannot access the target AWS account, update the environment in the AWS Lambda console and then verify auth endpoints before promoting the release.
 
-### ¿Qué pasa si el workflow falla?
+## Archived Material
 
-- GitHub te enviará una notificación (si está configurada)
-- Puedes ver los logs en GitHub Actions
-- El despliegue anterior sigue funcionando
-- Puedes reintentar desde GitHub Actions
-
-### ¿Afecta el frontend?
-
-**No**, son completamente independientes:
-- El frontend se publica por su propia ruta
-- GitHub Actions despliega Lambda
-- No se bloquean entre sí
-
-## Troubleshooting
-
-### Workflow no se ejecuta
-
-1. Verifica que el archivo `.github/workflows/deploy-lambda.yml` existe
-2. Verifica que hiciste push a `main` o `develop`
-3. Verifica que cambiaste archivos en `apps/mobile-app/app/api/` o `packages/infra/lambda/`
-
-### Error: "Access Denied"
-
-1. Verifica que `AWS_ROLE_ARN` está en GitHub Secrets
-2. Verifica que el IAM role existe y tiene permisos
-3. Ejecuta `./packages/tools/scripts/setup-github-actions-role.sh` de nuevo
-
-### Lambda no se actualiza
-
-1. Verifica logs del workflow en GitHub Actions
-2. Verifica que `lambda-deployment.zip` se creó
-3. Verifica permisos del IAM role
-
-## Documentación Completa
-
-Para más detalles, ver: `LAMBDA-CI-CD-SETUP.md`
+Older Amplify and standalone Lambda CI/CD instructions are historical only. Use this page, `apps/docs/docs/infra/DEPLOYMENT_MAP.md`, and `apps/docs/docs/reference/release/RELEASE_WORKFLOW.md` for active operations.

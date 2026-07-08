@@ -25,6 +25,10 @@ locals {
     for environment in [var.environment, var.dev_environment] :
     "${var.name_prefix}-${environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   ])
+  build_worker_lambda_function_names = distinct([
+    for function_name in [var.lambda_function_name, var.dev_lambda_function_name] :
+    trimspace(function_name) if trimspace(function_name) != ""
+  ])
 
   build_environment = merge(
     {
@@ -34,6 +38,9 @@ locals {
       EXPO_PUBLIC_SUPABASE_KEY_PROD      = var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY      = var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD = var.supabase_key
+      SITE_LAMBDA_FUNCTION_NAME          = var.lambda_function_name
+      SITE_LAMBDA_REGION                 = var.lambda_region
+      SITE_API_VERSION_URL               = var.api_version_url
     },
     trimspace(var.google_client_id) != "" ? {
       GOOGLE_CLIENT_ID             = trimspace(var.google_client_id)
@@ -50,6 +57,9 @@ locals {
       EXPO_PUBLIC_SUPABASE_KEY_DEV      = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY     = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
+      SITE_LAMBDA_FUNCTION_NAME         = var.dev_lambda_function_name
+      SITE_LAMBDA_REGION                = var.lambda_region
+      SITE_API_VERSION_URL              = var.dev_api_version_url
     },
     trimspace(var.google_client_id) != "" ? {
       GOOGLE_CLIENT_ID             = trimspace(var.google_client_id)
@@ -174,6 +184,8 @@ module "build_worker" {
   allowed_ssh_cidrs           = var.build_worker_allowed_ssh_cidrs
   deploy_bucket_names         = local.build_worker_deploy_bucket_names
   artifact_bucket_names       = local.build_worker_artifact_bucket_names
+  lambda_function_names       = local.build_worker_lambda_function_names
+  lambda_region               = var.lambda_region
   root_volume_size_gb         = var.build_worker_root_volume_size_gb
   detailed_monitoring         = var.build_worker_detailed_monitoring
   tags                        = var.tags

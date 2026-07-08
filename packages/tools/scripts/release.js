@@ -639,13 +639,8 @@ function createPromotionPullRequest(options, releaseVersion, releaseSha, baseRel
     buildPromotionChangeSummary(baseReleaseVersion),
     baseReleaseVersion,
   );
-  const reviewers = ['jack-kernel'];
   const currentLogin = getCurrentGitHubLogin(options);
-
-  if (currentLogin && currentLogin !== 'edcalderon') {
-    reviewers.push('edcalderon');
-  }
-
+  const reviewers = currentLogin && currentLogin === 'edcalderon' ? [] : ['edcalderon'];
   const reviewerArgs = reviewers.flatMap((reviewer) => ['--add-reviewer', reviewer]);
   const title = `chore: release v${releaseVersion}`;
   const existingPr = getOpenPromotionPullRequest(options);

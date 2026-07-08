@@ -88,6 +88,7 @@ same Terraform state. It creates:
 - a CodePipeline that pulls from GitHub and triggers the EC2 worker
 - a matching development pipeline that builds from `develop` with the dev Supabase inputs
 - a `dev.hashpass.tech` record in the target `hashpass.tech` hosted zone when the DNS stack is present
+- API Lambda deploy wiring for `hashpass-prod-expo-router-api` and `hashpass-dev-expo-router-api`
 
 Before the first apply, create the CodeConnections connection in the target
 account and complete the GitHub handshake:
@@ -110,6 +111,7 @@ from the root `.env` values for:
 - `dev_custom_domain_name` if you want to override the `dev.hashpass.tech` hostname
 - `site_bucket_name` and `dev_site_bucket_name` only if you want fixed bucket names; otherwise let Terraform generate unique names and point Route 53 at the resulting website endpoints
 - `site_acm_certificate_arn` once you have requested and validated the `hashpass.tech` ACM certificate in `us-east-1`
+- `lambda_function_name`, `dev_lambda_function_name`, `api_version_url`, and `dev_api_version_url` only if the active Lambda names or API hostnames differ from the defaults
 
 Apply it with:
 
@@ -137,6 +139,11 @@ need concurrent dev and prod throughput; a second worker only helps parallel
 queues and increases idle cost. The worker runs the same
 `packages/tools/scripts/build-static-site.sh` and
 `packages/tools/scripts/deploy-static-site.sh` helpers that local testing uses.
+The deploy helper also packages and updates the Expo Router API Lambda when the
+stack provides `SITE_LAMBDA_FUNCTION_NAME` and `SITE_LAMBDA_REGION`. It then
+checks `SITE_API_VERSION_URL` against the repository version, so the pipeline
+fails if `api.hashpass.tech` or `api-dev.hashpass.tech` is still serving stale
+API code after the deploy.
 The recommended worker shape is `m6i.large`; the old burstable `t3a.medium`
 shape can exhaust CPU credits during Expo export and stretch the pipeline to
 25+ minutes.

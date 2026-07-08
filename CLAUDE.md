@@ -51,8 +51,7 @@ Protected promotion flow:
 
 - `npm run release:promote` now opens the `develop -> main` pull request instead of pushing or merging to `main` directly
 - `main` is branch-protected, so release promotion must go through a PR, codeowner review, coverage checks, and the GitHub security scans
-- `@edcalderon` is the required code owner for release PR approval
-- `@jack-kernel` is requested as an additional reviewer on each release PR
+- `@edcalderon` is the current required code owner for release PR approval
 - The promotion PR body is diff-driven: it derives the next patch version from the latest release tag when the branch is still on the released semver, then lists the actual files changed since the previous release instead of repeating the merge checklist in the description
 
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering.
@@ -65,7 +64,7 @@ Protected promotion flow:
    - Commits the release-prep changes
    - Pushes the release branch to `origin` and `upstream`
    - Opens the protected `develop -> main` PR instead of pushing to `main`
-3. **Wait for `@edcalderon` approval** and confirm `@jack-kernel` has been requested as reviewer, then make sure the PR passes the coverage gate (minimum 33%) and the GitHub security scans before merging
+3. **Wait for `@edcalderon` codeowner approval**, then make sure the PR passes the coverage gate (minimum 33%) and the GitHub security scans before merging
 4. **Merge the PR and sync `develop` from `main`**
 5. **Run `npm run release:patch` on `main`** — this creates the stable tag, changelog entry, and release commit
 6. **Trigger CI workflow** manually from the release tag:
@@ -99,14 +98,14 @@ Protected promotion flow:
 
 **This is by design, not a bug.**
 
-Android builds triggered with `--field environment=development` bake `EXPO_PUBLIC_SUPABASE_PROFILE=core-development` into the JS bundle. At runtime, `readBuildEnvironment()` in `lib/api-client.ts` detects the substring `"development"` in that value and routes ALL API calls to `https://api-dev.hashpass.tech/api` (the `hashpass-api-dev` Lambda in us-east-1).
+Android builds triggered with `--field environment=development` bake `EXPO_PUBLIC_SUPABASE_PROFILE=core-development` into the JS bundle. At runtime, `readBuildEnvironment()` in `lib/api-client.ts` detects the substring `"development"` in that value and routes ALL API calls to `https://api-dev.hashpass.tech/api` (the `hashpass-dev-expo-router-api` Lambda in us-east-1).
 
 | Build field | Supabase profile | API Lambda |
 |-------------|-----------------|------------|
-| `environment=development` | `core-development` | `hashpass-api-dev` (us-east-1) |
-| `environment=production` | `core-production` | `hashpass-api-prod` (us-east-1) |
+| `environment=development` | `core-development` | `hashpass-dev-expo-router-api` (us-east-1) |
+| `environment=production` | `core-production` | `hashpass-prod-expo-router-api` (us-east-1) |
 
-**Consequence:** If `hashpass-api-dev` is out of date, dev builds will behave differently from prod — even if prod was just fixed. Always keep `develop` branch in sync with `main` so that target deploys of `develop` update `hashpass-api-dev` to the same code.
+**Consequence:** If `hashpass-dev-expo-router-api` is out of date, dev builds will behave differently from prod — even if prod was just fixed. Always keep `develop` branch in sync with `main` so that target deploys of `develop` update `hashpass-dev-expo-router-api` to the same code.
 
 ```bash
 # Sync develop with main after every release
@@ -117,9 +116,9 @@ git checkout main
 **If api-dev urgently needs the same code as api-prod** (e.g. a hotfix was released to main but develop wasn't synced), you can manually copy the prod Lambda bundle to dev:
 ```bash
 # Download prod bundle and deploy to dev
-aws lambda get-function --function-name hashpass-api-prod --region us-east-1 \
+aws lambda get-function --function-name hashpass-prod-expo-router-api --region us-east-1 \
   --query 'Code.Location' --output text | xargs curl -s -o /tmp/lambda-prod.zip
-aws lambda update-function-code --function-name hashpass-api-dev \
+aws lambda update-function-code --function-name hashpass-dev-expo-router-api \
   --region us-east-1 --zip-file fileb:///tmp/lambda-prod.zip
 ```
 
@@ -172,12 +171,13 @@ On every push to `main`, **two independent auto-deploy systems** run in parallel
 | Domain | System | What triggers it |
 |--------|--------|-----------------|
 | `hashpass.tech` | Target-account web pipeline + source CloudFront front door | Push to `main` |
-| `api.hashpass.tech` | AWS Lambda `hashpass-api-prod` (us-east-1) | Target web/API deployment flow |
+| `api.hashpass.tech` | AWS Lambda `hashpass-prod-expo-router-api` (us-east-1) | Target web/API deployment flow |
 | `bsl.hashpass.tech` | SST StaticSite via SST Console autodeploy | Push to `main` (SST Console webhook, configured in `sst.config.ts`) |
 | Android | EC2 + Fastlane → Play Store | Manual `gh workflow run` (see workflow below) |
 
 **Critical facts:**
 - `api.hashpass.tech` Lambda is in **us-east-1**, deployed by the target web/API flow (NOT legacy Amplify)
+- The target web deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`; if the version endpoint is stale, the deploy must fail
 - `bsl.hashpass.tech` is deployed by **SST Console** (NOT the `infra-deploy.yml` GitHub Actions workflow)
 - `infra-deploy.yml` auto-triggers on push to `main`/`develop` when infra or API paths change (Route53 + CloudFront permissions added to IAM role in v1.8.92)
 

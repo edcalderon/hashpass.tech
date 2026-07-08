@@ -18,13 +18,15 @@ if (Platform.OS === 'web') {
     removeItem: async (key: string) => {},
   };
 } else {
-  // For native (iOS, Android), use AsyncStorage
+  // For native (iOS, Android), keep AsyncStorage lazy without dynamic import.
+  // Metro rewrites import() through Expo's async-require helper, which is not
+  // available in the current Android release bundle toolchain.
   let asyncStorage: any = null;
   const loadAsyncStorage = async () => {
     if (!asyncStorage) {
       try {
-        const AsyncStorage = await import('@react-native-async-storage/async-storage');
-        asyncStorage = AsyncStorage.default;
+        const AsyncStorage = require('@react-native-async-storage/async-storage');
+        asyncStorage = AsyncStorage.default ?? AsyncStorage;
       } catch (error) {
         console.error('Failed to load AsyncStorage:', error);
         // Fallback to dummy storage

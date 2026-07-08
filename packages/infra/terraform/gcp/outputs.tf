@@ -30,7 +30,7 @@ output "sso_url" {
 
 output "setup_instructions" {
   description = "Post-deployment setup instructions"
-  value = <<-EOT
+  value       = <<-EOT
     HashPass SSO Infrastructure Deployed Successfully!
     
     Next Steps:
