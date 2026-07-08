@@ -75,17 +75,17 @@ Protected promotion flow:
      --field environment=development \
      --field track=internal \
      --field auto_promote_alpha=true \
-     --field alpha_release_status=draft \
+     --field alpha_release_status=completed \
      --field backend=fastlane \
      --field runner=aws-ec2
    ```
    Use `environment=development` with `track=internal` for smoke tests. For closed testing, publish the matching internal release first on the same tag, then rerun `environment=development` with `track=alpha`. The workflow blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
-   To do the internal release and auto-promote alpha in a single dispatch, set `auto_promote_alpha=true`. If the Play Console app is still in draft, set `alpha_release_status=draft`; otherwise leave it at `completed`.
+   To do the internal release and auto-promote alpha in a single dispatch, set `auto_promote_alpha=true` and keep `alpha_release_status=completed` so alpha publishes without manual draft review. Use `alpha_release_status=draft` only if Play Console still rejects completed alpha releases because the app itself is in draft.
    The alpha handoff uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle.
    Production track publishing (`environment=production` / `track=production`) remains paused until the release freeze is lifted.
    The release workflow uses the `ANDROID_UPLOAD_KEY_SHA1` repository variable to select the Expo build credential that matches the Play upload certificate.
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
-   The Fastlane lane also uploads any deobfuscation files it finds in the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` is present. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
+   The Fastlane lane also uploads any deobfuscation files it finds in the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` is present. This only applies to builds created after this change; any older draft artifacts stay without deobfuscation until a new build is uploaded.
    For the current internal/alpha path and the future production checklist, see `apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md`.
 7. **Verify the `upstream` fork** after the release is merged and synchronized. The release script now mirrors the release branch automatically; re-run this only if you need to reseed the backup fork manually:
    ```bash

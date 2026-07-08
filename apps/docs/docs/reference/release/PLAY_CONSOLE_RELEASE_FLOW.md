@@ -45,7 +45,9 @@ gh workflow run mobile-android-release.yml \
   --repo hashpass-tech/hashpass.tech \
   --ref v<NEW_VERSION> \
   --field environment=development \
+  --field track=internal \
   --field auto_promote_alpha=true \
+  --field alpha_release_status=completed \
   --field backend=fastlane \
   --field runner=aws-ec2
 ```
@@ -58,7 +60,7 @@ What to do in Play Console:
 4. Create the release and upload the AAB.
 5. Review warnings, save, and roll out.
 
-If you want the workflow to auto-dispatch alpha after internal, add `auto_promote_alpha=true`. If the first closed-test upload still needs to be a draft, also set `alpha_release_status=draft` on the internal dispatch.
+If you want the workflow to auto-dispatch alpha after internal, add `auto_promote_alpha=true` and keep `alpha_release_status=completed`. Use `alpha_release_status=draft` only if Play Console still rejects completed alpha releases because the app itself is in draft.
 
 What to verify:
 
