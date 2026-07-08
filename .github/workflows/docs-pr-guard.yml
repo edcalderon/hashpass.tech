@@ -1,0 +1,139 @@
+name: Docs threshold guard (PR)
+
+# Runs on every PR targeting main or develop.
+# Classifies the changed files and:
+#   - skip / minor   → passes silently (no docs required)
+#   - significant    → posts an advisory comment and passes
+#   - critical       → posts a blocking comment and FAILS the check
+#                      until a docs/auto-* or docs/manual-* branch is
+#                      merged alongside, or the PR label 'docs-exempt'
+#                      is applied by a maintainer.
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  threshold-check:
+    name: Docs threshold check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need full history for the diff
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # ── Get the diff for this PR (base → head) ──────────────────────────────
+      - name: Get PR changed files
+        id: pr-files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/pr_files.txt
+          echo "Changed files:"
+          cat /tmp/pr_files.txt
+          echo "count=$(wc -l < /tmp/pr_files.txt)" >> "$GITHUB_OUTPUT"
+
+      # ── Run the classifier ──────────────────────────────────────────────────
+      - name: Classify changes
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Feed the PR file list into the classifier via BASE_SHA
+          python3 .github/scripts/classify_changes.py
+        # classify_changes.py writes tier/skip/changed_areas/needs_claude_md_review
+        # to $GITHUB_OUTPUT automatically
+
+      # ── Check for docs-exempt label ─────────────────────────────────────────
+      - name: Check for docs-exempt label
+        id: exempt
+        run: |
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+          if echo "$LABELS" | python3 -c "import sys,json; sys.exit(0 if 'docs-exempt' in json.load(sys.stdin) else 1)"; then
+            echo "exempt=true" >> "$GITHUB_OUTPUT"
+            echo "PR is labelled docs-exempt — skipping docs check."
+          else
+            echo "exempt=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Check if a companion docs branch/PR already exists ──────────────────
+      - name: Check for companion docs PR
+        id: companion
+        if: steps.classify.outputs.tier == 'critical' && steps.exempt.outputs.exempt != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Look for an open PR from a docs/auto-* or docs/manual-* branch
+          DOCS_PRS=$(gh pr list \
+            --base "${{ github.event.pull_request.base.ref }}" \
+            --search "docs in:title" \
+            --json title,headRefName,state \
+            --jq '[.[] | select(.headRefName | startswith("docs/"))] | length')
+
+          echo "companion_count=$DOCS_PRS" >> "$GITHUB_OUTPUT"
+          echo "Found $DOCS_PRS companion docs PR(s)."
+
+      # ── Post / update PR comment ─────────────────────────────────────────────
+      - name: Post threshold comment
+        if: steps.classify.outputs.tier != 'skip'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: docs-threshold
+          message: |
+            ## Docs threshold check — `${{ steps.classify.outputs.tier }}`
+
+            **Changed areas:** `${{ steps.classify.outputs.changed_areas }}`
+            ${{ steps.classify.outputs.needs_claude_md_review == 'true' && '**⚠️ CLAUDE.md may need a review pass** — critical infra or auth paths changed.' || '' }}
+
+            ---
+
+            ${{ steps.classify.outputs.tier == 'critical' && '### 🚨 Action required' || '### ℹ️ Advisory' }}
+
+            ${{ steps.classify.outputs.tier == 'critical'
+              && format('This PR touches **critical subsystems** (`{0}`). Documentation must be updated before merge.
+
+            **Options:**
+            1. Wait for the [OpenWiki docs-autogen workflow](../../actions/workflows/docs-autogen.yml) to open a companion `docs/auto-*` PR and merge it alongside this one.
+            2. Manually update the relevant docs in `apps/docs/docs/` and push them to this branch.
+            3. If docs genuinely don''t need updating (e.g. internal refactor with no API change), ask a maintainer to add the `docs-exempt` label.', steps.classify.outputs.changed_areas)
+              || format('This PR touches **{0}** subsystems. No docs update is required to merge, but consider whether any user-facing behaviour changed that should be reflected in `apps/docs/docs/`.', steps.classify.outputs.tier) }}
+
+      # ── Set the final status ─────────────────────────────────────────────────
+      - name: Fail on critical with no companion docs
+        if: |
+          steps.classify.outputs.tier == 'critical' &&
+          steps.exempt.outputs.exempt != 'true' &&
+          (steps.companion.outputs.companion_count == '' || steps.companion.outputs.companion_count == '0')
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════════╗"
+          echo "║  DOCS THRESHOLD: CRITICAL — merge blocked                ║"
+          echo "║                                                          ║"
+          echo "║  Changed areas: ${{ steps.classify.outputs.changed_areas }}"
+          echo "║                                                          ║"
+          echo "║  Add label 'docs-exempt' to bypass (maintainers only).  ║"
+          echo "╚══════════════════════════════════════════════════════════╝"
+          echo ""
+          exit 1
+
+      - name: Pass — tier is ${{ steps.classify.outputs.tier }}
+        if: |
+          steps.classify.outputs.tier == 'skip' ||
+          steps.classify.outputs.tier == 'minor' ||
+          steps.classify.outputs.tier == 'significant' ||
+          steps.exempt.outputs.exempt == 'true' ||
+          (steps.companion.outputs.companion_count != '' && steps.companion.outputs.companion_count != '0')
+        run: |
+          echo "✓ Docs threshold check passed (tier=${{ steps.classify.outputs.tier }})"

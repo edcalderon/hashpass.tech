@@ -1,0 +1,210 @@
+name: OpenWiki — auto-update docs
+
+# ── When it runs ────────────────────────────────────────────────────────────────
+#
+#  1. Push to main / develop — threshold classifier decides the tier.
+#     critical    → high-priority PR opened immediately
+#     significant → standard docs-update PR
+#     minor       → deferred to the weekly sweep
+#     skip        → no action
+#
+#  2. Weekly schedule (Monday 07:00 UTC) — sweeps batched minor changes.
+#
+#  3. workflow_dispatch — manual trigger with optional tier/area override.
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/mobile-app/lib/**'
+      - 'apps/mobile-app/components/**'
+      - 'apps/mobile-app/app/**'
+      - 'apps/mobile-app/hooks/**'
+      - 'apps/mobile-app/contexts/**'
+      - 'apps/mobile-app/providers/**'
+      - 'apps/mobile-app/types/**'
+      - 'packages/auth/**'
+      - 'packages/backend/**'
+      - 'packages/config/**'
+      - 'packages/emails/**'
+      - 'packages/infra/**'
+      - 'packages/tools/**'
+      - '!**/*.test.ts'
+      - '!**/*.test.tsx'
+      - '!pnpm-lock.yaml'
+
+  schedule:
+    - cron: '0 7 * * 1'
+
+  workflow_dispatch:
+    inputs:
+      force_tier:
+        description: 'Override tier (skip | minor | significant | critical)'
+        required: false
+        default: ''
+      focus_areas:
+        description: 'Comma-separated area names (blank = auto)'
+        required: false
+        default: ''
+
+concurrency:
+  group: docs-autogen-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  classify:
+    name: Classify changed files
+    runs-on: ubuntu-latest
+    outputs:
+      tier:                   ${{ steps.override.outputs.effective_tier }}
+      changed_areas:          ${{ steps.override.outputs.effective_areas }}
+      skip:                   ${{ steps.classify.outputs.skip }}
+      needs_claude_md_review: ${{ steps.classify.outputs.needs_claude_md_review }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Classify changes
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.before }}
+        run: python3 .github/scripts/classify_changes.py
+
+      - name: Apply tier override / schedule adjustment
+        id: override
+        run: |
+          FORCE="${{ github.event.inputs.force_tier }}"
+          FOCUS="${{ github.event.inputs.focus_areas }}"
+          AUTO_TIER="${{ steps.classify.outputs.tier }}"
+          AUTO_AREAS="${{ steps.classify.outputs.changed_areas }}"
+
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$AUTO_TIER" = "skip" ]; then
+            AUTO_TIER="minor"
+            AUTO_AREAS="scheduled-weekly-sweep"
+          fi
+
+          echo "effective_tier=${FORCE:-$AUTO_TIER}"  >> "$GITHUB_OUTPUT"
+          echo "effective_areas=${FOCUS:-$AUTO_AREAS}" >> "$GITHUB_OUTPUT"
+
+  update-docs:
+    name: Update docs (${{ needs.classify.outputs.tier }})
+    needs: classify
+    if: needs.classify.outputs.tier != 'skip'
+    runs-on: ubuntu-latest
+    env:
+      TIER:          ${{ needs.classify.outputs.tier }}
+      CHANGED_AREAS: ${{ needs.classify.outputs.changed_areas }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Verify exact CLI flags at https://github.com/langchain-ai/openwiki
+      - name: Install OpenWiki
+        run: pip install openwiki
+
+      - name: Generate / update documentation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          cd apps/docs
+          FLAGS="--config openwiki.yml --model claude-opus-4-8 --tier $TIER"
+          [ -n "$CHANGED_AREAS" ] && FLAGS="$FLAGS --areas $CHANGED_AREAS"
+          echo "openwiki sync $FLAGS"
+          openwiki sync $FLAGS
+
+      - name: Check for doc changes
+        id: diff
+        run: |
+          git add apps/docs/docs/
+          git diff --staged --quiet && echo "changed=false" >> "$GITHUB_OUTPUT" \
+            || { echo "changed=true" >> "$GITHUB_OUTPUT"; git diff --staged --stat; }
+
+      - name: Open docs-update PR
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        id: pr
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: docs/auto-${{ github.run_id }}
+          base: ${{ github.ref_name }}
+          commit-message: "docs: auto-update from ${{ github.sha }} [skip ci]\n\nChanged areas: ${{ env.CHANGED_AREAS }}"
+          title: "${{ env.TIER == 'critical' && '🚨 ' || '' }}docs: auto-update — ${{ env.CHANGED_AREAS }}"
+          body: |
+            ## Documentation auto-update
+
+            **Tier:** `${{ env.TIER }}`
+            **Triggered by:** ${{ github.event_name == 'schedule' && 'weekly sweep' || format('commit {0}', github.sha) }}
+            **Changed areas:** `${{ env.CHANGED_AREAS }}`
+
+            ---
+
+            OpenWiki updated documentation in `apps/docs/docs/` based on source changes.
+
+            ### Review checklist
+            - [ ] Content is accurate
+            - [ ] Cross-links resolve
+            - [ ] Protected dirs untouched
+            ${{ needs.classify.outputs.needs_claude_md_review == 'true' && '- [ ] **CLAUDE.md may need a manual review** (see companion issue)' || '' }}
+
+            > Auto-generated by OpenWiki · Merge once reviewed
+          labels: |
+            documentation
+            automated
+            ${{ env.TIER == 'critical' && 'priority: high' || env.TIER == 'significant' && 'priority: medium' || 'priority: low' }}
+          reviewers: edcalderon
+
+  claude-md-audit:
+    name: Flag CLAUDE.md for review
+    needs: classify
+    if: |
+      needs.classify.outputs.needs_claude_md_review == 'true' &&
+      needs.classify.outputs.tier == 'critical'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install openwiki
+
+      - name: Audit CLAUDE.md accuracy
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          openwiki audit \
+            --file CLAUDE.md \
+            --repo . \
+            --changed-areas "${{ needs.classify.outputs.changed_areas }}" \
+            --model claude-opus-4-8 \
+            --output /tmp/claude-audit.md || true
+          [ -s /tmp/claude-audit.md ] || echo "No stale content found in CLAUDE.md." > /tmp/claude-audit.md
+
+      - name: Open CLAUDE.md review issue
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: 'CLAUDE.md accuracy review — ${{ needs.classify.outputs.changed_areas }}'
+          content-filepath: /tmp/claude-audit.md
+          labels: documentation,claude-md,priority: high
+          assignees: edcalderon

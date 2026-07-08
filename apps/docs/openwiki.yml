@@ -1,0 +1,255 @@
+# OpenWiki configuration for HASHPASS documentation
+# Docs: https://github.com/langchain-ai/openwiki
+#
+# Read by docs-autogen.yml on every qualifying push to main/develop.
+# Defines which source paths map to which docs, their tier, and which
+# existing docs are protected from auto-overwrite.
+
+model:
+  provider: anthropic
+  name: claude-opus-4-8
+  temperature: 0.2      # low temp = consistent, factual output
+
+repo:
+  root: ../..           # relative to apps/docs/
+
+output:
+  dir: docs             # relative to apps/docs/
+  frontmatter: true     # inject Docusaurus-compatible frontmatter
+  crosslinks: true      # auto-insert cross-links between related docs
+  heading_style: atx    # use # headings, not underline style
+
+sources:
+
+  # ── API contract & client ──────────────────────────────────────────────────
+  - name: API Client
+    area: api-client
+    tier: critical
+    path: ../../apps/mobile-app/lib/api-client.ts
+    output: api/api-client.md
+    description: >
+      The central HTTP client used by all native and web screens.
+      Document request(), ApiRequestOptions, URL-building logic
+      (apiSegment / skipEventSegment), and auth headers.
+
+  - name: API Middleware
+    area: api-middleware
+    tier: critical
+    path: ../../apps/mobile-app/lib/api-middleware.ts
+    output: api/api-middleware.md
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+  - name: Auth Library
+    area: auth-lib
+    tier: critical
+    path: ../../apps/mobile-app/lib/auth
+    output: auth/auth-lib.md
+
+  - name: Auth API Routes
+    area: auth-api
+    tier: critical
+    path: ../../apps/mobile-app/app/api/auth
+    output: auth/auth-routes.md
+    description: >
+      All Expo Router API routes under /api/auth. Document each endpoint:
+      method, request body, response shape, and error codes.
+
+  - name: OAuth Flow
+    area: oauth-api
+    tier: critical
+    path: ../../apps/mobile-app/app/api/auth/oauth
+    output: auth/oauth-flow.md
+    description: >
+      Google OAuth login, callback, and Directus fetch routes.
+      Cover the redirect chain, token exchange, and session hydration.
+
+  - name: OTP Flow
+    area: otp-api
+    tier: critical
+    path: ../../apps/mobile-app/app/api/auth/otp+api.ts
+    extra_paths:
+      - ../../apps/mobile-app/app/api/auth/otp/verify+api.ts
+    output: auth/otp-flow.md
+    description: >
+      6-digit OTP send and verify endpoints. Document the token_hash /
+      email_otp dual path, GoTrue direct-fetch bypass, and why PKCE
+      fields are stripped.
+
+  - name: Supabase Client
+    area: supabase-client
+    tier: critical
+    path: ../../apps/mobile-app/lib/supabase.ts
+    extra_paths:
+      - ../../apps/mobile-app/lib/supabase-server.ts
+    output: auth/supabase-client.md
+
+  - name: Wallet Auth
+    area: wallet-auth
+    tier: critical
+    path: ../../apps/mobile-app/lib/wallet-auth.ts
+    extra_paths:
+      - ../../apps/mobile-app/lib/wallet-auth.web.ts
+      - ../../apps/mobile-app/app/api/auth/wallet
+    output: auth/wallet-auth.md
+
+  - name: Auth Package
+    area: auth-package
+    tier: critical
+    path: ../../packages/auth/src
+    output: auth/auth-package.md
+    description: >
+      The shared @hashpass/auth package: factory pattern, Supabase OAuth
+      helper, Directus adapter, exported types.
+
+  # ── Event system ────────────────────────────────────────────────────────────
+  - name: Event Detector
+    area: event-detector
+    tier: critical
+    path: ../../apps/mobile-app/lib/event-detector.ts
+    output: guides/event-system.md
+    description: >
+      How the active event is resolved at runtime. Native vs web detection
+      path. The apiSegment override for native builds.
+
+  - name: Event Config
+    area: event-config
+    tier: critical
+    path: ../../packages/config/src/events.ts
+    extra_paths:
+      - ../../packages/config/src/features.ts
+      - ../../packages/config/src/index.ts
+    output: guides/event-config.md
+
+  - name: Event Branding
+    area: event-branding
+    tier: significant
+    path: ../../apps/mobile-app/lib/event-branding.ts
+    extra_paths:
+      - ../../apps/mobile-app/lib/event-path.ts
+    output: guides/event-branding.md
+
+  # ── App-wide contexts ────────────────────────────────────────────────────────
+  - name: App Contexts
+    area: app-contexts
+    tier: critical
+    path: ../../apps/mobile-app/contexts
+    output: api/app-contexts.md
+    description: >
+      All React contexts: AnimationLevelContext, ToastContext, BalanceProvider.
+      Document context shape, AsyncStorage keys, and provider nesting order.
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+  - name: Lambda Handler
+    area: lambda-handler
+    tier: critical
+    path: ../../packages/infra/lambda/index.js
+    output: infra/lambda-handler.md
+    description: >
+      The Lambda function backing api.hashpass.tech. Document routing table,
+      environment variables, and how it chains to the server bundle.
+
+  - name: SST Infrastructure
+    area: sst-infra
+    tier: critical
+    path: ../../packages/infra/sst.config.ts
+    extra_paths:
+      - ../../packages/infra/src
+    output: infra/sst-config.md
+    description: >
+      SST stack: StaticSite for bsl.hashpass.tech, Lambda construct,
+      Route53, CloudFront. Note the SST Console autodeploy hook.
+
+  - name: Cloudflare Worker
+    area: cloudflare-worker
+    tier: critical
+    path: ../../packages/infra/cloudflare
+    output: infra/cloudflare-worker.md
+
+  # ── QR & pass systems ────────────────────────────────────────────────────────
+  - name: QR System
+    area: qr-system
+    tier: critical
+    path: ../../apps/mobile-app/lib/qr-system.ts
+    extra_paths:
+      - ../../apps/mobile-app/app/api/qr
+    output: reference/qr/qr-system.md   # updates existing file
+
+  - name: Pass System
+    area: pass-system
+    tier: critical
+    path: ../../apps/mobile-app/lib/pass-system.ts
+    output: guides/pass-system.md
+
+  # ── Release scripts ──────────────────────────────────────────────────────────
+  - name: Release Scripts
+    area: release-scripts
+    tier: critical
+    path: ../../packages/tools/scripts/release.js
+    extra_paths:
+      - ../../packages/tools/scripts/package-lambda.sh
+    output: reference/release/release-scripts.md
+
+  # ── Server-side utilities ────────────────────────────────────────────────────
+  - name: Server Lib
+    area: server-lib
+    tier: critical
+    path: ../../apps/mobile-app/lib/server
+    output: api/server-lib.md
+
+  - name: Backend Package
+    area: backend-package
+    tier: significant
+    path: ../../packages/backend/src
+    output: api/backend-package.md
+
+  # ── UI Components ─────────────────────────────────────────────────────────────
+  - name: UI Components
+    area: components
+    tier: significant
+    path: ../../apps/mobile-app/components
+    output: components
+    description: >
+      One doc per major component. Include props interface, usage example,
+      platform differences, and any Reanimated worklet notes.
+
+  - name: Custom Hooks
+    area: hooks
+    tier: significant
+    path: ../../apps/mobile-app/hooks
+    output: api/hooks.md
+
+  - name: Providers
+    area: providers
+    tier: significant
+    path: ../../apps/mobile-app/providers
+    output: api/providers.md
+
+  - name: Config Package
+    area: config-package
+    tier: significant
+    path: ../../packages/config/src
+    output: api/config-package.md
+
+  - name: Email Templates
+    area: email-templates
+    tier: significant
+    path: ../../packages/emails/src
+    output: guides/email-templates.md
+
+# ── Protected paths ─────────────────────────────────────────────────────────────
+# OpenWiki reads these for cross-linking context but NEVER modifies them.
+
+protected:
+  - docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md
+  - docs/reference/release/RELEASE_WORKFLOW.md
+  - docs/reference/release/versioning-guide.md
+  - docs/infra/security
+  - docs/infra/migrations
+  - docs/infra/ANDROID_CI_MEMORY.md
+  - docs/storybook
+  - docs/deployment
+
+docusaurus:
+  sidebar_position_auto: true
+  generated_notice: true
+  edit_url_base: 'https://github.com/hashpass-tech/hashpass.tech/tree/main/'
