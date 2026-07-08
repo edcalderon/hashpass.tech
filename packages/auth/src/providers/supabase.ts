@@ -14,6 +14,41 @@ import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-
 import { Platform } from 'react-native';
 import { getSupabaseOAuthRedirectUrl, SUPABASE_OAUTH_CALLBACK_PATH } from '../supabase-oauth';
 
+type SupabaseEmailOtpType = 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email';
+
+const SUPABASE_EMAIL_OTP_FALLBACK_TYPES: SupabaseEmailOtpType[] = [
+  'magiclink',
+  'email',
+  'signup',
+  'invite',
+  'recovery',
+  'email_change',
+];
+
+const normalizeSupabaseEmailOtpType = (rawType: string | null | undefined): SupabaseEmailOtpType => {
+  const normalized = (rawType || 'magiclink').trim().toLowerCase();
+
+  switch (normalized) {
+    case 'email':
+    case 'signup':
+    case 'invite':
+    case 'recovery':
+    case 'email_change':
+      return normalized;
+    default:
+      return 'magiclink';
+  }
+};
+
+const getSupabaseEmailOtpTypeCandidates = (rawType: string | null | undefined): SupabaseEmailOtpType[] => {
+  const candidates = [
+    normalizeSupabaseEmailOtpType(rawType),
+    ...SUPABASE_EMAIL_OTP_FALLBACK_TYPES,
+  ];
+
+  return candidates.filter((candidate, index) => candidates.indexOf(candidate) === index);
+};
+
 export class SupabaseAuthProvider implements IAuthProvider {
   private supabase: SupabaseClient;
   private currentSession: AuthSession | null = null;
@@ -111,21 +146,139 @@ export class SupabaseAuthProvider implements IAuthProvider {
   async handleOAuthCallback(codeOrParams: string | Record<string, string>, state?: string): Promise<AuthResponse> {
     try {
       // Supabase automatically handles the OAuth callback through its session management
-      // Just get the current session
-      const { data, error } = await this.supabase.auth.getSession();
+      // but web callbacks still need explicit exchange / verification when the
+      // session has not already been restored by the client.
+      const params: Record<string, string> = typeof codeOrParams === 'string'
+        ? {
+          code: codeOrParams,
+          ...(state ? { state } : {}),
+        }
+        : codeOrParams;
 
-      if (error) {
-        return { error: error.message };
+      const hasWindowLocation = typeof window !== 'undefined' && window.location != null;
+      const urlSearchParams = hasWindowLocation ? new URLSearchParams(window.location.search) : new URLSearchParams();
+      const urlHashParams = hasWindowLocation ? new URLSearchParams(window.location.hash.substring(1)) : new URLSearchParams();
+
+      const authData = {
+        access_token: params.access_token || urlSearchParams.get('access_token') || urlHashParams.get('access_token'),
+        refresh_token: params.refresh_token || urlSearchParams.get('refresh_token') || urlHashParams.get('refresh_token'),
+        code: params.code || urlSearchParams.get('code'),
+        token_hash: params.token_hash || urlSearchParams.get('token_hash') || urlHashParams.get('token_hash'),
+        token: params.token || urlSearchParams.get('token'),
+        type: params.type || urlSearchParams.get('type') || urlHashParams.get('type'),
+        email: params.email || urlSearchParams.get('email') || urlHashParams.get('email'),
+      };
+
+      const hydrateSessionUser = async (session: Session | null): Promise<Session | null> => {
+        if (!session) {
+          return null;
+        }
+
+        if (session.user) {
+          return session;
+        }
+
+        try {
+          const { data: { user } } = await this.supabase.auth.getUser();
+          if (user) {
+            return {
+              ...session,
+              user,
+            } as Session;
+          }
+        } catch {
+          // Fall back to reading the stored session below.
+        }
+
+        try {
+          const { data: { session: refreshedSession } } = await this.supabase.auth.getSession();
+          if (refreshedSession?.user) {
+            return refreshedSession;
+          }
+        } catch {
+          // Keep the original session if Supabase cannot re-read it.
+        }
+
+        return session;
+      };
+
+      const finalizeSession = async (session: Session | null): Promise<AuthResponse> => {
+        if (!session) {
+          const { data, error } = await this.supabase.auth.getSession();
+
+          if (error) {
+            return { error: error.message };
+          }
+
+          if (!data.session) {
+            return { error: 'No session found after OAuth callback' };
+          }
+
+          session = data.session;
+        }
+
+        const hydratedSession = await hydrateSessionUser(session);
+        if (!hydratedSession?.user) {
+          return { error: 'No session found after OAuth callback' };
+        }
+
+        const mappedSession = this.mapSupabaseSession(hydratedSession);
+        this.currentSession = mappedSession;
+        return { user: mappedSession.user, session: mappedSession };
+      };
+
+      if (authData.access_token) {
+        const { data, error } = await this.supabase.auth.setSession({
+          access_token: authData.access_token,
+          refresh_token: authData.refresh_token || '',
+        });
+
+        if (error) {
+          return { error: error.message };
+        }
+
+        return await finalizeSession(data.session ?? null);
       }
 
-      if (!data.session) {
-        return { error: 'No session found after OAuth callback' };
+      if (authData.code) {
+        const { data, error } = await this.supabase.auth.exchangeCodeForSession(authData.code);
+
+        if (error) {
+          return { error: error.message };
+        }
+
+        return await finalizeSession(data.session ?? null);
       }
 
-      const session = this.mapSupabaseSession(data.session);
-      this.currentSession = session;
+      if (authData.token_hash || (authData.token && authData.email)) {
+        const candidateTypes = getSupabaseEmailOtpTypeCandidates(authData.type);
+        let lastError: Error | null = null;
 
-      return { user: session.user, session };
+        for (const verificationType of candidateTypes) {
+          try {
+            const verifyParams = authData.token_hash
+              ? { token_hash: authData.token_hash, type: verificationType }
+              : { email: authData.email, token: authData.token, type: verificationType };
+
+            const { data, error } = await this.supabase.auth.verifyOtp(verifyParams as any);
+
+            if (error) {
+              lastError = error;
+              continue;
+            }
+
+            return await finalizeSession(data.session ?? null);
+          } catch (verifyError: any) {
+            lastError = verifyError instanceof Error ? verifyError : new Error(String(verifyError));
+          }
+        }
+
+        if (lastError) {
+          return { error: lastError.message };
+        }
+      }
+
+      return await finalizeSession(null);
     } catch (error) {
       console.error('OAuth callback error:', error);
       return { error: error instanceof Error ? error.message : 'OAuth callback failed' };

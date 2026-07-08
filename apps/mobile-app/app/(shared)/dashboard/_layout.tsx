@@ -31,7 +31,6 @@ import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
 
 // DrawerNavigationProp generic constraint mismatch across @react-navigation versions
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DrawerNavigation = any;
 
 const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
@@ -74,7 +73,6 @@ function CustomDrawerContent() {
     // Only start animations if animations are enabled
     if (animationsEnabled) {
       // Start all animations with different durations and delays for fluid movement
-      console.log('Starting fluid gradient animations');
       gradientAnimation1.value = withRepeat(
         withTiming(1, { duration: 4000 }),
         -1,
@@ -97,7 +95,6 @@ function CustomDrawerContent() {
       );
     } else {
       // Stop all animations and reset to initial state
-      console.log('Stopping fluid gradient animations');
       gradientAnimation1.value = 0;
       gradientAnimation2.value = 0;
       gradientAnimation3.value = 0;
@@ -511,8 +508,6 @@ function CustomDrawerContent() {
                   }
                 ]}
                 onPress={() => {
-                  console.log(`Sidebar item clicked: ${item.route}, stepOrder: ${stepOrder}`);
-
                   // Navigate to the actual view first
                   handleNavigation(item.route);
 
@@ -673,10 +668,7 @@ export default function DashboardLayout() {
 
     if (!authLoading && !isLoggedIn) {
       if (shouldDelayRedirectForRecentAuth()) {
-        console.log('⏳ Recent auth success detected in dashboard; delaying redirect and rechecking session.');
-        authService.getSession().catch((error: unknown) => {
-          console.debug('Dashboard auth recheck during redirect grace failed:', error);
-        });
+        authService.getSession().catch(() => {});
         return;
       }
 
@@ -899,7 +891,6 @@ export default function DashboardLayout() {
             <View style={{ position: 'relative' }}>
               <CopilotTouchableOpacity
                 onPress={() => {
-                  console.log('Menu button clicked in tutorial');
                   // Open the drawer first
                   try {
                     drawerNavigation.dispatch(DrawerActions.openDrawer());
@@ -909,7 +900,6 @@ export default function DashboardLayout() {
 
                   // Wait for drawer animation, then continue tutorial
                   setTimeout(() => {
-                    console.log('Continuing tutorial to step 2');
                     // Use handleNth to go directly to step 2 (first sidebar item)
                     if (copilotHook?.handleNth && typeof copilotHook.handleNth === 'function') {
                       copilotHook.handleNth(2);
@@ -976,7 +966,6 @@ export default function DashboardLayout() {
           visible={qrScannerVisible}
           onClose={() => setQrScannerVisible(false)}
           onScanSuccess={(result: unknown) => {
-            console.log('QR Scan Success:', result);
             setQrScannerVisible(false);
             // You can add navigation or other actions here based on scan result
           }}
