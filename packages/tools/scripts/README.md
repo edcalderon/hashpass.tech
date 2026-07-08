@@ -28,7 +28,7 @@ Shared branch cadence:
 Release flow:
 
 - `release` / `release:patch` / `release:minor` / `release:major` run the branch-aware version release flow for the repo root
-- `release:promote` prepares the protected `develop -> main` promotion PR
+- `release:promote` prepares the protected `develop -> main` promotion PR. The script derives the next patch version from the latest release tag when needed, then fills the PR body with the actual files changed since the previous release plus release metadata. Repository protections still enforce the required reviews, coverage, and security checks.
 - `release:pipeline` remains the tenant/deploy pipeline for infra and legacy work
 - `release:dev` / `release:prod` target `core` by default
 - `release:bsl:dev` / `release:bsl:prod` follow the event tenant path and remain available for the historical branch-aware release flow

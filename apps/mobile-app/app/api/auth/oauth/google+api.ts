@@ -453,6 +453,7 @@ export async function GET(request: Request): Promise<Response> {
               DEFAULT_FRONTEND_ORIGIN ||
               'https://hashpass.tech';
             const webCallbackUrl = new URL('/auth/callback', webOrigin);
+            webCallbackUrl.searchParams.set('returnTo', returnTo);
             webCallbackUrl.searchParams.set('access_token', tokens.access_token);
             if (tokens.refresh_token) webCallbackUrl.searchParams.set('refresh_token', tokens.refresh_token);
             webCallbackUrl.searchParams.set('email', userEmail);

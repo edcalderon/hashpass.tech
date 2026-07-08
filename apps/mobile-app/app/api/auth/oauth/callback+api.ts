@@ -593,13 +593,15 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const returnTo = normalizeReturnToPath(url.searchParams.get('returnTo') || DEFAULT_RETURN_TO);
   const frontendOriginQuery = url.searchParams.get('frontendOrigin');
+  const nativeCallbackQuery = url.searchParams.get('native_callback');
   let failureReason = 'No Directus session was returned after OAuth callback.';
 
   // Get returnTo from cookie if not in URL (set by login endpoint)
   const cookies = request.headers.get('Cookie') || request.headers.get('cookie') || '';
   const returnToCookie = parseOAuthReturnCookie(getCookieValue(cookies, 'oauth_return_to'));
   const finalReturnTo = normalizeReturnToPath(returnToCookie.returnTo || returnTo);
-  const nativeCallbackCookie = getCookieValue(cookies, OAUTH_NATIVE_CALLBACK_COOKIE_NAME);
+  const nativeCallbackCookie =
+    getCookieValue(cookies, OAUTH_NATIVE_CALLBACK_COOKIE_NAME) || nativeCallbackQuery;
   const frontendOrigin = resolveFrontendOrigin({
     request,
     candidates: [

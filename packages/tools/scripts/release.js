@@ -140,6 +140,11 @@ function compareSemverVersions(left, right) {
   return 0;
 }
 
+function incrementPatchVersion(version) {
+  const [major, minor, patch] = parseSemverParts(version);
+  return `${major}.${minor}.${patch + 1}`;
+}
+
 function getLatestReleaseTagVersion(tagPrefix = 'v') {
   const output = runAndRead('git', ['tag', '--list', `${tagPrefix}*`, '--sort=-v:refname'], { log: false });
   const latestTag = output
@@ -543,46 +548,97 @@ function getCurrentGitHubLogin(options) {
   }
 }
 
-function buildPromotionPullRequestBody(releaseVersion, releaseSha) {
+function resolvePromotionVersion(currentVersion, latestReleaseVersion) {
+  const normalizedCurrent = String(currentVersion || '').trim().replace(/^v/, '');
+  const normalizedLatest = String(latestReleaseVersion || '').trim().replace(/^v/, '');
+
+  if (!normalizedCurrent) {
+    throw new Error('Unable to determine the current release version for promotion.');
+  }
+
+  if (!normalizedLatest) {
+    return normalizedCurrent;
+  }
+
+  if (compareSemverVersions(normalizedCurrent, normalizedLatest) > 0) {
+    return normalizedCurrent;
+  }
+
+  return incrementPatchVersion(normalizedLatest);
+}
+
+function buildPromotionChangeSummary(baseReleaseVersion) {
+  const normalizedBase = String(baseReleaseVersion || '').trim().replace(/^v/, '');
+  if (!normalizedBase) {
+    return '_Unable to determine the previous release base for this promotion._';
+  }
+
+  const output = runAndRead(
+    'git',
+    ['diff', '--name-only', '--diff-filter=ACMRTUXB', `v${normalizedBase}..HEAD`],
+    { log: false },
+  );
+
+  const files = output
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (files.length === 0) {
+    return `_No file changes were detected since v${normalizedBase}._`;
+  }
+
+  const maxItems = 20;
+  const visibleFiles = files.slice(0, maxItems).map((file) => `- \`${file}\``);
+  const remaining = files.length - visibleFiles.length;
+
+  if (remaining > 0) {
+    visibleFiles.push(`- _and ${remaining} more file(s)_`);
+  }
+
+  return visibleFiles.join('\n');
+}
+
+function buildPromotionPullRequestBody(releaseVersion, releaseSha, changeSummary, baseReleaseVersion) {
+  const normalizedVersion = String(releaseVersion || '').trim().replace(/^v/, '');
+  const versionLabel = normalizedVersion ? `v${normalizedVersion}` : 'pending version';
+  const normalizedBaseVersion = String(baseReleaseVersion || '').trim().replace(/^v/, '');
+  const changeBlock =
+    typeof changeSummary === 'string' && changeSummary.trim().length > 0
+      ? changeSummary.trim()
+      : '_No change summary is available._';
+
   return [
-    `Promote the current develop release prep for v${releaseVersion} into main.`,
+    `Promote the current develop release prep for ${versionLabel} into main.`,
     '',
-    'Merge requirements:',
-    '- `@edcalderon` code owner approval',
-    '- `@jack-kernel` reviewer request',
-    '- Coverage must stay at or above 33%',
-    '- GitHub security scans (CodeQL and secret-scan) must pass',
+    normalizedBaseVersion
+      ? `### Changes since v${normalizedBaseVersion}`
+      : '### Changes in this release',
+    changeBlock,
     '',
-    `Release commit: ${releaseSha}`,
-    releaseVersion ? `Release version: v${releaseVersion}` : 'Release version: pending main release',
+    '### Release metadata',
+    `- Release version: ${versionLabel}`,
+    normalizedBaseVersion ? `- Base release: v${normalizedBaseVersion}` : '- Base release: unknown',
+    releaseSha ? `- Release commit: ${releaseSha}` : '- Release commit: pending',
+    '- Source branch: develop',
     '',
-    'This PR must stay on the develop -> main path. Do not rebase from a feature branch or a stale branch.',
+    'This PR must stay on the protected develop -> main path. Repository rules enforce the required reviews, coverage, and security checks.',
   ].join('\n');
 }
 
-function createPromotionPullRequest(options, releaseVersion, releaseSha) {
+function createPromotionPullRequest(options, releaseVersion, releaseSha, baseReleaseVersion) {
   if (!options.promote) return;
 
   if (releaseVersion && typeof releaseVersion !== 'string') {
     throw new Error('Invalid release version for promotion PR creation.');
   }
 
-  const existingPr = getOpenPromotionPullRequest(options);
-  if (existingPr) {
-    console.log(`ℹ️ Promotion PR already open: ${existingPr.url}`);
-    return existingPr;
-  }
-
-  if (options.dryRun) {
-    console.log(
-      '$ gh pr create --repo hashpass-tech/hashpass.tech --base main --head develop --title "chore: release v' +
-        releaseVersion +
-        '" --body "<promotion-body>"',
-    );
-    return { url: '' };
-  }
-
-  const body = buildPromotionPullRequestBody(releaseVersion, releaseSha);
+  const body = buildPromotionPullRequestBody(
+    releaseVersion,
+    releaseSha,
+    buildPromotionChangeSummary(baseReleaseVersion),
+    baseReleaseVersion,
+  );
   const reviewers = ['jack-kernel'];
   const currentLogin = getCurrentGitHubLogin(options);
 
@@ -590,7 +646,47 @@ function createPromotionPullRequest(options, releaseVersion, releaseSha) {
     reviewers.push('edcalderon');
   }
 
-  const reviewerArgs = reviewers.flatMap((reviewer) => ['--reviewer', reviewer]);
+  const reviewerArgs = reviewers.flatMap((reviewer) => ['--add-reviewer', reviewer]);
+  const title = `chore: release v${releaseVersion}`;
+  const existingPr = getOpenPromotionPullRequest(options);
+  if (existingPr) {
+    if (options.dryRun) {
+      console.log(
+        `$ gh pr edit ${existingPr.number} --repo hashpass-tech/hashpass.tech --title "${title}" --body "<promotion-body>"`,
+      );
+      return { url: existingPr.url };
+    }
+
+    runInherit(
+      'gh',
+      [
+        'pr',
+        'edit',
+        String(existingPr.number),
+        '--repo',
+        'hashpass-tech/hashpass.tech',
+        '--title',
+        title,
+        '--body',
+        body,
+        ...reviewerArgs,
+      ],
+      options,
+    );
+
+    console.log(`✅ Updated promotion PR: ${existingPr.url}`);
+    return existingPr;
+  }
+
+  if (options.dryRun) {
+    console.log(
+      '$ gh pr create --repo hashpass-tech/hashpass.tech --base main --head develop --title "' +
+        title +
+        '" --body "<promotion-body>"',
+    );
+    return { url: '' };
+  }
+
   const prUrl = runAndRead(
     'gh',
     [
@@ -603,7 +699,7 @@ function createPromotionPullRequest(options, releaseVersion, releaseSha) {
       '--head',
       'develop',
       '--title',
-      `chore: release v${releaseVersion}`,
+      title,
       '--body',
       body,
       ...reviewerArgs,
@@ -620,6 +716,7 @@ function main() {
   let initialBranch = '';
   let currentBranch = '';
   let stashApplied = false;
+  let promotionBaseVersion = '';
 
   try {
     const options = parseArgs(process.argv.slice(2));
@@ -659,7 +756,9 @@ function main() {
     runPreflight(options);
     let releaseVersion = '';
     if (options.promote && releaseBranch === 'develop') {
-      releaseVersion = readJsonVersion('package.json');
+      const currentVersion = readJsonVersion('package.json');
+      promotionBaseVersion = getLatestReleaseTagVersion() || currentVersion;
+      releaseVersion = resolvePromotionVersion(currentVersion, promotionBaseVersion);
       runPromotionCommit(options, `chore: promote develop changes for v${releaseVersion}`);
     } else if (releaseBranch === 'main') {
       releaseVersion = runMainRelease(options, releaseBranch);
@@ -690,7 +789,12 @@ function main() {
         throw new Error('--promote requires a committed release. Drop --no-commit.');
       }
 
-      promotionPr = createPromotionPullRequest(options, releaseVersion, releaseSha);
+      promotionPr = createPromotionPullRequest(
+        options,
+        releaseVersion,
+        releaseSha,
+        promotionBaseVersion,
+      );
     }
 
     if (currentBranch !== initialBranch) {
@@ -733,4 +837,12 @@ function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  buildPromotionPullRequestBody,
+  incrementPatchVersion,
+  resolvePromotionVersion,
+};

@@ -43,6 +43,17 @@ describe('oauth login api', () => {
     }
   });
 
+  const getRedirectTarget = (location: string): URL => {
+    const directusUrl = new URL(location);
+    const redirect = directusUrl.searchParams.get('redirect');
+
+    if (!redirect) {
+      throw new Error('Missing redirect query parameter');
+    }
+
+    return new URL(redirect);
+  };
+
   it('falls back to localhost in local development even when the browser origin is production', async () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { GET } = require('../../../../app/api/auth/oauth/login+api');
@@ -67,7 +78,32 @@ describe('oauth login api', () => {
     const { GET } = require('../../../../app/api/auth/oauth/login+api');
 
     const response = await GET(
-      new Request('http://localhost:8081/api/auth/oauth/login?provider=google&returnTo=%2Fdashboard%2Fexplore', {
+      new Request(
+        'http://localhost:8081/api/auth/oauth/login?provider=google&returnTo=%2Fdashboard%2Fexplore&native_callback=hashpass%3A%2F%2Fauth%2Fcallback',
+        {
+        headers: {
+          origin: 'https://hashpass.tech',
+          referer: 'https://hashpass.tech/auth',
+        },
+      }
+      )
+    );
+
+    expect(response.status).toBe(302);
+    const location = response.headers.get('location') || '';
+    const redirectUrl = getRedirectTarget(location);
+    expect(location).toContain('https://sso.hashpass.co/auth/login/google?');
+    expect(location).not.toContain('client_id=');
+    expect(redirectUrl.searchParams.get('returnTo')).toBe('/dashboard/explore');
+    expect(redirectUrl.searchParams.get('native_callback')).toBe('hashpass://auth/callback');
+  });
+
+  it('falls back to the default dashboard route when returnTo is relative', async () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../../../app/api/auth/oauth/login+api');
+
+    const response = await GET(
+      new Request('http://localhost:8081/api/auth/oauth/login?provider=google&returnTo=dashboard', {
         headers: {
           origin: 'https://hashpass.tech',
           referer: 'https://hashpass.tech/auth',
@@ -76,10 +112,28 @@ describe('oauth login api', () => {
     );
 
     expect(response.status).toBe(302);
-    expect(response.headers.get('location')).toBe(
-      'https://sso.hashpass.co/auth/login/google?redirect=http%3A%2F%2Flocalhost%3A8081%2Fapi%2Fauth%2Foauth%2Fcallback&mode=session'
+    const location = response.headers.get('location') || '';
+    const redirectUrl = getRedirectTarget(location);
+    expect(redirectUrl.searchParams.get('returnTo')).toBe('/dashboard/explore');
+  });
+
+  it('falls back to the default dashboard route for auth paths', async () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../../../app/api/auth/oauth/login+api');
+
+    const response = await GET(
+      new Request('http://localhost:8081/api/auth/oauth/login?provider=google&returnTo=%2Fauth%2Fcallback', {
+        headers: {
+          origin: 'https://hashpass.tech',
+          referer: 'https://hashpass.tech/auth',
+        },
+      })
     );
-    expect(response.headers.get('location')).not.toContain('client_id=');
+
+    expect(response.status).toBe(302);
+    const location = response.headers.get('location') || '';
+    const redirectUrl = getRedirectTarget(location);
+    expect(redirectUrl.searchParams.get('returnTo')).toBe('/dashboard/explore');
   });
 
   it('derives the real frontend origin when the request lands on api.hashpass.tech', async () => {

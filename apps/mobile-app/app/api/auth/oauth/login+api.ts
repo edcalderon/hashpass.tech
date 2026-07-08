@@ -100,6 +100,10 @@ export async function GET(request: Request): Promise<Response> {
     : `${OAUTH_NATIVE_CALLBACK_COOKIE_NAME}=; Path=/; SameSite=Lax; Max-Age=0${secureFlag}`;
 
   const callbackUrl = new URL('/api/auth/oauth/callback', url.origin);
+  callbackUrl.searchParams.set('returnTo', returnTo);
+  if (nativeCallback) {
+    callbackUrl.searchParams.set('native_callback', nativeCallback);
+  }
   const directusOAuthUrl = new URL(`/auth/login/${encodeURIComponent(provider)}`, DIRECTUS_URL);
   directusOAuthUrl.searchParams.set('redirect', callbackUrl.toString());
   directusOAuthUrl.searchParams.set('mode', 'session');

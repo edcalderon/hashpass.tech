@@ -146,6 +146,72 @@ describe('oauth callback api', () => {
     expect(mockGenerateLink).toHaveBeenCalled();
   });
 
+  it('uses the native callback URL from the request when the cookie is missing', async () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const directusUser = {
+      id: 'directus-user-123',
+      email: 'ada@hashpass.tech',
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+      status: 'active',
+    };
+
+    mockFetchDirectus.mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: directusUser }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      })
+    );
+
+    const mockGenerateLink = jest.fn(async () => ({
+      data: {
+        properties: {
+          verification_type: 'magiclink',
+          hashed_token: 'bridge-token-123',
+        },
+      },
+      error: null,
+    }));
+
+    mockGetSupabaseServerForRequest.mockReturnValue({
+      auth: {
+        admin: {
+          createUser: jest.fn(async () => ({
+            data: { user: { id: 'supabase-user-123' } },
+            error: null,
+          })),
+          generateLink: mockGenerateLink,
+        },
+      },
+    });
+
+    const { GET } = require('../../../../app/api/auth/oauth/callback+api');
+
+    const response = await GET(
+      new Request(
+        'https://api.hashpass.tech/api/auth/oauth/callback?access_token=access123&refresh_token=refresh456&native_callback=hashpass%3A%2F%2Fauth%2Fcallback',
+        {
+          headers: {
+            origin: 'https://api.hashpass.tech',
+            referer: 'https://api.hashpass.tech/auth',
+          },
+        }
+      )
+    );
+
+    expect(response.status).toBe(302);
+    const location = response.headers.get('location') || '';
+    expect(location).toContain('hashpass://auth/callback?returnTo=%2Fdashboard%2Fexplore');
+    expect(location).toContain('access_token=access123');
+    expect(location).toContain('refresh_token=refresh456');
+    expect(location).toContain('sb_token_hash=bridge-token-123');
+    expect(location).toContain('directus_user=');
+    expect(mockFetchDirectus).toHaveBeenCalled();
+    expect(mockGenerateLink).toHaveBeenCalled();
+  });
+
   it('includes Directus user payload in the browser redirect fragment after OAuth success', async () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const directusUser = {

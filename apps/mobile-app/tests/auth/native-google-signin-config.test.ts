@@ -71,12 +71,48 @@ describe('shouldUseNativeGoogleSignin', () => {
     expect(shouldUseNativeGoogleSignin(undefined)).toBe(true);
   });
 
+  it('defaults to enabled on native when only the Better Auth Google client id exists', () => {
+    setEnv('BETTER_AUTH_GOOGLE_CLIENT_ID', 'better-auth-google-client-id');
+
+    const shouldUseNativeGoogleSignin = loadHelper('android');
+    expect(shouldUseNativeGoogleSignin()).toBe(true);
+  });
+
   it('can be disabled explicitly on native builds', () => {
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
     setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'false');
 
     const shouldUseNativeGoogleSignin = loadHelper('android');
     expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(false);
+  });
+
+  it('treats an explicit true flag as an enabled native release', () => {
+    setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
+    setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');
+
+    const shouldUseNativeGoogleSignin = loadHelper('android');
+    expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(true);
+  });
+
+  it('treats a blank native flag as unset', () => {
+    setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
+    setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', '   ');
+
+    const shouldUseNativeGoogleSignin = loadHelper('android');
+    expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(true);
+  });
+
+  it('ignores unrecognized native flag values and keeps native sign-in enabled', () => {
+    setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
+    setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'maybe');
+
+    const shouldUseNativeGoogleSignin = loadHelper('android');
+    expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(true);
+  });
+
+  it('returns false when no Google client id can be resolved', () => {
+    const shouldUseNativeGoogleSignin = loadHelper('android');
+    expect(shouldUseNativeGoogleSignin()).toBe(false);
   });
 
   it('stays disabled on web', () => {
