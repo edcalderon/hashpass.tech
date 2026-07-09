@@ -11,6 +11,7 @@ The active HASHPASS API deploy path is the target-account web pipeline. It is no
 5. The deploy helper runs `packages/tools/scripts/package-lambda.sh`.
 6. The deploy helper updates the configured Expo Router API Lambda.
 7. The deploy helper verifies `/api/config/versions` against `package.json`.
+8. `infra-deploy.yml` runs `packages/tools/scripts/deploy-api-lambda.sh` after SST deploy as a patch-release safety net, so the GitHub workflow also fails if either public version endpoint remains stale.
 
 If the API version endpoint is stale, the deploy fails.
 

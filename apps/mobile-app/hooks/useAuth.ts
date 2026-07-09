@@ -501,11 +501,9 @@ export const useAuth = () => {
 
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────
       // Use the system account picker to get an ID token, then exchange it with
-      // Better Auth first (same precedence as web — one Google identity per user,
-      // not two divergent ones), falling back to Supabase's signInWithIdToken only
-      // if Better Auth's own exchange fails. Enabled even if the app's primary
-      // provider is Directus. Disabled or unavailable → falls through to the
-      // provider OAuth flow below.
+      // Supabase first. Native mobile data APIs expect Supabase UUID user ids;
+      // Better Auth remains a fallback only when Supabase cannot accept the
+      // token. Disabled or unavailable → falls through to provider OAuth below.
       const nativeGoogleEnabled =
         provider === 'google' &&
         Platform.OS !== 'web' &&
@@ -520,36 +518,6 @@ export const useAuth = () => {
           // neither — e.g. a stale Directus session — not one that's already
           // a valid outcome of this same flow.
           await clearStaleProviderSession(['better-auth', 'supabase']);
-
-          // Native mobile data APIs still expect the Supabase UUID user id. Keep
-          // Better Auth as an SSO fallback, but prefer the Supabase ID-token
-          // session for the in-app authenticated state when it is available.
-          let betterAuthFallback: AuthResponse | null = null;
-          try {
-            const betterAuthResult = await getGoogleBetterAuthProvider().signInWithIdToken('google', idToken);
-            if (!betterAuthResult.error) {
-              const session =
-                betterAuthResult.session ??
-                (betterAuthResult.user
-                  ? {
-                      user: betterAuthResult.user,
-                      access_token: 'better_auth_session',
-                      provider: 'better-auth',
-                    }
-                  : null);
-
-              betterAuthFallback = session
-                ? {
-                    ...betterAuthResult,
-                    user: betterAuthResult.user ?? session.user,
-                    session,
-                  }
-                : betterAuthResult;
-            }
-          } catch {
-            // Better Auth is a native SSO fallback here; Supabase remains the
-            // preferred mobile app session because it provides the UUID user id.
-          }
 
           try {
             const { data, error: signInError } = await supabase.auth.signInWithIdToken({
@@ -567,6 +535,32 @@ export const useAuth = () => {
             applyAuthenticatedSession(supabaseSession);
             return { user: supabaseSession.user, session: supabaseSession };
           } catch (supabaseError) {
+            let betterAuthFallback: AuthResponse | null = null;
+            try {
+              const betterAuthResult = await getGoogleBetterAuthProvider().signInWithIdToken('google', idToken);
+              if (!betterAuthResult.error) {
+                const session =
+                  betterAuthResult.session ??
+                  (betterAuthResult.user
+                    ? {
+                        user: betterAuthResult.user,
+                        access_token: 'better_auth_session',
+                        provider: 'better-auth',
+                      }
+                    : null);
+
+                betterAuthFallback = session
+                  ? {
+                      ...betterAuthResult,
+                      user: betterAuthResult.user ?? session.user,
+                      session,
+                    }
+                  : betterAuthResult;
+              }
+            } catch {
+              // Keep the original Supabase error; it is the primary native path.
+            }
+
             const fallbackSession = betterAuthFallback?.session ?? null;
             if (fallbackSession?.user) {
               sessionBootstrapPromise = Promise.resolve(fallbackSession);

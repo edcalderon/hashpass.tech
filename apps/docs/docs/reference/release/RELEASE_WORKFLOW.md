@@ -52,8 +52,14 @@ The web app deploys through the target-account pipeline and CloudFront front doo
    - `main` updates `hashpass-prod-expo-router-api`
    - `develop` updates `hashpass-dev-expo-router-api`
 4. The deploy helper verifies `/api/config/versions` against the release version. A stale API version fails the deploy.
+5. The GitHub `Deploy Infra` workflow switches to the target-account `AWS_WEB_PIPELINE_ROLE_ARN` and runs the same API Lambda update as a release safety net after the SST deploy attempt:
+   - `main` runs `packages/tools/scripts/deploy-api-lambda.sh` for `hashpass-prod-expo-router-api`
+   - `develop` runs `packages/tools/scripts/deploy-api-lambda.sh` for `hashpass-dev-expo-router-api`
+   - `packages/tools/scripts/deploy-api-lambda.sh` builds a fresh Expo API bundle when the local export is missing or stale.
+   - `packages/tools/scripts/package-lambda.sh` rejects stale local Expo server exports before a Lambda zip can be uploaded.
+   - The SST BSL static deploy is best-effort in this workflow because `bsl.hashpass.tech` also deploys through SST Console; the API Lambda update and version verification stay hard-failing.
 
-Both paths are automatic and typically take a few minutes. No manual action is needed for web-only changes after the merge.
+Both paths are automatic and typically take a few minutes. A release is not complete until `https://api.hashpass.tech/api/config/versions` and `https://api-dev.hashpass.tech/api/config/versions` both report the release version.
 
 Legacy Amplify start-job instructions are archived in `archive/amplify/README.md` for historical reference only.
 

@@ -122,6 +122,54 @@ pipeline_is_active() {
   [[ "${execution_count}" -gt 0 || "${stage_count}" -gt 0 ]]
 }
 
+latest_pipeline_execution_report() {
+  local pipeline_name="$1"
+
+  aws codepipeline list-pipeline-executions \
+    --region "${REGION}" \
+    --pipeline-name "${pipeline_name}" \
+    --max-results 1 \
+    --output json \
+    | jq -r '
+      .pipelineExecutionSummaries[0]? |
+      [
+        .pipelineExecutionId,
+        .status,
+        (.lastUpdateTime // .startTime // "")
+      ] | @tsv
+    '
+}
+
+assert_pipelines_succeeded() {
+  local pipeline_name execution_id status updated_at
+  local failed=0
+
+  for pipeline_name in "${PIPELINE_NAMES[@]}"; do
+    execution_id=""
+    status=""
+    updated_at=""
+
+    while IFS=$'\t' read -r execution_id status updated_at; do
+      break
+    done < <(latest_pipeline_execution_report "${pipeline_name}")
+
+    if [[ -z "${execution_id}" || -z "${status}" ]]; then
+      log "Pipeline ${pipeline_name} has no execution summary."
+      failed=1
+      continue
+    fi
+
+    log "Pipeline ${pipeline_name} latest execution ${execution_id}: ${status}${updated_at:+ at ${updated_at}}"
+    summary "- ${pipeline_name}: ${status} (${execution_id})"
+
+    if [[ "${status}" != "Succeeded" ]]; then
+      failed=1
+    fi
+  done
+
+  [[ "${failed}" -eq 0 ]]
+}
+
 log_snapshot() {
   local pipeline_name
 
@@ -328,9 +376,16 @@ monitor_mode() {
     done
 
     if [[ "${#active_pipelines[@]}" -eq 0 ]]; then
+      pipeline_success="true"
+      assert_pipelines_succeeded || pipeline_success="false"
+
       if stop_worker_if_idle; then
         summary ""
         summary "- Final action: worker stopped after all monitored pipelines became idle."
+        if [[ "${pipeline_success}" != "true" ]]; then
+          log "One or more monitored pipelines did not finish successfully."
+          return 1
+        fi
         return 0
       fi
 

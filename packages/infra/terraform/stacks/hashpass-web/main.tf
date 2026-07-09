@@ -622,6 +622,19 @@ resource "aws_iam_role_policy" "github_actions_worker_control" {
         ]
         Resource = "*"
       },
+      {
+        Sid    = "DeployApiLambda"
+        Effect = "Allow"
+        Action = [
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
+          "lambda:UpdateFunctionCode",
+        ]
+        Resource = [
+          for function_name in local.build_worker_lambda_function_names :
+          "arn:aws:lambda:${var.lambda_region}:${data.aws_caller_identity.current.account_id}:function:${function_name}"
+        ]
+      },
     ]
   })
 }
