@@ -386,6 +386,9 @@ describe('useAuth native Google sign-in', () => {
 
     const mockBetterAuthSignInWithOAuth = jest.fn(async () => ({ pending: true }));
     const MockBetterAuthProvider = jest.fn().mockImplementation(() => ({
+      onAuthStateChange: jest.fn(() => () => {}),
+      getSession: jest.fn(async () => null),
+      signOut: jest.fn(async () => undefined),
       signInWithOAuth: mockBetterAuthSignInWithOAuth,
     }));
 
@@ -484,6 +487,9 @@ describe('useAuth native Google sign-in', () => {
       error: 'Better Auth is not configured for Google on this host.',
     }));
     const MockBetterAuthProvider = jest.fn().mockImplementation(() => ({
+      onAuthStateChange: jest.fn(() => () => {}),
+      getSession: jest.fn(async () => null),
+      signOut: jest.fn(async () => undefined),
       signInWithOAuth: mockBetterAuthSignInWithOAuth,
     }));
 
