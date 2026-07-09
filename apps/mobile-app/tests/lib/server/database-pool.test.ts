@@ -113,4 +113,18 @@ describe("database-pool", () => {
       "postgresql://postgres.fxgftanraszjjyeidvia:pw@aws-0-us-east-2.pooler.supabase.com:5432/postgres",
     );
   });
+
+  it("keeps explicit Supabase pooler URLs unchanged", () => {
+    process.env.BETTER_AUTH_DATABASE_URL =
+      "postgresql://postgres.fxgftanraszjjyeidvia:pw@aws-0-us-east-2.pooler.supabase.com:5432/postgres";
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const {
+      getDatabaseConnectionString,
+    } = require("../../../lib/server/database-pool");
+
+    expect(getDatabaseConnectionString()).toBe(
+      "postgresql://postgres.fxgftanraszjjyeidvia:pw@aws-0-us-east-2.pooler.supabase.com:5432/postgres",
+    );
+  });
 });

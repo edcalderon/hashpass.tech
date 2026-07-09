@@ -28,12 +28,16 @@ const getPreferredSupabasePoolerHost = (): string =>
     ? "aws-1-us-west-2.pooler.supabase.com"
     : "aws-0-us-east-2.pooler.supabase.com";
 
+const isSupabasePoolerHost = (hostname: string): boolean =>
+  hostname === "pooler.supabase.com" ||
+  hostname.endsWith(".pooler.supabase.com");
+
 const convertDirectSupabaseUrlToPooler = (connectionString: string): string => {
   try {
     const url = new URL(connectionString);
     const hostname = url.hostname.toLowerCase();
 
-    if (hostname.includes("pooler.supabase.com")) {
+    if (isSupabasePoolerHost(hostname)) {
       return connectionString;
     }
 
