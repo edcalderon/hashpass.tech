@@ -714,52 +714,54 @@ export default function HomeScreen() {
                   <Text style={styles.footerLinksTitle}>
                     {t("footer.resources")}
                   </Text>
-                  <TouchableOpacity
-                    onPress={() => router.push("/(shared)/docs")}
-                    style={styles.footerLink}
-                  >
-                    <Text style={styles.footerLinkText}>
-                      {t("footer.docs")}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const storybookUrl =
-                        Platform.OS === "web" &&
-                        typeof window !== "undefined" &&
-                        (process.env.NODE_ENV === "production" ||
-                          window.location.hostname !== "localhost")
-                          ? "/storybook"
-                          : process.env.EXPO_PUBLIC_STORYBOOK_URL ||
-                            "http://localhost:6006";
-                      if (
-                        Platform.OS === "web" &&
-                        typeof window !== "undefined"
-                      ) {
-                        window.open(storybookUrl, "_blank");
-                      } else {
-                        Linking.openURL(storybookUrl);
-                      }
-                    }}
-                    style={styles.footerLink}
-                  >
-                    <Text style={styles.footerLinkText}>
-                      {t("footer.guides")}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const supportEmail =
-                        process.env.NODEMAILER_FROM_SUPPORT ||
-                        "support@hashpass.tech";
-                      Linking.openURL(`mailto:${supportEmail}`);
-                    }}
-                    style={styles.footerLink}
-                  >
-                    <Text style={styles.footerLinkText}>
-                      {t("footer.support")}
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={styles.footerLinkList}>
+                    <TouchableOpacity
+                      onPress={() => router.push("/(shared)/docs")}
+                      style={styles.footerLink}
+                    >
+                      <Text style={styles.footerLinkText}>
+                        {t("footer.docs")}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const storybookUrl =
+                          Platform.OS === "web" &&
+                          typeof window !== "undefined" &&
+                          (process.env.NODE_ENV === "production" ||
+                            window.location.hostname !== "localhost")
+                            ? "/storybook"
+                            : process.env.EXPO_PUBLIC_STORYBOOK_URL ||
+                              "http://localhost:6006";
+                        if (
+                          Platform.OS === "web" &&
+                          typeof window !== "undefined"
+                        ) {
+                          window.open(storybookUrl, "_blank");
+                        } else {
+                          Linking.openURL(storybookUrl);
+                        }
+                      }}
+                      style={styles.footerLink}
+                    >
+                      <Text style={styles.footerLinkText}>
+                        {t("footer.guides")}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const supportEmail =
+                          process.env.NODEMAILER_FROM_SUPPORT ||
+                          "support@hashpass.tech";
+                        Linking.openURL(`mailto:${supportEmail}`);
+                      }}
+                      style={styles.footerLink}
+                    >
+                      <Text style={styles.footerLinkText}>
+                        {t("footer.support")}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <View
@@ -771,32 +773,34 @@ export default function HomeScreen() {
                   <Text style={styles.footerLinksTitle}>
                     {t("footer.legal")}
                   </Text>
-                  <TouchableOpacity
-                    onPress={() => router.push("/(shared)/privacy")}
-                    style={styles.footerLink}
-                  >
-                    <Text style={styles.footerLinkText}>
-                      {t("footer.privacy")}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => router.push("/(shared)/terms")}
-                    style={styles.footerLink}
-                  >
-                    <Text style={styles.footerLinkText}>
-                      {t("footer.terms")}
-                    </Text>
-                  </TouchableOpacity>
-                  {shouldShowFooterLink && footerLinkUrl && footerLinkName && (
+                  <View style={styles.footerLinkList}>
                     <TouchableOpacity
-                      onPress={() => Linking.openURL(footerLinkUrl)}
+                      onPress={() => router.push("/(shared)/privacy")}
                       style={styles.footerLink}
                     >
                       <Text style={styles.footerLinkText}>
-                        {footerLinkName}
+                        {t("footer.privacy")}
                       </Text>
                     </TouchableOpacity>
-                  )}
+                    <TouchableOpacity
+                      onPress={() => router.push("/(shared)/terms")}
+                      style={styles.footerLink}
+                    >
+                      <Text style={styles.footerLinkText}>
+                        {t("footer.terms")}
+                      </Text>
+                    </TouchableOpacity>
+                    {shouldShowFooterLink && footerLinkUrl && footerLinkName && (
+                      <TouchableOpacity
+                        onPress={() => Linking.openURL(footerLinkUrl)}
+                        style={styles.footerLink}
+                      >
+                        <Text style={styles.footerLinkText}>
+                          {footerLinkName}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               </View>
             </View>
@@ -1008,19 +1012,19 @@ const getStyles = (
       flexDirection: isMobile ? "column" : "row",
       justifyContent: isMobile ? "flex-start" : "space-between",
       alignItems: isMobile ? "flex-start" : "flex-start",
-      marginBottom: isMobile ? 30 : 40,
-      gap: isMobile ? 40 : 60,
+      marginBottom: isMobile ? 28 : 40,
+      gap: isMobile ? 28 : 60,
       width: "100%",
     },
     footerBrand: {
-      flex: isMobile ? 0 : 0.4,
+      ...(isMobile ? {} : { flex: 0.4 }),
       width: isMobile ? "100%" : "auto",
-      marginBottom: isMobile ? 40 : 0,
+      marginBottom: 0,
       alignItems: isMobile ? "flex-start" : "flex-start",
     },
     footerLogo: {
-      width: isMobile ? 180 : 220,
-      height: isMobile ? 50 : 60,
+      width: isMobile ? Math.min(windowWidth - 48, 220) : 220,
+      height: isMobile ? 58 : 60,
       marginBottom: isMobile ? 16 : 12,
     },
     footerBrandTagline: {
@@ -1032,37 +1036,46 @@ const getStyles = (
       width: isMobile ? "100%" : "auto",
     },
     footerLinks: {
-      flex: isMobile ? 0 : 0.6,
-      flexDirection: isMobile ? "column" : "row",
-      gap: isMobile ? 48 : 40,
+      ...(isMobile ? {} : { flex: 0.6 }),
+      flexDirection: isMobile && windowWidth < 520 ? "column" : "row",
+      gap: isMobile ? (windowWidth < 520 ? 30 : 28) : 40,
       justifyContent: isMobile ? "flex-start" : "flex-end",
       width: isMobile ? "100%" : "auto",
-      alignItems: isMobile ? "flex-start" : "flex-start",
-      marginTop: isMobile ? 24 : 0,
+      alignItems: isMobile && windowWidth < 520 ? "stretch" : "flex-start",
+      marginTop: 0,
       paddingTop: isMobile ? 0 : 0,
     },
     footerLinksColumn: {
-      flex: isMobile ? 0 : 1,
-      minWidth: isMobile ? "100%" : 140,
-      width: isMobile ? "100%" : "auto",
+      ...(isMobile ? {} : { flex: 1 }),
+      minWidth: isMobile ? 0 : 140,
+      width: isMobile && windowWidth < 520 ? "100%" : "auto",
     },
     footerLinksColumnMobile: {
-      marginTop: isMobile ? 24 : 0,
+      marginTop: 0,
     },
     footerLinksTitle: {
-      fontSize: isMobile ? 14 : 16,
+      fontSize: isMobile ? 16 : 16,
       fontWeight: "700",
       color: colors.text.primary,
-      marginBottom: isMobile ? 14 : 16,
+      marginBottom: isMobile ? 12 : 16,
       letterSpacing: -0.3,
+      lineHeight: isMobile ? 22 : 22,
+    },
+    footerLinkList: {
+      width: "100%",
     },
     footerLink: {
-      marginBottom: isMobile ? 12 : 12,
+      minHeight: isMobile ? 36 : 32,
+      paddingVertical: isMobile ? 5 : 4,
+      justifyContent: "center",
+      marginBottom: isMobile ? 4 : 6,
+      width: "100%",
     },
     footerLinkText: {
-      fontSize: isMobile ? 14 : 15,
+      fontSize: isMobile ? 15 : 15,
       color: colors.text.secondary,
-      lineHeight: isMobile ? 20 : 22,
+      lineHeight: isMobile ? 22 : 22,
+      flexShrink: 1,
     },
     footerBottom: {
       paddingTop: isMobile ? 20 : 30,
@@ -1076,6 +1089,7 @@ const getStyles = (
       justifyContent: "center",
       alignItems: "center",
       gap: 12,
+      flexWrap: "wrap",
       paddingRight: Platform.OS !== "web" && !isMobile ? 96 : 0,
     },
     footerCopyright: {
