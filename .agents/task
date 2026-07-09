@@ -1,0 +1,35 @@
+# Agent Tasks Index
+
+## Active Tasks
+
+| File | Description | Priority |
+|------|-------------|----------|
+| [active/task-hashpass-ai-assistant.md](active/task-hashpass-ai-assistant.md) | App-wide HashPass AI assistant with floating chat UI, standalone page, Bedrock RAG, and Aurora/RDS backing | 🔴 High |
+| [active/task-aws-account-migration.md](active/task-aws-account-migration.md) | Migrate HashPass AWS services from account `058264267235` to `952191196420` with reversible IaC | 🔴 High |
+| [active/task-app-publish.md](active/task-app-publish.md) | Google Play Store closed testing upload in progress + production rollout (v1.8.148) | 🔴 High |
+| [active/task-native-google-signin.md](active/task-native-google-signin.md) | Replace browser OAuth with native Google Sign-In SDK (no-browser flow) | 🟡 Medium |
+
+## Pending Tasks
+
+| File | Description | Priority |
+|------|-------------|----------|
+| [pending/directus-usage-and-flow.md](pending/directus-usage-and-flow.md) | Organize Directus's actual role (auth vs CMS vs deprecate), document the real Better-Auth-first auth flow, evaluate self-hosted BaaS alternatives (PocketBase, self-hosted Supabase, etc.) | 🟢 Low |
+| [pending/email-proxy-balancer.md](pending/email-proxy-balancer.md) | Brevo primary + self-hosted SMTP fallback with daily budget tracking | 🟡 Medium |
+| [pending/typescript-7-safe-migration.md](pending/typescript-7-safe-migration.md) | Safe staged migration to TypeScript 7 with TS 6 compatibility tooling, config cleanup, and benchmark validation | 🟡 Medium |
+
+## Done / Archived
+
+| File | Description | Completed |
+|------|-------------|-----------|
+| [done/task-monorepo-migration.md](done/task-monorepo-migration.md) | Full monorepo migration (pnpm/turbo, packages, apps) | 2026-02-14 |
+
+---
+
+## Recent Fixes (not tracked as tasks)
+
+| Version | Fix |
+|---------|-----|
+| v1.8.132 | Removed the black native light-mode auth panel, selected the correct HashPass logo asset, and added the auth screen `dataSet` typecheck augment |
+| v1.8.71 | `RNAnimated.View` for header `opacity` — mixed Animated API crash after Google auth |
+| v1.8.72 | `RNAnimated.View` for header outer container — `borderBottomWidth`/`shadowOpacity` crash |
+| v1.8.73 | `Platform.OS` guard on `window.addEventListener` in Wallet; avatar PNG fallback on profile |
