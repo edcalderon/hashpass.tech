@@ -1,3 +1,14 @@
+## [1.8.181](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.180...v1.8.181) (2026-07-09)
+
+
+### Bug Fixes
+
+* **auth:** redirect better auth oauth errors to frontend ([02b4aca](https://github.com/hashpass-tech/hashpass.tech/commit/02b4aca6da00de31d2280fd7f1637a668cded623))
+
+
+
+
+
 ## [1.8.180](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.179...v1.8.180) (2026-07-09)
 
 
