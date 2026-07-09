@@ -89,7 +89,7 @@ a real sign-in:
   branches, but no longer determines which backend actually handles a sign-in
   for Google or OTP.
 
-**Before fully removing it**, check whether any *existing* users still carry
+**Before fully removing it**, check whether any _existing_ users still carry
 Directus-issued sessions/tokens that would need a migration path, and whether
 `sso.hashpass.co` is relied on by anything outside this app (e.g. an admin
 tool). Those are the only reasons this doc doesn't say "delete it now."
@@ -119,6 +119,12 @@ For the Better Auth Google flow (now the default for every tenant on web):
   `https://hashpass.tech`, `https://www.hashpass.tech`, `https://dev.hashpass.tech`
   were missing until 2026-07-08 and would have made Better Auth reject
   requests from the production core domain.
+- The API Lambda adapter must forward API Gateway v2 `event.cookies` into the
+  Fetch `Cookie` header before handing the request to Expo Router / Better
+  Auth. Better Auth stores the OAuth state in a secure cookie on
+  `api.hashpass.tech`; if the callback reaches `/api/auth/callback/google`
+  without that cookie, the server rejects the Google return as
+  `state_mismatch` and the app falls back to `/auth`.
 
 Supabase compatibility paths (email/OTP and native fallback only):
 
@@ -137,6 +143,7 @@ Google sign-in button anymore — see ["Do we still need Directus?"](#do-we-stil
 - `apps/mobile-app/lib/server/better-auth.ts` — server-side Better Auth config (`socialProviders.google`, `allowedHosts`, `trustedOrigins`)
 - `apps/mobile-app/lib/server/better-auth-route.ts` — wraps Better Auth's route handler so auth errors never strand users on the API host
 - `apps/mobile-app/lib/server/better-auth-error-redirect.ts` — converts Better Auth `/api/auth/error?...` and bad redirect targets into frontend `/auth?...` redirects
+- `packages/infra/lambda/index.js` — converts API Gateway v2 events into Fetch requests; must preserve the OAuth state cookie from `event.cookies`
 - `apps/mobile-app/lib/supabase.ts` — fallback path only
 - `apps/mobile-app/app/(shared)/auth/callback.tsx`
 - `apps/mobile-app/app/api/auth/[...auth]+api.ts` — Better Auth's catch-all handler, exported through the wrapper above
@@ -251,17 +258,17 @@ Mirrors the web precedence (see [Current Main Google Flow](#current-main-google-
 
 ### Required configuration
 
-| Setting | Value |
-|---------|-------|
-| `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN` | `true` (baked into bundle at CI build time) |
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | OAuth 2.0 Web client ID from GCP (type: Web application) |
-| GCP Android OAuth client SHA-1 | **App signing key certificate** SHA-1 from Play Console → App integrity → App signing |
+| Setting                            | Value                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN` | `true` (baked into bundle at CI build time)                                           |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | OAuth 2.0 Web client ID from GCP (type: Web application)                              |
+| GCP Android OAuth client SHA-1     | **App signing key certificate** SHA-1 from Play Console → App integrity → App signing |
 
 **Critical:** Google Play re-signs the AAB with its own App Signing Key. The SHA-1 registered in GCP must be the **App signing key** from Play Console, NOT the upload key from your local keystore. Using the upload key SHA-1 causes `DEVELOPER_ERROR` at runtime.
 
-| Key | SHA-1 |
-|-----|-------|
-| App signing key (Play, register this in GCP) | `38:54:0E:C7:01:A7:11:AF:EE:D0:80:B1:EC:D0:E1:09:09:B0:68:79` |
+| Key                                                       | SHA-1                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------- |
+| App signing key (Play, register this in GCP)              | `38:54:0E:C7:01:A7:11:AF:EE:D0:80:B1:EC:D0:E1:09:09:B0:68:79` |
 | Upload key (local Fastlane build, do NOT register in GCP) | `C1:B7:B9:E6:7F:D1:99:06:16:07:6E:D0:0E:D3:BA:20:12:24:8C:B1` |
 
 ### Sign-out behavior
