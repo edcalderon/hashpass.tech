@@ -45,6 +45,11 @@ jobs:
           node-version: "22.22.0"
           cache: "pnpm"
 
+      - name: Setup Bun for SST
+        run: |
+          npm install --global bun@1.2.23
+          bun --version
+
       - name: Install dependencies
         run: |
           rm -rf node_modules
