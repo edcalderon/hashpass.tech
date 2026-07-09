@@ -1,3 +1,14 @@
+## [1.8.182](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.181...v1.8.182) (2026-07-09)
+
+
+### Bug Fixes
+
+* **auth:** stabilize google auth CI checks ([a2e2b25](https://github.com/hashpass-tech/hashpass.tech/commit/a2e2b25e4804af3227e141a4b306336f4bc5bf7c))
+
+
+
+
+
 ## [1.8.181](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.180...v1.8.181) (2026-07-09)
 
 
