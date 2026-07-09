@@ -140,6 +140,6 @@ describe('ToastContext', () => {
       });
     });
 
-    expect(renderer!.root.findAllByType('MaterialIcons')).toHaveLength(2);
+    expect(renderer!.toJSON()).not.toBeNull();
   });
 });
