@@ -582,7 +582,12 @@ export default function AuthScreen() {
     Platform.OS,
     animationLevel,
   );
-  const authHeaderPalette = getAuthHeaderPalette(isDark, showAuthBackground);
+  const showGlobalAuthBackground = showAuthBackground && !isDesktopLayout;
+  const showDesktopFormBackground = showAuthBackground && isDesktopLayout;
+  const authHeaderPalette = getAuthHeaderPalette(
+    isDark,
+    showGlobalAuthBackground,
+  );
   const authLogoSource =
     Platform.OS === "web" && !isDark
       ? HASHPASS_WEB_LIGHT_AUTH_LOGO
@@ -609,7 +614,7 @@ export default function AuthScreen() {
     isVeryCompactMobile,
     isDesktopLayout,
     isNativeLightMode,
-    showAuthBackground,
+    showGlobalAuthBackground,
     authHeaderPalette,
   );
   const isBusy = busyAction !== null;
@@ -1553,7 +1558,7 @@ export default function AuthScreen() {
       style={[styles.container, styles.containerWeb]}
       edges={["top", "bottom"]}
     >
-      {showAuthBackground ? <ShaderAnimation /> : null}
+      {showGlobalAuthBackground ? <ShaderAnimation /> : null}
       <View
         style={[
           styles.layoutShell,
@@ -1566,6 +1571,11 @@ export default function AuthScreen() {
             isDesktopLayout ? styles.formPaneDesktop : null,
           ]}
         >
+          {showDesktopFormBackground ? (
+            <View style={styles.desktopFormShader} pointerEvents="none">
+              <ShaderAnimation />
+            </View>
+          ) : null}
           <QuickSettingsPanel />
 
           <TouchableOpacity
@@ -2443,18 +2453,42 @@ const getStyles = (
     },
     layoutShellDesktop: {
       flexDirection: "row",
+      width: "100%",
+      maxWidth: 1760,
+      alignSelf: "center",
+      paddingHorizontal: 24,
+      paddingVertical: 24,
+      gap: 20,
     },
     formPane: {
       flex: 1,
       position: "relative",
     },
     formPaneDesktop: {
-      flex: 1.34,
-      minWidth: 620,
-      maxWidth: 920,
-      borderRightWidth: 1,
-      borderRightColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
-      backgroundColor: "transparent",
+      flex: 0.95,
+      minWidth: 480,
+      maxWidth: 720,
+      borderRadius: 32,
+      overflow: "hidden",
+      backgroundColor: isDark
+        ? "rgba(5, 8, 14, 0.94)"
+        : "rgba(255, 255, 255, 0.9)",
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(13,16,24,0.08)",
+      ...(Platform.OS === "web"
+        ? {
+            boxShadow: isDark
+              ? "0 28px 80px rgba(0,0,0,0.36)"
+              : "0 24px 72px rgba(31,38,62,0.12)",
+          }
+        : {
+            elevation: 8,
+          }),
+    },
+    desktopFormShader: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 0,
+      opacity: isDark ? 0.5 : 0.3,
     },
     centered: {
       justifyContent: "center",
@@ -2502,6 +2536,7 @@ const getStyles = (
     },
     scrollView: {
       flex: 1,
+      zIndex: 1,
     },
     scrollContent: {
       flexGrow: 1,
@@ -3214,15 +3249,27 @@ const getStyles = (
       textDecorationLine: "underline",
     },
     desktopHeroPane: {
-      flex: 0.74,
-      minWidth: 320,
+      flex: 1.05,
+      minWidth: 0,
       position: "relative",
       overflow: "hidden",
+      borderRadius: 32,
       backgroundColor: isDark ? "#030910" : "#ffffff",
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(13,16,24,0.08)",
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 24,
-      paddingVertical: 34,
+      paddingHorizontal: 32,
+      paddingVertical: 40,
+      ...(Platform.OS === "web"
+        ? {
+            boxShadow: isDark
+              ? "0 28px 80px rgba(0,0,0,0.36)"
+              : "0 24px 72px rgba(31,38,62,0.12)",
+          }
+        : {
+            elevation: 8,
+          }),
     },
     desktopHeroBlob: {
       position: "absolute",
