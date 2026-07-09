@@ -409,7 +409,7 @@ describe("HomeScreen native tablet layout", () => {
       .findAllByType("Text")
       .find(
         (node: any) =>
-          node.props.children === "- YOUR EVENT YOUR COMMUNITY YOUR REWARDS -",
+          node.props.numberOfLines === 1 && Array.isArray(node.props.children),
       );
 
     expect(taglineText).toBeTruthy();
@@ -419,6 +419,25 @@ describe("HomeScreen native tablet layout", () => {
         color: mockColors.text.primary,
       }),
     );
+    for (const phrase of ["YOUR EVENT", "YOUR COMMUNITY", "YOUR REWARDS"]) {
+      expect(
+        root
+          .findAllByType("Text")
+          .some((node: any) => node.props.children === phrase),
+      ).toBe(true);
+    }
+    const taglineDots = root
+      .findAllByType("Text")
+      .filter((node: any) => node.props.children === " • ");
+    expect(taglineDots).toHaveLength(2);
+    for (const dot of taglineDots) {
+      expect(dot.props.style).toEqual(
+        expect.objectContaining({
+          color: mockColors.primary,
+          fontWeight: "900",
+        }),
+      );
+    }
 
     const heroLogo = root
       .findAllByType("Image")

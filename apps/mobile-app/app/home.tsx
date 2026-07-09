@@ -50,7 +50,7 @@ import {
   getHashpassStaticHeroLogo,
 } from "../lib/hashpass-logo";
 import { useAnimationLevel } from "../contexts/AnimationLevelContext";
-import { resolveHeroTaglineText } from "../lib/home-hero";
+import { resolveHeroTaglineWords } from "../lib/home-hero";
 
 // Import git info to check branch
 let gitInfo: { gitBranch?: string } = {};
@@ -361,7 +361,7 @@ export default function HomeScreen() {
   });
 
   const words: string[] = t("taglineFlipList").split(",");
-  const staticTagline = resolveHeroTaglineText(words, " ", true);
+  const staticTaglineWords = resolveHeroTaglineWords(words);
   const heroLogoSource =
     animationLevel === "none"
       ? getHashpassStaticHeroLogo(isDark)
@@ -419,7 +419,16 @@ export default function HomeScreen() {
                     adjustsFontSizeToFit
                     minimumFontScale={0.72}
                   >
-                    {staticTagline}
+                    <Text style={styles.taglineStaticEdge}>- </Text>
+                    {staticTaglineWords.map((word, index) => (
+                      <React.Fragment key={`${word}-${index}`}>
+                        {index > 0 ? (
+                          <Text style={styles.taglineStaticDot}> • </Text>
+                        ) : null}
+                        <Text>{word}</Text>
+                      </React.Fragment>
+                    ))}
+                    <Text style={styles.taglineStaticEdge}> -</Text>
                   </Text>
                 )}
               </View>
@@ -897,6 +906,15 @@ const getStyles = (
       lineHeight: isMobile ? 18 : 34,
       textAlign: "center",
       color: heroForegroundColor,
+    },
+    taglineStaticEdge: {
+      color: heroForegroundColor,
+      opacity: 0.92,
+    },
+    taglineStaticDot: {
+      color: isDark ? "#a1d1d6" : colors.primary,
+      fontWeight: "900",
+      opacity: 1,
     },
     sectionTitle: {
       fontSize: isMobile ? 24 : 28,
