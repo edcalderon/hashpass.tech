@@ -105,6 +105,20 @@ const mapSupabaseUserToAuthUser = (supabaseUser: any): AuthUser => ({
   created_at: supabaseUser.created_at,
 });
 
+const mapSupabaseSessionToAuthSession = (session: any): AuthSession | null => {
+  if (!session?.user) {
+    return null;
+  }
+
+  return {
+    user: mapSupabaseUserToAuthUser(session.user),
+    access_token: session.access_token || '',
+    refresh_token: session.refresh_token,
+    expires_at: session.expires_at,
+    provider: 'supabase',
+  };
+};
+
 const hasPublicSupabaseAuthConfig = (): boolean => {
   const { supabaseUrl, supabaseAnonKey } = resolvePublicSupabaseConfig();
   return Boolean(supabaseUrl && supabaseAnonKey);
@@ -118,6 +132,19 @@ export const useAuth = () => {
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const betterAuthUnsubscribeRef = useRef<(() => void) | null>(null);
   const supabaseUnsubscribeRef = useRef<(() => void) | null>(null);
+  const authenticatedSessionOverrideRef = useRef<AuthSession | null>(null);
+
+  const applyAuthenticatedSession = useCallback((session?: AuthSession | null): boolean => {
+    if (!session?.user) {
+      return false;
+    }
+
+    authenticatedSessionOverrideRef.current = session;
+    setUser(session.user);
+    setIsLoggedIn(true);
+    setIsLoading(false);
+    return true;
+  }, []);
 
   useEffect(() => {
     // Prevent duplicate initialization
@@ -226,19 +253,29 @@ export const useAuth = () => {
 
     const applyCombinedAuthState = () => {
       const ready = directusReady && betterAuthReady && supabaseReady;
-      const loggedIn = isBetterAuthLoggedIn || isDirectusLoggedIn || isSupabaseLoggedIn;
-      const resolvedUser = isBetterAuthLoggedIn
-        ? betterAuthUser
-        : isDirectusLoggedIn
-          ? directusUser
-          : supabaseUser;
+      const sessionOverride = authenticatedSessionOverrideRef.current;
+      const loggedIn =
+        !!sessionOverride?.user || isBetterAuthLoggedIn || isDirectusLoggedIn || isSupabaseLoggedIn;
+      const resolvedUser = sessionOverride?.user ??
+        (isBetterAuthLoggedIn
+          ? betterAuthUser
+          : isDirectusLoggedIn
+            ? directusUser
+            : supabaseUser);
 
       setUser(resolvedUser);
       setIsLoggedIn(loggedIn);
       setIsLoading(!ready);
     };
 
-    const betterAuthProvider = Platform.OS === 'web' ? getWebBetterAuthProvider() : null;
+    const shouldBootstrapNativeBetterAuth =
+      Platform.OS !== 'web' && shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());
+    const betterAuthProvider =
+      Platform.OS === 'web'
+        ? getWebBetterAuthProvider()
+        : shouldBootstrapNativeBetterAuth
+          ? getGoogleBetterAuthProvider()
+          : null;
 
     // Subscribe to Directus/provider state changes
     unsubscribeRef.current = authService.onAuthStateChange((session: AuthSession | null) => {
@@ -376,6 +413,8 @@ export const useAuth = () => {
   }, []);
 
   const signOut = useCallback(async () => {
+    authenticatedSessionOverrideRef.current = null;
+
     // Clear native Google Sign-In cache so the account picker always shows on next login.
     // Must run before app sign-out to avoid the SDK being in a bad state.
     if (shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId())) {
@@ -488,7 +527,18 @@ export const useAuth = () => {
           try {
             const betterAuthResult = await getGoogleBetterAuthProvider().signInWithIdToken('google', idToken);
             if (!betterAuthResult.error) {
-              sessionBootstrapPromise = Promise.resolve(betterAuthResult.session ?? null);
+              const session =
+                betterAuthResult.session ??
+                (betterAuthResult.user
+                  ? {
+                      user: betterAuthResult.user,
+                      access_token: 'better_auth_session',
+                      provider: 'better-auth',
+                    }
+                  : null);
+
+              sessionBootstrapPromise = Promise.resolve(session);
+              applyAuthenticatedSession(session);
               return betterAuthResult;
             }
             console.warn('[useAuth] Better Auth native Google sign-in failed, falling back to Supabase:', betterAuthResult.error);
@@ -496,11 +546,12 @@ export const useAuth = () => {
             console.warn('[useAuth] Better Auth native Google sign-in threw, falling back to Supabase:', betterAuthError);
           }
 
-          const { error: signInError } = await supabase.auth.signInWithIdToken({
+          const { data, error: signInError } = await supabase.auth.signInWithIdToken({
             provider: 'google',
             token: idToken,
           });
           if (signInError) throw signInError;
+          applyAuthenticatedSession(mapSupabaseSessionToAuthSession(data?.session));
           sessionBootstrapPromise = Promise.resolve(null);
           return { pending: true };
         } catch (err: any) {
@@ -593,7 +644,7 @@ export const useAuth = () => {
       console.error('Error signing in with OAuth:', error);
       throw error;
     }
-  }, []);
+  }, [applyAuthenticatedSession]);
 
   const handleOAuthCallback = useCallback(async (codeOrParams: string | Record<string, string>, state?: string) => {
     try {
