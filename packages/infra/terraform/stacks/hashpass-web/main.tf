@@ -629,6 +629,7 @@ resource "aws_iam_role_policy" "github_actions_worker_control" {
           "lambda:GetFunction",
           "lambda:GetFunctionConfiguration",
           "lambda:UpdateFunctionCode",
+          "lambda:UpdateFunctionConfiguration",
         ]
         Resource = [
           for function_name in local.build_worker_lambda_function_names :

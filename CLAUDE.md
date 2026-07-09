@@ -160,6 +160,30 @@ If app opens but crashes with a JS error:
 
 Always push to origin for CI/CD. Push to upstream for backup after release scripts.
 
+## Target AWS Account Access
+
+The default local AWS profile may point at the source account. Target-account
+web/API infra uses the private account ID stored in `AWS_TARGET_ACCOUNT_ID`;
+use the local AWS CLI profile named `hashpass` for those operations.
+
+The profile is configured from private `.env` values:
+
+```bash
+set -a
+source .env
+set +a
+aws configure set aws_access_key_id "$AWS_TARGET_ACCESS_KEY" --profile hashpass
+aws configure set aws_secret_access_key "$AWS_TARGET_SECRET_KEY" --profile hashpass
+aws configure set region us-east-2 --profile hashpass
+aws configure set output json --profile hashpass
+test "$(aws sts get-caller-identity --profile hashpass --query Account --output text)" = "$AWS_TARGET_ACCOUNT_ID"
+```
+
+The last command must succeed without printing the account ID. Use `AWS_PROFILE=hashpass` for
+`packages/infra/terraform/stacks/hashpass-web`, `hashpass-api-target`, and
+`hashpass-dns`, and pass `--region us-east-1` for direct Lambda commands against
+`hashpass-prod-expo-router-api` or `hashpass-dev-expo-router-api`.
+
 ## Deployment Architecture
 
 ### How Each Domain Is Deployed
@@ -179,6 +203,7 @@ On every push to `main`, **two independent auto-deploy systems** run in parallel
 - `api.hashpass.tech` Lambda is in **us-east-1**, deployed by the target web/API flow (NOT legacy Amplify)
 - The target web deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`; if the version endpoint is stale, the deploy must fail
 - `infra-deploy.yml` also runs `packages/tools/scripts/deploy-api-lambda.sh` after the SST static deploy attempt. This is the release safety net for patch releases: the workflow must switch to the target-account `AWS_WEB_PIPELINE_ROLE_ARN`, build a fresh Expo API bundle, update `hashpass-prod-expo-router-api` on `main` and `hashpass-dev-expo-router-api` on `develop`, then verify the public version endpoint before the release can be considered complete. The SST BSL static deploy is best-effort in this workflow because `bsl.hashpass.tech` also has its own SST Console autodeploy path; the API Lambda verification remains the hard release gate.
+- Because `deploy-api-lambda.sh` syncs Lambda environment variables before uploading code, the target-account `hashpass-web-github-actions` role must allow `lambda:UpdateFunctionConfiguration` on both Expo Router API Lambda functions, in addition to `lambda:UpdateFunctionCode`.
 - `bsl.hashpass.tech` is deployed by **SST Console** (NOT the `infra-deploy.yml` GitHub Actions workflow)
 - `infra-deploy.yml` auto-triggers on push to `main`/`develop` when infra or API paths change (Route53 + CloudFront permissions added to IAM role in v1.8.92)
 

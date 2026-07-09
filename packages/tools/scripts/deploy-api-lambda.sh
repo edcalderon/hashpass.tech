@@ -12,6 +12,7 @@ API_EXPECTED_VERSION="${SITE_EXPECTED_VERSION:-${API_EXPECTED_VERSION:-}}"
 API_VERSION_VERIFY_RETRIES="${SITE_API_VERSION_VERIFY_RETRIES:-${API_VERSION_VERIFY_RETRIES:-12}}"
 API_VERSION_VERIFY_SLEEP_SECONDS="${SITE_API_VERSION_VERIFY_SLEEP_SECONDS:-${API_VERSION_VERIFY_SLEEP_SECONDS:-10}}"
 API_VERSION_VERIFY_TIMEOUT_MS="${SITE_API_VERSION_VERIFY_TIMEOUT_MS:-${API_VERSION_VERIFY_TIMEOUT_MS:-15000}}"
+API_LAMBDA_ENV_UPDATE_MAX_BYTES="${SITE_API_LAMBDA_ENV_UPDATE_MAX_BYTES:-${API_LAMBDA_ENV_UPDATE_MAX_BYTES:-3900}}"
 
 read_expected_api_version() {
   if [[ -n "${API_EXPECTED_VERSION}" ]]; then
@@ -117,20 +118,24 @@ NODE
 sync_lambda_environment() {
   local current_config_file
   local environment_file
+  local sync_status_file
+  local sync_action
   current_config_file="$(mktemp /tmp/hashpass-lambda-config.XXXXXX.json)"
   environment_file="$(mktemp /tmp/hashpass-lambda-env.XXXXXX.json)"
+  sync_status_file="$(mktemp /tmp/hashpass-lambda-env-status.XXXXXX.json)"
 
   aws lambda get-function-configuration \
     --function-name "${LAMBDA_FUNCTION_NAME}" \
     --region "${LAMBDA_REGION}" \
     --output json >"${current_config_file}"
 
-  node - "${current_config_file}" "${environment_file}" <<'NODE'
+  node - "${current_config_file}" "${environment_file}" "${sync_status_file}" <<'NODE'
 const fs = require('node:fs');
 
-const [configPath, environmentPath] = process.argv.slice(2);
+const [configPath, environmentPath, statusPath] = process.argv.slice(2);
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const current = { ...(config.Environment?.Variables || {}) };
+const maxBytes = Number.parseInt(process.env.API_LAMBDA_ENV_UPDATE_MAX_BYTES || '3900', 10) || 3900;
 
 const syncKeys = [
   'EXPO_PUBLIC_SUPABASE_PROFILE',
@@ -163,26 +168,39 @@ for (const key of syncKeys) {
   current[key] = trimmed;
 }
 
-fs.writeFileSync(environmentPath, JSON.stringify({ Variables: current }));
+const measuredBytes = Buffer.byteLength(JSON.stringify(current), 'utf8');
 
-if (changed.length > 0) {
-  console.log(`Syncing Lambda environment keys: ${changed.join(', ')}`);
-} else {
+if (changed.length === 0) {
+  fs.writeFileSync(statusPath, JSON.stringify({ action: 'noop', changed, measuredBytes, maxBytes }));
   console.log('Lambda environment already has the requested public Supabase/API keys.');
+} else if (measuredBytes > maxBytes) {
+  fs.writeFileSync(statusPath, JSON.stringify({ action: 'skip_size', changed, measuredBytes, maxBytes }));
+  console.warn(
+    `Skipping Lambda environment sync because the merged payload is ${measuredBytes} bytes, above the safe ${maxBytes} byte limit. ` +
+      `Keys not synced: ${changed.join(', ')}`
+  );
+} else {
+  fs.writeFileSync(environmentPath, JSON.stringify({ Variables: current }));
+  fs.writeFileSync(statusPath, JSON.stringify({ action: 'update', changed, measuredBytes, maxBytes }));
+  console.log(`Syncing Lambda environment keys: ${changed.join(', ')}`);
 }
 NODE
 
-  aws lambda update-function-configuration \
-    --function-name "${LAMBDA_FUNCTION_NAME}" \
-    --region "${LAMBDA_REGION}" \
-    --environment "file://${environment_file}" \
-    >/dev/null
+  sync_action="$(node -e "process.stdout.write(JSON.parse(require('node:fs').readFileSync('${sync_status_file}', 'utf8')).action)")"
 
-  aws lambda wait function-updated \
-    --function-name "${LAMBDA_FUNCTION_NAME}" \
-    --region "${LAMBDA_REGION}"
+  if [[ "${sync_action}" == "update" ]]; then
+    aws lambda update-function-configuration \
+      --function-name "${LAMBDA_FUNCTION_NAME}" \
+      --region "${LAMBDA_REGION}" \
+      --environment "file://${environment_file}" \
+      >/dev/null
 
-  rm -f "${current_config_file}" "${environment_file}"
+    aws lambda wait function-updated \
+      --function-name "${LAMBDA_FUNCTION_NAME}" \
+      --region "${LAMBDA_REGION}"
+  fi
+
+  rm -f "${current_config_file}" "${environment_file}" "${sync_status_file}"
 }
 
 if [[ -z "${LAMBDA_FUNCTION_NAME}" ]]; then
