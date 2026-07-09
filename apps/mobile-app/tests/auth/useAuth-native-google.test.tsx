@@ -314,7 +314,7 @@ describe('useAuth native Google sign-in', () => {
       })
     );
     expect(MockBetterAuthProvider).toHaveBeenCalledTimes(1);
-    expect(mockBetterAuthSignInWithIdToken).toHaveBeenCalledWith('google', 'native-id-token');
+    expect(mockBetterAuthSignInWithIdToken).not.toHaveBeenCalled();
     expect(mockSupabase.auth.signInWithIdToken).toHaveBeenCalledWith({
       provider: 'google',
       token: 'native-id-token',
@@ -436,6 +436,9 @@ describe('useAuth native Google sign-in', () => {
       provider: 'google',
       token: 'native-id-token',
     });
+    expect(mockSupabase.auth.signInWithIdToken.mock.invocationCallOrder[0]).toBeLessThan(
+      mockBetterAuthSignInWithIdToken.mock.invocationCallOrder[0]
+    );
     expect(capturedHook.isLoggedIn).toBe(true);
     expect(capturedHook.user).toEqual(betterAuthSession.user);
     expect(capturedHook.isLoading).toBe(false);

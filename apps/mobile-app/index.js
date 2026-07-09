@@ -28,6 +28,15 @@ if (typeof ErrorUtils !== 'undefined') {
   });
 }
 
+// Expo Router calls URLSearchParams.has while serializing navigation state.
+// Older Hermes/RN globals ship a stub that throws "has is not implemented",
+// which can crash native OAuth returns before the dashboard redirect runs.
+try {
+  require('./lib/polyfills/url-search-params').installURLSearchParamsPolyfill();
+} catch (err) {
+  console.error('[HashPass] Failed to install URLSearchParams polyfill:', err);
+}
+
 // Load the router. Wrap in try-catch to surface synchronous module-eval errors.
 try {
   require('expo-router/entry');

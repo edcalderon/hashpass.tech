@@ -1271,6 +1271,11 @@ export default function AuthScreen() {
         t("loginSuccess", "Login successful"),
         t("welcomeBack", "Welcome back!"),
       );
+
+      if (Platform.OS !== "web") {
+        hasNavigatedRef.current = true;
+        router.replace(redirectPath as any);
+      }
     } catch (error: any) {
       const message = extractApiError(
         error?.message,
