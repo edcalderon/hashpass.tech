@@ -119,6 +119,11 @@ For the Better Auth Google flow (now the default for every tenant on web):
   `https://hashpass.tech`, `https://www.hashpass.tech`, `https://dev.hashpass.tech`
   were missing until 2026-07-08 and would have made Better Auth reject
   requests from the production core domain.
+- API Gateway and the Lambda adapter CORS allowlists must include the same
+  credentialed frontend origins. In particular, `https://dev.hashpass.tech`
+  must be allowed by `hashpass-dev-http-api`; otherwise the browser blocks
+  `https://api-dev.hashpass.tech/api/auth/sign-in/social` during Google
+  sign-in before Better Auth can start the redirect.
 - The API Lambda adapter must forward API Gateway v2 `event.cookies` into the
   Fetch `Cookie` header before handing the request to Expo Router / Better
   Auth. Better Auth stores the OAuth state in a secure cookie on

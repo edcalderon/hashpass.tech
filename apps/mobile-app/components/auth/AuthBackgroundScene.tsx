@@ -226,7 +226,7 @@ const AuthBackgroundSceneInner: FC<{ amount: number; isMobile: boolean; isDark: 
       style={{
         position: 'absolute',
         inset: 0,
-        zIndex: -1,
+        zIndex: 0,
         pointerEvents: 'none',
         overflow: 'hidden',
       }}

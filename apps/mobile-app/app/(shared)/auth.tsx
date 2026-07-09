@@ -193,8 +193,7 @@ type DesktopHeroPanelProps = {
 const shouldShowAuthBackground = (
   platformOS: string,
   animationLevel: "full" | "reduced" | "none",
-  isDesktopLayout: boolean,
-) => platformOS === "web" && animationLevel === "full" && !isDesktopLayout;
+) => platformOS === "web" && animationLevel === "full";
 
 const getAuthHeaderPalette = (
   isDark: boolean,
@@ -582,16 +581,18 @@ export default function AuthScreen() {
   const showAuthBackground = shouldShowAuthBackground(
     Platform.OS,
     animationLevel,
-    isDesktopLayout,
   );
-  const authHeaderPalette = getAuthHeaderPalette(isDark, showAuthBackground);
+  const showGlobalAuthBackground = showAuthBackground && !isDesktopLayout;
+  const showDesktopFormBackground = showAuthBackground && isDesktopLayout;
+  const authHeaderPalette = getAuthHeaderPalette(
+    isDark,
+    showGlobalAuthBackground,
+  );
   const authLogoSource =
     Platform.OS === "web" && !isDark
       ? HASHPASS_WEB_LIGHT_AUTH_LOGO
       : getHashpassFullLogo(isDark);
-  // WebGL shader background: use it only for the single-column web layout.
-  // Desktop split view gets its own hero panel, so the form side stays on a
-  // stable surface for cleaner separation and contrast.
+  // WebGL shader background: web-only, and disabled for reduced/none to save GPU.
   const {
     supabaseUrl: publicSupabaseUrl,
     supabaseAnonKey: publicSupabaseAnonKey,
@@ -613,7 +614,7 @@ export default function AuthScreen() {
     isVeryCompactMobile,
     isDesktopLayout,
     isNativeLightMode,
-    showAuthBackground,
+    showGlobalAuthBackground,
     authHeaderPalette,
   );
   const isBusy = busyAction !== null;
@@ -1557,7 +1558,7 @@ export default function AuthScreen() {
       style={[styles.container, styles.containerWeb]}
       edges={["top", "bottom"]}
     >
-      {showAuthBackground ? <ShaderAnimation /> : null}
+      {showGlobalAuthBackground ? <ShaderAnimation /> : null}
       <View
         style={[
           styles.layoutShell,
@@ -1570,6 +1571,11 @@ export default function AuthScreen() {
             isDesktopLayout ? styles.formPaneDesktop : null,
           ]}
         >
+          {showDesktopFormBackground ? (
+            <View style={styles.desktopFormShader} pointerEvents="none">
+              <ShaderAnimation />
+            </View>
+          ) : null}
           <QuickSettingsPanel />
 
           <TouchableOpacity
@@ -2472,12 +2478,16 @@ const getStyles = (
       ...(Platform.OS === "web"
         ? {
             boxShadow: isDark
-              ? "0 22px 60px rgba(0,0,0,0.34)"
-              : "0 18px 44px rgba(20, 20, 30, 0.10)",
+              ? "0 28px 80px rgba(0,0,0,0.36)"
+              : "0 24px 72px rgba(31,38,62,0.12)",
           }
         : {
-            elevation: 3,
+            elevation: 8,
           }),
+    },
+    desktopFormShader: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 0,
     },
     centered: {
       justifyContent: "center",
@@ -2525,6 +2535,7 @@ const getStyles = (
     },
     scrollView: {
       flex: 1,
+      zIndex: 1,
     },
     scrollContent: {
       flexGrow: 1,
@@ -3241,22 +3252,22 @@ const getStyles = (
       minWidth: 0,
       position: "relative",
       overflow: "hidden",
+      borderRadius: 32,
       backgroundColor: isDark ? "#030910" : "#ffffff",
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(13,16,24,0.08)",
       alignItems: "center",
       justifyContent: "center",
       paddingHorizontal: 32,
       paddingVertical: 40,
-      borderRadius: 32,
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(13,16,24,0.06)",
       ...(Platform.OS === "web"
         ? {
             boxShadow: isDark
-              ? "0 28px 72px rgba(0,0,0,0.28)"
-              : "0 20px 50px rgba(20, 20, 30, 0.08)",
+              ? "0 28px 80px rgba(0,0,0,0.36)"
+              : "0 24px 72px rgba(31,38,62,0.12)",
           }
         : {
-            elevation: 2,
+            elevation: 8,
           }),
     },
     desktopHeroBlob: {

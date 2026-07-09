@@ -47,9 +47,10 @@ import { Svg, Path } from "react-native-svg";
 import {
   getHashpassFullLogo,
   getHashpassFooterLogo,
+  getHashpassStaticHeroLogo,
 } from "../lib/hashpass-logo";
 import { useAnimationLevel } from "../contexts/AnimationLevelContext";
-import { resolveHeroTaglineText } from "../lib/home-hero";
+import { resolveHeroTaglineWords } from "../lib/home-hero";
 
 // Import git info to check branch
 let gitInfo: { gitBranch?: string } = {};
@@ -360,7 +361,11 @@ export default function HomeScreen() {
   });
 
   const words: string[] = t("taglineFlipList").split(",");
-  const staticTagline = resolveHeroTaglineText(words);
+  const staticTaglineWords = resolveHeroTaglineWords(words);
+  const heroLogoSource =
+    animationLevel === "none"
+      ? getHashpassStaticHeroLogo(isDark)
+      : getHashpassFullLogo(isDark);
 
   return (
     <Animated.View style={[styles.container, animatedBackground]}>
@@ -399,7 +404,7 @@ export default function HomeScreen() {
           >
             <View style={styles.logoStack}>
               <Image
-                source={getHashpassFullLogo(isDark)}
+                source={heroLogoSource}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -414,7 +419,16 @@ export default function HomeScreen() {
                     adjustsFontSizeToFit
                     minimumFontScale={0.72}
                   >
-                    {staticTagline}
+                    <Text style={styles.taglineStaticEdge}>- </Text>
+                    {staticTaglineWords.map((word, index) => (
+                      <React.Fragment key={`${word}-${index}`}>
+                        {index > 0 ? (
+                          <Text style={styles.taglineStaticDot}> • </Text>
+                        ) : null}
+                        <Text>{word}</Text>
+                      </React.Fragment>
+                    ))}
+                    <Text style={styles.taglineStaticEdge}> -</Text>
                   </Text>
                 )}
               </View>
@@ -850,14 +864,29 @@ const getStyles = (
       position: "relative",
       marginTop: taglineOffset,
       width: "100%",
-      maxWidth: resolvedLogoWidth,
+      maxWidth: isHeroAnimationEnabled
+        ? resolvedLogoWidth
+        : Math.min(
+            Math.max(resolvedLogoWidth, isMobile ? 340 : 900),
+            windowWidth - (isMobile ? 32 : 80),
+          ),
       alignSelf: "center",
       alignItems: "center",
       justifyContent: "center",
       // On web the FlipWords exit uses scale:2 + translate — needs overflow
       // visible and extra height so the word flies out without a rectangular clip.
       height:
-        Platform.OS === "web" ? (isMobile ? 80 : 160) : isMobile ? 42 : 60,
+        Platform.OS === "web"
+          ? isHeroAnimationEnabled
+            ? isMobile
+              ? 80
+              : 160
+            : isMobile
+              ? 44
+              : 72
+          : isMobile
+            ? 42
+            : 60,
       overflow: Platform.OS === "web" ? "visible" : "hidden",
     },
     taglineAnimated: {
@@ -877,6 +906,15 @@ const getStyles = (
       lineHeight: isMobile ? 18 : 34,
       textAlign: "center",
       color: heroForegroundColor,
+    },
+    taglineStaticEdge: {
+      color: heroForegroundColor,
+      opacity: 0.92,
+    },
+    taglineStaticDot: {
+      color: isDark ? "#a1d1d6" : colors.primary,
+      fontWeight: "900",
+      opacity: 1,
     },
     sectionTitle: {
       fontSize: isMobile ? 24 : 28,
