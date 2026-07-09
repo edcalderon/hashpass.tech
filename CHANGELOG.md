@@ -1,3 +1,14 @@
+## [1.8.185](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.184...v1.8.185) (2026-07-09)
+
+
+### Bug Fixes
+
+* update native Google auth session state ([3ae11db](https://github.com/hashpass-tech/hashpass.tech/commit/3ae11db5400eceaf5f930c1fd80f5183b104b30e))
+
+
+
+
+
 ## [1.8.184](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.183...v1.8.184) (2026-07-09)
 
 
