@@ -57,6 +57,25 @@ if [ ! -f "$BETTER_AUTH_ROUTE" ]; then
   exit 1
 fi
 
+VERSION_ROUTE="$PACKAGE_DIR/server/_expo/functions/api/config/versions+api.js"
+EXPECTED_VERSION="$(node -p "require('$PROJECT_ROOT/package.json').version")"
+if [ ! -f "$VERSION_ROUTE" ]; then
+  echo "❌ Version API route is missing from the Expo server export."
+  echo "   Expected:"
+  echo "   - $VERSION_ROUTE"
+  echo "   Re-run the web build and verify app/api/config/versions+api.ts is included."
+  exit 1
+fi
+
+if ! grep -q "$EXPECTED_VERSION" "$VERSION_ROUTE"; then
+  echo "❌ Expo server export is stale."
+  echo "   Expected runtime version ${EXPECTED_VERSION} in:"
+  echo "   - $VERSION_ROUTE"
+  echo "   Run a clean web/API export before packaging:"
+  echo "   CI=1 SKIP_ENV_PROPAGATE=1 EXPO_EXPORT_MAX_WORKERS=1 npm --prefix apps/mobile-app run build:static"
+  exit 1
+fi
+
 # Copy config files needed by API routes
 echo "3a. Copying config files..."
 mkdir -p "$PACKAGE_DIR/config"

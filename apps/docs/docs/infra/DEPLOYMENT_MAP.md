@@ -46,6 +46,8 @@ The development web surface uses the same front-door pattern as production. The 
 
 The API lives in the target-account Lambda + API Gateway stack, not Amplify. The active web deploy helper packages the API with `packages/tools/scripts/package-lambda.sh`, updates the Lambda code, waits for the update, and verifies the public version endpoint.
 
+Patch releases also run `packages/tools/scripts/deploy-api-lambda.sh` from `infra-deploy.yml` after the SST static deploy. That workflow is intentionally redundant with the target web pipeline so a green static deploy cannot hide a stale API Lambda.
+
 **Lambda names:**
 - Production: `hashpass-prod-expo-router-api` (us-east-1)
 - Development: `hashpass-dev-expo-router-api` (us-east-1)

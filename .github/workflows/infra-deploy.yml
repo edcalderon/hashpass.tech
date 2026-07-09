@@ -12,6 +12,8 @@ on:
       - "apps/mobile-app/config/**"
       - "packages/auth/**"
       - "packages/config/**"
+      - "packages/tools/scripts/deploy-api-lambda.sh"
+      - "packages/tools/scripts/package-lambda.sh"
       - "packages/types/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -58,6 +60,22 @@ jobs:
         if: github.ref_name == 'main'
         run: pnpm --filter @hashpass/infra run deploy:prod
 
+      - name: Deploy production API Lambda
+        if: github.ref_name == 'main'
+        env:
+          SITE_LAMBDA_FUNCTION_NAME: hashpass-prod-expo-router-api
+          SITE_LAMBDA_REGION: us-east-1
+          SITE_API_VERSION_URL: https://api.hashpass.tech/api/config/versions
+        run: bash packages/tools/scripts/deploy-api-lambda.sh
+
       - name: Deploy development
         if: github.ref_name == 'develop'
         run: pnpm --filter @hashpass/infra run deploy:dev
+
+      - name: Deploy development API Lambda
+        if: github.ref_name == 'develop'
+        env:
+          SITE_LAMBDA_FUNCTION_NAME: hashpass-dev-expo-router-api
+          SITE_LAMBDA_REGION: us-east-1
+          SITE_API_VERSION_URL: https://api-dev.hashpass.tech/api/config/versions
+        run: bash packages/tools/scripts/deploy-api-lambda.sh
