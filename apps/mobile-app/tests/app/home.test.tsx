@@ -23,6 +23,7 @@ const loadHomeScreen = ({
   width = 1200,
   height = 900,
   platform = "android",
+  topInset = 0,
   bottomInset = 28,
   animationLevel = "reduced",
   isDark = false,
@@ -31,6 +32,7 @@ const loadHomeScreen = ({
   width?: number;
   height?: number;
   platform?: "android" | "ios" | "web";
+  topInset?: number;
   bottomInset?: number;
   animationLevel?: "full" | "reduced" | "none";
   isDark?: boolean;
@@ -188,7 +190,7 @@ const loadHomeScreen = ({
 
     jest.doMock("react-native-safe-area-context", () => ({
       useSafeAreaInsets: () => ({
-        top: 0,
+        top: topInset,
         right: 0,
         bottom: bottomInset,
         left: 0,
@@ -365,6 +367,8 @@ describe("HomeScreen native tablet layout", () => {
     const scrollView = root.findByType("Reanimated.ScrollView");
 
     expect(scrollView.props.contentOffset).toEqual({ x: 0, y: 0 });
+    expect(scrollView.props.decelerationRate).toBe(0.985);
+    expect(scrollView.props.alwaysBounceVertical).toBe(false);
     expect(scrollView.props.contentContainerStyle).toEqual(
       expect.objectContaining({ paddingBottom: 160 }),
     );
@@ -380,8 +384,8 @@ describe("HomeScreen native tablet layout", () => {
       .findAllByType("View")
       .find(
         (node: any) =>
-          node.props.style?.minHeight === 560 &&
-          node.props.style?.height === 560,
+          node.props.style?.minHeight === 738 &&
+          node.props.style?.height === 738,
       );
     expect(hero).toBeTruthy();
 
@@ -390,11 +394,48 @@ describe("HomeScreen native tablet layout", () => {
       .find((node: any) => node.props.style?.paddingBottom === 200);
     expect(footer).toBeTruthy();
 
+    const topControls = root
+      .findAllByType("Reanimated.View")
+      .find(
+        (node: any) =>
+          styleArrayContains(node.props.style, { top: 58 }) &&
+          styleArrayContains(node.props.style, { opacity: 1 }),
+      );
+    expect(topControls).toBeTruthy();
+
+    const callsBeforeLayout = mockScrollTo.mock.calls.length;
+    act(() => {
+      scrollView.props.onLayout?.({});
+      scrollView.props.onContentSizeChange?.(1200, 2200);
+    });
+    expect(mockScrollTo.mock.calls.length).toBeGreaterThan(callsBeforeLayout);
+
     act(() => {
       jest.runOnlyPendingTimers();
     });
 
     expect(mockScrollTo).toHaveBeenCalledWith({ y: 0, animated: false });
+    expect(mockScrollTo.mock.calls.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("uses safe-area top spacing for native phone settings and login controls", () => {
+    const { renderer } = loadHomeScreen({
+      width: 390,
+      height: 844,
+      platform: "ios",
+      topInset: 47,
+      bottomInset: 34,
+    });
+
+    const topControls = renderer.root
+      .findAllByType("Reanimated.View")
+      .find(
+        (node: any) =>
+          styleArrayContains(node.props.style, { top: 67 }) &&
+          styleArrayContains(node.props.style, { opacity: 1 }),
+      );
+
+    expect(topControls).toBeTruthy();
   });
 
   it("renders a static single-line hero tagline with theme-aware colors when animations are disabled", () => {

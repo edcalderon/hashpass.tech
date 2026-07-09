@@ -68,6 +68,9 @@ export default function HomeScreen() {
   const { t } = useTranslation("index");
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
+  const isNative = Platform.OS !== "web";
+  const [isNativeInitialScrollSettled, setIsNativeInitialScrollSettled] =
+    useState(!isNative);
 
   // Get current event info for dynamic footer
   const currentEvent = getCurrentEvent();
@@ -144,14 +147,19 @@ export default function HomeScreen() {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const isPhoneLayout = Platform.OS === "web" ? isMobile : windowWidth < 700;
   const isTabletLayout = Platform.OS !== "web" && !isPhoneLayout;
-  const nativeBottomInset =
-    Platform.OS === "web" ? 0 : Math.max(insets.bottom, 24);
+  const nativeBottomInset = isNative ? Math.max(insets.bottom, 24) : 0;
   const floatingControlsBottom =
-    Platform.OS === "web" ? 50 : nativeBottomInset + (isTabletLayout ? 88 : 76);
+    isNative ? nativeBottomInset + (isTabletLayout ? 88 : 76) : 50;
+  const nativeTopControlsTop = isNative
+    ? Math.max(insets.top + 20, isTabletLayout ? 58 : 64)
+    : undefined;
+  const quickSettingsHideAfterScrollY = isNative
+    ? Math.max(windowHeight * 0.5, isTabletLayout ? 420 : 320)
+    : isTabletLayout
+      ? 120
+      : 30;
   const footerBottomReserve =
-    Platform.OS === "web"
-      ? 0
-      : nativeBottomInset + (isTabletLayout ? 132 : 112);
+    isNative ? nativeBottomInset + (isTabletLayout ? 132 : 112) : 0;
   const styles = getStyles(
     isDark,
     colors,
@@ -200,30 +208,64 @@ export default function HomeScreen() {
 
   const router = useRouter();
   const scrollY = useSharedValue(0);
+  const initialScrollLock = useSharedValue(isNative ? 1 : 0);
   const buttonAnimation = useSharedValue(0);
 
   const featuresRef = React.useRef<View>(null);
   const featuresLayoutRef = React.useRef({ y: 0 });
+  const resetScrollPosition = React.useCallback(() => {
+    scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+    scrollY.value = 0;
+  }, [scrollY]);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
+      if (initialScrollLock.value === 1) {
+        scrollY.value = 0;
+        return;
+      }
       scrollY.value = event.contentOffset.y;
     },
   });
 
   useEffect(() => {
-    const resetScrollPosition = () => {
-      scrollRef.current?.scrollTo?.({ y: 0, animated: false });
-      scrollY.value = 0;
-    };
-
     resetScrollPosition();
-    const timer = setTimeout(
-      resetScrollPosition,
-      Platform.OS === "web" ? 0 : 80,
+    if (!isNative) {
+      initialScrollLock.value = 0;
+      setIsNativeInitialScrollSettled(true);
+      return undefined;
+    }
+
+    initialScrollLock.value = 1;
+    setIsNativeInitialScrollSettled(false);
+
+    const resetTimers = [0, 80, 220, 480].map((delay) =>
+      setTimeout(resetScrollPosition, delay),
     );
-    return () => clearTimeout(timer);
-  }, [scrollY]);
+    const settleTimer = setTimeout(() => {
+      resetScrollPosition();
+      initialScrollLock.value = 0;
+      setIsNativeInitialScrollSettled(true);
+    }, 700);
+
+    return () => {
+      resetTimers.forEach(clearTimeout);
+      clearTimeout(settleTimer);
+    };
+  }, [
+    animationLevel,
+    initialScrollLock,
+    isNative,
+    resetScrollPosition,
+    windowHeight,
+    windowWidth,
+  ]);
+
+  const handleInitialScrollLayout = React.useCallback(() => {
+    if (isNative && !isNativeInitialScrollSettled) {
+      resetScrollPosition();
+    }
+  }, [isNative, isNativeInitialScrollSettled, resetScrollPosition]);
 
   const handleScrollToFeatures = () => {
     if (!scrollRef.current) return;
@@ -254,8 +296,16 @@ export default function HomeScreen() {
 
   const headerAnimatedStyle = useAnimatedStyle(() => {
     // none: hero always fully visible (no fade-out on scroll)
-    if (animLevelNum.value === 0) return { opacity: 1 };
-    const opacity = interpolate(scrollY.value, [0, 100], [1, 0], {
+    if (animLevelNum.value === 0 || initialScrollLock.value === 1) {
+      return { opacity: 1 };
+    }
+    const fadeInputRange = isNative
+      ? [
+          Math.max(windowHeight * 0.42, isTabletLayout ? 360 : 300),
+          Math.max(windowHeight * 0.42, isTabletLayout ? 360 : 300) + 220,
+        ]
+      : [0, 100];
+    const opacity = interpolate(scrollY.value, fadeInputRange, [1, 0], {
       extrapolateLeft: Extrapolation.CLAMP,
       extrapolateRight: Extrapolation.CLAMP,
     });
@@ -361,7 +411,7 @@ export default function HomeScreen() {
   });
 
   const words: string[] = t("taglineFlipList").split(",");
-  const staticTaglineWords = resolveHeroTaglineWords(words);
+  const staticTaglineWords: string[] = resolveHeroTaglineWords(words);
   const heroLogoSource =
     animationLevel === "none"
       ? getHashpassStaticHeroLogo(isDark)
@@ -377,7 +427,9 @@ export default function HomeScreen() {
       />
       <QuickSettingsPanel
         scrollY={scrollY}
-        hideAfterScrollY={isTabletLayout ? 120 : 30}
+        hideAfterScrollY={quickSettingsHideAfterScrollY}
+        forceVisible={isNative && !isNativeInitialScrollSettled}
+        topOffset={nativeTopControlsTop}
       />
 
       <Animated.ScrollView
@@ -389,6 +441,11 @@ export default function HomeScreen() {
         contentOffset={{ x: 0, y: 0 }}
         contentInsetAdjustmentBehavior="never"
         overScrollMode="never"
+        bounces={Platform.OS === "ios"}
+        alwaysBounceVertical={false}
+        decelerationRate={Platform.OS === "ios" ? "normal" : 0.985}
+        onLayout={handleInitialScrollLayout}
+        onContentSizeChange={handleInitialScrollLayout}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
@@ -794,8 +851,8 @@ const getStyles = (
       : 220;
   const taglineOffset = isMobile ? 10 : isNativeTablet ? 12 : 18;
   const nativeHeroHeight = isNativeTablet
-    ? Math.min(Math.max(windowHeight * 0.52, 560), 700)
-    : Math.min(Math.max(windowHeight * 0.58, 440), 540);
+    ? Math.min(Math.max(windowHeight * 0.82, 680), 860)
+    : Math.min(Math.max(windowHeight * 0.86, 620), 760);
   const heroHeight = isNative ? nativeHeroHeight : isMobile ? 480 : "100%";
   const heroMinHeight = isNative ? nativeHeroHeight : isMobile ? 480 : 520;
 

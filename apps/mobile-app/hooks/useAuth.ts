@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { authService, BetterAuthProvider, getSupabaseOAuthRedirectUrl } from '@hashpass/auth';
-import type { AuthSession, AuthUser, IAuthProvider } from '@hashpass/auth';
+import type { AuthResponse, AuthSession, AuthUser, IAuthProvider } from '@hashpass/auth';
 import { configureAuthService } from '@hashpass/auth/auth-dependencies';
 import { createSessionFromUrl, supabase } from '../lib/supabase';
 import { Platform } from 'react-native';
@@ -521,9 +521,10 @@ export const useAuth = () => {
           // a valid outcome of this same flow.
           await clearStaleProviderSession(['better-auth', 'supabase']);
 
-          // nativeGoogleEnabled already implies providerName !== 'better-auth'
-          // (via nativeSupabaseGoogleAvailable above), so authService can never
-          // already be Better Auth here — always use the dedicated instance.
+          // Native mobile data APIs still expect the Supabase UUID user id. Keep
+          // Better Auth as an SSO fallback, but prefer the Supabase ID-token
+          // session for the in-app authenticated state when it is available.
+          let betterAuthFallback: AuthResponse | null = null;
           try {
             const betterAuthResult = await getGoogleBetterAuthProvider().signInWithIdToken('google', idToken);
             if (!betterAuthResult.error) {
@@ -537,23 +538,43 @@ export const useAuth = () => {
                     }
                   : null);
 
-              sessionBootstrapPromise = Promise.resolve(session);
-              applyAuthenticatedSession(session);
-              return betterAuthResult;
+              betterAuthFallback = session
+                ? {
+                    ...betterAuthResult,
+                    user: betterAuthResult.user ?? session.user,
+                    session,
+                  }
+                : betterAuthResult;
             }
-            console.warn('[useAuth] Better Auth native Google sign-in failed, falling back to Supabase:', betterAuthResult.error);
-          } catch (betterAuthError) {
-            console.warn('[useAuth] Better Auth native Google sign-in threw, falling back to Supabase:', betterAuthError);
+          } catch {
+            // Better Auth is a native SSO fallback here; Supabase remains the
+            // preferred mobile app session because it provides the UUID user id.
           }
 
-          const { data, error: signInError } = await supabase.auth.signInWithIdToken({
-            provider: 'google',
-            token: idToken,
-          });
-          if (signInError) throw signInError;
-          applyAuthenticatedSession(mapSupabaseSessionToAuthSession(data?.session));
-          sessionBootstrapPromise = Promise.resolve(null);
-          return { pending: true };
+          try {
+            const { data, error: signInError } = await supabase.auth.signInWithIdToken({
+              provider: 'google',
+              token: idToken,
+            });
+            if (signInError) throw signInError;
+
+            const supabaseSession = mapSupabaseSessionToAuthSession(data?.session);
+            if (!supabaseSession) {
+              throw new Error('Google sign-in completed, but no Supabase session was created.');
+            }
+
+            sessionBootstrapPromise = Promise.resolve(supabaseSession);
+            applyAuthenticatedSession(supabaseSession);
+            return { user: supabaseSession.user, session: supabaseSession };
+          } catch (supabaseError) {
+            const fallbackSession = betterAuthFallback?.session ?? null;
+            if (fallbackSession?.user) {
+              sessionBootstrapPromise = Promise.resolve(fallbackSession);
+              applyAuthenticatedSession(fallbackSession);
+              return betterAuthFallback!;
+            }
+            throw supabaseError;
+          }
         } catch (err: any) {
           const errorCode = err?.code;
           const nativeInProgressCode = (nativeGoogleSigninStatusCodes as Record<string, string | undefined>).IN_PROGRESS;
@@ -641,7 +662,6 @@ export const useAuth = () => {
 
       return result;
     } catch (error) {
-      console.error('Error signing in with OAuth:', error);
       throw error;
     }
   }, [applyAuthenticatedSession]);

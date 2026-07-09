@@ -49,6 +49,8 @@ import {
 interface Props {
   scrollY?: SharedValue<number>;
   hideAfterScrollY?: number;
+  forceVisible?: boolean;
+  topOffset?: number;
 }
 
 type LocaleOption = { code: string; name: string };
@@ -124,7 +126,12 @@ function PillGroup<T extends string>({
 
 // ─── main ────────────────────────────────────────────────────────────────────
 
-export default function QuickSettingsPanel({ scrollY, hideAfterScrollY = 30 }: Props) {
+export default function QuickSettingsPanel({
+  scrollY,
+  hideAfterScrollY = 30,
+  forceVisible = false,
+  topOffset,
+}: Props) {
   const { theme, setTheme, colors, isDark } = useTheme();
   const { locale, setLocale } = useLanguage();
   const { animationLevel, setAnimationLevel } = useAnimationLevel();
@@ -171,10 +178,11 @@ export default function QuickSettingsPanel({ scrollY, hideAfterScrollY = 30 }: P
   const btnRotateDeg = btnRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] });
 
   const containerStyle = useAnimatedStyle(() => {
+    if (forceVisible) return { opacity: 1, pointerEvents: 'auto' } as const;
     if (!scrollY) return { opacity: 1, pointerEvents: 'auto' } as const;
     const visible = scrollY.value <= hideAfterScrollY;
     return { opacity: withTiming(visible ? 1 : 0, { duration: 160 }), pointerEvents: visible ? 'auto' : 'none' } as const;
-  }, [scrollY, hideAfterScrollY]);
+  }, [scrollY, hideAfterScrollY, forceVisible]);
 
   const bg = isDark ? 'rgba(14,14,26,0.97)' : 'rgba(255,255,255,0.97)';
   const borderCol = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
@@ -281,7 +289,12 @@ export default function QuickSettingsPanel({ scrollY, hideAfterScrollY = 30 }: P
 
   return (
     <Reanimated.View
-      style={[styles.container, isMobile && styles.containerMobile, containerStyle]}
+      style={[
+        styles.container,
+        isMobile && styles.containerMobile,
+        typeof topOffset === 'number' ? { top: topOffset } : null,
+        containerStyle,
+      ]}
     >
       {/* Backdrop */}
       {open && Platform.OS === 'web' && (
