@@ -1,3 +1,14 @@
+## [1.8.186](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.185...v1.8.186) (2026-07-09)
+
+
+### Bug Fixes
+
+* stabilize native google auth and landing load ([3fbd81f](https://github.com/hashpass-tech/hashpass.tech/commit/3fbd81ffcaf828d3db7545d637d3a5f124274257))
+
+
+
+
+
 ## [1.8.185](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.184...v1.8.185) (2026-07-09)
 
 
