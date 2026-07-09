@@ -26,7 +26,7 @@ const loadHomeScreen = ({
   bottomInset = 28,
   animationLevel = "reduced",
   isDark = false,
-  taglineFlipList = "- YOUR EVENT -,- YOUR COMMUNITY -,- YOUR BENEFITS -",
+  taglineFlipList = "- YOUR EVENT -,- YOUR COMMUNITY -,- YOUR REWARDS -",
 }: {
   width?: number;
   height?: number;
@@ -274,6 +274,7 @@ const loadHomeScreen = ({
     jest.doMock("../../lib/hashpass-logo", () => ({
       getHashpassFooterLogo: () => 1,
       getHashpassFullLogo: () => 1,
+      getHashpassStaticHeroLogo: () => 2,
     }));
 
     jest.doMock("../../lib/utils", () => ({
@@ -408,7 +409,7 @@ describe("HomeScreen native tablet layout", () => {
       .findAllByType("Text")
       .find(
         (node: any) =>
-          node.props.children === "YOUR EVENT YOUR COMMUNITY YOUR BENEFITS",
+          node.props.children === "- YOUR EVENT YOUR COMMUNITY YOUR REWARDS -",
       );
 
     expect(taglineText).toBeTruthy();
@@ -418,6 +419,11 @@ describe("HomeScreen native tablet layout", () => {
         color: mockColors.text.primary,
       }),
     );
+
+    const heroLogo = root
+      .findAllByType("Image")
+      .find((node: any) => node.props.source === 2);
+    expect(heroLogo).toBeTruthy();
 
     const scrollLabel = root
       .findAllByType("Text")

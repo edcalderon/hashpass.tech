@@ -193,8 +193,7 @@ type DesktopHeroPanelProps = {
 const shouldShowAuthBackground = (
   platformOS: string,
   animationLevel: "full" | "reduced" | "none",
-  isDesktopLayout: boolean,
-) => platformOS === "web" && animationLevel === "full" && !isDesktopLayout;
+) => platformOS === "web" && animationLevel === "full";
 
 const getAuthHeaderPalette = (
   isDark: boolean,
@@ -582,16 +581,13 @@ export default function AuthScreen() {
   const showAuthBackground = shouldShowAuthBackground(
     Platform.OS,
     animationLevel,
-    isDesktopLayout,
   );
   const authHeaderPalette = getAuthHeaderPalette(isDark, showAuthBackground);
   const authLogoSource =
     Platform.OS === "web" && !isDark
       ? HASHPASS_WEB_LIGHT_AUTH_LOGO
       : getHashpassFullLogo(isDark);
-  // WebGL shader background: use it only for the single-column web layout.
-  // Desktop split view gets its own hero panel, so the form side stays on a
-  // stable surface for cleaner separation and contrast.
+  // WebGL shader background: web-only, and disabled for reduced/none to save GPU.
   const {
     supabaseUrl: publicSupabaseUrl,
     supabaseAnonKey: publicSupabaseAnonKey,
@@ -2447,37 +2443,18 @@ const getStyles = (
     },
     layoutShellDesktop: {
       flexDirection: "row",
-      width: "100%",
-      maxWidth: 1760,
-      alignSelf: "center",
-      paddingHorizontal: 24,
-      paddingVertical: 24,
-      gap: 20,
     },
     formPane: {
       flex: 1,
       position: "relative",
     },
     formPaneDesktop: {
-      flex: 0.95,
-      minWidth: 480,
-      maxWidth: 720,
-      borderRadius: 32,
-      overflow: "hidden",
-      backgroundColor: isDark
-        ? "rgba(5, 8, 14, 0.94)"
-        : "rgba(255, 255, 255, 0.9)",
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(13,16,24,0.08)",
-      ...(Platform.OS === "web"
-        ? {
-            boxShadow: isDark
-              ? "0 22px 60px rgba(0,0,0,0.34)"
-              : "0 18px 44px rgba(20, 20, 30, 0.10)",
-          }
-        : {
-            elevation: 3,
-          }),
+      flex: 1.34,
+      minWidth: 620,
+      maxWidth: 920,
+      borderRightWidth: 1,
+      borderRightColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+      backgroundColor: "transparent",
     },
     centered: {
       justifyContent: "center",
@@ -3237,27 +3214,15 @@ const getStyles = (
       textDecorationLine: "underline",
     },
     desktopHeroPane: {
-      flex: 1.05,
-      minWidth: 0,
+      flex: 0.74,
+      minWidth: 320,
       position: "relative",
       overflow: "hidden",
       backgroundColor: isDark ? "#030910" : "#ffffff",
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: 32,
-      paddingVertical: 40,
-      borderRadius: 32,
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(13,16,24,0.06)",
-      ...(Platform.OS === "web"
-        ? {
-            boxShadow: isDark
-              ? "0 28px 72px rgba(0,0,0,0.28)"
-              : "0 20px 50px rgba(20, 20, 30, 0.08)",
-          }
-        : {
-            elevation: 2,
-          }),
+      paddingHorizontal: 24,
+      paddingVertical: 34,
     },
     desktopHeroBlob: {
       position: "absolute",

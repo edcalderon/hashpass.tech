@@ -79,6 +79,7 @@ variable "api_cors_origins" {
   default = {
     dev = [
       "http://localhost:8081",
+      "https://dev.hashpass.tech",
       "https://bsl-dev.hashpass.tech",
       "https://bsl.hashpass.tech",
       "https://blockchainsummit-dev.hashpass.lat",

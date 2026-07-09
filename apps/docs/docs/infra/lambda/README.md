@@ -22,6 +22,14 @@ Google returns to `/api/auth/callback/google`. If the Lambda adapter drops the
 cookie, production Google sign-in fails with `state_mismatch` and redirects the
 user back to `/auth`.
 
+## CORS Requirements
+
+API Gateway handles browser preflight before some requests reach Lambda, so its
+CORS origin list and the Lambda fallback allowlist must stay aligned. The dev
+Google flow requires `https://dev.hashpass.tech` to be allowed by
+`hashpass-dev-http-api`; otherwise `api-dev.hashpass.tech` returns a preflight
+without `Access-Control-Allow-Origin` and the browser never reaches Better Auth.
+
 ## Active Docs
 
 - [`LAMBDA-CI-CD-QUICK-START.md`](LAMBDA-CI-CD-QUICK-START.md) - current release and emergency deploy path
