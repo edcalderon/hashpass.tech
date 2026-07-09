@@ -13,6 +13,8 @@ export async function clearNativeGoogleAccount(): Promise<void> {
   return;
 }
 
-export async function signInWithNativeGoogleAccount(): Promise<{ idToken: string }> {
+export async function signInWithNativeGoogleAccount(
+  _webClientId?: string | null
+): Promise<{ idToken: string }> {
   throw new Error('Native Google Sign-In is not available on web.');
 }

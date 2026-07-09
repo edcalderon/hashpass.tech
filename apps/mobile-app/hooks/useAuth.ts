@@ -14,6 +14,7 @@ import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config'
 import { mergeOAuthFragmentParams } from '../lib/auth/oauth/callback-params';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
+import { markRecentAuthSuccess } from '../lib/auth/recent-auth';
 
 // Reuse the app's Supabase singleton (lib/supabase.ts) instead of letting
 // @hashpass/auth build a second GoTrueClient against the same project.
@@ -512,7 +513,7 @@ export const useAuth = () => {
 
       if (nativeGoogleEnabled) {
         try {
-          const { idToken } = await signInWithNativeGoogleAccount();
+          const { idToken } = await signInWithNativeGoogleAccount(googleWebClientId);
           // Native's two-tier attempt (Better Auth, then Supabase) ends up on
           // one of these two either way, so only clear a session belonging to
           // neither — e.g. a stale Directus session — not one that's already
@@ -532,6 +533,7 @@ export const useAuth = () => {
             }
 
             sessionBootstrapPromise = Promise.resolve(supabaseSession);
+            markRecentAuthSuccess();
             applyAuthenticatedSession(supabaseSession);
             return { user: supabaseSession.user, session: supabaseSession };
           } catch (supabaseError) {
@@ -564,6 +566,7 @@ export const useAuth = () => {
             const fallbackSession = betterAuthFallback?.session ?? null;
             if (fallbackSession?.user) {
               sessionBootstrapPromise = Promise.resolve(fallbackSession);
+              markRecentAuthSuccess();
               applyAuthenticatedSession(fallbackSession);
               return betterAuthFallback!;
             }
@@ -576,12 +579,22 @@ export const useAuth = () => {
           const isUserDismissal =
             errorCode === nativeGoogleSigninStatusCodes.SIGN_IN_CANCELLED ||
             /cancel/i.test(message);
+          const shouldFallbackToBrowserOAuth =
+            errorCode === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE ||
+            errorCode === nativeGoogleSigninStatusCodes.NULL_PRESENTER ||
+            errorCode === 'GOOGLE_SIGN_IN_UNAVAILABLE' ||
+            errorCode === 'NULL_PRESENTER' ||
+            errorCode === '10' ||
+            /DEVELOPER_ERROR|Native Google Sign-In is unavailable|RNGoogleSignin|apiClient is null|Current activity is null|not exported|not linked|could not be found/i.test(message);
 
           if (isUserDismissal || (nativeInProgressCode && errorCode === nativeInProgressCode)) {
             return { pending: false };
           }
-          if (errorCode === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-            console.warn('[useAuth] Play Services unavailable, falling back to browser OAuth');
+          if (shouldFallbackToBrowserOAuth) {
+            console.warn('[useAuth] Native Google Sign-In unavailable, falling back to browser OAuth:', {
+              code: errorCode,
+              message,
+            });
             // fall through to provider-specific OAuth flow below
           } else if (errorCode === 'GOOGLE_ID_TOKEN_MISSING') {
             throw new Error(

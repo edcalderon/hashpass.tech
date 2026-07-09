@@ -163,6 +163,19 @@ describe('signInWithNativeGoogleAccount', () => {
     await expect(signInWithNativeGoogleAccount()).resolves.toEqual({ idToken: 'native-id-token' });
   });
 
+  it('configures the SDK immediately before starting native sign-in', async () => {
+    const { signInWithNativeGoogleAccount } = loadNativeGoogleSignin();
+
+    await expect(signInWithNativeGoogleAccount('google-web-client-id')).resolves.toEqual({
+      idToken: 'native-id-token',
+    });
+    expect(mockGoogleSignin.configure).toHaveBeenCalledWith({
+      webClientId: 'google-web-client-id',
+      offlineAccess: false,
+    });
+    expect(mockGoogleSignin.hasPlayServices).toHaveBeenCalledTimes(1);
+  });
+
   it('normalizes cancelled SDK responses without an ID token', async () => {
     mockGoogleSignin.signIn.mockResolvedValueOnce({ type: 'cancelled' } as never);
     const { signInWithNativeGoogleAccount } = loadNativeGoogleSignin();
@@ -192,5 +205,20 @@ describe('signInWithNativeGoogleAccount', () => {
       message: 'Play Services unavailable',
     });
     expect(mockGoogleSignin.signIn).not.toHaveBeenCalled();
+  });
+
+  it('does not throw on module import when the native Google module is unavailable', async () => {
+    jest.dontMock('@react-native-google-signin/google-signin');
+    jest.doMock('@react-native-google-signin/google-signin', () => {
+      throw new Error('TurboModuleRegistry.getEnforcing(...): RNGoogleSignin could not be found');
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const nativeGoogleSignin = require('../../lib/native-google-signin.native');
+
+    await expect(nativeGoogleSignin.signInWithNativeGoogleAccount('google-web-client-id')).rejects.toMatchObject({
+      code: 'GOOGLE_SIGN_IN_UNAVAILABLE',
+      message: expect.stringContaining('RNGoogleSignin could not be found'),
+    });
   });
 });

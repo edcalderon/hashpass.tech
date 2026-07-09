@@ -108,18 +108,35 @@ describe('getSupabaseOAuthRedirectUrl', () => {
     expect(getSupabaseOAuthRedirectUrl()).toBe('http://localhost:8081/auth/callback');
   });
 
-  it('ignores a production-looking browser origin when local dev is active', () => {
+  it('uses a hosted HTTPS browser origin even when the build env is development', () => {
     setEnv('EXPO_PUBLIC_ENV', 'local');
     (globalThis as Record<string, unknown>).window = {
       location: {
-        origin: 'https://hashpass.tech',
+        origin: 'https://dev.hashpass.tech',
       },
     };
 
     expect(
       getSupabaseOAuthRedirectUrl({
-        origin: 'https://hashpass.tech',
+        origin: 'https://dev.hashpass.tech',
       })
-    ).toBe('http://localhost:8081/auth/callback');
+    ).toBe('https://dev.hashpass.tech/auth/callback');
+  });
+
+  it('does not use localhost for native relay callbacks', () => {
+    setEnv('EXPO_PUBLIC_ENV', 'development');
+    (globalThis as Record<string, unknown>).window = {
+      location: {
+        origin: 'http://localhost:8081',
+      },
+    };
+
+    expect(
+      getSupabaseOAuthRedirectUrl({
+        callbackPath: 'auth/callback?nativeRelay=1&returnTo=%2Fdashboard%2Fexplore',
+        platform: 'android',
+        relayToNative: true,
+      })
+    ).toBe('https://hashpass.tech/auth/callback?nativeRelay=1&returnTo=%2Fdashboard%2Fexplore');
   });
 });

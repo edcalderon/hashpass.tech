@@ -78,6 +78,66 @@ const getSupabaseEmailOtpTypeCandidates = (rawType: string | null | undefined): 
   return candidates.filter((candidate, index) => candidates.indexOf(candidate) === index);
 };
 
+const mergeUrlParams = (target: Record<string, string>, source: URLSearchParams): void => {
+  source.forEach((value, key) => {
+    if (value && !target[key]) {
+      target[key] = value;
+    }
+  });
+};
+
+const mergeRawParamString = (target: Record<string, string>, rawValue?: string | null): void => {
+  const normalized = (rawValue || '').replace(/^[?#]/, '').trim();
+  if (!normalized) return;
+
+  mergeUrlParams(target, new URLSearchParams(normalized));
+};
+
+const parseSupabaseAuthUrl = (url: string): {
+  params: Record<string, string>;
+  errorCode: string | null;
+} => {
+  const parsedByExpo = QueryParams.getQueryParams(url);
+  const params: Record<string, string> = {};
+
+  Object.entries(parsedByExpo.params || {}).forEach(([key, value]) => {
+    if (typeof value === 'string' && value) {
+      params[key] = value;
+    }
+  });
+
+  try {
+    const parsedUrl = new URL(url);
+    mergeUrlParams(params, parsedUrl.searchParams);
+    mergeRawParamString(params, parsedUrl.hash);
+
+    if (params._fragment) {
+      try {
+        mergeRawParamString(params, decodeURIComponent(params._fragment));
+      } catch {
+        mergeRawParamString(params, params._fragment);
+      }
+    }
+  } catch {
+    const queryStart = url.indexOf('?');
+    const hashStart = url.indexOf('#');
+
+    if (queryStart >= 0) {
+      const queryEnd = hashStart >= 0 && hashStart > queryStart ? hashStart : undefined;
+      mergeRawParamString(params, url.slice(queryStart + 1, queryEnd));
+    }
+
+    if (hashStart >= 0) {
+      mergeRawParamString(params, url.slice(hashStart + 1));
+    }
+  }
+
+  return {
+    params,
+    errorCode: parsedByExpo.errorCode || params.error_code || params.error || null,
+  };
+};
+
 
 /**
  * Creates a session from a URL, typically after OAuth redirect
@@ -128,8 +188,10 @@ export const createSessionFromUrl = async (url: string): Promise<{
   };
 
   try {
-    // Parse URL parameters (QueryParams.getQueryParams handles both query string and hash)
-    const { params, errorCode } = QueryParams.getQueryParams(url);
+    // Parse URL parameters. Expo's parser handles common redirects, while the
+    // explicit URL fallback covers hosted web callbacks where auth data may be
+    // split between query params, hash fragments, or encoded native relay params.
+    const { params, errorCode } = parseSupabaseAuthUrl(url);
     const hasAuthParams = Boolean(
       params.access_token ||
       params.code ||

@@ -20,6 +20,8 @@ Both flows have distinct behavior depending on whether the request originates fr
 5. Supabase PKCE exchange: `exchangeCodeForSession(code)` (code verifier in localStorage)
 6. Session established → redirect to `returnTo` path
 
+The callback parser reads auth payloads from normal query params, hash fragments, and encoded native relay fragments. This covers both PKCE links (`?code=...`) and older implicit links (`#access_token=...&type=email`) so a successful Supabase callback must establish a session before the app redirects to the dashboard.
+
 ## Magic Link — Native App
 
 The native app cannot open a web redirect and capture the session directly. Instead it uses a **web relay**:
@@ -63,6 +65,7 @@ The web callback detects Android via user agent and switches between formats:
 
 - The **PKCE code verifier** is stored in native AsyncStorage. The web callback page cannot exchange the code — it must relay to the native app.
 - `auth_signin_method` is set in native AsyncStorage (not the web browser's localStorage). The web callback cannot read it, so it detects the magic link by checking for a `code` param + `nativeRelay=1`.
+- Hosted origins take precedence over local development defaults. `dev.hashpass.tech` must generate `https://dev.hashpass.tech/auth/callback`, and native relay links must not fall back to `http://localhost:8081` unless the caller explicitly runs a local web flow.
 - If the native relay fires but the app does not open (e.g., not installed), the web callback shows an "Open in HASHPASS App" button for a manual retry.
 
 ## OTP Code Flow
@@ -74,7 +77,7 @@ The OTP flow uses a custom API endpoint instead of Supabase's built-in OTP:
 3. Lambda extracts the 6-digit OTP from the token and sends it via Brevo email/SMS
 4. User enters code in the app
 5. App calls `POST /api/auth/otp/verify` with `{ email, code }` — **no auth header**
-6. Lambda calls `supabase.auth.verifyOtp({ email, token: code, type: 'magiclink' })`
+6. Lambda looks up the stored `token_hash`, then calls GoTrue `/auth/v1/verify` with an anon key from the same Supabase project as the service-role key
 7. Returns the Supabase session to the client
 
 The OTP endpoints are **public** (no bearer token). The API client must use `skipAuth: true` to prevent adding an `Authorization` header, which would cause CORS failures and possible API Gateway rejections.
@@ -90,6 +93,10 @@ The Lambda selects a Supabase project based on the request origin:
 | `localhost`, `api-dev.hashpass.tech` | `core-development` | Dev credentials |
 
 Profile logic lives in `apps/mobile-app/config/supabase-profiles.ts`. The server-side `readProcessEnv` always prefers live Lambda `process.env` values over Metro-baked build-time values, so Lambda env vars override any values baked into the bundle at build time.
+
+OTP verification has one extra guard: it decodes the service-role JWT project ref and selects the public Supabase URL and anon key whose URL host matches that ref. This prevents `Invalid API key` responses when the Lambda has a valid service-role key but the generic public anon variables point at a different Supabase project.
+
+The API Lambda deploy script syncs the public Supabase URL/key aliases and frontend/API URL variables from the GitHub Actions environment before updating Lambda code. It preserves existing secret variables such as `SUPABASE_SERVICE_ROLE_KEY`, so secret rotation remains separate from the public config sync.
 
 ## Auth Callback URL Allowlist
 
