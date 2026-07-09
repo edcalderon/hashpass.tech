@@ -15,6 +15,16 @@ Use `codebase-memory-mcp` first for repo discovery and fast checks.
 - Use `search_code`, `rg`, or direct file reads only for literals, config values, generated files, or when the graph has already narrowed the target.
 - If the project is missing or stale, re-index `/home/ed/Documents/HASH/hashpass.tech` and then repeat the graph search.
 
+## Browser Fetch And Test Tools
+
+Use the installed browser tools for page fetches, responsive checks, and browser QA:
+
+- Start with PinchTab for low-token page reads: `pinchtab daemon`, `pinchtab health`, `pinchtab nav <url>`, `pinchtab text`, and `pinchtab snap`.
+- Use `browser-use` for autonomous multi-page form workflows. It is installed as a `uv` user tool; local Chrome control requires enabling `chrome://inspect/#remote-debugging`, or a trusted Browser Use Cloud / `BU_CDP_WS` target.
+- Use `agent-browser` for auth-heavy flows, recordings, ref-based actions, and browser diagnostics. Run `agent-browser doctor`, then `agent-browser skills get core` for current instructions.
+
+Do not put credentials, cookies, auth tokens, AWS account IDs, or private `.env` values in prompts, docs, screenshots, recordings, or logs.
+
 ## Deployment Command Contract
 
 When the user says `deploy`, `release`, or `release patch`, complete the full production release unless the user limits the scope.

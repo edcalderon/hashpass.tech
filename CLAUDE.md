@@ -27,6 +27,34 @@ Project index command:
 codebase-memory-mcp cli index_repository '{"repo_path":"/home/ed/Documents/HASH/hashpass.tech","mode":"full"}'
 ```
 
+### Browser Fetch And Test Tooling
+Use the installed browser tools in this order for web fetch, QA, and responsive checks:
+
+1. **PinchTab first** for token-light page reads and fast inspection. It is installed globally and its user daemon should be running.
+   ```bash
+   pinchtab daemon
+   pinchtab health
+   export PINCHTAB_SESSION="$(pinchtab session create --agent-id hashpass-agent)"
+   pinchtab nav https://hashpass.tech
+   pinchtab text
+   pinchtab snap
+   ```
+2. **browser-use** for autonomous multi-page form workflows. This machine uses `uv tool install browser-use` because direct `pip --user` installs are blocked by the OS-managed Python environment. Local Chrome control requires enabling `chrome://inspect/#remote-debugging`; if that is not enabled, use Browser Use Cloud auth or a trusted `BU_CDP_WS` endpoint instead.
+   ```bash
+   browser-use --doctor
+   browser-use <<'PY'
+   ensure_real_tab()
+   print(page_info())
+   PY
+   ```
+3. **agent-browser** for auth-heavy flows, recording, stable ref-based browser actions, and deep browser diagnostics. It is installed globally with its browser runtime.
+   ```bash
+   agent-browser doctor
+   agent-browser skills get core
+   ```
+
+Keep screenshots, recordings, logs, and copied page text free of credentials, cookies, auth tokens, account IDs, and private environment values. Prefer Playwright or the repo test scripts for deterministic regression checks, and use these browser tools to inspect or reproduce live UI issues.
+
 ### Version Management
 **NEVER manually edit version numbers in package.json or app.json.**
 **Do not hand-release.** The release scripts own the version bump, CHANGELOG.md, README.md sync, tag, and push flow.
