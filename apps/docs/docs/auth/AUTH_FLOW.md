@@ -135,9 +135,11 @@ Google sign-in button anymore — see ["Do we still need Directus?"](#do-we-stil
 - `apps/mobile-app/hooks/useAuth.ts` — `signInWithOAuth('google')` and `handleOAuthCallback` (Better-Auth-first routing)
 - `packages/auth/src/providers/better-auth.ts` — `BetterAuthProvider.signInWithOAuth` / `.handleOAuthCallback`
 - `apps/mobile-app/lib/server/better-auth.ts` — server-side Better Auth config (`socialProviders.google`, `allowedHosts`, `trustedOrigins`)
+- `apps/mobile-app/lib/server/better-auth-route.ts` — wraps Better Auth's route handler so auth errors never strand users on the API host
+- `apps/mobile-app/lib/server/better-auth-error-redirect.ts` — converts Better Auth `/api/auth/error?...` and bad redirect targets into frontend `/auth?...` redirects
 - `apps/mobile-app/lib/supabase.ts` — fallback path only
 - `apps/mobile-app/app/(shared)/auth/callback.tsx`
-- `apps/mobile-app/app/api/auth/[...auth]+api.ts` — Better Auth's catch-all handler
+- `apps/mobile-app/app/api/auth/[...auth]+api.ts` — Better Auth's catch-all handler, exported through the wrapper above
 - `apps/mobile-app/app/api/auth/oauth/login+api.ts` / `callback+api.ts` — Directus bridge (rarely reached now)
 
 <a id="schema-migration"></a>
@@ -322,6 +324,30 @@ on web) instead of checking Better Auth's session first. Confirm
 for that marker on web before falling through to `authService`. This isn't a
 Directus problem despite the message text — Directus was never actually
 involved.
+
+### Browser lands on `https://api.hashpass.tech/?error=state_mismatch` or `/api/auth/error?...`
+
+This is a Better Auth failure path, not a successful login. It means Better
+Auth rejected the callback before app code could restore a session, usually
+because the OAuth `state` cookie was missing, stale, or no longer matched the
+callback request.
+
+The production fix shipped on 2026-07-08 is server-side:
+
+1. `apps/mobile-app/lib/server/better-auth-route.ts` intercepts requests to
+   Better Auth's catch-all route before and after the framework handler runs.
+2. If the request itself is `/api/auth/error?...`, or if Better Auth tries to
+   redirect the browser from `/api/auth/*` to `/` with auth error params,
+   `apps/mobile-app/lib/server/better-auth-error-redirect.ts` rewrites the
+   response to the frontend auth screen instead.
+3. The final browser destination becomes
+   `/auth?error=state_mismatch&message=...&returnTo=...` on the frontend
+   origin, not the API host. Local requests stay on `http://localhost:8081`,
+   `api-dev.hashpass.tech` maps to `https://dev.hashpass.tech`, and production
+   maps to `https://hashpass.tech`.
+
+If this page ever reappears on the API host in production, the wrapper route
+has regressed or the deployed API bundle is older than the frontend bundle.
 
 ### Other
 
