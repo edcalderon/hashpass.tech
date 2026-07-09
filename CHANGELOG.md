@@ -1,3 +1,14 @@
+## [1.8.188](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.187...v1.8.188) (2026-07-09)
+
+
+### Bug Fixes
+
+* repair native and hosted auth release ([24fad57](https://github.com/hashpass-tech/hashpass.tech/commit/24fad57842e771dba9b2d0995d2197898e9e4f9f))
+
+
+
+
+
 ## [1.8.187](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.186...v1.8.187) (2026-07-09)
 
 
