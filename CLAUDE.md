@@ -178,6 +178,7 @@ If app opens but crashes with a JS error:
 
 - `::add-mask::` workflow commands for all secrets in CI
 - No secrets visible in GitHub Actions logs
+- Never let `aws lambda update-function-configuration` stderr print raw Lambda environment payloads. Use `packages/tools/scripts/deploy-api-lambda.sh`, which masks outgoing environment values and redacts AWS CLI errors before writing them to logs.
 - `print_command: false` in Fastlane gradle() calls
 - Keystore files gitignored (`config/android-signing.env`, `config/hashpass-release.keystore`)
 - Environment variables properly masked in CI

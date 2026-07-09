@@ -119,10 +119,19 @@ sync_lambda_environment() {
   local current_config_file
   local environment_file
   local sync_status_file
+  local aws_error_file
   local sync_action
+  local update_status
   current_config_file="$(mktemp /tmp/hashpass-lambda-config.XXXXXX.json)"
   environment_file="$(mktemp /tmp/hashpass-lambda-env.XXXXXX.json)"
   sync_status_file="$(mktemp /tmp/hashpass-lambda-env-status.XXXXXX.json)"
+  aws_error_file="$(mktemp /tmp/hashpass-lambda-env-aws-error.XXXXXX.log)"
+
+  cleanup_lambda_environment_files() {
+    rm -f "${current_config_file}" "${environment_file}" "${sync_status_file}" "${aws_error_file}"
+    trap - RETURN
+  }
+  trap cleanup_lambda_environment_files RETURN
 
   aws lambda get-function-configuration \
     --function-name "${LAMBDA_FUNCTION_NAME}" \
@@ -189,18 +198,78 @@ NODE
   sync_action="$(node -e "process.stdout.write(JSON.parse(require('node:fs').readFileSync('${sync_status_file}', 'utf8')).action)")"
 
   if [[ "${sync_action}" == "update" ]]; then
+    if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+      node - "${environment_file}" <<'NODE'
+const fs = require('node:fs');
+
+const [environmentPath] = process.argv.slice(2);
+const environment = JSON.parse(fs.readFileSync(environmentPath, 'utf8'));
+const values = new Set(Object.values(environment.Variables || {}));
+
+function escapeWorkflowCommandValue(value) {
+  return String(value).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+
+for (const value of [...values].filter((item) => typeof item === 'string' && item.length >= 4)) {
+  console.log(`::add-mask::${escapeWorkflowCommandValue(value)}`);
+}
+NODE
+    fi
+
+    set +e
     aws lambda update-function-configuration \
       --function-name "${LAMBDA_FUNCTION_NAME}" \
       --region "${LAMBDA_REGION}" \
       --environment "file://${environment_file}" \
-      >/dev/null
+      >/dev/null 2>"${aws_error_file}"
+    update_status=$?
+    set -e
+
+    if [[ "${update_status}" -ne 0 ]]; then
+      echo "ERROR: Lambda environment update failed. Redacted AWS CLI output follows:" >&2
+      node - "${current_config_file}" "${environment_file}" "${aws_error_file}" <<'NODE' >&2
+const fs = require('node:fs');
+
+const [currentConfigPath, environmentPath, errorPath] = process.argv.slice(2);
+const values = new Set();
+
+function readJson(path) {
+  try {
+    return JSON.parse(fs.readFileSync(path, 'utf8'));
+  } catch (_error) {
+    return {};
+  }
+}
+
+function collectValues(vars) {
+  for (const value of Object.values(vars || {})) {
+    if (typeof value === 'string' && value.length >= 4) {
+      values.add(value);
+    }
+  }
+}
+
+collectValues(readJson(currentConfigPath).Environment?.Variables);
+collectValues(readJson(environmentPath).Variables);
+
+let output = fs.readFileSync(errorPath, 'utf8');
+for (const value of [...values].sort((a, b) => b.length - a.length)) {
+  output = output.split(value).join('[REDACTED]');
+}
+
+output = output.replace(/String measured:\s*\{.*$/gms, 'String measured: [REDACTED_ENV_PAYLOAD]');
+output = output.replace(/(postgres(?:ql)?:\/\/[^:\s/@]+:)([^@\s]+)(@)/gi, '$1[REDACTED]$3');
+output = output.replace(/(mongodb(?:\+srv)?:\/\/[^:\s/@]+:)([^@\s]+)(@)/gi, '$1[REDACTED]$3');
+
+process.stderr.write(output.trim() ? `${output.trim()}\n` : 'AWS CLI returned no stderr output.\n');
+NODE
+      return "${update_status}"
+    fi
 
     aws lambda wait function-updated \
       --function-name "${LAMBDA_FUNCTION_NAME}" \
       --region "${LAMBDA_REGION}"
   fi
-
-  rm -f "${current_config_file}" "${environment_file}" "${sync_status_file}"
 }
 
 if [[ -z "${LAMBDA_FUNCTION_NAME}" ]]; then
