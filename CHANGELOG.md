@@ -1,3 +1,18 @@
+## [1.8.184](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.183...v1.8.184) (2026-07-09)
+
+
+### Bug Fixes
+
+* remove desktop auth shader veil ([be91dc4](https://github.com/hashpass-tech/hashpass.tech/commit/be91dc498855e8421e11247182e6dc7ec0af10bc))
+* restore auth surfaces and dev oauth ([06bdf6f](https://github.com/hashpass-tech/hashpass.tech/commit/06bdf6fef954a6d71bfe56ff0f7d05540839e545))
+* restore desktop auth card backdrop ([cc8a2b6](https://github.com/hashpass-tech/hashpass.tech/commit/cc8a2b64c3185bb8a908b03909125d83905f9951))
+* style static hero tagline separators ([f19ee54](https://github.com/hashpass-tech/hashpass.tech/commit/f19ee549399ac6030fe38e9f3ca0ff49af986774))
+* validate supabase pooler host exactly ([df46a5c](https://github.com/hashpass-tech/hashpass.tech/commit/df46a5c8931520017b7339fa61f961a56da6cb0a))
+
+
+
+
+
 ## [1.8.183](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.182...v1.8.183) (2026-07-09)
 
 
