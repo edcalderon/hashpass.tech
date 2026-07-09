@@ -37,7 +37,9 @@ const fragmentShader = `
       }
     }
 
-    gl_FragColor = vec4(color[0], color[1], color[2], 1.0);
+    float intensity = max(max(color[0], color[1]), color[2]);
+    float alpha = smoothstep(0.015, 0.12, intensity);
+    gl_FragColor = vec4(color[0], color[1], color[2], alpha);
   }
 `;
 
@@ -65,6 +67,8 @@ export default function AuthShaderScene() {
       uniforms,
       vertexShader,
       fragmentShader,
+      transparent: true,
+      depthWrite: false,
     });
 
     const mesh = new THREE.Mesh(geometry, material);

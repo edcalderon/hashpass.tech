@@ -2488,7 +2488,6 @@ const getStyles = (
     desktopFormShader: {
       ...StyleSheet.absoluteFillObject,
       zIndex: 0,
-      opacity: isDark ? 0.5 : 0.3,
     },
     centered: {
       justifyContent: "center",
