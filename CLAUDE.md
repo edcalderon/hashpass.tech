@@ -27,6 +27,34 @@ Project index command:
 codebase-memory-mcp cli index_repository '{"repo_path":"/home/ed/Documents/HASH/hashpass.tech","mode":"full"}'
 ```
 
+### Browser Fetch And Test Tooling
+Use the installed browser tools in this order for web fetch, QA, and responsive checks:
+
+1. **PinchTab first** for token-light page reads and fast inspection. It is installed globally and its user daemon should be running.
+   ```bash
+   pinchtab daemon
+   pinchtab health
+   export PINCHTAB_SESSION="$(pinchtab session create --agent-id hashpass-agent)"
+   pinchtab nav https://hashpass.tech
+   pinchtab text
+   pinchtab snap
+   ```
+2. **browser-use** for autonomous multi-page form workflows. This machine uses `uv tool install browser-use` because direct `pip --user` installs are blocked by the OS-managed Python environment. Local Chrome control requires enabling `chrome://inspect/#remote-debugging`; if that is not enabled, use Browser Use Cloud auth or a trusted `BU_CDP_WS` endpoint instead.
+   ```bash
+   browser-use --doctor
+   browser-use <<'PY'
+   ensure_real_tab()
+   print(page_info())
+   PY
+   ```
+3. **agent-browser** for auth-heavy flows, recording, stable ref-based browser actions, and deep browser diagnostics. It is installed globally with its browser runtime.
+   ```bash
+   agent-browser doctor
+   agent-browser skills get core
+   ```
+
+Keep screenshots, recordings, logs, and copied page text free of credentials, cookies, auth tokens, account IDs, and private environment values. Prefer Playwright or the repo test scripts for deterministic regression checks, and use these browser tools to inspect or reproduce live UI issues.
+
 ### Version Management
 **NEVER manually edit version numbers in package.json or app.json.**
 **Do not hand-release.** The release scripts own the version bump, CHANGELOG.md, README.md sync, tag, and push flow.
@@ -150,6 +178,7 @@ If app opens but crashes with a JS error:
 
 - `::add-mask::` workflow commands for all secrets in CI
 - No secrets visible in GitHub Actions logs
+- Never let `aws lambda update-function-configuration` stderr print raw Lambda environment payloads. Use `packages/tools/scripts/deploy-api-lambda.sh`, which masks outgoing environment values and redacts AWS CLI errors before writing them to logs.
 - `print_command: false` in Fastlane gradle() calls
 - Keystore files gitignored (`config/android-signing.env`, `config/hashpass-release.keystore`)
 - Environment variables properly masked in CI
@@ -159,6 +188,30 @@ If app opens but crashes with a JS error:
 - **upstream** = `edcalderon/hashpass.tech` (personal fork — backup)
 
 Always push to origin for CI/CD. Push to upstream for backup after release scripts.
+
+## Target AWS Account Access
+
+The default local AWS profile may point at the source account. Target-account
+web/API infra uses the private account ID stored in `AWS_TARGET_ACCOUNT_ID`;
+use the local AWS CLI profile named `hashpass` for those operations.
+
+The profile is configured from private `.env` values:
+
+```bash
+set -a
+source .env
+set +a
+aws configure set aws_access_key_id "$AWS_TARGET_ACCESS_KEY" --profile hashpass
+aws configure set aws_secret_access_key "$AWS_TARGET_SECRET_KEY" --profile hashpass
+aws configure set region us-east-2 --profile hashpass
+aws configure set output json --profile hashpass
+test "$(aws sts get-caller-identity --profile hashpass --query Account --output text)" = "$AWS_TARGET_ACCOUNT_ID"
+```
+
+The last command must succeed without printing the account ID. Use `AWS_PROFILE=hashpass` for
+`packages/infra/terraform/stacks/hashpass-web`, `hashpass-api-target`, and
+`hashpass-dns`, and pass `--region us-east-1` for direct Lambda commands against
+`hashpass-prod-expo-router-api` or `hashpass-dev-expo-router-api`.
 
 ## Deployment Architecture
 
@@ -179,6 +232,7 @@ On every push to `main`, **two independent auto-deploy systems** run in parallel
 - `api.hashpass.tech` Lambda is in **us-east-1**, deployed by the target web/API flow (NOT legacy Amplify)
 - The target web deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`; if the version endpoint is stale, the deploy must fail
 - `infra-deploy.yml` also runs `packages/tools/scripts/deploy-api-lambda.sh` after the SST static deploy attempt. This is the release safety net for patch releases: the workflow must switch to the target-account `AWS_WEB_PIPELINE_ROLE_ARN`, build a fresh Expo API bundle, update `hashpass-prod-expo-router-api` on `main` and `hashpass-dev-expo-router-api` on `develop`, then verify the public version endpoint before the release can be considered complete. The SST BSL static deploy is best-effort in this workflow because `bsl.hashpass.tech` also has its own SST Console autodeploy path; the API Lambda verification remains the hard release gate.
+- Because `deploy-api-lambda.sh` syncs Lambda environment variables before uploading code, the target-account `hashpass-web-github-actions` role must allow `lambda:UpdateFunctionConfiguration` on both Expo Router API Lambda functions, in addition to `lambda:UpdateFunctionCode`.
 - `bsl.hashpass.tech` is deployed by **SST Console** (NOT the `infra-deploy.yml` GitHub Actions workflow)
 - `infra-deploy.yml` auto-triggers on push to `main`/`develop` when infra or API paths change (Route53 + CloudFront permissions added to IAM role in v1.8.92)
 

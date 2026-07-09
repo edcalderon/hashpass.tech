@@ -50,6 +50,30 @@ If your GCP account cannot manage Secret Manager, use `directus_env_file_paths` 
 If your startup Git ref does not contain the compose path, use `directus_compose_file_paths` to inject `docker-compose.yml` directly.
 Never commit filled `.env` files to git; keep only `.example` templates in VCS.
 
+## Target AWS Profile
+
+The target-account web, DNS, and API Gateway/Lambda stacks use the private AWS
+account ID stored in `AWS_TARGET_ACCOUNT_ID`. Keep a local AWS CLI profile named
+`hashpass` for those stacks; the default profile may point at the source account.
+
+Configure or refresh the profile from the private root `.env` values:
+
+```bash
+set -a
+source .env
+set +a
+aws configure set aws_access_key_id "$AWS_TARGET_ACCESS_KEY" --profile hashpass
+aws configure set aws_secret_access_key "$AWS_TARGET_SECRET_KEY" --profile hashpass
+aws configure set region us-east-2 --profile hashpass
+aws configure set output json --profile hashpass
+test "$(aws sts get-caller-identity --profile hashpass --query Account --output text)" = "$AWS_TARGET_ACCOUNT_ID"
+```
+
+The verification command must succeed without printing the account ID. Use
+`AWS_PROFILE=hashpass` when running `hashpass-web`, `hashpass-api-target`, or
+`hashpass-dns` Terraform commands. Use `--region us-east-1` for direct Lambda commands against
+`hashpass-prod-expo-router-api` or `hashpass-dev-expo-router-api`.
+
 ## Quick Start
 
 ### AWS Stack
@@ -94,7 +118,7 @@ Before the first apply, create the CodeConnections connection in the target
 account and complete the GitHub handshake:
 
 ```bash
-TARGET_AWS_ACCOUNT_ID=952191196420 \
+TARGET_AWS_ACCOUNT_ID="$AWS_TARGET_ACCOUNT_ID" \
 AWS_REGION=us-east-2 \
 ./packages/tools/scripts/provision-infra-connection.sh
 ```
@@ -144,6 +168,11 @@ stack provides `SITE_LAMBDA_FUNCTION_NAME` and `SITE_LAMBDA_REGION`. It then
 checks `SITE_API_VERSION_URL` against the repository version, so the pipeline
 fails if `api.hashpass.tech` or `api-dev.hashpass.tech` is still serving stale
 API code after the deploy.
+The GitHub Actions target role `hashpass-web-github-actions` must allow
+`lambda:GetFunction`, `lambda:GetFunctionConfiguration`,
+`lambda:UpdateFunctionCode`, and `lambda:UpdateFunctionConfiguration` on both
+Expo Router API Lambda ARNs because `deploy-api-lambda.sh` updates environment
+variables before uploading code.
 The recommended worker shape is `m6i.large`; the old burstable `t3a.medium`
 shape can exhaust CPU credits during Expo export and stretch the pipeline to
 25+ minutes.
