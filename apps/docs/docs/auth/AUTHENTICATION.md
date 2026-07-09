@@ -7,7 +7,7 @@ HASHPASS uses a provider-agnostic auth layer in code, but as of 2026-07-08 **web
 1. The app calls `useAuth.signInWithOAuth('google')`.
 2. **Web:** always tries Better Auth first — `signIn.social({ provider: 'google', ... })` against `<apiBase>/api/auth`, redirecting to Google with `redirect_uri=<apiBase>/api/auth/callback/google`. Better Auth's own server exchanges the code and sets a session cookie, then redirects to `/auth/callback`. Only if this itself errors does the code fall back to `supabase.auth.signInWithOAuth()`.
 3. **Native:** unchanged — uses the Google Sign-In SDK and exchanges the ID token with `supabase.auth.signInWithIdToken()`.
-4. The callback route (`/auth/callback`) checks for a live Better Auth session first (via a `localStorage` marker set before the redirect), then falls back to the tenant's resolved provider (`authService`) only if that marker isn't present — see [AUTH_FLOW.md](AUTH_FLOW.md) for the full sequence.
+4. The callback route (`/auth/callback`) checks for a live Better Auth session first (via the `auth_signin_method=google_oauth` marker set before the redirect), then falls back to the tenant's resolved provider (`authService`) only if that marker isn't present — see [AUTH_FLOW.md](AUTH_FLOW.md) for the full sequence.
 5. The Directus bridge (`/api/auth/oauth/login` → Directus → `/api/auth/oauth/callback`) is unchanged in code but is not called by the Google button in any current flow.
 
 ## Why This Design

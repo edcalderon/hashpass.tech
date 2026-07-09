@@ -201,7 +201,25 @@ jobs:
             --output /tmp/claude-audit.md || true
           [ -s /tmp/claude-audit.md ] || echo "No stale content found in CLAUDE.md." > /tmp/claude-audit.md
 
+      - name: Check whether repository issues are enabled
+        id: repo_issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repo = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const enabled = repo.data.has_issues ? 'true' : 'false';
+            core.setOutput('enabled', enabled);
+
+            if (enabled !== 'true') {
+              core.warning('Repository issues are disabled; skipping CLAUDE.md review issue creation.');
+            }
+
       - name: Open CLAUDE.md review issue
+        if: steps.repo_issues.outputs.enabled == 'true'
         uses: peter-evans/create-issue-from-file@v5
         with:
           title: 'CLAUDE.md accuracy review — ${{ needs.classify.outputs.changed_areas }}'

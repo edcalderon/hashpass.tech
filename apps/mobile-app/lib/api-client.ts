@@ -298,10 +298,14 @@ export class EventApiClient {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
+      let didTimeout = false;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        didTimeout = true;
+        controller.abort();
+      }, timeout);
 
+      try {
         const response = await fetch(url, {
           method,
           headers: requestHeaders,
@@ -309,8 +313,6 @@ export class EventApiClient {
           signal: controller.signal,
           credentials: options.skipAuth ? 'omit' : 'include',
         });
-
-        clearTimeout(timeoutId);
 
         // Parse response body first (for both success and error cases)
         let data: any;
@@ -337,10 +339,14 @@ export class EventApiClient {
           success: true
         };
       } catch (error) {
-        lastError = error as Error;
+        if (didTimeout) {
+          lastError = new Error('The request timed out. Please try again.');
+        } else {
+          lastError = error as Error;
+        }
         
         // Don't retry on certain errors
-        if (error instanceof Error && error.name === 'AbortError') {
+        if (didTimeout || (error instanceof Error && error.name === 'AbortError')) {
           break;
         }
         
@@ -348,6 +354,8 @@ export class EventApiClient {
         if (attempt < retries) {
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
         }
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
