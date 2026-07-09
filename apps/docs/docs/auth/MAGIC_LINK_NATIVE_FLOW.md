@@ -101,3 +101,5 @@ The API Lambda deploy script syncs the public Supabase URL/key aliases and front
 ## Auth Callback URL Allowlist
 
 For magic links to redirect to `hashpass.tech/auth/callback` (instead of falling back to the Supabase project's Site URL), that URL must be in the Supabase project's **Allowed Redirect URLs** list in the Supabase dashboard. Check this if magic links start redirecting to `localhost` or another unexpected URL.
+
+Production and development Supabase projects must both allow their hosted callback URLs: `https://hashpass.tech/auth/callback` and `https://dev.hashpass.tech/auth/callback`.
