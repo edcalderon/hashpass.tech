@@ -178,7 +178,7 @@ On every push to `main`, **two independent auto-deploy systems** run in parallel
 **Critical facts:**
 - `api.hashpass.tech` Lambda is in **us-east-1**, deployed by the target web/API flow (NOT legacy Amplify)
 - The target web deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`; if the version endpoint is stale, the deploy must fail
-- `infra-deploy.yml` also runs `packages/tools/scripts/deploy-api-lambda.sh` after the SST static deploy. This is the release safety net for patch releases: the workflow must update `hashpass-prod-expo-router-api` on `main` and `hashpass-dev-expo-router-api` on `develop`, then verify the public version endpoint before the release can be considered complete.
+- `infra-deploy.yml` also runs `packages/tools/scripts/deploy-api-lambda.sh` after the SST static deploy. This is the release safety net for patch releases: the workflow must switch to the target-account `AWS_WEB_PIPELINE_ROLE_ARN`, update `hashpass-prod-expo-router-api` on `main` and `hashpass-dev-expo-router-api` on `develop`, then verify the public version endpoint before the release can be considered complete.
 - `bsl.hashpass.tech` is deployed by **SST Console** (NOT the `infra-deploy.yml` GitHub Actions workflow)
 - `infra-deploy.yml` auto-triggers on push to `main`/`develop` when infra or API paths change (Route53 + CloudFront permissions added to IAM role in v1.8.92)
 

@@ -52,7 +52,7 @@ The web app deploys through the target-account pipeline and CloudFront front doo
    - `main` updates `hashpass-prod-expo-router-api`
    - `develop` updates `hashpass-dev-expo-router-api`
 4. The deploy helper verifies `/api/config/versions` against the release version. A stale API version fails the deploy.
-5. The GitHub `Deploy Infra` workflow runs the same API Lambda update as a release safety net after SST deploy:
+5. The GitHub `Deploy Infra` workflow switches to the target-account `AWS_WEB_PIPELINE_ROLE_ARN` and runs the same API Lambda update as a release safety net after SST deploy:
    - `main` runs `packages/tools/scripts/deploy-api-lambda.sh` for `hashpass-prod-expo-router-api`
    - `develop` runs `packages/tools/scripts/deploy-api-lambda.sh` for `hashpass-dev-expo-router-api`
    - `packages/tools/scripts/package-lambda.sh` rejects stale local Expo server exports before a Lambda zip can be uploaded.
