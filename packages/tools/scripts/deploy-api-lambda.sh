@@ -22,6 +22,29 @@ read_expected_api_version() {
   node -e "process.stdout.write(require('${PROJECT_ROOT}/package.json').version || '')"
 }
 
+ensure_fresh_api_bundle() {
+  local expected_version="$1"
+  local version_route="${PROJECT_ROOT}/apps/mobile-app/dist/server/_expo/functions/api/config/versions+api.js"
+
+  if [[ "${API_LAMBDA_SKIP_BUILD:-false}" == "true" ]]; then
+    echo "Skipping API bundle build because API_LAMBDA_SKIP_BUILD=true."
+    return 0
+  fi
+
+  if [[ -f "${version_route}" ]] && grep -Fq -- "${expected_version}" "${version_route}"; then
+    echo "Using existing Expo API bundle for ${expected_version}."
+    return 0
+  fi
+
+  echo "Building fresh Expo API bundle for Lambda."
+  env \
+    CI="${CI:-1}" \
+    SKIP_ENV_PROPAGATE="${SKIP_ENV_PROPAGATE:-1}" \
+    EXPO_EXPORT_MAX_WORKERS="${EXPO_EXPORT_MAX_WORKERS:-1}" \
+    NODE_MAX_OLD_SPACE_SIZE="${NODE_MAX_OLD_SPACE_SIZE:-12288}" \
+    npm --prefix "${PROJECT_ROOT}/apps/mobile-app" run build:static
+}
+
 verify_api_version_once() {
   local version_url="$1"
   local expected_version="$2"
@@ -118,6 +141,7 @@ echo "  Region:   ${LAMBDA_REGION}"
 echo "  Version:  ${expected_version}"
 echo "  Verify:   ${API_VERSION_URL}"
 
+ensure_fresh_api_bundle "${expected_version}"
 bash "${SCRIPT_DIR}/package-lambda.sh"
 
 if [[ ! -f "${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" ]]; then

@@ -46,7 +46,7 @@ The development web surface uses the same front-door pattern as production. The 
 
 The API lives in the target-account Lambda + API Gateway stack, not Amplify. The active web deploy helper packages the API with `packages/tools/scripts/package-lambda.sh`, updates the Lambda code, waits for the update, and verifies the public version endpoint.
 
-Patch releases also run `packages/tools/scripts/deploy-api-lambda.sh` from `infra-deploy.yml` after the SST static deploy. That workflow switches from the source-account infra role to the target-account `AWS_WEB_PIPELINE_ROLE_ARN` before updating Lambda. It is intentionally redundant with the target web pipeline so a green static deploy cannot hide a stale API Lambda.
+Patch releases also run `packages/tools/scripts/deploy-api-lambda.sh` from `infra-deploy.yml` after the SST static deploy attempt. That workflow switches from the source-account infra role to the target-account `AWS_WEB_PIPELINE_ROLE_ARN`, builds a fresh Expo API bundle if needed, and then updates Lambda. It is intentionally redundant with the target web pipeline so a green static deploy cannot hide a stale API Lambda. The BSL SST static deploy is best-effort in this workflow because `bsl.hashpass.tech` also deploys through SST Console; the API Lambda update and public version verification remain hard-failing.
 
 **Lambda names:**
 - Production: `hashpass-prod-expo-router-api` (us-east-1)

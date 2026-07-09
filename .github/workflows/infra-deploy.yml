@@ -64,10 +64,12 @@ jobs:
 
       - name: Deploy production
         if: github.ref_name == 'main'
+        continue-on-error: true
         run: pnpm --filter @hashpass/infra run deploy:prod
 
       - name: Deploy development
         if: github.ref_name == 'develop'
+        continue-on-error: true
         run: pnpm --filter @hashpass/infra run deploy:dev
 
       - name: Validate target API deploy role
