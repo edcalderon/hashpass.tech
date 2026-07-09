@@ -20,11 +20,14 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.186)
+## 📋 Latest Changes (v1.8.187)
 
 ### Bug Fixes
 
-* stabilize native google auth and landing load ([3fbd81f](https://github.com/hashpass-tech/hashpass.tech/commit/3fbd81ffcaf828d3db7545d637d3a5f124274257))
+* enforce api lambda release deploy ([7f9f38a](https://github.com/hashpass-tech/hashpass.tech/commit/7f9f38a7c6139250502cf62e603976df2b3a8322))
+* harden api lambda release deploy ([c67aaf1](https://github.com/hashpass-tech/hashpass.tech/commit/c67aaf190fa644508ede7c5c382bf6156e503402))
+* harden native google auth return ([e296ef3](https://github.com/hashpass-tech/hashpass.tech/commit/e296ef37606a08d77be8e2c39c7aeb8faad0df7a))
+* use target role for api lambda deploy ([c7b3833](https://github.com/hashpass-tech/hashpass.tech/commit/c7b3833ae80f23eaf8f36b6c5093e6d8590d41f9))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

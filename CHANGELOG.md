@@ -1,3 +1,17 @@
+## [1.8.187](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.186...v1.8.187) (2026-07-09)
+
+
+### Bug Fixes
+
+* enforce api lambda release deploy ([7f9f38a](https://github.com/hashpass-tech/hashpass.tech/commit/7f9f38a7c6139250502cf62e603976df2b3a8322))
+* harden api lambda release deploy ([c67aaf1](https://github.com/hashpass-tech/hashpass.tech/commit/c67aaf190fa644508ede7c5c382bf6156e503402))
+* harden native google auth return ([e296ef3](https://github.com/hashpass-tech/hashpass.tech/commit/e296ef37606a08d77be8e2c39c7aeb8faad0df7a))
+* use target role for api lambda deploy ([c7b3833](https://github.com/hashpass-tech/hashpass.tech/commit/c7b3833ae80f23eaf8f36b6c5093e6d8590d41f9))
+
+
+
+
+
 ## [1.8.186](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.185...v1.8.186) (2026-07-09)
 
 
