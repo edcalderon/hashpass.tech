@@ -50,12 +50,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       duration, // Always set duration (either explicit or default)
     };
 
-    console.log('🔔 Creating toast:', newToast);
-    setToasts(prev => {
-      const updated = [...prev, newToast];
-      console.log('🔔 Updated toasts array:', updated);
-      return updated;
-    });
+    setToasts(prev => [...prev, newToast]);
   }, []);
 
   const hideToast = useCallback((id: string) => {

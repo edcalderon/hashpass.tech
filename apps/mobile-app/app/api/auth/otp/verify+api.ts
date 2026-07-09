@@ -1,6 +1,6 @@
+/* eslint-disable no-restricted-syntax -- Server-side OTP verification must call GoTrue directly. */
 import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../../lib/supabase-server';
-import { resolvePublicSupabaseConfig } from '../../../../config/supabase-profiles';
-import { hostnameFromRequest } from '../../../../config/supabase-profiles';
+import { hostnameFromRequest, resolvePublicSupabaseConfig } from '../../../../config/supabase-profiles';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
 
 const corsHeaders = {
@@ -73,8 +73,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Clean up expired OTP codes
-    await supabase.rpc('cleanup_expired_otp_codes');
     const { selectedProfile, usingDevFallback } = getSupabaseServerEnv(request);
 
     const normalizedEmail = email.trim().toLowerCase();

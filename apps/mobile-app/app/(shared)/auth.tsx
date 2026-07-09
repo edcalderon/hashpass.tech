@@ -118,6 +118,8 @@ const extractApiError = (payload: unknown, fallback: string): string => {
   return fallback;
 };
 
+const OTP_API_TIMEOUT_MS = 30000;
+
 const resolveOAuthErrorMessage = (
   errorCode: string | undefined,
   rawMessage: string | undefined,
@@ -816,7 +818,12 @@ export default function AuthScreen() {
           delivery: otpDeliveryMethod,
           phone: otpDeliveryMethod === 'sms' ? normalizedPhone : undefined,
         },
-        { skipEventSegment: true, skipAuth: true }
+        {
+          skipEventSegment: true,
+          skipAuth: true,
+          retries: 0,
+          timeout: OTP_API_TIMEOUT_MS,
+        }
       )) as {
         success?: boolean;
         data?: {
@@ -892,7 +899,12 @@ export default function AuthScreen() {
       const verifyResponse = (await apiClient.post(
         '/auth/otp/verify',
         { email: normalizedEmail, code: normalizedCode },
-        { skipEventSegment: true, skipAuth: true }
+        {
+          skipEventSegment: true,
+          skipAuth: true,
+          retries: 0,
+          timeout: OTP_API_TIMEOUT_MS,
+        }
       )) as {
         success?: boolean;
         data?: {
@@ -946,6 +958,11 @@ export default function AuthScreen() {
         /email link is invalid or has expired/i.test(rawMessage) ||
           /otp has expired or is invalid/i.test(rawMessage)
           ? t('otpInvalid', 'Invalid or expired code.')
+          : /timed out|aborted/i.test(rawMessage)
+            ? t(
+                'otpVerifyTimeout',
+                'Verification took too long. Please try again. If the same code fails again, request a new one.'
+              )
           : rawMessage;
 
       setOtpError(message);

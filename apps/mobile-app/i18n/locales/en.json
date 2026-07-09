@@ -177,6 +177,7 @@
     "otpResendCountdown": "Send another code in {seconds}s.",
     "otpSendAnother": "Send again",
     "otpVerifyFailed": "Could not verify the code. Please request a new one.",
+    "otpVerifyTimeout": "Verification took too long. Please try again. If the same code fails again, request a new one.",
     "phoneInvalid": "Enter a valid phone number. The country code is selected separately.",
     "phonePlaceholder": "Enter your phone number",
     "phoneRequired": "Phone number is required for SMS OTP.",

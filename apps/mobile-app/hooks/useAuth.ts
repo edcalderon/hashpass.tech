@@ -41,6 +41,11 @@ const getGoogleBetterAuthProvider = (): BetterAuthProvider => {
   return googleBetterAuthProvider;
 };
 
+const getWebBetterAuthProvider = (): IAuthProvider => {
+  const providerName = authService.getProviderName();
+  return providerName === 'better-auth' ? authService : getGoogleBetterAuthProvider();
+};
+
 type SupabaseBridgeType = 'magiclink' | 'recovery' | 'invite' | 'signup' | 'email' | 'email_change';
 
 const normalizeSupabaseBridgeType = (rawType: string | null): SupabaseBridgeType => {
@@ -111,6 +116,7 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true);
   const isInitializedRef = useRef(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const betterAuthUnsubscribeRef = useRef<(() => void) | null>(null);
   const supabaseUnsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -190,13 +196,18 @@ export const useAuth = () => {
     }
 
     let directusReady = false;
+    let betterAuthReady = false;
     let supabaseReady = false;
     let directusBootstrapFinished = false;
+    let betterAuthBootstrapFinished = false;
     let supabaseBootstrapFinished = false;
     let directusUser: AuthUser | null = null;
+    let betterAuthUser: AuthUser | null = null;
     let supabaseUser: AuthUser | null = null;
     let isDirectusLoggedIn = false;
+    let isBetterAuthLoggedIn = false;
     let isSupabaseLoggedIn = false;
+    let legacyBootstrapStarted = false;
 
     const syncDirectusStateFromProvider = (sessionFallback?: AuthSession | null) => {
       const providerUser = authService.getUser?.() ?? null;
@@ -208,15 +219,26 @@ export const useAuth = () => {
       isDirectusLoggedIn = isAuthenticated && !!resolvedUser;
     };
 
+    const syncBetterAuthStateFromProvider = (sessionFallback?: AuthSession | null) => {
+      betterAuthUser = sessionFallback?.user ?? null;
+      isBetterAuthLoggedIn = !!sessionFallback?.user;
+    };
+
     const applyCombinedAuthState = () => {
-      const ready = directusReady && supabaseReady;
-      const loggedIn = isDirectusLoggedIn || isSupabaseLoggedIn;
-      const resolvedUser = isDirectusLoggedIn ? directusUser : supabaseUser;
+      const ready = directusReady && betterAuthReady && supabaseReady;
+      const loggedIn = isBetterAuthLoggedIn || isDirectusLoggedIn || isSupabaseLoggedIn;
+      const resolvedUser = isBetterAuthLoggedIn
+        ? betterAuthUser
+        : isDirectusLoggedIn
+          ? directusUser
+          : supabaseUser;
 
       setUser(resolvedUser);
       setIsLoggedIn(loggedIn);
       setIsLoading(!ready);
     };
+
+    const betterAuthProvider = Platform.OS === 'web' ? getWebBetterAuthProvider() : null;
 
     // Subscribe to Directus/provider state changes
     unsubscribeRef.current = authService.onAuthStateChange((session: AuthSession | null) => {
@@ -237,6 +259,21 @@ export const useAuth = () => {
       applyCombinedAuthState();
     });
 
+    if (betterAuthProvider) {
+      betterAuthUnsubscribeRef.current = betterAuthProvider.onAuthStateChange((session: AuthSession | null) => {
+        syncBetterAuthStateFromProvider(session);
+
+        // Ignore the initial null callback until bootstrap resolves to avoid
+        // false "logged out" redirects during the first Better Auth probe.
+        if (!betterAuthBootstrapFinished && !isBetterAuthLoggedIn) {
+          return;
+        }
+
+        betterAuthReady = true;
+        applyCombinedAuthState();
+      });
+    }
+
     // Subscribe to Supabase state changes (needed for passwordless and dual-session bridge).
     const { data: supabaseSub } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       supabaseUser = session?.user ? mapSupabaseUserToAuthUser(session.user) : null;
@@ -250,36 +287,76 @@ export const useAuth = () => {
     });
     supabaseUnsubscribeRef.current = () => supabaseSub.subscription.unsubscribe();
 
-    // Initialize session once globally to avoid repeated /users/me probes.
-    const bootstrapPromise = sessionBootstrapPromise ?? (sessionBootstrapPromise = authService.getSession());
-    bootstrapPromise
-      .then((session: AuthSession | null) => {
-        syncDirectusStateFromProvider(session);
-      })
-      .catch((error: any) => {
-        console.error('[useAuth] Session bootstrap failed:', error);
-        syncDirectusStateFromProvider(null);
-      })
-      .finally(() => {
-        directusBootstrapFinished = true;
-        directusReady = true;
-        applyCombinedAuthState();
-      });
+    const startLegacyBootstrap = () => {
+      if (legacyBootstrapStarted) return;
+      legacyBootstrapStarted = true;
 
-    supabase.auth
-      .getSession()
-      .then(({ data }: any) => {
-        supabaseUser = data.session?.user ? mapSupabaseUserToAuthUser(data.session.user) : null;
-        isSupabaseLoggedIn = !!data.session?.user;
-      })
-      .catch((error: any) => {
-        console.error('[useAuth] Supabase session bootstrap failed:', error);
-      })
-      .finally(() => {
-        supabaseBootstrapFinished = true;
-        supabaseReady = true;
-        applyCombinedAuthState();
-      });
+      // Initialize session once globally to avoid repeated /users/me probes.
+      const bootstrapPromise = sessionBootstrapPromise ?? (sessionBootstrapPromise = authService.getSession());
+      bootstrapPromise
+        .then((session: AuthSession | null) => {
+          syncDirectusStateFromProvider(session);
+        })
+        .catch((error: any) => {
+          console.error('[useAuth] Session bootstrap failed:', error);
+          syncDirectusStateFromProvider(null);
+        })
+        .finally(() => {
+          directusBootstrapFinished = true;
+          directusReady = true;
+          applyCombinedAuthState();
+        });
+
+      supabase.auth
+        .getSession()
+        .then(({ data }: any) => {
+          supabaseUser = data.session?.user ? mapSupabaseUserToAuthUser(data.session.user) : null;
+          isSupabaseLoggedIn = !!data.session?.user;
+        })
+        .catch((error: any) => {
+          console.error('[useAuth] Supabase session bootstrap failed:', error);
+        })
+        .finally(() => {
+          supabaseBootstrapFinished = true;
+          supabaseReady = true;
+          applyCombinedAuthState();
+        });
+    };
+
+    if (betterAuthProvider) {
+      betterAuthProvider
+        .getSession()
+        .then((session: AuthSession | null) => {
+          syncBetterAuthStateFromProvider(session);
+
+          if (session?.user) {
+            betterAuthBootstrapFinished = true;
+            betterAuthReady = true;
+            directusBootstrapFinished = true;
+            directusReady = true;
+            supabaseBootstrapFinished = true;
+            supabaseReady = true;
+            applyCombinedAuthState();
+            return;
+          }
+
+          startLegacyBootstrap();
+        })
+        .catch((error: any) => {
+          console.error('[useAuth] Better Auth session bootstrap failed:', error);
+          syncBetterAuthStateFromProvider(null);
+          startLegacyBootstrap();
+        })
+        .finally(() => {
+          betterAuthBootstrapFinished = true;
+          betterAuthReady = true;
+          applyCombinedAuthState();
+        });
+    } else {
+      betterAuthBootstrapFinished = true;
+      betterAuthReady = true;
+      startLegacyBootstrap();
+    }
 
     return () => {
       if (unsubscribeRef.current) {
@@ -289,6 +366,10 @@ export const useAuth = () => {
       if (supabaseUnsubscribeRef.current) {
         supabaseUnsubscribeRef.current();
         supabaseUnsubscribeRef.current = null;
+      }
+      if (betterAuthUnsubscribeRef.current) {
+        betterAuthUnsubscribeRef.current();
+        betterAuthUnsubscribeRef.current = null;
       }
       isInitializedRef.current = false;
     };
@@ -301,8 +382,14 @@ export const useAuth = () => {
       await clearNativeGoogleAccount();
     }
 
+    const webBetterAuthProvider =
+      Platform.OS === 'web' && authService.getProviderName() !== 'better-auth'
+        ? getGoogleBetterAuthProvider()
+        : null;
+
     const results = await Promise.allSettled([
       authService.signOut(),
+      webBetterAuthProvider?.signOut() ?? Promise.resolve(undefined),
       supabase.auth.signOut(),
     ]);
 

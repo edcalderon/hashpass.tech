@@ -168,6 +168,7 @@
     "otpResendCountdown": "Renvoyer un code dans {seconds}s.",
     "otpSendAnother": "Renvoyer",
     "otpVerifyFailed": "Impossible de vérifier le code. Veuillez en demander un nouveau.",
+    "otpVerifyTimeout": "La vérification a pris trop de temps. Veuillez réessayer. Si le même code échoue encore, demandez-en un nouveau.",
     "phoneInvalid": "Saisissez un numéro de téléphone valide. L'indicatif du pays est sélectionné séparément.",
     "phonePlaceholder": "Saisissez votre numéro de téléphone",
     "phoneRequired": "Le numéro de téléphone est requis pour l'OTP par SMS.",

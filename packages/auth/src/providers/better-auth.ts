@@ -26,12 +26,6 @@ const normalizeBasePath = (value?: string | null): string => {
   return normalized.replace(new RegExp(`/${LEGACY_BETTER_AUTH_SEGMENT}$`), '/auth');
 };
 
-const normalizeBaseURL = (value?: string | null): string | undefined => {
-  const trimmed = (value || '').trim();
-  if (!trimmed) return undefined;
-  return trimmed.replace(/\/$/, '').replace(new RegExp(`/${LEGACY_BETTER_AUTH_SEGMENT}$`), '/auth');
-};
-
 const splitName = (name?: string | null) => {
   const trimmed = (name || '').trim();
   if (!trimmed) return { firstName: '', lastName: '' };
@@ -137,6 +131,26 @@ export class BetterAuthProvider implements IAuthProvider {
     }
   }
 
+  private async readSessionWithRetry(
+    options: { retries?: number; delayMs?: number } = {}
+  ): Promise<AuthSession | null> {
+    const retries = Math.max(0, options.retries ?? 1);
+    const delayMs = Math.max(0, options.delayMs ?? 700);
+
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      const session = await this.getSession({ force: true });
+      if (session) {
+        return session;
+      }
+
+      if (attempt < retries && delayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+
+    return null;
+  }
+
   private async initializeSession(): Promise<void> {
     const session = await this.getSession();
     if (session) this.notifyStateChange(session);
@@ -171,6 +185,7 @@ export class BetterAuthProvider implements IAuthProvider {
 
       window.localStorage.setItem('oauth_return_url', window.location.pathname);
       window.localStorage.setItem('oauth_in_progress', 'true');
+      window.localStorage.setItem('auth_signin_method', 'google_oauth');
 
       const result = await (this.getClient() as any).signIn.social({
         provider: 'google',
@@ -210,7 +225,7 @@ export class BetterAuthProvider implements IAuthProvider {
         return { error: result.error.message || result.error.statusText || 'Google sign-in failed.' };
       }
 
-      const session = await this.getSession({ force: true });
+      const session = await this.readSessionWithRetry();
       if (!session) {
         return { error: 'Authentication completed but no Better Auth session was found.' };
       }
@@ -222,7 +237,7 @@ export class BetterAuthProvider implements IAuthProvider {
   }
 
   async handleOAuthCallback(): Promise<AuthResponse> {
-    const session = await this.getSession({ force: true });
+    const session = await this.readSessionWithRetry();
 
     if (!session) {
       return { error: 'Authentication completed but no Better Auth session was found.' };

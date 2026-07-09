@@ -92,6 +92,7 @@ afterEach(() => {
   global.fetch = originalFetch;
   Platform.OS = originalPlatformOs;
   setWindow(undefined);
+  jest.useRealTimers();
 });
 
 describe('EventApiClient credential handling', () => {
@@ -202,5 +203,36 @@ describe('EventApiClient credential handling', () => {
       credentials: 'omit',
     }));
     expect(mockAuthSession).not.toHaveBeenCalled();
+  });
+
+  it('returns a friendly timeout error and does not retry aborted requests', async () => {
+    jest.useFakeTimers();
+
+    const fetchMock = jest.fn((_url: string, init?: RequestInit) => new Promise((_, reject) => {
+      const signal = init?.signal as AbortSignal | undefined;
+      signal?.addEventListener('abort', () => {
+        const error = new Error('The operation was aborted.');
+        error.name = 'AbortError';
+        reject(error);
+      });
+    }));
+
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new EventApiClient();
+    const responsePromise = client.request('status', {
+      skipEventSegment: true,
+      skipAuth: true,
+      timeout: 5,
+    });
+
+    await jest.advanceTimersByTimeAsync(5);
+
+    await expect(responsePromise).resolves.toEqual({
+      data: null,
+      error: 'The request timed out. Please try again.',
+      success: false,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
