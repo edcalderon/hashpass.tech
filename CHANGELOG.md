@@ -1,3 +1,14 @@
+## [1.8.180](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.179...v1.8.180) (2026-07-09)
+
+
+### Bug Fixes
+
+* **mobile:** stabilize native landing and google sign-in ([89899a5](https://github.com/hashpass-tech/hashpass.tech/commit/89899a565401b38c7cedb62aa77c83036ceafffb))
+
+
+
+
+
 ## [1.8.179](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.178...v1.8.179) (2026-07-08)
 
 
