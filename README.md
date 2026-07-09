@@ -100,7 +100,7 @@ Use `codebase-memory-mcp` first for repo discovery and fast checks.
 
 ### Authentication
 
-Main `hashpass.tech` Google sign-in uses Supabase directly on web and native when public Supabase config is available. The API-owned Directus OAuth bridge remains the fallback and compatibility path documented in [apps/docs/docs/auth/AUTH_FLOW.md](apps/docs/docs/auth/AUTH_FLOW.md). BSL (`bsl.hashpass.tech`) uses Better Auth at `https://api.hashpass.tech/api/auth`, with its AWS SSM parameters normalized under `/hashpass/[env]/bsl/better-auth/` by `packages/tools/scripts/util/setup-parameters.sh sync`.
+Main `hashpass.tech` Google sign-in uses Better Auth on web and never starts Supabase Google OAuth directly. The Android native app uses the Google Sign-In SDK account picker, exchanges the ID token with Better Auth first, and keeps Supabase ID-token sign-in as a native-only compatibility fallback. The API-owned Directus OAuth bridge is not used for Google sign-in; see [apps/docs/docs/auth/AUTH_FLOW.md](apps/docs/docs/auth/AUTH_FLOW.md) for the current flow. BSL (`bsl.hashpass.tech`) uses Better Auth at `https://api.hashpass.tech/api/auth`, with its AWS SSM parameters normalized under `/hashpass/[env]/bsl/better-auth/` by `packages/tools/scripts/util/setup-parameters.sh sync`.
 
 The **Android native app** uses the `@react-native-google-signin/google-signin` SDK (no browser popup) when Supabase public config exists and `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=true` is baked into the bundle. The GCP Android OAuth client must be registered with the **App signing key** SHA-1 from Play Console (not the upload key). See [Native Google Sign-In SDK Flow](apps/docs/docs/auth/AUTH_FLOW.md#native-google-sign-in-sdk-flow-android) for full details.
 
@@ -151,7 +151,7 @@ Deployment split:
 - Android production publishing is paused for the current release freeze. Use the development/internal path and the alpha closed-testing path instead.
 - `pnpm run android:release` is the production-track fastlane path and should stay paused until the freeze lifts.
 - `pnpm run android:release:alpha` uses the same fastlane path, runs against the development profile, and submits to the Play Console alpha closed-testing track after the matching internal release succeeds for the same tag.
-- If you want one-step promotion, dispatch the Android workflow with `auto_promote_alpha=true`; set `alpha_release_status=draft` for the first closed-test upload while Play still treats the app as draft.
+- If you want one-step promotion, dispatch the Android workflow with `auto_promote_alpha=true` and keep `alpha_release_status=completed` so the alpha release publishes without manual draft review. Use `draft` only if Play Console rejects completed alpha releases because the app itself is still in draft.
 - `pnpm run android:bundle:dev` builds an internal preview bundle on the development EAS project.
 - `pnpm run android:publish:dev` submits the latest internal preview build through the development EAS project.
 - `pnpm run android:release:dev` now defaults to the self-hosted fastlane path and auto-submits an internal preview build in one step.
@@ -161,7 +161,7 @@ Deployment split:
 - `pnpm run android:release` and `pnpm run android:release:dev` honor `MOBILE_RELEASE_BACKEND`, defaulting to fastlane so the same command can target the self-hosted runner without changing scripts.
 - The self-hosted GitHub Actions workflow `.github/workflows/mobile-android-release.yml` targets the `hashpass-mobile-release` runner label on AWS EC2, defaults to fastlane, and can be switched back to EAS through the workflow input.
 - Temporary release posture: keep Android publishing on the development profile for now. Use `pnpm run android:release:dev` for internal testing, then `pnpm run android:release:alpha` after the same tag succeeds internally. Leave production paused until the release freeze is lifted.
-- The workflow accepts `environment=development` with `track=internal` for the first pass and `track=alpha` after internal succeeds. If you want the workflow to auto-dispatch alpha after internal, set `auto_promote_alpha=true` and, when needed, `alpha_release_status=draft`. Production dispatches are paused during the freeze.
+- The workflow accepts `environment=development` with `track=internal` for the first pass and `track=alpha` after internal succeeds. If you want the workflow to auto-dispatch alpha after internal, set `auto_promote_alpha=true` and keep `alpha_release_status=completed`. Production dispatches are paused during the freeze.
 - The auto-dispatched alpha run uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle.
 - The release promotion command `npm run release:promote` prepares the `develop -> main` PR, so do not direct-push release commits to `main`.
 - The target web pipeline deploys both the static site and the Expo Router API Lambda. It verifies `/api/config/versions` after each Lambda update so stale APIs fail the deploy instead of silently serving an old version.

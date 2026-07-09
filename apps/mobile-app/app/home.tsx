@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation, getCurrentLocale } from '../i18n/i18n';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Linking, Platform, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -52,6 +53,7 @@ export default function HomeScreen() {
   const [userName, setUserName] = useState<string | null>(null);
   const { t } = useTranslation('index');
   const isMobile = useIsMobile();
+  const insets = useSafeAreaInsets();
   
   // Get current event info for dynamic footer
   const currentEvent = getCurrentEvent();
@@ -113,7 +115,24 @@ export default function HomeScreen() {
     opacity: interpolate(bounceAnim.value, [0, 0.5, 1], [0.95, 0.25, 0.95]),
   }));
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-  const styles = getStyles(isDark, colors, isMobile, isWebLightMode, windowWidth);
+  const isPhoneLayout = Platform.OS === 'web' ? isMobile : windowWidth < 700;
+  const isTabletLayout = Platform.OS !== 'web' && !isPhoneLayout;
+  const nativeBottomInset = Platform.OS === 'web' ? 0 : Math.max(insets.bottom, 24);
+  const floatingControlsBottom = Platform.OS === 'web'
+    ? 50
+    : nativeBottomInset + (isTabletLayout ? 88 : 76);
+  const footerBottomReserve = Platform.OS === 'web'
+    ? 0
+    : nativeBottomInset + (isTabletLayout ? 132 : 112);
+  const styles = getStyles(
+    isDark,
+    colors,
+    isPhoneLayout,
+    isWebLightMode,
+    windowWidth,
+    windowHeight,
+    footerBottomReserve
+  );
   const bgAnimation = useSharedValue(animationLevel === 'none' ? 1 : 0);
   const scrollRef = React.useRef<any>(null);
   const feature1Anim = useSharedValue(animationLevel === 'none' ? 1 : 0);
@@ -154,6 +173,17 @@ export default function HomeScreen() {
     },
   });
 
+  useEffect(() => {
+    const resetScrollPosition = () => {
+      scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+      scrollY.value = 0;
+    };
+
+    resetScrollPosition();
+    const timer = setTimeout(resetScrollPosition, Platform.OS === 'web' ? 0 : 80);
+    return () => clearTimeout(timer);
+  }, [scrollY]);
+
   const handleScrollToFeatures = () => {
     if (!scrollRef.current) return;
     if (Platform.OS === 'web') {
@@ -163,7 +193,8 @@ export default function HomeScreen() {
       const targetY = featuresLayoutRef.current.y > 0
         ? featuresLayoutRef.current.y
         : windowHeight * 0.85;
-      scrollRef.current.scrollTo({ y: targetY, animated: true });
+      const topClearance = isTabletLayout ? 28 : 8;
+      scrollRef.current.scrollTo({ y: Math.max(0, targetY - topClearance), animated: true });
     }
   };
 
@@ -257,22 +288,31 @@ export default function HomeScreen() {
   return (
     <Animated.View style={[styles.container, animatedBackground]}>
 
-      <BackToTop scrollY={scrollY} scrollRef={scrollRef} colors={colors} />
-      <QuickSettingsPanel scrollY={scrollY} />
+      <BackToTop
+        scrollY={scrollY}
+        scrollRef={scrollRef}
+        colors={colors}
+        bottomOffset={floatingControlsBottom}
+      />
+      <QuickSettingsPanel scrollY={scrollY} hideAfterScrollY={isTabletLayout ? 120 : 30} />
 
       <Animated.ScrollView
         ref={scrollRef}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        contentOffset={{ x: 0, y: 0 }}
+        contentInsetAdjustmentBehavior="never"
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
           {animationLevel === 'full' && (
             <CrystalForgeBackground
               isDarkMode={isDark}
-              enableClickSpawn={!isMobile}
-              maxCrystals={isMobile ? 20 : 36}
+              enableClickSpawn={!isPhoneLayout}
+              maxCrystals={isPhoneLayout ? 20 : 36}
             />
           )}
           <Animated.View style={[styles.heroTextContainer, headerAnimatedStyle]}>
@@ -297,24 +337,24 @@ export default function HomeScreen() {
               activeOpacity={0.7}
               onPress={handleScrollToFeatures}
               style={styles.scrollDownButton}
-              hitSlop={isMobile ? { top: 12, bottom: 0, left: 24, right: 24 } : { top: 30, bottom: 0, left: 40, right: 40 }}
+              hitSlop={isPhoneLayout ? { top: 12, bottom: 0, left: 24, right: 24 } : { top: 30, bottom: 0, left: 40, right: 40 }}
             >
-              <View style={[styles.scrollDownContent, isMobile && styles.scrollDownContentMobile]} pointerEvents="box-none">
-                <Text style={[styles.scrollDownText, isMobile && styles.scrollDownTextMobile]}>{t('scroll', 'Scroll')}</Text>
-                <View style={[styles.scrollIndicatorMouse, isMobile && styles.scrollIndicatorMouseMobile]}>
-                  <Animated.View style={[styles.scrollWheel, isMobile && styles.scrollWheelMobile, wheelAnimatedStyle]} />
+              <View style={[styles.scrollDownContent, isPhoneLayout && styles.scrollDownContentMobile]} pointerEvents="box-none">
+                <Text style={[styles.scrollDownText, isPhoneLayout && styles.scrollDownTextMobile]}>{t('scroll', 'Scroll')}</Text>
+                <View style={[styles.scrollIndicatorMouse, isPhoneLayout && styles.scrollIndicatorMouseMobile]}>
+                  <Animated.View style={[styles.scrollWheel, isPhoneLayout && styles.scrollWheelMobile, wheelAnimatedStyle]} />
                 </View>
-                <Animated.View style={[styles.arrowDown, isMobile && styles.arrowDownMobile, arrowAnimatedStyle]}>
+                <Animated.View style={[styles.arrowDown, isPhoneLayout && styles.arrowDownMobile, arrowAnimatedStyle]}>
                   <Svg
-                    width={isMobile ? 16 : 20}
-                    height={isMobile ? 10 : 12}
+                    width={isPhoneLayout ? 16 : 20}
+                    height={isPhoneLayout ? 10 : 12}
                     viewBox="0 0 20 12"
                     fill="none"
                   >
                     <Path
                       d="M2 2L10 10L18 2"
                       stroke={isWebLightMode ? '#FFFFFF' : colors.text.primary}
-                      strokeWidth={isMobile ? '1.7' : '2'}
+                      strokeWidth={isPhoneLayout ? '1.7' : '2'}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
@@ -485,7 +525,7 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <View style={[styles.footerLinksColumn, isMobile && styles.footerLinksColumnMobile]}>
+                <View style={[styles.footerLinksColumn, isPhoneLayout && styles.footerLinksColumnMobile]}>
                   <Text style={styles.footerLinksTitle}>{t('footer.legal')}</Text>
                   <TouchableOpacity
                     onPress={() => router.push('/(shared)/privacy')}
@@ -527,12 +567,35 @@ export default function HomeScreen() {
   );
 }
 
-const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMode: boolean, windowWidth = 375) => {
+const getStyles = (
+  isDark: boolean,
+  colors: any,
+  isMobile: boolean,
+  isWebLightMode: boolean,
+  windowWidth = 375,
+  windowHeight = 800,
+  footerBottomReserve = 0
+) => {
   // On narrow native screens, cap logo width so it never overflows with padding
-  const maxLogoWidth = Platform.OS !== 'web' ? Math.min(windowWidth - 48, 300) : (isMobile ? 300 : 580);
+  const isNative = Platform.OS !== 'web';
+  const isNativeTablet = isNative && !isMobile;
+  const maxLogoWidth = isNative
+    ? Math.min(windowWidth - (isNativeTablet ? 160 : 48), isNativeTablet ? 500 : 300)
+    : (isMobile ? 300 : 580);
   const logoWidth = isMobile ? maxLogoWidth : 580;
-  const logoHeight = isMobile ? Math.round(logoWidth * 0.5) : 220;
-  const taglineOffset = isMobile ? 10 : 18;
+  const nativeTabletLogoWidth = isNativeTablet ? maxLogoWidth : logoWidth;
+  const resolvedLogoWidth = isNativeTablet ? nativeTabletLogoWidth : logoWidth;
+  const logoHeight = isMobile
+    ? Math.round(resolvedLogoWidth * 0.5)
+    : isNativeTablet
+      ? Math.round(resolvedLogoWidth * 0.36)
+      : 220;
+  const taglineOffset = isMobile ? 10 : isNativeTablet ? 12 : 18;
+  const nativeHeroHeight = isNativeTablet
+    ? Math.min(Math.max(windowHeight * 0.52, 560), 700)
+    : Math.min(Math.max(windowHeight * 0.58, 440), 540);
+  const heroHeight = isNative ? nativeHeroHeight : (isMobile ? 480 : '100%');
+  const heroMinHeight = isNative ? nativeHeroHeight : (isMobile ? 480 : 520);
 
   return StyleSheet.create({
     container: {
@@ -542,9 +605,12 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
     scrollView: {
       flex: 1,
     },
+    scrollContent: {
+      paddingBottom: footerBottomReserve,
+    },
     hero: {
-      minHeight: isMobile ? 480 : 520,
-      height: isMobile ? 480 : '100%',
+      minHeight: heroMinHeight,
+      height: heroHeight,
       maxHeight: 1000,
       position: 'relative',
       overflow: 'hidden',
@@ -552,7 +618,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       borderBottomRightRadius: 30,
       flexDirection: 'column',
       justifyContent: 'space-between',
-      paddingBottom: isMobile ? 40 : 60,
+      paddingBottom: isMobile ? 40 : isNativeTablet ? 54 : 60,
       // Native has no CrystalForgeBackground — provide a subtle gradient-tinted surface
       // so the logo has visual contrast in both light and dark mode.
       backgroundColor: Platform.OS !== 'web'
@@ -583,7 +649,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       position: 'relative',
     },
     logo: {
-      width: logoWidth,
+      width: resolvedLogoWidth,
       height: logoHeight,
     },
     headline: {
@@ -597,13 +663,13 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       position: 'relative',
       marginTop: taglineOffset,
       width: '100%',
-      maxWidth: logoWidth,
+      maxWidth: resolvedLogoWidth,
       alignSelf: 'center',
       alignItems: 'center',
       justifyContent: 'center',
       // On web the FlipWords exit uses scale:2 + translate — needs overflow
       // visible and extra height so the word flies out without a rectangular clip.
-      height: Platform.OS === 'web' ? (isMobile ? 80 : 160) : (isMobile ? 42 : 72),
+      height: Platform.OS === 'web' ? (isMobile ? 80 : 160) : (isMobile ? 42 : 60),
       overflow: Platform.OS === 'web' ? 'visible' : 'hidden',
     },
     tagline: {
@@ -628,7 +694,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
       borderTopWidth: 1,
       borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
       paddingTop: isMobile ? 40 : 60,
-      paddingBottom: isMobile ? 30 : 40,
+      paddingBottom: (isMobile ? 30 : 40) + footerBottomReserve,
       paddingHorizontal: isMobile ? 20 : 40,
       position: 'relative',
       bottom: 0,
@@ -672,7 +738,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
   footerLinks: {
     flex: isMobile ? 0 : 0.6,
     flexDirection: isMobile ? 'column' : 'row',
-    gap: isMobile ? 109 : 40,
+    gap: isMobile ? 48 : 40,
     justifyContent: isMobile ? 'flex-start' : 'flex-end',
     width: isMobile ? '100%' : 'auto',
     alignItems: isMobile ? 'flex-start' : 'flex-start',
@@ -712,6 +778,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
     justifyContent: 'center',
     alignItems: 'center',
     gap: 12,
+    paddingRight: Platform.OS !== 'web' && !isMobile ? 96 : 0,
   },
   footerCopyright: {
     fontSize: isMobile ? 12 : 14,
@@ -727,7 +794,7 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean, isWebLightMo
     marginBottom: 32,
   },
   featuresContainer: {
-    marginTop: 40,
+    marginTop: isMobile ? 40 : isNativeTablet ? 34 : 40,
     marginBottom: 40,
   },
   featuresGrid: {

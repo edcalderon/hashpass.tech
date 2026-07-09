@@ -41,9 +41,10 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: ${{ env.CODECOV_TOKEN != '' }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: ./apps/mobile-app/coverage/lcov.info
           fail_ci_if_error: true
           verbose: true
+          version: v11.2.8
           token: ${{ env.CODECOV_TOKEN }}
