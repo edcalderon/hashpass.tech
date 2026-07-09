@@ -401,6 +401,7 @@ export const useAuth = () => {
           try {
             const betterAuthResult = await getGoogleBetterAuthProvider().signInWithIdToken('google', idToken);
             if (!betterAuthResult.error) {
+              sessionBootstrapPromise = Promise.resolve(betterAuthResult.session ?? null);
               return betterAuthResult;
             }
             console.warn('[useAuth] Better Auth native Google sign-in failed, falling back to Supabase:', betterAuthResult.error);
@@ -413,14 +414,26 @@ export const useAuth = () => {
             token: idToken,
           });
           if (signInError) throw signInError;
+          sessionBootstrapPromise = Promise.resolve(null);
           return { pending: true };
         } catch (err: any) {
-          if (err.code === nativeGoogleSigninStatusCodes.SIGN_IN_CANCELLED) {
+          const errorCode = err?.code;
+          const nativeInProgressCode = (nativeGoogleSigninStatusCodes as Record<string, string | undefined>).IN_PROGRESS;
+          const message = err?.message || '';
+          const isUserDismissal =
+            errorCode === nativeGoogleSigninStatusCodes.SIGN_IN_CANCELLED ||
+            /cancel/i.test(message);
+
+          if (isUserDismissal || (nativeInProgressCode && errorCode === nativeInProgressCode)) {
             return { pending: false };
           }
-          if (err.code === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+          if (errorCode === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
             console.warn('[useAuth] Play Services unavailable, falling back to browser OAuth');
             // fall through to provider-specific OAuth flow below
+          } else if (errorCode === 'GOOGLE_ID_TOKEN_MISSING') {
+            throw new Error(
+              'Google sign-in completed, but the device did not return a usable ID token. Please try again.'
+            );
           } else {
             throw err;
           }

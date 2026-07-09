@@ -52,6 +52,7 @@ interface Props {
   scrollY: SharedValue<number>;
   scrollRef: React.RefObject<any>;
   colors: any;
+  bottomOffset?: number;
 }
 
 type LocaleOption = { code: string; name: string };
@@ -107,7 +108,7 @@ function PillGroup<T extends string>({
 
 // ─── main component ───────────────────────────────────────────────────────────
 
-const BackToTop: React.FC<Props> = ({ scrollY, scrollRef, colors }) => {
+const BackToTop: React.FC<Props> = ({ scrollY, scrollRef, colors, bottomOffset = 50 }) => {
   const { theme, setTheme, isDark } = useTheme();
   const { locale, setLocale } = useLanguage();
   const { animationLevel, setAnimationLevel } = useAnimationLevel();
@@ -272,7 +273,7 @@ const BackToTop: React.FC<Props> = ({ scrollY, scrollRef, colors }) => {
   );
 
   return (
-    <Reanimated.View style={[styles.stack, stackStyle]}>
+    <Reanimated.View style={[styles.stack, { bottom: bottomOffset }, stackStyle]}>
       {/* Backdrop — closes panel on outside tap */}
       {panelOpen && Platform.OS === 'web' && (
         <TouchableWithoutFeedback onPress={closePanel}>
@@ -358,7 +359,6 @@ const BackToTop: React.FC<Props> = ({ scrollY, scrollRef, colors }) => {
 const styles = StyleSheet.create({
   stack: {
     position: 'absolute',
-    bottom: 50,
     right: 20,
     zIndex: 100,
     alignItems: 'center',

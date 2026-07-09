@@ -122,3 +122,75 @@ describe('shouldUseNativeGoogleSignin', () => {
     expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(false);
   });
 });
+
+describe('signInWithNativeGoogleAccount', () => {
+  const mockGoogleSignin = {
+    configure: jest.fn(),
+    hasPlayServices: jest.fn(async () => true),
+    signIn: jest.fn(async () => ({ data: { idToken: 'native-id-token' } })),
+    signOut: jest.fn(async () => undefined),
+  };
+  const mockStatusCodes = {
+    SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+    PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+  };
+
+  const loadNativeGoogleSignin = () => {
+    jest.doMock('@react-native-google-signin/google-signin', () => ({
+      GoogleSignin: mockGoogleSignin,
+      statusCodes: mockStatusCodes,
+    }));
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('../../lib/native-google-signin.native');
+  };
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockGoogleSignin.configure.mockClear();
+    mockGoogleSignin.hasPlayServices.mockReset().mockResolvedValue(true);
+    mockGoogleSignin.signIn.mockReset().mockResolvedValue({ data: { idToken: 'native-id-token' } });
+    mockGoogleSignin.signOut.mockClear();
+  });
+
+  afterEach(() => {
+    jest.dontMock('@react-native-google-signin/google-signin');
+  });
+
+  it('returns the SDK ID token when Google Sign-In succeeds', async () => {
+    const { signInWithNativeGoogleAccount } = loadNativeGoogleSignin();
+
+    await expect(signInWithNativeGoogleAccount()).resolves.toEqual({ idToken: 'native-id-token' });
+  });
+
+  it('normalizes cancelled SDK responses without an ID token', async () => {
+    mockGoogleSignin.signIn.mockResolvedValueOnce({ type: 'cancelled' } as never);
+    const { signInWithNativeGoogleAccount } = loadNativeGoogleSignin();
+
+    await expect(signInWithNativeGoogleAccount()).rejects.toMatchObject({
+      code: mockStatusCodes.SIGN_IN_CANCELLED,
+      message: 'Google Sign-In was cancelled.',
+    });
+  });
+
+  it('normalizes successful SDK responses that are missing an ID token', async () => {
+    mockGoogleSignin.signIn.mockResolvedValueOnce({ type: 'success', data: {} } as never);
+    const { signInWithNativeGoogleAccount } = loadNativeGoogleSignin();
+
+    await expect(signInWithNativeGoogleAccount()).rejects.toMatchObject({
+      code: 'GOOGLE_ID_TOKEN_MISSING',
+      message: 'Google Sign-In did not return an ID token (response type: success).',
+    });
+  });
+
+  it('normalizes Play Services failures before starting account selection', async () => {
+    mockGoogleSignin.hasPlayServices.mockRejectedValueOnce(new Error('Play Services unavailable'));
+    const { signInWithNativeGoogleAccount } = loadNativeGoogleSignin();
+
+    await expect(signInWithNativeGoogleAccount()).rejects.toMatchObject({
+      code: mockStatusCodes.PLAY_SERVICES_NOT_AVAILABLE,
+      message: 'Play Services unavailable',
+    });
+    expect(mockGoogleSignin.signIn).not.toHaveBeenCalled();
+  });
+});
