@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   View,
   Text,
@@ -17,54 +23,54 @@ import {
   FlatList,
   Pressable,
   useWindowDimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import QuickSettingsPanel from '../../components/QuickSettingsPanel';
-import { useTheme } from '../../hooks/useTheme';
-import { useToastHelpers } from '@contexts/ToastContext';
-import PrivacyTermsModal from '../../components/PrivacyTermsModal';
-import VersionDisplay from '../../components/VersionDisplay';
-import { useAuth } from '../../hooks/useAuth';
-import { getCurrentLocale, useTranslation } from '../../i18n/i18n';
-import { apiClient } from '../../lib/api-client';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import QuickSettingsPanel from "../../components/QuickSettingsPanel";
+import { useTheme } from "../../hooks/useTheme";
+import { useToastHelpers } from "@contexts/ToastContext";
+import PrivacyTermsModal from "../../components/PrivacyTermsModal";
+import VersionDisplay from "../../components/VersionDisplay";
+import { useAuth } from "../../hooks/useAuth";
+import { getCurrentLocale, useTranslation } from "../../i18n/i18n";
+import { apiClient } from "../../lib/api-client";
 import {
   authService,
   SUPABASE_OAUTH_CALLBACK_PATH,
   getSupabaseOAuthRedirectUrl,
-} from '@hashpass/auth';
-import ShaderAnimation from '../../components/ShaderAnimation';
-import SafeLinearGradient from '../../components/SafeLinearGradient';
-import { getEmailAutocompleteSuggestions } from '../../lib/email-autocomplete';
+} from "@hashpass/auth";
+import ShaderAnimation from "../../components/ShaderAnimation";
+import SafeLinearGradient from "../../components/SafeLinearGradient";
+import { getEmailAutocompleteSuggestions } from "../../lib/email-autocomplete";
 import {
   buildCountryDialOptions,
   filterCountryDialOptions,
   resolveDefaultCountryISO2,
-} from '../../lib/country-dial-options';
-import { Ionicons } from '../../lib/vector-icons';
-import { supabase } from '../../lib/supabase';
-import { resolvePublicSupabaseConfig } from '../../config/supabase-profiles';
-import { getHashpassFullLogo } from '../../lib/hashpass-logo';
-import { useAnimationLevel } from '../../contexts/AnimationLevelContext';
+} from "../../lib/country-dial-options";
+import { Ionicons } from "../../lib/vector-icons";
+import { supabase } from "../../lib/supabase";
+import { resolvePublicSupabaseConfig } from "../../config/supabase-profiles";
+import { getHashpassFullLogo } from "../../lib/hashpass-logo";
+import { useAnimationLevel } from "../../contexts/AnimationLevelContext";
 
-const HASHPASS_WEB_LIGHT_AUTH_LOGO = require('../../assets/logos/hashpass/logo-full-hashpass-white.svg');
+const HASHPASS_WEB_LIGHT_AUTH_LOGO = require("../../assets/logos/hashpass/logo-full-hashpass-white.svg");
 
-type EmailAuthMethod = 'magic-link' | 'otp-code';
-type BusyAction = 'magic-link' | 'otp-send' | 'otp-verify' | 'oauth' | null;
-type OtpDeliveryMethod = 'email' | 'sms';
-type ActiveSubmitField = 'email' | 'phone' | 'otp' | null;
+type EmailAuthMethod = "magic-link" | "otp-code";
+type BusyAction = "magic-link" | "otp-send" | "otp-verify" | "oauth" | null;
+type OtpDeliveryMethod = "email" | "sms";
+type ActiveSubmitField = "email" | "phone" | "otp" | null;
 
 const OTP_CODE_LENGTH = 6;
 const MAGIC_LINK_RESEND_COOLDOWN_SECONDS = 45;
 const OTP_RESEND_COOLDOWN_SECONDS = 45;
-const OTP_DIGIT_KEYS = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'] as const;
+const OTP_DIGIT_KEYS = ["d1", "d2", "d3", "d4", "d5", "d6"] as const;
 
 const buildSupabaseCallbackPath = (returnTo: string, nativeRelay = false) => {
   const params = new URLSearchParams();
-  params.set('returnTo', returnTo);
+  params.set("returnTo", returnTo);
 
   if (nativeRelay) {
-    params.set('nativeRelay', '1');
+    params.set("nativeRelay", "1");
   }
 
   return `${SUPABASE_OAUTH_CALLBACK_PATH}?${params.toString()}`;
@@ -79,39 +85,45 @@ const normalizeReturnToPath = (rawPath: string): string => {
     // Keep original value when decode fails.
   }
 
-  if (!normalized.startsWith('/')) {
-    return '/dashboard/explore';
+  if (!normalized.startsWith("/")) {
+    return "/dashboard/explore";
   }
 
-  normalized = normalized.replace(/\/\([^/]+\)/g, '');
+  normalized = normalized.replace(/\/\([^/]+\)/g, "");
 
-  if (!normalized || normalized === '/auth' || normalized.includes(SUPABASE_OAUTH_CALLBACK_PATH)) {
-    return '/dashboard/explore';
+  if (
+    !normalized ||
+    normalized === "/auth" ||
+    normalized.includes(SUPABASE_OAUTH_CALLBACK_PATH)
+  ) {
+    return "/dashboard/explore";
   }
 
   return normalized;
 };
 
-const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isValidEmail = (value: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const isValidE164Phone = (value: string) => /^\+[1-9]\d{7,14}$/.test(value);
-const normalizePhoneDigits = (value: string) => value.replace(/\D/g, '');
+const normalizePhoneDigits = (value: string) => value.replace(/\D/g, "");
 const buildE164Phone = (dialCode: string, localNumber: string) => {
   const normalizedDialCode = normalizePhoneDigits(dialCode);
   const normalizedLocalNumber = normalizePhoneDigits(localNumber);
-  if (!normalizedDialCode || !normalizedLocalNumber) return '';
+  if (!normalizedDialCode || !normalizedLocalNumber) return "";
   return `+${normalizedDialCode}${normalizedLocalNumber}`;
 };
 
 const extractApiError = (payload: unknown, fallback: string): string => {
-  if (payload && typeof payload === 'object') {
+  if (payload && typeof payload === "object") {
     const body = payload as Record<string, unknown>;
 
-    if (typeof body.message === 'string' && body.message.trim()) return body.message;
-    if (typeof body.error === 'string' && body.error.trim()) return body.error;
-    if (typeof body.code === 'string' && body.code.trim()) return body.code;
+    if (typeof body.message === "string" && body.message.trim())
+      return body.message;
+    if (typeof body.error === "string" && body.error.trim()) return body.error;
+    if (typeof body.code === "string" && body.code.trim()) return body.code;
   }
 
-  if (typeof payload === 'string' && payload.trim()) {
+  if (typeof payload === "string" && payload.trim()) {
     return payload;
   }
 
@@ -123,35 +135,35 @@ const OTP_API_TIMEOUT_MS = 30000;
 const resolveOAuthErrorMessage = (
   errorCode: string | undefined,
   rawMessage: string | undefined,
-  fallback: string
+  fallback: string,
 ): string => {
   const message = rawMessage?.trim();
-  const normalized = `${errorCode || ''} ${message || ''}`.toLowerCase();
+  const normalized = `${errorCode || ""} ${message || ""}`.toLowerCase();
 
   if (message) {
     return message;
   }
 
   if (
-    normalized.includes('otp_expired') ||
-    normalized.includes('email link is invalid or has expired')
+    normalized.includes("otp_expired") ||
+    normalized.includes("email link is invalid or has expired")
   ) {
-    return 'Your magic link is invalid or has expired. Request a new link and try again.';
+    return "Your magic link is invalid or has expired. Request a new link and try again.";
   }
 
   if (
-    normalized.includes('invalid_credentials') ||
-    normalized.includes('invalid user credentials')
+    normalized.includes("invalid_credentials") ||
+    normalized.includes("invalid user credentials")
   ) {
-    return 'Google sign-in completed, but Directus did not establish a valid session. Please try again.';
+    return "Google sign-in completed, but Directus did not establish a valid session. Please try again.";
   }
 
   if (
-    normalized.includes('networkerror') ||
-    normalized.includes('failed to fetch') ||
-    normalized.includes('cors')
+    normalized.includes("networkerror") ||
+    normalized.includes("failed to fetch") ||
+    normalized.includes("cors")
   ) {
-    return 'Your browser could not reach the Directus auth server. Please verify local CORS and Directus URL settings.';
+    return "Your browser could not reach the Directus auth server. Please verify local CORS and Directus URL settings.";
   }
 
   return fallback;
@@ -166,17 +178,44 @@ type HeroSlide = {
   description: string;
 };
 
+type AuthHeaderPalette = {
+  titleColor: string;
+  subtitleColor: string;
+};
+
 type DesktopHeroPanelProps = {
   slides: HeroSlide[];
   isDark: boolean;
   styles: any;
-  animationLevel: 'full' | 'reduced' | 'none';
+  animationLevel: "full" | "reduced" | "none";
 };
+
+const shouldShowAuthBackground = (
+  platformOS: string,
+  animationLevel: "full" | "reduced" | "none",
+  isDesktopLayout: boolean,
+) => platformOS === "web" && animationLevel === "full" && !isDesktopLayout;
+
+const getAuthHeaderPalette = (
+  isDark: boolean,
+  useAnimatedBackdrop: boolean,
+): AuthHeaderPalette =>
+  useAnimatedBackdrop
+    ? {
+        titleColor: "#ffffff",
+        subtitleColor: "rgba(255, 255, 255, 0.82)",
+      }
+    : {
+        titleColor: isDark ? "#f8f8fb" : "#171a22",
+        subtitleColor: isDark
+          ? "rgba(245, 247, 251, 0.78)"
+          : "rgba(21, 24, 31, 0.72)",
+      };
 
 const createFloatingLoop = (
   value: Animated.Value,
   duration: number,
-  useNativeDriver: boolean
+  useNativeDriver: boolean,
 ) =>
   Animated.loop(
     Animated.sequence([
@@ -192,48 +231,59 @@ const createFloatingLoop = (
         easing: Easing.inOut(Easing.sin),
         useNativeDriver,
       }),
-    ])
+    ]),
   );
 
-const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHeroPanelProps) => {
-  const useNativeDriver = Platform.OS !== 'web';
+const DesktopHeroPanel = ({
+  slides,
+  isDark,
+  styles,
+  animationLevel,
+}: DesktopHeroPanelProps) => {
+  const useNativeDriver = Platform.OS !== "web";
   const blobOne = useRef(new Animated.Value(0)).current;
   const blobTwo = useRef(new Animated.Value(0)).current;
   const blobThree = useRef(new Animated.Value(0)).current;
-  const contentEntrance = useRef(new Animated.Value(animationLevel === 'none' ? 1 : 0)).current;
+  const contentEntrance = useRef(
+    new Animated.Value(animationLevel === "none" ? 1 : 0),
+  ).current;
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const heroGradientColors = isDark
-    ? (['#030a12', '#0a1f31', '#13415e'] as const)
-    : (['#ffffff', '#fff9f8', '#fff1ee'] as const);
+    ? (["#030a12", "#0a1f31", "#13415e"] as const)
+    : (["#ffffff", "#fff9f8", "#fff1ee"] as const);
 
   useEffect(() => {
-    if (animationLevel === 'none') {
+    if (animationLevel === "none") {
       // Skip all blob and entrance animations — show content immediately
       contentEntrance.setValue(1);
       return;
     }
 
-    const blobAnimations = animationLevel === 'full'
-      ? [
-          createFloatingLoop(blobOne, 6200, useNativeDriver),
-          createFloatingLoop(blobTwo, 7600, useNativeDriver),
-          createFloatingLoop(blobThree, 9400, useNativeDriver),
-        ]
-      : [];
+    const blobAnimations =
+      animationLevel === "full"
+        ? [
+            createFloatingLoop(blobOne, 6200, useNativeDriver),
+            createFloatingLoop(blobTwo, 7600, useNativeDriver),
+            createFloatingLoop(blobThree, 9400, useNativeDriver),
+          ]
+        : [];
 
     const blobTimers = blobAnimations.map((animation, index) =>
-      setTimeout(() => animation.start(), index * 420)
+      setTimeout(() => animation.start(), index * 420),
     );
 
     contentEntrance.setValue(0);
-    const revealDuration = animationLevel === 'reduced' ? 250 : 820;
+    const revealDuration = animationLevel === "reduced" ? 250 : 820;
     const revealAnimation = Animated.timing(contentEntrance, {
       toValue: 1,
       duration: revealDuration,
       easing: Easing.out(Easing.cubic),
       useNativeDriver,
     });
-    const revealTimer = setTimeout(() => revealAnimation.start(), animationLevel === 'reduced' ? 0 : 120);
+    const revealTimer = setTimeout(
+      () => revealAnimation.start(),
+      animationLevel === "reduced" ? 0 : 120,
+    );
 
     return () => {
       blobTimers.forEach(clearTimeout);
@@ -241,7 +291,14 @@ const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHer
       blobAnimations.forEach((animation) => animation.stop());
       revealAnimation.stop();
     };
-  }, [blobOne, blobThree, blobTwo, contentEntrance, useNativeDriver, animationLevel]);
+  }, [
+    blobOne,
+    blobThree,
+    blobTwo,
+    contentEntrance,
+    useNativeDriver,
+    animationLevel,
+  ]);
 
   const blobOneTranslateX = blobOne.interpolate({
     inputRange: [0, 1],
@@ -277,16 +334,19 @@ const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHer
   });
   const safeSlideIndex = slides.length ? activeSlideIndex % slides.length : 0;
   const currentSlide = slides[safeSlideIndex] || {
-    id: 'secure',
-    icon: 'shield-checkmark-outline',
-    title: 'Secure & Private',
-    description: 'Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.',
+    id: "secure",
+    icon: "shield-checkmark-outline",
+    title: "Secure & Private",
+    description:
+      "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.",
   };
 
   useEffect(() => {
     if (slides.length <= 1) return;
     const rotationInterval = setInterval(() => {
-      setActiveSlideIndex((previousIndex) => (previousIndex + 1) % slides.length);
+      setActiveSlideIndex(
+        (previousIndex) => (previousIndex + 1) % slides.length,
+      );
     }, 4200);
     return () => clearInterval(rotationInterval);
   }, [slides.length]);
@@ -305,7 +365,10 @@ const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHer
           styles.desktopHeroBlob,
           styles.desktopHeroBlobOne,
           {
-            transform: [{ translateX: blobOneTranslateX }, { translateY: blobOneTranslateY }],
+            transform: [
+              { translateX: blobOneTranslateX },
+              { translateY: blobOneTranslateY },
+            ],
           },
         ]}
       />
@@ -314,7 +377,10 @@ const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHer
           styles.desktopHeroBlob,
           styles.desktopHeroBlobTwo,
           {
-            transform: [{ translateX: blobTwoTranslateX }, { translateY: blobTwoTranslateY }],
+            transform: [
+              { translateX: blobTwoTranslateX },
+              { translateY: blobTwoTranslateY },
+            ],
           },
         ]}
       />
@@ -323,7 +389,10 @@ const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHer
           styles.desktopHeroBlob,
           styles.desktopHeroBlobThree,
           {
-            transform: [{ translateX: blobThreeTranslateX }, { translateY: blobThreeTranslateY }],
+            transform: [
+              { translateX: blobThreeTranslateX },
+              { translateY: blobThreeTranslateY },
+            ],
           },
         ]}
       />
@@ -341,10 +410,16 @@ const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHer
         ]}
       >
         <View style={styles.desktopHeroBadge}>
-          <Ionicons name={currentSlide.icon as any} size={32} color={isDark ? '#ddf7fb' : '#af0d01'} />
+          <Ionicons
+            name={currentSlide.icon as any}
+            size={32}
+            color={isDark ? "#ddf7fb" : "#af0d01"}
+          />
         </View>
         <Text style={styles.desktopHeroTitle}>{currentSlide.title}</Text>
-        <Text style={styles.desktopHeroDescription}>{currentSlide.description}</Text>
+        <Text style={styles.desktopHeroDescription}>
+          {currentSlide.description}
+        </Text>
 
         <View style={styles.desktopHeroProgress}>
           {slides.map((slide, index) => (
@@ -359,7 +434,9 @@ const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHer
               <View
                 style={[
                   styles.desktopHeroProgressDot,
-                  index === safeSlideIndex ? styles.desktopHeroProgressDotActive : null,
+                  index === safeSlideIndex
+                    ? styles.desktopHeroProgressDotActive
+                    : null,
                 ]}
               />
             </TouchableOpacity>
@@ -373,88 +450,112 @@ const DesktopHeroPanel = ({ slides, isDark, styles, animationLevel }: DesktopHer
 export default function AuthScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const { colors, isDark } = useTheme();
-  const { t } = useTranslation('auth');
-  const { t: tIndex } = useTranslation('index');
+  const { t } = useTranslation("auth");
+  const { t: tIndex } = useTranslation("index");
   const router = useRouter();
   const params = useLocalSearchParams();
   const { showError, showSuccess } = useToastHelpers();
-  const { user, isLoggedIn, isLoading: authLoading, signInWithOAuth } = useAuth();
-  const isDesktopLayout = Platform.OS === 'web' && windowWidth >= DESKTOP_AUTH_BREAKPOINT;
+  const {
+    user,
+    isLoggedIn,
+    isLoading: authLoading,
+    signInWithOAuth,
+  } = useAuth();
+  const isDesktopLayout =
+    Platform.OS === "web" && windowWidth >= DESKTOP_AUTH_BREAKPOINT;
   const isCompactMobile = !isDesktopLayout && windowWidth <= 420;
   const isVeryCompactMobile = !isDesktopLayout && windowWidth <= 360;
-  const useNativeDriver = Platform.OS !== 'web';
+  const useNativeDriver = Platform.OS !== "web";
   const { animationLevel } = useAnimationLevel();
-  const formEntrance = useRef(new Animated.Value(animationLevel === 'none' ? 1 : 0)).current;
+  const formEntrance = useRef(
+    new Animated.Value(animationLevel === "none" ? 1 : 0),
+  ).current;
 
-  const rawReturnTo = Array.isArray(params.returnTo) ? params.returnTo[0] : params.returnTo;
-  const rawAuthError = Array.isArray(params.error) ? params.error[0] : params.error;
-  const rawAuthMessage = Array.isArray(params.message) ? params.message[0] : params.message;
+  const rawReturnTo = Array.isArray(params.returnTo)
+    ? params.returnTo[0]
+    : params.returnTo;
+  const rawAuthError = Array.isArray(params.error)
+    ? params.error[0]
+    : params.error;
+  const rawAuthMessage = Array.isArray(params.message)
+    ? params.message[0]
+    : params.message;
 
   const redirectPath =
-    typeof rawReturnTo === 'string' && rawReturnTo.trim()
+    typeof rawReturnTo === "string" && rawReturnTo.trim()
       ? normalizeReturnToPath(rawReturnTo)
-      : '/dashboard/explore';
+      : "/dashboard/explore";
 
   const currentLocale = getCurrentLocale();
   const heroSlides: HeroSlide[] = [
     {
-      id: 'secure',
-      icon: 'shield-checkmark-outline',
-      title: tIndex('features.secure.title', 'Secure & Private'),
+      id: "secure",
+      icon: "shield-checkmark-outline",
+      title: tIndex("features.secure.title", "Secure & Private"),
       description: tIndex(
-        'features.secure.description',
-        'Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.'
+        "features.secure.description",
+        "Your data is encrypted and protected with industry-leading security protocols. We prioritize your privacy above all else.",
       ),
     },
     {
-      id: 'management',
-      icon: 'wallet-outline',
-      title: tIndex('features.management.title', 'Effortless Management'),
+      id: "management",
+      icon: "wallet-outline",
+      title: tIndex("features.management.title", "Effortless Management"),
       description: tIndex(
-        'features.management.description',
-        'Organize all your digital credentials, loyalty cards, and communities in one intuitive place.'
+        "features.management.description",
+        "Organize all your digital credentials, loyalty cards, and communities in one intuitive place.",
       ),
     },
     {
-      id: 'sync',
-      icon: 'globe-outline',
-      title: tIndex('features.sync.title', 'Cross-Platform Sync'),
+      id: "sync",
+      icon: "globe-outline",
+      title: tIndex("features.sync.title", "Cross-Platform Sync"),
       description: tIndex(
-        'features.sync.description',
-        'Access your data across all your devices with our secure cloud sync.'
+        "features.sync.description",
+        "Access your data across all your devices with our secure cloud sync.",
       ),
     },
   ];
   const countryDialOptions = useMemo(
     () => buildCountryDialOptions(currentLocale),
-    [currentLocale]
+    [currentLocale],
   );
 
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
-  const [emailAuthMethod, setEmailAuthMethod] = useState<EmailAuthMethod>('magic-link');
-  const [email, setEmail] = useState('');
-  const [otpDigits, setOtpDigits] = useState<string[]>(new Array(OTP_CODE_LENGTH).fill(''));
-  const [otpDeliveryMethod, setOtpDeliveryMethod] = useState<OtpDeliveryMethod>('email');
-  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
-  const [countrySearchQuery, setCountrySearchQuery] = useState('');
-  const [selectedCountryISO2, setSelectedCountryISO2] = useState<string>(() =>
-    resolveDefaultCountryISO2(countryDialOptions, currentLocale)
+  const [emailAuthMethod, setEmailAuthMethod] =
+    useState<EmailAuthMethod>("magic-link");
+  const [email, setEmail] = useState("");
+  const [otpDigits, setOtpDigits] = useState<string[]>(
+    new Array(OTP_CODE_LENGTH).fill(""),
   );
-  const [phone, setPhone] = useState('');
+  const [otpDeliveryMethod, setOtpDeliveryMethod] =
+    useState<OtpDeliveryMethod>("email");
+  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
+  const [countrySearchQuery, setCountrySearchQuery] = useState("");
+  const [selectedCountryISO2, setSelectedCountryISO2] = useState<string>(() =>
+    resolveDefaultCountryISO2(countryDialOptions, currentLocale),
+  );
+  const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpCodeSentAt, setOtpCodeSentAt] = useState<number | null>(null);
   const [magicLinkSentAt, setMagicLinkSentAt] = useState<number | null>(null);
-  const [magicLinkTimerNow, setMagicLinkTimerNow] = useState<number>(() => Date.now());
-  const [emailError, setEmailError] = useState('');
-  const [emailSuggestionsDismissed, setEmailSuggestionsDismissed] = useState(false);
-  const [activeEmailSuggestionIndex, setActiveEmailSuggestionIndex] = useState(0);
-  const [otpError, setOtpError] = useState('');
+  const [magicLinkTimerNow, setMagicLinkTimerNow] = useState<number>(() =>
+    Date.now(),
+  );
+  const [emailError, setEmailError] = useState("");
+  const [emailSuggestionsDismissed, setEmailSuggestionsDismissed] =
+    useState(false);
+  const [activeEmailSuggestionIndex, setActiveEmailSuggestionIndex] =
+    useState(0);
+  const [otpError, setOtpError] = useState("");
   const [focusedDigitIndex, setFocusedDigitIndex] = useState(-1);
-  const [phoneError, setPhoneError] = useState('');
+  const [phoneError, setPhoneError] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<'privacy' | 'terms'>('privacy');
+  const [modalType, setModalType] = useState<"privacy" | "terms">("privacy");
   const emailInputRef = useRef<TextInput>(null);
-  const digitRefs = useRef<(TextInput | null)[]>(new Array(OTP_CODE_LENGTH).fill(null));
+  const digitRefs = useRef<(TextInput | null)[]>(
+    new Array(OTP_CODE_LENGTH).fill(null),
+  );
   const lastSubmitTriggerRef = useRef(0);
   const shouldShowEmailSuggestionsRef = useRef(false);
   const activeEmailSuggestionRef = useRef<string | null>(null);
@@ -478,19 +579,31 @@ export default function AuthScreen() {
   const oauthInFlightRef = useRef(false);
   const authProviderName = authService.getProviderName();
   const isNativeLightMode = !isDark;
+  const showAuthBackground = shouldShowAuthBackground(
+    Platform.OS,
+    animationLevel,
+    isDesktopLayout,
+  );
+  const authHeaderPalette = getAuthHeaderPalette(isDark, showAuthBackground);
   const authLogoSource =
-    Platform.OS === 'web' && !isDark
+    Platform.OS === "web" && !isDark
       ? HASHPASS_WEB_LIGHT_AUTH_LOGO
       : getHashpassFullLogo(isDark);
-  // WebGL shader background: web-only, and disabled for reduced/none to save GPU
-  const showAuthBackground = Platform.OS === 'web' && animationLevel === 'full';
-  const { supabaseUrl: publicSupabaseUrl, supabaseAnonKey: publicSupabaseAnonKey } =
-    resolvePublicSupabaseConfig();
-  const hasSupabasePasswordlessConfig = Boolean(publicSupabaseUrl && publicSupabaseAnonKey);
-  const isPasswordlessSupported = authProviderName === 'supabase' || hasSupabasePasswordlessConfig;
+  // WebGL shader background: use it only for the single-column web layout.
+  // Desktop split view gets its own hero panel, so the form side stays on a
+  // stable surface for cleaner separation and contrast.
+  const {
+    supabaseUrl: publicSupabaseUrl,
+    supabaseAnonKey: publicSupabaseAnonKey,
+  } = resolvePublicSupabaseConfig();
+  const hasSupabasePasswordlessConfig = Boolean(
+    publicSupabaseUrl && publicSupabaseAnonKey,
+  );
+  const isPasswordlessSupported =
+    authProviderName === "supabase" || hasSupabasePasswordlessConfig;
   const passwordlessUnavailableMessage = t(
-    'passwordlessUnavailableMessage',
-    'Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.'
+    "passwordlessUnavailableMessage",
+    "Magic link and OTP sign-in are unavailable because Supabase passwordless is not configured for this environment.",
   );
 
   const styles = getStyles(
@@ -499,63 +612,81 @@ export default function AuthScreen() {
     isCompactMobile,
     isVeryCompactMobile,
     isDesktopLayout,
-    isNativeLightMode
+    isNativeLightMode,
+    showAuthBackground,
+    authHeaderPalette,
   );
   const isBusy = busyAction !== null;
-  const isOAuthRedirecting = busyAction === 'oauth';
-  const signInWithGoogleLabel = t('signInWithGoogle', 'Sign in with Google');
-  const openingGoogleSignInLabel = t('openingGoogleSignIn', 'Opening Google sign-in...');
-  const oauthButtonLabel =
-    isOAuthRedirecting
-      ? Platform.OS === 'web'
-        ? t('redirectingToGoogle', 'Redirecting to Google...')
-        : openingGoogleSignInLabel
-      : signInWithGoogleLabel;
+  const isOAuthRedirecting = busyAction === "oauth";
+  const signInWithGoogleLabel = t("signInWithGoogle", "Sign in with Google");
+  const openingGoogleSignInLabel = t(
+    "openingGoogleSignIn",
+    "Opening Google sign-in...",
+  );
+  const oauthButtonLabel = isOAuthRedirecting
+    ? Platform.OS === "web"
+      ? t("redirectingToGoogle", "Redirecting to Google...")
+      : openingGoogleSignInLabel
+    : signInWithGoogleLabel;
   const authActionMessage = useMemo(() => {
     switch (busyAction) {
-      case 'magic-link':
-        return t('sendingMagicLink', 'Sending magic link...');
-      case 'otp-send':
-        return t('sendingVerificationCode', 'Sending verification code...');
-      case 'otp-verify':
-        return t('verifyingCode', 'Verifying code...');
-      case 'oauth':
+      case "magic-link":
+        return t("sendingMagicLink", "Sending magic link...");
+      case "otp-send":
+        return t("sendingVerificationCode", "Sending verification code...");
+      case "otp-verify":
+        return t("verifyingCode", "Verifying code...");
+      case "oauth":
         return t(
-          'googleAuthHint',
-          'Please wait while your browser finishes the Google sign-in.'
+          "googleAuthHint",
+          "Please wait while your browser finishes the Google sign-in.",
         );
       default:
-        return '';
+        return "";
     }
   }, [busyAction, t]);
-  const magicLinkResendRemainingSeconds = magicLinkSentAt === null
-    ? 0
-    : Math.max(
-      0,
-      Math.ceil((magicLinkSentAt + (MAGIC_LINK_RESEND_COOLDOWN_SECONDS * 1000) - magicLinkTimerNow) / 1000)
-    );
-  const otpResendRemainingSeconds = otpCodeSentAt === null
-    ? 0
-    : Math.max(
-      0,
-      Math.ceil((otpCodeSentAt + (OTP_RESEND_COOLDOWN_SECONDS * 1000) - magicLinkTimerNow) / 1000)
-    );
-  const isMagicLinkConfirmationVisible = emailAuthMethod === 'magic-link' && magicLinkSentAt !== null;
+  const magicLinkResendRemainingSeconds =
+    magicLinkSentAt === null
+      ? 0
+      : Math.max(
+          0,
+          Math.ceil(
+            (magicLinkSentAt +
+              MAGIC_LINK_RESEND_COOLDOWN_SECONDS * 1000 -
+              magicLinkTimerNow) /
+              1000,
+          ),
+        );
+  const otpResendRemainingSeconds =
+    otpCodeSentAt === null
+      ? 0
+      : Math.max(
+          0,
+          Math.ceil(
+            (otpCodeSentAt +
+              OTP_RESEND_COOLDOWN_SECONDS * 1000 -
+              magicLinkTimerNow) /
+              1000,
+          ),
+        );
+  const isMagicLinkConfirmationVisible =
+    emailAuthMethod === "magic-link" && magicLinkSentAt !== null;
   const selectedCountry = useMemo(
     () =>
-      countryDialOptions.find((country: { iso2: string }) => country.iso2 === selectedCountryISO2) ||
-      countryDialOptions[0],
-    [countryDialOptions, selectedCountryISO2]
+      countryDialOptions.find(
+        (country: { iso2: string }) => country.iso2 === selectedCountryISO2,
+      ) || countryDialOptions[0],
+    [countryDialOptions, selectedCountryISO2],
   );
   const filteredCountryOptions = useMemo(
     () => filterCountryDialOptions(countryDialOptions, countrySearchQuery),
-    [countryDialOptions, countrySearchQuery]
+    [countryDialOptions, countrySearchQuery],
   );
   // Compact joined code used for validation + API calls
-  const otpCode = otpDigits.join('');
+  const otpCode = otpDigits.join("");
   const emailSuggestions = useMemo(
     () => getEmailAutocompleteSuggestions(email, { limit: 12 }) as string[],
-    [email]
+    [email],
   );
   const normalizedEmailInput = email.trim().toLowerCase();
   const shouldShowEmailSuggestions =
@@ -611,7 +742,7 @@ export default function AuthScreen() {
   useEffect(() => {
     if (!otpSent) {
       setFocusedDigitIndex(-1);
-      if (activeSubmitFieldRef.current === 'otp') {
+      if (activeSubmitFieldRef.current === "otp") {
         activeSubmitFieldRef.current = null;
       }
       return;
@@ -619,7 +750,7 @@ export default function AuthScreen() {
 
     const timer = setTimeout(() => {
       digitRefs.current[0]?.focus();
-      activeSubmitFieldRef.current = 'otp';
+      activeSubmitFieldRef.current = "otp";
     }, 40);
 
     return () => clearTimeout(timer);
@@ -627,18 +758,20 @@ export default function AuthScreen() {
 
   useEffect(() => {
     if (hasShownOAuthErrorRef.current) return;
-    if (typeof rawAuthError !== 'string' && typeof rawAuthMessage !== 'string') return;
+    if (typeof rawAuthError !== "string" && typeof rawAuthMessage !== "string")
+      return;
 
     const signInMethod =
-      Platform.OS === 'web' && typeof window !== 'undefined'
-        ? window.localStorage.getItem('auth_signin_method')
+      Platform.OS === "web" && typeof window !== "undefined"
+        ? window.localStorage.getItem("auth_signin_method")
         : null;
-    const isPasswordlessMethod = signInMethod === 'magic_link' || signInMethod === 'otp_code';
+    const isPasswordlessMethod =
+      signInMethod === "magic_link" || signInMethod === "otp_code";
 
     let message = resolveOAuthErrorMessage(
-      typeof rawAuthError === 'string' ? rawAuthError : undefined,
-      typeof rawAuthMessage === 'string' ? rawAuthMessage : undefined,
-      t('oauthError', 'Google sign-in failed. Please try again.')
+      typeof rawAuthError === "string" ? rawAuthError : undefined,
+      typeof rawAuthMessage === "string" ? rawAuthMessage : undefined,
+      t("oauthError", "Google sign-in failed. Please try again."),
     );
 
     if (isPasswordlessMethod && !isPasswordlessSupported) {
@@ -646,30 +779,41 @@ export default function AuthScreen() {
     }
 
     hasShownOAuthErrorRef.current = true;
-    console.error('[Auth] OAuth callback failed', {
+    console.error("[Auth] OAuth callback failed", {
       error: rawAuthError,
       message,
     });
-    showError(t('authenticationError', 'Authentication Error'), message);
+    showError(t("authenticationError", "Authentication Error"), message);
 
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
       const cleanUrl = new URL(window.location.href);
-      cleanUrl.searchParams.delete('error');
-      cleanUrl.searchParams.delete('message');
-      window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
-      window.localStorage.removeItem('auth_signin_method');
+      cleanUrl.searchParams.delete("error");
+      cleanUrl.searchParams.delete("message");
+      window.history.replaceState(
+        {},
+        "",
+        `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`,
+      );
+      window.localStorage.removeItem("auth_signin_method");
     }
-  }, [isPasswordlessSupported, passwordlessUnavailableMessage, rawAuthError, rawAuthMessage, showError, t]);
+  }, [
+    isPasswordlessSupported,
+    passwordlessUnavailableMessage,
+    rawAuthError,
+    rawAuthMessage,
+    showError,
+    t,
+  ]);
 
   useEffect(() => {
-    if (animationLevel === 'none') {
+    if (animationLevel === "none") {
       formEntrance.setValue(1);
       return;
     }
     formEntrance.setValue(0);
     const formReveal = Animated.timing(formEntrance, {
       toValue: 1,
-      duration: animationLevel === 'reduced' ? 180 : 560,
+      duration: animationLevel === "reduced" ? 180 : 560,
       easing: Easing.out(Easing.cubic),
       useNativeDriver,
     });
@@ -682,23 +826,23 @@ export default function AuthScreen() {
     const normalized = email.trim().toLowerCase();
 
     if (!normalized) {
-      setEmailError(t('emailRequired', 'Email is required'));
+      setEmailError(t("emailRequired", "Email is required"));
       return null;
     }
 
     if (!isValidEmail(normalized)) {
-      setEmailError(t('emailInvalid', 'Please enter a valid email address'));
+      setEmailError(t("emailInvalid", "Please enter a valid email address"));
       return null;
     }
 
-    setEmailError('');
+    setEmailError("");
     return normalized;
   }, [email, t]);
 
   const resetMagicLinkConfirmation = () => {
     setMagicLinkSentAt(null);
     setMagicLinkTimerNow(Date.now());
-    setOtpError('');
+    setOtpError("");
   };
 
   const handleSendMagicLink = async () => {
@@ -706,29 +850,33 @@ export default function AuthScreen() {
     if (magicLinkSentAt !== null && magicLinkResendRemainingSeconds > 0) return;
 
     if (!isPasswordlessSupported) {
-      showError(t('authenticationError', 'Authentication Error'), passwordlessUnavailableMessage);
+      showError(
+        t("authenticationError", "Authentication Error"),
+        passwordlessUnavailableMessage,
+      );
       return;
     }
 
     const normalizedEmail = validateEmailOrShowError();
     if (!normalizedEmail) return;
 
-    setBusyAction('magic-link');
-    setOtpError('');
+    setBusyAction("magic-link");
+    setOtpError("");
 
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem('auth_signin_method', 'magic_link');
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem("auth_signin_method", "magic_link");
       }
 
-      const nativeRelay = Platform.OS !== 'web';
+      const nativeRelay = Platform.OS !== "web";
       // React Native polyfills expose window.location.origin as "null" or the Metro
       // dev-server URL (http://localhost:8081). Both are unusable as OAuth redirect
       // origins — fall back to the EXPO_PUBLIC_SITE_URL env var instead.
-      const rawWindowOrigin = typeof window !== 'undefined' ? window.location?.origin : undefined;
+      const rawWindowOrigin =
+        typeof window !== "undefined" ? window.location?.origin : undefined;
       const isUnusableOrigin =
         !rawWindowOrigin ||
-        rawWindowOrigin === 'null' ||
+        rawWindowOrigin === "null" ||
         /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(rawWindowOrigin);
       const safeWindowOrigin = isUnusableOrigin ? undefined : rawWindowOrigin;
       const redirectTo = getSupabaseOAuthRedirectUrl({
@@ -750,25 +898,25 @@ export default function AuthScreen() {
       }
 
       setOtpSent(false);
-      setOtpDigits(new Array(OTP_CODE_LENGTH).fill(''));
+      setOtpDigits(new Array(OTP_CODE_LENGTH).fill(""));
       setMagicLinkSentAt(Date.now());
       setMagicLinkTimerNow(Date.now());
 
       showSuccess(
-        t('magicLinkSentTitle', 'Link sent'),
-        t('magicLinkSentMessage', 'Please check your email to login.')
+        t("magicLinkSentTitle", "Link sent"),
+        t("magicLinkSentMessage", "Please check your email to login."),
       );
     } catch (error: any) {
       const message = extractApiError(
         error?.message,
-        t('magicLinkFailed', 'Could not send magic link. Please try again.')
+        t("magicLinkFailed", "Could not send magic link. Please try again."),
       );
 
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.removeItem('auth_signin_method');
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.removeItem("auth_signin_method");
       }
 
-      showError(t('authenticationError', 'Authentication Error'), message);
+      showError(t("authenticationError", "Authentication Error"), message);
     } finally {
       setBusyAction(null);
     }
@@ -779,95 +927,112 @@ export default function AuthScreen() {
     if (otpCodeSentAt !== null && otpResendRemainingSeconds > 0) return;
 
     if (!isPasswordlessSupported) {
-      showError(t('authenticationError', 'Authentication Error'), passwordlessUnavailableMessage);
+      showError(
+        t("authenticationError", "Authentication Error"),
+        passwordlessUnavailableMessage,
+      );
       return;
     }
 
     const normalizedEmail = validateEmailOrShowError();
     if (!normalizedEmail) return;
 
-    let normalizedPhone = '';
-    if (otpDeliveryMethod === 'sms') {
+    let normalizedPhone = "";
+    if (otpDeliveryMethod === "sms") {
       const localNumber = normalizePhoneDigits(phone);
-      normalizedPhone = buildE164Phone(selectedCountry?.dialCode || '', localNumber);
+      normalizedPhone = buildE164Phone(
+        selectedCountry?.dialCode || "",
+        localNumber,
+      );
 
       if (!normalizedPhone) {
-        setPhoneError(t('phoneRequired', 'Phone number is required for SMS OTP.'));
+        setPhoneError(
+          t("phoneRequired", "Phone number is required for SMS OTP."),
+        );
         return;
       }
       if (!isValidE164Phone(normalizedPhone)) {
         setPhoneError(
           t(
-            'phoneInvalid',
-            'Enter a valid phone number. The country code is selected separately.'
-          )
+            "phoneInvalid",
+            "Enter a valid phone number. The country code is selected separately.",
+          ),
         );
         return;
       }
     }
 
-    setBusyAction('otp-send');
-    setOtpError('');
-    setPhoneError('');
+    setBusyAction("otp-send");
+    setOtpError("");
+    setPhoneError("");
 
     try {
       const response = (await apiClient.post(
-        '/auth/otp',
+        "/auth/otp",
         {
           email: normalizedEmail,
           delivery: otpDeliveryMethod,
-          phone: otpDeliveryMethod === 'sms' ? normalizedPhone : undefined,
+          phone: otpDeliveryMethod === "sms" ? normalizedPhone : undefined,
         },
         {
           skipEventSegment: true,
           skipAuth: true,
           retries: 0,
           timeout: OTP_API_TIMEOUT_MS,
-        }
+        },
       )) as {
         success?: boolean;
         data?: {
           success?: boolean;
           message?: string;
           error?: string;
-          delivery?: 'email' | 'sms';
+          delivery?: "email" | "sms";
         };
         error?: string;
       };
 
       if (!response.success) {
-        throw new Error(response.error || t('otpSendFailed', 'Could not send verification code.'));
+        throw new Error(
+          response.error ||
+            t("otpSendFailed", "Could not send verification code."),
+        );
       }
 
       if (!response.data?.success) {
         throw new Error(
-          extractApiError(response.data, t('otpSendFailed', 'Could not send verification code.'))
+          extractApiError(
+            response.data,
+            t("otpSendFailed", "Could not send verification code."),
+          ),
         );
       }
 
       setOtpSent(true);
-      setOtpDigits(new Array(OTP_CODE_LENGTH).fill(''));
+      setOtpDigits(new Array(OTP_CODE_LENGTH).fill(""));
       setOtpCodeSentAt(Date.now());
       setMagicLinkTimerNow(Date.now());
       focusOtpInput(0);
 
       showSuccess(
-        t('otpCodeSent', 'Verification code sent'),
-        otpDeliveryMethod === 'sms'
-          ? t('otpSmsSentMessage', 'Check your phone for the 6-digit code.')
-          : t('otpCodeSentMessage', 'Check your email for the 6-digit code.')
+        t("otpCodeSent", "Verification code sent"),
+        otpDeliveryMethod === "sms"
+          ? t("otpSmsSentMessage", "Check your phone for the 6-digit code.")
+          : t("otpCodeSentMessage", "Check your email for the 6-digit code."),
       );
     } catch (error: any) {
       const message = extractApiError(
         error?.message,
-        t('otpSendFailed', 'Could not send verification code. Please try again.')
+        t(
+          "otpSendFailed",
+          "Could not send verification code. Please try again.",
+        ),
       );
 
-      if (otpDeliveryMethod === 'sms' && /phone/i.test(message)) {
+      if (otpDeliveryMethod === "sms" && /phone/i.test(message)) {
         setPhoneError(message);
       }
 
-      showError(t('authenticationError', 'Authentication Error'), message);
+      showError(t("authenticationError", "Authentication Error"), message);
     } finally {
       setBusyAction(null);
     }
@@ -877,7 +1042,10 @@ export default function AuthScreen() {
     if (isBusy) return;
 
     if (!isPasswordlessSupported) {
-      showError(t('authenticationError', 'Authentication Error'), passwordlessUnavailableMessage);
+      showError(
+        t("authenticationError", "Authentication Error"),
+        passwordlessUnavailableMessage,
+      );
       return;
     }
 
@@ -887,30 +1055,39 @@ export default function AuthScreen() {
     const normalizedCode = otpCode.trim();
     if (normalizedCode.length !== OTP_CODE_LENGTH) {
       setOtpError(
-        t('otpLengthError', `Please enter the ${OTP_CODE_LENGTH}-digit verification code.`)
+        t(
+          "otpLengthError",
+          `Please enter the ${OTP_CODE_LENGTH}-digit verification code.`,
+        ),
       );
       return;
     }
 
-    setBusyAction('otp-verify');
-    setOtpError('');
+    setBusyAction("otp-verify");
+    setOtpError("");
 
     try {
       const verifyResponse = (await apiClient.post(
-        '/auth/otp/verify',
+        "/auth/otp/verify",
         { email: normalizedEmail, code: normalizedCode },
         {
           skipEventSegment: true,
           skipAuth: true,
           retries: 0,
           timeout: OTP_API_TIMEOUT_MS,
-        }
+        },
       )) as {
         success?: boolean;
         data?: {
           success?: boolean;
           token_hash?: string;
-          type?: 'signup' | 'invite' | 'magiclink' | 'recovery' | 'email_change' | 'email';
+          type?:
+            | "signup"
+            | "invite"
+            | "magiclink"
+            | "recovery"
+            | "email_change"
+            | "email";
           email?: string;
           session?: {
             access_token?: string;
@@ -924,16 +1101,28 @@ export default function AuthScreen() {
       };
 
       if (!verifyResponse.success) {
-        throw new Error(verifyResponse.error || t('otpInvalid', 'Invalid or expired code.'));
+        throw new Error(
+          verifyResponse.error || t("otpInvalid", "Invalid or expired code."),
+        );
       }
 
       if (!verifyResponse.data?.success || !verifyResponse.data.token_hash) {
-        throw new Error(extractApiError(verifyResponse.data, t('otpInvalid', 'Invalid or expired code.')));
+        throw new Error(
+          extractApiError(
+            verifyResponse.data,
+            t("otpInvalid", "Invalid or expired code."),
+          ),
+        );
       }
 
       const sessionPayload = verifyResponse.data.session;
       if (!sessionPayload?.access_token || !sessionPayload?.refresh_token) {
-        throw new Error(t('otpVerifyFailed', 'Could not verify the code. Please request a new one.'));
+        throw new Error(
+          t(
+            "otpVerifyFailed",
+            "Could not verify the code. Please request a new one.",
+          ),
+        );
       }
 
       const { error: sessionError } = await supabase.auth.setSession({
@@ -945,28 +1134,34 @@ export default function AuthScreen() {
         throw sessionError;
       }
 
-      showSuccess(t('loginSuccess', 'Login successful'), t('welcomeBack', 'Welcome back!'));
+      showSuccess(
+        t("loginSuccess", "Login successful"),
+        t("welcomeBack", "Welcome back!"),
+      );
 
       hasNavigatedRef.current = true;
       router.replace(redirectPath as any);
     } catch (error: any) {
       const rawMessage = extractApiError(
         error?.message,
-        t('otpVerifyFailed', 'Could not verify the code. Please request a new one.')
+        t(
+          "otpVerifyFailed",
+          "Could not verify the code. Please request a new one.",
+        ),
       );
       const message =
         /email link is invalid or has expired/i.test(rawMessage) ||
-          /otp has expired or is invalid/i.test(rawMessage)
-          ? t('otpInvalid', 'Invalid or expired code.')
+        /otp has expired or is invalid/i.test(rawMessage)
+          ? t("otpInvalid", "Invalid or expired code.")
           : /timed out|aborted/i.test(rawMessage)
             ? t(
-                'otpVerifyTimeout',
-                'Verification took too long. Please try again. If the same code fails again, request a new one.'
+                "otpVerifyTimeout",
+                "Verification took too long. Please try again. If the same code fails again, request a new one.",
               )
-          : rawMessage;
+            : rawMessage;
 
       setOtpError(message);
-      showError(t('authenticationError', 'Authentication Error'), message);
+      showError(t("authenticationError", "Authentication Error"), message);
     } finally {
       setBusyAction(null);
     }
@@ -986,29 +1181,36 @@ export default function AuthScreen() {
   ]);
 
   // Auto-submit when all 6 digit slots are filled
-  const autoSubmittedCodeRef = useRef('');
+  const autoSubmittedCodeRef = useRef("");
   useEffect(() => {
-    const allFilled = otpDigits.every((d) => d !== '');
-    const fullCode = otpDigits.join('');
-    if (allFilled && otpSent && !isBusy && autoSubmittedCodeRef.current !== fullCode) {
+    const allFilled = otpDigits.every((d) => d !== "");
+    const fullCode = otpDigits.join("");
+    if (
+      allFilled &&
+      otpSent &&
+      !isBusy &&
+      autoSubmittedCodeRef.current !== fullCode
+    ) {
       autoSubmittedCodeRef.current = fullCode;
       void handleVerifyOtpCode();
     }
     if (!allFilled) {
-      autoSubmittedCodeRef.current = '';
+      autoSubmittedCodeRef.current = "";
     }
   }, [handleVerifyOtpCode, isBusy, otpDigits, otpSent]);
 
   const handleDigitChange = (index: number, value: string) => {
-    const cleaned = value.replace(/[^0-9]/g, '');
+    const cleaned = value.replace(/[^0-9]/g, "");
 
     if (cleaned.length > 1) {
       // SMS auto-fill or paste: distribute from index 0
-      const chars = cleaned.slice(0, OTP_CODE_LENGTH).split('');
-      const newDigits = new Array(OTP_CODE_LENGTH).fill('');
-      chars.forEach((c, i) => { newDigits[i] = c; });
+      const chars = cleaned.slice(0, OTP_CODE_LENGTH).split("");
+      const newDigits = new Array(OTP_CODE_LENGTH).fill("");
+      chars.forEach((c, i) => {
+        newDigits[i] = c;
+      });
       setOtpDigits(newDigits);
-      if (otpError) setOtpError('');
+      if (otpError) setOtpError("");
       const nextFocus = Math.min(chars.length, OTP_CODE_LENGTH - 1);
       digitRefs.current[nextFocus]?.focus();
       return;
@@ -1017,7 +1219,7 @@ export default function AuthScreen() {
     const newDigits = [...otpDigits];
     newDigits[index] = cleaned;
     setOtpDigits(newDigits);
-    if (otpError) setOtpError('');
+    if (otpError) setOtpError("");
 
     if (cleaned && index < OTP_CODE_LENGTH - 1) {
       digitRefs.current[index + 1]?.focus();
@@ -1025,14 +1227,14 @@ export default function AuthScreen() {
   };
 
   const handleDigitKeyPress = (index: number, key: string) => {
-    if (key === 'Backspace') {
+    if (key === "Backspace") {
       if (otpDigits[index]) {
         const newDigits = [...otpDigits];
-        newDigits[index] = '';
+        newDigits[index] = "";
         setOtpDigits(newDigits);
       } else if (index > 0) {
         const newDigits = [...otpDigits];
-        newDigits[index - 1] = '';
+        newDigits[index - 1] = "";
         setOtpDigits(newDigits);
         digitRefs.current[index - 1]?.focus();
       }
@@ -1040,8 +1242,8 @@ export default function AuthScreen() {
   };
 
   const handleClearOtpCode = () => {
-    setOtpDigits(new Array(OTP_CODE_LENGTH).fill(''));
-    setOtpError('');
+    setOtpDigits(new Array(OTP_CODE_LENGTH).fill(""));
+    setOtpError("");
     digitRefs.current[0]?.focus();
   };
 
@@ -1049,33 +1251,36 @@ export default function AuthScreen() {
     if (isBusy || oauthInFlightRef.current) return;
 
     oauthInFlightRef.current = true;
-    setBusyAction('oauth');
+    setBusyAction("oauth");
     let keepOAuthBusy = false;
 
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem('auth_signin_method', 'google_oauth');
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem("auth_signin_method", "google_oauth");
       }
 
-      const result = await signInWithOAuth('google');
+      const result = await signInWithOAuth("google");
 
       if (result.pending) {
         keepOAuthBusy = true;
         return;
       }
 
-      showSuccess(t('loginSuccess', 'Login successful'), t('welcomeBack', 'Welcome back!'));
+      showSuccess(
+        t("loginSuccess", "Login successful"),
+        t("welcomeBack", "Welcome back!"),
+      );
     } catch (error: any) {
       const message = extractApiError(
         error?.message,
-        t('oauthError', 'Google sign-in failed. Please try again.')
+        t("oauthError", "Google sign-in failed. Please try again."),
       );
 
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.removeItem('auth_signin_method');
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.removeItem("auth_signin_method");
       }
 
-      showError(t('authenticationError', 'Authentication Error'), message);
+      showError(t("authenticationError", "Authentication Error"), message);
     } finally {
       if (!keepOAuthBusy) {
         oauthInFlightRef.current = false;
@@ -1085,33 +1290,36 @@ export default function AuthScreen() {
   };
 
   const openPrivacyModal = () => {
-    setModalType('privacy');
+    setModalType("privacy");
     setModalVisible(true);
   };
 
   const openTermsModal = () => {
-    setModalType('terms');
+    setModalType("terms");
     setModalVisible(true);
   };
 
   const applyEmailSuggestion = (suggestedEmail: string) => {
     setEmail(suggestedEmail);
     setEmailSuggestionsDismissed(false);
-    if (emailError) setEmailError('');
+    if (emailError) setEmailError("");
 
     const focusInput = () => {
       emailInputRef.current?.focus();
-      activeSubmitFieldRef.current = 'email';
+      activeSubmitFieldRef.current = "email";
       try {
         emailInputRef.current?.setNativeProps?.({
-          selection: { start: suggestedEmail.length, end: suggestedEmail.length },
+          selection: {
+            start: suggestedEmail.length,
+            end: suggestedEmail.length,
+          },
         });
       } catch {
         // Ignore selection assignment failures on unsupported targets.
       }
     };
 
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       setTimeout(focusInput, 0);
       return;
     }
@@ -1123,13 +1331,16 @@ export default function AuthScreen() {
     const previousNormalizedEmail = email.trim().toLowerCase();
     const nextNormalizedEmail = text.trim().toLowerCase();
 
-    if (emailSuggestionsDismissed && previousNormalizedEmail !== nextNormalizedEmail) {
+    if (
+      emailSuggestionsDismissed &&
+      previousNormalizedEmail !== nextNormalizedEmail
+    ) {
       setEmailSuggestionsDismissed(false);
     }
 
     setEmail(text);
     setActiveEmailSuggestionIndex(0);
-    if (emailError) setEmailError('');
+    if (emailError) setEmailError("");
   };
 
   const dismissEmailSuggestions = () => {
@@ -1161,7 +1372,7 @@ export default function AuthScreen() {
   const handlePrimaryEmailAction = () => {
     if (tryApplyTopEmailSuggestion()) return;
 
-    if (emailAuthMethod === 'magic-link') {
+    if (emailAuthMethod === "magic-link") {
       void handleSendMagicLink();
       return;
     }
@@ -1183,20 +1394,20 @@ export default function AuthScreen() {
 
   const handleEnterKeyPress = (
     event: NativeSyntheticEvent<TextInputKeyPressEventData>,
-    action: () => void
+    action: () => void,
   ) => {
-    if (Platform.OS !== 'web') return;
-    if (event.nativeEvent.key !== 'Enter') return;
+    if (Platform.OS !== "web") return;
+    if (event.nativeEvent.key !== "Enter") return;
     runSubmitAction(action);
   };
 
   const handleEmailInputKeyPress = (
-    event: NativeSyntheticEvent<TextInputKeyPressEventData>
+    event: NativeSyntheticEvent<TextInputKeyPressEventData>,
   ) => {
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== "web") return;
 
     const key = event.nativeEvent.key;
-    if (key === 'Tab') {
+    if (key === "Tab") {
       if (shouldShowEmailSuggestions && emailSuggestions.length > 0) {
         const isShiftPressed = Boolean((event.nativeEvent as any).shiftKey);
         setActiveEmailSuggestionIndex((previousIndex) => {
@@ -1210,7 +1421,7 @@ export default function AuthScreen() {
       return;
     }
 
-    if (key === 'Enter') {
+    if (key === "Enter") {
       if (acceptActiveEmailSuggestion()) {
         (event as any).preventDefault?.();
         return;
@@ -1220,12 +1431,18 @@ export default function AuthScreen() {
   };
 
   const focusOtpInput = (selectionIndex = 0) => {
-    const boundedIndex = Math.max(0, Math.min(OTP_CODE_LENGTH - 1, selectionIndex));
+    const boundedIndex = Math.max(
+      0,
+      Math.min(OTP_CODE_LENGTH - 1, selectionIndex),
+    );
     const focus = () => {
       digitRefs.current[boundedIndex]?.focus();
-      activeSubmitFieldRef.current = 'otp';
+      activeSubmitFieldRef.current = "otp";
     };
-    if (Platform.OS === 'web') { setTimeout(focus, 0); return; }
+    if (Platform.OS === "web") {
+      setTimeout(focus, 0);
+      return;
+    }
     focus();
   };
 
@@ -1234,7 +1451,7 @@ export default function AuthScreen() {
     if (tryApplyTopEmailSuggestion()) return;
 
     // If OTP was already sent, move focus to the code input instead of submitting empty code.
-    if (emailAuthMethod === 'otp-code' && otpSent) {
+    if (emailAuthMethod === "otp-code" && otpSent) {
       focusOtpInput();
       return;
     }
@@ -1252,7 +1469,7 @@ export default function AuthScreen() {
   };
 
   const focusEmailInput = () => {
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== "web") return;
     setTimeout(() => {
       emailInputRef.current?.focus();
     }, 0);
@@ -1260,7 +1477,7 @@ export default function AuthScreen() {
 
   const handlePhoneInputSubmit = () => {
     if (isBusy) return;
-    if (emailAuthMethod === 'otp-code' && !otpSent) {
+    if (emailAuthMethod === "otp-code" && !otpSent) {
       handlePrimaryEmailAction();
     }
   };
@@ -1270,7 +1487,10 @@ export default function AuthScreen() {
 
     if (otpCode.trim().length !== OTP_CODE_LENGTH) {
       setOtpError(
-        t('otpLengthError', `Please enter the ${OTP_CODE_LENGTH}-digit verification code.`)
+        t(
+          "otpLengthError",
+          `Please enter the ${OTP_CODE_LENGTH}-digit verification code.`,
+        ),
       );
       return;
     }
@@ -1278,16 +1498,19 @@ export default function AuthScreen() {
     void handleVerifyOtpCode();
   };
 
-  submitActionsRef.current.primary = () => runSubmitAction(handlePrimaryEmailAction);
-  submitActionsRef.current.email = () => runSubmitAction(handleEmailInputSubmit);
-  submitActionsRef.current.phone = () => runSubmitAction(handlePhoneInputSubmit);
+  submitActionsRef.current.primary = () =>
+    runSubmitAction(handlePrimaryEmailAction);
+  submitActionsRef.current.email = () =>
+    runSubmitAction(handleEmailInputSubmit);
+  submitActionsRef.current.phone = () =>
+    runSubmitAction(handlePhoneInputSubmit);
   submitActionsRef.current.otp = () => runSubmitAction(handleOtpInputSubmit);
 
   useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
 
     const handleWindowEnter = (event: KeyboardEvent) => {
-      if (event.key !== 'Enter' && event.key !== 'NumpadEnter') return;
+      if (event.key !== "Enter" && event.key !== "NumpadEnter") return;
       if (event.defaultPrevented) return;
 
       const target = event.target as HTMLElement | null;
@@ -1299,7 +1522,10 @@ export default function AuthScreen() {
 
       const activeField = activeSubmitFieldRef.current;
       if (activeField) {
-        if (activeField === 'email' && acceptActiveEmailSuggestionRef.current()) {
+        if (
+          activeField === "email" &&
+          acceptActiveEmailSuggestionRef.current()
+        ) {
           return;
         }
         submitActionsRef.current[activeField]();
@@ -1309,35 +1535,59 @@ export default function AuthScreen() {
       submitActionsRef.current.primary();
     };
 
-    window.addEventListener('keydown', handleWindowEnter);
-    return () => window.removeEventListener('keydown', handleWindowEnter);
+    window.addEventListener("keydown", handleWindowEnter);
+    return () => window.removeEventListener("keydown", handleWindowEnter);
   }, []);
 
   if (authLoading) {
     return (
-      <SafeAreaView style={[styles.container, styles.centered, styles.containerWeb]}>
+      <SafeAreaView
+        style={[styles.container, styles.centered, styles.containerWeb]}
+      >
         {showAuthBackground ? <ShaderAnimation /> : null}
-        <Text style={styles.loadingText}>{t('checkingAuth', 'Checking authentication...')}</Text>
+        <Text style={styles.loadingText}>
+          {t("checkingAuth", "Checking authentication...")}
+        </Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, styles.containerWeb]} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={[styles.container, styles.containerWeb]}
+      edges={["top", "bottom"]}
+    >
       {showAuthBackground ? <ShaderAnimation /> : null}
-      <View style={[styles.layoutShell, isDesktopLayout ? styles.layoutShellDesktop : null]}>
-        <View style={[styles.formPane, isDesktopLayout ? styles.formPaneDesktop : null]}>
+      <View
+        style={[
+          styles.layoutShell,
+          isDesktopLayout ? styles.layoutShellDesktop : null,
+        ]}
+      >
+        <View
+          style={[
+            styles.formPane,
+            isDesktopLayout ? styles.formPaneDesktop : null,
+          ]}
+        >
           <QuickSettingsPanel />
 
           <TouchableOpacity
-            style={[styles.backButton, isDesktopLayout ? styles.backButtonDesktop : null]}
-            onPress={() => router.push('/home')}
-            accessibilityLabel={t('back', 'Go Back')}
+            style={[
+              styles.backButton,
+              isDesktopLayout ? styles.backButtonDesktop : null,
+            ]}
+            onPress={() => router.push("/home")}
+            accessibilityLabel={t("back", "Go Back")}
             accessibilityRole="button"
             activeOpacity={0.85}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="arrow-back" size={26} color={isDark ? '#f8f8fb' : '#121212'} />
+            <Ionicons
+              name="arrow-back"
+              size={26}
+              color={isDark ? "#f8f8fb" : "#121212"}
+            />
           </TouchableOpacity>
 
           <ScrollView
@@ -1351,11 +1601,23 @@ export default function AuthScreen() {
             keyboardDismissMode="on-drag"
             bounces={false}
           >
-            <View style={[styles.content, isDesktopLayout ? styles.contentDesktop : null]}>
-              <View style={[styles.authHeaderBlock, isDesktopLayout ? styles.authHeaderBlockDesktop : null]}>
-                <Text style={styles.authHeaderTitle}>{t('welcomeHeading', 'Welcome')}</Text>
+            <View
+              style={[
+                styles.content,
+                isDesktopLayout ? styles.contentDesktop : null,
+              ]}
+            >
+              <View
+                style={[
+                  styles.authHeaderBlock,
+                  isDesktopLayout ? styles.authHeaderBlockDesktop : null,
+                ]}
+              >
+                <Text style={styles.authHeaderTitle}>
+                  {t("welcomeHeading", "Welcome")}
+                </Text>
                 <Text style={styles.authHeaderSubtitle}>
-                  {t('subtitle', 'Sign in to unlock your digital life.')}
+                  {t("subtitle", "Sign in to unlock your digital life.")}
                 </Text>
               </View>
 
@@ -1363,13 +1625,18 @@ export default function AuthScreen() {
                 style={
                   isDesktopLayout
                     ? {
-                      opacity: formCardOpacity,
-                      transform: [{ translateY: formCardTranslateY }],
-                    }
+                        opacity: formCardOpacity,
+                        transform: [{ translateY: formCardTranslateY }],
+                      }
                     : null
                 }
               >
-                <View style={[styles.authCard, isDesktopLayout ? styles.authCardDesktop : null]}>
+                <View
+                  style={[
+                    styles.authCard,
+                    isDesktopLayout ? styles.authCardDesktop : null,
+                  ]}
+                >
                   <View style={styles.logoContainer}>
                     <Image
                       source={authLogoSource}
@@ -1378,31 +1645,42 @@ export default function AuthScreen() {
                     />
                   </View>
 
-                  <View style={styles.primaryAuthContainer} dataSet={{ authEnterSubmit: 'true' }}>
+                  <View
+                    style={styles.primaryAuthContainer}
+                    dataSet={{ authEnterSubmit: "true" }}
+                  >
                     {!isPasswordlessSupported ? (
                       <View style={styles.passwordlessInfoCard}>
                         <Ionicons
                           name="information-circle-outline"
                           size={28}
-                          color={isDark ? '#f5f5f5' : '#1f2125'}
+                          color={isDark ? "#f5f5f5" : "#1f2125"}
                         />
                         <Text style={styles.passwordlessInfoTitle}>
-                          {t('passwordlessUnavailableTitle', 'Email Link and OTP Unavailable')}
+                          {t(
+                            "passwordlessUnavailableTitle",
+                            "Email Link and OTP Unavailable",
+                          )}
                         </Text>
-                        <Text style={styles.passwordlessInfoMessage}>{passwordlessUnavailableMessage}</Text>
+                        <Text style={styles.passwordlessInfoMessage}>
+                          {passwordlessUnavailableMessage}
+                        </Text>
                       </View>
                     ) : isMagicLinkConfirmationVisible ? (
                       <View style={styles.magicLinkConfirmationCard}>
                         <Ionicons
                           name="mail-open-outline"
                           size={30}
-                          color={isDark ? '#f5f5f5' : '#1f2125'}
+                          color={isDark ? "#f5f5f5" : "#1f2125"}
                         />
                         <Text style={styles.magicLinkConfirmationTitle}>
-                          {t('magicLinkSentTitle', 'Link sent')}
+                          {t("magicLinkSentTitle", "Link sent")}
                         </Text>
                         <Text style={styles.magicLinkConfirmationMessage}>
-                          {t('magicLinkSentMessage', 'Please check your email to login.')}
+                          {t(
+                            "magicLinkSentMessage",
+                            "Please check your email to login.",
+                          )}
                         </Text>
                         <Text
                           style={styles.magicLinkConfirmationEmail}
@@ -1413,17 +1691,19 @@ export default function AuthScreen() {
                         </Text>
                         {magicLinkResendRemainingSeconds > 0 ? (
                           <Text style={styles.magicLinkCountdownText}>
-                            {t('magicLinkResendCountdown', { seconds: magicLinkResendRemainingSeconds })}
+                            {t("magicLinkResendCountdown", {
+                              seconds: magicLinkResendRemainingSeconds,
+                            })}
                           </Text>
                         ) : (
                           <TouchableOpacity
                             style={styles.secondaryActionButton}
                             onPress={() => void handleSendMagicLink()}
                             disabled={isBusy}
-                            dataSet={{ authEnterIgnore: 'true' }}
+                            dataSet={{ authEnterIgnore: "true" }}
                           >
                             <Text style={styles.secondaryActionText}>
-                              {t('magicLinkSendAnother', 'Send another link')}
+                              {t("magicLinkSendAnother", "Send another link")}
                             </Text>
                           </TouchableOpacity>
                         )}
@@ -1432,9 +1712,11 @@ export default function AuthScreen() {
                           style={styles.magicLinkCloseButton}
                           onPress={resetMagicLinkConfirmation}
                           disabled={isBusy}
-                          dataSet={{ authEnterIgnore: 'true' }}
+                          dataSet={{ authEnterIgnore: "true" }}
                         >
-                          <Text style={styles.magicLinkCloseText}>{t('magicLinkClose', 'Close')}</Text>
+                          <Text style={styles.magicLinkCloseText}>
+                            {t("magicLinkClose", "Close")}
+                          </Text>
                         </TouchableOpacity>
                       </View>
                     ) : (
@@ -1448,7 +1730,9 @@ export default function AuthScreen() {
                           <Ionicons
                             name="mail-outline"
                             size={18}
-                            color={emailError ? '#F44336' : colors.text.secondary}
+                            color={
+                              emailError ? "#F44336" : colors.text.secondary
+                            }
                             style={styles.inputIcon}
                           />
                           <TextInput
@@ -1456,17 +1740,20 @@ export default function AuthScreen() {
                             style={styles.emailInput}
                             value={email}
                             onChangeText={handleEmailInputChange}
-                            placeholder={t('emailPlaceholder', 'Enter your email')}
+                            placeholder={t(
+                              "emailPlaceholder",
+                              "Enter your email",
+                            )}
                             placeholderTextColor={colors.text.secondary}
                             keyboardType="email-address"
                             autoCapitalize="none"
                             autoCorrect={false}
                             editable={!isBusy}
                             onFocus={() => {
-                              activeSubmitFieldRef.current = 'email';
+                              activeSubmitFieldRef.current = "email";
                             }}
                             onBlur={() => {
-                              if (activeSubmitFieldRef.current === 'email') {
+                              if (activeSubmitFieldRef.current === "email") {
                                 activeSubmitFieldRef.current = null;
                               }
                             }}
@@ -1475,387 +1762,519 @@ export default function AuthScreen() {
                             onKeyPress={handleEmailInputKeyPress}
                           />
                         </View>
-                  {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-                  {shouldShowEmailSuggestions ? (
-                    <View style={styles.emailSuggestionsContainer}>
-                      <View style={styles.emailSuggestionsHeader}>
-                        <Text style={styles.emailSuggestionsTitle}>
-                          {t('emailAutocompleteTitle', 'Suggestions')}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.emailSuggestionsCloseButton}
-                          onPress={dismissEmailSuggestions}
-                          disabled={isBusy}
-                          dataSet={{ authEnterIgnore: 'true' }}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('closeSuggestions', 'Close suggestions')}
-                        >
-                          <Ionicons name="close" size={16} color={isDark ? '#cfd3de' : '#5f6678'} />
-                        </TouchableOpacity>
-                      </View>
-                      <ScrollView
-                        style={styles.emailSuggestionsList}
-                        nestedScrollEnabled
-                        keyboardShouldPersistTaps="handled"
-                        showsVerticalScrollIndicator
-                        dataSet={{ authEnterIgnore: 'true' }}
-                      >
-                        {emailSuggestions.map((suggestion, index) => (
-                          <TouchableOpacity
-                            key={suggestion}
-                            style={[
-                              styles.emailSuggestionItem,
-                              index === 0 ? styles.emailSuggestionItemFirst : null,
-                              index === activeEmailSuggestionIndex ? styles.emailSuggestionItemActive : null,
-                            ]}
-                            onPress={() => applyEmailSuggestion(suggestion)}
-                            disabled={isBusy}
-                            dataSet={{ authEnterIgnore: 'true' }}
-                          >
-                            <Text style={styles.emailSuggestionText} numberOfLines={1}>
-                              {suggestion}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  ) : null}
-
-                  <View style={styles.methodTabs}>
-                    <TouchableOpacity
-                      style={[
-                        styles.methodTab,
-                        emailAuthMethod === 'magic-link' ? styles.methodTabActive : null,
-                      ]}
-                      onPress={() => {
-                        setEmailAuthMethod('magic-link');
-                        resetMagicLinkConfirmation();
-                        setOtpError('');
-                        setPhoneError('');
-                        focusEmailInput();
-                      }}
-                      disabled={isBusy}
-                    >
-                      <Ionicons
-                        name="link-outline"
-                        size={16}
-                        color={emailAuthMethod === 'magic-link' ? colors.text.primary : colors.text.secondary}
-                      />
-                      <Text
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                        style={[
-                          styles.methodTabText,
-                          emailAuthMethod === 'magic-link' ? styles.methodTabTextActive : null,
-                        ]}
-                      >
-                        {t('magicLink', 'Magic Link')}
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.methodTab,
-                        emailAuthMethod === 'otp-code' ? styles.methodTabActive : null,
-                      ]}
-                      onPress={() => {
-                        setEmailAuthMethod('otp-code');
-                        resetMagicLinkConfirmation();
-                        setOtpError('');
-                        setPhoneError('');
-                        focusEmailInput();
-                      }}
-                      disabled={isBusy}
-                    >
-                      <Ionicons
-                        name="keypad-outline"
-                        size={16}
-                        color={emailAuthMethod === 'otp-code' ? colors.text.primary : colors.text.secondary}
-                      />
-                      <Text
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                        style={[
-                          styles.methodTabText,
-                          emailAuthMethod === 'otp-code' ? styles.methodTabTextActive : null,
-                        ]}
-                      >
-                        {t('otpCode', 'OTP Code')}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {emailAuthMethod === 'otp-code' ? (
-                    <View style={styles.otpDeliveryContainer}>
-                      <TouchableOpacity
-                        style={styles.deliverySwitchButton}
-                        onPress={() => {
-                          setOtpDeliveryMethod((prev) => (prev === 'email' ? 'sms' : 'email'));
-                          setPhoneError('');
-                          setCountryPickerVisible(false);
-                          setCountrySearchQuery('');
-                        }}
-                        disabled={isBusy}
-                        dataSet={{ authEnterIgnore: 'true' }}
-                      >
-                        <Text style={styles.deliverySwitchText}>
-                          {otpDeliveryMethod === 'email'
-                            ? t('cantAccessEmailUseSms', "Can't access email? Send OTP by SMS")
-                            : t('useEmailOtpInstead', 'Use email OTP instead')}
-                        </Text>
-                      </TouchableOpacity>
-
-                      {otpDeliveryMethod === 'sms' ? (
-                        <>
-                          <View style={styles.phoneRow}>
-                            <TouchableOpacity
-                              style={styles.countryPickerButton}
-                              onPress={() => setCountryPickerVisible(true)}
-                              disabled={isBusy}
-                              accessibilityRole="button"
-                              accessibilityLabel={t('selectCountryCode', 'Select country code')}
-                              dataSet={{ authEnterIgnore: 'true' }}
+                        {emailError ? (
+                          <Text style={styles.errorText}>{emailError}</Text>
+                        ) : null}
+                        {shouldShowEmailSuggestions ? (
+                          <View style={styles.emailSuggestionsContainer}>
+                            <View style={styles.emailSuggestionsHeader}>
+                              <Text style={styles.emailSuggestionsTitle}>
+                                {t("emailAutocompleteTitle", "Suggestions")}
+                              </Text>
+                              <TouchableOpacity
+                                style={styles.emailSuggestionsCloseButton}
+                                onPress={dismissEmailSuggestions}
+                                disabled={isBusy}
+                                dataSet={{ authEnterIgnore: "true" }}
+                                accessibilityRole="button"
+                                accessibilityLabel={t(
+                                  "closeSuggestions",
+                                  "Close suggestions",
+                                )}
+                              >
+                                <Ionicons
+                                  name="close"
+                                  size={16}
+                                  color={isDark ? "#cfd3de" : "#5f6678"}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                            <ScrollView
+                              style={styles.emailSuggestionsList}
+                              nestedScrollEnabled
+                              keyboardShouldPersistTaps="handled"
+                              showsVerticalScrollIndicator
+                              dataSet={{ authEnterIgnore: "true" }}
                             >
-                              <Text style={styles.countryPickerDialCode}>
-                                +{selectedCountry?.dialCode || '1'}
-                              </Text>
-                              <Text style={styles.countryPickerISO2}>
-                                {selectedCountry?.iso2 || 'US'}
-                              </Text>
-                              <Ionicons
-                                name="chevron-down"
-                                size={16}
-                                color={colors.text.secondary}
-                              />
-                            </TouchableOpacity>
+                              {emailSuggestions.map((suggestion, index) => (
+                                <TouchableOpacity
+                                  key={suggestion}
+                                  style={[
+                                    styles.emailSuggestionItem,
+                                    index === 0
+                                      ? styles.emailSuggestionItemFirst
+                                      : null,
+                                    index === activeEmailSuggestionIndex
+                                      ? styles.emailSuggestionItemActive
+                                      : null,
+                                  ]}
+                                  onPress={() =>
+                                    applyEmailSuggestion(suggestion)
+                                  }
+                                  disabled={isBusy}
+                                  dataSet={{ authEnterIgnore: "true" }}
+                                >
+                                  <Text
+                                    style={styles.emailSuggestionText}
+                                    numberOfLines={1}
+                                  >
+                                    {suggestion}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </ScrollView>
+                          </View>
+                        ) : null}
 
-                            <View
+                        <View style={styles.methodTabs}>
+                          <TouchableOpacity
+                            style={[
+                              styles.methodTab,
+                              emailAuthMethod === "magic-link"
+                                ? styles.methodTabActive
+                                : null,
+                            ]}
+                            onPress={() => {
+                              setEmailAuthMethod("magic-link");
+                              resetMagicLinkConfirmation();
+                              setOtpError("");
+                              setPhoneError("");
+                              focusEmailInput();
+                            }}
+                            disabled={isBusy}
+                          >
+                            <Ionicons
+                              name="link-outline"
+                              size={16}
+                              color={
+                                emailAuthMethod === "magic-link"
+                                  ? colors.text.primary
+                                  : colors.text.secondary
+                              }
+                            />
+                            <Text
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
                               style={[
-                                styles.emailInputContainer,
-                                styles.phoneInputContainer,
-                                phoneError ? styles.emailInputContainerError : null,
+                                styles.methodTabText,
+                                emailAuthMethod === "magic-link"
+                                  ? styles.methodTabTextActive
+                                  : null,
                               ]}
                             >
-                              <Ionicons
-                                name="call-outline"
-                                size={18}
-                                color={phoneError ? '#F44336' : colors.text.secondary}
-                                style={styles.inputIcon}
-                              />
-                              <TextInput
-                                style={styles.emailInput}
-                                value={phone}
-                                onChangeText={(text) => {
-                                  setPhone(text.replace(/[^\d]/g, ''));
-                                  if (phoneError) setPhoneError('');
-                                }}
-                                placeholder={t('phonePlaceholder', 'Enter your phone number')}
-                                placeholderTextColor={colors.text.secondary}
-                                keyboardType="phone-pad"
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                editable={!isBusy}
-                                onFocus={() => {
-                                  activeSubmitFieldRef.current = 'phone';
-                                }}
-                                onBlur={() => {
-                                  if (activeSubmitFieldRef.current === 'phone') {
-                                    activeSubmitFieldRef.current = null;
-                                  }
-                                }}
-                                returnKeyType="send"
-                                onSubmitEditing={() => runSubmitAction(handlePhoneInputSubmit)}
-                                onKeyPress={(event) => handleEnterKeyPress(event, handlePhoneInputSubmit)}
-                              />
-                            </View>
-                          </View>
+                              {t("magicLink", "Magic Link")}
+                            </Text>
+                          </TouchableOpacity>
 
-                          <Text style={styles.selectedCountryText}>
-                            {selectedCountry?.name || 'United States'}
-                          </Text>
-                          {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
-                          <Text style={styles.deliveryHint}>
-                            {t(
-                              'otpSmsHint',
-                              'We will send the login code by SMS using the selected country code.'
-                            )}
-                          </Text>
-                        </>
-                      ) : null}
-                    </View>
-                  ) : null}
-
-                  {emailAuthMethod === 'otp-code' && otpSent ? (
-                    <View style={styles.otpSection}>
-                      <Text style={styles.otpInputPrompt}>
-                        {t('enterOtpCode', 'Enter 6-digit code')}
-                      </Text>
-
-                      <View style={styles.otpDigitsWrapper} dataSet={{ authEnterIgnore: 'true' } as any}>
-                        {OTP_DIGIT_KEYS.map((key, index) => (
-                          <View
-                            key={key}
+                          <TouchableOpacity
                             style={[
-                              styles.otpDigitCell,
-                              otpDigits[index] ? styles.otpDigitCellFilled : null,
-                              focusedDigitIndex === index ? styles.otpDigitCellActive : null,
-                              otpError ? styles.otpDigitCellError : null,
+                              styles.methodTab,
+                              emailAuthMethod === "otp-code"
+                                ? styles.methodTabActive
+                                : null,
                             ]}
+                            onPress={() => {
+                              setEmailAuthMethod("otp-code");
+                              resetMagicLinkConfirmation();
+                              setOtpError("");
+                              setPhoneError("");
+                              focusEmailInput();
+                            }}
+                            disabled={isBusy}
                           >
-                            <TextInput
-                              ref={(r) => { digitRefs.current[index] = r; }}
-                              style={styles.otpDigitInput}
-                              value={otpDigits[index]}
-                              onChangeText={(v) => handleDigitChange(index, v)}
-                              onKeyPress={(e) => handleDigitKeyPress(index, e.nativeEvent.key)}
-                              onFocus={() => {
-                                setFocusedDigitIndex(index);
-                                activeSubmitFieldRef.current = 'otp';
-                              }}
-                              onBlur={() => {
-                                setFocusedDigitIndex((prev) => (prev === index ? -1 : prev));
-                                if (activeSubmitFieldRef.current === 'otp') {
-                                  activeSubmitFieldRef.current = null;
-                                }
-                              }}
-                              keyboardType="number-pad"
-                              maxLength={index === 0 ? OTP_CODE_LENGTH : 1}
-                              editable={!isBusy}
-                              textContentType={index === 0 ? 'oneTimeCode' : undefined}
-                              autoComplete={index === 0 ? 'one-time-code' : 'off'}
-                              returnKeyType="done"
-                              selectTextOnFocus
-                              onSubmitEditing={() => runSubmitAction(handleOtpInputSubmit)}
+                            <Ionicons
+                              name="keypad-outline"
+                              size={16}
+                              color={
+                                emailAuthMethod === "otp-code"
+                                  ? colors.text.primary
+                                  : colors.text.secondary
+                              }
                             />
-                          </View>
-                        ))}
-                      </View>
-
-                      {otpCode.length > 0 && !isBusy && (
-                        <TouchableOpacity
-                          onPress={handleClearOtpCode}
-                          style={styles.otpClearButton}
-                          dataSet={{ authEnterIgnore: 'true' } as any}
-                        >
-                          <Text style={styles.otpClearText}>{t('clearCode', 'Clear')}</Text>
-                        </TouchableOpacity>
-                      )}
-
-                      {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
-                      <Text style={styles.otpResendPrompt}>
-                        {t('otpResendPrompt', "Didn't receive the OTP code?")}
-                      </Text>
-                      {otpResendRemainingSeconds > 0 ? (
-                        <Text style={styles.otpResendCountdownText}>
-                          {t('otpResendCountdown', { seconds: otpResendRemainingSeconds })}
-                        </Text>
-                      ) : (
-                        <TouchableOpacity
-                          style={styles.secondaryActionButton}
-                          onPress={() => void handleSendOtpCode()}
-                          disabled={isBusy}
-                          dataSet={{ authEnterIgnore: 'true' }}
-                        >
-                          <Text style={styles.secondaryActionText}>{t('otpSendAnother', 'Send again')}</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ) : null}
-
-                  <TouchableOpacity
-                    style={[styles.primaryButton, isBusy ? styles.primaryButtonDisabled : null]}
-                    onPress={handlePrimaryEmailAction}
-                    disabled={isBusy}
-                  >
-                    <View style={styles.primaryButtonContent}>
-                      {(isBusy && busyAction !== 'oauth') ? (
-                        <View style={styles.primaryButtonIconGroup}>
-                          <ActivityIndicator size="small" color="#FFFFFF" />
+                            <Text
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                              style={[
+                                styles.methodTabText,
+                                emailAuthMethod === "otp-code"
+                                  ? styles.methodTabTextActive
+                                  : null,
+                              ]}
+                            >
+                              {t("otpCode", "OTP Code")}
+                            </Text>
+                          </TouchableOpacity>
                         </View>
-                      ) : null}
-                      <Text style={styles.primaryButtonText}>
-                        {busyAction === 'magic-link'
-                          ? t('sendingEmail', 'Sending email...')
-                          : busyAction === 'otp-send'
-                            ? t('sendingOtpCode', 'Sending OTP code...')
-                            : busyAction === 'otp-verify'
-                              ? t('verifyingCode', 'Verifying code...')
-                              : emailAuthMethod === 'magic-link'
-                                ? t('sendMagicLink', 'Send Magic Link')
-                                : otpSent
-                                  ? t('verifyCode', 'Verify Code')
-                                  : t('sendCode', 'Send Code')}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('orContinueWith', 'Or continue with')}</Text>
-              <View style={styles.dividerLine} />
-            </View>
+                        {emailAuthMethod === "otp-code" ? (
+                          <View style={styles.otpDeliveryContainer}>
+                            <TouchableOpacity
+                              style={styles.deliverySwitchButton}
+                              onPress={() => {
+                                setOtpDeliveryMethod((prev) =>
+                                  prev === "email" ? "sms" : "email",
+                                );
+                                setPhoneError("");
+                                setCountryPickerVisible(false);
+                                setCountrySearchQuery("");
+                              }}
+                              disabled={isBusy}
+                              dataSet={{ authEnterIgnore: "true" }}
+                            >
+                              <Text style={styles.deliverySwitchText}>
+                                {otpDeliveryMethod === "email"
+                                  ? t(
+                                      "cantAccessEmailUseSms",
+                                      "Can't access email? Send OTP by SMS",
+                                    )
+                                  : t(
+                                      "useEmailOtpInstead",
+                                      "Use email OTP instead",
+                                    )}
+                              </Text>
+                            </TouchableOpacity>
 
-            <View style={styles.oauthContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.oauthButton,
-                  styles.oauthButtonNative,
-                ]}
-                onPress={() => void handleGoogleSignIn()}
-                disabled={isBusy}
-                accessibilityRole="button"
-                accessibilityLabel={oauthButtonLabel}
-                accessibilityState={{ disabled: isBusy, busy: isOAuthRedirecting }}
-              >
-                <View style={styles.oauthButtonContent}>
-                  <View style={styles.oauthButtonIconGroup}>
-                    {isOAuthRedirecting ? (
-                      <ActivityIndicator size="small" color="#4285F4" />
-                    ) : (
-                      <Ionicons name="logo-google" size={24} color="#4285F4" />
+                            {otpDeliveryMethod === "sms" ? (
+                              <>
+                                <View style={styles.phoneRow}>
+                                  <TouchableOpacity
+                                    style={styles.countryPickerButton}
+                                    onPress={() =>
+                                      setCountryPickerVisible(true)
+                                    }
+                                    disabled={isBusy}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={t(
+                                      "selectCountryCode",
+                                      "Select country code",
+                                    )}
+                                    dataSet={{ authEnterIgnore: "true" }}
+                                  >
+                                    <Text style={styles.countryPickerDialCode}>
+                                      +{selectedCountry?.dialCode || "1"}
+                                    </Text>
+                                    <Text style={styles.countryPickerISO2}>
+                                      {selectedCountry?.iso2 || "US"}
+                                    </Text>
+                                    <Ionicons
+                                      name="chevron-down"
+                                      size={16}
+                                      color={colors.text.secondary}
+                                    />
+                                  </TouchableOpacity>
+
+                                  <View
+                                    style={[
+                                      styles.emailInputContainer,
+                                      styles.phoneInputContainer,
+                                      phoneError
+                                        ? styles.emailInputContainerError
+                                        : null,
+                                    ]}
+                                  >
+                                    <Ionicons
+                                      name="call-outline"
+                                      size={18}
+                                      color={
+                                        phoneError
+                                          ? "#F44336"
+                                          : colors.text.secondary
+                                      }
+                                      style={styles.inputIcon}
+                                    />
+                                    <TextInput
+                                      style={styles.emailInput}
+                                      value={phone}
+                                      onChangeText={(text) => {
+                                        setPhone(text.replace(/[^\d]/g, ""));
+                                        if (phoneError) setPhoneError("");
+                                      }}
+                                      placeholder={t(
+                                        "phonePlaceholder",
+                                        "Enter your phone number",
+                                      )}
+                                      placeholderTextColor={
+                                        colors.text.secondary
+                                      }
+                                      keyboardType="phone-pad"
+                                      autoCapitalize="none"
+                                      autoCorrect={false}
+                                      editable={!isBusy}
+                                      onFocus={() => {
+                                        activeSubmitFieldRef.current = "phone";
+                                      }}
+                                      onBlur={() => {
+                                        if (
+                                          activeSubmitFieldRef.current ===
+                                          "phone"
+                                        ) {
+                                          activeSubmitFieldRef.current = null;
+                                        }
+                                      }}
+                                      returnKeyType="send"
+                                      onSubmitEditing={() =>
+                                        runSubmitAction(handlePhoneInputSubmit)
+                                      }
+                                      onKeyPress={(event) =>
+                                        handleEnterKeyPress(
+                                          event,
+                                          handlePhoneInputSubmit,
+                                        )
+                                      }
+                                    />
+                                  </View>
+                                </View>
+
+                                <Text style={styles.selectedCountryText}>
+                                  {selectedCountry?.name || "United States"}
+                                </Text>
+                                {phoneError ? (
+                                  <Text style={styles.errorText}>
+                                    {phoneError}
+                                  </Text>
+                                ) : null}
+                                <Text style={styles.deliveryHint}>
+                                  {t(
+                                    "otpSmsHint",
+                                    "We will send the login code by SMS using the selected country code.",
+                                  )}
+                                </Text>
+                              </>
+                            ) : null}
+                          </View>
+                        ) : null}
+
+                        {emailAuthMethod === "otp-code" && otpSent ? (
+                          <View style={styles.otpSection}>
+                            <Text style={styles.otpInputPrompt}>
+                              {t("enterOtpCode", "Enter 6-digit code")}
+                            </Text>
+
+                            <View
+                              style={styles.otpDigitsWrapper}
+                              dataSet={{ authEnterIgnore: "true" } as any}
+                            >
+                              {OTP_DIGIT_KEYS.map((key, index) => (
+                                <View
+                                  key={key}
+                                  style={[
+                                    styles.otpDigitCell,
+                                    otpDigits[index]
+                                      ? styles.otpDigitCellFilled
+                                      : null,
+                                    focusedDigitIndex === index
+                                      ? styles.otpDigitCellActive
+                                      : null,
+                                    otpError ? styles.otpDigitCellError : null,
+                                  ]}
+                                >
+                                  <TextInput
+                                    ref={(r) => {
+                                      digitRefs.current[index] = r;
+                                    }}
+                                    style={styles.otpDigitInput}
+                                    value={otpDigits[index]}
+                                    onChangeText={(v) =>
+                                      handleDigitChange(index, v)
+                                    }
+                                    onKeyPress={(e) =>
+                                      handleDigitKeyPress(
+                                        index,
+                                        e.nativeEvent.key,
+                                      )
+                                    }
+                                    onFocus={() => {
+                                      setFocusedDigitIndex(index);
+                                      activeSubmitFieldRef.current = "otp";
+                                    }}
+                                    onBlur={() => {
+                                      setFocusedDigitIndex((prev) =>
+                                        prev === index ? -1 : prev,
+                                      );
+                                      if (
+                                        activeSubmitFieldRef.current === "otp"
+                                      ) {
+                                        activeSubmitFieldRef.current = null;
+                                      }
+                                    }}
+                                    keyboardType="number-pad"
+                                    maxLength={
+                                      index === 0 ? OTP_CODE_LENGTH : 1
+                                    }
+                                    editable={!isBusy}
+                                    textContentType={
+                                      index === 0 ? "oneTimeCode" : undefined
+                                    }
+                                    autoComplete={
+                                      index === 0 ? "one-time-code" : "off"
+                                    }
+                                    returnKeyType="done"
+                                    selectTextOnFocus
+                                    onSubmitEditing={() =>
+                                      runSubmitAction(handleOtpInputSubmit)
+                                    }
+                                  />
+                                </View>
+                              ))}
+                            </View>
+
+                            {otpCode.length > 0 && !isBusy && (
+                              <TouchableOpacity
+                                onPress={handleClearOtpCode}
+                                style={styles.otpClearButton}
+                                dataSet={{ authEnterIgnore: "true" } as any}
+                              >
+                                <Text style={styles.otpClearText}>
+                                  {t("clearCode", "Clear")}
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+
+                            {otpError ? (
+                              <Text style={styles.errorText}>{otpError}</Text>
+                            ) : null}
+                            <Text style={styles.otpResendPrompt}>
+                              {t(
+                                "otpResendPrompt",
+                                "Didn't receive the OTP code?",
+                              )}
+                            </Text>
+                            {otpResendRemainingSeconds > 0 ? (
+                              <Text style={styles.otpResendCountdownText}>
+                                {t("otpResendCountdown", {
+                                  seconds: otpResendRemainingSeconds,
+                                })}
+                              </Text>
+                            ) : (
+                              <TouchableOpacity
+                                style={styles.secondaryActionButton}
+                                onPress={() => void handleSendOtpCode()}
+                                disabled={isBusy}
+                                dataSet={{ authEnterIgnore: "true" }}
+                              >
+                                <Text style={styles.secondaryActionText}>
+                                  {t("otpSendAnother", "Send again")}
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        ) : null}
+
+                        <TouchableOpacity
+                          style={[
+                            styles.primaryButton,
+                            isBusy ? styles.primaryButtonDisabled : null,
+                          ]}
+                          onPress={handlePrimaryEmailAction}
+                          disabled={isBusy}
+                        >
+                          <View style={styles.primaryButtonContent}>
+                            {isBusy && busyAction !== "oauth" ? (
+                              <View style={styles.primaryButtonIconGroup}>
+                                <ActivityIndicator
+                                  size="small"
+                                  color="#FFFFFF"
+                                />
+                              </View>
+                            ) : null}
+                            <Text style={styles.primaryButtonText}>
+                              {busyAction === "magic-link"
+                                ? t("sendingEmail", "Sending email...")
+                                : busyAction === "otp-send"
+                                  ? t("sendingOtpCode", "Sending OTP code...")
+                                  : busyAction === "otp-verify"
+                                    ? t("verifyingCode", "Verifying code...")
+                                    : emailAuthMethod === "magic-link"
+                                      ? t("sendMagicLink", "Send Magic Link")
+                                      : otpSent
+                                        ? t("verifyCode", "Verify Code")
+                                        : t("sendCode", "Send Code")}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      </>
                     )}
                   </View>
-                  <Text
-                    style={[
-                      styles.oauthButtonText,
-                      isOAuthRedirecting ? styles.oauthButtonTextBusy : null,
-                    ]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {oauthButtonLabel}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
 
-            {authActionMessage ? (
-              <View style={styles.authActionMessageContainer} dataSet={{ authEnterIgnore: 'true' }}>
-                <Text style={styles.authActionMessage}>{authActionMessage}</Text>
-              </View>
-            ) : null}
+                  <View style={styles.dividerContainer}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>
+                      {t("orContinueWith", "Or continue with")}
+                    </Text>
+                    <View style={styles.dividerLine} />
+                  </View>
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                {t('privacy.text', 'By signing in, you agree to our')}{' '}
-                <Text style={styles.footerLink} onPress={openTermsModal}>
-                  {t('privacy.terms', 'Terms of Service')}
-                </Text>
-                {' '}
-                {t('and', 'and')}{' '}
-                <Text style={styles.footerLink} onPress={openPrivacyModal}>
-                  {t('privacy.privacy', 'Privacy Policy')}
-                </Text>
-                .
-              </Text>
-            </View>
+                  <View style={styles.oauthContainer}>
+                    <TouchableOpacity
+                      style={[styles.oauthButton, styles.oauthButtonNative]}
+                      onPress={() => void handleGoogleSignIn()}
+                      disabled={isBusy}
+                      accessibilityRole="button"
+                      accessibilityLabel={oauthButtonLabel}
+                      accessibilityState={{
+                        disabled: isBusy,
+                        busy: isOAuthRedirecting,
+                      }}
+                    >
+                      <View style={styles.oauthButtonContent}>
+                        <View style={styles.oauthButtonIconGroup}>
+                          {isOAuthRedirecting ? (
+                            <ActivityIndicator size="small" color="#4285F4" />
+                          ) : (
+                            <Ionicons
+                              name="logo-google"
+                              size={24}
+                              color="#4285F4"
+                            />
+                          )}
+                        </View>
+                        <Text
+                          style={[
+                            styles.oauthButtonText,
+                            isOAuthRedirecting
+                              ? styles.oauthButtonTextBusy
+                              : null,
+                          ]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {oauthButtonLabel}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
 
-            <View style={{ alignItems: 'center', marginTop: 12 }}>
-              <VersionDisplay compact={true} />
-            </View>
+                  {authActionMessage ? (
+                    <View
+                      style={styles.authActionMessageContainer}
+                      dataSet={{ authEnterIgnore: "true" }}
+                    >
+                      <Text style={styles.authActionMessage}>
+                        {authActionMessage}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  <View style={styles.footer}>
+                    <Text style={styles.footerText}>
+                      {t("privacy.text", "By signing in, you agree to our")}{" "}
+                      <Text style={styles.footerLink} onPress={openTermsModal}>
+                        {t("privacy.terms", "Terms of Service")}
+                      </Text>{" "}
+                      {t("and", "and")}{" "}
+                      <Text
+                        style={styles.footerLink}
+                        onPress={openPrivacyModal}
+                      >
+                        {t("privacy.privacy", "Privacy Policy")}
+                      </Text>
+                      .
+                    </Text>
+                  </View>
+
+                  <View style={{ alignItems: "center", marginTop: 12 }}>
+                    <VersionDisplay compact={true} />
+                  </View>
                 </View>
               </Animated.View>
             </View>
@@ -1878,7 +2297,7 @@ export default function AuthScreen() {
         animationType="slide"
         onRequestClose={() => {
           setCountryPickerVisible(false);
-          setCountrySearchQuery('');
+          setCountrySearchQuery("");
         }}
       >
         <View style={styles.countryPickerModalRoot}>
@@ -1886,7 +2305,7 @@ export default function AuthScreen() {
             style={styles.countryPickerBackdrop}
             onPress={() => {
               setCountryPickerVisible(false);
-              setCountrySearchQuery('');
+              setCountrySearchQuery("");
             }}
           />
 
@@ -1895,20 +2314,23 @@ export default function AuthScreen() {
 
             <View style={styles.countryPickerHeader}>
               <Text style={styles.countryPickerTitle}>
-                {t('countryCodeTitle', 'Select country code')}
+                {t("countryCodeTitle", "Select country code")}
               </Text>
               <TouchableOpacity
                 onPress={() => {
                   setCountryPickerVisible(false);
-                  setCountrySearchQuery('');
+                  setCountrySearchQuery("");
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={t('closeCountrySelector', 'Close country selector')}
+                accessibilityLabel={t(
+                  "closeCountrySelector",
+                  "Close country selector",
+                )}
               >
                 <Ionicons
                   name="close"
                   size={22}
-                  color={isDark ? '#f3f3f3' : '#1d1e20'}
+                  color={isDark ? "#f3f3f3" : "#1d1e20"}
                 />
               </TouchableOpacity>
             </View>
@@ -1924,7 +2346,10 @@ export default function AuthScreen() {
                 style={styles.countrySearchInput}
                 value={countrySearchQuery}
                 onChangeText={setCountrySearchQuery}
-                placeholder={t('countrySearchPlaceholder', 'Search by country, ISO, or dial code')}
+                placeholder={t(
+                  "countrySearchPlaceholder",
+                  "Search by country, ISO, or dial code",
+                )}
                 placeholderTextColor={colors.text.secondary}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -1938,7 +2363,7 @@ export default function AuthScreen() {
               contentContainerStyle={styles.countryPickerList}
               ListEmptyComponent={
                 <Text style={styles.countryPickerEmptyText}>
-                  {t('countryNoMatches', 'No countries match your search.')}
+                  {t("countryNoMatches", "No countries match your search.")}
                 </Text>
               }
               renderItem={({ item }) => {
@@ -1952,17 +2377,23 @@ export default function AuthScreen() {
                     ]}
                     onPress={() => {
                       setSelectedCountryISO2(item.iso2);
-                      setPhoneError('');
+                      setPhoneError("");
                       setCountryPickerVisible(false);
-                      setCountrySearchQuery('');
+                      setCountrySearchQuery("");
                     }}
                   >
                     <View style={styles.countryPickerOptionInfo}>
-                      <Text style={styles.countryPickerOptionName}>{item.name}</Text>
-                      <Text style={styles.countryPickerOptionISO2}>{item.iso2}</Text>
+                      <Text style={styles.countryPickerOptionName}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.countryPickerOptionISO2}>
+                        {item.iso2}
+                      </Text>
                     </View>
 
-                    <Text style={styles.countryPickerOptionDialCode}>+{item.dialCode}</Text>
+                    <Text style={styles.countryPickerOptionDialCode}>
+                      +{item.dialCode}
+                    </Text>
                   </TouchableOpacity>
                 );
               }}
@@ -1986,45 +2417,74 @@ const getStyles = (
   isCompactMobile: boolean,
   isVeryCompactMobile: boolean,
   isDesktopLayout: boolean = false,
-  isNativeLightMode: boolean = false
+  isNativeLightMode: boolean = false,
+  showAuthBackground: boolean = false,
+  authHeaderPalette: AuthHeaderPalette = {
+    titleColor: "#ffffff",
+    subtitleColor: "rgba(255, 255, 255, 0.82)",
+  },
 ) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#050507' : '#f3f4f8',
+      backgroundColor: isDark ? "#050507" : "#f3f4f8",
     },
     containerWeb: {
-      position: 'relative',
-      ...(Platform.OS === 'web' ? { backgroundColor: 'transparent' } : {}),
+      position: "relative",
+      ...(Platform.OS === "web"
+        ? {
+            backgroundColor: showAuthBackground
+              ? "transparent"
+              : isDark
+                ? "#050507"
+                : "#f3f4f8",
+          }
+        : {}),
     },
     layoutShell: {
       flex: 1,
-      flexDirection: 'column',
+      flexDirection: "column",
     },
     layoutShellDesktop: {
-      flexDirection: 'row',
+      flexDirection: "row",
+      width: "100%",
+      maxWidth: 1760,
+      alignSelf: "center",
+      paddingHorizontal: 24,
+      paddingVertical: 24,
+      gap: 20,
     },
     formPane: {
       flex: 1,
-      position: 'relative',
+      position: "relative",
     },
     formPaneDesktop: {
-      flex: 1.34,
-      minWidth: 620,
-      maxWidth: 920,
-      borderRightWidth: 1,
-      borderRightColor: 'rgba(255,255,255,0.08)',
-      // Transparent so the full-screen ShaderAnimation shows through behind the
-      // left card section — same dark hero as the mobile layout. Text over it is
-      // therefore always white, regardless of the OS color scheme.
-      backgroundColor: 'transparent',
+      flex: 0.95,
+      minWidth: 480,
+      maxWidth: 720,
+      borderRadius: 32,
+      overflow: "hidden",
+      backgroundColor: isDark
+        ? "rgba(5, 8, 14, 0.94)"
+        : "rgba(255, 255, 255, 0.9)",
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(13,16,24,0.08)",
+      ...(Platform.OS === "web"
+        ? {
+            boxShadow: isDark
+              ? "0 22px 60px rgba(0,0,0,0.34)"
+              : "0 18px 44px rgba(20, 20, 30, 0.10)",
+          }
+        : {
+            elevation: 3,
+          }),
     },
     centered: {
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
     },
     cursorBackground: {
-      position: 'absolute',
+      position: "absolute",
       top: 0,
       left: 0,
       right: 0,
@@ -2032,22 +2492,28 @@ const getStyles = (
       zIndex: -1,
     },
     backButton: {
-      position: 'absolute',
+      position: "absolute",
       top: 20,
       left: 20,
       width: 44,
       height: 44,
       borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: isDark ? 'rgba(6, 9, 16, 0.72)' : 'rgba(255, 255, 255, 0.88)',
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDark
+        ? "rgba(6, 9, 16, 0.72)"
+        : "rgba(255, 255, 255, 0.88)",
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(13,16,24,0.10)',
-      ...(Platform.OS === 'web'
-        ? { boxShadow: isDark ? '0 8px 22px rgba(0,0,0,0.28)' : '0 8px 22px rgba(0,0,0,0.16)' }
+      borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(13,16,24,0.10)",
+      ...(Platform.OS === "web"
+        ? {
+            boxShadow: isDark
+              ? "0 8px 22px rgba(0,0,0,0.28)"
+              : "0 8px 22px rgba(0,0,0,0.16)",
+          }
         : {
-          elevation: 3,
-        }),
+            elevation: 3,
+          }),
       zIndex: 1001,
     },
     backButtonDesktop: {
@@ -2064,9 +2530,15 @@ const getStyles = (
       flexGrow: 1,
       // Native: ThemeAndLanguageSwitcher sits at top:56 and is ~44px tall, so push
       // content below it. Web doesn't need as much clearance.
-      paddingTop: Platform.OS === 'web' ? 70 : 112,
+      paddingTop: Platform.OS === "web" ? 70 : 112,
       paddingHorizontal:
-        Platform.OS === 'web' ? (isCompactMobile ? 14 : 20) : (isCompactMobile ? 18 : 24),
+        Platform.OS === "web"
+          ? isCompactMobile
+            ? 14
+            : 20
+          : isCompactMobile
+            ? 18
+            : 24,
       paddingBottom: 40,
     },
     scrollContentDesktop: {
@@ -2076,35 +2548,37 @@ const getStyles = (
     },
     content: {
       flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
       zIndex: 1,
     },
     contentDesktop: {
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
     },
     authCard: {
-      width: '100%',
-      maxWidth: Platform.OS === 'web' ? 420 : isCompactMobile ? 392 : 420,
-      alignSelf: 'center',
+      width: "100%",
+      maxWidth: Platform.OS === "web" ? 420 : isCompactMobile ? 392 : 420,
+      alignSelf: "center",
       borderRadius: 18,
       paddingHorizontal: isCompactMobile ? 14 : 20,
       paddingVertical: isCompactMobile ? 20 : 24,
-      backgroundColor: isDark ? '#151515' : '#ffffff',
+      backgroundColor: isDark ? "#151515" : "#ffffff",
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-      overflow: 'hidden',
-      boxShadow: isDark ? '0 14px 36px rgba(0,0,0,0.45)' : '0 12px 34px rgba(0,0,0,0.12)',
+      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+      overflow: "hidden",
+      boxShadow: isDark
+        ? "0 14px 36px rgba(0,0,0,0.45)"
+        : "0 12px 34px rgba(0,0,0,0.12)",
       elevation: 6,
     },
     authCardDesktop: {
       maxWidth: 520,
     },
     logoContainer: {
-      alignItems: 'center',
-      alignSelf: 'center',
+      alignItems: "center",
+      alignSelf: "center",
       marginBottom: 18,
     },
     logo: {
@@ -2112,11 +2586,11 @@ const getStyles = (
       height: isCompactMobile ? 78 : 86,
     },
     authHeaderBlock: {
-      width: '100%',
+      width: "100%",
       maxWidth: 520,
       marginBottom: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
       paddingHorizontal: 8,
     },
     authHeaderBlockDesktop: {
@@ -2125,121 +2599,116 @@ const getStyles = (
     },
     authHeaderTitle: {
       fontSize: isDesktopLayout ? 44 : isCompactMobile ? 32 : 38,
-      fontWeight: '800',
-      // Fixed light color, not theme-dependent: this heading always sits on
-      // the dark ShaderAnimation/hero background (both light and dark mode),
-      // so following colors.text.primary made it near-invisible in light
-      // mode, where that token resolves to a dark color meant for the page's
-      // light background elsewhere.
-      color: '#ffffff',
-      textAlign: 'center',
+      fontWeight: "800",
+      color: authHeaderPalette.titleColor,
+      textAlign: "center",
       letterSpacing: -0.8,
     },
     authHeaderSubtitle: {
       marginTop: 8,
       fontSize: isDesktopLayout ? 24 : isCompactMobile ? 16 : 18,
       lineHeight: isDesktopLayout ? 30 : 24,
-      color: 'rgba(255, 255, 255, 0.82)',
-      textAlign: 'center',
+      color: authHeaderPalette.subtitleColor,
+      textAlign: "center",
     },
     primaryAuthContainer: {
-      width: '100%',
+      width: "100%",
       gap: 12,
     },
     passwordlessInfoCard: {
-      width: '100%',
+      width: "100%",
       maxWidth: isDesktopLayout ? 420 : isCompactMobile ? 360 : 380,
-      alignSelf: 'center',
+      alignSelf: "center",
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#d9d9de',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f6f9',
+      borderColor: isDark ? "rgba(255,255,255,0.14)" : "#d9d9de",
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f5f6f9",
       paddingHorizontal: 16,
       paddingVertical: 16,
-      alignItems: 'center',
+      alignItems: "center",
       gap: 8,
     },
     passwordlessInfoTitle: {
       fontSize: 18,
-      fontWeight: '700',
-      color: isDark ? '#fff' : '#131418',
-      textAlign: 'center',
+      fontWeight: "700",
+      color: isDark ? "#fff" : "#131418",
+      textAlign: "center",
     },
     passwordlessInfoMessage: {
       fontSize: 14,
       lineHeight: 20,
-      color: isDark ? '#d5d6db' : '#4c4e55',
-      textAlign: 'center',
+      color: isDark ? "#d5d6db" : "#4c4e55",
+      textAlign: "center",
     },
     magicLinkConfirmationCard: {
-      width: '100%',
+      width: "100%",
       maxWidth: isDesktopLayout ? 420 : isCompactMobile ? 360 : 380,
-      alignSelf: 'center',
+      alignSelf: "center",
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#d9d9de',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f6f9',
+      borderColor: isDark ? "rgba(255,255,255,0.14)" : "#d9d9de",
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f5f6f9",
       paddingHorizontal: 16,
       paddingVertical: 16,
-      alignItems: 'center',
+      alignItems: "center",
       gap: 8,
     },
     magicLinkConfirmationTitle: {
       fontSize: 20,
-      fontWeight: '700',
-      color: isDark ? '#fff' : '#131418',
-      textAlign: 'center',
+      fontWeight: "700",
+      color: isDark ? "#fff" : "#131418",
+      textAlign: "center",
     },
     magicLinkConfirmationMessage: {
       fontSize: 14,
       lineHeight: 20,
-      color: isDark ? '#d5d6db' : '#4c4e55',
-      textAlign: 'center',
-      width: '100%',
+      color: isDark ? "#d5d6db" : "#4c4e55",
+      textAlign: "center",
+      width: "100%",
     },
     magicLinkConfirmationEmail: {
       fontSize: 14,
-      fontWeight: '700',
-      color: isDark ? '#ffffff' : '#17181b',
-      textAlign: 'center',
+      fontWeight: "700",
+      color: isDark ? "#ffffff" : "#17181b",
+      textAlign: "center",
     },
     magicLinkCountdownText: {
       fontSize: 13,
       lineHeight: 18,
-      color: isDark ? '#bec0c6' : '#61636a',
-      textAlign: 'center',
+      color: isDark ? "#bec0c6" : "#61636a",
+      textAlign: "center",
       marginTop: 2,
-      width: '100%',
+      width: "100%",
     },
     magicLinkCloseButton: {
       marginTop: 6,
       borderRadius: 10,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#d1d2d8',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#eceef4',
+      borderColor: isDark ? "rgba(255,255,255,0.18)" : "#d1d2d8",
+      backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "#eceef4",
       paddingHorizontal: 14,
       paddingVertical: 8,
     },
     magicLinkCloseText: {
       fontSize: 14,
-      fontWeight: '700',
-      color: isDark ? '#ffffff' : '#24262b',
+      fontWeight: "700",
+      color: isDark ? "#ffffff" : "#24262b",
     },
     emailInputContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f1f1f4',
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#f1f1f4",
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#dddddf',
+      borderColor: isDark ? "rgba(255,255,255,0.12)" : "#dddddf",
       paddingHorizontal: 14,
       height: 52,
-      width: '100%',
+      width: "100%",
       minWidth: 0,
-      overflow: 'hidden',
+      overflow: "hidden",
     },
     emailInputContainerError: {
-      borderColor: '#F44336',
+      borderColor: "#F44336",
     },
     inputIcon: {
       marginRight: 10,
@@ -2250,111 +2719,111 @@ const getStyles = (
       minWidth: 0,
       flexShrink: 1,
       fontSize: isCompactMobile ? 16 : 18,
-      color: isDark ? '#fff' : '#121212',
+      color: isDark ? "#fff" : "#121212",
       paddingVertical: 0,
     },
     emailSuggestionsContainer: {
-      width: '100%',
+      width: "100%",
       marginTop: 2,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.14)' : '#d9dbe2',
-      backgroundColor: isDark ? '#111521' : '#f8f9fc',
-      overflow: 'hidden',
+      borderColor: isDark ? "rgba(255,255,255,0.14)" : "#d9dbe2",
+      backgroundColor: isDark ? "#111521" : "#f8f9fc",
+      overflow: "hidden",
     },
     emailSuggestionsHeader: {
       minHeight: 38,
       paddingLeft: 14,
       paddingRight: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       borderBottomWidth: 1,
-      borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : '#e4e7f0',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#f1f3f8',
+      borderBottomColor: isDark ? "rgba(255,255,255,0.08)" : "#e4e7f0",
+      backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "#f1f3f8",
     },
     emailSuggestionsTitle: {
       fontSize: 12,
-      fontWeight: '600',
-      color: isDark ? '#aeb4c4' : '#5a6276',
+      fontWeight: "600",
+      color: isDark ? "#aeb4c4" : "#5a6276",
     },
     emailSuggestionsCloseButton: {
       width: 28,
       height: 28,
       borderRadius: 14,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
     },
     emailSuggestionsList: {
       maxHeight: 220,
     },
     emailSuggestionItem: {
       minHeight: 42,
-      justifyContent: 'center',
+      justifyContent: "center",
       paddingHorizontal: 14,
       borderTopWidth: 1,
-      borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : '#e4e7f0',
+      borderTopColor: isDark ? "rgba(255,255,255,0.08)" : "#e4e7f0",
     },
     emailSuggestionItemFirst: {
       borderTopWidth: 0,
     },
     emailSuggestionItemActive: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#eef2fc',
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#eef2fc",
     },
     emailSuggestionText: {
       fontSize: 17,
-      fontWeight: '600',
-      color: isDark ? '#e9ecf2' : '#2d3240',
+      fontWeight: "600",
+      color: isDark ? "#e9ecf2" : "#2d3240",
     },
     methodTabs: {
-      flexDirection: 'row',
+      flexDirection: "row",
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#d8d8dc',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#eeeeef',
+      borderColor: isDark ? "rgba(255,255,255,0.12)" : "#d8d8dc",
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#eeeeef",
       padding: 4,
       gap: 6,
-      width: '100%',
+      width: "100%",
     },
     methodTab: {
       flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       gap: 6,
       height: 38,
       borderRadius: 8,
-      backgroundColor: 'transparent',
+      backgroundColor: "transparent",
     },
     methodTabActive: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.16)' : '#d8d8dc',
+      backgroundColor: isDark ? "rgba(255,255,255,0.16)" : "#d8d8dc",
     },
     methodTabText: {
       fontSize: isCompactMobile ? 15 : 16,
       color: colors.text.secondary,
-      fontWeight: '600',
+      fontWeight: "600",
       flexShrink: 1,
     },
     methodTabTextActive: {
-      color: isDark ? '#fff' : '#121212',
+      color: isDark ? "#fff" : "#121212",
     },
     otpSection: {
-      width: '100%',
+      width: "100%",
       gap: 8,
     },
     otpInputPrompt: {
       fontSize: 13,
       lineHeight: 18,
-      color: isDark ? '#d0d1d6' : '#54565d',
+      color: isDark ? "#d0d1d6" : "#54565d",
       marginLeft: 4,
       marginBottom: 2,
-      fontWeight: '500',
+      fontWeight: "500",
     },
     otpDigitsWrapper: {
-      width: '100%',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: 8,
     },
     otpDigitCell: {
@@ -2362,206 +2831,208 @@ const getStyles = (
       height: 52,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.16)' : '#d8d9dd',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f1f1f4',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
+      borderColor: isDark ? "rgba(255,255,255,0.16)" : "#d8d9dd",
+      backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#f1f1f4",
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+      overflow: "hidden",
     },
     otpDigitCellFilled: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#ececf1',
-      borderColor: isDark ? 'rgba(255,255,255,0.28)' : '#c8c9ce',
+      backgroundColor: isDark ? "rgba(255,255,255,0.12)" : "#ececf1",
+      borderColor: isDark ? "rgba(255,255,255,0.28)" : "#c8c9ce",
     },
     otpDigitCellActive: {
-      borderColor: '#c81000',
-      backgroundColor: isDark ? 'rgba(200,16,0,0.18)' : '#fff2f1',
+      borderColor: "#c81000",
+      backgroundColor: isDark ? "rgba(200,16,0,0.18)" : "#fff2f1",
     },
     otpDigitCellError: {
-      borderColor: '#F44336',
+      borderColor: "#F44336",
     },
     otpDigitText: {
       fontSize: 24,
-      fontWeight: '700',
+      fontWeight: "700",
       letterSpacing: 1.4,
-      color: isDark ? '#fff' : '#121212',
-      textAlign: 'center',
+      color: isDark ? "#fff" : "#121212",
+      textAlign: "center",
       minWidth: 12,
     },
     otpDigitUnderline: {
-      position: 'absolute',
+      position: "absolute",
       left: 10,
       right: 10,
       bottom: 8,
       height: 2,
       borderRadius: 999,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.24)' : 'rgba(18,18,18,0.14)',
+      backgroundColor: isDark
+        ? "rgba(255,255,255,0.24)"
+        : "rgba(18,18,18,0.14)",
     },
     otpDigitUnderlineActive: {
       height: 3,
-      backgroundColor: '#c81000',
+      backgroundColor: "#c81000",
     },
     otpDigitUnderlineError: {
-      backgroundColor: '#F44336',
+      backgroundColor: "#F44336",
     },
     otpDigitInput: {
-      width: '100%',
-      height: '100%',
+      width: "100%",
+      height: "100%",
       fontSize: 24,
-      fontWeight: '700',
-      color: isDark ? '#fff' : '#121212',
-      textAlign: 'center',
+      fontWeight: "700",
+      color: isDark ? "#fff" : "#121212",
+      textAlign: "center",
       padding: 0,
-      backgroundColor: 'transparent',
-      caretColor: '#c81000',
+      backgroundColor: "transparent",
+      caretColor: "#c81000",
     } as any,
     otpClearButton: {
-      alignSelf: 'flex-end',
+      alignSelf: "flex-end",
       marginTop: 4,
       paddingVertical: 4,
       paddingHorizontal: 8,
     },
     otpClearText: {
       fontSize: 12,
-      color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)',
-      fontWeight: '600',
+      color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.4)",
+      fontWeight: "600",
     },
     otpResendPrompt: {
       fontSize: 13,
       lineHeight: 18,
-      color: isDark ? '#c7c9ce' : '#5d5f66',
-      textAlign: 'center',
+      color: isDark ? "#c7c9ce" : "#5d5f66",
+      textAlign: "center",
       marginTop: 2,
     },
     otpResendCountdownText: {
       fontSize: 13,
       lineHeight: 18,
-      color: isDark ? '#bec0c6' : '#61636a',
-      textAlign: 'center',
+      color: isDark ? "#bec0c6" : "#61636a",
+      textAlign: "center",
     },
     otpDeliveryContainer: {
-      width: '100%',
+      width: "100%",
       gap: 8,
     },
     deliverySwitchButton: {
-      alignSelf: 'stretch',
-      width: '100%',
+      alignSelf: "stretch",
+      width: "100%",
       paddingVertical: 2,
       paddingHorizontal: 2,
     },
     deliverySwitchText: {
       fontSize: 13,
-      color: isDark ? '#cfcfd3' : '#55565b',
-      textDecorationLine: 'underline',
-      fontWeight: '600',
+      color: isDark ? "#cfcfd3" : "#55565b",
+      textDecorationLine: "underline",
+      fontWeight: "600",
       flexShrink: 1,
       lineHeight: 18,
     },
     deliveryHint: {
       fontSize: 12,
-      color: isDark ? '#bdbdc2' : '#6a6b70',
+      color: isDark ? "#bdbdc2" : "#6a6b70",
       marginLeft: 4,
       lineHeight: 16,
     },
     phoneRow: {
-      width: '100%',
-      flexDirection: isVeryCompactMobile ? 'column' : 'row',
-      alignItems: isVeryCompactMobile ? 'stretch' : 'center',
+      width: "100%",
+      flexDirection: isVeryCompactMobile ? "column" : "row",
+      alignItems: isVeryCompactMobile ? "stretch" : "center",
       gap: isCompactMobile ? 6 : 8,
-      flexWrap: 'nowrap',
+      flexWrap: "nowrap",
     },
     countryPickerButton: {
       height: isCompactMobile ? 50 : 52,
       minWidth: isVeryCompactMobile ? 0 : 98,
-      width: isVeryCompactMobile ? '100%' : undefined,
+      width: isVeryCompactMobile ? "100%" : undefined,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#dddddf',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f1f1f4',
+      borderColor: isDark ? "rgba(255,255,255,0.12)" : "#dddddf",
+      backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#f1f1f4",
       paddingHorizontal: 10,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: 6,
       flexShrink: 0,
     },
     countryPickerDialCode: {
       fontSize: 16,
-      fontWeight: '700',
-      color: isDark ? '#fff' : '#121212',
+      fontWeight: "700",
+      color: isDark ? "#fff" : "#121212",
       letterSpacing: 0.2,
     },
     countryPickerISO2: {
       fontSize: 12,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text.secondary,
-      textTransform: 'uppercase',
+      textTransform: "uppercase",
     },
     phoneInputContainer: {
       flex: 1,
       minWidth: 0,
-      width: isVeryCompactMobile ? '100%' : undefined,
+      width: isVeryCompactMobile ? "100%" : undefined,
     },
     selectedCountryText: {
       fontSize: 12,
-      color: isDark ? '#cdced2' : '#57585d',
+      color: isDark ? "#cdced2" : "#57585d",
       marginLeft: 4,
-      fontWeight: '500',
+      fontWeight: "500",
     },
     countryPickerModalRoot: {
       flex: 1,
-      justifyContent: 'flex-end',
+      justifyContent: "flex-end",
     },
     countryPickerBackdrop: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(8, 8, 10, 0.52)',
+      backgroundColor: "rgba(8, 8, 10, 0.52)",
     },
     countryPickerSheet: {
-      maxHeight: '78%',
+      maxHeight: "78%",
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
-      backgroundColor: isDark ? '#101113' : '#fbfbfd',
+      backgroundColor: isDark ? "#101113" : "#fbfbfd",
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+      borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)",
       paddingHorizontal: 16,
       paddingTop: 10,
       paddingBottom: 16,
-      boxShadow: '0 -10px 30px rgba(0,0,0,0.25)',
+      boxShadow: "0 -10px 30px rgba(0,0,0,0.25)",
       elevation: 14,
     },
     countryPickerSheetHandle: {
-      alignSelf: 'center',
+      alignSelf: "center",
       width: 44,
       height: 5,
       borderRadius: 999,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.2)',
+      backgroundColor: isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.2)",
       marginBottom: 10,
     },
     countryPickerHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
       marginBottom: 12,
     },
     countryPickerTitle: {
       fontSize: 20,
-      fontWeight: '700',
-      color: isDark ? '#ffffff' : '#16171a',
+      fontWeight: "700",
+      color: isDark ? "#ffffff" : "#16171a",
     },
     countrySearchContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.12)' : '#d7d8dc',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f2f3f6',
+      borderColor: isDark ? "rgba(255,255,255,0.12)" : "#d7d8dc",
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f2f3f6",
       paddingHorizontal: 12,
       height: 48,
       marginBottom: 12,
     },
     countrySearchInput: {
       flex: 1,
-      color: isDark ? '#ffffff' : '#111214',
+      color: isDark ? "#ffffff" : "#111214",
       fontSize: 16,
       paddingVertical: 0,
     },
@@ -2569,8 +3040,8 @@ const getStyles = (
       paddingBottom: 12,
     },
     countryPickerEmptyText: {
-      textAlign: 'center',
-      color: isDark ? '#c8c9cd' : '#56575c',
+      textAlign: "center",
+      color: isDark ? "#c8c9cd" : "#56575c",
       fontSize: 14,
       paddingVertical: 24,
     },
@@ -2578,18 +3049,18 @@ const getStyles = (
       height: 56,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#e0e0e3',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#ffffff',
+      borderColor: isDark ? "rgba(255,255,255,0.08)" : "#e0e0e3",
+      backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "#ffffff",
       paddingHorizontal: 12,
       marginBottom: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
       gap: 10,
     },
     countryPickerOptionSelected: {
-      borderColor: isDark ? 'rgba(255,255,255,0.32)' : '#b7b8be',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#f4f5f8',
+      borderColor: isDark ? "rgba(255,255,255,0.32)" : "#b7b8be",
+      backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#f4f5f8",
     },
     countryPickerOptionInfo: {
       flex: 1,
@@ -2597,28 +3068,28 @@ const getStyles = (
     },
     countryPickerOptionName: {
       fontSize: 15,
-      fontWeight: '600',
-      color: isDark ? '#ffffff' : '#141518',
+      fontWeight: "600",
+      color: isDark ? "#ffffff" : "#141518",
     },
     countryPickerOptionISO2: {
       fontSize: 12,
-      fontWeight: '500',
-      color: isDark ? '#bfc0c5' : '#66676d',
-      textTransform: 'uppercase',
+      fontWeight: "500",
+      color: isDark ? "#bfc0c5" : "#66676d",
+      textTransform: "uppercase",
     },
     countryPickerOptionDialCode: {
       fontSize: 16,
-      fontWeight: '700',
-      color: isDark ? '#ffffff' : '#141518',
+      fontWeight: "700",
+      color: isDark ? "#ffffff" : "#141518",
       letterSpacing: 0.2,
     },
     primaryButton: {
       height: 52,
       borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#c81000',
-      boxShadow: '0 4px 14px rgba(200, 16, 0, 0.35)',
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#c81000",
+      boxShadow: "0 4px 14px rgba(200, 16, 0, 0.35)",
       elevation: 4,
     },
     primaryButtonDisabled: {
@@ -2627,100 +3098,100 @@ const getStyles = (
     primaryButtonContent: {
       flex: 1,
       minWidth: 0,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       gap: 10,
-      overflow: 'hidden',
+      overflow: "hidden",
     },
     primaryButtonIconGroup: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       minWidth: 20,
     },
     primaryButtonText: {
       fontSize: 20,
-      fontWeight: '700',
-      color: '#fff',
+      fontWeight: "700",
+      color: "#fff",
     },
     secondaryActionButton: {
-      alignSelf: 'center',
+      alignSelf: "center",
       paddingVertical: 4,
       paddingHorizontal: 8,
     },
     secondaryActionText: {
-      color: isDark ? '#fff' : '#434343',
-      textDecorationLine: 'underline',
+      color: isDark ? "#fff" : "#434343",
+      textDecorationLine: "underline",
       fontSize: 14,
-      fontWeight: '600',
+      fontWeight: "600",
     },
     errorText: {
-      color: '#F44336',
+      color: "#F44336",
       fontSize: 14,
       marginLeft: 4,
     },
     dividerContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      width: '100%',
+      flexDirection: "row",
+      alignItems: "center",
+      width: "100%",
       marginVertical: 22,
     },
     dividerLine: {
       flex: 1,
       height: 1,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : '#d9d9db',
+      backgroundColor: isDark ? "rgba(255,255,255,0.2)" : "#d9d9db",
     },
     dividerText: {
       marginHorizontal: 14,
       fontSize: 15,
-      color: isDark ? '#bdbdc2' : '#6e6e72',
+      color: isDark ? "#bdbdc2" : "#6e6e72",
     },
     oauthContainer: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
       marginBottom: 18,
-      width: '100%',
+      width: "100%",
     },
     oauthButton: {
       width: 56,
       height: 56,
       borderRadius: 28,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#ffffff',
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDark ? "rgba(255,255,255,0.12)" : "#ffffff",
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.18)' : '#d7d7da',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+      borderColor: isDark ? "rgba(255,255,255,0.18)" : "#d7d7da",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
       elevation: 3,
     },
     oauthButtonNative: {
-      width: '100%',
-      maxWidth: '100%',
+      width: "100%",
+      maxWidth: "100%",
       height: 52,
       borderRadius: 14,
-      alignSelf: 'stretch',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignSelf: "stretch",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       gap: isVeryCompactMobile ? 8 : 10,
       paddingHorizontal: isVeryCompactMobile ? 12 : 16,
-      overflow: 'hidden',
+      overflow: "hidden",
     },
     oauthButtonContent: {
       flex: 1,
       minWidth: 0,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       gap: isVeryCompactMobile ? 8 : 10,
-      overflow: 'hidden',
+      overflow: "hidden",
     },
     oauthButtonIconGroup: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       gap: 6,
       minWidth: 34,
     },
@@ -2728,17 +3199,17 @@ const getStyles = (
       flex: 1,
       minWidth: 0,
       fontSize: isVeryCompactMobile ? 14 : isCompactMobile ? 15 : 16,
-      fontWeight: '700',
+      fontWeight: "700",
       color: colors.text.primary,
-      textAlign: 'center',
+      textAlign: "center",
       lineHeight: isVeryCompactMobile ? 18 : 20,
     },
     oauthButtonTextBusy: {
       letterSpacing: 0.1,
     },
     authActionMessageContainer: {
-      width: '100%',
-      alignItems: 'center',
+      width: "100%",
+      alignItems: "center",
       marginTop: -2,
       marginBottom: 8,
       paddingHorizontal: 8,
@@ -2746,38 +3217,50 @@ const getStyles = (
     authActionMessage: {
       fontSize: 13,
       lineHeight: 18,
-      color: isDark ? '#d7d9df' : '#46484f',
-      textAlign: 'center',
+      color: isDark ? "#d7d9df" : "#46484f",
+      textAlign: "center",
     },
     footer: {
       marginTop: 2,
-      alignItems: 'center',
+      alignItems: "center",
       paddingHorizontal: 6,
     },
     footerText: {
       fontSize: 14,
       lineHeight: 20,
-      color: isDark ? '#e6e6e8' : '#323236',
-      textAlign: 'center',
+      color: isDark ? "#e6e6e8" : "#323236",
+      textAlign: "center",
     },
     footerLink: {
-      color: isDark ? '#ffffff' : '#5a4ac9',
-      fontWeight: '700',
-      textDecorationLine: 'underline',
+      color: isDark ? "#ffffff" : "#5a4ac9",
+      fontWeight: "700",
+      textDecorationLine: "underline",
     },
     desktopHeroPane: {
-      flex: 0.74,
-      minWidth: 320,
-      position: 'relative',
-      overflow: 'hidden',
-      backgroundColor: isDark ? '#030910' : '#ffffff',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 24,
-      paddingVertical: 34,
+      flex: 1.05,
+      minWidth: 0,
+      position: "relative",
+      overflow: "hidden",
+      backgroundColor: isDark ? "#030910" : "#ffffff",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 32,
+      paddingVertical: 40,
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(13,16,24,0.06)",
+      ...(Platform.OS === "web"
+        ? {
+            boxShadow: isDark
+              ? "0 28px 72px rgba(0,0,0,0.28)"
+              : "0 20px 50px rgba(20, 20, 30, 0.08)",
+          }
+        : {
+            elevation: 2,
+          }),
     },
     desktopHeroBlob: {
-      position: 'absolute',
+      position: "absolute",
       borderRadius: 999,
       opacity: 0.58,
     },
@@ -2786,47 +3269,51 @@ const getStyles = (
       height: 270,
       top: -60,
       left: -90,
-      backgroundColor: isDark ? 'rgba(161,209,214,0.34)' : 'rgba(175,13,1,0.24)',
+      backgroundColor: isDark
+        ? "rgba(161,209,214,0.34)"
+        : "rgba(175,13,1,0.24)",
     },
     desktopHeroBlobTwo: {
       width: 240,
       height: 240,
       top: 92,
       right: -96,
-      backgroundColor: isDark ? 'rgba(42,146,196,0.3)' : 'rgba(175,13,1,0.14)',
+      backgroundColor: isDark ? "rgba(42,146,196,0.3)" : "rgba(175,13,1,0.14)",
     },
     desktopHeroBlobThree: {
       width: 252,
       height: 252,
       bottom: -104,
       left: 52,
-      backgroundColor: isDark ? 'rgba(28,112,160,0.28)' : 'rgba(210,36,23,0.2)',
+      backgroundColor: isDark ? "rgba(28,112,160,0.28)" : "rgba(210,36,23,0.2)",
     },
     desktopHeroWaveTop: {
-      position: 'absolute',
+      position: "absolute",
       top: -92,
       left: -150,
       right: -150,
       height: 220,
       borderRadius: 180,
-      backgroundColor: isDark ? 'rgba(161,209,214,0.18)' : 'rgba(255,255,255,0.94)',
-      transform: [{ rotate: '-8deg' }],
+      backgroundColor: isDark
+        ? "rgba(161,209,214,0.18)"
+        : "rgba(255,255,255,0.94)",
+      transform: [{ rotate: "-8deg" }],
     },
     desktopHeroWaveBottom: {
-      position: 'absolute',
+      position: "absolute",
       bottom: -118,
       left: -126,
       right: -126,
       height: 246,
       borderRadius: 210,
-      backgroundColor: isDark ? 'rgba(2,11,20,0.74)' : 'rgba(175,13,1,0.12)',
-      transform: [{ rotate: '6deg' }],
+      backgroundColor: isDark ? "rgba(2,11,20,0.74)" : "rgba(175,13,1,0.12)",
+      transform: [{ rotate: "6deg" }],
     },
     desktopHeroBody: {
-      width: '100%',
-      maxWidth: 320,
-      alignItems: 'center',
-      justifyContent: 'center',
+      width: "100%",
+      maxWidth: 360,
+      alignItems: "center",
+      justifyContent: "center",
       paddingHorizontal: 4,
       zIndex: 2,
     },
@@ -2835,49 +3322,51 @@ const getStyles = (
       height: 72,
       borderRadius: 36,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(161,209,214,0.42)' : 'rgba(175,13,1,0.32)',
-      backgroundColor: isDark ? 'rgba(161,209,214,0.2)' : 'rgba(175,13,1,0.1)',
-      alignItems: 'center',
-      justifyContent: 'center',
+      borderColor: isDark ? "rgba(161,209,214,0.42)" : "rgba(175,13,1,0.32)",
+      backgroundColor: isDark ? "rgba(161,209,214,0.2)" : "rgba(175,13,1,0.1)",
+      alignItems: "center",
+      justifyContent: "center",
       marginBottom: 14,
     },
     desktopHeroTitle: {
-      fontSize: 34,
-      lineHeight: 38,
-      fontWeight: '800',
-      color: isDark ? '#f3f9ff' : '#111214',
-      textAlign: 'center',
+      fontSize: 36,
+      lineHeight: 40,
+      fontWeight: "800",
+      color: isDark ? "#f3f9ff" : "#111214",
+      textAlign: "center",
       letterSpacing: -0.8,
     },
     desktopHeroDescription: {
       marginTop: 12,
-      fontSize: 15,
-      lineHeight: 22,
-      color: isDark ? 'rgba(220,240,248,0.88)' : 'rgba(17,18,20,0.86)',
-      textAlign: 'center',
-      maxWidth: 320,
+      fontSize: 16,
+      lineHeight: 24,
+      color: isDark ? "rgba(220,240,248,0.88)" : "rgba(17,18,20,0.86)",
+      textAlign: "center",
+      maxWidth: 360,
     },
     desktopHeroProgress: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       marginTop: 18,
       gap: 8,
     },
     desktopHeroProgressDotButton: {
       width: 20,
       height: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
+      alignItems: "center",
+      justifyContent: "center",
     },
     desktopHeroProgressDot: {
       width: 10,
       height: 10,
       borderRadius: 999,
-      backgroundColor: isDark ? 'rgba(161,209,214,0.42)' : 'rgba(175,13,1,0.24)',
+      backgroundColor: isDark
+        ? "rgba(161,209,214,0.42)"
+        : "rgba(175,13,1,0.24)",
     },
     desktopHeroProgressDotActive: {
-      backgroundColor: isDark ? '#a1d1d6' : '#af0d01',
+      backgroundColor: isDark ? "#a1d1d6" : "#af0d01",
     },
     loadingText: {
       marginTop: 16,
