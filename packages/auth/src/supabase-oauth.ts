@@ -11,6 +11,10 @@ type SupabaseOAuthRedirectOptions = {
   relayToNative?: boolean;
 };
 
+type ResolveWebOriginOptions = {
+  allowLocal?: boolean;
+};
+
 const LOCAL_ORIGINS = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
 
 const normalizeCallbackPath = (callbackPath?: string) => {
@@ -59,7 +63,8 @@ const isLocalOrigin = (value?: string | null): boolean => {
   }
 };
 
-export const resolveWebOrigin = () => {
+export const resolveWebOrigin = (options: ResolveWebOriginOptions = {}) => {
+  const allowLocal = options.allowLocal ?? true;
   const isLocalDev = isLocalDevRuntime();
   const fallbackLocalOrigin = 'http://localhost:8081';
   const envCandidates = [
@@ -73,12 +78,26 @@ export const resolveWebOrigin = () => {
     typeof window !== 'undefined' ? parseOrigin(window.location?.origin) : null;
   const explicitEnvOrigin = envCandidates.map(parseOrigin).find(Boolean) || null;
 
-  if (isLocalDev) {
+  if (browserOrigin && !isLocalOrigin(browserOrigin)) {
+    return normalizeOrigin(browserOrigin);
+  }
+
+  if (isLocalDev && allowLocal) {
     const localCandidates = [browserOrigin, explicitEnvOrigin].filter(
       (candidate): candidate is string => Boolean(candidate) && isLocalOrigin(candidate)
     );
 
-    return normalizeOrigin(localCandidates[0] || fallbackLocalOrigin);
+    if (localCandidates[0]) {
+      return normalizeOrigin(localCandidates[0]);
+    }
+  }
+
+  if (explicitEnvOrigin && !isLocalOrigin(explicitEnvOrigin)) {
+    return normalizeOrigin(explicitEnvOrigin);
+  }
+
+  if (isLocalDev && allowLocal) {
+    return normalizeOrigin(fallbackLocalOrigin);
   }
 
   const productionCandidates = [
@@ -102,9 +121,7 @@ export const getSupabaseOAuthRedirectUrl = (options: SupabaseOAuthRedirectOption
 
   if (platform === 'web' || relayToNative) {
     const explicitOrigin = parseOrigin(options.origin);
-    const origin = isLocalDevRuntime()
-      ? (explicitOrigin && isLocalOrigin(explicitOrigin) ? explicitOrigin : resolveWebOrigin())
-      : explicitOrigin || resolveWebOrigin();
+    const origin = explicitOrigin || resolveWebOrigin({ allowLocal: !relayToNative });
 
     return origin ? `${origin}${callbackPath}` : callbackPath;
   }

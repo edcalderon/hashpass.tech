@@ -15,6 +15,15 @@ type CallbackHashError = {
     message: string;
 };
 
+const SUPABASE_PASSWORDLESS_TYPES = new Set([
+    'magiclink',
+    'email',
+    'signup',
+    'invite',
+    'recovery',
+    'email_change',
+]);
+
 const normalizeCallbackHashError = (rawCode: string | null, rawMessage: string | null): CallbackHashError => {
     const code = (rawCode || 'oauth_failed').toLowerCase();
     const message = (rawMessage || '').trim();
@@ -442,15 +451,18 @@ export default function AuthCallback() {
                 const isNativePasswordlessCode = Platform.OS !== 'web' && Boolean(params.code);
                 const isWebPasswordlessCode = Platform.OS === 'web' && Boolean(params.code);
 
-                // Fallback: detect Supabase implicit-flow magic link tokens (#access_token=...&type=magiclink).
-                // These appear when the client was not configured with flowType:'pkce'. We distinguish
-                // them from Google/Directus OAuth tokens by checking for type=magiclink in the hash.
+                // Fallback: detect Supabase implicit-flow passwordless tokens
+                // (#access_token=...&type=magiclink/email/etc.). These appear when
+                // the client was not configured with flowType:'pkce', or when an
+                // older email link is opened after a deployment.
                 const hashStr = Platform.OS === 'web' && typeof window !== 'undefined'
                     ? window.location.hash.replace(/^#/, '')
                     : '';
                 const hashUrlParams = hashStr ? new URLSearchParams(hashStr) : null;
-                const isImplicitMagicLink = Boolean(
-                    hashUrlParams?.get('access_token') && hashUrlParams?.get('type') === 'magiclink'
+                const hashAuthType = hashUrlParams?.get('type')?.toLowerCase() || '';
+                const isImplicitPasswordlessLink = Boolean(
+                    hashUrlParams?.get('access_token') &&
+                    (!hashAuthType || SUPABASE_PASSWORDLESS_TYPES.has(hashAuthType))
                 );
 
                 const isPasswordlessMethod =
@@ -458,7 +470,7 @@ export default function AuthCallback() {
                     signInMethod === 'otp_code' ||
                     isNativePasswordlessCode ||
                     isWebPasswordlessCode ||
-                    isImplicitMagicLink ||
+                    isImplicitPasswordlessLink ||
                     Boolean(params.token_hash) ||
                     Boolean(params.token && params.email);
 
@@ -492,7 +504,7 @@ export default function AuthCallback() {
                     // not in Chrome's storage. We cannot exchange the code here. Re-attempt relay.
                     const isNativeRelayFallback =
                         Platform.OS === 'web' &&
-                        (isWebPasswordlessCode || isImplicitMagicLink) &&
+                        (isWebPasswordlessCode || isImplicitPasswordlessLink) &&
                         (nativeRelayValue === '1' || nativeRelayValue === 'true');
 
                     if (isNativeRelayFallback) {

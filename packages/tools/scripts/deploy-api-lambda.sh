@@ -114,6 +114,77 @@ main().catch((error) => {
 NODE
 }
 
+sync_lambda_environment() {
+  local current_config_file
+  local environment_file
+  current_config_file="$(mktemp /tmp/hashpass-lambda-config.XXXXXX.json)"
+  environment_file="$(mktemp /tmp/hashpass-lambda-env.XXXXXX.json)"
+
+  aws lambda get-function-configuration \
+    --function-name "${LAMBDA_FUNCTION_NAME}" \
+    --region "${LAMBDA_REGION}" \
+    --output json >"${current_config_file}"
+
+  node - "${current_config_file}" "${environment_file}" <<'NODE'
+const fs = require('node:fs');
+
+const [configPath, environmentPath] = process.argv.slice(2);
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+const current = { ...(config.Environment?.Variables || {}) };
+
+const syncKeys = [
+  'EXPO_PUBLIC_SUPABASE_PROFILE',
+  'SUPABASE_PROFILE',
+  'EXPO_PUBLIC_SUPABASE_URL',
+  'EXPO_PUBLIC_SUPABASE_URL_DEV',
+  'EXPO_PUBLIC_SUPABASE_URL_PROD',
+  'EXPO_PUBLIC_SUPABASE_KEY',
+  'EXPO_PUBLIC_SUPABASE_KEY_DEV',
+  'EXPO_PUBLIC_SUPABASE_KEY_PROD',
+  'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+  'EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV',
+  'EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD',
+  'EXPO_PUBLIC_SITE_URL',
+  'SITE_URL',
+  'FRONTEND_URL',
+  'EXPO_PUBLIC_API_BASE_URL',
+  'EXPO_PUBLIC_BETTER_AUTH_URL',
+];
+
+const changed = [];
+for (const key of syncKeys) {
+  const value = process.env[key];
+  if (typeof value !== 'string' || !value.trim()) continue;
+
+  const trimmed = value.trim();
+  if (current[key] !== trimmed) {
+    changed.push(key);
+  }
+  current[key] = trimmed;
+}
+
+fs.writeFileSync(environmentPath, JSON.stringify({ Variables: current }));
+
+if (changed.length > 0) {
+  console.log(`Syncing Lambda environment keys: ${changed.join(', ')}`);
+} else {
+  console.log('Lambda environment already has the requested public Supabase/API keys.');
+}
+NODE
+
+  aws lambda update-function-configuration \
+    --function-name "${LAMBDA_FUNCTION_NAME}" \
+    --region "${LAMBDA_REGION}" \
+    --environment "file://${environment_file}" \
+    >/dev/null
+
+  aws lambda wait function-updated \
+    --function-name "${LAMBDA_FUNCTION_NAME}" \
+    --region "${LAMBDA_REGION}"
+
+  rm -f "${current_config_file}" "${environment_file}"
+}
+
 if [[ -z "${LAMBDA_FUNCTION_NAME}" ]]; then
   echo "ERROR: SITE_LAMBDA_FUNCTION_NAME or API_LAMBDA_FUNCTION_NAME is required." >&2
   exit 1
@@ -148,6 +219,8 @@ if [[ ! -f "${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" ]]; then
   echo "ERROR: Lambda package was not created: ${PROJECT_ROOT}/${LAMBDA_ZIP_PATH}" >&2
   exit 1
 fi
+
+sync_lambda_environment
 
 aws lambda update-function-code \
   --function-name "${LAMBDA_FUNCTION_NAME}" \

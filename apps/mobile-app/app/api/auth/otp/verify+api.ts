@@ -15,6 +15,13 @@ type ParsedTokenHash = {
   emailOtp: string;
 };
 
+const SUPABASE_PROFILE_IDS = [
+  'core-development',
+  'core-production',
+  'bsl-development',
+  'bsl-production',
+] as const;
+
 function parseStoredTokenHash(rawTokenHash: string | null | undefined): ParsedTokenHash {
   const fallback: ParsedTokenHash = {
     tokenHash: rawTokenHash?.trim() || '',
@@ -37,6 +44,66 @@ function parseStoredTokenHash(rawTokenHash: string | null | undefined): ParsedTo
     tokenHash,
     verificationType: verificationType || 'magiclink',
     emailOtp,
+  };
+}
+
+function decodeJwtPayload(token: string | null | undefined): Record<string, any> | null {
+  if (!token || !token.includes('.')) return null;
+
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function supabaseProjectRefFromUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+
+  try {
+    const hostname = new URL(value).hostname.toLowerCase();
+    const [projectRef] = hostname.split('.');
+    return projectRef || null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveAnonConfigForServiceProject(request: Request): {
+  anonUrl?: string;
+  anonKey?: string;
+  matchedProfile: string;
+  serviceRef: string | null;
+} {
+  const hostname = hostnameFromRequest(request);
+  const serverEnv = getSupabaseServerEnv(request);
+  const serviceRef = decodeJwtPayload(serverEnv.supabaseServiceKey)?.ref || null;
+  const fallback = resolvePublicSupabaseConfig({ hostname });
+
+  if (serviceRef) {
+    for (const profileId of SUPABASE_PROFILE_IDS) {
+      const candidate = resolvePublicSupabaseConfig({ profileId });
+      if (
+        candidate.supabaseUrl &&
+        candidate.supabaseAnonKey &&
+        supabaseProjectRefFromUrl(candidate.supabaseUrl) === serviceRef
+      ) {
+        return {
+          anonUrl: candidate.supabaseUrl,
+          anonKey: candidate.supabaseAnonKey,
+          matchedProfile: profileId,
+          serviceRef,
+        };
+      }
+    }
+  }
+
+  return {
+    anonUrl: fallback.supabaseUrl,
+    anonKey: fallback.supabaseAnonKey,
+    matchedProfile: fallback.profileId,
+    serviceRef,
   };
 }
 
@@ -160,11 +227,13 @@ export async function POST(request: Request) {
     // so the stored token from the OTP send step is still valid and unConsumed.
     // Generating a fresh link here caused GoTrue to return "Only the token_hash and type
     // should be provided" because the JS client attaches extra PKCE fields internally.
-    const hostname = hostnameFromRequest(request);
-    const { supabaseUrl: anonUrl, supabaseAnonKey: anonKey } = resolvePublicSupabaseConfig({ hostname });
+    const { anonUrl, anonKey, matchedProfile, serviceRef } = resolveAnonConfigForServiceProject(request);
 
     if (!anonUrl || !anonKey) {
-      console.error('OTP verify: missing anon Supabase config for hostname:', hostname);
+      console.error('OTP verify: missing anon Supabase config:', {
+        matchedProfile,
+        serviceRef,
+      });
       return new Response(
         JSON.stringify({ error: 'Server configuration error', code: 'server_config_error' }),
         { status: 503, headers: { 'Content-Type': 'application/json', ...corsHeaders } }

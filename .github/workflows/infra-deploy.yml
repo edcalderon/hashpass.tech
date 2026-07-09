@@ -96,6 +96,22 @@ jobs:
           SITE_LAMBDA_FUNCTION_NAME: hashpass-prod-expo-router-api
           SITE_LAMBDA_REGION: us-east-1
           SITE_API_VERSION_URL: https://api.hashpass.tech/api/config/versions
+          EXPO_PUBLIC_SUPABASE_PROFILE: core-production
+          SUPABASE_PROFILE: core-production
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
+          EXPO_PUBLIC_SUPABASE_URL_DEV: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}
+          EXPO_PUBLIC_SUPABASE_URL_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+          EXPO_PUBLIC_SUPABASE_KEY_DEV: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+          EXPO_PUBLIC_SUPABASE_KEY_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+          EXPO_PUBLIC_SITE_URL: https://hashpass.tech
+          SITE_URL: https://hashpass.tech
+          FRONTEND_URL: https://hashpass.tech
+          EXPO_PUBLIC_API_BASE_URL: https://api.hashpass.tech/api
+          EXPO_PUBLIC_BETTER_AUTH_URL: https://api.hashpass.tech/api/auth
         run: bash packages/tools/scripts/deploy-api-lambda.sh
 
       - name: Deploy development API Lambda
@@ -104,4 +120,20 @@ jobs:
           SITE_LAMBDA_FUNCTION_NAME: hashpass-dev-expo-router-api
           SITE_LAMBDA_REGION: us-east-1
           SITE_API_VERSION_URL: https://api-dev.hashpass.tech/api/config/versions
+          EXPO_PUBLIC_SUPABASE_PROFILE: core-development
+          SUPABASE_PROFILE: core-development
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}
+          EXPO_PUBLIC_SUPABASE_URL_DEV: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_DEV }}
+          EXPO_PUBLIC_SUPABASE_URL_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+          EXPO_PUBLIC_SUPABASE_KEY_DEV: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+          EXPO_PUBLIC_SUPABASE_KEY_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
+          EXPO_PUBLIC_SITE_URL: https://dev.hashpass.tech
+          SITE_URL: https://dev.hashpass.tech
+          FRONTEND_URL: https://dev.hashpass.tech
+          EXPO_PUBLIC_API_BASE_URL: https://api-dev.hashpass.tech/api
+          EXPO_PUBLIC_BETTER_AUTH_URL: https://api-dev.hashpass.tech/api/auth
         run: bash packages/tools/scripts/deploy-api-lambda.sh
