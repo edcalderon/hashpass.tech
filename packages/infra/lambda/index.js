@@ -90,6 +90,17 @@ function getSetCookieHeaders(headers) {
     .filter(Boolean);
 }
 
+function buildRequestHeaders(event) {
+  const headers = new Headers(event.headers || {});
+  const hasCookieHeader = Boolean(getHeader(event.headers, 'cookie'));
+
+  if (!hasCookieHeader && Array.isArray(event.cookies) && event.cookies.length > 0) {
+    headers.set('cookie', event.cookies.join('; '));
+  }
+
+  return headers;
+}
+
 // AWS Lambda handler for API Gateway
 exports.handler = async (event) => {
   try {
@@ -147,7 +158,7 @@ exports.handler = async (event) => {
     // Convert API Gateway event to Request object
     const request = new Request(fullUrl, {
       method: method,
-      headers: new Headers(event.headers || {}),
+      headers: buildRequestHeaders(event),
       body: event.body && method !== 'GET' && method !== 'HEAD'
         ? (typeof event.body === 'string' ? event.body : JSON.stringify(event.body))
         : undefined,
@@ -240,4 +251,8 @@ exports.handler = async (event) => {
       isBase64Encoded: false,
     };
   }
+};
+
+exports._internal = {
+  buildRequestHeaders,
 };

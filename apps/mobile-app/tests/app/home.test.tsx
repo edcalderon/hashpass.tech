@@ -5,30 +5,36 @@ const mockRouterPush = jest.fn();
 const mockScrollTo = jest.fn();
 
 const mockColors = {
-  primary: '#c81000',
-  primaryContrastText: '#ffffff',
-  secondary: '#20242c',
-  secondaryContrastText: '#ffffff',
-  surface: '#ffffff',
+  primary: "#c81000",
+  primaryContrastText: "#ffffff",
+  secondary: "#20242c",
+  secondaryContrastText: "#ffffff",
+  surface: "#ffffff",
   background: {
-    default: '#ffffff',
+    default: "#ffffff",
   },
   text: {
-    primary: '#121212',
-    secondary: '#5f6678',
+    primary: "#121212",
+    secondary: "#5f6678",
   },
 };
 
 const loadHomeScreen = ({
   width = 1200,
   height = 900,
-  platform = 'android',
+  platform = "android",
   bottomInset = 28,
+  animationLevel = "reduced",
+  isDark = false,
+  taglineFlipList = "- YOUR EVENT -,- YOUR COMMUNITY -,- YOUR BENEFITS -",
 }: {
   width?: number;
   height?: number;
-  platform?: 'android' | 'ios' | 'web';
+  platform?: "android" | "ios" | "web";
   bottomInset?: number;
+  animationLevel?: "full" | "reduced" | "none";
+  isDark?: boolean;
+  taglineFlipList?: string;
 } = {}) => {
   let renderer: any;
   let actFn: any;
@@ -37,7 +43,7 @@ const loadHomeScreen = ({
     jest.resetModules();
     mockScrollTo.mockReset();
 
-    const React = require('react');
+    const React = require("react");
 
     const MockAnimatedValue = class {
       value: number;
@@ -51,9 +57,12 @@ const loadHomeScreen = ({
       }
     };
 
-    const mockAnimation = (value: { value?: number }, config: { toValue?: number }) => ({
+    const mockAnimation = (
+      value: { value?: number },
+      config: { toValue?: number },
+    ) => ({
       start: (callback?: () => void) => {
-        if (typeof config.toValue === 'number') {
+        if (typeof config.toValue === "number") {
           value.value = config.toValue;
         }
 
@@ -61,25 +70,31 @@ const loadHomeScreen = ({
       },
     });
 
-    const MockReanimatedScrollView = React.forwardRef((props: any, ref: any) => {
-      React.useImperativeHandle(ref, () => ({
-        scrollTo: mockScrollTo,
-      }));
+    const MockReanimatedScrollView = React.forwardRef(
+      (props: any, ref: any) => {
+        React.useImperativeHandle(ref, () => ({
+          scrollTo: mockScrollTo,
+        }));
 
-      return React.createElement('Reanimated.ScrollView', props, props.children);
-    });
-    MockReanimatedScrollView.displayName = 'MockReanimatedScrollView';
+        return React.createElement(
+          "Reanimated.ScrollView",
+          props,
+          props.children,
+        );
+      },
+    );
+    MockReanimatedScrollView.displayName = "MockReanimatedScrollView";
 
-    jest.doMock('react-native', () => ({
+    jest.doMock("react-native", () => ({
       Animated: {
         Value: MockAnimatedValue,
-        View: 'Animated.View',
-        Text: 'Animated.Text',
+        View: "Animated.View",
+        Text: "Animated.Text",
         spring: (value: any, config: any) => mockAnimation(value, config),
         timing: (value: any, config: any) => mockAnimation(value, config),
       },
       Appearance: {
-        getColorScheme: () => 'light',
+        getColorScheme: () => "light",
         addEventListener: jest.fn(() => ({ remove: jest.fn() })),
         removeEventListener: jest.fn(),
         addChangeListener: jest.fn(() => ({ remove: jest.fn() })),
@@ -90,27 +105,28 @@ const loadHomeScreen = ({
         isReduceMotionEnabled: jest.fn(() => Promise.resolve(false)),
       },
       AppState: {
-        currentState: 'active',
+        currentState: "active",
         addEventListener: jest.fn(() => ({ remove: jest.fn() })),
       },
       Dimensions: {
         get: jest.fn(() => ({ width, height, scale: 1, fontScale: 1 })),
         addEventListener: jest.fn(() => ({ remove: jest.fn() })),
       },
-      Image: 'Image',
+      Image: "Image",
       Linking: {
         openURL: jest.fn(),
       },
-      Modal: 'Modal',
+      Modal: "Modal",
       Platform: {
         OS: platform,
-        select: (options: Record<string, unknown>) => options[platform] ?? options.default,
+        select: (options: Record<string, unknown>) =>
+          options[platform] ?? options.default,
       },
-      Pressable: 'Pressable',
-      ScrollView: 'ScrollView',
+      Pressable: "Pressable",
+      ScrollView: "ScrollView",
       StyleSheet: {
         absoluteFillObject: {
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           right: 0,
           bottom: 0,
@@ -119,15 +135,15 @@ const loadHomeScreen = ({
         create: (styles: any) => styles,
         flatten: (style: any) => style,
       },
-      Text: 'Text',
-      TouchableOpacity: 'TouchableOpacity',
-      TouchableWithoutFeedback: 'TouchableWithoutFeedback',
-      View: 'View',
+      Text: "Text",
+      TouchableOpacity: "TouchableOpacity",
+      TouchableWithoutFeedback: "TouchableWithoutFeedback",
+      View: "View",
       useWindowDimensions: () => ({ width, height, scale: 1, fontScale: 1 }),
     }));
 
     jest.doMock(
-      'react-native-css-interop/src/runtime/native/appearance-observables',
+      "react-native-css-interop/src/runtime/native/appearance-observables",
       () => ({
         addChangeListener: jest.fn(),
         addEventListener: jest.fn(),
@@ -135,25 +151,30 @@ const loadHomeScreen = ({
         removeEventListener: jest.fn(),
         resetAppearanceListeners: jest.fn(),
       }),
-      { virtual: true }
+      { virtual: true },
     );
 
-    jest.doMock('react-native-reanimated', () => ({
+    jest.doMock("react-native-reanimated", () => ({
       __esModule: true,
       default: {
-        View: 'Reanimated.View',
+        View: "Reanimated.View",
         ScrollView: MockReanimatedScrollView,
       },
       Easing: {
-        ease: 'ease',
+        ease: "ease",
         inOut: (value: unknown) => value,
       },
       Extrapolation: {
-        CLAMP: 'clamp',
+        CLAMP: "clamp",
       },
-      interpolate: (value: number, inputRange: number[], outputRange: number[]) => (
-        value <= inputRange[0] ? outputRange[0] : outputRange[outputRange.length - 1]
-      ),
+      interpolate: (
+        value: number,
+        inputRange: number[],
+        outputRange: number[],
+      ) =>
+        value <= inputRange[0]
+          ? outputRange[0]
+          : outputRange[outputRange.length - 1],
       useAnimatedReaction: jest.fn(),
       useAnimatedScrollHandler: (handlers: any) => handlers,
       useAnimatedStyle: (factory: () => any) => factory(),
@@ -165,7 +186,7 @@ const loadHomeScreen = ({
       withTiming: (value: unknown) => value,
     }));
 
-    jest.doMock('react-native-safe-area-context', () => ({
+    jest.doMock("react-native-safe-area-context", () => ({
       useSafeAreaInsets: () => ({
         top: 0,
         right: 0,
@@ -174,106 +195,131 @@ const loadHomeScreen = ({
       }),
     }));
 
-    jest.doMock('react-native-svg', () => ({
-      Svg: 'Svg',
-      Path: 'Path',
+    jest.doMock("react-native-svg", () => ({
+      Svg: "Svg",
+      Path: "Path",
     }));
 
-    jest.doMock('expo-haptics', () => ({
+    jest.doMock("expo-haptics", () => ({
       __esModule: true,
       ImpactFeedbackStyle: {
-        Light: 'Light',
+        Light: "Light",
       },
       impactAsync: jest.fn(),
     }));
 
-    jest.doMock('expo-router', () => ({
-      usePathname: () => '/home',
+    jest.doMock("expo-router", () => ({
+      usePathname: () => "/home",
       useRouter: () => ({
         push: mockRouterPush,
       }),
     }));
 
-    jest.doMock('../../hooks/useAuth', () => ({
+    jest.doMock("../../hooks/useAuth", () => ({
       useAuth: () => ({ user: null }),
     }));
 
-    jest.doMock('../../hooks/useTheme', () => ({
+    jest.doMock("../../hooks/useTheme", () => ({
       useTheme: () => ({
-        colors: mockColors,
-        isDark: false,
-        theme: 'light',
+        colors: isDark
+          ? {
+              ...mockColors,
+              background: {
+                default: "#121212",
+              },
+              text: {
+                ...mockColors.text,
+                primary: "#ffffff",
+                secondary: "#f0f0f0",
+              },
+            }
+          : mockColors,
+        isDark,
+        theme: isDark ? "dark" : "light",
         setTheme: jest.fn(),
       }),
     }));
 
-    jest.doMock('../../hooks/useIsMobile', () => ({
+    jest.doMock("../../hooks/useIsMobile", () => ({
       useIsMobile: () => true,
     }));
 
-    jest.doMock('../../providers/LanguageProvider', () => ({
+    jest.doMock("../../providers/LanguageProvider", () => ({
       useLanguage: () => ({
-        locale: 'en',
+        locale: "en",
         setLocale: jest.fn(),
       }),
     }));
 
-    jest.doMock('../../contexts/AnimationLevelContext', () => ({
+    jest.doMock("../../contexts/AnimationLevelContext", () => ({
       useAnimationLevel: () => ({
-        animationLevel: 'reduced',
+        animationLevel,
         setAnimationLevel: jest.fn(),
       }),
     }));
 
-    jest.doMock('../../i18n/i18n', () => ({
-      getCurrentLocale: () => 'en',
-      getAvailableLocales: () => [{ code: 'en', name: 'english' }],
+    jest.doMock("../../i18n/i18n", () => ({
+      getCurrentLocale: () => "en",
+      getAvailableLocales: () => [{ code: "en", name: "english" }],
       useTranslation: () => ({
-        t: (key: string, fallback?: string) => fallback || key,
+        t: (key: string, fallback?: string) =>
+          key === "taglineFlipList" ? taglineFlipList : fallback || key,
       }),
     }));
 
-    jest.doMock('../../lib/event-detector', () => ({
+    jest.doMock("../../lib/event-detector", () => ({
       getCurrentEvent: () => null,
     }));
 
-    jest.doMock('../../lib/hashpass-logo', () => ({
+    jest.doMock("../../lib/hashpass-logo", () => ({
       getHashpassFooterLogo: () => 1,
       getHashpassFullLogo: () => 1,
     }));
 
-    jest.doMock('../../lib/utils', () => ({
+    jest.doMock("../../lib/utils", () => ({
       createShadowStyle: () => ({}),
     }));
 
-    jest.doMock('../../components/icons/SettingsIcons', () => ({
-      ArrowUpIcon: 'ArrowUpIcon',
-      SettingsIcon: 'SettingsIcon',
-      LogInIcon: 'LogInIcon',
-      MoonIcon: 'MoonIcon',
-      SunIcon: 'SunIcon',
-      AutoIcon: 'AutoIcon',
-      ZapIcon: 'ZapIcon',
-      SliderIcon: 'SliderIcon',
-      PauseIcon: 'PauseIcon',
-      CheckIcon: 'CheckIcon',
-      getFlagEmoji: () => 'US',
+    jest.doMock("../../components/icons/SettingsIcons", () => ({
+      ArrowUpIcon: "ArrowUpIcon",
+      SettingsIcon: "SettingsIcon",
+      LogInIcon: "LogInIcon",
+      MoonIcon: "MoonIcon",
+      SunIcon: "SunIcon",
+      AutoIcon: "AutoIcon",
+      ZapIcon: "ZapIcon",
+      SliderIcon: "SliderIcon",
+      PauseIcon: "PauseIcon",
+      CheckIcon: "CheckIcon",
+      getFlagEmoji: () => "US",
     }));
 
-    jest.doMock('../../components/Features', () => 'Features');
-    jest.doMock('../../components/Testimonials', () => 'Testimonials');
-    jest.doMock('../../components/InteractiveHoverButton', () => ({
-      InteractiveHoverButton: 'InteractiveHoverButton',
+    jest.doMock("../../components/Features", () => "Features");
+    jest.doMock("../../components/Testimonials", () => "Testimonials");
+    jest.doMock("../../components/InteractiveHoverButton", () => ({
+      InteractiveHoverButton: "InteractiveHoverButton",
     }));
-    jest.doMock('../../components/FlipWords', () => 'FlipWords');
-    jest.doMock('../../components/Newsletter', () => 'Newsletter');
-    jest.doMock('../../components/EventBannerCarousel', () => 'EventBannerCarousel');
-    jest.doMock('../../components/VersionStatusIndicator', () => 'VersionStatusIndicator');
-    jest.doMock('../../components/CrystalForgeBackground', () => 'CrystalForgeBackground');
-    jest.doMock('../../components/AnimatedGradientBackground', () => 'AnimatedGradientBackground');
+    jest.doMock("../../components/FlipWords", () => "FlipWords");
+    jest.doMock("../../components/Newsletter", () => "Newsletter");
+    jest.doMock(
+      "../../components/EventBannerCarousel",
+      () => "EventBannerCarousel",
+    );
+    jest.doMock(
+      "../../components/VersionStatusIndicator",
+      () => "VersionStatusIndicator",
+    );
+    jest.doMock(
+      "../../components/CrystalForgeBackground",
+      () => "CrystalForgeBackground",
+    );
+    jest.doMock(
+      "../../components/AnimatedGradientBackground",
+      () => "AnimatedGradientBackground",
+    );
 
-    const TestRenderer = require('react-test-renderer');
-    const HomeScreen = require('../../app/home').default;
+    const TestRenderer = require("react-test-renderer");
+    const HomeScreen = require("../../app/home").default;
 
     actFn = TestRenderer.act;
     actFn(() => {
@@ -285,12 +331,17 @@ const loadHomeScreen = ({
 };
 
 const styleArrayContains = (style: unknown, matcher: Record<string, unknown>) =>
-  Array.isArray(style) && style.some((entry) => (
-    entry && typeof entry === 'object' &&
-    Object.entries(matcher).every(([key, value]) => (entry as Record<string, unknown>)[key] === value)
-  ));
+  Array.isArray(style) &&
+  style.some(
+    (entry) =>
+      entry &&
+      typeof entry === "object" &&
+      Object.entries(matcher).every(
+        ([key, value]) => (entry as Record<string, unknown>)[key] === value,
+      ),
+  );
 
-describe('HomeScreen native tablet layout', () => {
+describe("HomeScreen native tablet layout", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     mockRouterPush.mockReset();
@@ -301,34 +352,40 @@ describe('HomeScreen native tablet layout', () => {
     jest.useRealTimers();
   });
 
-  it('starts at the top and reserves tablet footer space for floating controls', () => {
+  it("starts at the top and reserves tablet footer space for floating controls", () => {
     const { renderer, act } = loadHomeScreen({
       width: 1200,
       height: 900,
-      platform: 'android',
+      platform: "android",
       bottomInset: 28,
     });
 
     const root = renderer.root;
-    const scrollView = root.findByType('Reanimated.ScrollView');
+    const scrollView = root.findByType("Reanimated.ScrollView");
 
     expect(scrollView.props.contentOffset).toEqual({ x: 0, y: 0 });
     expect(scrollView.props.contentContainerStyle).toEqual(
-      expect.objectContaining({ paddingBottom: 160 })
+      expect.objectContaining({ paddingBottom: 160 }),
     );
 
     const floatingStack = root
-      .findAllByType('Reanimated.View')
-      .find((node: any) => styleArrayContains(node.props.style, { bottom: 116 }));
+      .findAllByType("Reanimated.View")
+      .find((node: any) =>
+        styleArrayContains(node.props.style, { bottom: 116 }),
+      );
     expect(floatingStack).toBeTruthy();
 
     const hero = root
-      .findAllByType('View')
-      .find((node: any) => node.props.style?.minHeight === 560 && node.props.style?.height === 560);
+      .findAllByType("View")
+      .find(
+        (node: any) =>
+          node.props.style?.minHeight === 560 &&
+          node.props.style?.height === 560,
+      );
     expect(hero).toBeTruthy();
 
     const footer = root
-      .findAllByType('View')
+      .findAllByType("View")
       .find((node: any) => node.props.style?.paddingBottom === 200);
     expect(footer).toBeTruthy();
 
@@ -337,5 +394,43 @@ describe('HomeScreen native tablet layout', () => {
     });
 
     expect(mockScrollTo).toHaveBeenCalledWith({ y: 0, animated: false });
+  });
+
+  it("renders a static single-line hero tagline with theme-aware colors when animations are disabled", () => {
+    const { renderer } = loadHomeScreen({
+      platform: "web",
+      animationLevel: "none",
+      isDark: false,
+    });
+
+    const root = renderer.root;
+    const taglineText = root
+      .findAllByType("Text")
+      .find(
+        (node: any) =>
+          node.props.children === "YOUR EVENT YOUR COMMUNITY YOUR BENEFITS",
+      );
+
+    expect(taglineText).toBeTruthy();
+    expect(taglineText?.props.numberOfLines).toBe(1);
+    expect(taglineText?.props.style).toEqual(
+      expect.objectContaining({
+        color: mockColors.text.primary,
+      }),
+    );
+
+    const scrollLabel = root
+      .findAllByType("Text")
+      .find((node: any) => node.props.children === "Scroll");
+    expect(
+      styleArrayContains(scrollLabel?.props.style, {
+        color: mockColors.text.primary,
+      }),
+    ).toBe(true);
+
+    const arrowPath = root
+      .findAllByType("Path")
+      .find((node: any) => node.props.stroke);
+    expect(arrowPath?.props.stroke).toBe(mockColors.text.primary);
   });
 });
