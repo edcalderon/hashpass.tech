@@ -692,7 +692,19 @@ export const useAuth = () => {
           throw new Error('Google sign-in completed, but no Supabase session was created.');
         }
 
-        return { pending: true };
+        const hydratedNativeBrowserSession =
+          sessionResult.session && sessionResult.user && !(sessionResult.session as any).user
+            ? { ...sessionResult.session, user: sessionResult.user }
+            : sessionResult.session;
+        const supabaseSession = mapSupabaseSessionToAuthSession(hydratedNativeBrowserSession);
+        if (!supabaseSession) {
+          throw new Error('Google sign-in completed, but no Supabase user session was created.');
+        }
+
+        sessionBootstrapPromise = Promise.resolve(supabaseSession);
+        markRecentAuthSuccess();
+        applyAuthenticatedSession(supabaseSession);
+        return { user: supabaseSession.user, session: supabaseSession };
       }
 
       if (Platform.OS !== 'web' && !result.oauthUrl) {

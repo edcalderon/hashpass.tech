@@ -1248,6 +1248,34 @@ export default function AuthScreen() {
     digitRefs.current[0]?.focus();
   };
 
+  const navigateAfterNativeGoogleAuth = useCallback((path: string) => {
+    const normalizedPath = normalizeReturnToPath(path);
+    const routeGroupPath = normalizedPath.startsWith("/dashboard")
+      ? `/(shared)${normalizedPath}`
+      : "/(shared)/dashboard/explore";
+
+    hasNavigatedRef.current = true;
+
+    try {
+      router.replace(normalizedPath as any);
+    } catch (primaryNavError) {
+      console.warn("[AuthScreen] Native Google auth dashboard navigation failed; trying route group path.", {
+        path: normalizedPath,
+        error: primaryNavError instanceof Error ? primaryNavError.message : String(primaryNavError),
+      });
+
+      try {
+        router.replace(routeGroupPath as any);
+      } catch (fallbackNavError) {
+        console.error("[AuthScreen] Native Google auth dashboard fallback navigation failed:", {
+          path: routeGroupPath,
+          error: fallbackNavError instanceof Error ? fallbackNavError.message : String(fallbackNavError),
+        });
+        throw fallbackNavError;
+      }
+    }
+  }, [router]);
+
   const handleGoogleSignIn = async () => {
     if (isBusy || oauthInFlightRef.current) return;
 
@@ -1273,8 +1301,7 @@ export default function AuthScreen() {
       );
 
       if (Platform.OS !== "web") {
-        hasNavigatedRef.current = true;
-        router.replace(redirectPath as any);
+        navigateAfterNativeGoogleAuth(redirectPath);
       }
     } catch (error: any) {
       const message = extractApiError(

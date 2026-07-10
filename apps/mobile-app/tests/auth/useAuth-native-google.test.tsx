@@ -693,6 +693,10 @@ describe('useAuth native Google sign-in', () => {
         signInWithNativeGoogleAccount: mockSignInWithNativeGoogleAccount,
       }));
 
+      jest.doMock('../../lib/auth/recent-auth', () => ({
+        markRecentAuthSuccess: mockMarkRecentAuthSuccess,
+      }));
+
       jest.doMock('../../lib/auth/oauth/callback-params', () => ({
         mergeOAuthFragmentParams: jest.fn((params: URLSearchParams, extras: Record<string, string>) => ({
           ...Object.fromEntries(params.entries()),
@@ -725,7 +729,20 @@ describe('useAuth native Google sign-in', () => {
       result = await capturedHook.signInWithOAuth('google');
     });
 
-    expect(result).toEqual({ pending: true });
+    expect(result).toEqual(
+      expect.objectContaining({
+        user: expect.objectContaining({
+          id: 'supabase-user',
+          email: 'user@example.com',
+        }),
+        session: expect.objectContaining({
+          user: expect.objectContaining({
+            id: 'supabase-user',
+            email: 'user@example.com',
+          }),
+        }),
+      })
+    );
     expect(mockSignInWithNativeGoogleAccount).toHaveBeenCalledWith('google-web-client-id');
     expect(mockAuthService.signInWithOAuth).toHaveBeenCalledWith('google');
     expect(mockOpenAuthSessionAsync).toHaveBeenCalledWith(
@@ -735,6 +752,15 @@ describe('useAuth native Google sign-in', () => {
     expect(mockCreateSessionFromUrl).toHaveBeenCalledWith(
       'myapp://auth/callback#access_token=native-browser-token'
     );
+    expect(mockMarkRecentAuthSuccess).toHaveBeenCalledTimes(1);
+    expect(capturedHook.isLoggedIn).toBe(true);
+    expect(capturedHook.user).toEqual(
+      expect.objectContaining({
+        id: 'supabase-user',
+        email: 'user@example.com',
+      })
+    );
+    expect(capturedHook.isLoading).toBe(false);
   });
 
   it('falls back to browser OAuth when Android reports numeric native Google developer error', async () => {
@@ -833,7 +859,20 @@ describe('useAuth native Google sign-in', () => {
       result = await capturedHook.signInWithOAuth('google');
     });
 
-    expect(result).toEqual({ pending: true });
+    expect(result).toEqual(
+      expect.objectContaining({
+        user: expect.objectContaining({
+          id: 'supabase-user',
+          email: 'user@example.com',
+        }),
+        session: expect.objectContaining({
+          user: expect.objectContaining({
+            id: 'supabase-user',
+            email: 'user@example.com',
+          }),
+        }),
+      })
+    );
     expect(mockSignInWithNativeGoogleAccount).toHaveBeenCalledWith('google-web-client-id');
     expect(mockAuthService.signInWithOAuth).toHaveBeenCalledWith('google');
     expect(mockOpenAuthSessionAsync).toHaveBeenCalledWith(
