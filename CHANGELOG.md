@@ -1,3 +1,14 @@
+## [1.8.193](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.192...v1.8.193) (2026-07-10)
+
+
+### Bug Fixes
+
+* **mobile:** default google auth to crash-safe flow ([42c3466](https://github.com/hashpass-tech/hashpass.tech/commit/42c34666c9c96ee9cfbfe542d4df8a06957842a2))
+
+
+
+
+
 ## [1.8.192](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.191...v1.8.192) (2026-07-10)
 
 
