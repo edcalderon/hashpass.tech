@@ -207,6 +207,17 @@ describe('signInWithNativeGoogleAccount', () => {
     expect(mockGoogleSignin.signIn).not.toHaveBeenCalled();
   });
 
+  it('does not start account selection when Play Services are reported unavailable', async () => {
+    mockGoogleSignin.hasPlayServices.mockResolvedValueOnce(false);
+    const { signInWithNativeGoogleAccount } = loadNativeGoogleSignin();
+
+    await expect(signInWithNativeGoogleAccount()).rejects.toMatchObject({
+      code: mockStatusCodes.PLAY_SERVICES_NOT_AVAILABLE,
+      message: 'Google Play Services are unavailable on this device.',
+    });
+    expect(mockGoogleSignin.signIn).not.toHaveBeenCalled();
+  });
+
   it('does not throw on module import when the native Google module is unavailable', async () => {
     jest.dontMock('@react-native-google-signin/google-signin');
     jest.doMock('@react-native-google-signin/google-signin', () => {

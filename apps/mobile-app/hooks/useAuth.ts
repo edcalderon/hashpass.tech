@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { authService, BetterAuthProvider, getSupabaseOAuthRedirectUrl } from '@hashpass/auth';
-import type { AuthResponse, AuthSession, AuthUser, IAuthProvider } from '@hashpass/auth';
+import type { AuthSession, AuthUser, IAuthProvider } from '@hashpass/auth';
 import { configureAuthService } from '@hashpass/auth/auth-dependencies';
 import { createSessionFromUrl, supabase } from '../lib/supabase';
 import { Platform } from 'react-native';
@@ -458,11 +458,10 @@ export const useAuth = () => {
     try {
       const googleWebClientId = resolveGoogleOAuthClientId();
       const providerName = authService.getProviderName();
-      // Native-only: whether the Supabase ID-token SDK path is available. Web no
-      // longer uses this — see the Better Auth branch below.
-      const nativeSupabaseGoogleAvailable =
+      // Native-only: the SDK account picker still needs public Supabase config
+      // so the compatibility fallback can create a mobile data session.
+      const nativeGoogleAvailable =
         provider === 'google' &&
-        providerName !== 'better-auth' &&
         hasPublicSupabaseAuthConfig();
 
       const clearStaleProviderSession = async (skipProviders: 'better-auth' | 'supabase' | ('better-auth' | 'supabase')[]) => {
@@ -502,23 +501,63 @@ export const useAuth = () => {
 
       // ── Native Google Sign-In (SDK path, feature-flagged) ──────────────────────
       // Use the system account picker to get an ID token, then exchange it with
-      // Supabase first. Native mobile data APIs expect Supabase UUID user ids;
-      // Better Auth remains a fallback only when Supabase cannot accept the
-      // token. Disabled or unavailable → falls through to provider OAuth below.
+      // Better Auth first so native and web Google sign-in land on the same
+      // identity. Supabase remains a native-only compatibility fallback.
       const nativeGoogleEnabled =
         provider === 'google' &&
         Platform.OS !== 'web' &&
-        nativeSupabaseGoogleAvailable &&
+        nativeGoogleAvailable &&
         shouldUseNativeGoogleSignin(googleWebClientId);
 
       if (nativeGoogleEnabled) {
         try {
           const { idToken } = await signInWithNativeGoogleAccount(googleWebClientId);
-          // Native's two-tier attempt (Better Auth, then Supabase) ends up on
-          // one of these two either way, so only clear a session belonging to
-          // neither — e.g. a stale Directus session — not one that's already
-          // a valid outcome of this same flow.
+          // Native's two-tier attempt ends up on one of these two either way,
+          // so only clear a session belonging to neither — e.g. a stale
+          // Directus session — not one that's already a valid outcome.
           await clearStaleProviderSession(['better-auth', 'supabase']);
+
+          let betterAuthPrimaryError: unknown = null;
+          try {
+            const betterAuthGoogle =
+              providerName === 'better-auth'
+                ? (authService as unknown as BetterAuthProvider)
+                : getGoogleBetterAuthProvider();
+
+            const betterAuthResult = await betterAuthGoogle.signInWithIdToken('google', idToken);
+            if (betterAuthResult.error) {
+              throw new Error(betterAuthResult.error);
+            }
+
+            const session =
+              betterAuthResult.session ??
+              (betterAuthResult.user
+                ? {
+                    user: betterAuthResult.user,
+                    access_token: 'better_auth_session',
+                    provider: 'better-auth',
+                  }
+                : null);
+
+            if (!session?.user) {
+              throw new Error('Google sign-in completed, but no Better Auth session was created.');
+            }
+
+            sessionBootstrapPromise = Promise.resolve(session);
+            markRecentAuthSuccess();
+            applyAuthenticatedSession(session);
+            return {
+              ...betterAuthResult,
+              user: betterAuthResult.user ?? session.user,
+              session,
+            };
+          } catch (betterAuthError) {
+            betterAuthPrimaryError = betterAuthError;
+            console.warn(
+              '[useAuth] Better Auth native Google ID-token exchange failed, trying Supabase fallback:',
+              betterAuthError
+            );
+          }
 
           try {
             const { data, error: signInError } = await supabase.auth.signInWithIdToken({
@@ -537,38 +576,8 @@ export const useAuth = () => {
             applyAuthenticatedSession(supabaseSession);
             return { user: supabaseSession.user, session: supabaseSession };
           } catch (supabaseError) {
-            let betterAuthFallback: AuthResponse | null = null;
-            try {
-              const betterAuthResult = await getGoogleBetterAuthProvider().signInWithIdToken('google', idToken);
-              if (!betterAuthResult.error) {
-                const session =
-                  betterAuthResult.session ??
-                  (betterAuthResult.user
-                    ? {
-                        user: betterAuthResult.user,
-                        access_token: 'better_auth_session',
-                        provider: 'better-auth',
-                      }
-                    : null);
-
-                betterAuthFallback = session
-                  ? {
-                      ...betterAuthResult,
-                      user: betterAuthResult.user ?? session.user,
-                      session,
-                    }
-                  : betterAuthResult;
-              }
-            } catch {
-              // Keep the original Supabase error; it is the primary native path.
-            }
-
-            const fallbackSession = betterAuthFallback?.session ?? null;
-            if (fallbackSession?.user) {
-              sessionBootstrapPromise = Promise.resolve(fallbackSession);
-              markRecentAuthSuccess();
-              applyAuthenticatedSession(fallbackSession);
-              return betterAuthFallback!;
+            if (betterAuthPrimaryError) {
+              console.warn('[useAuth] Supabase native Google fallback also failed:', supabaseError);
             }
             throw supabaseError;
           }
