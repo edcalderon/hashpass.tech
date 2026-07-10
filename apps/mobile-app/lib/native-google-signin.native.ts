@@ -16,9 +16,28 @@ export const nativeGoogleSigninStatusCodes: Record<string, string> = {
   NULL_PRESENTER: 'NULL_PRESENTER',
 };
 
-const createNativeGoogleSigninError = (message: string, code: string) => {
+const normalizeNativeGoogleSigninCode = (code: unknown, fallback: string): string => {
+  if (typeof code === 'string' && code.trim()) {
+    return code;
+  }
+  if (typeof code === 'number') {
+    return String(code);
+  }
+  return fallback;
+};
+
+const getNativeGoogleSigninErrorDetails = (error: any, fallbackCode: string) => ({
+  code: normalizeNativeGoogleSigninCode(error?.code, fallbackCode),
+  message: error?.message || String(error || 'Unknown native Google Sign-In error'),
+  name: error?.name || 'Error',
+});
+
+const createNativeGoogleSigninError = (message: string, code: unknown) => {
   const error = new Error(message);
-  (error as Error & { code?: string }).code = code;
+  (error as Error & { code?: string }).code = normalizeNativeGoogleSigninCode(
+    code,
+    'GOOGLE_SIGN_IN_FAILED'
+  );
   return error;
 };
 
@@ -42,6 +61,10 @@ const getNativeGoogleSigninModule = (): NativeGoogleSigninModule => {
     Object.assign(nativeGoogleSigninStatusCodes, loadedModule.statusCodes || {});
     return loadedModule;
   } catch (error: any) {
+    console.warn('[GoogleSignin] Native module unavailable:', getNativeGoogleSigninErrorDetails(
+      error,
+      'GOOGLE_SIGN_IN_UNAVAILABLE'
+    ));
     throw createNativeGoogleSigninError(
       error?.message
         ? `Native Google Sign-In is unavailable: ${error.message}`
@@ -62,8 +85,11 @@ export async function configureNativeGoogleSignin(webClientId?: string | null): 
       webClientId,
       offlineAccess: false,
     });
-  } catch (error) {
-    console.warn('[GoogleSignin] configure() failed:', error);
+  } catch (error: any) {
+    console.warn('[GoogleSignin] configure() failed:', getNativeGoogleSigninErrorDetails(
+      error,
+      'GOOGLE_CONFIGURE_FAILED'
+    ));
   }
 }
 
@@ -95,9 +121,17 @@ export async function signInWithNativeGoogleAccount(
     }
   } catch (error: any) {
     if (error?.code === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      console.warn('[GoogleSignin] Play Services unavailable:', getNativeGoogleSigninErrorDetails(
+        error,
+        nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE
+      ));
       throw error;
     }
 
+    console.warn('[GoogleSignin] Play Services check failed:', getNativeGoogleSigninErrorDetails(
+      error,
+      nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE
+    ));
     throw createNativeGoogleSigninError(
       error?.message || 'Google Play Services are unavailable on this device.',
       error?.code || nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE
@@ -108,6 +142,10 @@ export async function signInWithNativeGoogleAccount(
   try {
     response = await GoogleSignin.signIn();
   } catch (error: any) {
+    console.warn('[GoogleSignin] signIn() failed:', getNativeGoogleSigninErrorDetails(
+      error,
+      'GOOGLE_SIGN_IN_FAILED'
+    ));
     throw createNativeGoogleSigninError(
       error?.message || 'Google Sign-In was cancelled or could not be started.',
       error?.code || 'GOOGLE_SIGN_IN_FAILED'
@@ -125,6 +163,10 @@ export async function signInWithNativeGoogleAccount(
       responseType === 'cancelled' ||
       responseType === 'cancel' ||
       responseType === nativeGoogleSigninStatusCodes.SIGN_IN_CANCELLED;
+    console.warn('[GoogleSignin] signIn() returned no ID token:', {
+      responseType,
+      isCancelled,
+    });
     throw createNativeGoogleSigninError(
       isCancelled
         ? 'Google Sign-In was cancelled.'

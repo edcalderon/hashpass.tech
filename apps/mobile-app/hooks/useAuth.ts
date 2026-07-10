@@ -125,6 +125,22 @@ const hasPublicSupabaseAuthConfig = (): boolean => {
   return Boolean(supabaseUrl && supabaseAnonKey);
 };
 
+const normalizeNativeGoogleErrorCode = (code: unknown): string => {
+  if (typeof code === 'string') {
+    return code;
+  }
+  if (typeof code === 'number') {
+    return String(code);
+  }
+  return '';
+};
+
+const getNativeGoogleAuthErrorDetails = (error: any) => ({
+  code: normalizeNativeGoogleErrorCode(error?.code),
+  message: error?.message || String(error || 'Unknown native Google auth error'),
+  name: error?.name || 'Error',
+});
+
 export const useAuth = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -582,9 +598,8 @@ export const useAuth = () => {
             throw supabaseError;
           }
         } catch (err: any) {
-          const errorCode = err?.code;
+          const { code: errorCode, message, name } = getNativeGoogleAuthErrorDetails(err);
           const nativeInProgressCode = (nativeGoogleSigninStatusCodes as Record<string, string | undefined>).IN_PROGRESS;
-          const message = err?.message || '';
           const isUserDismissal =
             errorCode === nativeGoogleSigninStatusCodes.SIGN_IN_CANCELLED ||
             /cancel/i.test(message);
@@ -595,6 +610,14 @@ export const useAuth = () => {
             errorCode === 'NULL_PRESENTER' ||
             errorCode === '10' ||
             /DEVELOPER_ERROR|Native Google Sign-In is unavailable|RNGoogleSignin|apiClient is null|Current activity is null|not exported|not linked|could not be found/i.test(message);
+
+          console.warn('[useAuth] Native Google auth SDK flow failed:', {
+            code: errorCode || 'UNKNOWN',
+            name,
+            message,
+            fallbackToBrowserOAuth: shouldFallbackToBrowserOAuth,
+            userDismissal: isUserDismissal,
+          });
 
           if (isUserDismissal || (nativeInProgressCode && errorCode === nativeInProgressCode)) {
             return { pending: false };

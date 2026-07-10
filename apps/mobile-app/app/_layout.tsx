@@ -35,6 +35,7 @@ import { configureNativeGoogleSignin } from '../lib/native-google-signin';
 import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config';
 import { hasRecentAuthSuccess } from '../lib/auth/recent-auth';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
+import { checkNativeCrashLog, showNativeCrashAlert } from '../lib/native-crash-reader';
 import packageJson from '../package.json';
 
 const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
@@ -97,6 +98,30 @@ function ThemedContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [versionUpdate, setVersionUpdate] = useState<{ currentVersion: string; latestVersion: string } | null>(null);
   const [lastRedirectTime, setLastRedirectTime] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return undefined;
+    }
+
+    let mounted = true;
+    checkNativeCrashLog()
+      .then((crash: string | null) => {
+        if (!mounted || !crash) {
+          return;
+        }
+
+        console.error('[NativeCrash] Previous Android crash log:', crash);
+        showNativeCrashAlert(crash);
+      })
+      .catch((error: unknown) => {
+        console.warn('[NativeCrash] Failed to read previous crash log:', error);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Check version on first load (web only) and initialize console welcome
   useEffect(() => {
