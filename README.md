@@ -20,13 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.189)
+## 📋 Latest Changes (v1.8.190)
 
 ### Bug Fixes
 
-* **infra:** harden lambda deploy environment sync ([8ed4beb](https://github.com/hashpass-tech/hashpass.tech/commit/8ed4beb4023ef6dcd6acf002475bf29f4393f5b1))
-* **infra:** redact lambda environment errors ([c42f25a](https://github.com/hashpass-tech/hashpass.tech/commit/c42f25a5d36360bd663ebbb74aa77fe2e685fe87))
-* **web:** stabilize mobile footer layout ([2534d45](https://github.com/hashpass-tech/hashpass.tech/commit/2534d45d12d7e901ca664d183a5913995a6df393))
+* **auth:** stabilize native Google sign-in ([be244be](https://github.com/hashpass-tech/hashpass.tech/commit/be244bed6149ed2ab1fbc529caee422b6a7921e1))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

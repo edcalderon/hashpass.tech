@@ -1,3 +1,14 @@
+## [1.8.190](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.189...v1.8.190) (2026-07-10)
+
+
+### Bug Fixes
+
+* **auth:** stabilize native Google sign-in ([be244be](https://github.com/hashpass-tech/hashpass.tech/commit/be244bed6149ed2ab1fbc529caee422b6a7921e1))
+
+
+
+
+
 ## [1.8.189](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.188...v1.8.189) (2026-07-09)
 
 
