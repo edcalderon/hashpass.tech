@@ -2,6 +2,12 @@ const APP_VERSION = '1.8.192';
 const STATIC_CACHE = `hashpass-static-v${APP_VERSION}`;
 const PAGE_CACHE = `hashpass-pages-v${APP_VERSION}`;
 const OFFLINE_URL = '/offline.html';
+const RELEASE_METADATA_PATHS = new Set([
+  '/config/versions.json',
+  '/config/version.production.json',
+  '/config/version.development.json',
+  '/config/update-policy.json'
+]);
 const PRECACHE_URLS = [
   '/',
   '/home',
@@ -33,6 +39,10 @@ const putInCache = async (cacheName, request, response) => {
   const cache = await caches.open(cacheName);
   await cache.put(request, response.clone());
 };
+
+const fetchFresh = (request) => fetch(request, { cache: 'no-cache' });
+
+const fetchNoStore = (request) => fetch(request, { cache: 'no-store' });
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -106,7 +116,12 @@ self.addEventListener('fetch', (event) => {
     url.searchParams.has('refresh_token');
 
   if (isSensitiveRoute) {
-    event.respondWith(fetch(request, { cache: 'no-store' }));
+    event.respondWith(fetchNoStore(request));
+    return;
+  }
+
+  if (RELEASE_METADATA_PATHS.has(url.pathname) || url.pathname === '/sw.js') {
+    event.respondWith(fetchNoStore(request));
     return;
   }
 
@@ -120,7 +135,7 @@ self.addEventListener('fetch', (event) => {
             return preloadResponse;
           }
 
-          const networkResponse = await fetch(request);
+          const networkResponse = await fetchFresh(request);
           await putInCache(PAGE_CACHE, request, networkResponse);
           return networkResponse;
         } catch {
@@ -135,12 +150,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  const isStaticAsset =
-    request.destination === 'style' ||
+  const isRuntimeAsset =
     request.destination === 'script' ||
-    request.destination === 'font' ||
-    request.destination === 'image' ||
+    request.destination === 'style' ||
     url.pathname === '/manifest.json';
+
+  if (isRuntimeAsset) {
+    event.respondWith(
+      (async () => {
+        try {
+          const networkResponse = await fetchFresh(request);
+          await putInCache(STATIC_CACHE, request, networkResponse);
+          return networkResponse;
+        } catch {
+          return (await caches.match(request)) || Response.error();
+        }
+      })()
+    );
+    return;
+  }
+
+  const isStaticAsset =
+    request.destination === 'font' ||
+    request.destination === 'image';
 
   if (isStaticAsset) {
     event.respondWith(

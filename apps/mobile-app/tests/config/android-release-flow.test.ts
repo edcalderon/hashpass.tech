@@ -86,6 +86,15 @@ function loadExpoConfig(profile: 'production' | 'preview') {
 }
 
 describe('Android release flow', () => {
+  it('keeps the native Google SDK path opt-in for Android release builds', () => {
+    const workflow = fs.readFileSync(
+      path.resolve(mobileAppRoot, '../../.github/workflows/mobile-android-release.yml'),
+      'utf8',
+    );
+
+    expect(workflow).toContain("EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN: ${{ vars.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || 'false' }}");
+  });
+
   it('configures EAS production builds for Android App Bundles with remote version management', () => {
     const easConfig = readJson('eas.json');
 

@@ -33,11 +33,9 @@ export const shouldUseNativeGoogleSignin = (webClientId?: string | null): boolea
   }
 
   const explicitFlag = parseBooleanFlag(process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN);
-  if (explicitFlag === false) {
-    return false;
-  }
 
-  // Native Google Sign-In should be the default on mobile so the SDK path is used
-  // unless a release explicitly disables it.
-  return true;
+  // Keep the SDK path opt-in for release builds. A bad/missing Android OAuth
+  // client can crash before JavaScript can recover, while browser OAuth can
+  // still complete and hydrate the Supabase session on native.
+  return explicitFlag === true;
 };
