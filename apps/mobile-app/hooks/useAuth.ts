@@ -3,7 +3,7 @@ import { authService, BetterAuthProvider, getSupabaseOAuthRedirectUrl } from '@h
 import type { AuthSession, AuthUser, IAuthProvider } from '@hashpass/auth';
 import { configureAuthService } from '@hashpass/auth/auth-dependencies';
 import { createSessionFromUrl, supabase } from '../lib/supabase';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import {
   clearNativeGoogleAccount,
@@ -118,6 +118,92 @@ const mapSupabaseSessionToAuthSession = (session: any): AuthSession | null => {
     expires_at: session.expires_at,
     provider: 'supabase',
   };
+};
+
+type NativeOAuthBrowserResult = {
+  type: string;
+  url?: string;
+  error?: unknown;
+  source?: 'browser' | 'linking';
+};
+
+const normalizeOAuthCallbackPrefix = (value: string): string => {
+  const [withoutHash] = value.split('#');
+  const [withoutQuery] = withoutHash.split('?');
+  return withoutQuery.replace(/\/+$/, '').toLowerCase();
+};
+
+const isExpectedNativeOAuthCallbackUrl = (url: string, callbackUrl: string): boolean => {
+  const normalizedUrl = normalizeOAuthCallbackPrefix(url);
+  const normalizedCallbackUrl = normalizeOAuthCallbackPrefix(callbackUrl);
+
+  return (
+    normalizedUrl === normalizedCallbackUrl ||
+    normalizedUrl === 'hashpass://auth/callback' ||
+    normalizedUrl === 'intent://auth/callback'
+  );
+};
+
+const createNativeOAuthCallbackListener = (callbackUrl: string) => {
+  if (Platform.OS === 'web' || typeof Linking?.addEventListener !== 'function') {
+    return null;
+  }
+
+  let resolveCallbackUrl: (url: string) => void = () => {};
+  const promise = new Promise<NativeOAuthBrowserResult>((resolve) => {
+    resolveCallbackUrl = (url: string) => {
+      resolve({ type: 'success', url, source: 'linking' });
+    };
+  });
+
+  const subscription = Linking.addEventListener('url', (event: { url?: string }) => {
+    const eventUrl = event?.url;
+    if (typeof eventUrl === 'string' && isExpectedNativeOAuthCallbackUrl(eventUrl, callbackUrl)) {
+      resolveCallbackUrl(eventUrl);
+    }
+  });
+
+  return {
+    promise,
+    cleanup: () => subscription?.remove?.(),
+  };
+};
+
+const openNativeOAuthBrowserSession = async (
+  oauthUrl: string,
+  callbackUrl: string
+): Promise<NativeOAuthBrowserResult> => {
+  const callbackListener = createNativeOAuthCallbackListener(callbackUrl);
+  const browserPromise = WebBrowser.openAuthSessionAsync(oauthUrl, callbackUrl)
+    .then((result: NativeOAuthBrowserResult) => ({
+      ...result,
+      source: 'browser' as const,
+    }))
+    .catch((error: unknown) => ({
+      type: 'error',
+      error,
+      source: 'browser' as const,
+    }));
+
+  try {
+    const result = callbackListener
+      ? await Promise.race([browserPromise, callbackListener.promise])
+      : await browserPromise;
+
+    if (result.source === 'linking' && typeof WebBrowser.dismissAuthSession === 'function') {
+      try {
+        WebBrowser.dismissAuthSession();
+      } catch (dismissError: any) {
+        console.warn('[useAuth] Native OAuth browser dismiss after Linking callback failed:', {
+          message: dismissError?.message || String(dismissError),
+        });
+      }
+    }
+
+    return result;
+  } finally {
+    callbackListener?.cleanup();
+  }
 };
 
 const hasPublicSupabaseAuthConfig = (): boolean => {
@@ -652,20 +738,72 @@ export const useAuth = () => {
       // On native, the provider returns a URL to open in the system browser
       if (Platform.OS !== 'web' && result.oauthUrl) {
         const callbackUrl = getSupabaseOAuthRedirectUrl();
-        const browserResult = await WebBrowser.openAuthSessionAsync(
-          result.oauthUrl,
-          callbackUrl
-        );
+        const providerName = authService.getProviderName();
+        const resolveRestoredSupabaseSession = async (reason: string) => {
+          try {
+            const { data, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError) {
+              console.warn('[useAuth] Native Google browser OAuth session check failed:', {
+                reason,
+                message: sessionError.message,
+              });
+              return null;
+            }
+
+            const restoredSession = mapSupabaseSessionToAuthSession(data?.session);
+            if (!restoredSession) {
+              return null;
+            }
+
+            console.warn('[useAuth] Native Google browser OAuth recovered an existing Supabase session:', {
+              reason,
+            });
+            sessionBootstrapPromise = Promise.resolve(restoredSession);
+            markRecentAuthSuccess();
+            applyAuthenticatedSession(restoredSession);
+            return { user: restoredSession.user, session: restoredSession };
+          } catch (sessionError: any) {
+            console.warn('[useAuth] Native Google browser OAuth session recovery threw:', {
+              reason,
+              message: sessionError?.message || String(sessionError),
+            });
+            return null;
+          }
+        };
+
+        const browserResult = await openNativeOAuthBrowserSession(result.oauthUrl, callbackUrl);
+
+        if (browserResult.type === 'error') {
+          const restoredResult = await resolveRestoredSupabaseSession('browser_error');
+          if (restoredResult) {
+            return restoredResult;
+          }
+
+          throw browserResult.error instanceof Error
+            ? browserResult.error
+            : new Error('Google sign-in failed while opening the browser auth session.');
+        }
 
         if (browserResult.type !== 'success') {
+          console.warn('[useAuth] Native Google browser OAuth did not return a success callback; checking session.', {
+            type: browserResult.type,
+          });
+          const restoredResult = await resolveRestoredSupabaseSession('browser_dismissed');
+          if (restoredResult) {
+            return restoredResult;
+          }
+
           throw new Error('Google sign-in was cancelled before the browser returned to the app.');
         }
 
         if (!browserResult.url) {
+          const restoredResult = await resolveRestoredSupabaseSession('missing_callback_url');
+          if (restoredResult) {
+            return restoredResult;
+          }
+
           throw new Error('Google sign-in completed, but the app did not receive a callback URL.');
         }
-
-        const providerName = authService.getProviderName();
 
         if (providerName === 'directus' && authService.handleOAuthCallback) {
           // Parse query params from the deep-link callback URL and hand them to the
@@ -682,13 +820,33 @@ export const useAuth = () => {
         }
 
         // Supabase: extract tokens from URL fragment / query params
-        const sessionResult = await createSessionFromUrl(browserResult.url);
+        let sessionResult: Awaited<ReturnType<typeof createSessionFromUrl>>;
+        try {
+          sessionResult = await createSessionFromUrl(browserResult.url);
+        } catch (sessionError: any) {
+          const restoredResult = await resolveRestoredSupabaseSession('callback_parse_exception');
+          if (restoredResult) {
+            return restoredResult;
+          }
+
+          throw sessionError;
+        }
 
         if (sessionResult.error) {
+          const restoredResult = await resolveRestoredSupabaseSession('callback_parse_error');
+          if (restoredResult) {
+            return restoredResult;
+          }
+
           throw sessionResult.error;
         }
 
         if (!sessionResult.session) {
+          const restoredResult = await resolveRestoredSupabaseSession('missing_session_after_callback');
+          if (restoredResult) {
+            return restoredResult;
+          }
+
           throw new Error('Google sign-in completed, but no Supabase session was created.');
         }
 
@@ -698,6 +856,11 @@ export const useAuth = () => {
             : sessionResult.session;
         const supabaseSession = mapSupabaseSessionToAuthSession(hydratedNativeBrowserSession);
         if (!supabaseSession) {
+          const restoredResult = await resolveRestoredSupabaseSession('missing_user_after_callback');
+          if (restoredResult) {
+            return restoredResult;
+          }
+
           throw new Error('Google sign-in completed, but no Supabase user session was created.');
         }
 
