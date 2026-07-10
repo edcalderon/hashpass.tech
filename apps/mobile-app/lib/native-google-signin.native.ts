@@ -86,8 +86,18 @@ export async function signInWithNativeGoogleAccount(
   }
 
   try {
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    const hasPlayServices = await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    if (!hasPlayServices) {
+      throw createNativeGoogleSigninError(
+        'Google Play Services are unavailable on this device.',
+        nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE
+      );
+    }
   } catch (error: any) {
+    if (error?.code === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      throw error;
+    }
+
     throw createNativeGoogleSigninError(
       error?.message || 'Google Play Services are unavailable on this device.',
       error?.code || nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE

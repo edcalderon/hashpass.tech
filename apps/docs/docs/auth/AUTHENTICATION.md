@@ -1,13 +1,13 @@
 # Authentication
 
-HASHPASS uses a provider-agnostic auth layer in code, but as of 2026-07-08 **web Google sign-in has one canonical path for every tenant: Better Auth first, Supabase as a last-resort fallback.** The Directus OAuth bridge described lower in this doc still exists in the tree but is not reachable from the Google button anymore — see [AUTH_FLOW.md § Do we still need Directus?](AUTH_FLOW.md#do-we-still-need-directus).
+HASHPASS uses a provider-agnostic auth layer in code, but as of 2026-07-08 **Google sign-in has one canonical path for every tenant: Better Auth first, Supabase as a last-resort fallback.** The Directus OAuth bridge described lower in this doc still exists in the tree but is not reachable from the Google button anymore — see [AUTH_FLOW.md § Do we still need Directus?](AUTH_FLOW.md#do-we-still-need-directus).
 
 ## What Happens In Production
 
 1. The app calls `useAuth.signInWithOAuth('google')`.
 2. **Web:** always tries Better Auth first — `signIn.social({ provider: 'google', ... })` against `<apiBase>/api/auth`, redirecting to Google with `redirect_uri=<apiBase>/api/auth/callback/google`. Better Auth's own server exchanges the code and sets a session cookie, then redirects to `/auth/callback`. Only if this itself errors does the code fall back to `supabase.auth.signInWithOAuth()`.
-3. **Native:** unchanged — uses the Google Sign-In SDK and exchanges the ID token with `supabase.auth.signInWithIdToken()`.
-4. The callback route (`/auth/callback`) checks for a live Better Auth session first (via the `auth_signin_method=google_oauth` marker set before the redirect), then falls back to the tenant's resolved provider (`authService`) only if that marker isn't present — see [AUTH_FLOW.md](AUTH_FLOW.md) for the full sequence.
+3. **Native:** uses the Google Sign-In SDK account picker, exchanges the ID token with `BetterAuthProvider.signInWithIdToken('google', idToken)` first, then falls back to `supabase.auth.signInWithIdToken()` only if Better Auth rejects the token or returns no session.
+4. The web callback route (`/auth/callback`) checks for a live Better Auth session first (via the `auth_signin_method=google_oauth` marker set before the redirect), then falls back to the tenant's resolved provider (`authService`) only if that marker isn't present — see [AUTH_FLOW.md](AUTH_FLOW.md) for the full sequence.
 5. The Directus bridge (`/api/auth/oauth/login` → Directus → `/api/auth/oauth/callback`) is unchanged in code but is not called by the Google button in any current flow.
 
 ## Why This Design
@@ -32,7 +32,7 @@ BETTER_AUTH_GOOGLE_CLIENT_SECRET=<...>    # or GOOGLE_CLIENT_SECRET
 
 Google Cloud Console must have `<apiBase>/api/auth/callback/google` registered as an authorized redirect URI for every environment (`https://api.hashpass.tech/...` and `http://localhost:8081/...` are separate entries on the same OAuth Client).
 
-Supabase fallback path (only reached if Better Auth's request itself fails):
+Supabase fallback path (only reached after Better Auth fails):
 
 ```bash
 EXPO_PUBLIC_SUPABASE_URL=<SUPABASE_URL>
