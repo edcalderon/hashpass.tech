@@ -1,3 +1,14 @@
+## [1.8.195](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.194...v1.8.195) (2026-07-10)
+
+
+### Bug Fixes
+
+* **mobile:** tolerate native google callback listener failures ([407d43d](https://github.com/hashpass-tech/hashpass.tech/commit/407d43d473df3182e337fd550295e97643aca14e))
+
+
+
+
+
 ## [1.8.194](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.193...v1.8.194) (2026-07-10)
 
 

@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.194)
+## 📋 Latest Changes (v1.8.195)
 
 ### Bug Fixes
 
-* **mobile:** harden native google auth callback ([deaf186](https://github.com/hashpass-tech/hashpass.tech/commit/deaf186c7a49a2af3bd6c18afee828400dd332a0))
+* **mobile:** tolerate native google callback listener failures ([407d43d](https://github.com/hashpass-tech/hashpass.tech/commit/407d43d473df3182e337fd550295e97643aca14e))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
