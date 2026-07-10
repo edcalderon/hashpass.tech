@@ -156,12 +156,20 @@ const createNativeOAuthCallbackListener = (callbackUrl: string) => {
     };
   });
 
-  const subscription = Linking.addEventListener('url', (event: { url?: string }) => {
-    const eventUrl = event?.url;
-    if (typeof eventUrl === 'string' && isExpectedNativeOAuthCallbackUrl(eventUrl, callbackUrl)) {
-      resolveCallbackUrl(eventUrl);
-    }
-  });
+  let subscription: { remove?: () => void } | null = null;
+  try {
+    subscription = Linking.addEventListener('url', (event: { url?: string }) => {
+      const eventUrl = event?.url;
+      if (typeof eventUrl === 'string' && isExpectedNativeOAuthCallbackUrl(eventUrl, callbackUrl)) {
+        resolveCallbackUrl(eventUrl);
+      }
+    });
+  } catch (listenerError: any) {
+    console.warn('[useAuth] Native OAuth callback listener could not be registered:', {
+      message: listenerError?.message || String(listenerError),
+    });
+    return null;
+  }
 
   return {
     promise,
