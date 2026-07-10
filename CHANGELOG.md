@@ -1,3 +1,14 @@
+## [1.8.191](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.190...v1.8.191) (2026-07-10)
+
+
+### Bug Fixes
+
+* **auth:** harden native Google sign-in ([b16ccb5](https://github.com/hashpass-tech/hashpass.tech/commit/b16ccb5eeb96c66596ba5d45a43ad04318af50ee))
+
+
+
+
+
 ## [1.8.190](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.189...v1.8.190) (2026-07-10)
 
 
