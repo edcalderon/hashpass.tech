@@ -1,3 +1,14 @@
+## [1.8.192](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.191...v1.8.192) (2026-07-10)
+
+
+### Bug Fixes
+
+* **mobile:** complete native google browser fallback auth ([#30](https://github.com/hashpass-tech/hashpass.tech/issues/30)) ([50acdca](https://github.com/hashpass-tech/hashpass.tech/commit/50acdca9a361f445c5dc98466cf5b923a32c382d))
+
+
+
+
+
 ## [1.8.191](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.190...v1.8.191) (2026-07-10)
 
 
