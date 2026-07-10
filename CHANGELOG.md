@@ -1,3 +1,14 @@
+## [1.8.194](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.193...v1.8.194) (2026-07-10)
+
+
+### Bug Fixes
+
+* **mobile:** harden native google auth callback ([deaf186](https://github.com/hashpass-tech/hashpass.tech/commit/deaf186c7a49a2af3bd6c18afee828400dd332a0))
+
+
+
+
+
 ## [1.8.193](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.192...v1.8.193) (2026-07-10)
 
 
