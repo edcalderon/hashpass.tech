@@ -45,7 +45,9 @@ export default function ExploreScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const styles = getStyles(isDark, colors);
-  const { start: startTutorial, copilotEvents } = useCopilot();
+  const copilot = useCopilot() as any;
+  const startTutorial = typeof copilot?.start === 'function' ? copilot.start : null;
+  const copilotEvents = copilot?.copilotEvents;
   const { shouldShowTutorial, markTutorialCompleted, isReady, mainTutorialCompleted, updateTutorialStep, mainTutorialProgress } = useTutorialPreferences();
   const { isLoggedIn, isLoading: authLoading } = useAuth();
   const tutorialStartedRef = useRef(false);
@@ -58,7 +60,7 @@ export default function ExploreScreen() {
   const currentEventInfo: EventInfo | null = currentEventFromRoute 
     ? currentEventFromRoute
     : currentEventFromContext 
-      ? availableEvents.find(e => e.id === currentEventFromContext.id) || null
+      ? availableEvents.find((e: EventInfo) => e.id === currentEventFromContext.id) || null
       : availableEvents[0] || null;
   
   // Initialize all state hooks at the top.
@@ -170,7 +172,7 @@ export default function ExploreScreen() {
           try {
             console.log('Tutorial auto-start: Calling startTutorial()');
             // Check if startTutorial is a function
-            if (typeof startTutorial !== 'function') {
+            if (!startTutorial) {
               console.error('startTutorial is not a function:', typeof startTutorial, startTutorial);
               tutorialStartedRef.current = false;
               return;
@@ -212,6 +214,15 @@ export default function ExploreScreen() {
 
   // Listen for tutorial events
   useEffect(() => {
+    if (
+      !copilotEvents ||
+      typeof copilotEvents.on !== 'function' ||
+      typeof copilotEvents.off !== 'function'
+    ) {
+      console.warn('[Explore] Copilot events unavailable; tutorial event tracking disabled.');
+      return undefined;
+    }
+
     const handleTutorialStop = () => {
       markTutorialCompleted('main');
     };
@@ -588,7 +599,7 @@ export default function ExploreScreen() {
                   Select an event to view details, speakers, agenda, and more
                 </Text>
                 <View style={styles.eventsGrid}>
-                  {availableEvents.map((eventData, index) => renderEventCard(eventData, index))}
+                  {availableEvents.map((eventData: EventInfo, index: number) => renderEventCard(eventData, index))}
                 </View>
               </View>
             ) : (
@@ -602,7 +613,7 @@ export default function ExploreScreen() {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.eventSelector}
                   >
-                    {availableEvents.map((eventData, index) => renderEventCard(eventData, index))}
+                    {availableEvents.map((eventData: EventInfo, index: number) => renderEventCard(eventData, index))}
                   </ScrollView>
                 </View>
               )

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation, getCurrentLocale } from "../i18n/i18n";
 import {
   View,
@@ -210,6 +210,19 @@ export default function HomeScreen() {
   const scrollY = useSharedValue(0);
   const initialScrollLock = useSharedValue(isNative ? 1 : 0);
   const buttonAnimation = useSharedValue(0);
+
+  const handleGoToAppPress = useCallback(() => {
+    try {
+      router.replace("/dashboard/explore" as any);
+    } catch (error) {
+      console.error("[Home] Failed to navigate to dashboard after auth:", error);
+      try {
+        router.push("/(shared)/dashboard/explore" as any);
+      } catch (fallbackError) {
+        console.error("[Home] Fallback dashboard navigation also failed:", fallbackError);
+      }
+    }
+  }, [router]);
 
   const featuresRef = React.useRef<View>(null);
   const featuresLayoutRef = React.useRef({ y: 0 });
@@ -612,7 +625,7 @@ export default function HomeScreen() {
               </Text>
               <Animated.View style={styles.ctaButton}>
                 <TouchableOpacity
-                  onPress={() => router.push("/(shared)/dashboard/explore")}
+                  onPress={handleGoToAppPress}
                   activeOpacity={0.9}
                   onPressIn={() => {
                     buttonAnimation.value = withSpring(1);
