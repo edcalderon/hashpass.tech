@@ -245,6 +245,29 @@ const getAuthErrorMessage = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
+// GoTrue returns this for BOTH the OAuth-redirect flow and signInWithIdToken()
+// when the provider toggle in Supabase Dashboard > Authentication > Providers
+// is off — a config error, not a transient auth failure. It reads exactly like
+// a normal failed sign-in to the end user, so this went unnoticed for days
+// until someone happened to inspect a raw network response. Detect it and log
+// it loudly/distinctly so it can't hide in generic "sign-in failed" noise again.
+const isProviderDisabledError = (error: unknown): boolean => {
+  const message = getAuthErrorMessage(error, '').toLowerCase();
+  return message.includes('provider is not enabled') || message.includes('unsupported provider');
+};
+
+const warnIfProviderDisabled = (provider: string, error: unknown): void => {
+  if (!isProviderDisabledError(error)) {
+    return;
+  }
+  console.error(
+    `🚨 [useAuth] CONFIG ERROR: Supabase reports the "${provider}" provider is disabled. ` +
+      `This is not a transient failure — every sign-in attempt through this path will fail until fixed. ` +
+      `Fix: Supabase Dashboard > Authentication > Providers > enable ${provider}.`,
+    { rawMessage: getAuthErrorMessage(error, '') }
+  );
+};
+
 export const useAuth = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -703,6 +726,7 @@ export const useAuth = () => {
             if (betterAuthPrimaryError) {
               console.warn('[useAuth] Supabase native Google fallback also failed:', supabaseError);
             }
+            warnIfProviderDisabled('google', supabaseError);
             const supabaseMessage = getAuthErrorMessage(
               supabaseError,
               'Google sign-in failed after account selection. Please try again.'
