@@ -377,9 +377,11 @@ jobs:
       # Native Android should default to crash-safe browser OAuth.
       # Leave AUTH_PROVIDER unset so the runtime can resolve the native provider
       # from the bundled Supabase credentials instead of forcing Directus browser OAuth.
-      # Enable the SDK account-picker flow only after the signed Android OAuth
-      # client is verified for the current package/certificate pair.
-      EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN: ${{ vars.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || 'false' }}
+      # Keep Play builds on browser OAuth until the signed Android OAuth client
+      # is verified for the current package/certificate pair. Do not inherit the
+      # repo variable here: a stale true value can make the native SDK crash
+      # before JavaScript can recover.
+      EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN: 'false'
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
       # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons so this
       # must live here. Metro bundler OOM'd at 2036/2048 MiB on a large bundle, so we give Node
