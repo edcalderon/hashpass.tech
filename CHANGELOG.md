@@ -1,3 +1,14 @@
+## [1.8.199](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.198...v1.8.199) (2026-07-11)
+
+
+### Bug Fixes
+
+* **mobile:** harden RN URLSearchParams stub via live instance, not require ([7226c39](https://github.com/hashpass-tech/hashpass.tech/commit/7226c395bd5b6f6e1c94018d59497d1e30c45c9b))
+
+
+
+
+
 ## [1.8.198](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.197...v1.8.198) (2026-07-11)
 
 
