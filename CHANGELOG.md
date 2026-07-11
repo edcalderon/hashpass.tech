@@ -1,3 +1,14 @@
+## [1.8.197](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.196...v1.8.197) (2026-07-11)
+
+
+### Bug Fixes
+
+* **mobile:** harden native Google SDK auth flow ([b6c37c7](https://github.com/hashpass-tech/hashpass.tech/commit/b6c37c7e927cc8de12cba4ab65bef076df5bff7d))
+
+
+
+
+
 ## [1.8.196](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.195...v1.8.196) (2026-07-11)
 
 
