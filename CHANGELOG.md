@@ -1,3 +1,15 @@
+## [1.8.200](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.199...v1.8.200) (2026-07-11)
+
+
+### Bug Fixes
+
+* **mobile:** flag disabled Supabase auth providers loudly instead of silently ([79fb9ae](https://github.com/hashpass-tech/hashpass.tech/commit/79fb9aef55b2652fc4782600632fa0222b129df7))
+* **mobile:** lock URLSearchParams/URL globals against mid-session re-binding ([5cec4e3](https://github.com/hashpass-tech/hashpass.tech/commit/5cec4e3a781e0804dcb52c698288470fd184f75b))
+
+
+
+
+
 ## [1.8.199](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.198...v1.8.199) (2026-07-11)
 
 
