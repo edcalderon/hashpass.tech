@@ -257,7 +257,7 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
     'GOOGLE_CLIENT_SECRET_DEV',
     'GOOGLE_CLIENT_SECRET_PROD',
   ]);
-  const nativeGoogleSignin = String(targetConfig.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || '').trim() || 'false';
+  const nativeGoogleSignin = String(targetConfig.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || '').trim() || 'true';
   const googleWebClientId = String(
     targetConfig.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
       betterAuthGoogleClientId ||

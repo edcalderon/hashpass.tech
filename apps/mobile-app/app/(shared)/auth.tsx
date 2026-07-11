@@ -1290,6 +1290,10 @@ export default function AuthScreen() {
 
       const result = await signInWithOAuth("google");
 
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
       if (result.pending) {
         keepOAuthBusy = true;
         return;
