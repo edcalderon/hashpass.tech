@@ -335,6 +335,76 @@ const hardenURLSearchParamsInstance = (makeInstance: () => any): boolean => {
   }
 };
 
+// Lock a global property to a validated implementation. v1.8.199 proved on-device
+// (adb, versionCode 254) that even with the boot global fully working AND RN's
+// stub class patched via require, SOMETHING during the native Google sign-in flow
+// re-binds `global.URLSearchParams` back to a throwing stub before the post-login
+// navigation runs — the crash fired ~70s after boot diagnostics passed, in the
+// same PID, with no JS-context restart. Rather than chase every possible
+// re-binder, make re-binding harmless: freeze the property as a non-configurable
+// accessor whose setter only accepts fully-working implementations (and patches
+// broken `_searchParams`-shaped ones so instances made from them stay safe).
+// RN's own polyfillGlobal/polyfillObjectProperty checks `configurable` first and
+// bails with a console.error instead of throwing, so RN/Expo re-install attempts
+// degrade gracefully; plain `=` assignments hit the setter, so strict-mode
+// callers don't throw either.
+const isReactNativeRuntime = (): boolean =>
+  typeof navigator !== 'undefined' && (navigator as any)?.product === 'ReactNative';
+
+const lockGlobalProperty = (
+  name: 'URL' | 'URLSearchParams',
+  isAcceptable: (candidate: unknown) => boolean,
+  onRejected?: (candidate: unknown) => void
+): boolean => {
+  try {
+    const g: any = globalThis as any;
+    let current = g[name];
+    if (!isAcceptable(current)) {
+      return false;
+    }
+
+    Object.defineProperty(g, name, {
+      configurable: false,
+      enumerable: true,
+      get: () => current,
+      set: (next: unknown) => {
+        try {
+          if (isAcceptable(next)) {
+            current = next;
+            return;
+          }
+          // Keep serving the working implementation; log who tried, so field
+          // logcat identifies the re-binder instead of the crash hiding it.
+          console.warn(`[HashPass][urlsp] blocked broken global ${name} assignment`, {
+            stack: new Error().stack?.split('\n').slice(1, 6).join(' | '),
+          });
+          onRejected?.(next);
+        } catch {
+          // A setter must never throw — it would crash the assigning module.
+        }
+      },
+    });
+    return true;
+  } catch (lockError: any) {
+    console.warn(`[HashPass][urlsp] could not lock global ${name}`, {
+      message: lockError?.message || String(lockError),
+    });
+    return false;
+  }
+};
+
+const isAcceptableURL = (candidate: unknown): boolean => {
+  if (typeof candidate !== 'function') {
+    return false;
+  }
+  try {
+    const probe: any = new (candidate as new (url: string) => any)('https://hashpass.invalid/?a=1');
+    return probe?.searchParams?.get?.('a') === '1';
+  } catch {
+    return false;
+  }
+};
+
 export const installURLSearchParamsPolyfill = (): boolean => {
   // 1. FIRST, permanently fix React Native's raw Blob stub prototype using live
   //    instances (before any global override), so that even if `global.URL` /
@@ -361,12 +431,45 @@ export const installURLSearchParamsPolyfill = (): boolean => {
   const patchedGlobalFull = applyFullStubPolyfill((globalThis as any).URLSearchParams);
   const patchedGlobalHas = patchedGlobalFull ? false : installURLSearchParamsHasPolyfill();
 
+  // 4. LOCK the globals (native runtimes only — never touch browser globals, and
+  //    Jest keeps swapping test doubles freely). After this, no later code can
+  //    swap in a broken implementation: setter-validated, non-configurable.
+  //    This is what actually stops the v1.8.199 post-account-picker crash, where
+  //    a mid-session re-bind restored RN's throwing stub between the boot patch
+  //    and the post-login navigation.
+  let lockedURLSearchParams = false;
+  let lockedURL = false;
+  if (isReactNativeRuntime()) {
+    lockedURLSearchParams = lockGlobalProperty(
+      'URLSearchParams',
+      isFullyWorkingURLSearchParams,
+      (rejected) => {
+        // Patch the rejected stub class too: other code may hold a direct
+        // reference to it (e.g. RN's URL.searchParams) and construct instances.
+        applyFullStubPolyfill(rejected);
+      }
+    );
+    lockedURL = lockGlobalProperty('URL', isAcceptableURL, (rejected) => {
+      try {
+        const sp = new (rejected as new (url: string) => any)('https://hashpass.invalid/?a=1')
+          ?.searchParams;
+        if (sp) {
+          applyFullStubPolyfill(Object.getPrototypeOf(sp)?.constructor);
+        }
+      } catch {
+        // Nothing else to harden on this candidate.
+      }
+    });
+  }
+
   const anyChange =
     hardenedStubPrototype ||
     patchedStubViaRequire ||
     installedWorkingGlobals ||
     patchedGlobalFull ||
-    patchedGlobalHas;
+    patchedGlobalHas ||
+    lockedURLSearchParams ||
+    lockedURL;
 
   // Diagnostics: verify the end state actually works, so the release build can be
   // confirmed from logcat instead of assumed. Never throws.
@@ -401,6 +504,8 @@ export const installURLSearchParamsPolyfill = (): boolean => {
       installedWorkingGlobals,
       patchedGlobalFull,
       patchedGlobalHas,
+      lockedURLSearchParams,
+      lockedURL,
       methodsDoNotThrow,
       urlParsesQuery,
     });
