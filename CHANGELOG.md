@@ -1,3 +1,14 @@
+## [1.8.198](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.197...v1.8.198) (2026-07-11)
+
+
+### Bug Fixes
+
+* **mobile:** patch RN's raw URLSearchParams stub directly, not just the current global ([3d7f6cc](https://github.com/hashpass-tech/hashpass.tech/commit/3d7f6ccf90e1b5c1b6d503e2cf8fac8667f39dd8))
+
+
+
+
+
 ## [1.8.197](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.196...v1.8.197) (2026-07-11)
 
 

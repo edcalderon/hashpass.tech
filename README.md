@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.197)
+## 📋 Latest Changes (v1.8.198)
 
 ### Bug Fixes
 
-* **mobile:** harden native Google SDK auth flow ([b6c37c7](https://github.com/hashpass-tech/hashpass.tech/commit/b6c37c7e927cc8de12cba4ab65bef076df5bff7d))
+* **mobile:** patch RN's raw URLSearchParams stub directly, not just the current global ([3d7f6cc](https://github.com/hashpass-tech/hashpass.tech/commit/3d7f6ccf90e1b5c1b6d503e2cf8fac8667f39dd8))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
