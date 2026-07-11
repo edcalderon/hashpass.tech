@@ -1,3 +1,14 @@
+## [1.8.196](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.195...v1.8.196) (2026-07-11)
+
+
+### Bug Fixes
+
+* **mobile:** keep native google sdk disabled in releases ([85b9b95](https://github.com/hashpass-tech/hashpass.tech/commit/85b9b95a5f3d1dbc61f10d176eff371131bcff53))
+
+
+
+
+
 ## [1.8.195](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.194...v1.8.195) (2026-07-10)
 
 
