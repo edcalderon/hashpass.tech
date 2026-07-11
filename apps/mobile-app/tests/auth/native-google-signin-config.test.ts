@@ -57,25 +57,25 @@ describe('shouldUseNativeGoogleSignin', () => {
     jest.dontMock('react-native');
   });
 
-  it('defaults to disabled on native when a web client id exists', () => {
+  it('defaults to enabled on native when a web client id exists', () => {
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
 
     const shouldUseNativeGoogleSignin = loadHelper('android');
-    expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(false);
+    expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(true);
   });
 
-  it('defaults to disabled on native when only the shared GOOGLE_CLIENT_ID exists', () => {
+  it('defaults to enabled on native when only the shared GOOGLE_CLIENT_ID exists', () => {
     setEnv('GOOGLE_CLIENT_ID', 'shared-google-client-id');
 
     const shouldUseNativeGoogleSignin = loadHelper('android');
-    expect(shouldUseNativeGoogleSignin(undefined)).toBe(false);
+    expect(shouldUseNativeGoogleSignin(undefined)).toBe(true);
   });
 
-  it('defaults to disabled on native when only the Better Auth Google client id exists', () => {
+  it('defaults to enabled on native when only the Better Auth Google client id exists', () => {
     setEnv('BETTER_AUTH_GOOGLE_CLIENT_ID', 'better-auth-google-client-id');
 
     const shouldUseNativeGoogleSignin = loadHelper('android');
-    expect(shouldUseNativeGoogleSignin()).toBe(false);
+    expect(shouldUseNativeGoogleSignin()).toBe(true);
   });
 
   it('can be disabled explicitly on native builds', () => {
@@ -94,20 +94,20 @@ describe('shouldUseNativeGoogleSignin', () => {
     expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(true);
   });
 
-  it('treats a blank native flag as unset and disabled', () => {
+  it('treats a blank native flag as unset and enabled', () => {
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
     setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', '   ');
 
     const shouldUseNativeGoogleSignin = loadHelper('android');
-    expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(false);
+    expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(true);
   });
 
-  it('ignores unrecognized native flag values and keeps native sign-in disabled', () => {
+  it('ignores unrecognized native flag values and keeps native sign-in enabled', () => {
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
     setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'maybe');
 
     const shouldUseNativeGoogleSignin = loadHelper('android');
-    expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(false);
+    expect(shouldUseNativeGoogleSignin(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)).toBe(true);
   });
 
   it('returns false when no Google client id can be resolved', () => {

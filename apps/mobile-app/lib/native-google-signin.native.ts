@@ -97,7 +97,11 @@ export async function clearNativeGoogleAccount(): Promise<void> {
   try {
     const { GoogleSignin } = getNativeGoogleSigninModule();
     await GoogleSignin.signOut();
-  } catch {
+  } catch (error: any) {
+    console.warn('[GoogleSignin] signOut() cache clear failed:', getNativeGoogleSigninErrorDetails(
+      error,
+      'GOOGLE_SIGN_OUT_FAILED'
+    ));
     // Non-critical. Continue with app sign-out or cache clearing.
   }
 }

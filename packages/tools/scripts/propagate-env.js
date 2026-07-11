@@ -380,7 +380,7 @@ function applyCanonicalTenantOverrides(targetConfig, runtime) {
   const betterAuthGoogleClientId = targetConfig.BETTER_AUTH_GOOGLE_CLIENT_ID || targetConfig.GOOGLE_CLIENT_ID || '';
   const betterAuthGoogleClientSecret =
     targetConfig.BETTER_AUTH_GOOGLE_CLIENT_SECRET || targetConfig.GOOGLE_CLIENT_SECRET || '';
-  const nativeGoogleSignin = String(targetConfig.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || '').trim() || 'false';
+  const nativeGoogleSignin = String(targetConfig.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || '').trim() || 'true';
   const googleWebClientId = String(
     targetConfig.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
       betterAuthGoogleClientId ||

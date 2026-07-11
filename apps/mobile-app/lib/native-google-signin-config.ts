@@ -34,8 +34,11 @@ export const shouldUseNativeGoogleSignin = (webClientId?: string | null): boolea
 
   const explicitFlag = parseBooleanFlag(process.env.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN);
 
-  // Keep the SDK path opt-in for release builds. A bad/missing Android OAuth
-  // client can crash before JavaScript can recover, while browser OAuth can
-  // still complete and hydrate the Supabase session on native.
-  return explicitFlag === true;
+  if (explicitFlag === false) {
+    return false;
+  }
+
+  // Native builds should use the SDK account-picker flow by default. The flag
+  // remains available only as an emergency diagnostic override for local builds.
+  return true;
 };

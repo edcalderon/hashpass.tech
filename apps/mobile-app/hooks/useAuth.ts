@@ -235,6 +235,16 @@ const getNativeGoogleAuthErrorDetails = (error: any) => ({
   name: error?.name || 'Error',
 });
 
+const getAuthErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error.trim()) {
+    return error.trim();
+  }
+  return fallback;
+};
+
 export const useAuth = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -529,7 +539,11 @@ export const useAuth = () => {
     // Clear native Google Sign-In cache so the account picker always shows on next login.
     // Must run before app sign-out to avoid the SDK being in a bad state.
     if (shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId())) {
-      await clearNativeGoogleAccount();
+      try {
+        await clearNativeGoogleAccount();
+      } catch (nativeClearError) {
+        console.warn('[useAuth] Native Google account cache clear failed during sign-out:', nativeClearError);
+      }
     }
 
     const webBetterAuthProvider =
@@ -689,7 +703,17 @@ export const useAuth = () => {
             if (betterAuthPrimaryError) {
               console.warn('[useAuth] Supabase native Google fallback also failed:', supabaseError);
             }
-            throw supabaseError;
+            const supabaseMessage = getAuthErrorMessage(
+              supabaseError,
+              'Google sign-in failed after account selection. Please try again.'
+            );
+            console.error('[useAuth] Native Google ID-token exchange failed after account selection:', {
+              betterAuthMessage: betterAuthPrimaryError
+                ? getAuthErrorMessage(betterAuthPrimaryError, 'Better Auth exchange failed.')
+                : null,
+              supabaseMessage,
+            });
+            return { error: supabaseMessage };
           }
         } catch (err: any) {
           const { code: errorCode, message, name } = getNativeGoogleAuthErrorDetails(err);
@@ -723,11 +747,16 @@ export const useAuth = () => {
             });
             // fall through to provider-specific OAuth flow below
           } else if (errorCode === 'GOOGLE_ID_TOKEN_MISSING') {
-            throw new Error(
-              'Google sign-in completed, but the device did not return a usable ID token. Please try again.'
-            );
+            return {
+              error: 'Google sign-in completed, but the device did not return a usable ID token. Please try again.',
+            };
           } else {
-            throw err;
+            return {
+              error: getAuthErrorMessage(
+                err,
+                'Native Google sign-in failed after account selection. Please try again.'
+              ),
+            };
           }
         }
       }
