@@ -86,13 +86,30 @@ function loadExpoConfig(profile: 'production' | 'preview') {
 }
 
 describe('Android release flow', () => {
-  it('keeps the native Google SDK path opt-in for Android release builds', () => {
+  it('keeps the native Google SDK path disabled for Android release builds', () => {
     const workflow = fs.readFileSync(
       path.resolve(mobileAppRoot, '../../.github/workflows/mobile-android-release.yml'),
       'utf8',
     );
 
-    expect(workflow).toContain("EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN: ${{ vars.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || 'false' }}");
+    expect(workflow).toContain("EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN: 'false'");
+    expect(workflow).not.toContain('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN: ${{ vars.EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN');
+  });
+
+  it('keeps generated native Google env on browser OAuth by default', () => {
+    const syncEnv = fs.readFileSync(
+      path.resolve(mobileAppRoot, '../../packages/tools/scripts/sync-env.js'),
+      'utf8',
+    );
+    const propagateEnv = fs.readFileSync(
+      path.resolve(mobileAppRoot, '../../packages/tools/scripts/propagate-env.js'),
+      'utf8',
+    );
+    const envExample = fs.readFileSync(path.resolve(mobileAppRoot, '.env.example'), 'utf8');
+
+    expect(syncEnv).toContain("EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || '').trim() || 'false'");
+    expect(propagateEnv).toContain("EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN || '').trim() || 'false'");
+    expect(envExample).toContain('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=false');
   });
 
   it('configures EAS production builds for Android App Bundles with remote version management', () => {
