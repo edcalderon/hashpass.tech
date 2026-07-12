@@ -46,33 +46,29 @@ const MIME_TYPES = {
   '.woff2': 'font/woff2',
 };
 
-// Resolves a request path against distDir and rejects anything that would
-// escape it (e.g. `../../etc/passwd`). This server only ever needs to serve
-// this script's own hardcoded ROUTES, but CodeQL correctly flags req.url as
-// user-controlled input regardless of that — path.join doesn't strip `..`
-// segments, so an unvalidated join is a real traversal primitive even in a
-// short-lived local/CI-only server.
-const distDirResolved = path.resolve(distDir);
-
-function resolveSafePath(candidatePath) {
-  const resolved = path.resolve(candidatePath);
-  if (resolved !== distDirResolved && !resolved.startsWith(distDirResolved + path.sep)) {
-    return null;
-  }
-  return resolved;
+// Rejects any request path containing a `..` segment (or a null byte)
+// before it ever touches path.join/fs — this server only ever needs to
+// serve this script's own hardcoded ROUTES plus static asset paths under
+// distDir, none of which legitimately need `..` to resolve. Checking the
+// raw decoded string directly (rather than validating an already-joined
+// path afterward) is also the sanitizer shape CodeQL's js/path-injection
+// query recognizes as closing the taint flow from req.url.
+function isSafeRelativePath(relativePath) {
+  return !relativePath.includes('..') && !relativePath.includes('\0');
 }
 
 function startServer() {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       const reqPath = decodeURIComponent(req.url.split('?')[0]);
-      let filePath = resolveSafePath(path.join(distDir, reqPath));
 
-      if (!filePath) {
+      if (!isSafeRelativePath(reqPath)) {
         res.writeHead(400);
         res.end('Bad request');
         return;
       }
+
+      let filePath = path.join(distDir, reqPath);
 
       // Expo Router's static export pre-renders one HTML shell per route
       // (as either <route>.html or <route>/index.html depending on build
@@ -81,15 +77,11 @@ function startServer() {
       // fall back to the root index.html for any non-asset path, exactly
       // like a real static host's SPA fallback would.
       if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
-        const candidates = [
-          resolveSafePath(`${filePath}.html`),
-          resolveSafePath(path.join(filePath, 'index.html')),
-          resolveSafePath(path.join(distDir, 'index.html')),
-        ].filter(Boolean);
+        const candidates = [`${filePath}.html`, path.join(filePath, 'index.html'), path.join(distDir, 'index.html')];
         filePath = candidates.find(existsSync) ?? candidates[candidates.length - 1];
       }
 
-      if (!filePath || !existsSync(filePath)) {
+      if (!existsSync(filePath)) {
         res.writeHead(404);
         res.end('Not found');
         return;
