@@ -1080,7 +1080,7 @@
     "consentBodyPIPEDA": "캐나다 법(PIPEDA)에 따라 분석 쿠키를 설정하기 전에 동의가 필요합니다. Google Analytics를 사용하여 이 사이트의 이용 방식을 파악합니다.",
     "consentBodyDefault": "Google Analytics를 사용하여 이 사이트의 이용 방식을 파악합니다. 분석 쿠키 사용에 동의하시겠습니까?",
     "consentPrivacy": "개인정보 처리방침",
-    "consentDecline": "거부",
+    "consentDecline": "비필수 쿠키 거부",
     "consentAccept": "수락"
   },
   "version": {

@@ -797,7 +797,7 @@
     "consentBodyPIPEDA": "La loi canadienne (LPRPDE) exige votre consentement avant de pouvoir déposer des cookies d'analyse. Nous utilisons Google Analytics pour comprendre comment ce site est utilisé.",
     "consentBodyDefault": "Nous utilisons Google Analytics pour comprendre comment ce site est utilisé. Veuillez nous indiquer si vous consentez aux cookies d'analyse.",
     "consentPrivacy": "Politique de confidentialité",
-    "consentDecline": "Refuser",
+    "consentDecline": "Refuser le non essentiel",
     "consentAccept": "Accepter"
   },
   "version": {

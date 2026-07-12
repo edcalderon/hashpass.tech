@@ -98,7 +98,7 @@ export default function CookieConsentBanner() {
         </View>
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.declineButton} onPress={handleDecline}>
-            <Text style={styles.declineText}>{t('consentDecline', 'Decline')}</Text>
+            <Text style={styles.declineText}>{t('consentDecline', 'Reject non-essential')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.acceptButton} onPress={handleAccept}>
             <Text style={styles.acceptText}>{t('consentAccept', 'Accept')}</Text>
