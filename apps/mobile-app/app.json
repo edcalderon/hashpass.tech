@@ -123,15 +123,7 @@
           "iosUrlScheme": "com.googleusercontent.apps.576459188181-r65kt04nh0m4q86jbo1ohm12di9v3mjq"
         }
       ],
-      "react-native-edge-to-edge",
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "hashpass",
-          "project": "react-native",
-          "url": "https://sentry.io/"
-        }
-      ]
+      "react-native-edge-to-edge"
     ],
     "experiments": {
       "typedRoutes": true
