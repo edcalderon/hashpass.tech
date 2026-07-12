@@ -23,6 +23,7 @@ import {
   FlatList,
   Pressable,
   useWindowDimensions,
+  InteractionManager,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -1299,13 +1300,27 @@ export default function AuthScreen() {
         return;
       }
 
-      showSuccess(
-        t("loginSuccess", "Login successful"),
-        t("welcomeBack", "Welcome back!"),
-      );
-
       if (Platform.OS !== "web") {
-        navigateAfterNativeGoogleAuth(redirectPath);
+        // Give the native Activity Result transition (the Google account
+        // picker closing back into MainActivity) a beat to settle before
+        // mounting a new toast and navigating. Firing both synchronously,
+        // right as onActivityResult resolves this promise, races Fabric's
+        // surface teardown/remount for that transition — on-device logs
+        // showed a dropped "topLayout" event right before an unrelated
+        // fatal crash in this exact window, which is the signature of a
+        // view receiving a layout event after being torn down mid-navigation.
+        InteractionManager.runAfterInteractions(() => {
+          showSuccess(
+            t("loginSuccess", "Login successful"),
+            t("welcomeBack", "Welcome back!"),
+          );
+          navigateAfterNativeGoogleAuth(redirectPath);
+        });
+      } else {
+        showSuccess(
+          t("loginSuccess", "Login successful"),
+          t("welcomeBack", "Welcome back!"),
+        );
       }
     } catch (error: any) {
       const message = extractApiError(
