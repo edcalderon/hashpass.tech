@@ -333,6 +333,7 @@ export default function EventBannerCarousel({
                       showLiveIndicator={Boolean(event.eventStartDate)}
                       eventStartDate={getEventStartDate(event)}
                       isLive={false}
+                      eventId={event.id}
                       eventImage={event.image}
                     />
                   )}

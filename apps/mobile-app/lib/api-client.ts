@@ -32,6 +32,9 @@ export interface ApiRequestOptions {
   skipEventSegment?: boolean; // Skip event-specific segment for global endpoints
   apiSegment?: string;       // Explicit URL segment override (bypasses getCurrentEvent detection)
   skipAuth?: boolean; // Skip attaching Authorization for public endpoints
+  eventId?: string; // Resolve the event by id instead of route/hostname detection —
+                     // needed when the calling component isn't rendered on an
+                     // event-scoped route (e.g. an event widget on the global home page)
 }
 
 const LOCALHOST_API_PATTERN = /^(https?:\/\/)?(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?(?:\/|$)/i;
@@ -191,8 +194,11 @@ export class EventApiClient {
     path: string,
     options: ApiRequestOptions = {}
   ): Promise<ApiResponse<T>> {
-    // Get the event configuration
-    const event = getCurrentEvent();
+    // Get the event configuration. An explicit options.eventId (when the
+    // caller isn't on an event-scoped route) takes precedence over
+    // route/hostname detection so getEventApiSegment() below doesn't fall
+    // back to the 'default' segment, which has no matching API route.
+    const event = getCurrentEvent(options.eventId);
     
     // Determine base URL: env/Constants wins, then event config, else constructor default
     const runtimeBaseUrl = resolveRuntimeApiBaseUrl();
@@ -331,7 +337,9 @@ export class EventApiClient {
         if (!response.ok) {
           // Extract error message from response body if available
           const errorMessage = data?.error || data?.message || `HTTP ${response.status}: ${response.statusText}`;
-          throw new Error(errorMessage);
+          const httpError = new Error(errorMessage) as Error & { status?: number };
+          httpError.status = response.status;
+          throw httpError;
         }
 
         return {
@@ -346,7 +354,13 @@ export class EventApiClient {
         }
         
         // Don't retry on certain errors
-        if (didTimeout || (error instanceof Error && error.name === 'AbortError')) {
+        const status = (error as Error & { status?: number })?.status;
+        // 4xx client errors (except 408 timeout / 429 rate-limit) won't succeed
+        // on retry — the request itself is wrong (bad route, bad params, auth),
+        // not a transient failure. Retrying just multiplies load on a 404, etc.
+        const isNonRetryableClientError =
+          typeof status === 'number' && status >= 400 && status < 500 && status !== 408 && status !== 429;
+        if (didTimeout || (error instanceof Error && error.name === 'AbortError') || isNonRetryableClientError) {
           break;
         }
         
