@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607121001, // Updated to current timestamp
+  buildNumber: 202607122110, // Updated to current timestamp
   releaseDate: '2026-07-12',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'auto-trigger mobile Android release on every main release tag'
+    // No new features
   ],
   bugfixes: [
-    'stop infinite reload loop from the version checker'
+    'stub both value and type for plain named imports in typecheck-changed',
+    'eliminate react-native-copilot crash on Android login'
   ],
   breakingChanges: [],
-  notes: 'auto-trigger mobile Android release on every main release tag; stop infinite reload loop from the version checker'
+  notes: 'stub both value and type for plain named imports in typecheck-changed; eliminate react-native-copilot crash on Android login'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.208': {
+    version: '1.8.208',
+    buildNumber: 202607122110,
+    releaseDate: '2026-07-12',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stub both value and type for plain named imports in typecheck-changed',
+      'eliminate react-native-copilot crash on Android login'
+    ],
+    breakingChanges: [],
+    notes: 'stub both value and type for plain named imports in typecheck-changed; eliminate react-native-copilot crash on Android login'
+  },
   '1.8.207': {
     version: '1.8.207',
     buildNumber: 202607121001,

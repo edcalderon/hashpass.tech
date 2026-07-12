@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.207",
+  "version": "1.8.208",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {

@@ -1,3 +1,15 @@
+## [1.8.208](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.207...v1.8.208) (2026-07-12)
+
+
+### Bug Fixes
+
+* **mobile:** eliminate react-native-copilot crash on Android login ([bef97c1](https://github.com/hashpass-tech/hashpass.tech/commit/bef97c1acadaa1b49719d126a6d78d79d2c1b196))
+* **tools:** stub both value and type for plain named imports in typecheck-changed ([22cca9b](https://github.com/hashpass-tech/hashpass.tech/commit/22cca9b0453718e9d22e5851cb2ebcfe61a36ec8))
+
+
+
+
+
 ## [1.8.207](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.206...v1.8.207) (2026-07-12)
 
 
