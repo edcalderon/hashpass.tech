@@ -37,10 +37,26 @@ import { hasRecentAuthSuccess } from '../lib/auth/recent-auth';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { checkNativeCrashLog, showNativeCrashAlert } from '../lib/native-crash-reader';
 import packageJson from '../package.json';
+import * as Sentry from '@sentry/react-native';
 
 const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
   ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
   : `v${packageJson.version} · local build`;
+
+// Must run before installGlobalErrorHandler() below: Sentry's init installs its
+// own ErrorUtils global handler, and installGlobalErrorHandler() chains to
+// whatever handler was already registered — so this ordering is what makes
+// Sentry actually receive fatal JS errors (including ones that crash at the
+// native bridge level, like unhandled exceptions during a commit/passive
+// effect, which never reach AppErrorBoundary's componentDidCatch).
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    environment: process.env.EXPO_PUBLIC_ENV || 'development',
+    release: packageJson.version,
+    tracesSampleRate: 0.2,
+  });
+}
 
 // Surface JS errors thrown outside React render (async/native bridge) instead
 // of letting the app close with a blank screen.
@@ -49,7 +65,7 @@ installGlobalErrorHandler();
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
   const theme = useThemeProvider();
 
   return (
@@ -387,3 +403,5 @@ function ThemedContent() {
     </>
   );
 }
+
+export default Sentry.wrap(RootLayout);

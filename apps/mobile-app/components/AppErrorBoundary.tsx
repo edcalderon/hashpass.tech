@@ -1,5 +1,6 @@
 import React from 'react';
 import { Platform, ScrollView, Text, View } from 'react-native';
+import * as Sentry from '@sentry/react-native';
 
 type AppErrorBoundaryProps = {
   children: React.ReactNode;
@@ -34,6 +35,11 @@ export class AppErrorBoundary extends React.Component<
   componentDidCatch(error: Error, info: { componentStack: string }) {
     // Keep this visible in logcat / Metro for native crash triage.
     console.error('💥 Uncaught render error:', error?.message, info?.componentStack);
+    // This boundary stops the error here (renders the fallback UI below
+    // instead of re-throwing), so it never reaches Sentry.wrap()'s own outer
+    // boundary in app/_layout.tsx — report it explicitly or Sentry never sees
+    // any render error caught here.
+    Sentry.captureException(error, { contexts: { react: { componentStack: info?.componentStack } } });
     this.setState({ info: info?.componentStack ?? null });
   }
 
