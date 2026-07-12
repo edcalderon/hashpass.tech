@@ -1,3 +1,16 @@
+## [1.8.203](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.202...v1.8.203) (2026-07-12)
+
+
+### Bug Fixes
+
+* **mobile:** patch react-native-copilot's unconditional onLayout crash on Fabric ([31e9e53](https://github.com/hashpass-tech/hashpass.tech/commit/31e9e5394fd0baff7e1a2d1ea587db277d94b01b))
+* **release:** escape backslashes before quotes in version.ts codegen ([148238c](https://github.com/hashpass-tech/hashpass.tech/commit/148238c9112afa39869e1efba7f12a13a9d19531))
+* **tooling:** derive release notes from git log instead of copy-pasting stale content ([6ed10e2](https://github.com/hashpass-tech/hashpass.tech/commit/6ed10e2ddef5a9227c2c43a37822d389fa3a013d)), closes [#40](https://github.com/hashpass-tech/hashpass.tech/issues/40)
+
+
+
+
+
 ## [1.8.202](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.201...v1.8.202) (2026-07-12)
 
 

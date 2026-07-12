@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607120203, // Updated to current timestamp
+  buildNumber: 202607120404, // Updated to current timestamp
   releaseDate: '2026-07-12',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-  features: [],
+  features: [
+    // No new features
+  ],
   bugfixes: [
-    'Removed the black native light-mode auth panel so the HASHPASS logo sits directly on the card',
-    'Selected the correct HASHPASS logo asset for light and dark auth surfaces on web and native',
-    'Added a local React Native web augment so the auth screen dataSet props typecheck in the mobile app'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.202 release'
+  notes: 'Version 1.8.203 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.203': {
+    version: '1.8.203',
+    buildNumber: 202607120404,
+    releaseDate: '2026-07-12',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.8.203 release'
+  },
   '1.8.202': {
     version: '1.8.202',
     buildNumber: 202607120203,
