@@ -1,0 +1,41 @@
+name: Trigger mobile release on version tag
+
+# packages/tools/scripts/release.js only ever creates a `v*` tag when
+# releasing to main (runGitTag is called exclusively from the
+# `releaseBranch === 'main'` branch of release.js — develop promotions use
+# runPromotionCommit instead and never tag). So a `v*` tag push is a
+# reliable signal that a real release just landed on main, and this keeps
+# native mobile in sync with every web/main update instead of requiring a
+# manual `gh workflow run mobile-android-release.yml` after every release.
+#
+# Internal track only, with auto-promote-alpha — matches the "temporary
+# release posture" in CLAUDE.md (production dispatches stay paused, and
+# alpha only promotes after internal succeeds on the same tag).
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  trigger-mobile-release:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch mobile-android-release.yml for ${{ github.ref_name }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run mobile-android-release.yml \
+            --repo hashpass-tech/hashpass.tech \
+            --ref "${{ github.ref_name }}" \
+            --field environment=development \
+            --field track=internal \
+            --field auto_promote_alpha=true \
+            --field alpha_release_status=completed \
+            --field backend=fastlane \
+            --field runner=aws-ec2
