@@ -462,6 +462,7 @@ jobs:
           set -euo pipefail
           LOCK_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1)
           HASH_FILE="$HOME/.gradle/.pnpm-lock-hash"
+          mkdir -p "$(dirname "$HASH_FILE")"
           STORED=$(cat "$HASH_FILE" 2>/dev/null || echo "none")
           if [ "$LOCK_HASH" = "$STORED" ] && [ -d node_modules ]; then
             echo "pnpm-lock.yaml unchanged and node_modules present — skipping install."
