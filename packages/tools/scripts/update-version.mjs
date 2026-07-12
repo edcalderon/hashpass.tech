@@ -40,6 +40,20 @@ const GIT_INFO_PATHS = [
   path.join(mobileAppRoot, 'config', 'git-info.json'),
 ];
 
+// Escapes a string for safe interpolation into a single-quoted JS string
+// literal written into version.ts. Backslashes MUST be escaped first — doing
+// only `.replace(/'/g, "\\'")` (the previous approach everywhere below) is
+// incomplete escaping: a source string ending in a backslash immediately
+// before a quote (e.g. from a Windows path in a commit subject, `C:\foo\`)
+// would have that backslash "consume" the following escaped quote, breaking
+// out of the string literal early. Since this is git-log-derived content
+// interpolated into generated source that then gets require()'d by the app,
+// that's a real code-injection surface, not just a cosmetic bug (CodeQL
+// js/incomplete-string-escaping flagged this).
+function escapeJsStringLiteral(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
 // Function to get current version from package.json
 function getCurrentVersion() {
   const packageJsonPath = path.join(projectRoot, 'package.json');
@@ -270,7 +284,7 @@ function applyCurrentVersionArrays(content, { features, bugfixes, breakingChange
 
   const formatArray = (items, emptyComment) =>
     items.length > 0
-      ? items.map((item) => `    '${item.replace(/'/g, "\\'")}'`).join(',\n')
+      ? items.map((item) => `    '${escapeJsStringLiteral(item)}'`).join(',\n')
       : `    ${emptyComment}`;
 
   let block = blockMatch[0];
@@ -543,13 +557,13 @@ try {
 
     // Format arrays as strings for the entry
     const featuresStr = features.length > 0
-      ? features.map(f => `      '${f.replace(/'/g, "\\'")}'`).join(',\n')
+      ? features.map(f => `      '${escapeJsStringLiteral(f)}'`).join(',\n')
       : '      // No new features';
     const bugfixesStr = bugfixes.length > 0
-      ? bugfixes.map(f => `      '${f.replace(/'/g, "\\'")}'`).join(',\n')
+      ? bugfixes.map(f => `      '${escapeJsStringLiteral(f)}'`).join(',\n')
       : '      // No bugfixes';
     const breakingStr = breakingChanges.length > 0
-      ? breakingChanges.map(f => `      '${f.replace(/'/g, "\\'")}'`).join(',\n')
+      ? breakingChanges.map(f => `      '${escapeJsStringLiteral(f)}'`).join(',\n')
       : '';
 
     // Add new version to VERSION_HISTORY
@@ -566,7 +580,7 @@ ${featuresStr}
 ${bugfixesStr}
     ],
     breakingChanges: [${breakingStr ? '\n' + breakingStr + '\n    ' : ''}],
-    notes: '${(releaseNotes || gitDerivedSummary.notes || `Version ${newVersion} release`).replace(/'/g, "\\'")}'
+    notes: '${escapeJsStringLiteral(releaseNotes || gitDerivedSummary.notes || `Version ${newVersion} release`)}'
   },`;
 
     // Check if version already exists in VERSION_HISTORY to avoid duplicates
