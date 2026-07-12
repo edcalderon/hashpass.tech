@@ -94,6 +94,11 @@ const autoGit = args.includes('--auto-git'); // Shorthand for --commit --tag --p
 
 // Determine version
 let newVersion;
+// Tracked in every branch (not just the auto-increment ones) so it can anchor
+// the `git log <fromVersion>..HEAD` range used to auto-derive release notes
+// below — previously only computed inside the auto-increment branches, so an
+// explicit-version invocation had no "previous version" to diff against.
+const versionBeforeBump = getCurrentVersion();
 
 if (versionIndex !== -1) {
   // Explicit version provided
@@ -162,6 +167,128 @@ const releaseDate = new Date().toISOString().split('T')[0];
 // Range: up to ~2M for v2.0.0, well within Android's 2.1B limit.
 const [vMajor, vMinor, vPatch] = newVersion.split('.').map(Number);
 const androidVersionCode = vMajor * 10000 + vMinor * 100 + vPatch;
+
+// Real release content for THIS version, derived from git history below
+// (function is hoisted — defined further down, called here before that
+// definition's source position, which is fine for a `function` declaration).
+const gitDerivedSummary = deriveReleaseSummaryFromGit(versionBeforeBump);
+if (gitDerivedSummary.features.length || gitDerivedSummary.bugfixes.length || gitDerivedSummary.breakingChanges.length) {
+  console.log(`📝 Auto-derived release summary from git log v${versionBeforeBump}..HEAD:`, {
+    features: gitDerivedSummary.features.length,
+    bugfixes: gitDerivedSummary.bugfixes.length,
+    breakingChanges: gitDerivedSummary.breakingChanges.length,
+  });
+} else {
+  console.warn(`⚠️  No conventional-commit feat:/fix: subjects found since v${versionBeforeBump} — features/bugfixes will be empty rather than stale`);
+}
+
+// Auto-derive a release summary from conventional-commit messages since the
+// last release tag, so CURRENT_VERSION.features/bugfixes/breakingChanges/notes
+// and the CHANGELOG.md entry reflect what actually changed in THIS release.
+// Previously these fields only ever got set from a manual --notes= flag that
+// nobody has been passing in practice, so version.ts's CURRENT_VERSION.bugfixes
+// silently carried forward whatever a human typed in once, unchanged, across
+// every subsequent automated release — including releases (like this one) that
+// never touched the thing the stale bullets described.
+function deriveReleaseSummaryFromGit(fromVersion) {
+  const empty = { features: [], bugfixes: [], breakingChanges: [], notes: '' };
+  if (!fromVersion) return empty;
+
+  let fromRef = null;
+  for (const candidate of [`v${fromVersion}`, fromVersion]) {
+    try {
+      execSync(`git rev-parse --verify ${candidate}`, { cwd: projectRoot, stdio: 'ignore' });
+      fromRef = candidate;
+      break;
+    } catch {
+      // try the next candidate tag form
+    }
+  }
+  if (!fromRef) {
+    console.warn(`⚠️  No git tag found for v${fromVersion} — skipping auto-derived release notes`);
+    return empty;
+  }
+
+  let log;
+  try {
+    log = execSync(`git log ${fromRef}..HEAD --no-merges --pretty=format:%s`, {
+      cwd: projectRoot,
+      encoding: 'utf8',
+    });
+  } catch (error) {
+    console.warn(`⚠️  Could not read git log for ${fromRef}..HEAD: ${error.message}`);
+    return empty;
+  }
+
+  const features = [];
+  const bugfixes = [];
+  const breakingChanges = [];
+  const seen = new Set();
+
+  for (const rawSubject of log.split('\n')) {
+    const subject = rawSubject.trim();
+    if (!subject) continue;
+    // The release tooling's own bookkeeping commits aren't user-facing changes.
+    if (/^chore\(release\)|^chore:\s*release\b/i.test(subject)) continue;
+
+    const match = subject.match(/^(\w+)(\([^)]*\))?(!)?:\s*(.+)$/);
+    if (!match) continue; // not conventional-commit shaped — skip rather than guess wrong
+
+    const [, type, , breakingMarker, description] = match;
+    const cleaned = description.trim();
+    if (!cleaned || seen.has(cleaned)) continue;
+    seen.add(cleaned);
+
+    if (breakingMarker) {
+      breakingChanges.push(cleaned);
+    } else if (type === 'feat') {
+      features.push(cleaned);
+    } else if (type === 'fix') {
+      bugfixes.push(cleaned);
+    }
+  }
+
+  const highlights = [...features, ...bugfixes, ...breakingChanges].slice(0, 3);
+  const notes = highlights.length ? highlights.join('; ') : '';
+
+  return { features, bugfixes, breakingChanges, notes };
+}
+
+// Rewrite CURRENT_VERSION's features/bugfixes/breakingChanges arrays in place
+// with this release's gitDerivedSummary. VERSION_HISTORY entries are built
+// separately (also from gitDerivedSummary, see the "Update version history"
+// section below) since that array is keyed per-version and this function only
+// ever targets the single CURRENT_VERSION block — isolating that block first
+// so this can never accidentally match a VERSION_HISTORY entry that happens to
+// contain the same field names.
+function applyCurrentVersionArrays(content, { features, bugfixes, breakingChanges }) {
+  const blockMatch = content.match(/export const CURRENT_VERSION: VersionInfo = \{[\s\S]*?\n\};/);
+  if (!blockMatch) {
+    console.warn('⚠️  Could not find CURRENT_VERSION block to update features/bugfixes/breakingChanges');
+    return content;
+  }
+
+  const formatArray = (items, emptyComment) =>
+    items.length > 0
+      ? items.map((item) => `    '${item.replace(/'/g, "\\'")}'`).join(',\n')
+      : `    ${emptyComment}`;
+
+  let block = blockMatch[0];
+  block = block.replace(
+    /features:\s*\[[\s\S]*?\],/,
+    `features: [\n${formatArray(features, '// No new features')}\n  ],`
+  );
+  block = block.replace(
+    /bugfixes:\s*\[[\s\S]*?\],/,
+    `bugfixes: [\n${formatArray(bugfixes, '// No bugfixes')}\n  ],`
+  );
+  block = block.replace(
+    /breakingChanges:\s*\[[\s\S]*?\],/,
+    `breakingChanges: [${breakingChanges.length > 0 ? `\n${formatArray(breakingChanges, '')}\n  ` : ''}],`
+  );
+
+  return content.replace(blockMatch[0], block);
+}
 
 // Function to update the CHANGELOG.md file
 function updateChangelog(version, releaseType, notes = '') {
@@ -267,7 +394,7 @@ const filesToUpdate = [
       },
       {
         key: 'notes',
-        value: `'${releaseNotes || `Version ${newVersion} release`}'`,
+        value: `'${releaseNotes || gitDerivedSummary.notes || `Version ${newVersion} release`}'`,
         pattern: /notes:\s*'[^']*'/
       }
     ]
@@ -368,6 +495,11 @@ for (const file of filesToUpdate) {
       }
     }
 
+    if (file.path === 'apps/mobile-app/config/version.ts') {
+      content = applyCurrentVersionArrays(content, gitDerivedSummary);
+      fileUpdated = true;
+    }
+
     if (fileUpdated) {
       fs.writeFileSync(filePath, content, 'utf8');
     } else {
@@ -390,66 +522,6 @@ try {
   allUpdated = false;
 }
 
-// Helper function to extract features and bugfixes from CURRENT_VERSION
-function extractFeaturesAndBugfixes(content) {
-  const features = [];
-  const bugfixes = [];
-  const breakingChanges = [];
-
-  // Extract CURRENT_VERSION block
-  const currentVersionMatch = content.match(/export const CURRENT_VERSION: VersionInfo = \{([\s\S]*?)\};/);
-  if (!currentVersionMatch) {
-    console.warn('⚠️  Could not find CURRENT_VERSION block, using empty arrays');
-    return { features, bugfixes, breakingChanges };
-  }
-
-  const currentVersionContent = currentVersionMatch[1];
-
-  // Extract features array from CURRENT_VERSION only
-  const featuresMatch = currentVersionContent.match(/features:\s*\[([\s\S]*?)\],/);
-  if (featuresMatch) {
-    const featuresContent = featuresMatch[1];
-    const featureLines = featuresContent.split('\n').filter(line => {
-      const trimmed = line.trim();
-      return trimmed.startsWith("'") || trimmed.startsWith('"');
-    });
-    features.push(...featureLines.map(line => {
-      const match = line.match(/['"](.*?)['"]/);
-      return match ? match[1] : '';
-    }).filter(f => f));
-  }
-
-  // Extract bugfixes array from CURRENT_VERSION only
-  const bugfixesMatch = currentVersionContent.match(/bugfixes:\s*\[([\s\S]*?)\],/);
-  if (bugfixesMatch) {
-    const bugfixesContent = bugfixesMatch[1];
-    const bugfixLines = bugfixesContent.split('\n').filter(line => {
-      const trimmed = line.trim();
-      return trimmed.startsWith("'") || trimmed.startsWith('"');
-    });
-    bugfixes.push(...bugfixLines.map(line => {
-      const match = line.match(/['"](.*?)['"]/);
-      return match ? match[1] : '';
-    }).filter(f => f));
-  }
-
-  // Extract breakingChanges array from CURRENT_VERSION only
-  const breakingMatch = currentVersionContent.match(/breakingChanges:\s*\[([\s\S]*?)\],/);
-  if (breakingMatch) {
-    const breakingContent = breakingMatch[1];
-    const breakingLines = breakingContent.split('\n').filter(line => {
-      const trimmed = line.trim();
-      return trimmed.startsWith("'") || trimmed.startsWith('"');
-    });
-    breakingChanges.push(...breakingLines.map(line => {
-      const match = line.match(/['"](.*?)['"]/);
-      return match ? match[1] : '';
-    }).filter(f => f));
-  }
-
-  return { features, bugfixes, breakingChanges };
-}
-
 // Update version history in each version.ts file
 try {
   for (const versionTsPath of VERSION_TS_PATHS) {
@@ -459,8 +531,15 @@ try {
 
     let content = fs.readFileSync(versionTsPath, 'utf8');
 
-    // Extract features and bugfixes from CURRENT_VERSION
-    const { features, bugfixes, breakingChanges } = extractFeaturesAndBugfixes(content);
+    // This entry is keyed by `newVersion` (the version being CREATED right
+    // now), so its features/bugfixes/breakingChanges must describe what
+    // changed IN newVersion — i.e. gitDerivedSummary (commits since
+    // versionBeforeBump). Previously this read the OLD CURRENT_VERSION
+    // block's fields instead (extractFeaturesAndBugfixes(content), before
+    // this same loop overwrites it below), which meant every VERSION_HISTORY
+    // entry was mislabeled with the PREVIOUS release's bugfixes under the
+    // NEW version's key.
+    const { features, bugfixes, breakingChanges } = gitDerivedSummary;
 
     // Format arrays as strings for the entry
     const featuresStr = features.length > 0
@@ -487,7 +566,7 @@ ${featuresStr}
 ${bugfixesStr}
     ],
     breakingChanges: [${breakingStr ? '\n' + breakingStr + '\n    ' : ''}],
-    notes: '${(releaseNotes || `Version ${newVersion} release`).replace(/'/g, "\\'")}'
+    notes: '${(releaseNotes || gitDerivedSummary.notes || `Version ${newVersion} release`).replace(/'/g, "\\'")}'
   },`;
 
     // Check if version already exists in VERSION_HISTORY to avoid duplicates
