@@ -20,12 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.200)
+## 📋 Latest Changes (v1.8.201)
 
 ### Bug Fixes
 
-* **mobile:** flag disabled Supabase auth providers loudly instead of silently ([79fb9ae](https://github.com/hashpass-tech/hashpass.tech/commit/79fb9aef55b2652fc4782600632fa0222b129df7))
-* **mobile:** lock URLSearchParams/URL globals against mid-session re-binding ([5cec4e3](https://github.com/hashpass-tech/hashpass.tech/commit/5cec4e3a781e0804dcb52c698288470fd184f75b))
+* **mobile:** disable tutorial auto-start crashing on Fabric/newArch after login ([7a1c623](https://github.com/hashpass-tech/hashpass.tech/commit/7a1c623569daebe07ed45d90bbe345bb3b101c5f)), closes [#39](https://github.com/hashpass-tech/hashpass.tech/issues/39)
+* **mobile:** fix TS definite-assignment error in AppErrorBoundary test ([2f7f8b8](https://github.com/hashpass-tech/hashpass.tech/commit/2f7f8b88963f815d2b54b5725ffef965f527e0c1))
+
+
+### Features
+
+* **mobile): add Sentry crash reporting; fix(mobile:** type-check native Google status codes on non-native resolution ([ba77990](https://github.com/hashpass-tech/hashpass.tech/commit/ba77990aafe926a9b71343aa74e6633ea6f3cba4))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

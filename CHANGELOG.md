@@ -1,3 +1,20 @@
+## [1.8.201](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.200...v1.8.201) (2026-07-12)
+
+
+### Bug Fixes
+
+* **mobile:** disable tutorial auto-start crashing on Fabric/newArch after login ([7a1c623](https://github.com/hashpass-tech/hashpass.tech/commit/7a1c623569daebe07ed45d90bbe345bb3b101c5f)), closes [#39](https://github.com/hashpass-tech/hashpass.tech/issues/39)
+* **mobile:** fix TS definite-assignment error in AppErrorBoundary test ([2f7f8b8](https://github.com/hashpass-tech/hashpass.tech/commit/2f7f8b88963f815d2b54b5725ffef965f527e0c1))
+
+
+### Features
+
+* **mobile): add Sentry crash reporting; fix(mobile:** type-check native Google status codes on non-native resolution ([ba77990](https://github.com/hashpass-tech/hashpass.tech/commit/ba77990aafe926a9b71343aa74e6633ea6f3cba4))
+
+
+
+
+
 ## [1.8.200](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.199...v1.8.200) (2026-07-11)
 
 
