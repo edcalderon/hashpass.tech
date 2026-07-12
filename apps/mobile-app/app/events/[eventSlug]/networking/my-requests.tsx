@@ -19,7 +19,7 @@ import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { MeetingRequest } from '@/types/networking';
 import * as Haptics from 'expo-haptics';
-import { CopilotStep, walkthroughable } from 'react-native-copilot';
+import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 import UnifiedSearchAndFilter from '../../../../components/UnifiedSearchAndFilter';
 import { useNotifications } from '@contexts/NotificationContext';
 import { useRealtimeMeetingRequests, RequestWithDirection } from '../../../../hooks/useRealtimeMeetingRequests';

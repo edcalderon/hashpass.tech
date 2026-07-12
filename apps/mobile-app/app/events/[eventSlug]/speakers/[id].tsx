@@ -14,7 +14,7 @@ import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
 import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl } from '../../../../lib/string-utils';
 import LoadingScreen from '../../../../components/LoadingScreen';
-import { CopilotStep, walkthroughable } from 'react-native-copilot';
+import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 import { useTranslation } from '../../../../i18n/i18n';
 import { MaterialIcons } from '../../../../lib/vector-icons';
 

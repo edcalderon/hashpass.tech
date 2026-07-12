@@ -28,7 +28,7 @@ import QRScanner from '../../../components/QRScanner';
 import MiniNotificationDropdown from '../../../components/MiniNotificationDropdown';
 import { hasRecentAuthSuccess } from '../../../lib/auth/recent-auth';
 import { t } from '@lingui/macro';
-import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
+import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 
 // DrawerNavigationProp generic constraint mismatch across @react-navigation versions
 type DrawerNavigation = any;

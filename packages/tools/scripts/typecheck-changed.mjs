@@ -247,10 +247,19 @@ function writeStubModule(stubPath, stubInfo) {
     lines.push(`export declare class ${name} { constructor(...args: any[]); [key: string]: any; static [key: string]: any; }`);
   }
 
+  // A plain (non-`type`-prefixed) named import gives no reliable signal about
+  // whether the source module exports a value, a type, or both — e.g.
+  // `import { MeetingRequest } from '../types'` where MeetingRequest is
+  // actually an `interface`, used only in type positions in this file.
+  // Emitting only a `const: any` stub then fails with "X refers to a value,
+  // but is being used as a type here" the moment the consuming file uses it
+  // as a type. Values and types live in separate namespaces in TypeScript,
+  // so declaring both under the same name is legal and covers every usage
+  // shape without needing to know which one the real module actually is.
   for (const name of stubInfo.namedValueImports) {
-    // `any` is callable, constructable, and allows property access — safe for objects,
-    // functions, and mixed-use imports. Type-position usage must use `import type`.
+    if (stubInfo.namedClassImports.has(name)) continue;
     lines.push(`export declare const ${name}: any;`);
+    lines.push(`export type ${name} = any;`);
   }
 
   for (const name of stubInfo.namedTypeImports) {

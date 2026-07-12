@@ -19,7 +19,7 @@ import { useToastHelpers } from '@contexts/ToastContext';
 import QuickAccessGrid from '@/components/explorer/QuickAccessGrid';
 import LoadingScreen from '@/components/LoadingScreen';
 import type { NetworkingStats, StatsState, QuickAccessItem } from '@/types/networking';
-import { CopilotStep, walkthroughable, useCopilot } from 'react-native-copilot';
+import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 import { useTutorialPreferences } from '@/hooks/useTutorialPreferences';
 import { useTranslation } from '@/i18n/i18n';
 

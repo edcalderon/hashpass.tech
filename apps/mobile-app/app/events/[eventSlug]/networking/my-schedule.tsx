@@ -30,7 +30,7 @@ import type { Meeting, TimeSlot, DaySchedule } from '@/types/networking';
 import ScheduleConfirmationModal from '../../../../components/ScheduleConfirmationModal';
 import * as Haptics from 'expo-haptics';
 import { AgendaItem } from '../../../../types/events';
-import { CopilotStep, walkthroughable } from 'react-native-copilot';
+import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 
 const CopilotView = walkthroughable(View);
 
