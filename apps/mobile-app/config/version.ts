@@ -22,26 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607120935, // Updated to current timestamp
+  buildNumber: 202607121001, // Updated to current timestamp
   releaseDate: '2026-07-12',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add web smoke test to catch runtime-only production regressions'
+    'auto-trigger mobile Android release on every main release tag'
   ],
   bugfixes: [
-    'match escaped quotes when replacing CURRENT_VERSION.notes',
-    'use path.normalize + leading-.. strip, CodeQL\'s recognized sanitizer',
-    'sanitize request path before path.join, not after',
-    'sanitize file paths in web-smoke-test.mjs\'s local server',
-    'bump react-native-svg 15.11.2 -> 15.12.1, fixes web startup crash'
+    'stop infinite reload loop from the version checker'
   ],
   breakingChanges: [],
-  notes: 'add web smoke test to catch runtime-only production regressions; match escaped quotes when replacing CURRENT_VERSION.notes; use path.normalize + leading-.. strip, CodeQL\'s recognized sanitizer'
+  notes: 'auto-trigger mobile Android release on every main release tag; stop infinite reload loop from the version checker'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.207': {
+    version: '1.8.207',
+    buildNumber: 202607121001,
+    releaseDate: '2026-07-12',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'auto-trigger mobile Android release on every main release tag'
+    ],
+    bugfixes: [
+      'stop infinite reload loop from the version checker'
+    ],
+    breakingChanges: [],
+    notes: 'auto-trigger mobile Android release on every main release tag; stop infinite reload loop from the version checker'
+  },
   '1.8.206': {
     version: '1.8.206',
     buildNumber: 202607120935,

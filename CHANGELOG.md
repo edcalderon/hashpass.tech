@@ -1,3 +1,19 @@
+## [1.8.207](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.206...v1.8.207) (2026-07-12)
+
+
+### Bug Fixes
+
+* **web:** stop infinite reload loop from the version checker ([b4937d1](https://github.com/hashpass-tech/hashpass.tech/commit/b4937d1bd18a2409a9ae6a0dbb172412355ccb19))
+
+
+### Features
+
+* **ci:** auto-trigger mobile Android release on every main release tag ([01a2df3](https://github.com/hashpass-tech/hashpass.tech/commit/01a2df3fca3c5327b9b4f67b0b0380014bd3cce9))
+
+
+
+
+
 ## [1.8.206](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.205...v1.8.206) (2026-07-12)
 
 

@@ -20,20 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.206)
+## 📋 Latest Changes (v1.8.207)
 
 ### Bug Fixes
 
-* **ci:** sanitize file paths in web-smoke-test.mjs's local server ([be18260](https://github.com/hashpass-tech/hashpass.tech/commit/be182603e5a834e4b8c8b84af4a9ee68fa26a4e0))
-* **ci:** sanitize request path before path.join, not after ([97579f4](https://github.com/hashpass-tech/hashpass.tech/commit/97579f4ce1f9848acded9ce62ce254d2a94c1afb))
-* **ci:** use path.normalize + leading-.. strip, CodeQL's recognized sanitizer ([abb2025](https://github.com/hashpass-tech/hashpass.tech/commit/abb20259f01a678412fbffd3568c6f629a4002dc))
-* **mobile:** bump react-native-svg 15.11.2 -> 15.12.1, fixes web startup crash ([71e2419](https://github.com/hashpass-tech/hashpass.tech/commit/71e24194af440b0551f4fee3a0c61f8596c3b07a))
-* **release:** match escaped quotes when replacing CURRENT_VERSION.notes ([f5df0ce](https://github.com/hashpass-tech/hashpass.tech/commit/f5df0ce362f6aa482cd4de5eab24d0deab617a9c))
+* **web:** stop infinite reload loop from the version checker ([b4937d1](https://github.com/hashpass-tech/hashpass.tech/commit/b4937d1bd18a2409a9ae6a0dbb172412355ccb19))
 
 
 ### Features
 
-* **ci:** add web smoke test to catch runtime-only production regressions ([452226b](https://github.com/hashpass-tech/hashpass.tech/commit/452226b04bca39abd5eece356a43516f176b4952))
+* **ci:** auto-trigger mobile Android release on every main release tag ([01a2df3](https://github.com/hashpass-tech/hashpass.tech/commit/01a2df3fca3c5327b9b4f67b0b0380014bd3cce9))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
