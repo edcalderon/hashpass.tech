@@ -20,18 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.205)
+## 📋 Latest Changes (v1.8.206)
 
 ### Bug Fixes
 
-* **mobile:** move notifications off direct client-side Supabase calls ([af23ad4](https://github.com/hashpass-tech/hashpass.tech/commit/af23ad4183c48a7eddf39a26b9ec8c3f4dc7f8d6))
-* **mobile:** pin react-native-svg to Expo SDK 53's certified 15.11.2 ([3988d73](https://github.com/hashpass-tech/hashpass.tech/commit/3988d731a2533a8e328e3839a3598104dde91e30))
+* **ci:** sanitize file paths in web-smoke-test.mjs's local server ([be18260](https://github.com/hashpass-tech/hashpass.tech/commit/be182603e5a834e4b8c8b84af4a9ee68fa26a4e0))
+* **ci:** sanitize request path before path.join, not after ([97579f4](https://github.com/hashpass-tech/hashpass.tech/commit/97579f4ce1f9848acded9ce62ce254d2a94c1afb))
+* **ci:** use path.normalize + leading-.. strip, CodeQL's recognized sanitizer ([abb2025](https://github.com/hashpass-tech/hashpass.tech/commit/abb20259f01a678412fbffd3568c6f629a4002dc))
+* **mobile:** bump react-native-svg 15.11.2 -> 15.12.1, fixes web startup crash ([71e2419](https://github.com/hashpass-tech/hashpass.tech/commit/71e24194af440b0551f4fee3a0c61f8596c3b07a))
+* **release:** match escaped quotes when replacing CURRENT_VERSION.notes ([f5df0ce](https://github.com/hashpass-tech/hashpass.tech/commit/f5df0ce362f6aa482cd4de5eab24d0deab617a9c))
 
 
 ### Features
 
-* **infra:** add Sentry error reporting to the API Lambda ([bcc9650](https://github.com/hashpass-tech/hashpass.tech/commit/bcc9650fe631f45a83f792796a3d53fdcb356304))
-* **infra:** wire Sentry DSN into the web build pipeline ([dc4a66b](https://github.com/hashpass-tech/hashpass.tech/commit/dc4a66b75c535eaf5ac7fbdb6427f69bb6abb4e8))
+* **ci:** add web smoke test to catch runtime-only production regressions ([452226b](https://github.com/hashpass-tech/hashpass.tech/commit/452226b04bca39abd5eece356a43516f176b4952))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -22,24 +22,45 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607120834, // Updated to current timestamp
+  buildNumber: 202607120935, // Updated to current timestamp
   releaseDate: '2026-07-12',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add Sentry error reporting to the API Lambda',
-    'wire Sentry DSN into the web build pipeline'
+    'add web smoke test to catch runtime-only production regressions'
   ],
   bugfixes: [
-    'pin react-native-svg to Expo SDK 53\'s certified 15.11.2',
-    'move notifications off direct client-side Supabase calls'
+    'match escaped quotes when replacing CURRENT_VERSION.notes',
+    'use path.normalize + leading-.. strip, CodeQL\'s recognized sanitizer',
+    'sanitize request path before path.join, not after',
+    'sanitize file paths in web-smoke-test.mjs\'s local server',
+    'bump react-native-svg 15.11.2 -> 15.12.1, fixes web startup crash'
   ],
   breakingChanges: [],
-  notes: 'add Sentry error reporting to the API Lambda; wire Sentry DSN into the web build pipeline; pin react-native-svg to Expo SDK 53\'s certified 15.11.2'
+  notes: 'add web smoke test to catch runtime-only production regressions; match escaped quotes when replacing CURRENT_VERSION.notes; use path.normalize + leading-.. strip, CodeQL\'s recognized sanitizer'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.206': {
+    version: '1.8.206',
+    buildNumber: 202607120935,
+    releaseDate: '2026-07-12',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add web smoke test to catch runtime-only production regressions'
+    ],
+    bugfixes: [
+      'match escaped quotes when replacing CURRENT_VERSION.notes',
+      'use path.normalize + leading-.. strip, CodeQL\'s recognized sanitizer',
+      'sanitize request path before path.join, not after',
+      'sanitize file paths in web-smoke-test.mjs\'s local server',
+      'bump react-native-svg 15.11.2 -> 15.12.1, fixes web startup crash'
+    ],
+    breakingChanges: [],
+    notes: 'add web smoke test to catch runtime-only production regressions; match escaped quotes when replacing CURRENT_VERSION.notes; use path.normalize + leading-.. strip, CodeQL\'s recognized sanitizer'
+  },
   '1.8.205': {
     version: '1.8.205',
     buildNumber: 202607120834,

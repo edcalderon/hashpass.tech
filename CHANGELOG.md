@@ -1,3 +1,23 @@
+## [1.8.206](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.205...v1.8.206) (2026-07-12)
+
+
+### Bug Fixes
+
+* **ci:** sanitize file paths in web-smoke-test.mjs's local server ([be18260](https://github.com/hashpass-tech/hashpass.tech/commit/be182603e5a834e4b8c8b84af4a9ee68fa26a4e0))
+* **ci:** sanitize request path before path.join, not after ([97579f4](https://github.com/hashpass-tech/hashpass.tech/commit/97579f4ce1f9848acded9ce62ce254d2a94c1afb))
+* **ci:** use path.normalize + leading-.. strip, CodeQL's recognized sanitizer ([abb2025](https://github.com/hashpass-tech/hashpass.tech/commit/abb20259f01a678412fbffd3568c6f629a4002dc))
+* **mobile:** bump react-native-svg 15.11.2 -> 15.12.1, fixes web startup crash ([71e2419](https://github.com/hashpass-tech/hashpass.tech/commit/71e24194af440b0551f4fee3a0c61f8596c3b07a))
+* **release:** match escaped quotes when replacing CURRENT_VERSION.notes ([f5df0ce](https://github.com/hashpass-tech/hashpass.tech/commit/f5df0ce362f6aa482cd4de5eab24d0deab617a9c))
+
+
+### Features
+
+* **ci:** add web smoke test to catch runtime-only production regressions ([452226b](https://github.com/hashpass-tech/hashpass.tech/commit/452226b04bca39abd5eece356a43516f176b4952))
+
+
+
+
+
 ## [1.8.205](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.204...v1.8.205) (2026-07-12)
 
 
