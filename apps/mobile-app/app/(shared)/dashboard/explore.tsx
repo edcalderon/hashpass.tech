@@ -32,6 +32,11 @@ type QuickAccessItem = {
   route: string;
 };
 
+// Disabled: startTutorial() crashes on Fabric/newArch — see the usage site
+// below for the full explanation. Flip back to true once the offending
+// SVG-based CopilotStep target is identified and fixed.
+const TUTORIAL_AUTO_START_ENABLED = false;
+
 const CopilotView = walkthroughable(View);
 const CopilotText = walkthroughable(Text);
 const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
@@ -160,6 +165,21 @@ export default function ExploreScreen() {
       return;
     }
 
+    if (!TUTORIAL_AUTO_START_ENABLED) {
+      // startTutorial() measures/highlights the first CopilotStep target, which
+      // crashes the app on Fabric/newArch with "Unsupported top level event
+      // type 'topSvgLayout'/'topLayout'/'topDetached' dispatched". Copilot's
+      // overlay is already forced to "view" (see CopilotProvider in
+      // app/_layout.tsx), so this isn't Copilot's own SVG mask — it's an
+      // SVG-based element among the highlighted dashboard targets that
+      // doesn't register its layout event correctly under the new
+      // architecture. This crashed on every first login, so auto-start is
+      // disabled until the specific offending step/component is identified
+      // and fixed with a Fabric-compatible SVG version or a non-SVG target.
+      console.warn('Tutorial auto-start: disabled (Fabric/SVG layout event crash — see TUTORIAL_AUTO_START_ENABLED)');
+      return;
+    }
+
     console.log('Tutorial auto-start: All conditions met, starting tutorial...');
 
     // Use InteractionManager to ensure UI is ready
@@ -177,15 +197,15 @@ export default function ExploreScreen() {
               tutorialStartedRef.current = false;
               return;
             }
-            
+
             // Check if steps are registered - getSteps is not available in current version
             // Proceed with tutorial start without step verification
             console.log('Starting tutorial without step verification');
-            
+
             // Start tutorial first, then update database after it successfully starts
             const result = startTutorial();
             console.log('Tutorial start result:', result);
-            
+
             // Mark tutorial as started in database after a short delay to ensure tutorial started
             setTimeout(() => {
               updateTutorialStep('main', 1).catch((err: unknown) => console.error('Error updating tutorial step:', err));
@@ -203,7 +223,7 @@ export default function ExploreScreen() {
           console.log('Tutorial auto-start: Ref was set to true, skipping start');
         }
       }, 4000); // Increased delay to ensure all CopilotSteps are registered (layout + header need time to mount)
-      
+
       return () => clearTimeout(timer);
     });
 

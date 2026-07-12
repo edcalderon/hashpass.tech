@@ -381,6 +381,14 @@ jobs:
       # failures and logs post-picker auth exchange errors without closing.
       EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN: 'true'
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
+      # Sentry crash/error reporting. DSN is a publishable client key (safe as a
+      # GitHub Variable, not a secret). SENTRY_AUTH_TOKEN is server-side only —
+      # it authorizes the release-build source-map/debug-symbol upload and must
+      # never be embedded in the app bundle, so it's read as a process env var
+      # by the Sentry Gradle plugin during the native build, not written into
+      # the app's env file below.
+      EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       # GitHub Actions blocks setting NODE_OPTIONS via $GITHUB_ENV for security reasons so this
       # must live here. Metro bundler OOM'd at 2036/2048 MiB on a large bundle, so we give Node
       # 3072 MiB; Gradle is tuned down to 2048 MiB in "Tune build memory limits" to compensate
@@ -773,6 +781,7 @@ jobs:
           [ -n "${EXPO_PUBLIC_SITE_URL:-}" ]            && printf 'EXPO_PUBLIC_SITE_URL=%s\n'            "$EXPO_PUBLIC_SITE_URL"            >> "$env_file"
           [ -n "${EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN:-}" ] && printf 'EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN=%s\n' "$EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN" >> "$env_file"
           [ -n "${EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID:-}" ] && printf 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=%s\n' "$EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID" >> "$env_file"
+          [ -n "${EXPO_PUBLIC_SENTRY_DSN:-}" ]           && printf 'EXPO_PUBLIC_SENTRY_DSN=%s\n'           "$EXPO_PUBLIC_SENTRY_DSN"           >> "$env_file"
           vars_written=$(grep -c '.' "$env_file" || true)
           echo "Wrote ${vars_written} env var(s) to ${env_file}"
 

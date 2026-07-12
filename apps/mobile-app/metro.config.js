@@ -15,7 +15,11 @@ if (!process.env.CI) {
   }
 }
 
-const { getDefaultConfig } = require('expo/metro-config');
+// getSentryExpoConfig wraps expo/metro-config's getDefaultConfig and adds the
+// Babel transform + serializer hooks Sentry needs to symbolicate stack traces
+// (source-map upload happens at native build time; this just makes Metro emit
+// the annotations that upload step needs).
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 const { withNativeWind } = require('nativewind/metro');
 const { wrapWithReanimatedMetroConfig } = require('react-native-reanimated/metro-config');
 const { FileStore } = require('metro-cache');
@@ -27,7 +31,7 @@ const { resolveZustandCommonJs } = require('./lib/metro/zustand-resolver');
 const workspaceRoot = path.resolve(__dirname, '../..');
 const workspaceRequire = createRequire(path.join(workspaceRoot, 'package.json'));
 const dreiPackageDir = path.dirname(workspaceRequire.resolve('@react-three/drei/package.json'));
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname);
 
 const runtimeWorkspacePackages = [
   'auth',
