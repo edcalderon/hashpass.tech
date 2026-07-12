@@ -20,12 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.208)
+## 📋 Latest Changes (v1.8.209)
 
-### Bug Fixes
+### Chores
 
-* **mobile:** eliminate react-native-copilot crash on Android login ([bef97c1](https://github.com/hashpass-tech/hashpass.tech/commit/bef97c1acadaa1b49719d126a6d78d79d2c1b196))
-* **tools:** stub both value and type for plain named imports in typecheck-changed ([22cca9b](https://github.com/hashpass-tech/hashpass.tech/commit/22cca9b0453718e9d22e5851cb2ebcfe61a36ec8))
+* **release:** re-cut version to force a new Play Console review after v1.8.208's submission got stuck; no functional changes ([914fa29](https://github.com/hashpass-tech/hashpass.tech/commit/914fa29f0))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
