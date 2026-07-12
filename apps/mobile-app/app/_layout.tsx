@@ -27,7 +27,7 @@ import SoftUpdateBanner from '../components/SoftUpdateBanner';
 import { useNativeUpdateCheck } from '../hooks/useNativeUpdateCheck';
 import * as SplashScreen from 'expo-splash-screen';
 import { I18nProvider } from '../providers/I18nProvider';
-import { CopilotProvider } from 'react-native-copilot';
+import { CopilotProvider } from '@lib/copilot-shim';
 import { checkVersionOnStart } from '../lib/version-checker';
 import LoadingScreen from '../components/LoadingScreen';
 import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppErrorBoundary';
