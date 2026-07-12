@@ -46,11 +46,33 @@ const MIME_TYPES = {
   '.woff2': 'font/woff2',
 };
 
+// Resolves a request path against distDir and rejects anything that would
+// escape it (e.g. `../../etc/passwd`). This server only ever needs to serve
+// this script's own hardcoded ROUTES, but CodeQL correctly flags req.url as
+// user-controlled input regardless of that — path.join doesn't strip `..`
+// segments, so an unvalidated join is a real traversal primitive even in a
+// short-lived local/CI-only server.
+const distDirResolved = path.resolve(distDir);
+
+function resolveSafePath(candidatePath) {
+  const resolved = path.resolve(candidatePath);
+  if (resolved !== distDirResolved && !resolved.startsWith(distDirResolved + path.sep)) {
+    return null;
+  }
+  return resolved;
+}
+
 function startServer() {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
-      let reqPath = decodeURIComponent(req.url.split('?')[0]);
-      let filePath = path.join(distDir, reqPath);
+      const reqPath = decodeURIComponent(req.url.split('?')[0]);
+      let filePath = resolveSafePath(path.join(distDir, reqPath));
+
+      if (!filePath) {
+        res.writeHead(400);
+        res.end('Bad request');
+        return;
+      }
 
       // Expo Router's static export pre-renders one HTML shell per route
       // (as either <route>.html or <route>/index.html depending on build
@@ -60,14 +82,14 @@ function startServer() {
       // like a real static host's SPA fallback would.
       if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
         const candidates = [
-          `${filePath}.html`,
-          path.join(filePath, 'index.html'),
-          path.join(distDir, 'index.html'),
-        ];
+          resolveSafePath(`${filePath}.html`),
+          resolveSafePath(path.join(filePath, 'index.html')),
+          resolveSafePath(path.join(distDir, 'index.html')),
+        ].filter(Boolean);
         filePath = candidates.find(existsSync) ?? candidates[candidates.length - 1];
       }
 
-      if (!existsSync(filePath)) {
+      if (!filePath || !existsSync(filePath)) {
         res.writeHead(404);
         res.end('Not found');
         return;
