@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/api-client';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from '../i18n/i18n';
 import { translateNotification } from '../lib/notification-translations';
@@ -55,12 +56,19 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Track current user ID to prevent unnecessary re-fetches
   const currentUserIdRef = useRef<string | null>(null);
+  // The REAL Supabase auth.users(id) UUID for the current session, resolved
+  // server-side (see lib/server/resolve-notification-identity.ts). This can
+  // differ from `user.id` when the active session came from a non-Supabase
+  // provider (e.g. Better Auth uses its own non-UUID id format). Used to
+  // scope the realtime subscription filter correctly.
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
 
   const unreadCount = notifications.filter(n => !n.is_read && !n.is_archived).length;
 
   const fetchNotifications = useCallback(async () => {
     if (!user) {
       setNotifications([]);
+      setResolvedUserId(null);
       setIsLoading(false);
       currentUserIdRef.current = null;
       return;
@@ -74,20 +82,21 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     currentUserIdRef.current = user.id;
 
     try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const response = await apiClient.get(
+        'notifications',
+        { params: { limit: 50 }, skipEventSegment: true }
+      );
 
-      if (error) {
-        console.error('Error fetching notifications:', error);
+      if (!response.success || !response.data) {
+        console.error('Error fetching notifications:', response.error);
         return;
       }
 
+      const responseData = response.data as { data: Notification[]; resolvedUserId: string | null };
+      setResolvedUserId(responseData.resolvedUserId);
+
       // Translate notifications
-      const translatedNotifications = (data || []).map((notification: any) => {
+      const translatedNotifications = (responseData.data || []).map((notification: any) => {
         const translated = translateNotification(notification, t);
         return {
           ...notification,
@@ -108,23 +117,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     if (!user) return;
 
     try {
-      const { error } = await (supabase as any)
-        .from('notifications')
-        .update({ 
-          is_read: true, 
-          read_at: new Date().toISOString() 
-        })
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+      const response = await apiClient.patch(
+        `notifications/${notificationId}`,
+        { is_read: true },
+        { skipEventSegment: true }
+      );
 
-      if (error) {
-        console.error('Error marking notification as read:', error);
+      if (!response.success) {
+        console.error('Error marking notification as read:', response.error);
         return;
       }
 
-      setNotifications(prev => 
-        prev.map((notification: Notification) => 
-          notification.id === notificationId 
+      setNotifications(prev =>
+        prev.map((notification: Notification) =>
+          notification.id === notificationId
             ? { ...notification, is_read: true, read_at: new Date().toISOString() }
             : notification
         )
@@ -138,23 +144,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     if (!user) return;
 
     try {
-      const { error } = await (supabase as any)
-        .from('notifications')
-        .update({ 
-          is_read: false, 
-          read_at: null
-        })
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+      const response = await apiClient.patch(
+        `notifications/${notificationId}`,
+        { is_read: false },
+        { skipEventSegment: true }
+      );
 
-      if (error) {
-        console.error('Error marking notification as unread:', error);
+      if (!response.success) {
+        console.error('Error marking notification as unread:', response.error);
         return;
       }
 
-      setNotifications(prev => 
-        prev.map((notification: Notification) => 
-          notification.id === notificationId 
+      setNotifications(prev =>
+        prev.map((notification: Notification) =>
+          notification.id === notificationId
             ? { ...notification, is_read: false, read_at: undefined }
             : notification
         )
@@ -170,31 +173,26 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     try {
       // Archive and mark as read in a single update
       const now = new Date().toISOString();
-      const { error } = await (supabase as any)
-        .from('notifications')
-        .update({ 
-          is_read: true,
-          read_at: now,
-          is_archived: true,
-          archived_at: now
-        })
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+      const response = await apiClient.patch(
+        `notifications/${notificationId}`,
+        { is_archived: true },
+        { skipEventSegment: true }
+      );
 
-      if (error) {
-        console.error('Error archiving notification:', error);
+      if (!response.success) {
+        console.error('Error archiving notification:', response.error);
         return;
       }
 
       // Update local state
-      setNotifications(prev => 
-        prev.map((notification: Notification) => 
-          notification.id === notificationId 
-            ? { 
-                ...notification, 
+      setNotifications(prev =>
+        prev.map((notification: Notification) =>
+          notification.id === notificationId
+            ? {
+                ...notification,
                 is_read: true,
                 read_at: now,
-                is_archived: true, 
+                is_archived: true,
                 archived_at: now
               }
             : notification
@@ -209,21 +207,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     if (!user) return;
 
     try {
-      const { error } = await (supabase as any)
-        .from('notifications')
-        .update({ 
-          is_read: true, 
-          read_at: new Date().toISOString() 
-        })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
+      const response = await apiClient.patch('notifications', undefined, { skipEventSegment: true });
 
-      if (error) {
-        console.error('Error marking all notifications as read:', error);
+      if (!response.success) {
+        console.error('Error marking all notifications as read:', response.error);
         return;
       }
 
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map((notification: Notification) => ({
           ...notification,
           is_read: true,
@@ -239,18 +230,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+      const response = await apiClient.delete(`notifications/${notificationId}`, { skipEventSegment: true });
 
-      if (error) {
-        console.error('Error deleting notification:', error);
+      if (!response.success) {
+        console.error('Error deleting notification:', response.error);
         return;
       }
 
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.filter((notification: Notification) => notification.id !== notificationId)
       );
     } catch (error) {
@@ -265,14 +252,20 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     await fetchNotifications();
   }, [fetchNotifications]);
 
-  // Set up real-time subscription
+  // Initial fetch + auto-refresh fallback. Realtime subscription (below)
+  // depends on resolvedUserId, which this fetch populates.
   useEffect(() => {
     if (!user) return;
-
-    // Initial fetch
     fetchNotifications();
+  }, [user, fetchNotifications]);
 
-    // Set up real-time subscription
+  // Set up real-time subscription — scoped to the resolved Supabase auth
+  // UUID, not user.id, since user.id may be a non-Supabase provider id that
+  // would never match the notifications.user_id column and silently receive
+  // no events.
+  useEffect(() => {
+    if (!user || !resolvedUserId) return;
+
     const channel = supabase
       .channel('notifications')
       .on(
@@ -281,12 +274,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${resolvedUserId}`,
         },
         (payload: any) => {
           console.log('New notification received:', payload);
           const newNotification = payload.new as Notification;
-          
+
           // Translate the new notification
           const translated = translateNotification(newNotification, t);
           const translatedNotification = {
@@ -294,10 +287,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
             title: translated.title,
             message: translated.message
           };
-          
+
           // Add to the beginning of the list
           setNotifications(prev => [translatedNotification, ...prev]);
-          
+
           // Show browser notification if permission granted (web-only; Notification API doesn't exist on native)
           if (typeof window !== 'undefined' && typeof Notification !== 'undefined' && Notification.permission === 'granted' && newNotification.is_urgent) {
             const notificationOptions: NotificationOptions = {
@@ -310,7 +303,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
             // Add click handler for chat messages to navigate to meeting room
             const browserNotification = new window.Notification(newNotification.title, notificationOptions);
-            
+
             browserNotification.onclick = () => {
               window.focus();
               // Navigate to meeting chat if it's a chat message
@@ -329,16 +322,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           event: 'UPDATE',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${resolvedUserId}`,
         },
         (payload: any) => {
           console.log('Notification updated:', payload);
           const updatedNotification = payload.new as Notification;
-          
-          setNotifications(prev => 
-            prev.map(notification => 
-              notification.id === updatedNotification.id 
-                ? updatedNotification 
+
+          setNotifications(prev =>
+            prev.map(notification =>
+              notification.id === updatedNotification.id
+                ? updatedNotification
                 : notification
             )
           );
@@ -350,13 +343,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
           event: 'DELETE',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${resolvedUserId}`,
         },
         (payload: any) => {
           console.log('Notification deleted:', payload);
           const deletedNotification = payload.old as Notification;
-          
-          setNotifications(prev => 
+
+          setNotifications(prev =>
             prev.filter(notification => notification.id !== deletedNotification.id)
           );
         }
@@ -372,7 +365,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // Only depend on user.id to prevent re-subscription on other user changes
+  }, [user?.id, resolvedUserId]); // Only depend on identity to prevent re-subscription on other user changes
 
   // Auto-refresh notifications every 30 seconds as fallback
   useEffect(() => {

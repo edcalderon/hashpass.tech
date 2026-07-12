@@ -6,6 +6,39 @@
 const { createRequestHandler } = require("@expo/server/build/index");
 const path = require("path");
 
+// @sentry/aws-serverless is installed at Lambda packaging time (see
+// packages/tools/scripts/package-lambda.sh's `npm install --production`
+// step inside the copied package dir), not via the monorepo's pnpm
+// install — this module isn't in the root node_modules, so tests that
+// require() this file directly need this to fail soft rather than
+// blowing up module load entirely.
+let Sentry = null;
+try {
+  Sentry = require("@sentry/aws-serverless");
+} catch {
+  // absent outside a packaged Lambda deploy — every Sentry.* call below
+  // is already gated on both `Sentry` and SENTRY_DSN being present.
+}
+
+// Route handlers (apps/mobile-app/app/api/**/+api.ts) generally catch their
+// own errors and return a normal Response with a 4xx/5xx status instead of
+// throwing — e.g. a Supabase client rejecting because of an invalid key
+// never surfaces as an exception here, just a 500 response. A plain
+// exception-only Sentry wrap would silently miss all of those. Sentry.init()
+// is a no-op with an empty dsn.
+//
+// NODE_ENV only (not EXPO_PUBLIC_ENV) — this is server-only Lambda code, and
+// referencing an EXPO_PUBLIC_* var here trips babel-preset-expo's client env
+// inlining transform on this file when it's require()'d from Jest tests in
+// apps/mobile-app, even though this file lives entirely outside that app.
+if (Sentry && process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || "production",
+    tracesSampleRate: 0.2,
+  });
+}
+
 // Create Expo Server request handler
 // The build directory should contain the compiled server code
 const handleRequest = createRequestHandler(path.join(__dirname, "server"));
@@ -107,7 +140,7 @@ function buildRequestHeaders(event) {
 }
 
 // AWS Lambda handler for API Gateway
-exports.handler = async (event) => {
+async function handleLambdaEvent(event) {
   try {
     // Support both API Gateway v1 (REST API) and v2 (HTTP API) events
     const method =
@@ -190,6 +223,18 @@ exports.handler = async (event) => {
     // Handle the request with Expo Server
     const response = await handleRequest(request);
 
+    // Route handlers catch their own errors and return a normal Response
+    // with a 5xx status instead of throwing, so this is the only place that
+    // sees them. Report explicitly — Sentry.wrapHandler() below only sees
+    // exceptions that actually escape this function.
+    if (response.status >= 500 && Sentry && process.env.SENTRY_DSN) {
+      Sentry.captureMessage(`API route returned ${response.status}`, {
+        level: "error",
+        tags: { http_status: response.status, http_method: method },
+        extra: { path: requestPath, fullUrl },
+      });
+    }
+
     // Convert Response to API Gateway format
     const body = await response.text();
     const headers = {};
@@ -261,6 +306,10 @@ exports.handler = async (event) => {
     console.error("Error handling API request:", error);
     console.error("Event:", JSON.stringify(event, null, 2));
 
+    if (Sentry && process.env.SENTRY_DSN) {
+      Sentry.captureException(error);
+    }
+
     return {
       statusCode: 500,
       headers: applyCorsHeaders(
@@ -277,7 +326,15 @@ exports.handler = async (event) => {
       isBase64Encoded: false,
     };
   }
-};
+}
+
+// Sentry.wrapHandler() ensures buffered events are flushed before the Lambda
+// execution environment freezes on return — a plain try/catch around the
+// handler body isn't enough for that, and it also catches exceptions that
+// escape handleLambdaEvent entirely (e.g. thrown before the try block).
+exports.handler = Sentry && process.env.SENTRY_DSN
+  ? Sentry.wrapHandler(handleLambdaEvent)
+  : handleLambdaEvent;
 
 exports._internal = {
   buildRequestHeaders,

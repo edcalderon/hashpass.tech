@@ -5,6 +5,7 @@ Reference docs capture implementation details that are still useful but not part
 ## Active Docs
 
 - [`mobile-app/event-scoped-api-client.md`](mobile-app/event-scoped-api-client.md)
+- [`mobile-app/native-module-version-pinning.md`](mobile-app/native-module-version-pinning.md)
 - [`performance/PERFORMANCE_OPTIMIZATIONS.md`](performance/PERFORMANCE_OPTIMIZATIONS.md)
 - [`qr/qr-system.md`](qr/qr-system.md)
 - [`release/PLAY_CONSOLE_RELEASE_FLOW.md`](release/PLAY_CONSOLE_RELEASE_FLOW.md)

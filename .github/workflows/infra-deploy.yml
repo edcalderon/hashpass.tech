@@ -112,6 +112,7 @@ jobs:
           FRONTEND_URL: https://hashpass.tech
           EXPO_PUBLIC_API_BASE_URL: https://api.hashpass.tech/api
           EXPO_PUBLIC_BETTER_AUTH_URL: https://api.hashpass.tech/api/auth
+          SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
         run: bash packages/tools/scripts/deploy-api-lambda.sh
 
       - name: Deploy development API Lambda
@@ -136,4 +137,5 @@ jobs:
           FRONTEND_URL: https://dev.hashpass.tech
           EXPO_PUBLIC_API_BASE_URL: https://api-dev.hashpass.tech/api
           EXPO_PUBLIC_BETTER_AUTH_URL: https://api-dev.hashpass.tech/api/auth
+          SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
         run: bash packages/tools/scripts/deploy-api-lambda.sh

@@ -17,6 +17,7 @@ supabase_url      = "https://mnnqryrdlhddorqsrtbn.supabase.co"
 supabase_key      = "<EXPO_PUBLIC_SUPABASE_KEY_PROD>"
 google_client_id  = "<GOOGLE_CLIENT_ID>"
 ga_measurement_id = "G-2JCRQCH0R1"
+sentry_dsn        = "<SENTRY_DSN>"
 
 # Development web build inputs. Use the dev Supabase project so the branch
 # pipeline tests against the development auth/database path.
