@@ -431,7 +431,14 @@ const filesToUpdate = [
       {
         key: 'notes',
         value: `'${escapeJsStringLiteral(releaseNotes || gitDerivedSummary.notes || `Version ${newVersion} release`)}'`,
-        pattern: /notes:\s*'[^']*'/
+        // The previous release's notes value can itself contain escaped
+        // quotes (e.g. "CodeQL\'s"), which a naive [^']* stops at
+        // prematurely — it treats the character right after the backslash
+        // as the closing quote, truncating the match and leaving a
+        // fragment of the old string behind after replacement. Match
+        // escaped-char-or-non-quote instead, so it only stops at a truly
+        // unescaped closing quote.
+        pattern: /notes:\s*'(?:[^'\\]|\\.)*'/
       }
     ]
   })),
