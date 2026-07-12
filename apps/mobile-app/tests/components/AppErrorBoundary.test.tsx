@@ -50,7 +50,7 @@ describe('AppErrorBoundary', () => {
   });
 
   it('catches a render error, reports it to Sentry, and shows the fallback UI', () => {
-    let renderer: TestRenderer.ReactTestRenderer;
+    let renderer!: TestRenderer.ReactTestRenderer;
     // componentDidCatch's setState runs in a layout-effect-like commit that
     // react-test-renderer does not flush synchronously outside of act() —
     // without this wrapper the assertions below race the catch and see 0 calls.
