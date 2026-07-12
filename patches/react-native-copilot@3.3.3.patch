@@ -1,0 +1,26 @@
+diff --git a/dist/index.js b/dist/index.js
+index 3aff2e2030b4f2df810d090d3250b865cf446f02..2adba398d489506d8b3f5b24775870a6238c7150 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1127,10 +1127,17 @@ var CopilotStep = ({
+   }, [name, unregisterStep, active]);
+   const copilotProps = (0, import_react11.useMemo)(
+     () => ({
+-      ref: wrapperRef,
+-      onLayout: () => {
+-      }
+-      // Android hack
++      ref: wrapperRef
++      // The upstream "Android hack" (an empty onLayout: () => {}) attached a
++      // no-op layout listener to every CopilotStep-wrapped view unconditionally
++      // (whether or not the tutorial was ever started), so its mere presence
++      // registered a Fabric layout event on views that don't declare it in
++      // their codegen'd view config, crashing with "Unsupported top level
++      // event type 'topLayout'/'topSvgLayout'/'topDetached' dispatched" on
++      // every dashboard render under this app's newArchEnabled build. Actual
++      // step measurement uses wrapperRef.current.measure(...) (an imperative
++      // native call), which does not depend on this onLayout callback, so
++      // removing it does not affect real tutorial functionality.
+     }),
+     []
+   );

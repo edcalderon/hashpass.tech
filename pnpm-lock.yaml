@@ -17,6 +17,9 @@ patchedDependencies:
   metro-file-map@0.82.5:
     hash: ziggfo7kkwnggzmshak5omo5o4
     path: patches/metro-file-map@0.82.5.patch
+  react-native-copilot@3.3.3:
+    hash: ocickmwtvvlgtxhe4exmvxshty
+    path: patches/react-native-copilot@3.3.3.patch
   react-native-css-interop@0.2.1:
     hash: 3ovotlv4g2dqpzrx3otza2w5re
     path: patches/react-native-css-interop@0.2.1.patch
@@ -252,7 +255,7 @@ importers:
         version: 0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
       react-native-copilot:
         specifier: ^3.3.3
-        version: 3.3.3(@types/node@24.10.13)(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 3.3.3(patch_hash=ocickmwtvvlgtxhe4exmvxshty)(@types/node@24.10.13)(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-gesture-handler:
         specifier: ~2.24.0
         version: 2.24.0(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -748,7 +751,7 @@ importers:
         version: 0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
       react-native-copilot:
         specifier: ^3.3.3
-        version: 3.3.3(@types/node@24.10.13)(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 3.3.3(patch_hash=ocickmwtvvlgtxhe4exmvxshty)(@types/node@24.10.13)(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-css-interop:
         specifier: 0.2.1
         version: 0.2.1(patch_hash=3ovotlv4g2dqpzrx3otza2w5re)(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
@@ -31973,7 +31976,7 @@ snapshots:
       react-loadable: '@docusaurus/react-loadable@6.0.0(react@19.0.0)'
       webpack: 5.105.2(@swc/core@1.15.41(@swc/helpers@0.5.18))
 
-  react-native-copilot@3.3.3(@types/node@24.10.13)(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
+  react-native-copilot@3.3.3(patch_hash=ocickmwtvvlgtxhe4exmvxshty)(@types/node@24.10.13)(react-native-svg@15.15.3(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.2(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
     dependencies:
       '@changesets/changelog-github': 0.5.2
       '@changesets/cli': 2.29.8(@types/node@24.10.13)
