@@ -1,0 +1,61 @@
+name: Web smoke test
+
+# Loads the real built web bundle in a headless browser and fails on any
+# uncaught JS error during initial render. Exists because of a real
+# incident (v1.8.205): a dependency version bump typechecked, linted, and
+# built successfully, but its minified web bundle threw
+# "hasTouchableProperty is not a function" on every page in production —
+# a class of bug only a real browser executing the real bundle can catch.
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "apps/mobile-app/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/web-smoke-test.yml"
+  push:
+    branches: [main, develop]
+    paths:
+      - "apps/mobile-app/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    name: Build web export and smoke-test key routes
+    runs-on: ubuntu-latest
+    env:
+      CI: "1"
+      SKIP_ENV_PROPAGATE: "1"
+      EXPO_EXPORT_MAX_WORKERS: "2"
+      NODE_MAX_OLD_SPACE_SIZE: "8192"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.0"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Install Playwright Chromium
+        run: pnpm --dir apps/mobile-app exec playwright install --with-deps chromium
+
+      - name: Build web export
+        run: pnpm --dir apps/mobile-app run build:static
+
+      - name: Run web smoke test
+        run: pnpm --dir apps/mobile-app run smoke:web
