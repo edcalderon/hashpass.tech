@@ -3,7 +3,7 @@ import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { useRouter } from 'expo-router';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
-import { fetchIPLocation, GDPR_COUNTRY_CODES } from '../lib/ipquery';
+import { fetchIPLocation, GDPR_COUNTRY_CODES, type IPLocation } from '../lib/ipquery';
 
 const CONSENT_KEY = 'hashpass_cookie_consent';
 
@@ -62,7 +62,7 @@ export default function CookieConsentBanner() {
 
     // Detect country via ipquery.io (timezone fallback built in), then show banner.
     // We wait for detection so the law text is correct on first render.
-    fetchIPLocation().then((loc) => {
+    fetchIPLocation().then((loc: IPLocation | null) => {
       setLaw(detectLaw(loc?.country_code ?? ''));
       setVisible(true);
     });
@@ -98,7 +98,7 @@ export default function CookieConsentBanner() {
         </View>
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.declineButton} onPress={handleDecline}>
-            <Text style={styles.declineText}>{t('consentDecline', 'Decline')}</Text>
+            <Text style={styles.declineText}>{t('consentDecline', 'Reject non-essential')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.acceptButton} onPress={handleAccept}>
             <Text style={styles.acceptText}>{t('consentAccept', 'Accept')}</Text>

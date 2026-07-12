@@ -202,7 +202,7 @@ describe('CookieConsentBanner', () => {
 
     const declineButton = renderer.root.findAllByType('TouchableOpacity').find((node: any) => {
       const label = node.findAllByType('Text')[0]?.children.join('');
-      return label === 'Decline';
+      return label === 'Reject non-essential';
     });
     expect(declineButton).toBeTruthy();
 

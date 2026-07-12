@@ -796,7 +796,7 @@
     "consentBodyPIPEDA": "A lei canadense (PIPEDA) exige seu consentimento antes de podermos definir cookies de análise. Usamos o Google Analytics para entender como este site é utilizado.",
     "consentBodyDefault": "Usamos o Google Analytics para entender como este site é utilizado. Por favor, indique se você consente com os cookies de análise.",
     "consentPrivacy": "Política de Privacidade",
-    "consentDecline": "Recusar",
+    "consentDecline": "Recusar não essenciais",
     "consentAccept": "Aceitar"
   },
   "version": {

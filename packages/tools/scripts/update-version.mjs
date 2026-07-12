@@ -185,7 +185,7 @@ const androidVersionCode = vMajor * 10000 + vMinor * 100 + vPatch;
 // Real release content for THIS version, derived from git history below
 // (function is hoisted — defined further down, called here before that
 // definition's source position, which is fine for a `function` declaration).
-const gitDerivedSummary = deriveReleaseSummaryFromGit(versionBeforeBump);
+const gitDerivedSummary = deriveReleaseSummaryFromGit(versionBeforeBump, newVersion);
 if (gitDerivedSummary.features.length || gitDerivedSummary.bugfixes.length || gitDerivedSummary.breakingChanges.length) {
   console.log(`📝 Auto-derived release summary from git log v${versionBeforeBump}..HEAD:`, {
     features: gitDerivedSummary.features.length,
@@ -204,22 +204,44 @@ if (gitDerivedSummary.features.length || gitDerivedSummary.bugfixes.length || gi
 // silently carried forward whatever a human typed in once, unchanged, across
 // every subsequent automated release — including releases (like this one) that
 // never touched the thing the stale bullets described.
-function deriveReleaseSummaryFromGit(fromVersion) {
+function deriveReleaseSummaryFromGit(fromVersion, currentNewVersion) {
   const empty = { features: [], bugfixes: [], breakingChanges: [], notes: '' };
-  if (!fromVersion) return empty;
 
   let fromRef = null;
-  for (const candidate of [`v${fromVersion}`, fromVersion]) {
-    try {
-      execSync(`git rev-parse --verify ${candidate}`, { cwd: projectRoot, stdio: 'ignore' });
-      fromRef = candidate;
-      break;
-    } catch {
-      // try the next candidate tag form
+  // release.js's runMainRelease bumps package.json's version via the
+  // `versioning` tool BEFORE invoking this script with the new version as an
+  // explicit argument, so getCurrentVersion() here already reads the
+  // post-bump value — fromVersion (aka versionBeforeBump) ends up equal to
+  // currentNewVersion, and no `v${fromVersion}` tag exists yet to diff
+  // against. Skip the direct lookup in that case and fall through to the
+  // nearest-reachable-tag fallback below instead of silently returning empty.
+  if (fromVersion && fromVersion !== currentNewVersion) {
+    for (const candidate of [`v${fromVersion}`, fromVersion]) {
+      try {
+        execSync(`git rev-parse --verify ${candidate}`, { cwd: projectRoot, stdio: 'ignore' });
+        fromRef = candidate;
+        break;
+      } catch {
+        // try the next candidate tag form
+      }
     }
   }
   if (!fromRef) {
-    console.warn(`⚠️  No git tag found for v${fromVersion} — skipping auto-derived release notes`);
+    try {
+      const nearestTag = execSync('git describe --tags --abbrev=0 --match "v*"', {
+        cwd: projectRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+      if (nearestTag && nearestTag !== `v${currentNewVersion}`) {
+        fromRef = nearestTag;
+      }
+    } catch {
+      // no reachable tag at all (e.g. shallow clone or first-ever release)
+    }
+  }
+  if (!fromRef) {
+    console.warn(`⚠️  No previous release tag found to diff against (tried v${fromVersion}) — skipping auto-derived release notes`);
     return empty;
   }
 

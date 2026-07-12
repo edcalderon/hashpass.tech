@@ -1150,7 +1150,7 @@
     "consentBodyPIPEDA": "Canadian law (PIPEDA) requires your consent before we can set analytics cookies. We use Google Analytics to understand how this site is used.",
     "consentBodyDefault": "We use Google Analytics to understand how this site is used. Please let us know if you consent to analytics cookies.",
     "consentPrivacy": "Privacy Policy",
-    "consentDecline": "Decline",
+    "consentDecline": "Reject non-essential",
     "consentAccept": "Accept"
   },
   "version": {

@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from '../i18n/i18n';
 import { isMainBranch } from '../lib/event-detector';
 import { apiClient } from '../lib/api-client';
-import { AgendaItem, parseEventISO, formatTimeRange } from '../types/agenda';
+import { type AgendaItem, parseEventISO, formatTimeRange } from '../types/agenda';
 import { buildEventPath } from '../lib/event-path';
 
 interface AgendaTrackerProps {
@@ -44,7 +44,12 @@ export default function AgendaTracker({
       try {
         setLoading(true);
         const response = await apiClient.request('agenda', {
-          params: { eventId }
+          params: { eventId },
+          // AgendaTracker is also rendered outside event-scoped routes (e.g.
+          // the home page's promo carousel), where getCurrentEvent() can't
+          // detect an event from the URL and falls back to a 'default'
+          // segment that has no matching API route. Resolve explicitly.
+          eventId,
         });
         
         let agendaData: AgendaItem[] = [];
@@ -193,7 +198,7 @@ export default function AgendaTracker({
       } else {
         // Try ISO format
         try {
-          startTime = parseEventISO(currentEvent.time);
+          startTime = parseEventISO(currentEvent.time) as Date;
           if (!isNaN(startTime.getTime())) {
             const duration = currentEvent.duration_minutes || 60;
             endTime = new Date(startTime.getTime() + duration * 60 * 1000);
@@ -262,7 +267,7 @@ export default function AgendaTracker({
       } else {
         // Try ISO format
         try {
-          startTime = parseEventISO(nextEvent.time!);
+          startTime = parseEventISO(nextEvent.time!) as Date;
           if (isNaN(startTime.getTime())) {
             startTime = null;
           }
