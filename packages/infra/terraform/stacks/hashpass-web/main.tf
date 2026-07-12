@@ -49,6 +49,9 @@ locals {
     trimspace(var.ga_measurement_id) != "" ? {
       EXPO_PUBLIC_GA_MEASUREMENT_ID_PROD = trimspace(var.ga_measurement_id)
     } : {},
+    trimspace(var.sentry_dsn) != "" ? {
+      EXPO_PUBLIC_SENTRY_DSN = trimspace(var.sentry_dsn)
+    } : {},
     var.build_environment_overrides
   )
 
@@ -70,6 +73,9 @@ locals {
     } : {},
     trimspace(var.ga_measurement_id) != "" ? {
       EXPO_PUBLIC_GA_MEASUREMENT_ID_PROD = trimspace(var.ga_measurement_id)
+    } : {},
+    trimspace(var.sentry_dsn) != "" ? {
+      EXPO_PUBLIC_SENTRY_DSN = trimspace(var.sentry_dsn)
     } : {},
     var.build_environment_overrides
   )

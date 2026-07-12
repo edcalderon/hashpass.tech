@@ -67,6 +67,12 @@ variable "ga_measurement_id" {
   default     = "G-2JCRQCH0R1"
 }
 
+variable "sentry_dsn" {
+  description = "Sentry DSN baked into the web build (public/publishable key, safe to expose client-side). Empty disables Sentry.init() for the web bundle."
+  type        = string
+  default     = ""
+}
+
 variable "lambda_region" {
   description = "AWS region containing the Expo Router API Lambda functions"
   type        = string
