@@ -32,9 +32,16 @@ type QuickAccessItem = {
   route: string;
 };
 
-// Disabled: startTutorial() crashes on Fabric/newArch — see the usage site
-// below for the full explanation. Flip back to true once the offending
-// SVG-based CopilotStep target is identified and fixed.
+// Disabled: on-device reproduction showed the crash ("Unsupported top level
+// event type 'topLayout' dispatched") fires from CopilotStep's own render —
+// specifically the onLayout: () => {} "Android hack" that react-native-copilot
+// attaches to every CopilotStep-wrapped view unconditionally, whether or not
+// the tutorial is running — NOT from startTutorial() itself. That hack is now
+// removed via patches/react-native-copilot@3.3.3.patch (its mere presence
+// registered an unrecognized Fabric layout event on views under this app's
+// newArchEnabled build). The patch should make it safe to flip this back to
+// true, but that hasn't been verified end-to-end on-device yet (only that the
+// crash source is gone) — do that before re-enabling.
 const TUTORIAL_AUTO_START_ENABLED = false;
 
 const CopilotView = walkthroughable(View);

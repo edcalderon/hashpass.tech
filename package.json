@@ -12,7 +12,8 @@
       "react-native-css-interop@0.2.1": "patches/react-native-css-interop@0.2.1.patch",
       "expo-router@5.1.11": "patches/expo-router@5.1.11.patch",
       "react-native-web@0.20.0": "patches/react-native-web@0.20.0.patch",
-      "@expo/cli@0.24.24": "patches/@expo__cli@0.24.24.patch"
+      "@expo/cli@0.24.24": "patches/@expo__cli@0.24.24.patch",
+      "react-native-copilot@3.3.3": "patches/react-native-copilot@3.3.3.patch"
     }
   },
   "scripts": {
