@@ -1,3 +1,14 @@
+## [1.8.202](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.201...v1.8.202) (2026-07-12)
+
+
+### Bug Fixes
+
+* **mobile:** remove Sentry Expo config plugin that broke the Android release build ([3b47422](https://github.com/hashpass-tech/hashpass.tech/commit/3b474228901ffafaebf586bf744a393b00597ddb))
+
+
+
+
+
 ## [1.8.201](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.200...v1.8.201) (2026-07-12)
 
 
