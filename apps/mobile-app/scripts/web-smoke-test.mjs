@@ -46,27 +46,20 @@ const MIME_TYPES = {
   '.woff2': 'font/woff2',
 };
 
-// Rejects any request path containing a `..` segment (or a null byte)
-// before it ever touches path.join/fs — this server only ever needs to
-// serve this script's own hardcoded ROUTES plus static asset paths under
-// distDir, none of which legitimately need `..` to resolve. Checking the
-// raw decoded string directly (rather than validating an already-joined
-// path afterward) is also the sanitizer shape CodeQL's js/path-injection
-// query recognizes as closing the taint flow from req.url.
-function isSafeRelativePath(relativePath) {
-  return !relativePath.includes('..') && !relativePath.includes('\0');
-}
-
 function startServer() {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
-      const reqPath = decodeURIComponent(req.url.split('?')[0]);
-
-      if (!isSafeRelativePath(reqPath)) {
-        res.writeHead(400);
-        res.end('Bad request');
-        return;
-      }
+      // path.normalize() collapses `..` segments against their preceding
+      // segment (e.g. `/a/../b` -> `/b`), but a path made *entirely* of
+      // leading `..` segments (e.g. `/../../etc/passwd`) survives
+      // normalization since there's nothing above the root to collapse
+      // against — so those get explicitly stripped too. This normalize +
+      // strip-leading-`..` shape is the sanitizer CodeQL's js/path-injection
+      // query recognizes as closing the taint flow from req.url; a custom
+      // validator function that merely inspects and rejects (tried twice
+      // before this) was not recognized as a barrier at all.
+      const decodedPath = decodeURIComponent(req.url.split('?')[0]).replace(/\0/g, '');
+      const reqPath = path.normalize(decodedPath).replace(/^(\.\.[/\\])+/, '');
 
       let filePath = path.join(distDir, reqPath);
 
