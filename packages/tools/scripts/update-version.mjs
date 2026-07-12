@@ -430,7 +430,7 @@ const filesToUpdate = [
       },
       {
         key: 'notes',
-        value: `'${releaseNotes || gitDerivedSummary.notes || `Version ${newVersion} release`}'`,
+        value: `'${escapeJsStringLiteral(releaseNotes || gitDerivedSummary.notes || `Version ${newVersion} release`)}'`,
         pattern: /notes:\s*'[^']*'/
       }
     ]
