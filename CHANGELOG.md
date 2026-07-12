@@ -1,3 +1,18 @@
+## [1.8.204](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.203...v1.8.204) (2026-07-12)
+
+
+### Bug Fixes
+
+* **mobile:** annotate fetchIPLocation callback param explicitly ([fa2f312](https://github.com/hashpass-tech/hashpass.tech/commit/fa2f3128a6d039dcf0818bacb65d1adfaabc7cea))
+* **mobile:** clarify cookie banner's decline option as reject non-essential ([827cb2f](https://github.com/hashpass-tech/hashpass.tech/commit/827cb2f1dc170a3aa0174c337cf77a35e3602da3))
+* **release:** derive release notes correctly when package.json is pre-bumped ([17e641a](https://github.com/hashpass-tech/hashpass.tech/commit/17e641a3b5ab2672d017e165045cd3fcd7e3a758))
+* **release:** escape CURRENT_VERSION.notes interpolation ([3766113](https://github.com/hashpass-tech/hashpass.tech/commit/37661133b9aa0dc31626c2b71bc8b3185121c799))
+* **web:** stop runaway agenda-fetch 404 loop on the home page ([a850785](https://github.com/hashpass-tech/hashpass.tech/commit/a8507859bf02a97edb0004c84024ca5d7768fd98))
+
+
+
+
+
 ## [1.8.203](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.202...v1.8.203) (2026-07-12)
 
 

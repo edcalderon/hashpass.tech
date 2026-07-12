@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607120404, // Updated to current timestamp
+  buildNumber: 202607120459, // Updated to current timestamp
   releaseDate: '2026-07-12',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,37 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'escape CURRENT_VERSION.notes interpolation',
+    'stop runaway agenda-fetch 404 loop on the home page',
+    'annotate fetchIPLocation callback param explicitly',
+    'clarify cookie banner\'s decline option as reject non-essential',
+    'derive release notes correctly when package.json is pre-bumped'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.203 release'
+  notes: 'escape CURRENT_VERSION.notes interpolation; stop runaway agenda-fetch 404 loop on the home page; annotate fetchIPLocation callback param explicitly'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.204': {
+    version: '1.8.204',
+    buildNumber: 202607120459,
+    releaseDate: '2026-07-12',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'escape CURRENT_VERSION.notes interpolation',
+      'stop runaway agenda-fetch 404 loop on the home page',
+      'annotate fetchIPLocation callback param explicitly',
+      'clarify cookie banner\'s decline option as reject non-essential',
+      'derive release notes correctly when package.json is pre-bumped'
+    ],
+    breakingChanges: [],
+    notes: 'escape CURRENT_VERSION.notes interpolation; stop runaway agenda-fetch 404 loop on the home page; annotate fetchIPLocation callback param explicitly'
+  },
   '1.8.203': {
     version: '1.8.203',
     buildNumber: 202607120404,
