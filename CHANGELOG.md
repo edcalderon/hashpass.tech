@@ -1,3 +1,21 @@
+## [1.8.205](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.204...v1.8.205) (2026-07-12)
+
+
+### Bug Fixes
+
+* **mobile:** move notifications off direct client-side Supabase calls ([af23ad4](https://github.com/hashpass-tech/hashpass.tech/commit/af23ad4183c48a7eddf39a26b9ec8c3f4dc7f8d6))
+* **mobile:** pin react-native-svg to Expo SDK 53's certified 15.11.2 ([3988d73](https://github.com/hashpass-tech/hashpass.tech/commit/3988d731a2533a8e328e3839a3598104dde91e30))
+
+
+### Features
+
+* **infra:** add Sentry error reporting to the API Lambda ([bcc9650](https://github.com/hashpass-tech/hashpass.tech/commit/bcc9650fe631f45a83f792796a3d53fdcb356304))
+* **infra:** wire Sentry DSN into the web build pipeline ([dc4a66b](https://github.com/hashpass-tech/hashpass.tech/commit/dc4a66b75c535eaf5ac7fbdb6427f69bb6abb4e8))
+
+
+
+
+
 ## [1.8.204](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.203...v1.8.204) (2026-07-12)
 
 

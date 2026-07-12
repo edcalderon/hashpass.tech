@@ -20,15 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.204)
+## 📋 Latest Changes (v1.8.205)
 
 ### Bug Fixes
 
-* **mobile:** annotate fetchIPLocation callback param explicitly ([fa2f312](https://github.com/hashpass-tech/hashpass.tech/commit/fa2f3128a6d039dcf0818bacb65d1adfaabc7cea))
-* **mobile:** clarify cookie banner's decline option as reject non-essential ([827cb2f](https://github.com/hashpass-tech/hashpass.tech/commit/827cb2f1dc170a3aa0174c337cf77a35e3602da3))
-* **release:** derive release notes correctly when package.json is pre-bumped ([17e641a](https://github.com/hashpass-tech/hashpass.tech/commit/17e641a3b5ab2672d017e165045cd3fcd7e3a758))
-* **release:** escape CURRENT_VERSION.notes interpolation ([3766113](https://github.com/hashpass-tech/hashpass.tech/commit/37661133b9aa0dc31626c2b71bc8b3185121c799))
-* **web:** stop runaway agenda-fetch 404 loop on the home page ([a850785](https://github.com/hashpass-tech/hashpass.tech/commit/a8507859bf02a97edb0004c84024ca5d7768fd98))
+* **mobile:** move notifications off direct client-side Supabase calls ([af23ad4](https://github.com/hashpass-tech/hashpass.tech/commit/af23ad4183c48a7eddf39a26b9ec8c3f4dc7f8d6))
+* **mobile:** pin react-native-svg to Expo SDK 53's certified 15.11.2 ([3988d73](https://github.com/hashpass-tech/hashpass.tech/commit/3988d731a2533a8e328e3839a3598104dde91e30))
+
+
+### Features
+
+* **infra:** add Sentry error reporting to the API Lambda ([bcc9650](https://github.com/hashpass-tech/hashpass.tech/commit/bcc9650fe631f45a83f792796a3d53fdcb356304))
+* **infra:** wire Sentry DSN into the web build pipeline ([dc4a66b](https://github.com/hashpass-tech/hashpass.tech/commit/dc4a66b75c535eaf5ac7fbdb6427f69bb6abb4e8))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

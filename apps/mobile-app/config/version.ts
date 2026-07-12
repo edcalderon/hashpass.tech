@@ -22,26 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607120459, // Updated to current timestamp
+  buildNumber: 202607120834, // Updated to current timestamp
   releaseDate: '2026-07-12',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add Sentry error reporting to the API Lambda',
+    'wire Sentry DSN into the web build pipeline'
   ],
   bugfixes: [
-    'escape CURRENT_VERSION.notes interpolation',
-    'stop runaway agenda-fetch 404 loop on the home page',
-    'annotate fetchIPLocation callback param explicitly',
-    'clarify cookie banner\'s decline option as reject non-essential',
-    'derive release notes correctly when package.json is pre-bumped'
+    'pin react-native-svg to Expo SDK 53\'s certified 15.11.2',
+    'move notifications off direct client-side Supabase calls'
   ],
   breakingChanges: [],
-  notes: 'escape CURRENT_VERSION.notes interpolation; stop runaway agenda-fetch 404 loop on the home page; annotate fetchIPLocation callback param explicitly'
+  notes: 'add Sentry error reporting to the API Lambda; wire Sentry DSN into the web build pipeline; pin react-native-svg to Expo SDK 53\'s certified 15.11.2'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.205': {
+    version: '1.8.205',
+    buildNumber: 202607120834,
+    releaseDate: '2026-07-12',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add Sentry error reporting to the API Lambda',
+      'wire Sentry DSN into the web build pipeline'
+    ],
+    bugfixes: [
+      'pin react-native-svg to Expo SDK 53\'s certified 15.11.2',
+      'move notifications off direct client-side Supabase calls'
+    ],
+    breakingChanges: [],
+    notes: 'add Sentry error reporting to the API Lambda; wire Sentry DSN into the web build pipeline; pin react-native-svg to Expo SDK 53\'s certified 15.11.2'
+  },
   '1.8.204': {
     version: '1.8.204',
     buildNumber: 202607120459,
