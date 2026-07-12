@@ -100,6 +100,14 @@ if [ ! -f "$PACKAGE_DIR/node_modules/pg/package.json" ]; then
   exit 1
 fi
 
+if [ ! -f "$PACKAGE_DIR/node_modules/@sentry/aws-serverless/package.json" ]; then
+  echo "❌ Lambda package is missing the @sentry/aws-serverless dependency required for error reporting."
+  echo "   Expected:"
+  echo "   - $PACKAGE_DIR/node_modules/@sentry/aws-serverless/package.json"
+  echo "   Check packages/infra/lambda/package.json before deploying."
+  exit 1
+fi
+
 # Create deployment package
 echo "5. Creating deployment zip..."
 # Zip contents of package directory, not the directory itself

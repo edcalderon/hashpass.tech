@@ -163,6 +163,7 @@ const syncKeys = [
   'FRONTEND_URL',
   'EXPO_PUBLIC_API_BASE_URL',
   'EXPO_PUBLIC_BETTER_AUTH_URL',
+  'SENTRY_DSN',
 ];
 
 const changed = [];

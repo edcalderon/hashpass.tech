@@ -6,6 +6,7 @@
   "type": "commonjs",
   "dependencies": {
     "@expo/server": "^0.4.4",
+    "@sentry/aws-serverless": "^10.65.0",
     "pg": "^8.16.3"
   },
   "engines": {
