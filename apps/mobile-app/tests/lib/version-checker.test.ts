@@ -110,6 +110,37 @@ describe('version checker', () => {
     expect(mockReload).toHaveBeenCalled();
   });
 
+  // Regression test for a production incident: checkVersionOnStart() calls
+  // checkVersionAndClearCache(true) on every fresh page load, and a
+  // needsUpdate=true result reloads the page via window.location.reload() —
+  // which fully remounts the app and re-runs checkVersionOnStart() from
+  // scratch. The cooldown previously only applied when forceCheck was
+  // false, so if the deployed backend version kept moving (e.g. during a
+  // string of rapid releases), every reload immediately re-detected
+  // "update available" and reloaded again with zero rate limiting — an
+  // infinite reload loop on any page outside /events/ or /dashboard.
+  it('does not reload again within the cooldown window, even when forced', async () => {
+    mockApiGet.mockResolvedValue({
+      success: true,
+      data: {
+        currentVersion: '1.8.156',
+        versionInfo: {
+          needsUpdate: true,
+        },
+      },
+    });
+
+    (global as any).localStorage.getItem = jest.fn(() => String(Date.now() - 1000));
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { checkVersionAndClearCache } = require('../../lib/version-checker');
+    const wasCleared = await checkVersionAndClearCache(true);
+
+    expect(wasCleared).toBe(false);
+    expect(mockReload).not.toHaveBeenCalled();
+    expect(mockApiGet).not.toHaveBeenCalled();
+  });
+
   afterEach(() => {
     jest.restoreAllMocks();
   });

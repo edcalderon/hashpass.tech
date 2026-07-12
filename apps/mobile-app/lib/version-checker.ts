@@ -76,10 +76,19 @@ export async function checkVersionAndClearCache(forceCheck: boolean = false): Pr
   try {
     if (!forceCheck && isUserActive()) return false;
 
-    if (!forceCheck) {
-      const lastCheck = localStorage.getItem(VERSION_STORAGE_KEY);
-      if (lastCheck && Date.now() - parseInt(lastCheck, 10) < VERSION_CHECK_COOLDOWN) return false;
-    }
+    // The cooldown must apply even for forced checks. checkVersionOnStart()
+    // calls this with forceCheck=true on every fresh page load (after a
+    // 2s delay), and on a needsUpdate=true result it clears caches and
+    // calls window.location.reload() — which fully remounts the app and
+    // re-runs checkVersionOnStart() from scratch. Skipping the cooldown
+    // here meant that loop had zero rate limiting: if the client's
+    // baked-in version ever lagged the live backend (e.g. during a string
+    // of rapid releases), every reload immediately re-detected the same
+    // "update available" condition and reloaded again, forever. localStorage
+    // survives reload, so honoring the cooldown here actually breaks the
+    // loop after the first reload.
+    const lastCheck = localStorage.getItem(VERSION_STORAGE_KEY);
+    if (lastCheck && Date.now() - parseInt(lastCheck, 10) < VERSION_CHECK_COOLDOWN) return false;
 
     localStorage.setItem(VERSION_STORAGE_KEY, Date.now().toString());
 
