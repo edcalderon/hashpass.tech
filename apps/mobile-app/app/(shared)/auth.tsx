@@ -26,7 +26,7 @@ import {
   InteractionManager,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, Redirect } from "expo-router";
 import QuickSettingsPanel from "../../components/QuickSettingsPanel";
 import { useTheme } from "../../hooks/useTheme";
 import { useToastHelpers } from "@contexts/ToastContext";
@@ -1619,6 +1619,22 @@ export default function AuthScreen() {
         </Text>
       </SafeAreaView>
     );
+  }
+
+  // Reported crash: opening /auth while a session is already active (e.g.
+  // tapping the login icon from the landing page after a previous login)
+  // crashed immediately, with no login attempt needed — before this screen
+  // even reaches the auto-redirect useEffect below. That effect only fires
+  // after the full form tree (ScrollView, animated gradients, OTP inputs,
+  // gesture handlers) has already mounted and committed, so an
+  // already-authenticated visit mounts all of that just to tear it down a
+  // moment later — a fast mount-then-unmount of a view-heavy screen, which
+  // is a known class of native crash under Fabric. Redirecting here, before
+  // any of that renders, avoids mounting it at all for this case. The
+  // useEffect below still handles the "login just completed on this screen"
+  // transition, which legitimately needs the form mounted first.
+  if (isLoggedIn && user) {
+    return <Redirect href={redirectPath as any} />;
   }
 
   return (
