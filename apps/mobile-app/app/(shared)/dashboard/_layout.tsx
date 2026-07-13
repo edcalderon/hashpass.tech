@@ -1009,10 +1009,26 @@ export default function DashboardLayout() {
       <NotificationProvider>
         <ScrollProvider>
           <View style={{ flex: 1 }}>
+            {/* Reported crash: react-native-screens fires its native
+              "topAttached" header-attachment event (HeaderAttachedEvent.kt,
+              part of ScreenStackHeaderConfig) whenever a Screen's native
+              header slot mounts, even when the header content itself is a
+              fully custom render prop like ScreenWithHeader below. That
+              event is generated for native-stack's header machinery; this
+              app uses a Drawer navigator, and on-device logs showed
+              "Unsupported top level event type 'topAttached' dispatched"
+              (crashing the whole app) immediately after [RNScreens] header
+              warnings, right as this layout mounted post-login. Rendering
+              ScreenWithHeader as a plain sibling instead of through
+              Drawer.Screen's header slot avoids react-native-screens'
+              native header attachment path entirely — safe since
+              ScreenWithHeader already absolutely-positions itself
+              (position: 'absolute', zIndex: 1000) to overlay content,
+              regardless of where in the tree it renders. */}
             <Drawer
               drawerContent={CustomDrawerContent}
               screenOptions={{
-                header: () => <ScreenWithHeader />,
+                headerShown: false,
                 drawerType: 'front',
                 drawerStyle: {
                   width: isMobile ? '88%' : 360,
@@ -1021,63 +1037,16 @@ export default function DashboardLayout() {
                 drawerPosition: 'left',
               }}
             >
-              <Drawer.Screen
-                name="explore"
-                options={{
-                  headerShown: true,
-                  header: () => <ScreenWithHeader />,
-                }}
-              />
-              <Drawer.Screen
-                name="notifications"
-                options={{
-                  headerShown: true,
-                  header: () => <ScreenWithHeader />,
-                }}
-              />
-              <Drawer.Screen
-                name="wallet"
-                options={{
-                  headerShown: true,
-                  header: () => <ScreenWithHeader />,
-                }}
-              />
-              <Drawer.Screen
-                name="profile"
-                options={{
-                  headerShown: true,
-                  header: () => <ScreenWithHeader />,
-                }}
-              />
-              <Drawer.Screen
-                name="settings"
-                options={{
-                  headerShown: true,
-                  header: () => <ScreenWithHeader />,
-                }}
-              />
-              <Drawer.Screen
-                name="admin"
-                options={{
-                  headerShown: true,
-                  header: () => <ScreenWithHeader />,
-                }}
-              />
-              <Drawer.Screen
-                name="qr-view"
-                options={{
-                  headerShown: true,
-                  header: () => <ScreenWithHeader />,
-                }}
-              />
-              <Drawer.Screen
-                name="pass-details"
-                options={{
-                  headerShown: true,
-                  header: () => <ScreenWithHeader />,
-                }}
-              />
+              <Drawer.Screen name="explore" />
+              <Drawer.Screen name="notifications" />
+              <Drawer.Screen name="wallet" />
+              <Drawer.Screen name="profile" />
+              <Drawer.Screen name="settings" />
+              <Drawer.Screen name="admin" />
+              <Drawer.Screen name="qr-view" />
+              <Drawer.Screen name="pass-details" />
             </Drawer>
+            <ScreenWithHeader />
           </View>
         </ScrollProvider>
       </NotificationProvider>
