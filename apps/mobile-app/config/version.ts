@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607130550, // Updated to current timestamp
+  buildNumber: 202607131722, // Updated to current timestamp
   releaseDate: '2026-07-13',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'stop routing the dashboard header through react-native-screens\' native header slot'
+    'scope the header-attachment workaround to Android only, restore web/iOS'
   ],
   breakingChanges: [],
-  notes: 'stop routing the dashboard header through react-native-screens\' native header slot'
+  notes: 'scope the header-attachment workaround to Android only, restore web/iOS'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.214': {
+    version: '1.8.214',
+    buildNumber: 202607131722,
+    releaseDate: '2026-07-13',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'scope the header-attachment workaround to Android only, restore web/iOS'
+    ],
+    breakingChanges: [],
+    notes: 'scope the header-attachment workaround to Android only, restore web/iOS'
+  },
   '1.8.213': {
     version: '1.8.213',
     buildNumber: 202607130550,

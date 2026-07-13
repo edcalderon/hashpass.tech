@@ -1,3 +1,14 @@
+## [1.8.214](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.213...v1.8.214) (2026-07-13)
+
+
+### Bug Fixes
+
+* **mobile:** scope the header-attachment workaround to Android only, restore web/iOS ([3d0f2d0](https://github.com/hashpass-tech/hashpass.tech/commit/3d0f2d09c635301d4fb61b83b185a54f2c7287ff))
+
+
+
+
+
 ## [1.8.213](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.212...v1.8.213) (2026-07-13)
 
 

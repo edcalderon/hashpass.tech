@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.213)
+## 📋 Latest Changes (v1.8.214)
 
 ### Bug Fixes
 
-* **mobile:** stop routing the dashboard header through react-native-screens' native header slot ([025a7cd](https://github.com/hashpass-tech/hashpass.tech/commit/025a7cde4945db01c754cee4f4adb154af9e7b7a))
+* **mobile:** scope the header-attachment workaround to Android only, restore web/iOS ([3d0f2d0](https://github.com/hashpass-tech/hashpass.tech/commit/3d0f2d09c635301d4fb61b83b185a54f2c7287ff))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
