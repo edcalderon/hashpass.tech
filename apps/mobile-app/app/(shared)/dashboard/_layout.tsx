@@ -39,17 +39,25 @@ type DrawerNavigation = any;
 // inside Header no longer resolves to the Drawer navigator, breaking the
 // hamburger button's openDrawer() call. CustomDrawerContent IS still
 // rendered inside the Drawer's own navigation context (drawerContent is a
-// provided slot, same as Drawer.Screen's header prop), so it captures a
-// working reference here for Header to reuse. Module-level and mutable
-// rather than a passed-down ref since there is only ever one Drawer
-// instance mounted at a time in this app.
-let drawerNavigationRef: DrawerNavigation | null = null;
+// provided slot, same as Drawer.Screen's header prop), so it hands Header a
+// working reference via navRef.
+//
+// navRef is an instance-scoped useRef owned by DashboardLayout (see below),
+// not module-level state. A previous version used a module-level `let`
+// here, which is a singleton shared by every mounted instance of this file
+// — a nav-transition overlap or Fast Refresh remount could let one
+// instance's cleanup null out (or a stale unmount overwrite) the ref another
+// still-live instance depended on, risking a dispatch against a torn-down
+// navigator, the same native-crash shape as the header-slot issue below.
+// Scoping the ref per DashboardLayout instance removes that cross-instance
+// hazard entirely.
+type DrawerNavRef = React.MutableRefObject<DrawerNavigation | null>;
 
 const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
 const CopilotView = walkthroughable(View);
 
 // Custom drawer content component
-function CustomDrawerContent() {
+function CustomDrawerContent({ navRef }: { navRef?: DrawerNavRef }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const { signOut, user } = useAuth();
   const { event } = useEvent();
@@ -59,12 +67,22 @@ function CustomDrawerContent() {
   const router = useRouter();
   const pathname = usePathname();
   const navigation = useNavigation<DrawerNavigation>();
+  // Written synchronously during render, not in an effect: CustomDrawerContent
+  // receives `navigation` as soon as it renders, so waiting for an effect to
+  // commit only reopens the exact race (a tap between mount and effect)
+  // the "resolve drawer nav ref live" fix was meant to close. Assigning the
+  // same value to a ref on every render is idempotent, so this is safe even
+  // under Strict Mode's double-render in dev.
+  if (navRef) {
+    navRef.current = navigation;
+  }
   useEffect(() => {
-    drawerNavigationRef = navigation;
     return () => {
-      drawerNavigationRef = null;
+      if (navRef && navRef.current === navigation) {
+        navRef.current = null;
+      }
     };
-  }, [navigation]);
+  }, [navigation, navRef]);
   const copilotHook = useCopilot() as any;
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
@@ -677,6 +695,9 @@ export default function DashboardLayout() {
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const styles = getStyles(isDark, colors, isMobile, insets);
+  // Instance-scoped bridge from CustomDrawerContent's navigation object to
+  // Header (see the DrawerNavRef comment above CustomDrawerContent).
+  const drawerNavRef = useRef<DrawerNavigation | null>(null);
 
   // Verify user is logged in before allowing dashboard access (provider-agnostic)
   React.useEffect(() => {
@@ -701,12 +722,12 @@ export default function DashboardLayout() {
     // tree (see the platform check further down), so useNavigation() here
     // would resolve to a parent navigator, not the Drawer — openDrawer()
     // would silently no-op. Always call the hook (Rules of Hooks), but on
-    // Android prefer the ref CustomDrawerContent captures from inside the
-    // Drawer's actual context. drawerNavigationRef is read lazily at tap
-    // time (not captured here) because it's a plain module variable set by
-    // an effect in a sibling tree — reading it at render time can capture a
-    // stale/null value if Header renders before that effect runs, and
-    // nothing re-renders Header once the ref becomes available.
+    // Android prefer drawerNavRef.current, which CustomDrawerContent writes
+    // synchronously during its own render from inside the Drawer's actual
+    // context (see DrawerNavRef above). Read lazily at tap time, not
+    // captured here — reading it at Header's render time could still catch
+    // drawerNavRef before CustomDrawerContent has rendered even once, and
+    // nothing re-renders Header once the ref becomes populated.
     const navigationFromContext = useNavigation<DrawerNavigation>();
     const headerRouter = useRouter();
     const { headerOpacity, headerBackground, headerTint, headerBlur, headerBorderWidth, headerHeight, setHeaderHeight, scrollY } = useScroll();
@@ -922,11 +943,15 @@ export default function DashboardLayout() {
                   // Resolve live, not from a render-captured variable — see
                   // note above navigationFromContext.
                   const drawerNavigation = Platform.OS === 'android'
-                    ? (drawerNavigationRef ?? navigationFromContext)
+                    ? (drawerNavRef.current ?? navigationFromContext)
                     : navigationFromContext;
                   // Open the drawer first
                   try {
-                    drawerNavigation.dispatch(DrawerActions.openDrawer());
+                    if (typeof drawerNavigation?.dispatch === 'function') {
+                      drawerNavigation.dispatch(DrawerActions.openDrawer());
+                    } else {
+                      console.warn('Drawer navigation unavailable, skipping openDrawer');
+                    }
                   } catch (e) {
                     console.error('Error opening drawer:', e);
                   }
@@ -1062,7 +1087,7 @@ export default function DashboardLayout() {
         <ScrollProvider>
           <View style={{ flex: 1 }}>
             <Drawer
-              drawerContent={CustomDrawerContent}
+              drawerContent={(props) => <CustomDrawerContent {...props} navRef={drawerNavRef} />}
               screenOptions={{
                 ...drawerHeaderOptions,
                 drawerType: 'front',
