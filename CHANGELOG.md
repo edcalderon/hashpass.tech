@@ -1,3 +1,14 @@
+## [1.8.218](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.217...v1.8.218) (2026-07-13)
+
+
+### Features
+
+* **release:** merge-triggered tag/sync workflow, version bump moves into promotion PR ([37a3a2c](https://github.com/hashpass-tech/hashpass.tech/commit/37a3a2c14600fa509ee733918a496c9aa740356e))
+
+
+
+
+
 ## [1.8.217](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.216...v1.8.217) (2026-07-13)
 
 

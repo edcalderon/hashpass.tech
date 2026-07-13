@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.217)
+## 📋 Latest Changes (v1.8.218)
 
-### Bug Fixes
+### Features
 
-* **mobile:** memoize Drawer's drawerContent to stop remounting on every render ([d92fb89](https://github.com/hashpass-tech/hashpass.tech/commit/d92fb89ce48a016cffd587f953e4ee529bca8f11))
+* **release:** merge-triggered tag/sync workflow, version bump moves into promotion PR ([37a3a2c](https://github.com/hashpass-tech/hashpass.tech/commit/37a3a2c14600fa509ee733918a496c9aa740356e))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
