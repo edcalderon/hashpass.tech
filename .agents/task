@@ -13,6 +13,7 @@
 
 | File | Description | Priority |
 |------|-------------|----------|
+| [pending/task-release-flow-security-and-kpi.md](pending/task-release-flow-security-and-kpi.md) | Security hardening for release-flow-automation (PAT lifecycle, bypass policy, runbooks) + time-to-ship KPI: measured 2m25s/1m19s (old) vs 32s (new) | 🟡 Medium |
 | [pending/directus-usage-and-flow.md](pending/directus-usage-and-flow.md) | Organize Directus's actual role (auth vs CMS vs deprecate), document the real Better-Auth-first auth flow, evaluate self-hosted BaaS alternatives (PocketBase, self-hosted Supabase, etc.) | 🟢 Low |
 | [pending/email-proxy-balancer.md](pending/email-proxy-balancer.md) | Brevo primary + self-hosted SMTP fallback with daily budget tracking | 🟡 Medium |
 | [pending/typescript-7-safe-migration.md](pending/typescript-7-safe-migration.md) | Safe staged migration to TypeScript 7 with TS 6 compatibility tooling, config cleanup, and benchmark validation | 🟡 Medium |
