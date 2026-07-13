@@ -1141,8 +1141,19 @@ export default function AuthScreen() {
         t("welcomeBack", "Welcome back!"),
       );
 
-      hasNavigatedRef.current = true;
-      router.replace(redirectPath as any);
+      // supabase.auth.setSession() above fires an async auth-state-change
+      // event that updates isLoggedIn/user, which can trigger the generic
+      // auto-redirect effect (below, watching isLoggedIn && user) before
+      // this handler's own continuation resumes — two router.replace()
+      // calls landing back-to-back for the same login, which is a known
+      // source of Fabric surface instability during rapid navigation.
+      // Re-checking the ref immediately before navigating (instead of
+      // unconditionally setting it) makes this handler a no-op if the
+      // generic effect already navigated first.
+      if (!hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
+        router.replace(redirectPath as any);
+      }
     } catch (error: any) {
       const rawMessage = extractApiError(
         error?.message,
@@ -1250,6 +1261,12 @@ export default function AuthScreen() {
   };
 
   const navigateAfterNativeGoogleAuth = useCallback((path: string) => {
+    // The generic auto-redirect effect (watching isLoggedIn && user) may
+    // have already navigated by the time this runs, since it fires as soon
+    // as the native auth's session update lands in state — same
+    // double-navigation race documented on the OTP success handler above.
+    if (hasNavigatedRef.current) return;
+
     const normalizedPath = normalizeReturnToPath(path);
     const routeGroupPath = normalizedPath.startsWith("/dashboard")
       ? `/(shared)${normalizedPath}`
