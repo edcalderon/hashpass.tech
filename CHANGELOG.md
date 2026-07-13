@@ -1,3 +1,14 @@
+## [1.8.216](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.215...v1.8.216) (2026-07-13)
+
+
+### Bug Fixes
+
+* **mobile:** scope drawer nav ref to DashboardLayout instance to prevent stale-navigator crash ([2183523](https://github.com/hashpass-tech/hashpass.tech/commit/218352334fe25bfb832ddd5c9b3a301608d65ac1))
+
+
+
+
+
 ## [1.8.215](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.214...v1.8.215) (2026-07-13)
 
 
