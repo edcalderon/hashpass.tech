@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607130213, // Updated to current timestamp
+  buildNumber: 202607130349, // Updated to current timestamp
   releaseDate: '2026-07-13',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,31 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'prevent double router.replace() race on every login method'
+    'set hasNavigatedRef synchronously in the early-auth-redirect branch',
+    'redirect before mounting the auth screen when already logged in'
   ],
   breakingChanges: [],
-  notes: 'prevent double router.replace() race on every login method'
+  notes: 'set hasNavigatedRef synchronously in the early-auth-redirect branch; redirect before mounting the auth screen when already logged in'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.212': {
+    version: '1.8.212',
+    buildNumber: 202607130349,
+    releaseDate: '2026-07-13',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'set hasNavigatedRef synchronously in the early-auth-redirect branch',
+      'redirect before mounting the auth screen when already logged in'
+    ],
+    breakingChanges: [],
+    notes: 'set hasNavigatedRef synchronously in the early-auth-redirect branch; redirect before mounting the auth screen when already logged in'
+  },
   '1.8.211': {
     version: '1.8.211',
     buildNumber: 202607130213,

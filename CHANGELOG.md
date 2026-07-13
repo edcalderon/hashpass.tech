@@ -1,3 +1,15 @@
+## [1.8.212](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.211...v1.8.212) (2026-07-13)
+
+
+### Bug Fixes
+
+* **mobile:** redirect before mounting the auth screen when already logged in ([d069a8b](https://github.com/hashpass-tech/hashpass.tech/commit/d069a8bafd919ccbbc99d877fa4b8ced8cc9bb2e))
+* **mobile:** set hasNavigatedRef synchronously in the early-auth-redirect branch ([394e707](https://github.com/hashpass-tech/hashpass.tech/commit/394e7078471f807c7e141e4684cb499c41c94a6f))
+
+
+
+
+
 ## [1.8.211](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.210...v1.8.211) (2026-07-13)
 
 
