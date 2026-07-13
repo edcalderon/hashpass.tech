@@ -1,3 +1,14 @@
+## [1.8.217](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.216...v1.8.217) (2026-07-13)
+
+
+### Bug Fixes
+
+* **mobile:** memoize Drawer's drawerContent to stop remounting on every render ([d92fb89](https://github.com/hashpass-tech/hashpass.tech/commit/d92fb89ce48a016cffd587f953e4ee529bca8f11))
+
+
+
+
+
 ## [1.8.216](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.215...v1.8.216) (2026-07-13)
 
 
