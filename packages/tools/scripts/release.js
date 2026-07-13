@@ -246,6 +246,7 @@ function parseArgs(argv) {
     forceBranchAware: false,
     format: '',
     build: '',
+    skipVersionBump: false,
     help: false,
   };
 
@@ -387,6 +388,11 @@ function parseArgs(argv) {
       continue;
     }
 
+    if (arg === '--skip-version-bump') {
+      options.skipVersionBump = true;
+      continue;
+    }
+
     throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -415,6 +421,7 @@ function printUsage() {
       '  --format <format>         Override version format for branch-aware release',
       '  --build <number>          Override build number for dev/feature releases',
       '  --force-branch-aware      Force branch-aware mode even if config changes',
+      '  --skip-version-bump       On --promote, skip the version/changelog bump (old predict-only behavior)',
       '  -h, --help                Show this help',
       '',
       'Examples:',
@@ -955,8 +962,30 @@ function main() {
     if (options.promote && releaseBranch === 'develop') {
       const currentVersion = readJsonVersion('package.json');
       promotionBaseVersion = getLatestReleaseTagVersion() || currentVersion;
-      releaseVersion = resolvePromotionVersion(currentVersion, promotionBaseVersion);
-      runPromotionCommit(options, `chore: promote develop changes for v${releaseVersion}`);
+      const predictedVersion = resolvePromotionVersion(currentVersion, promotionBaseVersion);
+
+      // Commit any unrelated dirty/untracked files first (rare — e.g. a
+      // stray local config file) so the version bump below lands as its
+      // own clean, separately-labeled commit and a reviewer can isolate it
+      // from both the code diff and from incidental janitorial changes.
+      runPromotionCommit(options, `chore: promote develop changes for v${predictedVersion}`);
+
+      if (options.skipVersionBump) {
+        releaseVersion = predictedVersion;
+      } else {
+        // The version bump + changelog now happen here, inside the
+        // reviewed PR, instead of after merge on a separate main worktree.
+        // main's branch-aware format rules apply regardless of which
+        // branch this physically runs on (--target-branch is explicit),
+        // verified empirically 2026-07-13. Reuse runMainRelease as-is:
+        // it already does exactly this (versioning patch --no-commit
+        // --no-tag, update-version.mjs, JSON syncs) — only the branch this
+        // gets committed on differs. No tag here: tagging happens after
+        // merge, on main's actual merge-commit SHA, once that CI job
+        // exists (see .agents/active/task-release-flow-automation.md).
+        releaseVersion = runMainRelease(options, 'main');
+        runGitCommit(options, releaseVersion);
+      }
     } else if (releaseBranch === 'main') {
       releaseVersion = runMainRelease(options, releaseBranch);
     } else {

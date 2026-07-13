@@ -39,7 +39,7 @@ The full release includes:
 6. Merge the PR and sync the release commit back to `develop`.
 7. Push the synchronized `develop` branch to `origin` and `upstream`.
 8. Run `npm run release:patch` on `main` to cut the stable tag.
-9. Trigger the Android release workflow from the new version tag.
+9. Do not trigger the Android release workflow manually. `.github/workflows/mobile-release-on-tag.yml` auto-dispatches `mobile-android-release.yml` on the `v*.*.*` tag push from step 8. Confirmed 2026-07-13: running `gh workflow run mobile-android-release.yml` after `release:patch` creates a duplicate run racing the auto-triggered one for the same Android version code — only dispatch it manually for a retry on an already-tagged version or a non-default track/environment.
 10. Verify the Android workflow and the web/API deployment checks, including the API version endpoint guard.
 
 Do not report a deployment as complete while a required push, branch sync, release workflow, or deployment check is pending or failed.
