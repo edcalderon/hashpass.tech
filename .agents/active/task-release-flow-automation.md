@@ -324,13 +324,20 @@ should be independently mergeable and independently revertible.
       needed anywhere in the documented flow
 - [x] Workflow failure produces an explicit notification, not just a
       GitHub Actions status badge
-- [ ] Validated on at least one real patch release with a human watching
-      before being treated as unattended-safe
-- [ ] `CLAUDE.md`, `AGENTS.md`, and
+- [x] Validated on a real patch release with a human watching: PR #56
+      (v1.8.218), merged 2026-07-13 23:17:47. `release-tag-on-merge.yml` ran
+      to completion — tag `v1.8.218` created pointing at the exact merge
+      commit `f7ec922cc`, `mobile-release-on-tag.yml` cascade-fired
+      correctly via the PAT (proving the anti-recursion fix works),
+      `mobile-android-release.yml` auto-triggered with no duplicate, and
+      `develop` fast-forwarded to `main` — all within ~30 seconds of merge,
+      zero manual steps
+- [x] `CLAUDE.md`, `AGENTS.md`, and
       `apps/docs/docs/reference/release/RELEASE_WORKFLOW.md` all describe
       the same flow, with no manual step left in any of them that the
-      workflow now performs automatically
-- [ ] `AGENTS.md` step 9 stale Android-trigger instruction fixed
+      workflow now performs automatically (commit `20623744d`, on
+      `develop` — will reach `main` on the next promotion)
+- [x] `AGENTS.md` step 9 stale Android-trigger instruction fixed
       (independent of the rest of this task's completion)
 
 ## Non-Goals
