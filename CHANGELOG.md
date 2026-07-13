@@ -1,3 +1,14 @@
+## [1.8.215](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.214...v1.8.215) (2026-07-13)
+
+
+### Bug Fixes
+
+* **mobile:** resolve drawer nav ref live, prefer supabase session over stale directus cache ([68aca72](https://github.com/hashpass-tech/hashpass.tech/commit/68aca723aa59d1736e20694994b3da19bd30abe6))
+
+
+
+
+
 ## [1.8.214](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.213...v1.8.214) (2026-07-13)
 
 

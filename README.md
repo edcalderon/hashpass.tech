@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.214)
+## 📋 Latest Changes (v1.8.215)
 
 ### Bug Fixes
 
-* **mobile:** scope the header-attachment workaround to Android only, restore web/iOS ([3d0f2d0](https://github.com/hashpass-tech/hashpass.tech/commit/3d0f2d09c635301d4fb61b83b185a54f2c7287ff))
+* **mobile:** resolve drawer nav ref live, prefer supabase session over stale directus cache ([68aca72](https://github.com/hashpass-tech/hashpass.tech/commit/68aca723aa59d1736e20694994b3da19bd30abe6))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
