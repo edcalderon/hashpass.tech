@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607130003, // Updated to current timestamp
+  buildNumber: 202607130041, // Updated to current timestamp
   releaseDate: '2026-07-13',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,33 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'sync app.json/version.ts/versions.json to 1.8.209',
+    'defer post-native-auth toast/navigation until interactions settle',
+    'create ~/.gradle before writing the pnpm-lock-hash cache file'
   ],
   breakingChanges: [],
-  notes: 'Re-release to unstick a stuck Google Play Console review; no functional changes'
+  notes: 'sync app.json/version.ts/versions.json to 1.8.209; defer post-native-auth toast/navigation until interactions settle; create ~/.gradle before writing the pnpm-lock-hash cache file'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.210': {
+    version: '1.8.210',
+    buildNumber: 202607130041,
+    releaseDate: '2026-07-13',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'sync app.json/version.ts/versions.json to 1.8.209',
+      'defer post-native-auth toast/navigation until interactions settle',
+      'create ~/.gradle before writing the pnpm-lock-hash cache file'
+    ],
+    breakingChanges: [],
+    notes: 'sync app.json/version.ts/versions.json to 1.8.209; defer post-native-auth toast/navigation until interactions settle; create ~/.gradle before writing the pnpm-lock-hash cache file'
+  },
   '1.8.209': {
     version: '1.8.209',
     buildNumber: 202607130001,

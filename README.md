@@ -20,11 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.209)
+## 📋 Latest Changes (v1.8.210)
 
-### Chores
+### Bug Fixes
 
-* **release:** re-cut version to force a new Play Console review after v1.8.208's submission got stuck; no functional changes ([914fa29](https://github.com/hashpass-tech/hashpass.tech/commit/914fa29f0))
+* **ci:** create ~/.gradle before writing the pnpm-lock-hash cache file ([fb6f8f9](https://github.com/hashpass-tech/hashpass.tech/commit/fb6f8f9f5a6344a94829d70f214bc456c4579379))
+* **mobile:** defer post-native-auth toast/navigation until interactions settle ([391a21b](https://github.com/hashpass-tech/hashpass.tech/commit/391a21b64f2622ddee260f734e09055d156dd331))
+* **release:** sync app.json/version.ts/versions.json to 1.8.209 ([06f3f73](https://github.com/hashpass-tech/hashpass.tech/commit/06f3f736f293e2e1a9074db078784365d18cf814)), closes [#48](https://github.com/hashpass-tech/hashpass.tech/issues/48)
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
