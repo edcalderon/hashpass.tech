@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607122110, // Updated to current timestamp
-  releaseDate: '2026-07-12',
+  buildNumber: 202607130003, // Updated to current timestamp
+  releaseDate: '2026-07-13',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'stub both value and type for plain named imports in typecheck-changed',
-    'eliminate react-native-copilot crash on Android login'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'stub both value and type for plain named imports in typecheck-changed; eliminate react-native-copilot crash on Android login'
+  notes: 'Re-release to unstick a stuck Google Play Console review; no functional changes'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.209': {
+    version: '1.8.209',
+    buildNumber: 202607130001,
+    releaseDate: '2026-07-13',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Re-release to unstick a stuck Google Play Console review; no functional changes'
+  },
   '1.8.208': {
     version: '1.8.208',
     buildNumber: 202607122110,
@@ -3606,7 +3620,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.7.7',
     buildNumber: 202605140233,
     releaseDate: '2026-05-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3624,7 +3638,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.7.6',
     buildNumber: 202605120032,
     releaseDate: '2026-05-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3642,7 +3656,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.7.5',
     buildNumber: 202605111848,
     releaseDate: '2026-05-11',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3660,7 +3674,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.7.2',
     buildNumber: 202605100823,
     releaseDate: '2026-05-10',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3858,7 +3872,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.127',
     buildNumber: 202602230129,
     releaseDate: '2026-02-23',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3876,7 +3890,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.126',
     buildNumber: 202602230047,
     releaseDate: '2026-02-23',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3894,7 +3908,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.125',
     buildNumber: 202602230002,
     releaseDate: '2026-02-23',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3912,7 +3926,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.124',
     buildNumber: 202602222150,
     releaseDate: '2026-02-22',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3930,7 +3944,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.123',
     buildNumber: 202602222148,
     releaseDate: '2026-02-22',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3948,7 +3962,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.122',
     buildNumber: 202602222107,
     releaseDate: '2026-02-22',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3966,7 +3980,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.121',
     buildNumber: 202602222101,
     releaseDate: '2026-02-22',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -3984,7 +3998,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.120',
     buildNumber: 202602222045,
     releaseDate: '2026-02-22',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4002,7 +4016,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.119',
     buildNumber: 202602222023,
     releaseDate: '2026-02-22',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4020,7 +4034,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.118',
     buildNumber: 202602221954,
     releaseDate: '2026-02-22',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4038,7 +4052,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.117',
     buildNumber: 202602220533,
     releaseDate: '2026-02-22',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4056,7 +4070,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.116',
     buildNumber: 202602220434,
     releaseDate: '2026-02-22',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4074,7 +4088,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.113',
     buildNumber: 202511261143,
     releaseDate: '2025-11-26',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4092,7 +4106,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.112',
     buildNumber: 202511261115,
     releaseDate: '2025-11-26',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4110,7 +4124,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.111',
     buildNumber: 202511261059,
     releaseDate: '2025-11-26',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4128,7 +4142,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.110',
     buildNumber: 202511261035,
     releaseDate: '2025-11-26',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4146,7 +4160,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.109',
     buildNumber: 202511260947,
     releaseDate: '2025-11-26',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4164,7 +4178,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.108',
     buildNumber: 202511260943,
     releaseDate: '2025-11-26',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4182,7 +4196,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.107',
     buildNumber: 202511171850,
     releaseDate: '2025-11-17',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4200,7 +4214,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.106',
     buildNumber: 202511171850,
     releaseDate: '2025-11-17',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [],
     bugfixes: [
@@ -4216,7 +4230,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.105',
     buildNumber: 202511171753,
     releaseDate: '2025-11-17',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4235,7 +4249,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.104',
     buildNumber: 202511171734,
     releaseDate: '2025-11-17',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4254,7 +4268,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.103',
     buildNumber: 202511170148,
     releaseDate: '2025-11-17',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4273,7 +4287,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.102',
     buildNumber: 202511161830,
     releaseDate: '2025-11-16',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4292,7 +4306,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.101',
     buildNumber: 202511152100,
     releaseDate: '2025-11-15',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4311,7 +4325,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.100',
     buildNumber: 202511152034,
     releaseDate: '2025-11-15',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4330,7 +4344,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.99',
     buildNumber: 202511152006,
     releaseDate: '2025-11-15',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4349,7 +4363,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.98',
     buildNumber: 202511151921,
     releaseDate: '2025-11-15',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4368,7 +4382,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.97',
     buildNumber: 202511141248,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4387,7 +4401,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.96',
     buildNumber: 202511141246,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4406,7 +4420,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.95',
     buildNumber: 202511141225,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4425,7 +4439,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.94',
     buildNumber: 202511141207,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4444,7 +4458,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.93',
     buildNumber: 202511141147,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4463,7 +4477,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.92',
     buildNumber: 202511141100,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [],
     bugfixes: [
@@ -4480,7 +4494,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.90',
     buildNumber: 202511141000,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4499,7 +4513,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.88',
     buildNumber: 202511140839,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4518,7 +4532,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.87',
     buildNumber: 202511140756,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4537,7 +4551,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.86',
     buildNumber: 202511140650,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4556,7 +4570,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.85',
     buildNumber: 202511140626,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4575,7 +4589,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.84',
     buildNumber: 202511140509,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4594,7 +4608,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.83',
     buildNumber: 202511140507,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4613,7 +4627,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.82',
     buildNumber: 202511140006,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [],
     bugfixes: [
@@ -4630,7 +4644,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.81',
     buildNumber: 202511140404,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -4646,7 +4660,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.80',
     buildNumber: 202511140402,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [],
     bugfixes: [
@@ -4660,7 +4674,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.79',
     buildNumber: 202511140142,
     releaseDate: '2025-11-14',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4682,7 +4696,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.78',
     buildNumber: 202511132154,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4704,7 +4718,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.77',
     buildNumber: 202511132133,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4726,7 +4740,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.76',
     buildNumber: 202511132114,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4748,7 +4762,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.73',
     buildNumber: 202511131938,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4770,7 +4784,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.72',
     buildNumber: 202511131925,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4792,7 +4806,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.71',
     buildNumber: 202511131845,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4814,7 +4828,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.70',
     buildNumber: 202511131825,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4836,7 +4850,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.69',
     buildNumber: 202511131746,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4858,7 +4872,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.68',
     buildNumber: 202511131739,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4880,7 +4894,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.67',
     buildNumber: 202511131712,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4902,7 +4916,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.65',
     buildNumber: 202511131611,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4924,7 +4938,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.64',
     buildNumber: 202511131557,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4946,7 +4960,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.62',
     buildNumber: 202511131200,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     features: [
       'Added requester information display in meeting details (name, avatar, title, company)',
@@ -4968,7 +4982,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.61',
     buildNumber: 202511130935,
     releaseDate: '2025-11-13',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     features: [
       'Added chat last seen tracking system - tracks when users view meeting chats',
@@ -4993,7 +5007,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.60',
     buildNumber: 202511121828,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added active speaker badges to all speaker cards (green dot + Active label)',
@@ -5014,7 +5028,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.59',
     buildNumber: 202511121744,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [],
     bugfixes: [
@@ -5032,7 +5046,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.58',
     buildNumber: 202511121726,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [],
     bugfixes: [
@@ -5052,7 +5066,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.57',
     buildNumber: 202511122205,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -5070,7 +5084,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.56',
     buildNumber: 202511122157,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -5088,7 +5102,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.55',
     buildNumber: 202511122142,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -5106,7 +5120,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.54',
     buildNumber: 202511122138,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -5124,7 +5138,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.53',
     buildNumber: 202511122104,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -5142,7 +5156,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.52',
     buildNumber: 202511122042,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -5160,7 +5174,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.51',
     buildNumber: 202511122033,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       // No new features
@@ -5178,7 +5192,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.50',
     buildNumber: 202511121501,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [],
     bugfixes: [
@@ -5194,7 +5208,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.49',
     buildNumber: 202511121924,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5213,7 +5227,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.48',
     buildNumber: 202511121902,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5232,7 +5246,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.47',
     buildNumber: 202511121745,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5251,7 +5265,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.46',
     buildNumber: 202511121704,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5270,7 +5284,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.45',
     buildNumber: 202511121456,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5289,7 +5303,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.44',
     buildNumber: 202511121434,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5308,7 +5322,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.43',
     buildNumber: 202511121339,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5327,7 +5341,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.42',
     buildNumber: 202511121336,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5346,7 +5360,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.41',
     buildNumber: 202511121314,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5365,7 +5379,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.40',
     buildNumber: 202511121310,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5384,7 +5398,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.39',
     buildNumber: 202511121245,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5403,7 +5417,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.38',
     buildNumber: 202511121240,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5422,7 +5436,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.37',
     buildNumber: 202511121223,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5441,7 +5455,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.36',
     buildNumber: 202511120912,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Refactored version system to use version.ts as single source of truth',
@@ -5460,7 +5474,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.35',
     buildNumber: 202511120857,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5477,7 +5491,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.34',
     buildNumber: 202511120834,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5494,7 +5508,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.33',
     buildNumber: 202511120823,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5511,7 +5525,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.32',
     buildNumber: 202511120758,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5528,7 +5542,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.31',
     buildNumber: 202511120733,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5545,7 +5559,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.30',
     buildNumber: 202511120648,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5562,7 +5576,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.29',
     buildNumber: 202511120601,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5579,7 +5593,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.28',
     buildNumber: 202511120547,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5596,7 +5610,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.26',
     buildNumber: 202511120547,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5613,7 +5627,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.25',
     buildNumber: 202511120545,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5630,7 +5644,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.27',
     buildNumber: 202511120508,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5647,7 +5661,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.23',
     buildNumber: 202511120431,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5664,7 +5678,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.24',
     buildNumber: 202511120416,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5681,7 +5695,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.22',
     buildNumber: 202511120256,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5698,7 +5712,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.21',
     buildNumber: 202511120045,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5715,7 +5729,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.20',
     buildNumber: 202511120030,
     releaseDate: '2025-11-12',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5732,7 +5746,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.19',
     buildNumber: 202511112015,
     releaseDate: '2025-11-11',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5749,7 +5763,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.18',
     buildNumber: 202511111958,
     releaseDate: '2025-11-11',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5766,7 +5780,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.17',
     buildNumber: 202511111952,
     releaseDate: '2025-11-11',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5783,7 +5797,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.16',
     buildNumber: 202511111952,
     releaseDate: '2025-11-11',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5800,7 +5814,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.14',
     buildNumber: 202511110654,
     releaseDate: '2025-11-11',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5817,7 +5831,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.13',
     buildNumber: 202511110640,
     releaseDate: '2025-11-11',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5834,7 +5848,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.12',
     buildNumber: 202511110614,
     releaseDate: '2025-11-11',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5851,7 +5865,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.11',
     buildNumber: 202511102042,
     releaseDate: '2025-11-10',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5868,7 +5882,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.10',
     buildNumber: 202511101904,
     releaseDate: '2025-11-10',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5885,7 +5899,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.9',
     buildNumber: 202511101015,
     releaseDate: '2025-11-10',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5902,7 +5916,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.8',
     buildNumber: 202511100828,
     releaseDate: '2025-11-10',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5919,7 +5933,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.7',
     buildNumber: 202511092344,
     releaseDate: '2025-11-09',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5936,7 +5950,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.6',
     buildNumber: 202511092132,
     releaseDate: '2025-11-09',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5953,7 +5967,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.5',
     buildNumber: 202511081641,
     releaseDate: '2025-11-08',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5970,7 +5984,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.4',
     buildNumber: 202511080702,
     releaseDate: '2025-11-08',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -5987,7 +6001,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.3',
     buildNumber: 202511072207,
     releaseDate: '2025-11-07',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -6004,7 +6018,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.2',
     buildNumber: 202511072038,
     releaseDate: '2025-11-07',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -6021,7 +6035,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.1',
     buildNumber: 202511072036,
     releaseDate: '2025-11-07',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -6038,7 +6052,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.6.0',
     buildNumber: 202511070811,
     releaseDate: '2025-11-07',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -6055,7 +6069,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.16',
     buildNumber: 202511070644,
     releaseDate: '2025-11-07',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -6072,7 +6086,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.15',
     buildNumber: 202511070329,
     releaseDate: '2025-11-07',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -6089,7 +6103,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.14',
     buildNumber: 202511070301,
     releaseDate: '2025-11-07',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -6106,7 +6120,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.13',
     buildNumber: 202511070249,
     releaseDate: '2025-11-07',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -6123,7 +6137,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.12',
     buildNumber: 202511070059,
     releaseDate: '2025-11-07',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Added Privacy/Terms modal component for in-app viewing',
@@ -6140,7 +6154,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.11',
     buildNumber: 202511062244,
     releaseDate: '2025-11-06',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6159,7 +6173,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.9',
     buildNumber: 202511062041,
     releaseDate: '2025-11-06',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6178,7 +6192,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.8',
     buildNumber: 202511061859,
     releaseDate: '2025-11-06',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6197,7 +6211,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.7',
     buildNumber: 202511061751,
     releaseDate: '2025-11-06',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6216,7 +6230,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.6',
     buildNumber: 202511052256,
     releaseDate: '2025-11-05',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6235,7 +6249,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.5',
     buildNumber: 202511052229,
     releaseDate: '2025-11-05',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6254,7 +6268,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.4',
     buildNumber: 202511050332,
     releaseDate: '2025-11-05',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6273,7 +6287,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.3',
     buildNumber: 202511050324,
     releaseDate: '2025-11-05',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6292,7 +6306,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.2',
     buildNumber: 202511050316,
     releaseDate: '2025-11-05',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6311,7 +6325,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.1',
     buildNumber: 202511050304,
     releaseDate: '2025-11-05',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6330,7 +6344,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.5.0',
     buildNumber: 202511050249,
     releaseDate: '2025-11-05',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6349,7 +6363,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.4.9',
     buildNumber: 202511041603,
     releaseDate: '2025-11-04',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Improved language switching with smooth updates without remounting',
@@ -6368,7 +6382,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.4.8',
     buildNumber: 202511040915,
     releaseDate: '2025-11-04',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'HASHPASS logo clickable with zoom animation - navigates to home page',
@@ -6388,7 +6402,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.4.7',
     buildNumber: 202511030135,
     releaseDate: '2025-11-03',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'HASHPASS logo clickable with zoom animation - navigates to home page',
@@ -6408,7 +6422,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.4.6',
     buildNumber: 202511022340,
     releaseDate: '2025-11-02',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'HASHPASS logo clickable with zoom animation - navigates to home page',
@@ -6428,7 +6442,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.4.4',
     buildNumber: 202511020451,
     releaseDate: '2025-11-02',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'HASHPASS logo clickable with zoom animation - navigates to home page',
@@ -6448,7 +6462,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.4.3',
     buildNumber: 202511020310,
     releaseDate: '2025-11-02',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'HASHPASS logo clickable with zoom animation - navigates to home page',
@@ -6468,7 +6482,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.4.2',
     buildNumber: 202511012207,
     releaseDate: '2025-11-01',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'HASHPASS logo clickable with zoom animation - navigates to home page',
@@ -6488,7 +6502,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.4.1',
     buildNumber: 202511020246,
     releaseDate: '2025-11-02',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Unified LoadingScreen component for consistent loading states across the app',
@@ -6508,7 +6522,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.4.0',
     buildNumber: 202511020054,
     releaseDate: '2025-11-02',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Unified LoadingScreen component for consistent loading states across the app',
@@ -6528,7 +6542,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.3.9',
     buildNumber: 202510310833,
     releaseDate: '2025-10-31',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Unified LoadingScreen component for consistent loading states across the app',
@@ -6548,7 +6562,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.3.8',
     buildNumber: 202510310801,
     releaseDate: '2025-10-31',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'User pass management system',
@@ -6577,7 +6591,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.3.7',
     buildNumber: 202510310647,
     releaseDate: '2025-10-31',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'User pass management system',
@@ -6606,7 +6620,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.3.6',
     buildNumber: 202510310635,
     releaseDate: '2025-10-31',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'User pass management system',
@@ -6635,7 +6649,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.3.5',
     buildNumber: 202510310540,
     releaseDate: '2025-10-31',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'User pass management system',
@@ -6664,7 +6678,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.3.4',
     buildNumber: 202510302121,
     releaseDate: '2025-10-30',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'User pass management system',
@@ -6693,7 +6707,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.3.2',
     buildNumber: 202510272149,
     releaseDate: '2025-10-27',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     features: [
       'Automated version management and changelog updates',
@@ -6710,7 +6724,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.2.9',
     buildNumber: 202510261852,
     releaseDate: '2025-10-26',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'production',
     features: [],
     bugfixes: [
@@ -6724,7 +6738,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.2.3',
     buildNumber: 202510181800,
     releaseDate: '2025-10-18',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'development',
     features: [
       'Complete networking center with horizontal scrolling',
@@ -6744,7 +6758,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.2.2',
     buildNumber: 202510151600,
     releaseDate: '2025-10-15',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'production',
     features: [],
     bugfixes: [
@@ -6765,7 +6779,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.2.1',
     buildNumber: 202510151510,
     releaseDate: '2025-10-15',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'production',
     features: [],
     bugfixes: [
@@ -6783,7 +6797,7 @@ export const VERSION_HISTORY: VersionHistory = {
     version: '1.2.0',
     buildNumber: 202501150000,
     releaseDate: '2025-01-15',
-    releaseType: 'beta',
+    releaseType: 'stable',
     environment: 'production',
     features: [
       'User pass management system with database integration',
