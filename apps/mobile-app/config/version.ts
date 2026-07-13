@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607130349, // Updated to current timestamp
+  buildNumber: 202607130550, // Updated to current timestamp
   releaseDate: '2026-07-13',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,15 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'set hasNavigatedRef synchronously in the early-auth-redirect branch',
-    'redirect before mounting the auth screen when already logged in'
+    'stop routing the dashboard header through react-native-screens\' native header slot'
   ],
   breakingChanges: [],
-  notes: 'set hasNavigatedRef synchronously in the early-auth-redirect branch; redirect before mounting the auth screen when already logged in'
+  notes: 'stop routing the dashboard header through react-native-screens\' native header slot'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.213': {
+    version: '1.8.213',
+    buildNumber: 202607130550,
+    releaseDate: '2026-07-13',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stop routing the dashboard header through react-native-screens\' native header slot'
+    ],
+    breakingChanges: [],
+    notes: 'stop routing the dashboard header through react-native-screens\' native header slot'
+  },
   '1.8.212': {
     version: '1.8.212',
     buildNumber: 202607130349,

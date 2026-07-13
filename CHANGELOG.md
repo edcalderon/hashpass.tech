@@ -1,3 +1,14 @@
+## [1.8.213](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.212...v1.8.213) (2026-07-13)
+
+
+### Bug Fixes
+
+* **mobile:** stop routing the dashboard header through react-native-screens' native header slot ([025a7cd](https://github.com/hashpass-tech/hashpass.tech/commit/025a7cde4945db01c754cee4f4adb154af9e7b7a))
+
+
+
+
+
 ## [1.8.212](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.211...v1.8.212) (2026-07-13)
 
 
