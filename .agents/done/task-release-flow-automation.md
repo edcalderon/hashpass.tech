@@ -1,9 +1,16 @@
 # Release Flow Automation — Merge-Triggered Tag & Sync
 
-**Status:** 🟡 In progress — tag protection live, release.js updated, workflow built, blocked on RELEASE_AUTOMATION_TOKEN PAT (see Implementation Log)
+**Status:** ✅ Done — validated live on v1.8.218 (PR #56, merged 2026-07-13 23:17:47), all docs cut over
 **Priority:** High
 **Created:** 2026-07-13
-**Updated:** 2026-07-13
+**Completed:** 2026-07-13
+
+**Closing note:** docs cutover (commit `20623744d`) is on `develop` only as
+of completion — `main` will pick it up on the next promotion that carries
+a real (non-docs-only) change. Attempted a docs-only promotion specifically
+to sync it sooner and hit the changelog tool's "no documented changes"
+guard as expected — correctly refused to cut an empty release. Left as-is
+rather than forced; this is the tool working as designed, not a gap.
 
 ---
 
