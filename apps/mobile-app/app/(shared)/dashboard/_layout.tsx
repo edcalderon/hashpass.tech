@@ -33,6 +33,18 @@ import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 // DrawerNavigationProp generic constraint mismatch across @react-navigation versions
 type DrawerNavigation = any;
 
+// On Android, Header/ScreenWithHeader render outside the Drawer's own
+// screen tree (see the platform check in DashboardLayout below, added to
+// avoid a react-native-screens native crash) so useNavigation() called
+// inside Header no longer resolves to the Drawer navigator, breaking the
+// hamburger button's openDrawer() call. CustomDrawerContent IS still
+// rendered inside the Drawer's own navigation context (drawerContent is a
+// provided slot, same as Drawer.Screen's header prop), so it captures a
+// working reference here for Header to reuse. Module-level and mutable
+// rather than a passed-down ref since there is only ever one Drawer
+// instance mounted at a time in this app.
+let drawerNavigationRef: DrawerNavigation | null = null;
+
 const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
 const CopilotView = walkthroughable(View);
 
@@ -47,6 +59,12 @@ function CustomDrawerContent() {
   const router = useRouter();
   const pathname = usePathname();
   const navigation = useNavigation<DrawerNavigation>();
+  useEffect(() => {
+    drawerNavigationRef = navigation;
+    return () => {
+      drawerNavigationRef = null;
+    };
+  }, [navigation]);
   const copilotHook = useCopilot() as any;
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
@@ -679,7 +697,16 @@ export default function DashboardLayout() {
 
   // Header component for the drawer screens
   const Header = () => {
-    const drawerNavigation = useNavigation<DrawerNavigation>();
+    // On Android this component renders outside the Drawer's own screen
+    // tree (see the platform check further down), so useNavigation() here
+    // would resolve to a parent navigator, not the Drawer — openDrawer()
+    // would silently no-op. Always call the hook (Rules of Hooks), but on
+    // Android prefer the ref CustomDrawerContent captures from inside the
+    // Drawer's actual context.
+    const navigationFromContext = useNavigation<DrawerNavigation>();
+    const drawerNavigation = Platform.OS === 'android'
+      ? (drawerNavigationRef ?? navigationFromContext)
+      : navigationFromContext;
     const headerRouter = useRouter();
     const { headerOpacity, headerBackground, headerTint, headerBlur, headerBorderWidth, headerHeight, setHeaderHeight, scrollY } = useScroll();
     const { animationsEnabled } = useAnimations();
@@ -1004,31 +1031,34 @@ export default function DashboardLayout() {
   };
 
 
+  // Reported crash (Android only): react-native-screens fires its native
+  // "topAttached" header-attachment event (HeaderAttachedEvent.kt, part of
+  // ScreenStackHeaderConfig — an android/ native file, so this cannot occur
+  // on web or iOS) whenever a Screen's native header slot mounts, even when
+  // the header content itself is a fully custom render prop like
+  // ScreenWithHeader. On-device logs showed "Unsupported top level event
+  // type 'topAttached' dispatched" (crashing the whole app) immediately
+  // after [RNScreens] header warnings, right as this layout mounted
+  // post-login. Routing ScreenWithHeader through Drawer.Screen's header
+  // slot only on non-Android platforms avoids that native path on Android
+  // while keeping web/iOS on the original approach, where ScreenWithHeader
+  // renders inside the Drawer's own navigation context (needed for
+  // Header's useNavigation<DrawerNavigation>() to resolve openDrawer() —
+  // rendering it as an unconditional sibling outside the Drawer broke the
+  // sidebar toggle on web, since that put it outside the Drawer's context).
+  const drawerHeaderOptions = Platform.OS === 'android'
+    ? { headerShown: false }
+    : { headerShown: true, header: () => <ScreenWithHeader /> };
+
   return (
     <AnimationProvider>
       <NotificationProvider>
         <ScrollProvider>
           <View style={{ flex: 1 }}>
-            {/* Reported crash: react-native-screens fires its native
-              "topAttached" header-attachment event (HeaderAttachedEvent.kt,
-              part of ScreenStackHeaderConfig) whenever a Screen's native
-              header slot mounts, even when the header content itself is a
-              fully custom render prop like ScreenWithHeader below. That
-              event is generated for native-stack's header machinery; this
-              app uses a Drawer navigator, and on-device logs showed
-              "Unsupported top level event type 'topAttached' dispatched"
-              (crashing the whole app) immediately after [RNScreens] header
-              warnings, right as this layout mounted post-login. Rendering
-              ScreenWithHeader as a plain sibling instead of through
-              Drawer.Screen's header slot avoids react-native-screens'
-              native header attachment path entirely — safe since
-              ScreenWithHeader already absolutely-positions itself
-              (position: 'absolute', zIndex: 1000) to overlay content,
-              regardless of where in the tree it renders. */}
             <Drawer
               drawerContent={CustomDrawerContent}
               screenOptions={{
-                headerShown: false,
+                ...drawerHeaderOptions,
                 drawerType: 'front',
                 drawerStyle: {
                   width: isMobile ? '88%' : 360,
@@ -1046,7 +1076,7 @@ export default function DashboardLayout() {
               <Drawer.Screen name="qr-view" />
               <Drawer.Screen name="pass-details" />
             </Drawer>
-            <ScreenWithHeader />
+            {Platform.OS === 'android' && <ScreenWithHeader />}
           </View>
         </ScrollProvider>
       </NotificationProvider>
