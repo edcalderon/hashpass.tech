@@ -90,16 +90,21 @@ None of these block the shipped automation — they're the deferred items
 from the original task's risk analysis, now that there's a live system to
 harden rather than a design to review.
 
-1. **`RELEASE_AUTOMATION_TOKEN` lifecycle is currently unmanaged.**
-   Fine-grained PATs carry an expiration (GitHub either requires one or
-   strongly defaults to one, depending on account/org settings — confirm
-   the actual expiration date set on this specific token, since it wasn't
-   explicitly chosen during setup). An expired or revoked PAT means the
-   *next* release silently fails at the preflight step — which is a
-   correct failure mode (loud, not silent-degrade), but it fails exactly
-   when someone is trying to ship, not proactively. Needs: (a) confirm the
-   actual expiration date, (b) a calendar reminder or automated check
-   before that date, (c) a documented rotation procedure.
+1. **`RELEASE_AUTOMATION_TOKEN` is set to no expiration** — confirmed
+   2026-07-13, explicit accepted-risk decision by the user ("PAT has no
+   expiration for now, this is a security issue but for now is okay").
+   That removes the "expires without warning mid-release" failure mode
+   this item originally worried about, but trades it for a different one:
+   a no-expiration PAT is a standing credential with no forced rotation, so
+   if it's ever leaked (accidentally logged, phished, etc.) it stays valid
+   indefinitely rather than self-limiting. Since it's scoped to only
+   Contents read/write on this one repo, the blast radius of a leak is
+   bounded to release mechanics (tag/push), not full account access — but
+   it's still a standing risk, deliberately accepted for now rather than
+   mitigated. Revisit if: (a) the GitHub App migration below happens
+   (removes the need for a long-lived credential entirely), or (b) this
+   token's usage ever needs to be audited/rotated for any reason — at that
+   point, set an actual expiration rather than reverting to none.
 2. **Consider migrating off a personal fine-grained PAT to a GitHub App
    installation token.** A PAT is tied to `edcalderon`'s personal account —
    if that account's access changes for any reason, the release pipeline
@@ -181,8 +186,9 @@ tracking so they're not lost:
 
 ## Acceptance Criteria
 
-- [ ] `RELEASE_AUTOMATION_TOKEN` expiration date confirmed and a rotation
-      reminder/process exists
+- [x] `RELEASE_AUTOMATION_TOKEN` expiration confirmed: set to no expiration,
+      accepted as a standing risk for now (2026-07-13) — revisit if the
+      GitHub App migration happens or the token ever needs auditing
 - [ ] Decision made (and documented) on GitHub App migration for the PAT —
       do it, or explicitly defer with a reason
 - [ ] Decision made (and documented) on emergency bypass policy for `main`
