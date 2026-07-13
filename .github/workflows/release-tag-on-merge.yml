@@ -1,0 +1,130 @@
+name: Release tag on merge
+
+# Fires once a develop -> main promotion PR merges. The version bump and
+# changelog now happen inside that PR itself (packages/tools/scripts/
+# release.js's --promote path runs the same bump machinery release:patch
+# used to run on main, and commits it as its own labeled commit before the
+# PR opens) — so by the time this workflow runs, the merge commit on main
+# already has the final, reviewed version in package.json. This job's only
+# jobs are: tag that exact commit, and fast-forward develop to match.
+#
+# See .agents/active/task-release-flow-automation.md for the full design
+# and the security considerations behind each piece below. In short:
+# - Tags github.event.pull_request.merge_commit_sha, never a live branch
+#   ref read at execution time, so a second merge landing in the gap
+#   between the trigger firing and this job starting can't cause the wrong
+#   commit to get tagged.
+# - concurrency guards against a duplicate run tagging twice for one PR —
+#   the same bug class that produced a duplicate mobile-android-release.yml
+#   dispatch on 2026-07-13.
+# - actions/checkout is pinned by commit SHA (not just the v4 tag other
+#   workflows in this repo use) because this workflow can push directly to
+#   main's tag namespace and to develop — a higher bar than most workflows
+#   here, deliberately.
+# - Only pushes the tag to origin, not upstream (the personal-fork backup
+#   remote) — that remote lives under a different GitHub account, so no
+#   token available here can authenticate to it anyway. Re-sync upstream
+#   manually if needed, same as CLAUDE.md already documents elsewhere.
+# - On failure, comments on the merged PR directly (where a human will
+#   actually look) rather than relying on the Actions tab status alone.
+#
+# IMPORTANT — why this uses a PAT, not the default GITHUB_TOKEN:
+# GitHub does not let pushes made with the default GITHUB_TOKEN trigger
+# other workflows' `on: push` listeners (anti-recursion protection). If the
+# tag push here used the default token, mobile-release-on-tag.yml's
+# `push: tags: v*.*.*` trigger would silently never fire, and the same for
+# infra-deploy.yml's `push: branches: [develop]` trigger on the sync push
+# below — breaking exactly the automation this task exists to keep working.
+# RELEASE_AUTOMATION_TOKEN must be a fine-grained PAT scoped to only this
+# repository with only the "Contents: Read and write" permission (no
+# broader account-wide PAT) — see the task file for setup steps. Without
+# this secret configured, the preflight step below fails loudly instead of
+# silently falling back to a token whose pushes wouldn't cascade.
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-tag-on-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  tag-and-sync:
+    if: >
+      github.repository == 'hashpass-tech/hashpass.tech' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'develop' &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preflight — require RELEASE_AUTOMATION_TOKEN
+        env:
+          TOKEN_SET: ${{ secrets.RELEASE_AUTOMATION_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [ "${TOKEN_SET}" != "true" ]; then
+            echo "::error::RELEASE_AUTOMATION_TOKEN secret is not configured. A fine-grained PAT scoped to this repo (Contents: Read and write) is required so the tag/develop-sync pushes below can trigger downstream workflows — the default GITHUB_TOKEN cannot do this (GitHub's anti-recursion rule). See .agents/active/task-release-flow-automation.md."
+            exit 1
+          fi
+
+      - name: Checkout merge commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_AUTOMATION_TOKEN }}
+
+      - name: Read release version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not read version from package.json at the merge commit."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Guard against re-tagging an existing version
+        run: |
+          set -euo pipefail
+          if git rev-parse "refs/tags/v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "::error::Tag v${{ steps.version.outputs.version }} already exists. Refusing to move or duplicate it — if this PR's version bump is wrong, fix package.json and re-promote instead of re-running this job."
+            exit 1
+          fi
+
+      - name: Create and push release tag
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${RELEASE_VERSION}" -m "Version ${RELEASE_VERSION}" "${MERGE_SHA}"
+          git push origin "v${RELEASE_VERSION}"
+
+      - name: Sync develop from main
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          git push origin "${MERGE_SHA}:refs/heads/develop"
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh pr comment "${PR_NUMBER}" \
+            --repo hashpass-tech/hashpass.tech \
+            --body "⚠️ release-tag-on-merge failed after this PR merged — the release tag and/or the develop sync may be incomplete. Manual follow-up needed. Failed run: ${RUN_URL}"

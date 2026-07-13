@@ -1,8 +1,9 @@
 # Release Flow Automation — Merge-Triggered Tag & Sync
 
-**Status:** 🟡 Not started — design approved, implementation not begun
+**Status:** 🟡 In progress — tag protection live, release.js updated, workflow built, blocked on RELEASE_AUTOMATION_TOKEN PAT (see Implementation Log)
 **Priority:** High
 **Created:** 2026-07-13
+**Updated:** 2026-07-13
 
 ---
 
@@ -53,6 +54,72 @@ theoretical cleanup:
   structurally impossible to get wrong is instead "documented, and a human
   (or agent) has to remember it correctly every time."** That's exactly what
   this task removes.
+
+## Implementation Log
+
+Started 2026-07-13. Two additional discoveries made while implementing,
+both fixed or documented in place rather than deferred:
+
+1. **`main`'s branch ruleset was configured but not enforced.** The `MAIN`
+   ruleset (1 required approval, CodeQL, coverage ≥33%, code quality,
+   Copilot review — everything CLAUDE.md describes) existed with
+   `enforcement: "disabled"`, and the legacy branch-protection API confirmed
+   `main` as literally unprotected. This explained why `release:patch`'s
+   direct `git push origin main` always succeeded — nothing was enforcing
+   the PR-only path at the GitHub level, despite the whole team process
+   (and this task's own risk analysis) assuming it was. **Flipped to
+   `enforcement: "active"` via `gh api ... rulesets/18627241 --method PUT
+   --field enforcement=active`** (user-authorized). Also discovered
+   `require_code_owner_review` is `false` on that ruleset even though
+   `CODEOWNERS` exists (`* @edcalderon`) — any single approver currently
+   satisfies the rule, not specifically the codeowner. Left as-is per
+   explicit user decision 2026-07-13; revisit separately from this task.
+   Added a second ruleset, `release-tags` (id `18897278`), target `tag`,
+   pattern `refs/tags/v*.*.*`, rules `deletion` + `update`, no bypass
+   actors — satisfies this task's tag-protection acceptance criterion.
+
+   **Direct consequence:** enabling the ruleset immediately blocked
+   `release:patch`'s direct push to `main` (any direct push to `main` now
+   requires a PR — tags are unaffected, the ruleset targets the branch, not
+   tags). This made finishing this task's workflow urgent rather than
+   incremental — the old flow's final step no longer works at all until the
+   new one replaces it.
+
+2. **`release:promote`'s new version-bump step (below) verified safe by
+   actually running it** (not just reading code): `pnpm exec versioning
+   patch --branch-aware --target-branch main --no-commit --no-tag` run from
+   a `develop` checkout correctly computed the same next-version as
+   `resolvePromotionVersion`'s independent calculation, confirming
+   `--target-branch` is genuinely branch-name-parameterized rather than
+   requiring physical checkout on that branch. (It also surfaced a real,
+   separate behavior: it refuses to write a changelog entry with "no
+   documented changes" if nothing conventional-commit-worthy landed since
+   the last release — a sensible guard, but a new failure mode for
+   `release:promote` that didn't exist before; worth calling out in the
+   cutover PR description.) Test was fully reversible — `--no-commit` never
+   commits, so `git checkout -- .` cleanly discarded the trial write before
+   anything real happened.
+
+3. **The merge-triggered workflow cannot use the default `GITHUB_TOKEN` for
+   its pushes.** GitHub's anti-recursion rule means pushes authenticated
+   with the default `GITHUB_TOKEN` do not trigger other workflows' `on:
+   push` listeners. Using it here would have silently broken
+   `mobile-release-on-tag.yml`'s `push: tags: v*.*.*` trigger (the exact
+   automation this session started by fixing) and `infra-deploy.yml`'s
+   `push: branches: [develop]` trigger on the sync push. **Requires a
+   fine-grained PAT**, stored as repo secret `RELEASE_AUTOMATION_TOKEN`,
+   scoped to only `hashpass-tech/hashpass.tech` with only "Contents: Read
+   and write" permission. This cannot be minted headlessly (GitHub requires
+   interactive web-UI consent to create a PAT) — **blocked on a human
+   action**: create the PAT at
+   https://github.com/settings/personal-access-tokens/new (fine-grained,
+   repository access limited to `hashpass-tech/hashpass.tech`, permission
+   "Contents: Read and write"), then either paste it for `gh secret set
+   RELEASE_AUTOMATION_TOKEN --repo hashpass-tech/hashpass.tech`, or set it
+   directly in the repo's Settings → Secrets → Actions. The workflow
+   (`.github/workflows/release-tag-on-merge.yml`) fails loudly at a
+   preflight step if this secret is missing, rather than silently falling
+   back to a token whose pushes wouldn't cascade.
 
 ## Current Flow (as-is)
 
@@ -214,7 +281,9 @@ should be independently mergeable and independently revertible.
 | `CLAUDE.md` | Update Mobile Android Release Workflow and Version Management sections to describe the new flow once implemented |
 | `AGENTS.md` | Fix stale step 9 (manual Android trigger) now; update the full Deployment Command Contract once the merge-triggered flow lands |
 | `apps/docs/docs/reference/release/RELEASE_WORKFLOW.md` | Update the Canonical Order checklist to match the new flow |
-| GitHub repo settings (tag protection) | Add protection rule for `v*.*.*` |
+| GitHub repo settings (tag protection) | ✅ Done — `release-tags` ruleset, id `18897278` |
+| GitHub repo settings (`main` ruleset) | ✅ Done — flipped `MAIN` ruleset (id `18627241`) from `disabled` to `active` |
+| GitHub repo secrets | **Blocked on human action** — needs `RELEASE_AUTOMATION_TOKEN` (fine-grained PAT, this repo only, Contents read/write). See Implementation Log item 3. |
 
 ## Rollback Strategy
 
@@ -229,19 +298,31 @@ should be independently mergeable and independently revertible.
   tag, failed sync), the fallback is the existing manual flow — keep
   `CLAUDE.md`'s manual instructions intact (marked as fallback, not deleted)
   until the automated path has a real track record.
+- **Known gap as of 2026-07-13:** the "fallback" is presently degraded, not
+  fully functional — enabling the `MAIN` ruleset (Implementation Log item 1)
+  means `release:patch`'s direct push to `main` now fails too, with no
+  bypass actor configured. Until `RELEASE_AUTOMATION_TOKEN` is set and the
+  new workflow is validated, there is genuinely no working path to cut a
+  release from `main` other than a manual PR carrying just the version-bump
+  commit. This is an accepted, temporary state per the user's explicit
+  2026-07-13 decision to prioritize finishing the workflow over adding a
+  bypass actor.
 
 ## Acceptance Criteria
 
-- [ ] Tag protection configured for `v*.*.*`
-- [ ] `release:promote` commits the version bump/changelog as its own
+- [x] Tag protection configured for `v*.*.*`
+- [x] `release:promote` commits the version bump/changelog as its own
       labeled commit on the promotion branch, before PR creation
-- [ ] New merge-triggered workflow exists, scoped to `contents: write` only,
-      with a `concurrency:` group keyed on the PR number
-- [ ] Workflow tags `github.event.pull_request.merge_commit_sha`, never live
+- [x] New merge-triggered workflow exists, with a `concurrency:` group keyed
+      on the PR number (scoped to `contents: write` + `pull-requests: write`
+      — the latter added for the failure-comment step, using the default
+      token; pushes use a separate fine-grained PAT, see Implementation Log
+      item 3)
+- [x] Workflow tags `github.event.pull_request.merge_commit_sha`, never live
       `main` `HEAD`
-- [ ] Workflow syncs `develop` from `main` in one step, no second sync
+- [x] Workflow syncs `develop` from `main` in one step, no second sync
       needed anywhere in the documented flow
-- [ ] Workflow failure produces an explicit notification, not just a
+- [x] Workflow failure produces an explicit notification, not just a
       GitHub Actions status badge
 - [ ] Validated on at least one real patch release with a human watching
       before being treated as unattended-safe
