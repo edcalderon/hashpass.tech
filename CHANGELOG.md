@@ -1,3 +1,14 @@
+## [1.8.211](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.210...v1.8.211) (2026-07-13)
+
+
+### Bug Fixes
+
+* **mobile:** prevent double router.replace() race on every login method ([f793b84](https://github.com/hashpass-tech/hashpass.tech/commit/f793b84efaf320b55988570a94142b19e881c6ea))
+
+
+
+
+
 ## [1.8.210](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.209...v1.8.210) (2026-07-13)
 
 
