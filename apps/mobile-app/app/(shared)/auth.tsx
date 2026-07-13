@@ -1633,7 +1633,14 @@ export default function AuthScreen() {
   // any of that renders, avoids mounting it at all for this case. The
   // useEffect below still handles the "login just completed on this screen"
   // transition, which legitimately needs the form mounted first.
+  //
+  // hasNavigatedRef must be set here too, synchronously, not just in the
+  // effect: effects for this same commit (including the auto-redirect one
+  // below) still run after this render regardless of which branch we
+  // return, so without this the effect would see the ref as still false
+  // and fire its own router.replace() right behind this one.
   if (isLoggedIn && user) {
+    hasNavigatedRef.current = true;
     return <Redirect href={redirectPath as any} />;
   }
 
