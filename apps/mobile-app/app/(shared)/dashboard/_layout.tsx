@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps } from 'react-native-reanimated';
@@ -698,6 +698,20 @@ export default function DashboardLayout() {
   // Instance-scoped bridge from CustomDrawerContent's navigation object to
   // Header (see the DrawerNavRef comment above CustomDrawerContent).
   const drawerNavRef = useRef<DrawerNavigation | null>(null);
+  // Memoized so drawerContent keeps a stable identity across DashboardLayout
+  // re-renders (scroll, notifications, animation state all cause those). An
+  // inline arrow function here would make react-navigation's Drawer treat
+  // drawerContent as a new component on every render, unmounting/remounting
+  // CustomDrawerContent — the actual gesture-handled, animated native drawer
+  // view — repeatedly. Tearing down a view with live gesture-handler /
+  // reanimated bindings mid-flight is a known native-crash trigger, and
+  // exactly the failure shape behind this file's prior react-native-screens
+  // incidents. drawerNavRef itself is a stable ref object, so it's safe to
+  // close over without listing it as a dependency.
+  const renderDrawerContent = useCallback(
+    (props: object) => <CustomDrawerContent {...props} navRef={drawerNavRef} />,
+    [],
+  );
 
   // Verify user is logged in before allowing dashboard access (provider-agnostic)
   React.useEffect(() => {
@@ -1087,7 +1101,7 @@ export default function DashboardLayout() {
         <ScrollProvider>
           <View style={{ flex: 1 }}>
             <Drawer
-              drawerContent={(props) => <CustomDrawerContent {...props} navRef={drawerNavRef} />}
+              drawerContent={renderDrawerContent}
               screenOptions={{
                 ...drawerHeaderOptions,
                 drawerType: 'front',

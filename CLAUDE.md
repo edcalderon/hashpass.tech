@@ -95,7 +95,9 @@ Protected promotion flow:
 3. **Wait for `@edcalderon` codeowner approval**, then make sure the PR passes the coverage gate (minimum 33%) and the GitHub security scans before merging
 4. **Merge the PR and sync `develop` from `main`.** Before proceeding to step 5/6, re-check `gh pr list --repo hashpass-tech/hashpass.tech --base main --state open` — if any commits landed on `develop` after `release:promote` ran (docs fixes, follow-up commits, etc.), a second small promotion PR may exist and must also be merged first. Do not dispatch the mobile workflow while any promotion PR for this release is still open, even a trivial one. See `apps/docs/docs/reference/release/RELEASE_WORKFLOW.md`'s "Canonical Order" section for the full checklist and the 2026-07-08 incident that prompted this.
 5. **Run `npm run release:patch` on `main`** — this creates the stable tag, changelog entry, and release commit. This pushes directly to `main`; that push is not blocked by branch protection (only the promotion PR's code diff requires review/coverage/security checks) — confirmed 2026-07-08.
-6. **Trigger CI workflow** manually from the release tag:
+6. **CI workflow triggers automatically — do not also dispatch it manually.** `.github/workflows/mobile-release-on-tag.yml` fires on every `v*.*.*` tag push to `main` (which `release:patch` just did in step 5) and dispatches `mobile-android-release.yml` itself with exactly the fields below. Confirmed 2026-07-13: manually running the same `gh workflow run` after `release:patch` creates a duplicate run with the same version code, racing the auto-triggered one for the same Play Console internal-track upload — cancel the duplicate, don't let both proceed. Check `gh run list --repo hashpass-tech/hashpass.tech --workflow mobile-android-release.yml --limit 3` after step 5 to confirm the auto-triggered run picked up before doing anything else.
+
+   The auto-dispatch is equivalent to:
    ```bash
    gh workflow run mobile-android-release.yml \
      --repo hashpass-tech/hashpass.tech \
@@ -107,7 +109,7 @@ Protected promotion flow:
      --field backend=fastlane \
      --field runner=aws-ec2
    ```
-   Use `environment=development` with `track=internal` for smoke tests. For closed testing, publish the matching internal release first on the same tag, then rerun `environment=development` with `track=alpha`. The workflow blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
+   Only run this manually for a case the auto-trigger doesn't cover — e.g. retrying a failed run on an already-tagged version, or a non-default track/environment (`alpha`-only, `production` once the freeze lifts). Use `environment=development` with `track=internal` for smoke tests. For closed testing, publish the matching internal release first on the same tag, then rerun `environment=development` with `track=alpha`. The workflow blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
    To do the internal release and auto-promote alpha in a single dispatch, set `auto_promote_alpha=true` and keep `alpha_release_status=completed` so alpha publishes without manual draft review. Use `alpha_release_status=draft` only if Play Console still rejects completed alpha releases because the app itself is in draft.
    The alpha handoff uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle.
    Production track publishing (`environment=production` / `track=production`) remains paused until the release freeze is lifted.
@@ -226,7 +228,7 @@ On every push to `main`, **two independent auto-deploy systems** run in parallel
 | `hashpass.tech` | Target-account web pipeline + source CloudFront front door | Push to `main` |
 | `api.hashpass.tech` | AWS Lambda `hashpass-prod-expo-router-api` (us-east-1) | Target web/API deployment flow |
 | `bsl.hashpass.tech` | SST StaticSite via SST Console autodeploy | Push to `main` (SST Console webhook, configured in `sst.config.ts`) |
-| Android | EC2 + Fastlane → Play Store | Manual `gh workflow run` (see workflow below) |
+| Android | EC2 + Fastlane → Play Store | Auto-dispatched on `v*.*.*` tag push to `main` via `.github/workflows/mobile-release-on-tag.yml` (internal track); manual `gh workflow run` only for retries or non-default tracks (see workflow below) |
 
 **Critical facts:**
 - `api.hashpass.tech` Lambda is in **us-east-1**, deployed by the target web/API flow (NOT legacy Amplify)
