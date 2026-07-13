@@ -702,11 +702,12 @@ export default function DashboardLayout() {
     // would resolve to a parent navigator, not the Drawer — openDrawer()
     // would silently no-op. Always call the hook (Rules of Hooks), but on
     // Android prefer the ref CustomDrawerContent captures from inside the
-    // Drawer's actual context.
+    // Drawer's actual context. drawerNavigationRef is read lazily at tap
+    // time (not captured here) because it's a plain module variable set by
+    // an effect in a sibling tree — reading it at render time can capture a
+    // stale/null value if Header renders before that effect runs, and
+    // nothing re-renders Header once the ref becomes available.
     const navigationFromContext = useNavigation<DrawerNavigation>();
-    const drawerNavigation = Platform.OS === 'android'
-      ? (drawerNavigationRef ?? navigationFromContext)
-      : navigationFromContext;
     const headerRouter = useRouter();
     const { headerOpacity, headerBackground, headerTint, headerBlur, headerBorderWidth, headerHeight, setHeaderHeight, scrollY } = useScroll();
     const { animationsEnabled } = useAnimations();
@@ -918,6 +919,11 @@ export default function DashboardLayout() {
             <View style={{ position: 'relative' }}>
               <CopilotTouchableOpacity
                 onPress={() => {
+                  // Resolve live, not from a render-captured variable — see
+                  // note above navigationFromContext.
+                  const drawerNavigation = Platform.OS === 'android'
+                    ? (drawerNavigationRef ?? navigationFromContext)
+                    : navigationFromContext;
                   // Open the drawer first
                   try {
                     drawerNavigation.dispatch(DrawerActions.openDrawer());

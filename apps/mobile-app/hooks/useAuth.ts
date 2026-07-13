@@ -400,12 +400,22 @@ export const useAuth = () => {
       const sessionOverride = authenticatedSessionOverrideRef.current;
       const loggedIn =
         !!sessionOverride?.user || isBetterAuthLoggedIn || isDirectusLoggedIn || isSupabaseLoggedIn;
+      // Supabase is the real live auth backend for email/OTP on this tenant;
+      // the 'directus' provider mainly resurfaces a stale cached session from
+      // SecureStore (see project memory: Directus is unreachable, kept only
+      // as a fallback for possible Directus-only accounts). When Supabase
+      // reports a session too, its id is the real auth.users UUID and must
+      // win — otherwise stale directusUser.id values (not valid UUIDs) get
+      // passed into uuid-typed Postgres columns (user_roles.user_id etc.)
+      // and every query using them fails with "invalid input syntax for
+      // type uuid". Directus stays as the fallback for accounts that only
+      // ever had a Directus session.
       const resolvedUser = sessionOverride?.user ??
         (isBetterAuthLoggedIn
           ? betterAuthUser
-          : isDirectusLoggedIn
-            ? directusUser
-            : supabaseUser);
+          : isSupabaseLoggedIn
+            ? supabaseUser
+            : directusUser);
 
       setUser(resolvedUser);
       setIsLoggedIn(loggedIn);
