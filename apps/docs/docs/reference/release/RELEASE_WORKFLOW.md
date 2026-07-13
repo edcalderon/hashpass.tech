@@ -2,23 +2,28 @@
 
 ## Canonical Order — Follow This Exactly, Don't Skip Ahead
 
-This is the one sequence that matters. Every step in this doc below expands
-on one of these — but the ordering itself, and never skipping a step, is
-what actually prevents releases from going out inconsistent. **The mistake
-made on 2026-07-08 that prompted writing this section explicitly: the
-mobile Android workflow was dispatched from a release tag *before* the
-promotion PR carrying a doc-only commit had been merged** — the tag itself
-was fine (created from `main` after the *first* promotion PR merged), but
-a second, smaller PR was left open and forgotten while later steps
-proceeded. Nothing broke, but it violated the intended order and had to be
-caught after the fact. Don't let that happen again:
+**Updated 2026-07-13: steps 4-6 below are now automatic.** This is the one
+sequence that matters. Every step in this doc below expands on one of these
+— but the ordering itself, and never skipping a step, is what actually
+prevents releases from going out inconsistent. **The mistake made on
+2026-07-08 that prompted writing this section explicitly: the mobile
+Android workflow was dispatched from a release tag *before* the promotion
+PR carrying a doc-only commit had been merged** — the tag itself was fine
+(created from `main` after the *first* promotion PR merged), but a second,
+smaller PR was left open and forgotten while later steps proceeded. Nothing
+broke, but it violated the intended order and had to be caught after the
+fact. This is exactly the class of mistake automating steps 4-6 removes —
+a step that should be structurally impossible to get wrong no longer
+depends on a human remembering to do it correctly. See
+`.agents/active/task-release-flow-automation.md` (or `.agents/done/` once
+closed out) for the full design.
 
 1. **Work on `develop`.** Commit and push everything there first — code, docs, config, everything.
-2. **Open the promotion PR:** `npm run release:promote` (develop → main).
-3. **Merge that PR before doing anything else.** Do not proceed to step 4, and *especially* do not dispatch the mobile workflow, while any promotion PR for this release is still open — even a trivial doc-only one opened as a follow-up. Check with `gh pr view <N> --json state,mergedAt` if there's any doubt. If a second small PR gets opened after the first because of edits made after the promote ran, merge that one too before moving on — don't accumulate open PRs across steps.
-4. **Cut the stable release on `main`:** `npm run release:patch`, run on `main` (see the worktree note below if `main` lives in a separate checkout).
-5. **Verify `develop` and `main` actually match, and that production reflects it.** At minimum: `git log main..develop` and `git log develop..main` should both be empty after syncing; hit the live production API directly (e.g. `curl https://api.hashpass.tech/api/auth/get-session`) to confirm the deploy that's supposed to have gone out actually did, rather than assuming a push to `main` means production is now correct. Sync `develop` from `main` (`git merge main` on develop) so both branches carry the release commit.
-6. **Only now, release to mobile** — dispatch `mobile-android-release.yml` against the tag created in step 4.
+2. **Open the promotion PR:** `npm run release:promote` (develop → main). This now also runs the real version bump and changelog, committing it as its own `chore: release vX.Y.Z` commit before the PR opens — the PR *is* the release, version bump included, not a preview of one.
+3. **Merge that PR before doing anything else.** Do not proceed while any promotion PR for this release is still open — even a trivial doc-only one opened as a follow-up. Check with `gh pr view <N> --json state,mergedAt` if there's any doubt. If a second small PR gets opened after the first because of edits made after the promote ran, merge that one too before moving on — don't accumulate open PRs across steps.
+4. **That's the last manual step.** `.github/workflows/release-tag-on-merge.yml` fires automatically on the merge: it tags the exact merge commit as `vX.Y.Z` (the version already bumped inside the PR — no second bump happens on `main`) and fast-forwards `develop` to match, in one push. Do not run `npm run release:patch` on `main` and do not manually sync `develop` — both are now handled for you. If this job fails, it comments directly on the merged PR; check there first.
+5. **Verify `develop` and `main` actually match, and that production reflects it.** At minimum: `git log main..develop` and `git log develop..main` should both be empty; hit the live production API directly (e.g. `curl https://api.hashpass.tech/api/auth/get-session`) to confirm the deploy that's supposed to have gone out actually did, rather than assuming a push to `main` means production is now correct.
+6. **Android release fires on its own too** — the tag push from step 4 triggers `mobile-release-on-tag.yml`, which dispatches `mobile-android-release.yml`. Verify it picked up with `gh run list --repo hashpass-tech/hashpass.tech --workflow mobile-android-release.yml --limit 3`; only dispatch it manually for a retry or a non-default track (see Android Release below) — a manual dispatch after a normal merge creates a duplicate run racing the auto-triggered one for the same Play Console version code (confirmed 2026-07-13).
 
 ## The Golden Rule: Never Manually Edit Version Numbers
 
@@ -30,10 +35,10 @@ The repository now treats `develop` as the only release source branch. Promotion
 
 ### What changed
 
-- `npm run release:promote` opens a GitHub PR from `develop` to `main` for the actual **code** changes
-- Release PRs currently require `@edcalderon` codeowner approval
-- Release PRs must pass the coverage gate and GitHub security scans before merge
-- **Code changes must go through that PR — but `npm run release:patch` run directly on `main` (Step 4 below) does push straight to `main`, and that push is *not* blocked.** Confirmed 2026-07-08: `release:patch`'s version-bump/changelog/tag commit pushed to `origin main` and `upstream main` with no rejection. Branch protection here gates the PR-review/coverage/security requirements for the promotion PR's code diff — it does not block every push to `main` outright. Don't assume `release:patch` on `main` needs its own PR; it doesn't, and there is currently no automated job that creates the tag any other way (no CI runs on merge-to-main to do this for you).
+- `npm run release:promote` opens a GitHub PR from `develop` to `main` carrying the code changes **and**, as of 2026-07-13, the version bump/changelog as its own commit — the PR diff is the full release, nothing left to bump after merge.
+- Release PRs currently require `@edcalderon` approval (the ruleset's `require_code_owner_review` is `false` today, so technically any approving review satisfies it — revisit if that matters).
+- Release PRs must pass the coverage gate and GitHub security scans before merge.
+- **`main` is genuinely branch-protected as of 2026-07-13.** The `MAIN` ruleset (id `18627241`) existed since 2026-07-07 but had `enforcement: disabled` until then — direct pushes to `main`, including `release:patch`'s old version-bump/changelog/tag commit, succeeded with no rejection the whole time despite this doc previously saying otherwise. It's active now: any direct push to `main` is rejected, code changes must go through the promotion PR, full stop. `npm run release:patch` is no longer run on `main` as part of the normal flow — see "Cut the stable release" below.
 - If you're ever unsure whether a given push to `main` will be accepted, the safe way to find out is to just run the actual `npm run release:*` command — don't hand-rewrite what it would do with raw `git`/`gh` commands to "test" the protection first.
 
 ### Required checks before merge
@@ -87,14 +92,14 @@ npm run release:promote   # develop -> main PR prep
 
 This script:
 
-- Commits the release-prep changes on `develop`
+- Commits any unrelated dirty/untracked files first, as its own commit
+- Runs the real version bump and changelog write, and commits that as its own `chore: release vX.Y.Z` commit — as of 2026-07-13 this is real, not a prediction: `package.json`, `CHANGELOG.md`, and the rest are already bumped by the time the PR opens
 - Pushes the release branch to `origin` and `upstream`
 - Opens the protected `develop -> main` PR
-- Leaves the stable version bump and release tag for the `main` release step
 
-`npm run release:patch -- --promote` is the same promotion prep path if you prefer to call the release script directly.
+`npm run release:patch -- --promote` is the same promotion prep path if you prefer to call the release script directly. Pass `--skip-version-bump` to fall back to the old predict-only behavior (PR title shows a predicted version, no actual bump happens) if you need it for some reason.
 
-**If there's nothing version-relevant to bump**, the script logs `No promotion file changes to commit; using the current HEAD for the promotion PR` and opens the PR against whatever is already on `develop` — this is normal, not an error, when the develop commits since the last release are all feature/doc work with no version-file changes of their own. The PR title still shows the next predicted version; the actual `package.json`/`CHANGELOG.md` bump only happens in Step 4.
+**If the version bump step fails with "Changelog entry vX.Y.Z has no documented changes"**, that means every commit since the last release was something the changelog tool doesn't consider release-worthy (e.g. doc-only or task-file commits with no conventional-commit type it recognizes) — this is a deliberate guard against shipping an empty release, not a bug. Add a real change or use `--skip-version-bump` if you specifically want to promote without one.
 
 If the PR-creation step itself fails on something transient (seen 2026-07-08: `gh pr create` returning `HTTP 502: 502 Bad Gateway`), re-run `npm run release:promote` again rather than hand-issuing the `gh pr create` command it logged — check `git log`/`git status` first to confirm the commit+push already succeeded so you don't duplicate them, but let the script redo the PR-creation call itself.
 
@@ -108,21 +113,26 @@ The PR body should make the actual release contents obvious:
 
 ### Step 3 — Merge the release PR
 
-Merge the PR after the branch protection checks pass. Once merged, sync `develop` from `main` so both branches land on the release commit.
+Merge the PR after the branch protection checks pass. That's the last manual step in the whole flow.
 
-### Step 4 — Cut the stable release on `main`
+### Step 4 — Tag and sync happen automatically
 
-```bash
-npm run release:patch
-```
+`.github/workflows/release-tag-on-merge.yml` fires the moment the PR merges:
 
-Run this on `main` after the PR merges. This is the stable version bump, changelog entry, git tag, and release commit that the Android workflow and web deployment use.
+- Tags `github.event.pull_request.merge_commit_sha` as `vX.Y.Z`, reading the version already bumped inside the PR (no second bump happens on `main` — `npm run release:patch` is not part of the normal flow anymore)
+- Pushes the tag to `origin`
+- Fast-forwards `develop` to the same commit and pushes it to `origin`
+- Comments on the merged PR directly if anything fails, rather than only showing a red X in the Actions tab
 
-**This is the one step that pushes directly to `main`** — see the note in "What changed" above. There's no PR for this specific commit; that's expected.
+This requires the `RELEASE_AUTOMATION_TOKEN` repo secret (a fine-grained PAT scoped to this repo only, "Contents: Read and write" permission). It's needed instead of the default `GITHUB_TOKEN` because GitHub does not let the default token's pushes trigger other workflows — using it here would have silently broken `mobile-release-on-tag.yml`'s tag-push trigger and `infra-deploy.yml`'s `develop`-push trigger. If the secret is missing, the workflow fails loudly at a preflight step instead of silently degrading.
 
-If you keep `main` checked out in a separate git worktree (common local setup here — `hashpass.tech-main` alongside the primary `hashpass.tech` checkout on `develop`), run the command from that worktree directly. `git checkout main` will fail with `'main' is already used by worktree at ...` if you try to switch to it from the `develop` checkout — that's not an error to work around, it just means you should `cd` into the other worktree (or use `git -C <path> ...` for individual commands) instead of trying to check out `main` in place.
+**`npm run release:patch` still exists and still works as a manual fallback** if this workflow needs to be bypassed for some reason — run it from the `main` worktree exactly as before (see the worktree note below) — but it will fail its own `git push origin main` unless you're also bypassing the now-active `MAIN` ruleset somehow, since that push goes directly to a genuinely protected branch. Treat it as an emergency path, not the normal one.
 
-### Step 5 — Trigger the Android CI
+If you keep `main` checked out in a separate git worktree (common local setup here — `hashpass.tech-main` alongside the primary `hashpass.tech` checkout on `develop`), run any manual `main`-branch command from that worktree directly. `git checkout main` will fail with `'main' is already used by worktree at ...` if you try to switch to it from the `develop` checkout — that's not an error to work around, it just means you should `cd` into the other worktree (or use `git -C <path> ...` for individual commands) instead of trying to check out `main` in place.
+
+### Step 5 — Android CI triggers itself
+
+**This already happened by the time you read this** — the tag push from Step 4 fires `mobile-release-on-tag.yml`, which dispatches `mobile-android-release.yml` with the exact fields below automatically. Verify it picked up: `gh run list --repo hashpass-tech/hashpass.tech --workflow mobile-android-release.yml --limit 3`. The manual command below is only for a retry on an already-tagged version, or a non-default track/environment — running it after a normal merge creates a duplicate run racing the auto-triggered one for the same Play Console version code (confirmed 2026-07-13, had to cancel the duplicate).
 
 ```bash
 gh workflow run mobile-android-release.yml \
@@ -165,6 +175,8 @@ The workflow also matches Expo build credentials by the `ANDROID_UPLOAD_KEY_SHA1
 
 ### Step 6 — Back up to the personal fork
 
+`release-tag-on-merge.yml` does not do this for you — no token available to that workflow can authenticate to a different account's fork. Run manually if the backup mirror needs to catch up:
+
 ```bash
 git push upstream develop v<NEW_VERSION>
 ```
@@ -190,6 +202,6 @@ Versions follow `MAJOR.MINOR.PATCH` (semver) and `versionCode` is derived from t
 |------|-------------|-------|
 | Web static bundle | Every target web release | `hashpass.tech`, `dev.hashpass.tech` |
 | Lambda API routes | Every target web/API deploy | `api.hashpass.tech`, `api-dev.hashpass.tech` |
-| Android APK/AAB | Manual CI trigger on release tag | Play Store |
+| Android APK/AAB | Auto-triggered on release tag push (manual dispatch only for retries/non-default tracks) | Play Store |
 
 The Lambda environment variables (secrets, Supabase keys, etc.) are **not** updated by a static deploy. Update them with `node packages/tools/scripts/sync-env.js production --tenant core` or the AWS Lambda console before releasing if secrets changed.

@@ -1,12 +1,15 @@
 name: Trigger mobile release on version tag
 
-# packages/tools/scripts/release.js only ever creates a `v*` tag when
-# releasing to main (runGitTag is called exclusively from the
-# `releaseBranch === 'main'` branch of release.js — develop promotions use
-# runPromotionCommit instead and never tag). So a `v*` tag push is a
-# reliable signal that a real release just landed on main, and this keeps
-# native mobile in sync with every web/main update instead of requiring a
-# manual `gh workflow run mobile-android-release.yml` after every release.
+# A `v*` tag push is a reliable signal that a real release just landed on
+# main, so this keeps native mobile in sync with every web/main update
+# instead of requiring a manual `gh workflow run mobile-android-release.yml`
+# after every release. As of 2026-07-13, tags are created by
+# release-tag-on-merge.yml (fires when a develop -> main promotion PR
+# merges, tags that exact merge commit) rather than by
+# packages/tools/scripts/release.js's runGitTag directly — release.js's
+# `main`-branch patch path still has tag-creation logic for manual/fallback
+# use, but the normal flow no longer runs it. Either source produces the
+# same `v*.*.*` tag shape this workflow reacts to.
 #
 # Internal track only, with auto-promote-alpha — matches the "temporary
 # release posture" in CLAUDE.md (production dispatches stay paused, and
