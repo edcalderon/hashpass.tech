@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 /**
  * Memory management utilities to prevent memory leaks and optimize performance
  */
@@ -141,14 +143,17 @@ class MemoryManager {
 export const memoryManager = new MemoryManager();
 
 // Periodic cleanup
-if (typeof window !== 'undefined') {
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
   setInterval(() => {
     memoryManager.cleanupExpired();
   }, 10 * 60 * 1000); // Every 10 minutes
 }
 
-// Cleanup on page unload
-if (typeof window !== 'undefined') {
+// Cleanup on page unload (web only — window.addEventListener isn't available on native,
+// see apps/docs/docs/reference/mobile-app/local-android-debugging.md for how this
+// surfaced: `typeof window !== 'undefined'` alone is true in this RN environment
+// too, because of a global URL/window polyfill, but window.addEventListener isn't)
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     memoryManager.cleanupAll();
   });
