@@ -1,3 +1,14 @@
+## [1.8.221](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.220...v1.8.221) (2026-07-14)
+
+
+### Bug Fixes
+
+* **mobile:** dashboard gesture crash after login, add sign-out on landing ([446bc29](https://github.com/hashpass-tech/hashpass.tech/commit/446bc29214f39fe12b00cb5e828134b947a41b71))
+
+
+
+
+
 ## [1.8.220](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.219...v1.8.220) (2026-07-14)
 
 
