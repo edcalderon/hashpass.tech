@@ -124,7 +124,8 @@
         "directus_key=replace-with-random-key-min-32-chars",
         "directus_secret=replace-with-random-secret-min-32-chars",
         "key: \\$\\{directus_key:-replace-with-random-key\\}",
-        "secret: \\$\\{directus_secret:-replace-with-random-secret\\}"
+        "secret: \\$\\{directus_secret:-replace-with-random-secret\\}",
+        "process.env.EXPO_PUBLIC_DEV_AUTH_BYPASS = originalEnv;"
       ]
     },
     "lifecycle-hooks": {
