@@ -161,18 +161,23 @@ aws lambda update-function-code --function-name hashpass-dev-expo-router-api \
 ### Android Launch Crash Debugging
 If the app won't open on Android:
 
-1. **Check Play Console Android Vitals** for crash stack trace (most reliable source)
-2. **Verify Expo package versions** match bundledNativeModules:
+1. **Check Play Console Android Vitals** for crash stack trace (most reliable source), or reproduce locally first — see [local-android-debugging.md](apps/docs/docs/reference/mobile-app/local-android-debugging.md) for a full local emulator + logcat loop that's much faster than a CI/Play Store round trip for diagnosing and verifying a fix before dispatching a real release.
+2. **Verify Expo package versions** match bundledNativeModules — use real semver range matching, not string equality (a naive `!==` check flags every `~`/`^`-prefixed package as a false-positive mismatch):
    ```bash
    node -e "
+   const semver = require('semver');
    const bundled = require('./node_modules/expo/bundledNativeModules.json');
    for (const [pkg, range] of Object.entries(bundled)) {
-     const actual = require(\`./node_modules/\${pkg}/package.json\`).version;
-     console.log(pkg + ': installed=' + actual + ' expected=' + range);
+     try {
+       const actual = require(\`./node_modules/\${pkg}/package.json\`).version;
+       if (!semver.satisfies(actual, range)) console.log(pkg + ': installed=' + actual + ' expected=' + range);
+     } catch {}
    }
    "
    ```
-3. **Never assume a fix worked** without testing on Play Store internal or the relevant closed-testing track first.
+   See [native-module-version-pinning.md](apps/docs/docs/reference/mobile-app/native-module-version-pinning.md) for the full policy, three real incidents this exact class of drift has caused, and why diffing a vendor's native source files between two versions is **not** sufficient to verify a version bump won't regress a native crash — only a real on-device reproduction does. If a certified pin required for Android breaks a *different* platform, patch the specific broken file with `pnpm patch` rather than moving off the pin — see that doc's "regression" incident for a worked example.
+3. **Never assume a fix worked** without testing on Play Store internal or the relevant closed-testing track first — a local emulator reproduction is for fast iteration, not a substitute for the real release verification.
+4. **A silent failure (no crash, no error, just "nothing happened") is not automatically a session/auth/data problem** — see [drawer-navigation-gotchas.md](apps/docs/docs/reference/mobile-app/drawer-navigation-gotchas.md) for two real bugs (wrong navigator object, a sibling view's zIndex silently winning) that produced zero console output and were only found via direct state instrumentation, not code reading.
 
 ### JavaScript Errors on Startup
 If app opens but crashes with a JS error:
@@ -356,6 +361,7 @@ Migration history: V004 (create), V005 (rename ba_users), V006 (singular rename 
 See `apps/docs/docs/auth/USER_REGISTRY.md` for full schema and sync paths.
 
 ## Recent Fixes
+- v1.8.219: Fixed the real dashboard sidebar bug (drawerContent used `useNavigation()` instead of the `navigation` prop react-navigation passes it, silently dispatching to the wrong navigator) and its visual overlap (Header's zIndex couldn't out-stack the open drawer panel on Android — now hidden while open instead); re-pinned `react-native-svg` to 15.11.2 for the Android crash and added `patches/react-native-svg@15.11.2.patch` to also fix a real web startup crash that pin reintroduces, instead of trading one platform's crash for the other. See [drawer-navigation-gotchas.md](apps/docs/docs/reference/mobile-app/drawer-navigation-gotchas.md) and [native-module-version-pinning.md](apps/docs/docs/reference/mobile-app/native-module-version-pinning.md).
 - v1.8.114: V006 migration — renamed canonical `public.users` → `public.user` (SQL singular standard); added FK constraints from all `user_*` tables → `auth.users(id)` ON DELETE CASCADE; fixed `user_profiles.user_id` text→uuid; applied to both prod and dev
 - v1.8.113: V004+V005 migrations applied — created `public.user` canonical registry with `upsert_public_user_registry()` + auth.users sync triggers; renamed Better Auth `user` → `ba_users`; configured `modelName: 'ba_users'` in Better Auth
 - v1.8.112: Delete Account fix — resolve Supabase auth UUID by email (Directus OAuth path sends Directus UUID, not Supabase UUID)
