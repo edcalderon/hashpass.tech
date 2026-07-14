@@ -1,3 +1,15 @@
+## [1.8.219](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.218...v1.8.219) (2026-07-14)
+
+
+### Bug Fixes
+
+* **mobile:** pin react-native and react-native-svg to Expo SDK's exact expected versions ([b9a16c2](https://github.com/hashpass-tech/hashpass.tech/commit/b9a16c203a1ba035301741abd25e244eea109d3d))
+* **mobile:** resolve the actual sidebar-not-opening bug, not just the crash ([df02df8](https://github.com/hashpass-tech/hashpass.tech/commit/df02df85300e56cf7db5786fcd7920674526ab0d))
+
+
+
+
+
 ## [1.8.218](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.217...v1.8.218) (2026-07-13)
 
 
