@@ -63,9 +63,10 @@ try {
 
 export default function HomeScreen() {
   const { colors, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [userName, setUserName] = useState<string | null>(null);
   const { t } = useTranslation("index");
+  const { t: tNav } = useTranslation("nav");
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
   const isNative = Platform.OS !== "web";
@@ -223,6 +224,16 @@ export default function HomeScreen() {
       }
     }
   }, [router]);
+
+  // Landing previously had no way to end a session once logged in — a
+  // returning user saw "Welcome back" + "Go to App" only, with no exit.
+  const handleSignOutPress = useCallback(async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("[Home] Failed to sign out:", error);
+    }
+  }, [signOut]);
 
   const featuresRef = React.useRef<View>(null);
   const featuresLayoutRef = React.useRef({ y: 0 });
@@ -623,6 +634,13 @@ export default function HomeScreen() {
                 {"\n"}
                 {userName}
               </Text>
+              <TouchableOpacity
+                onPress={handleSignOutPress}
+                activeOpacity={0.7}
+                style={styles.signOutLink}
+              >
+                <Text style={styles.signOutLinkText}>{tNav("logout")}</Text>
+              </TouchableOpacity>
               <Animated.View style={styles.ctaButton}>
                 <TouchableOpacity
                   onPress={handleGoToAppPress}
@@ -1158,6 +1176,18 @@ const getStyles = (
     ctaButton: {
       transform: [{ scale: 1.3 }],
       overflow: "hidden",
+    },
+    signOutLink: {
+      alignSelf: "center",
+      marginBottom: 20,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+    },
+    signOutLinkText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: isDark ? "rgba(255, 255, 255, 0.7)" : "rgba(18, 18, 18, 0.6)",
+      textDecorationLine: "underline",
     },
     ctaButtonText: {
       fontSize: 20,
