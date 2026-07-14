@@ -77,27 +77,31 @@ The script:
 
 Protected promotion flow:
 
-- `npm run release:promote` now opens the `develop -> main` pull request instead of pushing or merging to `main` directly
-- `main` is branch-protected, so release promotion must go through a PR, codeowner review, coverage checks, and the GitHub security scans
-- `@edcalderon` is the current required code owner for release PR approval
+- `npm run release:promote` opens the `develop -> main` pull request instead of pushing or merging to `main` directly. **Since 2026-07-13, it also runs the real version bump and writes the changelog**, committing that as its own labeled commit (`chore: release vX.Y.Z`) before the PR opens — the PR diff a reviewer sees *is* the release artifact, version bump included, not a prediction of one. Pass `--skip-version-bump` to fall back to the old predict-only behavior if needed.
+- `main` is genuinely branch-protected by an active GitHub ruleset (id `18627241`) — direct pushes to `main` are rejected; release promotion must go through a PR, review, coverage checks, and the GitHub security scans. (This ruleset existed but had `enforcement: disabled` until 2026-07-13 — `main` was not actually protected before that despite this doc saying so. Verify with `gh api repos/hashpass-tech/hashpass.tech/rulesets/18627241 --jq .enforcement` if anything here seems inconsistent with observed behavior.)
+- `@edcalderon` is the intended code owner for release PR approval, though the ruleset's `require_code_owner_review` is currently `false` — any single approving review satisfies it today, not specifically the codeowner.
 - The promotion PR body is release-note driven: it derives the next patch version from the latest release tag when the branch is still on the released semver, then surfaces the readable release summary from version metadata/changelog first, adds auto-generated implementation bullets for docs/release/tooling changes, and keeps changed files tucked into a collapsible details block
+- **Once the PR merges, `.github/workflows/release-tag-on-merge.yml` runs automatically**: it tags the exact merge commit as `vX.Y.Z` (reading the version already bumped inside the PR — no second bump happens on `main`) and fast-forwards `develop` to match, in one step. `npm run release:patch` run manually on `main` is no longer part of the normal flow — see Mobile Android Release Workflow below.
 
-**Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering.
+**Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering. The version bump living inside the reviewed PR (rather than as a separate post-merge step) closes the gap between "what was reviewed" and "what got tagged," and removes the manual post-merge steps that a human previously had to remember and run correctly by hand — see `.agents/active/task-release-flow-automation.md` for the full design and incident history behind this change.
 
 ### Mobile Android Release Workflow
-**Temporary release posture:** while the app is under active development, keep Android publishing internal-first. Use `environment=development` with `track=internal` for the first pass, then rerun the same tag with `track=alpha` after the internal release succeeds. Production dispatches are paused for now.
+**Temporary release posture:** while the app is under active development, keep Android publishing internal-first. Internal track publishes automatically on tag creation; alpha auto-promotes after internal succeeds on the same tag (`auto_promote_alpha=true`). Production dispatches are paused for now.
 
 1. **Create and validate the commit on `develop`**
 2. **Run `npm run release:promote`** on `develop` — this:
    - Commits the release-prep changes
+   - Runs the version bump + changelog and commits it as its own `chore: release vX.Y.Z` commit
    - Pushes the release branch to `origin` and `upstream`
    - Opens the protected `develop -> main` PR instead of pushing to `main`
-3. **Wait for `@edcalderon` codeowner approval**, then make sure the PR passes the coverage gate (minimum 33%) and the GitHub security scans before merging
-4. **Merge the PR and sync `develop` from `main`.** Before proceeding to step 5/6, re-check `gh pr list --repo hashpass-tech/hashpass.tech --base main --state open` — if any commits landed on `develop` after `release:promote` ran (docs fixes, follow-up commits, etc.), a second small promotion PR may exist and must also be merged first. Do not dispatch the mobile workflow while any promotion PR for this release is still open, even a trivial one. See `apps/docs/docs/reference/release/RELEASE_WORKFLOW.md`'s "Canonical Order" section for the full checklist and the 2026-07-08 incident that prompted this.
-5. **Run `npm run release:patch` on `main`** — this creates the stable tag, changelog entry, and release commit. This pushes directly to `main`; that push is not blocked by branch protection (only the promotion PR's code diff requires review/coverage/security checks) — confirmed 2026-07-08.
-6. **CI workflow triggers automatically — do not also dispatch it manually.** `.github/workflows/mobile-release-on-tag.yml` fires on every `v*.*.*` tag push to `main` (which `release:patch` just did in step 5) and dispatches `mobile-android-release.yml` itself with exactly the fields below. Confirmed 2026-07-13: manually running the same `gh workflow run` after `release:patch` creates a duplicate run with the same version code, racing the auto-triggered one for the same Play Console internal-track upload — cancel the duplicate, don't let both proceed. Check `gh run list --repo hashpass-tech/hashpass.tech --workflow mobile-android-release.yml --limit 3` after step 5 to confirm the auto-triggered run picked up before doing anything else.
-
-   The auto-dispatch is equivalent to:
+3. **Wait for `@edcalderon` approval**, then make sure the PR passes the coverage gate (minimum 33%) and the GitHub security scans before merging
+4. **Merge the PR.** That's the last manual step. `release-tag-on-merge.yml` fires automatically on the merge and handles everything below — do not run `npm run release:patch` on `main` or manually sync `develop`; both now happen for you:
+   - Tags `github.event.pull_request.merge_commit_sha` as `vX.Y.Z` and pushes the tag to `origin` (not `upstream` — see below)
+   - Fast-forwards `develop` to the same commit and pushes it to `origin`
+   - The tag push fires `.github/workflows/mobile-release-on-tag.yml`, which dispatches `mobile-android-release.yml` with `environment=development track=internal auto_promote_alpha=true` — the same Android build trigger as before, just one hop further upstream now
+   - If this job fails, it comments directly on the merged PR rather than only showing a red X in the Actions tab — check there first
+   - Requires the `RELEASE_AUTOMATION_TOKEN` repo secret (fine-grained PAT, this repo only, Contents read/write) to be set. Without it, the job fails loudly at a preflight step rather than silently using a token whose pushes can't trigger other workflows — GitHub's default `GITHUB_TOKEN` cannot trigger other workflows' `on: push` listeners, which is why a PAT is required here at all.
+5. **Verify the Android workflow picked up**: `gh run list --repo hashpass-tech/hashpass.tech --workflow mobile-android-release.yml --limit 3`. Only dispatch it manually for a case the auto-trigger doesn't cover — a retry on an already-tagged version, or a non-default track/environment (`alpha`-only, `production` once the freeze lifts):
    ```bash
    gh workflow run mobile-android-release.yml \
      --repo hashpass-tech/hashpass.tech \
@@ -109,7 +113,8 @@ Protected promotion flow:
      --field backend=fastlane \
      --field runner=aws-ec2
    ```
-   Only run this manually for a case the auto-trigger doesn't cover — e.g. retrying a failed run on an already-tagged version, or a non-default track/environment (`alpha`-only, `production` once the freeze lifts). Use `environment=development` with `track=internal` for smoke tests. For closed testing, publish the matching internal release first on the same tag, then rerun `environment=development` with `track=alpha`. The workflow blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
+   Manually dispatching this after a normal merge creates a duplicate run racing the auto-triggered one for the same Play Console version code — confirmed 2026-07-13. Don't.
+   For closed testing, publish the matching internal release first on the same tag, then rerun `environment=development` with `track=alpha`. The workflow blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
    To do the internal release and auto-promote alpha in a single dispatch, set `auto_promote_alpha=true` and keep `alpha_release_status=completed` so alpha publishes without manual draft review. Use `alpha_release_status=draft` only if Play Console still rejects completed alpha releases because the app itself is in draft.
    The alpha handoff uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle.
    Production track publishing (`environment=production` / `track=production`) remains paused until the release freeze is lifted.
@@ -117,7 +122,7 @@ Protected promotion flow:
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
    The Fastlane lane also uploads any deobfuscation files it finds in the Android build outputs, so Play Console crash traces stay readable when `mapping.txt` or `native-debug-symbols.zip` is present. This only applies to builds created after this change; any older draft artifacts stay without deobfuscation until a new build is uploaded.
    For the current internal/alpha path and the future production checklist, see `apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md`.
-7. **Verify the `upstream` fork** after the release is merged and synchronized. The release script now mirrors the release branch automatically; re-run this only if you need to reseed the backup fork manually:
+6. **`upstream` (the personal-fork backup) is not auto-synced by `release-tag-on-merge.yml`** — no token available to that workflow can authenticate to a different account's fork. Re-sync manually if needed:
    ```bash
    git push upstream develop <TAG_NAME>
    ```
@@ -137,8 +142,9 @@ Android builds triggered with `--field environment=development` bake `EXPO_PUBLI
 
 **Consequence:** If `hashpass-dev-expo-router-api` is out of date, dev builds will behave differently from prod — even if prod was just fixed. Always keep `develop` branch in sync with `main` so that target deploys of `develop` update `hashpass-dev-expo-router-api` to the same code.
 
+**This sync is automatic as of 2026-07-13** — `release-tag-on-merge.yml` fast-forwards `develop` to `main`'s merge commit as part of every promotion PR merge (see Mobile Android Release Workflow above). Only run this by hand if that workflow failed or `develop` has drifted for some other reason:
 ```bash
-# Sync develop with main after every release
+# Manual fallback sync only — normally unnecessary now
 git checkout develop && git merge main && git push origin develop && git push upstream develop
 git checkout main
 ```
@@ -155,18 +161,23 @@ aws lambda update-function-code --function-name hashpass-dev-expo-router-api \
 ### Android Launch Crash Debugging
 If the app won't open on Android:
 
-1. **Check Play Console Android Vitals** for crash stack trace (most reliable source)
-2. **Verify Expo package versions** match bundledNativeModules:
+1. **Check Play Console Android Vitals** for crash stack trace (most reliable source), or reproduce locally first — see [local-android-debugging.md](apps/docs/docs/reference/mobile-app/local-android-debugging.md) for a full local emulator + logcat loop that's much faster than a CI/Play Store round trip for diagnosing and verifying a fix before dispatching a real release.
+2. **Verify Expo package versions** match bundledNativeModules — use real semver range matching, not string equality (a naive `!==` check flags every `~`/`^`-prefixed package as a false-positive mismatch):
    ```bash
    node -e "
+   const semver = require('semver');
    const bundled = require('./node_modules/expo/bundledNativeModules.json');
    for (const [pkg, range] of Object.entries(bundled)) {
-     const actual = require(\`./node_modules/\${pkg}/package.json\`).version;
-     console.log(pkg + ': installed=' + actual + ' expected=' + range);
+     try {
+       const actual = require(\`./node_modules/\${pkg}/package.json\`).version;
+       if (!semver.satisfies(actual, range)) console.log(pkg + ': installed=' + actual + ' expected=' + range);
+     } catch {}
    }
    "
    ```
-3. **Never assume a fix worked** without testing on Play Store internal or the relevant closed-testing track first.
+   See [native-module-version-pinning.md](apps/docs/docs/reference/mobile-app/native-module-version-pinning.md) for the full policy, three real incidents this exact class of drift has caused, and why diffing a vendor's native source files between two versions is **not** sufficient to verify a version bump won't regress a native crash — only a real on-device reproduction does. If a certified pin required for Android breaks a *different* platform, patch the specific broken file with `pnpm patch` rather than moving off the pin — see that doc's "regression" incident for a worked example.
+3. **Never assume a fix worked** without testing on Play Store internal or the relevant closed-testing track first — a local emulator reproduction is for fast iteration, not a substitute for the real release verification.
+4. **A silent failure (no crash, no error, just "nothing happened") is not automatically a session/auth/data problem** — see [drawer-navigation-gotchas.md](apps/docs/docs/reference/mobile-app/drawer-navigation-gotchas.md) for two real bugs (wrong navigator object, a sibling view's zIndex silently winning) that produced zero console output and were only found via direct state instrumentation, not code reading.
 
 ### JavaScript Errors on Startup
 If app opens but crashes with a JS error:
@@ -350,6 +361,7 @@ Migration history: V004 (create), V005 (rename ba_users), V006 (singular rename 
 See `apps/docs/docs/auth/USER_REGISTRY.md` for full schema and sync paths.
 
 ## Recent Fixes
+- v1.8.219: Fixed the real dashboard sidebar bug (drawerContent used `useNavigation()` instead of the `navigation` prop react-navigation passes it, silently dispatching to the wrong navigator) and its visual overlap (Header's zIndex couldn't out-stack the open drawer panel on Android — now hidden while open instead); re-pinned `react-native-svg` to 15.11.2 for the Android crash and added `patches/react-native-svg@15.11.2.patch` to also fix a real web startup crash that pin reintroduces, instead of trading one platform's crash for the other. See [drawer-navigation-gotchas.md](apps/docs/docs/reference/mobile-app/drawer-navigation-gotchas.md) and [native-module-version-pinning.md](apps/docs/docs/reference/mobile-app/native-module-version-pinning.md).
 - v1.8.114: V006 migration — renamed canonical `public.users` → `public.user` (SQL singular standard); added FK constraints from all `user_*` tables → `auth.users(id)` ON DELETE CASCADE; fixed `user_profiles.user_id` text→uuid; applied to both prod and dev
 - v1.8.113: V004+V005 migrations applied — created `public.user` canonical registry with `upsert_public_user_registry()` + auth.users sync triggers; renamed Better Auth `user` → `ba_users`; configured `modelName: 'ba_users'` in Better Auth
 - v1.8.112: Delete Account fix — resolve Supabase auth UUID by email (Directus OAuth path sends Directus UUID, not Supabase UUID)

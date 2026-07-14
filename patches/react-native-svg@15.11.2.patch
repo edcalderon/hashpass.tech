@@ -1,0 +1,181 @@
+diff --git a/lib/commonjs/web/utils/hasProperty.js b/lib/commonjs/web/utils/hasProperty.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1bd7eb6d0821e5f3f889c3c2e94ebf2320b8379d
+--- /dev/null
++++ b/lib/commonjs/web/utils/hasProperty.js
+@@ -0,0 +1,9 @@
++"use strict";
++
++Object.defineProperty(exports, "__esModule", {
++  value: true
++});
++exports.hasTouchableProperty = hasTouchableProperty;
++function hasTouchableProperty(props) {
++  return !!(props.onPress || props.onPressIn || props.onPressOut || props.onLongPress);
++}
+diff --git a/lib/commonjs/web/utils/parseTransform.js b/lib/commonjs/web/utils/parseTransform.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..39fe4eb334393ea9a12f5c406dfb807715b2dc17
+--- /dev/null
++++ b/lib/commonjs/web/utils/parseTransform.js
+@@ -0,0 +1,50 @@
++"use strict";
++
++Object.defineProperty(exports, "__esModule", {
++  value: true
++});
++exports.parseTransformProp = parseTransformProp;
++exports.stringifyTransformProps = stringifyTransformProps;
++var _extractTransform = require("../../lib/extract/extractTransform");
++function parseTransformProp(transform, props) {
++  const transformArray = [];
++  props && transformArray.push(...stringifyTransformProps(props));
++  if (Array.isArray(transform)) {
++    if (typeof transform[0] === 'number') {
++      transformArray.push(`matrix(${transform.join(' ')})`);
++    } else {
++      const stringifiedProps = (0, _extractTransform.transformsArrayToProps)(
++      // @ts-expect-error FIXME
++      transform);
++      transformArray.push(...stringifyTransformProps(stringifiedProps));
++    }
++  } else if (typeof transform === 'string') {
++    transformArray.push(transform);
++  }
++  return transformArray.length ? transformArray.join(' ') : undefined;
++}
++function stringifyTransformProps(transformProps) {
++  const transformArray = [];
++  if (transformProps.translate != null) {
++    transformArray.push(`translate(${transformProps.translate})`);
++  }
++  if (transformProps.translateX != null || transformProps.translateY != null) {
++    transformArray.push(`translate(${transformProps.translateX || 0}, ${transformProps.translateY || 0})`);
++  }
++  if (transformProps.scale != null) {
++    transformArray.push(`scale(${transformProps.scale})`);
++  }
++  if (transformProps.scaleX != null || transformProps.scaleY != null) {
++    transformArray.push(`scale(${transformProps.scaleX || 1}, ${transformProps.scaleY || 1})`);
++  }
++  if (transformProps.rotation != null) {
++    transformArray.push(`rotate(${transformProps.rotation})`);
++  }
++  if (transformProps.skewX != null) {
++    transformArray.push(`skewX(${transformProps.skewX})`);
++  }
++  if (transformProps.skewY != null) {
++    transformArray.push(`skewY(${transformProps.skewY})`);
++  }
++  return transformArray;
++}
+diff --git a/lib/commonjs/web/utils/prepare.js b/lib/commonjs/web/utils/prepare.js
+index 32b5db7d64b87b107f57e95d582740071a183ca3..08001a98e0fd438b275503a92c5417def59e4364 100644
+--- a/lib/commonjs/web/utils/prepare.js
++++ b/lib/commonjs/web/utils/prepare.js
+@@ -5,6 +5,8 @@ Object.defineProperty(exports, "__esModule", {
+ });
+ exports.prepare = void 0;
+ var _ = require(".");
++var _parseTransform = require("./parseTransform");
++var _hasProperty = require("./hasProperty");
+ var _resolve = require("../../lib/resolve");
+ var _resolveAssetUri2 = require("../../lib/resolveAssetUri");
+ /**
+@@ -34,7 +36,7 @@ const prepare = (self, props = self.props) => {
+     ...rest
+   } = props;
+   const clean = {
+-    ...((0, _.hasTouchableProperty)(props) ? {
++    ...((0, _hasProperty.hasTouchableProperty)(props) ? {
+       onStartShouldSetResponder: self.touchableHandleStartShouldSetResponder,
+       onResponderTerminationRequest: self.touchableHandleResponderTerminationRequest,
+       onResponderGrant: self.touchableHandleResponderGrant,
+@@ -51,15 +53,15 @@ const prepare = (self, props = self.props) => {
+   }
+ 
+   // we do it like this because setting transform as undefined causes error in web
+-  const parsedTransform = (0, _.parseTransformProp)(transform, props);
++  const parsedTransform = (0, _parseTransform.parseTransformProp)(transform, props);
+   if (parsedTransform) {
+     clean.transform = parsedTransform;
+   }
+-  const parsedGradientTransform = (0, _.parseTransformProp)(gradientTransform);
++  const parsedGradientTransform = (0, _parseTransform.parseTransformProp)(gradientTransform);
+   if (parsedGradientTransform) {
+     clean.gradientTransform = parsedGradientTransform;
+   }
+-  const parsedPatternTransform = (0, _.parseTransformProp)(patternTransform);
++  const parsedPatternTransform = (0, _parseTransform.parseTransformProp)(patternTransform);
+   if (parsedPatternTransform) {
+     clean.patternTransform = parsedPatternTransform;
+   }
+diff --git a/lib/module/web/utils/hasProperty.js b/lib/module/web/utils/hasProperty.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..7ab6380b661a2d19f0e4f1dce51728546cadd714
+--- /dev/null
++++ b/lib/module/web/utils/hasProperty.js
+@@ -0,0 +1,3 @@
++export function hasTouchableProperty(props) {
++  return !!(props.onPress || props.onPressIn || props.onPressOut || props.onLongPress);
++}
+diff --git a/lib/module/web/utils/parseTransform.js b/lib/module/web/utils/parseTransform.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..33801b8e99587605f943190d1f144f6855e0a957
+--- /dev/null
++++ b/lib/module/web/utils/parseTransform.js
+@@ -0,0 +1,43 @@
++import { transformsArrayToProps } from '../../lib/extract/extractTransform';
++export function parseTransformProp(transform, props) {
++  const transformArray = [];
++  props && transformArray.push(...stringifyTransformProps(props));
++  if (Array.isArray(transform)) {
++    if (typeof transform[0] === 'number') {
++      transformArray.push(`matrix(${transform.join(' ')})`);
++    } else {
++      const stringifiedProps = transformsArrayToProps(
++      // @ts-expect-error FIXME
++      transform);
++      transformArray.push(...stringifyTransformProps(stringifiedProps));
++    }
++  } else if (typeof transform === 'string') {
++    transformArray.push(transform);
++  }
++  return transformArray.length ? transformArray.join(' ') : undefined;
++}
++export function stringifyTransformProps(transformProps) {
++  const transformArray = [];
++  if (transformProps.translate != null) {
++    transformArray.push(`translate(${transformProps.translate})`);
++  }
++  if (transformProps.translateX != null || transformProps.translateY != null) {
++    transformArray.push(`translate(${transformProps.translateX || 0}, ${transformProps.translateY || 0})`);
++  }
++  if (transformProps.scale != null) {
++    transformArray.push(`scale(${transformProps.scale})`);
++  }
++  if (transformProps.scaleX != null || transformProps.scaleY != null) {
++    transformArray.push(`scale(${transformProps.scaleX || 1}, ${transformProps.scaleY || 1})`);
++  }
++  if (transformProps.rotation != null) {
++    transformArray.push(`rotate(${transformProps.rotation})`);
++  }
++  if (transformProps.skewX != null) {
++    transformArray.push(`skewX(${transformProps.skewX})`);
++  }
++  if (transformProps.skewY != null) {
++    transformArray.push(`skewY(${transformProps.skewY})`);
++  }
++  return transformArray;
++}
+diff --git a/lib/module/web/utils/prepare.js b/lib/module/web/utils/prepare.js
+index 796b489729509dc8799840f79a7e2c38ec6d1afe..113eb2b45c518fb2f1dd4fdcca1a87b29572cfe7 100644
+--- a/lib/module/web/utils/prepare.js
++++ b/lib/module/web/utils/prepare.js
+@@ -1,4 +1,5 @@
+-import { hasTouchableProperty, parseTransformProp } from '.';
++import { hasTouchableProperty } from './hasProperty';
++import { parseTransformProp } from './parseTransform';
+ import { resolve } from '../../lib/resolve';
+ import { resolveAssetUri } from '../../lib/resolveAssetUri';
+ /**

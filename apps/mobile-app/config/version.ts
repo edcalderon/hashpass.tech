@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607132308, // Updated to current timestamp
-  releaseDate: '2026-07-13',
+  buildNumber: 202607140219, // Updated to current timestamp
+  releaseDate: '2026-07-14',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'merge-triggered tag/sync workflow, version bump moves into promotion PR'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'resolve the actual sidebar-not-opening bug, not just the crash',
+    'pin react-native and react-native-svg to Expo SDK\'s exact expected versions'
   ],
   breakingChanges: [],
-  notes: 'merge-triggered tag/sync workflow, version bump moves into promotion PR'
+  notes: 'resolve the actual sidebar-not-opening bug, not just the crash; pin react-native and react-native-svg to Expo SDK\'s exact expected versions'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.219': {
+    version: '1.8.219',
+    buildNumber: 202607140219,
+    releaseDate: '2026-07-14',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'resolve the actual sidebar-not-opening bug, not just the crash',
+      'pin react-native and react-native-svg to Expo SDK\'s exact expected versions'
+    ],
+    breakingChanges: [],
+    notes: 'resolve the actual sidebar-not-opening bug, not just the crash; pin react-native and react-native-svg to Expo SDK\'s exact expected versions'
+  },
   '1.8.218': {
     version: '1.8.218',
     buildNumber: 202607132308,

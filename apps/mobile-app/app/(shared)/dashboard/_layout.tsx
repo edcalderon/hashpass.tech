@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps } from 'react-native-reanimated';
@@ -8,6 +8,7 @@ import { useRouter, usePathname, useNavigation as useExpoNavigation } from 'expo
 import { Drawer } from 'expo-router/drawer';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
+import { useDrawerStatus } from '@react-navigation/drawer';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@hashpass/types';
@@ -27,6 +28,7 @@ import SafeBlurView from '../../../components/SafeBlurView';
 import QRScanner from '../../../components/QRScanner';
 import MiniNotificationDropdown from '../../../components/MiniNotificationDropdown';
 import { hasRecentAuthSuccess } from '../../../lib/auth/recent-auth';
+import { isDevAuthBypassEnabled } from '../../../lib/auth/dev-bypass';
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 
@@ -57,7 +59,15 @@ const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
 const CopilotView = walkthroughable(View);
 
 // Custom drawer content component
-function CustomDrawerContent({ navRef }: { navRef?: DrawerNavRef }) {
+function CustomDrawerContent({
+  navRef,
+  navigation: drawerContentNavigation,
+  onDrawerStatusChange,
+}: {
+  navRef?: DrawerNavRef;
+  navigation?: DrawerNavigation;
+  onDrawerStatusChange?: (isOpen: boolean) => void;
+}) {
   const { colors, isDark, toggleTheme } = useTheme();
   const { signOut, user } = useAuth();
   const { event } = useEvent();
@@ -66,7 +76,16 @@ function CustomDrawerContent({ navRef }: { navRef?: DrawerNavRef }) {
   const { animationsEnabled } = useAnimations();
   const router = useRouter();
   const pathname = usePathname();
-  const navigation = useNavigation<DrawerNavigation>();
+  // react-navigation's Drawer explicitly passes `navigation` as a prop to
+  // whatever renders as drawerContent (part of DrawerContentComponentProps)
+  // — that prop is guaranteed to be the Drawer navigator itself. Calling the
+  // useNavigation() hook here instead resolves to the nearest ancestor Stack
+  // navigator in this app's tree, NOT the Drawer — confirmed by logging
+  // getState() on both and finding them identical, type: "stack". Every
+  // dispatch(openDrawer()) sent through that ref was silently no-opping
+  // against a Stack navigator that doesn't understand OPEN_DRAWER. Use the
+  // prop, not the hook.
+  const navigation = drawerContentNavigation as DrawerNavigation;
   // Written synchronously during render, not in an effect: CustomDrawerContent
   // receives `navigation` as soon as it renders, so waiting for an effect to
   // commit only reopens the exact race (a tap between mount and effect)
@@ -83,6 +102,21 @@ function CustomDrawerContent({ navRef }: { navRef?: DrawerNavRef }) {
       }
     };
   }, [navigation, navRef]);
+  // The custom Header renders as a sibling outside the Drawer's own subtree
+  // on Android (see the platform check in DashboardLayout below), with a
+  // high zIndex so screen content scrolls under it. That same zIndex also
+  // painted it over the Drawer's own open panel — confirmed a plain zIndex
+  // drop doesn't fix this (Android needs matching `elevation`, or the two
+  // views are on genuinely separate native surfaces zIndex alone can't
+  // reorder); not rendering the Header at all while open does. Reporting
+  // open/closed status up lets DashboardLayout skip the Header for that
+  // window — the Drawer's own content already has its own top branding, so
+  // nothing is lost, and the Drawer's built-in close affordances (backdrop
+  // tap, swipe, back button) remain the way to close it while it's up.
+  const drawerStatus = useDrawerStatus();
+  useEffect(() => {
+    onDrawerStatusChange?.(drawerStatus === 'open');
+  }, [drawerStatus, onDrawerStatusChange]);
   const copilotHook = useCopilot() as any;
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
@@ -698,6 +732,10 @@ export default function DashboardLayout() {
   // Instance-scoped bridge from CustomDrawerContent's navigation object to
   // Header (see the DrawerNavRef comment above CustomDrawerContent).
   const drawerNavRef = useRef<DrawerNavigation | null>(null);
+  // Lifted from CustomDrawerContent's useDrawerStatus() so Header can drop
+  // its zIndex while the drawer is open — see the comment above
+  // onDrawerStatusChange in CustomDrawerContent for why that's needed.
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   // Memoized so drawerContent keeps a stable identity across DashboardLayout
   // re-renders (scroll, notifications, animation state all cause those). An
   // inline arrow function here would make react-navigation's Drawer treat
@@ -706,15 +744,19 @@ export default function DashboardLayout() {
   // view — repeatedly. Tearing down a view with live gesture-handler /
   // reanimated bindings mid-flight is a known native-crash trigger, and
   // exactly the failure shape behind this file's prior react-native-screens
-  // incidents. drawerNavRef itself is a stable ref object, so it's safe to
-  // close over without listing it as a dependency.
+  // incidents. drawerNavRef and setIsDrawerOpen are both stable references
+  // across renders (a ref object and a useState setter), so it's safe to
+  // close over both without listing them as dependencies.
   const renderDrawerContent = useCallback(
-    (props: object) => <CustomDrawerContent {...props} navRef={drawerNavRef} />,
+    (props: object) => (
+      <CustomDrawerContent {...props} navRef={drawerNavRef} onDrawerStatusChange={setIsDrawerOpen} />
+    ),
     [],
   );
 
   // Verify user is logged in before allowing dashboard access (provider-agnostic)
   React.useEffect(() => {
+    if (isDevAuthBypassEnabled()) return;
     const shouldDelayRedirectForRecentAuth = () => {
       return hasRecentAuthSuccess();
     };
@@ -959,15 +1001,28 @@ export default function DashboardLayout() {
                   const drawerNavigation = Platform.OS === 'android'
                     ? (drawerNavRef.current ?? navigationFromContext)
                     : navigationFromContext;
-                  // Open the drawer first
+                  // Toggle, not just open. On Android this button is hidden
+                  // while the drawer is open (see isDrawerOpen below), so in
+                  // practice this branch always opens there — but on iOS,
+                  // Header renders inside the Drawer's own header slot (see
+                  // drawerHeaderOptions) and stays reachable while open, so
+                  // toggling (vs. always opening) is what makes the same
+                  // button close it there. Track whether this tap is
+                  // opening or closing before dispatch, since the tutorial
+                  // follow-up below should only run when actually opening.
+                  const wasOpen = isDrawerOpen;
                   try {
                     if (typeof drawerNavigation?.dispatch === 'function') {
-                      drawerNavigation.dispatch(DrawerActions.openDrawer());
+                      drawerNavigation.dispatch(DrawerActions.toggleDrawer());
                     } else {
-                      console.warn('Drawer navigation unavailable, skipping openDrawer');
+                      console.warn('Drawer navigation unavailable, skipping toggleDrawer');
                     }
                   } catch (e) {
-                    console.error('Error opening drawer:', e);
+                    console.error('Error toggling drawer:', e);
+                  }
+
+                  if (wasOpen) {
+                    return;
                   }
 
                   // Wait for drawer animation, then continue tutorial
@@ -1121,7 +1176,11 @@ export default function DashboardLayout() {
               <Drawer.Screen name="qr-view" />
               <Drawer.Screen name="pass-details" />
             </Drawer>
-            {Platform.OS === 'android' && <ScreenWithHeader />}
+            {/* Skipped while the drawer is open: ScreenWithHeader is a
+                sibling of Drawer with an elevated zIndex, which otherwise
+                paints over the Drawer's own open panel — see the
+                useDrawerStatus comment in CustomDrawerContent. */}
+            {Platform.OS === 'android' && !isDrawerOpen && <ScreenWithHeader />}
           </View>
         </ScrollProvider>
       </NotificationProvider>

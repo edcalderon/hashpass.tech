@@ -34,6 +34,7 @@ import { AppErrorBoundary, installGlobalErrorHandler } from '../components/AppEr
 import { configureNativeGoogleSignin } from '../lib/native-google-signin';
 import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config';
 import { hasRecentAuthSuccess } from '../lib/auth/recent-auth';
+import { isDevAuthBypassEnabled } from '../lib/auth/dev-bypass';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { checkNativeCrashLog, showNativeCrashAlert } from '../lib/native-crash-reader';
 import packageJson from '../package.json';
@@ -257,6 +258,7 @@ function ThemedContent() {
 
   // Handle auth redirection with session verification
   useEffect(() => {
+    if (isDevAuthBypassEnabled()) return;
     const shouldDelayRedirectForRecentAuth = () => {
       return hasRecentAuthSuccess();
     };

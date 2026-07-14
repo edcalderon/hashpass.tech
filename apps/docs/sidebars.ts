@@ -88,6 +88,16 @@ const sidebars = {
         },
         {
           type: 'category',
+          label: 'Mobile App',
+          items: [
+            'reference/mobile-app/native-module-version-pinning',
+            'reference/mobile-app/local-android-debugging',
+            'reference/mobile-app/drawer-navigation-gotchas',
+            'reference/mobile-app/event-scoped-api-client',
+          ],
+        },
+        {
+          type: 'category',
           label: 'Release',
           items: [
             'reference/release/RELEASE_WORKFLOW',

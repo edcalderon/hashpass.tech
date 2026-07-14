@@ -1,11 +1,12 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.218",
+  "version": "1.8.219",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
-      "caniuse-lite": "1.0.30001800"
+      "caniuse-lite": "1.0.30001800",
+      "react-native": "0.79.6"
     },
     "patchedDependencies": {
       "metro-file-map@0.82.5": "patches/metro-file-map@0.82.5.patch",
@@ -13,7 +14,8 @@
       "expo-router@5.1.11": "patches/expo-router@5.1.11.patch",
       "react-native-web@0.20.0": "patches/react-native-web@0.20.0.patch",
       "@expo/cli@0.24.24": "patches/@expo__cli@0.24.24.patch",
-      "react-native-copilot@3.3.3": "patches/react-native-copilot@3.3.3.patch"
+      "react-native-copilot@3.3.3": "patches/react-native-copilot@3.3.3.patch",
+      "react-native-svg@15.11.2": "patches/react-native-svg@15.11.2.patch"
     }
   },
   "scripts": {
@@ -215,14 +217,14 @@
     "puppeteer": "^24.29.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-native": "0.79.2",
+    "react-native": "0.79.6",
     "react-native-copilot": "^3.3.3",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-qrcode-svg": "^6.3.20",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-svg": "15.12.1",
+    "react-native-svg": "15.11.2",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",

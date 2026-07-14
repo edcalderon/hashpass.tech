@@ -34,15 +34,14 @@ The full release includes:
 1. Validate the current task changes.
 2. Commit the intended changes on `develop`.
 3. Push `develop` to `origin` and `upstream`.
-4. Run `npm run release:promote` on `develop`.
-5. Wait for `@edcalderon` codeowner approval, and keep coverage at or above 33% with the GitHub security scans passing before merging the PR.
-6. Merge the PR and sync the release commit back to `develop`.
-7. Push the synchronized `develop` branch to `origin` and `upstream`.
-8. Run `npm run release:patch` on `main` to cut the stable tag.
-9. Do not trigger the Android release workflow manually. `.github/workflows/mobile-release-on-tag.yml` auto-dispatches `mobile-android-release.yml` on the `v*.*.*` tag push from step 8. Confirmed 2026-07-13: running `gh workflow run mobile-android-release.yml` after `release:patch` creates a duplicate run racing the auto-triggered one for the same Android version code — only dispatch it manually for a retry on an already-tagged version or a non-default track/environment.
-10. Verify the Android workflow and the web/API deployment checks, including the API version endpoint guard.
+4. Run `npm run release:promote` on `develop`. As of 2026-07-13 this also runs the real version bump and changelog, committing it as its own `chore: release vX.Y.Z` commit before opening the PR — the PR diff is the release, version bump included.
+5. Wait for `@edcalderon` approval, and keep coverage at or above 33% with the GitHub security scans passing before merging the PR. `main` is enforced by an active GitHub ruleset (id `18627241`) — direct pushes to `main` are rejected, so this PR is the only way in.
+6. Merge the PR. That is the last manual step. Do not run `npm run release:patch` on `main` and do not manually sync `develop` — `.github/workflows/release-tag-on-merge.yml` fires automatically on the merge and does both: tags the exact merge commit as `vX.Y.Z` (the version already bumped inside the PR, no second bump on `main`) and fast-forwards `develop` to match. Requires the `RELEASE_AUTOMATION_TOKEN` repo secret; the job fails loudly with a clear message if that secret is missing rather than silently degrading.
+7. Do not trigger the Android release workflow manually. `.github/workflows/mobile-release-on-tag.yml` auto-dispatches `mobile-android-release.yml` on the `v*.*.*` tag push from step 6. Confirmed 2026-07-13: running `gh workflow run mobile-android-release.yml` after a merge creates a duplicate run racing the auto-triggered one for the same Android version code — only dispatch it manually for a retry on an already-tagged version or a non-default track/environment.
+8. Verify the Android workflow and the web/API deployment checks, including the API version endpoint guard.
+9. `upstream` (the personal-fork backup remote) is not synced by `release-tag-on-merge.yml` — no token available to that workflow can reach a different account's fork. Re-sync manually only if needed: `git push upstream develop <TAG_NAME>`.
 
-Do not report a deployment as complete while a required push, branch sync, release workflow, or deployment check is pending or failed.
+Do not report a deployment as complete while a required push, branch sync, release workflow, or deployment check is pending or failed. See `.agents/active/task-release-flow-automation.md` (or `.agents/done/` once closed out) for the full design and incident history behind this flow.
 Do not report the web deployment as complete if `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions` still reports an older version than the release.
 Do not hand-edit release artifacts or perform a release by hand; the release scripts own the version bump, changelog, README sync, tag, and push sequence.
 The Husky pre-commit hook runs the README sync guard, so a stale changelog/README pair should be fixed with `npm run update-readme` before committing.

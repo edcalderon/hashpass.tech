@@ -4,7 +4,6 @@
 
 | File | Description | Priority |
 |------|-------------|----------|
-| [active/task-release-flow-automation.md](active/task-release-flow-automation.md) | Merge-triggered tag & develop-sync to replace the manual release:promote/release:patch dance; version bump moves into the reviewed PR | 🔴 High |
 | [active/task-hashpass-ai-assistant.md](active/task-hashpass-ai-assistant.md) | App-wide HashPass AI assistant with floating chat UI, standalone page, Bedrock RAG, and Aurora/RDS backing | 🔴 High |
 | [active/task-aws-account-migration.md](active/task-aws-account-migration.md) | Migrate HashPass AWS services from account `058264267235` to `952191196420` with reversible IaC | 🔴 High |
 | [active/task-app-publish.md](active/task-app-publish.md) | Google Play Store closed testing upload in progress + production rollout (v1.8.148) | 🔴 High |
@@ -14,6 +13,7 @@
 
 | File | Description | Priority |
 |------|-------------|----------|
+| [pending/task-release-flow-security-and-kpi.md](pending/task-release-flow-security-and-kpi.md) | Security hardening for release-flow-automation (PAT lifecycle, bypass policy, runbooks) + time-to-ship KPI: measured 2m25s/1m19s (old) vs 32s (new) | 🟡 Medium |
 | [pending/directus-usage-and-flow.md](pending/directus-usage-and-flow.md) | Organize Directus's actual role (auth vs CMS vs deprecate), document the real Better-Auth-first auth flow, evaluate self-hosted BaaS alternatives (PocketBase, self-hosted Supabase, etc.) | 🟢 Low |
 | [pending/email-proxy-balancer.md](pending/email-proxy-balancer.md) | Brevo primary + self-hosted SMTP fallback with daily budget tracking | 🟡 Medium |
 | [pending/typescript-7-safe-migration.md](pending/typescript-7-safe-migration.md) | Safe staged migration to TypeScript 7 with TS 6 compatibility tooling, config cleanup, and benchmark validation | 🟡 Medium |
@@ -22,6 +22,7 @@
 
 | File | Description | Completed |
 |------|-------------|-----------|
+| [done/task-release-flow-automation.md](done/task-release-flow-automation.md) | Merge-triggered tag & develop-sync replacing the manual release:promote/release:patch dance; validated live on v1.8.218 | 2026-07-13 |
 | [done/task-monorepo-migration.md](done/task-monorepo-migration.md) | Full monorepo migration (pnpm/turbo, packages, apps) | 2026-02-14 |
 
 ---
