@@ -5,7 +5,8 @@
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
-      "caniuse-lite": "1.0.30001800"
+      "caniuse-lite": "1.0.30001800",
+      "react-native": "0.79.6"
     },
     "patchedDependencies": {
       "metro-file-map@0.82.5": "patches/metro-file-map@0.82.5.patch",
