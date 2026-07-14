@@ -13,7 +13,8 @@
       "expo-router@5.1.11": "patches/expo-router@5.1.11.patch",
       "react-native-web@0.20.0": "patches/react-native-web@0.20.0.patch",
       "@expo/cli@0.24.24": "patches/@expo__cli@0.24.24.patch",
-      "react-native-copilot@3.3.3": "patches/react-native-copilot@3.3.3.patch"
+      "react-native-copilot@3.3.3": "patches/react-native-copilot@3.3.3.patch",
+      "react-native-svg@15.11.2": "patches/react-native-svg@15.11.2.patch"
     }
   },
   "scripts": {
