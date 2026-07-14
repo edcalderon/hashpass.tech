@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607140550, // Updated to current timestamp
+  buildNumber: 202607141621, // Updated to current timestamp
   releaseDate: '2026-07-14',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'dashboard/drawer header logo invisible, window.addEventListener crash'
+    'dashboard gesture crash after login, add sign-out on landing'
   ],
   breakingChanges: [],
-  notes: 'dashboard/drawer header logo invisible, window.addEventListener crash'
+  notes: 'dashboard gesture crash after login, add sign-out on landing'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.221': {
+    version: '1.8.221',
+    buildNumber: 202607141621,
+    releaseDate: '2026-07-14',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'dashboard gesture crash after login, add sign-out on landing'
+    ],
+    breakingChanges: [],
+    notes: 'dashboard gesture crash after login, add sign-out on landing'
+  },
   '1.8.220': {
     version: '1.8.220',
     buildNumber: 202607140550,
