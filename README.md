@@ -20,12 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.219)
+## 📋 Latest Changes (v1.8.220)
 
 ### Bug Fixes
 
-* **mobile:** pin react-native and react-native-svg to Expo SDK's exact expected versions ([b9a16c2](https://github.com/hashpass-tech/hashpass.tech/commit/b9a16c203a1ba035301741abd25e244eea109d3d))
-* **mobile:** resolve the actual sidebar-not-opening bug, not just the crash ([df02df8](https://github.com/hashpass-tech/hashpass.tech/commit/df02df85300e56cf7db5786fcd7920674526ab0d))
+* **mobile:** dashboard/drawer header logo invisible, window.addEventListener crash ([2730334](https://github.com/hashpass-tech/hashpass.tech/commit/27303340e2356ea2b54c96acdcbab16923695363))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

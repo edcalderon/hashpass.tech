@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607140219, // Updated to current timestamp
+  buildNumber: 202607140550, // Updated to current timestamp
   releaseDate: '2026-07-14',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,15 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'resolve the actual sidebar-not-opening bug, not just the crash',
-    'pin react-native and react-native-svg to Expo SDK\'s exact expected versions'
+    'dashboard/drawer header logo invisible, window.addEventListener crash'
   ],
   breakingChanges: [],
-  notes: 'resolve the actual sidebar-not-opening bug, not just the crash; pin react-native and react-native-svg to Expo SDK\'s exact expected versions'
+  notes: 'dashboard/drawer header logo invisible, window.addEventListener crash'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.220': {
+    version: '1.8.220',
+    buildNumber: 202607140550,
+    releaseDate: '2026-07-14',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'dashboard/drawer header logo invisible, window.addEventListener crash'
+    ],
+    breakingChanges: [],
+    notes: 'dashboard/drawer header logo invisible, window.addEventListener crash'
+  },
   '1.8.219': {
     version: '1.8.219',
     buildNumber: 202607140219,

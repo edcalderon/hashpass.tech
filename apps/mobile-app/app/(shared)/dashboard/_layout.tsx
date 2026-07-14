@@ -493,8 +493,8 @@ function CustomDrawerContent({
               ]}>
                 <Image
                   source={isDark
-                    ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
-                    : require('../../../assets/logos/hashpass/logo-full-hashpass-white.svg')
+                    ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
+                    : require('../../../assets/logos/hashpass/logo-full-hashpass-black.png')
                   }
                   style={styles.logoImage}
                   resizeMode="contain"
@@ -1058,8 +1058,8 @@ export default function DashboardLayout() {
           >
             <Image
               source={isDark
-                ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg')
-                : require('../../../assets/logos/hashpass/logo-full-hashpass-white.svg')
+                ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
+                : require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')
               }
               style={styles.headerLogoImage}
               resizeMode="contain"
@@ -1245,7 +1245,14 @@ const getStyles = (
     right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: -1, // Place behind buttons
+    // A negative zIndex here previously made the logo invisible on Android
+    // (negative zIndex doesn't just sit behind the hamburger/QR buttons the
+    // way it does on web — it can drop behind the header's own background on
+    // Android's native compositor). pointerEvents: 'box-none' does the actual
+    // job negative zIndex was trying to do — letting taps on the empty parts
+    // of this full-width overlay fall through to the buttons underneath —
+    // without needing to hide the view to get there.
+    pointerEvents: 'box-none',
   },
   headerLogoImage: {
     width: 120,

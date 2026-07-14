@@ -1,3 +1,14 @@
+## [1.8.220](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.219...v1.8.220) (2026-07-14)
+
+
+### Bug Fixes
+
+* **mobile:** dashboard/drawer header logo invisible, window.addEventListener crash ([2730334](https://github.com/hashpass-tech/hashpass.tech/commit/27303340e2356ea2b54c96acdcbab16923695363))
+
+
+
+
+
 ## [1.8.219](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.218...v1.8.219) (2026-07-14)
 
 
