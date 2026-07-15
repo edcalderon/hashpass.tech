@@ -351,6 +351,24 @@ const hardenURLSearchParamsInstance = (makeInstance: () => any): boolean => {
 const isReactNativeRuntime = (): boolean =>
   typeof navigator !== 'undefined' && (navigator as any)?.product === 'ReactNative';
 
+// The lock below (`configurable: false`) is only safe under the New Architecture
+// (Fabric/Bridgeless), where it was designed and observed to fix the v1.8.199
+// mid-session re-bind. Under the OLD bridge (newArchEnabled: false,
+// "Bridgeless Mode: false" in logs), React Native's own later polyfill-install
+// pass hits this same non-configurable property, and — unlike the Bridgeless
+// path — that failure propagates as an uncaught exception during synchronous
+// bundle evaluation, before AppRegistry.registerComponent() ever runs. Native
+// then calls AppRegistry.runApplication() into a JS context with zero
+// registered callable modules, which is a permanent stuck-on-splash crash for
+// every user (found 2026-07-14 after v1.8.222 shipped newArchEnabled: false).
+// Detecting old-bridge mode and skipping only the lock — while keeping the
+// non-configurable-free hardening in steps 1-3 above, which is the actual
+// crash fix and doesn't depend on architecture — avoids trading one crash for
+// a strictly worse one.
+const isNewArchitectureEnabled = (): boolean =>
+  typeof (globalThis as any).nativeFabricUIManager !== 'undefined' ||
+  (globalThis as any).RN$Bridgeless === true;
+
 const lockGlobalProperty = (
   name: 'URL' | 'URLSearchParams',
   isAcceptable: (candidate: unknown) => boolean,
@@ -439,7 +457,7 @@ export const installURLSearchParamsPolyfill = (): boolean => {
   //    and the post-login navigation.
   let lockedURLSearchParams = false;
   let lockedURL = false;
-  if (isReactNativeRuntime()) {
+  if (isReactNativeRuntime() && isNewArchitectureEnabled()) {
     lockedURLSearchParams = lockGlobalProperty(
       'URLSearchParams',
       isFullyWorkingURLSearchParams,

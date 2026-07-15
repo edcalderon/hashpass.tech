@@ -9,11 +9,18 @@ describe('URLSearchParams global lock (native runtimes)', () => {
   const originalNavigator = (globalThis as any).navigator;
 
   beforeEach(() => {
-    // Simulate a React Native runtime so the lock engages.
+    // Simulate a React Native runtime on the New Architecture (Fabric/Bridgeless)
+    // so the lock engages — this is the only mode it's safe in. See the
+    // isNewArchitectureEnabled() comment in url-search-params.ts for why: under
+    // the old bridge, this same lock caused a stuck-on-splash crash for every
+    // user in v1.8.222 (newArchEnabled: false), because something in the old
+    // bridge's later polyfill pass throws uncaught against a locked property
+    // instead of degrading gracefully like RN's own guarded polyfillGlobal does.
     Object.defineProperty(globalThis, 'navigator', {
       configurable: true,
       value: { product: 'ReactNative' },
     });
+    (globalThis as any).nativeFabricUIManager = {};
   });
 
   afterEach(() => {
@@ -21,6 +28,7 @@ describe('URLSearchParams global lock (native runtimes)', () => {
       configurable: true,
       value: originalNavigator,
     });
+    delete (globalThis as any).nativeFabricUIManager;
     jest.resetModules();
   });
 

@@ -1,3 +1,14 @@
+## [1.8.223](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.222...v1.8.223) (2026-07-15)
+
+
+### Bug Fixes
+
+* **mobile:** stop URL/URLSearchParams global lock from breaking app boot on old bridge ([2ac3b91](https://github.com/hashpass-tech/hashpass.tech/commit/2ac3b91613c965bdf46a50880b0b20b2483fde2b))
+
+
+
+
+
 ## [1.8.222](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.221...v1.8.222) (2026-07-15)
 
 
