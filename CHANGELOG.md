@@ -1,3 +1,14 @@
+## [1.8.224](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.223...v1.8.224) (2026-07-15)
+
+
+### Bug Fixes
+
+* **mobile:** re-enable New Architecture to end total launch outage from v1.8.222/223 ([47a040a](https://github.com/hashpass-tech/hashpass.tech/commit/47a040a9a3238315afda16785f28fe4edefdb35a))
+
+
+
+
+
 ## [1.8.223](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.222...v1.8.223) (2026-07-15)
 
 

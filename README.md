@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.223)
+## 📋 Latest Changes (v1.8.224)
 
 ### Bug Fixes
 
-* **mobile:** stop URL/URLSearchParams global lock from breaking app boot on old bridge ([2ac3b91](https://github.com/hashpass-tech/hashpass.tech/commit/2ac3b91613c965bdf46a50880b0b20b2483fde2b))
+* **mobile:** re-enable New Architecture to end total launch outage from v1.8.222/223 ([47a040a](https://github.com/hashpass-tech/hashpass.tech/commit/47a040a9a3238315afda16785f28fe4edefdb35a))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

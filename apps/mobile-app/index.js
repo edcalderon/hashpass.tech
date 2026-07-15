@@ -38,9 +38,22 @@ try {
 }
 
 // Load the router. Wrap in try-catch to surface synchronous module-eval errors.
+console.log('[HashPass][boot] requiring expo-router/entry');
 try {
   require('expo-router/entry');
+  console.log('[HashPass][boot] expo-router/entry evaluated OK');
 } catch (err) {
+  // Log FIRST so the real error reaches logcat even when Alert can't render
+  // this early in old-bridge startup (a swallowed error here means no app
+  // component registers, so AppRegistry.runApplication crashes with n=0 and
+  // the app is stuck on the native splash — invisible without this log).
+  console.error(
+    '[HashPass][boot] expo-router/entry threw:',
+    (err && err.name ? err.name + ': ' : '') +
+      (err && err.message ? err.message : String(err)) +
+      '\n' +
+      (err && err.stack ? err.stack : 'no stack')
+  );
   try {
     const { Alert } = require('react-native');
     Alert.alert(
@@ -52,6 +65,6 @@ try {
       [{ text: 'OK' }]
     );
   } catch (_) {
-    console.error('[HashPass] Module load crash:', err);
+    console.error('[HashPass] Module load crash (alert unavailable):', err);
   }
 }
