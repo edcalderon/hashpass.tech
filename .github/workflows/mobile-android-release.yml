@@ -934,11 +934,18 @@ jobs:
           # Extract only the fields that drive native output.
           NATIVE_CONFIG=$(node -e "
             const app = require('./apps/mobile-app/app.json').expo;
+            const { buildExpoConfig } = require('./apps/mobile-app/lib/eas-config');
             const pkg = require('./apps/mobile-app/package.json');
+            const resolvedApp = buildExpoConfig({ baseConfig: app, env: process.env });
             console.log(JSON.stringify({
-              plugins: app.plugins,
-              android: app.android,
-              ios: app.ios,
+              newArchEnabled: resolvedApp.newArchEnabled,
+              plugins: resolvedApp.plugins,
+              android: resolvedApp.android,
+              ios: resolvedApp.ios,
+              extra: {
+                eas: resolvedApp.extra && resolvedApp.extra.eas,
+                router: resolvedApp.extra && resolvedApp.extra.router,
+              },
               dependencies: pkg.dependencies,
               devDependencies: pkg.devDependencies,
             }));

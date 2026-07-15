@@ -438,6 +438,31 @@ describe("HomeScreen native tablet layout", () => {
     expect(topControls).toBeTruthy();
   });
 
+  it("renders the native landing first frame visibly without waiting for scroll", () => {
+    const { renderer } = loadHomeScreen({
+      width: 390,
+      height: 844,
+      platform: "android",
+      animationLevel: "full",
+      isDark: false,
+    });
+
+    const root = renderer.root;
+    const container = root
+      .findAllByType("Reanimated.View")
+      .find(
+        (node: any) =>
+          styleArrayContains(node.props.style, { position: "relative" }) &&
+          styleArrayContains(node.props.style, { opacity: 1 }),
+      );
+    expect(container).toBeTruthy();
+
+    const hero = root
+      .findAllByType("View")
+      .find((node: any) => node.props.style?.backgroundColor === "#101820");
+    expect(hero).toBeTruthy();
+  });
+
   it("renders a static single-line hero tagline with theme-aware colors when animations are disabled", () => {
     const { renderer } = loadHomeScreen({
       platform: "web",
