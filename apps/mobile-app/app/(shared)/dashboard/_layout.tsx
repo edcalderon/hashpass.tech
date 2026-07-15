@@ -29,6 +29,7 @@ import QRScanner from '../../../components/QRScanner';
 import MiniNotificationDropdown from '../../../components/MiniNotificationDropdown';
 import { hasRecentAuthSuccess } from '../../../lib/auth/recent-auth';
 import { isDevAuthBypassEnabled } from '../../../lib/auth/dev-bypass';
+import { navigateDashboardBrandToLanding } from '../../../lib/dashboard-navigation';
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 
@@ -373,8 +374,11 @@ function CustomDrawerContent({
   });
 
   const handleLogoPress = () => {
-    navigation.dispatch(DrawerActions.closeDrawer());
-    router.push('./explore' as any);
+    navigateDashboardBrandToLanding({
+      navigation,
+      router,
+      closeDrawerAction: DrawerActions.closeDrawer(),
+    });
   };
 
   const handleLogoPressIn = () => {
@@ -478,6 +482,8 @@ function CustomDrawerContent({
               onPressIn={handleLogoPressIn}
               onPressOut={handleLogoPressOut}
               activeOpacity={1}
+              accessibilityRole="button"
+              accessibilityLabel={t({ id: 'nav.backToLanding', message: 'Back to landing' })}
               // @ts-ignore - Web-specific hover handlers
               onMouseEnter={handleLogoHoverIn}
               onMouseLeave={handleLogoHoverOut}
