@@ -20,11 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.224)
+## 📋 Latest Changes (v1.8.225)
 
 ### Bug Fixes
 
-* **mobile:** re-enable New Architecture to end total launch outage from v1.8.222/223 ([47a040a](https://github.com/hashpass-tech/hashpass.tech/commit/47a040a9a3238315afda16785f28fe4edefdb35a))
+* document local Android OTP release validation ([4585075](https://github.com/hashpass-tech/hashpass.tech/commit/45850758bbc365c075fcd204916cff0fc48983e9))
+* **mobile:** close landing logout session ([349a813](https://github.com/hashpass-tech/hashpass.tech/commit/349a8130e991d00bb83707184d3a9f1262abd772))
+
+
+### Reverts
+
+* Revert "chore: release v1.8.225" ([230cf52](https://github.com/hashpass-tech/hashpass.tech/commit/230cf525c7e5632666f87fa0f7ac5d0ab68d377a))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
