@@ -328,6 +328,9 @@
     },
     "welcomeBack": "Bem-vindo de volta!",
     "goToApp": "Ir para o aplicativo",
+    "signingOut": "Encerrando sessão...",
+    "signedOut": "Sessão encerrada.",
+    "signOutFailed": "Não foi possível sair. Tente novamente.",
     "readyToSimplify": "Pronto para simplificar sua vida digital?",
     "scroll": "Deslize",
     "getStartedNow": "Começar agora",
@@ -407,6 +410,7 @@
     "admin": "Painel de Administração",
     "brandSubtitle": "Plataforma de eventos digitais",
     "quickActions": "Ações rápidas",
+    "backToLanding": "Voltar ao início",
     "light": "Claro",
     "dark": "Escuro",
     "logout": "Sair"

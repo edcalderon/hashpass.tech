@@ -397,6 +397,9 @@
     },
     "welcomeBack": "¡Bienvenido de nuevo!",
     "goToApp": "Ir a la App",
+    "signingOut": "Cerrando sesión...",
+    "signedOut": "Sesión cerrada.",
+    "signOutFailed": "No se pudo cerrar sesión. Inténtalo de nuevo.",
     "readyToSimplify": "¿Listo para simplificar tu vida digital?",
     "scroll": "Desplázate",
     "getStartedNow": "Comenzar ahora",
@@ -545,6 +548,7 @@
     "admin": "Panel de Administración",
     "brandSubtitle": "Plataforma de Eventos Digitales",
     "quickActions": "Acciones rápidas",
+    "backToLanding": "Volver al inicio",
     "light": "Claro",
     "dark": "Oscuro",
     "logout": "Salir"

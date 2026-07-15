@@ -329,6 +329,9 @@
     },
     "welcomeBack": "Bon retour !",
     "goToApp": "Aller à l'application",
+    "signingOut": "Déconnexion...",
+    "signedOut": "Session fermée.",
+    "signOutFailed": "Impossible de se déconnecter. Réessayez.",
     "readyToSimplify": "Prêt à simplifier votre vie numérique ?",
     "scroll": "Défiler",
     "getStartedNow": "Commencer maintenant",
@@ -408,6 +411,7 @@
     "admin": "Panneau d'Administration",
     "brandSubtitle": "Plateforme d'événements numériques",
     "quickActions": "Actions rapides",
+    "backToLanding": "Retour à l'accueil",
     "light": "Clair",
     "dark": "Sombre",
     "logout": "Déconnexion"

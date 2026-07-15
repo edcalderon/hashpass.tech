@@ -397,6 +397,9 @@
     },
     "welcomeBack": "다시 오신 것을 환영합니다!",
     "goToApp": "앱으로 이동",
+    "signingOut": "로그아웃 중...",
+    "signedOut": "세션이 종료되었습니다.",
+    "signOutFailed": "로그아웃할 수 없습니다. 다시 시도하세요.",
     "readyToSimplify": "디지털 라이프를 단순화할 준비가 되셨나요?",
     "scroll": "스크롤",
     "getStartedNow": "지금 시작",
@@ -476,6 +479,7 @@
     "admin": "관리자 패널",
     "brandSubtitle": "디지털 이벤트 플랫폼",
     "quickActions": "빠른 작업",
+    "backToLanding": "랜딩으로 돌아가기",
     "light": "밝게",
     "dark": "어둡게",
     "logout": "로그아웃"

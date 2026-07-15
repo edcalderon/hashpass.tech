@@ -21,10 +21,12 @@ const mockAuthService = {
   getUser: jest.fn(() => null),
 };
 
+const mockIdleBetterAuthProviderSignOut = jest.fn(async () => undefined);
+
 const MockIdleBetterAuthProvider = jest.fn().mockImplementation(() => ({
   onAuthStateChange: jest.fn(() => () => {}),
   getSession: jest.fn(async () => null),
-  signOut: jest.fn(async () => undefined),
+  signOut: mockIdleBetterAuthProviderSignOut,
   signInWithIdToken: jest.fn(async () => ({
     error: 'Better Auth is not configured for this test.',
   })),
@@ -104,6 +106,7 @@ describe('useAuth native Google sign-in', () => {
     mockAuthService.getSession.mockClear();
     mockAuthService.onAuthStateChange.mockClear();
     mockAuthService.signOut.mockClear();
+    mockIdleBetterAuthProviderSignOut.mockClear();
     mockSignInWithNativeGoogleAccount.mockReset().mockResolvedValue({ idToken: 'native-id-token' });
     mockClearNativeGoogleAccount.mockReset().mockResolvedValue(undefined);
     mockOpenAuthSessionAsync.mockReset();
@@ -1404,6 +1407,7 @@ describe('useAuth native Google sign-in', () => {
     });
 
     expect(mockClearNativeGoogleAccount).toHaveBeenCalledTimes(1);
+    expect(mockIdleBetterAuthProviderSignOut).toHaveBeenCalledTimes(1);
     expect(mockAuthService.signOut).toHaveBeenCalledTimes(1);
     expect(mockSupabase.auth.signOut).toHaveBeenCalledTimes(1);
   });

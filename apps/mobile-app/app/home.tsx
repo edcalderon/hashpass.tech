@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation, getCurrentLocale } from "../i18n/i18n";
 import {
+  ActivityIndicator,
   View,
   Text,
   Image,
@@ -65,6 +66,9 @@ export default function HomeScreen() {
   const { colors, isDark } = useTheme();
   const { user, signOut } = useAuth();
   const [userName, setUserName] = useState<string | null>(null);
+  const [signOutStatus, setSignOutStatus] = useState<
+    "idle" | "pending" | "success" | "error"
+  >("idle");
   const { t } = useTranslation("index");
   const { t: tNav } = useTranslation("nav");
   const isMobile = useIsMobile();
@@ -228,12 +232,20 @@ export default function HomeScreen() {
   // Landing previously had no way to end a session once logged in — a
   // returning user saw "Welcome back" + "Go to App" only, with no exit.
   const handleSignOutPress = useCallback(async () => {
+    if (signOutStatus === "pending") {
+      return;
+    }
+
+    setSignOutStatus("pending");
     try {
       await signOut();
+      setUserName(null);
+      setSignOutStatus("success");
     } catch (error) {
       console.error("[Home] Failed to sign out:", error);
+      setSignOutStatus("error");
     }
-  }, [signOut]);
+  }, [signOut, signOutStatus]);
 
   const featuresRef = React.useRef<View>(null);
   const featuresLayoutRef = React.useRef({ y: 0 });
@@ -313,6 +325,9 @@ export default function HomeScreen() {
   useEffect(() => {
     if (user) {
       setUserName(user.email || user.user_metadata?.full_name || user.id);
+      setSignOutStatus((currentStatus) =>
+        currentStatus === "success" ? "idle" : currentStatus,
+      );
     } else {
       setUserName(null);
     }
@@ -440,6 +455,13 @@ export default function HomeScreen() {
     animationLevel === "none"
       ? getHashpassStaticHeroLogo(isDark)
       : getHashpassFullLogo(isDark);
+  const isSignOutPending = signOutStatus === "pending";
+  const signOutStatusMessage =
+    signOutStatus === "success"
+      ? t("signedOut", "Session closed.")
+      : signOutStatus === "error"
+        ? t("signOutFailed", "Could not sign out. Please try again.")
+        : null;
 
   return (
     <Animated.View style={[styles.container, animatedBackground]}>
@@ -636,20 +658,64 @@ export default function HomeScreen() {
               </Text>
               <TouchableOpacity
                 onPress={handleSignOutPress}
+                disabled={isSignOutPending}
                 activeOpacity={0.7}
                 style={styles.signOutLink}
+                accessibilityRole="button"
+                accessibilityState={{
+                  busy: isSignOutPending,
+                  disabled: isSignOutPending,
+                }}
               >
-                <Text style={styles.signOutLinkText}>{tNav("logout")}</Text>
+                <View style={styles.signOutLinkContent}>
+                  {isSignOutPending ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={
+                        isDark
+                          ? "rgba(255, 255, 255, 0.7)"
+                          : "rgba(18, 18, 18, 0.6)"
+                      }
+                    />
+                  ) : null}
+                  <Text
+                    style={[
+                      styles.signOutLinkText,
+                      isSignOutPending && styles.signOutLinkTextPending,
+                    ]}
+                  >
+                    {isSignOutPending
+                      ? t("signingOut", "Signing out...")
+                      : tNav("logout")}
+                  </Text>
+                </View>
               </TouchableOpacity>
+              {signOutStatusMessage ? (
+                <Text
+                  style={[
+                    styles.signOutStatusText,
+                    signOutStatus === "error" &&
+                      styles.signOutStatusErrorText,
+                  ]}
+                >
+                  {signOutStatusMessage}
+                </Text>
+              ) : null}
               <Animated.View style={styles.ctaButton}>
                 <TouchableOpacity
                   onPress={handleGoToAppPress}
-                  activeOpacity={0.9}
+                  disabled={isSignOutPending}
+                  activeOpacity={isSignOutPending ? 1 : 0.9}
+                  style={isSignOutPending && styles.disabledAction}
                   onPressIn={() => {
-                    buttonAnimation.value = withSpring(1);
+                    if (!isSignOutPending) {
+                      buttonAnimation.value = withSpring(1);
+                    }
                   }}
                   onPressOut={() => {
-                    buttonAnimation.value = withSpring(0);
+                    if (!isSignOutPending) {
+                      buttonAnimation.value = withSpring(0);
+                    }
                   }}
                 >
                   <Animated.View>
@@ -660,6 +726,11 @@ export default function HomeScreen() {
             </>
           ) : (
             <>
+              {signOutStatusMessage ? (
+                <Text style={styles.signOutStatusText}>
+                  {signOutStatusMessage}
+                </Text>
+              ) : null}
               <Text style={styles.ctaHeadline}>{t("readyToSimplify")}</Text>
               <Animated.View style={styles.ctaButton}>
                 <TouchableOpacity
@@ -1183,11 +1254,37 @@ const getStyles = (
       paddingVertical: 4,
       paddingHorizontal: 8,
     },
+    signOutLinkContent: {
+      minHeight: 22,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
     signOutLinkText: {
       fontSize: 14,
       fontWeight: "600",
       color: isDark ? "rgba(255, 255, 255, 0.7)" : "rgba(18, 18, 18, 0.6)",
       textDecorationLine: "underline",
+    },
+    signOutLinkTextPending: {
+      textDecorationLine: "none",
+      opacity: 0.82,
+    },
+    signOutStatusText: {
+      marginTop: -10,
+      marginBottom: 18,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "600",
+      textAlign: "center",
+      color: isDark ? "rgba(255, 255, 255, 0.72)" : "rgba(18, 18, 18, 0.66)",
+    },
+    signOutStatusErrorText: {
+      color: isDark ? "#FFB4AB" : "#B3261E",
+    },
+    disabledAction: {
+      opacity: 0.45,
     },
     ctaButtonText: {
       fontSize: 20,

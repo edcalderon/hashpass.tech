@@ -568,10 +568,12 @@ export const useAuth = () => {
 
   const signOut = useCallback(async () => {
     authenticatedSessionOverrideRef.current = null;
+    const shouldSignOutNativeGoogle =
+      Platform.OS !== 'web' && shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());
 
     // Clear native Google Sign-In cache so the account picker always shows on next login.
     // Must run before app sign-out to avoid the SDK being in a bad state.
-    if (shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId())) {
+    if (shouldSignOutNativeGoogle) {
       try {
         await clearNativeGoogleAccount();
       } catch (nativeClearError) {
@@ -579,27 +581,45 @@ export const useAuth = () => {
       }
     }
 
-    const webBetterAuthProvider =
-      Platform.OS === 'web' && authService.getProviderName() !== 'better-auth'
+    const dedicatedGoogleBetterAuthProvider =
+      authService.getProviderName() !== 'better-auth' &&
+      (Platform.OS === 'web' || shouldSignOutNativeGoogle)
         ? getGoogleBetterAuthProvider()
         : null;
 
     const results = await Promise.allSettled([
       authService.signOut(),
-      webBetterAuthProvider?.signOut() ?? Promise.resolve(undefined),
+      dedicatedGoogleBetterAuthProvider?.signOut() ?? Promise.resolve(undefined),
       supabase.auth.signOut(),
     ]);
 
-    const firstRejected = results.find(
-      (result): result is PromiseRejectedResult => result.status === 'rejected'
-    );
+    const firstFailedResult = results.find((result) => {
+      if (result.status === 'rejected') {
+        return true;
+      }
 
-    if (firstRejected) {
-      console.error('Error signing out:', firstRejected.reason);
-      throw firstRejected.reason;
+      const value = result.value as { error?: unknown } | undefined;
+      return Boolean(value?.error);
+    });
+
+    if (firstFailedResult) {
+      const failureReason =
+        firstFailedResult.status === 'rejected'
+          ? firstFailedResult.reason
+          : (firstFailedResult.value as { error?: unknown }).error;
+      const signOutError =
+        failureReason instanceof Error
+          ? failureReason
+          : new Error(getAuthErrorMessage(failureReason, 'Unable to sign out.'));
+
+      console.error('Error signing out:', signOutError);
+      throw signOutError;
     }
 
     sessionBootstrapPromise = Promise.resolve(null);
+    setUser(null);
+    setIsLoggedIn(false);
+    setIsLoading(false);
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
