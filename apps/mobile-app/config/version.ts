@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607152019, // Updated to current timestamp
+  buildNumber: 202607152141, // Updated to current timestamp
   releaseDate: '2026-07-15',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'stabilize Android dashboard entry'
+    'guard Android layout events'
   ],
   breakingChanges: [],
-  notes: 'stabilize Android dashboard entry'
+  notes: 'guard Android layout events'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.227': {
+    version: '1.8.227',
+    buildNumber: 202607152141,
+    releaseDate: '2026-07-15',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'guard Android layout events'
+    ],
+    breakingChanges: [],
+    notes: 'guard Android layout events'
+  },
   '1.8.226': {
     version: '1.8.226',
     buildNumber: 202607152019,

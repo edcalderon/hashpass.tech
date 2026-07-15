@@ -1,3 +1,14 @@
+## [1.8.227](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.226...v1.8.227) (2026-07-15)
+
+
+### Bug Fixes
+
+* **mobile:** guard Android layout events ([6d01463](https://github.com/hashpass-tech/hashpass.tech/commit/6d0146381708aee2f7df01fd7b7ce1b6e6c46200))
+
+
+
+
+
 ## [1.8.226](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.225...v1.8.226) (2026-07-15)
 
 
