@@ -44,6 +44,9 @@ describe('PWA install prompt layout', () => {
     expect(promptSource).toContain('setPointerCapture?.(event.pointerId)');
     expect(promptSource).toContain('releasePointerCapture?.(event.pointerId)');
     expect(promptSource).toContain('storePwaDragPosition(finalPosition)');
+    expect(promptSource).toContain('const DRAG_CLICK_SUPPRESS_MS = 350;');
+    expect(promptSource).toContain('suppressClickAfterDragUntilRef.current = Date.now() + DRAG_CLICK_SUPPRESS_MS;');
+    expect(promptSource).toContain('window.setTimeout(() => {');
     expect(promptSource).toContain('onPointerDown={handleDragPointerDown}');
     expect(promptSource).toContain('onPointerMove={handleDragPointerMove}');
     expect(promptSource).toContain('onPointerUp={handleDragPointerEnd}');

@@ -17,6 +17,7 @@ const ANDROID_CHROME_512 = require('../assets/android-chrome-512x512.png');
 
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
 const DONT_SHOW_AGAIN_KEY = 'hashpass:pwa-dont-show-until-reload';
+const DRAG_CLICK_SUPPRESS_MS = 350;
 
 type PwaDragStart = {
   pointerId: number;
@@ -47,7 +48,7 @@ const PWAPrompt = () => {
   const [dragPosition, setDragPosition] = useState<PwaDragPosition | null>(null);
   const [isDraggingPwa, setIsDraggingPwa] = useState(false);
   const dragStartRef = useRef<PwaDragStart | null>(null);
-  const suppressClickAfterDragRef = useRef(false);
+  const suppressClickAfterDragUntilRef = useRef(0);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -127,7 +128,7 @@ const PWAPrompt = () => {
     }
 
     const handleResize = () => {
-      setDragPosition((currentPosition) =>
+      setDragPosition((currentPosition: PwaDragPosition | null) =>
         clampPwaDragPosition(currentPosition ?? getDefaultPwaDragPosition())
       );
     };
@@ -193,7 +194,6 @@ const PWAPrompt = () => {
     }
 
     dragStart.hasMoved = true;
-    suppressClickAfterDragRef.current = true;
     setIsDraggingPwa(true);
     event.preventDefault();
 
@@ -219,6 +219,12 @@ const PWAPrompt = () => {
 
       setDragPosition(finalPosition);
       storePwaDragPosition(finalPosition);
+      suppressClickAfterDragUntilRef.current = Date.now() + DRAG_CLICK_SUPPRESS_MS;
+      window.setTimeout(() => {
+        if (Date.now() >= suppressClickAfterDragUntilRef.current) {
+          suppressClickAfterDragUntilRef.current = 0;
+        }
+      }, DRAG_CLICK_SUPPRESS_MS);
     }
 
     dragStartRef.current = null;
@@ -227,13 +233,14 @@ const PWAPrompt = () => {
   }, []);
 
   const handleDragClickCapture = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (!suppressClickAfterDragRef.current) {
+    if (Date.now() > suppressClickAfterDragUntilRef.current) {
+      suppressClickAfterDragUntilRef.current = 0;
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
-    suppressClickAfterDragRef.current = false;
+    suppressClickAfterDragUntilRef.current = 0;
   }, []);
 
   const getInstallInstructions = () => {
