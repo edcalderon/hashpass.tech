@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Animated, NativeSyntheticEvent, NativeScrollEvent, StatusBar, Platform, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Animated, NativeSyntheticEvent, NativeScrollEvent, StatusBar, Platform, InteractionManager, useWindowDimensions } from 'react-native';
 import Reanimated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useScroll } from '@contexts/ScrollContext';
 import { useEvent } from '@contexts/EventContext';
@@ -50,6 +50,7 @@ const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
 
 export default function ExploreScreen() {
   const { scrollY, headerHeight } = useScroll();
+  const { width: windowWidth } = useWindowDimensions();
   // Calculate safe area for nav bar overlay
   const navBarHeight = (StatusBar.currentHeight || 0) + 80; // StatusBar + header content
   const { event: currentEventFromContext } = useEvent();
@@ -402,6 +403,9 @@ export default function ExploreScreen() {
 
   const handleQuickAccessContentSizeChange = (w: number, _h: number) => {
     contentWidthRef.current = w;
+    if (Platform.OS === 'android' && viewportWidthRef.current <= 0) {
+      viewportWidthRef.current = Math.max(0, windowWidth - 40);
+    }
     maxScrollXRef.current = Math.max(0, w - viewportWidthRef.current);
     updateQuickAccessArrows(scrollXRef.current, maxScrollXRef.current);
   };
@@ -691,7 +695,7 @@ export default function ExploreScreen() {
                 snapToInterval={cardWidth + cardSpacing}
                 snapToAlignment="start"
                 disableIntervalMomentum
-                onLayout={handleQuickAccessLayout}
+                onLayout={Platform.OS === 'android' ? undefined : handleQuickAccessLayout}
                 onContentSizeChange={handleQuickAccessContentSizeChange}
                 // @ts-ignore - onWheel supported in RN Web
                 onWheel={handleQuickAccessWheel}

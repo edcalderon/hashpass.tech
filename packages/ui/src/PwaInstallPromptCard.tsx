@@ -17,6 +17,7 @@ export interface PwaInstallPromptCardProps {
   primaryLabel?: string;
   infoLabel?: string;
   closeLabel?: string;
+  secondaryLabel?: string;
   dialogLabel?: string;
   collapsed?: boolean;
   collapsedLabel?: string;
@@ -24,6 +25,7 @@ export interface PwaInstallPromptCardProps {
   className?: string;
   showInfoToggle?: boolean;
   onPrimaryAction: () => void;
+  onSecondaryAction?: () => void;
   onClose?: () => void;
   onExpand?: () => void;
 }
@@ -53,6 +55,7 @@ export default function PwaInstallPromptCard({
   primaryLabel = "Install HASHPASS",
   infoLabel = "What is this?",
   closeLabel = "Close install prompt",
+  secondaryLabel,
   dialogLabel,
   collapsed = false,
   collapsedLabel = "Expand install prompt",
@@ -60,6 +63,7 @@ export default function PwaInstallPromptCard({
   className = "",
   showInfoToggle = true,
   onPrimaryAction,
+  onSecondaryAction,
   onClose,
   onExpand,
 }: PwaInstallPromptCardProps) {
@@ -282,6 +286,8 @@ export default function PwaInstallPromptCard({
 
         .${scopeClass} .hp-pwa-footer {
           flex-shrink: 0;
+          display: grid;
+          gap: 8px;
         }
 
         .${scopeClass} .hp-pwa-body-list li::marker {
@@ -393,6 +399,25 @@ export default function PwaInstallPromptCard({
         .${scopeClass} .hp-pwa-info-toggle:hover {
           background: rgba(40, 92, 211, 0.22);
           border-color: rgba(147, 197, 253, 0.5);
+        }
+
+        .${scopeClass} .hp-pwa-secondary-action {
+          width: 100%;
+          border: 0;
+          background: transparent;
+          color: rgba(221, 230, 255, 0.78);
+          cursor: pointer;
+          font-size: 0.77rem;
+          font-weight: 570;
+          line-height: 1.35;
+          padding: 2px 4px;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          transition: color 160ms ease;
+        }
+
+        .${scopeClass} .hp-pwa-secondary-action:hover {
+          color: #ffffff;
         }
 
         .${scopeClass} .hp-pwa-info-panel {
@@ -584,6 +609,11 @@ export default function PwaInstallPromptCard({
             )}
             <span>{primaryLabel}</span>
           </button>
+          {secondaryLabel && onSecondaryAction && (
+            <button type="button" className="hp-pwa-secondary-action" onClick={onSecondaryAction}>
+              {secondaryLabel}
+            </button>
+          )}
         </div>
       </div>
       )}

@@ -1077,7 +1077,7 @@ export default function DashboardLayout() {
             <Image
               source={isDark
                 ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
-                : require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')
+                : require('../../../assets/logos/hashpass/logo-full-hashpass-black.png')
               }
               style={styles.headerLogoImage}
               resizeMode="contain"

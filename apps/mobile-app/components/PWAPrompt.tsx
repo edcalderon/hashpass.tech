@@ -1,7 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Image, Platform } from 'react-native';
 import PwaInstallPromptCard from '../../../packages/ui/src/PwaInstallPromptCard';
 import { buildAndroidIntentUrl, getInstallationStatus, resolvePwaLaunchUrl } from '../lib/pwa-utils';
+import {
+  getDefaultPwaDockPosition,
+  getPwaDockPositionCoordinates,
+  PWA_DOCK_POSITIONS,
+  readStoredPwaDockPosition,
+  storePwaDockPosition,
+  type PwaDockPosition,
+} from '../lib/pwa-drag';
 import { useTranslation } from '../i18n/i18n';
 
 const ANDROID_CHROME_192 = require('../assets/android-chrome-192x192.png');
@@ -27,6 +35,9 @@ const PWAPrompt = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
+  const [dockPosition, setDockPosition] = useState<PwaDockPosition | null>(null);
+  const [showDockControls, setShowDockControls] = useState(false);
+  const dockLayerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -38,6 +49,7 @@ const PWAPrompt = () => {
 
     const isStoredCollapsed = window.localStorage.getItem(COLLAPSE_KEY) === 'true';
     setIsCollapsed(isStoredCollapsed);
+    setDockPosition(readStoredPwaDockPosition() ?? getDefaultPwaDockPosition());
 
     let cancelled = false;
 
@@ -99,6 +111,55 @@ const PWAPrompt = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isCollapsed || !showDockControls || Platform.OS !== 'web' || typeof document === 'undefined') {
+      return;
+    }
+
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const dockLayer = dockLayerRef.current;
+      if (dockLayer && event.target instanceof Node && dockLayer.contains(event.target)) {
+        return;
+      }
+
+      setShowDockControls(false);
+    };
+
+    const handleDockKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowDockControls(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    document.addEventListener('keydown', handleDockKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handleOutsidePointerDown);
+      document.removeEventListener('keydown', handleDockKeyDown);
+    };
+  }, [isCollapsed, showDockControls]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      return;
+    }
+
+    const handleResize = () => {
+      setDockPosition((currentDockPosition: PwaDockPosition | null) =>
+        currentDockPosition ?? getDefaultPwaDockPosition()
+      );
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
+
   const collapsePrompt = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       window.localStorage.setItem(COLLAPSE_KEY, 'true');
@@ -111,12 +172,23 @@ const PWAPrompt = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       window.localStorage.removeItem(COLLAPSE_KEY);
     }
+    setShowDockControls(false);
     setIsCollapsed(false);
     setShowPrompt(true);
   };
 
   const closeInstallHelpModal = () => {
     setShowInstallHelpModal(false);
+  };
+
+  const movePwaDock = (nextDockPosition: PwaDockPosition) => {
+    setDockPosition(nextDockPosition);
+    setShowDockControls(false);
+    storePwaDockPosition(nextDockPosition);
+  };
+
+  const hidePwaDockControls = () => {
+    setShowDockControls(false);
   };
 
   const getInstallInstructions = () => {
@@ -319,7 +391,6 @@ const PWAPrompt = () => {
         t('details.one', 'PWA means Progressive Web App: app-like behavior from your browser install.'),
         t('details.two', 'No app-store download required, but you still get quick home-screen access.'),
         t('details.three', 'Great for event check-in flows, wallets, and notifications with less friction.'),
-        '▢ ' + t('dontShowAgain', "Don't show again until reload (click here)"),
       ]
     : [
         t('details.one', 'PWA means Progressive Web App: app-like behavior from your browser install.'),
@@ -327,14 +398,7 @@ const PWAPrompt = () => {
         t('details.three', 'Great for event check-in flows, wallets, and notifications with less friction.'),
       ];
 
-  return (
-    <div className="hp-pwa-wrapper" onClick={(e) => {
-      const checkboxText = t('dontShowAgain', "Don't show again until reload");
-      if (e.target instanceof HTMLElement &&
-          e.target.textContent?.includes(checkboxText)) {
-        handleDontShowAgain();
-      }
-    }}>
+  const promptCard = (
       <PwaInstallPromptCard
         className={`hp-pwa-floating${isCollapsed ? ' hp-pwa-collapsed-state' : ''}`}
         appName="HASHPASS"
@@ -361,10 +425,68 @@ const PWAPrompt = () => {
         collapsed={isCollapsed}
         collapsedLabel={collapsedLabel}
         collapsedActionVariant={isOpenAppMode ? 'open' : 'install'}
+        secondaryLabel={!isCollapsed && !isOpenAppMode ? t('dontShowAgain', "Don't show again until reload") : undefined}
+        onSecondaryAction={!isCollapsed && !isOpenAppMode ? handleDontShowAgain : undefined}
         onExpand={expandPrompt}
         onPrimaryAction={isOpenAppMode ? openApp : installPWA}
         onClose={collapsePrompt}
       />
+  );
+
+  if (isCollapsed) {
+    const effectiveDockPosition = dockPosition ?? getDefaultPwaDockPosition();
+    const effectiveDragPosition = getPwaDockPositionCoordinates(effectiveDockPosition);
+
+    return (
+      <div
+        ref={dockLayerRef}
+        className={`hp-pwa-wrapper hp-pwa-dock-layer hp-pwa-dock-${effectiveDockPosition}${showDockControls ? ' hp-pwa-dock-controls-visible' : ''}`}
+        style={{
+          left: `${Math.round(effectiveDragPosition.left)}px`,
+          top: `${Math.round(effectiveDragPosition.top)}px`,
+        }}
+        onPointerEnter={() => setShowDockControls(true)}
+        onPointerLeave={hidePwaDockControls}
+        onFocusCapture={() => setShowDockControls(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            hidePwaDockControls();
+          }
+        }}
+      >
+        {promptCard}
+        <div className="hp-pwa-dock-controls" role="group" aria-label={t('dockControls', 'Move PWA button')}>
+          {PWA_DOCK_POSITIONS.map((position: PwaDockPosition) => {
+            const isActiveDock = position === effectiveDockPosition;
+            const dockLabel = t(`dock.${position}`, `Move PWA button to ${position.replace('-', ' ')}`);
+
+            return (
+              <button
+                key={position}
+                type="button"
+                className={`hp-pwa-dock-target hp-pwa-dock-target-${position}${isActiveDock ? ' hp-pwa-dock-target-active' : ''}`}
+                aria-label={dockLabel}
+                aria-pressed={isActiveDock}
+                title={dockLabel}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const nextDockPosition = position;
+                  movePwaDock(nextDockPosition);
+                }}
+              >
+                <span className="hp-pwa-dock-target-dot" aria-hidden="true" />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="hp-pwa-wrapper">
+      {promptCard}
     </div>
   );
 };
