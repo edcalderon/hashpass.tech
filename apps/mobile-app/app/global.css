@@ -108,10 +108,8 @@
   transform: scale(0.82);
 }
 
-.hp-pwa-dock-layer:hover::before,
-.hp-pwa-dock-layer:hover::after,
-.hp-pwa-dock-layer:focus-within::before,
-.hp-pwa-dock-layer:focus-within::after {
+.hp-pwa-dock-layer.hp-pwa-dock-controls-visible::before,
+.hp-pwa-dock-layer.hp-pwa-dock-controls-visible::after {
   opacity: 1;
   transform: scale(1);
 }
@@ -142,13 +140,12 @@
 .hp-pwa-dock-controls {
   position: absolute;
   inset: -14px;
-  pointer-events: auto;
-  opacity: 0.78;
+  pointer-events: none;
+  opacity: 0;
   transition: opacity 160ms ease;
 }
 
-.hp-pwa-dock-layer:hover .hp-pwa-dock-controls,
-.hp-pwa-dock-layer:focus-within .hp-pwa-dock-controls {
+.hp-pwa-dock-layer.hp-pwa-dock-controls-visible .hp-pwa-dock-controls {
   opacity: 1;
 }
 
@@ -165,11 +162,16 @@
   display: grid;
   place-items: center;
   cursor: pointer;
+  pointer-events: none;
   touch-action: manipulation;
   transition:
     transform 160ms ease,
     background-color 160ms ease,
     border-color 160ms ease;
+}
+
+.hp-pwa-dock-layer.hp-pwa-dock-controls-visible .hp-pwa-dock-target {
+  pointer-events: auto;
 }
 
 .hp-pwa-dock-target:hover,

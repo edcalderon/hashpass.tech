@@ -6,6 +6,11 @@ import path from 'path';
 const readSource = (relativePath: string) =>
   fs.readFileSync(path.resolve(__dirname, relativePath), 'utf8');
 
+const readCssRule = (source: string, selector: string) => {
+  const match = source.match(new RegExp(`${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`));
+  return match?.[1] ?? '';
+};
+
 describe('PWA install prompt layout', () => {
   it('keeps the shared card split into header, scroll body, and footer sections', () => {
     const source = readSource('../../../../packages/ui/src/PwaInstallPromptCard.tsx');
@@ -45,6 +50,13 @@ describe('PWA install prompt layout', () => {
     expect(dragSource).toContain('export const resolveNearestPwaDockPosition');
     expect(promptSource).toContain("className=\"hp-pwa-dock-controls\"");
     expect(promptSource).toContain('className={`hp-pwa-dock-target hp-pwa-dock-target-${position}');
+    expect(promptSource).toContain('const [showDockControls, setShowDockControls] = useState(false);');
+    expect(promptSource).toContain("document.addEventListener('pointerdown', handleOutsidePointerDown);");
+    expect(promptSource).toContain('setShowDockControls(false);');
+    expect(promptSource).toContain("event.key === 'Escape'");
+    expect(promptSource).toContain('onPointerEnter={() => setShowDockControls(true)}');
+    expect(promptSource).toContain('onPointerLeave={hidePwaDockControls}');
+    expect(promptSource).toContain('onBlurCapture={(event) => {');
     expect(promptSource).toContain('storePwaDockPosition(nextDockPosition)');
     expect(promptSource).toContain('onExpand={expandPrompt}');
     expect(promptSource).not.toContain('onClickCapture=');
@@ -68,16 +80,23 @@ describe('PWA install prompt layout', () => {
 
   it('shows hover dock indicators for the PWA button placement controls', () => {
     const source = readSource('../../../../apps/mobile-app/app/global.css');
+    const dockControlsRule = readCssRule(source, '.hp-pwa-dock-controls');
+    const dockTargetRule = readCssRule(source, '.hp-pwa-dock-target');
 
     expect(source).toContain('.hp-pwa-dock-layer');
     expect(source).toContain('.hp-pwa-dock-layer::before');
-    expect(source).toContain('.hp-pwa-dock-layer:hover::before');
+    expect(source).toContain('.hp-pwa-dock-layer.hp-pwa-dock-controls-visible::before');
+    expect(source).toContain('.hp-pwa-dock-layer.hp-pwa-dock-controls-visible .hp-pwa-dock-controls');
     expect(source).toContain('.hp-pwa-dock-controls');
     expect(source).toContain('.hp-pwa-dock-target-top-left');
     expect(source).toContain('.hp-pwa-dock-target-bottom-left');
     expect(source).toContain('.hp-pwa-dock-target-bottom-right');
     expect(source).toContain('cursor: pointer;');
     expect(source).toContain('touch-action: manipulation;');
+    expect(dockControlsRule).toContain('pointer-events: none;');
+    expect(dockTargetRule).toContain('pointer-events: none;');
+    expect(source).toContain('.hp-pwa-dock-layer.hp-pwa-dock-controls-visible .hp-pwa-dock-target');
+    expect(source).toContain('pointer-events: auto;');
     expect(source).not.toContain('cursor: grabbing;');
   });
 });

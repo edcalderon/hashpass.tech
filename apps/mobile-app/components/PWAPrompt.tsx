@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Image, Platform } from 'react-native';
 import PwaInstallPromptCard from '../../../packages/ui/src/PwaInstallPromptCard';
 import { buildAndroidIntentUrl, getInstallationStatus, resolvePwaLaunchUrl } from '../lib/pwa-utils';
@@ -36,6 +36,8 @@ const PWAPrompt = () => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
   const [dockPosition, setDockPosition] = useState<PwaDockPosition | null>(null);
+  const [showDockControls, setShowDockControls] = useState(false);
+  const dockLayerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -110,6 +112,35 @@ const PWAPrompt = () => {
   }, []);
 
   useEffect(() => {
+    if (!isCollapsed || !showDockControls || Platform.OS !== 'web' || typeof document === 'undefined') {
+      return;
+    }
+
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const dockLayer = dockLayerRef.current;
+      if (dockLayer && event.target instanceof Node && dockLayer.contains(event.target)) {
+        return;
+      }
+
+      setShowDockControls(false);
+    };
+
+    const handleDockKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowDockControls(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    document.addEventListener('keydown', handleDockKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handleOutsidePointerDown);
+      document.removeEventListener('keydown', handleDockKeyDown);
+    };
+  }, [isCollapsed, showDockControls]);
+
+  useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
       return;
     }
@@ -141,6 +172,7 @@ const PWAPrompt = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       window.localStorage.removeItem(COLLAPSE_KEY);
     }
+    setShowDockControls(false);
     setIsCollapsed(false);
     setShowPrompt(true);
   };
@@ -151,7 +183,12 @@ const PWAPrompt = () => {
 
   const movePwaDock = (nextDockPosition: PwaDockPosition) => {
     setDockPosition(nextDockPosition);
+    setShowDockControls(false);
     storePwaDockPosition(nextDockPosition);
+  };
+
+  const hidePwaDockControls = () => {
+    setShowDockControls(false);
   };
 
   const getInstallInstructions = () => {
@@ -402,15 +439,24 @@ const PWAPrompt = () => {
 
     return (
       <div
-        className={`hp-pwa-wrapper hp-pwa-dock-layer hp-pwa-dock-${effectiveDockPosition}`}
+        ref={dockLayerRef}
+        className={`hp-pwa-wrapper hp-pwa-dock-layer hp-pwa-dock-${effectiveDockPosition}${showDockControls ? ' hp-pwa-dock-controls-visible' : ''}`}
         style={{
           left: `${Math.round(effectiveDragPosition.left)}px`,
           top: `${Math.round(effectiveDragPosition.top)}px`,
         }}
+        onPointerEnter={() => setShowDockControls(true)}
+        onPointerLeave={hidePwaDockControls}
+        onFocusCapture={() => setShowDockControls(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            hidePwaDockControls();
+          }
+        }}
       >
         {promptCard}
         <div className="hp-pwa-dock-controls" role="group" aria-label={t('dockControls', 'Move PWA button')}>
-          {PWA_DOCK_POSITIONS.map((position) => {
+          {PWA_DOCK_POSITIONS.map((position: PwaDockPosition) => {
             const isActiveDock = position === effectiveDockPosition;
             const dockLabel = t(`dock.${position}`, `Move PWA button to ${position.replace('-', ' ')}`);
 
