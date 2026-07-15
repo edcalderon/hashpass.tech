@@ -1,3 +1,14 @@
+## [1.8.222](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.221...v1.8.222) (2026-07-15)
+
+
+### Bug Fixes
+
+* **mobile:** disable New Architecture to stop Fabric event-type crash on Android ([3f8e945](https://github.com/hashpass-tech/hashpass.tech/commit/3f8e9452a46b505a57743abc68d039193a2bf49b))
+
+
+
+
+
 ## [1.8.221](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.220...v1.8.221) (2026-07-14)
 
 

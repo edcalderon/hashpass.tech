@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.221)
+## 📋 Latest Changes (v1.8.222)
 
 ### Bug Fixes
 
-* **mobile:** dashboard gesture crash after login, add sign-out on landing ([446bc29](https://github.com/hashpass-tech/hashpass.tech/commit/446bc29214f39fe12b00cb5e828134b947a41b71))
+* **mobile:** disable New Architecture to stop Fabric event-type crash on Android ([3f8e945](https://github.com/hashpass-tech/hashpass.tech/commit/3f8e9452a46b505a57743abc68d039193a2bf49b))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

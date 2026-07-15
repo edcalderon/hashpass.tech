@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607141621, // Updated to current timestamp
-  releaseDate: '2026-07-14',
+  buildNumber: 202607150001, // Updated to current timestamp
+  releaseDate: '2026-07-15',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'dashboard gesture crash after login, add sign-out on landing'
+    'disable New Architecture to stop Fabric event-type crash on Android'
   ],
   breakingChanges: [],
-  notes: 'dashboard gesture crash after login, add sign-out on landing'
+  notes: 'disable New Architecture to stop Fabric event-type crash on Android'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.222': {
+    version: '1.8.222',
+    buildNumber: 202607150001,
+    releaseDate: '2026-07-15',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'disable New Architecture to stop Fabric event-type crash on Android'
+    ],
+    breakingChanges: [],
+    notes: 'disable New Architecture to stop Fabric event-type crash on Android'
+  },
   '1.8.221': {
     version: '1.8.221',
     buildNumber: 202607141621,
