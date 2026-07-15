@@ -120,6 +120,17 @@ already-running app logs `"Warning: Activity not started, intent has been
 delivered to currently running top-most instance"` — that's the success
 case here, not an error).
 
+## Validating login paths locally
+
+Local `assembleRelease` builds are signed with the debug keystore, so the
+native Google sign-in client can fail before the app receives an ID token
+when the OAuth client certificate does not match that local signing cert.
+Use OTP to validate the post-login dashboard path in that case. If the app
+reaches the logged-in dashboard and stays alive, treat non-fatal provider
+bootstrap logs such as `Better Auth getSession error: TypeError: Network
+request failed` as a separate follow-up instead of conflating them with the
+native dashboard crash signature.
+
 ## Reaching screens behind the login gate, without a real session
 
 Real OTP/magic-link login requires either a deliverable email/SMS or
