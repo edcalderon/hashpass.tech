@@ -33,6 +33,7 @@ one from Android Studio's AVD manager or `emulator -avd <name>`.
 ## Building: release mode, not debug
 
 ```bash
+pnpm --dir apps/mobile-app exec expo prebuild --platform android --clean
 cd apps/mobile-app/android
 ./gradlew assembleRelease -q
 ```
@@ -45,6 +46,20 @@ non-crash doesn't tell you what a release build will do. This app's
 `android/app/build.gradle` signs `release` with the debug keystore
 locally (`signingConfig signingConfigs.debug`), so `assembleRelease`
 installs cleanly without needing production signing credentials.
+
+Run `expo prebuild --clean` before the local Gradle build when validating
+the latest native release. The generated `android/` project is gitignored,
+so it can keep an older `versionName` or `versionCode` from a previous
+release. A direct Gradle build then succeeds but installs the stale native
+project, which makes emulator debugging look like it is testing the latest
+deployment when it is not.
+
+Before installing, confirm the local APK metadata matches the deployment
+you mean to test:
+
+```bash
+cat apps/mobile-app/android/app/build/outputs/apk/release/output-metadata.json
+```
 
 The APK lands at
 `apps/mobile-app/android/app/build/outputs/apk/release/app-release.apk`.

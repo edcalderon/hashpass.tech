@@ -920,9 +920,10 @@ jobs:
       # When native-relevant config is unchanged we skip --clean and let Gradle
       # do a fully incremental build — cuts Release Android from ~30 min to ~3-5 min.
       #
-      # The hash intentionally excludes version fields from app.json/package.json
-      # because a bare version bump (patch release) does not affect native output.
-      # Only Expo plugins, android/ios config, and the dependency tree trigger a
+      # The hash intentionally ignores display-only package/app version strings,
+      # but includes app.android. Android versionCode is native Gradle output, so
+      # a Play version-code bump must force prebuild and refresh android/.
+      # Expo plugins, android/ios config, and the dependency tree also trigger a
       # full prebuild + NDK recompile.
       - name: Conditional Expo prebuild
         run: |
