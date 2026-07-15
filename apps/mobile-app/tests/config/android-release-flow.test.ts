@@ -121,6 +121,18 @@ describe('Android release flow', () => {
     expect(easConfig.build?.production?.android?.buildType).toBe('app-bundle');
   });
 
+  it('hashes resolved native Expo config before reusing Android prebuild output', () => {
+    const workflow = fs.readFileSync(
+      path.resolve(mobileAppRoot, '../../.github/workflows/mobile-android-release.yml'),
+      'utf8',
+    );
+
+    expect(workflow).toContain("const { buildExpoConfig } = require('./apps/mobile-app/lib/eas-config')");
+    expect(workflow).toContain('const resolvedApp = buildExpoConfig({ baseConfig: app, env: process.env })');
+    expect(workflow).toContain('newArchEnabled: resolvedApp.newArchEnabled');
+    expect(workflow).toContain('android: resolvedApp.android');
+  });
+
   it('configures preview builds for internal development app bundle distribution', () => {
     const easConfig = readJson('eas.json');
 

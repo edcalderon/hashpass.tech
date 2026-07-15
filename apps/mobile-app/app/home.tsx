@@ -103,11 +103,15 @@ export default function HomeScreen() {
   const { animationLevel } = useAnimationLevel();
   const isHeroAnimationEnabled = animationLevel === "full";
   const heroForegroundColor =
-    Platform.OS === "web" && isHeroAnimationEnabled
+    isNative
+      ? "#FFFFFF"
+      : Platform.OS === "web" && isHeroAnimationEnabled
       ? "#FFFFFF"
       : colors.text.primary;
   const heroForegroundMutedColor =
-    Platform.OS === "web" && isHeroAnimationEnabled
+    isNative
+      ? "rgba(255, 255, 255, 0.78)"
+      : Platform.OS === "web" && isHeroAnimationEnabled
       ? "rgba(255, 255, 255, 0.84)"
       : isDark
         ? "rgba(255, 255, 255, 0.78)"
@@ -176,14 +180,16 @@ export default function HomeScreen() {
     windowHeight,
     footerBottomReserve,
   );
-  const bgAnimation = useSharedValue(animationLevel === "none" ? 1 : 0);
+  const bgAnimation = useSharedValue(
+    animationLevel === "none" || isNative ? 1 : 0,
+  );
   const scrollRef = React.useRef<any>(null);
   const feature1Anim = useSharedValue(animationLevel === "none" ? 1 : 0);
   const feature2Anim = useSharedValue(animationLevel === "none" ? 1 : 0);
   const feature3Anim = useSharedValue(animationLevel === "none" ? 1 : 0);
 
   useEffect(() => {
-    if (animationLevel === "none") {
+    if (isNative || animationLevel === "none") {
       bgAnimation.value = 1;
       feature1Anim.value = 1;
       feature2Anim.value = 1;
@@ -197,6 +203,7 @@ export default function HomeScreen() {
     bgAnimation,
     isDark,
     animationLevel,
+    isNative,
     feature1Anim,
     feature2Anim,
     feature3Anim,
@@ -987,7 +994,7 @@ const getStyles = (
       // Native has no CrystalForgeBackground — provide a subtle gradient-tinted surface
       // so the logo has visual contrast in both light and dark mode.
       backgroundColor:
-        Platform.OS !== "web" ? (isDark ? "#0e1117" : "#f0f0f5") : undefined,
+        Platform.OS !== "web" ? (isDark ? "#0e1117" : "#101820") : undefined,
     },
     heroImage: {
       width: "100%",

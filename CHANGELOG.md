@@ -1,3 +1,14 @@
+## [1.8.226](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.225...v1.8.226) (2026-07-15)
+
+
+### Bug Fixes
+
+* **mobile:** stabilize Android dashboard entry ([e413d82](https://github.com/hashpass-tech/hashpass.tech/commit/e413d82a6cb21d0a008804f82677e66a8039d6b0))
+
+
+
+
+
 ## [1.8.225](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.224...v1.8.225) (2026-07-15)
 
 

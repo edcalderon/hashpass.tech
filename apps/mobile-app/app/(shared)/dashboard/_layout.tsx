@@ -33,6 +33,8 @@ import { navigateDashboardBrandToLanding } from '../../../lib/dashboard-navigati
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 
+const ANDROID_DASHBOARD_HEADER_HEIGHT = 56;
+
 // DrawerNavigationProp generic constraint mismatch across @react-navigation versions
 type DrawerNavigation = any;
 
@@ -799,6 +801,12 @@ export default function DashboardLayout() {
     const handleNext = copilotHook?.handleNext || copilotHook?.handleNth;
     const [qrScannerVisible, setQrScannerVisible] = React.useState(false);
 
+    React.useEffect(() => {
+      if (Platform.OS === 'android') {
+        setHeaderHeight(ANDROID_DASHBOARD_HEADER_HEIGHT);
+      }
+    }, [setHeaderHeight]);
+
     // Adjust header background color based on theme to match app background
     const HEADER_SCROLL_DISTANCE = 100;
     // Extract RGB values from theme background color
@@ -897,7 +905,11 @@ export default function DashboardLayout() {
             overflow: 'hidden',
           }
         ]}
-        onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
+        onLayout={
+          Platform.OS === 'android'
+            ? undefined
+            : (e) => setHeaderHeight(e.nativeEvent.layout.height)
+        }
       >
         {/* Background with blur and gloss effect */}
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -1114,8 +1126,6 @@ export default function DashboardLayout() {
 
   // Screen component with header
   const ScreenWithHeader = () => {
-    const { headerHeight } = useScroll();
-
     // Header should overlay content without taking space
     // Reserve only the top safe area so the drawer header stays clear of system bars.
     const statusBarHeight = insets.top || StatusBar.currentHeight || 0;

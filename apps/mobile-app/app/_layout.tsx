@@ -37,6 +37,7 @@ import { hasRecentAuthSuccess } from '../lib/auth/recent-auth';
 import { isDevAuthBypassEnabled } from '../lib/auth/dev-bypass';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { checkNativeCrashLog, showNativeCrashAlert } from '../lib/native-crash-reader';
+import { resolveDashboardStackOptions } from '../lib/native-navigation-options';
 import packageJson from '../package.json';
 import * as Sentry from '@sentry/react-native';
 
@@ -381,22 +382,7 @@ function ThemedContent() {
         <Stack.Screen name="terms" options={{ headerShown: false }} />
         <Stack.Screen
           name="(shared)/dashboard"
-          options={{
-            headerShown: false,
-            // gestureEnabled: false — the auth -> dashboard transition (a
-            // one-way login result, not something a user should swipe back
-            // out of) was crashing on Android with "Unsupported top level
-            // event type 'topTouchStart' dispatched" right as the native-stack
-            // screen mounted after OTP/Google sign-in success, reproduced live
-            // on a real authenticated session. Same crash class (Fabric event
-            // registration mismatch) as the earlier topTransitionProgress/
-            // topDetached crashes, both owned by react-native-screens' native
-            // stack — the interactive swipe-back gesture registers a raw touch
-            // responder that this app's Fabric build doesn't recognize.
-            // Disabling the gesture (not the slide animation itself) removes
-            // the touch responder without changing how the transition looks.
-            gestureEnabled: false,
-          }}
+          options={resolveDashboardStackOptions(Platform.OS)}
         />
       </Stack>
       <PWAPrompt />
