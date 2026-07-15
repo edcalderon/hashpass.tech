@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607150402, // Updated to current timestamp
+  buildNumber: 202607151845, // Updated to current timestamp
   releaseDate: '2026-07-15',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,33 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    're-enable New Architecture to end total launch outage from v1.8.222/223'
+    'route dashboard brand to landing',
+    'close landing logout session',
+    'document local Android OTP release validation'
   ],
   breakingChanges: [],
-  notes: 're-enable New Architecture to end total launch outage from v1.8.222/223'
+  notes: 'route dashboard brand to landing; close landing logout session; document local Android OTP release validation'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.225': {
+    version: '1.8.225',
+    buildNumber: 202607151845,
+    releaseDate: '2026-07-15',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'route dashboard brand to landing',
+      'close landing logout session',
+      'document local Android OTP release validation'
+    ],
+    breakingChanges: [],
+    notes: 'route dashboard brand to landing; close landing logout session; document local Android OTP release validation'
+  },
   '1.8.224': {
     version: '1.8.224',
     buildNumber: 202607150402,

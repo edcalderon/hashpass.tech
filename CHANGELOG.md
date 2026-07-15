@@ -1,3 +1,22 @@
+## [1.8.225](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.224...v1.8.225) (2026-07-15)
+
+
+### Bug Fixes
+
+* document local Android OTP release validation ([4585075](https://github.com/hashpass-tech/hashpass.tech/commit/45850758bbc365c075fcd204916cff0fc48983e9))
+* **mobile:** close landing logout session ([349a813](https://github.com/hashpass-tech/hashpass.tech/commit/349a8130e991d00bb83707184d3a9f1262abd772))
+* **mobile:** route dashboard brand to landing ([0ca0b0a](https://github.com/hashpass-tech/hashpass.tech/commit/0ca0b0a96ef24e0e6d820dd44e50712c8f1d3054))
+
+
+### Reverts
+
+* Revert "chore: release v1.8.225" ([acbcf36](https://github.com/hashpass-tech/hashpass.tech/commit/acbcf3639cabbdb8f1874636de4357865855db05))
+* Revert "chore: release v1.8.225" ([230cf52](https://github.com/hashpass-tech/hashpass.tech/commit/230cf525c7e5632666f87fa0f7ac5d0ab68d377a))
+
+
+
+
+
 ## [1.8.224](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.223...v1.8.224) (2026-07-15)
 
 
