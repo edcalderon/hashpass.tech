@@ -35,23 +35,23 @@ describe('PWA install prompt layout', () => {
     expect(source).toContain("WebkitOverflowScrolling: 'touch'");
   });
 
-  it('keeps the collapsed PWA button draggable with persisted placement', () => {
+  it('keeps the collapsed PWA opener separate from the dock placement controls', () => {
     const promptSource = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
     const dragSource = readSource('../../../../apps/mobile-app/lib/pwa-drag.ts');
 
     expect(dragSource).toContain("export const PWA_DRAG_POSITION_KEY = 'hashpass:pwa-install-position';");
+    expect(dragSource).toContain("export const PWA_DOCK_POSITIONS = ['top-left', 'bottom-left', 'bottom-right'] as const;");
     expect(dragSource).toContain('export const clampPwaDragPosition');
-    expect(promptSource).toContain('setPointerCapture?.(event.pointerId)');
-    expect(promptSource).toContain('releasePointerCapture?.(event.pointerId)');
-    expect(promptSource).toContain('storePwaDragPosition(finalPosition)');
-    expect(promptSource).toContain('const DRAG_CLICK_SUPPRESS_MS = 350;');
-    expect(promptSource).toContain('suppressClickAfterDragUntilRef.current = Date.now() + DRAG_CLICK_SUPPRESS_MS;');
-    expect(promptSource).toContain('window.setTimeout(() => {');
-    expect(promptSource).toContain('onPointerDown={handleDragPointerDown}');
-    expect(promptSource).toContain('onPointerMove={handleDragPointerMove}');
-    expect(promptSource).toContain('onPointerUp={handleDragPointerEnd}');
-    expect(promptSource).toContain('onClickCapture={handleDragClickCapture}');
-    expect(promptSource).toContain('hp-pwa-drag-layer');
+    expect(dragSource).toContain('export const resolveNearestPwaDockPosition');
+    expect(promptSource).toContain("className=\"hp-pwa-dock-controls\"");
+    expect(promptSource).toContain('className={`hp-pwa-dock-target hp-pwa-dock-target-${position}');
+    expect(promptSource).toContain('storePwaDockPosition(nextDockPosition)');
+    expect(promptSource).toContain('onExpand={expandPrompt}');
+    expect(promptSource).not.toContain('onClickCapture=');
+    expect(promptSource).not.toContain('onPointerDown={handleDragPointerDown}');
+    expect(promptSource).not.toContain('suppressNextClickAfterDragRef');
+    expect(promptSource).not.toContain('DRAG_SYNTHETIC_CLICK_SUPPRESS_MS');
+    expect(promptSource).toContain('hp-pwa-dock-layer');
   });
 
   it('renders the dont-show-again action as an accessible secondary button', () => {
@@ -66,16 +66,18 @@ describe('PWA install prompt layout', () => {
     expect(cardSource).toContain('className="hp-pwa-secondary-action"');
   });
 
-  it('shows hover and active drop indicators for the draggable PWA button', () => {
+  it('shows hover dock indicators for the PWA button placement controls', () => {
     const source = readSource('../../../../apps/mobile-app/app/global.css');
 
-    expect(source).toContain('.hp-pwa-drag-layer');
-    expect(source).toContain('.hp-pwa-drag-layer::before');
-    expect(source).toContain('.hp-pwa-drag-layer::after');
-    expect(source).toContain('.hp-pwa-drag-layer:hover::before');
-    expect(source).toContain('.hp-pwa-drag-layer.hp-pwa-dragging::before');
-    expect(source).toContain('cursor: grab;');
-    expect(source).toContain('cursor: grabbing;');
-    expect(source).toContain('touch-action: none;');
+    expect(source).toContain('.hp-pwa-dock-layer');
+    expect(source).toContain('.hp-pwa-dock-layer::before');
+    expect(source).toContain('.hp-pwa-dock-layer:hover::before');
+    expect(source).toContain('.hp-pwa-dock-controls');
+    expect(source).toContain('.hp-pwa-dock-target-top-left');
+    expect(source).toContain('.hp-pwa-dock-target-bottom-left');
+    expect(source).toContain('.hp-pwa-dock-target-bottom-right');
+    expect(source).toContain('cursor: pointer;');
+    expect(source).toContain('touch-action: manipulation;');
+    expect(source).not.toContain('cursor: grabbing;');
   });
 });

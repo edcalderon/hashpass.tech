@@ -9,9 +9,12 @@ export type PwaDragViewport = {
 };
 
 export const PWA_DRAG_POSITION_KEY = 'hashpass:pwa-install-position';
+export const PWA_DOCK_POSITIONS = ['top-left', 'bottom-left', 'bottom-right'] as const;
 export const PWA_DRAG_BUTTON_SIZE = 70;
 export const PWA_DRAG_SAFE_MARGIN = 12;
 export const PWA_DRAG_START_THRESHOLD = 5;
+
+export type PwaDockPosition = (typeof PWA_DOCK_POSITIONS)[number];
 
 const FALLBACK_VIEWPORT: PwaDragViewport = {
   width: 390,
@@ -43,20 +46,70 @@ export const clampPwaDragPosition = (
   };
 };
 
-export const getDefaultPwaDragPosition = (): PwaDragPosition => {
-  const viewport = getPwaDragViewport();
-  const isMobileViewport = viewport.width <= 768;
-  const basePosition = isMobileViewport
-    ? {
-        left: viewport.width - PWA_DRAG_BUTTON_SIZE - 20,
-        top: viewport.height - PWA_DRAG_BUTTON_SIZE - 20,
-      }
-    : {
-        left: 24,
-        top: 70,
-      };
+const isPwaDockPosition = (value: unknown): value is PwaDockPosition =>
+  typeof value === 'string' && (PWA_DOCK_POSITIONS as readonly string[]).includes(value);
 
-  return clampPwaDragPosition(basePosition, viewport);
+const isPwaDragPosition = (value: unknown): value is PwaDragPosition => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const possiblePosition = value as Partial<PwaDragPosition>;
+  return typeof possiblePosition.left === 'number' && typeof possiblePosition.top === 'number';
+};
+
+export const getPwaDockPositionCoordinates = (
+  dockPosition: PwaDockPosition,
+  viewport: PwaDragViewport = getPwaDragViewport()
+): PwaDragPosition => {
+  const bottomTop = viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN;
+  const rightLeft = viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN;
+
+  const coordinatesByDock: Record<PwaDockPosition, PwaDragPosition> = {
+    'top-left': {
+      left: PWA_DRAG_SAFE_MARGIN,
+      top: PWA_DRAG_SAFE_MARGIN,
+    },
+    'bottom-left': {
+      left: PWA_DRAG_SAFE_MARGIN,
+      top: bottomTop,
+    },
+    'bottom-right': {
+      left: rightLeft,
+      top: bottomTop,
+    },
+  };
+
+  return clampPwaDragPosition(coordinatesByDock[dockPosition], viewport);
+};
+
+export const getDefaultPwaDockPosition = (): PwaDockPosition => {
+  const viewport = getPwaDragViewport();
+  return viewport.width <= 768 ? 'bottom-right' : 'top-left';
+};
+
+export const getDefaultPwaDragPosition = (): PwaDragPosition => {
+  return getPwaDockPositionCoordinates(getDefaultPwaDockPosition());
+};
+
+export const resolveNearestPwaDockPosition = (
+  position: PwaDragPosition,
+  viewport: PwaDragViewport = getPwaDragViewport()
+): PwaDockPosition => {
+  const clampedPosition = clampPwaDragPosition(position, viewport);
+  const [nearestDockPosition] = PWA_DOCK_POSITIONS.reduce(
+    ([currentDock, currentDistance], candidateDock) => {
+      const candidatePosition = getPwaDockPositionCoordinates(candidateDock, viewport);
+      const distance =
+        (candidatePosition.left - clampedPosition.left) ** 2 +
+        (candidatePosition.top - clampedPosition.top) ** 2;
+
+      return distance < currentDistance ? [candidateDock, distance] : [currentDock, currentDistance];
+    },
+    ['top-left', Number.POSITIVE_INFINITY] as [PwaDockPosition, number]
+  );
+
+  return nearestDockPosition;
 };
 
 export const readStoredPwaDragPosition = (): PwaDragPosition | null => {
@@ -70,15 +123,53 @@ export const readStoredPwaDragPosition = (): PwaDragPosition | null => {
       return null;
     }
 
-    const parsedPosition = JSON.parse(storedPosition) as Partial<PwaDragPosition>;
-    if (typeof parsedPosition.left !== 'number' || typeof parsedPosition.top !== 'number') {
+    const parsedPosition = JSON.parse(storedPosition) as unknown;
+    if (isPwaDockPosition(parsedPosition)) {
+      return getPwaDockPositionCoordinates(parsedPosition);
+    }
+
+    if (!isPwaDragPosition(parsedPosition)) {
       return null;
     }
 
-    return clampPwaDragPosition(parsedPosition as PwaDragPosition);
+    return clampPwaDragPosition(parsedPosition);
   } catch {
     return null;
   }
+};
+
+export const readStoredPwaDockPosition = (): PwaDockPosition | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const storedPosition = window.localStorage.getItem(PWA_DRAG_POSITION_KEY);
+    if (!storedPosition) {
+      return null;
+    }
+
+    const parsedPosition = JSON.parse(storedPosition) as unknown;
+    if (isPwaDockPosition(parsedPosition)) {
+      return parsedPosition;
+    }
+
+    if (!isPwaDragPosition(parsedPosition)) {
+      return null;
+    }
+
+    return resolveNearestPwaDockPosition(parsedPosition);
+  } catch {
+    return null;
+  }
+};
+
+export const storePwaDockPosition = (dockPosition: PwaDockPosition) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.setItem(PWA_DRAG_POSITION_KEY, JSON.stringify(dockPosition));
 };
 
 export const storePwaDragPosition = (position: PwaDragPosition) => {

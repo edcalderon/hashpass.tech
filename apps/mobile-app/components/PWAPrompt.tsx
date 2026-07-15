@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Platform } from 'react-native';
 import PwaInstallPromptCard from '../../../packages/ui/src/PwaInstallPromptCard';
 import { buildAndroidIntentUrl, getInstallationStatus, resolvePwaLaunchUrl } from '../lib/pwa-utils';
 import {
-  clampPwaDragPosition,
-  getDefaultPwaDragPosition,
-  PWA_DRAG_START_THRESHOLD,
-  readStoredPwaDragPosition,
-  storePwaDragPosition,
-  type PwaDragPosition,
+  getDefaultPwaDockPosition,
+  getPwaDockPositionCoordinates,
+  PWA_DOCK_POSITIONS,
+  readStoredPwaDockPosition,
+  storePwaDockPosition,
+  type PwaDockPosition,
 } from '../lib/pwa-drag';
 import { useTranslation } from '../i18n/i18n';
 
@@ -17,16 +17,6 @@ const ANDROID_CHROME_512 = require('../assets/android-chrome-512x512.png');
 
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
 const DONT_SHOW_AGAIN_KEY = 'hashpass:pwa-dont-show-until-reload';
-const DRAG_CLICK_SUPPRESS_MS = 350;
-
-type PwaDragStart = {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  originLeft: number;
-  originTop: number;
-  hasMoved: boolean;
-};
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -45,10 +35,7 @@ const PWAPrompt = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
-  const [dragPosition, setDragPosition] = useState<PwaDragPosition | null>(null);
-  const [isDraggingPwa, setIsDraggingPwa] = useState(false);
-  const dragStartRef = useRef<PwaDragStart | null>(null);
-  const suppressClickAfterDragUntilRef = useRef(0);
+  const [dockPosition, setDockPosition] = useState<PwaDockPosition | null>(null);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -60,7 +47,7 @@ const PWAPrompt = () => {
 
     const isStoredCollapsed = window.localStorage.getItem(COLLAPSE_KEY) === 'true';
     setIsCollapsed(isStoredCollapsed);
-    setDragPosition(readStoredPwaDragPosition() ?? getDefaultPwaDragPosition());
+    setDockPosition(readStoredPwaDockPosition() ?? getDefaultPwaDockPosition());
 
     let cancelled = false;
 
@@ -128,8 +115,8 @@ const PWAPrompt = () => {
     }
 
     const handleResize = () => {
-      setDragPosition((currentPosition: PwaDragPosition | null) =>
-        clampPwaDragPosition(currentPosition ?? getDefaultPwaDragPosition())
+      setDockPosition((currentDockPosition: PwaDockPosition | null) =>
+        currentDockPosition ?? getDefaultPwaDockPosition()
       );
     };
 
@@ -162,86 +149,10 @@ const PWAPrompt = () => {
     setShowInstallHelpModal(false);
   };
 
-  const handleDragPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isCollapsed || event.button !== 0) {
-      return;
-    }
-
-    const currentPosition = dragPosition ?? getDefaultPwaDragPosition();
-    dragStartRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      originLeft: currentPosition.left,
-      originTop: currentPosition.top,
-      hasMoved: false,
-    };
-
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  }, [dragPosition, isCollapsed]);
-
-  const handleDragPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const dragStart = dragStartRef.current;
-    if (!dragStart || dragStart.pointerId !== event.pointerId) {
-      return;
-    }
-
-    const deltaX = event.clientX - dragStart.startX;
-    const deltaY = event.clientY - dragStart.startY;
-    const distance = Math.hypot(deltaX, deltaY);
-    if (!dragStart.hasMoved && distance < PWA_DRAG_START_THRESHOLD) {
-      return;
-    }
-
-    dragStart.hasMoved = true;
-    setIsDraggingPwa(true);
-    event.preventDefault();
-
-    setDragPosition(
-      clampPwaDragPosition({
-        left: dragStart.originLeft + deltaX,
-        top: dragStart.originTop + deltaY,
-      })
-    );
-  }, []);
-
-  const handleDragPointerEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const dragStart = dragStartRef.current;
-    if (!dragStart || dragStart.pointerId !== event.pointerId) {
-      return;
-    }
-
-    if (dragStart.hasMoved) {
-      const finalPosition = clampPwaDragPosition({
-        left: dragStart.originLeft + event.clientX - dragStart.startX,
-        top: dragStart.originTop + event.clientY - dragStart.startY,
-      });
-
-      setDragPosition(finalPosition);
-      storePwaDragPosition(finalPosition);
-      suppressClickAfterDragUntilRef.current = Date.now() + DRAG_CLICK_SUPPRESS_MS;
-      window.setTimeout(() => {
-        if (Date.now() >= suppressClickAfterDragUntilRef.current) {
-          suppressClickAfterDragUntilRef.current = 0;
-        }
-      }, DRAG_CLICK_SUPPRESS_MS);
-    }
-
-    dragStartRef.current = null;
-    setIsDraggingPwa(false);
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-  }, []);
-
-  const handleDragClickCapture = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (Date.now() > suppressClickAfterDragUntilRef.current) {
-      suppressClickAfterDragUntilRef.current = 0;
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    suppressClickAfterDragUntilRef.current = 0;
-  }, []);
+  const movePwaDock = (nextDockPosition: PwaDockPosition) => {
+    setDockPosition(nextDockPosition);
+    storePwaDockPosition(nextDockPosition);
+  };
 
   const getInstallInstructions = () => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -486,22 +397,43 @@ const PWAPrompt = () => {
   );
 
   if (isCollapsed) {
-    const effectiveDragPosition = dragPosition ?? getDefaultPwaDragPosition();
+    const effectiveDockPosition = dockPosition ?? getDefaultPwaDockPosition();
+    const effectiveDragPosition = getPwaDockPositionCoordinates(effectiveDockPosition);
 
     return (
       <div
-        className={`hp-pwa-wrapper hp-pwa-drag-layer${isDraggingPwa ? ' hp-pwa-dragging' : ''}`}
+        className={`hp-pwa-wrapper hp-pwa-dock-layer hp-pwa-dock-${effectiveDockPosition}`}
         style={{
           left: `${Math.round(effectiveDragPosition.left)}px`,
           top: `${Math.round(effectiveDragPosition.top)}px`,
         }}
-        onClickCapture={handleDragClickCapture}
-        onPointerDown={handleDragPointerDown}
-        onPointerMove={handleDragPointerMove}
-        onPointerUp={handleDragPointerEnd}
-        onPointerCancel={handleDragPointerEnd}
       >
         {promptCard}
+        <div className="hp-pwa-dock-controls" role="group" aria-label={t('dockControls', 'Move PWA button')}>
+          {PWA_DOCK_POSITIONS.map((position) => {
+            const isActiveDock = position === effectiveDockPosition;
+            const dockLabel = t(`dock.${position}`, `Move PWA button to ${position.replace('-', ' ')}`);
+
+            return (
+              <button
+                key={position}
+                type="button"
+                className={`hp-pwa-dock-target hp-pwa-dock-target-${position}${isActiveDock ? ' hp-pwa-dock-target-active' : ''}`}
+                aria-label={dockLabel}
+                aria-pressed={isActiveDock}
+                title={dockLabel}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const nextDockPosition = position;
+                  movePwaDock(nextDockPosition);
+                }}
+              >
+                <span className="hp-pwa-dock-target-dot" aria-hidden="true" />
+              </button>
+            );
+          })}
+        </div>
       </div>
     );
   }
