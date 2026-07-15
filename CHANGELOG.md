@@ -1,3 +1,14 @@
+## [1.8.225](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.224...v1.8.225) (2026-07-15)
+
+
+### Bug Fixes
+
+* document local Android OTP release validation ([4585075](https://github.com/hashpass-tech/hashpass.tech/commit/45850758bbc365c075fcd204916cff0fc48983e9))
+
+
+
+
+
 ## [1.8.224](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.223...v1.8.224) (2026-07-15)
 
 
