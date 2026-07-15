@@ -23,6 +23,10 @@ jest.mock(
   () => "white-native-png",
 );
 jest.mock(
+  "../../assets/logos/hashpass/logo-full-hashpass-black.png",
+  () => "black-native-png",
+);
+jest.mock(
   "../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png",
   () => "white-cyan-native-png",
 );
@@ -46,10 +50,10 @@ describe("getHashpassFullLogo", () => {
     expect(getHashpassFullLogo(false)).toBe("black-svg");
   });
 
-  it("uses the transparent native logo on light native surfaces", () => {
+  it("uses the black native logo on light native surfaces", () => {
     mockPlatform.OS = "android";
 
-    expect(getHashpassFullLogo(false)).toBe("white-native-png");
+    expect(getHashpassFullLogo(false)).toBe("black-native-png");
   });
 });
 
@@ -66,10 +70,10 @@ describe("getHashpassFooterLogo", () => {
     expect(getHashpassFooterLogo(false)).toBe("white-svg");
   });
 
-  it("uses the white native logo on light native footer", () => {
+  it("uses the black native logo on light native footer", () => {
     mockPlatform.OS = "android";
 
-    expect(getHashpassFooterLogo(false)).toBe("white-native-png");
+    expect(getHashpassFooterLogo(false)).toBe("black-native-png");
   });
 });
 
@@ -84,5 +88,11 @@ describe("getHashpassStaticHeroLogo", () => {
     mockPlatform.OS = "web";
 
     expect(getHashpassStaticHeroLogo(true)).toBe("white-cyan-svg");
+  });
+
+  it("uses the black native logo on light native hero surfaces", () => {
+    mockPlatform.OS = "android";
+
+    expect(getHashpassStaticHeroLogo(false)).toBe("black-native-png");
   });
 });

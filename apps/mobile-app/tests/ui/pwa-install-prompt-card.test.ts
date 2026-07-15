@@ -34,4 +34,45 @@ describe('PWA install prompt layout', () => {
     expect(source).toContain("overflowY: 'auto'");
     expect(source).toContain("WebkitOverflowScrolling: 'touch'");
   });
+
+  it('keeps the collapsed PWA button draggable with persisted placement', () => {
+    const promptSource = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
+    const dragSource = readSource('../../../../apps/mobile-app/lib/pwa-drag.ts');
+
+    expect(dragSource).toContain("export const PWA_DRAG_POSITION_KEY = 'hashpass:pwa-install-position';");
+    expect(dragSource).toContain('export const clampPwaDragPosition');
+    expect(promptSource).toContain('setPointerCapture?.(event.pointerId)');
+    expect(promptSource).toContain('releasePointerCapture?.(event.pointerId)');
+    expect(promptSource).toContain('storePwaDragPosition(finalPosition)');
+    expect(promptSource).toContain('onPointerDown={handleDragPointerDown}');
+    expect(promptSource).toContain('onPointerMove={handleDragPointerMove}');
+    expect(promptSource).toContain('onPointerUp={handleDragPointerEnd}');
+    expect(promptSource).toContain('onClickCapture={handleDragClickCapture}');
+    expect(promptSource).toContain('hp-pwa-drag-layer');
+  });
+
+  it('renders the dont-show-again action as an accessible secondary button', () => {
+    const promptSource = readSource('../../../../apps/mobile-app/components/PWAPrompt.tsx');
+    const cardSource = readSource('../../../../packages/ui/src/PwaInstallPromptCard.tsx');
+
+    expect(promptSource).toContain('secondaryLabel={!isCollapsed && !isOpenAppMode');
+    expect(promptSource).toContain('onSecondaryAction={!isCollapsed && !isOpenAppMode ? handleDontShowAgain : undefined}');
+    expect(promptSource).not.toContain("'▢ ' + t('");
+    expect(cardSource).toContain('secondaryLabel?: string;');
+    expect(cardSource).toContain('onSecondaryAction?: () => void;');
+    expect(cardSource).toContain('className="hp-pwa-secondary-action"');
+  });
+
+  it('shows hover and active drop indicators for the draggable PWA button', () => {
+    const source = readSource('../../../../apps/mobile-app/app/global.css');
+
+    expect(source).toContain('.hp-pwa-drag-layer');
+    expect(source).toContain('.hp-pwa-drag-layer::before');
+    expect(source).toContain('.hp-pwa-drag-layer::after');
+    expect(source).toContain('.hp-pwa-drag-layer:hover::before');
+    expect(source).toContain('.hp-pwa-drag-layer.hp-pwa-dragging::before');
+    expect(source).toContain('cursor: grab;');
+    expect(source).toContain('cursor: grabbing;');
+    expect(source).toContain('touch-action: none;');
+  });
 });

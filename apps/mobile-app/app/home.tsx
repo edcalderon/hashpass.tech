@@ -497,7 +497,7 @@ export default function HomeScreen() {
         bounces={Platform.OS === "ios"}
         alwaysBounceVertical={false}
         decelerationRate={Platform.OS === "ios" ? "normal" : 0.985}
-        onLayout={handleInitialScrollLayout}
+        onLayout={Platform.OS === "android" ? undefined : handleInitialScrollLayout}
         onContentSizeChange={handleInitialScrollLayout}
         showsVerticalScrollIndicator={false}
       >
@@ -616,10 +616,14 @@ export default function HomeScreen() {
 
         <View
           ref={featuresRef}
-          onLayout={(event) => {
-            const { y } = event.nativeEvent.layout;
-            featuresLayoutRef.current = { y };
-          }}
+          onLayout={
+            Platform.OS === "android"
+              ? undefined
+              : (event) => {
+                  const { y } = event.nativeEvent.layout;
+                  featuresLayoutRef.current = { y };
+                }
+          }
         >
           <Features
             styles={styles}

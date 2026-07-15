@@ -1,7 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Platform } from 'react-native';
 import PwaInstallPromptCard from '../../../packages/ui/src/PwaInstallPromptCard';
 import { buildAndroidIntentUrl, getInstallationStatus, resolvePwaLaunchUrl } from '../lib/pwa-utils';
+import {
+  clampPwaDragPosition,
+  getDefaultPwaDragPosition,
+  PWA_DRAG_START_THRESHOLD,
+  readStoredPwaDragPosition,
+  storePwaDragPosition,
+  type PwaDragPosition,
+} from '../lib/pwa-drag';
 import { useTranslation } from '../i18n/i18n';
 
 const ANDROID_CHROME_192 = require('../assets/android-chrome-192x192.png');
@@ -9,6 +17,15 @@ const ANDROID_CHROME_512 = require('../assets/android-chrome-512x512.png');
 
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
 const DONT_SHOW_AGAIN_KEY = 'hashpass:pwa-dont-show-until-reload';
+
+type PwaDragStart = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  originLeft: number;
+  originTop: number;
+  hasMoved: boolean;
+};
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -27,6 +44,10 @@ const PWAPrompt = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [showInstallHelpModal, setShowInstallHelpModal] = useState(false);
+  const [dragPosition, setDragPosition] = useState<PwaDragPosition | null>(null);
+  const [isDraggingPwa, setIsDraggingPwa] = useState(false);
+  const dragStartRef = useRef<PwaDragStart | null>(null);
+  const suppressClickAfterDragRef = useRef(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -38,6 +59,7 @@ const PWAPrompt = () => {
 
     const isStoredCollapsed = window.localStorage.getItem(COLLAPSE_KEY) === 'true';
     setIsCollapsed(isStoredCollapsed);
+    setDragPosition(readStoredPwaDragPosition() ?? getDefaultPwaDragPosition());
 
     let cancelled = false;
 
@@ -99,6 +121,26 @@ const PWAPrompt = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      return;
+    }
+
+    const handleResize = () => {
+      setDragPosition((currentPosition) =>
+        clampPwaDragPosition(currentPosition ?? getDefaultPwaDragPosition())
+      );
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
+
   const collapsePrompt = () => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       window.localStorage.setItem(COLLAPSE_KEY, 'true');
@@ -118,6 +160,81 @@ const PWAPrompt = () => {
   const closeInstallHelpModal = () => {
     setShowInstallHelpModal(false);
   };
+
+  const handleDragPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isCollapsed || event.button !== 0) {
+      return;
+    }
+
+    const currentPosition = dragPosition ?? getDefaultPwaDragPosition();
+    dragStartRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originLeft: currentPosition.left,
+      originTop: currentPosition.top,
+      hasMoved: false,
+    };
+
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }, [dragPosition, isCollapsed]);
+
+  const handleDragPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const dragStart = dragStartRef.current;
+    if (!dragStart || dragStart.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - dragStart.startX;
+    const deltaY = event.clientY - dragStart.startY;
+    const distance = Math.hypot(deltaX, deltaY);
+    if (!dragStart.hasMoved && distance < PWA_DRAG_START_THRESHOLD) {
+      return;
+    }
+
+    dragStart.hasMoved = true;
+    suppressClickAfterDragRef.current = true;
+    setIsDraggingPwa(true);
+    event.preventDefault();
+
+    setDragPosition(
+      clampPwaDragPosition({
+        left: dragStart.originLeft + deltaX,
+        top: dragStart.originTop + deltaY,
+      })
+    );
+  }, []);
+
+  const handleDragPointerEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const dragStart = dragStartRef.current;
+    if (!dragStart || dragStart.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (dragStart.hasMoved) {
+      const finalPosition = clampPwaDragPosition({
+        left: dragStart.originLeft + event.clientX - dragStart.startX,
+        top: dragStart.originTop + event.clientY - dragStart.startY,
+      });
+
+      setDragPosition(finalPosition);
+      storePwaDragPosition(finalPosition);
+    }
+
+    dragStartRef.current = null;
+    setIsDraggingPwa(false);
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+  }, []);
+
+  const handleDragClickCapture = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!suppressClickAfterDragRef.current) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    suppressClickAfterDragRef.current = false;
+  }, []);
 
   const getInstallInstructions = () => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
@@ -319,7 +436,6 @@ const PWAPrompt = () => {
         t('details.one', 'PWA means Progressive Web App: app-like behavior from your browser install.'),
         t('details.two', 'No app-store download required, but you still get quick home-screen access.'),
         t('details.three', 'Great for event check-in flows, wallets, and notifications with less friction.'),
-        '▢ ' + t('dontShowAgain', "Don't show again until reload (click here)"),
       ]
     : [
         t('details.one', 'PWA means Progressive Web App: app-like behavior from your browser install.'),
@@ -327,14 +443,7 @@ const PWAPrompt = () => {
         t('details.three', 'Great for event check-in flows, wallets, and notifications with less friction.'),
       ];
 
-  return (
-    <div className="hp-pwa-wrapper" onClick={(e) => {
-      const checkboxText = t('dontShowAgain', "Don't show again until reload");
-      if (e.target instanceof HTMLElement &&
-          e.target.textContent?.includes(checkboxText)) {
-        handleDontShowAgain();
-      }
-    }}>
+  const promptCard = (
       <PwaInstallPromptCard
         className={`hp-pwa-floating${isCollapsed ? ' hp-pwa-collapsed-state' : ''}`}
         appName="HASHPASS"
@@ -361,10 +470,38 @@ const PWAPrompt = () => {
         collapsed={isCollapsed}
         collapsedLabel={collapsedLabel}
         collapsedActionVariant={isOpenAppMode ? 'open' : 'install'}
+        secondaryLabel={!isCollapsed && !isOpenAppMode ? t('dontShowAgain', "Don't show again until reload") : undefined}
+        onSecondaryAction={!isCollapsed && !isOpenAppMode ? handleDontShowAgain : undefined}
         onExpand={expandPrompt}
         onPrimaryAction={isOpenAppMode ? openApp : installPWA}
         onClose={collapsePrompt}
       />
+  );
+
+  if (isCollapsed) {
+    const effectiveDragPosition = dragPosition ?? getDefaultPwaDragPosition();
+
+    return (
+      <div
+        className={`hp-pwa-wrapper hp-pwa-drag-layer${isDraggingPwa ? ' hp-pwa-dragging' : ''}`}
+        style={{
+          left: `${Math.round(effectiveDragPosition.left)}px`,
+          top: `${Math.round(effectiveDragPosition.top)}px`,
+        }}
+        onClickCapture={handleDragClickCapture}
+        onPointerDown={handleDragPointerDown}
+        onPointerMove={handleDragPointerMove}
+        onPointerUp={handleDragPointerEnd}
+        onPointerCancel={handleDragPointerEnd}
+      >
+        {promptCard}
+      </div>
+    );
+  }
+
+  return (
+    <div className="hp-pwa-wrapper">
+      {promptCard}
     </div>
   );
 };

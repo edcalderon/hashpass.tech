@@ -73,6 +73,88 @@
   cursor: default;
 }
 
+.hp-pwa-drag-layer {
+  position: fixed !important;
+  width: 70px !important;
+  height: 70px !important;
+  z-index: 1000 !important;
+  touch-action: none;
+  cursor: grab;
+  isolation: isolate;
+}
+
+.hp-pwa-drag-layer::before,
+.hp-pwa-drag-layer::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    border-color 160ms ease;
+}
+
+.hp-pwa-drag-layer::before {
+  inset: -8px;
+  border: 1px dashed rgba(204, 217, 255, 0.82);
+  transform: scale(0.9);
+}
+
+.hp-pwa-drag-layer::after {
+  inset: -15px;
+  border: 1px solid rgba(72, 211, 255, 0.46);
+  transform: scale(0.82);
+}
+
+.hp-pwa-drag-layer:hover::before,
+.hp-pwa-drag-layer:hover::after,
+.hp-pwa-drag-layer.hp-pwa-dragging::before,
+.hp-pwa-drag-layer.hp-pwa-dragging::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.hp-pwa-drag-layer.hp-pwa-dragging {
+  cursor: grabbing;
+}
+
+.hp-pwa-drag-layer.hp-pwa-dragging::before {
+  border-color: rgba(72, 211, 255, 0.95);
+}
+
+.hp-pwa-drag-layer .hp-pwa-floating,
+.hp-pwa-drag-layer .hp-pwa-floating.hp-pwa-collapsed-state {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  z-index: auto !important;
+}
+
+.hp-pwa-drag-layer .hp-pwa-floating.hp-pwa-collapsed-state,
+.hp-pwa-drag-layer .hp-pwa-collapsed {
+  cursor: grab;
+}
+
+.hp-pwa-drag-layer.hp-pwa-dragging .hp-pwa-floating.hp-pwa-collapsed-state,
+.hp-pwa-drag-layer.hp-pwa-dragging .hp-pwa-collapsed {
+  cursor: grabbing;
+}
+
+.hp-pwa-drag-layer .hp-pwa-collapsed {
+  box-shadow:
+    0 12px 30px rgba(6, 10, 30, 0.36),
+    0 0 0 1px rgba(222, 232, 255, 0.18) !important;
+}
+
+.hp-pwa-drag-layer.hp-pwa-dragging .hp-pwa-collapsed {
+  transform: scale(0.96);
+}
+
 /* Make details section interactive for checkbox */
 .hp-pwa-floating .hp-pwa-details {
   cursor: text;

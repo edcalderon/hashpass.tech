@@ -402,10 +402,10 @@ describe("HomeScreen native tablet layout", () => {
           styleArrayContains(node.props.style, { opacity: 1 }),
       );
     expect(topControls).toBeTruthy();
+    expect(scrollView.props.onLayout).toBeUndefined();
 
     const callsBeforeLayout = mockScrollTo.mock.calls.length;
     act(() => {
-      scrollView.props.onLayout?.({});
       scrollView.props.onContentSizeChange?.(1200, 2200);
     });
     expect(mockScrollTo.mock.calls.length).toBeGreaterThan(callsBeforeLayout);
