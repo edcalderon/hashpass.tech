@@ -1,6 +1,7 @@
 import { createActor } from 'xstate';
 
 import {
+  AUTH_SESSION_SETTLE_DELAY_MS,
   authSessionMachine,
   getAuthViewState,
   type AuthSessionMachineEvent,
@@ -20,7 +21,19 @@ const send = (actor: ReturnType<typeof createActor>, event: AuthSessionMachineEv
   actor.send(event);
 };
 
+const settleAuthSession = () => {
+  jest.advanceTimersByTime(AUTH_SESSION_SETTLE_DELAY_MS);
+};
+
 describe('authSessionMachine', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('keeps an existing Better Auth session authenticated when legacy providers later resolve empty', () => {
     const actor = createActor(authSessionMachine).start();
 
@@ -39,6 +52,15 @@ describe('authSessionMachine', () => {
       provider: 'supabase',
       session: null,
     });
+
+    expect(actor.getSnapshot().value).toBe('settlingAuthenticated');
+    expect(getAuthViewState(actor.getSnapshot())).toEqual({
+      user: expect.objectContaining({ id: 'better-user' }),
+      isLoggedIn: true,
+      isLoading: true,
+    });
+
+    settleAuthSession();
 
     expect(actor.getSnapshot().value).toBe('authenticated');
     expect(getAuthViewState(actor.getSnapshot())).toEqual({
@@ -102,6 +124,15 @@ describe('authSessionMachine', () => {
       session: makeSession('supabase-user', 'supabase'),
     });
 
+    expect(actor.getSnapshot().value).toBe('settlingAuthenticated');
+    expect(getAuthViewState(actor.getSnapshot())).toEqual({
+      user: expect.objectContaining({ id: 'supabase-user' }),
+      isLoggedIn: true,
+      isLoading: true,
+    });
+
+    settleAuthSession();
+
     expect(getAuthViewState(actor.getSnapshot())).toEqual({
       user: expect.objectContaining({ id: 'supabase-user' }),
       isLoggedIn: true,
@@ -117,6 +148,15 @@ describe('authSessionMachine', () => {
       session: makeSession('override-user', 'supabase'),
     });
 
+    expect(actor.getSnapshot().value).toBe('settlingAuthenticated');
+    expect(getAuthViewState(actor.getSnapshot())).toEqual({
+      user: expect.objectContaining({ id: 'override-user' }),
+      isLoggedIn: true,
+      isLoading: true,
+    });
+
+    settleAuthSession();
+
     expect(actor.getSnapshot().value).toBe('authenticated');
     expect(getAuthViewState(actor.getSnapshot())).toEqual({
       user: expect.objectContaining({ id: 'override-user' }),
@@ -130,6 +170,32 @@ describe('authSessionMachine', () => {
     expect(getAuthViewState(actor.getSnapshot())).toEqual({
       user: null,
       isLoggedIn: false,
+      isLoading: false,
+    });
+  });
+
+  it('keeps a fresh authenticated session route-loading until the settle delay completes', () => {
+    const actor = createActor(authSessionMachine).start();
+
+    send(actor, {
+      type: 'PROVIDER_RESOLVED',
+      provider: 'supabase',
+      session: makeSession('native-otp-user', 'supabase'),
+    });
+
+    expect(actor.getSnapshot().value).toBe('settlingAuthenticated');
+    expect(getAuthViewState(actor.getSnapshot())).toEqual({
+      user: expect.objectContaining({ id: 'native-otp-user' }),
+      isLoggedIn: true,
+      isLoading: true,
+    });
+
+    settleAuthSession();
+
+    expect(actor.getSnapshot().value).toBe('authenticated');
+    expect(getAuthViewState(actor.getSnapshot())).toEqual({
+      user: expect.objectContaining({ id: 'native-otp-user' }),
+      isLoggedIn: true,
       isLoading: false,
     });
   });

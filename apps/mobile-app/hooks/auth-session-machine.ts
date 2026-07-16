@@ -35,6 +35,7 @@ export type AuthSessionMachineEvent =
     };
 
 const PROVIDER_PRIORITY: AuthSessionProvider[] = ['betterAuth', 'supabase', 'directus'];
+export const AUTH_SESSION_SETTLE_DELAY_MS = 350;
 
 const emptyProviderState = (): ProviderSessionState => ({
   ready: false,
@@ -110,7 +111,7 @@ export const authSessionMachine = createMachine(
         always: [
           {
             guard: 'hasAuthenticatedUser',
-            target: 'authenticated',
+            target: 'settlingAuthenticated',
           },
           {
             guard: 'allProvidersReady',
@@ -160,11 +161,44 @@ export const authSessionMachine = createMachine(
           },
         },
       },
+      settlingAuthenticated: {
+        always: [
+          {
+            guard: 'hasNoAuthenticatedUserAndAllProvidersReady',
+            target: 'unauthenticated',
+          },
+          {
+            guard: 'hasNoAuthenticatedUser',
+            target: 'bootstrapping',
+          },
+        ],
+        after: {
+          [AUTH_SESSION_SETTLE_DELAY_MS]: {
+            guard: 'hasAuthenticatedUser',
+            target: 'authenticated',
+          },
+        },
+        on: {
+          PROVIDER_RESOLVED: {
+            actions: 'setProviderResolved',
+          },
+          SESSION_OVERRIDE: {
+            actions: 'setSessionOverride',
+          },
+          CLEAR_SESSION_OVERRIDE: {
+            actions: 'clearSessionOverride',
+          },
+          SIGNED_OUT: {
+            actions: 'clearAuthState',
+            target: 'unauthenticated',
+          },
+        },
+      },
       unauthenticated: {
         always: [
           {
             guard: 'hasAuthenticatedUser',
-            target: 'authenticated',
+            target: 'settlingAuthenticated',
           },
           {
             guard: 'notAllProvidersReady',
@@ -240,10 +274,11 @@ export const createAuthSessionActor = () => createActor(authSessionMachine);
 
 export const getAuthViewState = (snapshot: AuthSessionMachineSnapshot) => {
   const user = resolveAuthenticatedUser(snapshot.context);
+  const isSettlingAuthenticated = snapshot.matches('settlingAuthenticated');
 
   return {
     user,
     isLoggedIn: Boolean(user),
-    isLoading: !user && !allProvidersReady(snapshot.context),
+    isLoading: isSettlingAuthenticated || (!user && !allProvidersReady(snapshot.context)),
   };
 };

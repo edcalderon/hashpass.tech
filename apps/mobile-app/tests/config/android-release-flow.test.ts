@@ -131,6 +131,18 @@ describe('Android release flow', () => {
     expect(workflow).toContain('const resolvedApp = buildExpoConfig({ baseConfig: app, env: process.env })');
     expect(workflow).toContain('newArchEnabled: resolvedApp.newArchEnabled');
     expect(workflow).toContain('android: resolvedApp.android');
+    expect(workflow).toContain('cat pnpm-lock.yaml patches/*.patch');
+  });
+
+  it('invalidates persistent Android node_modules when native patch files change', () => {
+    const workflow = fs.readFileSync(
+      path.resolve(mobileAppRoot, '../../.github/workflows/mobile-android-release.yml'),
+      'utf8',
+    );
+
+    expect(workflow).toContain("hashFiles('pnpm-lock.yaml', 'apps/mobile-app/package.json', 'patches/*.patch')");
+    expect(workflow).toContain('sha256sum pnpm-lock.yaml patches/*.patch | sha256sum');
+    expect(workflow).toContain('pnpm lock and patch files unchanged');
   });
 
   it('configures preview builds for internal development app bundle distribution', () => {
