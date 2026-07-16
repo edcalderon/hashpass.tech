@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607161019, // Updated to current timestamp
+  buildNumber: 202607161256, // Updated to current timestamp
   releaseDate: '2026-07-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,31 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'stabilize Android auth handoff'
+    'stabilize native login event registry',
+    'stabilize native login and light logo'
   ],
   breakingChanges: [],
-  notes: 'stabilize Android auth handoff'
+  notes: 'stabilize native login event registry; stabilize native login and light logo'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.232': {
+    version: '1.8.232',
+    buildNumber: 202607161256,
+    releaseDate: '2026-07-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stabilize native login event registry',
+      'stabilize native login and light logo'
+    ],
+    breakingChanges: [],
+    notes: 'stabilize native login event registry; stabilize native login and light logo'
+  },
   '1.8.231': {
     version: '1.8.231',
     buildNumber: 202607161019,

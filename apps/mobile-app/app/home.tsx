@@ -104,13 +104,17 @@ export default function HomeScreen() {
   const isHeroAnimationEnabled = animationLevel === "full";
   const heroForegroundColor =
     isNative
-      ? "#FFFFFF"
+      ? isDark
+        ? "#FFFFFF"
+        : colors.text.primary
       : Platform.OS === "web" && isHeroAnimationEnabled
       ? "#FFFFFF"
       : colors.text.primary;
   const heroForegroundMutedColor =
     isNative
-      ? "rgba(255, 255, 255, 0.78)"
+      ? isDark
+        ? "rgba(255, 255, 255, 0.78)"
+        : "rgba(16, 24, 32, 0.46)"
       : Platform.OS === "web" && isHeroAnimationEnabled
       ? "rgba(255, 255, 255, 0.84)"
       : isDark
@@ -995,10 +999,10 @@ const getStyles = (
       flexDirection: "column",
       justifyContent: "space-between",
       paddingBottom: isMobile ? 40 : isNativeTablet ? 54 : 60,
-      // Native has no CrystalForgeBackground — provide a subtle gradient-tinted surface
-      // so the logo has visual contrast in both light and dark mode.
+      // Native has no CrystalForgeBackground, so provide a stable themed surface
+      // behind the raster logo assets.
       backgroundColor:
-        Platform.OS !== "web" ? (isDark ? "#0e1117" : "#101820") : undefined,
+        Platform.OS !== "web" ? (isDark ? "#0e1117" : "#F8FAFC") : undefined,
     },
     heroImage: {
       width: "100%",

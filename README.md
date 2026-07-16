@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.231)
+## 📋 Latest Changes (v1.8.232)
 
 ### Bug Fixes
 
-* stabilize Android auth handoff ([7b88e11](https://github.com/hashpass-tech/hashpass.tech/commit/7b88e1178823e83e079a02b7db2047ccb1965dbc))
+* stabilize native login event registry ([6fc5796](https://github.com/hashpass-tech/hashpass.tech/commit/6fc5796b7dc4a5c604f362b5812c46b1d651d858))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

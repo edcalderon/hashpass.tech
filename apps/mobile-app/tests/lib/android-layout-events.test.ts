@@ -32,11 +32,11 @@ describe('Android layout event crash guards', () => {
     expect(quickAccessGridSource).toContain("onLayout={Platform.OS === 'android' ? undefined : handleLayout}");
   });
 
-  it('uses the white full HASHPASS logo on light native surfaces', () => {
+  it('uses the black full HASHPASS logo on light native landing surfaces', () => {
     const logoSource = readSource('../../lib/hashpass-logo.ts');
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
 
-    expect(logoSource).toContain('logo-full-hashpass-white.png');
+    expect(logoSource).toContain('logo-full-hashpass-black.png');
     expect(dashboardSource).toContain("require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')");
   });
 
