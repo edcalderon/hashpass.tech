@@ -1,5 +1,4 @@
 import '../config/reanimated'; // CRITICAL: Ensure Reanimated is imported and configured first
-import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack, useRouter, usePathname, useSegments } from "expo-router";
@@ -37,7 +36,10 @@ import { hasRecentAuthSuccess } from '../lib/auth/recent-auth';
 import { isDevAuthBypassEnabled } from '../lib/auth/dev-bypass';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { checkNativeCrashLog, showNativeCrashAlert } from '../lib/native-crash-reader';
-import { resolveDashboardStackOptions } from '../lib/native-navigation-options';
+import {
+  resolveDashboardStackOptions,
+  resolveRootStackMotionOptions,
+} from '../lib/native-navigation-options';
 import packageJson from '../package.json';
 import * as Sentry from '@sentry/react-native';
 
@@ -364,8 +366,7 @@ function ThemedContent() {
             fontWeight: '600',
           },
           headerBackTitle: undefined,
-          animation: 'slide_from_right',
-          animationTypeForReplace: 'push',
+          ...resolveRootStackMotionOptions(Platform.OS),
         }}
       >
         {/* Always register routes to avoid linking mismatches */}

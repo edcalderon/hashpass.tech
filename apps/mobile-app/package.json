@@ -149,7 +149,8 @@
     "tailwindcss": "^3.4.17",
     "three": "^0.183.1",
     "twrnc": "^4.9.1",
-    "workbox-cli": "^7.1.0"
+    "workbox-cli": "^7.1.0",
+    "xstate": "^5.32.5"
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.28.5",

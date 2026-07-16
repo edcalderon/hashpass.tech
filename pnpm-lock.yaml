@@ -25,7 +25,7 @@ patchedDependencies:
     hash: 3ovotlv4g2dqpzrx3otza2w5re
     path: patches/react-native-css-interop@0.2.1.patch
   react-native-svg@15.11.2:
-    hash: f4c4cw2jqns423pspl4zcby2fe
+    hash: icbs6kh4svbrlxj3bzzdnq4nfq
     path: patches/react-native-svg@15.11.2.patch
   react-native-web@0.20.0:
     hash: lyhti7jhxdftt6yipx5xu47w6a
@@ -229,13 +229,13 @@ importers:
         version: 0.548.0(react@19.0.0)
       lucide-react-native:
         specifier: ^0.479.0
-        version: 0.479.0(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 0.479.0(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       motion:
         specifier: ^12.23.3
         version: 12.34.0(@emotion/is-prop-valid@1.4.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       nativewind:
         specifier: ^4.1.23
-        version: 4.2.1(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
+        version: 4.2.1(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
       node-fetch:
         specifier: ^3.3.2
         version: 3.3.2
@@ -259,13 +259,13 @@ importers:
         version: 0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
       react-native-copilot:
         specifier: ^3.3.3
-        version: 3.3.3(patch_hash=ocickmwtvvlgtxhe4exmvxshty)(@types/node@24.10.13)(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 3.3.3(patch_hash=ocickmwtvvlgtxhe4exmvxshty)(@types/node@24.10.13)(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-gesture-handler:
         specifier: ~2.24.0
         version: 2.24.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-qrcode-svg:
         specifier: ^6.3.20
-        version: 6.3.21(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 6.3.21(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-reanimated:
         specifier: ~3.17.4
         version: 3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -277,7 +277,7 @@ importers:
         version: 4.11.1(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-svg:
         specifier: 15.11.2
-        version: 15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-url-polyfill:
         specifier: ^2.0.0
         version: 2.0.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))
@@ -716,7 +716,7 @@ importers:
         version: 0.548.0(react@19.0.0)
       lucide-react-native:
         specifier: ^0.479.0
-        version: 0.479.0(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 0.479.0(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       metro-cache:
         specifier: 0.82.5
         version: 0.82.5
@@ -728,7 +728,7 @@ importers:
         version: 12.34.0(@emotion/is-prop-valid@1.4.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       nativewind:
         specifier: ^4.1.23
-        version: 4.2.1(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
+        version: 4.2.1(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
       node-fetch:
         specifier: ^3.3.2
         version: 3.3.2
@@ -755,10 +755,10 @@ importers:
         version: 0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
       react-native-copilot:
         specifier: ^3.3.3
-        version: 3.3.3(patch_hash=ocickmwtvvlgtxhe4exmvxshty)(@types/node@24.10.13)(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 3.3.3(patch_hash=ocickmwtvvlgtxhe4exmvxshty)(@types/node@24.10.13)(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-css-interop:
         specifier: 0.2.1
-        version: 0.2.1(patch_hash=3ovotlv4g2dqpzrx3otza2w5re)(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
+        version: 0.2.1(patch_hash=3ovotlv4g2dqpzrx3otza2w5re)(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
       react-native-edge-to-edge:
         specifier: 1.6.0
         version: 1.6.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -767,7 +767,7 @@ importers:
         version: 2.24.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-qrcode-svg:
         specifier: ^6.3.20
-        version: 6.3.21(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 6.3.21(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-reanimated:
         specifier: ~3.17.4
         version: 3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -779,7 +779,7 @@ importers:
         version: 4.11.1(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-svg:
         specifier: 15.11.2
-        version: 15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+        version: 15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-url-polyfill:
         specifier: ^2.0.0
         version: 2.0.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))
@@ -804,6 +804,9 @@ importers:
       workbox-cli:
         specifier: ^7.1.0
         version: 7.4.0(@types/babel__core@7.20.5)
+      xstate:
+        specifier: ^5.32.5
+        version: 5.32.5
     devDependencies:
       '@babel/preset-typescript':
         specifier: ^7.28.5
@@ -15748,6 +15751,9 @@ packages:
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
 
+  xstate@5.32.5:
+    resolution: {integrity: sha512-ULazi1oe6wGrXl0Frb6otSlkm5HLifbbVTkMk5kkSKqz4TkxJaVpnl6jOJwKeid3ORPxYyZQgNLUSYX9q65SIA==}
+
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
@@ -29186,11 +29192,11 @@ snapshots:
 
   lru-cache@7.18.3: {}
 
-  lucide-react-native@0.479.0(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
+  lucide-react-native@0.479.0(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
     dependencies:
       react: 19.0.0
       react-native: 0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
-      react-native-svg: 15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+      react-native-svg: 15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
 
   lucide-react@0.548.0(react@19.0.0):
     dependencies:
@@ -30189,11 +30195,11 @@ snapshots:
 
   napi-postinstall@0.3.4: {}
 
-  nativewind@4.2.1(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0)):
+  nativewind@4.2.1(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0)):
     dependencies:
       comment-json: 4.5.1
       debug: 4.4.3
-      react-native-css-interop: 0.2.1(patch_hash=3ovotlv4g2dqpzrx3otza2w5re)(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
+      react-native-css-interop: 0.2.1(patch_hash=3ovotlv4g2dqpzrx3otza2w5re)(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0))
       tailwindcss: 3.4.19(tsx@4.21.0)
     transitivePeerDependencies:
       - react
@@ -31961,19 +31967,19 @@ snapshots:
       react-loadable: '@docusaurus/react-loadable@6.0.0(react@19.0.0)'
       webpack: 5.105.2(@swc/core@1.15.41(@swc/helpers@0.5.18))
 
-  react-native-copilot@3.3.3(patch_hash=ocickmwtvvlgtxhe4exmvxshty)(@types/node@24.10.13)(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
+  react-native-copilot@3.3.3(patch_hash=ocickmwtvvlgtxhe4exmvxshty)(@types/node@24.10.13)(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
     dependencies:
       '@changesets/changelog-github': 0.5.2
       '@changesets/cli': 2.29.8(@types/node@24.10.13)
       mitt: 3.0.1
       react: 19.0.0
       react-native: 0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
-      react-native-svg: 15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+      react-native-svg: 15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
     transitivePeerDependencies:
       - '@types/node'
       - encoding
 
-  react-native-css-interop@0.2.1(patch_hash=3ovotlv4g2dqpzrx3otza2w5re)(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0)):
+  react-native-css-interop@0.2.1(patch_hash=3ovotlv4g2dqpzrx3otza2w5re)(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(tailwindcss@3.4.19(tsx@4.21.0)):
     dependencies:
       '@babel/helper-module-imports': 7.28.6
       '@babel/traverse': 7.29.0
@@ -31987,7 +31993,7 @@ snapshots:
       tailwindcss: 3.4.19(tsx@4.21.0)
     optionalDependencies:
       react-native-safe-area-context: 5.4.0(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
-      react-native-svg: 15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+      react-native-svg: 15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -32023,13 +32029,13 @@ snapshots:
       react: 19.0.0
       react-native: 0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
 
-  react-native-qrcode-svg@6.3.21(react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
+  react-native-qrcode-svg@6.3.21(react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
     dependencies:
       prop-types: 15.8.1
       qrcode: 1.5.4
       react: 19.0.0
       react-native: 0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
-      react-native-svg: 15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+      react-native-svg: 15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       text-encoding: 0.7.0
 
   react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
@@ -32065,7 +32071,7 @@ snapshots:
       react-native-is-edge-to-edge: 1.2.1(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       warn-once: 0.1.1
 
-  react-native-svg@15.11.2(patch_hash=f4c4cw2jqns423pspl4zcby2fe)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
+  react-native-svg@15.11.2(patch_hash=icbs6kh4svbrlxj3bzzdnq4nfq)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
     dependencies:
       css-select: 5.2.2
       css-tree: 1.1.3
@@ -35065,6 +35071,8 @@ snapshots:
   xmlbuilder@15.1.1: {}
 
   xmlchars@2.2.0: {}
+
+  xstate@5.32.5: {}
 
   xtend@4.0.2: {}
 

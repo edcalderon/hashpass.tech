@@ -1,3 +1,30 @@
+diff --git a/android/src/main/java/com/horcrux/svg/VirtualView.java b/android/src/main/java/com/horcrux/svg/VirtualView.java
+index 815b236d6c17cdffe9e4324083f79149f24ce97b..99765b6221fa8b90811dfd9b59805487aefaf5b0 100644
+--- a/android/src/main/java/com/horcrux/svg/VirtualView.java
++++ b/android/src/main/java/com/horcrux/svg/VirtualView.java
+@@ -20,10 +20,7 @@ import com.facebook.react.bridge.ReadableArray;
+ import com.facebook.react.bridge.ReadableType;
+ import com.facebook.react.common.ReactConstants;
+ import com.facebook.react.uimanager.DisplayMetricsHolder;
+-import com.facebook.react.uimanager.OnLayoutEvent;
+ import com.facebook.react.uimanager.PointerEvents;
+-import com.facebook.react.uimanager.UIManagerHelper;
+-import com.facebook.react.uimanager.events.EventDispatcher;
+ import com.facebook.react.views.view.ReactViewGroup;
+ import java.util.ArrayList;
+ import javax.annotation.Nullable;
+@@ -600,11 +597,6 @@ public abstract class VirtualView extends ReactViewGroup {
+         setBottom(Math.min(bottom, root.getHeight()));
+       }
+     }
+-    EventDispatcher eventDispatcher =
+-        UIManagerHelper.getEventDispatcherForReactTag(mContext, getId());
+-    if (eventDispatcher != null) {
+-      eventDispatcher.dispatchEvent(OnLayoutEvent.obtain(this.getId(), left, top, width, height));
+-    }
+   }
+
+   RectF getClientRect() {
 diff --git a/lib/commonjs/web/utils/hasProperty.js b/lib/commonjs/web/utils/hasProperty.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..1bd7eb6d0821e5f3f889c3c2e94ebf2320b8379d
