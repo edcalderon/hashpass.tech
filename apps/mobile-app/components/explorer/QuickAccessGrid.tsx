@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { useRouter } from 'expo-router';
@@ -160,7 +160,7 @@ export default function QuickAccessGrid({
           snapToInterval={cardWidth + cardSpacing}
           snapToAlignment="start"
           disableIntervalMomentum
-          onLayout={handleLayout}
+          onLayout={Platform.OS === 'android' ? undefined : handleLayout}
           onContentSizeChange={handleContentSizeChange}
           // @ts-ignore - onWheel supported in RN Web
           onWheel={handleWheel}

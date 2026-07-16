@@ -19,6 +19,7 @@ import {
   createAuthSessionActor,
   getAuthViewState,
   type AuthSessionMachineEvent,
+  type AuthSessionMachineSnapshot,
   type AuthSessionProvider,
 } from './auth-session-machine';
 
@@ -241,6 +242,10 @@ const getNativeGoogleAuthErrorDetails = (error: any) => ({
   name: error?.name || 'Error',
 });
 
+const isNativeGoogleDeveloperConfigurationError = (errorCode: string, message: string): boolean =>
+  errorCode === '10' ||
+  /DEVELOPER_ERROR|not registered to use OAuth2\.0|package name and SHA-1 certificate fingerprint|package info is not set correctly/i.test(message);
+
 const getAuthErrorMessage = (error: unknown, fallback: string): string => {
   if (error instanceof Error && error.message) {
     return error.message;
@@ -295,7 +300,7 @@ export const useAuth = () => {
   }, [authActor]);
 
   useEffect(() => {
-    const subscription = authActor.subscribe((snapshot) => {
+    const subscription = authActor.subscribe((snapshot: AuthSessionMachineSnapshot) => {
       setAuthViewState(getAuthViewState(snapshot));
     });
 
@@ -791,27 +796,36 @@ export const useAuth = () => {
         } catch (err: any) {
           const { code: errorCode, message, name } = getNativeGoogleAuthErrorDetails(err);
           const nativeInProgressCode = (nativeGoogleSigninStatusCodes as Record<string, string | undefined>).IN_PROGRESS;
+          const isDeveloperConfigurationError = isNativeGoogleDeveloperConfigurationError(errorCode, message);
           const isUserDismissal =
             errorCode === nativeGoogleSigninStatusCodes.SIGN_IN_CANCELLED ||
             /cancel/i.test(message);
           const shouldFallbackToBrowserOAuth =
-            errorCode === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE ||
-            errorCode === nativeGoogleSigninStatusCodes.NULL_PRESENTER ||
-            errorCode === 'GOOGLE_SIGN_IN_UNAVAILABLE' ||
-            errorCode === 'NULL_PRESENTER' ||
-            errorCode === '10' ||
-            /DEVELOPER_ERROR|Native Google Sign-In is unavailable|RNGoogleSignin|apiClient is null|Current activity is null|not exported|not linked|could not be found/i.test(message);
+            !isDeveloperConfigurationError &&
+            (
+              errorCode === nativeGoogleSigninStatusCodes.PLAY_SERVICES_NOT_AVAILABLE ||
+              errorCode === nativeGoogleSigninStatusCodes.NULL_PRESENTER ||
+              errorCode === 'GOOGLE_SIGN_IN_UNAVAILABLE' ||
+              errorCode === 'NULL_PRESENTER' ||
+              /Native Google Sign-In is unavailable|RNGoogleSignin|apiClient is null|Current activity is null|not exported|not linked|could not be found/i.test(message)
+            );
 
           console.warn('[useAuth] Native Google auth SDK flow failed:', {
             code: errorCode || 'UNKNOWN',
             name,
             message,
             fallbackToBrowserOAuth: shouldFallbackToBrowserOAuth,
+            developerConfigurationError: isDeveloperConfigurationError,
             userDismissal: isUserDismissal,
           });
 
           if (isUserDismissal || (nativeInProgressCode && errorCode === nativeInProgressCode)) {
             return { pending: false };
+          }
+          if (isDeveloperConfigurationError) {
+            return {
+              error: 'Google sign-in is not configured for this app build. Please install the signed release build or use another sign-in method.',
+            };
           }
           if (shouldFallbackToBrowserOAuth) {
             console.warn('[useAuth] Native Google Sign-In unavailable, falling back to browser OAuth:', {

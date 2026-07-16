@@ -1,3 +1,14 @@
+## [1.8.229](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.228...v1.8.229) (2026-07-16)
+
+
+### Bug Fixes
+
+* stabilize native auth and Android layout events ([bb4ec60](https://github.com/hashpass-tech/hashpass.tech/commit/bb4ec602855a9d730857d089ad8916a78b3631c5))
+
+
+
+
+
 ## [1.8.228](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.227...v1.8.228) (2026-07-16)
 
 

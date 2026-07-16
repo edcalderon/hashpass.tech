@@ -1547,7 +1547,7 @@ describe('useAuth native Google sign-in', () => {
     expect(capturedHook.isLoading).toBe(false);
   });
 
-  it('falls back to browser OAuth when Android reports numeric native Google developer error', async () => {
+  it('does not fall back to browser OAuth when Android reports native Google developer config error', async () => {
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
     setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');
     mockSignInWithNativeGoogleAccount.mockRejectedValueOnce(
@@ -1555,10 +1555,6 @@ describe('useAuth native Google sign-in', () => {
         code: 10,
       })
     );
-    mockOpenAuthSessionAsync.mockResolvedValueOnce({
-      type: 'success',
-      url: 'myapp://auth/callback#access_token=native-browser-token',
-    });
     const mockCreateSessionFromUrl = jest.fn(async () => ({
       session: {
         user: {
@@ -1645,27 +1641,15 @@ describe('useAuth native Google sign-in', () => {
 
     expect(result).toEqual(
       expect.objectContaining({
-        user: expect.objectContaining({
-          id: 'supabase-user',
-          email: 'user@example.com',
-        }),
-        session: expect.objectContaining({
-          user: expect.objectContaining({
-            id: 'supabase-user',
-            email: 'user@example.com',
-          }),
-        }),
+        error: expect.stringContaining('not configured for this app build'),
       })
     );
     expect(mockSignInWithNativeGoogleAccount).toHaveBeenCalledWith('google-web-client-id');
-    expect(mockAuthService.signInWithOAuth).toHaveBeenCalledWith('google');
-    expect(mockOpenAuthSessionAsync).toHaveBeenCalledWith(
-      'https://example.supabase.co/auth/v1/authorize',
-      'myapp://auth/callback'
-    );
-    expect(mockCreateSessionFromUrl).toHaveBeenCalledWith(
-      'myapp://auth/callback#access_token=native-browser-token'
-    );
+    expect(mockAuthService.signInWithOAuth).not.toHaveBeenCalled();
+    expect(mockOpenAuthSessionAsync).not.toHaveBeenCalled();
+    expect(mockCreateSessionFromUrl).not.toHaveBeenCalled();
+    expect(capturedHook.isLoggedIn).toBe(false);
+    expect(capturedHook.isLoading).toBe(false);
   });
 
   it('routes web Google sign-in through Better Auth first, even when the tenant provider is directus', async () => {
