@@ -1,6 +1,8 @@
 'use strict';
 
 const ANDROID_SCROLL_DIRECT_EVENTS = {
+  // Stock ScrollView direct events that can arrive before RN's generated
+  // view config registry has registered them in Android release bundles.
   topContentSizeChange: {
     registrationName: 'onContentSizeChange',
   },
