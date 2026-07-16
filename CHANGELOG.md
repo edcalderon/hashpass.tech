@@ -1,3 +1,14 @@
+## [1.8.232](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.231...v1.8.232) (2026-07-16)
+
+
+### Bug Fixes
+
+* stabilize native login event registry ([6fc5796](https://github.com/hashpass-tech/hashpass.tech/commit/6fc5796b7dc4a5c604f362b5812c46b1d651d858))
+
+
+
+
+
 ## [1.8.231](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.230...v1.8.231) (2026-07-16)
 
 
