@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607152141, // Updated to current timestamp
-  releaseDate: '2026-07-15',
+  buildNumber: 202607160244, // Updated to current timestamp
+  releaseDate: '2026-07-16',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'guard Android layout events'
+    'stabilize auth startup on Android'
   ],
   breakingChanges: [],
-  notes: 'guard Android layout events'
+  notes: 'stabilize auth startup on Android'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.228': {
+    version: '1.8.228',
+    buildNumber: 202607160244,
+    releaseDate: '2026-07-16',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stabilize auth startup on Android'
+    ],
+    breakingChanges: [],
+    notes: 'stabilize auth startup on Android'
+  },
   '1.8.227': {
     version: '1.8.227',
     buildNumber: 202607152141,

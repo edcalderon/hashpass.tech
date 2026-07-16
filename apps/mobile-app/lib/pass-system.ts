@@ -1,6 +1,22 @@
 import { supabase } from './supabase';
 import { resolveActiveEventId } from './event-path';
 
+const SUPABASE_AUTH_USER_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export const isSupabaseAuthUserId = (value: string | null | undefined): value is string =>
+  typeof value === 'string' && SUPABASE_AUTH_USER_ID_REGEX.test(value);
+
+const describeUserId = (value: string | null | undefined): string => {
+  if (!value) return 'missing';
+  return `${value.slice(0, 6)}...`;
+};
+
+const warnInvalidSupabaseUserId = (operation: string, userId: string | null | undefined): void => {
+  console.warn(
+    `[PassSystem] Skipping ${operation}: expected a Supabase auth UUID, received ${describeUserId(userId)}.`
+  );
+};
+
 export type PassType = 'general' | 'business' | 'vip';
 export type PassStatus = 'active' | 'used' | 'expired' | 'cancelled' | 'suspended';
 export type SubpassType = 'litter_smart' | 'networking' | 'workshop' | 'exclusive';
@@ -81,6 +97,11 @@ export interface PassTypeLimits {
 class PassSystemService {
   // Get user's pass information with real meeting request counts
   async getUserPassInfo(userId: string, eventId?: string): Promise<PassInfo | null> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('getUserPassInfo', userId);
+      return null;
+    }
+
     try {
       const resolvedEventId = resolveActiveEventId(eventId);
 
@@ -200,6 +221,11 @@ class PassSystemService {
 
   // Fallback method using only the counts function
   private async getUserPassInfoFromCounts(userId: string): Promise<PassInfo | null> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('getUserPassInfoFromCounts', userId);
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .rpc('get_user_meeting_request_counts', { p_user_id: userId })
@@ -243,10 +269,8 @@ class PassSystemService {
     try {
       const resolvedEventId = resolveActiveEventId(eventId);
 
-      // Validate UUID format
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(userId)) {
-        console.error('Invalid user ID format:', userId);
+      if (!isSupabaseAuthUserId(userId)) {
+        warnInvalidSupabaseUserId('canMakeMeetingRequest', userId);
         return {
           can_request: false,
           canSendRequest: false,
@@ -298,6 +322,11 @@ class PassSystemService {
     userId: string,
     speakerId: string
   ): Promise<any | null> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('getMeetingRequestStatus', userId);
+      return null;
+    }
+
     try {
       console.log('🔍 Getting meeting request status for user:', userId, 'speaker:', speakerId);
       
@@ -330,6 +359,11 @@ class PassSystemService {
     userId: string,
     requestId: string
   ): Promise<boolean> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('cancelMeetingRequest', userId);
+      return false;
+    }
+
     try {
       const { data, error } = await supabase
         .rpc('cancel_meeting_request', {
@@ -353,6 +387,11 @@ class PassSystemService {
   // Create default pass for user
   async createDefaultPass(userId: string, passType: PassType = 'general', eventId?: string): Promise<string | null> {
     const resolvedEventId = resolveActiveEventId(eventId);
+
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('createDefaultPass', userId);
+      return null;
+    }
 
     try {
       const { data, error } = await supabase
@@ -505,6 +544,11 @@ class PassSystemService {
     userId: string,
     reason?: string
   ): Promise<boolean> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('toggleUserBlock', userId);
+      return false;
+    }
+
     try {
       const { data, error } = await supabase
         .rpc('toggle_user_block', {
@@ -528,6 +572,11 @@ class PassSystemService {
 
   // Get user's subpasses
   async getUserSubpasses(userId: string): Promise<Subpass[]> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('getUserSubpasses', userId);
+      return [];
+    }
+
     try {
       const { data, error } = await supabase
         .from('subpasses')

@@ -15,6 +15,12 @@ import { mergeOAuthFragmentParams } from '../lib/auth/oauth/callback-params';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
 import { markRecentAuthSuccess } from '../lib/auth/recent-auth';
+import {
+  createAuthSessionActor,
+  getAuthViewState,
+  type AuthSessionMachineEvent,
+  type AuthSessionProvider,
+} from './auth-session-machine';
 
 // Reuse the app's Supabase singleton (lib/supabase.ts) instead of letting
 // @hashpass/auth build a second GoTrueClient against the same project.
@@ -269,14 +275,38 @@ const warnIfProviderDisabled = (provider: string, error: unknown): void => {
 };
 
 export const useAuth = () => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [authActor] = useState(() => createAuthSessionActor());
+  const [authViewState, setAuthViewState] = useState(() =>
+    getAuthViewState(authActor.getSnapshot())
+  );
+  const { user, isLoggedIn, isLoading } = authViewState;
   const isInitializedRef = useRef(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const betterAuthUnsubscribeRef = useRef<(() => void) | null>(null);
   const supabaseUnsubscribeRef = useRef<(() => void) | null>(null);
   const authenticatedSessionOverrideRef = useRef<AuthSession | null>(null);
+
+  const sendAuthEvent = useCallback((event: AuthSessionMachineEvent) => {
+    if (authActor.getSnapshot().status === 'stopped') {
+      return;
+    }
+
+    authActor.send(event);
+  }, [authActor]);
+
+  useEffect(() => {
+    const subscription = authActor.subscribe((snapshot) => {
+      setAuthViewState(getAuthViewState(snapshot));
+    });
+
+    authActor.start();
+    setAuthViewState(getAuthViewState(authActor.getSnapshot()));
+
+    return () => {
+      subscription.unsubscribe();
+      authActor.stop();
+    };
+  }, [authActor]);
 
   const applyAuthenticatedSession = useCallback((session?: AuthSession | null): boolean => {
     if (!session?.user) {
@@ -284,16 +314,15 @@ export const useAuth = () => {
     }
 
     authenticatedSessionOverrideRef.current = session;
-    setUser(session.user);
-    setIsLoggedIn(true);
-    setIsLoading(false);
+    sendAuthEvent({ type: 'SESSION_OVERRIDE', session });
     return true;
-  }, []);
+  }, [sendAuthEvent]);
 
   useEffect(() => {
     // Prevent duplicate initialization
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
+    let isActive = true;
 
     // Check for OAuth tokens in URL fragment on page load (for direct redirects from OAuth).
     // Process this once globally to avoid duplicate callback handling from many mounted components.
@@ -366,60 +395,59 @@ export const useAuth = () => {
       }
     }
 
-    let directusReady = false;
-    let betterAuthReady = false;
-    let supabaseReady = false;
     let directusBootstrapFinished = false;
     let betterAuthBootstrapFinished = false;
     let supabaseBootstrapFinished = false;
-    let directusUser: AuthUser | null = null;
-    let betterAuthUser: AuthUser | null = null;
-    let supabaseUser: AuthUser | null = null;
-    let isDirectusLoggedIn = false;
-    let isBetterAuthLoggedIn = false;
-    let isSupabaseLoggedIn = false;
     let legacyBootstrapStarted = false;
 
-    const syncDirectusStateFromProvider = (sessionFallback?: AuthSession | null) => {
+    const sendProviderResolved = (
+      provider: AuthSessionProvider,
+      state: {
+        session?: AuthSession | null;
+        user?: AuthUser | null;
+        loggedIn?: boolean;
+      }
+    ) => {
+      if (!isActive) {
+        return;
+      }
+
+      sendAuthEvent({
+        type: 'PROVIDER_RESOLVED',
+        provider,
+        session: state.session ?? null,
+        user: state.user ?? null,
+        loggedIn: state.loggedIn ?? Boolean(state.session?.user || state.user),
+      });
+    };
+
+    const readDirectusStateFromProvider = (sessionFallback?: AuthSession | null) => {
       const providerUser = authService.getUser?.() ?? null;
       const fallbackUser = sessionFallback?.user ?? null;
       const resolvedUser = providerUser || fallbackUser;
       const isAuthenticated = authService.isAuthenticated();
 
-      directusUser = isAuthenticated ? resolvedUser : null;
-      isDirectusLoggedIn = isAuthenticated && !!resolvedUser;
+      return {
+        session: sessionFallback ?? null,
+        user: isAuthenticated ? resolvedUser : null,
+        loggedIn: isAuthenticated && !!resolvedUser,
+      };
     };
 
-    const syncBetterAuthStateFromProvider = (sessionFallback?: AuthSession | null) => {
-      betterAuthUser = sessionFallback?.user ?? null;
-      isBetterAuthLoggedIn = !!sessionFallback?.user;
-    };
+    const readAuthSessionState = (session?: AuthSession | null) => ({
+      session: session ?? null,
+      user: session?.user ?? null,
+      loggedIn: Boolean(session?.user),
+    });
 
-    const applyCombinedAuthState = () => {
-      const ready = directusReady && betterAuthReady && supabaseReady;
-      const sessionOverride = authenticatedSessionOverrideRef.current;
-      const loggedIn =
-        !!sessionOverride?.user || isBetterAuthLoggedIn || isDirectusLoggedIn || isSupabaseLoggedIn;
-      // Supabase is the real live auth backend for email/OTP on this tenant;
-      // the 'directus' provider mainly resurfaces a stale cached session from
-      // SecureStore (see project memory: Directus is unreachable, kept only
-      // as a fallback for possible Directus-only accounts). When Supabase
-      // reports a session too, its id is the real auth.users UUID and must
-      // win — otherwise stale directusUser.id values (not valid UUIDs) get
-      // passed into uuid-typed Postgres columns (user_roles.user_id etc.)
-      // and every query using them fails with "invalid input syntax for
-      // type uuid". Directus stays as the fallback for accounts that only
-      // ever had a Directus session.
-      const resolvedUser = sessionOverride?.user ??
-        (isBetterAuthLoggedIn
-          ? betterAuthUser
-          : isSupabaseLoggedIn
-            ? supabaseUser
-            : directusUser);
+    const readSupabaseStateFromSession = (session?: any) => {
+      const mappedSession = mapSupabaseSessionToAuthSession(session);
 
-      setUser(resolvedUser);
-      setIsLoggedIn(loggedIn);
-      setIsLoading(!ready);
+      return {
+        session: mappedSession,
+        user: mappedSession?.user ?? null,
+        loggedIn: Boolean(mappedSession?.user),
+      };
     };
 
     const shouldBootstrapNativeBetterAuth =
@@ -433,48 +461,46 @@ export const useAuth = () => {
 
     // Subscribe to Directus/provider state changes
     unsubscribeRef.current = authService.onAuthStateChange((session: AuthSession | null) => {
-      syncDirectusStateFromProvider(session);
+      const directusState = readDirectusStateFromProvider(session);
 
       // Keep global bootstrap result aligned with the latest auth transition for newly mounted hooks.
-      if (isDirectusLoggedIn && session) {
+      if (directusState.loggedIn && session) {
         sessionBootstrapPromise = Promise.resolve(session);
-      } else if (directusBootstrapFinished && !isDirectusLoggedIn) {
+      } else if (directusBootstrapFinished && !directusState.loggedIn) {
         sessionBootstrapPromise = Promise.resolve(null);
       }
 
       // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
-      if (!directusBootstrapFinished && !isDirectusLoggedIn) {
+      if (!directusBootstrapFinished && !directusState.loggedIn) {
         return;
       }
-      directusReady = true;
-      applyCombinedAuthState();
+
+      sendProviderResolved('directus', directusState);
     });
 
     if (betterAuthProvider) {
       betterAuthUnsubscribeRef.current = betterAuthProvider.onAuthStateChange((session: AuthSession | null) => {
-        syncBetterAuthStateFromProvider(session);
+        const betterAuthState = readAuthSessionState(session);
 
         // Ignore the initial null callback until bootstrap resolves to avoid
         // false "logged out" redirects during the first Better Auth probe.
-        if (!betterAuthBootstrapFinished && !isBetterAuthLoggedIn) {
+        if (!betterAuthBootstrapFinished && !betterAuthState.loggedIn) {
           return;
         }
 
-        betterAuthReady = true;
-        applyCombinedAuthState();
+        sendProviderResolved('betterAuth', betterAuthState);
       });
     }
 
     // Subscribe to Supabase state changes (needed for passwordless and dual-session bridge).
     const { data: supabaseSub } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
-      supabaseUser = session?.user ? mapSupabaseUserToAuthUser(session.user) : null;
-      isSupabaseLoggedIn = !!session?.user;
+      const supabaseState = readSupabaseStateFromSession(session);
       // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
-      if (!supabaseBootstrapFinished && !session?.user) {
+      if (!supabaseBootstrapFinished && !supabaseState.loggedIn) {
         return;
       }
-      supabaseReady = true;
-      applyCombinedAuthState();
+
+      sendProviderResolved('supabase', supabaseState);
     });
     supabaseUnsubscribeRef.current = () => supabaseSub.subscription.unsubscribe();
 
@@ -486,48 +512,43 @@ export const useAuth = () => {
       const bootstrapPromise = sessionBootstrapPromise ?? (sessionBootstrapPromise = authService.getSession());
       bootstrapPromise
         .then((session: AuthSession | null) => {
-          syncDirectusStateFromProvider(session);
+          directusBootstrapFinished = true;
+          sendProviderResolved('directus', readDirectusStateFromProvider(session));
         })
         .catch((error: any) => {
           console.error('[useAuth] Session bootstrap failed:', error);
-          syncDirectusStateFromProvider(null);
-        })
-        .finally(() => {
           directusBootstrapFinished = true;
-          directusReady = true;
-          applyCombinedAuthState();
+          sendProviderResolved('directus', readAuthSessionState(null));
         });
 
       supabase.auth
         .getSession()
         .then(({ data }: any) => {
-          supabaseUser = data.session?.user ? mapSupabaseUserToAuthUser(data.session.user) : null;
-          isSupabaseLoggedIn = !!data.session?.user;
+          supabaseBootstrapFinished = true;
+          sendProviderResolved('supabase', readSupabaseStateFromSession(data.session));
         })
         .catch((error: any) => {
           console.error('[useAuth] Supabase session bootstrap failed:', error);
-        })
-        .finally(() => {
           supabaseBootstrapFinished = true;
-          supabaseReady = true;
-          applyCombinedAuthState();
+          sendProviderResolved('supabase', readAuthSessionState(null));
         });
     };
 
     if (betterAuthProvider) {
+      let latestBetterAuthState = readAuthSessionState(null);
+
       betterAuthProvider
         .getSession()
         .then((session: AuthSession | null) => {
-          syncBetterAuthStateFromProvider(session);
+          latestBetterAuthState = readAuthSessionState(session);
 
           if (session?.user) {
             betterAuthBootstrapFinished = true;
-            betterAuthReady = true;
+            sendProviderResolved('betterAuth', latestBetterAuthState);
             directusBootstrapFinished = true;
-            directusReady = true;
+            sendProviderResolved('directus', readAuthSessionState(null));
             supabaseBootstrapFinished = true;
-            supabaseReady = true;
-            applyCombinedAuthState();
+            sendProviderResolved('supabase', readAuthSessionState(null));
             return;
           }
 
@@ -535,21 +556,21 @@ export const useAuth = () => {
         })
         .catch((error: any) => {
           console.error('[useAuth] Better Auth session bootstrap failed:', error);
-          syncBetterAuthStateFromProvider(null);
+          latestBetterAuthState = readAuthSessionState(null);
           startLegacyBootstrap();
         })
         .finally(() => {
           betterAuthBootstrapFinished = true;
-          betterAuthReady = true;
-          applyCombinedAuthState();
+          sendProviderResolved('betterAuth', latestBetterAuthState);
         });
     } else {
       betterAuthBootstrapFinished = true;
-      betterAuthReady = true;
+      sendProviderResolved('betterAuth', readAuthSessionState(null));
       startLegacyBootstrap();
     }
 
     return () => {
+      isActive = false;
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
@@ -564,7 +585,7 @@ export const useAuth = () => {
       }
       isInitializedRef.current = false;
     };
-  }, []);
+  }, [sendAuthEvent]);
 
   const signOut = useCallback(async () => {
     authenticatedSessionOverrideRef.current = null;
@@ -617,10 +638,8 @@ export const useAuth = () => {
     }
 
     sessionBootstrapPromise = Promise.resolve(null);
-    setUser(null);
-    setIsLoggedIn(false);
-    setIsLoading(false);
-  }, []);
+    sendAuthEvent({ type: 'SIGNED_OUT' });
+  }, [sendAuthEvent]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
