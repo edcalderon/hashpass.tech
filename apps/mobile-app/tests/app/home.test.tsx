@@ -459,7 +459,7 @@ describe("HomeScreen native tablet layout", () => {
 
     const hero = root
       .findAllByType("View")
-      .find((node: any) => node.props.style?.backgroundColor === "#101820");
+      .find((node: any) => node.props.style?.backgroundColor === "#F8FAFC");
     expect(hero).toBeTruthy();
   });
 

@@ -3,7 +3,7 @@ import { Platform, type ImageSourcePropType } from "react-native";
 const HASHPASS_DARK_LOGO_WEB = require("../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg");
 const HASHPASS_DARK_LOGO_NATIVE = require("../assets/logos/hashpass/logo-full-hashpass-white-cyan.png");
 const HASHPASS_LIGHT_LOGO_WEB = require("../assets/logos/hashpass/logo-full-hashpass-black.svg");
-const HASHPASS_LIGHT_LOGO_NATIVE = require("../assets/logos/hashpass/logo-full-hashpass-white.png");
+const HASHPASS_LIGHT_LOGO_NATIVE = require("../assets/logos/hashpass/logo-full-hashpass-black.png");
 
 // Footer-specific: on light web the footer has a dark-tinted gradient background,
 // so use the white logo there instead of the black hero logo.

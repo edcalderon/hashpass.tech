@@ -37,6 +37,15 @@ try {
   console.error('[HashPass] Failed to install URLSearchParams polyfill:', err);
 }
 
+// RN 0.79 Android release builds can dispatch stock ScrollView events before
+// the JS view config registry has loaded their direct-event declarations.
+// Seed those declarations before expo-router renders auth/dashboard screens.
+try {
+  require('./lib/polyfills/native-event-registry').installNativeEventRegistryPatch();
+} catch (err) {
+  console.error('[HashPass] Failed to install native event registry patch:', err);
+}
+
 // Load the router. Wrap in try-catch to surface synchronous module-eval errors.
 console.log('[HashPass][boot] requiring expo-router/entry');
 try {

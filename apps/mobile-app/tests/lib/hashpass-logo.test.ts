@@ -50,10 +50,10 @@ describe("getHashpassFullLogo", () => {
     expect(getHashpassFullLogo(false)).toBe("black-svg");
   });
 
-  it("uses the white native logo on light native surfaces", () => {
+  it("uses the black native logo on light native surfaces", () => {
     mockPlatform.OS = "android";
 
-    expect(getHashpassFullLogo(false)).toBe("white-native-png");
+    expect(getHashpassFullLogo(false)).toBe("black-native-png");
   });
 });
 
@@ -70,10 +70,10 @@ describe("getHashpassFooterLogo", () => {
     expect(getHashpassFooterLogo(false)).toBe("white-svg");
   });
 
-  it("uses the white native logo on light native footer", () => {
+  it("uses the black native logo on light native footer", () => {
     mockPlatform.OS = "android";
 
-    expect(getHashpassFooterLogo(false)).toBe("white-native-png");
+    expect(getHashpassFooterLogo(false)).toBe("black-native-png");
   });
 });
 
@@ -90,9 +90,9 @@ describe("getHashpassStaticHeroLogo", () => {
     expect(getHashpassStaticHeroLogo(true)).toBe("white-cyan-svg");
   });
 
-  it("uses the white native logo on light native hero surfaces", () => {
+  it("uses the black native logo on light native hero surfaces", () => {
     mockPlatform.OS = "android";
 
-    expect(getHashpassStaticHeroLogo(false)).toBe("white-native-png");
+    expect(getHashpassStaticHeroLogo(false)).toBe("black-native-png");
   });
 });
