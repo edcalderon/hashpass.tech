@@ -1,3 +1,14 @@
+## [1.8.230](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.229...v1.8.230) (2026-07-16)
+
+
+### Bug Fixes
+
+* stabilize Android dashboard header ([d493815](https://github.com/hashpass-tech/hashpass.tech/commit/d493815b548739cd4d1abefc6d88bce63873a052))
+
+
+
+
+
 ## [1.8.229](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.228...v1.8.229) (2026-07-16)
 
 

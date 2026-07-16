@@ -33,20 +33,11 @@ import { navigateDashboardBrandToLanding } from '../../../lib/dashboard-navigati
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 
-const ANDROID_DASHBOARD_HEADER_HEIGHT = 56;
+const ANDROID_DASHBOARD_HEADER_HEIGHT = 64;
 
 // DrawerNavigationProp generic constraint mismatch across @react-navigation versions
 type DrawerNavigation = any;
 
-// On Android, Header/ScreenWithHeader render outside the Drawer's own
-// screen tree (see the platform check in DashboardLayout below, added to
-// avoid a react-native-screens native crash) so useNavigation() called
-// inside Header no longer resolves to the Drawer navigator, breaking the
-// hamburger button's openDrawer() call. CustomDrawerContent IS still
-// rendered inside the Drawer's own navigation context (drawerContent is a
-// provided slot, same as Drawer.Screen's header prop), so it hands Header a
-// working reference via navRef.
-//
 // navRef is an instance-scoped useRef owned by DashboardLayout (see below),
 // not module-level state. A previous version used a module-level `let`
 // here, which is a singleton shared by every mounted instance of this file
@@ -105,17 +96,6 @@ function CustomDrawerContent({
       }
     };
   }, [navigation, navRef]);
-  // The custom Header renders as a sibling outside the Drawer's own subtree
-  // on Android (see the platform check in DashboardLayout below), with a
-  // high zIndex so screen content scrolls under it. That same zIndex also
-  // painted it over the Drawer's own open panel — confirmed a plain zIndex
-  // drop doesn't fix this (Android needs matching `elevation`, or the two
-  // views are on genuinely separate native surfaces zIndex alone can't
-  // reorder); not rendering the Header at all while open does. Reporting
-  // open/closed status up lets DashboardLayout skip the Header for that
-  // window — the Drawer's own content already has its own top branding, so
-  // nothing is lost, and the Drawer's built-in close affordances (backdrop
-  // tap, swipe, back button) remain the way to close it while it's up.
   const drawerStatus = useDrawerStatus();
   useEffect(() => {
     onDrawerStatusChange?.(drawerStatus === 'open');
@@ -740,10 +720,9 @@ export default function DashboardLayout() {
   // Instance-scoped bridge from CustomDrawerContent's navigation object to
   // Header (see the DrawerNavRef comment above CustomDrawerContent).
   const drawerNavRef = useRef<DrawerNavigation | null>(null);
-  // Lifted from CustomDrawerContent's useDrawerStatus() so Header can drop
-  // its zIndex while the drawer is open — see the comment above
-  // onDrawerStatusChange in CustomDrawerContent for why that's needed.
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [androidQrScannerVisible, setAndroidQrScannerVisible] = useState(false);
+  const dashboardCopilotHook = useCopilot() as any;
   // Memoized so drawerContent keeps a stable identity across DashboardLayout
   // re-renders (scroll, notifications, animation state all cause those). An
   // inline arrow function here would make react-navigation's Drawer treat
@@ -780,18 +759,42 @@ export default function DashboardLayout() {
     }
   }, [authLoading, isLoggedIn, router]);
 
+  const openDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
+    const wasOpen = isDrawerOpen;
+
+    try {
+      if (typeof navigation?.openDrawer === 'function') {
+        navigation.openDrawer();
+      } else if (typeof navigation?.dispatch === 'function') {
+        navigation.dispatch(DrawerActions.openDrawer());
+      } else {
+        console.warn('Drawer navigation unavailable, skipping openDrawer');
+      }
+    } catch (e) {
+      console.error('Error opening drawer:', e);
+    }
+
+    if (wasOpen) {
+      return;
+    }
+
+    setTimeout(() => {
+      if (dashboardCopilotHook?.handleNth && typeof dashboardCopilotHook.handleNth === 'function') {
+        dashboardCopilotHook.handleNth(2);
+      } else if (dashboardCopilotHook?.handleNext && typeof dashboardCopilotHook.handleNext === 'function') {
+        dashboardCopilotHook.handleNext();
+      } else {
+        console.warn('No handleNext or handleNth available', dashboardCopilotHook);
+      }
+    }, 1200);
+  }, [dashboardCopilotHook, isDrawerOpen]);
+
   // Header component for the drawer screens
   const Header = () => {
-    // On Android this component renders outside the Drawer's own screen
-    // tree (see the platform check further down), so useNavigation() here
-    // would resolve to a parent navigator, not the Drawer — openDrawer()
-    // would silently no-op. Always call the hook (Rules of Hooks), but on
-    // Android prefer drawerNavRef.current, which CustomDrawerContent writes
-    // synchronously during its own render from inside the Drawer's actual
-    // context (see DrawerNavRef above). Read lazily at tap time, not
-    // captured here — reading it at Header's render time could still catch
-    // drawerNavRef before CustomDrawerContent has rendered even once, and
-    // nothing re-renders Header once the ref becomes populated.
+    // Always call the hook (Rules of Hooks), but keep the drawerContent-provided
+    // ref as a fallback. It is written from inside the Drawer's actual
+    // navigation context, which avoids dispatching drawer actions to a parent
+    // Stack navigator during transition edges.
     const navigationFromContext = useNavigation<DrawerNavigation>();
     const headerRouter = useRouter();
     const { headerOpacity, headerBackground, headerTint, headerBlur, headerBorderWidth, headerHeight, setHeaderHeight, scrollY } = useScroll();
@@ -806,6 +809,37 @@ export default function DashboardLayout() {
         setHeaderHeight(ANDROID_DASHBOARD_HEADER_HEIGHT);
       }
     }, [setHeaderHeight]);
+
+    const toggleDashboardDrawer = () => {
+      const drawerNavigation = Platform.OS === 'android'
+        ? (drawerNavRef.current ?? navigationFromContext)
+        : navigationFromContext;
+      const wasOpen = isDrawerOpen;
+
+      try {
+        if (typeof drawerNavigation?.dispatch === 'function') {
+          drawerNavigation.dispatch(DrawerActions.toggleDrawer());
+        } else {
+          console.warn('Drawer navigation unavailable, skipping toggleDrawer');
+        }
+      } catch (e) {
+        console.error('Error toggling drawer:', e);
+      }
+
+      if (wasOpen) {
+        return;
+      }
+
+      setTimeout(() => {
+        if (copilotHook?.handleNth && typeof copilotHook.handleNth === 'function') {
+          copilotHook.handleNth(2);
+        } else if (copilotHook?.handleNext && typeof copilotHook.handleNext === 'function') {
+          copilotHook.handleNext();
+        } else {
+          console.warn('No handleNext or handleNth available', copilotHook);
+        }
+      }, 1200);
+    };
 
     // Adjust header background color based on theme to match app background
     const HEADER_SCROLL_DISTANCE = 100;
@@ -891,6 +925,7 @@ export default function DashboardLayout() {
     // Animated.View from reanimated doesn't support old Animated.Interpolation directly
     return (
       <RNAnimated.View
+        pointerEvents="auto"
         style={[
           styles.header,
           Platform.OS !== 'web' && {
@@ -991,6 +1026,7 @@ export default function DashboardLayout() {
           )}
         </View>
         <RNAnimated.View
+          pointerEvents="auto"
           style={[
             styles.headerContent,
             animationsEnabled ? {
@@ -1013,48 +1049,7 @@ export default function DashboardLayout() {
           >
             <View style={{ position: 'relative' }}>
               <CopilotTouchableOpacity
-                onPress={() => {
-                  // Resolve live, not from a render-captured variable — see
-                  // note above navigationFromContext.
-                  const drawerNavigation = Platform.OS === 'android'
-                    ? (drawerNavRef.current ?? navigationFromContext)
-                    : navigationFromContext;
-                  // Toggle, not just open. On Android this button is hidden
-                  // while the drawer is open (see isDrawerOpen below), so in
-                  // practice this branch always opens there — but on iOS,
-                  // Header renders inside the Drawer's own header slot (see
-                  // drawerHeaderOptions) and stays reachable while open, so
-                  // toggling (vs. always opening) is what makes the same
-                  // button close it there. Track whether this tap is
-                  // opening or closing before dispatch, since the tutorial
-                  // follow-up below should only run when actually opening.
-                  const wasOpen = isDrawerOpen;
-                  try {
-                    if (typeof drawerNavigation?.dispatch === 'function') {
-                      drawerNavigation.dispatch(DrawerActions.toggleDrawer());
-                    } else {
-                      console.warn('Drawer navigation unavailable, skipping toggleDrawer');
-                    }
-                  } catch (e) {
-                    console.error('Error toggling drawer:', e);
-                  }
-
-                  if (wasOpen) {
-                    return;
-                  }
-
-                  // Wait for drawer animation, then continue tutorial
-                  setTimeout(() => {
-                    // Use handleNth to go directly to step 2 (first sidebar item)
-                    if (copilotHook?.handleNth && typeof copilotHook.handleNth === 'function') {
-                      copilotHook.handleNth(2);
-                    } else if (copilotHook?.handleNext && typeof copilotHook.handleNext === 'function') {
-                      copilotHook.handleNext();
-                    } else {
-                      console.warn('No handleNext or handleNth available', copilotHook);
-                    }
-                  }, 1200); // Increased delay to ensure drawer is fully open
-                }}
+                onPress={toggleDashboardDrawer}
                 style={styles.headerIconButton}
                 activeOpacity={0.8}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
@@ -1069,20 +1064,22 @@ export default function DashboardLayout() {
             </View>
           </CopilotStep>
 
-          <TouchableOpacity
-            onPress={() => headerRouter.push('./explore' as any)}
-            style={styles.headerLogoContainer}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={isDark
-                ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
-                : require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')
-              }
-              style={styles.headerLogoImage}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+          <View pointerEvents="box-none" style={styles.headerLogoContainer}>
+            <TouchableOpacity
+              onPress={() => headerRouter.push('./explore' as any)}
+              style={styles.headerLogoButton}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={isDark
+                  ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
+                  : require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')
+                }
+                style={styles.headerLogoImage}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
 
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             <CopilotStep text="Tap the notifications icon to view your recent notifications. The red badge shows the number of unread notifications. You can also access the full notifications screen from the sidebar." order={10} name="notificationsButton">
@@ -1104,6 +1101,7 @@ export default function DashboardLayout() {
               </CopilotTouchableOpacity>
             </CopilotStep>
           </View>
+
         </RNAnimated.View>
 
         {/* Regular QR Scanner Modal */}
@@ -1126,18 +1124,10 @@ export default function DashboardLayout() {
 
   // Screen component with header
   const ScreenWithHeader = () => {
-    // Header should overlay content without taking space
-    // Reserve only the top safe area so the drawer header stays clear of system bars.
-    const statusBarHeight = insets.top || StatusBar.currentHeight || 0;
-
     return (
-      <View style={[styles.headerContainer, {
-        height: statusBarHeight,
+      <View pointerEvents="auto" style={[styles.headerContainer, {
+        height: ANDROID_DASHBOARD_HEADER_HEIGHT,
         backgroundColor: isDark ? 'rgba(18, 18, 18, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
         zIndex: 1000,
       }]}>
         <SystemBars style={isDark ? 'light' : 'dark'} />
@@ -1147,24 +1137,93 @@ export default function DashboardLayout() {
   };
 
 
-  // Reported crash (Android only): react-native-screens fires its native
-  // "topAttached" header-attachment event (HeaderAttachedEvent.kt, part of
-  // ScreenStackHeaderConfig — an android/ native file, so this cannot occur
-  // on web or iOS) whenever a Screen's native header slot mounts, even when
-  // the header content itself is a fully custom render prop like
-  // ScreenWithHeader. On-device logs showed "Unsupported top level event
-  // type 'topAttached' dispatched" (crashing the whole app) immediately
-  // after [RNScreens] header warnings, right as this layout mounted
-  // post-login. Routing ScreenWithHeader through Drawer.Screen's header
-  // slot only on non-Android platforms avoids that native path on Android
-  // while keeping web/iOS on the original approach, where ScreenWithHeader
-  // renders inside the Drawer's own navigation context (needed for
-  // Header's useNavigation<DrawerNavigation>() to resolve openDrawer() —
-  // rendering it as an unconditional sibling outside the Drawer broke the
-  // sidebar toggle on web, since that put it outside the Drawer's context).
-  const drawerHeaderOptions = Platform.OS === 'android'
-    ? { headerShown: false }
-    : { headerShown: true, header: () => <ScreenWithHeader /> };
+  const customDrawerHeaderOptions = {
+    headerShown: true,
+    header: () => <ScreenWithHeader />,
+    headerStyle: { height: ANDROID_DASHBOARD_HEADER_HEIGHT },
+  };
+
+  const getDrawerHeaderOptions = (navigation: DrawerNavigation) => {
+    if (Platform.OS !== 'android') {
+      return customDrawerHeaderOptions;
+    }
+
+    return {
+      headerShown: true,
+      headerTitleAlign: 'center' as const,
+      headerTintColor: isDark ? '#FFFFFF' : '#000000',
+      headerStyle: {
+        height: ANDROID_DASHBOARD_HEADER_HEIGHT,
+        backgroundColor: isDark ? 'rgba(18, 18, 18, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+      },
+      headerShadowVisible: true,
+      headerLeftContainerStyle: styles.nativeHeaderLeftContainer,
+      headerRightContainerStyle: styles.nativeHeaderRightContainer,
+      headerTitle: () => (
+        <TouchableOpacity
+          onPress={() => router.push('./explore' as any)}
+          style={styles.headerLogoButton}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Explore events"
+        >
+          <Image
+            source={isDark
+              ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
+              : require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')
+            }
+            style={styles.headerLogoImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      ),
+      headerLeft: () => (
+        <CopilotStep
+          text="Welcome! Tap the menu button (☰) to open the sidebar. You'll see navigation options like Explore, Wallet, Notifications, Profile, and Settings."
+          order={1}
+          name="menuButton"
+        >
+          <CopilotTouchableOpacity
+            onPress={() => openDashboardDrawer(navigation)}
+            style={styles.headerIconButton}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Open navigation menu"
+          >
+            <Ionicons
+              name="menu"
+              size={26}
+              color={isDark ? '#FFFFFF' : '#000000'}
+            />
+          </CopilotTouchableOpacity>
+        </CopilotStep>
+      ),
+      headerRight: () => (
+        <View style={styles.nativeHeaderRight}>
+          <CopilotStep text="Tap the notifications icon to view your recent notifications. The red badge shows the number of unread notifications. You can also access the full notifications screen from the sidebar." order={10} name="notificationsButton">
+            <CopilotView style={styles.nativeHeaderActionSlot}>
+              <MiniNotificationDropdown />
+            </CopilotView>
+          </CopilotStep>
+          <CopilotStep text="Tap the QR code scanner to scan QR codes for event check-ins, networking, or accessing event features." order={11} name="qrScannerButton">
+            <CopilotTouchableOpacity
+              onPress={() => setAndroidQrScannerVisible(true)}
+              style={styles.headerIconButton}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Open QR scanner"
+            >
+              <Ionicons
+                name="qr-code-outline"
+                size={26}
+                color={isDark ? '#FFFFFF' : '#000000'}
+              />
+            </CopilotTouchableOpacity>
+          </CopilotStep>
+        </View>
+      ),
+    };
+  };
 
   return (
     <AnimationProvider>
@@ -1173,15 +1232,15 @@ export default function DashboardLayout() {
           <View style={{ flex: 1 }}>
             <Drawer
               drawerContent={renderDrawerContent}
-              screenOptions={{
-                ...drawerHeaderOptions,
+              screenOptions={({ navigation }) => ({
+                ...getDrawerHeaderOptions(navigation),
                 drawerType: 'front',
                 drawerStyle: {
                   width: isMobile ? '88%' : 360,
                 },
                 overlayColor: 'rgba(0,0,0,0.5)',
                 drawerPosition: 'left',
-              }}
+              })}
             >
               <Drawer.Screen name="explore" />
               <Drawer.Screen name="notifications" />
@@ -1192,11 +1251,18 @@ export default function DashboardLayout() {
               <Drawer.Screen name="qr-view" />
               <Drawer.Screen name="pass-details" />
             </Drawer>
-            {/* Skipped while the drawer is open: ScreenWithHeader is a
-                sibling of Drawer with an elevated zIndex, which otherwise
-                paints over the Drawer's own open panel — see the
-                useDrawerStatus comment in CustomDrawerContent. */}
-            {Platform.OS === 'android' && !isDrawerOpen && <ScreenWithHeader />}
+            {Platform.OS === 'android' && (
+              <QRScanner
+                visible={androidQrScannerVisible}
+                onClose={() => setAndroidQrScannerVisible(false)}
+                onScanSuccess={(result: unknown) => {
+                  setAndroidQrScannerVisible(false);
+                }}
+                onScanError={(error: unknown) => {
+                  console.error('QR Scan Error:', error);
+                }}
+              />
+            )}
           </View>
         </ScrollProvider>
       </NotificationProvider>
@@ -1218,24 +1284,23 @@ const getStyles = (
   headerContainer: {
     backgroundColor: 'transparent',
     zIndex: 1000,
-    pointerEvents: 'box-none', // Allow scroll to pass through
   },
   header: {
-    position: 'absolute',
-    top: insets.top || StatusBar.currentHeight || 0,
     left: 0,
     right: 0,
     zIndex: 1000,
+    height: ANDROID_DASHBOARD_HEADER_HEIGHT,
     backgroundColor: 'transparent',
     borderBottomWidth: 1,
     borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    pointerEvents: 'box-none', // Allow touch events to pass through to content, but keep buttons clickable
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    height: '100%',
   },
   headerButton: {
     padding: 12,
@@ -1250,7 +1315,8 @@ const getStyles = (
     borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)',
   },
   headerIconButton: {
-    padding: 12,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
@@ -1259,6 +1325,8 @@ const getStyles = (
     position: 'absolute',
     left: 0,
     right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
     // A negative zIndex here previously made the logo invisible on Android
@@ -1268,11 +1336,35 @@ const getStyles = (
     // job negative zIndex was trying to do — letting taps on the empty parts
     // of this full-width overlay fall through to the buttons underneath —
     // without needing to hide the view to get there.
-    pointerEvents: 'box-none',
+  },
+  headerLogoButton: {
+    width: 180,
+    height: ANDROID_DASHBOARD_HEADER_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerLogoImage: {
     width: 120,
     height: 40,
+  },
+  nativeHeaderLeftContainer: {
+    paddingLeft: 12,
+  },
+  nativeHeaderRightContainer: {
+    paddingRight: 12,
+  },
+  nativeHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
+    width: 112,
+  },
+  nativeHeaderActionSlot: {
+    width: 52,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   drawerHeader: {
     paddingTop: (isMobile ? 12 : 18)

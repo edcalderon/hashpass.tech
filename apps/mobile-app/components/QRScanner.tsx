@@ -439,7 +439,7 @@ export default function QRScanner({
       // Start scanner - ZXing will create video element automatically
       const result = await qrScannerService.startWebFallback(
         wrapper.id,
-        async (scanResult) => {
+        async (scanResult: { text: string }) => {
           const barCodeResult: BarCodeScannerResult = {
             type: 'qr' as any,
             data: scanResult.text,
@@ -449,7 +449,7 @@ export default function QRScanner({
             handleBarCodeScanned(barCodeResult);
           }
         },
-        (error) => {
+        (error: Error) => {
           console.error('Web fallback scan error:', error);
           if (onScanError) {
             onScanError(error.message);
@@ -533,7 +533,7 @@ export default function QRScanner({
           <View style={styles.modalContent}>
             <Ionicons name="camera-outline" size={64} color={colors.error} />
             <Text style={styles.errorTitle}>Camera Permission Required</Text>
-            <Text style={styles.errorText}>
+            <Text style={styles.permissionErrorText}>
               {Platform.OS === 'web' 
                 ? 'Please enable camera permissions in your browser settings to scan QR codes.'
                 : 'Please enable camera permissions in your device settings to scan QR codes.'}
@@ -612,7 +612,7 @@ export default function QRScanner({
                 style={[StyleSheet.absoluteFillObject, styles.cameraView]}
                 barCodeTypes={qrScannerService.getBarCodeTypes()}
                 type={qrScannerService.getRecommendedCameraType()}
-              onMountError={(error) => {
+              onMountError={(error: Error) => {
                 console.error('Camera mount error:', error);
                   
                   // On web, try fallback to ZXing
@@ -914,6 +914,13 @@ const getStyles = (isDark: boolean, colors: any) =>
       color: '#FFFFFF',
       marginLeft: 8,
       fontSize: 14,
+    },
+    permissionErrorText: {
+      color: colors.text.secondary,
+      fontSize: 16,
+      lineHeight: 22,
+      marginBottom: 8,
+      textAlign: 'center',
     },
     successContainer: {
       flexDirection: 'row',
