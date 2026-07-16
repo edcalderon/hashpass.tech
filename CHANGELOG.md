@@ -1,3 +1,14 @@
+## [1.8.228](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.227...v1.8.228) (2026-07-16)
+
+
+### Bug Fixes
+
+* **mobile:** stabilize auth startup on Android ([39a3f59](https://github.com/hashpass-tech/hashpass.tech/commit/39a3f593d052849c8cf1e42c1c81a77e213d2558))
+
+
+
+
+
 ## [1.8.227](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.226...v1.8.227) (2026-07-15)
 
 
