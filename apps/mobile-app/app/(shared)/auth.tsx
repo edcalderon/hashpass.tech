@@ -1141,19 +1141,11 @@ export default function AuthScreen() {
         t("welcomeBack", "Welcome back!"),
       );
 
-      // supabase.auth.setSession() above fires an async auth-state-change
-      // event that updates isLoggedIn/user, which can trigger the generic
-      // auto-redirect effect (below, watching isLoggedIn && user) before
-      // this handler's own continuation resumes — two router.replace()
-      // calls landing back-to-back for the same login, which is a known
-      // source of Fabric surface instability during rapid navigation.
-      // Re-checking the ref immediately before navigating (instead of
-      // unconditionally setting it) makes this handler a no-op if the
-      // generic effect already navigated first.
-      if (!hasNavigatedRef.current) {
-        hasNavigatedRef.current = true;
-        router.replace(redirectPath as any);
-      }
+      // Do not navigate directly from the OTP handler. supabase.auth.setSession()
+      // resolves before the auth context has finished its session-settling state,
+      // and immediate navigation from here can race the root auth redirect into
+      // the authenticated native stack. The effect above owns the single route
+      // replacement once authLoading is false.
     } catch (error: any) {
       const rawMessage = extractApiError(
         error?.message,
@@ -1183,8 +1175,6 @@ export default function AuthScreen() {
     isPasswordlessSupported,
     otpCode,
     passwordlessUnavailableMessage,
-    redirectPath,
-    router,
     setBusyAction,
     setOtpError,
     showError,
@@ -1260,40 +1250,6 @@ export default function AuthScreen() {
     digitRefs.current[0]?.focus();
   };
 
-  const navigateAfterNativeGoogleAuth = useCallback((path: string) => {
-    // The generic auto-redirect effect (watching isLoggedIn && user) may
-    // have already navigated by the time this runs, since it fires as soon
-    // as the native auth's session update lands in state — same
-    // double-navigation race documented on the OTP success handler above.
-    if (hasNavigatedRef.current) return;
-
-    const normalizedPath = normalizeReturnToPath(path);
-    const routeGroupPath = normalizedPath.startsWith("/dashboard")
-      ? `/(shared)${normalizedPath}`
-      : "/(shared)/dashboard/explore";
-
-    hasNavigatedRef.current = true;
-
-    try {
-      router.replace(normalizedPath as any);
-    } catch (primaryNavError) {
-      console.warn("[AuthScreen] Native Google auth dashboard navigation failed; trying route group path.", {
-        path: normalizedPath,
-        error: primaryNavError instanceof Error ? primaryNavError.message : String(primaryNavError),
-      });
-
-      try {
-        router.replace(routeGroupPath as any);
-      } catch (fallbackNavError) {
-        console.error("[AuthScreen] Native Google auth dashboard fallback navigation failed:", {
-          path: routeGroupPath,
-          error: fallbackNavError instanceof Error ? fallbackNavError.message : String(fallbackNavError),
-        });
-        throw fallbackNavError;
-      }
-    }
-  }, [router]);
-
   const handleGoogleSignIn = async () => {
     if (isBusy || oauthInFlightRef.current) return;
 
@@ -1331,7 +1287,6 @@ export default function AuthScreen() {
             t("loginSuccess", "Login successful"),
             t("welcomeBack", "Welcome back!"),
           );
-          navigateAfterNativeGoogleAuth(redirectPath);
         });
       } else {
         showSuccess(

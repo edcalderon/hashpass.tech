@@ -98,6 +98,14 @@ const restoreEnv = () => {
   }
 };
 
+const AUTH_SESSION_SETTLE_DELAY_MS = 350;
+
+const waitForAuthSessionSettle = async (testAct: (callback: () => Promise<void>) => Promise<void>) => {
+  await testAct(async () => {
+    await new Promise((resolve) => setTimeout(resolve, AUTH_SESSION_SETTLE_DELAY_MS + 50));
+  });
+};
+
 describe('useAuth native Google sign-in', () => {
   beforeEach(() => {
     jest.resetModules();
@@ -327,6 +335,8 @@ describe('useAuth native Google sign-in', () => {
         email: 'user@example.com',
       })
     );
+    expect(capturedHook.isLoading).toBe(true);
+    await waitForAuthSessionSettle(testAct);
     expect(capturedHook.isLoading).toBe(false);
   });
 
@@ -458,6 +468,8 @@ describe('useAuth native Google sign-in', () => {
         email: 'user@example.com',
       })
     );
+    expect(capturedHook.isLoading).toBe(true);
+    await waitForAuthSessionSettle(testAct);
     expect(capturedHook.isLoading).toBe(false);
   });
 
@@ -832,6 +844,8 @@ describe('useAuth native Google sign-in', () => {
     expect(mockSupabase.auth.signInWithIdToken).not.toHaveBeenCalled();
     expect(capturedHook.isLoggedIn).toBe(true);
     expect(capturedHook.user).toEqual(betterAuthSession.user);
+    expect(capturedHook.isLoading).toBe(true);
+    await waitForAuthSessionSettle(testAct);
     expect(capturedHook.isLoading).toBe(false);
   });
 
@@ -955,6 +969,8 @@ describe('useAuth native Google sign-in', () => {
         email: 'user@example.com',
       })
     );
+    expect(capturedHook.isLoading).toBe(true);
+    await waitForAuthSessionSettle(testAct);
     expect(capturedHook.isLoading).toBe(false);
   });
 
@@ -1544,6 +1560,8 @@ describe('useAuth native Google sign-in', () => {
         email: 'user@example.com',
       })
     );
+    expect(capturedHook.isLoading).toBe(true);
+    await waitForAuthSessionSettle(testAct);
     expect(capturedHook.isLoading).toBe(false);
   });
 

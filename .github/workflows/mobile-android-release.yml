@@ -434,7 +434,8 @@ jobs:
 
       # Cache Gradle wrapper + dependency cache + incremental build cache.
       # Only needed on GitHub-hosted runners — on EC2, ~/.gradle persists on disk between runs.
-      # Key includes the lock file so NDK/RN native outputs are reused across patch bumps.
+      # Key includes the lock file and patch files so NDK/RN native outputs are reused
+      # only when the patched native dependency sources are unchanged.
       - name: Cache Gradle
         if: inputs.runner == 'github-hosted'
         uses: actions/cache@v4
@@ -442,7 +443,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile-app/package.json') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile-app/package.json', 'patches/*.patch') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
@@ -460,12 +461,12 @@ jobs:
       - name: Install dependencies
         run: |
           set -euo pipefail
-          LOCK_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1)
+          LOCK_HASH=$(sha256sum pnpm-lock.yaml patches/*.patch | sha256sum | cut -d' ' -f1)
           HASH_FILE="$HOME/.gradle/.pnpm-lock-hash"
           mkdir -p "$(dirname "$HASH_FILE")"
           STORED=$(cat "$HASH_FILE" 2>/dev/null || echo "none")
           if [ "$LOCK_HASH" = "$STORED" ] && [ -d node_modules ]; then
-            echo "pnpm-lock.yaml unchanged and node_modules present — skipping install."
+            echo "pnpm lock and patch files unchanged, and node_modules present — skipping install."
           else
             pnpm install --frozen-lockfile --prefer-offline
             printf '%s' "$LOCK_HASH" > "$HASH_FILE"
@@ -923,8 +924,8 @@ jobs:
       # The hash intentionally ignores display-only package/app version strings,
       # but includes app.android. Android versionCode is native Gradle output, so
       # a Play version-code bump must force prebuild and refresh android/.
-      # Expo plugins, android/ios config, and the dependency tree also trigger a
-      # full prebuild + NDK recompile.
+      # Expo plugins, android/ios config, patch files, and the dependency tree
+      # also trigger a full prebuild + NDK recompile.
       - name: Conditional Expo prebuild
         run: |
           set -euo pipefail
@@ -950,7 +951,7 @@ jobs:
               devDependencies: pkg.devDependencies,
             }));
           " 2>/dev/null)
-          CURRENT_HASH=$(printf '%s' "$NATIVE_CONFIG" && cat pnpm-lock.yaml 2>/dev/null)
+          CURRENT_HASH=$(printf '%s' "$NATIVE_CONFIG" && cat pnpm-lock.yaml patches/*.patch 2>/dev/null)
           CURRENT_HASH=$(printf '%s' "$CURRENT_HASH" | sha256sum | cut -d' ' -f1)
           STORED_HASH=$(cat "$HASH_FILE" 2>/dev/null || echo "none")
 
