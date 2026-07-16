@@ -1,3 +1,14 @@
+## [1.8.231](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.230...v1.8.231) (2026-07-16)
+
+
+### Bug Fixes
+
+* stabilize Android auth handoff ([7b88e11](https://github.com/hashpass-tech/hashpass.tech/commit/7b88e1178823e83e079a02b7db2047ccb1965dbc))
+
+
+
+
+
 ## [1.8.230](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.229...v1.8.230) (2026-07-16)
 
 
