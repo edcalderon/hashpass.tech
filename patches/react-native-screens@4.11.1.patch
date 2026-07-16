@@ -1,0 +1,216 @@
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/HeaderAttachedEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/HeaderAttachedEvent.kt
+index 39b2e3f8dcb1fedac9f7ed65fc4bfbc1e13f98ff..1b244511d12365788da4232837981123e9311ac4 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/HeaderAttachedEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/HeaderAttachedEvent.kt
+@@ -16,6 +16,6 @@ class HeaderAttachedEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topAttached"
++        const val EVENT_NAME = "attached"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/HeaderBackButtonClickedEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/HeaderBackButtonClickedEvent.kt
+index 0bee5d717e3125a0b4a838dda5235a4be7d3a54e..804133b7342093f94745c6f52a43cbd904da163e 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/HeaderBackButtonClickedEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/HeaderBackButtonClickedEvent.kt
+@@ -16,6 +16,6 @@ class HeaderBackButtonClickedEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topHeaderBackButtonClicked"
++        const val EVENT_NAME = "headerBackButtonClicked"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/HeaderDetachedEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/HeaderDetachedEvent.kt
+index 39576873b823c59e4b717d2ea2529de631a6a276..81d002841d67ce4c5c0ebe6714cfc3bdd3e1199c 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/HeaderDetachedEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/HeaderDetachedEvent.kt
+@@ -16,6 +16,6 @@ class HeaderDetachedEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topDetached"
++        const val EVENT_NAME = "detached"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/HeaderHeightChangeEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/HeaderHeightChangeEvent.kt
+index 857c83a817e0af39f7939a339d50dd73368a0752..5313c25fc97e5eb04fda88715603edb5752ec598 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/HeaderHeightChangeEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/HeaderHeightChangeEvent.kt
+@@ -20,6 +20,6 @@ class HeaderHeightChangeEvent(
+         }
+ 
+     companion object {
+-        const val EVENT_NAME = "topHeaderHeightChange"
++        const val EVENT_NAME = "headerHeightChange"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/ScreenAppearEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/ScreenAppearEvent.kt
+index e1e3a9fa7c649f9a20831b47271a24bb56c4837c..6907426d3785007d55fbd538a767e263f14740cb 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/ScreenAppearEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/ScreenAppearEvent.kt
+@@ -16,6 +16,6 @@ class ScreenAppearEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topAppear"
++        const val EVENT_NAME = "appear"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/ScreenDisappearEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/ScreenDisappearEvent.kt
+index 5fafa4f987797d26beec181ffa8089e2d9f32d4e..725347ba60a5991ed62b48da1fd53b688d79aa0e 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/ScreenDisappearEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/ScreenDisappearEvent.kt
+@@ -16,6 +16,6 @@ class ScreenDisappearEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topDisappear"
++        const val EVENT_NAME = "disappear"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/ScreenDismissedEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/ScreenDismissedEvent.kt
+index 22b22c5b1c07749f02b3368ed41ca5dfbde36ad2..479548178a2bdeb7be369611189909dcf4dc8a0f 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/ScreenDismissedEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/ScreenDismissedEvent.kt
+@@ -19,6 +19,6 @@ class ScreenDismissedEvent(
+         }
+ 
+     companion object {
+-        const val EVENT_NAME = "topDismissed"
++        const val EVENT_NAME = "dismissed"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/ScreenTransitionProgressEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/ScreenTransitionProgressEvent.kt
+index 1f1d3d27bd67887926bc06731def29090d617e5a..cf06b279602354c208d08d1f206be9e597b0cbf6 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/ScreenTransitionProgressEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/ScreenTransitionProgressEvent.kt
+@@ -24,6 +24,6 @@ class ScreenTransitionProgressEvent(
+         }
+ 
+     companion object {
+-        const val EVENT_NAME = "topTransitionProgress"
++        const val EVENT_NAME = "transitionProgress"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillAppearEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillAppearEvent.kt
+index e121004e3db38a0d2f76f2588c3314d8837843a3..1bb3ff00db4cc329f118a00b926aebd36144d5f1 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillAppearEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillAppearEvent.kt
+@@ -16,6 +16,6 @@ class ScreenWillAppearEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topWillAppear"
++        const val EVENT_NAME = "willAppear"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillDisappearEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillDisappearEvent.kt
+index e81991bf9d2f15f845f113ddf19b1b64b9b4fdc1..5105bdc21c1f288c3f34ceb454f209aa75446598 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillDisappearEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillDisappearEvent.kt
+@@ -16,6 +16,6 @@ class ScreenWillDisappearEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topWillDisappear"
++        const val EVENT_NAME = "willDisappear"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarBlurEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarBlurEvent.kt
+index 9929aa7d21de3cd4b7fad67cc0329729cb6874ce..d490fa69ea205cc5225da4e71ec5a571b8207081 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarBlurEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarBlurEvent.kt
+@@ -16,6 +16,6 @@ class SearchBarBlurEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topSearchBlur"
++        const val EVENT_NAME = "searchBlur"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarChangeTextEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarChangeTextEvent.kt
+index d1c1e070688697da4b1eb9ed2e9c02951b1b4436..0ed7a3934e960e27e50c4bfe17771adb0b1eb883 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarChangeTextEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarChangeTextEvent.kt
+@@ -20,6 +20,6 @@ class SearchBarChangeTextEvent(
+         }
+ 
+     companion object {
+-        const val EVENT_NAME = "topChangeText"
++        const val EVENT_NAME = "changeText"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarCloseEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarCloseEvent.kt
+index 7ace3726555451c93c334970bc0e638ea6ac7975..138a3514bb431188eef7b3595b3bc75a8aeb2142 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarCloseEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarCloseEvent.kt
+@@ -16,6 +16,6 @@ class SearchBarCloseEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topClose"
++        const val EVENT_NAME = "close"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarFocusEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarFocusEvent.kt
+index 2b155ec660762e61448308da80836e36b9a8a1e6..5de40514b1f921dcd7ab88b0d8b6008cdba53c37 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarFocusEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarFocusEvent.kt
+@@ -16,6 +16,6 @@ class SearchBarFocusEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topSearchFocus"
++        const val EVENT_NAME = "searchFocus"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarOpenEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarOpenEvent.kt
+index 6a227c8d6d4eb9b434cd4ce4c52f4fa73fb86155..eba5c21526de5d8334b6a7b44eb883609e50911d 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarOpenEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarOpenEvent.kt
+@@ -16,6 +16,6 @@ class SearchBarOpenEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topOpen"
++        const val EVENT_NAME = "open"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarSearchButtonPressEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarSearchButtonPressEvent.kt
+index bb4d1cb04c3157a789efde619453545240f1d8bf..f6423f70b575f5a156dd1b60dfe51d187895ab3f 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/SearchBarSearchButtonPressEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/SearchBarSearchButtonPressEvent.kt
+@@ -20,6 +20,6 @@ class SearchBarSearchButtonPressEvent(
+         }
+ 
+     companion object {
+-        const val EVENT_NAME = "topSearchButtonPress"
++        const val EVENT_NAME = "searchButtonPress"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/SheetDetentChangedEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/SheetDetentChangedEvent.kt
+index 6fc53f941c06c84e649ce757c1c91df61b5e10fc..f69752c84273592e6e5a453f0be6cae50a02cd61 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/SheetDetentChangedEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/SheetDetentChangedEvent.kt
+@@ -22,6 +22,6 @@ class SheetDetentChangedEvent(
+         }
+ 
+     companion object {
+-        const val EVENT_NAME = "topSheetDetentChanged"
++        const val EVENT_NAME = "sheetDetentChanged"
+     }
+ }
+diff --git a/android/src/main/java/com/swmansion/rnscreens/events/StackFinishTransitioningEvent.kt b/android/src/main/java/com/swmansion/rnscreens/events/StackFinishTransitioningEvent.kt
+index af096272fd7c63a3a3329bcfa5d95454625cd1db..fdbae74abfffe0a687bb03efe7486b273f9eb32a 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/events/StackFinishTransitioningEvent.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/events/StackFinishTransitioningEvent.kt
+@@ -16,6 +16,6 @@ class StackFinishTransitioningEvent(
+     override fun getEventData(): WritableMap? = Arguments.createMap()
+ 
+     companion object {
+-        const val EVENT_NAME = "topFinishTransitioning"
++        const val EVENT_NAME = "finishTransitioning"
+     }
+ }

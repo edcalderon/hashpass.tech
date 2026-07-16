@@ -22,11 +22,66 @@ describe('Android layout event crash guards', () => {
     expect(source).toContain("if (Platform.OS === 'android' && viewportWidthRef.current <= 0)");
   });
 
-  it('uses the black full HASHPASS logo on light native surfaces', () => {
+  it('does not attach dashboard scroll-card onLayout handlers on Android', () => {
+    const hashPointsSource = readSource('../../components/HashPointsView.tsx');
+    const blockchainTokensSource = readSource('../../components/BlockchainTokensView.tsx');
+    const quickAccessGridSource = readSource('../../components/explorer/QuickAccessGrid.tsx');
+
+    expect(hashPointsSource).toContain("onLayout={Platform.OS === 'android' ? undefined : handleLayout}");
+    expect(blockchainTokensSource).toContain("onLayout={Platform.OS === 'android' ? undefined : handleLayout}");
+    expect(quickAccessGridSource).toContain("onLayout={Platform.OS === 'android' ? undefined : handleLayout}");
+  });
+
+  it('uses the white full HASHPASS logo on light native surfaces', () => {
     const logoSource = readSource('../../lib/hashpass-logo.ts');
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
 
-    expect(logoSource).toContain('logo-full-hashpass-black.png');
-    expect(dashboardSource).toContain("require('../../../assets/logos/hashpass/logo-full-hashpass-black.png')");
+    expect(logoSource).toContain('logo-full-hashpass-white.png');
+    expect(dashboardSource).toContain("require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')");
+  });
+
+  it('keeps safe-area Fabric events on the generated Fabric event name', () => {
+    const fabricInsetsEventSource = readSource(
+      '../../../../node_modules/react-native-safe-area-context/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt',
+    );
+    const paperInsetsEventSource = readSource(
+      '../../../../node_modules/react-native-safe-area-context/android/src/paper/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt',
+    );
+
+    expect(fabricInsetsEventSource).toContain('const val EVENT_NAME = "insetsChange"');
+    expect(fabricInsetsEventSource).not.toContain('const val EVENT_NAME = "topInsetsChange"');
+    expect(paperInsetsEventSource).toContain('const val EVENT_NAME = "topInsetsChange"');
+  });
+
+  it('keeps React Native Screens Android events on generated Fabric event names', () => {
+    const screensEvents: Record<string, string> = {
+      HeaderAttachedEvent: 'attached',
+      HeaderBackButtonClickedEvent: 'headerBackButtonClicked',
+      HeaderDetachedEvent: 'detached',
+      HeaderHeightChangeEvent: 'headerHeightChange',
+      ScreenAppearEvent: 'appear',
+      ScreenDisappearEvent: 'disappear',
+      ScreenDismissedEvent: 'dismissed',
+      ScreenTransitionProgressEvent: 'transitionProgress',
+      ScreenWillAppearEvent: 'willAppear',
+      ScreenWillDisappearEvent: 'willDisappear',
+      SearchBarBlurEvent: 'searchBlur',
+      SearchBarChangeTextEvent: 'changeText',
+      SearchBarCloseEvent: 'close',
+      SearchBarFocusEvent: 'searchFocus',
+      SearchBarOpenEvent: 'open',
+      SearchBarSearchButtonPressEvent: 'searchButtonPress',
+      SheetDetentChangedEvent: 'sheetDetentChanged',
+      StackFinishTransitioningEvent: 'finishTransitioning',
+    };
+
+    for (const [eventFile, eventName] of Object.entries(screensEvents)) {
+      const source = readSource(
+        `../../../../node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/${eventFile}.kt`,
+      );
+
+      expect(source).toContain(`const val EVENT_NAME = "${eventName}"`);
+      expect(source).not.toContain('const val EVENT_NAME = "top');
+    }
   });
 });

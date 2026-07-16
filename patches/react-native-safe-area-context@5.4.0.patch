@@ -1,0 +1,12 @@
+diff --git a/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt b/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt
+index b60ba5b2c36a396d15d8803e443d656bfbeb0a60..86fc5b42971b968eb78e701461734dfc1fe46217 100644
+--- a/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt
++++ b/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt
+@@ -20,6 +20,6 @@ internal class InsetsChangeEvent(
+   }
+ 
+   companion object {
+-    const val EVENT_NAME = "topInsetsChange"
++    const val EVENT_NAME = "insetsChange"
+   }
+ }

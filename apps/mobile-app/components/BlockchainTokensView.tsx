@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet, Modal, ActivityIndicator, Platform } from 'react-native';
-import { Coins, ArrowRightLeft, ExternalLink, TrendingUp, Shield, ChevronLeft, ChevronRight, Info, X, RefreshCw } from 'lucide-react-native';
+import { ArrowRightLeft, ExternalLink, TrendingUp, Shield, ChevronLeft, ChevronRight, Info, X, RefreshCw } from 'lucide-react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 import { useAuth } from '../hooks/useAuth';
 import { lukasRewardService } from '../lib/lukas-reward-service';
 import type { UserBalance } from '../lib/lukas-reward-service';
 import { useToastHelpers } from '../contexts/ToastContext';
-import { useBalance } from '../contexts/BalanceContext';
 
 interface Token {
   symbol: string;
@@ -25,7 +24,6 @@ const BlockchainTokensView = () => {
   const { t: translate } = useTranslation('wallet');
   const { user } = useAuth();
   const { showInfo, showSuccess } = useToastHelpers();
-  const { refreshBalance } = useBalance();
   
   // Helper function to translate with fallback
   const t = (key: string, fallback?: string) => {
@@ -317,7 +315,7 @@ const BlockchainTokensView = () => {
           snapToInterval={cardWidth + cardSpacing}
           snapToAlignment="start"
           disableIntervalMomentum
-          onLayout={handleLayout}
+          onLayout={Platform.OS === 'android' ? undefined : handleLayout}
           onContentSizeChange={handleContentSizeChange}
           // @ts-ignore - onWheel supported in RN Web
           onWheel={handleWheel}
@@ -775,4 +773,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
 });
 
 export default BlockchainTokensView;
-

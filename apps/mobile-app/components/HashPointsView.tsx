@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet, Platform } from 'react-native';
 import { Award, ArrowRightLeft, Gift, TrendingUp, Zap, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
@@ -231,7 +231,7 @@ const HashPointsView = () => {
             snapToInterval={swapCardWidth + cardSpacing}
             snapToAlignment="start"
             disableIntervalMomentum
-            onLayout={handleLayout}
+            onLayout={Platform.OS === 'android' ? undefined : handleLayout}
             onContentSizeChange={handleContentSizeChange}
             // @ts-ignore - onWheel supported in RN Web
             onWheel={handleWheel}
@@ -421,4 +421,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
 });
 
 export default HashPointsView;
-

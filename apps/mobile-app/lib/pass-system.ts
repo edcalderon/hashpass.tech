@@ -2,9 +2,21 @@ import { supabase } from './supabase';
 import { resolveActiveEventId } from './event-path';
 
 const SUPABASE_AUTH_USER_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PASS_STORAGE_EVENT_ID_ALIASES: Record<string, string> = {
+  bsl: 'bsl2025',
+  'bsl-2025': 'bsl2025',
+};
 
 export const isSupabaseAuthUserId = (value: string | null | undefined): value is string =>
   typeof value === 'string' && SUPABASE_AUTH_USER_ID_REGEX.test(value);
+
+export const resolvePassStorageEventId = (eventId: string): string =>
+  PASS_STORAGE_EVENT_ID_ALIASES[eventId] ?? eventId;
+
+const isDuplicateKeyError = (error: unknown): boolean => {
+  const typedError = error as { code?: string; message?: string } | null;
+  return typedError?.code === '23505' || /duplicate key value/i.test(typedError?.message ?? '');
+};
 
 const describeUserId = (value: string | null | undefined): string => {
   if (!value) return 'missing';
@@ -95,6 +107,24 @@ export interface PassTypeLimits {
 }
 
 class PassSystemService {
+  private readonly defaultPassCreations = new Map<string, Promise<string | null>>();
+
+  private async fetchActivePass(userId: string, eventId: string): Promise<{ passData: Pass | null; error: any | null }> {
+    const { data: passDataArray, error } = await supabase
+      .from('passes')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('event_id', eventId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    return {
+      passData: passDataArray && passDataArray.length > 0 ? passDataArray[0] : null,
+      error,
+    };
+  }
+
   // Get user's pass information with real meeting request counts
   async getUserPassInfo(userId: string, eventId?: string): Promise<PassInfo | null> {
     if (!isSupabaseAuthUserId(userId)) {
@@ -103,18 +133,11 @@ class PassSystemService {
     }
 
     try {
-      const resolvedEventId = resolveActiveEventId(eventId);
+      const resolvedEventId = resolvePassStorageEventId(resolveActiveEventId(eventId));
 
       // First, try to get the actual pass information from the passes table
       // Get the most recent active pass (in case user has multiple passes)
-      const { data: passDataArray, error: passError } = await supabase
-        .from('passes')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('event_id', resolvedEventId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const { passData: initialPassData, error: passError } = await this.fetchActivePass(userId, resolvedEventId);
       
       // Handle the case where no pass exists (404/406 errors are expected)
       if (passError && (passError.code === 'PGRST116' || passError.code === '406' || passError.message?.includes('No rows'))) {
@@ -129,7 +152,7 @@ class PassSystemService {
       }
       
       // Extract the first (and only) pass from the array
-      let passData = passDataArray && passDataArray.length > 0 ? passDataArray[0] : null;
+      let passData = initialPassData;
       
       if (!passData) {
         // No active pass found, try to create one automatically
@@ -138,17 +161,10 @@ class PassSystemService {
           const newPassId = await this.createDefaultPass(userId, 'general', resolvedEventId);
           if (newPassId) {
             // Retry getting pass info after creation
-            const { data: newPassDataArray, error: newPassError } = await supabase
-              .from('passes')
-              .select('*')
-              .eq('user_id', userId)
-              .eq('event_id', resolvedEventId)
-              .eq('status', 'active')
-              .order('created_at', { ascending: false })
-              .limit(1);
+            const { passData: newPassData, error: newPassError } = await this.fetchActivePass(userId, resolvedEventId);
             
-            if (!newPassError && newPassDataArray && newPassDataArray.length > 0) {
-              passData = newPassDataArray[0];
+            if (!newPassError && newPassData) {
+              passData = newPassData;
               console.log('✅ Successfully created and retrieved new pass');
             } else {
               // Still no pass, fallback to counts
@@ -267,7 +283,7 @@ class PassSystemService {
     eventId?: string
   ): Promise<PassRequestLimits> {
     try {
-      const resolvedEventId = resolveActiveEventId(eventId);
+      const resolvedEventId = resolvePassStorageEventId(resolveActiveEventId(eventId));
 
       if (!isSupabaseAuthUserId(userId)) {
         warnInvalidSupabaseUserId('canMakeMeetingRequest', userId);
@@ -386,13 +402,36 @@ class PassSystemService {
 
   // Create default pass for user
   async createDefaultPass(userId: string, passType: PassType = 'general', eventId?: string): Promise<string | null> {
-    const resolvedEventId = resolveActiveEventId(eventId);
+    const resolvedEventId = resolvePassStorageEventId(resolveActiveEventId(eventId));
 
     if (!isSupabaseAuthUserId(userId)) {
       warnInvalidSupabaseUserId('createDefaultPass', userId);
       return null;
     }
 
+    const creationKey = `${userId}:${resolvedEventId}:${passType}`;
+    const existingCreation = this.defaultPassCreations.get(creationKey);
+    if (existingCreation) {
+      return existingCreation;
+    }
+
+    const creation = this.createDefaultPassUnlocked(userId, passType, resolvedEventId);
+    this.defaultPassCreations.set(creationKey, creation);
+
+    try {
+      return await creation;
+    } finally {
+      if (this.defaultPassCreations.get(creationKey) === creation) {
+        this.defaultPassCreations.delete(creationKey);
+      }
+    }
+  }
+
+  private async createDefaultPassUnlocked(
+    userId: string,
+    passType: PassType,
+    resolvedEventId: string
+  ): Promise<string | null> {
     try {
       const { data, error } = await supabase
         .rpc('create_default_pass', {
@@ -402,6 +441,14 @@ class PassSystemService {
         .single();
 
       if (error) {
+        if (isDuplicateKeyError(error)) {
+          const { passData, error: fetchError } = await this.fetchActivePass(userId, resolvedEventId);
+          if (!fetchError && passData?.id) {
+            console.warn('Recovered existing default pass after duplicate create response for event', resolvedEventId);
+            return passData.id;
+          }
+        }
+
         console.error('Error creating default pass:', error, 'for event', resolvedEventId);
         return null;
       }
