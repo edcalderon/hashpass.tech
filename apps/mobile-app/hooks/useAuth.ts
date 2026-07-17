@@ -619,27 +619,20 @@ export const useAuth = () => {
       supabase.auth.signOut(),
     ]);
 
-    const firstFailedResult = results.find((result) => {
+    const signOutFailures = results.map((result) => {
       if (result.status === 'rejected') {
-        return true;
+        return result.reason;
       }
 
       const value = result.value as { error?: unknown } | undefined;
-      return Boolean(value?.error);
-    });
+      return value?.error ?? null;
+    }).filter((failure): failure is unknown => Boolean(failure));
 
-    if (firstFailedResult) {
-      const failureReason =
-        firstFailedResult.status === 'rejected'
-          ? firstFailedResult.reason
-          : (firstFailedResult.value as { error?: unknown }).error;
-      const signOutError =
-        failureReason instanceof Error
-          ? failureReason
-          : new Error(getAuthErrorMessage(failureReason, 'Unable to sign out.'));
-
-      console.error('Error signing out:', signOutError);
-      throw signOutError;
+    if (signOutFailures.length > 0) {
+      console.warn(
+        '[useAuth] Provider sign-out reported cleanup errors; clearing local auth state anyway:',
+        signOutFailures.map((failure) => getAuthErrorMessage(failure, 'Unable to sign out.'))
+      );
     }
 
     sessionBootstrapPromise = Promise.resolve(null);

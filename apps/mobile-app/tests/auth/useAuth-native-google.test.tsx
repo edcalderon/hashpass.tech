@@ -1428,6 +1428,122 @@ describe('useAuth native Google sign-in', () => {
     expect(mockSupabase.auth.signOut).toHaveBeenCalledTimes(1);
   });
 
+  it('clears local native auth state even when Better Auth sign-out reports a missing origin', async () => {
+    setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
+    setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');
+
+    const betterAuthSession = {
+      user: {
+        id: 'better-auth-user',
+        email: 'user@example.com',
+      },
+      access_token: 'better_auth_session',
+      provider: 'better-auth',
+    };
+    const mockBetterAuthSignOut = jest.fn(async () => ({
+      error: 'Missing or null Origin',
+    }));
+    const MockBetterAuthProvider = jest.fn().mockImplementation(() => ({
+      onAuthStateChange: jest.fn(() => () => {}),
+      getSession: jest.fn(async () => betterAuthSession),
+      signOut: mockBetterAuthSignOut,
+      signInWithIdToken: jest.fn(async () => ({
+        error: 'Better Auth is not configured for this test.',
+      })),
+    }));
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    let capturedHook: any = null;
+    let testAct: any = null;
+
+    try {
+      jest.isolateModules(() => {
+        jest.doMock('react-native', () => ({
+          Platform: { OS: 'android' },
+        }));
+
+        jest.doMock('@hashpass/auth', () => ({
+          authService: mockAuthService,
+          BetterAuthProvider: MockBetterAuthProvider,
+          getSupabaseOAuthRedirectUrl: jest.fn(() => 'myapp://auth/callback'),
+        }));
+
+        jest.doMock('@hashpass/auth/auth-dependencies', () => ({
+          configureAuthService: jest.fn(),
+        }));
+
+        jest.doMock('../../lib/supabase', () => ({
+          supabase: mockSupabase,
+          createSessionFromUrl: jest.fn(),
+        }));
+
+        jest.doMock('../../config/supabase-profiles', () => ({
+          resolvePublicSupabaseConfig: jest.fn(() => ({
+            supabaseUrl: 'https://example.supabase.co',
+            supabaseAnonKey: 'anon-key',
+          })),
+        }));
+
+        jest.doMock('../../lib/native-google-signin', () => ({
+          clearNativeGoogleAccount: mockClearNativeGoogleAccount,
+          nativeGoogleSigninStatusCodes: {
+            SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+            PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+          },
+          signInWithNativeGoogleAccount: mockSignInWithNativeGoogleAccount,
+        }));
+
+        jest.doMock('../../lib/auth/oauth/callback-params', () => ({
+          mergeOAuthFragmentParams: jest.fn((params: URLSearchParams, extras: Record<string, string>) => ({
+            ...Object.fromEntries(params.entries()),
+            ...extras,
+          })),
+        }));
+
+        jest.doMock('expo-web-browser', () => ({
+          __esModule: true,
+          openAuthSessionAsync: mockOpenAuthSessionAsync,
+        }));
+
+        const React = require('react');
+        const TestRenderer = require('react-test-renderer');
+        const { useAuth } = require('../../hooks/useAuth');
+        testAct = TestRenderer.act;
+
+        const Harness = () => {
+          capturedHook = useAuth();
+          return null;
+        };
+
+        TestRenderer.act(() => {
+          TestRenderer.create(React.createElement(Harness));
+        });
+      });
+
+      await waitForAuthSessionSettle(testAct);
+      expect(capturedHook.isLoggedIn).toBe(true);
+      mockBetterAuthSignOut.mockClear();
+      mockAuthService.signOut.mockClear();
+      mockSupabase.auth.signOut.mockClear();
+
+      await testAct(async () => {
+        await capturedHook.signOut();
+      });
+
+      expect(mockBetterAuthSignOut).toHaveBeenCalledTimes(1);
+      expect(mockAuthService.signOut).toHaveBeenCalledTimes(1);
+      expect(mockSupabase.auth.signOut).toHaveBeenCalledTimes(1);
+      expect(capturedHook.isLoggedIn).toBe(false);
+      expect(capturedHook.user).toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[useAuth] Provider sign-out reported cleanup errors; clearing local auth state anyway:',
+        ['Missing or null Origin']
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   it('falls back to browser OAuth when the native Google SDK is unavailable', async () => {
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
     setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');
