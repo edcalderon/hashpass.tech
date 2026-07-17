@@ -1,4 +1,9 @@
-export const DASHBOARD_LANDING_ROUTE = '/' as const;
+// Target `/home` directly, not `/`. The `/` index route forwards an
+// authenticated visitor to the dashboard (see app/index.tsx), so routing this
+// deliberate "back to landing" action through `/` would immediately bounce a
+// logged-in user right back into the dashboard. `/home` renders the landing
+// (with its "Welcome back" state) regardless of auth.
+export const DASHBOARD_LANDING_ROUTE = '/home' as const;
 
 type DashboardRouter = {
   replace?: (route: typeof DASHBOARD_LANDING_ROUTE) => void;
