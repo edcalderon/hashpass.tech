@@ -25,14 +25,19 @@ describe('native event registry patch', () => {
     expect(customDirectEventTypes.topMomentumScrollEnd).toEqual({
       registrationName: 'onMomentumScrollEnd',
     });
+    expect(customDirectEventTypes.topLayout).toEqual({
+      registrationName: 'onLayout',
+    });
     expect(result.patched).toEqual(
-      expect.arrayContaining(['topScroll', 'topScrollEndDrag']),
+      expect.arrayContaining(['topScroll', 'topScrollEndDrag', 'topLayout']),
     );
   });
 
   it('preserves existing native event registrations', () => {
     const existingTopScroll = { registrationName: 'customOnScroll' };
+    const existingTopLayout = { registrationName: 'customOnLayout' };
     const customDirectEventTypes = {
+      topLayout: existingTopLayout,
       topScroll: existingTopScroll,
     };
 
@@ -47,6 +52,8 @@ describe('native event registry patch', () => {
 
     expect(result.installed).toBe(true);
     expect(customDirectEventTypes.topScroll).toBe(existingTopScroll);
+    expect(customDirectEventTypes.topLayout).toBe(existingTopLayout);
     expect(result.patched).not.toContain('topScroll');
+    expect(result.patched).not.toContain('topLayout');
   });
 });

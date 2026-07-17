@@ -1,3 +1,14 @@
+## [1.8.233](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.232...v1.8.233) (2026-07-17)
+
+
+### Bug Fixes
+
+* stabilize native auth dashboard routing ([9f46191](https://github.com/hashpass-tech/hashpass.tech/commit/9f46191b45f1e36035cdaf705de9f2018cc85496))
+
+
+
+
+
 ## [1.8.232](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.231...v1.8.232) (2026-07-16)
 
 

@@ -1,8 +1,11 @@
 'use strict';
 
-const ANDROID_SCROLL_DIRECT_EVENTS = {
-  // Stock ScrollView direct events that can arrive before RN's generated
-  // view config registry has registered them in Android release bundles.
+const ANDROID_DIRECT_EVENTS = {
+  // Stock direct events that can arrive before RN's generated view config
+  // registry has registered them in Android release bundles.
+  topLayout: {
+    registrationName: 'onLayout',
+  },
   topContentSizeChange: {
     registrationName: 'onContentSizeChange',
   },
@@ -45,7 +48,7 @@ function installNativeEventRegistryPatch() {
   const patched = [];
 
   for (const [eventName, eventConfig] of Object.entries(
-    ANDROID_SCROLL_DIRECT_EVENTS,
+    ANDROID_DIRECT_EVENTS,
   )) {
     if (directEventTypes[eventName] == null) {
       directEventTypes[eventName] = eventConfig;
@@ -63,6 +66,7 @@ function installNativeEventRegistryPatch() {
 }
 
 module.exports = {
-  ANDROID_SCROLL_DIRECT_EVENTS,
+  ANDROID_DIRECT_EVENTS,
+  ANDROID_SCROLL_DIRECT_EVENTS: ANDROID_DIRECT_EVENTS,
   installNativeEventRegistryPatch,
 };

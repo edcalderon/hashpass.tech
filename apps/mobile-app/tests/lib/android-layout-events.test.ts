@@ -40,6 +40,17 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).toContain("require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')");
   });
 
+  it('routes native post-auth dashboard navigation through the shared route group', () => {
+    const authSource = readSource('../../app/(shared)/auth.tsx');
+    const homeSource = readSource('../../app/home.tsx');
+
+    expect(authSource).toContain('const DASHBOARD_EXPLORE_PUBLIC_PATH = "/dashboard/explore";');
+    expect(authSource).toContain('const DASHBOARD_EXPLORE_ROUTER_PATH = "/(shared)/dashboard/explore";');
+    expect(authSource).toContain('router.replace(routerRedirectPath as any);');
+    expect(authSource).toContain('return <Redirect href={routerRedirectPath as any} />;');
+    expect(homeSource).toContain('router.replace("/(shared)/dashboard/explore" as any);');
+  });
+
   it('keeps safe-area Fabric events on the generated Fabric event name', () => {
     const fabricInsetsEventSource = readSource(
       '../../../../node_modules/react-native-safe-area-context/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt',
