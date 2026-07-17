@@ -4,6 +4,7 @@
 
 import { createAuthClient } from 'better-auth/client';
 import { ENV_CONFIG } from '@hashpass/config';
+import { Platform } from 'react-native';
 import type {
   AuthProvider,
   AuthResponse,
@@ -31,6 +32,18 @@ const splitName = (name?: string | null) => {
   if (!trimmed) return { firstName: '', lastName: '' };
   const [firstName, ...rest] = trimmed.split(/\s+/);
   return { firstName, lastName: rest.join(' ') };
+};
+
+const resolveNativeTrustedOriginHeaders = (): Record<string, string> | undefined => {
+  if (Platform.OS === 'web') {
+    return undefined;
+  }
+
+  const origin = resolveWebOrigin({ allowLocal: false });
+  return {
+    Origin: origin,
+    Referer: `${origin}/`,
+  };
 };
 
 export class BetterAuthProvider implements IAuthProvider {
@@ -68,8 +81,16 @@ export class BetterAuthProvider implements IAuthProvider {
     const baseURL = this.resolveClientBaseURL();
 
     if (!this.client || this.clientBaseURL !== baseURL) {
+      const nativeTrustedOriginHeaders = resolveNativeTrustedOriginHeaders();
       this.client = createAuthClient({
         baseURL,
+        ...(nativeTrustedOriginHeaders
+          ? {
+              fetchOptions: {
+                headers: nativeTrustedOriginHeaders,
+              },
+            }
+          : {}),
       });
       this.clientBaseURL = baseURL;
     }

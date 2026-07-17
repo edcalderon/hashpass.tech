@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607170026, // Updated to current timestamp
+  buildNumber: 202607171618, // Updated to current timestamp
   releaseDate: '2026-07-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'stabilize native auth dashboard routing'
+    'harden native auth sign out'
   ],
   breakingChanges: [],
-  notes: 'stabilize native auth dashboard routing'
+  notes: 'harden native auth sign out'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.234': {
+    version: '1.8.234',
+    buildNumber: 202607171618,
+    releaseDate: '2026-07-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'harden native auth sign out'
+    ],
+    breakingChanges: [],
+    notes: 'harden native auth sign out'
+  },
   '1.8.233': {
     version: '1.8.233',
     buildNumber: 202607170026,

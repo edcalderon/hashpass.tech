@@ -161,4 +161,37 @@ describe('BetterAuthProvider', () => {
     );
     expect(result.pending).toBe(true);
   });
+
+  it('adds trusted origin headers for native Better Auth requests', async () => {
+    const { Platform } = require('react-native');
+    const originalPlatform = Platform.OS;
+    const originalSiteUrl = process.env.EXPO_PUBLIC_SITE_URL;
+    Platform.OS = 'android';
+    process.env.EXPO_PUBLIC_SITE_URL = 'https://hashpass.tech';
+    mockSignOut.mockResolvedValueOnce({});
+
+    try {
+      const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+      const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+      await provider.signOut();
+
+      expect(mockCreateAuthClient).toHaveBeenCalledWith({
+        baseURL: 'https://api.hashpass.tech/api/auth',
+        fetchOptions: {
+          headers: {
+            Origin: 'https://hashpass.tech',
+            Referer: 'https://hashpass.tech/',
+          },
+        },
+      });
+    } finally {
+      Platform.OS = originalPlatform;
+      if (typeof originalSiteUrl === 'string') {
+        process.env.EXPO_PUBLIC_SITE_URL = originalSiteUrl;
+      } else {
+        delete process.env.EXPO_PUBLIC_SITE_URL;
+      }
+    }
+  });
 });
