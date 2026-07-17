@@ -1,3 +1,14 @@
+## [1.8.234](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.233...v1.8.234) (2026-07-17)
+
+
+### Bug Fixes
+
+* harden native auth sign out ([5fdd77c](https://github.com/hashpass-tech/hashpass.tech/commit/5fdd77c966525e94ae37977f28d9750cab450b57))
+
+
+
+
+
 ## [1.8.233](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.232...v1.8.233) (2026-07-17)
 
 
