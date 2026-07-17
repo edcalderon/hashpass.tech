@@ -7,6 +7,7 @@
 | [active/task-hashpass-ai-assistant.md](active/task-hashpass-ai-assistant.md) | App-wide HashPass AI assistant with floating chat UI, standalone page, Bedrock RAG, and Aurora/RDS backing | 🔴 High |
 | [active/task-aws-account-migration.md](active/task-aws-account-migration.md) | Migrate HashPass AWS services from account `058264267235` to `952191196420` with reversible IaC | 🔴 High |
 | [active/task-app-publish.md](active/task-app-publish.md) | Google Play Store closed testing upload in progress + production rollout (v1.8.148) | 🔴 High |
+| [../apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md](../apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md) | Native auth resumes to landing but crashes on dashboard entry after v1.8.234; includes XState session-machine state and release evidence | 🔴 High |
 | [active/task-native-google-signin.md](active/task-native-google-signin.md) | Replace browser OAuth with native Google Sign-In SDK (no-browser flow) | 🟡 Medium |
 
 ## Pending Tasks
@@ -31,6 +32,8 @@
 
 | Version | Fix |
 |---------|-----|
+| v1.8.234 | Hardened native sign-out so local auth state clears even when Better Auth/Supabase provider cleanup reports errors; added native Better Auth trusted origin headers |
+| v1.8.233 | Stabilized native dashboard routing to `/(shared)/dashboard/explore` and kept Android layout-event protection in place |
 | v1.8.132 | Removed the black native light-mode auth panel, selected the correct HashPass logo asset, and added the auth screen `dataSet` typecheck augment |
 | v1.8.71 | `RNAnimated.View` for header `opacity` — mixed Animated API crash after Google auth |
 | v1.8.72 | `RNAnimated.View` for header outer container — `borderBottomWidth`/`shadowOpacity` crash |

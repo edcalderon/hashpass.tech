@@ -50,6 +50,7 @@ import {
 } from "../../lib/country-dial-options";
 import { Ionicons } from "../../lib/vector-icons";
 import { supabase } from "../../lib/supabase";
+import { markRecentAuthSuccess } from "../../lib/auth/recent-auth";
 import { resolvePublicSupabaseConfig } from "../../config/supabase-profiles";
 import { getHashpassFullLogo } from "../../lib/hashpass-logo";
 import { useAnimationLevel } from "../../contexts/AnimationLevelContext";
@@ -1153,6 +1154,14 @@ export default function AuthScreen() {
       if (sessionError) {
         throw sessionError;
       }
+
+      // The OTP path sets the Supabase session directly (bypassing useAuth's
+      // sign-in methods), so it must mark the recent-auth grace window itself.
+      // Without it, the auth session machine briefly flaps through
+      // `bootstrapping` (isLoggedIn=false) while Better Auth's getSession
+      // fails on native, and the dashboard/root guards would bounce the
+      // just-authenticated user back to /auth before the session settles.
+      markRecentAuthSuccess();
 
       showSuccess(
         t("loginSuccess", "Login successful"),

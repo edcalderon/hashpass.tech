@@ -1,19 +1,44 @@
 /// <reference types="jest" />
 
 describe('native event registry patch', () => {
+  const originalErrorUtils = global.ErrorUtils;
+
   afterEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    if (originalErrorUtils === undefined) {
+      delete global.ErrorUtils;
+    } else {
+      global.ErrorUtils = originalErrorUtils;
+    }
   });
 
-  it('registers stock Android scroll direct events when missing', () => {
-    const customDirectEventTypes = {};
-
+  const mockRegistry = (customDirectEventTypes) => {
     jest.doMock(
       'react-native/Libraries/Renderer/shims/ReactNativeViewConfigRegistry',
       () => ({ customDirectEventTypes }),
       { virtual: true },
     );
+  };
+
+  const mockErrorUtils = () => {
+    const previousHandler = jest.fn();
+    let currentHandler = previousHandler;
+    global.ErrorUtils = {
+      getGlobalHandler: () => currentHandler,
+      setGlobalHandler: (handler) => {
+        currentHandler = handler;
+      },
+    };
+    return {
+      previousHandler,
+      invoke: (error, isFatal) => currentHandler(error, isFatal),
+    };
+  };
+
+  it('registers stock Android scroll direct events when missing', () => {
+    const customDirectEventTypes = {};
+    mockRegistry(customDirectEventTypes);
 
     const { installNativeEventRegistryPatch } = require('../../lib/polyfills/native-event-registry');
     const result = installNativeEventRegistryPatch();
@@ -33,6 +58,37 @@ describe('native event registry patch', () => {
     );
   });
 
+  it('registers react-native-screens transition events when missing', () => {
+    const customDirectEventTypes = {};
+    mockRegistry(customDirectEventTypes);
+
+    const { installNativeEventRegistryPatch } = require('../../lib/polyfills/native-event-registry');
+    const result = installNativeEventRegistryPatch();
+
+    expect(result.installed).toBe(true);
+    expect(customDirectEventTypes.topDetached).toEqual({
+      registrationName: 'onDetached',
+    });
+    expect(customDirectEventTypes.topAttached).toEqual({
+      registrationName: 'onAttached',
+    });
+    expect(customDirectEventTypes.topAppear).toEqual({
+      registrationName: 'onAppear',
+    });
+    expect(customDirectEventTypes.topDismissed).toEqual({
+      registrationName: 'onDismissed',
+    });
+    expect(customDirectEventTypes.topTransitionProgress).toEqual({
+      registrationName: 'onTransitionProgress',
+    });
+    expect(customDirectEventTypes.topInsetsChange).toEqual({
+      registrationName: 'onInsetsChange',
+    });
+    expect(result.patched).toEqual(
+      expect.arrayContaining(['topDetached', 'topAttached', 'topWillDisappear']),
+    );
+  });
+
   it('preserves existing native event registrations', () => {
     const existingTopScroll = { registrationName: 'customOnScroll' };
     const existingTopLayout = { registrationName: 'customOnLayout' };
@@ -40,12 +96,7 @@ describe('native event registry patch', () => {
       topLayout: existingTopLayout,
       topScroll: existingTopScroll,
     };
-
-    jest.doMock(
-      'react-native/Libraries/Renderer/shims/ReactNativeViewConfigRegistry',
-      () => ({ customDirectEventTypes }),
-      { virtual: true },
-    );
+    mockRegistry(customDirectEventTypes);
 
     const { installNativeEventRegistryPatch } = require('../../lib/polyfills/native-event-registry');
     const result = installNativeEventRegistryPatch();
@@ -55,5 +106,62 @@ describe('native event registry patch', () => {
     expect(customDirectEventTypes.topLayout).toBe(existingTopLayout);
     expect(result.patched).not.toContain('topScroll');
     expect(result.patched).not.toContain('topLayout');
+  });
+
+  it('swallows unsupported-top-level-event fatals and registers the event', () => {
+    const customDirectEventTypes = {};
+    mockRegistry(customDirectEventTypes);
+    const { previousHandler, invoke } = mockErrorUtils();
+
+    const { installNativeEventRegistryPatch } = require('../../lib/polyfills/native-event-registry');
+    const result = installNativeEventRegistryPatch();
+
+    expect(result.crashGuardInstalled).toBe(true);
+
+    const error = new Error(
+      'Unsupported top level event type "topSomethingNew" dispatched',
+    );
+    invoke(error, true);
+
+    expect(previousHandler).not.toHaveBeenCalled();
+    expect(customDirectEventTypes.topSomethingNew).toEqual({
+      registrationName: 'onSomethingNew',
+    });
+  });
+
+  it('forwards unrelated errors to the previous global handler', () => {
+    mockRegistry({});
+    const { previousHandler, invoke } = mockErrorUtils();
+
+    const { installNativeEventRegistryPatch } = require('../../lib/polyfills/native-event-registry');
+    installNativeEventRegistryPatch();
+
+    const error = new Error('Some other fatal error');
+    invoke(error, true);
+
+    expect(previousHandler).toHaveBeenCalledWith(error, true);
+  });
+
+  it('installs the crash guard even when the registry is unavailable', () => {
+    jest.doMock(
+      'react-native/Libraries/Renderer/shims/ReactNativeViewConfigRegistry',
+      () => {
+        throw new Error('registry unavailable');
+      },
+      { virtual: true },
+    );
+    const { previousHandler, invoke } = mockErrorUtils();
+
+    const { installNativeEventRegistryPatch } = require('../../lib/polyfills/native-event-registry');
+    const result = installNativeEventRegistryPatch();
+
+    expect(result.installed).toBe(false);
+    expect(result.crashGuardInstalled).toBe(true);
+
+    invoke(
+      new Error('Unsupported top level event type "topDetached" dispatched'),
+      true,
+    );
+    expect(previousHandler).not.toHaveBeenCalled();
   });
 });
