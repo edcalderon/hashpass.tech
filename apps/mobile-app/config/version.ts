@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607161256, // Updated to current timestamp
-  releaseDate: '2026-07-16',
+  buildNumber: 202607170026, // Updated to current timestamp
+  releaseDate: '2026-07-17',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'stabilize native login event registry',
-    'stabilize native login and light logo'
+    'stabilize native auth dashboard routing'
   ],
   breakingChanges: [],
-  notes: 'stabilize native login event registry; stabilize native login and light logo'
+  notes: 'stabilize native auth dashboard routing'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.233': {
+    version: '1.8.233',
+    buildNumber: 202607170026,
+    releaseDate: '2026-07-17',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stabilize native auth dashboard routing'
+    ],
+    breakingChanges: [],
+    notes: 'stabilize native auth dashboard routing'
+  },
   '1.8.232': {
     version: '1.8.232',
     buildNumber: 202607161256,
