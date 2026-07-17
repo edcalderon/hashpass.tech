@@ -61,6 +61,8 @@ type BusyAction = "magic-link" | "otp-send" | "otp-verify" | "oauth" | null;
 type OtpDeliveryMethod = "email" | "sms";
 type ActiveSubmitField = "email" | "phone" | "otp" | null;
 
+const DASHBOARD_EXPLORE_PUBLIC_PATH = "/dashboard/explore";
+const DASHBOARD_EXPLORE_ROUTER_PATH = "/(shared)/dashboard/explore";
 const OTP_CODE_LENGTH = 6;
 const MAGIC_LINK_RESEND_COOLDOWN_SECONDS = 45;
 const OTP_RESEND_COOLDOWN_SECONDS = 45;
@@ -87,7 +89,7 @@ const normalizeReturnToPath = (rawPath: string): string => {
   }
 
   if (!normalized.startsWith("/")) {
-    return "/dashboard/explore";
+    return DASHBOARD_EXPLORE_PUBLIC_PATH;
   }
 
   normalized = normalized.replace(/\/\([^/]+\)/g, "");
@@ -97,10 +99,22 @@ const normalizeReturnToPath = (rawPath: string): string => {
     normalized === "/auth" ||
     normalized.includes(SUPABASE_OAUTH_CALLBACK_PATH)
   ) {
-    return "/dashboard/explore";
+    return DASHBOARD_EXPLORE_PUBLIC_PATH;
   }
 
   return normalized;
+};
+
+const mapToRouterPath = (path: string): string => {
+  if (path.startsWith("/dashboard") && !path.startsWith("/(shared)/dashboard")) {
+    return path.replace("/dashboard", "/(shared)/dashboard");
+  }
+
+  if (path === DASHBOARD_EXPLORE_ROUTER_PATH) {
+    return path;
+  }
+
+  return path;
 };
 
 const isValidEmail = (value: string) =>
@@ -484,7 +498,11 @@ export default function AuthScreen() {
   const redirectPath =
     typeof rawReturnTo === "string" && rawReturnTo.trim()
       ? normalizeReturnToPath(rawReturnTo)
-      : "/dashboard/explore";
+      : DASHBOARD_EXPLORE_PUBLIC_PATH;
+  const routerRedirectPath = useMemo(
+    () => mapToRouterPath(redirectPath),
+    [redirectPath],
+  );
 
   const currentLocale = getCurrentLocale();
   const heroSlides: HeroSlide[] = [
@@ -714,9 +732,9 @@ export default function AuthScreen() {
   useEffect(() => {
     if (isLoggedIn && user && !hasNavigatedRef.current && !authLoading) {
       hasNavigatedRef.current = true;
-      router.replace(redirectPath as any);
+      router.replace(routerRedirectPath as any);
     }
-  }, [authLoading, isLoggedIn, redirectPath, router, user]);
+  }, [authLoading, isLoggedIn, router, routerRedirectPath, user]);
 
   useEffect(() => {
     if (!shouldShowEmailSuggestions) {
@@ -1596,7 +1614,7 @@ export default function AuthScreen() {
   // and fire its own router.replace() right behind this one.
   if (isLoggedIn && user) {
     hasNavigatedRef.current = true;
-    return <Redirect href={redirectPath as any} />;
+    return <Redirect href={routerRedirectPath as any} />;
   }
 
   return (

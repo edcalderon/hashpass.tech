@@ -229,7 +229,7 @@ export default function HomeScreen() {
 
   const handleGoToAppPress = useCallback(() => {
     try {
-      router.replace("/dashboard/explore" as any);
+      router.replace("/(shared)/dashboard/explore" as any);
     } catch (error) {
       console.error("[Home] Failed to navigate to dashboard after auth:", error);
       try {
