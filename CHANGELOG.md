@@ -1,3 +1,14 @@
+## [1.8.235](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.234...v1.8.235) (2026-07-17)
+
+
+### Bug Fixes
+
+* native auth flow crash and post-login dashboard routing ([db5de84](https://github.com/hashpass-tech/hashpass.tech/commit/db5de8489d9e98d2bf6fdc879346ead644304133))
+
+
+
+
+
 ## [1.8.234](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.233...v1.8.234) (2026-07-17)
 
 
