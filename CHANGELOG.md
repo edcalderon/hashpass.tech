@@ -1,3 +1,14 @@
+## [1.8.236](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.235...v1.8.236) (2026-07-18)
+
+
+### Bug Fixes
+
+* guard against null pass_type/status on dashboard pass card ([f923c6e](https://github.com/hashpass-tech/hashpass.tech/commit/f923c6e8b1e86b7a34db05bc9b7c8764cf4fae5b))
+
+
+
+
+
 ## [1.8.235](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.234...v1.8.235) (2026-07-17)
 
 
