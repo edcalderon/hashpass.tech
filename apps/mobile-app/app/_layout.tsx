@@ -66,6 +66,29 @@ if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
 // of letting the app close with a blank screen.
 installGlobalErrorHandler();
 
+// Re-assert the native-event crash guard here, AFTER `require('expo-router/entry')`
+// (called from index.js, before this module ever loads) has already pulled in
+// React Native's own core. RN's Libraries/Core/setUpErrorHandling.js calls
+// `ErrorUtils.setGlobalHandler(handleError)` unconditionally — no capture, no
+// chaining — which silently DISCARDS whatever handler index.js installed
+// earlier and replaces it with RN's own default (log + crash-report-to-native).
+// Confirmed by evidence, not inference: a real device-class crash on
+// 2026-07-18 (topLayout/topAttached "Unsupported top level event type",
+// FATAL EXCEPTION on mqt_v_native via ReactHost.handleHostException) proved
+// our guard's own success log had NEVER fired in this build despite the
+// install log firing every launch — index.js's copy was already orphaned by
+// the time any Fabric event reached it. Re-installing here, after RN core AND
+// Sentry have both already registered their handlers, makes our guard the
+// last-installed (and therefore active/outermost) handler for the rest of
+// the app's life. index.js's earlier call still matters for its OTHER job —
+// seeding `directEventTypes` before the first screen mounts — so it stays;
+// only the guard's effectiveness depended on winning this ordering race.
+try {
+  require('../lib/polyfills/native-event-registry').installNativeEventRegistryPatch();
+} catch (err) {
+  console.error('[HashPass] Failed to re-install native event registry guard:', err);
+}
+
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
