@@ -1,11 +1,109 @@
 # Native Auth Dashboard Crash Handoff
 
-Status: session-flap root cause chain fixed; pending on-device verification of v1.8.237
+Status: TWO root causes fixed this session; pending on-device verification of v1.8.237
 Last updated: 2026-07-18
 Current released version: v1.8.236 (still crashing on device; fixes below target v1.8.237)
 Package under test: `com.hashpass.tech`
 
-## 2026-07-18 Update — The Real Chain: Provider Flap → Guard Redirect → Fabric Death
+## 2026-07-18 Update #2 — The Crash Guard Has Been Dead Code Since It Shipped
+
+This is ground truth, not inference: a locally-built v1.8.237 (with the
+provider-flap fixes below already applied) still force-closed on the
+**emulator**, driven live through a real Google Sign-In. `adb logcat -d`
+captured the complete FATAL EXCEPTION Java stack — the first real native
+crash stack this investigation has had all session (Sentry has never once
+captured this crash class from a real device).
+
+```
+E ReactNativeJS: Error: Unsupported top level event type "topLayout" dispatched
+W BridgelessReact: ReactHost{0}.handleHostException(message = "...topLayout"...)
+  extractEvents → anonymous → batchedUpdatesImpl → batchedUpdates$1 → dispatchEvent
+E AndroidRuntime: FATAL EXCEPTION: mqt_v_native
+E AndroidRuntime: com.facebook.react.common.JavascriptException: Error: Unsupported
+  top level event type "topLayout" dispatched
+  at com.facebook.react.modules.core.ExceptionsManagerModule.reportException(SourceFile:77)
+I ActivityManager: Process com.hashpass.tech (pid 19113) has died: fg TOP
+```
+
+### The bug: our ErrorUtils crash guard has never actually run
+
+`lib/polyfills/native-event-registry.js`'s `installUnsupportedEventCrashGuard`
+(shipped v1.8.233, expanded v1.8.235) is supposed to downgrade exactly this
+error class from fatal to a dropped/logged event. Its own success log —
+`[HashPass][events] dropped unsupported native event instead of crashing` —
+has **never appeared in any log this entire session**, across every crash,
+even though its install log (`installed native direct event fallbacks`)
+fires on every single launch. The guard installs. Then something silently
+throws it away before the first Fabric event ever reaches it.
+
+Root cause, confirmed by reading the actual RN source
+(`node_modules/react-native/Libraries/Core/setUpErrorHandling.js`):
+
+```js
+// unconditional, no capture of the previous handler, no chaining
+const ErrorUtils = require('../vendor/core/ErrorUtils').default;
+ErrorUtils.setGlobalHandler(handleError);
+```
+
+`index.js` installs our guard onto `global.ErrorUtils` at the top of the
+file, **before** calling `require('expo-router/entry')`. That require pulls
+in React Native's own core init as a transitive dependency, which runs the
+snippet above — silently replacing our guard with RN's default handler, no
+chaining, no trace. Everything installed afterward (Sentry's handler,
+`installGlobalErrorHandler()` in `app/_layout.tsx`) captures "the current
+handler" at that point and wraps it — but by then "the current handler" is
+already RN's own default, not our guard. Our guard becomes fully orphaned:
+still a live closure in memory, never called again by anything.
+
+This is not a new bug introduced this session — it has been the actual
+reason every "Unsupported top level event type" fix since v1.8.221 kept
+resurfacing under a different event name (`topLayout` → `topScroll` →
+`topDetached` → now `topLayout`/`topAttached` again). Each release's fix
+correctly expanded the registered-event allowlist and made the guard's
+*logic* correct; none of them fixed *installation order*, so the guard
+itself was never in the active handler chain to begin with. The "local
+release build survived a real OTP login" verification claimed for v1.8.235
+was real but incomplete — it happened not to hit this specific transition
+in that run; the guard's ineffectiveness was never actually exercised by
+that test.
+
+### The fix
+
+`app/_layout.tsx`, immediately after `installGlobalErrorHandler()`:
+re-install `installNativeEventRegistryPatch()` a second time. By this point
+in module evaluation, `require('expo-router/entry')` has already fully
+resolved (including RN core's own `setUpErrorHandling.js`) and Sentry has
+already called its own `ErrorUtils.setGlobalHandler`. Re-installing here
+makes our guard the **last-installed**, and therefore active/outermost,
+handler for the remainder of the app's life — nothing else calls
+`ErrorUtils.setGlobalHandler` after this point in the module graph.
+`index.js`'s original call still matters and stays: it seeds
+`directEventTypes` as early as possible, before any Fabric view can mount.
+Only the guard half of that call was silently losing the ordering race.
+
+Regression test: `tests/lib/native-event-registry.test.js` — "regains
+control when re-installed after something else overwrote the handler"
+— installs the guard, simulates RN core's unconditional overwrite (proving
+the orphaned guard lets a fatal reach the default handler), then re-installs
+and proves the guard is active again. Fails against the old single-install
+code path; passes with the fix.
+
+### Why this was never caught by local testing before today
+
+Local `assembleRelease` testing this session used OTP login exclusively.
+Native Google Sign-In on a local debug-keystore build normally fails outright
+(`DEVELOPER_ERROR`) before ever reaching the app — see the 2026-07-17
+entry below. It happened to succeed this time (system Google account already
+configured on this emulator image), which is the only reason this path was
+exercised at all. **Do not treat "OTP path survives" as proof this class of
+crash is fixed** — the guard's install-order bug affects any Fabric
+transition, not something specific to Google Sign-In; that was just the
+first transition, this session, timed unluckily enough to hit an
+unregistered event.
+
+---
+
+## 2026-07-18 Update #1 — The Provider-Flap Chain: Provider Flap → Guard Redirect → Fabric Death
 
 v1.8.235 (event-registry + routing) and v1.8.236 (null pass-data hardening)
 both shipped and both still crashed on the physical device with a *new,

@@ -164,4 +164,41 @@ describe('native event registry patch', () => {
     );
     expect(previousHandler).not.toHaveBeenCalled();
   });
+
+  it('regains control when re-installed after something else overwrote the handler', () => {
+    // Reproduces the real 2026-07-18 crash: index.js installs the guard, then
+    // require('expo-router/entry') pulls in React Native's own
+    // setUpErrorHandling.js, which calls ErrorUtils.setGlobalHandler()
+    // unconditionally — no chaining — silently discarding the guard. A
+    // FATAL EXCEPTION on mqt_v_native (Unsupported top level event type
+    // "topLayout"/"topAttached") reached native ReactHost.handleHostException
+    // because of this; our guard's own "dropped unsupported event" log had
+    // never fired despite "installed" firing on every launch.
+    mockRegistry({});
+    const { invoke } = mockErrorUtils();
+
+    const { installNativeEventRegistryPatch } = require('../../lib/polyfills/native-event-registry');
+    installNativeEventRegistryPatch();
+
+    // Simulate RN core's unconditional, non-chaining overwrite.
+    const rnCoreDefaultHandler = jest.fn();
+    global.ErrorUtils.setGlobalHandler(rnCoreDefaultHandler);
+
+    // Without a second install, the guard is orphaned: the fatal reaches
+    // RN's own default handler, which is what crashes the app.
+    const orphanedError = new Error('Unsupported top level event type "topLayout" dispatched');
+    invoke(orphanedError, true);
+    expect(rnCoreDefaultHandler).toHaveBeenCalledWith(orphanedError, true);
+
+    // Re-install (this is what app/_layout.tsx now does after RN core and
+    // Sentry have both already registered their own handlers) — the guard
+    // must become the active handler again.
+    rnCoreDefaultHandler.mockClear();
+    installNativeEventRegistryPatch();
+
+    const laterError = new Error('Unsupported top level event type "topAttached" dispatched');
+    invoke(laterError, true);
+
+    expect(rnCoreDefaultHandler).not.toHaveBeenCalled();
+  });
 });
