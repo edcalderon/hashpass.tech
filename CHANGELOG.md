@@ -1,3 +1,14 @@
+## [1.8.238](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.237...v1.8.238) (2026-07-18)
+
+
+### Bug Fixes
+
+* crash guard was dead code since v1.8.233 — RN core overwrote it every launch ([f7455a5](https://github.com/hashpass-tech/hashpass.tech/commit/f7455a501f4b5213e4066ffc4e76e89ae5c5ef09))
+
+
+
+
+
 ## [1.8.237](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.236...v1.8.237) (2026-07-18)
 
 
