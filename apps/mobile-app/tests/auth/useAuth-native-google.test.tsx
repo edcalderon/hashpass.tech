@@ -2070,4 +2070,132 @@ describe('useAuth native Google sign-in', () => {
     expect(mockSupabase.auth.signInWithOAuth).not.toHaveBeenCalled();
     expect(mockSignInWithNativeGoogleAccount).not.toHaveBeenCalled();
   });
+
+  it('keeps the user logged in via Supabase when a restored Better Auth session later flaps to null', async () => {
+    setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
+    setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');
+
+    const betterAuthSession = {
+      user: {
+        id: 'better-auth-user',
+        email: 'user@example.com',
+      },
+      access_token: 'better_auth_session',
+      provider: 'better-auth',
+    };
+
+    let betterAuthStateCallback: ((session: unknown) => void) | null = null;
+    const MockBetterAuthProvider = jest.fn().mockImplementation(() => ({
+      onAuthStateChange: jest.fn((callback: (session: unknown) => void) => {
+        betterAuthStateCallback = callback;
+        return () => {};
+      }),
+      getSession: jest.fn(async () => betterAuthSession),
+      signOut: jest.fn(async () => undefined),
+      signInWithIdToken: jest.fn(async () => ({ error: 'not used in this test' })),
+    }));
+
+    (mockSupabase.auth.getSession as jest.Mock).mockImplementation(async () => ({
+      data: {
+        session: {
+          user: {
+            id: 'supabase-user',
+            email: 'user@example.com',
+            user_metadata: {},
+          },
+          access_token: 'supabase-access-token',
+        },
+      },
+    }));
+
+    let capturedHook: any = null;
+    let testAct: any = null;
+
+    jest.isolateModules(() => {
+      jest.doMock('react-native', () => ({
+        Platform: { OS: 'android' },
+      }));
+
+      jest.doMock('@hashpass/auth', () => ({
+        authService: mockAuthService,
+        BetterAuthProvider: MockBetterAuthProvider,
+        getSupabaseOAuthRedirectUrl: jest.fn(() => 'myapp://auth/callback'),
+      }));
+
+      jest.doMock('@hashpass/auth/auth-dependencies', () => ({
+        configureAuthService: jest.fn(),
+      }));
+
+      jest.doMock('../../lib/supabase', () => ({
+        supabase: mockSupabase,
+        createSessionFromUrl: jest.fn(),
+      }));
+
+      jest.doMock('../../config/supabase-profiles', () => ({
+        resolvePublicSupabaseConfig: jest.fn(() => ({
+          supabaseUrl: 'https://example.supabase.co',
+          supabaseAnonKey: 'anon-key',
+        })),
+      }));
+
+      jest.doMock('../../lib/native-google-signin', () => ({
+        clearNativeGoogleAccount: mockClearNativeGoogleAccount,
+        nativeGoogleSigninStatusCodes: {
+          SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+          PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+        },
+        signInWithNativeGoogleAccount: mockSignInWithNativeGoogleAccount,
+      }));
+
+      jest.doMock('../../lib/auth/recent-auth', () => ({
+        markRecentAuthSuccess: mockMarkRecentAuthSuccess,
+      }));
+
+      jest.doMock('../../lib/auth/oauth/callback-params', () => ({
+        mergeOAuthFragmentParams: jest.fn((params: URLSearchParams, extras: Record<string, string>) => ({
+          ...Object.fromEntries(params.entries()),
+          ...extras,
+        })),
+      }));
+
+      jest.doMock('expo-web-browser', () => ({
+        __esModule: true,
+        openAuthSessionAsync: mockOpenAuthSessionAsync,
+      }));
+
+      const React = require('react');
+      const TestRenderer = require('react-test-renderer');
+      const { useAuth } = require('../../hooks/useAuth');
+      testAct = TestRenderer.act;
+
+      const Harness = () => {
+        capturedHook = useAuth();
+        return null;
+      };
+
+      TestRenderer.act(() => {
+        TestRenderer.create(React.createElement(Harness));
+      });
+    });
+
+    await waitForAuthSessionSettle(testAct);
+
+    // Regression: bootstrap must consult Supabase's persisted session even
+    // when Better Auth already has one, instead of force-marking it out.
+    expect(mockSupabase.auth.getSession).toHaveBeenCalled();
+    expect(capturedHook.isLoggedIn).toBe(true);
+    expect(capturedHook.user?.id).toBe('better-auth-user');
+
+    // Better Auth flaps to logged-out (the native "Network request failed"
+    // class). The Supabase session must keep the user logged in.
+    await testAct(async () => {
+      betterAuthStateCallback?.(null);
+    });
+    await waitForAuthSessionSettle(testAct);
+
+    expect(capturedHook.isLoggedIn).toBe(true);
+    expect(capturedHook.user?.id).toBe('supabase-user');
+
+    mockSupabase.auth.getSession.mockImplementation(async () => ({ data: { session: null } }));
+  });
 });

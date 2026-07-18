@@ -552,8 +552,21 @@ export const useAuth = () => {
             sendProviderResolved('betterAuth', latestBetterAuthState);
             directusBootstrapFinished = true;
             sendProviderResolved('directus', readAuthSessionState(null));
-            supabaseBootstrapFinished = true;
-            sendProviderResolved('supabase', readAuthSessionState(null));
+            // Resolve Supabase from its locally persisted session instead of
+            // force-marking it logged-out: an OTP/magic-link user holds a real
+            // Supabase session alongside Better Auth, and it must keep backing
+            // isLoggedIn when a flaky native Better Auth getSession drops out.
+            // (supabase.auth.getSession() reads local storage — no network.)
+            supabase.auth
+              .getSession()
+              .then(({ data }: any) => {
+                supabaseBootstrapFinished = true;
+                sendProviderResolved('supabase', readSupabaseStateFromSession(data.session));
+              })
+              .catch(() => {
+                supabaseBootstrapFinished = true;
+                sendProviderResolved('supabase', readAuthSessionState(null));
+              });
             return;
           }
 

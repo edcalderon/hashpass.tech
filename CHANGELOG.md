@@ -1,3 +1,14 @@
+## [1.8.237](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.236...v1.8.237) (2026-07-18)
+
+
+### Bug Fixes
+
+* stabilize native auth session restore ([fa351e6](https://github.com/hashpass-tech/hashpass.tech/commit/fa351e69414bd91e4de66c12af67d4c8f40dedf3))
+
+
+
+
+
 ## [1.8.236](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.235...v1.8.236) (2026-07-18)
 
 
