@@ -178,7 +178,7 @@ export default function PassDetailsScreen() {
             <Text style={styles.passNumber}>{passInfo.pass_number}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(passInfo.status) }]}>
-            <Text style={styles.statusText}>{passInfo.status.toUpperCase()}</Text>
+            <Text style={styles.statusText}>{(passInfo.status || '').toUpperCase()}</Text>
           </View>
         </View>
 

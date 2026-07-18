@@ -198,8 +198,8 @@ class PassSystemService {
         // Use pass data with default counts
         return {
           pass_id: passData.id,
-          pass_type: passData.pass_type,
-          status: passData.status,
+          pass_type: passData.pass_type || 'general',
+          status: passData.status || 'active',
           pass_number: passData.pass_number || 'Unknown',
           max_requests: passData.max_meeting_requests || 0,
           used_requests: passData.used_meeting_requests || 0,
@@ -217,8 +217,8 @@ class PassSystemService {
       // Combine pass data with real counts
       return {
         pass_id: passData.id,
-        pass_type: passData.pass_type,
-        status: passData.status,
+        pass_type: passData.pass_type || 'general',
+        status: passData.status || 'active',
         pass_number: passData.pass_number || 'Unknown',
         max_requests: passData.max_meeting_requests || 0,
         used_requests: counts.total_requests || 0,

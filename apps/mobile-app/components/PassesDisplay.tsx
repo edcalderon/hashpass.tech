@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import DynamicQRDisplay from './DynamicQRDisplay';
 import * as Clipboard from 'expo-clipboard';
 import { useTranslation } from '@/i18n/i18n';
+import * as Sentry from '@sentry/react-native';
 
 interface PassesDisplayProps {
   // Display mode
@@ -34,7 +35,7 @@ interface PassesDisplayProps {
   refreshTrigger?: number;
 }
 
-export default function PassesDisplay({
+function PassesDisplayInner({
   mode = 'dashboard',
   speakerId,
   boostAmount = 0,
@@ -395,7 +396,7 @@ export default function PassesDisplay({
                   {t({ id: 'passes.passPerks.general.conferences', message: 'Conferences only' })}
                 </Text>
                 <View style={{ gap: 6 }}>
-                  {passSystemService.getPassPerks('general').features.map((feature, index) => (
+                  {passSystemService.getPassPerks('general').features.map((feature: string, index: number) => (
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -403,7 +404,7 @@ export default function PassesDisplay({
                       </Text>
                     </View>
                   ))}
-                  {passSystemService.getPassPerks('general').perks.map((perk, index) => (
+                  {passSystemService.getPassPerks('general').perks.map((perk: string, index: number) => (
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -437,7 +438,7 @@ export default function PassesDisplay({
                   {t({ id: 'passes.passPerks.business.networking', message: '+ Networking & B2B sessions' })}
                 </Text>
                 <View style={{ gap: 6 }}>
-                  {passSystemService.getPassPerks('business').features.map((feature, index) => (
+                  {passSystemService.getPassPerks('business').features.map((feature: string, index: number) => (
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -445,7 +446,7 @@ export default function PassesDisplay({
                       </Text>
                     </View>
                   ))}
-                  {passSystemService.getPassPerks('business').perks.map((perk, index) => (
+                  {passSystemService.getPassPerks('business').perks.map((perk: string, index: number) => (
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -479,7 +480,7 @@ export default function PassesDisplay({
                   {t({ id: 'passes.passPerks.vip.networking', message: '+ VIP networking with speakers' })}
                 </Text>
                 <View style={{ gap: 6 }}>
-                  {passSystemService.getPassPerks('vip').features.map((feature, index) => (
+                  {passSystemService.getPassPerks('vip').features.map((feature: string, index: number) => (
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -487,7 +488,7 @@ export default function PassesDisplay({
                       </Text>
                     </View>
                   ))}
-                  {passSystemService.getPassPerks('vip').perks.map((perk, index) => (
+                  {passSystemService.getPassPerks('vip').perks.map((perk: string, index: number) => (
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -854,7 +855,7 @@ export default function PassesDisplay({
                 {t({ id: 'passes.passPerks.general.conferences', message: 'Conferences only' })}
               </Text>
               <View style={{ gap: 6 }}>
-                {passSystemService.getPassPerks('general').features.map((feature, index) => (
+                {passSystemService.getPassPerks('general').features.map((feature: string, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -862,7 +863,7 @@ export default function PassesDisplay({
                     </Text>
                   </View>
                 ))}
-                {passSystemService.getPassPerks('general').perks.map((perk, index) => (
+                {passSystemService.getPassPerks('general').perks.map((perk: string, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -893,7 +894,7 @@ export default function PassesDisplay({
                 {t({ id: 'passes.passPerks.business.networking', message: '+ Networking & B2B sessions' })}
               </Text>
               <View style={{ gap: 6 }}>
-                {passSystemService.getPassPerks('business').features.map((feature, index) => (
+                {passSystemService.getPassPerks('business').features.map((feature: string, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -901,7 +902,7 @@ export default function PassesDisplay({
                     </Text>
                   </View>
                 ))}
-                {passSystemService.getPassPerks('business').perks.map((perk, index) => (
+                {passSystemService.getPassPerks('business').perks.map((perk: string, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -932,7 +933,7 @@ export default function PassesDisplay({
                 {t({ id: 'passes.passPerks.vip.networking', message: '+ VIP networking with speakers' })}
               </Text>
               <View style={{ gap: 6 }}>
-                {passSystemService.getPassPerks('vip').features.map((feature, index) => (
+                {passSystemService.getPassPerks('vip').features.map((feature: string, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -940,7 +941,7 @@ export default function PassesDisplay({
                     </Text>
                   </View>
                 ))}
-                {passSystemService.getPassPerks('vip').perks.map((perk, index) => (
+                {passSystemService.getPassPerks('vip').perks.map((perk: string, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
@@ -1006,6 +1007,41 @@ export default function PassesDisplay({
       )}
     </View>
   );
+}
+
+// A malformed pass record (e.g. a null pass_type/status from a row the
+// service layer didn't fully normalize) can throw during PassCard's render.
+// That's a real defect to fix at the source, but this boundary is the
+// backstop: it keeps a bad pass from taking down the whole dashboard, and
+// reports the real error to Sentry so a future occurrence is diagnosable
+// instead of showing up as a silent, unexplained close.
+type PassesDisplayBoundaryState = { error: Error | null };
+
+class PassesDisplayBoundary extends React.Component<PassesDisplayProps, PassesDisplayBoundaryState> {
+  constructor(props: PassesDisplayProps) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): PassesDisplayBoundaryState {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: { componentStack: string }) {
+    console.error('[PassesDisplay] render error contained by boundary:', error?.message, info?.componentStack);
+    Sentry.captureException(error, { contexts: { react: { componentStack: info?.componentStack } } });
+  }
+
+  render() {
+    if (this.state.error) {
+      return null;
+    }
+    return <PassesDisplayInner {...this.props} />;
+  }
+}
+
+export default function PassesDisplay(props: PassesDisplayProps) {
+  return <PassesDisplayBoundary {...props} />;
 }
 
 // PassCard component for dashboard mode - enhanced ticket-style design with flip animation
@@ -1295,7 +1331,7 @@ const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: n
               fontWeight: '700', 
               color: '#FFFFFF'
             }}>
-              {pass.pass_type.toUpperCase()}
+              {(pass.pass_type || '').toUpperCase()}
             </Text>
           </View>
         </View>
@@ -1368,9 +1404,9 @@ const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: n
                 numberOfLines={1}
                 ellipsizeMode="head"
               >
-                {pass.pass_number.length > 12 
-                  ? `#${pass.pass_number.slice(0, 6)}...${pass.pass_number.slice(-4)}` 
-                  : `#${pass.pass_number}`}
+                {(pass.pass_number || '').length > 12
+                  ? `#${pass.pass_number.slice(0, 6)}...${pass.pass_number.slice(-4)}`
+                  : `#${pass.pass_number || ''}`}
               </Text>
             </View>
             <View style={{
@@ -1391,7 +1427,7 @@ const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: n
                 fontWeight: '700', 
                 color: getPassTypeColor(pass.pass_type)
               }}>
-                {pass.status.toUpperCase()}
+                {(pass.status || '').toUpperCase()}
               </Text>
             </View>
           </View>
@@ -1750,7 +1786,7 @@ const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: n
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
             <MaterialIcons name="label" size={18} color={colors.text.secondary} />
             <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-              {getPassTypeLabel(pass.pass_type)} {t({ id: 'passes.pass', message: 'Pass' })} • {pass.status.toUpperCase()}
+              {getPassTypeLabel(pass.pass_type)} {t({ id: 'passes.pass', message: 'Pass' })} • {(pass.status || '').toUpperCase()}
             </Text>
           </View>
         </View>

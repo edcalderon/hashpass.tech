@@ -217,4 +217,40 @@ describe('passSystemService Supabase user id guard', () => {
     expect(secondResult?.pass_id).toBe('pass-existing');
     expect(mockRpc.mock.calls.filter(([rpcName]) => rpcName === 'create_default_pass')).toHaveLength(1);
   });
+
+  it('falls back pass_type and status when the passes row has them null', async () => {
+    mockPassQuery({
+      data: [{ ...activePass, pass_type: null, status: null }],
+      error: null,
+    });
+    mockRpcSingle({
+      data: {
+        total_requests: 0,
+        remaining_requests: 10,
+        remaining_boost: 100,
+      },
+      error: null,
+    });
+
+    const result = await passSystemService.getUserPassInfo(supabaseUserId, 'bsl');
+
+    expect(result?.pass_type).toBe('general');
+    expect(result?.status).toBe('active');
+  });
+
+  it('falls back pass_type and status when the passes row has them null and the counts RPC errors', async () => {
+    mockPassQuery({
+      data: [{ ...activePass, pass_type: null, status: null }],
+      error: null,
+    });
+    mockRpcSingle({
+      data: null,
+      error: { code: 'PGRST000', message: 'counts unavailable' },
+    });
+
+    const result = await passSystemService.getUserPassInfo(supabaseUserId, 'bsl');
+
+    expect(result?.pass_type).toBe('general');
+    expect(result?.status).toBe('active');
+  });
 });
