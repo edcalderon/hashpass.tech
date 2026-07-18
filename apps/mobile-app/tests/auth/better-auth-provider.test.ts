@@ -194,4 +194,46 @@ describe('BetterAuthProvider', () => {
       }
     }
   });
+
+  it('keeps the last-known session when getSession fails at the network level', async () => {
+    mockGetSession
+      .mockResolvedValueOnce({ data: createBetterAuthSession() })
+      .mockRejectedValueOnce(new TypeError('Network request failed'));
+
+    const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+    const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const stateChanges: unknown[] = [];
+    provider.onAuthStateChange((session: unknown) => stateChanges.push(session));
+
+    const initial = await provider.getSession({ force: true });
+    expect(initial?.user?.id).toBe('user-123');
+
+    const afterNetworkFailure = await provider.getSession({ force: true });
+
+    expect(afterNetworkFailure?.user?.id).toBe('user-123');
+    expect(provider.isAuthenticated()).toBe(true);
+    // The transport failure must not broadcast a logout to subscribers —
+    // that broadcast is what ejected signed-in users from the dashboard.
+    expect(stateChanges.filter((session) => session === null)).toHaveLength(1); // only the initial subscribe callback
+    errorSpy.mockRestore();
+  });
+
+  it('still clears the session when the server definitively reports signed-out', async () => {
+    mockGetSession
+      .mockResolvedValueOnce({ data: createBetterAuthSession() })
+      .mockResolvedValueOnce({ data: { user: null, session: null } });
+
+    const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+    const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+    const stateChanges: unknown[] = [];
+    provider.onAuthStateChange((session: unknown) => stateChanges.push(session));
+
+    await provider.getSession({ force: true });
+    const afterSignedOutResponse = await provider.getSession({ force: true });
+
+    expect(afterSignedOutResponse).toBeNull();
+    expect(provider.isAuthenticated()).toBe(false);
+    expect(stateChanges[stateChanges.length - 1]).toBeNull();
+  });
 });

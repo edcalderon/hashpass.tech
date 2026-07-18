@@ -741,22 +741,38 @@ export default function DashboardLayout() {
     [],
   );
 
+  // Latest auth state for the delayed redirect below — the timeout must
+  // re-check the CURRENT values when it fires, not the ones captured when it
+  // was scheduled.
+  const isLoggedInRef = React.useRef(isLoggedIn);
+  const authLoadingRef = React.useRef(authLoading);
+  React.useEffect(() => {
+    isLoggedInRef.current = isLoggedIn;
+    authLoadingRef.current = authLoading;
+  });
+
   // Verify user is logged in before allowing dashboard access (provider-agnostic)
   React.useEffect(() => {
     if (isDevAuthBypassEnabled()) return;
-    const shouldDelayRedirectForRecentAuth = () => {
-      return hasRecentAuthSuccess();
-    };
+    if (authLoading || isLoggedIn) return;
 
-    if (!authLoading && !isLoggedIn) {
-      if (shouldDelayRedirectForRecentAuth()) {
-        authService.getSession().catch(() => {});
-        return;
-      }
+    if (hasRecentAuthSuccess()) {
+      authService.getSession().catch(() => {});
+      return;
+    }
 
+    // A transient provider flap (one failed native Better Auth getSession)
+    // can drop isLoggedIn for a beat while the user still holds a valid
+    // session. Redirecting instantly force-unmounts the dashboard mid-render
+    // — the exact window where Fabric crashes natively on Android — so only
+    // eject when the signed-out state actually persists.
+    const redirectTimer = setTimeout(() => {
+      if (authLoadingRef.current || isLoggedInRef.current) return;
       console.warn('⚠️ Not authenticated in dashboard, redirecting to auth');
       router.replace('/(shared)/auth' as any);
-    }
+    }, 2500);
+
+    return () => clearTimeout(redirectTimer);
   }, [authLoading, isLoggedIn, router]);
 
   const openDashboardDrawer = useCallback((navigation: DrawerNavigation) => {

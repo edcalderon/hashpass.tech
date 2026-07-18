@@ -1,10 +1,109 @@
 # Native Auth Dashboard Crash Handoff
 
-Status: root-caused and fixed locally; pending release verification
-Last updated: 2026-07-17
-Current released version: v1.8.234 (fixes below not yet released)
-Current commit: `5cf17b068ab8b402d8c4a46367ba900eb4172b8a`
+Status: session-flap root cause chain fixed; pending on-device verification of v1.8.237
+Last updated: 2026-07-18
+Current released version: v1.8.236 (still crashing on device; fixes below target v1.8.237)
 Package under test: `com.hashpass.tech`
+
+## 2026-07-18 Update — The Real Chain: Provider Flap → Guard Redirect → Fabric Death
+
+v1.8.235 (event-registry + routing) and v1.8.236 (null pass-data hardening)
+both shipped and both still crashed on the physical device with a *new,
+decisive* observable: **the dashboard mounts, then visibly redirects, then the
+app closes**. That redirect pinpointed the chain. Everything below was
+established this session with live evidence, not code reading alone.
+
+### What was ruled out first (evidence log)
+
+- **Local reproduction is impossible for this bug — understand why before
+  trusting any emulator result.** A local `assembleRelease` of v1.8.235
+  (dev profile, real OTP login with the reporter's own account, pass card
+  rendering, EN + ES locales, force-stop relaunch with restored session)
+  survived every path. The reason it cannot reproduce: locally, native Google
+  sign-in always fails (`DEVELOPER_ERROR`, debug keystore), so a Better Auth
+  session never exists on the emulator — and the crash requires one.
+- **The stray-JSX-text theory was disproven live.** `</View> {/* comment */}`
+  in PassCard does compile to a `" "` string child (verified via Babel), but
+  the pass card renders fine on-device in this RN version. Fixed anyway in
+  v1.8.236 alongside real null-safety gaps in `getUserPassInfo()`.
+- **Sentry is blind to this crash class.** Zero events have EVER arrived from
+  a physical device (all recorded events trace to emulator sessions). The
+  Sentry Expo config plugin was removed (v1.8.201), so there is no NDK layer:
+  a native/C++ Fabric death produces nothing. Do not treat "no Sentry event"
+  as "no crash". The only ground-truth sources for this device are Play
+  Console Android Vitals or the phone itself over USB.
+- **Play delivery was verified, not assumed**: v1.8.235 and v1.8.236 internal
+  + alpha workflow runs all succeeded; the device genuinely ran the fixed
+  builds.
+- **Android 6.0.1 question answered**: every release ever shipped used Expo
+  SDK 53 → `minSdkVersion 24` (Android 7.0). A 6.0.1 device can never have
+  installed this app; the crashing phone is not a 6.0.1 device.
+
+### The five-link chain (each link has a file:line)
+
+1. **Bootstrap short-circuit falsely zeroes Supabase.** When Better Auth
+   restores a session at cold start, `useAuth` marked `supabase` (and
+   `directus`) logged-out *without checking them* and skipped
+   `startLegacyBootstrap()` entirely (`hooks/useAuth.ts` ~550). An OTP user
+   with a real persisted Supabase session loses it from the machine's view.
+2. **Better Auth native `getSession` is chronically flaky** (`TypeError:
+   Network request failed` — seen constantly in emulator logcat too).
+3. **The provider treated a transport failure as a logout.**
+   `packages/auth/src/providers/better-auth.ts` `getSession` catch: set
+   `currentSession = null` + `notifyStateChange(null)`. One network blip
+   broadcast "logged out" to every subscriber → with link 1, zero providers
+   remain → `isLoggedIn` flips false while the dashboard is up.
+4. **The dashboard guard ejected instantly.**
+   `app/(shared)/dashboard/_layout.tsx` ~751: `!authLoading && !isLoggedIn` →
+   `router.replace('/(shared)/auth')`, protected only by a 12-second
+   post-login grace window that is **memory-only on native** (sessionStorage
+   does not exist there) — so a reopened app has zero protection. That is the
+   visible "suddenly redirect".
+5. **The forced dashboard unmount mid-mount is the Fabric crash window.**
+   Sentry (emulator, v1.8.229) captured exactly this shape:
+   `IllegalStateException: The specified child already has a parent` in
+   `FabricUIManager` during a Choreographer frame. On the device it dies
+   native-side (invisible to Sentry per above) → "app closes". Reopen
+   restores the Better Auth session → dashboard flashes → refresh fails →
+   repeat: the crash loop.
+
+### The fixes (v1.8.237)
+
+- **Provider stale-while-error** (`better-auth.ts` getSession catch): a
+  transport failure now returns the last-known session and does NOT broadcast
+  a logout. Only a successful response with no user (the server definitively
+  saying "signed out") clears state. Test: `better-auth-provider.test.ts`
+  ("keeps the last-known session…", "still clears the session…").
+- **Bootstrap resolves Supabase for real** (`useAuth.ts`): when Better Auth
+  has a session, Supabase is now resolved from its locally persisted session
+  (a storage read, no network) instead of being force-marked out — a second
+  provider keeps backing `isLoggedIn` through any Better Auth flap. Test:
+  `useAuth-native-google.test.tsx` ("keeps the user logged in via Supabase
+  when a restored Better Auth session later flaps to null") — this test
+  replays the exact reported sequence and fails on the old code.
+- **Guard hysteresis** (`dashboard/_layout.tsx`): the auth redirect now fires
+  only if the signed-out state persists for 2.5s (re-checked via refs when
+  the timer fires). A momentary flap can no longer force-unmount the
+  dashboard — which both fixes the UX and stops entering the Fabric crash
+  window.
+
+### Still open / next if it recurs
+
+- The underlying Better Auth native network failures (Origin/cookie handling)
+  deserve their own fix; the app now *survives* them rather than needing them
+  gone.
+- If any post-v1.8.237 crash appears: get the stack from Play Console →
+  Android Vitals (filter the new versionCode), or the phone over USB
+  (`adb logcat`, `dumpsys activity exit-info com.hashpass.tech`). Do not
+  rely on Sentry for native deaths until an NDK layer is added.
+
+---
+
+## Previous status (2026-07-17, retained)
+
+Status: root-caused and fixed locally; pending release verification
+Current released version at the time: v1.8.234
+Current commit: `5cf17b068ab8b402d8c4a46367ba900eb4172b8a`
 
 ## 2026-07-17 Update — Both Bugs Root-Caused And Fixed
 

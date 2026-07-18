@@ -305,9 +305,14 @@ export class BetterAuthProvider implements IAuthProvider {
         return session;
       } catch (error) {
         console.error('Better Auth getSession error:', error);
-        this.currentSession = null;
-        this.notifyStateChange(null);
-        return null;
+        // Transport-level failure (offline, DNS, flaky mobile data): keep the
+        // last-known session instead of broadcasting a logout. Only a
+        // successful response without a user (mapSession → null above) is a
+        // definitive "signed out". Clearing state here made every native
+        // connectivity blip eject a signed-in user from the dashboard, and
+        // the forced dashboard→auth unmount is the window where Fabric
+        // crashes natively on Android.
+        return this.currentSession;
       } finally {
         this.sessionLookupInFlight = null;
       }
