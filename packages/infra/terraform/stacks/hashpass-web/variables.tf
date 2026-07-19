@@ -64,7 +64,7 @@ variable "google_client_id" {
 variable "ga_measurement_id" {
   description = "Google Analytics 4 measurement ID baked into the web build"
   type        = string
-  default     = "G-2JCRQCH0R1"
+  default     = "G-BY2BLQFHC9"
 }
 
 variable "sentry_dsn" {

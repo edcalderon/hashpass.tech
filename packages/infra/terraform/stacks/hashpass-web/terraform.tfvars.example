@@ -16,7 +16,7 @@ connection_arn = "arn:aws:codeconnections:us-east-2:123456789012:connection/exam
 supabase_url      = "https://mnnqryrdlhddorqsrtbn.supabase.co"
 supabase_key      = "<EXPO_PUBLIC_SUPABASE_KEY_PROD>"
 google_client_id  = "<GOOGLE_CLIENT_ID>"
-ga_measurement_id = "G-2JCRQCH0R1"
+ga_measurement_id = "G-BY2BLQFHC9"
 sentry_dsn        = "<SENTRY_DSN>"
 
 # Development web build inputs. Use the dev Supabase project so the branch
