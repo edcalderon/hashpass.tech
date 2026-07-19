@@ -569,6 +569,20 @@ export default function AuthScreen() {
   const [activeEmailSuggestionIndex, setActiveEmailSuggestionIndex] =
     useState(0);
   const [otpError, setOtpError] = useState("");
+  // Cell 0 keeps a large maxLength (see the TextInput below) so the OS's
+  // native one-time-code autofill — which inserts the whole code as a single
+  // native text-change event — isn't truncated to one character before JS
+  // ever sees it (maxLength is enforced by a native InputFilter on
+  // Android/iOS, ahead of onChangeText). But that means cell 0's native
+  // EditText can end up holding more than one digit (from real autofill, a
+  // paste, or two fast keystrokes landing before focus visibly advances) at
+  // the exact moment applyOtpString() distributes those digits across all
+  // cells and resets cell 0's own value back down to a single digit — and
+  // Android does not reliably re-sync a controlled TextInput's native text
+  // when the new `value` is just a shorter prefix of what's already
+  // displayed. Bumping this key remounts cell 0 with fresh native state
+  // instead of relying on that prop diff.
+  const [otpCell0RemountKey, setOtpCell0RemountKey] = useState(0);
   const [focusedDigitIndex, setFocusedDigitIndex] = useState(-1);
   const [phoneError, setPhoneError] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
@@ -1247,7 +1261,11 @@ export default function AuthScreen() {
       newDigits[i] = c;
     });
     setOtpDigits(newDigits);
+    setOtpCell0RemountKey((k) => k + 1);
     if (otpError) setOtpError("");
+    // chars.length is always >= 1 here (the chars.length === 0 case already
+    // returned above), so nextFocus is always >= 1 — never cell 0 — so
+    // focusing it synchronously is safe even though cell 0 is remounting.
     const nextFocus = Math.min(chars.length, OTP_CODE_LENGTH - 1);
     digitRefs.current[nextFocus]?.focus();
     return chars.length;
@@ -2192,6 +2210,18 @@ export default function AuthScreen() {
                                   ]}
                                 >
                                   <TextInput
+                                    // Cell 0 remounts after a multi-digit
+                                    // distribute (see otpCell0RemountKey above)
+                                    // so its native EditText can't keep showing
+                                    // stale extra digits. Other cells never
+                                    // receive more than 1 native character
+                                    // (maxLength=1 is a real native filter for
+                                    // them), so they don't need this.
+                                    key={
+                                      index === 0
+                                        ? `otp-input-${key}-${otpCell0RemountKey}`
+                                        : `otp-input-${key}`
+                                    }
                                     ref={(r) => {
                                       digitRefs.current[index] = r;
                                     }}
@@ -2221,17 +2251,19 @@ export default function AuthScreen() {
                                       }
                                     }}
                                     keyboardType="number-pad"
-                                    // Every cell holds exactly one digit. Box 0
-                                    // previously used maxLength={OTP_CODE_LENGTH}
-                                    // so it could absorb a full SMS-autofill code,
-                                    // but that also let it visibly hold 2+ typed
-                                    // digits (e.g. "48") when a keystroke landed
-                                    // before focus advanced. SMS autofill still
-                                    // works: the OS delivers the whole code to
-                                    // box 0's onChangeText in a single event, and
-                                    // handleDigitChange's length>1 branch fans it
-                                    // out across the cells before maxLength matters.
-                                    maxLength={1}
+                                    // Cell 0 alone accepts the full code length:
+                                    // native one-time-code autofill (Android SMS
+                                    // Retriever / iOS Messages suggestion) inserts
+                                    // the whole code as a single native
+                                    // text-change event, and maxLength is enforced
+                                    // by a native InputFilter BEFORE onChangeText
+                                    // ever runs — capping this at 1 would silently
+                                    // truncate real autofill to a single digit.
+                                    // handleDigitChange's length>1 branch fans the
+                                    // rest out across the other cells (each capped
+                                    // at 1, since they never receive autofill
+                                    // directly).
+                                    maxLength={index === 0 ? OTP_CODE_LENGTH : 1}
                                     editable={!isBusy}
                                     textContentType={
                                       index === 0 ? "oneTimeCode" : undefined

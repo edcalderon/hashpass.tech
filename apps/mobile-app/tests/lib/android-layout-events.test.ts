@@ -51,6 +51,17 @@ describe('Android layout event crash guards', () => {
     expect(homeSource).toContain('router.replace("/(shared)/dashboard/explore" as any);');
   });
 
+  it('keeps native OTP autofill from leaving stale text in the first digit cell', () => {
+    const authSource = readSource('../../app/(shared)/auth.tsx');
+
+    expect(authSource).toContain('const [otpCell0RemountKey, setOtpCell0RemountKey] = useState(0);');
+    expect(authSource).toContain('setOtpCell0RemountKey((k) => k + 1);');
+    expect(authSource).toContain('`otp-input-${key}-${otpCell0RemountKey}`');
+    expect(authSource).toContain('`otp-input-${key}`');
+    expect(authSource).toContain('maxLength={index === 0 ? OTP_CODE_LENGTH : 1}');
+    expect(authSource).toContain('index === 0 ? "oneTimeCode" : undefined');
+  });
+
   it('keeps the native dashboard drawer clear of Android system edges', () => {
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
 
