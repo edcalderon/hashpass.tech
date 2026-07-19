@@ -28,6 +28,24 @@ if (typeof ErrorUtils !== 'undefined') {
   });
 }
 
+// This app only ships LTR locales (en/es/ko) and none of its layouts were
+// built to mirror. Android's I18nManager auto-detects RTL from the device's
+// system language before any JS runs, and React Native's Yoga layout engine
+// silently mirrors every `flexDirection: 'row'` style once that's set — no
+// crash, no warning, just visually offset/reordered content (e.g. the
+// dashboard drawer's branding row and quick-actions row) on exactly the
+// subset of devices that happen to have an RTL system language configured.
+// Force LTR since this app has no RTL-designed screens.
+try {
+  const { I18nManager } = require('react-native');
+  if (I18nManager.isRTL) {
+    I18nManager.allowRTL(false);
+    I18nManager.forceRTL(false);
+  }
+} catch (err) {
+  console.error('[HashPass] Failed to force LTR layout:', err);
+}
+
 // Expo Router calls URLSearchParams.has while serializing navigation state.
 // Older Hermes/RN globals ship a stub that throws "has is not implemented",
 // which can crash native OAuth returns before the dashboard redirect runs.

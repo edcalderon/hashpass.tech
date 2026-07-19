@@ -1,15 +1,16 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { supabaseServer } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { verifyUserToken } from '@hashpass/auth';
 
-// Admin tiers: superAdmin > admin > moderator
+// Admin tiers: super_admin > admin (matches the Postgres `user_role` enum —
+// there is no 'moderator' value; see db/migrations/V001__init_core_schema.sql)
 async function isAdmin(userId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .in('role', ['superAdmin', 'admin', 'moderator'])
+      .in('role', ['super_admin', 'admin'])
       .limit(1); // Limit to 1 since we only need to check existence
     
     if (error) {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       return new Response(JSON.stringify({ error: 'Token is required' }), { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .rpc('reactivate_qr_code', {
         p_token: token,
         p_admin_user_id: userId,

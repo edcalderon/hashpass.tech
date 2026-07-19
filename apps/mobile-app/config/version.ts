@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607190237, // Updated to current timestamp
+  buildNumber: 202607190455, // Updated to current timestamp
   releaseDate: '2026-07-19',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'stabilize Play Android native login'
+    'close post-v1.8.239 dashboard sidebar regressions and admin role check'
   ],
   breakingChanges: [],
-  notes: 'stabilize Play Android native login'
+  notes: 'close post-v1.8.239 dashboard sidebar regressions and admin role check'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.240': {
+    version: '1.8.240',
+    buildNumber: 202607190455,
+    releaseDate: '2026-07-19',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'close post-v1.8.239 dashboard sidebar regressions and admin role check'
+    ],
+    breakingChanges: [],
+    notes: 'close post-v1.8.239 dashboard sidebar regressions and admin role check'
+  },
   '1.8.239': {
     version: '1.8.239',
     buildNumber: 202607190237,

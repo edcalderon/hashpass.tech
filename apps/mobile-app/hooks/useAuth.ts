@@ -14,7 +14,7 @@ import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config'
 import { mergeOAuthFragmentParams } from '../lib/auth/oauth/callback-params';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
-import { markRecentAuthSuccess } from '../lib/auth/recent-auth';
+import { markRecentAuthSuccess, clearRecentAuthSuccess } from '../lib/auth/recent-auth';
 import {
   createAuthSessionActor,
   getAuthViewState,
@@ -607,6 +607,22 @@ export const useAuth = () => {
 
   const signOut = useCallback(async () => {
     authenticatedSessionOverrideRef.current = null;
+    // Must run before the provider sign-outs below, not after: the root and
+    // dashboard auth guards treat `isLoggedIn === false` as a possibly-transient
+    // provider flap for AUTH_REDIRECT_GRACE_WINDOW_MS after a login, and in that
+    // window they skip redirecting and instead force a fresh authService
+    // getSession() re-check (see app/_layout.tsx and dashboard/_layout.tsx). If
+    // a user explicitly signs out inside that same window, that "recheck"
+    // fires anyway, and on native it can resolve a still-lingering provider
+    // session (Better Auth/Supabase sign-out over a flaky native transport,
+    // the same flakiness documented throughout the v1.8.234-239 auth crash
+    // fixes, has no hard guarantee of finishing first) and silently
+    // resurrect the session we just cleared, bouncing the user straight back
+    // into the dashboard — this reads as "the Logout button does nothing."
+    // Clearing the grace flag here removes the window entirely: once a
+    // sign-out is in flight, isLoggedIn=false must always mean "redirect",
+    // never "assume it'll come back".
+    clearRecentAuthSuccess();
     const shouldSignOutNativeGoogle =
       Platform.OS !== 'web' && shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());
 

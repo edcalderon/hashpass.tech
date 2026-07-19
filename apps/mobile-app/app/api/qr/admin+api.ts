@@ -1,16 +1,20 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { supabaseServer } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
-import { authenticateRequest, isAdmin } from '@hashpass/auth';
+import { authenticateRequest } from '@hashpass/auth';
 
 // Helper function to check admin status - using Directus user data
 async function checkAdminStatus(userId: string): Promise<boolean> {
   try {
-    // Check database for admin role
-    const { data, error } = await supabase
+    // Check database for admin role. Values must match the Postgres
+    // `user_role` enum exactly (db/migrations/V001__init_core_schema.sql):
+    // 'user' | 'speaker' | 'organizer' | 'admin' | 'super_admin' — there is
+    // no 'moderator', and it's 'super_admin' not 'superAdmin'. Any other
+    // value here makes Postgres reject the whole `.in()` list.
+    const { data, error } = await supabaseServer
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .in('role', ['superAdmin', 'admin', 'moderator'])
+      .in('role', ['super_admin', 'admin'])
       .limit(1); // Limit to 1 since we only need to check existence
     
     if (error) {
@@ -54,7 +58,7 @@ export async function GET(request: Request) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const isUserAdmin = await isAdmin(userId);
+  const isUserAdmin = await checkAdminStatus(userId);
   if (!isUserAdmin) {
     return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), { status: 403 });
   }
@@ -69,7 +73,7 @@ export async function GET(request: Request) {
   const to = from + pageSize - 1;
 
   try {
-    let query = supabase
+    let query = supabaseServer
       .from('qr_codes')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -121,7 +125,7 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const isUserAdmin = await isAdmin(userId);
+  const isUserAdmin = await checkAdminStatus(userId);
   if (!isUserAdmin) {
     return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), { status: 403 });
   }
@@ -134,7 +138,7 @@ export async function POST(request: Request) {
       return new Response(JSON.stringify({ error: 'Token is required' }), { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .rpc('revoke_qr_code', {
         p_token: token,
         p_admin_user_id: userId,
