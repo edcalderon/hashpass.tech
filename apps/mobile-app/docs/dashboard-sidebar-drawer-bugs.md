@@ -87,24 +87,50 @@ actual rendered panel position can disagree about which side is "open" vs
 "outside" — which would make backdrop-tap-to-close unreliable specifically
 on the same RTL-locale devices affected by bug 2, not universally.
 
-**Fix**: `apps/mobile-app/index.js`, immediately after the fatal-error
-handler install and before the URLSearchParams/native-event-registry
-polyfills: if `I18nManager.isRTL`, call `allowRTL(false)` and
-`forceRTL(false)`.
+**Fix, take 1 (`apps/mobile-app/index.js`)**: immediately after the
+fatal-error handler install and before the URLSearchParams/native-event-registry
+polyfills: if `I18nManager.isRTL`, call `allowRTL(false)` and `forceRTL(false)`.
+Not unit-tested, consistent with the sibling polyfill installs in the same
+file (URLSearchParams, native-event-registry) — only the underlying modules
+are tested where they have real logic.
 
-**Not unit-tested**: consistent with the existing sibling polyfill installs
-in the same file (URLSearchParams, native-event-registry), which also have
-no direct test at the `index.js` call-site level — only the underlying
-modules are tested where they have real logic. This one-line guard has none
-to isolate.
+**Flagged in code review, and correctly so**: `I18nManager.forceRTL()` only
+*persists* the LTR preference for the native side to pick up on the **next**
+app start — it does not retroactively fix the already-created JS/Yoga layout
+context for the **current** session. On first launch after install/update on
+a device that's already RTL, the app goes straight into `expo-router/entry`
+in the same session without restarting, so the drawer would still render
+mirrored for that entire first session; only the next relaunch would be
+clean. There is no safe way to force an immediate reload here either:
+`DevSettings.reload()` (react-native's only built-in, dependency-free reload
+primitive) is a hard no-op outside `__DEV__`
+(`node_modules/react-native/Libraries/Utilities/DevSettings.js`) — confirmed
+by reading the source, not assumed — and this project has no `expo-updates`
+dependency to call `Updates.reloadAsync()` instead. Adding either purely for
+this would be a disproportionate amount of new native surface for an RTL
+layout glitch.
 
-**Known limitation, not a bug in this fix**: `I18nManager.forceRTL()`
-persists the LTR preference natively, but Android needs one full app
-restart to visually apply a *change* in direction (a long-standing RN
-platform limitation, not specific to this fix). A device that already
-launched this app once under RTL may need one relaunch after upgrading to
-pick this up cleanly; every fresh install/launch after this ships gets LTR
-immediately.
+**Fix, take 2 (the actual fix — `apps/mobile-app/plugins/withAndroidDisableRtl.js`)**:
+an Expo config plugin, registered in `app.json`'s `plugins` array alongside
+the existing `withAndroidReleaseMinification`, that sets
+`android:supportsRtl="false"` on `<application>` in the generated
+`AndroidManifest.xml` via `withAndroidManifest`. This solves it at the native
+layer instead of the JS layer: Android never mirrors this app's layout for an
+RTL system locale, from the very first frame, on every launch including the
+first one after install/update — no reload, no session-timing edge case, no
+new native dependency (`@expo/config-plugins` is already a transitive
+`expo` dependency, resolved the same way the sibling plugins do it). Verified
+by running `expo prebuild --platform android --clean` and confirming
+`android:supportsRtl="false"` appears on `<application>` in the generated
+`android/app/src/main/AndroidManifest.xml`. The JS-side `index.js` guard is
+left in place as a harmless defense-in-depth belt-and-suspenders check — with
+the manifest fix in place it should never actually have anything to do.
+
+**Not unit-tested**: consistent with the existing sibling config plugins
+(`withAndroidReleaseMinification`, `withAndroidCrashReporter`), neither of
+which has a dedicated test — verified via the actual generated manifest
+instead, which is a stronger check for this class of change than a plugin
+unit test would be.
 
 ## Bug 3 (not independently fixed — needs live verification): outside-tap-to-close
 
