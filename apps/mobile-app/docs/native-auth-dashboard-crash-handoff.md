@@ -1,9 +1,35 @@
 # Native Auth Dashboard Crash Handoff
 
-Status: unreleased local fix verified with Play-parity AAB + split install; next release must ship it
+Status: **RESOLVED in v1.8.239** — confirmed on a real internal-track Play install (device screenshot, not emulator): app reaches `/(shared)/dashboard/explore`, renders the drawer/sidebar, and stays alive. See "2026-07-19 Update #5" below. The historical investigation (Updates #1-#4 and everything below them) is retained for context; do not re-open it unless a fresh crash with a `FATAL EXCEPTION` / `Unsupported top level event type` signature reappears in logs.
 Last updated: 2026-07-19
-Current released version: v1.8.238 (does not contain the local fixes below)
+Current released version: v1.8.239 (contains all fixes below, including the renderer patch and Better Auth SecureStore caching)
 Package under test: `com.hashpass.tech`
+
+## 2026-07-19 Update #5 — v1.8.239 Confirmed Fixed On Real Device
+
+Released `938d55b62 fix: stabilize Play Android native login` (PR merge
+`4214181e8`, tagged and shipped as `chore: release v1.8.239` / `d8afe57b9`).
+
+Verification evidence: a screenshot from a real device running the shipped
+build shows the dashboard's sidebar/drawer open (Explore, Wallet,
+Notifications, Profile, Settings, Actions) over the dashboard content, with
+no crash and no bounce back to auth/landing. This is the first confirmation
+of this fix on a real Play-distributed install rather than only the local
+emulator/Play-parity smoke tests recorded in Update #4.
+
+This closes out the crash chain described in Updates #1-#4:
+`topLayout`/`topAttached`-class unsupported Fabric events (fixed via the
+`react-native@0.79.6` renderer patch), the ErrorUtils install-order bug
+(fixed via re-installing the guard after `expo-router/entry` resolves), and
+the Better Auth native session flap on cold reopen (fixed via SecureStore
+session caching + root-route redirect hysteresis in `app/_layout.tsx`).
+
+**New, separate issue surfaced by the same screenshot**: the open sidebar is
+mispositioned on some devices, does not close on outside-tap, and its
+Logout action does not work. This is a distinct dashboard-drawer bug, not a
+recurrence of the auth crash — tracked and fixed separately (see
+`dashboard-sidebar-drawer-bugs.md` / commit history from 2026-07-19 onward).
+Do not conflate the two: the auth/crash chain above is closed.
 
 ## 2026-07-19 Update #4 — Play-Parity Login And Cold Reopen Verified
 

@@ -1,15 +1,16 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { supabaseServer } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { verifyUserToken } from '@hashpass/auth';
 
-// Admin tiers: superAdmin > admin > moderator
+// Admin tiers: super_admin > admin (matches the Postgres `user_role` enum —
+// there is no 'moderator' value; see db/migrations/V001__init_core_schema.sql)
 async function isAdmin(userId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .in('role', ['superAdmin', 'admin', 'moderator'])
+      .in('role', ['super_admin', 'admin'])
       .limit(1); // Limit to 1 since we only need to check existence
     
     if (error) {
@@ -66,7 +67,7 @@ export async function GET(request: Request) {
   const to = from + pageSize - 1;
 
   try {
-    let query = supabase
+    let query = supabaseServer
       .from('qr_scan_logs')
       .select('*', { count: 'exact' })
       .order('scanned_at', { ascending: false })

@@ -1428,6 +1428,100 @@ describe('useAuth native Google sign-in', () => {
     expect(mockSupabase.auth.signOut).toHaveBeenCalledTimes(1);
   });
 
+  it('clears the recent-auth grace flag on sign-out, so the auth guards cannot resurrect the just-cleared session', async () => {
+    // Regression for: tapping Logout shortly after logging in (within
+    // AUTH_REDIRECT_GRACE_WINDOW_MS) appeared to do nothing. The root and
+    // dashboard auth guards treat hasRecentAuthSuccess()===true as "this is
+    // probably a transient provider flap, not a real sign-out" and respond
+    // by calling authService.getSession() again instead of redirecting —
+    // which can resolve a still-lingering native session and silently
+    // re-authenticate the user right after they explicitly signed out. If
+    // signOut() doesn't clear the flag, that stale window persists across
+    // the sign-out it should never survive.
+    setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
+    setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');
+
+    let capturedHook: any = null;
+    let testAct: any = null;
+    let recentAuth: any = null;
+
+    jest.isolateModules(() => {
+      jest.doMock('react-native', () => ({
+        Platform: { OS: 'android' },
+      }));
+
+      jest.doMock('@hashpass/auth', () => ({
+        authService: mockAuthService,
+        BetterAuthProvider: MockIdleBetterAuthProvider,
+        getSupabaseOAuthRedirectUrl: jest.fn(() => 'myapp://auth/callback'),
+      }));
+
+      jest.doMock('@hashpass/auth/auth-dependencies', () => ({
+        configureAuthService: jest.fn(),
+      }));
+
+      jest.doMock('../../lib/supabase', () => ({
+        supabase: mockSupabase,
+        createSessionFromUrl: jest.fn(),
+      }));
+
+      jest.doMock('../../config/supabase-profiles', () => ({
+        resolvePublicSupabaseConfig: jest.fn(() => ({
+          supabaseUrl: 'https://example.supabase.co',
+          supabaseAnonKey: 'anon-key',
+        })),
+      }));
+
+      jest.doMock('../../lib/native-google-signin', () => ({
+        clearNativeGoogleAccount: mockClearNativeGoogleAccount,
+        nativeGoogleSigninStatusCodes: {
+          SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+          PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+        },
+        signInWithNativeGoogleAccount: mockSignInWithNativeGoogleAccount,
+      }));
+
+      jest.doMock('../../lib/auth/oauth/callback-params', () => ({
+        mergeOAuthFragmentParams: jest.fn((params: URLSearchParams, extras: Record<string, string>) => ({
+          ...Object.fromEntries(params.entries()),
+          ...extras,
+        })),
+      }));
+
+      jest.doMock('expo-web-browser', () => ({
+        __esModule: true,
+        openAuthSessionAsync: mockOpenAuthSessionAsync,
+      }));
+
+      const React = require('react');
+      const TestRenderer = require('react-test-renderer');
+      recentAuth = require('../../lib/auth/recent-auth');
+      const { useAuth } = require('../../hooks/useAuth');
+      testAct = TestRenderer.act;
+
+      // Simulate the exact scenario: the user just logged in, so the grace
+      // window is active, before they immediately tap Logout.
+      recentAuth!.markRecentAuthSuccess();
+
+      const Harness = () => {
+        capturedHook = useAuth();
+        return null;
+      };
+
+      TestRenderer.act(() => {
+        TestRenderer.create(React.createElement(Harness));
+      });
+    });
+
+    expect(recentAuth!.hasRecentAuthSuccess()).toBe(true);
+
+    await testAct(async () => {
+      await capturedHook.signOut();
+    });
+
+    expect(recentAuth!.hasRecentAuthSuccess()).toBe(false);
+  });
+
   it('clears local native auth state even when Better Auth sign-out reports a missing origin', async () => {
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
     setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');

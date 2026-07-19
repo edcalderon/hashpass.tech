@@ -1,16 +1,21 @@
 import { supabase } from './supabase';
 
 /**
- * Admin tier hierarchy:
- * - superAdmin: Highest level, full system access
+ * Admin tier hierarchy (matches the Postgres `user_role` enum — see
+ * db/migrations/V001__init_core_schema.sql):
+ * - super_admin: Highest level, full system access
  * - admin: Standard admin access
- * - moderator: Limited admin access (read-only or restricted actions)
+ *
+ * There is no `moderator` value in the `user_role` enum. Querying for it (or
+ * for the camelCase `superAdmin`) makes Postgres reject the whole `.in()`
+ * list with "invalid input value for enum user_role", which silently broke
+ * every admin check in this app (isAdmin always fell through to `false`).
  */
 
-export type AdminRole = 'superAdmin' | 'admin' | 'moderator';
+export type AdminRole = 'super_admin' | 'admin';
 
 /**
- * Check if a user has any admin role (superAdmin, admin, or moderator)
+ * Check if a user has any admin role (super_admin or admin)
  */
 export async function isAdmin(userId: string): Promise<boolean> {
   try {
@@ -18,7 +23,7 @@ export async function isAdmin(userId: string): Promise<boolean> {
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .in('role', ['superAdmin', 'admin', 'moderator'])
+      .in('role', ['super_admin', 'admin'])
       .limit(1); // Limit to 1 since we only need to check existence
     
     if (error) {
@@ -41,19 +46,18 @@ export async function getUserAdminRole(userId: string): Promise<AdminRole | null
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .in('role', ['superAdmin', 'admin', 'moderator'])
-      .order('role', { ascending: false }); // superAdmin comes first alphabetically
-    
+      .in('role', ['super_admin', 'admin'])
+      .order('role', { ascending: false }); // super_admin comes first alphabetically
+
     if (error || !data || data.length === 0) {
       return null;
     }
-    
-    // Return the highest role (superAdmin > admin > moderator)
-    const roles = data.map(r => r.role as AdminRole);
-    if (roles.includes('superAdmin')) return 'superAdmin';
+
+    // Return the highest role (super_admin > admin)
+    const roles = data.map((r: { role: string }) => r.role as AdminRole);
+    if (roles.includes('super_admin')) return 'super_admin';
     if (roles.includes('admin')) return 'admin';
-    if (roles.includes('moderator')) return 'moderator';
-    
+
     return null;
   } catch {
     return null;
@@ -66,21 +70,20 @@ export async function getUserAdminRole(userId: string): Promise<AdminRole | null
 export async function hasAdminRole(userId: string, requiredRole: AdminRole): Promise<boolean> {
   const userRole = await getUserAdminRole(userId);
   if (!userRole) return false;
-  
+
   const roleHierarchy: Record<AdminRole, number> = {
-    superAdmin: 3,
-    admin: 2,
-    moderator: 1,
+    super_admin: 2,
+    admin: 1,
   };
-  
+
   return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
 }
 
 /**
- * Check if user is superAdmin
+ * Check if user is super_admin
  */
 export async function isSuperAdmin(userId: string): Promise<boolean> {
-  return hasAdminRole(userId, 'superAdmin');
+  return hasAdminRole(userId, 'super_admin');
 }
 
 /**
