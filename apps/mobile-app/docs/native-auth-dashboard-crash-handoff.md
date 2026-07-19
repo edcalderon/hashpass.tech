@@ -1,9 +1,174 @@
 # Native Auth Dashboard Crash Handoff
 
-Status: TWO root causes fixed this session; pending on-device verification of v1.8.237
-Last updated: 2026-07-18
-Current released version: v1.8.236 (still crashing on device; fixes below target v1.8.237)
+Status: unreleased local fix verified with Play-parity AAB + split install; next release must ship it
+Last updated: 2026-07-19
+Current released version: v1.8.238 (does not contain the local fixes below)
 Package under test: `com.hashpass.tech`
+
+## 2026-07-19 Update #4 — Play-Parity Login And Cold Reopen Verified
+
+After adding a Google Cloud Android OAuth client for the Play **Upload key**
+SHA-1, the local Play-parity split install could complete native Google Sign-In
+instead of stopping at Google's `OAuth2.0` registration error.
+
+Local artifact under test:
+
+- Built with `npm run android:play-parity:dev`.
+- Installed through bundletool split APK delivery from
+  `apps/mobile-app/android/app/build/outputs/bundle/release/app-release.aab`.
+- Installed package metadata: `versionName=1.8.238`,
+  `versionCode=29740455`, `minSdk=24`, `targetSdk=35`.
+
+Verification result:
+
+- Native Google Sign-In reached the account picker and returned to the app.
+- The app reached `/(shared)/dashboard/explore` and stayed alive.
+- `adb logcat` showed no `Unsupported top level event`, no `FATAL EXCEPTION`,
+  and no `Process com.hashpass.tech has died`.
+- The emulator still showed Better Auth native network failures:
+
+```text
+[useAuth] Better Auth native Google ID-token exchange failed, trying Supabase fallback: Network request failed
+Better Auth getSession error: TypeError: Network request failed
+```
+
+That exposed one final cold-start bug: Better Auth's mapped session was
+memory-only on native. If a process restart hit `getSession()` network failure
+before a provider could restore a session, the root guard could still treat the
+dashboard as signed out. The local fix now adds two defenses:
+
+- `packages/auth/src/providers/better-auth.ts`: native Better Auth sessions are
+  cached in SecureStore after a successful server session read. A later
+  transport failure uses that cache as stale-while-error state. A definitive
+  server signed-out response or explicit sign-out clears the cache.
+- `app/_layout.tsx`: the root protected-route guard now has the same 2.5s
+  signed-out hysteresis as the dashboard layout and re-checks current auth state
+  before redirecting.
+
+Final emulator check:
+
+- Force-stopped `com.hashpass.tech` while on the dashboard.
+- Relaunched from the launcher.
+- The app stayed on the dashboard with a live process.
+- Filtered logcat still showed Better Auth `Network request failed`, but showed
+  no `redirecting to auth`, no unsupported event error, and no fatal exception.
+
+Regression coverage:
+
+- `tests/auth/better-auth-provider.test.ts` covers native SecureStore caching,
+  cold-start transport failure fallback, and cache clearing on definitive
+  signed-out response.
+- Full mobile Jest: 71 suites / 313 tests passed.
+- `npm run typecheck` passed.
+
+## 2026-07-19 Update #3 — v1.8.238 Proved ErrorUtils Is Too Late
+
+Important correction: v1.8.238 did merge and ship to Play internal + alpha.
+It contains the ErrorUtils re-install fix from Update #2 below, but a fresh
+emulator run of the installed app (`versionName=1.8.238`) still force-closed
+during native Google Sign-In.
+
+Fresh ground truth from `adb logcat`:
+
+```text
+E ReactNativeJS: Error: Unsupported top level event type "topLayout" dispatched
+W BridgelessReact: ReactHost{0}.handleHostException(message = "...topLayout"...)
+E AndroidRuntime: FATAL EXCEPTION: mqt_v_native
+E AndroidRuntime: com.facebook.react.common.JavascriptException: Error:
+  Unsupported top level event type "topLayout" dispatched
+  at com.facebook.react.modules.core.ExceptionsManagerModule.reportException(SourceFile:77)
+I ActivityManager: Process com.hashpass.tech (pid 23748) has died: fg TOP
+```
+
+The log also showed our boot-time registry patch did run and did seed
+`topLayout`:
+
+```text
+[HashPass][events] installed native direct event fallbacks
+  patched: [ "topLayout", ..., "topInsetsChange" ],
+  crashGuardInstalled: true
+```
+
+Two conclusions are now proven:
+
+1. Boot-time seeding can patch one registry object while the renderer's
+   `extractEvents` path still sees a missing event config.
+2. The fatal in Bridgeless/Fabric can bypass the active `ErrorUtils` handler
+   and go straight through `ReactHost.handleHostException` to
+   `ExceptionsManagerModule.reportException`. Re-installing ErrorUtils in
+   `app/_layout.tsx` is not sufficient.
+
+### The v1.8.239 fix
+
+Patch React Native 0.79.6 itself via `pnpm.patchedDependencies`
+(`patches/react-native@0.79.6.patch`). The patch changes every relevant RN
+renderer implementation (`ReactFabric` and `ReactNativeRenderer`,
+dev/prod/profiling) at the actual throw site:
+
+- If `extractEvents()` sees a missing event config for a `top*` event, it
+  synthesizes a direct event config (`{ registrationName: "on" + name.slice(3) }`)
+  and continues dispatching.
+- Non-`top*` unsupported events still throw exactly as before.
+
+This moves the defense from "try to catch the fatal after the renderer throws"
+to "do not let the renderer throw for this known recoverable event class."
+
+Regression test: `tests/lib/native-event-registry.test.js` now also asserts
+the committed React Native patch covers all six renderer files. This is the
+durable test for this failure because the crashing code lives inside RN's
+bundled renderer, not inside app code.
+
+Local APK smoke for the renderer patch:
+
+- Built `apps/mobile-app/android/app/build/outputs/apk/release/app-release.apk`
+  successfully with Java 17 and `ANDROID_HOME=/home/ed/Android/Sdk`.
+- Android rejected in-place replacement of the Play-installed v1.8.238 because
+  the local APK signature differs, so the emulator copy was uninstalled first.
+- The patched APK installed and launched cleanly. Startup logcat showed
+  `[HashPass][events] installed native direct event fallbacks` with
+  `topLayout` included, and `pidof com.hashpass.tech` stayed alive.
+- A login tap on the clean local build handed off to Google Play / Play
+  services rather than reaching the dashboard transition. That run did not
+  reproduce the original crash path, but it also produced no
+  `Unsupported top level event type`, no `FATAL EXCEPTION`, and no new
+  `dumpsys activity exit-info` `APP CRASH` record for `com.hashpass.tech`.
+
+Release-parity correction: this APK smoke is **not** the same artifact shape
+as the published Play build. The Play workflow builds an Android App Bundle
+(`bundleRelease`) with a CI-written minimal mobile `.env`, release upload
+signing, and Play split delivery. A local `assembleRelease` APK can hide bugs
+that depend on any of those differences. For future "works locally, crashes
+from Play" reports, use:
+
+```bash
+npm run android:play-parity:dev
+npm run android:play-parity:dev -- --install
+```
+
+The helper refuses to run without auth-critical public env values and release
+signing credentials, so a local pass/fail is much closer to the internal/alpha
+Play artifact before a new release is shipped. Local no-submit builds invoke
+Gradle directly because Fastlane's build lane only wraps `bundleRelease`;
+explicit Play upload mode still goes through Fastlane. The helper also sets
+`EXPO_NO_DOTENV=1` so local `.env*` files cannot mask a CI/Play env problem.
+
+2026-07-19 local parity result: the AAB built successfully and installed as
+split APKs on the emulator. Startup and auth-screen navigation produced no
+`Unsupported top level event type` and no `FATAL EXCEPTION`. Native Google
+Sign-In reached the Google account picker, then Google rejected the local
+build before returning an ID token:
+
+```text
+This android application is not registered to use OAuth2.0
+```
+
+That is an OAuth client configuration gap for local parity, not the renderer
+crash. Play-delivered apps are signed with Google's App signing key, but the
+local split install is signed with the Upload key. To complete local Google
+login through this parity loop, Google Cloud needs an Android OAuth client for
+`com.hashpass.tech` with the Upload key SHA-1.
+
+---
 
 ## 2026-07-18 Update #2 — The Crash Guard Has Been Dead Code Since It Shipped
 

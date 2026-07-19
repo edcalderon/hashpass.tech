@@ -23,6 +23,9 @@ const {
   resolveFastlaneTrack: (options?: { profile?: string; track?: string | null }) => string;
 };
 
+const productionProjectIdFixture = 'fixture-eas-production-project-id';
+const developmentProjectIdFixture = 'fixture-eas-development-project-id';
+
 describe('run-mobile-fastlane', () => {
   it('normalizes fastlane tracks', () => {
     expect(normalizeFastlaneTrack()).toBeNull();
@@ -44,7 +47,7 @@ describe('run-mobile-fastlane', () => {
       track: 'alpha',
       baseEnv: {
         EAS_BUILD_PROFILE: 'production',
-        EAS_PROJECT_ID: 'f710aa31-82ef-4ee3-82a3-068b0fad04dc',
+        EAS_PROJECT_ID: productionProjectIdFixture,
         EXPO_OWNER: 'hashpasss-team',
         MOBILE_ANDROID_VERSION_CODE: '123456',
       },
@@ -67,7 +70,7 @@ describe('run-mobile-fastlane', () => {
       promoteTo: 'alpha',
       baseEnv: {
         EAS_BUILD_PROFILE: 'preview',
-        EAS_PROJECT_ID_DEV: 'b07c6fde-24ef-434a-8329-761815afe901',
+        EAS_PROJECT_ID_DEV: developmentProjectIdFixture,
         EXPO_OWNER_DEV: 'hashpasstechs-team',
       },
     });

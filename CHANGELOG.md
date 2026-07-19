@@ -1,3 +1,14 @@
+## [1.8.239](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.238...v1.8.239) (2026-07-19)
+
+
+### Bug Fixes
+
+* stabilize Play Android native login ([38c28bc](https://github.com/hashpass-tech/hashpass.tech/commit/38c28bcc1dc7a1c3f5e4dd4f5a6ee602512be564))
+
+
+
+
+
 ## [1.8.238](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.237...v1.8.238) (2026-07-18)
 
 

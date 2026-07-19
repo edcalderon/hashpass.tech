@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.238",
+  "version": "1.8.239",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",
@@ -19,6 +19,8 @@
     "android:release:eas:dev": "node ../../packages/tools/scripts/run-mobile-release.js --backend eas --env development",
     "android:release:fastlane": "node ../../packages/tools/scripts/run-mobile-release.js --backend fastlane --env production",
     "android:release:fastlane:dev": "node ../../packages/tools/scripts/run-mobile-release.js --backend fastlane --env development",
+    "android:play-parity:dev": "node ../../packages/tools/scripts/run-mobile-play-parity.js --env development --track internal",
+    "android:play-parity:prod": "node ../../packages/tools/scripts/run-mobile-play-parity.js --env production --track production",
     "ios": "EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-12288}\" expo start --ios --max-workers ${EXPO_WEB_MAX_WORKERS:-1}",
     "web": "EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-12288}\" expo start --web --max-workers ${EXPO_WEB_MAX_WORKERS:-1} --port ${EXPO_WEB_PORT:-8081}",
     "env:propagate": "node ../../packages/tools/scripts/propagate-env.js",

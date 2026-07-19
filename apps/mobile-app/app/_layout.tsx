@@ -46,6 +46,7 @@ import * as Sentry from '@sentry/react-native';
 const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
   ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
   : `v${packageJson.version} · local build`;
+const ROOT_AUTH_REDIRECT_HYSTERESIS_MS = 2500;
 
 // Must run before installGlobalErrorHandler() below: Sentry's init installs its
 // own ErrorUtils global handler, and installGlobalErrorHandler() chains to
@@ -141,6 +142,11 @@ function ThemedContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [versionUpdate, setVersionUpdate] = useState<{ currentVersion: string; latestVersion: string } | null>(null);
   const [lastRedirectTime, setLastRedirectTime] = useState(0);
+  const authRedirectStateRef = React.useRef({ isLoggedIn, isLoading });
+
+  useEffect(() => {
+    authRedirectStateRef.current = { isLoggedIn, isLoading };
+  }, [isLoggedIn, isLoading]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') {
@@ -313,39 +319,41 @@ function ThemedContent() {
         return;
       }
 
+      const scheduleAuthRedirect = (routeType: 'dashboard' | 'general') => {
+        const redirectTimer = setTimeout(() => {
+          if (authRedirectStateRef.current.isLoading || authRedirectStateRef.current.isLoggedIn) {
+            return;
+          }
+
+          // Throttle redirects to prevent redirect loops
+          const now = Date.now();
+          if (now - lastRedirectTime < 5000) {
+            console.warn('⚠️ Redirect throttled - last redirect was less than 5 seconds ago');
+            return;
+          }
+
+          console.warn(`⚠️ Not authenticated on ${routeType} route, redirecting to auth`);
+          setLastRedirectTime(now);
+          router.replace('/(shared)/auth' as any);
+        }, ROOT_AUTH_REDIRECT_HYSTERESIS_MS);
+
+        return () => clearTimeout(redirectTimer);
+      };
+
       if (isDashboardRoute && !isLoggedIn) {
         if (shouldDelayRedirectForRecentAuth()) {
           triggerAuthRecheck();
           return;
         }
 
-        // For dashboard routes, check if user is logged in via provider-agnostic auth
-        // Throttle redirects to prevent redirect loops
-        const now = Date.now();
-        if (now - lastRedirectTime < 5000) {
-          console.warn('⚠️ Redirect throttled - last redirect was less than 5 seconds ago');
-          return;
-        }
-
-        console.warn('⚠️ Not authenticated on dashboard route, redirecting to auth');
-        setLastRedirectTime(now);
-        router.replace('/(shared)/auth' as any);
+        return scheduleAuthRedirect('dashboard');
       } else if (!isLoggedIn && !isAuthFlow && !isEventPublic && !isHomePage && !isPublicPage) {
         if (shouldDelayRedirectForRecentAuth()) {
           triggerAuthRecheck();
           return;
         }
 
-        // Throttle redirects to prevent redirect loops
-        const now = Date.now();
-        if (now - lastRedirectTime < 5000) {
-          console.warn('⚠️ Redirect throttled - last redirect was less than 5 seconds ago');
-          return;
-        }
-
-        console.warn('⚠️ Not authenticated on general route, redirecting to auth');
-        setLastRedirectTime(now);
-        router.replace('/(shared)/auth' as any);
+        return scheduleAuthRedirect('general');
       }
     }
   }, [isLoggedIn, isAuthFlow, isEventPublic, isHomePage, isPublicPage, isReady, isLoading, router, pathname, lastRedirectTime]);

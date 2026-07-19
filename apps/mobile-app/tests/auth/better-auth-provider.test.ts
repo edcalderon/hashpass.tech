@@ -18,6 +18,9 @@ jest.mock('@hashpass/config', () => ({
 const mockGetSession = jest.fn();
 const mockSignInSocial = jest.fn();
 const mockSignOut = jest.fn();
+const mockGetItemAsync = jest.fn<Promise<string | null>, [string]>(async () => null);
+const mockSetItemAsync = jest.fn<Promise<void>, [string, string]>(async () => undefined);
+const mockDeleteItemAsync = jest.fn<Promise<void>, [string]>(async () => undefined);
 const mockCreateAuthClient = jest.fn(() => ({
   signIn: { social: mockSignInSocial },
   signOut: mockSignOut,
@@ -27,6 +30,12 @@ const mockCreateAuthClient = jest.fn(() => ({
 jest.mock('better-auth/client', () => ({
   createAuthClient: mockCreateAuthClient,
 }));
+
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: mockGetItemAsync,
+  setItemAsync: mockSetItemAsync,
+  deleteItemAsync: mockDeleteItemAsync,
+}), { virtual: true });
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 
@@ -45,7 +54,7 @@ const createBetterAuthSession = () => ({
     image: 'https://example.com/avatar.png',
   },
   session: {
-    expiresAt: new Date('2026-07-09T00:00:00.000Z').toISOString(),
+    expiresAt: new Date('2099-07-09T00:00:00.000Z').toISOString(),
   },
 });
 
@@ -66,6 +75,9 @@ describe('BetterAuthProvider', () => {
     mockGetSession.mockReset();
     mockSignInSocial.mockReset();
     mockSignOut.mockReset();
+    mockGetItemAsync.mockReset().mockResolvedValue(null);
+    mockSetItemAsync.mockReset().mockResolvedValue(undefined);
+    mockDeleteItemAsync.mockReset().mockResolvedValue(undefined);
     setTestWindow(undefined);
   });
 
@@ -235,5 +247,86 @@ describe('BetterAuthProvider', () => {
     expect(afterSignedOutResponse).toBeNull();
     expect(provider.isAuthenticated()).toBe(false);
     expect(stateChanges[stateChanges.length - 1]).toBeNull();
+  });
+
+  it('stores native Better Auth sessions in SecureStore', async () => {
+    const { Platform } = require('react-native');
+    const originalPlatform = Platform.OS;
+    Platform.OS = 'android';
+    mockGetSession.mockResolvedValueOnce({ data: createBetterAuthSession() });
+
+    try {
+      const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+      const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+      const session = await provider.getSession({ force: true });
+
+      expect(session?.user.email).toBe('user@example.com');
+      expect(mockSetItemAsync).toHaveBeenCalledWith(
+        'hashpass_better_auth_session',
+        expect.stringContaining('"provider":"better-auth"')
+      );
+    } finally {
+      Platform.OS = originalPlatform;
+    }
+  });
+
+  it('uses the stored native session when cold-start getSession hits a network failure', async () => {
+    const { Platform } = require('react-native');
+    const originalPlatform = Platform.OS;
+    Platform.OS = 'android';
+    const storedSession = {
+      user: {
+        id: 'stored-better-auth-user',
+        email: 'stored@example.com',
+        status: 'active',
+      },
+      access_token: 'better_auth_session',
+      provider: 'better-auth',
+      expires_at: Date.now() + 60_000,
+    };
+    mockGetItemAsync.mockResolvedValueOnce(JSON.stringify(storedSession));
+    mockGetSession.mockRejectedValueOnce(new TypeError('Network request failed'));
+
+    try {
+      const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+      const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const stateChanges: unknown[] = [];
+      provider.onAuthStateChange((session: unknown) => stateChanges.push(session));
+
+      const session = await provider.getSession({ force: true });
+
+      expect(session).toEqual(storedSession);
+      expect(provider.isAuthenticated()).toBe(true);
+      expect(stateChanges).toEqual([null, storedSession]);
+      expect(mockGetItemAsync).toHaveBeenCalledWith('hashpass_better_auth_session');
+      errorSpy.mockRestore();
+    } finally {
+      Platform.OS = originalPlatform;
+    }
+  });
+
+  it('clears the stored native session when the server definitively reports signed-out', async () => {
+    const { Platform } = require('react-native');
+    const originalPlatform = Platform.OS;
+    Platform.OS = 'android';
+    mockGetSession
+      .mockResolvedValueOnce({ data: createBetterAuthSession() })
+      .mockResolvedValueOnce({ data: { user: null, session: null } });
+
+    try {
+      const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+      const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+      await provider.getSession({ force: true });
+      const afterSignedOutResponse = await provider.getSession({ force: true });
+
+      expect(afterSignedOutResponse).toBeNull();
+      expect(provider.isAuthenticated()).toBe(false);
+      expect(mockDeleteItemAsync).toHaveBeenCalledWith('hashpass_better_auth_session');
+    } finally {
+      Platform.OS = originalPlatform;
+    }
   });
 });

@@ -1,5 +1,8 @@
 /// <reference types="jest" />
 
+const fs = require('fs');
+const path = require('path');
+
 describe('native event registry patch', () => {
   const originalErrorUtils = global.ErrorUtils;
 
@@ -200,5 +203,30 @@ describe('native event registry patch', () => {
     invoke(laterError, true);
 
     expect(rnCoreDefaultHandler).not.toHaveBeenCalled();
+  });
+
+  it('patches RN renderers to synthesize missing top-level direct events before throwing', () => {
+    const patch = fs.readFileSync(
+      path.resolve(__dirname, '../../../../patches/react-native@0.79.6.patch'),
+      'utf8',
+    );
+
+    for (const rendererFile of [
+      'Libraries/Renderer/implementations/ReactFabric-dev.js',
+      'Libraries/Renderer/implementations/ReactFabric-prod.js',
+      'Libraries/Renderer/implementations/ReactFabric-profiling.js',
+      'Libraries/Renderer/implementations/ReactNativeRenderer-dev.js',
+      'Libraries/Renderer/implementations/ReactNativeRenderer-prod.js',
+      'Libraries/Renderer/implementations/ReactNativeRenderer-profiling.js',
+    ]) {
+      expect(patch).toContain(`diff --git a/${rendererFile} b/${rendererFile}`);
+    }
+
+    expect(patch).toContain('function getHashPassDirectEventConfig(topLevelType)');
+    expect(patch).toContain('0 === topLevelType.indexOf("top")');
+    expect(patch).toContain('registrationName: "on" + topLevelType.slice(3)');
+    expect(patch).toContain(
+      'directDispatchConfig = getHashPassDirectEventConfig(topLevelType);',
+    );
   });
 });

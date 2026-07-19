@@ -15,6 +15,8 @@ const originalAndroidVersionCode = process.env.MOBILE_ANDROID_VERSION_CODE;
 const originalExpoUseLocalVersioning = process.env.EXPO_USE_LOCAL_VERSIONING;
 const originalRouterOrigin = process.env.EXPO_PUBLIC_ROUTER_ORIGIN;
 const originalRouterHeadOrigin = process.env.EXPO_PUBLIC_ROUTER_HEAD_ORIGIN;
+const productionProjectIdFixture = 'fixture-eas-production-project-id';
+const developmentProjectIdFixture = 'fixture-eas-development-project-id';
 
 afterEach(() => {
   if (typeof originalEnv === 'undefined') {
@@ -82,7 +84,7 @@ afterEach(() => {
 
 describe('app.config', () => {
   it('injects the EAS project id from env into expo extra config', () => {
-    process.env.EAS_PROJECT_ID = 'f710aa31-82ef-4ee3-82a3-068b0fad04dc';
+    process.env.EAS_PROJECT_ID = productionProjectIdFixture;
     process.env.EXPO_OWNER = 'hashpasss-team';
     process.env.EXPO_OWNER_DEV = 'hashpasstechs-team';
     delete process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
@@ -90,15 +92,15 @@ describe('app.config', () => {
     const appConfigFactory = require('../../app.config.js');
     const resolvedConfig = appConfigFactory({ config: {} });
 
-    expect(resolvedConfig.extra.eas.projectId).toBe('f710aa31-82ef-4ee3-82a3-068b0fad04dc');
+    expect(resolvedConfig.extra.eas.projectId).toBe(productionProjectIdFixture);
     expect(resolvedConfig.slug).toBe('hashpasstech');
     expect(resolvedConfig.owner).toBe('hashpasss-team');
   });
 
   it('prefers the development EAS project id for non-production build profiles', () => {
     process.env.EAS_BUILD_PROFILE = 'preview';
-    process.env.EAS_PROJECT_ID = 'f710aa31-82ef-4ee3-82a3-068b0fad04dc';
-    process.env.EAS_PROJECT_ID_DEV = 'b07c6fde-24ef-434a-8329-761815afe901';
+    process.env.EAS_PROJECT_ID = productionProjectIdFixture;
+    process.env.EAS_PROJECT_ID_DEV = developmentProjectIdFixture;
     process.env.EXPO_OWNER = 'hashpasss-team';
     process.env.EXPO_OWNER_DEV = 'hashpasstechs-team';
     delete process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
@@ -107,7 +109,7 @@ describe('app.config', () => {
     const appConfigFactory = require('../../app.config.js');
     const resolvedConfig = appConfigFactory({ config: {} });
 
-    expect(resolvedConfig.extra.eas.projectId).toBe('b07c6fde-24ef-434a-8329-761815afe901');
+    expect(resolvedConfig.extra.eas.projectId).toBe(developmentProjectIdFixture);
     expect(resolvedConfig.slug).toBe('hash-pass-tech');
     expect(resolvedConfig.owner).toBe('hashpasstechs-team');
   });

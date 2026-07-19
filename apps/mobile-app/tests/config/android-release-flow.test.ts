@@ -9,6 +9,8 @@ const readJson = (relativePath: string) =>
   JSON.parse(fs.readFileSync(path.join(mobileAppRoot, relativePath), 'utf8')) as Record<string, any>;
 const rootPackageJson = readJson('../../package.json') as Record<string, any>;
 const appJson = readJson('app.json').expo as Record<string, any>;
+const productionProjectIdFixture = 'fixture-eas-production-project-id';
+const developmentProjectIdFixture = 'fixture-eas-development-project-id';
 
 function createReleaseTestEnv(profile: 'production' | 'preview') {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hashpass-release-flow-'));
@@ -26,14 +28,14 @@ function createReleaseTestEnv(profile: 'production' | 'preview') {
     mobileEnvPath,
     baseEnv: (isProduction
       ? {
-          EAS_PROJECT_ID: 'f710aa31-82ef-4ee3-82a3-068b0fad04dc',
-          EXPO_PUBLIC_EAS_PROJECT_ID: 'f710aa31-82ef-4ee3-82a3-068b0fad04dc',
+          EAS_PROJECT_ID: productionProjectIdFixture,
+          EXPO_PUBLIC_EAS_PROJECT_ID: productionProjectIdFixture,
           EXPO_TOKEN: 'prodtok',
           EXPO_OWNER: 'hashpasss-team',
         }
       : {
-          EAS_PROJECT_ID_DEV: 'b07c6fde-24ef-434a-8329-761815afe901',
-          EXPO_PUBLIC_EAS_PROJECT_ID_DEV: 'b07c6fde-24ef-434a-8329-761815afe901',
+          EAS_PROJECT_ID_DEV: developmentProjectIdFixture,
+          EXPO_PUBLIC_EAS_PROJECT_ID_DEV: developmentProjectIdFixture,
           EXPO_TOKEN_DEV: 'devtok1',
           EXPO_OWNER_DEV: 'hashpasstechs-team',
         }) as Record<string, string>,
@@ -153,13 +155,9 @@ describe('Android release flow', () => {
     expect(easConfig.build?.preview?.android?.buildType).toBe('app-bundle');
     expect(easConfig.build?.preview?.autoIncrement).toBe(true);
     expect(easConfig.build?.preview?.env?.EAS_BUILD_PROFILE).toBe('preview');
-    expect(easConfig.build?.preview?.env?.EAS_PROJECT_ID).toBe(
-      'b07c6fde-24ef-434a-8329-761815afe901',
-    );
+    expect(easConfig.build?.preview?.env?.EAS_PROJECT_ID).toBeUndefined();
     expect(easConfig.build?.production?.env?.EAS_BUILD_PROFILE).toBe('production');
-    expect(easConfig.build?.production?.env?.EAS_PROJECT_ID).toBe(
-      'f710aa31-82ef-4ee3-82a3-068b0fad04dc',
-    );
+    expect(easConfig.build?.production?.env?.EAS_PROJECT_ID).toBeUndefined();
     expect(easConfig.submit?.preview?.android?.track).toBe('internal');
     expect(easConfig.submit?.preview?.android?.serviceAccountKeyPath).toBe(
       '../../config/hashpass-eas.json',
@@ -185,7 +183,7 @@ describe('Android release flow', () => {
     expect(env.EXPO_OWNER_DEV).toBe('hashpasstechs-team');
     expect(appConfig.slug).toBe('hash-pass-tech');
     expect(appConfig.owner).toBe('hashpasstechs-team');
-    expect(appConfig.extra?.eas?.projectId).toBe('b07c6fde-24ef-434a-8329-761815afe901');
+    expect(appConfig.extra?.eas?.projectId).toBe(developmentProjectIdFixture);
   });
 
   it('keeps the production Expo owner and project id for release builds', () => {
@@ -195,7 +193,7 @@ describe('Android release flow', () => {
     expect(env.EXPO_OWNER_DEV).toBeUndefined();
     expect(appConfig.slug).toBe('hashpasstech');
     expect(appConfig.owner).toBe('hashpasss-team');
-    expect(appConfig.extra?.eas?.projectId).toBe('f710aa31-82ef-4ee3-82a3-068b0fad04dc');
+    expect(appConfig.extra?.eas?.projectId).toBe(productionProjectIdFixture);
   });
 
   it('publishes the preview Expo aliases through the mobile EAS wrapper', () => {
@@ -225,10 +223,10 @@ describe('Android release flow', () => {
 
     expect(env.EAS_BUILD_PROFILE).toBe('preview');
     expect(env.EXPO_PUBLIC_EAS_BUILD_PROFILE).toBe('preview');
-    expect(env.EAS_PROJECT_ID).toBe('b07c6fde-24ef-434a-8329-761815afe901');
-    expect(env.EXPO_PUBLIC_EAS_PROJECT_ID).toBe('b07c6fde-24ef-434a-8329-761815afe901');
-    expect(env.EAS_PROJECT_ID_DEV).toBe('b07c6fde-24ef-434a-8329-761815afe901');
-    expect(env.EXPO_PUBLIC_EAS_PROJECT_ID_DEV).toBe('b07c6fde-24ef-434a-8329-761815afe901');
+    expect(env.EAS_PROJECT_ID).toBe(developmentProjectIdFixture);
+    expect(env.EXPO_PUBLIC_EAS_PROJECT_ID).toBe(developmentProjectIdFixture);
+    expect(env.EAS_PROJECT_ID_DEV).toBe(developmentProjectIdFixture);
+    expect(env.EXPO_PUBLIC_EAS_PROJECT_ID_DEV).toBe(developmentProjectIdFixture);
     expect(env.EXPO_OWNER).toBeUndefined();
     expect(env.EXPO_OWNER_DEV).toBe('hashpasstechs-team');
   });
@@ -269,6 +267,12 @@ describe('Android release flow', () => {
     expect(scripts['android:release:fastlane:dev']).toBe(
       'pnpm --filter hashpass-mobile-app android:release:fastlane:dev',
     );
+    expect(scripts['android:play-parity:dev']).toBe(
+      'pnpm --filter hashpass-mobile-app android:play-parity:dev',
+    );
+    expect(scripts['android:play-parity:prod']).toBe(
+      'pnpm --filter hashpass-mobile-app android:play-parity:prod',
+    );
     expect(mobileScripts['android:bundle']).toBe(
       'node ../../packages/tools/scripts/run-mobile-eas.js build --platform android --profile production',
     );
@@ -298,6 +302,12 @@ describe('Android release flow', () => {
     );
     expect(mobileScripts['android:release:fastlane:dev']).toBe(
       'node ../../packages/tools/scripts/run-mobile-release.js --backend fastlane --env development',
+    );
+    expect(mobileScripts['android:play-parity:dev']).toBe(
+      'node ../../packages/tools/scripts/run-mobile-play-parity.js --env development --track internal',
+    );
+    expect(mobileScripts['android:play-parity:prod']).toBe(
+      'node ../../packages/tools/scripts/run-mobile-play-parity.js --env production --track production',
     );
     expect(rootDependencies['@babel/core']).toBe('^7.25.2');
     expect(rootDependencies['@babel/plugin-transform-react-jsx']).toBe('^7.28.6');
