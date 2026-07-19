@@ -1,3 +1,14 @@
+## [1.8.241](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.240...v1.8.241) (2026-07-19)
+
+
+### Bug Fixes
+
+* **auth:** one digit per OTP cell, add clipboard Paste, haptics on main buttons ([81e8006](https://github.com/hashpass-tech/hashpass.tech/commit/81e8006364a9c01c1fed71d99c07a75afd4cc818))
+
+
+
+
+
 ## [1.8.240](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.239...v1.8.240) (2026-07-19)
 
 
