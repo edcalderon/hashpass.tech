@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps } from 'react-native-reanimated';
 import { SystemBars } from 'react-native-edge-to-edge';
@@ -35,6 +35,30 @@ import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 import { hapticLight, hapticMedium } from '../../../lib/haptics';
 
 const ANDROID_DASHBOARD_HEADER_HEIGHT = 64;
+const ANDROID_DRAWER_EDGE_GUARD = 16;
+const ANDROID_DRAWER_BOTTOM_GUARD = 56;
+
+type DashboardDrawerInsets = {
+  top?: number;
+  left?: number;
+  right?: number;
+  bottom?: number;
+};
+
+const getDashboardDrawerInsets = (insets: DashboardDrawerInsets = {}) => ({
+  top: Platform.OS === 'android'
+    ? Math.max(insets.top || 0, StatusBar.currentHeight || 0)
+    : insets.top || 0,
+  left: Platform.OS === 'android'
+    ? Math.max(insets.left || 0, ANDROID_DRAWER_EDGE_GUARD)
+    : insets.left || 0,
+  right: Platform.OS === 'android'
+    ? Math.max(insets.right || 0, ANDROID_DRAWER_EDGE_GUARD)
+    : insets.right || 0,
+  bottom: Platform.OS === 'android'
+    ? Math.max(insets.bottom || 0, ANDROID_DRAWER_BOTTOM_GUARD)
+    : insets.bottom || 0,
+});
 
 // DrawerNavigationProp generic constraint mismatch across @react-navigation versions
 type DrawerNavigation = any;
@@ -106,8 +130,10 @@ function CustomDrawerContent({
   const insets = useSafeAreaInsets();
   const { width: viewportWidth } = useWindowDimensions();
   const compactQuickActions = viewportWidth < 480;
-  const styles = getStyles(isDark, colors, isMobile, insets, compactQuickActions);
+  const drawerSafeInsets = getDashboardDrawerInsets(insets);
+  const styles = getStyles(isDark, colors, isMobile, drawerSafeInsets, compactQuickActions);
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
+  const [isSigningOut, setIsSigningOut] = React.useState(false);
   const brandBadgeText =
     event?.tour?.role === 'hub'
       ? 'BSL ON TOUR'
@@ -326,12 +352,24 @@ function CustomDrawerContent({
   };
 
   const handleLogout = async () => {
+    if (isSigningOut) {
+      return;
+    }
+
     hapticMedium();
+    setIsSigningOut(true);
+    try {
+      navigation.dispatch(DrawerActions.closeDrawer());
+    } catch (drawerError) {
+      console.warn('Unable to close drawer before signing out:', drawerError);
+    }
+
     try {
       await signOut();
-      router.replace('/');
+      router.replace('/(shared)/auth' as any);
     } catch (error) {
       console.error('Error signing out:', error);
+      setIsSigningOut(false);
     }
   };
 
@@ -685,18 +723,27 @@ function CustomDrawerContent({
 
           {/* Logout Button */}
           <TouchableOpacity
-            style={styles.quickToggleButton}
+            style={[
+              styles.quickToggleButton,
+              isSigningOut && styles.quickToggleButtonDisabled,
+            ]}
             onPress={handleLogout}
-            activeOpacity={0.7}
+            disabled={isSigningOut}
+            activeOpacity={isSigningOut ? 1 : 0.7}
             accessibilityRole="button"
             accessibilityLabel={t({ id: 'nav.logout', message: 'Logout' })}
+            accessibilityState={{ busy: isSigningOut, disabled: isSigningOut }}
           >
             <View style={[styles.quickToggleIcon, { backgroundColor: 'rgba(255, 59, 48, 0.12)' }]}>
-              <Ionicons
-                name="log-out-outline"
-                size={20}
-                color={colors.error.main}
-              />
+              {isSigningOut ? (
+                <ActivityIndicator size="small" color={colors.error.main} />
+              ) : (
+                <Ionicons
+                  name="log-out-outline"
+                  size={20}
+                  color={colors.error.main}
+                />
+              )}
             </View>
             {!compactQuickActions && (
               <Text style={[styles.quickToggleLabel, { color: colors.error.main }]} numberOfLines={1}>
@@ -708,7 +755,7 @@ function CustomDrawerContent({
       </View>
 
       {/* Version Display */}
-      <VersionDisplay showInSidebar={true} bottomInset={insets.bottom} />
+      <VersionDisplay showInSidebar={true} bottomInset={drawerSafeInsets.bottom} />
     </View>
   );
 }
@@ -718,9 +765,15 @@ export default function DashboardLayout() {
   const { colors, isDark } = useTheme();
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth } = useWindowDimensions();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const styles = getStyles(isDark, colors, isMobile, insets);
+  const dashboardDrawerWidth = Platform.OS !== 'web' && isMobile
+    ? Math.ceil(viewportWidth)
+    : isMobile
+      ? '88%'
+      : 360;
   // Instance-scoped bridge from CustomDrawerContent's navigation object to
   // Header (see the DrawerNavRef comment above CustomDrawerContent).
   const drawerNavRef = useRef<DrawerNavigation | null>(null);
@@ -1256,7 +1309,7 @@ export default function DashboardLayout() {
                 ...getDrawerHeaderOptions(navigation),
                 drawerType: 'front',
                 drawerStyle: {
-                  width: isMobile ? '88%' : 360,
+                  width: dashboardDrawerWidth,
                 },
                 overlayColor: 'rgba(0,0,0,0.5)',
                 drawerPosition: 'left',
@@ -1294,9 +1347,12 @@ const getStyles = (
   isDark: boolean,
   colors: any,
   isMobile: boolean,
-  insets: { top?: number; left?: number; right?: number; bottom?: number } = {},
+  insets: DashboardDrawerInsets = {},
   compactQuickActions = false,
-) => StyleSheet.create({
+) => {
+  const drawerSafeInsets = getDashboardDrawerInsets(insets);
+
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.default,
@@ -1387,10 +1443,10 @@ const getStyles = (
     justifyContent: 'center',
   },
   drawerHeader: {
-    paddingTop: (isMobile ? 12 : 18)
-      + (insets.top || (Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0)),
+    paddingTop: (isMobile ? 12 : 18) + drawerSafeInsets.top,
     paddingBottom: isMobile ? 14 : 18,
-    paddingHorizontal: 18,
+    paddingLeft: 18 + drawerSafeInsets.left,
+    paddingRight: 18 + drawerSafeInsets.right,
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : colors.background.paper,
@@ -1481,8 +1537,8 @@ const getStyles = (
   menuItemsContent: {
     paddingTop: 16,
     paddingBottom: 12,
-    paddingStart: (isMobile ? 12 : 10) + (insets.left || 0),
-    paddingEnd: (isMobile ? 12 : 10) + (insets.right || 0),
+    paddingStart: (isMobile ? 12 : 10) + drawerSafeInsets.left,
+    paddingEnd: (isMobile ? 12 : 10) + drawerSafeInsets.right,
     flexGrow: 1,
   },
   menuItems: {
@@ -1572,8 +1628,8 @@ const getStyles = (
   quickSettingsSection: {
     paddingHorizontal: compactQuickActions ? 10 : 12,
     paddingVertical: compactQuickActions ? 10 : 12,
-    marginStart: (isMobile ? 20 : 16) + (insets.left || 0),
-    marginEnd: (isMobile ? 18 : 16) + (insets.right || 0),
+    marginStart: (isMobile ? 20 : 16) + drawerSafeInsets.left,
+    marginEnd: (isMobile ? 18 : 16) + drawerSafeInsets.right,
     marginTop: 10,
     marginBottom: 6,
     borderRadius: 18,
@@ -1618,6 +1674,9 @@ const getStyles = (
       ? '0 3px 8px rgba(0, 0, 0, 0.10)'
       : '0 3px 8px rgba(15, 23, 42, 0.05)',
   },
+  quickToggleButtonDisabled: {
+    opacity: 0.72,
+  },
   quickToggleIcon: {
     width: compactQuickActions ? 38 : 30,
     height: compactQuickActions ? 38 : 30,
@@ -1648,4 +1707,5 @@ const getStyles = (
     width: isMobile ? 90 : 120,
     height: isMobile ? 90 : 120,
   }
-}); 
+  });
+};

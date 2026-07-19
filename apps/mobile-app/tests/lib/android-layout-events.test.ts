@@ -51,6 +51,23 @@ describe('Android layout event crash guards', () => {
     expect(homeSource).toContain('router.replace("/(shared)/dashboard/explore" as any);');
   });
 
+  it('keeps the native dashboard drawer clear of Android system edges', () => {
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+
+    expect(dashboardSource).toContain('const ANDROID_DRAWER_BOTTOM_GUARD = 56;');
+    expect(dashboardSource).toContain('const dashboardDrawerWidth = Platform.OS !== \'web\' && isMobile');
+    expect(dashboardSource).toContain('width: dashboardDrawerWidth');
+    expect(dashboardSource).toContain('bottomInset={drawerSafeInsets.bottom}');
+  });
+
+  it('routes dashboard drawer logout directly to auth on native', () => {
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+
+    expect(dashboardSource).toContain('const [isSigningOut, setIsSigningOut] = React.useState(false);');
+    expect(dashboardSource).toContain('router.replace(\'/(shared)/auth\' as any);');
+    expect(dashboardSource).toContain('disabled={isSigningOut}');
+  });
+
   it('keeps safe-area Fabric events on the generated Fabric event name', () => {
     const fabricInsetsEventSource = readSource(
       '../../../../node_modules/react-native-safe-area-context/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt',
