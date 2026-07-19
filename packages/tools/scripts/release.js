@@ -596,25 +596,202 @@ function normalizeReleaseText(value) {
     .trim();
 }
 
-function parseQuotedLine(value) {
-  const match = String(value || '')
-    .trim()
-    .match(/^(['"])(.*)\1,?$/);
+function decodeJsStringLiteralValue(rawValue) {
+  let decoded = '';
 
-  if (!match) return '';
+  for (let index = 0; index < rawValue.length; index += 1) {
+    const char = rawValue[index];
+    if (char !== '\\') {
+      decoded += char;
+      continue;
+    }
 
-  return match[2]
-    .replace(/\\(['"])/g, '$1')
-    .trim();
+    index += 1;
+    if (index >= rawValue.length) {
+      decoded += '\\';
+      break;
+    }
+
+    const escaped = rawValue[index];
+    switch (escaped) {
+      case '\\':
+      case "'":
+      case '"':
+        decoded += escaped;
+        break;
+      case 'n':
+        decoded += '\n';
+        break;
+      case 'r':
+        decoded += '\r';
+        break;
+      case 't':
+        decoded += '\t';
+        break;
+      case 'b':
+        decoded += '\b';
+        break;
+      case 'f':
+        decoded += '\f';
+        break;
+      case 'v':
+        decoded += '\v';
+        break;
+      case '0':
+        decoded += '\0';
+        break;
+      default:
+        decoded += `\\${escaped}`;
+    }
+  }
+
+  return decoded;
+}
+
+function extractArrayLiteralBody(block, key) {
+  const content = String(block || '');
+  const keyMatch = new RegExp(`${key}:\\s*\\[`).exec(content);
+  if (!keyMatch) return '';
+
+  const start = keyMatch.index + keyMatch[0].length;
+  let depth = 1;
+  let quote = '';
+  let inLineComment = false;
+  let inBlockComment = false;
+
+  for (let index = start; index < content.length; index += 1) {
+    const char = content[index];
+    const next = content[index + 1];
+
+    if (inLineComment) {
+      if (char === '\n') inLineComment = false;
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (char === '*' && next === '/') {
+        inBlockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (quote) {
+      if (char === '\\') {
+        index += 1;
+        continue;
+      }
+      if (char === quote) {
+        quote = '';
+      }
+      continue;
+    }
+
+    if (char === '/' && next === '/') {
+      inLineComment = true;
+      index += 1;
+      continue;
+    }
+
+    if (char === '/' && next === '*') {
+      inBlockComment = true;
+      index += 1;
+      continue;
+    }
+
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+
+    if (char === '[') {
+      depth += 1;
+      continue;
+    }
+
+    if (char === ']') {
+      depth -= 1;
+      if (depth === 0) {
+        return content.slice(start, index);
+      }
+    }
+  }
+
+  return '';
+}
+
+function extractQuotedStringValues(value) {
+  const content = String(value || '');
+  const values = [];
+  let quote = '';
+  let rawValue = '';
+  let inLineComment = false;
+  let inBlockComment = false;
+
+  for (let index = 0; index < content.length; index += 1) {
+    const char = content[index];
+    const next = content[index + 1];
+
+    if (inLineComment) {
+      if (char === '\n') inLineComment = false;
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (char === '*' && next === '/') {
+        inBlockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (!quote) {
+      if (char === '/' && next === '/') {
+        inLineComment = true;
+        index += 1;
+        continue;
+      }
+
+      if (char === '/' && next === '*') {
+        inBlockComment = true;
+        index += 1;
+        continue;
+      }
+
+      if (char === "'" || char === '"') {
+        quote = char;
+        rawValue = '';
+      }
+      continue;
+    }
+
+    if (char === '\\') {
+      rawValue += char;
+      if (index + 1 < content.length) {
+        index += 1;
+        rawValue += content[index];
+      }
+      continue;
+    }
+
+    if (char === quote) {
+      values.push(decodeJsStringLiteralValue(rawValue).trim());
+      quote = '';
+      rawValue = '';
+      continue;
+    }
+
+    rawValue += char;
+  }
+
+  return values;
 }
 
 function extractVersionArray(block, key) {
-  const match = String(block || '').match(new RegExp(`${key}:\\s*\\[([\\s\\S]*?)\\],`));
-  if (!match) return [];
+  const body = extractArrayLiteralBody(block, key);
+  if (!body) return [];
 
-  return match[1]
-    .split('\n')
-    .map((line) => parseQuotedLine(line))
+  return extractQuotedStringValues(body)
     .map((line) => normalizeReleaseText(line))
     .filter(Boolean);
 }
@@ -1071,6 +1248,7 @@ module.exports = {
   buildPromotionPullRequestBody,
   buildPromotionChangeSummary,
   buildPromotionFileHighlights,
+  extractVersionArray,
   formatPromotionSummarySections,
   incrementPatchVersion,
   resolvePromotionVersion,

@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607191814, // Updated to current timestamp
+  buildNumber: 202607192043, // Updated to current timestamp
   releaseDate: '2026-07-19',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,31 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'one digit per OTP cell, add clipboard Paste, haptics on main buttons'
+    'parse version arrays with commas',
+    'release native Android drawer and OTP fixes'
   ],
   breakingChanges: [],
-  notes: 'one digit per OTP cell, add clipboard Paste, haptics on main buttons'
+  notes: 'parse version arrays with commas; release native Android drawer and OTP fixes'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.242': {
+    version: '1.8.242',
+    buildNumber: 202607192043,
+    releaseDate: '2026-07-19',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'parse version arrays with commas',
+      'release native Android drawer and OTP fixes'
+    ],
+    breakingChanges: [],
+    notes: 'parse version arrays with commas; release native Android drawer and OTP fixes'
+  },
   '1.8.241': {
     version: '1.8.241',
     buildNumber: 202607191814,

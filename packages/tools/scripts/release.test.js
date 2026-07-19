@@ -1,6 +1,7 @@
 const {
   buildPromotionPullRequestBody,
   buildPromotionFileHighlights,
+  extractVersionArray,
   formatPromotionSummarySections,
   incrementPatchVersion,
   resolvePromotionVersion,
@@ -97,5 +98,29 @@ describe('release promotion PR body', () => {
     expect(summary).toContain('release docs and CLAUDE guidance');
     expect(summary).toContain('promotion PR generator');
     expect(summary).toContain('README sync aligned');
+  });
+
+  it('parses version.ts arrays with inline commas and escaped quotes', () => {
+    const block = String.raw`
+  features: ['Preserve city, country labels', "Render escaped \"double\" quotes"],
+  bugfixes: [
+    // The comma below belongs to the item, not the parser.
+    'Keep alpha, beta, and gamma together',
+    'Keep literal ], text inside a release bullet',
+    'Preserve escaped \'single\' quotes'
+  ],
+  breakingChanges: [],
+`;
+
+    expect(extractVersionArray(block, 'features')).toEqual([
+      'Preserve city, country labels',
+      'Render escaped "double" quotes',
+    ]);
+    expect(extractVersionArray(block, 'bugfixes')).toEqual([
+      'Keep alpha, beta, and gamma together',
+      'Keep literal ], text inside a release bullet',
+      "Preserve escaped 'single' quotes",
+    ]);
+    expect(extractVersionArray(block, 'breakingChanges')).toEqual([]);
   });
 });
