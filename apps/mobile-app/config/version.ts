@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607182315, // Updated to current timestamp
-  releaseDate: '2026-07-18',
+  buildNumber: 202607190237, // Updated to current timestamp
+  releaseDate: '2026-07-19',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'crash guard was dead code since v1.8.233 — RN core overwrote it every launch'
+    'stabilize Play Android native login'
   ],
   breakingChanges: [],
-  notes: 'crash guard was dead code since v1.8.233 — RN core overwrote it every launch'
+  notes: 'stabilize Play Android native login'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.239': {
+    version: '1.8.239',
+    buildNumber: 202607190237,
+    releaseDate: '2026-07-19',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stabilize Play Android native login'
+    ],
+    breakingChanges: [],
+    notes: 'stabilize Play Android native login'
+  },
   '1.8.238': {
     version: '1.8.238',
     buildNumber: 202607182315,
