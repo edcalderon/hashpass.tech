@@ -1,6 +1,6 @@
 import { supabaseServer } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
-import { authenticateRequest, isAdmin } from '@hashpass/auth';
+import { authenticateRequest } from '@hashpass/auth';
 
 // Helper function to check admin status - using Directus user data
 async function checkAdminStatus(userId: string): Promise<boolean> {
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const isUserAdmin = await isAdmin(userId);
+  const isUserAdmin = await checkAdminStatus(userId);
   if (!isUserAdmin) {
     return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), { status: 403 });
   }
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const isUserAdmin = await isAdmin(userId);
+  const isUserAdmin = await checkAdminStatus(userId);
   if (!isUserAdmin) {
     return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), { status: 403 });
   }
