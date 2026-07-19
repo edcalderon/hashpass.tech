@@ -54,6 +54,58 @@ function escapeJsStringLiteral(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+function decodeJsStringLiteralValue(rawValue) {
+  let decoded = '';
+
+  for (let index = 0; index < rawValue.length; index += 1) {
+    const char = rawValue[index];
+    if (char !== '\\') {
+      decoded += char;
+      continue;
+    }
+
+    index += 1;
+    if (index >= rawValue.length) {
+      decoded += '\\';
+      break;
+    }
+
+    const escaped = rawValue[index];
+    switch (escaped) {
+      case '\\':
+      case "'":
+      case '"':
+        decoded += escaped;
+        break;
+      case 'n':
+        decoded += '\n';
+        break;
+      case 'r':
+        decoded += '\r';
+        break;
+      case 't':
+        decoded += '\t';
+        break;
+      case 'b':
+        decoded += '\b';
+        break;
+      case 'f':
+        decoded += '\f';
+        break;
+      case 'v':
+        decoded += '\v';
+        break;
+      case '0':
+        decoded += '\0';
+        break;
+      default:
+        decoded += `\\${escaped}`;
+    }
+  }
+
+  return decoded;
+}
+
 // Function to get current version from package.json
 function getCurrentVersion() {
   const packageJsonPath = path.join(projectRoot, 'package.json');
@@ -726,9 +778,7 @@ try {
 
           while ((itemMatch = quotedStringPattern.exec(content)) !== null) {
             const rawValue = itemMatch[1] ?? itemMatch[2] ?? '';
-            const quote = itemMatch[1] != null ? "'" : '"';
-            const quotePattern = quote === "'" ? /\\'/g : /\\"/g;
-            items.push(rawValue.replace(/\\\\/g, '\\').replace(quotePattern, quote));
+            items.push(decodeJsStringLiteralValue(rawValue));
           }
 
           return items;

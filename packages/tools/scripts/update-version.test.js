@@ -17,6 +17,7 @@ function writeFile(filePath, content) {
 
 function createFixtureRepo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hashpass-version-test-'));
+  const escapedDoubleQuoteFeature = String.raw`      'Preserve escaped \"double\" quotes'`;
 
   writeFile(
     path.join(root, 'packages/tools/scripts/update-version.mjs'),
@@ -77,7 +78,8 @@ export const VERSION_HISTORY: VersionHistory = {
     environment: 'development',
     features: [
       'Preserve city, country labels',
-      'Preserve escaped \\'single\\' quotes'
+      'Preserve escaped \\'single\\' quotes',
+${escapedDoubleQuoteFeature}
     ],
     bugfixes: [
       'Keep alpha, beta, and gamma together'
@@ -93,7 +95,7 @@ export const VERSION_HISTORY: VersionHistory = {
 }
 
 describe('update-version', () => {
-  it('preserves commas inside quoted version.ts array items when generating versions.json', () => {
+  it('preserves commas and escaped quotes in version.ts array items when generating versions.json', () => {
     const root = createFixtureRepo();
 
     try {
@@ -114,6 +116,7 @@ describe('update-version', () => {
       expect(previousVersion.features).toEqual([
         'Preserve city, country labels',
         "Preserve escaped 'single' quotes",
+        'Preserve escaped "double" quotes',
       ]);
       expect(previousVersion.bugfixes).toEqual(['Keep alpha, beta, and gamma together']);
     } finally {
