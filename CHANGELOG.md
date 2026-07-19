@@ -1,3 +1,14 @@
+## [1.8.240](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.239...v1.8.240) (2026-07-19)
+
+
+### Bug Fixes
+
+* close post-v1.8.239 dashboard sidebar regressions and admin role check ([93c04c1](https://github.com/hashpass-tech/hashpass.tech/commit/93c04c19686af0e6205fe0137f55bb625990fac7))
+
+
+
+
+
 ## [1.8.239](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.238...v1.8.239) (2026-07-19)
 
 
