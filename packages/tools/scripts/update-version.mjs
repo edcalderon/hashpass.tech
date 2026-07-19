@@ -54,6 +54,58 @@ function escapeJsStringLiteral(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+function decodeJsStringLiteralValue(rawValue) {
+  let decoded = '';
+
+  for (let index = 0; index < rawValue.length; index += 1) {
+    const char = rawValue[index];
+    if (char !== '\\') {
+      decoded += char;
+      continue;
+    }
+
+    index += 1;
+    if (index >= rawValue.length) {
+      decoded += '\\';
+      break;
+    }
+
+    const escaped = rawValue[index];
+    switch (escaped) {
+      case '\\':
+      case "'":
+      case '"':
+        decoded += escaped;
+        break;
+      case 'n':
+        decoded += '\n';
+        break;
+      case 'r':
+        decoded += '\r';
+        break;
+      case 't':
+        decoded += '\t';
+        break;
+      case 'b':
+        decoded += '\b';
+        break;
+      case 'f':
+        decoded += '\f';
+        break;
+      case 'v':
+        decoded += '\v';
+        break;
+      case '0':
+        decoded += '\0';
+        break;
+      default:
+        decoded += `\\${escaped}`;
+    }
+  }
+
+  return decoded;
+}
+
 // Function to get current version from package.json
 function getCurrentVersion() {
   const packageJsonPath = path.join(projectRoot, 'package.json');
@@ -718,24 +770,18 @@ try {
         const extractArrayItems = (match) => {
           if (!match) return [];
           const content = match[1].trim();
-          if (!content || content.includes('// No')) return [];
-          // Split by comma or newline, handle quoted strings
-          return content
-            .split(/[,\n]/)
-            .map(item => {
-              item = item.trim();
-              // Remove comments
-              if (item.includes('//')) {
-                item = item.substring(0, item.indexOf('//')).trim();
-              }
-              // Extract quoted string
-              const quotedMatch = item.match(/'([^']*(?:\\'[^']*)*)'/);
-              if (quotedMatch) {
-                return quotedMatch[1].replace(/\\'/g, "'");
-              }
-              return null;
-            })
-            .filter(item => item && item.length > 0);
+          if (!content) return [];
+
+          const items = [];
+          const quotedStringPattern = /'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"/g;
+          let itemMatch;
+
+          while ((itemMatch = quotedStringPattern.exec(content)) !== null) {
+            const rawValue = itemMatch[1] ?? itemMatch[2] ?? '';
+            items.push(decodeJsStringLiteralValue(rawValue));
+          }
+
+          return items;
         };
 
         versions.push({

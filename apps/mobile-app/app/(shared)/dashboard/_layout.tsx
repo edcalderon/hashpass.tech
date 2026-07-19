@@ -32,6 +32,7 @@ import { isDevAuthBypassEnabled } from '../../../lib/auth/dev-bypass';
 import { navigateDashboardBrandToLanding } from '../../../lib/dashboard-navigation';
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
+import { hapticLight, hapticMedium } from '../../../lib/haptics';
 
 const ANDROID_DASHBOARD_HEADER_HEIGHT = 64;
 
@@ -302,6 +303,7 @@ function CustomDrawerContent({
   };
 
   const handleNavigation = (route: typeof menuItems[number]['route']) => {
+    hapticLight();
     // Safety check: ensure route is defined
     if (!route || typeof route !== 'string') {
       console.warn('Invalid route provided to handleNavigation:', route);
@@ -324,6 +326,7 @@ function CustomDrawerContent({
   };
 
   const handleLogout = async () => {
+    hapticMedium();
     try {
       await signOut();
       router.replace('/');
@@ -333,6 +336,7 @@ function CustomDrawerContent({
   };
 
   const handleLanguageToggle = async () => {
+    hapticLight();
     const locales = ['en', 'es', 'ko'];
     const currentIndex = locales.indexOf(locale);
     const nextIndex = (currentIndex + 1) % locales.length;
@@ -658,7 +662,7 @@ function CustomDrawerContent({
           {/* Theme Toggle */}
           <TouchableOpacity
             style={styles.quickToggleButton}
-            onPress={toggleTheme}
+            onPress={() => { hapticLight(); toggleTheme(); }}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel={isDark

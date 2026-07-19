@@ -165,6 +165,7 @@
     "otpSmsSentMessage": "Prüfe dein Telefon auf den 6-stelligen Code.",
     "otpResendPrompt": "OTP-Code nicht erhalten?",
     "clearCode": "Löschen",
+    "pasteCode": "Einfügen",
     "otpResendCountdown": "Neuen Code in {seconds}s senden.",
     "otpSendAnother": "Erneut senden",
     "otpVerifyFailed": "Code konnte nicht verifiziert werden. Bitte fordere einen neuen an.",

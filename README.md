@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.240)
+## 📋 Latest Changes (v1.8.241)
 
 ### Bug Fixes
 
-* close post-v1.8.239 dashboard sidebar regressions and admin role check ([93c04c1](https://github.com/hashpass-tech/hashpass.tech/commit/93c04c19686af0e6205fe0137f55bb625990fac7))
+* **auth:** one digit per OTP cell, add clipboard Paste, haptics on main buttons ([81e8006](https://github.com/hashpass-tech/hashpass.tech/commit/81e8006364a9c01c1fed71d99c07a75afd4cc818))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
