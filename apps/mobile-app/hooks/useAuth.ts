@@ -15,6 +15,7 @@ import { mergeOAuthFragmentParams } from '../lib/auth/oauth/callback-params';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
 import { markRecentAuthSuccess, clearRecentAuthSuccess } from '../lib/auth/recent-auth';
+import { withTimeout } from '../lib/with-timeout';
 import {
   createAuthSessionActor,
   getAuthViewState,
@@ -34,6 +35,13 @@ configureAuthService({ supabaseClient: supabase });
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
 let oauthHashProcessingPromise: Promise<void> | null = null;
 let oauthHashProcessed = false;
+
+// Per-step ceiling for each network/native call inside signOut(). None of
+// those calls (Google Sign-In's native module, Better Auth's client,
+// Supabase's client) apply a timeout of their own, so without this a single
+// hung request leaves signOut() — and any UI awaiting it, like a logout
+// button's busy state — stuck forever instead of failing visibly.
+const SIGN_OUT_STEP_TIMEOUT_MS = 8000;
 
 // Dedicated Better Auth instance for web Google sign-in when the tenant's
 // primary provider (authService) is NOT better-auth (e.g. core/hashpass.tech,
@@ -628,9 +636,13 @@ export const useAuth = () => {
 
     // Clear native Google Sign-In cache so the account picker always shows on next login.
     // Must run before app sign-out to avoid the SDK being in a bad state.
+    // Bounded with withTimeout: this is a native-module call, not a plain JS
+    // call, and it has no timeout of its own — on a flaky connection it can
+    // hang indefinitely rather than reject, which would leave signOut()
+    // (and therefore the caller's "signing out..." UI) stuck forever.
     if (shouldSignOutNativeGoogle) {
       try {
-        await clearNativeGoogleAccount();
+        await withTimeout(clearNativeGoogleAccount(), SIGN_OUT_STEP_TIMEOUT_MS, 'clearNativeGoogleAccount');
       } catch (nativeClearError) {
         console.warn('[useAuth] Native Google account cache clear failed during sign-out:', nativeClearError);
       }
@@ -642,10 +654,22 @@ export const useAuth = () => {
         ? getGoogleBetterAuthProvider()
         : null;
 
+    // Each provider call is individually bounded so one hung network request
+    // (this app has a long, documented history of native transport flakiness
+    // — see the v1.8.234-239 auth crash fixes) can't stall Promise.allSettled
+    // forever: allSettled only resolves once every entry has settled, and a
+    // promise that never rejects makes that a permanent hang, not a handled
+    // failure. A step that times out is simply reported as a failure below,
+    // same as a real rejection — signOut() still clears local state and lets
+    // the caller navigate away.
     const results = await Promise.allSettled([
-      authService.signOut(),
-      dedicatedGoogleBetterAuthProvider?.signOut() ?? Promise.resolve(undefined),
-      supabase.auth.signOut(),
+      withTimeout(authService.signOut(), SIGN_OUT_STEP_TIMEOUT_MS, 'authService.signOut'),
+      withTimeout(
+        dedicatedGoogleBetterAuthProvider?.signOut() ?? Promise.resolve(undefined),
+        SIGN_OUT_STEP_TIMEOUT_MS,
+        'dedicatedGoogleBetterAuthProvider.signOut',
+      ),
+      withTimeout(supabase.auth.signOut(), SIGN_OUT_STEP_TIMEOUT_MS, 'supabase.auth.signOut'),
     ]);
 
     const signOutFailures = results.map((result) => {

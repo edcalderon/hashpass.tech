@@ -20,11 +20,12 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.242)
+## 📋 Latest Changes (v1.8.244)
 
 ### Bug Fixes
 
-* parse version arrays with commas ([b040b22](https://github.com/hashpass-tech/hashpass.tech/commit/b040b2201c16400afa67bd41699d85d6fbdc6b62))
+* bound signOut()'s provider calls so a hung network call can't stall logout forever ([4155f9d](https://github.com/hashpass-tech/hashpass.tech/commit/4155f9d7fb83065608ec01f87b3c5f4aa64914d4))
+* restore the dashboard drawer's tap-outside-to-close affordance, add swipe-close, cut idle CPU ([e47e2b0](https://github.com/hashpass-tech/hashpass.tech/commit/e47e2b0b9cc7e3dc4b441a93b262aa2eedc7bb2e))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

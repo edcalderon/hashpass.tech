@@ -79,6 +79,38 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).toContain('disabled={isSigningOut}');
   });
 
+  it('leaves a visible dimmed backdrop next to the open drawer instead of covering the full screen', () => {
+    // Regression for: the drawer was set to Math.ceil(viewportWidth) (100%
+    // of the screen) on native mobile. With no gap left over, there is
+    // nothing for the drawer's own tap-outside-to-close overlay Pressable to
+    // render on top of — there is no "outside" a user can tap, even though
+    // the close handlers themselves are fine. Must be less than full width
+    // so a dimmed, tappable area remains on the right.
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+
+    expect(dashboardSource).toContain('Math.ceil(viewportWidth * 0.8)');
+  });
+
+  it('only runs the drawer header gradient animations while the drawer is open', () => {
+    // Regression for: these 4 infinite (-1) Reanimated animations ran for as
+    // long as CustomDrawerContent stayed mounted, i.e. the whole time the
+    // dashboard is open, not just the moments this decorative background is
+    // actually visible — measured at a sustained ~65%+ CPU on an emulator
+    // with the drawer merely left open and nothing being touched.
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+
+    expect(dashboardSource).toContain("if (animationsEnabled && drawerStatus === 'open') {");
+    expect(dashboardSource).toContain('}, [animationsEnabled, drawerStatus]);');
+  });
+
+  it('adds an explicit swipe-to-close gesture on the drawer body', () => {
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+
+    expect(dashboardSource).toContain("import { Gesture, GestureDetector } from 'react-native-gesture-handler';");
+    expect(dashboardSource).toContain('Gesture.Pan()');
+    expect(dashboardSource).toContain('<GestureDetector gesture={swipeToCloseGesture}>');
+  });
+
   it('keeps safe-area Fabric events on the generated Fabric event name', () => {
     const fabricInsetsEventSource = readSource(
       '../../../../node_modules/react-native-safe-area-context/android/src/fabric/java/com/th3rdwave/safeareacontext/InsetsChangeEvent.kt',

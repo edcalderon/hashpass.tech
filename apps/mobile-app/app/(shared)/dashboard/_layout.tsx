@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps, runOnJS } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { Ionicons } from '../../../lib/vector-icons';
 import { useRouter, usePathname, useNavigation as useExpoNavigation } from 'expo-router';
@@ -150,8 +151,19 @@ function CustomDrawerContent({
   const logoScale = useSharedValue(1);
 
   useEffect(() => {
-    // Only start animations if animations are enabled
-    if (animationsEnabled) {
+    // These 4 gradient layers used to animate for as long as
+    // CustomDrawerContent stayed mounted — which, since drawerContent is
+    // memoized to keep a stable identity (see the comment on
+    // renderDrawerContent below), is the entire time the dashboard is open,
+    // not just the brief moments the drawer itself is open and this
+    // decorative header background is actually visible. Four concurrent
+    // infinite (-1) UI-thread animations recalculating every frame, all the
+    // time, in the background, measured at ~65% sustained CPU on an
+    // emulator with the drawer merely left open and nothing being touched —
+    // a real, avoidable cost, and less UI-thread headroom for gesture
+    // recognition (tap-to-close, swipe-to-close) right when it matters most.
+    // Only run them while the drawer is actually open.
+    if (animationsEnabled && drawerStatus === 'open') {
       // Start all animations with different durations and delays for fluid movement
       gradientAnimation1.value = withRepeat(
         withTiming(1, { duration: 4000 }),
@@ -180,7 +192,7 @@ function CustomDrawerContent({
       gradientAnimation3.value = 0;
       gradientAnimation4.value = 0;
     }
-  }, [animationsEnabled]);
+  }, [animationsEnabled, drawerStatus]);
 
   // Animated styles for each gradient layer - only when animations enabled
   const animatedGradientStyle1 = useAnimatedStyle(() => {
@@ -437,7 +449,39 @@ function CustomDrawerContent({
     }
   };
 
+  const closeDrawerFromSwipe = React.useCallback(() => {
+    try {
+      navigation.dispatch(DrawerActions.closeDrawer());
+    } catch (e) {
+      console.error('Error closing drawer from swipe gesture:', e);
+    }
+  }, [navigation]);
+
+  // Explicit swipe-to-close on the drawer's own content, in addition to
+  // react-native-drawer-layout's built-in pan gesture (which covers the
+  // whole drawer + overlay from an ancestor view). Requested directly: users
+  // expect swiping left anywhere on the open drawer to close it, not just a
+  // narrow edge region. activeOffsetX only engages on a leftward drag past a
+  // small threshold (positive-direction movement is given a huge tolerance
+  // so a rightward swipe never activates this), and failOffsetY yields to
+  // the menu list's own vertical ScrollView the moment the gesture reads as
+  // primarily vertical, so this can't block scrolling the menu items.
+  const swipeToCloseGesture = React.useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-20, 1000])
+        .failOffsetY([-15, 15])
+        .onEnd((event) => {
+          'worklet';
+          if (event.translationX < -60) {
+            runOnJS(closeDrawerFromSwipe)();
+          }
+        }),
+    [closeDrawerFromSwipe],
+  );
+
   return (
+    <GestureDetector gesture={swipeToCloseGesture}>
     <View style={[styles.container, { backgroundColor: colors.background.default, flex: 1 }]}>
       {/* Drawer Header */}
       <View style={[styles.drawerHeader, {
@@ -757,6 +801,7 @@ function CustomDrawerContent({
       {/* Version Display */}
       <VersionDisplay showInSidebar={true} bottomInset={drawerSafeInsets.bottom} />
     </View>
+    </GestureDetector>
   );
 }
 
@@ -769,8 +814,16 @@ export default function DashboardLayout() {
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const styles = getStyles(isDark, colors, isMobile, insets);
+  // Native mobile intentionally stops short of the full viewport width
+  // (previously Math.ceil(viewportWidth), i.e. 100%): with no visible gap on
+  // the right, there is no dimmed backdrop left for the drawer's own
+  // tap-outside-to-close Pressable to sit on top of, so — even though the
+  // close handlers themselves are fine — there is no "outside" a user can
+  // tap to trigger them. Computing a live pixel value (not a '%' string)
+  // keeps this in sync with useWindowDimensions() on rotation/resize the
+  // same way the previous full-width value did.
   const dashboardDrawerWidth = Platform.OS !== 'web' && isMobile
-    ? Math.ceil(viewportWidth)
+    ? Math.ceil(viewportWidth * 0.8)
     : isMobile
       ? '88%'
       : 360;
