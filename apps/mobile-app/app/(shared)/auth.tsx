@@ -51,6 +51,8 @@ import {
 import { Ionicons } from "../../lib/vector-icons";
 import { supabase } from "../../lib/supabase";
 import { markRecentAuthSuccess } from "../../lib/auth/recent-auth";
+import { hapticLight, hapticMedium } from "../../lib/haptics";
+import * as Clipboard from "expo-clipboard";
 import { resolvePublicSupabaseConfig } from "../../config/supabase-profiles";
 import { getHashpassFullLogo } from "../../lib/hashpass-logo";
 import { useAnimationLevel } from "../../contexts/AnimationLevelContext";
@@ -1229,20 +1231,34 @@ export default function AuthScreen() {
     }
   }, [handleVerifyOtpCode, isBusy, otpDigits, otpSent]);
 
+  // Spread a multi-digit string (SMS auto-fill, paste, or a pasted clipboard
+  // code) across the individual cells, keeping only the leading digits. Each
+  // cell still renders exactly one digit; this is the only path that fills more
+  // than one at a time. Returns the number of digits applied.
+  const applyOtpString = (raw: string): number => {
+    const chars = raw
+      .replace(/[^0-9]/g, "")
+      .slice(0, OTP_CODE_LENGTH)
+      .split("");
+    if (chars.length === 0) return 0;
+
+    const newDigits = new Array(OTP_CODE_LENGTH).fill("");
+    chars.forEach((c, i) => {
+      newDigits[i] = c;
+    });
+    setOtpDigits(newDigits);
+    if (otpError) setOtpError("");
+    const nextFocus = Math.min(chars.length, OTP_CODE_LENGTH - 1);
+    digitRefs.current[nextFocus]?.focus();
+    return chars.length;
+  };
+
   const handleDigitChange = (index: number, value: string) => {
     const cleaned = value.replace(/[^0-9]/g, "");
 
     if (cleaned.length > 1) {
-      // SMS auto-fill or paste: distribute from index 0
-      const chars = cleaned.slice(0, OTP_CODE_LENGTH).split("");
-      const newDigits = new Array(OTP_CODE_LENGTH).fill("");
-      chars.forEach((c, i) => {
-        newDigits[i] = c;
-      });
-      setOtpDigits(newDigits);
-      if (otpError) setOtpError("");
-      const nextFocus = Math.min(chars.length, OTP_CODE_LENGTH - 1);
-      digitRefs.current[nextFocus]?.focus();
+      // SMS auto-fill or paste delivered several digits at once.
+      applyOtpString(cleaned);
       return;
     }
 
@@ -1277,8 +1293,35 @@ export default function AuthScreen() {
     digitRefs.current[0]?.focus();
   };
 
+  // Paste the code from the clipboard into the cells. Because each cell caps at
+  // one digit (maxLength=1), a native Ctrl+V / long-press-paste into a cell is
+  // truncated to a single digit — so we read the clipboard ourselves and fan
+  // the digits out across the cells. Triggered by the "Paste" affordance.
+  const handlePasteOtpCode = async () => {
+    hapticLight();
+    try {
+      const clip = await Clipboard.getStringAsync();
+      const applied = applyOtpString(clip || "");
+      if (applied === 0) {
+        setOtpError(
+          t("otpPasteEmpty", "No numeric code found on the clipboard."),
+        );
+        return;
+      }
+      if (applied === OTP_CODE_LENGTH) {
+        // A full code was pasted — verify it right away, matching the
+        // auto-submit that a completed manual entry triggers.
+        runSubmitAction(handleOtpInputSubmit);
+      }
+    } catch (error) {
+      console.warn("[auth] Failed to read clipboard for OTP paste:", error);
+      setOtpError(t("otpPasteFailed", "Could not read the clipboard."));
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     if (isBusy || oauthInFlightRef.current) return;
+    hapticLight();
 
     oauthInFlightRef.current = true;
     setBusyAction("oauth");
@@ -1421,6 +1464,7 @@ export default function AuthScreen() {
   acceptActiveEmailSuggestionRef.current = acceptActiveEmailSuggestion;
 
   const handlePrimaryEmailAction = () => {
+    hapticMedium();
     if (tryApplyTopEmailSuggestion()) return;
 
     if (emailAuthMethod === "magic-link") {
@@ -2177,9 +2221,17 @@ export default function AuthScreen() {
                                       }
                                     }}
                                     keyboardType="number-pad"
-                                    maxLength={
-                                      index === 0 ? OTP_CODE_LENGTH : 1
-                                    }
+                                    // Every cell holds exactly one digit. Box 0
+                                    // previously used maxLength={OTP_CODE_LENGTH}
+                                    // so it could absorb a full SMS-autofill code,
+                                    // but that also let it visibly hold 2+ typed
+                                    // digits (e.g. "48") when a keystroke landed
+                                    // before focus advanced. SMS autofill still
+                                    // works: the OS delivers the whole code to
+                                    // box 0's onChangeText in a single event, and
+                                    // handleDigitChange's length>1 branch fans it
+                                    // out across the cells before maxLength matters.
+                                    maxLength={1}
                                     editable={!isBusy}
                                     textContentType={
                                       index === 0 ? "oneTimeCode" : undefined
@@ -2197,17 +2249,39 @@ export default function AuthScreen() {
                               ))}
                             </View>
 
-                            {otpCode.length > 0 && !isBusy && (
-                              <TouchableOpacity
-                                onPress={handleClearOtpCode}
-                                style={styles.otpClearButton}
-                                dataSet={{ authEnterIgnore: "true" } as any}
-                              >
-                                <Text style={styles.otpClearText}>
-                                  {t("clearCode", "Clear")}
-                                </Text>
-                              </TouchableOpacity>
-                            )}
+                            <View style={styles.otpActionsRow}>
+                              {/* Paste (left): reads the clipboard and fills all
+                                  cells, since a native paste into a one-digit
+                                  cell would only keep a single digit. */}
+                              {!isBusy ? (
+                                <TouchableOpacity
+                                  onPress={() => void handlePasteOtpCode()}
+                                  style={styles.otpActionButton}
+                                  dataSet={{ authEnterIgnore: "true" } as any}
+                                >
+                                  <Text style={styles.otpClearText}>
+                                    {t("pasteCode", "Paste")}
+                                  </Text>
+                                </TouchableOpacity>
+                              ) : (
+                                <View />
+                              )}
+
+                              {/* Clear (right) */}
+                              {otpCode.length > 0 && !isBusy ? (
+                                <TouchableOpacity
+                                  onPress={handleClearOtpCode}
+                                  style={styles.otpActionButton}
+                                  dataSet={{ authEnterIgnore: "true" } as any}
+                                >
+                                  <Text style={styles.otpClearText}>
+                                    {t("clearCode", "Clear")}
+                                  </Text>
+                                </TouchableOpacity>
+                              ) : (
+                                <View />
+                              )}
+                            </View>
 
                             {otpError ? (
                               <Text style={styles.errorText}>{otpError}</Text>
@@ -2970,9 +3044,14 @@ const getStyles = (
       backgroundColor: "transparent",
       caretColor: "#c81000",
     } as any,
-    otpClearButton: {
-      alignSelf: "flex-end",
+    otpActionsRow: {
+      width: "100%",
       marginTop: 4,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    otpActionButton: {
       paddingVertical: 4,
       paddingHorizontal: 8,
     },
