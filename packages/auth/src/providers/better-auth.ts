@@ -16,9 +16,24 @@ import type {
 import { resolveWebOrigin } from '../supabase-oauth';
 
 type BetterAuthClient = ReturnType<typeof createAuthClient>;
+type SecureStoreModule = typeof import('expo-secure-store');
 
 const DEFAULT_BASE_PATH = '/api/auth';
 const LEGACY_BETTER_AUTH_SEGMENT = ['bsl', 'auth'].join('-');
+const BETTER_AUTH_SESSION_CACHE_KEY = 'hashpass_better_auth_session';
+
+let secureStoreModule: SecureStoreModule | null = null;
+
+const getSecureStore = (): SecureStoreModule => {
+  if (!secureStoreModule) {
+    // Keep native storage lazy without using import(), which Metro rewrites
+    // through Expo's async-require helper in Android release bundles.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    secureStoreModule = require('expo-secure-store') as SecureStoreModule;
+  }
+
+  return secureStoreModule;
+};
 
 const normalizeBasePath = (value?: string | null): string => {
   const trimmed = (value || DEFAULT_BASE_PATH).trim();
@@ -152,6 +167,71 @@ export class BetterAuthProvider implements IAuthProvider {
     }
   }
 
+  private isSessionExpired(session: AuthSession | null): boolean {
+    if (!session?.expires_at) {
+      return false;
+    }
+
+    return session.expires_at <= Date.now();
+  }
+
+  private async getStoredSession(): Promise<AuthSession | null> {
+    if (Platform.OS === 'web') {
+      return null;
+    }
+
+    try {
+      const SecureStore = getSecureStore();
+      const stored = await SecureStore.getItemAsync(BETTER_AUTH_SESSION_CACHE_KEY);
+      const session = stored ? JSON.parse(stored) as AuthSession : null;
+
+      if (!session?.user) {
+        return null;
+      }
+
+      if (this.isSessionExpired(session)) {
+        await SecureStore.deleteItemAsync(BETTER_AUTH_SESSION_CACHE_KEY);
+        return null;
+      }
+
+      return session;
+    } catch (error) {
+      console.error('Error getting stored Better Auth session:', error);
+      return null;
+    }
+  }
+
+  private async storeSession(session: AuthSession | null): Promise<void> {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    try {
+      const SecureStore = getSecureStore();
+      if (!session?.user || this.isSessionExpired(session)) {
+        await SecureStore.deleteItemAsync(BETTER_AUTH_SESSION_CACHE_KEY);
+        return;
+      }
+
+      await SecureStore.setItemAsync(BETTER_AUTH_SESSION_CACHE_KEY, JSON.stringify(session));
+    } catch (error) {
+      console.error('Error storing Better Auth session:', error);
+    }
+  }
+
+  private async clearStoredSession(): Promise<void> {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    try {
+      const SecureStore = getSecureStore();
+      await SecureStore.deleteItemAsync(BETTER_AUTH_SESSION_CACHE_KEY);
+    } catch (error) {
+      console.error('Error clearing Better Auth session:', error);
+    }
+  }
+
   private async readSessionWithRetry(
     options: { retries?: number; delayMs?: number } = {}
   ): Promise<AuthSession | null> {
@@ -271,6 +351,7 @@ export class BetterAuthProvider implements IAuthProvider {
     try {
       const result = await (this.getClient() as any).signOut();
       this.currentSession = null;
+      await this.clearStoredSession();
       this.notifyStateChange(null);
 
       if (result?.error) {
@@ -280,6 +361,7 @@ export class BetterAuthProvider implements IAuthProvider {
       return {};
     } catch (error) {
       this.currentSession = null;
+      await this.clearStoredSession();
       this.notifyStateChange(null);
       return { error: error instanceof Error ? error.message : 'Sign out failed' };
     }
@@ -300,6 +382,7 @@ export class BetterAuthProvider implements IAuthProvider {
         const session = this.mapSession(result?.data);
 
         this.currentSession = session;
+        await this.storeSession(session);
         this.notifyStateChange(session);
 
         return session;
@@ -312,7 +395,17 @@ export class BetterAuthProvider implements IAuthProvider {
         // connectivity blip eject a signed-in user from the dashboard, and
         // the forced dashboard→auth unmount is the window where Fabric
         // crashes natively on Android.
-        return this.currentSession;
+        if (this.currentSession) {
+          return this.currentSession;
+        }
+
+        const storedSession = await this.getStoredSession();
+        if (storedSession) {
+          this.currentSession = storedSession;
+          this.notifyStateChange(storedSession);
+        }
+
+        return storedSession;
       } finally {
         this.sessionLookupInFlight = null;
       }

@@ -3,20 +3,74 @@
 A faster loop than the CI/Play Store cycle for reproducing and verifying
 native-level Android bugs (crashes, navigation issues, anything that
 depends on the actual compiled app, not just JS logic): build a real
-release-mode APK locally, install it on a local emulator, and read
+release-mode artifact locally, install it on a local emulator, and read
 `adb logcat` directly. Full CI/Play Store dispatch is still the ground
-truth for a release, but this loop turns a multi-minute-per-attempt CI
-cycle into a few minutes per attempt, entirely offline from the release
-pipeline.
+truth for a release, but these loops keep most iteration offline from the
+release pipeline.
 
 ## When to use this vs. the CI pipeline
 
-Use this loop to **diagnose and verify a fix** before it ever reaches CI.
-Still dispatch the real Android release workflow (see
+Use the fast APK loop below to **diagnose and verify a fix** before it ever
+reaches CI. Still dispatch the real Android release workflow (see
 [RELEASE_WORKFLOW.md](../release/RELEASE_WORKFLOW.md)) before considering
 anything actually shipped — this loop doesn't touch signing, Play Console,
 or the EC2 runner, and a local debug-signed build is not the same
 artifact users receive.
+
+If the problem only appears in the published Play build, do **not** trust
+`assembleRelease` as confirmation. Use the Play-parity loop below: it builds
+the same release-signed Android App Bundle shape used by the release workflow,
+with the same small CI-shaped mobile `.env`, and optionally installs split
+APKs through bundletool. Local no-submit builds use Gradle directly because
+the Fastlane build lane is only a wrapper around `bundleRelease`; explicit
+Play uploads still use Fastlane.
+
+## Published-app parity loop
+
+Use this when a Play internal/alpha install behaves differently from the
+local APK loop:
+
+```bash
+# Internal/alpha shape used by the current release workflow.
+npm run android:play-parity:dev
+
+# Optional: after a successful AAB build, install Play-like split APKs.
+npm run android:play-parity:dev -- --install
+```
+
+This helper deliberately fails early unless local inputs are close enough to
+the Play upload path:
+
+- Auth-critical public env values must be present:
+  `EXPO_PUBLIC_SUPABASE_PROFILE`, `EXPO_PUBLIC_SUPABASE_URL`,
+  `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_SITE_URL`,
+  `EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN`, and
+  `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
+- Android release signing must be available in `config/android-signing.env`
+  or exported as `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,
+  `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`.
+- `--install` additionally needs `bundletool` on `PATH` or
+  `BUNDLETOOL_JAR=/path/to/bundletool.jar`.
+- To complete native Google Sign-In from a local split install, Google Cloud
+  must also have an **Android** OAuth client for package
+  `com.hashpass.tech` with the Upload key SHA-1. Play-delivered builds use
+  Google's App signing key SHA-1, but local `bundletool install-apks` builds
+  are signed with the Upload key. If this is missing, logcat shows
+  `This android application is not registered to use OAuth2.0` and the app
+  returns to the auth screen without reaching the dashboard.
+
+The helper defaults to `development/internal`, matching the current
+tag-triggered Play workflow. It builds a release-signed AAB with
+`bundleRelease`; it does not upload to Play unless you explicitly pass
+`--submit`, which switches back to the real Fastlane upload lane.
+It also sets `EXPO_NO_DOTENV=1`, so local `.env.local`,
+`.env.production`, and `.env` files cannot make the bundle differ from the
+small workflow-shaped public env.
+
+Use the APK loop below only after acknowledging its differences: APK instead
+of AAB, debug/local signing instead of the Play upload key, local env-file
+loading instead of the workflow's minimal mobile `.env`, and no Play split
+delivery.
 
 ## One-time environment setup
 
@@ -30,7 +84,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 Confirm an emulator is running: `adb devices -l`. If none is running, start
 one from Android Studio's AVD manager or `emulator -avd <name>`.
 
-## Building: release mode, not debug
+## Fast APK loop: release mode, not debug
 
 ```bash
 pnpm --dir apps/mobile-app exec expo prebuild --platform android --clean
