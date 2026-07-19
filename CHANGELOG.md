@@ -1,3 +1,15 @@
+## [1.8.244](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.242...v1.8.244) (2026-07-19)
+
+
+### Bug Fixes
+
+* bound signOut()'s provider calls so a hung network call can't stall logout forever ([4155f9d](https://github.com/hashpass-tech/hashpass.tech/commit/4155f9d7fb83065608ec01f87b3c5f4aa64914d4))
+* restore the dashboard drawer's tap-outside-to-close affordance, add swipe-close, cut idle CPU ([e47e2b0](https://github.com/hashpass-tech/hashpass.tech/commit/e47e2b0b9cc7e3dc4b441a93b262aa2eedc7bb2e))
+
+
+
+
+
 ## [1.8.243](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.242...v1.8.243) (2026-07-19)
 
 
