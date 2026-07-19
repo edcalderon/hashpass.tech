@@ -1,3 +1,14 @@
+## [1.8.242](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.241...v1.8.242) (2026-07-19)
+
+
+### Bug Fixes
+
+* parse version arrays with commas ([b040b22](https://github.com/hashpass-tech/hashpass.tech/commit/b040b2201c16400afa67bd41699d85d6fbdc6b62))
+
+
+
+
+
 ## [1.8.241](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.240...v1.8.241) (2026-07-19)
 
 
