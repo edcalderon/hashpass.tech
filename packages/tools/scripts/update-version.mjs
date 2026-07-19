@@ -718,24 +718,20 @@ try {
         const extractArrayItems = (match) => {
           if (!match) return [];
           const content = match[1].trim();
-          if (!content || content.includes('// No')) return [];
-          // Split by comma or newline, handle quoted strings
-          return content
-            .split(/[,\n]/)
-            .map(item => {
-              item = item.trim();
-              // Remove comments
-              if (item.includes('//')) {
-                item = item.substring(0, item.indexOf('//')).trim();
-              }
-              // Extract quoted string
-              const quotedMatch = item.match(/'([^']*(?:\\'[^']*)*)'/);
-              if (quotedMatch) {
-                return quotedMatch[1].replace(/\\'/g, "'");
-              }
-              return null;
-            })
-            .filter(item => item && item.length > 0);
+          if (!content) return [];
+
+          const items = [];
+          const quotedStringPattern = /'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"/g;
+          let itemMatch;
+
+          while ((itemMatch = quotedStringPattern.exec(content)) !== null) {
+            const rawValue = itemMatch[1] ?? itemMatch[2] ?? '';
+            const quote = itemMatch[1] != null ? "'" : '"';
+            const quotePattern = quote === "'" ? /\\'/g : /\\"/g;
+            items.push(rawValue.replace(/\\\\/g, '\\').replace(quotePattern, quote));
+          }
+
+          return items;
         };
 
         versions.push({
