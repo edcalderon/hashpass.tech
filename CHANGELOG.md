@@ -1,3 +1,14 @@
+## [1.8.246](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.245...v1.8.246) (2026-07-20)
+
+
+### Bug Fixes
+
+* clear native session on logout, redirect to landing, drop native sidebar animations ([0270c19](https://github.com/hashpass-tech/hashpass.tech/commit/0270c194f13de93beaab279759fa6913ba829f6c))
+
+
+
+
+
 ## [1.8.245](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.244...v1.8.245) (2026-07-20)
 
 

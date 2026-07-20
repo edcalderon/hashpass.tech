@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607200030, // Updated to current timestamp
+  buildNumber: 202607202217, // Updated to current timestamp
   releaseDate: '2026-07-20',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'make logout optimistic and defer sidebar gradient animations'
+    'clear native session on logout, redirect to landing, drop native sidebar animations'
   ],
   breakingChanges: [],
-  notes: 'make logout optimistic and defer sidebar gradient animations'
+  notes: 'clear native session on logout, redirect to landing, drop native sidebar animations'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.246': {
+    version: '1.8.246',
+    buildNumber: 202607202217,
+    releaseDate: '2026-07-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'clear native session on logout, redirect to landing, drop native sidebar animations'
+    ],
+    breakingChanges: [],
+    notes: 'clear native session on logout, redirect to landing, drop native sidebar animations'
+  },
   '1.8.245': {
     version: '1.8.245',
     buildNumber: 202607200030,

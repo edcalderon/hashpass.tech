@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.245)
+## 📋 Latest Changes (v1.8.246)
 
 ### Bug Fixes
 
-* make logout optimistic and defer sidebar gradient animations ([733c2af](https://github.com/hashpass-tech/hashpass.tech/commit/733c2af93505551f07175eee41d275d7df0b4310))
+* clear native session on logout, redirect to landing, drop native sidebar animations ([0270c19](https://github.com/hashpass-tech/hashpass.tech/commit/0270c194f13de93beaab279759fa6913ba829f6c))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
