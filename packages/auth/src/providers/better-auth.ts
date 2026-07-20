@@ -348,21 +348,28 @@ export class BetterAuthProvider implements IAuthProvider {
   }
 
   async signOut(): Promise<{ error?: string }> {
+    // Clear the LOCAL session — in-memory and the persistent SecureStore cache —
+    // BEFORE the network sign-out, not after. The Better Auth client's
+    // signOut() network call has no timeout of its own and this app has a long,
+    // documented history of that native transport hanging (see the
+    // v1.8.234-239 auth crash investigation). If the cache clear only ran after
+    // `await`ing that call, a hung request would leave the cached session on
+    // disk, and the next cold-start getSession() would resurrect the user who
+    // just tapped Logout — the exact "logout doesn't actually clear the
+    // session" symptom on native. Clearing up front guarantees the local
+    // session is gone regardless of whether the remote call ever settles.
+    this.currentSession = null;
+    await this.clearStoredSession();
+    this.notifyStateChange(null);
+
     try {
       const result = await (this.getClient() as any).signOut();
-      this.currentSession = null;
-      await this.clearStoredSession();
-      this.notifyStateChange(null);
-
       if (result?.error) {
         return { error: result.error.message || 'Sign out failed' };
       }
 
       return {};
     } catch (error) {
-      this.currentSession = null;
-      await this.clearStoredSession();
-      this.notifyStateChange(null);
       return { error: error instanceof Error ? error.message : 'Sign out failed' };
     }
   }
