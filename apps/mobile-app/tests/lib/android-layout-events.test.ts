@@ -71,12 +71,22 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).toContain('bottomInset={drawerSafeInsets.bottom}');
   });
 
-  it('routes dashboard drawer logout directly to auth on native', () => {
+  it('routes dashboard drawer logout to the public landing, not the login screen or app-close', () => {
+    // Regression for: Logout replaced to '/(shared)/auth' from inside the
+    // drawer's own navigator, which on native collapsed the stack far enough
+    // to exit the app instead of showing the login screen. '/home' is the
+    // public landing and renders regardless of auth state (see
+    // lib/dashboard-navigation.ts), so a signed-out user lands there cleanly.
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const handleLogoutSource = dashboardSource.slice(
+      dashboardSource.indexOf('const handleLogout = async () => {'),
+      dashboardSource.indexOf('const handleLanguageToggle')
+    );
 
     expect(dashboardSource).toContain('const [isSigningOut, setIsSigningOut] = React.useState(false);');
-    expect(dashboardSource).toContain('router.replace(\'/(shared)/auth\' as any);');
     expect(dashboardSource).toContain('disabled={isSigningOut}');
+    expect(handleLogoutSource).toContain('navigateDashboardBrandToLanding({');
+    expect(handleLogoutSource).not.toContain('router.replace(\'/(shared)/auth\'');
   });
 
   it('leaves a visible dimmed backdrop next to the open drawer instead of covering the full screen', () => {
@@ -99,8 +109,25 @@ describe('Android layout event crash guards', () => {
     // with the drawer merely left open and nothing being touched.
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
 
-    expect(dashboardSource).toContain("if (animationsEnabled && drawerStatus === 'open') {");
-    expect(dashboardSource).toContain('}, [animationsEnabled, drawerStatus]);');
+    expect(dashboardSource).toContain('if (decorativeAnimationsEnabled && drawerStatus === \'open\') {');
+    expect(dashboardSource).toContain('}, [decorativeAnimationsEnabled, drawerStatus]);');
+  });
+
+  it('disables all decorative drawer animation on native, not just web-tuned gating', () => {
+    // Regression for: the sidebar still felt slow to open/close on native even
+    // after the gradient animations were gated to only run while open (test
+    // above). The 4 gradient animations, the gradient layers themselves, and
+    // the logo press-spring were all still running on native — competing with
+    // the drawer's own open/close slide for UI-thread frame budget. Native now
+    // opts out of all of it; the decoration is kept on web only, where it's
+    // cheap and the slowness was never reported.
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+
+    expect(dashboardSource).toContain(
+      "const decorativeAnimationsEnabled = animationsEnabled && Platform.OS === 'web';"
+    );
+    expect(dashboardSource).toContain('{decorativeAnimationsEnabled ? (');
+    expect(dashboardSource).toContain("if (Platform.OS !== 'web') return;");
   });
 
   it('adds an explicit swipe-to-close gesture on the drawer body', () => {
