@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607192247, // Updated to current timestamp
-  releaseDate: '2026-07-19',
+  buildNumber: 202607200030, // Updated to current timestamp
+  releaseDate: '2026-07-20',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'restore the dashboard drawer\'s tap-outside-to-close affordance, add swipe-close, cut idle CPU',
-    'bound signOut()\'s provider calls so a hung network call can\'t stall logout forever'
+    'make logout optimistic and defer sidebar gradient animations'
   ],
   breakingChanges: [],
-  notes: 'restore the dashboard drawer\'s tap-outside-to-close affordance, add swipe-close, cut idle CPU; bound signOut()\'s provider calls so a hung network call can\'t stall logout forever'
+  notes: 'make logout optimistic and defer sidebar gradient animations'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.245': {
+    version: '1.8.245',
+    buildNumber: 202607200030,
+    releaseDate: '2026-07-20',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'make logout optimistic and defer sidebar gradient animations'
+    ],
+    breakingChanges: [],
+    notes: 'make logout optimistic and defer sidebar gradient animations'
+  },
   '1.8.244': {
     version: '1.8.244',
     buildNumber: 202607192247,
