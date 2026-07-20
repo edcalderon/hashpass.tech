@@ -1,3 +1,14 @@
+## [1.8.245](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.244...v1.8.245) (2026-07-20)
+
+
+### Bug Fixes
+
+* make logout optimistic and defer sidebar gradient animations ([733c2af](https://github.com/hashpass-tech/hashpass.tech/commit/733c2af93505551f07175eee41d275d7df0b4310))
+
+
+
+
+
 ## [1.8.244](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.242...v1.8.244) (2026-07-19)
 
 

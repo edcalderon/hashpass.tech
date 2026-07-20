@@ -631,6 +631,22 @@ export const useAuth = () => {
     // sign-out is in flight, isLoggedIn=false must always mean "redirect",
     // never "assume it'll come back".
     clearRecentAuthSuccess();
+
+    // Clear LOCAL session state up front, before any remote provider cleanup.
+    // The remote sign-outs below are individually bounded but can still take up
+    // to the full per-step timeout ceiling (up to ~16s worst case across the
+    // sequential native-Google clear + the parallel provider batch) on this
+    // app's documented flaky native transport. Gating "the user is actually
+    // logged out" on those calls is what made Logout appear to hang: the caller
+    // (see handleLogout in dashboard/_layout.tsx) awaited this whole function
+    // before navigating, so its spinner spun for the entire timeout window.
+    // Emitting SIGNED_OUT here — synchronously, before the first `await` below —
+    // flips isLoggedIn to false immediately so the UI can redirect at once,
+    // while the provider cleanup still runs (and is still awaited by callers/
+    // tests that want to observe it) as best-effort background work.
+    sessionBootstrapPromise = Promise.resolve(null);
+    sendAuthEvent({ type: 'SIGNED_OUT' });
+
     const shouldSignOutNativeGoogle =
       Platform.OS !== 'web' && shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());
 
@@ -683,13 +699,10 @@ export const useAuth = () => {
 
     if (signOutFailures.length > 0) {
       console.warn(
-        '[useAuth] Provider sign-out reported cleanup errors; clearing local auth state anyway:',
+        '[useAuth] Provider sign-out reported cleanup errors; local auth state was already cleared:',
         signOutFailures.map((failure) => getAuthErrorMessage(failure, 'Unable to sign out.'))
       );
     }
-
-    sessionBootstrapPromise = Promise.resolve(null);
-    sendAuthEvent({ type: 'SIGNED_OUT' });
   }, [sendAuthEvent]);
 
   const signIn = useCallback(async (email: string, password: string) => {
