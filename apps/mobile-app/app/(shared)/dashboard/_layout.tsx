@@ -150,28 +150,25 @@ function CustomDrawerContent({
   // Logo zoom animation
   const logoScale = useSharedValue(1);
 
+  // Native explicitly opts OUT of every decorative drawer animation. Users
+  // reported the sidebar felt slow to open and close on native, and the
+  // biggest avoidable cost during the slide is these UI-thread reanimated
+  // animations (the 4 fluid gradient layers below + the logo spring)
+  // contending with the drawer's own open/close transition for frame budget.
+  // On native we render a clean static header instead — no gradient layers, no
+  // withRepeat animations, no logo spring — so the slide has the whole frame
+  // budget to itself. The decoration is kept on web, where it's cheap and the
+  // slowness was never reported.
+  const decorativeAnimationsEnabled = animationsEnabled && Platform.OS === 'web';
+
   useEffect(() => {
-    // These 4 gradient layers used to animate for as long as
-    // CustomDrawerContent stayed mounted — which, since drawerContent is
-    // memoized to keep a stable identity (see the comment on
-    // renderDrawerContent below), is the entire time the dashboard is open,
-    // not just the brief moments the drawer itself is open and this
-    // decorative header background is actually visible. Four concurrent
-    // infinite (-1) UI-thread animations recalculating every frame, all the
-    // time, in the background, measured at ~65% sustained CPU on an
-    // emulator with the drawer merely left open and nothing being touched —
-    // a real, avoidable cost, and less UI-thread headroom for gesture
-    // recognition (tap-to-close, swipe-to-close) right when it matters most.
-    // Only run them while the drawer is actually open.
-    if (animationsEnabled && drawerStatus === 'open') {
-      // Don't start the 4 infinite decorative gradient animations the instant
-      // the drawer begins opening. The drawer's open slide is itself a
-      // UI-thread reanimated animation; kicking off four more concurrent
-      // infinite ones at the same moment makes them all contend for the same
-      // frame budget and is a big part of why the panel "feels slow" sliding
-      // in. Wait for the open transition to settle first, then start the
-      // decoration. The timer is cleared on cleanup (drawer closed, animations
-      // toggled off, or unmount) before it can fire.
+    // The 4 gradient layers only animate while the drawer is open AND only on
+    // web (see decorativeAnimationsEnabled above — native drops them entirely).
+    if (decorativeAnimationsEnabled && drawerStatus === 'open') {
+      // Wait for the open transition to settle before starting the infinite
+      // animations, so they never contend with the slide-in for frame budget.
+      // The timer is cleared on cleanup (drawer closed, animations toggled off,
+      // or unmount) before it can fire.
       const startTimer = setTimeout(() => {
         // Start all animations with different durations for fluid movement
         gradientAnimation1.value = withRepeat(
@@ -205,7 +202,7 @@ function CustomDrawerContent({
     gradientAnimation2.value = 0;
     gradientAnimation3.value = 0;
     gradientAnimation4.value = 0;
-  }, [animationsEnabled, drawerStatus]);
+  }, [decorativeAnimationsEnabled, drawerStatus]);
 
   // Animated styles for each gradient layer - only when animations enabled
   const animatedGradientStyle1 = useAnimatedStyle(() => {
@@ -383,25 +380,28 @@ function CustomDrawerContent({
 
     hapticMedium();
     setIsSigningOut(true);
-    try {
-      navigation.dispatch(DrawerActions.closeDrawer());
-    } catch (drawerError) {
-      console.warn('Unable to close drawer before signing out:', drawerError);
-    }
 
-    // signOut() clears local session state up front (synchronously, before its
-    // first await) and then runs bounded, best-effort remote provider cleanup.
-    // Navigate away immediately rather than awaiting that network cleanup — on
-    // a flaky connection it can take up to the full per-step timeout ceiling,
-    // and making the user watch a non-cancelable spinner for that long is
-    // exactly the "Logout hangs and never closes the session" report this
-    // fixes. The local sign-out has already happened by the time this line
-    // runs, so /(shared)/auth is the correct destination regardless of how the
-    // background provider cleanup ultimately resolves.
-    signOut().catch((error) => {
+    // Kick off sign-out. signOut() clears the in-memory auth state (SIGNED_OUT,
+    // emitted before its first await) AND — via BetterAuthProvider.signOut
+    // wiping the SecureStore cache up front — the persistent native session,
+    // so nothing is left for a cold start to resurrect. The bounded remote
+    // provider cleanup finishes in the background; we don't await it, because a
+    // flaky native call could take up to the full timeout ceiling.
+    signOut().catch((error: unknown) => {
       console.error('Error signing out:', error);
     });
-    router.replace('/(shared)/auth' as any);
+
+    // Redirect to the PUBLIC LANDING (/home), not the login screen, using the
+    // same helper the brand logo uses: it closes the drawer, then
+    // router.replace('/home'). /home renders regardless of auth (see
+    // dashboard-navigation), so a signed-out user lands there cleanly instead
+    // of being routed to /(shared)/auth (which, from inside the drawer's
+    // navigator, was collapsing the stack to the point Android exited the app).
+    navigateDashboardBrandToLanding({
+      navigation,
+      router,
+      closeDrawerAction: DrawerActions.closeDrawer(),
+    });
   };
 
   const handleLanguageToggle = async () => {
@@ -437,6 +437,9 @@ function CustomDrawerContent({
   };
 
   const handleLogoPressIn = () => {
+    // Web only — native opts out of all decorative drawer animation (see
+    // decorativeAnimationsEnabled). logoScale stays 1, so the logo is static.
+    if (Platform.OS !== 'web') return;
     logoScale.value = withSpring(1.1, {
       damping: 10,
       stiffness: 300,
@@ -444,6 +447,7 @@ function CustomDrawerContent({
   };
 
   const handleLogoPressOut = () => {
+    if (Platform.OS !== 'web') return;
     logoScale.value = withSpring(1, {
       damping: 10,
       stiffness: 300,
@@ -513,8 +517,9 @@ function CustomDrawerContent({
           ? '0 3px 12px rgba(0, 0, 0, 0.24)'
           : '0 3px 12px rgba(15, 23, 42, 0.12)',
       }]}>
-        {/* Animated Fluid Gradient Background Layers - only render when animations enabled */}
-        {animationsEnabled ? (
+        {/* Animated Fluid Gradient Background Layers — web only; native drops
+            them entirely so the drawer slide keeps the whole frame budget. */}
+        {decorativeAnimationsEnabled ? (
           <>
             <Animated.View
               style={[
@@ -849,7 +854,17 @@ export default function DashboardLayout() {
   // Instance-scoped bridge from CustomDrawerContent's navigation object to
   // Header (see the DrawerNavRef comment above CustomDrawerContent).
   const drawerNavRef = useRef<DrawerNavigation | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // Drawer open/closed is tracked in a REF, not useState, on purpose: it's only
+  // ever read (never rendered) — the two copilot `wasOpen` checks below — so
+  // making it reactive state bought nothing but a full DashboardLayout
+  // re-render (which re-runs the inline `screenOptions` and the Header) on
+  // every single open and close, right in the middle of the drawer slide. That
+  // JS work competing with the UI-thread slide is part of why the sidebar felt
+  // slow. A ref updates without re-rendering, so the slide runs undisturbed.
+  const drawerOpenRef = useRef(false);
+  const handleDrawerStatusChange = useCallback((isOpen: boolean) => {
+    drawerOpenRef.current = isOpen;
+  }, []);
   const [androidQrScannerVisible, setAndroidQrScannerVisible] = useState(false);
   const dashboardCopilotHook = useCopilot() as any;
   // Memoized so drawerContent keeps a stable identity across DashboardLayout
@@ -860,12 +875,12 @@ export default function DashboardLayout() {
   // view — repeatedly. Tearing down a view with live gesture-handler /
   // reanimated bindings mid-flight is a known native-crash trigger, and
   // exactly the failure shape behind this file's prior react-native-screens
-  // incidents. drawerNavRef and setIsDrawerOpen are both stable references
-  // across renders (a ref object and a useState setter), so it's safe to
+  // incidents. drawerNavRef and handleDrawerStatusChange are both stable
+  // references across renders (a ref object and a useCallback), so it's safe to
   // close over both without listing them as dependencies.
   const renderDrawerContent = useCallback(
     (props: object) => (
-      <CustomDrawerContent {...props} navRef={drawerNavRef} onDrawerStatusChange={setIsDrawerOpen} />
+      <CustomDrawerContent {...props} navRef={drawerNavRef} onDrawerStatusChange={handleDrawerStatusChange} />
     ),
     [],
   );
@@ -905,7 +920,7 @@ export default function DashboardLayout() {
   }, [authLoading, isLoggedIn, router]);
 
   const openDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
-    const wasOpen = isDrawerOpen;
+    const wasOpen = drawerOpenRef.current;
 
     try {
       if (typeof navigation?.openDrawer === 'function') {
@@ -932,7 +947,7 @@ export default function DashboardLayout() {
         console.warn('No handleNext or handleNth available', dashboardCopilotHook);
       }
     }, 1200);
-  }, [dashboardCopilotHook, isDrawerOpen]);
+  }, [dashboardCopilotHook]);
 
   // Header component for the drawer screens
   const Header = () => {
@@ -959,7 +974,7 @@ export default function DashboardLayout() {
       const drawerNavigation = Platform.OS === 'android'
         ? (drawerNavRef.current ?? navigationFromContext)
         : navigationFromContext;
-      const wasOpen = isDrawerOpen;
+      const wasOpen = drawerOpenRef.current;
 
       try {
         if (typeof drawerNavigation?.dispatch === 'function') {
