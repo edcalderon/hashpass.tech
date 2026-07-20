@@ -1630,7 +1630,7 @@ describe('useAuth native Google sign-in', () => {
       expect(capturedHook.isLoggedIn).toBe(false);
       expect(capturedHook.user).toBeNull();
       expect(warnSpy).toHaveBeenCalledWith(
-        '[useAuth] Provider sign-out reported cleanup errors; clearing local auth state anyway:',
+        '[useAuth] Provider sign-out reported cleanup errors; local auth state was already cleared:',
         ['Missing or null Origin']
       );
     } finally {

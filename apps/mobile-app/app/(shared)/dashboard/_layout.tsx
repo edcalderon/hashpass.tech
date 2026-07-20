@@ -164,34 +164,47 @@ function CustomDrawerContent({
     // recognition (tap-to-close, swipe-to-close) right when it matters most.
     // Only run them while the drawer is actually open.
     if (animationsEnabled && drawerStatus === 'open') {
-      // Start all animations with different durations and delays for fluid movement
-      gradientAnimation1.value = withRepeat(
-        withTiming(1, { duration: 4000 }),
-        -1,
-        true
-      );
-      gradientAnimation2.value = withRepeat(
-        withTiming(1, { duration: 5000 }),
-        -1,
-        true
-      );
-      gradientAnimation3.value = withRepeat(
-        withTiming(1, { duration: 6000 }),
-        -1,
-        true
-      );
-      gradientAnimation4.value = withRepeat(
-        withTiming(1, { duration: 3500 }),
-        -1,
-        true
-      );
-    } else {
-      // Stop all animations and reset to initial state
-      gradientAnimation1.value = 0;
-      gradientAnimation2.value = 0;
-      gradientAnimation3.value = 0;
-      gradientAnimation4.value = 0;
+      // Don't start the 4 infinite decorative gradient animations the instant
+      // the drawer begins opening. The drawer's open slide is itself a
+      // UI-thread reanimated animation; kicking off four more concurrent
+      // infinite ones at the same moment makes them all contend for the same
+      // frame budget and is a big part of why the panel "feels slow" sliding
+      // in. Wait for the open transition to settle first, then start the
+      // decoration. The timer is cleared on cleanup (drawer closed, animations
+      // toggled off, or unmount) before it can fire.
+      const startTimer = setTimeout(() => {
+        // Start all animations with different durations for fluid movement
+        gradientAnimation1.value = withRepeat(
+          withTiming(1, { duration: 4000 }),
+          -1,
+          true
+        );
+        gradientAnimation2.value = withRepeat(
+          withTiming(1, { duration: 5000 }),
+          -1,
+          true
+        );
+        gradientAnimation3.value = withRepeat(
+          withTiming(1, { duration: 6000 }),
+          -1,
+          true
+        );
+        gradientAnimation4.value = withRepeat(
+          withTiming(1, { duration: 3500 }),
+          -1,
+          true
+        );
+      }, 350);
+
+      return () => clearTimeout(startTimer);
     }
+
+    // Stop all animations and reset to initial state. Assigning a plain value
+    // to a shared value cancels any withRepeat currently running on it.
+    gradientAnimation1.value = 0;
+    gradientAnimation2.value = 0;
+    gradientAnimation3.value = 0;
+    gradientAnimation4.value = 0;
   }, [animationsEnabled, drawerStatus]);
 
   // Animated styles for each gradient layer - only when animations enabled
@@ -376,13 +389,19 @@ function CustomDrawerContent({
       console.warn('Unable to close drawer before signing out:', drawerError);
     }
 
-    try {
-      await signOut();
-      router.replace('/(shared)/auth' as any);
-    } catch (error) {
+    // signOut() clears local session state up front (synchronously, before its
+    // first await) and then runs bounded, best-effort remote provider cleanup.
+    // Navigate away immediately rather than awaiting that network cleanup — on
+    // a flaky connection it can take up to the full per-step timeout ceiling,
+    // and making the user watch a non-cancelable spinner for that long is
+    // exactly the "Logout hangs and never closes the session" report this
+    // fixes. The local sign-out has already happened by the time this line
+    // runs, so /(shared)/auth is the correct destination regardless of how the
+    // background provider cleanup ultimately resolves.
+    signOut().catch((error) => {
       console.error('Error signing out:', error);
-      setIsSigningOut(false);
-    }
+    });
+    router.replace('/(shared)/auth' as any);
   };
 
   const handleLanguageToggle = async () => {
