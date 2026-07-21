@@ -1,3 +1,14 @@
+## [1.8.247](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.246...v1.8.247) (2026-07-21)
+
+
+### Bug Fixes
+
+* clear Supabase session on signout, stabilize drawer width, revert logout target to auth screen ([857e521](https://github.com/hashpass-tech/hashpass.tech/commit/857e521da74f1a539be111dccd6b8ca651f5acac))
+
+
+
+
+
 ## [1.8.246](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.245...v1.8.246) (2026-07-20)
 
 
