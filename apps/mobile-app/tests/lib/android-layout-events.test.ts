@@ -66,17 +66,37 @@ describe('Android layout event crash guards', () => {
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
 
     expect(dashboardSource).toContain('const ANDROID_DRAWER_BOTTOM_GUARD = 56;');
-    expect(dashboardSource).toContain('const dashboardDrawerWidth = Platform.OS !== \'web\' && isMobile');
+    expect(dashboardSource).toContain('Platform.OS !== \'web\' && isMobile');
     expect(dashboardSource).toContain('width: dashboardDrawerWidth');
     expect(dashboardSource).toContain('bottomInset={drawerSafeInsets.bottom}');
   });
 
-  it('routes dashboard drawer logout to the public landing, not the login screen or app-close', () => {
-    // Regression for: Logout replaced to '/(shared)/auth' from inside the
-    // drawer's own navigator, which on native collapsed the stack far enough
-    // to exit the app instead of showing the login screen. '/home' is the
-    // public landing and renders regardless of auth state (see
-    // lib/dashboard-navigation.ts), so a signed-out user lands there cleanly.
+  it('keeps a stable drawerStyle reference so the open/close animation is not re-targeted mid-transition', () => {
+    // Regression for: opening the drawer looked like it stopped at an
+    // intermediate width (~40%) on the first tap and needed a second tap to
+    // reach the full 80%; closing showed the same two-tap symptom in reverse.
+    // `drawerStyle` was previously a brand-new `{ width: dashboardDrawerWidth }`
+    // object literal built inline inside the unmemoized `screenOptions`
+    // callback, so it got a new identity on every DashboardLayout re-render —
+    // including the several that happen while the drawer is mid-transition.
+    // React Navigation's Drawer derives its animation target from
+    // `options.drawerStyle`; a reference change mid-flight can re-target an
+    // in-progress animation from wherever it currently sits. Memoizing both
+    // the width value and the wrapper object keeps that reference stable
+    // across renders that don't actually change the width.
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+
+    expect(dashboardSource).toContain('const dashboardDrawerWidth = useMemo<DimensionValue>(');
+    expect(dashboardSource).toContain('const dashboardDrawerStyle = useMemo(');
+    expect(dashboardSource).toContain('() => ({ width: dashboardDrawerWidth }),');
+    expect(dashboardSource).toContain('drawerStyle: dashboardDrawerStyle,');
+  });
+
+  it('routes dashboard drawer logout to the login screen after clearing the local session', () => {
+    // Logout must clear the actual persisted session (see
+    // SupabaseAuthProvider/BetterAuthProvider signOut fixes) and land on the
+    // login screen, not silently do nothing and not leave a resurrectable
+    // session behind for a later getSession() to pick back up.
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
     const handleLogoutSource = dashboardSource.slice(
       dashboardSource.indexOf('const handleLogout = async () => {'),
@@ -85,8 +105,7 @@ describe('Android layout event crash guards', () => {
 
     expect(dashboardSource).toContain('const [isSigningOut, setIsSigningOut] = React.useState(false);');
     expect(dashboardSource).toContain('disabled={isSigningOut}');
-    expect(handleLogoutSource).toContain('navigateDashboardBrandToLanding({');
-    expect(handleLogoutSource).not.toContain('router.replace(\'/(shared)/auth\'');
+    expect(handleLogoutSource).toContain('router.replace(\'/(shared)/auth\' as any);');
   });
 
   it('leaves a visible dimmed backdrop next to the open drawer instead of covering the full screen', () => {

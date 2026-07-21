@@ -291,9 +291,36 @@ export class SupabaseAuthProvider implements IAuthProvider {
   }
 
   async signOut(): Promise<{ error?: string }> {
+    // Clear the persisted LOCAL session up front, independent of the network
+    // call. @supabase/auth-js's GoTrueClient._signOut() awaits the server-side
+    // token revocation (`this.admin.signOut(accessToken, scope)`) BEFORE it
+    // clears its own local storage (`_removeSession()`) — confirmed by reading
+    // the installed GoTrueClient source. On this app's documented flaky native
+    // transport, that network call can hang indefinitely, which means the
+    // SDK's own local-storage clear never runs and the persisted session
+    // survives on disk — even after our own withTimeout() wrapper upstream has
+    // already given up waiting and told the caller sign-out succeeded. Reach
+    // directly into the GoTrueClient instance's own `storage`/`storageKey`
+    // fields (not officially public API, but plain instance fields the SDK
+    // itself reads the same way internally, stable across current major
+    // versions) to clear the persisted session immediately, so nothing is left
+    // for a cold start to resurrect regardless of what the background network
+    // call does.
+    try {
+      const authClient = this.supabase.auth as unknown as {
+        storage?: { removeItem: (key: string) => Promise<void> | void };
+        storageKey?: string;
+      };
+      if (authClient.storage && authClient.storageKey) {
+        await authClient.storage.removeItem(authClient.storageKey);
+      }
+    } catch (storageError) {
+      console.error('Error clearing persisted Supabase session storage:', storageError);
+    }
+    this.currentSession = null;
+
     try {
       const { error } = await this.supabase.auth.signOut();
-      this.currentSession = null;
 
       if (error) {
         return { error: error.message };
