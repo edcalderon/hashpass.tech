@@ -1,3 +1,14 @@
+## [1.8.252](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.251...v1.8.252) (2026-07-21)
+
+
+### Bug Fixes
+
+* enable RLS on 33 public tables left exposed on the dev database ([76ab37b](https://github.com/hashpass-tech/hashpass.tech/commit/76ab37bed75c7e36da285a5bb8d8e508f95d58fb))
+
+
+
+
+
 ## [1.8.251](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.248...v1.8.251) (2026-07-21)
 
 
