@@ -1,0 +1,47 @@
+diff --git a/lib/module/views/Drawer.native.js b/lib/module/views/Drawer.native.js
+index c5882f94a4abb82a4b1c2fa390a978028ad247ae..f44377389efe41df633dc1af9906e24c4f93a244 100644
+--- a/lib/module/views/Drawer.native.js
++++ b/lib/module/views/Drawer.native.js
+@@ -135,9 +135,17 @@ export function Drawer({
+     touchX.value = 0;
+     translationX.value = withSpring(translateX, {
+       velocity,
+-      stiffness: 1000,
+-      damping: 500,
+-      mass: 3,
++      // HASHPASS patch: the upstream default (stiffness 1000, damping 500,
++      // mass 3) is heavily overdamped (damping ratio ~4.6) and heavy, so the
++      // drawer creeps slowly toward its target and visually looks like it
++      // "stops partway" — users reported it feeling slow and needing a second
++      // tap to fully open/close. These values are near-critically-damped and
++      // light (ratio ~1.0, mass 1) for a fast, single-motion open/close that
++      // still clamps cleanly at the target (overshootClamping) and preserves
++      // the swipe-velocity handoff (the `velocity` field above).
++      stiffness: 600,
++      damping: 45,
++      mass: 1,
+       overshootClamping: true,
+       restDisplacementThreshold: 0.01,
+       restSpeedThreshold: 0.01,
+diff --git a/src/views/Drawer.native.tsx b/src/views/Drawer.native.tsx
+index 6c38326b056f4a81d4572362e77fab4b5ac71a13..76e8bef30344c5e4d2abf1d1a88069ac5157a331 100644
+--- a/src/views/Drawer.native.tsx
++++ b/src/views/Drawer.native.tsx
+@@ -190,9 +190,14 @@ export function Drawer({
+         translateX,
+         {
+           velocity,
+-          stiffness: 1000,
+-          damping: 500,
+-          mass: 3,
++          // HASHPASS patch: upstream default (1000/500/mass 3) is heavily
++          // overdamped (~4.6) and heavy, so the drawer creeps toward its
++          // target and looks like it stops partway. Near-critically-damped and
++          // light (~1.0, mass 1) for a fast single-motion open/close. See the
++          // matching comment in lib/module/views/Drawer.native.js.
++          stiffness: 600,
++          damping: 45,
++          mass: 1,
+           overshootClamping: true,
+           restDisplacementThreshold: 0.01,
+           restSpeedThreshold: 0.01,

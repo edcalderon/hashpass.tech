@@ -1,3 +1,14 @@
+## [1.8.248](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.247...v1.8.248) (2026-07-21)
+
+
+### Bug Fixes
+
+* speed up native drawer, auto-collapse on tab change, harden logout session clear ([d721403](https://github.com/hashpass-tech/hashpass.tech/commit/d721403c9f178d44e40be32d70cca6828cdeb7db))
+
+
+
+
+
 ## [1.8.247](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.246...v1.8.247) (2026-07-21)
 
 

@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.247)
+## 📋 Latest Changes (v1.8.248)
 
 ### Bug Fixes
 
-* clear Supabase session on signout, stabilize drawer width, revert logout target to auth screen ([857e521](https://github.com/hashpass-tech/hashpass.tech/commit/857e521da74f1a539be111dccd6b8ca651f5acac))
+* speed up native drawer, auto-collapse on tab change, harden logout session clear ([d721403](https://github.com/hashpass-tech/hashpass.tech/commit/d721403c9f178d44e40be32d70cca6828cdeb7db))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

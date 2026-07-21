@@ -126,6 +126,27 @@ function CustomDrawerContent({
   useEffect(() => {
     onDrawerStatusChange?.(drawerStatus === 'open');
   }, [drawerStatus, onDrawerStatusChange]);
+  // Auto-collapse the drawer whenever the active route changes (i.e. a tab was
+  // selected). This MUST live in an effect keyed on pathname — closing the
+  // drawer inline in the menu tap handler (even deferred a frame) did not work:
+  // expo-router's navigation state update from router.push() is async and lands
+  // AFTER the inline closeDrawer(), leaving the sidebar open on top of the newly
+  // selected screen (the reported "doesn't auto-collapse on tab change" bug,
+  // reproduced live). By the time pathname has changed here, the navigation has
+  // settled, so this closeDrawer() is the final word. Closing an already-closed
+  // drawer is a harmless no-op, so no drawerStatus guard is needed.
+  const previousPathnameRef = useRef(pathname);
+  useEffect(() => {
+    if (previousPathnameRef.current === pathname) {
+      return;
+    }
+    previousPathnameRef.current = pathname;
+    try {
+      navigation.dispatch(DrawerActions.closeDrawer());
+    } catch (drawerError) {
+      console.error('Error collapsing drawer on route change:', drawerError);
+    }
+  }, [pathname, navigation]);
   const copilotHook = useCopilot() as any;
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
@@ -358,9 +379,6 @@ function CustomDrawerContent({
       return;
     }
 
-    // Close the drawer
-    navigation.dispatch(DrawerActions.closeDrawer());
-
     // Only navigate if we're not already on this screen
     const currentPath = pathname || '';
     const isActive = route.startsWith('./')
@@ -368,9 +386,35 @@ function CustomDrawerContent({
       : currentPath.startsWith(route);
 
     if (!isActive) {
-      // Navigate to the route - all routes are relative now
-      router.push(route);
+      // Navigate via the Drawer navigator using the unambiguous screen name
+      // ('wallet', 'profile', ...) — NOT router.push('./wallet'). The relative
+      // href resolved inconsistently from the drawer content's route context
+      // and was frequently a silent no-op: the tab behind never changed and,
+      // because pathname never updated, the auto-collapse effect above never
+      // fired either (verified live via logcat — handleNavigation ran, but no
+      // pathname change followed). A direct navigator navigate by screen name
+      // is deterministic and keeps expo-router's pathname in sync.
+      const screenName = route.replace('./', '');
+      try {
+        navigation.navigate(screenName);
+      } catch (navError) {
+        console.error('Error navigating from drawer:', navError);
+      }
     }
+
+    // Collapse the drawer on the next frame. navigation.navigate() is
+    // synchronous (unlike the previous async router.push), so by the time this
+    // rAF callback runs the navigation state is already applied and this
+    // closeDrawer() is the final word — it sticks. Runs for the active-tab
+    // (re-tap) case too, where no navigation happens but the sidebar should
+    // still close.
+    requestAnimationFrame(() => {
+      try {
+        navigation.dispatch(DrawerActions.closeDrawer());
+      } catch (drawerError) {
+        console.error('Error closing drawer after navigation:', drawerError);
+      }
+    });
   };
 
   const handleLogout = async () => {

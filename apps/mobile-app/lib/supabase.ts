@@ -854,3 +854,53 @@ const initializeSupabase = () => {
 
 // Initialize immediately
 export const supabase = initializeSupabase();
+
+/**
+ * Force-clear every persisted Supabase auth key from local storage,
+ * independent of the GoTrueClient's own network sign-out.
+ *
+ * Why this exists: @supabase/auth-js's GoTrueClient._signOut() awaits the
+ * server-side token revocation BEFORE it clears local storage. On this app's
+ * documented flaky native transport that network call can hang, so the
+ * persisted session survives on disk and the next cold-start getSession()
+ * resurrects a user who already tapped Logout — reported repeatedly as
+ * "logout redirects to auth but the app still has the session on restart".
+ * The provider-level signOut() clears its known storageKey up front, but this
+ * app-layer sweep is the belt-and-suspenders backstop: it removes EVERY
+ * `sb-*-auth-token`(+`-code-verifier`) key AsyncStorage holds, so it cannot
+ * miss a key even if the client's storageKey ever changes or a stale second
+ * client wrote its own. Best-effort and never throws — logout must proceed
+ * regardless.
+ */
+export const clearPersistedSupabaseSession = async (): Promise<void> => {
+  if (Platform.OS === 'web') {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const keys = Object.keys(window.localStorage);
+        for (const key of keys) {
+          if (key.startsWith('sb-') || key.startsWith('supabase.auth')) {
+            window.localStorage.removeItem(key);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('[supabase] Failed to clear web-persisted session:', error);
+    }
+    return;
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const AsyncStorageModule = require('@react-native-async-storage/async-storage');
+    const AsyncStorage = AsyncStorageModule.default ?? AsyncStorageModule;
+    const allKeys: string[] = (await AsyncStorage.getAllKeys()) ?? [];
+    const supabaseKeys = allKeys.filter(
+      (key) => key.startsWith('sb-') || key.startsWith('supabase.auth')
+    );
+    if (supabaseKeys.length > 0) {
+      await AsyncStorage.multiRemove(supabaseKeys);
+    }
+  } catch (error) {
+    console.warn('[supabase] Failed to clear native-persisted session:', error);
+  }
+};

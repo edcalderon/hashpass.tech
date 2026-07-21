@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { authService, BetterAuthProvider, getSupabaseOAuthRedirectUrl } from '@hashpass/auth';
 import type { AuthSession, AuthUser, IAuthProvider } from '@hashpass/auth';
 import { configureAuthService } from '@hashpass/auth/auth-dependencies';
-import { createSessionFromUrl, supabase } from '../lib/supabase';
+import { createSessionFromUrl, supabase, clearPersistedSupabaseSession } from '../lib/supabase';
 import { Linking, Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import {
@@ -646,6 +646,19 @@ export const useAuth = () => {
     // tests that want to observe it) as best-effort background work.
     sessionBootstrapPromise = Promise.resolve(null);
     sendAuthEvent({ type: 'SIGNED_OUT' });
+
+    // Belt-and-suspenders: force-clear every persisted Supabase auth key from
+    // local storage right now, independent of the provider signOut() below.
+    // The Supabase provider clears its own storageKey, but GoTrueClient only
+    // does so AFTER awaiting a network revocation that can hang on native — so
+    // this direct AsyncStorage sweep is what actually guarantees a cold start
+    // can't resurrect the session. Awaited (it's a fast local op) so the
+    // clear is committed before the caller navigates away.
+    try {
+      await clearPersistedSupabaseSession();
+    } catch (clearError) {
+      console.warn('[useAuth] Failed to clear persisted Supabase session during sign-out:', clearError);
+    }
 
     const shouldSignOutNativeGoogle =
       Platform.OS !== 'web' && shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());

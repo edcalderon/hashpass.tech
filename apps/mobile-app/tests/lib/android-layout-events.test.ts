@@ -92,6 +92,28 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).toContain('drawerStyle: dashboardDrawerStyle,');
   });
 
+  it('navigates drawer menu items by screen name and auto-collapses on route change', () => {
+    // Regression for two live-reproduced bugs: (1) tapping a menu item did not
+    // change the tab behind it — router.push('./wallet') from the drawer
+    // content's route context resolved inconsistently and was frequently a
+    // silent no-op; navigate by unambiguous screen name instead. (2) The
+    // sidebar did not auto-collapse on tab change — closing it inline was
+    // overridden by the async navigation update, so the reliable close lives in
+    // an effect keyed on pathname (fires after the route actually changes).
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const handleNavigationSource = dashboardSource.slice(
+      dashboardSource.indexOf('const handleNavigation ='),
+      dashboardSource.indexOf('const handleLogout =')
+    );
+
+    expect(handleNavigationSource).toContain("const screenName = route.replace('./', '');");
+    expect(handleNavigationSource).toContain('navigation.navigate(screenName);');
+    expect(handleNavigationSource).not.toContain('router.push(route)');
+    // Auto-collapse effect keyed on pathname.
+    expect(dashboardSource).toContain('const previousPathnameRef = useRef(pathname);');
+    expect(dashboardSource).toContain('}, [pathname, navigation]);');
+  });
+
   it('routes dashboard drawer logout to the login screen after clearing the local session', () => {
     // Logout must clear the actual persisted session (see
     // SupabaseAuthProvider/BetterAuthProvider signOut fixes) and land on the

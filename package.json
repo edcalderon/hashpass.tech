@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.247",
+  "version": "1.8.248",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -18,7 +18,8 @@
       "react-native-svg@15.11.2": "patches/react-native-svg@15.11.2.patch",
       "react-native-safe-area-context@5.4.0": "patches/react-native-safe-area-context@5.4.0.patch",
       "react-native-screens@4.11.1": "patches/react-native-screens@4.11.1.patch",
-      "react-native@0.79.6": "patches/react-native@0.79.6.patch"
+      "react-native@0.79.6": "patches/react-native@0.79.6.patch",
+      "react-native-drawer-layout@4.2.2": "patches/react-native-drawer-layout@4.2.2.patch"
     }
   },
   "scripts": {

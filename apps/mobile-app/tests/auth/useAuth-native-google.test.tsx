@@ -159,6 +159,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -251,6 +252,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: mockCreateSessionFromUrl,
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -385,6 +387,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: mockCreateSessionFromUrl,
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -525,6 +528,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: mockCreateSessionFromUrl,
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -665,6 +669,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: mockCreateSessionFromUrl,
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -781,6 +786,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -884,6 +890,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -1008,6 +1015,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -1099,6 +1107,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -1186,6 +1195,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -1283,6 +1293,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -1373,6 +1384,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -1463,6 +1475,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -1569,6 +1582,7 @@ describe('useAuth native Google sign-in', () => {
         jest.doMock('../../lib/supabase', () => ({
           supabase: mockSupabase,
           createSessionFromUrl: jest.fn(),
+          clearPersistedSupabaseSession: jest.fn(),
         }));
 
         jest.doMock('../../config/supabase-profiles', () => ({
@@ -1683,6 +1697,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: mockCreateSessionFromUrl,
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -1815,6 +1830,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: mockCreateSessionFromUrl,
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -1919,6 +1935,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -2020,6 +2037,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -2108,6 +2126,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
@@ -2223,6 +2242,7 @@ describe('useAuth native Google sign-in', () => {
       jest.doMock('../../lib/supabase', () => ({
         supabase: mockSupabase,
         createSessionFromUrl: jest.fn(),
+        clearPersistedSupabaseSession: jest.fn(),
       }));
 
       jest.doMock('../../config/supabase-profiles', () => ({
