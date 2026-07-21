@@ -24,6 +24,9 @@ patchedDependencies:
   react-native-css-interop@0.2.1:
     hash: 3ovotlv4g2dqpzrx3otza2w5re
     path: patches/react-native-css-interop@0.2.1.patch
+  react-native-drawer-layout@4.2.2:
+    hash: dzpdkpooheqykzwkfai4ytw2du
+    path: patches/react-native-drawer-layout@4.2.2.patch
   react-native-safe-area-context@5.4.0:
     hash: fnc6amsbkddbr236v3kkcih6py
     path: patches/react-native-safe-area-context@5.4.0.patch
@@ -21103,7 +21106,7 @@ snapshots:
       color: 4.2.3
       react: 19.0.0
       react-native: 0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
-      react-native-drawer-layout: 4.2.2(react-native-gesture-handler@2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+      react-native-drawer-layout: 4.2.2(patch_hash=dzpdkpooheqykzwkfai4ytw2du)(react-native-gesture-handler@2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-gesture-handler: 2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-reanimated: 3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-safe-area-context: 5.4.0(patch_hash=fnc6amsbkddbr236v3kkcih6py)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -32006,7 +32009,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  react-native-drawer-layout@4.2.2(react-native-gesture-handler@2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
+  react-native-drawer-layout@4.2.2(patch_hash=dzpdkpooheqykzwkfai4ytw2du)(react-native-gesture-handler@2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
     dependencies:
       color: 4.2.3
       react: 19.0.0
