@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607212236, // Updated to current timestamp
+  buildNumber: 202607212310, // Updated to current timestamp
   releaseDate: '2026-07-21',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,31 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
+    'stop web magic-link callbacks from triggering a Directus CORS probe',
     'default the web PWA install prompt to bottom-right, not top-left on desktop'
   ],
   breakingChanges: [],
-  notes: 'default the web PWA install prompt to bottom-right, not top-left on desktop'
+  notes: 'stop web magic-link callbacks from triggering a Directus CORS probe; default the web PWA install prompt to bottom-right, not top-left on desktop'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.250': {
+    version: '1.8.250',
+    buildNumber: 202607212310,
+    releaseDate: '2026-07-21',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stop web magic-link callbacks from triggering a Directus CORS probe',
+      'default the web PWA install prompt to bottom-right, not top-left on desktop'
+    ],
+    breakingChanges: [],
+    notes: 'stop web magic-link callbacks from triggering a Directus CORS probe; default the web PWA install prompt to bottom-right, not top-left on desktop'
+  },
   '1.8.249': {
     version: '1.8.249',
     buildNumber: 202607212236,
