@@ -112,6 +112,43 @@ describe('Directus OAuth sign-in', () => {
     expect(mockGetCurrentUserWithSession).not.toHaveBeenCalled();
   });
 
+  it('does not probe Directus cookies on the shared /auth/callback route when no Directus OAuth is in progress', async () => {
+    // Regression for: this probe used to fire unconditionally whenever the
+    // pathname included '/auth/callback' — but that route is shared by every
+    // auth method, including Supabase magic-link and OTP verification, which
+    // have nothing to do with Directus. That produced a CORS failure against
+    // the Directus SSO host (sso.hashpass.co) on every single magic-link
+    // callback in production. Only `oauth_in_progress` (set by Directus's own
+    // initiateOAuth or Better Auth's Google flow) should unlock this probe.
+    locationMock.pathname = '/auth/callback';
+    locationMock.href = 'https://hashpass.tech/auth/callback?code=abc123';
+    localStorageMock.getItem.mockReturnValue(null); // oauth_in_progress not set
+
+    const { DirectusAuthProvider } = require('../../../../packages/auth/src/providers/directus');
+
+    const provider = new DirectusAuthProvider('https://sso.hashpass.co');
+    const session = await provider.getSession();
+
+    expect(session).toBeNull();
+    expect(mockGetCurrentUserWithSession).not.toHaveBeenCalled();
+  });
+
+  it('does probe Directus cookies on /auth/callback when a Directus OAuth handoff is actually in progress', async () => {
+    locationMock.pathname = '/auth/callback';
+    locationMock.href = 'https://hashpass.tech/auth/callback?oauth_success=1';
+    (localStorageMock.getItem as jest.Mock).mockImplementation((key: string) =>
+      key === 'oauth_in_progress' ? 'true' : null
+    );
+    mockGetCurrentUserWithSession.mockResolvedValue({ data: null, error: { message: 'no session' } });
+
+    const { DirectusAuthProvider } = require('../../../../packages/auth/src/providers/directus');
+
+    const provider = new DirectusAuthProvider('https://sso.hashpass.co');
+    await provider.getSession();
+
+    expect(mockGetCurrentUserWithSession).toHaveBeenCalled();
+  });
+
   it('uses Directus user payload from the OAuth callback instead of calling /users/me', async () => {
     const { DirectusAuthProvider } = require('../../../../packages/auth/src/providers/directus');
 
