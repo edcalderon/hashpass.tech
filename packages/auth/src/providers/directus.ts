@@ -775,13 +775,24 @@ export class DirectusAuthProvider implements IAuthProvider {
       // On web, only probe the server during an active OAuth handoff.
       // Cookie-backed Directus sessions are not persisted locally, so probing on every
       // page load causes cross-origin noise without improving the restored session state.
+      //
+      // Gate purely on `oauth_in_progress` — NOT on merely being on the callback
+      // route. `/auth/callback` is the SAME shared route every auth method lands
+      // on, including Supabase magic-link and OTP verification, which have
+      // nothing to do with Directus. The previous `|| onCallbackRoute` bypass
+      // meant this probe fired unconditionally on 100% of magic-link/OTP
+      // callbacks too — producing a CORS failure against the Directus SSO host
+      // on every single one of them (confirmed live: "Cross-Origin Request
+      // Blocked ... sso.hashpass.co/users/me" logged alongside an unrelated
+      // Supabase session-establishment failure, misleadingly suggesting they
+      // were connected). `oauth_in_progress` is set only by Directus's own
+      // initiateOAuth and Better Auth's Google OAuth flow (see both providers'
+      // `signInWithOAuth`), so it correctly identifies an actual OAuth handoff
+      // regardless of which route the browser happens to be on.
       if (typeof window !== 'undefined' && Platform.OS === 'web') {
         const oauthInProgress = window.localStorage?.getItem('oauth_in_progress') === 'true';
-        const onCallbackRoute =
-          typeof window.location?.pathname === 'string' &&
-          window.location.pathname.includes('/auth/callback');
 
-        if (!oauthInProgress && !onCallbackRoute) {
+        if (!oauthInProgress) {
           this.nextSessionProbeAt = Date.now() + 3000;
           return null;
         }
