@@ -1,3 +1,14 @@
+## [1.8.249](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.248...v1.8.249) (2026-07-21)
+
+
+### Bug Fixes
+
+* default the web PWA install prompt to bottom-right, not top-left on desktop ([ed677c2](https://github.com/hashpass-tech/hashpass.tech/commit/ed677c2fc31618c4c785aed3aa45afeb0540ffbe))
+
+
+
+
+
 ## [1.8.248](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.247...v1.8.248) (2026-07-21)
 
 
