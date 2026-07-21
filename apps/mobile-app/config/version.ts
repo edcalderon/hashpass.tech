@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607202217, // Updated to current timestamp
-  releaseDate: '2026-07-20',
+  buildNumber: 202607211505, // Updated to current timestamp
+  releaseDate: '2026-07-21',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'clear native session on logout, redirect to landing, drop native sidebar animations'
+    'clear Supabase session on signout, stabilize drawer width, revert logout target to auth screen'
   ],
   breakingChanges: [],
-  notes: 'clear native session on logout, redirect to landing, drop native sidebar animations'
+  notes: 'clear Supabase session on signout, stabilize drawer width, revert logout target to auth screen'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.247': {
+    version: '1.8.247',
+    buildNumber: 202607211505,
+    releaseDate: '2026-07-21',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'clear Supabase session on signout, stabilize drawer width, revert logout target to auth screen'
+    ],
+    breakingChanges: [],
+    notes: 'clear Supabase session on signout, stabilize drawer width, revert logout target to auth screen'
+  },
   '1.8.246': {
     version: '1.8.246',
     buildNumber: 202607202217,

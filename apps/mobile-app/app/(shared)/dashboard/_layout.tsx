@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions, ActivityIndicator } from 'react-native';
+import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions, ActivityIndicator, type DimensionValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -380,28 +380,25 @@ function CustomDrawerContent({
 
     hapticMedium();
     setIsSigningOut(true);
+    try {
+      navigation.dispatch(DrawerActions.closeDrawer());
+    } catch (drawerError) {
+      console.warn('Unable to close drawer before signing out:', drawerError);
+    }
 
     // Kick off sign-out. signOut() clears the in-memory auth state (SIGNED_OUT,
-    // emitted before its first await) AND — via BetterAuthProvider.signOut
-    // wiping the SecureStore cache up front — the persistent native session,
-    // so nothing is left for a cold start to resurrect. The bounded remote
-    // provider cleanup finishes in the background; we don't await it, because a
-    // flaky native call could take up to the full timeout ceiling.
+    // emitted before its first await) AND — via BetterAuthProvider.signOut and
+    // SupabaseAuthProvider.signOut both wiping their persisted session storage
+    // up front — the persistent native session for every provider this app
+    // can be signed in through, so nothing is left for a cold start to
+    // resurrect. The bounded remote provider cleanup finishes in the
+    // background; we don't await it, because a flaky native call could take
+    // up to the full timeout ceiling.
     signOut().catch((error: unknown) => {
       console.error('Error signing out:', error);
     });
 
-    // Redirect to the PUBLIC LANDING (/home), not the login screen, using the
-    // same helper the brand logo uses: it closes the drawer, then
-    // router.replace('/home'). /home renders regardless of auth (see
-    // dashboard-navigation), so a signed-out user lands there cleanly instead
-    // of being routed to /(shared)/auth (which, from inside the drawer's
-    // navigator, was collapsing the stack to the point Android exited the app).
-    navigateDashboardBrandToLanding({
-      navigation,
-      router,
-      closeDrawerAction: DrawerActions.closeDrawer(),
-    });
+    router.replace('/(shared)/auth' as any);
   };
 
   const handleLanguageToggle = async () => {
@@ -846,11 +843,33 @@ export default function DashboardLayout() {
   // tap to trigger them. Computing a live pixel value (not a '%' string)
   // keeps this in sync with useWindowDimensions() on rotation/resize the
   // same way the previous full-width value did.
-  const dashboardDrawerWidth = Platform.OS !== 'web' && isMobile
-    ? Math.ceil(viewportWidth * 0.8)
-    : isMobile
-      ? '88%'
-      : 360;
+  //
+  // Memoized (both the number AND the `{ width }` wrapper object below): the
+  // open/close transition felt like it needed two taps to actually reach
+  // 80%/0% — the drawer would settle at some intermediate width on the first
+  // tap. `drawerStyle` was previously a brand-new object literal built inline
+  // inside the unmemoized `screenOptions` callback below, so it got a new
+  // identity on EVERY DashboardLayout re-render — including the several that
+  // happen while the drawer is mid-open/close (scroll updates, notification
+  // polling, animation ticks). React Navigation's Drawer derives its
+  // open/close animation target from `options.drawerStyle`, so a reference
+  // change mid-transition could re-target the in-flight animation using a
+  // still-transitioning current position, which reads exactly as "stops
+  // partway, needs a second tap to finish." A stable `dashboardDrawerWidth` +
+  // `drawerStyle` reference removes that as a possible cause.
+  const dashboardDrawerWidth = useMemo<DimensionValue>(
+    () =>
+      Platform.OS !== 'web' && isMobile
+        ? Math.ceil(viewportWidth * 0.8)
+        : isMobile
+          ? '88%'
+          : 360,
+    [isMobile, viewportWidth],
+  );
+  const dashboardDrawerStyle = useMemo(
+    () => ({ width: dashboardDrawerWidth }),
+    [dashboardDrawerWidth],
+  );
   // Instance-scoped bridge from CustomDrawerContent's navigation object to
   // Header (see the DrawerNavRef comment above CustomDrawerContent).
   const drawerNavRef = useRef<DrawerNavigation | null>(null);
@@ -1395,9 +1414,7 @@ export default function DashboardLayout() {
               screenOptions={({ navigation }) => ({
                 ...getDrawerHeaderOptions(navigation),
                 drawerType: 'front',
-                drawerStyle: {
-                  width: dashboardDrawerWidth,
-                },
+                drawerStyle: dashboardDrawerStyle,
                 overlayColor: 'rgba(0,0,0,0.5)',
                 drawerPosition: 'left',
               })}
