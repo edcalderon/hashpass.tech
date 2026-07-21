@@ -83,10 +83,7 @@ export const getPwaDockPositionCoordinates = (
   return clampPwaDragPosition(coordinatesByDock[dockPosition], viewport);
 };
 
-export const getDefaultPwaDockPosition = (): PwaDockPosition => {
-  const viewport = getPwaDragViewport();
-  return viewport.width <= 768 ? 'bottom-right' : 'top-left';
-};
+export const getDefaultPwaDockPosition = (): PwaDockPosition => 'bottom-right';
 
 export const getDefaultPwaDragPosition = (): PwaDragPosition => {
   return getPwaDockPositionCoordinates(getDefaultPwaDockPosition());
