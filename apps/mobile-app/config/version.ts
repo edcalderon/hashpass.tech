@@ -22,23 +22,70 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607212312, // Updated to current timestamp
-  releaseDate: '2026-07-21',
+  buildNumber: 202607220152, // Updated to current timestamp
+  releaseDate: '2026-07-22',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'stop web magic-link callbacks from triggering a Directus CORS probe',
-    'default the web PWA install prompt to bottom-right, not top-left on desktop'
+    'restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations',
+    'enable RLS on 33 public tables left exposed on the dev database'
   ],
   breakingChanges: [],
-  notes: 'stop web magic-link callbacks from triggering a Directus CORS probe; default the web PWA install prompt to bottom-right, not top-left on desktop'
+  notes: 'restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations; enable RLS on 33 public tables left exposed on the dev database'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.254': {
+    version: '1.8.254',
+    buildNumber: 202607220152,
+    releaseDate: '2026-07-22',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations',
+      'enable RLS on 33 public tables left exposed on the dev database'
+    ],
+    breakingChanges: [],
+    notes: 'restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations; enable RLS on 33 public tables left exposed on the dev database'
+  },
+  '1.8.253': {
+    version: '1.8.253',
+    buildNumber: 202607220151,
+    releaseDate: '2026-07-22',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations',
+      'enable RLS on 33 public tables left exposed on the dev database'
+    ],
+    breakingChanges: [],
+    notes: 'restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations; enable RLS on 33 public tables left exposed on the dev database'
+  },
+  '1.8.252': {
+    version: '1.8.252',
+    buildNumber: 202607212336,
+    releaseDate: '2026-07-21',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'enable RLS on 33 public tables left exposed on the dev database'
+    ],
+    breakingChanges: [],
+    notes: 'enable RLS on 33 public tables left exposed on the dev database'
+  },
   '1.8.251': {
     version: '1.8.251',
     buildNumber: 202607212312,

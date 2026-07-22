@@ -1,20 +1,5 @@
 
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_KEY as string;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 
 // Type definitions for the API response
 interface ApiResponse<T = any> {
@@ -38,6 +23,7 @@ interface MeetingSlot {
 // GET /api/bslatam/meeting-slots?userId=xxx - Get available slots for a user
 export async function GET(request: Request): Promise<Response> {
   try {
+    const supabase = getSupabaseServerForRequest(request);
     const { searchParams } = new URL(request.url);
     const targetUserId = searchParams.get('userId');
     const startDateParam = searchParams.get('startDate');
@@ -107,6 +93,7 @@ export async function GET(request: Request): Promise<Response> {
 // POST /api/bslatam/meeting-slots - Generate weekly slots for current user
 export async function POST(request: Request): Promise<Response> {
   try {
+    const supabase = getSupabaseServerForRequest(request);
     const body = await request.json();
     const userId = body.userId;
     const startDate = body.startDate || new Date().toISOString().split('T')[0];

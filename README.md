@@ -20,12 +20,12 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.251)
+## 📋 Latest Changes (v1.8.254)
 
 ### Bug Fixes
 
-* default the web PWA install prompt to bottom-right, not top-left on desktop ([ed677c2](https://github.com/hashpass-tech/hashpass.tech/commit/ed677c2fc31618c4c785aed3aa45afeb0540ffbe))
-* stop web magic-link callbacks from triggering a Directus CORS probe ([3eb756c](https://github.com/hashpass-tech/hashpass.tech/commit/3eb756c081752890d5d492aa5af4898276203c45))
+* enable RLS on 33 public tables left exposed on the dev database ([76ab37b](https://github.com/hashpass-tech/hashpass.tech/commit/76ab37bed75c7e36da285a5bb8d8e508f95d58fb))
+* restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations ([669a700](https://github.com/hashpass-tech/hashpass.tech/commit/669a700d60716bfe55b64cfd40db7d970e53c8c3))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
