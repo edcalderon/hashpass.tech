@@ -21,13 +21,16 @@
       "databaseUrlEnv": ["BSL_SUPABASE_DB_URL_PROD", "SUPABASE_DB_URL_BSL_PROD", "DATABASE_URL_BSL_PROD", "PROD_BSL_DB_URL"]
     }
   },
-  "defaultGroups": ["core", "events", "wallet", "auth", "security", "rls-hardening"],
+  "defaultGroups": ["rls-hardening"],
   "groups": {
     "core": ["apps/mobile-app/db/migrations/V001__init_core_schema.sql"],
     "events": ["apps/mobile-app/db/migrations/V002__meeting_requests_system.sql"],
     "security": ["apps/mobile-app/db/migrations/V003__row_level_security.sql"],
     "wallet": ["apps/mobile-app/db/migrations/V004__wallet_auth.sql"],
     "auth": ["apps/mobile-app/db/migrations/V005__otp_codes.sql"],
-    "rls-hardening": ["db/migrations/V008__enable_missing_rls.sql"]
+    "rls-hardening": [
+      "db/migrations/V008__enable_missing_rls.sql",
+      "db/migrations/V009__meeting_slots_select_policy.sql"
+    ]
   }
 }
