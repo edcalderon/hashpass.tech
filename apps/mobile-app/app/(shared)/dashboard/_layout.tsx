@@ -1,8 +1,7 @@
 import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image, Platform, Animated as RNAnimated, ScrollView, useWindowDimensions, ActivityIndicator, type DimensionValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring, useAnimatedProps, runOnJS } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, withSpring } from 'react-native-reanimated';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { Ionicons } from '../../../lib/vector-icons';
 import { useRouter, usePathname, useNavigation as useExpoNavigation } from 'expo-router';
@@ -371,6 +370,18 @@ function CustomDrawerContent({
     }
   };
 
+  const closeDrawer = () => {
+    try {
+      if (typeof navigation?.closeDrawer === 'function') {
+        navigation.closeDrawer();
+      } else {
+        navigation.dispatch(DrawerActions.closeDrawer());
+      }
+    } catch (drawerError) {
+      console.error('Error closing drawer:', drawerError);
+    }
+  };
+
   const handleNavigation = (route: typeof menuItems[number]['route']) => {
     hapticLight();
     // Safety check: ensure route is defined
@@ -409,11 +420,7 @@ function CustomDrawerContent({
     // (re-tap) case too, where no navigation happens but the sidebar should
     // still close.
     requestAnimationFrame(() => {
-      try {
-        navigation.dispatch(DrawerActions.closeDrawer());
-      } catch (drawerError) {
-        console.error('Error closing drawer after navigation:', drawerError);
-      }
+      closeDrawer();
     });
   };
 
@@ -424,23 +431,16 @@ function CustomDrawerContent({
 
     hapticMedium();
     setIsSigningOut(true);
-    try {
-      navigation.dispatch(DrawerActions.closeDrawer());
-    } catch (drawerError) {
-      console.warn('Unable to close drawer before signing out:', drawerError);
-    }
+    closeDrawer();
 
-    // Kick off sign-out. signOut() clears the in-memory auth state (SIGNED_OUT,
-    // emitted before its first await) AND — via BetterAuthProvider.signOut and
-    // SupabaseAuthProvider.signOut both wiping their persisted session storage
-    // up front — the persistent native session for every provider this app
-    // can be signed in through, so nothing is left for a cold start to
-    // resurrect. The bounded remote provider cleanup finishes in the
-    // background; we don't await it, because a flaky native call could take
-    // up to the full timeout ceiling.
-    signOut().catch((error: unknown) => {
+    try {
+      // Wait only for durable local cache removal. Remote token revocation and
+      // native Google cleanup continue in the background, but the next app
+      // launch cannot resurrect this user from SecureStore or AsyncStorage.
+      await signOut({ waitForRemoteCleanup: false });
+    } catch (error) {
       console.error('Error signing out:', error);
-    });
+    }
 
     router.replace('/(shared)/auth' as any);
   };
@@ -513,39 +513,7 @@ function CustomDrawerContent({
     }
   };
 
-  const closeDrawerFromSwipe = React.useCallback(() => {
-    try {
-      navigation.dispatch(DrawerActions.closeDrawer());
-    } catch (e) {
-      console.error('Error closing drawer from swipe gesture:', e);
-    }
-  }, [navigation]);
-
-  // Explicit swipe-to-close on the drawer's own content, in addition to
-  // react-native-drawer-layout's built-in pan gesture (which covers the
-  // whole drawer + overlay from an ancestor view). Requested directly: users
-  // expect swiping left anywhere on the open drawer to close it, not just a
-  // narrow edge region. activeOffsetX only engages on a leftward drag past a
-  // small threshold (positive-direction movement is given a huge tolerance
-  // so a rightward swipe never activates this), and failOffsetY yields to
-  // the menu list's own vertical ScrollView the moment the gesture reads as
-  // primarily vertical, so this can't block scrolling the menu items.
-  const swipeToCloseGesture = React.useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetX([-20, 1000])
-        .failOffsetY([-15, 15])
-        .onEnd((event) => {
-          'worklet';
-          if (event.translationX < -60) {
-            runOnJS(closeDrawerFromSwipe)();
-          }
-        }),
-    [closeDrawerFromSwipe],
-  );
-
   return (
-    <GestureDetector gesture={swipeToCloseGesture}>
     <View style={[styles.container, { backgroundColor: colors.background.default, flex: 1 }]}>
       {/* Drawer Header */}
       <View style={[styles.drawerHeader, {
@@ -647,6 +615,15 @@ function CustomDrawerContent({
               <Text style={styles.brandBadgeText}>{brandBadgeText}</Text>
             </View>
           </View>
+          <TouchableOpacity
+            onPress={closeDrawer}
+            style={styles.drawerCloseButton}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={t({ id: 'nav.closeMenu', message: 'Close navigation menu' })}
+          >
+            <Ionicons name="close" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -866,7 +843,6 @@ function CustomDrawerContent({
       {/* Version Display */}
       <VersionDisplay showInSidebar={true} bottomInset={drawerSafeInsets.bottom} />
     </View>
-    </GestureDetector>
   );
 }
 
@@ -1012,6 +988,33 @@ export default function DashboardLayout() {
     }, 1200);
   }, [dashboardCopilotHook]);
 
+  const closeDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
+    try {
+      if (typeof navigation?.closeDrawer === 'function') {
+        navigation.closeDrawer();
+      } else if (typeof navigation?.dispatch === 'function') {
+        navigation.dispatch(DrawerActions.closeDrawer());
+      } else {
+        console.warn('Drawer navigation unavailable, skipping closeDrawer');
+      }
+    } catch (error) {
+      console.error('Error closing drawer:', error);
+    }
+  }, []);
+
+  const toggleDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
+    const drawerNavigation = Platform.OS === 'android'
+      ? (drawerNavRef.current ?? navigation)
+      : navigation;
+
+    if (drawerOpenRef.current) {
+      closeDashboardDrawer(drawerNavigation);
+      return;
+    }
+
+    openDashboardDrawer(drawerNavigation);
+  }, [closeDashboardDrawer, openDashboardDrawer]);
+
   // Header component for the drawer screens
   const Header = () => {
     // Always call the hook (Rules of Hooks), but keep the drawerContent-provided
@@ -1032,37 +1035,6 @@ export default function DashboardLayout() {
         setHeaderHeight(ANDROID_DASHBOARD_HEADER_HEIGHT);
       }
     }, [setHeaderHeight]);
-
-    const toggleDashboardDrawer = () => {
-      const drawerNavigation = Platform.OS === 'android'
-        ? (drawerNavRef.current ?? navigationFromContext)
-        : navigationFromContext;
-      const wasOpen = drawerOpenRef.current;
-
-      try {
-        if (typeof drawerNavigation?.dispatch === 'function') {
-          drawerNavigation.dispatch(DrawerActions.toggleDrawer());
-        } else {
-          console.warn('Drawer navigation unavailable, skipping toggleDrawer');
-        }
-      } catch (e) {
-        console.error('Error toggling drawer:', e);
-      }
-
-      if (wasOpen) {
-        return;
-      }
-
-      setTimeout(() => {
-        if (copilotHook?.handleNth && typeof copilotHook.handleNth === 'function') {
-          copilotHook.handleNth(2);
-        } else if (copilotHook?.handleNext && typeof copilotHook.handleNext === 'function') {
-          copilotHook.handleNext();
-        } else {
-          console.warn('No handleNext or handleNth available', copilotHook);
-        }
-      }, 1200);
-    };
 
     // Adjust header background color based on theme to match app background
     const HEADER_SCROLL_DISTANCE = 100;
@@ -1272,7 +1244,7 @@ export default function DashboardLayout() {
           >
             <View style={{ position: 'relative' }}>
               <CopilotTouchableOpacity
-                onPress={toggleDashboardDrawer}
+                onPress={() => toggleDashboardDrawer(navigationFromContext)}
                 style={styles.headerIconButton}
                 activeOpacity={0.8}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
@@ -1407,11 +1379,11 @@ export default function DashboardLayout() {
           name="menuButton"
         >
           <CopilotTouchableOpacity
-            onPress={() => openDashboardDrawer(navigation)}
+            onPress={() => toggleDashboardDrawer(navigation)}
             style={styles.headerIconButton}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Open navigation menu"
+            accessibilityLabel="Toggle navigation menu"
           >
             <Ionicons
               name="menu"
@@ -1646,6 +1618,16 @@ const getStyles = (
   brandingSection: {
     flex: 1,
     alignItems: 'flex-start',
+  },
+  drawerCloseButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+    borderWidth: 1,
+    borderColor: colors.divider,
   },
   brandSubtitle: {
     fontSize: 12,

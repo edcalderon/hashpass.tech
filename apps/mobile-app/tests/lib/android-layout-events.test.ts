@@ -171,12 +171,34 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).toContain("if (Platform.OS !== 'web') return;");
   });
 
-  it('adds an explicit swipe-to-close gesture on the drawer body', () => {
+  it('uses one drawer gesture owner so a swipe or outside press always settles fully closed', () => {
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
 
-    expect(dashboardSource).toContain("import { Gesture, GestureDetector } from 'react-native-gesture-handler';");
-    expect(dashboardSource).toContain('Gesture.Pan()');
-    expect(dashboardSource).toContain('<GestureDetector gesture={swipeToCloseGesture}>');
+    // react-native-drawer-layout already owns a whole-screen pan and outside
+    // overlay. A second GestureDetector inside drawer content competed with
+    // it, allowing the close transition to be left partially open.
+    expect(dashboardSource).not.toContain('GestureDetector');
+    expect(dashboardSource).not.toContain('DrawerActions.toggleDrawer()');
+    expect(dashboardSource).toContain('const closeDashboardDrawer = useCallback');
+    expect(dashboardSource).toContain('navigation.closeDrawer();');
+    expect(dashboardSource).toContain('onPress={() => toggleDashboardDrawer(navigation)}');
+    expect(dashboardSource).toContain("id: 'nav.closeMenu', message: 'Close navigation menu'");
+  });
+
+  it('waits for durable native session cleanup before leaving the dashboard', () => {
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const authHookSource = readSource('../../hooks/useAuth.ts');
+    const handleLogoutSource = dashboardSource.slice(
+      dashboardSource.indexOf('const handleLogout = async () => {'),
+      dashboardSource.indexOf('const handleLanguageToggle')
+    );
+
+    expect(handleLogoutSource).toContain('await signOut({ waitForRemoteCleanup: false });');
+    expect(handleLogoutSource.indexOf('await signOut({ waitForRemoteCleanup: false });')).toBeLessThan(
+      handleLogoutSource.indexOf("router.replace('/(shared)/auth' as any);")
+    );
+    expect(authHookSource).toContain("from '../lib/auth/native-session-clear'");
+    expect(authHookSource).toContain('clearPersistedNativeProviderSessions()');
   });
 
   it('keeps safe-area Fabric events on the generated Fabric event name', () => {
