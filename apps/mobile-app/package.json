@@ -8,6 +8,7 @@
     "start": "EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-12288}\" expo start --max-workers ${EXPO_WEB_MAX_WORKERS:-1}",
     "start:reset": "EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-12288}\" expo start --clear --max-workers ${EXPO_WEB_MAX_WORKERS:-1}",
     "android": "EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-12288}\" expo start --android --max-workers ${EXPO_WEB_MAX_WORKERS:-1}",
+    "android:emulator": "sh -c 'sdk=\"${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/home/ed/Android/Sdk}}\"; exec \"$sdk/emulator/emulator\" -avd Medium_Phone_API_36.1 -no-snapshot \"$@\"' --",
     "android:bundle": "node ../../packages/tools/scripts/run-mobile-eas.js build --platform android --profile production",
     "android:bundle:dev": "node ../../packages/tools/scripts/run-mobile-eas.js build --platform android --profile preview",
     "android:publish": "node ../../packages/tools/scripts/run-mobile-eas.js submit --platform android --profile production --latest",
