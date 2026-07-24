@@ -31,6 +31,9 @@
     "rls-hardening": [
       "db/migrations/V008__enable_missing_rls.sql",
       "db/migrations/V009__meeting_slots_select_policy.sql"
+    ],
+    "upcoming-bsl-passes": [
+      "db/migrations/V010__provision_upcoming_bsl_general_passes.sql"
     ]
   }
 }
