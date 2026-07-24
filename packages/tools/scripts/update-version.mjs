@@ -404,7 +404,16 @@ function updateChangelog(version, releaseType, notes = '') {
     const hasDocumentedChanges = /^\s*(?:[-*+]|\d+\.)\s+\S/m.test(existingEntry);
 
     if (hasDocumentedChanges) {
-      console.log(`ℹ️ Version ${version} already exists in CHANGELOG.md, skipping update`);
+      const releaseHighlights = notes && !existingEntry.includes(`- ${notes}`)
+        ? `\n### Release Highlights\n- ${notes}\n`
+        : '';
+      if (releaseHighlights) {
+        content = content.slice(0, existingEntryEnd).trimEnd() + releaseHighlights + content.slice(existingEntryEnd);
+        fs.writeFileSync(changelogPath, content);
+        console.log(`✅ Added derived release notes to CHANGELOG.md entry for version ${version}`);
+      } else {
+        console.log(`ℹ️ Version ${version} already exists in CHANGELOG.md, skipping update`);
+      }
       return;
     }
 
@@ -627,7 +636,7 @@ for (const file of filesToUpdate) {
 }
 
 // Update CHANGELOG.md
-updateChangelog(newVersion, releaseType, releaseNotes);
+updateChangelog(newVersion, releaseType, releaseNotes || gitDerivedSummary.notes);
 
 try {
   syncReadmeFromChangelog();

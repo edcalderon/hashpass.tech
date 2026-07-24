@@ -59,10 +59,9 @@ BEGIN
   FROM public.get_pass_type_limits(p_pass_type)
   LIMIT 1;
 
-  -- Development's legacy passes table does not define an id default, while
-  -- production does. Generate a portable text id so both schemas can create
-  -- the same event-aware pass.
-  v_pass_id := 'BSL-' || upper(p_event_id) || '-' || replace(gen_random_uuid()::text, '-', '');
+  -- UUID text is accepted by the legacy text schema and by the canonical UUID
+  -- schema from V001. A prefixed value is not portable to UUID deployments.
+  v_pass_id := gen_random_uuid()::text;
 
   INSERT INTO public.passes (
     id,
