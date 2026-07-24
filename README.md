@@ -25,6 +25,8 @@
 ### Bug Fixes
 
 * recover empty generated release changelog entries ([1a85a40](https://github.com/hashpass-tech/hashpass.tech/commit/1a85a40e773e0d4252fc52347be2d096844a11c5))
+### Release Highlights
+- provision upcoming BSL general passes; restrict BSL pass minting to authorized users; recover empty generated release changelog entries; allow newsletter subscriptions without row readback
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -336,7 +336,7 @@ function deriveReleaseSummaryFromGit(fromVersion, currentNewVersion) {
     }
   }
 
-  const highlights = [...features, ...bugfixes, ...breakingChanges].slice(0, 3);
+  const highlights = [...features, ...bugfixes, ...breakingChanges];
   const notes = highlights.length ? highlights.join('; ') : '';
 
   return { features, bugfixes, breakingChanges, notes };
@@ -404,11 +404,13 @@ function updateChangelog(version, releaseType, notes = '') {
     const hasDocumentedChanges = /^\s*(?:[-*+]|\d+\.)\s+\S/m.test(existingEntry);
 
     if (hasDocumentedChanges) {
-      const releaseHighlights = notes && !existingEntry.includes(`- ${notes}`)
-        ? `\n### Release Highlights\n- ${notes}\n`
-        : '';
+      const releaseHighlights = notes ? `\n### Release Highlights\n- ${notes}\n` : '';
       if (releaseHighlights) {
-        content = content.slice(0, existingEntryEnd).trimEnd() + releaseHighlights + content.slice(existingEntryEnd);
+        const existingHighlightsPattern = /\n### Release Highlights\n(?:\s*(?:[-*+]|\d+\.)\s+.*\n?)*/;
+        const mergedEntry = existingHighlightsPattern.test(existingEntry)
+          ? existingEntry.replace(existingHighlightsPattern, releaseHighlights)
+          : existingEntry.trimEnd() + releaseHighlights;
+        content = content.slice(0, existingEntryStart) + mergedEntry + content.slice(existingEntryEnd);
         fs.writeFileSync(changelogPath, content);
         console.log(`✅ Added derived release notes to CHANGELOG.md entry for version ${version}`);
       } else {
