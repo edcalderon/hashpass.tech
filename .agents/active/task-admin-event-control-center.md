@@ -1,7 +1,19 @@
 # Task: Admin Event Control Center (event-scoped roles + full event admin surface)
 
 **Priority:** High
-**Status:** In progress — Phase 1 (schema foundation + privileged pass mutation) merged to `develop`. UI/role-management surfaces are not built yet.
+**Status:** In progress — Phase 1 (schema foundation + privileged pass mutation) merged to `develop` via [PR #92](https://github.com/hashpass-tech/hashpass.tech/pull/92) (2026-07-24) and promoted toward `main` via [PR #93](https://github.com/hashpass-tech/hashpass.tech/pull/93) (v1.8.257, awaiting @edcalderon approval — see repo release flow in `CLAUDE.md`). `V012` migration applied and verified on **prod**; **dev is not yet migrated** (see Rollout status below). UI/role-management surfaces are not built yet.
+
+## Rollout status
+
+- **`develop`**: merged (PR #92, commit `98b954364` → merge commit `6a3a9d487`).
+- **`main`**: pending — release promotion PR #93 open, needs human approval + coverage/security checks per the protected `develop -> main` flow before it lands.
+- **Prod DB (`hashpass-prod`, pooler-reachable)**: `V012` applied and verified 2026-07-24 — 5 seed events present, all 5 new tables (`events`, `event_roles`, `speakers`, `event_agenda_items`, `admin_action_log`) exist with RLS enabled, `has_event_admin_access`/`admin_mutate_event_pass` exist, `admin_mutate_event_pass` execute is `service_role`-only (not `anon`/`authenticated`), `passes_event_id_fkey` (`NOT VALID`) is in place.
+- **Dev DB (`fxgftanraszjjyeidvia`)**: **not yet applied.** Its direct-connect Postgres host is IPv6-only and wasn't reachable from the environment this migration was run in (no pooler URL was available for dev, unlike prod). Run manually from a machine with normal connectivity:
+  ```bash
+  set -a; source .env; set +a
+  psql "$SUPABASE_DB_URL_DEV" -v ON_ERROR_STOP=1 -f db/migrations/V012__admin_event_control_center.sql
+  ```
+  Until this runs, dev-environment builds (`EXPO_PUBLIC_SUPABASE_PROFILE=core-development`, routed to `hashpass-dev-expo-router-api`) will get a hard DB error from `/api/admin/passes` (RPC not found) rather than silently misbehaving — safe to leave briefly, but should be applied before anyone relies on dev for testing this feature.
 
 ## Goal
 
