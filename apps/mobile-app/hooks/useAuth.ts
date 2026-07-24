@@ -36,6 +36,10 @@ configureAuthService({ supabaseClient: supabase });
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
 let oauthHashProcessingPromise: Promise<void> | null = null;
 let oauthHashProcessed = false;
+// A dashboard logout and the next auth screen mount are separate hook
+// instances. Keep this native SDK cleanup barrier at module scope so a new
+// Google sign-in cannot race the preceding native Google sign-out.
+let nativeGoogleSignOutCleanup: Promise<void> | null = null;
 
 // Per-step ceiling for each network/native call inside signOut(). None of
 // those calls (Google Sign-In's native module, Better Auth's client,
@@ -662,25 +666,38 @@ export const useAuth = () => {
     // AsyncStorage. Previously Better Auth's cache was only reached after
     // native Google cleanup, so replacing the route immediately could leave a
     // cache that resurrected the user after a cold start.
+    const shouldSignOutNativeGoogle =
+      Platform.OS !== 'web' && shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());
+    const clearNativeGoogleBeforeNextLogin = async () => {
+      if (!shouldSignOutNativeGoogle) {
+        return;
+      }
+
+      try {
+        // This is intentionally part of the local sign-out barrier. Starting
+        // a new SDK signIn while the previous SDK signOut is still resolving
+        // produces ASYNC_OP_IN_PROGRESS and leaves the auth screen stuck in
+        // its "Opening Google sign-in" state.
+        await withTimeout(clearNativeGoogleAccount(), SIGN_OUT_STEP_TIMEOUT_MS, 'clearNativeGoogleAccount');
+      } catch (nativeClearError) {
+        console.warn('[useAuth] Native Google account cache clear failed during sign-out:', nativeClearError);
+      }
+    };
+
+    const nativeGoogleCleanupPromise = clearNativeGoogleBeforeNextLogin();
+    nativeGoogleSignOutCleanup = nativeGoogleCleanupPromise;
+    void nativeGoogleCleanupPromise.finally(() => {
+      if (nativeGoogleSignOutCleanup === nativeGoogleCleanupPromise) {
+        nativeGoogleSignOutCleanup = null;
+      }
+    });
+
     await Promise.all([
       clearPersistedNativeProviderSessions(),
       clearPersistedSupabaseSession(),
     ]);
 
     const finishRemoteCleanup = async () => {
-      const shouldSignOutNativeGoogle =
-        Platform.OS !== 'web' && shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());
-
-      // Clear native Google Sign-In cache so the account picker always shows on next login.
-      // Bounded with withTimeout because a native module call can hang on a flaky connection.
-      if (shouldSignOutNativeGoogle) {
-        try {
-          await withTimeout(clearNativeGoogleAccount(), SIGN_OUT_STEP_TIMEOUT_MS, 'clearNativeGoogleAccount');
-        } catch (nativeClearError) {
-          console.warn('[useAuth] Native Google account cache clear failed during sign-out:', nativeClearError);
-        }
-      }
-
       const dedicatedGoogleBetterAuthProvider =
         authService.getProviderName() !== 'better-auth' &&
         (Platform.OS === 'web' || shouldSignOutNativeGoogle)
@@ -718,8 +735,11 @@ export const useAuth = () => {
     };
 
     if (waitForRemoteCleanup) {
+      await nativeGoogleCleanupPromise;
       await finishRemoteCleanup();
     } else {
+      // Do not hold native navigation on a flaky Google SDK call. The next
+      // native Google login awaits this same promise before opening its picker.
       void finishRemoteCleanup().catch((error) => {
         console.warn('[useAuth] Remote sign-out cleanup failed after local sign-out:', error);
       });
@@ -792,6 +812,12 @@ export const useAuth = () => {
 
       if (nativeGoogleEnabled) {
         try {
+          // The dashboard can unmount immediately after logout. Await the
+          // module-scoped barrier from that unmounted hook before starting a
+          // new native SDK operation, otherwise Google returns IN_PROGRESS.
+          if (nativeGoogleSignOutCleanup) {
+            await nativeGoogleSignOutCleanup;
+          }
           const { idToken } = await signInWithNativeGoogleAccount(googleWebClientId);
           // Native's two-tier attempt ends up on one of these two either way,
           // so only clear a session belonging to neither — e.g. a stale
@@ -899,8 +925,13 @@ export const useAuth = () => {
             userDismissal: isUserDismissal,
           });
 
-          if (isUserDismissal || (nativeInProgressCode && errorCode === nativeInProgressCode)) {
+          if (isUserDismissal) {
             return { pending: false };
+          }
+          if (nativeInProgressCode && errorCode === nativeInProgressCode) {
+            return {
+              error: 'Google sign-in is still finishing. Please wait a moment and try again.',
+            };
           }
           if (isDeveloperConfigurationError) {
             return {
