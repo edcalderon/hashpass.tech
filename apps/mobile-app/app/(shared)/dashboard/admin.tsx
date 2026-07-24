@@ -14,7 +14,9 @@ import { resolveActiveEventId } from '../../../lib/event-path';
 import { apiClient } from '../../../lib/api-client';
 import { getUserEventRoles, highestEventRole, EventRole, EventRoleGrant } from '../../../lib/event-admin-access';
 
-type TabType = 'passes' | 'qr-scanner' | 'meetings';
+type TabType = 'passes' | 'qr-scanner' | 'meetings' | 'roles';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 interface Pass {
   id: string;
@@ -55,6 +57,15 @@ interface MeetingRequest {
   created_at: string;
 }
 
+interface EventRoleRow {
+  id: string;
+  user_id: string;
+  role: EventRole;
+  granted_by: string;
+  granted_at: string;
+  expires_at: string | null;
+}
+
 export default function AdminPanel() {
   const { colors, isDark } = useTheme();
   const { user, isLoading: authLoading } = useAuth();
@@ -90,6 +101,13 @@ export default function AdminPanel() {
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<MeetingRequest | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string>('');
+
+  // Staff & Roles State
+  const [eventRoles, setEventRoles] = useState<EventRoleRow[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [showGrantRoleModal, setShowGrantRoleModal] = useState(false);
+  const [newRoleUserId, setNewRoleUserId] = useState('');
+  const [newRoleType, setNewRoleType] = useState<EventRole>('moderator');
 
   const styles = getStyles(isDark, colors);
 
@@ -158,13 +176,13 @@ export default function AdminPanel() {
         return;
       }
 
-      console.log('User has event-scoped admin access for', eventRoles.map(g => g.eventId));
+      console.log('User has event-scoped admin access for', eventRoles.map((g: EventRoleGrant) => g.eventId));
       setAccessibleEvents(eventRoles);
       setIsUserAdmin(true);
       setAdminRole(null);
 
       const ambientEventId = resolveActiveEventId();
-      const defaultEventId = eventRoles.some(g => g.eventId === ambientEventId)
+      const defaultEventId = eventRoles.some((g: EventRoleGrant) => g.eventId === ambientEventId)
         ? ambientEventId
         : eventRoles[0].eventId;
       setSelectedEventId(defaultEventId);
@@ -191,6 +209,73 @@ export default function AdminPanel() {
     } else if (activeTab === 'meetings') {
       await loadMeetingRequests();
       await loadSpeakers();
+    } else if (activeTab === 'roles') {
+      await loadEventRoles();
+    }
+  };
+
+  const loadEventRoles = async () => {
+    setRolesLoading(true);
+    try {
+      const result = await apiClient.get(
+        `/admin/roles?eventId=${encodeURIComponent(selectedEventId)}`,
+        { skipEventSegment: true }
+      );
+      if (!result.success) throw new Error(result.error);
+      setEventRoles(((result.data as { data: EventRoleRow[] })?.data) || []);
+    } catch (error: any) {
+      console.error('Error loading event roles:', error);
+      Alert.alert('Error', 'Failed to load roles: ' + error.message);
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const handleGrantRole = async () => {
+    if (!UUID_PATTERN.test(newRoleUserId.trim())) {
+      Alert.alert('Error', 'Please enter a valid user UUID');
+      return;
+    }
+    try {
+      setRolesLoading(true);
+      const result = await apiClient.post('/admin/roles', {
+        action: 'grant',
+        eventId: selectedEventId,
+        targetUserId: newRoleUserId.trim(),
+        role: newRoleType,
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
+
+      Alert.alert('Success', `Granted ${newRoleType} for ${selectedEventId}`);
+      setShowGrantRoleModal(false);
+      setNewRoleUserId('');
+      setNewRoleType('moderator');
+      await loadEventRoles();
+    } catch (error: any) {
+      console.error('Error granting role:', error);
+      Alert.alert('Error', 'Failed to grant role: ' + error.message);
+    } finally {
+      setRolesLoading(false);
+    }
+  };
+
+  const handleRevokeRole = async (targetUserId: string, role: EventRole) => {
+    try {
+      setRolesLoading(true);
+      const result = await apiClient.post('/admin/roles', {
+        action: 'revoke',
+        eventId: selectedEventId,
+        targetUserId,
+        role,
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
+
+      await loadEventRoles();
+    } catch (error: any) {
+      console.error('Error revoking role:', error);
+      Alert.alert('Error', 'Failed to revoke role: ' + error.message);
+    } finally {
+      setRolesLoading(false);
     }
   };
 
@@ -505,6 +590,15 @@ export default function AdminPanel() {
           <MaterialIcons name="people" size={20} color={activeTab === 'meetings' ? '#007AFF' : colors.text.secondary} />
           <Text style={[styles.tabText, activeTab === 'meetings' && styles.tabTextActive]}>Meetings</Text>
         </TouchableOpacity>
+        {canManagePasses && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'roles' && styles.tabActive]}
+            onPress={() => setActiveTab('roles')}
+          >
+            <MaterialIcons name="admin-panel-settings" size={20} color={activeTab === 'roles' ? '#007AFF' : colors.text.secondary} />
+            <Text style={[styles.tabText, activeTab === 'roles' && styles.tabTextActive]}>Staff & Roles</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Content */}
@@ -546,6 +640,20 @@ export default function AdminPanel() {
               setShowMatchModal(true);
             }}
             onRefresh={loadMeetingRequests}
+          />
+        )}
+
+        {activeTab === 'roles' && (
+          <RolesTab
+            styles={styles}
+            colors={colors}
+            eventId={selectedEventId}
+            roles={eventRoles}
+            loading={rolesLoading}
+            canGrantEventAdmin={adminRole === 'super_admin'}
+            onGrantPress={() => setShowGrantRoleModal(true)}
+            onRevoke={handleRevokeRole}
+            onRefresh={loadEventRoles}
           />
         )}
       </ScrollView>
@@ -637,6 +745,77 @@ export default function AdminPanel() {
         />
       </Modal>
 
+      {/* Grant Role Modal */}
+      <Modal
+        visible={showGrantRoleModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowGrantRoleModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Grant Role for {selectedEventId}</Text>
+
+            <Text style={styles.modalLabel}>User ID (UUID)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newRoleUserId}
+              onChangeText={setNewRoleUserId}
+              placeholder="Enter user UUID from auth.users"
+              placeholderTextColor={colors.text.secondary}
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.modalLabel}>Role</Text>
+            <View style={styles.passTypeButtons}>
+              <TouchableOpacity
+                style={[styles.passTypeButton, newRoleType === 'moderator' && styles.passTypeButtonActive]}
+                onPress={() => setNewRoleType('moderator')}
+              >
+                <Text style={[styles.passTypeButtonText, newRoleType === 'moderator' && styles.passTypeButtonTextActive]}>
+                  MODERATOR
+                </Text>
+              </TouchableOpacity>
+              {adminRole === 'super_admin' && (
+                <TouchableOpacity
+                  style={[styles.passTypeButton, newRoleType === 'event_admin' && styles.passTypeButtonActive]}
+                  onPress={() => setNewRoleType('event_admin')}
+                >
+                  <Text style={[styles.passTypeButtonText, newRoleType === 'event_admin' && styles.passTypeButtonTextActive]}>
+                    EVENT ADMIN
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {adminRole !== 'super_admin' && (
+              <Text style={[styles.modalLabel, { fontSize: 12, marginTop: -12 }]}>
+                Only a super admin can grant event_admin. You can grant moderator.
+              </Text>
+            )}
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowGrantRoleModal(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleGrantRole}
+                disabled={rolesLoading}
+              >
+                {rolesLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Grant</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* QR Scanner */}
       <AdminQRScanner
         visible={showQRScanner}
@@ -720,6 +899,63 @@ function PassManagementTab({
           ))}
           {passes.length === 0 && (
             <Text style={styles.emptyText}>No passes found</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// Staff & Roles Tab Component
+function RolesTab({
+  styles,
+  colors,
+  eventId,
+  roles,
+  loading,
+  canGrantEventAdmin,
+  onGrantPress,
+  onRevoke,
+  onRefresh
+}: any) {
+  return (
+    <View style={styles.tabContent}>
+      <TouchableOpacity style={styles.createButton} onPress={onGrantPress}>
+        <MaterialIcons name="person-add" size={24} color="#fff" />
+        <Text style={styles.createButtonText}>Grant Role</Text>
+      </TouchableOpacity>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+      ) : (
+        <View style={styles.list}>
+          {roles.map((roleRow: EventRoleRow) => (
+            <View key={roleRow.id} style={styles.passCard}>
+              <View style={styles.passCardHeader}>
+                <Text style={styles.passNumber}>{roleRow.user_id}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: roleRow.role === 'event_admin' ? '#007AFF' : '#8E8E93' }]}>
+                  <Text style={styles.statusBadgeText}>{roleRow.role}</Text>
+                </View>
+              </View>
+              <Text style={styles.passInfo}>Event: {eventId}</Text>
+              <Text style={styles.passInfo}>
+                Granted: {new Date(roleRow.granted_at).toLocaleDateString()}
+                {roleRow.expires_at ? ` · Expires: ${new Date(roleRow.expires_at).toLocaleDateString()}` : ''}
+              </Text>
+              {(roleRow.role === 'moderator' || canGrantEventAdmin) && (
+                <View style={styles.passActions}>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => onRevoke(roleRow.user_id, roleRow.role)}
+                  >
+                    <Text style={styles.actionButtonText}>Revoke</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          ))}
+          {roles.length === 0 && (
+            <Text style={styles.emptyText}>No staff roles granted for this event yet</Text>
           )}
         </View>
       )}

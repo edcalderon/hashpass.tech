@@ -185,31 +185,25 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).toContain("id: 'nav.closeMenu', message: 'Close navigation menu'");
   });
 
-  it('locks the native drawer state during a transition and leaves close to buttons or the backdrop', () => {
+  it('always forwards the first native hamburger tap to the drawer navigator', () => {
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
     const openDrawerSource = dashboardSource.slice(
       dashboardSource.indexOf('const openDashboardDrawer = useCallback'),
       dashboardSource.indexOf('const closeDashboardDrawer = useCallback')
     );
-    const closeDrawerSource = dashboardSource.slice(
-      dashboardSource.indexOf('const closeDashboardDrawer = useCallback'),
-      dashboardSource.indexOf('const toggleDashboardDrawer = useCallback')
-    );
 
-    // A second native gesture while the first slide is still resolving can
-    // strand react-native-drawer-layout between endpoints. Native uses the
-    // reliable burger/backdrop close paths instead of a competing swipe.
+    // Regression for v1.8.258: a local "opening" transition lock could be
+    // set before React Navigation handled the action, but never resolve on
+    // some production Android devices. That made the first (and every later)
+    // hamburger press a no-op. The navigator owns its transition state; the
+    // header must always dispatch the initial open action.
     expect(dashboardSource).toContain("swipeEnabled: Platform.OS === 'web'");
-    expect(dashboardSource).toContain("const drawerTransitionRef = useRef<'opening' | 'closing' | null>(null);");
-    expect(dashboardSource).toContain("const settleDrawerTransition = useCallback((transition: 'opening' | 'closing') => {");
-    expect(dashboardSource).toContain("drawerTransitionRef.current === 'opening' && !isOpen");
-    expect(dashboardSource).toContain("drawerTransitionRef.current === 'closing' && isOpen");
-    expect(openDrawerSource).toContain('drawerOpenRef.current = true;');
-    expect(openDrawerSource).toContain("drawerTransitionRef.current = 'opening';");
-    expect(openDrawerSource).toContain("settleDrawerTransition('opening');");
-    expect(closeDrawerSource).toContain('drawerOpenRef.current = false;');
-    expect(closeDrawerSource).toContain("drawerTransitionRef.current = 'closing';");
-    expect(closeDrawerSource).toContain("settleDrawerTransition('closing');");
+    expect(dashboardSource).not.toContain('drawerTransitionRef');
+    expect(openDrawerSource).toContain('const wasOpen = drawerOpenRef.current;');
+    expect(openDrawerSource).toContain('navigation.openDrawer();');
+    expect(openDrawerSource.indexOf('navigation.openDrawer();')).toBeLessThan(
+      openDrawerSource.indexOf('if (wasOpen) {')
+    );
   });
 
   it('waits for durable native session cleanup before leaving the dashboard', () => {

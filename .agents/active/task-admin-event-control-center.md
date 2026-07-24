@@ -1,20 +1,31 @@
 # Task: Admin Event Control Center (event-scoped roles + full event admin surface)
 
 **Priority:** High
-**Status:** In progress — Phase 1 (schema foundation + privileged pass mutation) merged to `develop` via [PR #92](https://github.com/hashpass-tech/hashpass.tech/pull/92) (2026-07-24) and promoted toward `main` via [PR #93](https://github.com/hashpass-tech/hashpass.tech/pull/93) (v1.8.257, awaiting @edcalderon approval — see repo release flow in `CLAUDE.md`). Phase 2 (event-scoped admin UI access) pushed directly to `develop` the same day, not yet released. `V012`+`V013` migrations applied and verified on **prod**; **dev is not yet migrated** (see Rollout status below).
+**Status:** In progress — Phase 1 (schema foundation + privileged pass mutation) merged to `develop` via [PR #92](https://github.com/hashpass-tech/hashpass.tech/pull/92) (2026-07-24) and promoted toward `main` via [PR #93](https://github.com/hashpass-tech/hashpass.tech/pull/93) (v1.8.257, awaiting @edcalderon approval — see repo release flow in `CLAUDE.md`). Phases 2-4 (event-scoped admin UI access, role grant/revoke API + UI, dev/prod schema reconciliation) pushed directly to `develop` the same day, not yet released. `V012`-`V015` migrations applied and verified on **both prod and dev**. Passes and Staff & Roles are now both fully usable end-to-end by event-scoped admins, not just global ones.
 
 ## Rollout status
 
-- **`develop`**: Phase 1 merged (PR #92, commit `98b954364` → merge commit `6a3a9d487`); Phase 2 pushed directly (`admin.tsx` event-scoped gating, `lib/event-admin-access.ts`, `V013`).
-- **`main`**: pending — release promotion PR #93 open (covers Phase 1 only, opened before Phase 2 landed), needs human approval + coverage/security checks per the protected `develop -> main` flow before it lands. Phase 2 will ride the *next* patch release.
-- **Prod DB (`hashpass-prod`, pooler-reachable)**: `V012` and `V013` both applied and verified 2026-07-24 — 5 seed events present, all 5 new tables (`events`, `event_roles`, `speakers`, `event_agenda_items`, `admin_action_log`) exist with RLS enabled, `has_event_admin_access`/`admin_mutate_event_pass` exist, `admin_mutate_event_pass` execute is `service_role`-only (not `anon`/`authenticated`), `passes_event_id_fkey` (`NOT VALID`) is in place, `passes_event_admin_read` policy confirmed present.
-- **Dev DB (`fxgftanraszjjyeidvia`)**: **not yet applied (V012 or V013).** Its direct-connect Postgres host is IPv6-only and wasn't reachable from the environment these migrations were run in (no pooler URL was available for dev, unlike prod). Run manually from a machine with normal connectivity, in order:
-  ```bash
-  set -a; source .env; set +a
-  psql "$SUPABASE_DB_URL_DEV" -v ON_ERROR_STOP=1 -f db/migrations/V012__admin_event_control_center.sql
-  psql "$SUPABASE_DB_URL_DEV" -v ON_ERROR_STOP=1 -f db/migrations/V013__event_admin_passes_read.sql
-  ```
-  Until this runs, dev-environment builds (`EXPO_PUBLIC_SUPABASE_PROFILE=core-development`, routed to `hashpass-dev-expo-router-api`) will get a hard DB error from `/api/admin/passes` (RPC not found) rather than silently misbehaving — safe to leave briefly, but should be applied before anyone relies on dev for testing this feature.
+- **`develop`**: Phase 1 merged (PR #92, commit `98b954364` → merge commit `6a3a9d487`); Phases 2-4 pushed directly (`admin.tsx` event-scoped gating, `lib/event-admin-access.ts`, sidebar fix, `/api/admin/roles`, `V013`-`V015`).
+- **`main`**: pending — release promotion PR #93 open (covers Phase 1 only, opened before Phases 2-4 landed), needs human approval + coverage/security checks per the protected `develop -> main` flow before it lands. Phases 2-4 will ride the *next* patch release.
+- **Prod DB**: `V012`-`V015` all applied and verified 2026-07-24 — 5 seed events present, all 5 new tables (`events`, `event_roles`, `speakers`, `event_agenda_items`, `admin_action_log`) exist with RLS enabled, `has_event_admin_access`/`admin_mutate_event_pass`/`is_super_admin`/`admin_mutate_event_role` all exist, both mutation RPCs are `service_role`-only (not `anon`/`authenticated`), `passes_event_id_fkey`/`event_roles_user_id_fkey` are in place, `passes_event_admin_read` policy confirmed present. `V015` was a confirmed no-op here (prod already had the full baseline).
+- **Dev DB**: **fully reconciled and migrated 2026-07-24.** Dev's direct-connect Postgres host is IPv6-only (unreachable from a plain sandbox), but its Supavisor pooler (`aws-0-us-east-2.pooler.supabase.com`, username `postgres.<project-ref>`, same password as `SUPABASE_DB_URL_DEV`) is IPv4-reachable — use that for any future direct psql access to dev. **A real schema divergence was found and fixed in the process**: dev's `user_roles` predated this repo's tracked V001/V003 migrations — `role` was a plain `text` column (no `user_role` enum type existed on dev at all), `granted_by`/`granted_at`/`expires_at`/`metadata` were missing, and neither `is_admin()` nor `get_current_user_id()` existed. `V015__dev_user_roles_schema_parity.sql` fixed this (guarded/idempotent — verified as a safe no-op on prod first, then applied for real on dev). `V012`-`V014` then applied and verified cleanly on dev.
+
+## Role grants (2026-07-24)
+
+Requested by the repo owner in-session; identities intentionally not written here as plaintext email addresses (this file is committed to a public repo) — see internal record for who maps to which ID. Dev and prod are separate Supabase projects with independent `auth.users`, so the same person has a different uuid in each.
+
+- **Prod**: ✅ Grant 1 → `bsl` `event_admin` (`...66fe`). ✅ Grant 2 → `bsl` `event_admin` (`...c364`). ⏸️ Grant 3 (`super_admin` + `bsl` `event_admin`) — **blocked**: that account has no Supabase `auth.users` row on **prod** at all, only a Better Auth (`ba_users`) row and a canonical `public.user` registry row (a *different* uuid than the `ba_users` id). `user_roles.user_id` has a hard FK to `auth.users(id)` (confirmed by a failed insert: `violates foreign key constraint "user_roles_user_id_fkey"`). **Decision (user, 2026-07-24): wait for that account to complete a Supabase-backed sign-in on prod first**, then look up the real `auth.users.id` and grant. Do not create the `auth.users` row directly or substitute another identifier.
+  **Broader gap worth tracking separately**: no Better-Auth-only account (no `auth.users` row) can hold any `user_roles` row today, and almost certainly can't meaningfully hold an `event_roles` row either — a structural consequence of `user_roles`/`event_roles` being modeled against Supabase's `auth.users` while Better Auth is a parallel, separately-keyed identity store for the same person.
+- **Dev**: ✅ all three grants completed — Grant 3's account *does* have a real `auth.users` row on dev (unlike prod), so it got the full intended set there: global `super_admin` + `bsl` `event_admin`. Grants 1 and 2 also got `bsl` `event_admin` on dev (their dev-project uuids, distinct from their prod uuids).
+
+## Role grants (prod, 2026-07-24)
+
+Requested by the repo owner in-session; identities intentionally not written here as plaintext email addresses (this file is committed to a public repo) — see internal record for who maps to which ID.
+
+- ✅ Grant 1 → `bsl` `event_admin` (`auth.users.id` ending `...66fe`).
+- ✅ Grant 2 → `bsl` `event_admin` (`auth.users.id` ending `...c364`).
+- ⏸️ Grant 3 → intended `super_admin` (global) + `bsl` `event_admin` — **blocked**. That account has no Supabase `auth.users` row at all, only a Better Auth (`ba_users`) row and a canonical `public.user` registry row — a *different* uuid than the `ba_users` id. `user_roles.user_id` has a hard FK to `auth.users(id)` (confirmed by a failed insert: `violates foreign key constraint "user_roles_user_id_fkey"`); `event_roles.user_id` has no such FK but would very likely be functionally inert anyway, since a Better-Auth-only session's `user.id` in the app is presumably that provider's own string ID, not this uuid. **Decision (user, 2026-07-24): wait for that account to complete a Supabase-backed sign-in (e.g. OTP/email) first**, which creates a real `auth.users` row (and syncs the canonical registry), then grant both roles against that real ID. Do not create the `auth.users` row directly or substitute another identifier — look up the real `auth.users.id` again once sign-in is confirmed, then re-run the grant.
+  **Broader gap worth tracking separately**: this means *no* Better-Auth-only account (no `auth.users` row) can hold any `user_roles` row today, and almost certainly can't meaningfully hold an `event_roles` row either — not specific to this one account, a structural consequence of `user_roles`/`event_roles` being modeled against Supabase's `auth.users` while Better Auth is a parallel, separately-keyed identity store for the same person.
 
 ## Goal
 
@@ -59,16 +70,27 @@ Tests: `apps/mobile-app/tests/api/admin-passes.test.ts` covers invalid input (re
 **Review fixes applied before merge** (2026-07-24): stripped a hand-rolled version/changelog/README bump that had been bundled into the feature branch — version bumps don't belong in a feature PR per this repo's release policy, and this one was incomplete (missed `app.json`), which is what was actually failing CI's coverage/test check; and fixed the pass-upgrade limits bug described above.
 
 **Phase 2 (2026-07-24, direct to `develop`, not yet released):** closed the top-priority gap from Phase 1.
-- `db/migrations/V013__event_admin_passes_read.sql` — adds `passes_event_admin_read`, an RLS `SELECT` policy on `passes` using `has_event_admin_access(auth.uid(), event_id, false)`. Deliberately `event_admin`-only, not `moderator` (pass rows carry PII — email, company — and moderator pass access is still an open question, see below). Applied and verified on **prod**; not yet on dev (same connectivity blocker as V012).
+- `db/migrations/V013__event_admin_passes_read.sql` — adds `passes_event_admin_read`, an RLS `SELECT` policy on `passes` using `has_event_admin_access(auth.uid(), event_id, false)`. Deliberately `event_admin`-only, not `moderator` (pass rows carry PII — email, company — and moderator pass access is still an open question, see below). Applied and verified on **both prod and dev**.
 - `apps/mobile-app/lib/event-admin-access.ts` — new client helper, `getUserEventRoles(userId)` (reads the caller's own `event_roles` rows, permitted by V012's `event_roles_self_read` policy) and `highestEventRole(grants, eventId)`.
 - `admin.tsx`'s `checkAdminAccess()` now falls back to event-scoped access when the user isn't a global admin: if they hold any unexpired `event_admin`/`moderator` grant, they get into the panel, scoped to that event (or a switcher, if more than one). Global admin behavior is completely unchanged (same ambient-event resolution as before, zero new code path for them).
 - Added a lightweight event switcher (chip row under the header) for users with more than one event grant.
 - The **Passes tab is hidden entirely for `moderator`** — `admin_mutate_event_pass` already excluded moderators from pass mutations (`include_moderator=false`), and V013 excludes them from pass reads too, so there was nothing left for a moderator to do there. They land on QR Scanner instead.
 - **Not addressed in Phase 2** (still open): `/api/admin/events`, `/api/admin/roles`, speaker/agenda/venue CRUD, attendee/check-in view, `admin_action_log` viewer, legacy event ID reconciliation. See Delivery plan below.
 
+**Phase 3 (2026-07-24, direct to `develop`, not yet released):**
+- `db/migrations/V014__admin_event_role_management.sql` — `admin_mutate_event_role(actor, event_id, action, target_user_id, role, expires_at)`, a `service_role`-only RPC mirroring `admin_mutate_event_pass`. Self-authorizes (only `is_super_admin()` may grant/revoke `event_admin`; `is_super_admin()` OR `has_event_admin_access(..., include_moderator=false)` — i.e. a `super_admin` or that event's own `event_admin` — may grant/revoke `moderator`), upserts/deletes the `event_roles` row, writes `admin_action_log`. Also adds `event_roles_user_id_fkey` (FK to `auth.users`) — `event_roles` was the one role table missing this; see the Role grants section above for exactly why that matters.
+- `apps/mobile-app/app/api/admin/roles+api.ts` — `POST /api/admin/roles`: rate-limited, validates shape, authenticates, calls the RPC, maps a `42501` Postgres error to HTTP 403. No UI wired to it yet — for now, role grants/revokes happen by calling this route directly or via the RPC.
+- **Sidebar fix**: `apps/mobile-app/app/(shared)/dashboard/_layout.tsx`'s `CustomDrawerContent` — the "Admin Panel" menu item was still gated on the old global-only `isAdmin()`, so an event-scoped-only admin had no visible entry point into a panel that already supported them since Phase 2. Now falls back to `getUserEventRoles()` the same way `admin.tsx` does.
+- Tests: `apps/mobile-app/tests/api/admin-roles.test.ts` (invalid input, 403 mapping, authorized-grant path).
+- Applied and verified on **both prod and dev**.
+
+**Phase 4 (2026-07-24, direct to `develop`, not yet released):** dev/prod DB reconciliation (`V015`, see Rollout status above) plus the Staff & Roles UI.
+- Added `GET /api/admin/roles?eventId=...` (list current grants for an event — `event_roles`' own RLS only permits reading your own row, so listing everyone else's needed the same `has_event_admin_access`-authorized, service-role path as the mutation routes) and a test for it.
+- `admin.tsx` now has a **Staff & Roles tab** (visible to the same audience as Passes — global admin or that event's `event_admin`): lists current grants, a Grant Role modal, per-row Revoke. The grant modal only offers `event_admin` as an option when `adminRole === 'super_admin'` specifically — mirrors `admin_mutate_event_role`'s real rule (a plain global `admin`, not `super_admin`, can grant `moderator` but not `event_admin`) instead of showing a button that would just 403.
+
 ## What's NOT done yet (next phases)
 
-- **No `/api/admin/events`, `/api/admin/roles` routes** — no way to create an event, or grant/revoke `event_admin`/`moderator`, from the UI or an API. Right now the only way to populate `event_roles` is a direct DB insert.
+- **No `/api/admin/events` route** — no way to create/edit an event (info, venue, branding) from the UI or an API. `events` rows exist only via the V012 seed insert.
 - **No speaker/agenda/venue CRUD** — UI and API routes both outstanding. The `speakers`/`event_agenda_items` tables exist but nothing writes to them yet.
 - **No active/checked-in users view** for event admins.
 - **No `admin_action_log` viewer.**
@@ -93,7 +115,10 @@ Tests: `apps/mobile-app/tests/api/admin-passes.test.ts` covers invalid input (re
 - [x] Fix `checkAdminAccess()` to recognize event-scoped `event_admin`/`moderator`, not just global `isAdmin()`.
 - [x] Add an RLS policy so event-scoped `event_admin`s can list passes for their event without needing global `admin` (`moderator` intentionally excluded, pending the open question below).
 - [x] Add an event switcher to the Admin Panel; scope all reads/writes to the selected event.
-- [ ] Add `/api/admin/events` (create/edit event info, venue, branding) and `/api/admin/roles` (grant/revoke `event_admin`/`moderator`, enforcing the escalation rule above) + UI.
+- [x] Add `/api/admin/roles` (grant/revoke `event_admin`/`moderator`, enforcing the escalation rule above).
+- [x] Add a "Staff & Roles" tab in `admin.tsx` that calls `/api/admin/roles`.
+- [x] Reconcile dev's schema to prod's baseline (`V015`) and apply `V012`-`V015` to both environments.
+- [ ] Add `/api/admin/events` (create/edit event info, venue, branding) + UI.
 - [ ] Add agenda and speaker CRUD routes and UI.
 - [ ] Import remaining TypeScript event metadata into `events`/`speakers`/`event_agenda_items`; reconcile legacy `passes.event_id` values against real `events` rows.
 - [ ] `VALIDATE CONSTRAINT passes_event_id_fkey` once legacy data is reconciled.

@@ -1,3 +1,18 @@
+## [1.8.259](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.258...v1.8.259) (2026-07-24)
+
+
+### Bug Fixes
+
+* reconcile dev's user_roles schema to the V001/V003 baseline prod has ([d8153c7](https://github.com/hashpass-tech/hashpass.tech/commit/d8153c7ee3155d982ed5fd87f3175d7280e4d211))
+
+
+### Features
+
+* add /api/admin/roles for granting/revoking event_admin + moderator ([8c96391](https://github.com/hashpass-tech/hashpass.tech/commit/8c9639111810d56f45e5010397bd314aac802b8a))
+* add Staff & Roles tab to the Admin Panel ([39c7315](https://github.com/hashpass-tech/hashpass.tech/commit/39c73154f7c256dba7aa0e19fd9fa6eb2e4a5094))
+### Release Highlights
+- add Staff & Roles tab to the Admin Panel; add /api/admin/roles for granting/revoking event_admin + moderator; restore native drawer hamburger action; reconcile dev's user_roles schema to the V001/V003 baseline prod has
+
 ## [1.8.258](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.257...v1.8.258) (2026-07-24)
 ### Released
 - stabilize native drawer and Google logout
