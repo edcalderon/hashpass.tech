@@ -20,12 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.254)
+## 📋 Latest Changes (v1.8.255)
 
 ### Bug Fixes
 
-* enable RLS on 33 public tables left exposed on the dev database ([76ab37b](https://github.com/hashpass-tech/hashpass.tech/commit/76ab37bed75c7e36da285a5bb8d8e508f95d58fb))
-* restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations ([669a700](https://github.com/hashpass-tech/hashpass.tech/commit/669a700d60716bfe55b64cfd40db7d970e53c8c3))
+* route Cap CAPTCHA to configured API ([09ad79f](https://github.com/hashpass-tech/hashpass.tech/commit/09ad79f549e1456da7fdf31ae12267c62b99f8cb))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

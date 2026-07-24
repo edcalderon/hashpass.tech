@@ -1,3 +1,14 @@
+## [1.8.255](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.254...v1.8.255) (2026-07-24)
+
+
+### Bug Fixes
+
+* route Cap CAPTCHA to configured API ([09ad79f](https://github.com/hashpass-tech/hashpass.tech/commit/09ad79f549e1456da7fdf31ae12267c62b99f8cb))
+
+
+
+
+
 ## [1.8.254](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.251...v1.8.254) (2026-07-22)
 
 
