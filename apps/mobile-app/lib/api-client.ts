@@ -130,6 +130,16 @@ const resolveRuntimeApiBaseUrl = () => {
 
 export const getRuntimeApiBaseUrl = () => resolveRuntimeApiBaseUrl();
 
+/**
+ * Returns the Cap widget endpoint for the active API deployment.
+ *
+ * The web app is served as static assets, so its origin does not host Expo API
+ * routes in production. Deriving this from the runtime API base keeps Cap on
+ * the same backend as the subscription request while preserving localhost
+ * development routing.
+ */
+export const getCaptchaApiEndpoint = () => `${getRuntimeApiBaseUrl().replace(/\/$/, '')}/captcha/`;
+
 export class EventApiClient {
   private baseURL: string;
   private defaultHeaders: Record<string, string>;

@@ -12,6 +12,7 @@ import {
 } from '../lib/native-google-signin';
 import { shouldUseNativeGoogleSignin } from '../lib/native-google-signin-config';
 import { mergeOAuthFragmentParams } from '../lib/auth/oauth/callback-params';
+import { clearPersistedNativeProviderSessions } from '../lib/auth/native-session-clear';
 import { resolveGoogleOAuthClientId } from '../lib/auth/oauth/google-credentials';
 import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
 import { markRecentAuthSuccess, clearRecentAuthSuccess } from '../lib/auth/recent-auth';
@@ -42,6 +43,15 @@ let oauthHashProcessed = false;
 // hung request leaves signOut() — and any UI awaiting it, like a logout
 // button's busy state — stuck forever instead of failing visibly.
 const SIGN_OUT_STEP_TIMEOUT_MS = 8000;
+
+type SignOutOptions = {
+  /**
+   * Leave slow provider/network cleanup running after durable local sign-out.
+   * Native logout uses this so the app can safely leave the dashboard as soon
+   * as every persisted session cache is removed.
+   */
+  waitForRemoteCleanup?: boolean;
+};
 
 // Dedicated Better Auth instance for web Google sign-in when the tenant's
 // primary provider (authService) is NOT better-auth (e.g. core/hashpass.tech,
@@ -613,7 +623,7 @@ export const useAuth = () => {
     };
   }, [sendAuthEvent]);
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async ({ waitForRemoteCleanup = true }: SignOutOptions = {}) => {
     authenticatedSessionOverrideRef.current = null;
     // Must run before the provider sign-outs below, not after: the root and
     // dashboard auth guards treat `isLoggedIn === false` as a possibly-transient
@@ -647,74 +657,72 @@ export const useAuth = () => {
     sessionBootstrapPromise = Promise.resolve(null);
     sendAuthEvent({ type: 'SIGNED_OUT' });
 
-    // Belt-and-suspenders: force-clear every persisted Supabase auth key from
-    // local storage right now, independent of the provider signOut() below.
-    // The Supabase provider clears its own storageKey, but GoTrueClient only
-    // does so AFTER awaiting a network revocation that can hang on native — so
-    // this direct AsyncStorage sweep is what actually guarantees a cold start
-    // can't resurrect the session. Awaited (it's a fast local op) so the
-    // clear is committed before the caller navigates away.
-    try {
-      await clearPersistedSupabaseSession();
-    } catch (clearError) {
-      console.warn('[useAuth] Failed to clear persisted Supabase session during sign-out:', clearError);
-    }
-
-    const shouldSignOutNativeGoogle =
-      Platform.OS !== 'web' && shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());
-
-    // Clear native Google Sign-In cache so the account picker always shows on next login.
-    // Must run before app sign-out to avoid the SDK being in a bad state.
-    // Bounded with withTimeout: this is a native-module call, not a plain JS
-    // call, and it has no timeout of its own — on a flaky connection it can
-    // hang indefinitely rather than reject, which would leave signOut()
-    // (and therefore the caller's "signing out..." UI) stuck forever.
-    if (shouldSignOutNativeGoogle) {
-      try {
-        await withTimeout(clearNativeGoogleAccount(), SIGN_OUT_STEP_TIMEOUT_MS, 'clearNativeGoogleAccount');
-      } catch (nativeClearError) {
-        console.warn('[useAuth] Native Google account cache clear failed during sign-out:', nativeClearError);
-      }
-    }
-
-    const dedicatedGoogleBetterAuthProvider =
-      authService.getProviderName() !== 'better-auth' &&
-      (Platform.OS === 'web' || shouldSignOutNativeGoogle)
-        ? getGoogleBetterAuthProvider()
-        : null;
-
-    // Each provider call is individually bounded so one hung network request
-    // (this app has a long, documented history of native transport flakiness
-    // — see the v1.8.234-239 auth crash fixes) can't stall Promise.allSettled
-    // forever: allSettled only resolves once every entry has settled, and a
-    // promise that never rejects makes that a permanent hang, not a handled
-    // failure. A step that times out is simply reported as a failure below,
-    // same as a real rejection — signOut() still clears local state and lets
-    // the caller navigate away.
-    const results = await Promise.allSettled([
-      withTimeout(authService.signOut(), SIGN_OUT_STEP_TIMEOUT_MS, 'authService.signOut'),
-      withTimeout(
-        dedicatedGoogleBetterAuthProvider?.signOut() ?? Promise.resolve(undefined),
-        SIGN_OUT_STEP_TIMEOUT_MS,
-        'dedicatedGoogleBetterAuthProvider.signOut',
-      ),
-      withTimeout(supabase.auth.signOut(), SIGN_OUT_STEP_TIMEOUT_MS, 'supabase.auth.signOut'),
+    // Persisted data must be gone before a native screen transition. In
+    // particular, Better Auth and Directus use SecureStore while Supabase uses
+    // AsyncStorage. Previously Better Auth's cache was only reached after
+    // native Google cleanup, so replacing the route immediately could leave a
+    // cache that resurrected the user after a cold start.
+    await Promise.all([
+      clearPersistedNativeProviderSessions(),
+      clearPersistedSupabaseSession(),
     ]);
 
-    const signOutFailures = results.map((result) => {
-      if (result.status === 'rejected') {
-        return result.reason;
+    const finishRemoteCleanup = async () => {
+      const shouldSignOutNativeGoogle =
+        Platform.OS !== 'web' && shouldUseNativeGoogleSignin(resolveGoogleOAuthClientId());
+
+      // Clear native Google Sign-In cache so the account picker always shows on next login.
+      // Bounded with withTimeout because a native module call can hang on a flaky connection.
+      if (shouldSignOutNativeGoogle) {
+        try {
+          await withTimeout(clearNativeGoogleAccount(), SIGN_OUT_STEP_TIMEOUT_MS, 'clearNativeGoogleAccount');
+        } catch (nativeClearError) {
+          console.warn('[useAuth] Native Google account cache clear failed during sign-out:', nativeClearError);
+        }
       }
 
-      const value = result.value as { error?: unknown } | undefined;
-      return value?.error ?? null;
-    }).filter((failure): failure is unknown => Boolean(failure));
+      const dedicatedGoogleBetterAuthProvider =
+        authService.getProviderName() !== 'better-auth' &&
+        (Platform.OS === 'web' || shouldSignOutNativeGoogle)
+          ? getGoogleBetterAuthProvider()
+          : null;
 
-    if (signOutFailures.length > 0) {
-      console.warn(
-        '[useAuth] Provider sign-out reported cleanup errors; local auth state was already cleared:',
-        signOutFailures.map((failure) => getAuthErrorMessage(failure, 'Unable to sign out.'))
-      );
+      // Each provider call is individually bounded so one hung network request
+      // cannot stall cleanup forever. Local state has already been cleared,
+      // therefore a failed remote revocation must not restore the session.
+      const results = await Promise.allSettled([
+        withTimeout(authService.signOut(), SIGN_OUT_STEP_TIMEOUT_MS, 'authService.signOut'),
+        withTimeout(
+          dedicatedGoogleBetterAuthProvider?.signOut() ?? Promise.resolve(undefined),
+          SIGN_OUT_STEP_TIMEOUT_MS,
+          'dedicatedGoogleBetterAuthProvider.signOut',
+        ),
+        withTimeout(supabase.auth.signOut(), SIGN_OUT_STEP_TIMEOUT_MS, 'supabase.auth.signOut'),
+      ]);
+
+      const signOutFailures = results.map((result) => {
+        if (result.status === 'rejected') {
+          return result.reason;
+        }
+
+        const value = result.value as { error?: unknown } | undefined;
+        return value?.error ?? null;
+      }).filter((failure): failure is unknown => Boolean(failure));
+
+      if (signOutFailures.length > 0) {
+        console.warn(
+          '[useAuth] Provider sign-out reported cleanup errors; local auth state was already cleared:',
+          signOutFailures.map((failure) => getAuthErrorMessage(failure, 'Unable to sign out.'))
+        );
+      }
+    };
+
+    if (waitForRemoteCleanup) {
+      await finishRemoteCleanup();
+    } else {
+      void finishRemoteCleanup().catch((error) => {
+        console.warn('[useAuth] Remote sign-out cleanup failed after local sign-out:', error);
+      });
     }
   }, [sendAuthEvent]);
 

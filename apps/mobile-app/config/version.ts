@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607220152, // Updated to current timestamp
-  releaseDate: '2026-07-22',
+  buildNumber: 202607240128, // Updated to current timestamp
+  releaseDate: '2026-07-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations',
-    'enable RLS on 33 public tables left exposed on the dev database'
+    'route Cap CAPTCHA to configured API'
   ],
   breakingChanges: [],
-  notes: 'restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations; enable RLS on 33 public tables left exposed on the dev database'
+  notes: 'route Cap CAPTCHA to configured API'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.255': {
+    version: '1.8.255',
+    buildNumber: 202607240128,
+    releaseDate: '2026-07-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'route Cap CAPTCHA to configured API'
+    ],
+    breakingChanges: [],
+    notes: 'route Cap CAPTCHA to configured API'
+  },
   '1.8.254': {
     version: '1.8.254',
     buildNumber: 202607220152,

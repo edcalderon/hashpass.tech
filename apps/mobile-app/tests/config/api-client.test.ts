@@ -38,7 +38,7 @@ jest.mock('@hashpass/auth', () => ({
   },
 }));
 
-import { EventApiClient } from '../../lib/api-client';
+import { EventApiClient, getCaptchaApiEndpoint } from '../../lib/api-client';
 import { Platform } from 'react-native';
 
 const envBackup: Record<string, string | undefined> = {};
@@ -203,6 +203,20 @@ describe('EventApiClient credential handling', () => {
       credentials: 'omit',
     }));
     expect(mockAuthSession).not.toHaveBeenCalled();
+  });
+
+  it('uses the configured API base for Cap challenges on web instead of the static site origin', () => {
+    Platform.OS = 'web';
+    setEnv('EXPO_PUBLIC_API_BASE_URL', undefined);
+    setWindow({
+      location: {
+        hostname: 'hashpass.tech',
+        origin: 'https://hashpass.tech',
+      },
+      __API_BASE_URL__: 'https://api.hashpass.tech/api',
+    });
+
+    expect(getCaptchaApiEndpoint()).toBe('https://api.hashpass.tech/api/captcha/');
   });
 
   it('returns a friendly timeout error and does not retry aborted requests', async () => {
