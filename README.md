@@ -20,13 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.257)
+## 📋 Latest Changes (v1.8.258)
 
-### Bug Fixes
-
-* drop hand-release version bump, recompute pass limits on upgrade ([367f561](https://github.com/hashpass-tech/hashpass.tech/commit/367f561a428d59c07a25e87053ec6999b14fd698))
-### Release Highlights
-- drop hand-release version bump, recompute pass limits on upgrade
+### Released
+- stabilize native drawer and Google logout
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
