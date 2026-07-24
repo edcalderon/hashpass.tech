@@ -910,32 +910,8 @@ export default function DashboardLayout() {
   // JS work competing with the UI-thread slide is part of why the sidebar felt
   // slow. A ref updates without re-rendering, so the slide runs undisturbed.
   const drawerOpenRef = useRef(false);
-  // useDrawerStatus only exposes the settled endpoints. While an opening
-  // animation is in flight it continues to report "closed", which previously
-  // overwrote the burger's just-requested open state and allowed another
-  // conflicting action to strand the native drawer mid-slide.
-  const drawerTransitionRef = useRef<'opening' | 'closing' | null>(null);
   const handleDrawerStatusChange = useCallback((isOpen: boolean) => {
-    if (drawerTransitionRef.current === 'opening' && !isOpen) {
-      return;
-    }
-    if (drawerTransitionRef.current === 'closing' && isOpen) {
-      return;
-    }
-
     drawerOpenRef.current = isOpen;
-    drawerTransitionRef.current = null;
-  }, []);
-  const settleDrawerTransition = useCallback((transition: 'opening' | 'closing') => {
-    // React Navigation normally clears this through useDrawerStatus at the end
-    // of the slide. This fallback means a cancelled native animation cannot
-    // leave the controls locked forever; the desired endpoint remains in
-    // drawerOpenRef and the next deliberate burger action can recover it.
-    setTimeout(() => {
-      if (drawerTransitionRef.current === transition) {
-        drawerTransitionRef.current = null;
-      }
-    }, 700);
   }, []);
   const [androidQrScannerVisible, setAndroidQrScannerVisible] = useState(false);
   const dashboardCopilotHook = useCopilot() as any;
@@ -992,16 +968,7 @@ export default function DashboardLayout() {
   }, [authLoading, isLoggedIn, router]);
 
   const openDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
-    if (drawerOpenRef.current || drawerTransitionRef.current) {
-      return;
-    }
-
-    // Claim the transition before dispatching. useDrawerStatus() updates only
-    // after React Navigation has processed the action, leaving a small window
-    // where a second hamburger tap can otherwise dispatch another open/close
-    // action against the same native gesture handler.
-    drawerOpenRef.current = true;
-    drawerTransitionRef.current = 'opening';
+    const wasOpen = drawerOpenRef.current;
 
     try {
       if (typeof navigation?.openDrawer === 'function') {
@@ -1012,11 +979,16 @@ export default function DashboardLayout() {
         console.warn('Drawer navigation unavailable, skipping openDrawer');
       }
     } catch (e) {
-      drawerOpenRef.current = false;
-      drawerTransitionRef.current = null;
       console.error('Error opening drawer:', e);
     }
-    settleDrawerTransition('opening');
+
+    // React Navigation owns its animation lifecycle. In particular, do not
+    // lock this handler before the action is processed: on production Android
+    // that local lock could outlive an ignored action and make every future
+    // hamburger press a no-op (v1.8.258).
+    if (wasOpen) {
+      return;
+    }
 
     setTimeout(() => {
       if (dashboardCopilotHook?.handleNth && typeof dashboardCopilotHook.handleNth === 'function') {
@@ -1027,14 +999,9 @@ export default function DashboardLayout() {
         console.warn('No handleNext or handleNth available', dashboardCopilotHook);
       }
     }, 1200);
-  }, [dashboardCopilotHook, settleDrawerTransition]);
+  }, [dashboardCopilotHook]);
 
   const closeDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
-    // Match the intended destination immediately so a double tap during the
-    // close slide cannot re-open a partially transitioned native drawer.
-    drawerOpenRef.current = false;
-    drawerTransitionRef.current = 'closing';
-
     try {
       if (typeof navigation?.closeDrawer === 'function') {
         navigation.closeDrawer();
@@ -1044,11 +1011,9 @@ export default function DashboardLayout() {
         console.warn('Drawer navigation unavailable, skipping closeDrawer');
       }
     } catch (error) {
-      drawerTransitionRef.current = null;
       console.error('Error closing drawer:', error);
     }
-    settleDrawerTransition('closing');
-  }, [settleDrawerTransition]);
+  }, []);
 
   const toggleDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
     const drawerNavigation = Platform.OS === 'android'
