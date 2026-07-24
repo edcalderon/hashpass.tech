@@ -1,39 +1,14 @@
 /// <reference types="jest" />
 
-const mockPlatform = { OS: 'android' };
-const mockDeleteItemAsync = jest.fn<Promise<void>, [string]>(async () => undefined);
+import { clearNativeProviderSessionKeys } from '../../lib/auth/native-session-clear';
 
-jest.mock('react-native', () => ({
-  Platform: mockPlatform,
-}));
-
-jest.mock('expo-secure-store', () => ({
-  deleteItemAsync: mockDeleteItemAsync,
-}), { virtual: true });
-
-describe('clearPersistedNativeProviderSessions', () => {
-  beforeEach(() => {
-    mockPlatform.OS = 'android';
-    mockDeleteItemAsync.mockClear();
-  });
-
+describe('clearNativeProviderSessionKeys', () => {
   it('removes Better Auth and Directus caches before navigation can restore a session', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { clearPersistedNativeProviderSessions } = require('../../lib/auth/native-session-clear');
+    const deleteItemAsync = jest.fn<Promise<void>, [string]>(async () => undefined);
 
-    await clearPersistedNativeProviderSessions();
+    await clearNativeProviderSessionKeys(deleteItemAsync);
 
-    expect(mockDeleteItemAsync).toHaveBeenCalledWith('hashpass_better_auth_session');
-    expect(mockDeleteItemAsync).toHaveBeenCalledWith('hashpass_directus_session');
-  });
-
-  it('does not access SecureStore on web', async () => {
-    mockPlatform.OS = 'web';
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { clearPersistedNativeProviderSessions } = require('../../lib/auth/native-session-clear');
-
-    await clearPersistedNativeProviderSessions();
-
-    expect(mockDeleteItemAsync).not.toHaveBeenCalled();
+    expect(deleteItemAsync).toHaveBeenCalledWith('hashpass_better_auth_session');
+    expect(deleteItemAsync).toHaveBeenCalledWith('hashpass_directus_session');
   });
 });

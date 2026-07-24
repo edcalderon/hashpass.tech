@@ -2,11 +2,18 @@ import { Platform } from 'react-native';
 
 type SecureStoreModule = typeof import('expo-secure-store');
 type SecureStoreRuntimeModule = SecureStoreModule & { default?: SecureStoreModule };
+type DeleteItemAsync = (key: string) => Promise<void>;
 
 const NATIVE_PROVIDER_SESSION_KEYS = [
   'hashpass_better_auth_session',
   'hashpass_directus_session',
 ] as const;
+
+export const clearNativeProviderSessionKeys = async (
+  deleteItemAsync: DeleteItemAsync,
+): Promise<void> => {
+  await Promise.all(NATIVE_PROVIDER_SESSION_KEYS.map((key) => deleteItemAsync(key)));
+};
 
 /**
  * Removes every provider-owned SecureStore cache that can restore a native
@@ -24,9 +31,7 @@ export const clearPersistedNativeProviderSessions = async (): Promise<void> => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const SecureStoreModule = require('expo-secure-store') as SecureStoreRuntimeModule;
     const SecureStore = SecureStoreModule.default ?? SecureStoreModule;
-    await Promise.all(
-      NATIVE_PROVIDER_SESSION_KEYS.map((key) => SecureStore.deleteItemAsync(key)),
-    );
+    await clearNativeProviderSessionKeys(SecureStore.deleteItemAsync);
   } catch (error) {
     console.warn('[auth] Failed to clear persisted native provider sessions during sign-out:', error);
   }
