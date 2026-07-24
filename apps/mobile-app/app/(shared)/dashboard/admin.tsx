@@ -5,12 +5,13 @@ import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
 import { isAdmin, getUserAdminRole, AdminRole } from '../../../lib/admin-utils';
 import { supabase } from '../../../lib/supabase';
-import { passSystemService, PassType, PassStatus } from '../../../lib/pass-system';
-import { qrSystemService, QRScanResult } from '../../../lib/qr-system';
+import { PassType, PassStatus, resolvePassStorageEventId } from '../../../lib/pass-system';
+import { QRScanResult } from '../../../lib/qr-system';
 import AdminQRScanner from '../../../components/AdminQRScanner';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useRouter } from 'expo-router';
 import { resolveActiveEventId } from '../../../lib/event-path';
+import { apiClient } from '../../../lib/api-client';
 
 type TabType = 'passes' | 'qr-scanner' | 'meetings';
 
@@ -183,7 +184,7 @@ export default function AdminPanel() {
       if (passesError) throw passesError;
       
       // Create user list from pass user_ids
-      const uniqueUserIds = [...new Set((passesData || []).map(p => p.user_id))];
+      const uniqueUserIds = [...new Set(((passesData || []) as { user_id: string }[]).map(p => p.user_id))];
       setUsers(uniqueUserIds.map(id => ({ id, email: undefined, name: undefined })));
     } catch (error: any) {
       console.error('Error loading users:', error);
@@ -246,15 +247,16 @@ export default function AdminPanel() {
         return;
       }
 
-      const { data, error } = await supabase
-        .rpc('create_default_pass', {
-          p_user_id: userId,
-          p_pass_type: newPassType
-        });
+      const result = await apiClient.post('/admin/passes', {
+        action: 'create',
+        eventId: resolvePassStorageEventId(eventId),
+        userId,
+        passType: newPassType,
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
 
-      if (error) throw error;
-
-      Alert.alert('Success', `Pass created successfully! Pass ID: ${data}`);
+      const createdPassId = (result.data as { data: { id: string } }).data.id;
+      Alert.alert('Success', `Pass created successfully! Pass ID: ${createdPassId}`);
       setShowCreatePassModal(false);
       setNewPassUserId('');
       setNewPassType('general');
@@ -269,12 +271,13 @@ export default function AdminPanel() {
 
   const handleUpdatePassStatus = async (passId: string, newStatus: PassStatus) => {
     try {
-      const { error } = await supabase
-        .from('passes')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', passId);
-
-      if (error) throw error;
+      const result = await apiClient.post('/admin/passes', {
+        action: 'update',
+        eventId: resolvePassStorageEventId(eventId),
+        passId,
+        status: newStatus,
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
 
       Alert.alert('Success', 'Pass status updated');
       await loadPasses();

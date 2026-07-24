@@ -1,0 +1,60 @@
+import { rateLimitOk } from '@/lib/bsl/rateLimit';
+import { authorizeEventAdmin } from '@/lib/server/event-admin';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const PASS_TYPES = new Set(['general', 'business', 'vip']);
+const PASS_STATUSES = new Set(['active', 'used', 'expired', 'cancelled', 'suspended']);
+
+export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!rateLimitOk(`admin-passes:${ip}`)) {
+    return Response.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: 'A JSON body is required' }, { status: 400 });
+  }
+
+  const action = body.action;
+  const eventId = typeof body.eventId === 'string' ? body.eventId.trim() : '';
+  const userId = typeof body.userId === 'string' ? body.userId.trim() : null;
+  const passId = typeof body.passId === 'string' ? body.passId.trim() : null;
+  const passType = typeof body.passType === 'string' ? body.passType : null;
+  const status = typeof body.status === 'string' ? body.status : null;
+
+  if ((action !== 'create' && action !== 'update') || !EVENT_ID_PATTERN.test(eventId)) {
+    return Response.json({ error: 'A valid action and eventId are required' }, { status: 400 });
+  }
+  if (action === 'create' && (!userId || !UUID_PATTERN.test(userId) || !passType || !PASS_TYPES.has(passType))) {
+    return Response.json({ error: 'A valid userId and passType are required' }, { status: 400 });
+  }
+  if (action === 'update' && (!passId || (passType === null && status === null))) {
+    return Response.json({ error: 'A passId and at least one change are required' }, { status: 400 });
+  }
+  if ((passType && !PASS_TYPES.has(passType)) || (status && !PASS_STATUSES.has(status))) {
+    return Response.json({ error: 'Invalid pass type or status' }, { status: 400 });
+  }
+
+  const authorization = await authorizeEventAdmin(request, eventId);
+  if ('response' in authorization) return authorization.response;
+
+  const { data, error } = await authorization.supabase.rpc('admin_mutate_event_pass', {
+    p_actor_user_id: authorization.userId,
+    p_event_id: eventId,
+    p_action: action,
+    p_user_id: userId,
+    p_pass_id: passId,
+    p_pass_type: passType,
+    p_status: status,
+  });
+  if (error) {
+    console.error('Administrative pass mutation failed:', error.message);
+    return Response.json({ error: 'Unable to update pass' }, { status: 500 });
+  }
+
+  return Response.json({ data });
+}
