@@ -1,3 +1,7 @@
+## [1.8.260](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.259...v1.8.260) (2026-07-24)
+### Released
+- resolve provider-aware admin access
+
 ## [1.8.259](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.258...v1.8.259) (2026-07-24)
 
 

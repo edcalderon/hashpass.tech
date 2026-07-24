@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607242049, // Updated to current timestamp
+  buildNumber: 202607242209, // Updated to current timestamp
   releaseDate: '2026-07-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add Staff & Roles tab to the Admin Panel',
-    'add /api/admin/roles for granting/revoking event_admin + moderator'
+    // No new features
   ],
   bugfixes: [
-    'restore native drawer hamburger action',
-    'reconcile dev\'s user_roles schema to the V001/V003 baseline prod has'
+    'resolve provider-aware admin access'
   ],
   breakingChanges: [],
-  notes: 'add Staff & Roles tab to the Admin Panel; add /api/admin/roles for granting/revoking event_admin + moderator; restore native drawer hamburger action; reconcile dev\'s user_roles schema to the V001/V003 baseline prod has'
+  notes: 'resolve provider-aware admin access'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.260': {
+    version: '1.8.260',
+    buildNumber: 202607242209,
+    releaseDate: '2026-07-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'resolve provider-aware admin access'
+    ],
+    breakingChanges: [],
+    notes: 'resolve provider-aware admin access'
+  },
   '1.8.259': {
     version: '1.8.259',
     buildNumber: 202607242049,
