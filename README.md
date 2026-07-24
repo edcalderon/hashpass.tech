@@ -20,122 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.257)
+## 📋 Latest Changes (v1.8.256)
 
 ### Bug Fixes
 
-* **auth:** harden native Google sign-in b16ccb5
-* **auth:** one digit per OTP cell, add clipboard Paste, haptics on main buttons 81e8006
-* **auth:** stabilize native Google sign-in be244be
-* bound signOut()'s provider calls so a hung network call can't stall logout forever 4155f9d
-* call the corrected DB role check in /api/qr/admin, not the mismatched isAdmin 1068960, closes #80
-* **ci:** create ~/.gradle before writing the pnpm-lock-hash cache file fb6f8f9
-* **ci:** sanitize file paths in web-smoke-test.mjs's local server be18260
-* **ci:** sanitize request path before path.join, not after 97579f4
-* **ci:** use path.normalize + leading-.. strip, CodeQL's recognized sanitizer abb2025
-* clear native session on logout, redirect to landing, drop native sidebar animations 0270c19
-* clear Supabase session on signout, stabilize drawer width, revert logout target to auth screen 857e521
-* close post-v1.8.239 dashboard sidebar regressions and admin role check 93c04c1
-* crash guard was dead code since v1.8.233 — RN core overwrote it every launch f7455a5
-* default the web PWA install prompt to bottom-right, not top-left on desktop ed677c2
-* **deps:** unify react-native to 0.79.6 workspace-wide via pnpm override 6f9ef12
-* disable RTL at the Android manifest level, not just in JS 3b09f23, closes #80
-* document local Android OTP release validation 4585075
-* enable RLS on 33 public tables left exposed on the dev database 76ab37b
-* guard against null pass_type/status on dashboard pass card f923c6e
-* harden native auth sign out 5fdd77c
-* **infra:** harden lambda deploy environment sync 8ed4beb
-* **infra:** redact lambda environment errors c42f25a
-* make logout optimistic and defer sidebar gradient animations 733c2af
-* **mobile:** annotate fetchIPLocation callback param explicitly fa2f312
-* **mobile:** bump react-native-svg 15.11.2 -> 15.12.1, fixes web startup crash 71e2419
-* **mobile:** clarify cookie banner's decline option as reject non-essential 827cb2f
-* **mobile:** close landing logout session 349a813
-* **mobile:** complete native google browser fallback auth (#30) 50acdca, closes #30
-* **mobile:** dashboard gesture crash after login, add sign-out on landing 446bc29
-* **mobile:** dashboard/drawer header logo invisible, window.addEventListener crash 2730334
-* **mobile:** default google auth to crash-safe flow 42c3466
-* **mobile:** defer post-native-auth toast/navigation until interactions settle 391a21b
-* **mobile:** disable New Architecture to stop Fabric event-type crash on Android 3f8e945
-* **mobile:** disable tutorial auto-start crashing on Fabric/newArch after login 7a1c623, closes #39
-* **mobile:** eliminate react-native-copilot crash on Android login bef97c1
-* **mobile:** fix TS definite-assignment error in AppErrorBoundary test 2f7f8b8
-* **mobile:** flag disabled Supabase auth providers loudly instead of silently 79fb9ae
-* **mobile:** guard Android layout events 6d01463
-* **mobile:** harden native google auth callback deaf186
-* **mobile:** harden native Google SDK auth flow b6c37c7
-* **mobile:** harden RN URLSearchParams stub via live instance, not require 7226c39
-* **mobile:** keep native google sdk disabled in releases 85b9b95
-* **mobile:** lock URLSearchParams/URL globals against mid-session re-binding 5cec4e3
-* **mobile:** memoize Drawer's drawerContent to stop remounting on every render d92fb89
-* **mobile:** move notifications off direct client-side Supabase calls af23ad4
-* **mobile:** patch react-native-copilot's unconditional onLayout crash on Fabric 31e9e53
-* **mobile:** patch react-native-svg's web circular import instead of version-swapping 71375b7
-* **mobile:** patch RN's raw URLSearchParams stub directly, not just the current global 3d7f6cc
-* **mobile:** pin react-native and react-native-svg to Expo SDK's exact expected versions b9a16c2
-* **mobile:** pin react-native-svg to Expo SDK 53's certified 15.11.2 3988d73
-* **mobile:** prevent double router.replace() race on every login method f793b84
-* **mobile:** re-enable New Architecture to end total launch outage from v1.8.222/223 47a040a
-* **mobile:** redirect before mounting the auth screen when already logged in d069a8b
-* **mobile:** remove Sentry Expo config plugin that broke the Android release build 3b47422
-* **mobile:** resolve drawer nav ref live, prefer supabase session over stale directus cache 68aca72
-* **mobile:** resolve the actual sidebar-not-opening bug, not just the crash df02df8
-* **mobile:** route dashboard brand to landing 0ca0b0a
-* **mobile:** scope drawer nav ref to DashboardLayout instance to prevent stale-navigator crash 2183523
-* **mobile:** scope the header-attachment workaround to Android only, restore web/iOS 3d0f2d0
-* **mobile:** set hasNavigatedRef synchronously in the early-auth-redirect branch 394e707
-* **mobile:** stabilize Android dashboard entry e413d82
-* **mobile:** stabilize auth startup on Android 39a3f59
-* **mobile:** stop routing the dashboard header through react-native-screens' native header slot 025a7cd
-* **mobile:** stop URL/URLSearchParams global lock from breaking app boot on old bridge 2ac3b91
-* **mobile:** tolerate native google callback listener failures 407d43d
-* native auth flow crash and post-login dashboard routing db5de84
-* parse version arrays with commas b040b22
-* recover empty generated release changelog entries 1a85a40
-* **release:** derive release notes correctly when package.json is pre-bumped 17e641a
-* **release:** escape backslashes before quotes in version.ts codegen 148238c
-* **release:** escape CURRENT_VERSION.notes interpolation 3766113
-* **release:** match escaped quotes when replacing CURRENT_VERSION.notes f5df0ce
-* **release:** sync app.json/version.ts/versions.json to 1.8.209 06f3f73, closes #48
-* repair native and hosted auth release 24fad57
-* restore meeting_slots reads after V008, stop default migrate from touching unverified legacy migrations 669a700
-* restore the dashboard drawer's tap-outside-to-close affordance, add swipe-close, cut idle CPU e47e2b0
-* restrict BSL pass minting to authorized users aafba92
-* route Cap CAPTCHA to configured API 09ad79f
-* speed up native drawer, auto-collapse on tab change, harden logout session clear d721403
-* stabilize Android auth handoff 7b88e11
-* stabilize Android dashboard header d493815
-* stabilize native auth and Android layout events bb4ec60
-* stabilize native auth dashboard routing 9f46191
-* stabilize native auth session restore fa351e6
-* stabilize native login event registry 6fc5796
-* stabilize Play Android native login 938d55b
-* stop web magic-link callbacks from triggering a Directus CORS probe 3eb756c
-* **tooling:** derive release notes from git log instead of copy-pasting stale content 6ed10e2, closes #40
-* **tools:** stub both value and type for plain named imports in typecheck-changed 22cca9b
-* **web:** keep PWA dock controls off opener 938c9df
-* **web:** keep PWA dock opener clickable 62c3319
-* **web:** restore PWA prompt click after drag 88b420e
-* **web:** stabilize mobile footer layout 2534d45
-* **web:** stop infinite reload loop from the version checker b4937d1
-* **web:** stop runaway agenda-fetch 404 loop on the home page a850785
-
-
-### Features
-
-* **ci:** add web smoke test to catch runtime-only production regressions 452226b
-* **ci:** auto-trigger mobile Android release on every main release tag 01a2df3
-* **infra:** add Sentry error reporting to the API Lambda bcc9650
-* **infra:** wire Sentry DSN into the web build pipeline dc4a66b
-* **mobile): add Sentry crash reporting; fix(mobile:** type-check native Google status codes on non-native resolution ba77990
-* **release:** merge-triggered tag/sync workflow, version bump moves into promotion PR 37a3a2c
-* start event admin control center 795202d
-
-
-### Reverts
-
-* Revert "chore: release v1.8.225" acbcf36
-* Revert "chore: release v1.8.225" 230cf52
+* recover empty generated release changelog entries ([1a85a40](https://github.com/hashpass-tech/hashpass.tech/commit/1a85a40e773e0d4252fc52347be2d096844a11c5))
+### Release Highlights
+- provision upcoming BSL general passes; restrict BSL pass minting to authorized users; recover empty generated release changelog entries; allow newsletter subscriptions without row readback
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

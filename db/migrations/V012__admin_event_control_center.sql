@@ -182,9 +182,28 @@ BEGIN
     IF v_current_event IS DISTINCT FROM p_event_id THEN
       RAISE EXCEPTION 'Pass does not belong to the requested event' USING ERRCODE = '42501';
     END IF;
+
+    -- An upgrade/downgrade must recompute tier limits and perks, not just relabel
+    -- pass_type — otherwise a general pass "upgraded" to vip keeps its old
+    -- 5-request/100-boost caps and general_sessions/basic_swag perks.
+    IF p_pass_type IS NOT NULL THEN
+      SELECT max_requests, max_boost INTO v_max_requests, v_max_boost
+        FROM public.get_pass_type_limits(p_pass_type) LIMIT 1;
+    END IF;
+
     UPDATE public.passes SET
       pass_type = COALESCE(p_pass_type::public.pass_type, pass_type),
       status = COALESCE(p_status, status),
+      max_meeting_requests = CASE WHEN p_pass_type IS NOT NULL THEN COALESCE(v_max_requests, 10) ELSE max_meeting_requests END,
+      max_boost_amount = CASE WHEN p_pass_type IS NOT NULL THEN COALESCE(v_max_boost, 100) ELSE max_boost_amount END,
+      access_features = CASE WHEN p_pass_type IS NULL THEN access_features
+        WHEN p_pass_type = 'vip' THEN ARRAY['all_sessions', 'networking', 'exclusive_events', 'priority_seating', 'speaker_access']
+        WHEN p_pass_type = 'business' THEN ARRAY['all_sessions', 'networking', 'business_events']
+        ELSE ARRAY['general_sessions'] END,
+      special_perks = CASE WHEN p_pass_type IS NULL THEN special_perks
+        WHEN p_pass_type = 'vip' THEN ARRAY['concierge_service', 'exclusive_lounge', 'premium_swag']
+        WHEN p_pass_type = 'business' THEN ARRAY['business_lounge', 'networking_tools']
+        ELSE ARRAY['basic_swag'] END,
       updated_at = now()
     WHERE id::text = p_pass_id
     RETURNING id::text INTO v_pass_id;
