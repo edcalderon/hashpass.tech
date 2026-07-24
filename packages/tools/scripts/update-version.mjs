@@ -319,7 +319,7 @@ function deriveReleaseSummaryFromGit(fromVersion, currentNewVersion) {
     // The release tooling's own bookkeeping commits aren't user-facing changes.
     if (/^chore\(release\)|^chore:\s*release\b/i.test(subject)) continue;
 
-    const match = subject.match(/^(\w+)(\([^)]*\))?(!)?:\s*(.+)$/);
+    const match = subject.match(/^(?:[^\p{L}\p{N}_\s]+\s*)?(\w+)(\([^)]*\))?(!)?:\s*(.+)$/u);
     if (!match) continue; // not conventional-commit shaped — skip rather than guess wrong
 
     const [, type, , breakingMarker, description] = match;
@@ -336,7 +336,7 @@ function deriveReleaseSummaryFromGit(fromVersion, currentNewVersion) {
     }
   }
 
-  const highlights = [...features, ...bugfixes, ...breakingChanges].slice(0, 3);
+  const highlights = [...features, ...bugfixes, ...breakingChanges];
   const notes = highlights.length ? highlights.join('; ') : '';
 
   return { features, bugfixes, breakingChanges, notes };
@@ -390,9 +390,39 @@ function updateChangelog(version, releaseType, notes = '') {
 
   let content = fs.readFileSync(changelogPath, 'utf8');
 
-  // Check if the changelog already has this version
-  if (content.includes(`## [${version}]`)) {
-    console.log(`ℹ️ Version ${version} already exists in CHANGELOG.md, skipping update`);
+  // versioning writes its heading before it checks that conventional commits
+  // produced any changelog bullets. When all subjects use a supported emoji
+  // prefix (for example, "🐛 fix:"), that check can stop the release with an
+  // otherwise-empty heading. Fill that specific entry here so the project
+  // release script can recover without hand-editing release artifacts.
+  const versionHeading = `## [${version}]`;
+  const existingEntryStart = content.indexOf(versionHeading);
+  if (existingEntryStart !== -1) {
+    const followingEntryStart = content.indexOf('\n## ', existingEntryStart + versionHeading.length);
+    const existingEntryEnd = followingEntryStart === -1 ? content.length : followingEntryStart;
+    const existingEntry = content.slice(existingEntryStart, existingEntryEnd);
+    const hasDocumentedChanges = /^\s*(?:[-*+]|\d+\.)\s+\S/m.test(existingEntry);
+
+    if (hasDocumentedChanges) {
+      const releaseHighlights = notes ? `\n### Release Highlights\n- ${notes}\n` : '';
+      if (releaseHighlights) {
+        const existingHighlightsPattern = /\n### Release Highlights\n(?:\s*(?:[-*+]|\d+\.)\s+.*\n?)*/;
+        const mergedEntry = existingHighlightsPattern.test(existingEntry)
+          ? existingEntry.replace(existingHighlightsPattern, releaseHighlights)
+          : existingEntry.trimEnd() + releaseHighlights;
+        content = content.slice(0, existingEntryStart) + mergedEntry + content.slice(existingEntryEnd);
+        fs.writeFileSync(changelogPath, content);
+        console.log(`✅ Added derived release notes to CHANGELOG.md entry for version ${version}`);
+      } else {
+        console.log(`ℹ️ Version ${version} already exists in CHANGELOG.md, skipping update`);
+      }
+      return;
+    }
+
+    const documentedChanges = `\n### ${releaseType === 'stable' ? 'Released' : releaseType.charAt(0).toUpperCase() + releaseType.slice(1)}\n- ${notes || `Version ${version} release`}\n`;
+    content = content.slice(0, existingEntryEnd).trimEnd() + documentedChanges + content.slice(existingEntryEnd);
+    fs.writeFileSync(changelogPath, content);
+    console.log(`✅ Filled empty CHANGELOG.md entry for version ${version}`);
     return;
   }
 
@@ -608,7 +638,7 @@ for (const file of filesToUpdate) {
 }
 
 // Update CHANGELOG.md
-updateChangelog(newVersion, releaseType, releaseNotes);
+updateChangelog(newVersion, releaseType, releaseNotes || gitDerivedSummary.notes);
 
 try {
   syncReadmeFromChangelog();

@@ -123,4 +123,92 @@ describe('update-version', () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('fills an empty versioning-generated changelog entry with release notes', () => {
+    const root = createFixtureRepo();
+
+    try {
+      writeFile(
+        path.join(root, 'CHANGELOG.md'),
+        '## [1.0.1](https://example.test/compare/v1.0.0...v1.0.1) (2026-07-24)\n\n\n',
+      );
+
+      execFileSync('node', ['packages/tools/scripts/update-version.mjs', '1.0.1', '--skip-git-info'], {
+        cwd: root,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          HUSKY: '0',
+        },
+      });
+
+      const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
+      expect(changelog).toContain('## [1.0.1]');
+      expect(changelog).toContain('### Beta');
+      expect(changelog).toContain('- Version 1.0.1 release');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('adds derived notes to an existing partial changelog entry', () => {
+    const root = createFixtureRepo();
+
+    try {
+      writeFile(
+        path.join(root, 'CHANGELOG.md'),
+        '## [1.0.1](https://example.test/compare/v1.0.0...v1.0.1) (2026-07-24)\n\n### Bug Fixes\n- Existing parser fix\n',
+      );
+
+      execFileSync('node', [
+        'packages/tools/scripts/update-version.mjs',
+        '1.0.1',
+        '--skip-git-info',
+        '--notes=Add BSL general passes',
+      ], {
+        cwd: root,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          HUSKY: '0',
+        },
+      });
+
+      const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
+      expect(changelog).toContain('- Existing parser fix');
+      expect(changelog).toContain('### Release Highlights');
+      expect(changelog).toContain('- Add BSL general passes');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('replaces stale release highlights instead of appending another section', () => {
+    const root = createFixtureRepo();
+
+    try {
+      writeFile(
+        path.join(root, 'CHANGELOG.md'),
+        '## [1.0.1] - 2026-07-24\n\n### Bug Fixes\n- Existing parser fix\n\n### Release Highlights\n- Stale summary\n',
+      );
+
+      execFileSync('node', [
+        'packages/tools/scripts/update-version.mjs',
+        '1.0.1',
+        '--skip-git-info',
+        '--notes=Complete release summary',
+      ], {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...process.env, HUSKY: '0' },
+      });
+
+      const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
+      expect(changelog).toContain('- Complete release summary');
+      expect(changelog).not.toContain('- Stale summary');
+      expect(changelog.match(/### Release Highlights/g)).toHaveLength(1);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

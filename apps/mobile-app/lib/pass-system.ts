@@ -3,7 +3,10 @@ import { resolveActiveEventId } from './event-path';
 
 const SUPABASE_AUTH_USER_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PASS_STORAGE_EVENT_ID_ALIASES: Record<string, string> = {
-  bsl: 'bsl2025',
+  // The BSL hub represents the current tour. Keep its dashboard on the next
+  // upcoming stop rather than the 2025 archive, while retaining the explicit
+  // archive alias below for historical routes.
+  bsl: 'chile2026',
   'bsl-2025': 'bsl2025',
 };
 
@@ -436,7 +439,8 @@ class PassSystemService {
       const { data, error } = await supabase
         .rpc('create_default_pass', {
           p_user_id: userId,
-          p_pass_type: passType
+          p_pass_type: passType,
+          p_event_id: resolvedEventId,
         })
         .single();
 

@@ -11,7 +11,7 @@ jest.mock('../../lib/supabase', () => ({
 }));
 
 jest.mock('../../lib/event-path', () => ({
-  resolveActiveEventId: jest.fn(() => 'bsl'),
+  resolveActiveEventId: jest.fn((eventId?: string) => eventId || 'bsl'),
 }));
 
 // eslint-disable-next-line import/first
@@ -82,7 +82,7 @@ describe('passSystemService Supabase user id guard', () => {
   });
 
   it('maps BSL route ids to the pass storage event id', () => {
-    expect(resolvePassStorageEventId('bsl')).toBe('bsl2025');
+    expect(resolvePassStorageEventId('bsl')).toBe('chile2026');
     expect(resolvePassStorageEventId('bsl-2025')).toBe('bsl2025');
     expect(resolvePassStorageEventId('peru2026')).toBe('peru2026');
   });
@@ -161,6 +161,7 @@ describe('passSystemService Supabase user id guard', () => {
     expect(mockRpc).toHaveBeenCalledWith('create_default_pass', {
       p_user_id: supabaseUserId,
       p_pass_type: 'general',
+      p_event_id: 'chile2026',
     });
     expect(errorSpy).not.toHaveBeenCalledWith(
       expect.stringContaining('Error creating default pass'),
@@ -168,6 +169,20 @@ describe('passSystemService Supabase user id guard', () => {
       expect.anything(),
       expect.anything()
     );
+  });
+
+  it('sends the selected upcoming BSL event to the pass creation RPC', async () => {
+    mockRpcSingle({ data: 'pass-chile', error: null });
+
+    await expect(
+      passSystemService.createDefaultPass(supabaseUserId, 'general', 'chile2026')
+    ).resolves.toBe('pass-chile');
+
+    expect(mockRpc).toHaveBeenCalledWith('create_default_pass', {
+      p_user_id: supabaseUserId,
+      p_pass_type: 'general',
+      p_event_id: 'chile2026',
+    });
   });
 
   it('reuses an in-flight default-pass creation for concurrent bootstrap calls', async () => {

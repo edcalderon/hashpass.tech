@@ -54,10 +54,13 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data, error: insertError } = await supabase
+    // Do not request the inserted row back. The newsletter RLS policy permits
+    // public inserts but intentionally does not permit public reads; PostgREST
+    // treats `.select()` here as INSERT ... RETURNING and rejects it for an
+    // anonymous server credential.
+    const { error: insertError } = await supabase
       .from('newsletter_subscribers')
-      .insert([{ email, subscribed_at: new Date().toISOString(), created_at: new Date().toISOString(), email_sent: false }])
-      .select();
+      .insert([{ email, subscribed_at: new Date().toISOString(), created_at: new Date().toISOString(), email_sent: false }]);
 
     if (insertError) {
       console.error('[subscribe] insert error:', insertError);
@@ -67,7 +70,6 @@ export async function POST(request: Request) {
       throw new Error('Failed to save subscription');
     }
 
-    const subscriberId = data?.[0]?.id;
     const origin = new URL(request.url).origin;
     const unsubscribeUrl = `${origin}/api/unsubscribe?token=${encodeURIComponent(generateUnsubscribeToken(email))}`;
 
@@ -81,15 +83,13 @@ export async function POST(request: Request) {
       console.error('[subscribe] email threw:', emailError);
     }
 
-    if (subscriberId) {
-      await supabase
-        .from('newsletter_subscribers')
-        .update({ email_sent: emailSent })
-        .eq('id', subscriberId)
-        .then(({ error: e }: { error?: { message?: string } | null }) => {
-          if (e) console.warn('[subscribe] email_sent update failed:', e.message);
-        });
-    }
+    await supabase
+      .from('newsletter_subscribers')
+      .update({ email_sent: emailSent })
+      .eq('email', email)
+      .then(({ error: e }: { error?: { message?: string } | null }) => {
+        if (e) console.warn('[subscribe] email_sent update failed:', e.message);
+      });
 
     return json({
       success: true,
