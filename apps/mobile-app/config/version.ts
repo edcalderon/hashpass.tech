@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607240302, // Updated to current timestamp
+  buildNumber: 202607241726, // Updated to current timestamp
   releaseDate: '2026-07-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'provision upcoming BSL general passes'
+    // No new features
   ],
   bugfixes: [
-    'restrict BSL pass minting to authorized users',
-    'recover empty generated release changelog entries',
-    'allow newsletter subscriptions without row readback'
+    'drop hand-release version bump, recompute pass limits on upgrade'
   ],
   breakingChanges: [],
-  notes: 'provision upcoming BSL general passes; restrict BSL pass minting to authorized users; recover empty generated release changelog entries; allow newsletter subscriptions without row readback'
+  notes: 'drop hand-release version bump, recompute pass limits on upgrade'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.257': {
+    version: '1.8.257',
+    buildNumber: 202607241726,
+    releaseDate: '2026-07-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'drop hand-release version bump, recompute pass limits on upgrade'
+    ],
+    breakingChanges: [],
+    notes: 'drop hand-release version bump, recompute pass limits on upgrade'
+  },
   '1.8.256': {
     version: '1.8.256',
     buildNumber: 202607240246,

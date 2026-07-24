@@ -88,6 +88,11 @@ const sidebars = {
         },
         {
           type: 'category',
+          label: 'Admin',
+          items: ['reference/admin/admin-event-control-center'],
+        },
+        {
+          type: 'category',
           label: 'Mobile App',
           items: [
             'reference/mobile-app/native-module-version-pinning',

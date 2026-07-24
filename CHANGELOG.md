@@ -1,3 +1,12 @@
+## [1.8.257](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.256...v1.8.257) (2026-07-24)
+
+
+### Bug Fixes
+
+* drop hand-release version bump, recompute pass limits on upgrade ([367f561](https://github.com/hashpass-tech/hashpass.tech/commit/367f561a428d59c07a25e87053ec6999b14fd698))
+### Release Highlights
+- drop hand-release version bump, recompute pass limits on upgrade
+
 ## [1.8.256](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.255...v1.8.256) (2026-07-24)
 
 
