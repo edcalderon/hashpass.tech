@@ -19,6 +19,7 @@ import { authService } from '@hashpass/auth';
 import { supabase } from '../../../lib/supabase';
 import { useLanguage } from '../../../providers/LanguageProvider';
 import { isAdmin } from '../../../lib/admin-utils';
+import { getUserEventRoles } from '../../../lib/event-admin-access';
 import { ScrollProvider, useScroll } from '@contexts/ScrollContext';
 import { NotificationProvider, useNotifications } from '@contexts/NotificationContext';
 import { useEvent } from '@contexts/EventContext';
@@ -289,13 +290,21 @@ function CustomDrawerContent({
     };
   });
 
-  // Check admin status on mount
+  // Check admin status on mount. A user can also have access as an
+  // event-scoped event_admin/moderator (event_roles) without ever being a
+  // global admin (user_roles) — the sidebar entry must reflect that too, or
+  // an event-scoped admin has no visible way into the Admin Panel even
+  // though the panel itself already supports them (see admin.tsx).
   React.useEffect(() => {
     const checkAdminStatus = async () => {
-      if (user) {
-        const admin = await isAdmin(user.id);
-        setIsUserAdmin(admin);
+      if (!user) return;
+      const admin = await isAdmin(user.id);
+      if (admin) {
+        setIsUserAdmin(true);
+        return;
       }
+      const eventRoles = await getUserEventRoles(user.id);
+      setIsUserAdmin(eventRoles.length > 0);
     };
     checkAdminStatus();
   }, [user]);
