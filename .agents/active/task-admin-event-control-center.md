@@ -1,7 +1,7 @@
 # Task: Admin Event Control Center (event-scoped roles + full event admin surface)
 
 **Priority:** High
-**Status:** In progress — Phase 1 (schema foundation + privileged pass mutation) merged to `develop` via [PR #92](https://github.com/hashpass-tech/hashpass.tech/pull/92) (2026-07-24) and promoted toward `main` via [PR #93](https://github.com/hashpass-tech/hashpass.tech/pull/93) (v1.8.257, awaiting @edcalderon approval — see repo release flow in `CLAUDE.md`). Phases 2-4 (event-scoped admin UI access, role grant/revoke API, dev/prod schema reconciliation) pushed directly to `develop` the same day, not yet released. `V012`-`V015` migrations applied and verified on **both prod and dev**.
+**Status:** In progress — Phase 1 (schema foundation + privileged pass mutation) merged to `develop` via [PR #92](https://github.com/hashpass-tech/hashpass.tech/pull/92) (2026-07-24) and promoted toward `main` via [PR #93](https://github.com/hashpass-tech/hashpass.tech/pull/93) (v1.8.257, awaiting @edcalderon approval — see repo release flow in `CLAUDE.md`). Phases 2-4 (event-scoped admin UI access, role grant/revoke API + UI, dev/prod schema reconciliation) pushed directly to `develop` the same day, not yet released. `V012`-`V015` migrations applied and verified on **both prod and dev**. Passes and Staff & Roles are now both fully usable end-to-end by event-scoped admins, not just global ones.
 
 ## Rollout status
 
@@ -74,11 +74,13 @@ Tests: `apps/mobile-app/tests/api/admin-passes.test.ts` covers invalid input (re
 - **Sidebar fix**: `apps/mobile-app/app/(shared)/dashboard/_layout.tsx`'s `CustomDrawerContent` — the "Admin Panel" menu item was still gated on the old global-only `isAdmin()`, so an event-scoped-only admin had no visible entry point into a panel that already supported them since Phase 2. Now falls back to `getUserEventRoles()` the same way `admin.tsx` does.
 - Tests: `apps/mobile-app/tests/api/admin-roles.test.ts` (invalid input, 403 mapping, authorized-grant path).
 - Applied and verified on **both prod and dev**.
-- **Not addressed**: no UI for calling this route (Staff & Roles tab still doesn't exist in `admin.tsx`) — someone with API access (e.g. via curl/Postman, authenticated as a super_admin) can grant roles today; there's no in-app button yet.
+
+**Phase 4 (2026-07-24, direct to `develop`, not yet released):** dev/prod DB reconciliation (`V015`, see Rollout status above) plus the Staff & Roles UI.
+- Added `GET /api/admin/roles?eventId=...` (list current grants for an event — `event_roles`' own RLS only permits reading your own row, so listing everyone else's needed the same `has_event_admin_access`-authorized, service-role path as the mutation routes) and a test for it.
+- `admin.tsx` now has a **Staff & Roles tab** (visible to the same audience as Passes — global admin or that event's `event_admin`): lists current grants, a Grant Role modal, per-row Revoke. The grant modal only offers `event_admin` as an option when `adminRole === 'super_admin'` specifically — mirrors `admin_mutate_event_role`'s real rule (a plain global `admin`, not `super_admin`, can grant `moderator` but not `event_admin`) instead of showing a button that would just 403.
 
 ## What's NOT done yet (next phases)
 
-- **No UI for `/api/admin/roles`** — the route and RPC exist and are authorized correctly, but `admin.tsx` has no "Staff & Roles" tab to call it from yet.
 - **No `/api/admin/events` route** — no way to create/edit an event (info, venue, branding) from the UI or an API. `events` rows exist only via the V012 seed insert.
 - **No speaker/agenda/venue CRUD** — UI and API routes both outstanding. The `speakers`/`event_agenda_items` tables exist but nothing writes to them yet.
 - **No active/checked-in users view** for event admins.
@@ -105,7 +107,8 @@ Tests: `apps/mobile-app/tests/api/admin-passes.test.ts` covers invalid input (re
 - [x] Add an RLS policy so event-scoped `event_admin`s can list passes for their event without needing global `admin` (`moderator` intentionally excluded, pending the open question below).
 - [x] Add an event switcher to the Admin Panel; scope all reads/writes to the selected event.
 - [x] Add `/api/admin/roles` (grant/revoke `event_admin`/`moderator`, enforcing the escalation rule above).
-- [ ] Add a "Staff & Roles" tab in `admin.tsx` that calls `/api/admin/roles` — the route/RPC exist, no UI yet.
+- [x] Add a "Staff & Roles" tab in `admin.tsx` that calls `/api/admin/roles`.
+- [x] Reconcile dev's schema to prod's baseline (`V015`) and apply `V012`-`V015` to both environments.
 - [ ] Add `/api/admin/events` (create/edit event info, venue, branding) + UI.
 - [ ] Add agenda and speaker CRUD routes and UI.
 - [ ] Import remaining TypeScript event metadata into `events`/`speakers`/`event_agenda_items`; reconcile legacy `passes.event_id` values against real `events` rows.
