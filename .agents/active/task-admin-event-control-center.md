@@ -16,6 +16,15 @@
   ```
   Until this runs, dev-environment builds (`EXPO_PUBLIC_SUPABASE_PROFILE=core-development`, routed to `hashpass-dev-expo-router-api`) will get a hard DB error from `/api/admin/passes` (RPC not found) rather than silently misbehaving — safe to leave briefly, but should be applied before anyone relies on dev for testing this feature.
 
+## Role grants (prod, 2026-07-24)
+
+Requested by the repo owner in-session; identities intentionally not written here as plaintext email addresses (this file is committed to a public repo) — see internal record for who maps to which ID.
+
+- ✅ Grant 1 → `bsl` `event_admin` (`auth.users.id` ending `...66fe`).
+- ✅ Grant 2 → `bsl` `event_admin` (`auth.users.id` ending `...c364`).
+- ⏸️ Grant 3 → intended `super_admin` (global) + `bsl` `event_admin` — **blocked**. That account has no Supabase `auth.users` row at all, only a Better Auth (`ba_users`) row and a canonical `public.user` registry row — a *different* uuid than the `ba_users` id. `user_roles.user_id` has a hard FK to `auth.users(id)` (confirmed by a failed insert: `violates foreign key constraint "user_roles_user_id_fkey"`); `event_roles.user_id` has no such FK but would very likely be functionally inert anyway, since a Better-Auth-only session's `user.id` in the app is presumably that provider's own string ID, not this uuid. **Decision (user, 2026-07-24): wait for that account to complete a Supabase-backed sign-in (e.g. OTP/email) first**, which creates a real `auth.users` row (and syncs the canonical registry), then grant both roles against that real ID. Do not create the `auth.users` row directly or substitute another identifier — look up the real `auth.users.id` again once sign-in is confirmed, then re-run the grant.
+  **Broader gap worth tracking separately**: this means *no* Better-Auth-only account (no `auth.users` row) can hold any `user_roles` row today, and almost certainly can't meaningfully hold an `event_roles` row either — not specific to this one account, a structural consequence of `user_roles`/`event_roles` being modeled against Supabase's `auth.users` while Better Auth is a parallel, separately-keyed identity store for the same person.
+
 ## Goal
 
 Build a proper admin system so that:
