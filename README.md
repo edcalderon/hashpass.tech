@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.256)
+## 📋 Latest Changes (v1.8.257)
 
 ### Bug Fixes
 
-* recover empty generated release changelog entries ([1a85a40](https://github.com/hashpass-tech/hashpass.tech/commit/1a85a40e773e0d4252fc52347be2d096844a11c5))
+* drop hand-release version bump, recompute pass limits on upgrade ([367f561](https://github.com/hashpass-tech/hashpass.tech/commit/367f561a428d59c07a25e87053ec6999b14fd698))
 ### Release Highlights
-- provision upcoming BSL general passes; restrict BSL pass minting to authorized users; recover empty generated release changelog entries; allow newsletter subscriptions without row readback
+- drop hand-release version bump, recompute pass limits on upgrade
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
