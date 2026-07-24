@@ -3,7 +3,7 @@ import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from '@/lib/server/resolve-notification-identity';
-import { getEffectiveRole } from '@/lib/role-summary';
+import { getEffectiveRole, isRoleActive } from '@/lib/role-summary';
 
 const ADMIN_ROLES = new Set(['super_admin', 'admin']);
 const EVENT_ROLES = new Set(['event_admin', 'moderator']);
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   const [globalResult, eventResult] = await Promise.all([
     supabase
       .from('user_roles')
-      .select('role')
+      .select('role, expires_at')
       .eq('user_id', identity.supabaseUserId)
       .in('role', [...ADMIN_ROLES]),
     supabase
@@ -40,18 +40,20 @@ export async function GET(request: Request) {
     return Response.json({ error: 'Unable to load administrative access' }, { status: 500 });
   }
 
+  const now = Date.now();
   const globalRoles = (globalResult.data || [])
-    .map((row: { role: string }) => row.role)
-    .filter((role: string) => ADMIN_ROLES.has(role));
+    .filter((row: { role: string; expires_at: string | null }) =>
+      ADMIN_ROLES.has(row.role) && isRoleActive(row.expires_at, now)
+    )
+    .map((row: { role: string }) => row.role);
   const globalRole = globalRoles.includes('super_admin')
     ? 'super_admin'
     : globalRoles.includes('admin')
       ? 'admin'
       : null;
-  const now = Date.now();
   const eventRoles = (eventResult.data || [])
     .filter((row: { role: string; expires_at: string | null }) =>
-      EVENT_ROLES.has(row.role) && (!row.expires_at || new Date(row.expires_at).getTime() > now)
+      EVENT_ROLES.has(row.role) && isRoleActive(row.expires_at, now)
     )
     .map((row: { event_id: string; role: 'event_admin' | 'moderator' }) => ({
       eventId: row.event_id,

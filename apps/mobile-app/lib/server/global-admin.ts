@@ -3,6 +3,7 @@ import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from '@/lib/server/resolve-notification-identity';
+import { isRoleActive } from '@/lib/role-summary';
 
 /** Resolve a provider session and verify its linked account has global admin access. */
 export async function authorizeGlobalAdmin(request: Request) {
@@ -17,7 +18,7 @@ export async function authorizeGlobalAdmin(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
   const { data, error } = await supabase
     .from('user_roles')
-    .select('role')
+    .select('role, expires_at')
     .eq('user_id', identity.supabaseUserId)
     .in('role', ['super_admin', 'admin'])
     .limit(1);
@@ -26,7 +27,7 @@ export async function authorizeGlobalAdmin(request: Request) {
     console.error('Unable to verify global admin access:', error.message);
     return { response: Response.json({ error: 'Unable to verify administrative access' }, { status: 500 }) } as const;
   }
-  if (!data || data.length === 0) {
+  if (!data || !data.some((row: { expires_at: string | null }) => isRoleActive(row.expires_at))) {
     return { response: Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 }) } as const;
   }
 

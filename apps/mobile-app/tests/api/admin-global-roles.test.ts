@@ -73,4 +73,32 @@ describe('POST /api/admin/global-roles', () => {
     expect(response.status).toBe(403);
     expect(mockFrom).toHaveBeenCalledTimes(1);
   });
+
+  it('rejects an expired super-admin assignment', async () => {
+    const targetMaybeSingle = jest.fn().mockResolvedValue({
+      data: { provider_ids: { supabase: '8f60f5d2-5948-4df1-9670-2f9177cf2fe4' } },
+      error: null,
+    });
+    const targetEq = jest.fn().mockReturnValue({ maybeSingle: targetMaybeSingle });
+    const targetSelect = jest.fn().mockReturnValue({ eq: targetEq });
+    const upsert = jest.fn().mockResolvedValue({ error: null });
+
+    mockFrom
+      .mockReturnValueOnce(superAdminQuery({
+        data: [{ role: 'super_admin', expires_at: '2020-01-01T00:00:00.000Z' }],
+        error: null,
+      }))
+      .mockReturnValueOnce({ select: targetSelect })
+      .mockReturnValueOnce({ upsert });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { POST } = require('../../app/api/admin/global-roles+api');
+    const response = await POST(new Request('https://api.hashpass.tech/api/admin/global-roles', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'grant', targetEmail: 'new.admin@example.com' }),
+    }));
+
+    expect(response.status).toBe(403);
+    expect(upsert).not.toHaveBeenCalled();
+  });
 });

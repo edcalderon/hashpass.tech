@@ -3,6 +3,7 @@ import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from '@/lib/server/resolve-notification-identity';
+import { isRoleActive } from '@/lib/role-summary';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -19,7 +20,7 @@ async function authorizeSuperAdmin(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
   const { data, error } = await supabase
     .from('user_roles')
-    .select('role')
+    .select('role, expires_at')
     .eq('user_id', identity.supabaseUserId)
     .eq('role', 'super_admin')
     .limit(1);
@@ -28,7 +29,7 @@ async function authorizeSuperAdmin(request: Request) {
     console.error('Unable to verify super-admin access:', error.message);
     return { response: Response.json({ error: 'Unable to verify administrative access' }, { status: 500 }) } as const;
   }
-  if (!data || data.length === 0) {
+  if (!data || !data.some((row: { expires_at: string | null }) => isRoleActive(row.expires_at))) {
     return { response: Response.json({ error: 'Forbidden' }, { status: 403 }) } as const;
   }
 

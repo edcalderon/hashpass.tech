@@ -9,6 +9,11 @@ export type EffectiveRole = {
   eventIds: string[];
 };
 
+/** Treat malformed and past expiry values as inactive rather than granting access. */
+export function isRoleActive(expiresAt: string | null | undefined, now = Date.now()): boolean {
+  return !expiresAt || new Date(expiresAt).getTime() > now;
+}
+
 type EventRoleGrant = {
   eventId: string;
   role: EventAdminRole;

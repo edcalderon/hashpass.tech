@@ -98,6 +98,35 @@ describe('GET /api/admin/access', () => {
     });
   });
 
+  it('does not expose an expired global role as administrative access', async () => {
+    mockResolveNotificationIdentity.mockResolvedValue({
+      supabaseUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4',
+      email: 'former.admin@example.com',
+    });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'user_roles') {
+        return makeQuery({
+          data: [{ role: 'admin', expires_at: '2020-01-01T00:00:00.000Z' }],
+          error: null,
+        });
+      }
+      return makeQuery({ data: [], error: null });
+    });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../app/api/admin/access+api');
+    const response = await GET(new Request('https://api.hashpass.tech/api/admin/access'));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        globalRole: null,
+        eventRoles: [],
+        effectiveRole: { role: 'user', scope: 'none', eventIds: [] },
+      },
+    });
+  });
+
   it('rejects an account without a linked Supabase identity', async () => {
     mockResolveNotificationIdentity.mockResolvedValue({
       supabaseUserId: null,
