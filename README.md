@@ -20,11 +20,11 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.255)
+## 📋 Latest Changes (v1.8.256)
 
 ### Bug Fixes
 
-* route Cap CAPTCHA to configured API ([09ad79f](https://github.com/hashpass-tech/hashpass.tech/commit/09ad79f549e1456da7fdf31ae12267c62b99f8cb))
+* recover empty generated release changelog entries ([1a85a40](https://github.com/hashpass-tech/hashpass.tech/commit/1a85a40e773e0d4252fc52347be2d096844a11c5))
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607240128, // Updated to current timestamp
+  buildNumber: 202607240246, // Updated to current timestamp
   releaseDate: '2026-07-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'provision upcoming BSL general passes'
   ],
   bugfixes: [
-    'route Cap CAPTCHA to configured API'
+    'recover empty generated release changelog entries',
+    'allow newsletter subscriptions without row readback'
   ],
   breakingChanges: [],
-  notes: 'route Cap CAPTCHA to configured API'
+  notes: 'provision upcoming BSL general passes; recover empty generated release changelog entries; allow newsletter subscriptions without row readback'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.256': {
+    version: '1.8.256',
+    buildNumber: 202607240246,
+    releaseDate: '2026-07-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'provision upcoming BSL general passes'
+    ],
+    bugfixes: [
+      'recover empty generated release changelog entries',
+      'allow newsletter subscriptions without row readback'
+    ],
+    breakingChanges: [],
+    notes: 'provision upcoming BSL general passes; recover empty generated release changelog entries; allow newsletter subscriptions without row readback'
+  },
   '1.8.255': {
     version: '1.8.255',
     buildNumber: 202607240128,
