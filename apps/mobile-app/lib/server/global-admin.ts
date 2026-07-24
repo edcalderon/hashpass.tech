@@ -4,7 +4,8 @@ import {
   resolveNotificationIdentity,
 } from '@/lib/server/resolve-notification-identity';
 
-export async function authorizeEventAdmin(request: Request, eventId: string) {
+/** Resolve a provider session and verify its linked account has global admin access. */
+export async function authorizeGlobalAdmin(request: Request) {
   const identity = await resolveNotificationIdentity(request);
   if (isResolveIdentityError(identity)) {
     return { response: Response.json({ error: identity.error }, { status: identity.status }) } as const;
@@ -14,18 +15,19 @@ export async function authorizeEventAdmin(request: Request, eventId: string) {
   }
 
   const supabase = getSupabaseServerForRequest(request);
-  const { data, error } = await supabase.rpc('has_event_admin_access', {
-    p_user_id: identity.supabaseUserId,
-    p_event_id: eventId,
-    p_include_moderator: false,
-  });
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', identity.supabaseUserId)
+    .in('role', ['super_admin', 'admin'])
+    .limit(1);
 
   if (error) {
-    console.error('Event administrator authorization failed:', error.message);
-    return { response: Response.json({ error: 'Unable to authorize request' }, { status: 500 }) } as const;
+    console.error('Unable to verify global admin access:', error.message);
+    return { response: Response.json({ error: 'Unable to verify administrative access' }, { status: 500 }) } as const;
   }
-  if (!data) {
-    return { response: Response.json({ error: 'Forbidden' }, { status: 403 }) } as const;
+  if (!data || data.length === 0) {
+    return { response: Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 }) } as const;
   }
 
   return { userId: identity.supabaseUserId, supabase } as const;

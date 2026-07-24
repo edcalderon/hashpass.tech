@@ -1,48 +1,5 @@
-import { supabaseServer } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
-import { authenticateRequest } from '@hashpass/auth';
-
-// Helper function to check admin status - using Directus user data
-async function checkAdminStatus(userId: string): Promise<boolean> {
-  try {
-    // Check database for admin role. Values must match the Postgres
-    // `user_role` enum exactly (db/migrations/V001__init_core_schema.sql):
-    // 'user' | 'speaker' | 'organizer' | 'admin' | 'super_admin' — there is
-    // no 'moderator', and it's 'super_admin' not 'superAdmin'. Any other
-    // value here makes Postgres reject the whole `.in()` list.
-    const { data, error } = await supabaseServer
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .in('role', ['super_admin', 'admin'])
-      .limit(1); // Limit to 1 since we only need to check existence
-    
-    if (error) {
-      console.error('Error checking admin status:', error);
-      return false;
-    }
-    
-    return !!data && data.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-// Get authentication from request headers using Directus
-async function getAuthUserId(request: Request): Promise<string | null> {
-  try {
-    const { user, error } = await authenticateRequest(request);
-    
-    if (error || !user) {
-      console.log('Authentication failed:', error);
-      return null;
-    }
-    
-    return user.id;
-  } catch {
-    return null;
-  }
-}
+import { authorizeGlobalAdmin } from '@/lib/server/global-admin';
 
 /**
  * GET /api/qr/admin - List all QR codes with filters (admin only)
@@ -53,15 +10,8 @@ export async function GET(request: Request) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 });
   }
 
-  const userId = await getAuthUserId(request);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  }
-
-  const isUserAdmin = await checkAdminStatus(userId);
-  if (!isUserAdmin) {
-    return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), { status: 403 });
-  }
+  const authorization = await authorizeGlobalAdmin(request);
+  if ('response' in authorization) return authorization.response;
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
@@ -73,7 +23,7 @@ export async function GET(request: Request) {
   const to = from + pageSize - 1;
 
   try {
-    let query = supabaseServer
+    let query = authorization.supabase
       .from('qr_codes')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -120,15 +70,8 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 });
   }
 
-  const userId = await getAuthUserId(request);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  }
-
-  const isUserAdmin = await checkAdminStatus(userId);
-  if (!isUserAdmin) {
-    return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), { status: 403 });
-  }
+  const authorization = await authorizeGlobalAdmin(request);
+  if ('response' in authorization) return authorization.response;
 
   try {
     const body = await request.json();
@@ -138,10 +81,10 @@ export async function POST(request: Request) {
       return new Response(JSON.stringify({ error: 'Token is required' }), { status: 400 });
     }
 
-    const { data, error } = await supabaseServer
+    const { data, error } = await authorization.supabase
       .rpc('revoke_qr_code', {
         p_token: token,
-        p_admin_user_id: userId,
+        p_admin_user_id: authorization.userId,
         p_reason: reason || null,
       })
       .single();
@@ -160,4 +103,3 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Unexpected server error' }), { status: 500 });
   }
 }
-

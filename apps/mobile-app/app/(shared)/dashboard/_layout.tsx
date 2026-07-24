@@ -16,10 +16,8 @@ import { useTheme } from '../../../hooks/useTheme';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useAuth } from '../../../hooks/useAuth';
 import { authService } from '@hashpass/auth';
-import { supabase } from '../../../lib/supabase';
 import { useLanguage } from '../../../providers/LanguageProvider';
-import { isAdmin } from '../../../lib/admin-utils';
-import { getUserEventRoles } from '../../../lib/event-admin-access';
+import { getCurrentAdminAccess } from '../../../lib/admin-access';
 import { ScrollProvider, useScroll } from '@contexts/ScrollContext';
 import { NotificationProvider, useNotifications } from '@contexts/NotificationContext';
 import { useEvent } from '@contexts/EventContext';
@@ -296,17 +294,29 @@ function CustomDrawerContent({
   // an event-scoped admin has no visible way into the Admin Panel even
   // though the panel itself already supports them (see admin.tsx).
   React.useEffect(() => {
+    let cancelled = false;
+
     const checkAdminStatus = async () => {
-      if (!user) return;
-      const admin = await isAdmin(user.id);
-      if (admin) {
-        setIsUserAdmin(true);
+      if (!user) {
+        if (!cancelled) setIsUserAdmin(false);
         return;
       }
-      const eventRoles = await getUserEventRoles(user.id);
-      setIsUserAdmin(eventRoles.length > 0);
+
+      try {
+        const access = await getCurrentAdminAccess();
+        if (!cancelled) {
+          setIsUserAdmin(access.effectiveRole.role !== 'user');
+        }
+      } catch (error) {
+        console.error('Unable to load admin access for drawer:', error);
+        if (!cancelled) setIsUserAdmin(false);
+      }
     };
+
     checkAdminStatus();
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const baseMenuItems = [

@@ -2,6 +2,7 @@
 
 const mockAuthenticateRequest = jest.fn();
 const mockRpc = jest.fn();
+const mockResolveNotificationIdentity = jest.fn();
 const mockRateLimitOk = jest.fn((_key: string) => true);
 const mockOrder = jest.fn();
 const mockFrom = jest.fn((..._args: unknown[]) => ({
@@ -22,6 +23,10 @@ jest.mock('@/lib/supabase-server', () => ({
 jest.mock('@/lib/bsl/rateLimit', () => ({
   rateLimitOk: (key: string) => mockRateLimitOk(key),
 }));
+jest.mock('@/lib/server/resolve-notification-identity', () => ({
+  resolveNotificationIdentity: (...args: unknown[]) => mockResolveNotificationIdentity(...args),
+  isResolveIdentityError: (value: { status?: unknown }) => typeof value?.status === 'number',
+}));
 
 describe('POST /api/admin/roles', () => {
   const actorId = '7f60f5d2-5948-4df1-9670-2f9177cf2fe4';
@@ -31,10 +36,12 @@ describe('POST /api/admin/roles', () => {
     jest.resetModules();
     mockAuthenticateRequest.mockReset();
     mockRpc.mockReset();
+    mockResolveNotificationIdentity.mockReset();
     mockOrder.mockReset();
     mockFrom.mockClear();
     mockRateLimitOk.mockReturnValue(true);
     mockAuthenticateRequest.mockResolvedValue({ user: { id: actorId }, error: null });
+    mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: actorId, email: 'admin@example.com' });
   });
 
   const post = async (body: Record<string, unknown>) => {
@@ -97,10 +104,12 @@ describe('GET /api/admin/roles', () => {
     jest.resetModules();
     mockAuthenticateRequest.mockReset();
     mockRpc.mockReset();
+    mockResolveNotificationIdentity.mockReset();
     mockOrder.mockReset();
     mockFrom.mockClear();
     mockRateLimitOk.mockReturnValue(true);
     mockAuthenticateRequest.mockResolvedValue({ user: { id: actorId }, error: null });
+    mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: actorId, email: 'admin@example.com' });
   });
 
   const get = async (eventId: string) => {
