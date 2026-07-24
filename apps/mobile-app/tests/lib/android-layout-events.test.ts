@@ -185,6 +185,33 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).toContain("id: 'nav.closeMenu', message: 'Close navigation menu'");
   });
 
+  it('locks the native drawer state during a transition and leaves close to buttons or the backdrop', () => {
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+    const openDrawerSource = dashboardSource.slice(
+      dashboardSource.indexOf('const openDashboardDrawer = useCallback'),
+      dashboardSource.indexOf('const closeDashboardDrawer = useCallback')
+    );
+    const closeDrawerSource = dashboardSource.slice(
+      dashboardSource.indexOf('const closeDashboardDrawer = useCallback'),
+      dashboardSource.indexOf('const toggleDashboardDrawer = useCallback')
+    );
+
+    // A second native gesture while the first slide is still resolving can
+    // strand react-native-drawer-layout between endpoints. Native uses the
+    // reliable burger/backdrop close paths instead of a competing swipe.
+    expect(dashboardSource).toContain("swipeEnabled: Platform.OS === 'web'");
+    expect(dashboardSource).toContain("const drawerTransitionRef = useRef<'opening' | 'closing' | null>(null);");
+    expect(dashboardSource).toContain("const settleDrawerTransition = useCallback((transition: 'opening' | 'closing') => {");
+    expect(dashboardSource).toContain("drawerTransitionRef.current === 'opening' && !isOpen");
+    expect(dashboardSource).toContain("drawerTransitionRef.current === 'closing' && isOpen");
+    expect(openDrawerSource).toContain('drawerOpenRef.current = true;');
+    expect(openDrawerSource).toContain("drawerTransitionRef.current = 'opening';");
+    expect(openDrawerSource).toContain("settleDrawerTransition('opening');");
+    expect(closeDrawerSource).toContain('drawerOpenRef.current = false;');
+    expect(closeDrawerSource).toContain("drawerTransitionRef.current = 'closing';");
+    expect(closeDrawerSource).toContain("settleDrawerTransition('closing');");
+  });
+
   it('waits for durable native session cleanup before leaving the dashboard', () => {
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
     const authHookSource = readSource('../../hooks/useAuth.ts');
@@ -199,6 +226,32 @@ describe('Android layout event crash guards', () => {
     );
     expect(authHookSource).toContain("from '../lib/auth/native-session-clear'");
     expect(authHookSource).toContain('clearPersistedNativeProviderSessions()');
+  });
+
+  it('finishes native Google account cleanup before allowing a new login attempt', () => {
+    const authHookSource = readSource('../../hooks/useAuth.ts');
+    const signOutSource = authHookSource.slice(
+      authHookSource.indexOf('const signOut = useCallback'),
+      authHookSource.indexOf('const signIn = useCallback')
+    );
+
+    expect(signOutSource).toContain('const clearNativeGoogleBeforeNextLogin = async () =>');
+    expect(signOutSource).toContain('const nativeGoogleCleanupPromise = clearNativeGoogleBeforeNextLogin();');
+    expect(signOutSource.indexOf('const nativeGoogleCleanupPromise = clearNativeGoogleBeforeNextLogin();')).toBeLessThan(
+      signOutSource.indexOf('const finishRemoteCleanup = async () =>')
+    );
+  });
+
+  it('makes a new native Google login wait for an in-flight logout cleanup', () => {
+    const authHookSource = readSource('../../hooks/useAuth.ts');
+    const oauthSource = authHookSource.slice(
+      authHookSource.indexOf('const signInWithOAuth = useCallback'),
+      authHookSource.indexOf('const processOAuthCallback = useCallback')
+    );
+
+    expect(authHookSource).toContain('let nativeGoogleSignOutCleanup: Promise<void> | null = null;');
+    expect(authHookSource).toContain('nativeGoogleSignOutCleanup = nativeGoogleCleanupPromise;');
+    expect(oauthSource).toContain('await nativeGoogleSignOutCleanup;');
   });
 
   it('keeps safe-area Fabric events on the generated Fabric event name', () => {

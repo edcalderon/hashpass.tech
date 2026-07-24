@@ -1,3 +1,7 @@
+## [1.8.258](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.257...v1.8.258) (2026-07-24)
+### Released
+- stabilize native drawer and Google logout
+
 ## [1.8.257](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.256...v1.8.257) (2026-07-24)
 
 

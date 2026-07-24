@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607241726, // Updated to current timestamp
+  buildNumber: 202607241847, // Updated to current timestamp
   releaseDate: '2026-07-24',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'drop hand-release version bump, recompute pass limits on upgrade'
+    'stabilize native drawer and Google logout'
   ],
   breakingChanges: [],
-  notes: 'drop hand-release version bump, recompute pass limits on upgrade'
+  notes: 'stabilize native drawer and Google logout'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.258': {
+    version: '1.8.258',
+    buildNumber: 202607241847,
+    releaseDate: '2026-07-24',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stabilize native drawer and Google logout'
+    ],
+    breakingChanges: [],
+    notes: 'stabilize native drawer and Google logout'
+  },
   '1.8.257': {
     version: '1.8.257',
     buildNumber: 202607241726,
