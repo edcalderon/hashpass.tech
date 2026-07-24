@@ -1,17 +1,18 @@
 # Task: Admin Event Control Center (event-scoped roles + full event admin surface)
 
 **Priority:** High
-**Status:** In progress — Phase 1 (schema foundation + privileged pass mutation) merged to `develop` via [PR #92](https://github.com/hashpass-tech/hashpass.tech/pull/92) (2026-07-24) and promoted toward `main` via [PR #93](https://github.com/hashpass-tech/hashpass.tech/pull/93) (v1.8.257, awaiting @edcalderon approval — see repo release flow in `CLAUDE.md`). `V012` migration applied and verified on **prod**; **dev is not yet migrated** (see Rollout status below). UI/role-management surfaces are not built yet.
+**Status:** In progress — Phase 1 (schema foundation + privileged pass mutation) merged to `develop` via [PR #92](https://github.com/hashpass-tech/hashpass.tech/pull/92) (2026-07-24) and promoted toward `main` via [PR #93](https://github.com/hashpass-tech/hashpass.tech/pull/93) (v1.8.257, awaiting @edcalderon approval — see repo release flow in `CLAUDE.md`). Phase 2 (event-scoped admin UI access) pushed directly to `develop` the same day, not yet released. `V012`+`V013` migrations applied and verified on **prod**; **dev is not yet migrated** (see Rollout status below).
 
 ## Rollout status
 
-- **`develop`**: merged (PR #92, commit `98b954364` → merge commit `6a3a9d487`).
-- **`main`**: pending — release promotion PR #93 open, needs human approval + coverage/security checks per the protected `develop -> main` flow before it lands.
-- **Prod DB (`hashpass-prod`, pooler-reachable)**: `V012` applied and verified 2026-07-24 — 5 seed events present, all 5 new tables (`events`, `event_roles`, `speakers`, `event_agenda_items`, `admin_action_log`) exist with RLS enabled, `has_event_admin_access`/`admin_mutate_event_pass` exist, `admin_mutate_event_pass` execute is `service_role`-only (not `anon`/`authenticated`), `passes_event_id_fkey` (`NOT VALID`) is in place.
-- **Dev DB (`fxgftanraszjjyeidvia`)**: **not yet applied.** Its direct-connect Postgres host is IPv6-only and wasn't reachable from the environment this migration was run in (no pooler URL was available for dev, unlike prod). Run manually from a machine with normal connectivity:
+- **`develop`**: Phase 1 merged (PR #92, commit `98b954364` → merge commit `6a3a9d487`); Phase 2 pushed directly (`admin.tsx` event-scoped gating, `lib/event-admin-access.ts`, `V013`).
+- **`main`**: pending — release promotion PR #93 open (covers Phase 1 only, opened before Phase 2 landed), needs human approval + coverage/security checks per the protected `develop -> main` flow before it lands. Phase 2 will ride the *next* patch release.
+- **Prod DB (`hashpass-prod`, pooler-reachable)**: `V012` and `V013` both applied and verified 2026-07-24 — 5 seed events present, all 5 new tables (`events`, `event_roles`, `speakers`, `event_agenda_items`, `admin_action_log`) exist with RLS enabled, `has_event_admin_access`/`admin_mutate_event_pass` exist, `admin_mutate_event_pass` execute is `service_role`-only (not `anon`/`authenticated`), `passes_event_id_fkey` (`NOT VALID`) is in place, `passes_event_admin_read` policy confirmed present.
+- **Dev DB (`fxgftanraszjjyeidvia`)**: **not yet applied (V012 or V013).** Its direct-connect Postgres host is IPv6-only and wasn't reachable from the environment these migrations were run in (no pooler URL was available for dev, unlike prod). Run manually from a machine with normal connectivity, in order:
   ```bash
   set -a; source .env; set +a
   psql "$SUPABASE_DB_URL_DEV" -v ON_ERROR_STOP=1 -f db/migrations/V012__admin_event_control_center.sql
+  psql "$SUPABASE_DB_URL_DEV" -v ON_ERROR_STOP=1 -f db/migrations/V013__event_admin_passes_read.sql
   ```
   Until this runs, dev-environment builds (`EXPO_PUBLIC_SUPABASE_PROFILE=core-development`, routed to `hashpass-dev-expo-router-api`) will get a hard DB error from `/api/admin/passes` (RPC not found) rather than silently misbehaving — safe to leave briefly, but should be applied before anyone relies on dev for testing this feature.
 
@@ -55,16 +56,21 @@ Frontend:
 
 Tests: `apps/mobile-app/tests/api/admin-passes.test.ts` covers invalid input (rejected pre-auth/pre-DB), unauthorized caller (403, no mutation attempted), and an authorized mutation using the authenticated actor's ID (not a client-supplied one).
 
-**Review fixes applied before merge** (this session): stripped a hand-rolled version/changelog/README bump that had been bundled into the feature branch — version bumps don't belong in a feature PR per this repo's release policy, and this one was incomplete (missed `app.json`), which is what was actually failing CI's coverage/test check; and fixed the pass-upgrade limits bug described above.
+**Review fixes applied before merge** (2026-07-24): stripped a hand-rolled version/changelog/README bump that had been bundled into the feature branch — version bumps don't belong in a feature PR per this repo's release policy, and this one was incomplete (missed `app.json`), which is what was actually failing CI's coverage/test check; and fixed the pass-upgrade limits bug described above.
+
+**Phase 2 (2026-07-24, direct to `develop`, not yet released):** closed the top-priority gap from Phase 1.
+- `db/migrations/V013__event_admin_passes_read.sql` — adds `passes_event_admin_read`, an RLS `SELECT` policy on `passes` using `has_event_admin_access(auth.uid(), event_id, false)`. Deliberately `event_admin`-only, not `moderator` (pass rows carry PII — email, company — and moderator pass access is still an open question, see below). Applied and verified on **prod**; not yet on dev (same connectivity blocker as V012).
+- `apps/mobile-app/lib/event-admin-access.ts` — new client helper, `getUserEventRoles(userId)` (reads the caller's own `event_roles` rows, permitted by V012's `event_roles_self_read` policy) and `highestEventRole(grants, eventId)`.
+- `admin.tsx`'s `checkAdminAccess()` now falls back to event-scoped access when the user isn't a global admin: if they hold any unexpired `event_admin`/`moderator` grant, they get into the panel, scoped to that event (or a switcher, if more than one). Global admin behavior is completely unchanged (same ambient-event resolution as before, zero new code path for them).
+- Added a lightweight event switcher (chip row under the header) for users with more than one event grant.
+- The **Passes tab is hidden entirely for `moderator`** — `admin_mutate_event_pass` already excluded moderators from pass mutations (`include_moderator=false`), and V013 excludes them from pass reads too, so there was nothing left for a moderator to do there. They land on QR Scanner instead.
+- **Not addressed in Phase 2** (still open): `/api/admin/events`, `/api/admin/roles`, speaker/agenda/venue CRUD, attendee/check-in view, `admin_action_log` viewer, legacy event ID reconciliation. See Delivery plan below.
 
 ## What's NOT done yet (next phases)
 
-- **The Admin Panel's entry gate is still global-only.** `checkAdminAccess()` in `admin.tsx` still calls the old `isAdmin(user.id)` (checks `user_roles` only). A user who is granted `event_admin`/`moderator` via the new `event_roles` table has **no way to reach the admin UI at all yet** — the new role only currently matters to the one server route that checks it directly (`/api/admin/passes`). This is the top-priority next step.
-- **No event switcher / event-scoped navigation** in the UI.
 - **No `/api/admin/events`, `/api/admin/roles` routes** — no way to create an event, or grant/revoke `event_admin`/`moderator`, from the UI or an API. Right now the only way to populate `event_roles` is a direct DB insert.
 - **No speaker/agenda/venue CRUD** — UI and API routes both outstanding. The `speakers`/`event_agenda_items` tables exist but nothing writes to them yet.
 - **No active/checked-in users view** for event admins.
-- **`passes` client-side reads (`loadPasses()` in `admin.tsx`) are still gated by the old `passes_admin_all` RLS policy** (`is_admin()`, global-only) — an event-scoped-only admin (not a global admin) would see zero rows in the passes list today even after the gating above is fixed, because there's no `passes` RLS policy yet that checks `has_event_admin_access`. Needs either a new RLS policy or (more consistent with the "server-controlled writes" principle already established) moving the read path through an authorized server route too.
 - **No `admin_action_log` viewer.**
 - **Legacy event ID reconciliation not done** — `passes.event_id` FK is `NOT VALID`; still needs a data-cleanup pass and `ALTER TABLE ... VALIDATE CONSTRAINT` once legacy/unknown event IDs are resolved.
 - **TypeScript config (`packages/config/src/events.ts`) not yet retired** — still the source of truth for anything not yet imported into `events`.
@@ -84,11 +90,11 @@ Tests: `apps/mobile-app/tests/api/admin-passes.test.ts` covers invalid input (re
 - [x] Add a privileged, event-authorized pass mutation route (`admin_mutate_event_pass` + `/api/admin/passes`) with audit logging.
 - [x] Move the current Admin Panel create/status pass mutations to the server route.
 - [x] Fix pass-upgrade to recompute tier limits/perks, not just relabel `pass_type`.
-- [ ] Fix `checkAdminAccess()` to recognize event-scoped `event_admin`/`moderator`, not just global `isAdmin()` — **blocking everything below**.
+- [x] Fix `checkAdminAccess()` to recognize event-scoped `event_admin`/`moderator`, not just global `isAdmin()`.
+- [x] Add an RLS policy so event-scoped `event_admin`s can list passes for their event without needing global `admin` (`moderator` intentionally excluded, pending the open question below).
+- [x] Add an event switcher to the Admin Panel; scope all reads/writes to the selected event.
 - [ ] Add `/api/admin/events` (create/edit event info, venue, branding) and `/api/admin/roles` (grant/revoke `event_admin`/`moderator`, enforcing the escalation rule above) + UI.
 - [ ] Add agenda and speaker CRUD routes and UI.
-- [ ] Add an event switcher to the Admin Panel; scope all reads/writes to the selected event.
-- [ ] Add an RLS policy (or server-routed read) so event-scoped admins can list passes for their event without needing global `admin`.
 - [ ] Import remaining TypeScript event metadata into `events`/`speakers`/`event_agenda_items`; reconcile legacy `passes.event_id` values against real `events` rows.
 - [ ] `VALIDATE CONSTRAINT passes_event_id_fkey` once legacy data is reconciled.
 - [ ] Add attendee search, bulk operations, dashboards, and an `admin_action_log` viewer.

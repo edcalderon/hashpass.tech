@@ -12,6 +12,7 @@ import LoadingScreen from '../../../components/LoadingScreen';
 import { useRouter } from 'expo-router';
 import { resolveActiveEventId } from '../../../lib/event-path';
 import { apiClient } from '../../../lib/api-client';
+import { getUserEventRoles, highestEventRole, EventRole, EventRoleGrant } from '../../../lib/event-admin-access';
 
 type TabType = 'passes' | 'qr-scanner' | 'meetings';
 
@@ -58,12 +59,20 @@ export default function AdminPanel() {
   const { colors, isDark } = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const eventId = resolveActiveEventId();
   const [activeTab, setActiveTab] = useState<TabType>('passes');
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQRScanner, setShowQRScanner] = useState(false);
+
+  // Event scoping — global admins keep the ambient (host-resolved) event and
+  // are unaffected by any of this. A user who is only an event_admin/
+  // moderator (event_roles, not user_roles) is scoped to the event(s) they
+  // were granted, with a switcher when they hold more than one.
+  const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
+  const [accessibleEvents, setAccessibleEvents] = useState<EventRoleGrant[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string>(() => resolveActiveEventId());
+  const [currentEventRole, setCurrentEventRole] = useState<EventRole | null>(null);
   
   // Pass Management State
   const [passes, setPasses] = useState<Pass[]>([]);
@@ -107,7 +116,15 @@ export default function AdminPanel() {
     if (isUserAdmin) {
       loadInitialData();
     }
-  }, [isUserAdmin, activeTab]);
+  }, [isUserAdmin, activeTab, selectedEventId]);
+
+  // Moderators don't get pass management (see V013 / task decisions) — the
+  // Passes tab is hidden for them, so bounce off it if it was the default.
+  useEffect(() => {
+    if (!isGlobalAdmin && currentEventRole === 'moderator' && activeTab === 'passes') {
+      setActiveTab('qr-scanner');
+    }
+  }, [isGlobalAdmin, currentEventRole, activeTab]);
 
   const checkAdminAccess = async () => {
     if (!user) {
@@ -118,27 +135,52 @@ export default function AdminPanel() {
 
     console.log('Checking admin access for user:', user.id);
     setLoading(true);
-    
+
     try {
-      const admin = await isAdmin(user.id);
-      console.log('Admin check result:', admin);
-      
-      if (!admin) {
-        console.log('User is not admin, redirecting...');
+      const globalAdmin = await isAdmin(user.id);
+      console.log('Global admin check result:', globalAdmin);
+
+      if (globalAdmin) {
+        setIsGlobalAdmin(true);
+        setIsUserAdmin(true);
+        const role = await getUserAdminRole(user.id);
+        setAdminRole(role);
+        setLoading(false);
+        return;
+      }
+
+      // Not a global admin — fall back to per-event event_admin/moderator grants.
+      const eventRoles = await getUserEventRoles(user.id);
+      if (eventRoles.length === 0) {
+        console.log('User has no global or event-scoped admin role, redirecting...');
         Alert.alert('Access Denied', 'You do not have admin privileges.');
         router.replace('/(shared)/dashboard/explore');
         return;
       }
 
-      console.log('User is admin, setting up admin panel...');
+      console.log('User has event-scoped admin access for', eventRoles.map(g => g.eventId));
+      setAccessibleEvents(eventRoles);
       setIsUserAdmin(true);
-      const role = await getUserAdminRole(user.id);
-      setAdminRole(role);
+      setAdminRole(null);
+
+      const ambientEventId = resolveActiveEventId();
+      const defaultEventId = eventRoles.some(g => g.eventId === ambientEventId)
+        ? ambientEventId
+        : eventRoles[0].eventId;
+      setSelectedEventId(defaultEventId);
+      setCurrentEventRole(highestEventRole(eventRoles, defaultEventId));
       setLoading(false);
     } catch (error) {
       console.error('Error checking admin access:', error);
       Alert.alert('Error', 'Failed to verify admin access. Please try again.');
       router.replace('/(shared)/dashboard/explore');
+    }
+  };
+
+  const handleSelectEvent = (eventId: string) => {
+    setSelectedEventId(eventId);
+    if (!isGlobalAdmin) {
+      setCurrentEventRole(highestEventRole(accessibleEvents, eventId));
     }
   };
 
@@ -158,7 +200,7 @@ export default function AdminPanel() {
       const { data, error } = await supabase
         .from('passes')
         .select('*')
-        .eq('event_id', eventId)
+        .eq('event_id', selectedEventId)
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -178,7 +220,7 @@ export default function AdminPanel() {
       const { data: passesData, error: passesError } = await supabase
         .from('passes')
         .select('user_id')
-        .eq('event_id', eventId)
+        .eq('event_id', selectedEventId)
         .limit(200);
 
       if (passesError) throw passesError;
@@ -249,7 +291,7 @@ export default function AdminPanel() {
 
       const result = await apiClient.post('/admin/passes', {
         action: 'create',
-        eventId: resolvePassStorageEventId(eventId),
+        eventId: resolvePassStorageEventId(selectedEventId),
         userId,
         passType: newPassType,
       }, { skipEventSegment: true });
@@ -273,7 +315,7 @@ export default function AdminPanel() {
     try {
       const result = await apiClient.post('/admin/passes', {
         action: 'update',
-        eventId: resolvePassStorageEventId(eventId),
+        eventId: resolvePassStorageEventId(selectedEventId),
         passId,
         status: newStatus,
       }, { skipEventSegment: true });
@@ -411,23 +453,44 @@ export default function AdminPanel() {
     return null; // Will redirect
   }
 
+  const canManagePasses = isGlobalAdmin || currentEventRole === 'event_admin';
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Admin Panel</Text>
-        <Text style={styles.headerSubtitle}>Role: {adminRole || 'Admin'}</Text>
+        <Text style={styles.headerSubtitle}>
+          Role: {isGlobalAdmin ? (adminRole || 'Admin') : `${currentEventRole || 'admin'} @ ${selectedEventId}`}
+        </Text>
+        {!isGlobalAdmin && accessibleEvents.length > 1 && (
+          <View style={styles.eventSwitcher}>
+            {accessibleEvents.map((grant) => (
+              <TouchableOpacity
+                key={grant.eventId}
+                style={[styles.eventSwitcherChip, selectedEventId === grant.eventId && styles.eventSwitcherChipActive]}
+                onPress={() => handleSelectEvent(grant.eventId)}
+              >
+                <Text style={[styles.eventSwitcherChipText, selectedEventId === grant.eventId && styles.eventSwitcherChipTextActive]}>
+                  {grant.eventId}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'passes' && styles.tabActive]}
-          onPress={() => setActiveTab('passes')}
-        >
-          <MaterialIcons name="card-membership" size={20} color={activeTab === 'passes' ? '#007AFF' : colors.text.secondary} />
-          <Text style={[styles.tabText, activeTab === 'passes' && styles.tabTextActive]}>Passes</Text>
-        </TouchableOpacity>
+        {canManagePasses && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'passes' && styles.tabActive]}
+            onPress={() => setActiveTab('passes')}
+          >
+            <MaterialIcons name="card-membership" size={20} color={activeTab === 'passes' ? '#007AFF' : colors.text.secondary} />
+            <Text style={[styles.tabText, activeTab === 'passes' && styles.tabTextActive]}>Passes</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.tab, activeTab === 'qr-scanner' && styles.tabActive]}
           onPress={() => setActiveTab('qr-scanner')}
@@ -872,6 +935,32 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: colors.text.secondary,
+  },
+  eventSwitcher: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  eventSwitcherChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    backgroundColor: colors.background.default,
+  },
+  eventSwitcherChipActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  eventSwitcherChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text.secondary,
+  },
+  eventSwitcherChipTextActive: {
+    color: '#fff',
   },
   tabs: {
     flexDirection: 'row',
