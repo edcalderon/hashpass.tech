@@ -1,11 +1,48 @@
 import { authenticateRequest } from '@hashpass/auth';
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
+import { authorizeEventAdmin } from '@/lib/server/event-admin';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const ROLES = new Set(['event_admin', 'moderator']);
 const ACTIONS = new Set(['grant', 'revoke']);
+
+/**
+ * GET /api/admin/roles?eventId=... — list current event_admin/moderator
+ * grants for an event. event_roles' own RLS only lets a user read their own
+ * row (V012's event_roles_self_read), so listing everyone else's requires
+ * the same service-role + has_event_admin_access authorization used by the
+ * mutation routes, not a direct client-side table read.
+ */
+export async function GET(request: Request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!rateLimitOk(`admin-roles:${ip}`)) {
+    return Response.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const eventId = (searchParams.get('eventId') || '').trim();
+  if (!EVENT_ID_PATTERN.test(eventId)) {
+    return Response.json({ error: 'A valid eventId is required' }, { status: 400 });
+  }
+
+  const authorization = await authorizeEventAdmin(request, eventId);
+  if ('response' in authorization) return authorization.response;
+
+  const { data, error } = await authorization.supabase
+    .from('event_roles')
+    .select('id, user_id, role, granted_by, granted_at, expires_at')
+    .eq('event_id', eventId)
+    .order('granted_at', { ascending: false });
+
+  if (error) {
+    console.error('Failed to list event roles:', error.message);
+    return Response.json({ error: 'Unable to list roles' }, { status: 500 });
+  }
+
+  return Response.json({ data: data || [] });
+}
 
 /**
  * POST /api/admin/roles — grant/revoke event_admin or moderator for an event.
