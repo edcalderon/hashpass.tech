@@ -480,9 +480,25 @@ function runMainRelease(options, branch) {
     noTag: true,
   };
 
-  runInherit(VERSIONING_BIN, ['exec', 'versioning', ...buildVersioningArgs(mainOptions, branch)], options);
+  let versioningError = null;
+  try {
+    runInherit(VERSIONING_BIN, ['exec', 'versioning', ...buildVersioningArgs(mainOptions, branch)], options);
+  } catch (error) {
+    versioningError = error;
+  }
 
   const releaseVersion = readJsonVersion('package.json');
+
+  if (versioningError && !hasEmptyChangelogEntry(releaseVersion)) {
+    throw versioningError;
+  }
+
+  if (versioningError) {
+    console.warn(
+      `⚠️  Recovering the empty v${releaseVersion} changelog entry generated before versioning validation.`,
+    );
+  }
+
   runInherit('node', [
     'packages/tools/scripts/update-version.mjs',
     releaseVersion,
@@ -493,7 +509,29 @@ function runMainRelease(options, branch) {
   syncJsonVersion('apps/mobile-app/config/version.production.json', releaseVersion);
   syncJsonVersion('apps/mobile-app/config/version.development.json', releaseVersion);
 
+  if (versioningError) {
+    runInherit(
+      VERSIONING_BIN,
+      ['exec', 'versioning', 'check-changelog', '--config', options.config, '--version', releaseVersion],
+      options,
+    );
+  }
+
   return releaseVersion;
+}
+
+function hasEmptyChangelogEntry(version) {
+  const changelogPath = path.join(ROOT_DIR, 'CHANGELOG.md');
+  if (!fs.existsSync(changelogPath)) return false;
+
+  const heading = `## [${String(version).trim().replace(/^v/, '')}]`;
+  const content = fs.readFileSync(changelogPath, 'utf8');
+  const start = content.indexOf(heading);
+  if (start === -1) return false;
+
+  const end = content.indexOf('\n## ', start + heading.length);
+  const entry = content.slice(start, end === -1 ? content.length : end);
+  return !/^\s*(?:[-*+]|\d+\.)\s+\S/m.test(entry);
 }
 
 function getExactTagForHead(options) {

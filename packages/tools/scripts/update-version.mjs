@@ -319,7 +319,7 @@ function deriveReleaseSummaryFromGit(fromVersion, currentNewVersion) {
     // The release tooling's own bookkeeping commits aren't user-facing changes.
     if (/^chore\(release\)|^chore:\s*release\b/i.test(subject)) continue;
 
-    const match = subject.match(/^(\w+)(\([^)]*\))?(!)?:\s*(.+)$/);
+    const match = subject.match(/^(?:[^\p{L}\p{N}_\s]+\s*)?(\w+)(\([^)]*\))?(!)?:\s*(.+)$/u);
     if (!match) continue; // not conventional-commit shaped — skip rather than guess wrong
 
     const [, type, , breakingMarker, description] = match;
@@ -390,9 +390,28 @@ function updateChangelog(version, releaseType, notes = '') {
 
   let content = fs.readFileSync(changelogPath, 'utf8');
 
-  // Check if the changelog already has this version
-  if (content.includes(`## [${version}]`)) {
-    console.log(`ℹ️ Version ${version} already exists in CHANGELOG.md, skipping update`);
+  // versioning writes its heading before it checks that conventional commits
+  // produced any changelog bullets. When all subjects use a supported emoji
+  // prefix (for example, "🐛 fix:"), that check can stop the release with an
+  // otherwise-empty heading. Fill that specific entry here so the project
+  // release script can recover without hand-editing release artifacts.
+  const versionHeading = `## [${version}]`;
+  const existingEntryStart = content.indexOf(versionHeading);
+  if (existingEntryStart !== -1) {
+    const followingEntryStart = content.indexOf('\n## ', existingEntryStart + versionHeading.length);
+    const existingEntryEnd = followingEntryStart === -1 ? content.length : followingEntryStart;
+    const existingEntry = content.slice(existingEntryStart, existingEntryEnd);
+    const hasDocumentedChanges = /^\s*(?:[-*+]|\d+\.)\s+\S/m.test(existingEntry);
+
+    if (hasDocumentedChanges) {
+      console.log(`ℹ️ Version ${version} already exists in CHANGELOG.md, skipping update`);
+      return;
+    }
+
+    const documentedChanges = `\n### ${releaseType === 'stable' ? 'Released' : releaseType.charAt(0).toUpperCase() + releaseType.slice(1)}\n- ${notes || `Version ${version} release`}\n`;
+    content = content.slice(0, existingEntryEnd).trimEnd() + documentedChanges + content.slice(existingEntryEnd);
+    fs.writeFileSync(changelogPath, content);
+    console.log(`✅ Filled empty CHANGELOG.md entry for version ${version}`);
     return;
   }
 
