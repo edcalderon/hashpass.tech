@@ -8,6 +8,8 @@ import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
 import type { AuthUser } from '@hashpass/auth';
+import { getCurrentAdminAccess } from '../../../lib/admin-access';
+import { formatEffectiveRole, type EffectiveRole } from '../../../lib/role-summary';
 
 // DiceBear PNG format — React Native Image cannot render SVG so we use /png endpoints
 const generateAvatarUrl = (name: string, style: 'avataaars' | 'fun-emoji' | 'bottts' = 'avataaars'): string => {
@@ -50,6 +52,7 @@ export default function ProfileScreen() {
   const [retryingProfile, setRetryingProfile] = useState(false);
   // Raw Supabase user — always has created_at + user_metadata.avatar_url regardless of auth provider
   const [rawSupabaseUser, setRawSupabaseUser] = useState<any>(null);
+  const [effectiveRole, setEffectiveRole] = useState<EffectiveRole | null>(null);
 
   const hasProfileContent = useCallback((candidate?: AuthUser | null): boolean => {
     const hasName = Boolean(
@@ -122,6 +125,30 @@ export default function ProfileScreen() {
       if (data?.session?.user) setRawSupabaseUser(data.session.user);
     });
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadRole = async () => {
+      if (!user) {
+        if (!cancelled) setEffectiveRole(null);
+        return;
+      }
+
+      try {
+        const access = await getCurrentAdminAccess();
+        if (!cancelled) setEffectiveRole(access.effectiveRole);
+      } catch (error) {
+        console.error('Unable to load profile role:', error);
+        if (!cancelled) setEffectiveRole(null);
+      }
+    };
+
+    loadRole();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const activeUser = profileUser ?? user ?? null;
 
@@ -342,7 +369,7 @@ export default function ProfileScreen() {
               </View>
               
               <View style={styles.divider} />
-              
+
               <View style={styles.infoRow}>
                 <View style={styles.infoIconContainer}>
                   <Ionicons name="person-outline" size={22} color={colors.primary} />
@@ -355,6 +382,20 @@ export default function ProfileScreen() {
               
               <View style={styles.divider} />
               
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconContainer}>
+                  <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Role</Text>
+                  <Text style={styles.infoValue}>
+                    {effectiveRole ? formatEffectiveRole(effectiveRole) : 'Role unavailable'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
               <View style={styles.infoRow}>
                 <View style={styles.infoIconContainer}>
                   <Ionicons name="calendar-outline" size={22} color={colors.primary} />

@@ -1,7 +1,10 @@
-import { authenticateRequest } from '@hashpass/auth';
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { authorizeEventAdmin } from '@/lib/server/event-admin';
+import {
+  isResolveIdentityError,
+  resolveNotificationIdentity,
+} from '@/lib/server/resolve-notification-identity';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -79,14 +82,17 @@ export async function POST(request: Request) {
     return Response.json({ error: 'expiresAt must be a valid date string' }, { status: 400 });
   }
 
-  const { user, error: authError } = await authenticateRequest(request);
-  if (authError || !user) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const identity = await resolveNotificationIdentity(request);
+  if (isResolveIdentityError(identity)) {
+    return Response.json({ error: identity.error }, { status: identity.status });
+  }
+  if (!identity.supabaseUserId) {
+    return Response.json({ error: 'Account is not linked to an administrative identity' }, { status: 403 });
   }
 
   const supabase = getSupabaseServerForRequest(request);
   const { data, error } = await supabase.rpc('admin_mutate_event_role', {
-    p_actor_user_id: user.id,
+    p_actor_user_id: identity.supabaseUserId,
     p_event_id: eventId,
     p_action: action,
     p_target_user_id: targetUserId,

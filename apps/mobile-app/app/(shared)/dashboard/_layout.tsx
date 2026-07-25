@@ -16,10 +16,8 @@ import { useTheme } from '../../../hooks/useTheme';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useAuth } from '../../../hooks/useAuth';
 import { authService } from '@hashpass/auth';
-import { supabase } from '../../../lib/supabase';
 import { useLanguage } from '../../../providers/LanguageProvider';
-import { isAdmin } from '../../../lib/admin-utils';
-import { getUserEventRoles } from '../../../lib/event-admin-access';
+import { getCurrentAdminAccess } from '../../../lib/admin-access';
 import { ScrollProvider, useScroll } from '@contexts/ScrollContext';
 import { NotificationProvider, useNotifications } from '@contexts/NotificationContext';
 import { useEvent } from '@contexts/EventContext';
@@ -296,17 +294,29 @@ function CustomDrawerContent({
   // an event-scoped admin has no visible way into the Admin Panel even
   // though the panel itself already supports them (see admin.tsx).
   React.useEffect(() => {
+    let cancelled = false;
+
     const checkAdminStatus = async () => {
-      if (!user) return;
-      const admin = await isAdmin(user.id);
-      if (admin) {
-        setIsUserAdmin(true);
+      if (!user) {
+        if (!cancelled) setIsUserAdmin(false);
         return;
       }
-      const eventRoles = await getUserEventRoles(user.id);
-      setIsUserAdmin(eventRoles.length > 0);
+
+      try {
+        const access = await getCurrentAdminAccess();
+        if (!cancelled) {
+          setIsUserAdmin(access.effectiveRole.role !== 'user');
+        }
+      } catch (error) {
+        console.error('Unable to load admin access for drawer:', error);
+        if (!cancelled) setIsUserAdmin(false);
+      }
     };
+
     checkAdminStatus();
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const baseMenuItems = [
@@ -1001,32 +1011,38 @@ export default function DashboardLayout() {
     }, 1200);
   }, [dashboardCopilotHook]);
 
-  const closeDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
-    try {
-      if (typeof navigation?.closeDrawer === 'function') {
-        navigation.closeDrawer();
-      } else if (typeof navigation?.dispatch === 'function') {
-        navigation.dispatch(DrawerActions.closeDrawer());
-      } else {
-        console.warn('Drawer navigation unavailable, skipping closeDrawer');
+  // The native header is rendered outside the drawer-content subtree. On the
+  // affected v1.8.259 builds its cached drawer status was stale ("open" while
+  // the drawer was visibly closed), so a toggle sent closeDrawer and made the
+  // hamburger appear dead. Resolve the Drawer navigator from the live screen
+  // navigation object first; only use the content ref as a fallback for the
+  // custom non-native header.
+  const resolveDashboardDrawerNavigation = useCallback((navigation: DrawerNavigation) => {
+    const findDrawerNavigation = (candidate: DrawerNavigation | null | undefined) => {
+      const seen = new Set<DrawerNavigation>();
+      let current = candidate;
+
+      while (current && !seen.has(current)) {
+        if (typeof current.openDrawer === 'function') {
+          return current;
+        }
+
+        seen.add(current);
+        current = typeof current.getParent === 'function' ? current.getParent() : undefined;
       }
-    } catch (error) {
-      console.error('Error closing drawer:', error);
-    }
+
+      return null;
+    };
+
+    return findDrawerNavigation(navigation)
+      ?? findDrawerNavigation(drawerNavRef.current)
+      ?? drawerNavRef.current
+      ?? navigation;
   }, []);
 
-  const toggleDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
-    const drawerNavigation = Platform.OS === 'android'
-      ? (drawerNavRef.current ?? navigation)
-      : navigation;
-
-    if (drawerOpenRef.current) {
-      closeDashboardDrawer(drawerNavigation);
-      return;
-    }
-
-    openDashboardDrawer(drawerNavigation);
-  }, [closeDashboardDrawer, openDashboardDrawer]);
+  const openDashboardDrawerFromHeader = useCallback((navigation: DrawerNavigation) => {
+    openDashboardDrawer(resolveDashboardDrawerNavigation(navigation));
+  }, [openDashboardDrawer, resolveDashboardDrawerNavigation]);
 
   // Header component for the drawer screens
   const Header = () => {
@@ -1257,7 +1273,7 @@ export default function DashboardLayout() {
           >
             <View style={{ position: 'relative' }}>
               <CopilotTouchableOpacity
-                onPress={() => toggleDashboardDrawer(navigationFromContext)}
+                onPress={() => openDashboardDrawerFromHeader(navigationFromContext)}
                 style={styles.headerIconButton}
                 activeOpacity={0.8}
                 hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
@@ -1392,11 +1408,11 @@ export default function DashboardLayout() {
           name="menuButton"
         >
           <CopilotTouchableOpacity
-            onPress={() => toggleDashboardDrawer(navigation)}
+            onPress={() => openDashboardDrawerFromHeader(navigation)}
             style={styles.headerIconButton}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Toggle navigation menu"
+            accessibilityLabel="Open navigation menu"
           >
             <Ionicons
               name="menu"

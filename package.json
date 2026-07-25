@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.259",
+  "version": "1.8.260",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -28,6 +28,7 @@
     "start:club": "pnpm --filter hashpass-club-web start",
     "start:reset": "pnpm --filter hashpass-mobile-app start:reset",
     "android": "pnpm --filter hashpass-mobile-app android",
+    "android:emulator": "pnpm --filter hashpass-mobile-app android:emulator",
     "android:bundle": "pnpm --filter hashpass-mobile-app android:bundle",
     "android:bundle:dev": "pnpm --filter hashpass-mobile-app android:bundle:dev",
     "android:publish": "pnpm --filter hashpass-mobile-app android:publish",

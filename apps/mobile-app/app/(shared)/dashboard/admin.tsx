@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert,
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
-import { isAdmin, getUserAdminRole, AdminRole } from '../../../lib/admin-utils';
+import type { AdminRole } from '../../../lib/admin-utils';
+import { getCurrentAdminAccess } from '../../../lib/admin-access';
 import { supabase } from '../../../lib/supabase';
 import { PassType, PassStatus, resolvePassStorageEventId } from '../../../lib/pass-system';
 import { QRScanResult } from '../../../lib/qr-system';
@@ -12,7 +13,7 @@ import LoadingScreen from '../../../components/LoadingScreen';
 import { useRouter } from 'expo-router';
 import { resolveActiveEventId } from '../../../lib/event-path';
 import { apiClient } from '../../../lib/api-client';
-import { getUserEventRoles, highestEventRole, EventRole, EventRoleGrant } from '../../../lib/event-admin-access';
+import { highestEventRole, EventRole, EventRoleGrant } from '../../../lib/event-admin-access';
 
 type TabType = 'passes' | 'qr-scanner' | 'meetings' | 'roles';
 
@@ -66,6 +67,14 @@ interface EventRoleRow {
   expires_at: string | null;
 }
 
+interface GlobalAdminRoleRow {
+  id: string;
+  user_id: string;
+  role: AdminRole;
+  created_at: string;
+  expires_at: string | null;
+}
+
 export default function AdminPanel() {
   const { colors, isDark } = useTheme();
   const { user, isLoading: authLoading } = useAuth();
@@ -108,6 +117,10 @@ export default function AdminPanel() {
   const [showGrantRoleModal, setShowGrantRoleModal] = useState(false);
   const [newRoleUserId, setNewRoleUserId] = useState('');
   const [newRoleType, setNewRoleType] = useState<EventRole>('moderator');
+  const [globalAdmins, setGlobalAdmins] = useState<GlobalAdminRoleRow[]>([]);
+  const [globalAdminsLoading, setGlobalAdminsLoading] = useState(false);
+  const [showGrantGlobalAdminModal, setShowGrantGlobalAdminModal] = useState(false);
+  const [newGlobalAdminEmail, setNewGlobalAdminEmail] = useState('');
 
   const styles = getStyles(isDark, colors);
 
@@ -155,20 +168,20 @@ export default function AdminPanel() {
     setLoading(true);
 
     try {
-      const globalAdmin = await isAdmin(user.id);
+      const access = await getCurrentAdminAccess();
+      const globalAdmin = Boolean(access.globalRole);
       console.log('Global admin check result:', globalAdmin);
 
       if (globalAdmin) {
         setIsGlobalAdmin(true);
         setIsUserAdmin(true);
-        const role = await getUserAdminRole(user.id);
-        setAdminRole(role);
+        setAdminRole(access.globalRole);
         setLoading(false);
         return;
       }
 
       // Not a global admin — fall back to per-event event_admin/moderator grants.
-      const eventRoles = await getUserEventRoles(user.id);
+      const eventRoles = access.eventRoles;
       if (eventRoles.length === 0) {
         console.log('User has no global or event-scoped admin role, redirecting...');
         Alert.alert('Access Denied', 'You do not have admin privileges.');
@@ -210,7 +223,10 @@ export default function AdminPanel() {
       await loadMeetingRequests();
       await loadSpeakers();
     } else if (activeTab === 'roles') {
-      await loadEventRoles();
+      await Promise.all([
+        loadEventRoles(),
+        adminRole === 'super_admin' ? loadGlobalAdmins() : Promise.resolve(),
+      ]);
     }
   };
 
@@ -276,6 +292,53 @@ export default function AdminPanel() {
       Alert.alert('Error', 'Failed to revoke role: ' + error.message);
     } finally {
       setRolesLoading(false);
+    }
+  };
+
+  const loadGlobalAdmins = async () => {
+    if (adminRole !== 'super_admin') return;
+    setGlobalAdminsLoading(true);
+    try {
+      const result = await apiClient.get('/admin/global-roles', { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
+      setGlobalAdmins(((result.data as { data?: GlobalAdminRoleRow[] })?.data) || []);
+    } catch (error: any) {
+      console.error('Error loading global administrators:', error);
+      Alert.alert('Error', 'Failed to load global administrators: ' + error.message);
+    } finally {
+      setGlobalAdminsLoading(false);
+    }
+  };
+
+  const mutateGlobalAdmin = async (action: 'grant' | 'revoke', target: string, targetIsUserId = false) => {
+    try {
+      setGlobalAdminsLoading(true);
+      const result = await apiClient.post('/admin/global-roles', {
+        action,
+        ...(targetIsUserId ? { targetUserId: target } : { targetEmail: target }),
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
+      await loadGlobalAdmins();
+      return true;
+    } catch (error: any) {
+      console.error('Error updating global administrator:', error);
+      Alert.alert('Error', 'Failed to update global administrator: ' + error.message);
+      return false;
+    } finally {
+      setGlobalAdminsLoading(false);
+    }
+  };
+
+  const handleGrantGlobalAdmin = async () => {
+    const email = newGlobalAdminEmail.trim().toLowerCase();
+    if (!email.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+    if (await mutateGlobalAdmin('grant', email)) {
+      setShowGrantGlobalAdminModal(false);
+      setNewGlobalAdminEmail('');
+      Alert.alert('Success', `${email} is now a global admin`);
     }
   };
 
@@ -651,6 +714,11 @@ export default function AdminPanel() {
             roles={eventRoles}
             loading={rolesLoading}
             canGrantEventAdmin={adminRole === 'super_admin'}
+            canManageGlobalAdmins={adminRole === 'super_admin'}
+            globalAdmins={globalAdmins}
+            globalAdminsLoading={globalAdminsLoading}
+            onGrantGlobalAdmin={() => setShowGrantGlobalAdminModal(true)}
+            onRevokeGlobalAdmin={(userId: string) => mutateGlobalAdmin('revoke', userId, true)}
             onGrantPress={() => setShowGrantRoleModal(true)}
             onRevoke={handleRevokeRole}
             onRefresh={loadEventRoles}
@@ -816,6 +884,54 @@ export default function AdminPanel() {
         </View>
       </Modal>
 
+      {/* Grant Global Administrator Modal */}
+      <Modal
+        visible={showGrantGlobalAdminModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowGrantGlobalAdminModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Grant Global Admin</Text>
+
+            <Text style={styles.modalLabel}>Account email</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newGlobalAdminEmail}
+              onChangeText={setNewGlobalAdminEmail}
+              placeholder="admin@example.com"
+              placeholderTextColor={colors.text.secondary}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            <Text style={[styles.modalLabel, { fontSize: 12, marginTop: 4 }]}>
+              Global admins can manage event operations but cannot grant global admin access.
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowGrantGlobalAdminModal(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleGrantGlobalAdmin}
+                disabled={globalAdminsLoading}
+              >
+                {globalAdminsLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Grant</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* QR Scanner */}
       <AdminQRScanner
         visible={showQRScanner}
@@ -914,12 +1030,58 @@ function RolesTab({
   roles,
   loading,
   canGrantEventAdmin,
+  canManageGlobalAdmins,
+  globalAdmins,
+  globalAdminsLoading,
+  onGrantGlobalAdmin,
+  onRevokeGlobalAdmin,
   onGrantPress,
   onRevoke,
   onRefresh
 }: any) {
   return (
     <View style={styles.tabContent}>
+      {canManageGlobalAdmins && (
+        <>
+          <Text style={[styles.passNumber, { marginBottom: 8 }]}>Global Administrators</Text>
+          <Text style={[styles.passInfo, { marginBottom: 12 }]}>Only a super admin can grant or revoke this role.</Text>
+          <TouchableOpacity style={styles.createButton} onPress={onGrantGlobalAdmin}>
+            <MaterialIcons name="admin-panel-settings" size={24} color="#fff" />
+            <Text style={styles.createButtonText}>Grant Global Admin</Text>
+          </TouchableOpacity>
+          {globalAdminsLoading ? (
+            <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+          ) : (
+            <View style={[styles.list, { marginBottom: 24 }]}>
+              {globalAdmins.map((roleRow: GlobalAdminRoleRow) => (
+                <View key={roleRow.id} style={styles.passCard}>
+                  <View style={styles.passCardHeader}>
+                    <Text style={styles.passNumber}>{roleRow.user_id}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: roleRow.role === 'super_admin' ? '#DC2626' : '#7C3AED' }]}>
+                      <Text style={styles.statusBadgeText}>{roleRow.role}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.passInfo}>Granted: {new Date(roleRow.created_at).toLocaleDateString()}</Text>
+                  {roleRow.role === 'admin' && (
+                    <View style={styles.passActions}>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => onRevokeGlobalAdmin(roleRow.user_id)}
+                      >
+                        <Text style={styles.actionButtonText}>Revoke</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+              {globalAdmins.length === 0 && (
+                <Text style={styles.emptyText}>No standard global administrators granted</Text>
+              )}
+            </View>
+          )}
+          <Text style={[styles.passNumber, { marginBottom: 8 }]}>Event Staff</Text>
+        </>
+      )}
       <TouchableOpacity style={styles.createButton} onPress={onGrantPress}>
         <MaterialIcons name="person-add" size={24} color="#fff" />
         <Text style={styles.createButtonText}>Grant Role</Text>

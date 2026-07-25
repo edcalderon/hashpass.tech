@@ -1,15 +1,21 @@
-import { authenticateRequest } from '@hashpass/auth';
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
+import {
+  isResolveIdentityError,
+  resolveNotificationIdentity,
+} from '@/lib/server/resolve-notification-identity';
 
 export async function authorizeEventAdmin(request: Request, eventId: string) {
-  const { user, error: authenticationError } = await authenticateRequest(request);
-  if (authenticationError || !user) {
-    return { response: Response.json({ error: 'Unauthorized' }, { status: 401 }) } as const;
+  const identity = await resolveNotificationIdentity(request);
+  if (isResolveIdentityError(identity)) {
+    return { response: Response.json({ error: identity.error }, { status: identity.status }) } as const;
+  }
+  if (!identity.supabaseUserId) {
+    return { response: Response.json({ error: 'Account is not linked to an administrative identity' }, { status: 403 }) } as const;
   }
 
   const supabase = getSupabaseServerForRequest(request);
   const { data, error } = await supabase.rpc('has_event_admin_access', {
-    p_user_id: user.id,
+    p_user_id: identity.supabaseUserId,
     p_event_id: eventId,
     p_include_moderator: false,
   });
@@ -22,5 +28,5 @@ export async function authorizeEventAdmin(request: Request, eventId: string) {
     return { response: Response.json({ error: 'Forbidden' }, { status: 403 }) } as const;
   }
 
-  return { userId: user.id, supabase } as const;
+  return { userId: identity.supabaseUserId, supabase } as const;
 }

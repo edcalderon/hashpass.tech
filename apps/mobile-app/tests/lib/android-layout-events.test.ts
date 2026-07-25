@@ -171,7 +171,7 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).toContain("if (Platform.OS !== 'web') return;");
   });
 
-  it('uses one drawer gesture owner so a swipe or outside press always settles fully closed', () => {
+  it('uses one drawer gesture owner so the close button or outside press always settles fully closed', () => {
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
 
     // react-native-drawer-layout already owns a whole-screen pan and outside
@@ -179,9 +179,8 @@ describe('Android layout event crash guards', () => {
     // it, allowing the close transition to be left partially open.
     expect(dashboardSource).not.toContain('GestureDetector');
     expect(dashboardSource).not.toContain('DrawerActions.toggleDrawer()');
-    expect(dashboardSource).toContain('const closeDashboardDrawer = useCallback');
     expect(dashboardSource).toContain('navigation.closeDrawer();');
-    expect(dashboardSource).toContain('onPress={() => toggleDashboardDrawer(navigation)}');
+    expect(dashboardSource).toContain('onPress={() => openDashboardDrawerFromHeader(navigation)}');
     expect(dashboardSource).toContain("id: 'nav.closeMenu', message: 'Close navigation menu'");
   });
 
@@ -204,6 +203,21 @@ describe('Android layout event crash guards', () => {
     expect(openDrawerSource.indexOf('navigation.openDrawer();')).toBeLessThan(
       openDrawerSource.indexOf('if (wasOpen) {')
     );
+  });
+
+  it('always opens the native drawer from the hamburger instead of trusting stale drawer status', () => {
+    // Regression for v1.8.259: on some Android devices the Drawer status ref
+    // reported "open" while the drawer was visibly closed. Treating the
+    // hamburger as a toggle then dispatched closeDrawer(), which appeared to
+    // users as a dead menu button. The hamburger is now a one-way open action;
+    // the drawer's close button/backdrop own the close path.
+    const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
+
+    expect(dashboardSource).toContain('const resolveDashboardDrawerNavigation = useCallback');
+    expect(dashboardSource).toContain('const openDashboardDrawerFromHeader = useCallback');
+    expect(dashboardSource).toContain('openDashboardDrawer(resolveDashboardDrawerNavigation(navigation));');
+    expect(dashboardSource).toContain('onPress={() => openDashboardDrawerFromHeader(navigation)}');
+    expect(dashboardSource).not.toContain('onPress={() => toggleDashboardDrawer(navigation)}');
   });
 
   it('waits for durable native session cleanup before leaving the dashboard', () => {

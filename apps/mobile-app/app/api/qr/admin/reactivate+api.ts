@@ -1,43 +1,5 @@
-import { supabaseServer } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
-import { verifyUserToken } from '@hashpass/auth';
-
-// Admin tiers: super_admin > admin (matches the Postgres `user_role` enum —
-// there is no 'moderator' value; see db/migrations/V001__init_core_schema.sql)
-async function isAdmin(userId: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabaseServer
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .in('role', ['super_admin', 'admin'])
-      .limit(1); // Limit to 1 since we only need to check existence
-    
-    if (error) {
-      console.error('Error checking admin status:', error);
-      return false;
-    }
-    
-    return !!data && data.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-async function getAuthUserId(request: Request): Promise<string | null> {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return null;
-  
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const { user, error } = await verifyUserToken(token, request);
-    
-    if (error || !user) return null;
-    return user.id;
-  } catch {
-    return null;
-  }
-}
+import { authorizeGlobalAdmin } from '@/lib/server/global-admin';
 
 /**
  * POST /api/qr/admin/reactivate - Reactivate a QR code (admin only)
@@ -48,15 +10,8 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 });
   }
 
-  const userId = await getAuthUserId(request);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  }
-
-  const isUserAdmin = await isAdmin(userId);
-  if (!isUserAdmin) {
-    return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), { status: 403 });
-  }
+  const authorization = await authorizeGlobalAdmin(request);
+  if ('response' in authorization) return authorization.response;
 
   try {
     const body = await request.json();
@@ -66,10 +21,10 @@ export async function POST(request: Request) {
       return new Response(JSON.stringify({ error: 'Token is required' }), { status: 400 });
     }
 
-    const { data, error } = await supabaseServer
+    const { data, error } = await authorization.supabase
       .rpc('reactivate_qr_code', {
         p_token: token,
-        p_admin_user_id: userId,
+        p_admin_user_id: authorization.userId,
       })
       .single();
 

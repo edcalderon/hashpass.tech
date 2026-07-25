@@ -1,43 +1,5 @@
-import { supabaseServer } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
-import { verifyUserToken } from '@hashpass/auth';
-
-// Admin tiers: super_admin > admin (matches the Postgres `user_role` enum —
-// there is no 'moderator' value; see db/migrations/V001__init_core_schema.sql)
-async function isAdmin(userId: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabaseServer
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .in('role', ['super_admin', 'admin'])
-      .limit(1); // Limit to 1 since we only need to check existence
-    
-    if (error) {
-      console.error('Error checking admin status:', error);
-      return false;
-    }
-    
-    return !!data && data.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-async function getAuthUserId(request: Request): Promise<string | null> {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader) return null;
-  
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const { user, error } = await verifyUserToken(token, request);
-    
-    if (error || !user) return null;
-    return user.id;
-  } catch {
-    return null;
-  }
-}
+import { authorizeGlobalAdmin } from '@/lib/server/global-admin';
 
 /**
  * GET /api/qr/admin/logs - Get QR scan logs (admin only)
@@ -48,15 +10,8 @@ export async function GET(request: Request) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 });
   }
 
-  const userId = await getAuthUserId(request);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-  }
-
-  const isUserAdmin = await isAdmin(userId);
-  if (!isUserAdmin) {
-    return new Response(JSON.stringify({ error: 'Forbidden: Admin access required' }), { status: 403 });
-  }
+  const authorization = await authorizeGlobalAdmin(request);
+  if ('response' in authorization) return authorization.response;
 
   const { searchParams } = new URL(request.url);
   const qrCodeId = searchParams.get('qr_code_id');
@@ -67,7 +22,7 @@ export async function GET(request: Request) {
   const to = from + pageSize - 1;
 
   try {
-    let query = supabaseServer
+    let query = authorization.supabase
       .from('qr_scan_logs')
       .select('*', { count: 'exact' })
       .order('scanned_at', { ascending: false })
