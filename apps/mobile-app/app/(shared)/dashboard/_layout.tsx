@@ -7,7 +7,6 @@ import { Ionicons } from '../../../lib/vector-icons';
 import { useRouter, usePathname, useNavigation as useExpoNavigation } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
-import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useDrawerStatus } from '@react-navigation/drawer';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -29,6 +28,7 @@ import MiniNotificationDropdown from '../../../components/MiniNotificationDropdo
 import { hasRecentAuthSuccess } from '../../../lib/auth/recent-auth';
 import { isDevAuthBypassEnabled } from '../../../lib/auth/dev-bypass';
 import { navigateDashboardBrandToLanding } from '../../../lib/dashboard-navigation';
+import { openTargetedDashboardDrawer } from '../../../lib/dashboard-drawer';
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 import { hapticLight, hapticMedium } from '../../../lib/haptics';
@@ -59,7 +59,6 @@ const getDashboardDrawerInsets = (insets: DashboardDrawerInsets = {}) => ({
     : insets.bottom || 0,
 });
 
-// DrawerNavigationProp generic constraint mismatch across @react-navigation versions
 type DrawerNavigation = any;
 
 // navRef is an instance-scoped useRef owned by DashboardLayout (see below),
@@ -979,17 +978,15 @@ export default function DashboardLayout() {
 
   const openDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
     const wasOpen = drawerOpenRef.current;
+    const opened = openTargetedDashboardDrawer({
+      navigation,
+      drawerNavigation: drawerNavRef.current,
+      openDrawerAction: DrawerActions.openDrawer(),
+    });
 
-    try {
-      if (typeof navigation?.openDrawer === 'function') {
-        navigation.openDrawer();
-      } else if (typeof navigation?.dispatch === 'function') {
-        navigation.dispatch(DrawerActions.openDrawer());
-      } else {
-        console.warn('Drawer navigation unavailable, skipping openDrawer');
-      }
-    } catch (e) {
-      console.error('Error opening drawer:', e);
+    if (!opened) {
+      console.warn('Drawer navigation unavailable, skipping openDrawer');
+      return;
     }
 
     // React Navigation owns its animation lifecycle. In particular, do not
@@ -1011,38 +1008,9 @@ export default function DashboardLayout() {
     }, 1200);
   }, [dashboardCopilotHook]);
 
-  // The native header is rendered outside the drawer-content subtree. On the
-  // affected v1.8.259 builds its cached drawer status was stale ("open" while
-  // the drawer was visibly closed), so a toggle sent closeDrawer and made the
-  // hamburger appear dead. Resolve the Drawer navigator from the live screen
-  // navigation object first; only use the content ref as a fallback for the
-  // custom non-native header.
-  const resolveDashboardDrawerNavigation = useCallback((navigation: DrawerNavigation) => {
-    const findDrawerNavigation = (candidate: DrawerNavigation | null | undefined) => {
-      const seen = new Set<DrawerNavigation>();
-      let current = candidate;
-
-      while (current && !seen.has(current)) {
-        if (typeof current.openDrawer === 'function') {
-          return current;
-        }
-
-        seen.add(current);
-        current = typeof current.getParent === 'function' ? current.getParent() : undefined;
-      }
-
-      return null;
-    };
-
-    return findDrawerNavigation(navigation)
-      ?? findDrawerNavigation(drawerNavRef.current)
-      ?? drawerNavRef.current
-      ?? navigation;
-  }, []);
-
   const openDashboardDrawerFromHeader = useCallback((navigation: DrawerNavigation) => {
-    openDashboardDrawer(resolveDashboardDrawerNavigation(navigation));
-  }, [openDashboardDrawer, resolveDashboardDrawerNavigation]);
+    openDashboardDrawer(navigation);
+  }, [openDashboardDrawer]);
 
   // Header component for the drawer screens
   const Header = () => {
