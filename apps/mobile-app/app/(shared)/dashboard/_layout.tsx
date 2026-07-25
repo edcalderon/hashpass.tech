@@ -17,7 +17,7 @@ import { useIsMobile } from '../../../hooks/useIsMobile';
 import { useAuth } from '../../../hooks/useAuth';
 import { authService } from '@hashpass/auth';
 import { useLanguage } from '../../../providers/LanguageProvider';
-import { getCurrentAdminAccess } from '../../../lib/admin-access';
+import { canLoadCurrentAdminAccess, getCurrentAdminAccess } from '../../../lib/admin-access';
 import { ScrollProvider, useScroll } from '@contexts/ScrollContext';
 import { NotificationProvider, useNotifications } from '@contexts/NotificationContext';
 import { useEvent } from '@contexts/EventContext';
@@ -87,7 +87,7 @@ function CustomDrawerContent({
   onDrawerStatusChange?: (isOpen: boolean) => void;
 }) {
   const { colors, isDark, toggleTheme } = useTheme();
-  const { signOut, user } = useAuth();
+  const { signOut, user, isLoading: authLoading } = useAuth();
   const { event } = useEvent();
   const { locale, setLocale } = useLanguage();
   const { unreadCount } = useNotifications();
@@ -297,8 +297,8 @@ function CustomDrawerContent({
     let cancelled = false;
 
     const checkAdminStatus = async () => {
-      if (!user) {
-        if (!cancelled) setIsUserAdmin(false);
+      if (!canLoadCurrentAdminAccess(user, authLoading)) {
+        if (!authLoading && !cancelled) setIsUserAdmin(false);
         return;
       }
 
@@ -317,7 +317,7 @@ function CustomDrawerContent({
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [authLoading, user]);
 
   const baseMenuItems = [
     {

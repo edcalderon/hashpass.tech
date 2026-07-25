@@ -31,10 +31,12 @@ jest.mock('../../lib/supabase', () => ({
 }));
 
 const mockAuthSession = jest.fn();
+const mockApiAccessToken = jest.fn();
 
 jest.mock('@hashpass/auth', () => ({
   authService: {
-    getSession: mockAuthSession,
+    getSession: (...args: unknown[]) => mockAuthSession(...args),
+    getApiAccessToken: (...args: unknown[]) => mockApiAccessToken(...args),
   },
 }));
 
@@ -84,6 +86,7 @@ beforeEach(() => {
   Platform.OS = 'android';
   setEnv('EXPO_PUBLIC_API_BASE_URL', 'https://api.hashpass.tech/api');
   mockAuthSession.mockClear();
+  mockApiAccessToken.mockReset();
   setWindow(undefined);
 });
 
@@ -217,6 +220,34 @@ describe('EventApiClient credential handling', () => {
     });
 
     expect(getCaptchaApiEndpoint()).toBe('https://api.hashpass.tech/api/captcha/');
+  });
+
+  it('exchanges a cookie-backed Directus session for a bearer token before calling the API', async () => {
+    mockAuthSession.mockResolvedValue({
+      access_token: 'session_based',
+      user: { id: 'directus-user-123', email: 'ada@hashpass.tech' },
+    });
+    mockApiAccessToken.mockResolvedValue('directus-bearer-token');
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => 'application/json' },
+      json: async () => ({ data: {} }),
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new EventApiClient();
+    await expect(client.request('admin/access', { skipEventSegment: true })).resolves.toEqual({
+      data: { data: {} },
+      success: true,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(mockApiAccessToken).toHaveBeenCalledTimes(1);
+    expect(init.headers).toEqual(expect.objectContaining({
+      Authorization: 'Bearer directus-bearer-token',
+    }));
   });
 
   it('returns a friendly timeout error and does not retry aborted requests', async () => {

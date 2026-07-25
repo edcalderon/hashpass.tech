@@ -8,7 +8,7 @@ import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
 import type { AuthUser } from '@hashpass/auth';
-import { getCurrentAdminAccess } from '../../../lib/admin-access';
+import { canLoadCurrentAdminAccess, getCurrentAdminAccess } from '../../../lib/admin-access';
 import { formatEffectiveRole, type EffectiveRole } from '../../../lib/role-summary';
 
 // DiceBear PNG format — React Native Image cannot render SVG so we use /png endpoints
@@ -130,8 +130,8 @@ export default function ProfileScreen() {
     let cancelled = false;
 
     const loadRole = async () => {
-      if (!user) {
-        if (!cancelled) setEffectiveRole(null);
+      if (!canLoadCurrentAdminAccess(user, authLoading)) {
+        if (!authLoading && !cancelled) setEffectiveRole(null);
         return;
       }
 
@@ -148,7 +148,7 @@ export default function ProfileScreen() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [authLoading, user]);
 
   const activeUser = profileUser ?? user ?? null;
 
