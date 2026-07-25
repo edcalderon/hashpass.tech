@@ -199,8 +199,9 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).toContain("swipeEnabled: Platform.OS === 'web'");
     expect(dashboardSource).not.toContain('drawerTransitionRef');
     expect(openDrawerSource).toContain('const wasOpen = drawerOpenRef.current;');
-    expect(openDrawerSource).toContain('navigation.openDrawer();');
-    expect(openDrawerSource.indexOf('navigation.openDrawer();')).toBeLessThan(
+    expect(openDrawerSource).toContain('const opened = openTargetedDashboardDrawer({');
+    expect(openDrawerSource).toContain('openDrawerAction: DrawerActions.openDrawer(),');
+    expect(openDrawerSource.indexOf('const opened = openTargetedDashboardDrawer({')).toBeLessThan(
       openDrawerSource.indexOf('if (wasOpen) {')
     );
   });
@@ -213,10 +214,11 @@ describe('Android layout event crash guards', () => {
     // the drawer's close button/backdrop own the close path.
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
 
-    expect(dashboardSource).toContain('const resolveDashboardDrawerNavigation = useCallback');
+    expect(dashboardSource).toContain("import { openTargetedDashboardDrawer } from '../../../lib/dashboard-drawer';");
     expect(dashboardSource).toContain('const openDashboardDrawerFromHeader = useCallback');
-    expect(dashboardSource).toContain('openDashboardDrawer(resolveDashboardDrawerNavigation(navigation));');
+    expect(dashboardSource).toContain('openDashboardDrawer(navigation);');
     expect(dashboardSource).toContain('onPress={() => openDashboardDrawerFromHeader(navigation)}');
+    expect(dashboardSource).toContain('onPress={() => openDashboardDrawerFromHeader(navigationFromContext)}');
     expect(dashboardSource).not.toContain('onPress={() => toggleDashboardDrawer(navigation)}');
   });
 

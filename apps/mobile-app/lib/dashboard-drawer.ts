@@ -10,19 +10,14 @@ type OpenTargetedDashboardDrawerOptions = {
   openDrawerAction: Record<string, unknown>;
 };
 
-const findDrawerNavigation = (
+const findDispatchNavigation = (
   navigation?: DashboardDrawerNavigation | null,
 ): DashboardDrawerNavigation | null => {
   const seen = new Set<DashboardDrawerNavigation>();
   let current = navigation;
 
   while (current && !seen.has(current)) {
-    const state = current.getState?.();
-    if (
-      state?.type === 'drawer'
-      && typeof state.key === 'string'
-      && typeof current.dispatch === 'function'
-    ) {
+    if (typeof current.dispatch === 'function') {
       return current;
     }
 
@@ -38,21 +33,21 @@ export const openTargetedDashboardDrawer = ({
   drawerNavigation,
   openDrawerAction,
 }: OpenTargetedDashboardDrawerOptions): boolean => {
-  const drawer = findDrawerNavigation(navigation)
-    ?? findDrawerNavigation(drawerNavigation);
-  const drawerState = drawer?.getState?.();
+  // The drawerContent navigation is the strongest reference because React
+  // Navigation passes it directly from the Drawer navigator. During the first
+  // release render it may not exist yet, so fall back to the header navigation
+  // and let React Navigation bubble the generic OPEN_DRAWER action.
+  //
+  // Do not require getState().type/key here. Optimized native builds can expose
+  // only a partial navigation state, and targeting the action at that snapshot
+  // made a valid production hamburger tap silently no-op.
+  const dispatcher = findDispatchNavigation(drawerNavigation)
+    ?? findDispatchNavigation(navigation);
 
-  if (
-    !drawer
-    || typeof drawer.dispatch !== 'function'
-    || typeof drawerState?.key !== 'string'
-  ) {
+  if (!dispatcher || typeof dispatcher.dispatch !== 'function') {
     return false;
   }
 
-  drawer.dispatch({
-    ...openDrawerAction,
-    target: drawerState.key,
-  });
+  dispatcher.dispatch(openDrawerAction);
   return true;
 };

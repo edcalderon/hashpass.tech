@@ -194,5 +194,6 @@ describe('Directus OAuth sign-in', () => {
       access_token: 'directus-bearer-token',
       refresh_token: 'rotated-refresh',
     }));
+    await provider.signOut();
   });
 });

@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607251845, // Updated to current timestamp
+  buildNumber: 202607252031, // Updated to current timestamp
   releaseDate: '2026-07-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,15 +30,31 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'target native drawer navigation',
-    'authenticate admin access from Directus cookies'
+    'clear OAuth refresh timer after test',
+    'open dashboard drawer in release builds'
   ],
   breakingChanges: [],
-  notes: 'target native drawer navigation; authenticate admin access from Directus cookies'
+  notes: 'clear OAuth refresh timer after test; open dashboard drawer in release builds'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.262': {
+    version: '1.8.262',
+    buildNumber: 202607252031,
+    releaseDate: '2026-07-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'clear OAuth refresh timer after test',
+      'open dashboard drawer in release builds'
+    ],
+    breakingChanges: [],
+    notes: 'clear OAuth refresh timer after test; open dashboard drawer in release builds'
+  },
   '1.8.261': {
     version: '1.8.261',
     buildNumber: 202607251845,
