@@ -1,3 +1,7 @@
+## [1.8.261](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.260...v1.8.261) (2026-07-25)
+### Released
+- target native drawer navigation; authenticate admin access from Directus cookies
+
 ## [1.8.260](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.259...v1.8.260) (2026-07-24)
 ### Released
 - resolve provider-aware admin access

@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.260)
+## 📋 Latest Changes (v1.8.261)
 
 ### Released
-- resolve provider-aware admin access
+- target native drawer navigation; authenticate admin access from Directus cookies
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
