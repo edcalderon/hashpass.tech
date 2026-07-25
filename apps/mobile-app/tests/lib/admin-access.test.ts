@@ -106,4 +106,13 @@ describe('getCurrentAdminAccess', () => {
     mockGet.mockResolvedValueOnce({ success: false });
     await expect(getCurrentAdminAccess()).rejects.toThrow('Unable to load administrative access');
   });
+
+  it('waits for authentication to finish before loading administrative access', () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { canLoadCurrentAdminAccess } = require('../../lib/admin-access');
+
+    expect(canLoadCurrentAdminAccess({ id: 'user-1' }, true)).toBe(false);
+    expect(canLoadCurrentAdminAccess(null, false)).toBe(false);
+    expect(canLoadCurrentAdminAccess({ id: 'user-1' }, false)).toBe(true);
+  });
 });

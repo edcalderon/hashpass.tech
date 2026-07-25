@@ -307,6 +307,13 @@ export class EventApiClient {
           session.access_token !== 'oauth_session';
         if (isBearerUsableToken) {
           requestHeaders['Authorization'] = `Bearer ${session.access_token}`;
+        } else {
+          try {
+            const apiAccessToken = await authService.getApiAccessToken?.();
+            if (apiAccessToken) {
+              requestHeaders['Authorization'] = `Bearer ${apiAccessToken}`;
+            }
+          } catch { /* fall back to cookie authentication when the token exchange is unavailable */ }
         }
       }
     }

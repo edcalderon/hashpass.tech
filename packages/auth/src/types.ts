@@ -47,6 +47,8 @@ export interface IAuthProvider {
   
   // Session management
   getSession(): Promise<AuthSession | null>;
+  /** Obtain a short-lived bearer token when a cookie-backed provider must call the API. */
+  getApiAccessToken?(): Promise<string | null>;
   refreshSession(): Promise<AuthResponse>;
   isAuthenticated(): boolean;
   

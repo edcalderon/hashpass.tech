@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607242209, // Updated to current timestamp
-  releaseDate: '2026-07-24',
+  buildNumber: 202607251845, // Updated to current timestamp
+  releaseDate: '2026-07-25',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'resolve provider-aware admin access'
+    'target native drawer navigation',
+    'authenticate admin access from Directus cookies'
   ],
   breakingChanges: [],
-  notes: 'resolve provider-aware admin access'
+  notes: 'target native drawer navigation; authenticate admin access from Directus cookies'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.261': {
+    version: '1.8.261',
+    buildNumber: 202607251845,
+    releaseDate: '2026-07-25',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'target native drawer navigation',
+      'authenticate admin access from Directus cookies'
+    ],
+    breakingChanges: [],
+    notes: 'target native drawer navigation; authenticate admin access from Directus cookies'
+  },
   '1.8.260': {
     version: '1.8.260',
     buildNumber: 202607242209,

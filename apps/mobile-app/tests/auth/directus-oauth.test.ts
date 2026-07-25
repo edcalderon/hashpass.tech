@@ -13,12 +13,13 @@ const mockLogoutSession = jest.fn(async () => ({ data: null, error: null }));
 const mockListAuthProviders = jest.fn(async () => ({ data: [], error: null }));
 const mockGetCurrentUserWithToken = jest.fn();
 const mockGetCurrentUserWithSession = jest.fn();
+const mockRefreshSessionWithCookies = jest.fn();
 const mockDirectusApiClientCtor = jest.fn(() => ({
   logoutSession: mockLogoutSession,
   listAuthProviders: mockListAuthProviders,
   getCurrentUserWithToken: mockGetCurrentUserWithToken,
   getCurrentUserWithSession: mockGetCurrentUserWithSession,
-  refreshSessionWithCookies: jest.fn(),
+  refreshSessionWithCookies: mockRefreshSessionWithCookies,
   refreshSessionWithSessionCookies: jest.fn(),
   logoutWithToken: jest.fn(),
   refreshToken: jest.fn(),
@@ -56,6 +57,7 @@ beforeEach(() => {
   mockListAuthProviders.mockClear();
   mockGetCurrentUserWithToken.mockClear();
   mockGetCurrentUserWithSession.mockClear();
+  mockRefreshSessionWithCookies.mockReset();
   mockDirectusApiClientCtor.mockClear();
 
   locationMock.pathname = '/auth';
@@ -171,5 +173,26 @@ describe('Directus OAuth sign-in', () => {
     expect(result.session?.user.email).toBe('ada@hashpass.tech');
     expect(mockGetCurrentUserWithToken).not.toHaveBeenCalled();
     expect(mockGetCurrentUserWithSession).not.toHaveBeenCalled();
+  });
+
+  it('exchanges a cookie-backed session for a bearer token only when an API request needs one', async () => {
+    const { DirectusAuthProvider } = require('../../../../packages/auth/src/providers/directus');
+    const provider = new DirectusAuthProvider('https://sso.hashpass.co');
+    (provider as any).session = {
+      user: { id: 'directus-user-123', email: 'ada@hashpass.tech' },
+      access_token: 'session_based',
+      provider: 'directus',
+    };
+    mockRefreshSessionWithCookies.mockResolvedValue({
+      data: { access_token: 'directus-bearer-token', refresh_token: 'rotated-refresh', expires: 900 },
+      error: null,
+    });
+
+    await expect((provider as any).getApiAccessToken()).resolves.toBe('directus-bearer-token');
+    expect(mockRefreshSessionWithCookies).toHaveBeenCalledTimes(1);
+    expect((provider as any).session).toEqual(expect.objectContaining({
+      access_token: 'directus-bearer-token',
+      refresh_token: 'rotated-refresh',
+    }));
   });
 });

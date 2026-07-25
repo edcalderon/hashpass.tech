@@ -13,6 +13,10 @@ export type AdminAccess = {
   effectiveRole: EffectiveRole;
 };
 
+/** An access request is valid only after the active authentication state is known. */
+export const canLoadCurrentAdminAccess = (user: unknown, authLoading: boolean): boolean =>
+  !authLoading && Boolean(user);
+
 const isAdminRole = (value: unknown): value is AdminRole =>
   value === 'super_admin' || value === 'admin';
 

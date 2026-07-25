@@ -863,6 +863,39 @@ export class DirectusAuthProvider implements IAuthProvider {
     }
   }
 
+  /**
+   * Exchange an SSO cookie for a short-lived bearer token only at the point an
+   * API request needs it. The browser cannot send an sso.hashpass.co cookie to
+   * api.hashpass.tech, so a persisted `session_based` marker alone is not
+   * sufficient for provider-aware API routes.
+   */
+  async getApiAccessToken(): Promise<string | null> {
+    if (this.session && !this.isCookieBackedSession(this.session) && this.isTokenValid(this.session)) {
+      return this.session.access_token;
+    }
+    if (!this.session || !this.isCookieBackedSession(this.session)) return null;
+
+    try {
+      const refreshResult = await this.apiClient.refreshSessionWithCookies();
+      const tokens = refreshResult.data;
+      if (!tokens?.access_token) return null;
+
+      const refreshedSession: AuthSession = {
+        ...this.session,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token || this.session.refresh_token,
+        expires_at: tokens.expires ? Date.now() + (tokens.expires * 1000) : undefined,
+      };
+      this.session = refreshedSession;
+      await this.storeSession(refreshedSession.user, refreshedSession.expires_at, false);
+      this.setupRefreshTimer();
+      this.notifyStateChange(refreshedSession);
+      return tokens.access_token;
+    } catch {
+      return null;
+    }
+  }
+
   async refreshSession(): Promise<AuthResponse> {
     if (!this.session?.refresh_token) {
       return { error: 'No refresh token available' };
