@@ -95,6 +95,60 @@ describe('POST /api/admin/roles', () => {
       p_action: 'grant',
     }));
   });
+
+  it('rate limits and validates expiry before resolving the caller', async () => {
+    mockRateLimitOk.mockReturnValueOnce(false);
+    const rateLimited = await post({ action: 'grant', eventId: 'bsl', targetUserId: targetId, role: 'moderator' });
+    expect(rateLimited.status).toBe(429);
+    expect(mockResolveNotificationIdentity).not.toHaveBeenCalled();
+
+    const invalidExpiry = await post({
+      action: 'grant',
+      eventId: 'bsl',
+      targetUserId: targetId,
+      role: 'moderator',
+      expiresAt: 'not-a-date',
+    });
+    expect(invalidExpiry.status).toBe(400);
+    expect(mockResolveNotificationIdentity).not.toHaveBeenCalled();
+  });
+
+  it('returns authentication failures before mutating event roles', async () => {
+    mockResolveNotificationIdentity.mockResolvedValueOnce({ error: 'Unauthorized', status: 401 });
+    const unauthorized = await post({ action: 'grant', eventId: 'bsl', targetUserId: targetId, role: 'moderator' });
+    expect(unauthorized.status).toBe(401);
+    expect(mockRpc).not.toHaveBeenCalled();
+
+    mockResolveNotificationIdentity.mockResolvedValueOnce({ supabaseUserId: null, email: 'unlinked@example.com' });
+    const unlinked = await post({ action: 'grant', eventId: 'bsl', targetUserId: targetId, role: 'moderator' });
+    expect(unlinked.status).toBe(403);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('maps invalid RPC input and unexpected mutation errors safely', async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'expires_at must be in the future', code: '22023' },
+    });
+    const invalidRpcInput = await post({ action: 'grant', eventId: 'bsl', targetUserId: targetId, role: 'moderator' });
+    expect(invalidRpcInput.status).toBe(400);
+    await expect(invalidRpcInput.json()).resolves.toEqual({ error: 'expires_at must be in the future' });
+
+    mockRpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'database unavailable', code: 'XX000' },
+    });
+    const unexpectedFailure = await post({ action: 'grant', eventId: 'bsl', targetUserId: targetId, role: 'moderator' });
+    expect(unexpectedFailure.status).toBe(500);
+    await expect(unexpectedFailure.json()).resolves.toEqual({ error: 'Unable to update role' });
+  });
+
+  it('requires a JSON request body', async () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { POST } = require('../../app/api/admin/roles+api');
+    const response = await POST(new Request('https://api.hashpass.tech/api/admin/roles', { method: 'POST' }));
+    expect(response.status).toBe(400);
+  });
 });
 
 describe('GET /api/admin/roles', () => {
@@ -142,5 +196,20 @@ describe('GET /api/admin/roles', () => {
     const body = await response.json();
     expect(body.data).toHaveLength(1);
     expect(mockFrom).toHaveBeenCalledWith('event_roles');
+  });
+
+  it('rate limits listing before checking event access', async () => {
+    mockRateLimitOk.mockReturnValueOnce(false);
+    const response = await get('bsl');
+    expect(response.status).toBe(429);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('does not expose role data when the listing query fails', async () => {
+    mockRpc.mockResolvedValueOnce({ data: true, error: null });
+    mockOrder.mockResolvedValueOnce({ data: null, error: { message: 'database unavailable' } });
+    const response = await get('bsl');
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: 'Unable to list roles' });
   });
 });
