@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.263)
+## 📋 Latest Changes (v1.8.264)
 
 ### Released
-- add swipe-to-close on the native dashboard drawer
+- auto-clear stale Metro cache on the mobile release runner
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

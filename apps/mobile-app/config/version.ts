@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607260027, // Updated to current timestamp
+  buildNumber: 202607260313, // Updated to current timestamp
   releaseDate: '2026-07-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add swipe-to-close on the native dashboard drawer'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'auto-clear stale Metro cache on the mobile release runner'
   ],
   breakingChanges: [],
-  notes: 'add swipe-to-close on the native dashboard drawer'
+  notes: 'auto-clear stale Metro cache on the mobile release runner'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.264': {
+    version: '1.8.264',
+    buildNumber: 202607260313,
+    releaseDate: '2026-07-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'auto-clear stale Metro cache on the mobile release runner'
+    ],
+    breakingChanges: [],
+    notes: 'auto-clear stale Metro cache on the mobile release runner'
+  },
   '1.8.263': {
     version: '1.8.263',
     buildNumber: 202607260027,
