@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607261818, // Updated to current timestamp
+  buildNumber: 202607262253, // Updated to current timestamp
   releaseDate: '2026-07-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,31 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'bypass broken drawer open/close dispatch on CI-built Android artifacts'
+    'force full node_modules reconciliation when deps change on the release runner',
+    'force a single @react-navigation/drawer resolution across the workspace'
   ],
   breakingChanges: [],
-  notes: 'bypass broken drawer open/close dispatch on CI-built Android artifacts'
+  notes: 'force full node_modules reconciliation when deps change on the release runner; force a single @react-navigation/drawer resolution across the workspace'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.266': {
+    version: '1.8.266',
+    buildNumber: 202607262253,
+    releaseDate: '2026-07-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'force full node_modules reconciliation when deps change on the release runner',
+      'force a single @react-navigation/drawer resolution across the workspace'
+    ],
+    breakingChanges: [],
+    notes: 'force full node_modules reconciliation when deps change on the release runner; force a single @react-navigation/drawer resolution across the workspace'
+  },
   '1.8.265': {
     version: '1.8.265',
     buildNumber: 202607261818,

@@ -20,13 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.265)
+## 📋 Latest Changes (v1.8.266)
 
 ### Bug Fixes
 
-* bypass broken drawer open/close dispatch on CI-built Android artifacts ([bfb89bd](https://github.com/hashpass-tech/hashpass.tech/commit/bfb89bdb20df29a98574418594820c8651119d74))
+* force a single @react-navigation/drawer resolution across the workspace ([5324416](https://github.com/hashpass-tech/hashpass.tech/commit/532441647b4eff1f0daf0669b82e0b98d62f6b61))
+* force full node_modules reconciliation when deps change on the release runner ([fe50e21](https://github.com/hashpass-tech/hashpass.tech/commit/fe50e214fe20df084e6000490f29f3a285236b1d))
+
+
+### Performance Improvements
+
+* skip server/API-route bundling on native expo export:embed ([9d5e4ac](https://github.com/hashpass-tech/hashpass.tech/commit/9d5e4ac1dc7cf8e0093cdc1ca7a711af6600775e))
 ### Release Highlights
-- bypass broken drawer open/close dispatch on CI-built Android artifacts
+- force full node_modules reconciliation when deps change on the release runner; force a single @react-navigation/drawer resolution across the workspace
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
