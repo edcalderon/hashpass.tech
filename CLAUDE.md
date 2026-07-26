@@ -116,7 +116,20 @@ Protected promotion flow:
    Manually dispatching this after a normal merge creates a duplicate run racing the auto-triggered one for the same Play Console version code — confirmed 2026-07-13. Don't.
    For closed testing, publish the matching internal release first on the same tag, then rerun `environment=development` with `track=alpha`. The workflow blocks alpha until a successful internal release exists for that tag, which keeps version codes in order and prevents internal/closed drift.
    To do the internal release and auto-promote alpha in a single dispatch, set `auto_promote_alpha=true` and keep `alpha_release_status=completed` so alpha publishes without manual draft review. Use `alpha_release_status=draft` only if Play Console still rejects completed alpha releases because the app itself is in draft.
-   The alpha handoff uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle.
+   The alpha handoff uses the promote-only path (`promote_only=true`) so it reuses the internal Play release instead of uploading a second bundle — no rebuild, just a Play Developer API track-promotion call via Fastlane `supply`'s `track_promote_to`.
+
+   **If `auto_promote_alpha=true` didn't promote (failed, was skipped, or you just need to retry it), you do NOT need to re-run the internal release to try again.** The `require-internal-before-alpha` gate (`.github/workflows/mobile-android-release.yml`, job of the same name) is not time-bound or tied to the same dispatch chain — it searches the *full history* of `mobile-android-release.yml` runs for the target ref and passes as long as *any* `development/internal` run for that ref ever had a successful `release` job, regardless of when. Confirmed 2026-07-26: you can dispatch the promote-only path standalone, at any later time, and it will find and reuse whatever internal release already exists for that ref:
+   ```bash
+   gh workflow run mobile-android-release.yml \
+     --repo hashpass-tech/hashpass.tech \
+     --ref v<VERSION> \
+     --field environment=development \
+     --field track=alpha \
+     --field promote_only=true \
+     --field alpha_release_status=completed \
+     --field backend=fastlane
+   ```
+   Only fall back to a full internal re-release if no internal release has *ever* succeeded for that exact ref (nothing to promote), or if you actually want new code shipped rather than re-promoting what's already on Play. Prefer the promote-only retry — it's a GitHub-hosted job (not the EC2 runner) and skips the entire build/bundle step, so it's dramatically cheaper in both time and EC2 cost than a full internal re-release.
    Production track publishing (`environment=production` / `track=production`) remains paused until the release freeze is lifted.
    The release workflow uses the `ANDROID_UPLOAD_KEY_SHA1` repository variable to select the Expo build credential that matches the Play upload certificate.
    Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
