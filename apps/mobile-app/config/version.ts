@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607260313, // Updated to current timestamp
+  buildNumber: 202607261818, // Updated to current timestamp
   releaseDate: '2026-07-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'auto-clear stale Metro cache on the mobile release runner'
+    'bypass broken drawer open/close dispatch on CI-built Android artifacts'
   ],
   breakingChanges: [],
-  notes: 'auto-clear stale Metro cache on the mobile release runner'
+  notes: 'bypass broken drawer open/close dispatch on CI-built Android artifacts'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.265': {
+    version: '1.8.265',
+    buildNumber: 202607261818,
+    releaseDate: '2026-07-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'bypass broken drawer open/close dispatch on CI-built Android artifacts'
+    ],
+    breakingChanges: [],
+    notes: 'bypass broken drawer open/close dispatch on CI-built Android artifacts'
+  },
   '1.8.264': {
     version: '1.8.264',
     buildNumber: 202607260313,

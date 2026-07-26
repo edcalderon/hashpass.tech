@@ -20,10 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.264)
+## 📋 Latest Changes (v1.8.265)
 
-### Released
-- auto-clear stale Metro cache on the mobile release runner
+### Bug Fixes
+
+* bypass broken drawer open/close dispatch on CI-built Android artifacts ([bfb89bd](https://github.com/hashpass-tech/hashpass.tech/commit/bfb89bdb20df29a98574418594820c8651119d74))
+### Release Highlights
+- bypass broken drawer open/close dispatch on CI-built Android artifacts
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
