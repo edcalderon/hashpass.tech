@@ -12,6 +12,9 @@ patchedDependencies:
   '@expo/cli@0.24.24':
     hash: 3za3wr4obwx2n2qmdozpcortny
     path: patches/@expo__cli@0.24.24.patch
+  '@react-navigation/drawer@7.8.1':
+    hash: iudjfeokyty3tzieh35rc7lrj4
+    path: patches/@react-navigation__drawer@7.8.1.patch
   expo-router@5.1.11:
     hash: mhabwvxp3jcvgfsuxhmzamfpcq
     path: patches/expo-router@5.1.11.patch
@@ -25,7 +28,7 @@ patchedDependencies:
     hash: 3ovotlv4g2dqpzrx3otza2w5re
     path: patches/react-native-css-interop@0.2.1.patch
   react-native-drawer-layout@4.2.2:
-    hash: abm2dmofnyzjptjpg4dabmw574
+    hash: ngludytd4hz26fdgqeqjxjoqhm
     path: patches/react-native-drawer-layout@4.2.2.patch
   react-native-safe-area-context@5.4.0:
     hash: fnc6amsbkddbr236v3kkcih6py
@@ -100,7 +103,7 @@ importers:
         version: 7.13.0(@react-navigation/native@7.1.28(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(patch_hash=fnc6amsbkddbr236v3kkcih6py)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-screens@4.11.1(patch_hash=gru2hhxfk46y3f7b6vnochy4my)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       '@react-navigation/drawer':
         specifier: ^7.6.0
-        version: 7.8.1(m3biyhybjl7joix7gld2l2bcga)
+        version: 7.8.1(patch_hash=iudjfeokyty3tzieh35rc7lrj4)(m3biyhybjl7joix7gld2l2bcga)
       '@react-navigation/native':
         specifier: ^7.1.18
         version: 7.1.28(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -208,7 +211,7 @@ importers:
         version: 16.1.6(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       expo-router:
         specifier: ~5.1.11
-        version: 5.1.11(patch_hash=mhabwvxp3jcvgfsuxhmzamfpcq)(jrm3eetvplyemdyudefc33ycta)
+        version: 5.1.11(patch_hash=mhabwvxp3jcvgfsuxhmzamfpcq)(xji2wew2kkc6uoosl74xobuqty)
       expo-secure-store:
         specifier: ^14.2.3
         version: 14.2.4(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))
@@ -557,7 +560,7 @@ importers:
         version: 7.13.0(@react-navigation/native@7.1.28(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(patch_hash=fnc6amsbkddbr236v3kkcih6py)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-screens@4.11.1(patch_hash=gru2hhxfk46y3f7b6vnochy4my)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       '@react-navigation/drawer':
         specifier: ^7.6.0
-        version: 7.8.1(m3biyhybjl7joix7gld2l2bcga)
+        version: 7.8.1(patch_hash=iudjfeokyty3tzieh35rc7lrj4)(m3biyhybjl7joix7gld2l2bcga)
       '@react-navigation/native':
         specifier: ^7.1.18
         version: 7.1.28(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -689,7 +692,7 @@ importers:
         version: 16.1.6(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       expo-router:
         specifier: ~5.1.11
-        version: 5.1.11(patch_hash=mhabwvxp3jcvgfsuxhmzamfpcq)(jrm3eetvplyemdyudefc33ycta)
+        version: 5.1.11(patch_hash=mhabwvxp3jcvgfsuxhmzamfpcq)(xji2wew2kkc6uoosl74xobuqty)
       expo-secure-store:
         specifier: ^14.2.3
         version: 14.2.4(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))
@@ -21099,14 +21102,14 @@ snapshots:
       use-latest-callback: 0.2.6(react@19.0.0)
       use-sync-external-store: 1.6.0(react@19.0.0)
 
-  '@react-navigation/drawer@7.8.1(m3biyhybjl7joix7gld2l2bcga)':
+  '@react-navigation/drawer@7.8.1(patch_hash=iudjfeokyty3tzieh35rc7lrj4)(m3biyhybjl7joix7gld2l2bcga)':
     dependencies:
       '@react-navigation/elements': 2.9.5(@react-navigation/native@7.1.28(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-safe-area-context@5.4.0(patch_hash=fnc6amsbkddbr236v3kkcih6py)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       '@react-navigation/native': 7.1.28(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       color: 4.2.3
       react: 19.0.0
       react-native: 0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)
-      react-native-drawer-layout: 4.2.2(patch_hash=abm2dmofnyzjptjpg4dabmw574)(react-native-gesture-handler@2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
+      react-native-drawer-layout: 4.2.2(patch_hash=ngludytd4hz26fdgqeqjxjoqhm)(react-native-gesture-handler@2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-gesture-handler: 2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-reanimated: 3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       react-native-safe-area-context: 5.4.0(patch_hash=fnc6amsbkddbr236v3kkcih6py)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -26802,7 +26805,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  expo-router@5.1.11(patch_hash=mhabwvxp3jcvgfsuxhmzamfpcq)(jrm3eetvplyemdyudefc33ycta):
+  expo-router@5.1.11(patch_hash=mhabwvxp3jcvgfsuxhmzamfpcq)(xji2wew2kkc6uoosl74xobuqty):
     dependencies:
       '@expo/metro-runtime': 5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))
       '@expo/schema-utils': 0.1.8
@@ -26824,7 +26827,7 @@ snapshots:
       server-only: 0.0.1
       shallowequal: 1.1.0
     optionalDependencies:
-      '@react-navigation/drawer': 7.8.1(m3biyhybjl7joix7gld2l2bcga)
+      '@react-navigation/drawer': 7.8.1(patch_hash=iudjfeokyty3tzieh35rc7lrj4)(m3biyhybjl7joix7gld2l2bcga)
       react-native-reanimated: 3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
     transitivePeerDependencies:
       - '@react-native-masked-view/masked-view'
@@ -32009,7 +32012,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  react-native-drawer-layout@4.2.2(patch_hash=abm2dmofnyzjptjpg4dabmw574)(react-native-gesture-handler@2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
+  react-native-drawer-layout@4.2.2(patch_hash=ngludytd4hz26fdgqeqjxjoqhm)(react-native-gesture-handler@2.24.0(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native-reanimated@3.17.5(@babel/core@7.29.0)(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
     dependencies:
       color: 4.2.3
       react: 19.0.0
