@@ -72,6 +72,21 @@ type DrawerNavigation = any;
 // hazard entirely.
 type DrawerNavRef = React.MutableRefObject<DrawerNavigation | null>;
 
+// Imperative escape hatch into the patched @react-navigation/drawer's own
+// internal open/closed state (see patches/@react-navigation__drawer@7.8.1.patch).
+// On CI-built Android artifacts only (never reproduced from any local build
+// of identical source — confirmed via live diagnostic tracing), dispatching
+// DrawerActions.openDrawer()/closeDrawer() resolves without error but the
+// resulting navigation-state update never reaches the mounted Drawer's
+// render — the sidebar silently never opens. Calling setOpen directly here
+// bypasses that broken navigation-state -> render pipeline entirely. Kept as
+// a plain ref, not app-level React state, for the same reason drawerOpenRef
+// below is a ref: wiring a reactive open/close flag into DashboardLayout's
+// own render would cascade a full re-render into the header and gradient
+// animations mid-slide, the exact perf regression drawerOpenRef was
+// introduced to avoid.
+type DrawerOpenControlRef = React.MutableRefObject<{ setOpen: (open: boolean) => void } | null>;
+
 const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
 const CopilotView = walkthroughable(View);
 
@@ -80,10 +95,12 @@ function CustomDrawerContent({
   navRef,
   navigation: drawerContentNavigation,
   onDrawerStatusChange,
+  openCloseControlRef,
 }: {
   navRef?: DrawerNavRef;
   navigation?: DrawerNavigation;
   onDrawerStatusChange?: (isOpen: boolean) => void;
+  openCloseControlRef?: DrawerOpenControlRef;
 }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const { signOut, user, isLoading: authLoading } = useAuth();
@@ -112,6 +129,22 @@ function CustomDrawerContent({
   if (navRef) {
     navRef.current = navigation;
   }
+  // See the DrawerOpenControlRef comment above. Falls back to a plain
+  // dispatch when the ref isn't populated yet (first render, before the
+  // patched DrawerView's effect has run) -- that dispatch may itself be
+  // subject to the same CI-only propagation bug this ref exists to route
+  // around, but it's a harmless best-effort fallback, not the primary path.
+  const setDrawerOpen = React.useCallback((open: boolean) => {
+    if (openCloseControlRef?.current?.setOpen) {
+      openCloseControlRef.current.setOpen(open);
+      return;
+    }
+    try {
+      navigation.dispatch(open ? DrawerActions.openDrawer() : DrawerActions.closeDrawer());
+    } catch (drawerError) {
+      console.error('Error toggling drawer (fallback dispatch):', drawerError);
+    }
+  }, [openCloseControlRef, navigation]);
   useEffect(() => {
     return () => {
       if (navRef && navRef.current === navigation) {
@@ -138,12 +171,8 @@ function CustomDrawerContent({
       return;
     }
     previousPathnameRef.current = pathname;
-    try {
-      navigation.dispatch(DrawerActions.closeDrawer());
-    } catch (drawerError) {
-      console.error('Error collapsing drawer on route change:', drawerError);
-    }
-  }, [pathname, navigation]);
+    setDrawerOpen(false);
+  }, [pathname, setDrawerOpen]);
   const copilotHook = useCopilot() as any;
   const isMobile = useIsMobile();
   const insets = useSafeAreaInsets();
@@ -389,15 +418,7 @@ function CustomDrawerContent({
   };
 
   const closeDrawer = () => {
-    try {
-      if (typeof navigation?.closeDrawer === 'function') {
-        navigation.closeDrawer();
-      } else {
-        navigation.dispatch(DrawerActions.closeDrawer());
-      }
-    } catch (drawerError) {
-      console.error('Error closing drawer:', drawerError);
-    }
+    setDrawerOpen(false);
   };
 
   const handleNavigation = (route: typeof menuItems[number]['route']) => {
@@ -728,7 +749,7 @@ function CustomDrawerContent({
                     // This ensures main content steps (Your Passes, Quick Access, etc.) are visible
                     if (index === menuItems.length - 1) {
                       setTimeout(() => {
-                        navigation.dispatch(DrawerActions.closeDrawer());
+                        setDrawerOpen(false);
                       }, 500); // Wait for tutorial to move to next step (order 8)
                     }
                   }, 300); // Small delay to allow navigation to complete
@@ -922,6 +943,10 @@ export default function DashboardLayout() {
   const handleDrawerStatusChange = useCallback((isOpen: boolean) => {
     drawerOpenRef.current = isOpen;
   }, []);
+  // See the DrawerOpenControlRef comment above CustomDrawerContent. Populated
+  // by the patched DrawerView; a plain ref so wiring it up doesn't cascade a
+  // DashboardLayout re-render, for the same reason as drawerOpenRef above.
+  const drawerOpenControlRef: DrawerOpenControlRef = useRef(null);
   const [androidQrScannerVisible, setAndroidQrScannerVisible] = useState(false);
   const dashboardCopilotHook = useCopilot() as any;
   // Memoized so drawerContent keeps a stable identity across DashboardLayout
@@ -937,7 +962,12 @@ export default function DashboardLayout() {
   // close over both without listing them as dependencies.
   const renderDrawerContent = useCallback(
     (props: object) => (
-      <CustomDrawerContent {...props} navRef={drawerNavRef} onDrawerStatusChange={handleDrawerStatusChange} />
+      <CustomDrawerContent
+        {...props}
+        navRef={drawerNavRef}
+        onDrawerStatusChange={handleDrawerStatusChange}
+        openCloseControlRef={drawerOpenControlRef}
+      />
     ),
     [],
   );
@@ -978,15 +1008,29 @@ export default function DashboardLayout() {
 
   const openDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
     const wasOpen = drawerOpenRef.current;
-    const opened = openTargetedDashboardDrawer({
-      navigation,
-      drawerNavigation: drawerNavRef.current,
-      openDrawerAction: DrawerActions.openDrawer(),
-    });
 
-    if (!opened) {
-      console.warn('Drawer navigation unavailable, skipping openDrawer');
-      return;
+    // Primary path: the imperative ref into the patched DrawerView's own
+    // state (see DrawerOpenControlRef comment above). dispatch() reliably
+    // resolves without error on CI-built Android artifacts, but the
+    // resulting navigation-state update was reproducibly never reaching the
+    // mounted Drawer's render there — confirmed via live diagnostic tracing
+    // against a real CI-built artifact, never reproduced from any local
+    // build of identical source. The ref bypasses that broken pipeline
+    // entirely. Fall back to the old dispatch-based path only on the first
+    // render, before the patched DrawerView's effect has populated the ref.
+    if (drawerOpenControlRef.current?.setOpen) {
+      drawerOpenControlRef.current.setOpen(true);
+    } else {
+      const opened = openTargetedDashboardDrawer({
+        navigation,
+        drawerNavigation: drawerNavRef.current,
+        openDrawerAction: DrawerActions.openDrawer(),
+      });
+
+      if (!opened) {
+        console.warn('Drawer navigation unavailable, skipping openDrawer');
+        return;
+      }
     }
 
     // React Navigation owns its animation lifecycle. In particular, do not
@@ -1423,6 +1467,7 @@ export default function DashboardLayout() {
         <ScrollProvider>
           <View style={{ flex: 1 }}>
             <Drawer
+              openControlRef={drawerOpenControlRef}
               drawerContent={renderDrawerContent}
               screenOptions={({ navigation }) => ({
                 ...getDrawerHeaderOptions(navigation),

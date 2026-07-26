@@ -1,0 +1,91 @@
+diff --git a/lib/module/views/DrawerView.js b/lib/module/views/DrawerView.js
+index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..e261e3df4815e420a0365950489ee966953503bf 100644
+--- a/lib/module/views/DrawerView.js
++++ b/lib/module/views/DrawerView.js
+@@ -24,8 +24,35 @@ function DrawerViewBase({
+   descriptors,
+   defaultStatus,
+   drawerContent = renderDrawerContentDefault,
+-  detachInactiveScreens = Platform.OS === 'web' || Platform.OS === 'android' || Platform.OS === 'ios'
++  detachInactiveScreens = Platform.OS === 'web' || Platform.OS === 'android' || Platform.OS === 'ios',
++  // HASHPASS patch: on CI-built Android artifacts only (never reproduced in
++  // any local build from identical source, confirmed via live diagnostic
++  // tracing), navigation.dispatch(DrawerActions.openDrawer()/closeDrawer())
++  // resolves without throwing but the resulting `state` update never causes
++  // this component to recompute `open` below -- the drawer silently never
++  // opens. openControlRef gives the app an imperative escape hatch that
++  // bypasses the navigation-state -> `open` prop pipeline entirely: it is a
++  // plain ref (not app-level React state), so wiring it up does not cascade
++  // a re-render into the app's own component tree -- see the drawerOpenRef
++  // comment in the app's dashboard layout for why that specifically matters
++  // here (a reactive open/close flag up there previously caused a visible
++  // perf regression by re-rendering the whole dashboard mid-slide). The
++  // override lives entirely in this component's own local state instead.
++  openControlRef
+ }) {
++  const [openOverride, setOpenOverride] = React.useState(null);
++  React.useEffect(() => {
++    if (openControlRef) {
++      openControlRef.current = {
++        setOpen: setOpenOverride
++      };
++    }
++    return () => {
++      if (openControlRef && openControlRef.current && openControlRef.current.setOpen === setOpenOverride) {
++        openControlRef.current = null;
++      }
++    };
++  }, [openControlRef]);
+   const {
+     direction
+   } = useLocale();
+@@ -69,14 +96,27 @@ function DrawerViewBase({
+   const {
+     colors
+   } = useTheme();
+-  const drawerStatus = getDrawerStatusFromState(state);
++  // HASHPASS patch: openOverride (see openControlRef above) takes priority
++  // over the navigation state's own status when set. It is cleared back to
++  // null (deferring to navigation state again) whenever a navigation-driven
++  // status change agrees with it, so a later successful dispatch elsewhere
++  // in the app isn't permanently shadowed by a stale override.
++  const navigationDrawerStatus = getDrawerStatusFromState(state);
++  const drawerStatus = typeof openOverride === 'boolean' ? openOverride ? 'open' : 'closed' : navigationDrawerStatus;
++  React.useEffect(() => {
++    if (typeof openOverride === 'boolean' && navigationDrawerStatus === (openOverride ? 'open' : 'closed')) {
++      setOpenOverride(null);
++    }
++  }, [navigationDrawerStatus, openOverride]);
+   const handleDrawerOpen = useLatestCallback(() => {
++    setOpenOverride(true);
+     navigation.dispatch({
+       ...DrawerActions.openDrawer(),
+       target: state.key
+     });
+   });
+   const handleDrawerClose = useLatestCallback(() => {
++    setOpenOverride(false);
+     navigation.dispatch({
+       ...DrawerActions.closeDrawer(),
+       target: state.key
+diff --git a/lib/typescript/src/types.d.ts b/lib/typescript/src/types.d.ts
+index 23ca75f92238680ed9f71a11f2d7dcb24c17c1d6..e977a912beebaa120f6d43ae6e07d469afaa3128 100644
+--- a/lib/typescript/src/types.d.ts
++++ b/lib/typescript/src/types.d.ts
+@@ -23,6 +23,16 @@ export type DrawerNavigationConfig = {
+      * Defaults to `true`.
+      */
+     detachInactiveScreens?: boolean;
++    /**
++     * HASHPASS patch: imperative escape hatch into this navigator's own
++     * open/closed state, bypassing navigation.dispatch(DrawerActions...) --
++     * see the matching comment in views/DrawerView.js for why.
++     */
++    openControlRef?: {
++        current: {
++            setOpen: (open: boolean) => void;
++        } | null;
++    };
+ };
+ export type DrawerNavigationOptions = HeaderOptions & {
+     /**

@@ -1,3 +1,12 @@
+## [1.8.265](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.264...v1.8.265) (2026-07-26)
+
+
+### Bug Fixes
+
+* bypass broken drawer open/close dispatch on CI-built Android artifacts ([bfb89bd](https://github.com/hashpass-tech/hashpass.tech/commit/bfb89bdb20df29a98574418594820c8651119d74))
+### Release Highlights
+- bypass broken drawer open/close dispatch on CI-built Android artifacts
+
 ## [1.8.264](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.263...v1.8.264) (2026-07-26)
 ### Released
 - auto-clear stale Metro cache on the mobile release runner
