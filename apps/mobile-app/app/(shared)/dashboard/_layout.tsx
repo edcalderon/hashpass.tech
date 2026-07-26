@@ -978,11 +978,17 @@ export default function DashboardLayout() {
 
   const openDashboardDrawer = useCallback((navigation: DrawerNavigation) => {
     const wasOpen = drawerOpenRef.current;
+    console.error(
+      '[BURGER-DIAG] openDashboardDrawer called, wasOpen=', wasOpen,
+      'navigation.dispatch=', typeof navigation?.dispatch,
+      'drawerNavRef.current.dispatch=', typeof drawerNavRef.current?.dispatch,
+    );
     const opened = openTargetedDashboardDrawer({
       navigation,
       drawerNavigation: drawerNavRef.current,
       openDrawerAction: DrawerActions.openDrawer(),
     });
+    console.error('[BURGER-DIAG] openTargetedDashboardDrawer returned', opened);
 
     if (!opened) {
       console.warn('Drawer navigation unavailable, skipping openDrawer');
@@ -1376,7 +1382,10 @@ export default function DashboardLayout() {
           name="menuButton"
         >
           <CopilotTouchableOpacity
-            onPress={() => openDashboardDrawerFromHeader(navigation)}
+            onPress={() => {
+              console.error('[BURGER-DIAG] onPress fired, navigation=', typeof navigation, !!navigation);
+              openDashboardDrawerFromHeader(navigation);
+            }}
             style={styles.headerIconButton}
             activeOpacity={0.8}
             accessibilityRole="button"

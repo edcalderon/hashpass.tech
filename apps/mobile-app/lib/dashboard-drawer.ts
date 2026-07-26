@@ -44,10 +44,20 @@ export const openTargetedDashboardDrawer = ({
   const dispatcher = findDispatchNavigation(drawerNavigation)
     ?? findDispatchNavigation(navigation);
 
+  console.error(
+    '[BURGER-DIAG] findDispatchNavigation result:',
+    'fromDrawerNavigation=', !!findDispatchNavigation(drawerNavigation),
+    'fromNavigation=', !!findDispatchNavigation(navigation),
+    'finalDispatcher=', !!dispatcher,
+  );
+
   if (!dispatcher || typeof dispatcher.dispatch !== 'function') {
+    console.error('[BURGER-DIAG] no dispatcher found, bailing out');
     return false;
   }
 
+  console.error('[BURGER-DIAG] calling dispatcher.dispatch(openDrawerAction)', JSON.stringify(openDrawerAction));
   dispatcher.dispatch(openDrawerAction);
+  console.error('[BURGER-DIAG] dispatch() call completed without throwing');
   return true;
 };
