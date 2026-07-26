@@ -109,9 +109,11 @@ describe('Android layout event crash guards', () => {
     expect(handleNavigationSource).toContain("const screenName = route.replace('./', '');");
     expect(handleNavigationSource).toContain('navigation.navigate(screenName);');
     expect(handleNavigationSource).not.toContain('router.push(route)');
-    // Auto-collapse effect keyed on pathname.
+    // Auto-collapse effect keyed on pathname. Closes via setDrawerOpen (the
+    // openControlRef-backed helper — see the "uses one drawer gesture owner"
+    // test below), not a direct dispatch, so this is keyed on setDrawerOpen.
     expect(dashboardSource).toContain('const previousPathnameRef = useRef(pathname);');
-    expect(dashboardSource).toContain('}, [pathname, navigation]);');
+    expect(dashboardSource).toContain('}, [pathname, setDrawerOpen]);');
   });
 
   it('routes dashboard drawer logout to the login screen after clearing the local session', () => {
@@ -179,7 +181,17 @@ describe('Android layout event crash guards', () => {
     // it, allowing the close transition to be left partially open.
     expect(dashboardSource).not.toContain('GestureDetector');
     expect(dashboardSource).not.toContain('DrawerActions.toggleDrawer()');
-    expect(dashboardSource).toContain('navigation.closeDrawer();');
+    // closeDrawer() is the one canonical close path (X button, menu-item
+    // auto-collapse, logout, tutorial-forced close all route through it —
+    // see the other tests in this file). It calls setDrawerOpen(false), not
+    // navigation.dispatch()/closeDrawer() directly: on CI-built Android
+    // artifacts only, dispatch() resolved without error but the resulting
+    // navigation-state update never reached the mounted Drawer's render, so
+    // the sidebar silently never opened/closed there (never reproduced from
+    // any local build of identical source). setDrawerOpen drives the
+    // patched @react-navigation/drawer's own openControlRef instead,
+    // bypassing that broken pipeline.
+    expect(dashboardSource).toContain('const closeDrawer = () => {\n    setDrawerOpen(false);\n  };');
     expect(dashboardSource).toContain('onPress={() => openDashboardDrawerFromHeader(navigation)}');
     expect(dashboardSource).toContain("id: 'nav.closeMenu', message: 'Close navigation menu'");
   });
