@@ -1,8 +1,42 @@
 diff --git a/lib/module/views/Drawer.native.js b/lib/module/views/Drawer.native.js
-index c5882f94a4abb82a4b1c2fa390a978028ad247ae..f44377389efe41df633dc1af9906e24c4f93a244 100644
+index c5882f94a4abb82a4b1c2fa390a978028ad247ae..6a214437168b7af8ee5087b80a94e8d38f8711f8 100644
 --- a/lib/module/views/Drawer.native.js
 +++ b/lib/module/views/Drawer.native.js
-@@ -135,9 +135,17 @@ export function Drawer({
+@@ -118,16 +118,33 @@ export function Drawer({
+   const onAnimationStart = useLatestCallback(open => {
+     onTransitionStart?.(!open);
+   });
++  // HASHPASS patch: tracks whether a toggle (open or close) spring is
++  // currently in flight, regardless of what triggered it (prop change or
++  // gesture). Used below to keep the close-while-open swipe gesture (see the
++  // `.enabled()` patch further down) from starting a second, overlapping
++  // toggleDrawer() while a prior one hasn't settled — doing so raced two
++  // concurrent view-tree mutations and crashed Fabric with "addViewAt:
++  // failed to insert view ... The specified child already has a parent."
++  // (reproduced live 2026-07-25 by swiping to close within ~1s of a
++  // burger-tap open). Deliberately plain useState, not a shared value —
++  // it's read from JS-thread `.enabled()`, not a worklet.
++  const [isTransitioning, setIsTransitioning] = React.useState(false);
+   const onAnimationEnd = useLatestCallback((open, finished) => {
+     if (!finished) {
++      // An interrupted (replaced) spring's stale completion — leave
++      // isTransitioning as-is. The toggleDrawer() call that interrupted it
++      // already re-set isTransitioning(true) for itself; only that newer
++      // transition's own (finished === true) completion should clear it.
+       return;
+     }
++    setIsTransitioning(false);
+     onTransitionEnd?.(!open);
+   });
+   const toggleDrawer = React.useCallback((open, velocity) => {
+     'worklet';
+ 
+     const translateX = getDrawerTranslationX(open);
++    runOnJS(setIsTransitioning)(true);
+     if (velocity === undefined) {
+       runOnJS(onAnimationStart)(open);
+     }
+@@ -135,9 +152,17 @@ export function Drawer({
      touchX.value = 0;
      translationX.value = withSpring(translateX, {
        velocity,
@@ -23,11 +57,73 @@ index c5882f94a4abb82a4b1c2fa390a978028ad247ae..f44377389efe41df633dc1af9906e24c
        overshootClamping: true,
        restDisplacementThreshold: 0.01,
        restSpeedThreshold: 0.01,
+@@ -182,12 +207,21 @@ export function Drawer({
+       (event.velocityX === 0 ? event.translationX : event.velocityX) < 0 : open;
+       toggleDrawer(nextOpen, event.velocityX);
+       runOnJS(onGestureFinish)();
+-    }).activeOffsetX([-SWIPE_MIN_OFFSET, SWIPE_MIN_OFFSET]).failOffsetY([-SWIPE_MIN_OFFSET, SWIPE_MIN_OFFSET]).hitSlop(hitSlop).enabled(drawerType !== 'permanent' && swipeEnabled);
++    // HASHPASS patch: re-enable this gesture while the drawer is already
++    // open AND settled (not isTransitioning) so swipe-to-close works even
++    // with swipeEnabled forced off on native (edge-swipe-to-open is what
++    // that flag guards against). The !isTransitioning half of this is load-
++    // bearing, not defensive filler: without it, swiping to close within
++    // ~1s of a burger-tap open raced the still-running open spring and
++    // crashed Fabric ("addViewAt: failed to insert view ... already has a
++    // parent"), reproduced live 2026-07-25. See the matching comment in
++    // src/views/Drawer.native.tsx.
++    }).activeOffsetX([-SWIPE_MIN_OFFSET, SWIPE_MIN_OFFSET]).failOffsetY([-SWIPE_MIN_OFFSET, SWIPE_MIN_OFFSET]).hitSlop(hitSlop).enabled(drawerType !== 'permanent' && (swipeEnabled || open && !isTransitioning));
+     if (panGesture && configureGestureHandler) {
+       panGesture = configureGestureHandler(panGesture);
+     }
+     return panGesture;
+-  }, [configureGestureHandler, drawerPosition, drawerType, gestureState, hitSlop, onGestureBegin, onGestureAbort, onGestureFinish, open, startX, swipeEnabled, swipeMinDistance, swipeMinVelocity, toggleDrawer, touchStartX, touchX, translationX]);
++  }, [configureGestureHandler, drawerPosition, drawerType, gestureState, hitSlop, isTransitioning, onGestureBegin, onGestureAbort, onGestureFinish, open, startX, swipeEnabled, swipeMinDistance, swipeMinVelocity, toggleDrawer, touchStartX, touchX, translationX]);
+   const translateX = useDerivedValue(() => {
+     // Comment stolen from react-native-gesture-handler/DrawerLayout
+     //
 diff --git a/src/views/Drawer.native.tsx b/src/views/Drawer.native.tsx
-index 6c38326b056f4a81d4572362e77fab4b5ac71a13..76e8bef30344c5e4d2abf1d1a88069ac5157a331 100644
+index 6c38326b056f4a81d4572362e77fab4b5ac71a13..c92360d8d20c0a8a688b0521dca9155302d37ec3 100644
 --- a/src/views/Drawer.native.tsx
 +++ b/src/views/Drawer.native.tsx
-@@ -190,9 +190,14 @@ export function Drawer({
+@@ -164,12 +164,29 @@ export function Drawer({
+     onTransitionStart?.(!open);
+   });
+ 
++  // HASHPASS patch: tracks whether a toggle (open or close) spring is
++  // currently in flight, regardless of what triggered it (prop change or
++  // gesture). Used below to keep the close-while-open swipe gesture (see the
++  // `.enabled()` patch further down) from starting a second, overlapping
++  // toggleDrawer() while a prior one hasn't settled — doing so raced two
++  // concurrent view-tree mutations and crashed Fabric with "addViewAt:
++  // failed to insert view ... The specified child already has a parent."
++  // (reproduced live 2026-07-25 by swiping to close within ~1s of a
++  // burger-tap open). Deliberately plain useState, not a shared value —
++  // it's read from JS-thread `.enabled()`, not a worklet.
++  const [isTransitioning, setIsTransitioning] = React.useState(false);
++
+   const onAnimationEnd = useLatestCallback(
+     (open: boolean, finished?: boolean) => {
+       if (!finished) {
++        // An interrupted (replaced) spring's stale completion — leave
++        // isTransitioning as-is. The toggleDrawer() call that interrupted it
++        // already re-set isTransitioning(true) for itself; only that newer
++        // transition's own (finished === true) completion should clear it.
+         return;
+       }
+ 
++      setIsTransitioning(false);
+       onTransitionEnd?.(!open);
+     }
+   );
+@@ -180,6 +197,7 @@ export function Drawer({
+ 
+       const translateX = getDrawerTranslationX(open);
+ 
++      runOnJS(setIsTransitioning)(true);
+       if (velocity === undefined) {
+         runOnJS(onAnimationStart)(open);
+       }
+@@ -190,9 +208,14 @@ export function Drawer({
          translateX,
          {
            velocity,
@@ -45,3 +141,35 @@ index 6c38326b056f4a81d4572362e77fab4b5ac71a13..76e8bef30344c5e4d2abf1d1a88069ac
            overshootClamping: true,
            restDisplacementThreshold: 0.01,
            restSpeedThreshold: 0.01,
+@@ -272,7 +295,22 @@ export function Drawer({
+       .activeOffsetX([-SWIPE_MIN_OFFSET, SWIPE_MIN_OFFSET])
+       .failOffsetY([-SWIPE_MIN_OFFSET, SWIPE_MIN_OFFSET])
+       .hitSlop(hitSlop)
+-      .enabled(drawerType !== 'permanent' && swipeEnabled);
++      // HASHPASS patch: swipeEnabled is forced off on native (see the app's
++      // own screenOptions) to avoid a native edge-swipe dispatching a second
++      // drawer-open transition while a burger-tap-triggered one is still
++      // settling. That's only a risk for the *closed* edge-swipe-to-open
++      // case. Once the drawer is already open AND settled (!isTransitioning),
++      // this is the same single pan gesture the library already fully owns
++      // for its close transition, so re-enabling it here (instead of adding
++      // a second, competing gesture recognizer on the drawer content — tried
++      // and reverted, see apps/mobile-app/tests/lib/android-layout-events.test.ts)
++      // lets users swipe left to close without touching the edge-open bug at
++      // all. The !isTransitioning half is load-bearing, not defensive
++      // filler: without it, swiping to close within ~1s of a burger-tap open
++      // raced the still-running open spring and crashed Fabric ("addViewAt:
++      // failed to insert view ... already has a parent"), reproduced live
++      // 2026-07-25.
++      .enabled(drawerType !== 'permanent' && (swipeEnabled || (open && !isTransitioning)));
+ 
+     if (panGesture && configureGestureHandler) {
+       panGesture = configureGestureHandler(panGesture);
+@@ -285,6 +323,7 @@ export function Drawer({
+     drawerType,
+     gestureState,
+     hitSlop,
++    isTransitioning,
+     onGestureBegin,
+     onGestureAbort,
+     onGestureFinish,
