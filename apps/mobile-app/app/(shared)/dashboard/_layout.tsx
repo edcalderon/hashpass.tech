@@ -1018,9 +1018,12 @@ export default function DashboardLayout() {
     // build of identical source. The ref bypasses that broken pipeline
     // entirely. Fall back to the old dispatch-based path only on the first
     // render, before the patched DrawerView's effect has populated the ref.
+    console.error('[BURGER-DIAG] openDashboardDrawer, drawerOpenControlRef.current=', typeof drawerOpenControlRef.current, drawerOpenControlRef.current);
     if (drawerOpenControlRef.current?.setOpen) {
+      console.error('[BURGER-DIAG] using ref path');
       drawerOpenControlRef.current.setOpen(true);
     } else {
+      console.error('[BURGER-DIAG] using fallback dispatch path');
       const opened = openTargetedDashboardDrawer({
         navigation,
         drawerNavigation: drawerNavRef.current,
