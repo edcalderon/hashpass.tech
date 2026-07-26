@@ -68,6 +68,16 @@ on:
         options:
           - aws-ec2
           - github-hosted
+      clear_metro_cache:
+        description: >-
+          Force-clear the persistent Metro cache on the EC2 runner before building, even if
+          dependencies didn't change. The cache normally auto-clears whenever pnpm install
+          actually runs (see the 2026-07-26 stale-cache incident in
+          apps/docs/docs/reference/mobile-app/metro-cache-incident.md) — this is a manual
+          escape hatch for suspected staleness that slipped past that check.
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: mobile-android-release-${{ github.ref_name }}
@@ -459,6 +469,7 @@ jobs:
           eas --version
 
       - name: Install dependencies
+        id: install-deps
         run: |
           set -euo pipefail
           LOCK_HASH=$(sha256sum pnpm-lock.yaml patches/*.patch | sha256sum | cut -d' ' -f1)
@@ -467,10 +478,63 @@ jobs:
           STORED=$(cat "$HASH_FILE" 2>/dev/null || echo "none")
           if [ "$LOCK_HASH" = "$STORED" ] && [ -d node_modules ]; then
             echo "pnpm lock and patch files unchanged, and node_modules present — skipping install."
+            echo "deps_changed=false" >> "$GITHUB_OUTPUT"
           else
             pnpm install --frozen-lockfile --prefer-offline
             printf '%s' "$LOCK_HASH" > "$HASH_FILE"
+            echo "deps_changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # Incident 2026-07-26: the persistent Metro cache on this EC2 runner (below) went
+      # ~3 weeks without invalidating for a dependency-level change — pnpm correctly
+      # reinstalled a patched native module (react-native-drawer-layout) into node_modules,
+      # but Metro kept serving an old cached transform for it, so the shipped release JS
+      # bundle silently ran stale drawer/navigation code. No crash, no error, no log —
+      # the dashboard hamburger menu just stopped opening, in production, for weeks,
+      # invisible to every local/emulator build because only this one persistent cache
+      # was affected. Full writeup: apps/docs/docs/reference/mobile-app/metro-cache-incident.md.
+      #
+      # Fix: clear Metro's cache every time `pnpm install` actually did something (same
+      # dependency-changed signal the step above already computes), plus a manual
+      # `clear_metro_cache` dispatch input as an escape hatch for anything that slips past
+      # that signal. Every clear is logged to a persistent on-runner audit file so cache
+      # history survives across builds and isn't just scrollback in a CI log.
+      - name: Clear stale Metro cache if dependencies changed
+        if: steps.install-deps.outputs.deps_changed == 'true' || inputs.clear_metro_cache == true
+        run: |
+          set -euo pipefail
+          CACHE_DIR="${METRO_CACHE_DIR:-$HOME/.metro-cache}"
+          AUDIT_LOG="$HOME/.metro-cache-clear-log"
+          REASON="unknown"
+          if [ "${{ inputs.clear_metro_cache }}" = "true" ]; then
+            REASON="manual dispatch input"
+          elif [ "${{ steps.install-deps.outputs.deps_changed }}" = "true" ]; then
+            REASON="pnpm-lock.yaml/patches changed (dependencies reinstalled)"
+          fi
+
+          if [ -d "$CACHE_DIR" ]; then
+            SIZE_BEFORE=$(du -sh "$CACHE_DIR" 2>/dev/null | cut -f1)
+            AGE_DAYS=$(find "$CACHE_DIR" -maxdepth 0 -printf '%T@\n' 2>/dev/null | awk -v now="$(date +%s)" '{printf "%.1f", (now-$1)/86400}')
+          else
+            SIZE_BEFORE="0"
+            AGE_DAYS="n/a"
+          fi
+
+          echo "Clearing Metro cache at $CACHE_DIR (reason: $REASON, size: ${SIZE_BEFORE}, age: ${AGE_DAYS} days)"
+          rm -rf "$CACHE_DIR"
+          mkdir -p "$CACHE_DIR"
+
+          printf '%s | ref=%s | reason=%s | size_before=%s | age_days=%s | run=%s\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            "${{ github.ref_name }}" \
+            "$REASON" \
+            "$SIZE_BEFORE" \
+            "$AGE_DAYS" \
+            "${{ github.run_id }}" \
+            >> "$AUDIT_LOG"
+
+          echo "Audit trail (last 10 clears):"
+          tail -10 "$AUDIT_LOG"
 
       - name: Materialize Google Play service account
         run: |

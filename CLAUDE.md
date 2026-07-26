@@ -129,6 +129,8 @@ Protected promotion flow:
 
 **Android CI memory tuning:** See `apps/docs/docs/infra/ANDROID_CI_MEMORY.md` before touching `NODE_OPTIONS` or `GRADLE_MB` in the workflow — wrong values cause silent SIGTERM or Metro OOM.
 
+**Metro cache on the EC2 runner is persistent — and can go stale silently.** The self-hosted mobile-release runner keeps `node_modules`, `~/.gradle`, and `METRO_CACHE_DIR=/home/runner/.metro-cache` on disk across every release for speed. The release job now auto-clears the Metro cache whenever `pnpm install` actually reinstalled (dependency/patch content changed) — but if you ever suspect a shipped build is running stale JS despite correct source (silent behavior mismatch, no crash, no error, works on every local/emulator rebuild but not on the real device), don't assume it's a code bug: dispatch `mobile-android-release.yml` with `clear_metro_cache=true` first. Full incident writeup (a production drawer/sidebar regression that survived for weeks because of exactly this): `apps/docs/docs/reference/mobile-app/metro-cache-incident.md`.
+
 ### Native Android App Environment — dev builds hit api-dev (intentional)
 
 **This is by design, not a bug.**
