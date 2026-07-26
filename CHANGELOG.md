@@ -1,3 +1,7 @@
+## [1.8.264](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.263...v1.8.264) (2026-07-26)
+### Released
+- auto-clear stale Metro cache on the mobile release runner
+
 ## [1.8.263](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.262...v1.8.263) (2026-07-26)
 ### Released
 - add swipe-to-close on the native dashboard drawer
