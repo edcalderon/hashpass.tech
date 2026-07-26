@@ -1,8 +1,8 @@
 diff --git a/lib/module/views/DrawerView.js b/lib/module/views/DrawerView.js
-index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..5867024be336b5c46a55984734e63826a3a3ba67 100644
+index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..2c51b2e3e4e6c6d0e29c644b7d8d3de80e213d7e 100644
 --- a/lib/module/views/DrawerView.js
 +++ b/lib/module/views/DrawerView.js
-@@ -24,8 +24,48 @@ function DrawerViewBase({
+@@ -24,8 +24,45 @@ function DrawerViewBase({
    descriptors,
    defaultStatus,
    drawerContent = renderDrawerContentDefault,
@@ -36,10 +36,7 @@ index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..5867024be336b5c46a55984734e63826
 +  // fresh wrapper object on every render is cheap and idempotent.
 +  if (openControlRef) {
 +    openControlRef.current = {
-+      setOpen: value => {
-+        console.error('[DRAWERVIEW-DIAG] setOpen invoked via ref, value=', value);
-+        setOpenOverride(value);
-+      }
++      setOpen: setOpenOverride
 +    };
 +  }
 +  React.useEffect(() => {
@@ -52,7 +49,7 @@ index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..5867024be336b5c46a55984734e63826
    const {
      direction
    } = useLocale();
-@@ -69,14 +109,28 @@ function DrawerViewBase({
+@@ -69,14 +106,27 @@ function DrawerViewBase({
    const {
      colors
    } = useTheme();
@@ -64,7 +61,6 @@ index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..5867024be336b5c46a55984734e63826
 +  // in the app isn't permanently shadowed by a stale override.
 +  const navigationDrawerStatus = getDrawerStatusFromState(state);
 +  const drawerStatus = typeof openOverride === 'boolean' ? openOverride ? 'open' : 'closed' : navigationDrawerStatus;
-+  console.error('[DRAWERVIEW-DIAG] render, openOverride=', openOverride, 'navigationDrawerStatus=', navigationDrawerStatus, 'drawerStatus=', drawerStatus, 'openControlRef.current=', typeof openControlRef?.current);
 +  React.useEffect(() => {
 +    if (typeof openOverride === 'boolean' && navigationDrawerStatus === (openOverride ? 'open' : 'closed')) {
 +      setOpenOverride(null);
