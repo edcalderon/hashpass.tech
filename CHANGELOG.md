@@ -1,3 +1,7 @@
+## [1.8.263](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.262...v1.8.263) (2026-07-26)
+### Released
+- add swipe-to-close on the native dashboard drawer
+
 ## [1.8.262](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.261...v1.8.262) (2026-07-25)
 ### Released
 - clear OAuth refresh timer after test; open dashboard drawer in release builds

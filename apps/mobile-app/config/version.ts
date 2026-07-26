@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607252031, // Updated to current timestamp
-  releaseDate: '2026-07-25',
+  buildNumber: 202607260027, // Updated to current timestamp
+  releaseDate: '2026-07-26',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add swipe-to-close on the native dashboard drawer'
   ],
   bugfixes: [
-    'clear OAuth refresh timer after test',
-    'open dashboard drawer in release builds'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'clear OAuth refresh timer after test; open dashboard drawer in release builds'
+  notes: 'add swipe-to-close on the native dashboard drawer'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.263': {
+    version: '1.8.263',
+    buildNumber: 202607260027,
+    releaseDate: '2026-07-26',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add swipe-to-close on the native dashboard drawer'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add swipe-to-close on the native dashboard drawer'
+  },
   '1.8.262': {
     version: '1.8.262',
     buildNumber: 202607252031,
