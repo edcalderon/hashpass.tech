@@ -9,6 +9,19 @@ jest.mock('../../lib/api-client', () => ({
   apiClient: { post: jest.fn() },
 }));
 
+// Under jest.coverage.config.cjs, jest.setup.cjs's global react-native mock
+// doesn't provide NativeModules, which the real expo-constants needs at
+// import time (it crashes reading NativeModules.EXDevLauncher). Mirrors the
+// same minimal mock already used by tests/config/api-client.test.ts.
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    expoConfig: {
+      extra: {},
+    },
+  },
+}));
+
 import {
   resolveConfiguredSpeakerImage,
   resolveSpeakerImage,
