@@ -124,6 +124,7 @@ const makeTourStopConfig = (
     brandingLogo: string;
     speakers: Speaker[];
     agenda: AgendaItem[];
+    dayThemes?: Record<string, { es: string; en: string }>;
   }
 ): EventConfig => ({
   id: eventId,
@@ -158,6 +159,7 @@ const makeTourStopConfig = (
   database: BSL_DATABASE,
   speakers: options.speakers,
   agenda: options.agenda,
+  dayThemes: options.dayThemes,
   tour: {
     hubEventId: 'bsl',
     role: 'stop',
@@ -270,6 +272,15 @@ export const EVENTS: Record<string, EventConfig> = {
     stopOrder: 2,
     image: '/assets/logos/bsl/bsl-chile-pro.svg',
     brandingLogo: '/assets/logos/bsl/bsl-chile-pro.svg',
+    // Verified against https://blockchainsummit.la/chile2026/ -- these are
+    // this stop's own published day themes, not the original bsl2025 hub
+    // event's (which agenda.tsx's getTabTheme was previously hardcoded to
+    // show for every tour-stop event regardless of which one was open).
+    dayThemes: {
+      '1': { es: 'Regulación, Supervisión y Evolución Institucional', en: 'Regulation, Supervision and Institutional Evolution' },
+      '2': { es: 'Tokenización, Stablecoins y Nueva Infraestructura Financiera', en: 'Tokenization, Stablecoins and New Financial Infrastructure' },
+      '3': { es: 'Integración Financiera Global y Sistema Financiero 2030', en: 'Global Financial Integration and the Financial System of 2030' },
+    },
     speakers: [
       { id: 'alberto-naudon', name: 'Alberto Naudon', title: 'Vice President', company: 'Banco Central de Chile', image: `${CHILE2026_SPEAKER_IMAGE_BASE}/alberto-naudon.webp` },
       { id: 'alvaro-clarke', name: 'Álvaro Clarke', title: 'Executive Director of Executive Education', company: 'Facultad de Economía y Negocios, Universidad de Chile', image: `${CHILE2026_SPEAKER_IMAGE_BASE}/alvaro-clarke.webp` },

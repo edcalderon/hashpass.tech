@@ -28,7 +28,7 @@ import ScheduleConfirmationModal from '../../../components/ScheduleConfirmationM
 import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
-import { useTranslation } from '../../../i18n/i18n';
+import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
 
 const { width } = Dimensions.get('window');
 
@@ -152,6 +152,20 @@ export default function BSL2025AgendaScreen() {
   };
 
   const getTabTheme = (dayKey: string) => {
+    const dayNumberMatch = dayKey.match(/Day (\d+)/);
+    const dayNumber = dayNumberMatch?.[1];
+
+    // Prefer this event's own published day theme (see chile2026's
+    // dayThemes in packages/config/src/events.ts) over the generic
+    // fallback copy, which was previously the original bsl2025 hub
+    // event's themes shown for every tour-stop event regardless of which
+    // one was actually open.
+    const eventTheme = dayNumber ? (event as any)?.dayThemes?.[dayNumber] : undefined;
+    if (eventTheme) {
+      const locale = getCurrentLocale();
+      return eventTheme[locale] || eventTheme.en || eventTheme.es || '';
+    }
+
     if (dayKey.includes('Day 1')) return t('tabs.themes.day1');
     if (dayKey.includes('Day 2')) return t('tabs.themes.day2');
     if (dayKey.includes('Day 3')) return t('tabs.themes.day3');
@@ -1354,9 +1368,9 @@ export default function BSL2025AgendaScreen() {
                 const dayItems = agendaByDay[activeTab] || [];
                 return dayItems.some(dayItem => String((dayItem as any).id) === String((item as any).id));
               });
-              
+
               // Removed console.log to prevent infinite re-renders
-              
+
               if (filteredItems.length === 0) {
                 return (
                   <View style={styles.noResultsContainer}>
@@ -1366,11 +1380,23 @@ export default function BSL2025AgendaScreen() {
                   </View>
                 );
               }
-              
+
               return filteredItems.map(renderAgendaItem);
             })()}
           </View>
+        ) : agenda.length > 0 ? (
+          // We already have real agenda items (confirmed by the top-level
+          // loading gate above), but activeTab doesn't have a matching
+          // agendaByDay entry yet -- e.g. the session/deep-link effect set
+          // activeTab to a key the grouping effect hasn't produced yet.
+          // This is still a loading state, not "no agenda for this event":
+          // agenda.length > 0 already proves there IS agenda.
+          <View style={styles.agendaList}>
+            <LoadingScreen message={t('loading')} fullScreen={false} />
+          </View>
         ) : (
+          // Only reachable once agenda is confirmed empty -- the real "no
+          // agenda for this event" case, not a stand-in for still loading.
           <View style={styles.noAgendaContainer}>
             <MaterialIcons name="event-busy" size={48} color={colors.text.secondary} />
             <Text style={styles.noAgendaText}>{t('empty.title')}</Text>

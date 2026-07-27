@@ -84,6 +84,11 @@ export interface EventConfig {
   };
   speakers?: Speaker[];
   agenda?: AgendaItem[];
+  // Per-day theme titles as actually published for this event (e.g. the
+  // event's own blockchainsummit.la/{eventId}/ page), keyed by day number
+  // ('1'/'2'/'3'). Falls back to generic day-theme copy when not set --
+  // these are distinct per tour stop and should not be assumed shared.
+  dayThemes?: Record<string, { es: string; en: string }>;
   quickAccessItems?: QuickAccessItem[];
   eventType?: 'hashpass' | 'whitelabel';
   tour?: EventTourMeta;
