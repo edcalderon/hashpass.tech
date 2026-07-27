@@ -298,7 +298,7 @@ export default function DynamicQRDisplay({
   
   const logoSource = (() => {
     try {
-      return { uri: Image.resolveAssetSource(require('../assets/android-chrome-192x192.png')).uri };
+      return { uri: Image.resolveAssetSource(require('../assets/android-chrome-192x192.webp')).uri };
     } catch {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         return { uri: `${window.location.origin}/favicon.ico` };

@@ -118,6 +118,7 @@
       "expo-router",
       "./plugins/withAndroidReleaseMinification",
       "./plugins/withAndroidDisableRtl",
+      "./plugins/withAndroidLargeScreenSupport",
       [
         "@react-native-google-signin/google-signin",
         {

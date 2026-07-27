@@ -36,8 +36,8 @@ describe('Android layout event crash guards', () => {
     const logoSource = readSource('../../lib/hashpass-logo.ts');
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
 
-    expect(logoSource).toContain('logo-full-hashpass-black.png');
-    expect(dashboardSource).toContain("require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')");
+    expect(logoSource).toContain('logo-full-hashpass-black.webp');
+    expect(dashboardSource).toContain("require('../../../assets/logos/hashpass/logo-full-hashpass-white.webp')");
   });
 
   it('routes native post-auth dashboard navigation through the shared route group', () => {

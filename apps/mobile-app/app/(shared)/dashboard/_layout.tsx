@@ -644,8 +644,8 @@ function CustomDrawerContent({
               ]}>
                 <Image
                   source={isDark
-                    ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
-                    : require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')
+                    ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp')
+                    : require('../../../assets/logos/hashpass/logo-full-hashpass-white.webp')
                   }
                   style={styles.logoImage}
                   resizeMode="contain"
@@ -1308,8 +1308,8 @@ export default function DashboardLayout() {
             >
               <Image
                 source={isDark
-                  ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
-                  : require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')
+                  ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp')
+                  : require('../../../assets/logos/hashpass/logo-full-hashpass-white.webp')
                 }
                 style={styles.headerLogoImage}
                 resizeMode="contain"
@@ -1405,8 +1405,8 @@ export default function DashboardLayout() {
         >
           <Image
             source={isDark
-              ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png')
-              : require('../../../assets/logos/hashpass/logo-full-hashpass-white.png')
+              ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp')
+              : require('../../../assets/logos/hashpass/logo-full-hashpass-white.webp')
             }
             style={styles.headerLogoImage}
             resizeMode="contain"
