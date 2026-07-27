@@ -86,7 +86,7 @@ Protected promotion flow:
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering. The version bump living inside the reviewed PR (rather than as a separate post-merge step) closes the gap between "what was reviewed" and "what got tagged," and removes the manual post-merge steps that a human previously had to remember and run correctly by hand — see `.agents/active/task-release-flow-automation.md` for the full design and incident history behind this change.
 
 ### Mobile Android Release Workflow
-**Release posture (updated 2026-07-26):** the full progression is internal → alpha (closed testing) → beta (open testing) → production, each gated on the previous track having succeeded for the same ref. Internal publishes automatically on tag creation; alpha auto-promotes after internal succeeds on the same tag (`auto_promote_alpha=true`). Beta and production are always deliberate manual dispatches — nothing auto-promotes past alpha.
+**Release posture (updated 2026-07-27):** the full progression is internal → alpha (closed testing) → beta (open testing) → production, each gated on the previous track having succeeded for the same ref. Internal publishes automatically on tag creation; alpha auto-promotes after internal succeeds on the same tag (`auto_promote_alpha=true`), and beta now auto-promotes after that auto-promoted alpha succeeds (`auto_promote_beta=true`) — so a single tag push carries a release all the way through internal → alpha → beta with no manual dispatch. Production is the deliberate exception: it never auto-promotes, by design — it's the only track that builds against the real backend (`environment=production`) and ships to real users, so it keeps a manual `gh workflow run` as the final human checkpoint after beta has been validated by real external testers.
 
 `environment` and `track` are two separate concepts, validated as a pair:
 - `environment` controls which backend the app bundle points at (`development` → `api-dev.hashpass.tech`, `production` → `api.hashpass.tech` — see the "Native Android App Environment" section below).
@@ -104,7 +104,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
 4. **Merge the PR.** That's the last manual step. `release-tag-on-merge.yml` fires automatically on the merge and handles everything below — do not run `npm run release:patch` on `main` or manually sync `develop`; both now happen for you:
    - Tags `github.event.pull_request.merge_commit_sha` as `vX.Y.Z` and pushes the tag to `origin` (not `upstream` — see below)
    - Fast-forwards `develop` to the same commit and pushes it to `origin`
-   - The tag push fires `.github/workflows/mobile-release-on-tag.yml`, which dispatches `mobile-android-release.yml` with `environment=development track=internal auto_promote_alpha=true` — the same Android build trigger as before, just one hop further upstream now
+   - The tag push fires `.github/workflows/mobile-release-on-tag.yml`, which dispatches `mobile-android-release.yml` with `environment=development track=internal auto_promote_alpha=true auto_promote_beta=true` — the same Android build trigger as before, just one hop further upstream now, and now carrying the release through beta automatically too (see the auto-promote-beta job in that workflow)
    - If this job fails, it comments directly on the merged PR rather than only showing a red X in the Actions tab — check there first
    - Requires the `RELEASE_AUTOMATION_TOKEN` repo secret (fine-grained PAT, this repo only, Contents read/write) to be set. Without it, the job fails loudly at a preflight step rather than silently using a token whose pushes can't trigger other workflows — GitHub's default `GITHUB_TOKEN` cannot trigger other workflows' `on: push` listeners, which is why a PAT is required here at all.
 5. **Verify the Android workflow picked up**: `gh run list --repo hashpass-tech/hashpass.tech --workflow mobile-android-release.yml --limit 3`. Only dispatch it manually for a case the auto-trigger doesn't cover — a retry on an already-tagged version, or a non-default track (`alpha`, `beta`, or `production`):
@@ -116,6 +116,8 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
      --field track=internal \
      --field auto_promote_alpha=true \
      --field alpha_release_status=completed \
+     --field auto_promote_beta=true \
+     --field beta_release_status=completed \
      --field backend=fastlane \
      --field runner=aws-ec2
    ```
@@ -136,7 +138,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
    Only fall back to a full internal re-release if no internal release has *ever* succeeded for that exact ref (nothing to promote), or if you actually want new code shipped rather than re-promoting what's already on Play. Prefer the promote-only retry — it's a GitHub-hosted job (not the EC2 runner) and skips the entire build/bundle step, so it's dramatically cheaper in both time and EC2 cost than a full internal re-release.
    The release workflow uses the `ANDROID_UPLOAD_KEY_SHA1` repository variable to select the Expo build credential that matches the Play upload certificate.
 
-   **Beta (open testing), added 2026-07-26.** Same promote-only shape as alpha, one track up — reuses the alpha Play release, never rebuilds, still `environment=development`:
+   **Beta (open testing), added 2026-07-26, auto-promoted as of 2026-07-27.** A normal tag-triggered release now reaches beta on its own — no manual dispatch needed. Only dispatch this manually for a retry (`auto_promote_beta=true` failed or was skipped for a given ref) or to promote an older tag that predates this automation. Same promote-only shape as alpha, one track up — reuses the alpha Play release, never rebuilds, still `environment=development`:
    ```bash
    gh workflow run mobile-android-release.yml \
      --repo hashpass-tech/hashpass.tech \
@@ -147,7 +149,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
      --field release_status=completed \
      --field backend=fastlane
    ```
-   Gated by `require-alpha-before-beta`, the same non-time-bound full-history-search pattern as the alpha gate: it passes as long as an alpha release (or an alpha promotion) ever succeeded for that ref, regardless of when. There is no `auto_promote_beta` — going public via open testing is always a deliberate manual step, never auto-chained after alpha.
+   Gated by `require-alpha-before-beta`, the same non-time-bound full-history-search pattern as the alpha gate: it passes as long as an alpha release (or an alpha promotion) ever succeeded for that ref, regardless of when — so this retry command works standalone at any later time, same as the alpha retry above. Production is still never auto-chained past beta — see below.
 
    **Production, added 2026-07-26.** The only track that requires `environment=production` and the only one that's never promote-only — it always builds fresh, because the production backend URL is baked into the JS bundle at build time and the beta artifact was built against `environment=development`:
    ```bash
