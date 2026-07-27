@@ -1,6 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+// lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
+// font glyphs @expo/vector-icons renders directly; the raw font can show its
+// tofu/"?" fallback glyph for a window before the icon font loads on web --
+// worse here since LoadingScreen is often the very first thing rendered.
+import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 

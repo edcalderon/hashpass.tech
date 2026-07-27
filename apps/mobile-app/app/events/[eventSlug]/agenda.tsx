@@ -1317,8 +1317,15 @@ export default function BSL2025AgendaScreen() {
       </View>
     );
   };
-  // Show global loader while loading
-  if (loading) {
+  // Show global loader while loading. Also cover the gap between agenda
+  // finishing its load and the separate grouping effect (deps: [agenda,
+  // loading]) actually running: that effect only fires on the render AFTER
+  // `loading` flips to false, so for one frame agenda has real items but
+  // agendaByDay is still {} and activeTab still points at the unset
+  // default -- which would otherwise render the real "no agenda for this
+  // event" empty state for real data that just hasn't been grouped yet.
+  const agendaGroupingPending = agenda.length > 0 && Object.keys(agendaByDay).length === 0;
+  if (loading || agendaGroupingPending) {
     return (
       <LoadingScreen
         message={t('loading')}

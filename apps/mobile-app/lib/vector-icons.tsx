@@ -1,6 +1,7 @@
 import React from 'react';
 import { Platform, Text } from 'react-native';
 import {
+  Activity,
   Apple,
   ArrowDown,
   ArrowLeft,
@@ -61,6 +62,7 @@ import {
   Moon,
   Lightbulb,
   PartyPopper,
+  Pencil,
   Phone,
   Plus,
   QrCode,
@@ -134,7 +136,9 @@ function GoogleIcon({ size = 24, color = '#4285F4', style }: { size?: number; co
 
 const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   add: Plus,
+  'admin-panel-settings': Cog,
   analytics: ChartBar,
+  'bar-chart': ChartBar,
   apps: Grid3x3,
   'arrow-back': ArrowLeft,
   'arrow-downward': ArrowDown,
@@ -168,10 +172,12 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   'confirmation-number': Ticket,
   dashboard: LayoutDashboard,
   drafts: MailOpen,
+  edit: Pencil,
   email: Mail,
   'error-outline': CircleAlert,
   event: CalendarDays,
   'event-busy': CalendarX2,
+  'event-note': CalendarDays,
   explore: Compass,
   favorite: Star,
   'filter-list': SlidersHorizontal,
@@ -239,6 +245,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   refresh: RefreshCw,
   restaurant: Utensils,
   schedule: Clock,
+  search: Search,
   'search-off': SearchX,
   'search-outline': Search,
   send: Send,
@@ -251,7 +258,9 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   'ticket-outline': Ticket,
   'trending-up': TrendingUp,
   'warning-outline': TriangleAlert,
+  'network-check': Activity,
   sunny: Sun,
+  timeline: Activity,
   'wb-sunny': Sun,
   sync: RefreshCw,
   tune: SlidersHorizontal,
