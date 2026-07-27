@@ -1358,6 +1358,20 @@ export default function BSL2025AgendaScreen() {
         />
       )}
 
+      {/* Full day title -- the tab card itself truncates the theme text to
+          fit its fixed small size (see tabTheme style), so this shows the
+          complete, untruncated day name + theme once a day is selected. */}
+      {activeTab && Object.keys(agendaByDay).length > 0 && (
+        <View style={styles.dayHeader}>
+          <Text style={styles.dayHeaderLabel} numberOfLines={1}>
+            {getTabLabel(activeTab)}
+            {!!getTabTheme(activeTab) && (
+              <Text style={styles.dayHeaderTheme}>: {getTabTheme(activeTab)}</Text>
+            )}
+          </Text>
+        </View>
+      )}
+
       {/* Tab Content */}
       <View style={styles.contentContainer}>
         {activeTab && agendaByDay[activeTab] ? (
@@ -1489,6 +1503,24 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  dayHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 6,
+  },
+  dayHeaderLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  dayHeaderTheme: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    textTransform: 'none',
   },
   tabLabel: {
     fontSize: 12, // Slightly smaller font for mobile

@@ -9,6 +9,7 @@ import type { CreateMeetingRequestData } from '../../../../lib/matchmaking';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useBalance } from '@contexts/BalanceContext';
 import { supabase } from '../../../../lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { passSystemService } from '../../../../lib/pass-system';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
@@ -55,6 +56,8 @@ export default function SpeakerDetail() {
   const { isDark, colors } = useTheme();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
+  // e.g. event.api.basePath = '/api/bslatam' → apiSegment = 'bslatam'
+  const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
   const { user, isLoggedIn } = useAuth();
   const { t } = useTranslation('networking');
   const router = useRouter();
@@ -355,48 +358,19 @@ export default function SpeakerDetail() {
 
     setLoadingRequestStatus(true);
     try {
-      console.log('🔄 Loading meeting requests for user:', user.id, 'speaker:', speaker.id);
-      
-      // Use the new function to get all meeting requests for this speaker
-      const { data, error } = await supabase
-        .rpc('get_meeting_requests_for_speaker', {
-          p_user_id: user.id.toString(),
-          p_speaker_id: speaker.id
-        } as any) as any;
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment,
+        params: { speakerId: speaker.id },
+      });
 
-      if (error) {
-        console.error('❌ Error loading meeting requests:', error);
-        console.error('❌ Error details:', error.details);
-        console.error('❌ Error hint:', error.hint);
-        
-        // Fallback to direct query
-        console.log('🔄 Trying fallback query...');
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('meeting_requests')
-          .select('*')
-          .eq('requester_id', user.id)
-          .eq('speaker_id', speaker.id)
-          .order('created_at', { ascending: false });
-
-        if (fallbackError) {
-          console.error('❌ Fallback query also failed:', fallbackError);
-          setMeetingRequests([]);
-        } else {
-          console.log('✅ Fallback query result:', fallbackData);
-          setMeetingRequests(fallbackData || []);
-        }
-      } else {
-        console.log('✅ Meeting requests result:', data);
-        // Handle both direct array and wrapped response
-        const allRequests = Array.isArray(data) ? data : (data?.requests || []);
-        console.log('📊 Number of requests found:', allRequests.length);
-        
-        // Filter to show only the current user's requests when viewing a speaker profile
-        // (not when the user is the speaker themselves)
-        const userRequests = allRequests.filter((req: any) => req.requester_id === user.id);
-        console.log('📊 Number of user requests:', userRequests.length);
-        setMeetingRequests(userRequests);
+      if (!response.success) {
+        console.error('❌ Error loading meeting requests:', response.error);
+        setMeetingRequests([]);
+        return;
       }
+
+      const data = (response.data as any)?.data;
+      setMeetingRequests(data || []);
     } catch (error) {
       console.error('❌ Error in loadMeetingRequestStatus:', error);
       setMeetingRequests([]);
@@ -410,22 +384,17 @@ export default function SpeakerDetail() {
 
     setLoadingCancelledRequests(true);
     try {
-      console.log('🔄 Loading cancelled requests for user:', user.id, 'speaker:', speaker.id);
-      
-      const { data, error } = await supabase
-        .from('meeting_requests')
-        .select('*')
-        .eq('requester_id', user.id)
-        .eq('speaker_id', speaker.id)
-        .eq('status', 'cancelled')
-        .order('created_at', { ascending: false });
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment,
+        params: { speakerId: speaker.id, status: 'cancelled' },
+      });
 
-      if (error) {
-        console.error('❌ Error loading cancelled requests:', error);
+      if (!response.success) {
+        console.error('❌ Error loading cancelled requests:', response.error);
         return;
       }
 
-      console.log('🔄 Cancelled requests result:', data);
+      const data = (response.data as any)?.data;
       setCancelledRequests(data || []);
     } catch (error) {
       console.error('❌ Error in loadCancelledRequests:', error);
