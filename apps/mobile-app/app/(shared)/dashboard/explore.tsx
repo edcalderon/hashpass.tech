@@ -1,6 +1,6 @@
-import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Animated, NativeSyntheticEvent, NativeScrollEvent, StatusBar, Platform, InteractionManager, useWindowDimensions } from 'react-native';
-import Reanimated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Animated, StatusBar, Platform, InteractionManager, useWindowDimensions } from 'react-native';
+import Reanimated from 'react-native-reanimated';
 import { useScroll } from '@contexts/ScrollContext';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
@@ -10,13 +10,14 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import EventBanner from '../../../components/EventBanner';
 import PassesDisplay from '../../../components/PassesDisplay';
+import { useHorizontalScrollArrows } from '../../../hooks/useHorizontalScrollArrows';
 import {
-  getAvailableEvents, 
-  getCurrentEvent, 
+  getAvailableEvents,
+  getCurrentEvent,
   shouldShowEventSelector,
   getEventQuickAccessItems,
   isMainBranch,
-  type EventInfo 
+  type EventInfo
 } from '../../../lib/event-detector';
 import { resolveEventImageSource } from '../../../lib/event-branding';
 import { t } from '@lingui/macro';
@@ -121,27 +122,23 @@ export default function ExploreScreen() {
       setSelectedEvent(matchedEvent);
     }
   }, [routeEventIdParam]);
-  const scrollXRef = useRef(0);
-  const maxScrollXRef = useRef(0);
-  const viewportWidthRef = useRef(0);
-  const contentWidthRef = useRef(0);
-  const quickAccessScrollRef = useRef<ScrollView>(null);
-  const quickAccessLeftArrowOpacity = useSharedValue(0.32);
-  const quickAccessRightArrowOpacity = useSharedValue(1);
-  const quickAccessLeftArrowStyle = useAnimatedStyle(() => ({
-    opacity: quickAccessLeftArrowOpacity.value,
-  }));
-  const quickAccessRightArrowStyle = useAnimatedStyle(() => ({
-    opacity: quickAccessRightArrowOpacity.value,
-  }));
+  // Quick Access card dimensions (matching styles.quickAccessCard).
+  const quickAccessCardWidth = 132;
+  const quickAccessCardSpacing = 10;
+  const quickAccessScroll = useHorizontalScrollArrows({
+    cardWidth: quickAccessCardWidth,
+    cardSpacing: quickAccessCardSpacing,
+    androidFallbackWidth: Math.max(0, windowWidth - 40),
+  });
 
-  const updateQuickAccessArrows = useCallback((scrollX: number, maxScrollX: number) => {
-    const canScrollLeft = scrollX > 0;
-    const canScrollRight = scrollX < maxScrollX - 10;
-
-    quickAccessLeftArrowOpacity.value = canScrollLeft ? 1 : 0.32;
-    quickAccessRightArrowOpacity.value = canScrollRight ? 1 : 0.32;
-  }, [quickAccessLeftArrowOpacity, quickAccessRightArrowOpacity]);
+  // Select Event card dimensions (matching styles.eventCard's non-global width/margin).
+  const eventSelectorCardWidth = 200;
+  const eventSelectorCardSpacing = 12;
+  const eventSelectorScroll = useHorizontalScrollArrows({
+    cardWidth: eventSelectorCardWidth,
+    cardSpacing: eventSelectorCardSpacing,
+    androidFallbackWidth: Math.max(0, windowWidth - 40),
+  });
 
   // Reset ref when tutorial is reset (completion status changes or progress is cleared)
   useEffect(() => {
@@ -304,86 +301,6 @@ export default function ExploreScreen() {
     };
   }, [copilotEvents, markTutorialCompleted, updateTutorialStep]);
 
-  const handleQuickAccessWheel = (e: any) => {
-    // Map wheel vertical/horizontal delta to horizontal scroll
-    const dx = e?.nativeEvent?.deltaX ?? e?.deltaX ?? 0;
-    const dy = e?.nativeEvent?.deltaY ?? e?.deltaY ?? 0;
-    const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
-    const nextX = Math.max(0, Math.min(scrollXRef.current + delta, maxScrollXRef.current));
-    
-    if (typeof e?.preventDefault === 'function') {
-      e.preventDefault();
-    }
-    
-    if (quickAccessScrollRef.current) {
-      quickAccessScrollRef.current.scrollTo({ x: nextX, animated: false });
-    }
-  };
-
-  // Web-specific scroll detection using DOM events (fallback)
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-
-    let scrollElement: HTMLElement | null = null;
-    let cleanupFn: (() => void) | null = null;
-    let initTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    // Use a small delay to ensure the ScrollView is mounted
-    const timeoutId = setTimeout(() => {
-      try {
-        const scrollRef = quickAccessScrollRef.current as any;
-        if (!scrollRef) return;
-
-        // Try to get the underlying DOM element
-        const getScrollElement = () => {
-          // React Native Web ScrollView structure
-          if (scrollRef._component) {
-            const innerView = scrollRef._component.querySelector?.('div[style*="overflow"]') ||
-                             scrollRef._component.querySelector?.('div[class*="scroll"]') ||
-                             scrollRef;
-            return innerView;
-          }
-          return null;
-        };
-
-        scrollElement = getScrollElement();
-        if (!scrollElement) return;
-
-        const handleWebScroll = () => {
-          if (!scrollElement) return;
-          
-          const currentScrollX = scrollElement.scrollLeft;
-          const currentMaxScrollX = scrollElement.scrollWidth - scrollElement.clientWidth;
-          
-          scrollXRef.current = currentScrollX;
-          maxScrollXRef.current = currentMaxScrollX;
-          viewportWidthRef.current = scrollElement.clientWidth;
-          contentWidthRef.current = scrollElement.scrollWidth;
-          updateQuickAccessArrows(currentScrollX, currentMaxScrollX);
-        };
-        
-        scrollElement.addEventListener('scroll', handleWebScroll, { passive: true });
-        
-        // Initial check after a brief delay
-        initTimeout = setTimeout(handleWebScroll, 100);
-
-        cleanupFn = () => {
-          if (initTimeout) clearTimeout(initTimeout);
-          if (scrollElement) {
-            scrollElement.removeEventListener('scroll', handleWebScroll);
-          }
-        };
-      } catch (error) {
-        console.warn('Failed to set up web scroll listener:', error);
-      }
-    }, 500);
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (cleanupFn) cleanupFn();
-    };
-  }, [updateQuickAccessArrows]);
-
   // Early return if no event info is available (after all hooks are declared)
   if (!currentEventInfo) {
     return (
@@ -392,80 +309,11 @@ export default function ExploreScreen() {
       </View>
     );
   }
-  
-  // Quick Access card dimensions (matching styles)
-  const cardWidth = 132;
-  const cardSpacing = 10;
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     { useNativeDriver: false }
   );
-
-  const handleQuickAccessScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const currentScrollX = contentOffset.x;
-    const currentMaxScrollX = contentSize.width - layoutMeasurement.width;
-    
-    scrollXRef.current = currentScrollX;
-    maxScrollXRef.current = currentMaxScrollX;
-    viewportWidthRef.current = layoutMeasurement.width;
-    contentWidthRef.current = contentSize.width;
-    updateQuickAccessArrows(currentScrollX, currentMaxScrollX);
-  };
-
-  // Additional scroll handlers for better web support
-  const handleQuickAccessScrollBeginDrag = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    handleQuickAccessScroll(event);
-  };
-
-  const handleQuickAccessScrollEndDrag = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    handleQuickAccessScroll(event);
-  };
-
-  const handleQuickAccessMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    handleQuickAccessScroll(event);
-  };
-
-  const handleQuickAccessLayout = (e: any) => {
-    const w = e?.nativeEvent?.layout?.width || 0;
-    viewportWidthRef.current = w;
-    maxScrollXRef.current = Math.max(0, contentWidthRef.current - w);
-    updateQuickAccessArrows(scrollXRef.current, maxScrollXRef.current);
-  };
-
-  const handleQuickAccessContentSizeChange = (w: number, _h: number) => {
-    contentWidthRef.current = w;
-    if (Platform.OS === 'android' && viewportWidthRef.current <= 0) {
-      viewportWidthRef.current = Math.max(0, windowWidth - 40);
-    }
-    maxScrollXRef.current = Math.max(0, w - viewportWidthRef.current);
-    updateQuickAccessArrows(scrollXRef.current, maxScrollXRef.current);
-  };
-
-
-  const scrollQuickAccess = (direction: 'left' | 'right') => {
-    if (!quickAccessScrollRef.current) return;
-    
-    // For small screens, scroll by one card at a time
-    // For larger screens, scroll by viewport width minus spacing
-    const scrollAmount = viewportWidthRef.current > 0 && viewportWidthRef.current > cardWidth * 2
-      ? Math.min(viewportWidthRef.current - cardSpacing, cardWidth * 2)
-      : cardWidth + cardSpacing;
-    
-    const currentScrollX = scrollXRef.current || 0;
-    const target = direction === 'left' 
-      ? Math.max(0, currentScrollX - scrollAmount)
-      : Math.min(maxScrollXRef.current, currentScrollX + scrollAmount);
-    
-    // Only scroll if we're not already at the boundary
-    if ((direction === 'left' && currentScrollX > 0) || 
-        (direction === 'right' && currentScrollX < maxScrollXRef.current)) {
-      quickAccessScrollRef.current.scrollTo({ x: target, animated: true });
-    }
-  };
-
-
 
   const handleEventSelect = (eventData: EventInfo) => {
     // Select in-place in both modes: highlights the tapped card, swaps the
@@ -741,13 +589,49 @@ export default function ExploreScreen() {
               showEventSelector && (
                 <View style={styles.eventSelectorContainer}>
                   <Text style={styles.eventSelectorTitle}>{t({ id: 'explore.selectEvent', message: 'Select Event' })}</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.eventSelector}
-                  >
-                    {availableEvents.map((eventData: EventInfo, index: number) => renderEventCard(eventData, index))}
-                  </ScrollView>
+                  <View style={styles.eventSelectorScrollWrapper}>
+                    {eventSelectorScroll.canScrollLeft && (
+                      <Reanimated.View style={[styles.scrollArrowLeft, eventSelectorScroll.leftArrowStyle]}>
+                        <TouchableOpacity
+                          style={styles.scrollArrowButton}
+                          onPress={() => eventSelectorScroll.scroll('left')}
+                        >
+                          <MaterialIcons name="chevron-left" size={24} color={colors.primary} />
+                        </TouchableOpacity>
+                      </Reanimated.View>
+                    )}
+                    <ScrollView
+                      ref={eventSelectorScroll.scrollRef}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.eventSelector}
+                      onScroll={eventSelectorScroll.handleScroll}
+                      onScrollBeginDrag={eventSelectorScroll.handleScrollBeginDrag}
+                      onScrollEndDrag={eventSelectorScroll.handleScrollEndDrag}
+                      onMomentumScrollEnd={eventSelectorScroll.handleMomentumScrollEnd}
+                      scrollEventThrottle={Platform.OS === 'web' ? 0 : 16}
+                      decelerationRate="fast"
+                      snapToInterval={eventSelectorCardWidth + eventSelectorCardSpacing}
+                      snapToAlignment="start"
+                      disableIntervalMomentum
+                      onLayout={Platform.OS === 'android' ? undefined : eventSelectorScroll.handleLayout}
+                      onContentSizeChange={eventSelectorScroll.handleContentSizeChange}
+                      // @ts-ignore - onWheel supported in RN Web
+                      onWheel={eventSelectorScroll.handleWheel}
+                    >
+                      {availableEvents.map((eventData: EventInfo, index: number) => renderEventCard(eventData, index))}
+                    </ScrollView>
+                    {eventSelectorScroll.canScrollRight && (
+                      <Reanimated.View style={[styles.scrollArrowRight, eventSelectorScroll.rightArrowStyle]}>
+                        <TouchableOpacity
+                          style={styles.scrollArrowButton}
+                          onPress={() => eventSelectorScroll.scroll('right')}
+                        >
+                          <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
+                        </TouchableOpacity>
+                      </Reanimated.View>
+                    )}
+                  </View>
                 </View>
               )
             )}
@@ -778,43 +662,47 @@ export default function ExploreScreen() {
             <CopilotView style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'explore.quickAccess', message: 'Quick Access' })}</Text>
             <View style={styles.quickAccessContainer}>
-              <Reanimated.View style={[styles.scrollArrowLeft, quickAccessLeftArrowStyle]}>
-                <TouchableOpacity
-                  style={styles.scrollArrowButton}
-                  onPress={() => scrollQuickAccess('left')}
-                >
-                  <MaterialIcons name="chevron-left" size={24} color={colors.primary} />
-                </TouchableOpacity>
-              </Reanimated.View>
+              {quickAccessScroll.canScrollLeft && (
+                <Reanimated.View style={[styles.scrollArrowLeft, quickAccessScroll.leftArrowStyle]}>
+                  <TouchableOpacity
+                    style={styles.scrollArrowButton}
+                    onPress={() => quickAccessScroll.scroll('left')}
+                  >
+                    <MaterialIcons name="chevron-left" size={24} color={colors.primary} />
+                  </TouchableOpacity>
+                </Reanimated.View>
+              )}
               <ScrollView
-                ref={quickAccessScrollRef}
+                ref={quickAccessScroll.scrollRef}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScroll}
-                onScroll={handleQuickAccessScroll}
-                onScrollBeginDrag={handleQuickAccessScrollBeginDrag}
-                onScrollEndDrag={handleQuickAccessScrollEndDrag}
-                onMomentumScrollEnd={handleQuickAccessMomentumScrollEnd}
+                onScroll={quickAccessScroll.handleScroll}
+                onScrollBeginDrag={quickAccessScroll.handleScrollBeginDrag}
+                onScrollEndDrag={quickAccessScroll.handleScrollEndDrag}
+                onMomentumScrollEnd={quickAccessScroll.handleMomentumScrollEnd}
                 scrollEventThrottle={Platform.OS === 'web' ? 0 : 16}
                 decelerationRate="fast"
-                snapToInterval={cardWidth + cardSpacing}
+                snapToInterval={quickAccessCardWidth + quickAccessCardSpacing}
                 snapToAlignment="start"
                 disableIntervalMomentum
-                onLayout={Platform.OS === 'android' ? undefined : handleQuickAccessLayout}
-                onContentSizeChange={handleQuickAccessContentSizeChange}
+                onLayout={Platform.OS === 'android' ? undefined : quickAccessScroll.handleLayout}
+                onContentSizeChange={quickAccessScroll.handleContentSizeChange}
                 // @ts-ignore - onWheel supported in RN Web
-                onWheel={handleQuickAccessWheel}
+                onWheel={quickAccessScroll.handleWheel}
               >
                 {getQuickAccessItems().map((item, index) => renderQuickAccessItem(item, index))}
               </ScrollView>
-              <Reanimated.View style={[styles.scrollArrowRight, quickAccessRightArrowStyle]}>
-                <TouchableOpacity
-                  style={styles.scrollArrowButton}
-                  onPress={() => scrollQuickAccess('right')}
-                >
-                  <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
-                </TouchableOpacity>
-              </Reanimated.View>
+              {quickAccessScroll.canScrollRight && (
+                <Reanimated.View style={[styles.scrollArrowRight, quickAccessScroll.rightArrowStyle]}>
+                  <TouchableOpacity
+                    style={styles.scrollArrowButton}
+                    onPress={() => quickAccessScroll.scroll('right')}
+                  >
+                    <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
+                  </TouchableOpacity>
+                </Reanimated.View>
+              )}
             </View>
             </CopilotView>
           </CopilotStep>
@@ -849,6 +737,11 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     marginBottom: 12,
+  },
+  eventSelectorScrollWrapper: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   eventSelector: {
     paddingRight: 20,
