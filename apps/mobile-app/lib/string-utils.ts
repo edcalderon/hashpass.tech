@@ -196,6 +196,26 @@ export function getSpeakerAvatarUrl(
 }
 
 /**
+ * Resolves a speaker's display image for the event-config (JSON) fallback
+ * path: prefers the speaker's own configured image, then Cloudinary, then
+ * the S3-backed name-guess lookup. getSpeakerAvatarUrl already retries
+ * Cloudinary internally before its S3 fallback, so the explicit
+ * getSpeakerCloudinaryAvatarUrl() call here is a harmless carryover from
+ * the original call site rather than a behavior change.
+ */
+export function resolveConfiguredSpeakerImage(image: string | undefined, name: string): string {
+  return image || getSpeakerCloudinaryAvatarUrl(name) || getSpeakerAvatarUrl(name);
+}
+
+/**
+ * Resolves a speaker's display image when only a direct image field and the
+ * name-guess fallback are available (no separate Cloudinary pre-check).
+ */
+export function resolveSpeakerImage(image: string | undefined, name: string): string {
+  return image || getSpeakerAvatarUrl(name);
+}
+
+/**
  * Generates LinkedIn URL for a speaker
  * @param name - The speaker's name
  * @returns LinkedIn URL

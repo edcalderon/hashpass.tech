@@ -9,7 +9,7 @@ import EventBanner from '../../../../components/EventBanner';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import SpeakerSearchAndSort from '../../../../components/SpeakerSearchAndSort';
 import { sortSpeakersByPriority } from '../../../../lib/speaker-priority';
-import { getSpeakerAvatarUrl, getSpeakerCloudinaryAvatarUrl } from '../../../../lib/string-utils';
+import { getSpeakerAvatarUrl, resolveConfiguredSpeakerImage, resolveSpeakerImage } from '../../../../lib/string-utils';
 import LoadingScreen from '../../../../components/LoadingScreen';
 
 // Type definitions
@@ -154,7 +154,7 @@ export default function SpeakersCalendar() {
           // s.image is our own hosted photo (see packages/config/src/events.ts).
           // Only fall back to the legacy Cloudinary/name-guessing lookup for
           // older speakers that were never given a real image field.
-          image: s.image || getSpeakerCloudinaryAvatarUrl(s.name) || getSpeakerAvatarUrl(s.name)
+          image: resolveConfiguredSpeakerImage(s.image, s.name)
         }));
 
         // Remove duplicates based on ID
@@ -177,9 +177,9 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          image: s.image || getSpeakerAvatarUrl(s.name)
+          image: resolveSpeakerImage(s.image, s.name)
         }));
-        
+
         // Remove duplicates based on ID
         const uniqueEmergencySpeakers = formattedEventSpeakers.filter((speaker: Speaker, index: number, self: Speaker[]) =>
           index === self.findIndex((s: Speaker) => s.id === speaker.id)

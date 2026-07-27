@@ -19,6 +19,7 @@ import { useToastHelpers } from '@contexts/ToastContext';
 import QuickAccessGrid from '@/components/explorer/QuickAccessGrid';
 import LoadingScreen from '@/components/LoadingScreen';
 import type { NetworkingStats, StatsState, QuickAccessItem } from '@/types/networking';
+import { resolveNetworkingStats } from '@/lib/networking-stats';
 import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 import { useTutorialPreferences } from '@/hooks/useTutorialPreferences';
 import { useTranslation } from '@/i18n/i18n';
@@ -317,19 +318,7 @@ export default function NetworkingView() {
         // Don't throw here, just use default values
       }
 
-      // Calculate scheduled meetings (accept both legacy accepted and approved states)
-      const scheduledMeetings = resolvedStats.approved_requests || resolvedStats.accepted_requests || 0;
-      const acceptedRequests = resolvedStats.accepted_requests || resolvedStats.approved_requests || 0;
-
-      const newStats: NetworkingStats = {
-        totalRequests: resolvedStats.total_requests || 0,
-        pendingRequests: resolvedStats.pending_requests ?? 0,
-        acceptedRequests,
-        declinedRequests: resolvedStats.declined_requests ?? 0,
-        cancelledRequests: resolvedStats.cancelled_requests ?? 0,
-        blockedUsers: speakerStats.blockedUsers,
-        scheduledMeetings: scheduledMeetings,
-      };
+      const newStats: NetworkingStats = resolveNetworkingStats(resolvedStats, speakerStats.blockedUsers);
 
       console.log('✅ Networking stats loaded successfully:', newStats);
 
