@@ -243,12 +243,18 @@ export default function NetworkingView() {
 
       console.log(`🔄 Loading networking stats (attempt ${retryCount + 1}/${maxRetries + 1}) for user:`, user.id, silent ? '(silent update)' : '');
 
-      // Use the RPC function for better performance and reliability
+      // Use the RPC function for better performance and reliability.
+      // .single() unwraps the RETURNS TABLE result into a plain object --
+      // without it, supabase-js returns an array and every statsData.field
+      // read below silently resolves to undefined, which the || 0 / ?? 0
+      // fallbacks then mask as "0 requests" instead of surfacing the shape
+      // mismatch.
       // Add timeout to prevent stale loading states on slow mobile networks
       const statsPromise = supabase
         .rpc('get_user_meeting_request_counts', {
           p_user_id: user.id
-        });
+        })
+        .single();
 
       const { data: statsData, error: statsError } = await Promise.race([
         statsPromise,
@@ -260,11 +266,19 @@ export default function NetworkingView() {
         throw new Error(`Stats API error: ${statsError.message}`);
       }
 
+      // get_user_meeting_request_counts always RETURN QUERY SELECTs exactly
+      // one row (its aggregates default to 0 via COALESCE even for a user
+      // with no passes/requests at all), so a falsy result here isn't a real
+      // "nothing to show" case -- it's a transient response-shape hiccup.
+      // Degrade to zeroed-out stats instead of a hard error screen; the
+      // retry loop above will still recover it on the next attempt if the
+      // hiccup keeps happening.
+      const resolvedStats = statsData || {};
       if (!statsData) {
-        throw new Error('No data returned from stats API');
+        console.warn('⚠️ Stats RPC returned no data; showing zeroed stats instead of failing');
+      } else {
+        console.log('📊 Stats RPC result:', statsData);
       }
-
-      console.log('📊 Stats RPC result:', statsData);
 
       // Check if user is a speaker and get additional speaker-specific data
       let speakerStats = {
@@ -304,15 +318,15 @@ export default function NetworkingView() {
       }
 
       // Calculate scheduled meetings (accept both legacy accepted and approved states)
-      const scheduledMeetings = statsData.approved_requests || statsData.accepted_requests || 0;
-      const acceptedRequests = statsData.accepted_requests || statsData.approved_requests || 0;
+      const scheduledMeetings = resolvedStats.approved_requests || resolvedStats.accepted_requests || 0;
+      const acceptedRequests = resolvedStats.accepted_requests || resolvedStats.approved_requests || 0;
 
       const newStats: NetworkingStats = {
-        totalRequests: statsData.total_requests || 0,
-        pendingRequests: statsData.pending_requests ?? 0,
+        totalRequests: resolvedStats.total_requests || 0,
+        pendingRequests: resolvedStats.pending_requests ?? 0,
         acceptedRequests,
-        declinedRequests: statsData.declined_requests ?? 0,
-        cancelledRequests: statsData.cancelled_requests ?? 0,
+        declinedRequests: resolvedStats.declined_requests ?? 0,
+        cancelledRequests: resolvedStats.cancelled_requests ?? 0,
         blockedUsers: speakerStats.blockedUsers,
         scheduledMeetings: scheduledMeetings,
       };

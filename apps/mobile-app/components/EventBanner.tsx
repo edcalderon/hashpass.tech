@@ -32,6 +32,30 @@ interface TimeLeft {
   seconds: number;
 }
 
+const ZERO_TIME_LEFT: TimeLeft = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+
+// Pure function (no closure over component state) so it can compute the
+// real countdown synchronously as the timeLeft state's lazy initializer.
+// Previously timeLeft started at ZERO_TIME_LEFT and only got corrected by
+// the first setInterval tick a full second after mount, so the banner
+// visibly flashed "00 DAYS : 00 HRS : 00 MIN : 00 SEC" on every load.
+const calculateTimeLeft = (eventStartDate?: string): TimeLeft => {
+  if (!eventStartDate) return ZERO_TIME_LEFT;
+
+  const eventTime = new Date(eventStartDate).getTime();
+  if (Number.isNaN(eventTime)) return ZERO_TIME_LEFT;
+
+  const difference = eventTime - Date.now();
+  if (difference <= 0) return ZERO_TIME_LEFT;
+
+  return {
+    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+    minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+    seconds: Math.floor((difference % (1000 * 60)) / 1000),
+  };
+};
+
 export default function EventBanner({ 
   title, 
   subtitle, 
@@ -56,7 +80,7 @@ export default function EventBanner({
   const gratitudeEventLabel = title || 'this event';
   const isArchiveEvent = Boolean(isEventFinished || eventId === 'bsl2025' || tourBrand?.label?.toLowerCase().includes('archive'));
   const suppressLiveContent = isArchiveEvent && !isEventFinished;
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => calculateTimeLeft(eventStartDate));
   const [isEventLive, setIsEventLive] = useState(false);
   const [pulseAnim] = useState(new Animated.Value(1));
   const styles = getStyles(isDark, colors, backgroundColor, isArchiveEvent);
@@ -81,33 +105,15 @@ export default function EventBanner({
     return () => clearInterval(interval);
   }, [eventStartDate, hasValidStartDate]);
 
-  // Calculate time left until event
-  const calculateTimeLeft = (): TimeLeft => {
-    if (!eventStartDate || !hasValidStartDate) {
-      return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-    }
-
-    const now = new Date().getTime();
-    const eventTime = new Date(eventStartDate).getTime();
-    const difference = eventTime - now;
-
-    if (difference > 0) {
-      return {
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((difference % (1000 * 60)) / 1000)
-      };
-    } else {
-      return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-    }
-  };
-
-  // Update countdown every second (only if event hasn't started)
+  // Update countdown every second (only if event hasn't started). Ticks
+  // once immediately so a re-render triggered by isEventLive/isLive
+  // changing doesn't wait a full second for the next interval tick before
+  // showing a correct value.
   useEffect(() => {
     if (showCountdown && !isEventLive && !isLive) {
+      setTimeLeft(calculateTimeLeft(eventStartDate));
       const timer = setInterval(() => {
-        setTimeLeft(calculateTimeLeft());
+        setTimeLeft(calculateTimeLeft(eventStartDate));
       }, 1000);
 
       return () => clearInterval(timer);

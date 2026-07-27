@@ -138,7 +138,10 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          image: getSpeakerCloudinaryAvatarUrl(s.name) || getSpeakerAvatarUrl(s.name) // Prioritize Cloudinary
+          // s.image is our own hosted photo (see packages/config/src/events.ts).
+          // Only fall back to the legacy Cloudinary/name-guessing lookup for
+          // older speakers that were never given a real image field.
+          image: s.image || getSpeakerCloudinaryAvatarUrl(s.name) || getSpeakerAvatarUrl(s.name)
         }));
         
         // Remove duplicates based on ID
@@ -161,7 +164,7 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          image: getSpeakerAvatarUrl(s.name)
+          image: s.image || getSpeakerAvatarUrl(s.name)
         }));
         
         // Remove duplicates based on ID
