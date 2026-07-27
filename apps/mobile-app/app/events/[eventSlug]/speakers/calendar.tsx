@@ -168,8 +168,8 @@ export default function SpeakersCalendar() {
         }));
         
         // Remove duplicates based on ID
-        const uniqueEmergencySpeakers = formattedEventSpeakers.filter((speaker, index, self) => 
-          index === self.findIndex(s => s.id === speaker.id)
+        const uniqueEmergencySpeakers = formattedEventSpeakers.filter((speaker: Speaker, index: number, self: Speaker[]) =>
+          index === self.findIndex((s: Speaker) => s.id === speaker.id)
         );
         
         // Sort by priority order
@@ -189,7 +189,7 @@ export default function SpeakersCalendar() {
   }, [speakers]);
 
   // Group agenda by day
-  const agendaByDay = agenda.reduce((acc, item) => {
+  const agendaByDay = agenda.reduce((acc: Record<string, AgendaItem[]>, item: AgendaItem) => {
     const day = item.time.split(' ')[0]; // Extract day from time
     if (!acc[day]) acc[day] = [];
     acc[day].push(item);
@@ -290,7 +290,7 @@ export default function SpeakersCalendar() {
             onGroupedSpeakers={setGroupedSpeakers}
             onSearchChange={setSearchQuery}
             onSortChange={setSortBy}
-            onActiveFilterChange={(showActiveOnly) => {
+            onActiveFilterChange={(showActiveOnly: boolean) => {
               setShowActiveOnly(showActiveOnly);
             }}
           />
@@ -327,11 +327,11 @@ export default function SpeakersCalendar() {
         {Object.keys(agendaByDay).length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Event Agenda</Text>
-            {Object.entries(agendaByDay).map(([day, dayAgenda]) => (
+            {Object.entries(agendaByDay).map(([day, dayAgenda]: [string, AgendaItem[]]) => (
               <View key={day} style={styles.daySection}>
                 <Text style={styles.dayTitle}>{day}</Text>
                 <View style={styles.agendaList}>
-                  {dayAgenda.map(agendaItem => (
+                  {dayAgenda.map((agendaItem: AgendaItem) => (
                     <AgendaCard key={agendaItem.id} agendaItem={agendaItem} />
                   ))}
                 </View>
