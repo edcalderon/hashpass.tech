@@ -1,8 +1,8 @@
 diff --git a/lib/module/views/DrawerView.js b/lib/module/views/DrawerView.js
-index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..e261e3df4815e420a0365950489ee966953503bf 100644
+index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..2c51b2e3e4e6c6d0e29c644b7d8d3de80e213d7e 100644
 --- a/lib/module/views/DrawerView.js
 +++ b/lib/module/views/DrawerView.js
-@@ -24,8 +24,35 @@ function DrawerViewBase({
+@@ -24,8 +24,45 @@ function DrawerViewBase({
    descriptors,
    defaultStatus,
    drawerContent = renderDrawerContentDefault,
@@ -24,12 +24,22 @@ index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..e261e3df4815e420a0365950489ee966
 +  openControlRef
  }) {
 +  const [openOverride, setOpenOverride] = React.useState(null);
++  // HASHPASS patch: assigned synchronously during render, not inside an
++  // effect. This mirrors the app's own navRef pattern in the dashboard
++  // layout ("Written synchronously during render, not in an effect...
++  // waiting for an effect to commit only reopens the exact race") -- an
++  // effect populating this ref could itself be exactly the kind of update
++  // that doesn't reliably land in time on the CI-built artifacts this ref
++  // exists to route around, silently leaving the broken dispatch-based
++  // fallback as the only thing that actually runs. setOpenOverride's
++  // identity is stable across renders (a useState setter), so assigning a
++  // fresh wrapper object on every render is cheap and idempotent.
++  if (openControlRef) {
++    openControlRef.current = {
++      setOpen: setOpenOverride
++    };
++  }
 +  React.useEffect(() => {
-+    if (openControlRef) {
-+      openControlRef.current = {
-+        setOpen: setOpenOverride
-+      };
-+    }
 +    return () => {
 +      if (openControlRef && openControlRef.current && openControlRef.current.setOpen === setOpenOverride) {
 +        openControlRef.current = null;
@@ -39,7 +49,7 @@ index 0c8ea7256ac0c8385bb1f78037146cab4a6c619b..e261e3df4815e420a0365950489ee966
    const {
      direction
    } = useLocale();
-@@ -69,14 +96,27 @@ function DrawerViewBase({
+@@ -69,14 +106,27 @@ function DrawerViewBase({
    const {
      colors
    } = useTheme();

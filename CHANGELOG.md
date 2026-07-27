@@ -1,3 +1,18 @@
+## [1.8.266](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.265...v1.8.266) (2026-07-26)
+
+
+### Bug Fixes
+
+* force a single @react-navigation/drawer resolution across the workspace ([5324416](https://github.com/hashpass-tech/hashpass.tech/commit/532441647b4eff1f0daf0669b82e0b98d62f6b61))
+* force full node_modules reconciliation when deps change on the release runner ([fe50e21](https://github.com/hashpass-tech/hashpass.tech/commit/fe50e214fe20df084e6000490f29f3a285236b1d))
+
+
+### Performance Improvements
+
+* skip server/API-route bundling on native expo export:embed ([9d5e4ac](https://github.com/hashpass-tech/hashpass.tech/commit/9d5e4ac1dc7cf8e0093cdc1ca7a711af6600775e))
+### Release Highlights
+- force full node_modules reconciliation when deps change on the release runner; force a single @react-navigation/drawer resolution across the workspace
+
 ## [1.8.265](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.264...v1.8.265) (2026-07-26)
 
 

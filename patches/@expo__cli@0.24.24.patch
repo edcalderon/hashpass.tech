@@ -1,5 +1,30 @@
+diff --git a/build/src/export/embed/exportEmbedAsync.js b/build/src/export/embed/exportEmbedAsync.js
+index 40f8baba1846633b069279e02a17350bfb219465..b400012576beb414a835293fec050627a01108e1 100644
+--- a/build/src/export/embed/exportEmbedAsync.js
++++ b/build/src/export/embed/exportEmbedAsync.js
+@@ -252,7 +252,19 @@ async function exportEmbedBundleAndAssetsAsync(projectRoot, options) {
+             sourceMapUrl,
+             unstable_transformProfile: options.unstableTransformProfile || (isHermes ? 'hermes-stable' : 'default')
+         });
+-        const apiRoutesEnabled = devServer.isReactServerComponentsEnabled || ((_exp_web = exp.web) == null ? void 0 : _exp_web.output) === 'server';
++        // HASHPASS patch: this project's app.json sets web.output = "server"
++        // so the separately-deployed Lambda API (packages/tools/scripts/
++        // package-lambda.sh) gets server-mode static export on the WEB
++        // platform. Upstream, that check ignores which platform is actually
++        // being embedded, so every native `expo export:embed` for android/ios
++        // ALSO exports a full server bundle + manifest for every app/api/**
++        // route -- code a native client never calls directly (those routes
++        // are consumed over HTTP against the already-deployed Lambda, not
++        // bundled into the client). Measured ~13 of ~30 minutes of a mobile
++        // release build spent bundling this unused server surface. Scoping
++        // to platform === 'web' preserves the existing web/Lambda export
++        // path exactly and only skips this for native embeds.
++        const apiRoutesEnabled = options.platform === 'web' && (devServer.isReactServerComponentsEnabled || ((_exp_web = exp.web) == null ? void 0 : _exp_web.output) === 'server');
+         if (apiRoutesEnabled) {
+             await (0, _exportServer.exportStandaloneServerAsync)(projectRoot, devServer, {
+                 exp,
 diff --git a/build/src/start/server/middleware/CorsMiddleware.js b/build/src/start/server/middleware/CorsMiddleware.js
-index 20c7bd558bd44f02d8ff65035a63f5f019ab021b..99ae397e0d7f0b752f721ee23524223c7747cbb7 100644
+index 20c7bd558bd44f02d8ff65035a63f5f019ab021b..00dc3a7e10c71a7908903640a5092d27fdb3314a 100644
 --- a/build/src/start/server/middleware/CorsMiddleware.js
 +++ b/build/src/start/server/middleware/CorsMiddleware.js
 @@ -19,6 +19,31 @@ _export(exports, {

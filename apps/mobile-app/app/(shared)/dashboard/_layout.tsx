@@ -74,12 +74,17 @@ type DrawerNavRef = React.MutableRefObject<DrawerNavigation | null>;
 
 // Imperative escape hatch into the patched @react-navigation/drawer's own
 // internal open/closed state (see patches/@react-navigation__drawer@7.8.1.patch).
-// On CI-built Android artifacts only (never reproduced from any local build
-// of identical source — confirmed via live diagnostic tracing), dispatching
-// DrawerActions.openDrawer()/closeDrawer() resolves without error but the
-// resulting navigation-state update never reaches the mounted Drawer's
-// render — the sidebar silently never opens. Calling setOpen directly here
-// bypasses that broken navigation-state -> render pipeline entirely. Kept as
+// Root cause of the long-standing "hamburger does nothing on real Play
+// builds" bug: a stale node_modules symlink on the CI release runner
+// pointed apps/mobile-app at an orphaned, unpatched copy of
+// @react-navigation/drawer (see the "force full node_modules
+// reconciliation" commit in mobile-android-release.yml), so
+// navigation.dispatch(DrawerActions.openDrawer()/closeDrawer()) was
+// resolving against code that had never received this fix in the first
+// place. Kept as the primary mechanism (rather than reverting to plain
+// dispatch now that the packaging bug is fixed) because it's already
+// verified working end-to-end on a real CI-built artifact and gives an
+// extra layer of resilience against this class of bug recurring. Kept as
 // a plain ref, not app-level React state, for the same reason drawerOpenRef
 // below is a ref: wiring a reactive open/close flag into DashboardLayout's
 // own render would cascade a full re-render into the header and gradient
@@ -1010,14 +1015,9 @@ export default function DashboardLayout() {
     const wasOpen = drawerOpenRef.current;
 
     // Primary path: the imperative ref into the patched DrawerView's own
-    // state (see DrawerOpenControlRef comment above). dispatch() reliably
-    // resolves without error on CI-built Android artifacts, but the
-    // resulting navigation-state update was reproducibly never reaching the
-    // mounted Drawer's render there — confirmed via live diagnostic tracing
-    // against a real CI-built artifact, never reproduced from any local
-    // build of identical source. The ref bypasses that broken pipeline
-    // entirely. Fall back to the old dispatch-based path only on the first
-    // render, before the patched DrawerView's effect has populated the ref.
+    // state (see DrawerOpenControlRef comment above). Fall back to the old
+    // dispatch-based path only on the first render, before the patched
+    // DrawerView's effect has populated the ref.
     if (drawerOpenControlRef.current?.setOpen) {
       drawerOpenControlRef.current.setOpen(true);
     } else {

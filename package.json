@@ -1,12 +1,13 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.265",
+  "version": "1.8.266",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
       "caniuse-lite": "1.0.30001800",
-      "react-native": "0.79.6"
+      "react-native": "0.79.6",
+      "@react-navigation/drawer": "7.8.1"
     },
     "patchedDependencies": {
       "metro-file-map@0.82.5": "patches/metro-file-map@0.82.5.patch",
