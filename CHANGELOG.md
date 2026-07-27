@@ -1,3 +1,12 @@
+## [1.8.268](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.267...v1.8.268) (2026-07-27)
+
+
+### Features
+
+* auto-chain Android release promotion through beta (open testing) ([c0a19de](https://github.com/hashpass-tech/hashpass.tech/commit/c0a19de458a49a54520f57fec8088cd8b0225a52))
+### Release Highlights
+- auto-chain Android release promotion through beta (open testing)
+
 ## [1.8.267](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.266...v1.8.267) (2026-07-27)
 
 

@@ -37,6 +37,16 @@ on:
         required: false
         default: false
         type: boolean
+      auto_promote_beta:
+        description: >-
+          Automatically dispatch beta (open testing) after a successful auto-promoted
+          alpha release. Only takes effect when auto_promote_alpha is also true --
+          it is carried through from the internal dispatch to the alpha dispatch to
+          the beta dispatch, so a manually-triggered alpha run (auto_promote_beta
+          defaults to false there) will not auto-chain into beta.
+        required: false
+        default: false
+        type: boolean
       promote_only:
         description: >-
           Promote an existing Play release to the next track without rebuilding.
@@ -48,6 +58,16 @@ on:
         type: boolean
       alpha_release_status:
         description: Google Play release status for the auto-promoted alpha release
+        required: false
+        default: completed
+        type: choice
+        options:
+          - completed
+          - draft
+          - halted
+          - inProgress
+      beta_release_status:
+        description: Google Play release status for the auto-promoted beta release
         required: false
         default: completed
         type: choice
@@ -1337,6 +1357,8 @@ jobs:
       - name: Dispatch alpha release
         env:
           ALPHA_RELEASE_STATUS: ${{ inputs.alpha_release_status }}
+          AUTO_PROMOTE_BETA: ${{ inputs.auto_promote_beta }}
+          BETA_RELEASE_STATUS: ${{ inputs.beta_release_status }}
         uses: actions/github-script@v7
         with:
           script: |
@@ -1362,9 +1384,60 @@ jobs:
                 runner: 'github-hosted',
                 promote_only: 'true',
                 auto_promote_alpha: 'false',
+                auto_promote_beta: process.env.AUTO_PROMOTE_BETA,
+                beta_release_status: process.env.BETA_RELEASE_STATUS,
               },
             });
             core.info(`Queued alpha release for ${refName}.`);
+
+  # Mirrors auto-promote-alpha one track up: after a successful auto-promoted
+  # alpha release, dispatch the matching beta (open testing) run on the same
+  # ref. auto_promote_beta only reaches this job carried through from the
+  # original internal dispatch (see auto-promote-alpha above), so a manually
+  # dispatched or manually promote_only alpha run defaults to false here and
+  # will not auto-chain. Production is deliberately never auto-chained past
+  # this point -- see require-beta-before-production and the production
+  # release job for why that gate stays a manual, deliberate dispatch.
+  auto-promote-beta:
+    needs: [promote-alpha]
+    if: always() && inputs.promote_only == true && needs.promote-alpha.result == 'success' && inputs.environment == 'development' && inputs.track == 'alpha' && inputs.auto_promote_beta
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch beta release
+        env:
+          BETA_RELEASE_STATUS: ${{ inputs.beta_release_status }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const refName = String(context.ref_name || context.ref || '')
+              .replace(/^refs\/heads\//, '')
+              .replace(/^refs\/tags\//, '');
+
+            if (!refName) {
+              core.setFailed('Unable to determine the release ref for beta dispatch.');
+              return;
+            }
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'mobile-android-release.yml',
+              ref: refName,
+              inputs: {
+                environment: 'development',
+                track: 'beta',
+                release_status: process.env.BETA_RELEASE_STATUS,
+                backend: 'fastlane',
+                runner: 'github-hosted',
+                promote_only: 'true',
+                auto_promote_alpha: 'false',
+                auto_promote_beta: 'false',
+              },
+            });
+            core.info(`Queued beta (open testing) release for ${refName}.`);
 
   # Stops the EC2 runner after the build rather than waiting for the idle watchdog.
   # Grace period: waits 90 s then checks the GitHub API — if the runner picked up a

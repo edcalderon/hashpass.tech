@@ -11,9 +11,14 @@ name: Trigger mobile release on version tag
 # use, but the normal flow no longer runs it. Either source produces the
 # same `v*.*.*` tag shape this workflow reacts to.
 #
-# Internal track only, with auto-promote-alpha — matches the "temporary
-# release posture" in CLAUDE.md (production dispatches stay paused, and
-# alpha only promotes after internal succeeds on the same tag).
+# Dispatches internal track with auto_promote_alpha and auto_promote_beta —
+# per the release posture in CLAUDE.md, internal -> alpha -> beta (open
+# testing) all fire automatically in sequence from a single tag push.
+# Production is deliberately excluded from this chain and always requires a
+# separate, deliberate `gh workflow run` dispatch: it's the only track that
+# builds against the real backend (environment=production) and ships to real
+# users, so it keeps a manual checkpoint after beta has been validated by
+# real external testers (decided 2026-07-27).
 
 on:
   push:
@@ -40,5 +45,7 @@ jobs:
             --field track=internal \
             --field auto_promote_alpha=true \
             --field alpha_release_status=completed \
+            --field auto_promote_beta=true \
+            --field beta_release_status=completed \
             --field backend=fastlane \
             --field runner=aws-ec2
