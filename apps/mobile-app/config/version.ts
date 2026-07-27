@@ -22,23 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607262253, // Updated to current timestamp
-  releaseDate: '2026-07-26',
+  buildNumber: 202607270500, // Updated to current timestamp
+  releaseDate: '2026-07-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'address Play Console large-screen, bitmap, and R8 recommendations',
+    'extend Play Store promotion pipeline to open testing and production'
   ],
   bugfixes: [
-    'force full node_modules reconciliation when deps change on the release runner',
-    'force a single @react-navigation/drawer resolution across the workspace'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'force full node_modules reconciliation when deps change on the release runner; force a single @react-navigation/drawer resolution across the workspace'
+  notes: 'address Play Console large-screen, bitmap, and R8 recommendations; extend Play Store promotion pipeline to open testing and production'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.267': {
+    version: '1.8.267',
+    buildNumber: 202607270500,
+    releaseDate: '2026-07-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'address Play Console large-screen, bitmap, and R8 recommendations',
+      'extend Play Store promotion pipeline to open testing and production'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'address Play Console large-screen, bitmap, and R8 recommendations; extend Play Store promotion pipeline to open testing and production'
+  },
   '1.8.266': {
     version: '1.8.266',
     buildNumber: 202607262253,

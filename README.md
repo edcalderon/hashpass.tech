@@ -20,19 +20,14 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.266)
+## 📋 Latest Changes (v1.8.267)
 
-### Bug Fixes
+### Features
 
-* force a single @react-navigation/drawer resolution across the workspace ([5324416](https://github.com/hashpass-tech/hashpass.tech/commit/532441647b4eff1f0daf0669b82e0b98d62f6b61))
-* force full node_modules reconciliation when deps change on the release runner ([fe50e21](https://github.com/hashpass-tech/hashpass.tech/commit/fe50e214fe20df084e6000490f29f3a285236b1d))
-
-
-### Performance Improvements
-
-* skip server/API-route bundling on native expo export:embed ([9d5e4ac](https://github.com/hashpass-tech/hashpass.tech/commit/9d5e4ac1dc7cf8e0093cdc1ca7a711af6600775e))
+* address Play Console large-screen, bitmap, and R8 recommendations ([e6203d6](https://github.com/hashpass-tech/hashpass.tech/commit/e6203d62c2d42631b7e33c3da522970ba6e0b5fe))
+* extend Play Store promotion pipeline to open testing and production ([3c51dc8](https://github.com/hashpass-tech/hashpass.tech/commit/3c51dc8fbf69c3054b35eadf1cd664caa4c83d9a))
 ### Release Highlights
-- force full node_modules reconciliation when deps change on the release runner; force a single @react-navigation/drawer resolution across the workspace
+- address Play Console large-screen, bitmap, and R8 recommendations; extend Play Store promotion pipeline to open testing and production
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
