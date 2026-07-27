@@ -38,7 +38,11 @@ on:
         default: false
         type: boolean
       promote_only:
-        description: Promote the existing internal release to alpha without rebuilding
+        description: >-
+          Promote an existing Play release to the next track without rebuilding.
+          track=alpha promotes from internal; track=beta promotes from alpha.
+          Not supported for track=production, which always needs a fresh build
+          (different environment/backend baked into the bundle).
         required: false
         default: false
         type: boolean
@@ -84,8 +88,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Temporary release posture: production Android releases are paused.
-  # Development dispatches are limited to internal or alpha while the freeze is active.
+  # Release posture (updated 2026-07-26): environment and track are two separate
+  # concepts and are validated as a pair, not independently.
+  #   - environment controls which backend the app bundle points at
+  #     (development -> api-dev.hashpass.tech, production -> api.hashpass.tech).
+  #   - track controls Play Store distribution (internal/alpha/beta/production).
+  # Decision: track=beta (open testing, publicly joinable) intentionally stays on
+  # the DEVELOPMENT backend -- it's still a testing phase even though it's public,
+  # so real external testers exercise the full Play distribution pipeline without
+  # touching production data. Only track=production requires environment=production,
+  # since that's the first artifact that should ever point real users at the real
+  # backend. These two must always be paired; no other combination is valid.
   validate-release-target:
     runs-on: ubuntu-latest
     steps:
@@ -93,38 +106,46 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ "${{ inputs.environment }}" = "production" ]; then
+          if [ "${{ inputs.environment }}" = "production" ] && [ "${{ inputs.track }}" != "production" ]; then
             cat >&2 <<'EOF'
-            Production Android releases are paused for the current development cycle.
-            Use environment=development with track=internal for smoke tests or track=alpha for closed testing after internal succeeds.
+            environment=production may only be paired with track=production.
+            Every other track (internal/alpha/beta) intentionally stays on environment=development.
+          EOF
+            exit 1
+          fi
+
+          if [ "${{ inputs.environment }}" = "development" ] && [ "${{ inputs.track }}" = "production" ]; then
+            cat >&2 <<'EOF'
+            track=production requires environment=production.
+            Promote through track=beta (open testing) on environment=development first, then dispatch
+            environment=production track=production once that open-testing release has been validated.
           EOF
             exit 1
           fi
 
           case "${{ inputs.track }}" in
-            internal|alpha)
+            internal|alpha|beta|production)
               ;;
             *)
-              cat >&2 <<'EOF'
-            Development Android releases are limited to the internal and alpha tracks while the production freeze is active.
-            Use track=internal for the first pass, then track=alpha after the internal release succeeds for the same tag.
-          EOF
+              echo "Unrecognized track: ${{ inputs.track }}" >&2
               exit 1
               ;;
           esac
 
           if [ "${{ inputs.promote_only }}" = "true" ] && [ "${{ inputs.backend }}" != "fastlane" ]; then
             cat >&2 <<'EOF'
-            Promotion-only alpha releases currently require backend=fastlane.
-            The promotion path reuses the existing internal Play release instead of uploading a new bundle.
+            Promotion-only releases currently require backend=fastlane.
+            The promotion path reuses an existing Play release instead of uploading a new bundle.
           EOF
             exit 1
           fi
 
-          if [ "${{ inputs.promote_only }}" = "true" ] && { [ "${{ inputs.environment }}" != "development" ] || [ "${{ inputs.track }}" != "alpha" ]; }; then
+          if [ "${{ inputs.promote_only }}" = "true" ] && { [ "${{ inputs.environment }}" != "development" ] || { [ "${{ inputs.track }}" != "alpha" ] && [ "${{ inputs.track }}" != "beta" ]; }; }; then
             cat >&2 <<'EOF'
-            Promotion-only dispatches must use environment=development and track=alpha.
-            This path is reserved for promoting the already-published internal release into closed testing.
+            Promotion-only dispatches must use environment=development with track=alpha or track=beta.
+            track=alpha promotes the existing internal release; track=beta promotes the existing alpha release.
+            track=production is never promotion-only -- it always needs a fresh build, since it's the
+            only track built against a different (production) backend than the rest.
           EOF
             exit 1
           fi
@@ -222,6 +243,172 @@ jobs:
               );
             }
 
+  # Mirrors require-internal-before-alpha one track up: open testing (beta) may
+  # not be dispatched for a ref until closed testing (alpha) has succeeded for
+  # that same ref. Same non-time-bound design -- searches full run history, not
+  # just the current dispatch chain, so a standalone retry works at any later
+  # time as long as alpha ever succeeded for this ref.
+  require-alpha-before-beta:
+    runs-on: ubuntu-latest
+    if: inputs.track == 'beta'
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Require a successful alpha release first
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const refName = String(context.ref_name || context.ref || '')
+              .replace(/^refs\/heads\//, '')
+              .replace(/^refs\/tags\//, '');
+
+            if (!refName) {
+              core.setFailed('Unable to determine the release ref for beta gating.');
+              return;
+            }
+
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'mobile-android-release.yml',
+                branch: refName,
+                per_page: 100,
+              }
+            );
+
+            async function hasSuccessfulReleaseOrPromoteJob(runId) {
+              const jobs = await github.paginate(
+                github.rest.actions.listJobsForWorkflowRun,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                }
+              );
+
+              return jobs.some(
+                (job) =>
+                  (job.name === 'release' || job.name === 'promote-alpha') &&
+                  job.conclusion === 'success'
+              );
+            }
+
+            let alphaRun = null;
+            for (const run of runs) {
+              const title = run.display_title || run.displayTitle || run.name || '';
+              if (
+                run.event !== 'workflow_dispatch' ||
+                !title.includes('development/alpha') ||
+                !title.includes(refName)
+              ) {
+                continue;
+              }
+
+              if (await hasSuccessfulReleaseOrPromoteJob(run.id)) {
+                alphaRun = run;
+                break;
+              }
+            }
+
+            if (!alphaRun) {
+              core.setFailed(
+                [
+                  `Blocked beta (open testing) release for ${refName}.`,
+                  'Publish the alpha (closed testing) release first, wait for it to succeed,',
+                  'then rerun the beta release so closed and open testing stay in sync.',
+                ].join(' ')
+              );
+            }
+
+  # Mirrors require-alpha-before-beta another track up: production may not be
+  # dispatched for a ref until open testing (beta) has succeeded for that same
+  # ref. Unlike the alpha->beta and internal->alpha gates, this does NOT imply
+  # the production build can reuse the beta artifact -- beta runs on
+  # environment=development and production requires a fresh build against
+  # environment=production (different backend baked into the JS bundle). This
+  # gate only certifies the same code has been validated by real external
+  # testers via open testing before anyone ships it to the real backend.
+  require-beta-before-production:
+    runs-on: ubuntu-latest
+    if: inputs.track == 'production'
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Require a successful open-testing (beta) release first
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const refName = String(context.ref_name || context.ref || '')
+              .replace(/^refs\/heads\//, '')
+              .replace(/^refs\/tags\//, '');
+
+            if (!refName) {
+              core.setFailed('Unable to determine the release ref for production gating.');
+              return;
+            }
+
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'mobile-android-release.yml',
+                branch: refName,
+                per_page: 100,
+              }
+            );
+
+            async function hasSuccessfulReleaseOrPromoteJob(runId) {
+              const jobs = await github.paginate(
+                github.rest.actions.listJobsForWorkflowRun,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                }
+              );
+
+              return jobs.some(
+                (job) =>
+                  (job.name === 'release' || job.name === 'promote-beta') &&
+                  job.conclusion === 'success'
+              );
+            }
+
+            let betaRun = null;
+            for (const run of runs) {
+              const title = run.display_title || run.displayTitle || run.name || '';
+              if (
+                run.event !== 'workflow_dispatch' ||
+                !title.includes('development/beta') ||
+                !title.includes(refName)
+              ) {
+                continue;
+              }
+
+              if (await hasSuccessfulReleaseOrPromoteJob(run.id)) {
+                betaRun = run;
+                break;
+              }
+            }
+
+            if (!betaRun) {
+              core.setFailed(
+                [
+                  `Blocked production release for ${refName}.`,
+                  'Publish the beta (open testing) release first, wait for it to succeed,',
+                  'then dispatch environment=production track=production once open testing is validated.',
+                  'Production always builds fresh against the real backend -- it never reuses the beta artifact.',
+                ].join(' ')
+              );
+            }
+
   # Promotes the existing internal release to alpha without uploading a second bundle.
   promote-alpha:
     needs: [validate-release-target, require-internal-before-alpha]
@@ -295,15 +482,91 @@ jobs:
             --track internal \
             --promote-to alpha
 
+  # Promotes the existing alpha (closed testing) release to beta (open testing)
+  # without uploading a second bundle. Mirrors promote-alpha exactly one track
+  # up -- see the require-alpha-before-beta comment for why this is safe to
+  # reuse (same environment=development bundle, only Play distribution changes).
+  promote-beta:
+    needs: [validate-release-target, require-alpha-before-beta]
+    if: always() && github.repository == 'hashpass-tech/hashpass.tech' && needs.validate-release-target.result == 'success' && needs.require-alpha-before-beta.result != 'failure' && inputs.promote_only && inputs.environment == 'development' && inputs.track == 'beta'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      CI: '1'
+      MOBILE_RELEASE_BACKEND: ${{ inputs.backend }}
+      MOBILE_RELEASE_ENV: ${{ inputs.environment }}
+      MOBILE_RELEASE_TRACK: alpha
+      MOBILE_RELEASE_PROMOTE_TO: beta
+      FASTLANE_RELEASE_STATUS: ${{ inputs.release_status }}
+      GOOGLE_PLAY_JSON_KEY: ${{ github.workspace }}/.runner-secrets/google-play-service-account.json
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: false
+
+      - name: Clean workspace
+        run: |
+          set -euo pipefail
+          git clean -ffd
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.0"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Materialize Google Play service account
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "Missing required environment variable: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"
+            exit 1
+          fi
+
+          mkdir -p "$(dirname "$GOOGLE_PLAY_JSON_KEY")" config
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$GOOGLE_PLAY_JSON_KEY"
+          cp "$GOOGLE_PLAY_JSON_KEY" config/hashpass-eas.json
+          chmod 600 "$GOOGLE_PLAY_JSON_KEY" config/hashpass-eas.json
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: apps/mobile-app
+
+      - name: Promote Android
+        run: |
+          set -euo pipefail
+          node packages/tools/scripts/run-mobile-release.js \
+            --backend fastlane \
+            --env development \
+            --track alpha \
+            --promote-to beta
+
   # Wakes the EC2 runner before the release job runs.
   # Requires three GitHub variables: AWS_RUNNER_ROLE_ARN, EC2_RUNNER_INSTANCE_ID, AWS_RUNNER_REGION.
   # Skipped automatically when using github-hosted runner or when variables are not yet configured.
   # Set up: run terraform apply with enable_github_actions_runner_control=true, then copy the
   # github_actions_role_arn output as GitHub variable AWS_RUNNER_ROLE_ARN.
   start-runner:
-    needs: [validate-release-target, require-internal-before-alpha]
+    needs: [validate-release-target, require-internal-before-alpha, require-alpha-before-beta, require-beta-before-production]
     runs-on: ubuntu-latest
-    if: always() && inputs.promote_only != true && needs.validate-release-target.result == 'success' && (needs.require-internal-before-alpha.result == 'success' || needs.require-internal-before-alpha.result == 'skipped') && inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
+    if: always() && inputs.promote_only != true && needs.validate-release-target.result == 'success' && needs.require-internal-before-alpha.result != 'failure' && needs.require-alpha-before-beta.result != 'failure' && needs.require-beta-before-production.result != 'failure' && inputs.runner != 'github-hosted' && vars.AWS_RUNNER_ROLE_ARN != '' && vars.EC2_RUNNER_INSTANCE_ID != ''
     permissions:
       id-token: write
       contents: read
@@ -351,8 +614,8 @@ jobs:
           echo "Done waiting — GitHub will dispatch the release job when the runner is online."
 
   release:
-    needs: [validate-release-target, select-runner, start-runner, require-internal-before-alpha]
-    if: always() && inputs.promote_only != true && github.repository == 'hashpass-tech/hashpass.tech' && needs.validate-release-target.result == 'success' && needs.select-runner.result == 'success' && needs.require-internal-before-alpha.result != 'failure' && (needs.start-runner.result == 'success' || needs.start-runner.result == 'skipped')
+    needs: [validate-release-target, select-runner, start-runner, require-internal-before-alpha, require-alpha-before-beta, require-beta-before-production]
+    if: always() && inputs.promote_only != true && github.repository == 'hashpass-tech/hashpass.tech' && needs.validate-release-target.result == 'success' && needs.select-runner.result == 'success' && needs.require-internal-before-alpha.result != 'failure' && needs.require-alpha-before-beta.result != 'failure' && needs.require-beta-before-production.result != 'failure' && (needs.start-runner.result == 'success' || needs.start-runner.result == 'skipped')
     runs-on: ${{ fromJSON(needs.select-runner.outputs.runner) }}
     timeout-minutes: 120
     permissions:

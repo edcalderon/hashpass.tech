@@ -12,8 +12,8 @@ import {
 } from '../lib/pwa-drag';
 import { useTranslation } from '../i18n/i18n';
 
-const ANDROID_CHROME_192 = require('../assets/android-chrome-192x192.png');
-const ANDROID_CHROME_512 = require('../assets/android-chrome-512x512.png');
+const ANDROID_CHROME_192 = require('../assets/android-chrome-192x192.webp');
+const ANDROID_CHROME_512 = require('../assets/android-chrome-512x512.webp');
 
 const COLLAPSE_KEY = 'hashpass:pwa-install-collapsed';
 const DONT_SHOW_AGAIN_KEY = 'hashpass:pwa-dont-show-until-reload';

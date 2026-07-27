@@ -37,7 +37,7 @@ export interface LampBrandingConfig {
 
 const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg');
 const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.svg');
-const BSL_WHITE_BRAND_LOGO = require('../assets/logos/bsl/bsl-white.png');
+const BSL_WHITE_BRAND_LOGO = require('../assets/logos/bsl/bsl-white.webp');
 const BSL_ONTOUR_LOGO = require('../assets/logos/bsl/bsl-ontour-pro.svg');
 const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.svg');
 const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.svg');
@@ -253,7 +253,7 @@ export default function EventBannerCarousel({
             
             <View style={styles.qrCodeContainer}>
               <Image 
-                source={require('../assets/images/qr-one-link-hashpass.png')} 
+                source={require('../assets/images/qr-one-link-hashpass.webp')}
                 style={styles.qrCode}
                 resizeMode="contain"
               />

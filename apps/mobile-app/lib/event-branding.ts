@@ -6,7 +6,7 @@ const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.svg');
 const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.svg');
 const BSL_ARCHIVE_LOGO = require('../assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg');
 const BSL_ARCHIVE_BANNER = require('../assets/images/bsl2025-hero.svg');
-const BSL_PLAIN_LOGO = require('../assets/logos/bsl/bsl-white.png');
+const BSL_PLAIN_LOGO = require('../assets/logos/bsl/bsl-white.webp');
 const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg');
 const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.svg');
 

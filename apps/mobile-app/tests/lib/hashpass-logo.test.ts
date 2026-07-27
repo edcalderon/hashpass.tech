@@ -19,15 +19,15 @@ jest.mock(
   () => "white-svg",
 );
 jest.mock(
-  "../../assets/logos/hashpass/logo-full-hashpass-white.png",
+  "../../assets/logos/hashpass/logo-full-hashpass-white.webp",
   () => "white-native-png",
 );
 jest.mock(
-  "../../assets/logos/hashpass/logo-full-hashpass-black.png",
+  "../../assets/logos/hashpass/logo-full-hashpass-black.webp",
   () => "black-native-png",
 );
 jest.mock(
-  "../../assets/logos/hashpass/logo-full-hashpass-white-cyan.png",
+  "../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp",
   () => "white-cyan-native-png",
 );
 
