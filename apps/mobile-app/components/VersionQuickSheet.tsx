@@ -60,6 +60,7 @@ export default function VersionQuickSheet({
   const [updateCheckState, setUpdateCheckState] = useState<UpdateCheckState>('idle');
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
   const [storeUrl, setStoreUrl] = useState<string | null>(null);
+  const [storeWebUrl, setStoreWebUrl] = useState<string | null>(null);
 
   const versionInfo = versionService.getCurrentVersion();
   const badgeInfo = versionService.getVersionBadgeInfo(versionInfo.releaseType);
@@ -84,7 +85,11 @@ export default function VersionQuickSheet({
       const url: string | null = Platform.OS === 'android'
         ? (data.androidStoreUrl ?? null)
         : (data.iosStoreUrl ?? null);
+      const webUrl: string | null = Platform.OS === 'android'
+        ? (data.androidStoreWebUrl ?? null)
+        : (data.iosStoreWebUrl ?? null);
       setStoreUrl(url);
+      setStoreWebUrl(webUrl);
       if (latest && compareAppVersions(currentVersion, latest) < 0) {
         setUpdateCheckState('update-available');
       } else {
@@ -95,11 +100,25 @@ export default function VersionQuickSheet({
     }
   };
 
-  const handleOpenStore = () => {
+  const handleOpenStore = async () => {
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined') window.location.reload();
-    } else if (storeUrl) {
-      Linking.openURL(storeUrl);
+      return;
+    }
+
+    // Prefer the native market:// deep link so this opens the Play Store app
+    // directly; canOpenURL can return false (e.g. package visibility not
+    // declared, or no store app installed), so fall back to the https URL
+    // rather than let openURL reject with no fallback.
+    if (storeUrl) {
+      const canOpen = await Linking.canOpenURL(storeUrl).catch(() => false);
+      if (canOpen) {
+        await Linking.openURL(storeUrl).catch(() => null);
+        return;
+      }
+    }
+    if (storeWebUrl) {
+      await Linking.openURL(storeWebUrl).catch(() => null);
     }
   };
 
