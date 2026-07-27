@@ -103,7 +103,14 @@ export default function ExploreScreen() {
   // actually changing, and never clobbers a manual card selection, which
   // doesn't touch this param at all.
   const routeEventIdParam = typeof params.eventId === 'string' ? params.eventId : undefined;
-  const lastSyncedRouteEventIdRef = useRef<string | undefined>(routeEventIdParam);
+  // Starts undefined, NOT routeEventIdParam -- if it started pre-populated
+  // with the param already present at mount, the effect below would see
+  // "unchanged" on its very first run and skip syncing, exactly the case
+  // (fresh mount or direct/reloaded ?eventId=... URL) this effect exists to
+  // handle. Global explorer's selectedEvent starts at null regardless of the
+  // route param, so skipping that first sync left it stuck showing the
+  // generic banner instead of the linked event.
+  const lastSyncedRouteEventIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (!routeEventIdParam) return;
     if (routeEventIdParam === lastSyncedRouteEventIdRef.current) return;
@@ -470,8 +477,12 @@ export default function ExploreScreen() {
   };
 
   const getEventBadgeLabel = (eventData: EventInfo): string => {
-    if (eventData.tour?.role === 'hub') return 'BSL ON TOUR';
     if (eventData.tour?.role === 'archive') return 'Past Event';
+    // Hub and stops share the same "BSL ON TOUR" badge -- Peru/Chile/Colombia
+    // are stops on the same 2026 tour as the hub, not separate campaigns, so
+    // they carry the same brand badge instead of falling back to each
+    // event's own name.
+    if (eventData.tour?.role === 'hub' || eventData.tour?.role === 'stop') return 'BSL ON TOUR';
     return eventData.name;
   };
 

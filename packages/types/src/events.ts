@@ -19,6 +19,12 @@ export interface AgendaItem {
   speakers?: string[];
   type: 'keynote' | 'panel' | 'break' | 'meal' | 'registration';
   location?: string;
+  // Explicit day number ('1' | '2' | '3', see app/events/[eventSlug]/agenda.tsx)
+  // for multi-day events. Without it, the agenda screen falls back to
+  // positionally slicing the flat item list into groups of 4 to guess at
+  // days, which silently misplaces most sessions once an event has more
+  // than a handful of items.
+  day?: string;
 }
 
 export interface QuickAccessItem {

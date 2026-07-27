@@ -327,11 +327,15 @@ class PassSystemService {
         }
       }
 
-      const { data: countsData } = await supabase
-        .rpc('get_user_meeting_request_counts', { p_user_id: userId })
-        .single();
-      const counts = countsData as any;
-
+      // Deliberately NOT using get_user_meeting_request_counts here: it takes
+      // no event argument and resolves its scope from the Postgres session
+      // setting app.event_id, which a stateless RPC call from this client
+      // never sets -- so it always falls back to hard-coded 'bsl2025'. A
+      // single call's result would get stamped onto every pass in this list,
+      // showing the archive event's usage on the Chile/Peru/Colombia cards
+      // too. Each pass row already carries its own used/max counters, which
+      // are event-scoped by construction (see create_default_pass), so read
+      // straight from the row instead.
       return Array.from(latestByEvent.values()).map((passData) => ({
         event_id: passData.event_id,
         pass_id: passData.id,
@@ -339,14 +343,11 @@ class PassSystemService {
         status: passData.status || 'active',
         pass_number: passData.pass_number || 'Unknown',
         max_requests: passData.max_meeting_requests || 0,
-        used_requests: counts?.total_requests ?? passData.used_meeting_requests ?? 0,
-        remaining_requests:
-          counts?.remaining_requests ??
-          (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
+        used_requests: passData.used_meeting_requests || 0,
+        remaining_requests: (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
         max_boost: passData.max_boost_amount || 0,
         used_boost: passData.used_boost_amount || 0,
-        remaining_boost:
-          counts?.remaining_boost ?? (passData.max_boost_amount || 0) - (passData.used_boost_amount || 0),
+        remaining_boost: (passData.max_boost_amount || 0) - (passData.used_boost_amount || 0),
         access_features: passData.access_features || [],
         special_perks: passData.special_perks || [],
       }));
