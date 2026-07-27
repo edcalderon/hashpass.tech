@@ -9,6 +9,12 @@ export interface AgendaItem {
   speakers?: string[];
   type: AgendaType;
   location?: string;
+  // Explicit day number ('1' | '2' | '3') for multi-day events -- see the
+  // "Group agenda by day" effect in app/events/[eventSlug]/agenda.tsx, which
+  // falls back to positionally slicing the flat item list into groups of 4
+  // when this is absent, silently misplacing most sessions once an event
+  // has more than a handful of items.
+  day?: string;
 }
 
 // Helper function to get color based on agenda type

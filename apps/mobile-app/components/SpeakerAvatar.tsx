@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
 
 interface SpeakerAvatarProps {
   name?: string;
@@ -54,19 +54,25 @@ function getBackgroundColor(name?: string): string {
 
 export default function SpeakerAvatar({
   name,
+  imageUrl,
   size = 50,
   style,
   showBorder = false,
 }: SpeakerAvatarProps) {
-  // Intentionally render a lightweight placeholder only.
-  // Speaker photos are no longer fetched from local bundles or remote CDNs.
+  // Photos are our own bundled/S3-hosted static assets (no CDN retry/loading
+  // state machine like the one that caused prior "infinite loading loops" --
+  // see git history on this file, "fix: harden mobile web launch"). This is
+  // deliberately a single onError flag with no retries: if it fails to load
+  // once, permanently fall back to the initials placeholder for this instance.
+  const [imageFailed, setImageFailed] = useState(false);
   const initials = getInitials(name);
   const backgroundColor = getBackgroundColor(name);
+  const showImage = Boolean(imageUrl) && !imageFailed;
 
   return (
     <View
       accessibilityRole="image"
-      accessibilityLabel={name ? `${name} avatar placeholder` : 'Speaker avatar placeholder'}
+      accessibilityLabel={name ? `${name} avatar${showImage ? '' : ' placeholder'}` : 'Speaker avatar placeholder'}
       style={[
         styles.container,
         {
@@ -79,9 +85,17 @@ export default function SpeakerAvatar({
         style,
       ]}
     >
-      <Text style={[styles.initialsText, { fontSize: Math.max(12, size * 0.38) }]}>
-        {initials}
-      </Text>
+      {showImage ? (
+        <Image
+          source={{ uri: imageUrl as string }}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <Text style={[styles.initialsText, { fontSize: Math.max(12, size * 0.38) }]}>
+          {initials}
+        </Text>
+      )}
     </View>
   );
 }

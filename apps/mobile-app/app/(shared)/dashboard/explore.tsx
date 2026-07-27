@@ -88,6 +88,39 @@ export default function ExploreScreen() {
     isGlobalExplorer ? null : (currentEventInfo || availableEvents[0] || null)
   );
   const [showEventSelector, setShowEventSelector] = useState(shouldShowEventSelector());
+
+  // Quick-access hub tiles (Peru/Chile/Colombia/Archive) navigate to
+  // /events/{id}/home, which redirects back here with ?eventId={id} instead of
+  // rendering a separate screen. Without this sync, that navigation lands back
+  // on this same mounted explore screen with selectedEvent untouched, so the
+  // "Select Event" card never highlights and Quick Access never switches to the
+  // tapped event's own items (Agenda/Networking/Speakers/Event Info) -- it only
+  // worked when tapping the event card directly, which calls setSelectedEvent
+  // via handleEventSelect below. Applies in both explorer modes now: global
+  // explorer also selects in-place (see handleEventSelect), so drilling from
+  // the hub into e.g. Chile 2026 there needs the same sync. Guarded by a ref
+  // (not just the params value) so this only reacts to the route param
+  // actually changing, and never clobbers a manual card selection, which
+  // doesn't touch this param at all.
+  const routeEventIdParam = typeof params.eventId === 'string' ? params.eventId : undefined;
+  // Starts undefined, NOT routeEventIdParam -- if it started pre-populated
+  // with the param already present at mount, the effect below would see
+  // "unchanged" on its very first run and skip syncing, exactly the case
+  // (fresh mount or direct/reloaded ?eventId=... URL) this effect exists to
+  // handle. Global explorer's selectedEvent starts at null regardless of the
+  // route param, so skipping that first sync left it stuck showing the
+  // generic banner instead of the linked event.
+  const lastSyncedRouteEventIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!routeEventIdParam) return;
+    if (routeEventIdParam === lastSyncedRouteEventIdRef.current) return;
+    lastSyncedRouteEventIdRef.current = routeEventIdParam;
+
+    const matchedEvent = getCurrentEvent(routeEventIdParam);
+    if (matchedEvent) {
+      setSelectedEvent(matchedEvent);
+    }
+  }, [routeEventIdParam]);
   const scrollXRef = useRef(0);
   const maxScrollXRef = useRef(0);
   const viewportWidthRef = useRef(0);
@@ -435,24 +468,21 @@ export default function ExploreScreen() {
 
 
   const handleEventSelect = (eventData: EventInfo) => {
-    if (isGlobalExplorer) {
-      // In global explorer, navigate to the event's home page
-      if (eventData?.id && eventData?.routes?.home) {
-        const route = eventData.routes.home.replace(/\/+/g, '/');
-        router.push(route as any);
-      } else if (eventData?.id) {
-        const route = `/events/${eventData.id}/home`.replace(/\/+/g, '/');
-        router.push(route as any);
-      }
-    } else {
-      // In event-specific explorer, just update selection
-      setSelectedEvent(eventData);
-    }
+    // Select in-place in both modes: highlights the tapped card, swaps the
+    // hero banner to that event, and shows its Quick Access below Passes --
+    // same behavior the tenant-scoped (BSL) explorer already had. Global
+    // explorer used to navigate away to /events/{id}/home instead, which
+    // lost the selection the moment you tapped anything.
+    setSelectedEvent(eventData);
   };
 
   const getEventBadgeLabel = (eventData: EventInfo): string => {
-    if (eventData.tour?.role === 'hub') return 'BSL ON TOUR';
     if (eventData.tour?.role === 'archive') return 'Past Event';
+    // Hub and stops share the same "BSL ON TOUR" badge -- Peru/Chile/Colombia
+    // are stops on the same 2026 tour as the hub, not separate campaigns, so
+    // they carry the same brand badge instead of falling back to each
+    // event's own name.
+    if (eventData.tour?.role === 'hub' || eventData.tour?.role === 'stop') return 'BSL ON TOUR';
     return eventData.name;
   };
 
@@ -506,6 +536,64 @@ export default function ExploreScreen() {
               <Text style={styles.eventDate}>{eventData.eventDateString}</Text>
             )}
           </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Compact list row for the global (main hashpass.tech) explorer. The old
+  // rendering reused the 200px banner-image card meant for a handful of BSL
+  // tour stops -- fine at 5 events, but every row eagerly mounts a full-size
+  // background image + gradient overlay, so it gets heavy and visually huge
+  // fast as more events are added. This is a plain row (thumbnail + text),
+  // selectable the same way as the tour cards (colored left border + tint).
+  const renderEventListRow = (eventData: EventInfo, index: number) => {
+    const isArchiveEvent = eventData.tour?.role === 'archive';
+    const isSelected = selectedEvent?.id === eventData.id;
+
+    return (
+      <TouchableOpacity
+        key={eventData.id}
+        style={[
+          styles.eventListRow,
+          {
+            marginTop: index === 0 ? 0 : 8,
+            borderColor: isSelected ? eventData.color : colors.divider,
+            borderLeftColor: eventData.color,
+            borderLeftWidth: 4,
+            backgroundColor: isSelected
+              ? `${eventData.color}14`
+              : colors.background.paper,
+          },
+        ]}
+        onPress={() => handleEventSelect(eventData)}
+        activeOpacity={0.75}
+      >
+        <Image
+          source={resolveEventImageSource(eventData.image) || { uri: 'https://via.placeholder.com/80x80' }}
+          style={[
+            styles.eventListRowThumb,
+            { backgroundColor: isArchiveEvent ? '#08111E' : colors.background.default },
+          ]}
+        />
+        <View style={styles.eventListRowBody}>
+          <Text style={styles.eventListRowTitle} numberOfLines={1}>
+            {eventData.title}
+          </Text>
+          <Text style={styles.eventListRowSubtitle} numberOfLines={1}>
+            {eventData.eventDateString || eventData.subtitle}
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.eventListRowBadge,
+            isArchiveEvent && styles.archiveEventBadge,
+            !isArchiveEvent && { backgroundColor: eventData.color },
+          ]}
+        >
+          <Text style={styles.eventBadgeText} numberOfLines={1}>
+            {getEventBadgeLabel(eventData)}
+          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -576,6 +664,13 @@ export default function ExploreScreen() {
     return getEventQuickAccessItems(selectedEvent.id) as QuickAccessItem[];
   };
 
+  // Tour stop ids (Peru/Chile/Colombia/Archive), excluding the hub itself --
+  // used to show every held pass across the tour when the hub is selected,
+  // since a user can hold passes for more than one upcoming stop at once.
+  const tourStopEventIds = availableEvents
+    .filter((event: EventInfo) => event.tour && event.tour.role !== 'hub')
+    .map((event: EventInfo) => event.id);
+
   return (
     <View style={styles.container}>
       <Animated.ScrollView
@@ -590,10 +685,10 @@ export default function ExploreScreen() {
       >
         {/* Event Banner (now scrolls with content) */}
         {/* Banner starts from top, nav bar floats on top with blur */}
-        {isGlobalExplorer ? (
-          /* GLOBAL EXPLORER MODE (hashpass.tech / main tenant) */
-          /* Shows banner for HASHPASS platform with all events */
-          <EventBanner 
+        {isGlobalExplorer && !selectedEvent ? (
+          /* GLOBAL EXPLORER MODE, nothing selected yet (hashpass.tech / main tenant) */
+          /* Shows the generic HASHPASS platform banner until an event is tapped below */
+          <EventBanner
             title="HASHPASS Events"
             subtitle="Discover and explore all available events"
             date="Global Event Explorer"
@@ -603,9 +698,11 @@ export default function ExploreScreen() {
             eventId="default"
           />
         ) : (
-          /* EVENT-SPECIFIC EXPLORER MODE (tenant-scoped hosts like bsl.hashpass.tech) */
-          /* Shows banner for the selected tenant event with countdown/live indicator */
-          <EventBanner 
+          /* A specific event is selected -- tenant-scoped explorer (bsl.hashpass.tech)
+             always has one via its initial state, global explorer gets one once a
+             card below is tapped. Same banner either way: countdown/live indicator
+             for real dated stops, static for the tour hub. */
+          <EventBanner
             title={selectedEvent?.title || t({ id: 'explore.banner.title', message: 'BSL On Tour' })}
             subtitle={selectedEvent?.subtitle || t({ id: 'explore.banner.subtitle', message: 'Peru, Chile and Colombia 2026 roadshow' })}
             date={selectedEvent?.eventDateString || selectedEvent?.subtitle || t({ id: 'explore.banner.date', message: '2026 Tour' })}
@@ -620,17 +717,22 @@ export default function ExploreScreen() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             {isGlobalExplorer ? (
-              /* GLOBAL EXPLORER: Show all events in a vertical grid */
-              /* Users can click any event card to navigate to that event's home page */
+              /* GLOBAL EXPLORER: compact, selectable list of all events.
+                 Tapping a row selects it in-place (same as the tenant-scoped
+                 explorer's cards below) -- swaps the hero banner above and
+                 reveals that event's own Quick Access below Passes, instead
+                 of navigating away to a separate screen. Compact rows (not
+                 the 200px banner cards used for the handful of BSL tour
+                 stops) keep this list manageable as more events are added. */
               <View style={styles.eventsSection}>
                 <Text style={styles.sectionTitle}>
                   {t({ id: 'explore.banner.exploreAllEvents', message: 'Explore All Events' })}
                 </Text>
                 <Text style={styles.sectionDescription}>
-                  Select an event to view details, speakers, agenda, and more
+                  Select an event to view its speakers, agenda, and quick access
                 </Text>
-                <View style={styles.eventsGrid}>
-                  {availableEvents.map((eventData: EventInfo, index: number) => renderEventCard(eventData, index))}
+                <View>
+                  {availableEvents.map((eventData: EventInfo, index: number) => renderEventListRow(eventData, index))}
                 </View>
               </View>
             ) : (
@@ -657,18 +759,21 @@ export default function ExploreScreen() {
           <CopilotStep text="This is where you can view your event passes. Your passes show your ticket type and access level for the event." order={8} name="yourPasses">
             <CopilotView style={{ paddingHorizontal: 20, paddingTop: 20 }}>
               <Text style={styles.sectionTitle}>{t({ id: 'explore.yourPasses', message: 'Your Passes' })}</Text>
-              <PassesDisplay 
+              <PassesDisplay
                 mode="dashboard"
                 showTitle={false}
                 showPassComparison={false}
+                eventId={selectedEvent?.tour?.role !== 'hub' ? selectedEvent?.id : undefined}
+                eventIds={selectedEvent?.tour?.role === 'hub' ? tourStopEventIds : undefined}
               />
             </CopilotView>
           </CopilotStep>
         )}
 
-        {/* Quick Access Section - Only show for EVENT-SPECIFIC explorer */}
-        {/* In global explorer, users navigate via event cards instead */}
-        {!isGlobalExplorer && (
+        {/* Quick Access Section - shows once an event is selected. Always true
+            for the tenant-scoped explorer (has one from initial state); in the
+            global explorer this only appears after tapping an event above. */}
+        {Boolean(selectedEvent) && (
           <CopilotStep text="Quick Access cards let you quickly navigate to important sections like Speakers, Agenda, Networking Center, and Event Information. Swipe horizontally to see all options." order={9} name="quickAccess">
             <CopilotView style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'explore.quickAccess', message: 'Quick Access' })}</Text>
@@ -827,6 +932,42 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 12,
     opacity: 0.85,
     marginTop: 4,
+  },
+  eventListRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+  eventListRowThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    resizeMode: 'cover',
+  },
+  eventListRowBody: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 8,
+    minWidth: 0,
+  },
+  eventListRowTitle: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  eventListRowSubtitle: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  eventListRowBadge: {
+    alignSelf: 'flex-start',
+    maxWidth: 96,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   section: {
     padding: 20,

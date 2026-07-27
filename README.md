@@ -20,13 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.268)
+## 📋 Latest Changes (v1.8.269)
+
+### Bug Fixes
+
+* BSL explorer quick-access event switching and multi-event pass display ([b09a50d](https://github.com/hashpass-tech/hashpass.tech/commit/b09a50d516475b021d760e2bb354f2bf92691831))
+* remove baked-in text from bsl2025 archive hero background ([51173cc](https://github.com/hashpass-tech/hashpass.tech/commit/51173cc75b7accd003c2ed5e0c3cea5194bd595c))
+* type explicit EventInfo params in tourStopEventIds filter/map ([a201209](https://github.com/hashpass-tech/hashpass.tech/commit/a201209b05d8f24a7c974f59c9643332a16b72b0))
+
 
 ### Features
 
-* auto-chain Android release promotion through beta (open testing) ([c0a19de](https://github.com/hashpass-tech/hashpass.tech/commit/c0a19de458a49a54520f57fec8088cd8b0225a52))
+* real chile2026 agenda/speakers, S3 speaker photos, main explorer redesign ([199e18d](https://github.com/hashpass-tech/hashpass.tech/commit/199e18d26c08aa3e90b4498516f9a37dc51c3f94))
 ### Release Highlights
-- auto-chain Android release promotion through beta (open testing)
+- real chile2026 agenda/speakers, S3 speaker photos, main explorer redesign; remove baked-in text from bsl2025 archive hero background; type explicit EventInfo params in tourStopEventIds filter/map; BSL explorer quick-access event switching and multi-event pass display
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

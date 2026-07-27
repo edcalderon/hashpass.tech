@@ -145,6 +145,7 @@ describe('passSystemService Supabase user id guard', () => {
 
     await expect(passSystemService.getUserPassInfo(supabaseUserId, 'bsl')).resolves.toEqual({
       pass_id: 'pass-existing',
+      event_id: 'bsl2025',
       pass_type: 'general',
       status: 'active',
       pass_number: 'BSL-GENERAL-EXISTING',
