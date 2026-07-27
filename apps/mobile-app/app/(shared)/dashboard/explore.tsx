@@ -603,8 +603,8 @@ export default function ExploreScreen() {
   // used to show every held pass across the tour when the hub is selected,
   // since a user can hold passes for more than one upcoming stop at once.
   const tourStopEventIds = availableEvents
-    .filter((event) => event.tour && event.tour.role !== 'hub')
-    .map((event) => event.id);
+    .filter((event: EventInfo) => event.tour && event.tour.role !== 'hub')
+    .map((event: EventInfo) => event.id);
 
   return (
     <View style={styles.container}>
