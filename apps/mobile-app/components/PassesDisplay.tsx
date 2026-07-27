@@ -5,7 +5,8 @@ import { useRouter } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolate } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
-import { passSystemService, PassInfo, PassRequestLimits } from '@/lib/pass-system';
+import { passSystemService, PassInfo, PassRequestLimits, EventPassInfo } from '@/lib/pass-system';
+import { EVENTS } from '@/config/events';
 import { supabase } from '@/lib/supabase';
 import DynamicQRDisplay from './DynamicQRDisplay';
 import * as Clipboard from 'expo-clipboard';
@@ -15,22 +16,32 @@ import * as Sentry from '@sentry/react-native';
 interface PassesDisplayProps {
   // Display mode
   mode?: 'dashboard' | 'speaker';
-  
+
   // Speaker-specific props
   speakerId?: string;
   boostAmount?: number;
   showRequestButton?: boolean;
   onRequestPress?: () => void;
-  
+
+  // Which event's pass to show (dashboard mode, single-event screens). Falls
+  // back to the tenant-resolved default event when omitted.
+  eventId?: string;
+
+  // List mode (dashboard mode only): shows every active pass the user holds
+  // across these events instead of a single event's pass -- used on the tour
+  // hub screen where a user can hold passes for more than one upcoming stop
+  // at once. Takes precedence over eventId when provided.
+  eventIds?: string[];
+
   // Callbacks
   onPassInfoLoaded?: (passInfo: PassInfo | null) => void;
   onRequestLimitsLoaded?: (limits: PassRequestLimits) => void;
-  
+
   // Dashboard-specific props
   showTitle?: boolean;
   title?: string;
   showPassComparison?: boolean;
-  
+
   // Refresh trigger
   refreshTrigger?: number;
 }
@@ -41,6 +52,8 @@ function PassesDisplayInner({
   boostAmount = 0,
   showRequestButton = false,
   onRequestPress,
+  eventId,
+  eventIds,
   onPassInfoLoaded,
   onRequestLimitsLoaded,
   showTitle = true,
@@ -53,10 +66,13 @@ function PassesDisplayInner({
   const { user } = useAuth();
   const router = useRouter();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
+  const [passesList, setPassesList] = useState<EventPassInfo[]>([]);
   const [requestLimits, setRequestLimits] = useState<PassRequestLimits | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [showComparison, setShowComparison] = useState(showPassComparison);
+  const isListMode = mode === 'dashboard' && Boolean(eventIds?.length);
+  const eventIdsKey = eventIds?.join(',');
   
   // Helper function to translate
   // Note: useTranslation('passes') already sets the namespace, so remove 'passes.' prefix if present
@@ -82,7 +98,7 @@ function PassesDisplayInner({
 
   useEffect(() => {
     loadPassInfo();
-  }, [user, refreshTrigger]);
+  }, [user, refreshTrigger, eventId, isListMode, eventIdsKey]);
 
   useEffect(() => {
     if (speakerId && user) {
@@ -94,18 +110,28 @@ function PassesDisplayInner({
     if (!user) {
       setLoading(false);
       setPassInfo(null);
+      setPassesList([]);
       setInitialLoad(false);
       return;
     }
 
     setLoading(true);
     try {
-      const info = await passSystemService.getUserPassInfo(user.id);
-      setPassInfo(info);
-      onPassInfoLoaded?.(info);
+      if (isListMode) {
+        const list = await passSystemService.getUserPassesForEvents(user.id, eventIds!);
+        setPassesList(list);
+        setPassInfo(list[0] || null);
+        onPassInfoLoaded?.(list[0] || null);
+      } else {
+        const info = await passSystemService.getUserPassInfo(user.id, eventId);
+        setPassInfo(info);
+        setPassesList([]);
+        onPassInfoLoaded?.(info);
+      }
     } catch (error) {
       console.error('Error loading pass info:', error);
       setPassInfo(null);
+      setPassesList([]);
     } finally {
       setLoading(false);
       // Add a small delay to prevent flash of "No Pass Found"
@@ -258,7 +284,7 @@ function PassesDisplayInner({
         
         <View style={{ minHeight: 520, marginHorizontal: -4 }}>
           <FlatList
-            data={[passInfo]}
+            data={isListMode ? passesList : passInfo ? [passInfo] : []}
             renderItem={({ item }) => (
               <View style={{ width: 340, marginRight: 20, paddingHorizontal: 4 }}>
                 <PassCard pass={item} refreshTrigger={refreshTrigger} />
@@ -1054,6 +1080,13 @@ const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: n
   const [isFlipped, setIsFlipped] = useState(false);
   const [meetingRequests, setMeetingRequests] = useState<any[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  // Only known once pass.event_id is populated (getUserPassInfo /
+  // getUserPassesForEvents) -- absent for the legacy counts-only fallback,
+  // which falls back to the historical bsl2025 label below.
+  const eventConfig = pass.event_id ? EVENTS[pass.event_id as keyof typeof EVENTS] : undefined;
+  const passEventTitle = eventConfig?.title || 'BSL 2025';
+  const passEventShortName = eventConfig?.name || passEventTitle;
+  const passEventDate = eventConfig?.eventDateString || eventConfig?.subtitle;
   
   // Helper function to translate
   // Note: useTranslation('passes') already sets the namespace, so remove 'passes.' prefix if present
@@ -1148,20 +1181,20 @@ const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: n
   const handleShare = async () => {
     try {
       const passTypeDisplay = passSystemService.getPassTypeDisplayName(pass.pass_type);
-      const shareMessage = `Check out my ${passTypeDisplay} pass for BSL 2025!\n\nPass Number: ${pass.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
+      const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventTitle}!\n\nPass Number: ${pass.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
 
       // Check if Share API is available (works on mobile and some browsers)
       if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
         // Use Web Share API if available
         await navigator.share({
-          title: `BSL 2025 ${passTypeDisplay} Pass`,
+          title: `${passEventTitle} ${passTypeDisplay} Pass`,
           text: shareMessage,
         });
       } else if (Platform.OS !== 'web' && Share.share) {
         // Use React Native Share on mobile
         await Share.share({
           message: shareMessage,
-          title: `BSL 2025 ${passTypeDisplay} Pass`,
+          title: `${passEventTitle} ${passTypeDisplay} Pass`,
         });
       } else {
         // Fallback: Copy to clipboard for browsers without Share API
@@ -1181,7 +1214,7 @@ const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: n
       // For other errors, fallback to clipboard
       try {
         const passTypeDisplay = passSystemService.getPassTypeDisplayName(pass.pass_type);
-        const shareMessage = `Check out my ${passTypeDisplay} pass for BSL 2025!\n\nPass Number: ${pass.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
+        const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventTitle}!\n\nPass Number: ${pass.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
         await Clipboard.setStringAsync(shareMessage);
         Alert.alert(
           t({ id: 'passes.copiedTitle', message: 'Pass Information Copied' }),
@@ -1308,14 +1341,14 @@ const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: n
               minimumFontScale={0.8}
               adjustsFontSizeToFit
             >
-              {getPassTypeLabel(pass.pass_type)} {t({ id: 'passes.pass', message: 'Pass' })}
+              {eventConfig ? `${passEventShortName} • ` : ''}{getPassTypeLabel(pass.pass_type)} {t({ id: 'passes.pass', message: 'Pass' })}
             </Text>
-            <Text style={{ 
-              fontSize: 9, 
+            <Text style={{
+              fontSize: 9,
               color: colors.text.secondary,
               opacity: 0.8
             }}>
-              {t({ id: 'passes.date', message: 'Nov 12-14, 2025' })}
+              {passEventDate || t({ id: 'passes.date', message: 'Nov 12-14, 2025' })}
             </Text>
           </View>
           <View style={{

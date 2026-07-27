@@ -88,6 +88,29 @@ export default function ExploreScreen() {
     isGlobalExplorer ? null : (currentEventInfo || availableEvents[0] || null)
   );
   const [showEventSelector, setShowEventSelector] = useState(shouldShowEventSelector());
+
+  // Quick-access hub tiles (Peru/Chile/Colombia/Archive) navigate to
+  // /events/{id}/home, which redirects back here with ?eventId={id} instead of
+  // rendering a separate screen. Without this sync, that navigation lands back
+  // on this same mounted explore screen with selectedEvent untouched, so the
+  // "Select Event" card never highlights and Quick Access never switches to the
+  // tapped event's own items (Agenda/Networking/Speakers/Event Info) -- it only
+  // worked when tapping the event card directly, which calls setSelectedEvent
+  // via handleEventSelect below. Guarded by a ref (not just the params value)
+  // so this only reacts to the route param actually changing, and never
+  // clobbers a manual card selection, which doesn't touch this param at all.
+  const routeEventIdParam = typeof params.eventId === 'string' ? params.eventId : undefined;
+  const lastSyncedRouteEventIdRef = useRef<string | undefined>(routeEventIdParam);
+  useEffect(() => {
+    if (isGlobalExplorer || !routeEventIdParam) return;
+    if (routeEventIdParam === lastSyncedRouteEventIdRef.current) return;
+    lastSyncedRouteEventIdRef.current = routeEventIdParam;
+
+    const matchedEvent = getCurrentEvent(routeEventIdParam);
+    if (matchedEvent) {
+      setSelectedEvent(matchedEvent);
+    }
+  }, [isGlobalExplorer, routeEventIdParam]);
   const scrollXRef = useRef(0);
   const maxScrollXRef = useRef(0);
   const viewportWidthRef = useRef(0);
@@ -576,6 +599,13 @@ export default function ExploreScreen() {
     return getEventQuickAccessItems(selectedEvent.id) as QuickAccessItem[];
   };
 
+  // Tour stop ids (Peru/Chile/Colombia/Archive), excluding the hub itself --
+  // used to show every held pass across the tour when the hub is selected,
+  // since a user can hold passes for more than one upcoming stop at once.
+  const tourStopEventIds = availableEvents
+    .filter((event) => event.tour && event.tour.role !== 'hub')
+    .map((event) => event.id);
+
   return (
     <View style={styles.container}>
       <Animated.ScrollView
@@ -657,10 +687,12 @@ export default function ExploreScreen() {
           <CopilotStep text="This is where you can view your event passes. Your passes show your ticket type and access level for the event." order={8} name="yourPasses">
             <CopilotView style={{ paddingHorizontal: 20, paddingTop: 20 }}>
               <Text style={styles.sectionTitle}>{t({ id: 'explore.yourPasses', message: 'Your Passes' })}</Text>
-              <PassesDisplay 
+              <PassesDisplay
                 mode="dashboard"
                 showTitle={false}
                 showPassComparison={false}
+                eventId={selectedEvent?.tour?.role !== 'hub' ? selectedEvent?.id : undefined}
+                eventIds={selectedEvent?.tour?.role === 'hub' ? tourStopEventIds : undefined}
               />
             </CopilotView>
           </CopilotStep>

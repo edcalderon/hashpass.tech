@@ -99,6 +99,15 @@ export interface PassInfo {
   remaining_boost: number;
   access_features: string[];
   special_perks: string[];
+  // The event this pass was issued for. Populated whenever the pass row is
+  // known (getUserPassInfo, getUserPassesForEvents); absent only in the
+  // legacy counts-only fallback (getUserPassInfoFromCounts), which has no
+  // underlying pass row to read it from.
+  event_id?: string;
+}
+
+export interface EventPassInfo extends PassInfo {
+  event_id: string;
 }
 
 export interface PassTypeLimits {
@@ -201,6 +210,7 @@ class PassSystemService {
         // Use pass data with default counts
         return {
           pass_id: passData.id,
+          event_id: passData.event_id,
           pass_type: passData.pass_type || 'general',
           status: passData.status || 'active',
           pass_number: passData.pass_number || 'Unknown',
@@ -216,10 +226,11 @@ class PassSystemService {
       }
 
       const counts = countsData as any;
-      
+
       // Combine pass data with real counts
       return {
         pass_id: passData.id,
+        event_id: passData.event_id,
         pass_type: passData.pass_type || 'general',
         status: passData.status || 'active',
         pass_number: passData.pass_number || 'Unknown',
@@ -275,6 +286,73 @@ class PassSystemService {
     } catch (error) {
       console.error('Error in getUserPassInfoFromCounts:', error);
       return null;
+    }
+  }
+
+  // Get every active pass a user holds across a set of events (e.g. all stops
+  // on a tour), one row per event. Unlike getUserPassInfo this never falls
+  // back to a single tenant-resolved event and never auto-creates a missing
+  // pass -- it's meant to reflect exactly what the user already holds so a
+  // multi-event "Your Passes" list can render one card per held pass.
+  async getUserPassesForEvents(userId: string, eventIds: string[]): Promise<EventPassInfo[]> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('getUserPassesForEvents', userId);
+      return [];
+    }
+
+    const resolvedEventIds = Array.from(new Set(eventIds.map(resolvePassStorageEventId)));
+    if (!resolvedEventIds.length) return [];
+
+    try {
+      const { data: passRows, error } = await supabase
+        .from('passes')
+        .select('*')
+        .eq('user_id', userId)
+        .in('event_id', resolvedEventIds)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error getting passes for events:', error);
+        return [];
+      }
+
+      if (!passRows?.length) return [];
+
+      // Keep only the most recent active pass per event.
+      const latestByEvent = new Map<string, Pass>();
+      for (const pass of passRows as Pass[]) {
+        if (!latestByEvent.has(pass.event_id)) {
+          latestByEvent.set(pass.event_id, pass);
+        }
+      }
+
+      const { data: countsData } = await supabase
+        .rpc('get_user_meeting_request_counts', { p_user_id: userId })
+        .single();
+      const counts = countsData as any;
+
+      return Array.from(latestByEvent.values()).map((passData) => ({
+        event_id: passData.event_id,
+        pass_id: passData.id,
+        pass_type: passData.pass_type || 'general',
+        status: passData.status || 'active',
+        pass_number: passData.pass_number || 'Unknown',
+        max_requests: passData.max_meeting_requests || 0,
+        used_requests: counts?.total_requests ?? passData.used_meeting_requests ?? 0,
+        remaining_requests:
+          counts?.remaining_requests ??
+          (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
+        max_boost: passData.max_boost_amount || 0,
+        used_boost: passData.used_boost_amount || 0,
+        remaining_boost:
+          counts?.remaining_boost ?? (passData.max_boost_amount || 0) - (passData.used_boost_amount || 0),
+        access_features: passData.access_features || [],
+        special_perks: passData.special_perks || [],
+      }));
+    } catch (error) {
+      console.error('Error in getUserPassesForEvents:', error);
+      return [];
     }
   }
 
