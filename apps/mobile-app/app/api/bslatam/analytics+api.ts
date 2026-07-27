@@ -1,6 +1,7 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   const [{ count: total }, { count: accepted }, { count: requested }] = await Promise.all([
     supabase.from('BSL_Bookings').select('id', { count: 'exact', head: true }),
     supabase.from('BSL_Bookings').select('id', { count: 'exact', head: true }).eq('status', 'accepted'),

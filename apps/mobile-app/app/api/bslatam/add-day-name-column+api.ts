@@ -1,6 +1,7 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 
 export async function POST(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   try {
     // Add the day_name column
     const { error: alterError } = await supabase.rpc('exec_sql', {

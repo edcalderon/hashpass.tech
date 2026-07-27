@@ -1,7 +1,8 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 
 export async function POST(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
   if (!rateLimitOk(`verify-ticket:${ip}`)) {
     return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 });

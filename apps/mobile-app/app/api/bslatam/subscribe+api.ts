@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { sendSubscriptionConfirmation } from '@/lib/email';
 
 /**
@@ -6,6 +6,7 @@ import { sendSubscriptionConfirmation } from '@/lib/email';
  * This provides backward compatibility for clients that use /api/bslatam/subscribe
  */
 export async function POST(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   try {
     // Ensure the request has a JSON content-type
     if (request.headers.get('content-type') !== 'application/json') {

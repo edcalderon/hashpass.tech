@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +14,7 @@ export async function OPTIONS() {
 }
 
 export async function GET(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   const { searchParams } = new URL(request.url);
   const eventId = searchParams.get('eventId') || 'bsl';
 
