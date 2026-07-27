@@ -96,8 +96,24 @@ export default function SpeakersCalendar() {
     return speakers.filter(s => s.isActive).length;
   }, [speakers]);
 
-  // Load speakers from database with JSON fallback
+  // Resolve agenda items' raw speaker id slugs (e.g. 'alvaro-clarke') to
+  // display names for AgendaCard, instead of showing the id itself.
+  const speakerNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of speakers) map[s.id] = s.name;
+    return map;
+  }, [speakers]);
+
+  // Load speakers from database with JSON fallback. Gated on event being
+  // resolved: EventContext derives `event` synchronously from usePathname(),
+  // which can be null on the very first render before routing settles. This
+  // effect only runs once "on mount" (see deps below), so if it fired while
+  // `event` was still null, event?.speakers would bake in as [] forever --
+  // the JSON fallback would never get real data even after `event` resolved
+  // moments later, since nothing would re-trigger this effect.
   useEffect(() => {
+    if (!event) return;
+
     const loadSpeakers = async () => {
       try {
         setLoading(true);
@@ -194,7 +210,7 @@ export default function SpeakersCalendar() {
     };
 
     loadSpeakers();
-  }, []); // Load only once on mount
+  }, [event?.id]); // Re-run once `event` resolves (or the route's event changes)
 
   // Update filtered speakers when speakers change
   useEffect(() => {
@@ -263,7 +279,9 @@ export default function SpeakersCalendar() {
       <View style={styles.agendaContent}>
         <Text style={styles.agendaTitle}>{agendaItem.title}</Text>
         {agendaItem.speakers && agendaItem.speakers.length > 0 && (
-          <Text style={styles.agendaSpeakers}>Speakers: {agendaItem.speakers.join(', ')}</Text>
+          <Text style={styles.agendaSpeakers}>
+            Speakers: {agendaItem.speakers.map(id => speakerNameById[id] || id).join(', ')}
+          </Text>
         )}
       </View>
     </View>

@@ -71,7 +71,7 @@ const customAgendaFilterLogic = (
       const matchesDescription = item.description?.toLowerCase().includes(query) ?? false;
       
       // Since we only have speaker IDs, we can only match against the ID itself
-      const matchesSpeaker = item.speakers?.some((speakerId: string) => 
+      const matchesSpeaker = item.speakers?.some((speakerId: string) =>
         speakerId.toLowerCase().includes(query)
       ) ?? false;
       
@@ -821,20 +821,31 @@ export default function BSL2025AgendaScreen() {
       .trim();
   };
 
-  // Function to find speaker ID by name (synchronous check first)
-  const findSpeakerId = (speakerName: string): string | null => {
-    // Try to find speaker in the event speakers data first
+  // Resolves an agenda item's speaker reference to both a display name and a
+  // navigable speaker id. Newer tour-stop events (packages/config/src/
+  // events.ts's chile2026/peru2026/colombia2026 agenda data) reference
+  // speakers by id slug (e.g. 'alvaro-clarke'), not display name -- the
+  // original name-substring match below predates that and was silently
+  // failing for id-slug references (a hyphenated, unaccented slug rarely
+  // substring-matches an accented display name), which is why agenda cards
+  // were rendering the raw id slug as if it were the speaker's name.
+  const resolveAgendaSpeaker = (value: string): { id: string | null; displayName: string } => {
     if (event?.speakers) {
-      const speaker = event.speakers.find((s: { name: string; id?: string }) => 
-        s.name.toLowerCase().includes(speakerName.toLowerCase()) ||
-        speakerName.toLowerCase().includes(s.name.toLowerCase())
+      const byId = event.speakers.find((s: { id?: string }) => s.id === value);
+      if (byId) return { id: byId.id ?? null, displayName: byId.name };
+
+      const byName = event.speakers.find((s: { name: string }) =>
+        s.name.toLowerCase().includes(value.toLowerCase()) ||
+        value.toLowerCase().includes(s.name.toLowerCase())
       );
-      if (speaker?.id) return speaker.id;
+      if (byName?.id) return { id: byName.id, displayName: value };
     }
-    
-    // Return null for now - async lookup can be added later if needed
-    return null;
+
+    return { id: null, displayName: value };
   };
+
+  // Function to find speaker ID by name (synchronous check first)
+  const findSpeakerId = (speakerName: string): string | null => resolveAgendaSpeaker(speakerName).id;
 
   // Function to handle speaker navigation
   const handleSpeakerPress = async (speakerName: string) => {
@@ -1024,22 +1035,21 @@ export default function BSL2025AgendaScreen() {
 
   // Helper function to get the event's date based on day field or ISO time
   const getEventDate = (item: AgendaItem): Date | null => {
-    // First try to get the day from the item's day field
+    // Map the item's day field to an actual calendar date, derived from
+    // *this* event's real eventStartDate (day N = eventStartDate + (N-1)
+    // days). Previously hardcoded to November 12-14, 2025 -- the original
+    // bsl2025 hub event's dates -- which silently marked every tour-stop
+    // event's agenda (chile2026, peru2026, colombia2026, ...) as already
+    // past, since November 2025 predates all of them.
     const day = (item as any).day;
-    if (day) {
-      let eventDate: Date | null = null;
-      
-      // Map day to actual date
-      if (day.includes('Día 1') || day === '1') {
-        eventDate = new Date(2025, 10, 12); // November 12, 2025 (month is 0-indexed)
-      } else if (day.includes('Día 2') || day === '2') {
-        eventDate = new Date(2025, 10, 13); // November 13, 2025
-      } else if (day.includes('Día 3') || day === '3') {
-        eventDate = new Date(2025, 10, 14); // November 14, 2025
-      }
-      
-      if (eventDate) {
-        return eventDate;
+    if (day && event?.eventStartDate) {
+      const dayMatch = String(day).match(/(\d+)/);
+      const dayNumber = dayMatch ? parseInt(dayMatch[1], 10) : null;
+      if (dayNumber && dayNumber >= 1) {
+        const start = new Date(event.eventStartDate);
+        if (!isNaN(start.getTime())) {
+          return new Date(start.getFullYear(), start.getMonth(), start.getDate() + (dayNumber - 1));
+        }
       }
     }
     
@@ -1225,16 +1235,16 @@ export default function BSL2025AgendaScreen() {
               <MaterialIcons name="people" size={16} color={colors.text.secondary} />
               <View style={styles.speakersList}>
                 {item.speakers.map((speaker: string, index: number) => {
-                  const speakerId = findSpeakerId(speaker);
+                  const { id: speakerId, displayName } = resolveAgendaSpeaker(speaker);
                   const isClickable = speakerId !== null;
                   return (
                     <React.Fragment key={index}>
                       {isClickable ? (
                         <TouchableOpacity onPress={() => handleSpeakerPress(speaker)} style={styles.speakerLink}>
-                          <Text style={[styles.agendaSpeakers, styles.clickableSpeaker]}>{speaker}</Text>
+                          <Text style={[styles.agendaSpeakers, styles.clickableSpeaker]}>{displayName}</Text>
                         </TouchableOpacity>
                       ) : (
-                        <Text style={styles.agendaSpeakers}>{speaker}</Text>
+                        <Text style={styles.agendaSpeakers}>{displayName}</Text>
                       )}
                       {index < (item.speakers?.length || 0) - 1 && (
                         <Text style={styles.speakerSeparator}>, </Text>
