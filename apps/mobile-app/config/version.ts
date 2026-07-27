@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607270500, // Updated to current timestamp
+  buildNumber: 202607271529, // Updated to current timestamp
   releaseDate: '2026-07-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'address Play Console large-screen, bitmap, and R8 recommendations',
-    'extend Play Store promotion pipeline to open testing and production'
+    'auto-chain Android release promotion through beta (open testing)'
   ],
   bugfixes: [
     // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'address Play Console large-screen, bitmap, and R8 recommendations; extend Play Store promotion pipeline to open testing and production'
+  notes: 'auto-chain Android release promotion through beta (open testing)'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.268': {
+    version: '1.8.268',
+    buildNumber: 202607271529,
+    releaseDate: '2026-07-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'auto-chain Android release promotion through beta (open testing)'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'auto-chain Android release promotion through beta (open testing)'
+  },
   '1.8.267': {
     version: '1.8.267',
     buildNumber: 202607270500,

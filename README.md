@@ -20,14 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.267)
+## 📋 Latest Changes (v1.8.268)
 
 ### Features
 
-* address Play Console large-screen, bitmap, and R8 recommendations ([e6203d6](https://github.com/hashpass-tech/hashpass.tech/commit/e6203d62c2d42631b7e33c3da522970ba6e0b5fe))
-* extend Play Store promotion pipeline to open testing and production ([3c51dc8](https://github.com/hashpass-tech/hashpass.tech/commit/3c51dc8fbf69c3054b35eadf1cd664caa4c83d9a))
+* auto-chain Android release promotion through beta (open testing) ([c0a19de](https://github.com/hashpass-tech/hashpass.tech/commit/c0a19de458a49a54520f57fec8088cd8b0225a52))
 ### Release Highlights
-- address Play Console large-screen, bitmap, and R8 recommendations; extend Play Store promotion pipeline to open testing and production
+- auto-chain Android release promotion through beta (open testing)
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
