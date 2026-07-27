@@ -15,11 +15,16 @@ describe('Android layout event crash guards', () => {
     expect(source).toContain('featuresLayoutRef.current = { y };');
   });
 
-  it('does not attach dashboard quick-access onLayout on Android', () => {
+  it('does not attach dashboard quick-access/select-event onLayout on Android', () => {
     const source = readSource('../../app/(shared)/dashboard/explore.tsx');
+    // Both horizontal scroll rows in this screen (Quick Access, Select Event)
+    // share the useHorizontalScrollArrows hook, which owns the actual
+    // Android viewportWidthRef fallback guard (checked below).
+    const hookSource = readSource('../../hooks/useHorizontalScrollArrows.ts');
 
-    expect(source).toContain("onLayout={Platform.OS === 'android' ? undefined : handleQuickAccessLayout}");
-    expect(source).toContain("if (Platform.OS === 'android' && viewportWidthRef.current <= 0)");
+    expect(source).toContain("onLayout={Platform.OS === 'android' ? undefined : quickAccessScroll.handleLayout}");
+    expect(source).toContain("onLayout={Platform.OS === 'android' ? undefined : eventSelectorScroll.handleLayout}");
+    expect(hookSource).toContain("if (Platform.OS === 'android' && viewportWidthRef.current <= 0 && androidFallbackWidth)");
   });
 
   it('does not attach dashboard scroll-card onLayout handlers on Android', () => {

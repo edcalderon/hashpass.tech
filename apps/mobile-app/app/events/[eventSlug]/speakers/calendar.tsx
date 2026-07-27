@@ -9,7 +9,7 @@ import EventBanner from '../../../../components/EventBanner';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import SpeakerSearchAndSort from '../../../../components/SpeakerSearchAndSort';
 import { sortSpeakersByPriority } from '../../../../lib/speaker-priority';
-import { getSpeakerAvatarUrl, getSpeakerCloudinaryAvatarUrl } from '../../../../lib/string-utils';
+import { getSpeakerAvatarUrl, resolveConfiguredSpeakerImage, resolveSpeakerImage } from '../../../../lib/string-utils';
 import LoadingScreen from '../../../../components/LoadingScreen';
 
 // Type definitions
@@ -32,6 +32,19 @@ interface AgendaItem {
   speakers?: string[];
   type: 'keynote' | 'panel' | 'break' | 'meal' | 'registration';
   location?: string;
+}
+
+// Shape of event?.speakers entries (from packages/config/src/events.ts's
+// Speaker type) as actually read below -- named explicitly rather than
+// inferred through `event` (from useEvent(), a non-relative import) so the
+// pre-push isolated typecheck's blanket `any` stub for that import doesn't
+// cascade into implicit-any errors on every .map() callback here.
+interface EventSpeakerConfig {
+  id: string;
+  name: string;
+  title?: string | null;
+  company?: string | null;
+  image?: string;
 }
 
 const getAgendaTypeColor = (type: string) => {
@@ -119,7 +132,7 @@ export default function SpeakersCalendar() {
             );
             
             // Sort by priority order
-            const sortedSpeakers = sortSpeakersByPriority<Speaker>(uniqueSpeakers);
+            const sortedSpeakers: Speaker[] = sortSpeakersByPriority(uniqueSpeakers);
             setSpeakers(sortedSpeakers);
             console.log('✅ Loaded speakers from database:', uniqueSpeakers.length, 'unique speakers');
             setLoading(false);
@@ -132,22 +145,25 @@ export default function SpeakersCalendar() {
         // Fallback to event config (JSON)
         console.log('📋 Loading speakers from event config (JSON fallback)...');
         const eventSpeakers = event?.speakers || [];
-        const formattedEventSpeakers = eventSpeakers.map(s => ({
+        const formattedEventSpeakers = eventSpeakers.map((s: EventSpeakerConfig) => ({
           id: s.id,
           name: s.name,
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          image: getSpeakerCloudinaryAvatarUrl(s.name) || getSpeakerAvatarUrl(s.name) // Prioritize Cloudinary
+          // s.image is our own hosted photo (see packages/config/src/events.ts).
+          // Only fall back to the legacy Cloudinary/name-guessing lookup for
+          // older speakers that were never given a real image field.
+          image: resolveConfiguredSpeakerImage(s.image, s.name)
         }));
-        
+
         // Remove duplicates based on ID
-        const uniqueEventSpeakers = formattedEventSpeakers.filter((speaker, index, self) => 
-          index === self.findIndex(s => s.id === speaker.id)
+        const uniqueEventSpeakers = formattedEventSpeakers.filter((speaker: Speaker, index: number, self: Speaker[]) =>
+          index === self.findIndex((s: Speaker) => s.id === speaker.id)
         );
-        
+
         // Sort by priority order
-        const sortedEventSpeakers = sortSpeakersByPriority<Speaker>(uniqueEventSpeakers);
+        const sortedEventSpeakers: Speaker[] = sortSpeakersByPriority(uniqueEventSpeakers);
         setSpeakers(sortedEventSpeakers);
         console.log('✅ Loaded speakers from event config (JSON fallback):', uniqueEventSpeakers.length, 'unique speakers');
         setLoading(false);
@@ -155,22 +171,22 @@ export default function SpeakersCalendar() {
         console.error('❌ Error loading speakers:', error);
         // Emergency fallback to event config
         const eventSpeakers = event?.speakers || [];
-        const formattedEventSpeakers = eventSpeakers.map(s => ({
+        const formattedEventSpeakers = eventSpeakers.map((s: EventSpeakerConfig) => ({
           id: s.id,
           name: s.name,
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
-          image: getSpeakerAvatarUrl(s.name)
+          image: resolveSpeakerImage(s.image, s.name)
         }));
-        
+
         // Remove duplicates based on ID
-        const uniqueEmergencySpeakers = formattedEventSpeakers.filter((speaker, index, self) => 
-          index === self.findIndex(s => s.id === speaker.id)
+        const uniqueEmergencySpeakers = formattedEventSpeakers.filter((speaker: Speaker, index: number, self: Speaker[]) =>
+          index === self.findIndex((s: Speaker) => s.id === speaker.id)
         );
         
         // Sort by priority order
-        const sortedEmergencySpeakers = sortSpeakersByPriority(uniqueEmergencySpeakers);
+        const sortedEmergencySpeakers: Speaker[] = sortSpeakersByPriority(uniqueEmergencySpeakers);
         setSpeakers(sortedEmergencySpeakers);
         console.log('✅ Emergency fallback successful:', uniqueEmergencySpeakers.length, 'unique speakers');
         setLoading(false);
@@ -185,8 +201,12 @@ export default function SpeakersCalendar() {
     setFilteredSpeakers(speakers);
   }, [speakers]);
 
-  // Group agenda by day
-  const agendaByDay = agenda.reduce((acc, item) => {
+  // Group agenda by day. Explicit variable annotation (not just the reduce
+  // callback's param types) so Object.entries(agendaByDay) below reliably
+  // resolves to [string, AgendaItem[]][] regardless of how `agenda`'s own
+  // type (sourced from `event`, a non-relative import stubbed as `any` by
+  // the pre-push isolated typecheck) affects .reduce()'s inferred return.
+  const agendaByDay: Record<string, AgendaItem[]> = agenda.reduce((acc: Record<string, AgendaItem[]>, item: AgendaItem) => {
     const day = item.time.split(' ')[0]; // Extract day from time
     if (!acc[day]) acc[day] = [];
     acc[day].push(item);
@@ -287,7 +307,7 @@ export default function SpeakersCalendar() {
             onGroupedSpeakers={setGroupedSpeakers}
             onSearchChange={setSearchQuery}
             onSortChange={setSortBy}
-            onActiveFilterChange={(showActiveOnly) => {
+            onActiveFilterChange={(showActiveOnly: boolean) => {
               setShowActiveOnly(showActiveOnly);
             }}
           />
@@ -324,11 +344,11 @@ export default function SpeakersCalendar() {
         {Object.keys(agendaByDay).length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Event Agenda</Text>
-            {Object.entries(agendaByDay).map(([day, dayAgenda]) => (
+            {Object.entries(agendaByDay).map(([day, dayAgenda]: [string, AgendaItem[]]) => (
               <View key={day} style={styles.daySection}>
                 <Text style={styles.dayTitle}>{day}</Text>
                 <View style={styles.agendaList}>
-                  {dayAgenda.map(agendaItem => (
+                  {dayAgenda.map((agendaItem: AgendaItem) => (
                     <AgendaCard key={agendaItem.id} agendaItem={agendaItem} />
                   ))}
                 </View>

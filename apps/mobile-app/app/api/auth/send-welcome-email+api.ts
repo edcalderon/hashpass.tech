@@ -1,4 +1,4 @@
-import { supabaseServer } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { sendWelcomeEmailToNewUser } from '@/lib/email';
 
 /**
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = supabaseServer;
+    const supabase = getSupabaseServerForRequest(request);
     
     // Check if welcome email has already been sent (with message_id) - database-level check
     let alreadySent = false;

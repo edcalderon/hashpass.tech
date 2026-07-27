@@ -1,4 +1,4 @@
-import { supabaseServer } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { sendUserOnboardingEmail, sendSpeakerOnboardingEmail, detectUserLocale } from '@/lib/email';
 
 /**
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = supabaseServer;
+    const supabase = getSupabaseServerForRequest(request);
     const results: {
       userOnboarding?: { success: boolean; alreadySent?: boolean; error?: string };
       speakerOnboarding?: { success: boolean; alreadySent?: boolean; error?: string; isSpeaker?: boolean };

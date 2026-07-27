@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { validateBookingInput } from '@/lib/bsl/validation';
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { sendBookingEmail } from '@/lib/email';
@@ -8,6 +8,7 @@ function badRequest(message: string) {
 }
 
 export async function GET(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('user');
   if (!userId) return badRequest('Missing user');
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   try {
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
     if (!rateLimitOk(`post-booking:${ip}`)) {

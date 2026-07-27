@@ -1,10 +1,11 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 
 /**
  * API endpoint to verify OTP code for account deletion
  * Verifies the code and marks it as used
  */
 export async function POST(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   try {
     const body = await request.json();
     const { email, code } = body;

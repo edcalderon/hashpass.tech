@@ -1,6 +1,7 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 
 export async function GET(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId') || 'demo-user'; // For demo purposes
   const eventId = searchParams.get('eventId') || 'bsl';

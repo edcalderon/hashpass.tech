@@ -1,4 +1,4 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import nodemailer from 'nodemailer';
 
 /**
@@ -6,6 +6,7 @@ import nodemailer from 'nodemailer';
  * Generates OTP token and sends custom email with a 6-digit code
  */
 export async function POST(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   try {
     const body = await request.json();
     const { email } = body;

@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
+import { useHorizontalScrollArrows } from '../../hooks/useHorizontalScrollArrows';
 
 interface QuickAccessItem {
   id: string;
@@ -24,9 +25,9 @@ interface QuickAccessGridProps {
   cardSpacing?: number;
 }
 
-export default function QuickAccessGrid({ 
-  items, 
-  title = "Quick Access", 
+export default function QuickAccessGrid({
+  items,
+  title = "Quick Access",
   showScrollArrows = false,
   onItemPress,
   cardWidth = 132,
@@ -35,76 +36,10 @@ export default function QuickAccessGrid({
   const { isDark, colors } = useTheme();
   const router = useRouter();
   const styles = getStyles(isDark, colors, cardWidth, cardSpacing);
-  
-  const scrollXRef = useRef(0);
-  const maxScrollXRef = useRef(0);
-  const viewportWidthRef = useRef(0);
-  const contentWidthRef = useRef(0);
-  const scrollRef = useRef<ScrollView>(null);
-  const leftArrowOpacity = useSharedValue(0.32);
-  const rightArrowOpacity = useSharedValue(1);
-  const leftArrowStyle = useAnimatedStyle(() => ({
-    opacity: leftArrowOpacity.value,
-  }));
-  const rightArrowStyle = useAnimatedStyle(() => ({
-    opacity: rightArrowOpacity.value,
-  }));
 
-  const updateArrowVisibility = (scrollX: number, maxScrollX: number) => {
-    if (!showScrollArrows) return;
-
-    const canScrollLeft = scrollX > 0;
-    const canScrollRight = scrollX < maxScrollX - 10;
-
-    leftArrowOpacity.value = canScrollLeft ? 1 : 0.32;
-    rightArrowOpacity.value = canScrollRight ? 1 : 0.32;
-  };
-
-  const handleScroll = (event: any) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const x = contentOffset.x;
-    const maxX = Math.max(0, contentSize.width - layoutMeasurement.width);
-    scrollXRef.current = x;
-    maxScrollXRef.current = maxX;
-    viewportWidthRef.current = layoutMeasurement.width;
-    updateArrowVisibility(x, maxX);
-  };
-
-  const scrollTo = (direction: 'left' | 'right') => {
-    const delta = Math.max(160, viewportWidthRef.current - cardSpacing);
-    const target = direction === 'left'
-      ? scrollXRef.current - delta
-      : scrollXRef.current + delta;
-    const nextX = Math.max(0, Math.min(target, maxScrollXRef.current));
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ x: nextX, animated: true });
-    }
-  };
-
-  const handleLayout = (e: any) => {
-    const w = e?.nativeEvent?.layout?.width || 0;
-    viewportWidthRef.current = w;
-    maxScrollXRef.current = Math.max(0, contentWidthRef.current - w);
-    updateArrowVisibility(scrollXRef.current, maxScrollXRef.current);
-  };
-
-  const handleContentSizeChange = (w: number, _h: number) => {
-    contentWidthRef.current = w;
-    maxScrollXRef.current = Math.max(0, w - viewportWidthRef.current);
-    updateArrowVisibility(scrollXRef.current, maxScrollXRef.current);
-  };
-
-  const handleWheel = (e: any) => {
-    // RN Web: map wheel vertical/horizontal delta to horizontal scroll
-    const dx = e?.nativeEvent?.deltaX ?? e?.deltaX ?? 0;
-    const dy = e?.nativeEvent?.deltaY ?? e?.deltaY ?? 0;
-    const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
-    const nextX = Math.max(0, Math.min(scrollXRef.current + delta, maxScrollXRef.current));
-    if (typeof e?.preventDefault === 'function') e.preventDefault();
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ x: nextX, animated: false });
-    }
-  };
+  const { scrollRef, canScrollLeft, canScrollRight, leftArrowStyle, rightArrowStyle,
+    handleWheel, handleScroll, handleLayout, handleContentSizeChange, scroll,
+  } = useHorizontalScrollArrows({ cardWidth, cardSpacing });
 
   const handleItemPress = (item: QuickAccessItem) => {
     if (onItemPress) {
@@ -139,11 +74,11 @@ export default function QuickAccessGrid({
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.quickAccessContainer}>
-        {showScrollArrows && (
+        {showScrollArrows && canScrollLeft && (
           <Animated.View style={[styles.scrollArrow, styles.leftArrow, leftArrowStyle]}>
             <TouchableOpacity
               style={styles.scrollArrowButton}
-              onPress={() => scrollTo('left')}
+              onPress={() => scroll('left')}
             >
               <MaterialIcons name="chevron-left" size={24} color={colors.primary} />
             </TouchableOpacity>
@@ -155,7 +90,10 @@ export default function QuickAccessGrid({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.horizontalScroll}
           onScroll={handleScroll}
-          scrollEventThrottle={16}
+          onScrollBeginDrag={handleScroll}
+          onScrollEndDrag={handleScroll}
+          onMomentumScrollEnd={handleScroll}
+          scrollEventThrottle={Platform.OS === 'web' ? 0 : 16}
           decelerationRate="fast"
           snapToInterval={cardWidth + cardSpacing}
           snapToAlignment="start"
@@ -167,11 +105,11 @@ export default function QuickAccessGrid({
         >
           {items.map((item, index) => renderQuickAccessItem(item, index))}
         </ScrollView>
-        {showScrollArrows && (
+        {showScrollArrows && canScrollRight && (
           <Animated.View style={[styles.scrollArrow, styles.rightArrow, rightArrowStyle]}>
             <TouchableOpacity
               style={styles.scrollArrowButton}
-              onPress={() => scrollTo('right')}
+              onPress={() => scroll('right')}
             >
               <MaterialIcons name="chevron-right" size={24} color={colors.primary} />
             </TouchableOpacity>

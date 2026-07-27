@@ -12,7 +12,7 @@ import { supabase } from '../../../../lib/supabase';
 import { passSystemService } from '../../../../lib/pass-system';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
-import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl } from '../../../../lib/string-utils';
+import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl, resolveSpeakerImage } from '../../../../lib/string-utils';
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 import { useTranslation } from '../../../../i18n/i18n';
@@ -225,7 +225,7 @@ export default function SpeakerDetail() {
           title: foundSpeaker.title,
           company: foundSpeaker.company,
           bio: `Experienced professional in ${foundSpeaker.title} at ${foundSpeaker.company}.`,
-          image: getSpeakerAvatarUrl(foundSpeaker.name),
+          image: resolveSpeakerImage(foundSpeaker.image, foundSpeaker.name),
           linkedin: getSpeakerLinkedInUrl(foundSpeaker.name),
           twitter: getSpeakerTwitterUrl(foundSpeaker.name),
           tags: ['Blockchain', 'FinTech', 'Innovation'],
@@ -254,7 +254,7 @@ export default function SpeakerDetail() {
           title: foundSpeaker.title,
           company: foundSpeaker.company,
           bio: `Experienced professional in ${foundSpeaker.title} at ${foundSpeaker.company}.`,
-          image: getSpeakerAvatarUrl(foundSpeaker.name),
+          image: resolveSpeakerImage(foundSpeaker.image, foundSpeaker.name),
           linkedin: getSpeakerLinkedInUrl(foundSpeaker.name),
           twitter: getSpeakerTwitterUrl(foundSpeaker.name),
           tags: ['Blockchain', 'FinTech', 'Innovation'],

@@ -1,7 +1,8 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { getSpeakerCloudinaryAvatarUrl } from '@/lib/cloudinary';
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const supabase = getSupabaseServerForRequest(request);
   const id = params?.id;
   if (!id) {
     return new Response(JSON.stringify({ error: 'Missing speaker id' }), { status: 400 });

@@ -1,7 +1,8 @@
-import { supabaseServer as supabase } from '@/lib/supabase-server';
+import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { getSpeakerCloudinaryAvatarUrl } from '@/lib/cloudinary';
 
 export async function GET(request: Request) {
+  const supabase = getSupabaseServerForRequest(request);
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1', 10);
   const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '20', 10), 100);
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
     }
 
     // Add Cloudinary URLs to speaker data
-    const speakersWithCloudinary = (data || []).map(speaker => ({
+    const speakersWithCloudinary = (data || []).map((speaker: { name: string }) => ({
       ...speaker,
       cloudinaryAvatarUrl: getSpeakerCloudinaryAvatarUrl(speaker.name, 200)
     }));

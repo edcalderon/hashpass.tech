@@ -84,6 +84,15 @@ if [ -f "${BUILD_DIR}/config/versions.json" ]; then
 elif [ -f "$PROJECT_ROOT/apps/mobile-app/config/versions.json" ]; then
   cp "$PROJECT_ROOT/apps/mobile-app/config/versions.json" "$PACKAGE_DIR/config/"
 fi
+# update-policy.json drives the native soft/hard update banners (minimumVersion,
+# nativeVersion, Play/App Store URLs) served by GET /api/config/versions. Without
+# it in the bundle, that endpoint silently falls back to an empty {} policy and
+# every field comes back null -- the banner never has a version or URL to show.
+if [ -f "${BUILD_DIR}/config/update-policy.json" ]; then
+  cp "${BUILD_DIR}/config/update-policy.json" "$PACKAGE_DIR/config/"
+elif [ -f "$PROJECT_ROOT/apps/mobile-app/config/update-policy.json" ]; then
+  cp "$PROJECT_ROOT/apps/mobile-app/config/update-policy.json" "$PACKAGE_DIR/config/"
+fi
 # Note: We do NOT copy the root package.json as it has incompatible dependencies
 # The packages/infra/lambda/package.json already has the minimal dependencies needed
 
