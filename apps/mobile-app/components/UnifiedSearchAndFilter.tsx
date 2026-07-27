@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+// lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
+// font glyphs @expo/vector-icons renders directly; the raw font can show its
+// tofu/"?" fallback glyph for a window before the icon font loads on web.
+import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 
 // Generic interfaces for different data types

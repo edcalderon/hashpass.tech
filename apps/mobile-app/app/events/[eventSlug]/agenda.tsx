@@ -146,13 +146,15 @@ export default function BSL2025AgendaScreen() {
   const getTabLabel = (dayKey: string) => {
     // Expect keys like "Day 1 - November 12"
     const parts = dayKey.split(' - ');
-    return parts[0] || dayKey;
+    const rawLabel = parts[0] || dayKey;
+    const dayNumberMatch = rawLabel.match(/(\d+)/);
+    return dayNumberMatch ? t('tabs.day', { number: dayNumberMatch[1] }) : rawLabel;
   };
 
   const getTabTheme = (dayKey: string) => {
-    if (dayKey.includes('Day 1')) return 'Regulación, Bancos Centrales e Infraestructura del Dinero Digital';
-    if (dayKey.includes('Day 2')) return 'PSAV, Compliance, Custodia y Tokenización';
-    if (dayKey.includes('Day 3')) return 'Stablecoins y DeFi: Integrando el Mundo Financiero Global';
+    if (dayKey.includes('Day 1')) return t('tabs.themes.day1');
+    if (dayKey.includes('Day 2')) return t('tabs.themes.day2');
+    if (dayKey.includes('Day 3')) return t('tabs.themes.day3');
     return '';
   };
 
@@ -408,35 +410,32 @@ export default function BSL2025AgendaScreen() {
       const uniqueDays = [...new Set(dayValues)];
       console.log('📅 Unique day values:', uniqueDays);
       
-      // Group by day, handling both simple and complex day names
+      // Group by day, handling both simple and complex day names. dayKey is
+      // purely an internal grouping/react-key value here -- it's never
+      // rendered directly (getTabLabel/getTabTheme derive the displayed,
+      // translated text from it), so the hardcoded "November N" isn't
+      // user-visible; left as-is to avoid touching this key's format, which
+      // several other places in this file pattern-match against.
       agenda.forEach(item => {
         const day = (item as any).day;
         if (day) {
           let dayKey: string;
-          let dayName: string;
-          
+
           // Extract day number from complex day names
           if (day.includes('Día 1')) {
             dayKey = 'Day 1 - November 12';
-            dayName = 'Regulación, Bancos Centrales e Infraestructura del Dinero Digital';
           } else if (day.includes('Día 2')) {
             dayKey = 'Day 2 - November 13';
-            dayName = 'PSAV, Compliance, Custodia y Tokenización';
           } else if (day.includes('Día 3')) {
             dayKey = 'Day 3 - November 14';
-            dayName = 'Stablecoins y DeFi: Integrando el Mundo Financiero Global';
           } else if (day === '1' || day === '2' || day === '3') {
             // Simple day numbers
             dayKey = `Day ${day} - November ${day === '1' ? '12' : day === '2' ? '13' : '14'}`;
-            dayName = day === '1' ? 'Regulación, Bancos Centrales e Infraestructura del Dinero Digital' :
-                     day === '2' ? 'PSAV, Compliance, Custodia y Tokenización' :
-                     'Stablecoins y DeFi: Integrando el Mundo Financiero Global';
           } else {
             // Fallback for other formats
             dayKey = day;
-            dayName = 'Event Day';
           }
-          
+
           if (!grouped[dayKey]) {
             grouped[dayKey] = [];
           }
@@ -1220,6 +1219,8 @@ export default function BSL2025AgendaScreen() {
                 onPress={() => handleToggleFavorite(item)}
                 style={styles.actionButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={isFavorite ? t('actions.removeFromFavorites') : t('actions.addToFavorites')}
               >
                 <MaterialIcons
                   name={isFavorite ? 'star' : 'star-border'}
@@ -1231,6 +1232,8 @@ export default function BSL2025AgendaScreen() {
                 onPress={handleConfirmPress}
                 style={styles.actionButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={isConfirmed ? t('actions.unmarkAttending') : t('actions.markAttending')}
               >
                 <MaterialIcons
                   name={isConfirmed ? 'check-circle' : 'radio-button-unchecked'}
@@ -1247,7 +1250,12 @@ export default function BSL2025AgendaScreen() {
 
           {item.speakers && item.speakers.length > 0 && (
             <View style={styles.speakersContainer}>
-              <MaterialIcons name="people" size={16} color={colors.text.secondary} />
+              <MaterialIcons
+                name="people"
+                size={16}
+                color={colors.text.secondary}
+                accessibilityLabel={t('labels.speakers')}
+              />
               <View style={styles.speakersList}>
                 {item.speakers.map((speaker: string, index: number) => {
                   const { id: speakerId, displayName, image } = resolveAgendaSpeaker(speaker);
@@ -1293,7 +1301,12 @@ export default function BSL2025AgendaScreen() {
             if (location) {
               return (
                 <View style={styles.locationContainer}>
-                  <MaterialIcons name="location-on" size={16} color={colors.text.secondary} />
+                  <MaterialIcons
+                    name="location-on"
+                    size={16}
+                    color={colors.text.secondary}
+                    accessibilityLabel={t('labels.location')}
+                  />
                   <Text style={styles.agendaLocation}>{location}</Text>
                 </View>
               );

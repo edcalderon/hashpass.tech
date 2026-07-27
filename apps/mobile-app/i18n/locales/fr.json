@@ -423,7 +423,14 @@
     "banner": {
       "title": "Blockchain Summit Latam 2025",
       "subtitle": "12-14 novembre 2025 • Universidad EAFIT, Medellín",
-      "date": "12-14 novembre 2025"
+      "date": "12-14 novembre 2025",
+      "pastEvent": "Événement Passé",
+      "archivedEdition": "Événement Passé / Édition Archivée",
+      "startsIn": "L'événement commence dans :",
+      "days": "JOURS",
+      "hours": "HRS",
+      "minutes": "MIN",
+      "seconds": "SEC"
     },
     "selectEvent": "Sélectionner un événement",
     "yourPasses": "Vos passes",
@@ -829,5 +836,73 @@
     "updateNow": "Mettre à Jour",
     "updateClearing": "Effacement du cache…",
     "updateReloading": "Rechargement…"
+  },
+  "agenda": {
+    "title": "Programme de l'Événement",
+    "subtitle_one": "Programme de la Conférence • 1 Session",
+    "subtitle_other": "Programme de la Conférence • {count} Sessions",
+    "date": "12-14 novembre 2025 • Medellín, Colombie",
+    "loading": "Chargement du programme...",
+    "filter": {
+      "type": "Type",
+      "speakers": "Intervenants",
+      "keynote": "Conférence Principale",
+      "panel": "Panel",
+      "break": "Pause",
+      "meal": "Repas",
+      "registration": "Inscription"
+    },
+    "search": {
+      "placeholder": "Rechercher des sessions, intervenants ou mots-clés..."
+    },
+    "tabs": {
+      "sessions": "sessions",
+      "day": "Jour {number}",
+      "themes": {
+        "day1": "Régulation, Banques Centrales et Infrastructure de la Monnaie Numérique",
+        "day2": "PSAV, Conformité, Conservation et Tokenisation",
+        "day3": "Stablecoins et DeFi : Intégrer le Système Financier Mondial"
+      }
+    },
+    "noResults": {
+      "title": "Aucune session ne correspond à vos filtres",
+      "subtitle": "Ajustez votre recherche ou vos filtres"
+    },
+    "empty": {
+      "title": "Aucun programme disponible",
+      "subtitle": "Revenez plus tard pour consulter le programme de l'événement",
+      "noLiveData": "Aucune donnée de programme en direct"
+    },
+    "badges": {
+      "past": "PASSÉ"
+    },
+    "locations": {
+      "mainStage": "Scène Principale",
+      "registrationArea": "Zone d'Inscription"
+    },
+    "messages": {
+      "untitledEvent": "Événement Sans Titre",
+      "eventConfirmed": "Événement confirmé",
+      "eventConfirmedMessage": "Cet événement a été ajouté à votre programme",
+      "eventUnconfirmed": "Événement non confirmé",
+      "eventUnconfirmedMessage": "Cet événement a été retiré de votre programme confirmé",
+      "error": "Erreur",
+      "confirmError": "Échec de la confirmation de l'événement",
+      "unconfirmError": "Échec de l'annulation de la confirmation",
+      "addedToFavorites": "Ajouté aux favoris",
+      "removedFromFavorites": "Retiré des favoris",
+      "addToFavoritesError": "Échec de l'ajout aux favoris",
+      "removeFromFavoritesError": "Échec du retrait des favoris"
+    },
+    "actions": {
+      "addToFavorites": "Ajouter aux favoris",
+      "removeFromFavorites": "Retirer des favoris",
+      "markAttending": "Marquer comme présent",
+      "unmarkAttending": "Annuler la présence"
+    },
+    "labels": {
+      "speakers": "Intervenants",
+      "location": "Lieu"
+    }
   }
 }

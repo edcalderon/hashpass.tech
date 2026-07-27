@@ -422,7 +422,14 @@
     "banner": {
       "title": "Blockchain Summit Latam 2025",
       "subtitle": "12-14 de novembro de 2025 • Universidad EAFIT, Medellín",
-      "date": "12-14 de novembro de 2025"
+      "date": "12-14 de novembro de 2025",
+      "pastEvent": "Evento Passado",
+      "archivedEdition": "Evento Passado / Edição Arquivada",
+      "startsIn": "O evento começa em:",
+      "days": "DIAS",
+      "hours": "HRS",
+      "minutes": "MIN",
+      "seconds": "SEG"
     },
     "selectEvent": "Selecionar evento",
     "yourPasses": "Seus passes",
@@ -828,5 +835,73 @@
     "updateNow": "Atualizar Agora",
     "updateClearing": "Limpando cache…",
     "updateReloading": "Recarregando…"
+  },
+  "agenda": {
+    "title": "Agenda do Evento",
+    "subtitle_one": "Programação da Conferência • 1 Sessão",
+    "subtitle_other": "Programação da Conferência • {count} Sessões",
+    "date": "12-14 de novembro de 2025 • Medellín, Colômbia",
+    "loading": "Carregando agenda...",
+    "filter": {
+      "type": "Tipo",
+      "speakers": "Palestrantes",
+      "keynote": "Palestra Principal",
+      "panel": "Painel",
+      "break": "Intervalo",
+      "meal": "Refeição",
+      "registration": "Registro"
+    },
+    "search": {
+      "placeholder": "Buscar sessões, palestrantes ou palavras-chave..."
+    },
+    "tabs": {
+      "sessions": "sessões",
+      "day": "Dia {number}",
+      "themes": {
+        "day1": "Regulação, Bancos Centrais e Infraestrutura do Dinheiro Digital",
+        "day2": "PSAV, Compliance, Custódia e Tokenização",
+        "day3": "Stablecoins e DeFi: Integrando o Sistema Financeiro Global"
+      }
+    },
+    "noResults": {
+      "title": "Nenhuma sessão corresponde aos seus filtros",
+      "subtitle": "Ajuste sua busca ou filtros"
+    },
+    "empty": {
+      "title": "Nenhuma agenda disponível",
+      "subtitle": "Volte mais tarde para ver a programação do evento",
+      "noLiveData": "Sem dados de agenda ao vivo"
+    },
+    "badges": {
+      "past": "PASSADO"
+    },
+    "locations": {
+      "mainStage": "Palco Principal",
+      "registrationArea": "Área de Registro"
+    },
+    "messages": {
+      "untitledEvent": "Evento Sem Título",
+      "eventConfirmed": "Evento confirmado",
+      "eventConfirmedMessage": "Este evento foi adicionado à sua programação",
+      "eventUnconfirmed": "Evento não confirmado",
+      "eventUnconfirmedMessage": "Este evento foi removido da sua programação confirmada",
+      "error": "Erro",
+      "confirmError": "Falha ao confirmar o evento",
+      "unconfirmError": "Falha ao desconfirmar o evento",
+      "addedToFavorites": "Adicionado aos favoritos",
+      "removedFromFavorites": "Removido dos favoritos",
+      "addToFavoritesError": "Falha ao adicionar aos favoritos",
+      "removeFromFavoritesError": "Falha ao remover dos favoritos"
+    },
+    "actions": {
+      "addToFavorites": "Adicionar aos favoritos",
+      "removeFromFavorites": "Remover dos favoritos",
+      "markAttending": "Marcar como presente",
+      "unmarkAttending": "Desmarcar presença"
+    },
+    "labels": {
+      "speakers": "Palestrantes",
+      "location": "Local"
+    }
   }
 }
