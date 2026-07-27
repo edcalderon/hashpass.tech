@@ -191,7 +191,7 @@ export default function SpeakerDetail() {
             title: dbSpeaker.title,
             company: dbSpeaker.company || '',
             bio: dbSpeaker.bio || `Experienced professional in ${dbSpeaker.title}.`,
-            image: dbSpeaker.cloudinaryAvatarUrl || dbSpeaker.imageurl || getSpeakerAvatarUrl(dbSpeaker.name),
+            image: dbSpeaker.imageurl || getSpeakerAvatarUrl(dbSpeaker.name),
             linkedin: dbSpeaker.linkedin || getSpeakerLinkedInUrl(dbSpeaker.name),
             twitter: dbSpeaker.twitter || getSpeakerTwitterUrl(dbSpeaker.name),
             tags: dbSpeaker.tags || ['Blockchain', 'FinTech', 'Innovation'],

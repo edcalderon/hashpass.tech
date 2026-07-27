@@ -2,9 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, InteractionManager } from 'react-native';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
-import { MaterialIcons } from '@expo/vector-icons';
+// lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
+// font glyphs @expo/vector-icons renders directly; the raw font can show its
+// tofu/"?" fallback glyph for a window before the icon font loads on web.
+import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import EventBanner from '../../../components/EventBanner';
+import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { apiClient } from '@/lib/api-client';
 import { 
@@ -193,8 +197,17 @@ export default function BSL2025AgendaScreen() {
     return items;
   };
 
-  // Load agenda from database first, fallback to hardcoded config only on error
+  // Load agenda from database first, fallback to hardcoded config only on error.
+  // Gated on event being resolved: EventContext derives `event` synchronously
+  // from usePathname(), which can be null on the very first render before
+  // routing settles. Without this guard, that first run computes its JSON
+  // fallback from a null event (event?.agenda ?? EVENTS[eventId]?.agenda,
+  // with eventId itself not yet resolved either), landing on an empty
+  // agenda and briefly showing "no agenda yet" before event?.agenda changing
+  // re-triggers this effect with the real data a moment later.
   useEffect(() => {
+    if (!event) return;
+
     const loadAgenda = async () => {
       try {
         setLoading(true);
@@ -829,16 +842,18 @@ export default function BSL2025AgendaScreen() {
   // failing for id-slug references (a hyphenated, unaccented slug rarely
   // substring-matches an accented display name), which is why agenda cards
   // were rendering the raw id slug as if it were the speaker's name.
-  const resolveAgendaSpeaker = (value: string): { id: string | null; displayName: string } => {
+  const resolveAgendaSpeaker = (
+    value: string
+  ): { id: string | null; displayName: string; image?: string } => {
     if (event?.speakers) {
       const byId = event.speakers.find((s: { id?: string }) => s.id === value);
-      if (byId) return { id: byId.id ?? null, displayName: byId.name };
+      if (byId) return { id: byId.id ?? null, displayName: byId.name, image: byId.image };
 
       const byName = event.speakers.find((s: { name: string }) =>
         s.name.toLowerCase().includes(value.toLowerCase()) ||
         value.toLowerCase().includes(s.name.toLowerCase())
       );
-      if (byName?.id) return { id: byName.id, displayName: value };
+      if (byName?.id) return { id: byName.id, displayName: value, image: byName.image };
     }
 
     return { id: null, displayName: value };
@@ -1235,19 +1250,27 @@ export default function BSL2025AgendaScreen() {
               <MaterialIcons name="people" size={16} color={colors.text.secondary} />
               <View style={styles.speakersList}>
                 {item.speakers.map((speaker: string, index: number) => {
-                  const { id: speakerId, displayName } = resolveAgendaSpeaker(speaker);
+                  const { id: speakerId, displayName, image } = resolveAgendaSpeaker(speaker);
                   const isClickable = speakerId !== null;
+                  const chipContent = (
+                    <>
+                      <SpeakerAvatar name={displayName} imageUrl={image} size={22} />
+                      <Text
+                        style={[styles.agendaSpeakers, isClickable && styles.clickableSpeaker]}
+                        numberOfLines={1}
+                      >
+                        {displayName}
+                      </Text>
+                    </>
+                  );
                   return (
                     <React.Fragment key={index}>
                       {isClickable ? (
-                        <TouchableOpacity onPress={() => handleSpeakerPress(speaker)} style={styles.speakerLink}>
-                          <Text style={[styles.agendaSpeakers, styles.clickableSpeaker]}>{displayName}</Text>
+                        <TouchableOpacity onPress={() => handleSpeakerPress(speaker)} style={styles.speakerChip}>
+                          {chipContent}
                         </TouchableOpacity>
                       ) : (
-                        <Text style={styles.agendaSpeakers}>{displayName}</Text>
-                      )}
-                      {index < (item.speakers?.length || 0) - 1 && (
-                        <Text style={styles.speakerSeparator}>, </Text>
+                        <View style={styles.speakerChip}>{chipContent}</View>
                       )}
                     </React.Fragment>
                   );
@@ -1285,7 +1308,6 @@ export default function BSL2025AgendaScreen() {
   if (loading) {
     return (
       <LoadingScreen
-        icon="schedule"
         message={t('loading')}
         fullScreen={true}
       />
@@ -1652,30 +1674,30 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   speakersContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
+    gap: 6,
   },
   speakersList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     flex: 1,
+    gap: 8,
+    marginTop: -2,
+  },
+  speakerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: 200,
   },
   agendaSpeakers: {
     fontSize: 13,
     color: colors.text.secondary,
-    marginLeft: 6,
-    flex: 1,
+    flexShrink: 1,
   },
   clickableSpeaker: {
     color: '#007AFF',
-    textDecorationLine: 'underline',
-  },
-  speakerLink: {
-    // No additional styling needed, inherits from parent
-  },
-  speakerSeparator: {
-    fontSize: 13,
-    color: colors.text.secondary,
   },
   locationContainer: {
     flexDirection: 'row',

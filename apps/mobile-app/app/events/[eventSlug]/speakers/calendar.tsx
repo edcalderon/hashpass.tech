@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../../hooks/useTheme';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '../../../../lib/vector-icons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../../../lib/supabase';
 import EventBanner from '../../../../components/EventBanner';
@@ -24,16 +24,6 @@ interface Speaker {
   isActive?: boolean; // Has user_id = active speaker
 }
 
-interface AgendaItem {
-  id: string;
-  time: string;
-  title: string;
-  description?: string;
-  speakers?: string[];
-  type: 'keynote' | 'panel' | 'break' | 'meal' | 'registration';
-  location?: string;
-}
-
 // Shape of event?.speakers entries (from packages/config/src/events.ts's
 // Speaker type) as actually read below -- named explicitly rather than
 // inferred through `event` (from useEvent(), a non-relative import) so the
@@ -47,17 +37,6 @@ interface EventSpeakerConfig {
   image?: string;
 }
 
-const getAgendaTypeColor = (type: string) => {
-  switch (type) {
-    case 'keynote': return '#007AFF';
-    case 'panel': return '#34A853';
-    case 'break': return '#FF9500';
-    case 'meal': return '#FF3B30';
-    case 'registration': return '#8E8E93';
-    default: return '#8E8E93';
-  }
-};
-
 export default function SpeakersCalendar() {
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
@@ -65,9 +44,6 @@ export default function SpeakersCalendar() {
   const styles = getStyles(isDark, colors);
   const eventId = event?.id || 'bsl';
   const eventDateLabel = event?.eventDateString || event?.subtitle || '2026 Tour';
-  const eventLocationLabel = event?.tour?.city && event?.tour?.country
-    ? `${event.tour.city}, ${event.tour.country}`
-    : event?.subtitle || 'Latin America';
 
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [filteredSpeakers, setFilteredSpeakers] = useState<Speaker[]>([]);
@@ -76,8 +52,7 @@ export default function SpeakersCalendar() {
   const [sortBy, setSortBy] = useState('name');
   const [showActiveOnly, setShowActiveOnly] = useState(false);
   const [loading, setLoading] = useState(true);
-  const agenda = event?.agenda || [];
-  
+
   // Check if event is finished
   const [isEventFinished, setIsEventFinished] = useState(false);
   useEffect(() => {
@@ -94,14 +69,6 @@ export default function SpeakersCalendar() {
   // Calculate active speakers count
   const activeSpeakersCount = useMemo(() => {
     return speakers.filter(s => s.isActive).length;
-  }, [speakers]);
-
-  // Resolve agenda items' raw speaker id slugs (e.g. 'alvaro-clarke') to
-  // display names for AgendaCard, instead of showing the id itself.
-  const speakerNameById = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const s of speakers) map[s.id] = s.name;
-    return map;
   }, [speakers]);
 
   // Load speakers from database with JSON fallback. Gated on event being
@@ -137,7 +104,7 @@ export default function SpeakersCalendar() {
               title: s.title || null,
               company: s.company || null,
               bio: s.bio || (s.title ? `Experienced professional in ${s.title}.` : undefined),
-              image: s.cloudinaryAvatarUrl || s.imageurl || getSpeakerAvatarUrl(s.name), // Prioritize Cloudinary URL
+              image: s.imageurl || getSpeakerAvatarUrl(s.name),
               user_id: s.user_id || undefined,
               isActive: !!s.user_id // Active if has user_id
             }));
@@ -217,18 +184,6 @@ export default function SpeakersCalendar() {
     setFilteredSpeakers(speakers);
   }, [speakers]);
 
-  // Group agenda by day. Explicit variable annotation (not just the reduce
-  // callback's param types) so Object.entries(agendaByDay) below reliably
-  // resolves to [string, AgendaItem[]][] regardless of how `agenda`'s own
-  // type (sourced from `event`, a non-relative import stubbed as `any` by
-  // the pre-push isolated typecheck) affects .reduce()'s inferred return.
-  const agendaByDay: Record<string, AgendaItem[]> = agenda.reduce((acc: Record<string, AgendaItem[]>, item: AgendaItem) => {
-    const day = item.time.split(' ')[0]; // Extract day from time
-    if (!acc[day]) acc[day] = [];
-    acc[day].push(item);
-    return acc;
-  }, {} as Record<string, AgendaItem[]>);
-
   // SpeakerCard component
   const SpeakerCard = ({ speaker }: { speaker: Speaker }) => {
     return (
@@ -266,26 +221,6 @@ export default function SpeakersCalendar() {
       </TouchableOpacity>
     );
   };
-
-  // AgendaCard component
-  const AgendaCard = ({ agendaItem }: { agendaItem: AgendaItem }) => (
-    <View style={styles.agendaCard}>
-      <View style={styles.agendaTimeContainer}>
-        <Text style={styles.agendaTime}>{agendaItem.time}</Text>
-        <View style={[styles.agendaTypeBadge, { backgroundColor: getAgendaTypeColor(agendaItem.type) }]}>
-          <Text style={styles.agendaTypeText}>{agendaItem.type.toUpperCase()}</Text>
-        </View>
-      </View>
-      <View style={styles.agendaContent}>
-        <Text style={styles.agendaTitle}>{agendaItem.title}</Text>
-        {agendaItem.speakers && agendaItem.speakers.length > 0 && (
-          <Text style={styles.agendaSpeakers}>
-            Speakers: {agendaItem.speakers.map(id => speakerNameById[id] || id).join(', ')}
-          </Text>
-        )}
-      </View>
-    </View>
-  );
 
   if (loading) {
     return (
@@ -358,45 +293,6 @@ export default function SpeakersCalendar() {
           </View>
         )}
 
-        {/* Event Agenda by Day */}
-        {Object.keys(agendaByDay).length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Event Agenda</Text>
-            {Object.entries(agendaByDay).map(([day, dayAgenda]: [string, AgendaItem[]]) => (
-              <View key={day} style={styles.daySection}>
-                <Text style={styles.dayTitle}>{day}</Text>
-                <View style={styles.agendaList}>
-                  {dayAgenda.map((agendaItem: AgendaItem) => (
-                    <AgendaCard key={agendaItem.id} agendaItem={agendaItem} />
-                  ))}
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Event Info Section */}
-        <View style={[styles.section, styles.infoSection]}>
-          <Text style={styles.sectionTitle}>Event Information</Text>
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <MaterialIcons name="location-on" size={20} color="#007AFF" />
-        <Text style={styles.infoText}>{eventLocationLabel}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <MaterialIcons name="event" size={20} color="#007AFF" />
-        <Text style={styles.infoText}>{eventDateLabel}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <MaterialIcons name="people" size={20} color="#007AFF" />
-              <Text style={styles.infoText}>{speakers.length} Speakers</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <MaterialIcons name="schedule" size={20} color="#007AFF" />
-              <Text style={styles.infoText}>3 Days of Content</Text>
-            </View>
-          </View>
-        </View>
       </ScrollView>
     </View>
   );
@@ -422,18 +318,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text.primary,
     marginBottom: 15,
-  },
-  daySection: {
-    marginBottom: 20,
-  },
-  dayTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: 10,
-    paddingBottom: 8,
-    borderBottomWidth: 2,
-    borderBottomColor: '#007AFF',
   },
   speakersList: {
     gap: 12,
@@ -521,82 +405,6 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.text.secondary,
     fontWeight: '400',
     opacity: 0.8,
-  },
-  agendaList: {
-    gap: 12,
-  },
-  agendaCard: {
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  agendaTimeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  agendaTime: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  agendaTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  agendaTypeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  agendaContent: {
-    flex: 1,
-  },
-  agendaTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: 4,
-  },
-  agendaSpeakers: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    fontStyle: 'italic',
-  },
-  infoSection: {
-    backgroundColor: colors.background.paper,
-  },
-  infoCard: {
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoText: {
-    fontSize: 14,
-    color: colors.text.primary,
-    marginLeft: 12,
   },
   noResultsContainer: {
     alignItems: 'center',

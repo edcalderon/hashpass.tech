@@ -20,7 +20,9 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Circle,
   ClipboardList,
+  Clock,
   CloudDownload,
   Bug,
   Compass,
@@ -218,7 +220,9 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   'qr-code': QrCode,
   'qr-code-outline': QrCode,
   'qr-code-scanner': ScanQrCode,
+  'radio-button-unchecked': Circle,
   refresh: RefreshCw,
+  schedule: Clock,
   'search-off': SearchX,
   'search-outline': Search,
   send: Send,
@@ -227,6 +231,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   'shield-outline': Shield,
   security: Shield,
   star: Star,
+  'star-border': Star,
   'ticket-outline': Ticket,
   'warning-outline': TriangleAlert,
   sunny: Sun,
@@ -245,7 +250,11 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
 
 function WebMaterialIcons({ name, ...props }: IconProps) {
   const MappedIcon = WEB_MATERIAL_ICONS[name] ?? CircleHelp;
-  return <MappedIcon {...props} />;
+  // Lucide's Star renders as an outline by default; MaterialIcons distinguishes
+  // the filled 'star' from the hollow 'star-border' as two different glyphs, so
+  // fill it here to preserve that same filled/outline contrast.
+  const fillProps = name === 'star' ? { fill: (props as { color?: string }).color } : undefined;
+  return <MappedIcon {...props} {...fillProps} />;
 }
 
 function WebIonicons({ name, ...props }: IconProps) {

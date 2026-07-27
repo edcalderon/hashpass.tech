@@ -25,42 +25,47 @@ jest.mock('expo-constants', () => ({
 import {
   resolveConfiguredSpeakerImage,
   resolveSpeakerImage,
-  getSpeakerCloudinaryAvatarUrl,
   getSpeakerAvatarUrl,
 } from '../../lib/string-utils';
 
-describe('resolveConfiguredSpeakerImage', () => {
-  it('prefers the speaker\'s own configured image over any lookup', () => {
-    expect(resolveConfiguredSpeakerImage('https://cdn.example.com/foto.png', 'Ada Lovelace')).toBe(
-      'https://cdn.example.com/foto.png'
-    );
-  });
-
-  it('falls back to the Cloudinary lookup when no configured image is set', () => {
-    expect(resolveConfiguredSpeakerImage(undefined, 'Ada Lovelace')).toBe(
-      getSpeakerCloudinaryAvatarUrl('Ada Lovelace')
-    );
-  });
-
-  it('treats an empty string image as unset, same as undefined', () => {
-    expect(resolveConfiguredSpeakerImage('', 'Ada Lovelace')).toBe(
-      getSpeakerCloudinaryAvatarUrl('Ada Lovelace')
-    );
-  });
-});
-
 describe('resolveSpeakerImage', () => {
-  it('prefers the speaker\'s own configured image over the name-guess lookup', () => {
+  it('prefers the speaker\'s own configured image over the S3 name-guess lookup', () => {
     expect(resolveSpeakerImage('https://cdn.example.com/foto.png', 'Grace Hopper')).toBe(
       'https://cdn.example.com/foto.png'
     );
   });
 
-  it('falls back to getSpeakerAvatarUrl when no configured image is set', () => {
-    expect(resolveSpeakerImage(undefined, 'Grace Hopper')).toBe(getSpeakerAvatarUrl('Grace Hopper'));
+  it('falls back to getSpeakerAvatarUrl (S3) when no configured image is set', () => {
+    const result = resolveSpeakerImage(undefined, 'Grace Hopper');
+    expect(result).toBe(getSpeakerAvatarUrl('Grace Hopper'));
+    // Cloudinary is no longer part of this lookup chain -- see getSpeakerAvatarUrl.
+    expect(result).not.toContain('cloudinary.com');
+    expect(result).toContain('s3');
   });
 
   it('treats an empty string image as unset, same as undefined', () => {
     expect(resolveSpeakerImage('', 'Grace Hopper')).toBe(getSpeakerAvatarUrl('Grace Hopper'));
+  });
+});
+
+describe('resolveConfiguredSpeakerImage', () => {
+  it('is a deprecated alias of resolveSpeakerImage', () => {
+    expect(resolveConfiguredSpeakerImage).toBe(resolveSpeakerImage);
+  });
+});
+
+describe('getSpeakerAvatarUrl', () => {
+  it('never returns a Cloudinary URL', () => {
+    // getSpeakerCloudinaryAvatarUrl always returns a URL string regardless of
+    // whether the image exists there, and its cloudinaryId duplicates the
+    // "speakers/avatars/" path segment -- it was reliably 404ing. This
+    // function goes straight to S3, where these images actually live.
+    expect(getSpeakerAvatarUrl('Erick Ortiz')).not.toContain('cloudinary.com');
+  });
+
+  it('prefers an explicitly provided S3 URL when given one', () => {
+    expect(getSpeakerAvatarUrl('Erick Ortiz', 'https://cdn.example.com/erick.png')).toBe(
+      'https://cdn.example.com/erick.png'
+    );
   });
 });
