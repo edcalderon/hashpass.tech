@@ -22,24 +22,45 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607271949, // Updated to current timestamp
+  buildNumber: 202607272126, // Updated to current timestamp
   releaseDate: '2026-07-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'real chile2026 agenda/speakers, S3 speaker photos, main explorer redesign'
+    // No new features
   ],
   bugfixes: [
-    'remove baked-in text from bsl2025 archive hero background',
-    'type explicit EventInfo params in tourStopEventIds filter/map',
-    'BSL explorer quick-access event switching and multi-event pass display'
+    'resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures',
+    'fully resolve isolated typecheck gaps in calendar.tsx',
+    'type explicit params in calendar.tsx flagged by pre-push typecheck',
+    'countdown flash, networking stats hard-fail, speaker image priority',
+    'hide scroll arrows until needed, fix Select Event scroll on web'
   ],
   breakingChanges: [],
-  notes: 'real chile2026 agenda/speakers, S3 speaker photos, main explorer redesign; remove baked-in text from bsl2025 archive hero background; type explicit EventInfo params in tourStopEventIds filter/map; BSL explorer quick-access event switching and multi-event pass display'
+  notes: 'resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures; fully resolve isolated typecheck gaps in calendar.tsx; type explicit params in calendar.tsx flagged by pre-push typecheck; countdown flash, networking stats hard-fail, speaker image priority; hide scroll arrows until needed, fix Select Event scroll on web'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.270': {
+    version: '1.8.270',
+    buildNumber: 202607272126,
+    releaseDate: '2026-07-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures',
+      'fully resolve isolated typecheck gaps in calendar.tsx',
+      'type explicit params in calendar.tsx flagged by pre-push typecheck',
+      'countdown flash, networking stats hard-fail, speaker image priority',
+      'hide scroll arrows until needed, fix Select Event scroll on web'
+    ],
+    breakingChanges: [],
+    notes: 'resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures; fully resolve isolated typecheck gaps in calendar.tsx; type explicit params in calendar.tsx flagged by pre-push typecheck; countdown flash, networking stats hard-fail, speaker image priority; hide scroll arrows until needed, fix Select Event scroll on web'
+  },
   '1.8.269': {
     version: '1.8.269',
     buildNumber: 202607271949,

@@ -1,3 +1,16 @@
+## [1.8.270](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.269...v1.8.270) (2026-07-27)
+
+
+### Bug Fixes
+
+* countdown flash, networking stats hard-fail, speaker image priority ([afbf0d8](https://github.com/hashpass-tech/hashpass.tech/commit/afbf0d8cbbb5f75ce25e4c53f61c88ac2a55d0aa))
+* fully resolve isolated typecheck gaps in calendar.tsx ([c28cfb4](https://github.com/hashpass-tech/hashpass.tech/commit/c28cfb46aa5e0974f38d2191a4929b617b04086d))
+* hide scroll arrows until needed, fix Select Event scroll on web ([9db9052](https://github.com/hashpass-tech/hashpass.tech/commit/9db905276dd617ccb1dd85f0b452dd4f79608582))
+* resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures ([6fe09c6](https://github.com/hashpass-tech/hashpass.tech/commit/6fe09c6683157d1b78aaf03c543a148fdb4f0719))
+* type explicit params in calendar.tsx flagged by pre-push typecheck ([43fd854](https://github.com/hashpass-tech/hashpass.tech/commit/43fd854b312533b0002f14cda9ec4217ad9630c7))
+### Release Highlights
+- resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures; fully resolve isolated typecheck gaps in calendar.tsx; type explicit params in calendar.tsx flagged by pre-push typecheck; countdown flash, networking stats hard-fail, speaker image priority; hide scroll arrows until needed, fix Select Event scroll on web
+
 ## [1.8.269](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.268...v1.8.269) (2026-07-27)
 
 

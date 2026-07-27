@@ -20,20 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.269)
+## 📋 Latest Changes (v1.8.270)
 
 ### Bug Fixes
 
-* BSL explorer quick-access event switching and multi-event pass display ([b09a50d](https://github.com/hashpass-tech/hashpass.tech/commit/b09a50d516475b021d760e2bb354f2bf92691831))
-* remove baked-in text from bsl2025 archive hero background ([51173cc](https://github.com/hashpass-tech/hashpass.tech/commit/51173cc75b7accd003c2ed5e0c3cea5194bd595c))
-* type explicit EventInfo params in tourStopEventIds filter/map ([a201209](https://github.com/hashpass-tech/hashpass.tech/commit/a201209b05d8f24a7c974f59c9643332a16b72b0))
-
-
-### Features
-
-* real chile2026 agenda/speakers, S3 speaker photos, main explorer redesign ([199e18d](https://github.com/hashpass-tech/hashpass.tech/commit/199e18d26c08aa3e90b4498516f9a37dc51c3f94))
+* countdown flash, networking stats hard-fail, speaker image priority ([afbf0d8](https://github.com/hashpass-tech/hashpass.tech/commit/afbf0d8cbbb5f75ce25e4c53f61c88ac2a55d0aa))
+* fully resolve isolated typecheck gaps in calendar.tsx ([c28cfb4](https://github.com/hashpass-tech/hashpass.tech/commit/c28cfb46aa5e0974f38d2191a4929b617b04086d))
+* hide scroll arrows until needed, fix Select Event scroll on web ([9db9052](https://github.com/hashpass-tech/hashpass.tech/commit/9db905276dd617ccb1dd85f0b452dd4f79608582))
+* resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures ([6fe09c6](https://github.com/hashpass-tech/hashpass.tech/commit/6fe09c6683157d1b78aaf03c543a148fdb4f0719))
+* type explicit params in calendar.tsx flagged by pre-push typecheck ([43fd854](https://github.com/hashpass-tech/hashpass.tech/commit/43fd854b312533b0002f14cda9ec4217ad9630c7))
 ### Release Highlights
-- real chile2026 agenda/speakers, S3 speaker photos, main explorer redesign; remove baked-in text from bsl2025 archive hero background; type explicit EventInfo params in tourStopEventIds filter/map; BSL explorer quick-access event switching and multi-event pass display
+- resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures; fully resolve isolated typecheck gaps in calendar.tsx; type explicit params in calendar.tsx flagged by pre-push typecheck; countdown flash, networking stats hard-fail, speaker image priority; hide scroll arrows until needed, fix Select Event scroll on web
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
