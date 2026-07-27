@@ -1,3 +1,19 @@
+## [1.8.269](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.268...v1.8.269) (2026-07-27)
+
+
+### Bug Fixes
+
+* BSL explorer quick-access event switching and multi-event pass display ([b09a50d](https://github.com/hashpass-tech/hashpass.tech/commit/b09a50d516475b021d760e2bb354f2bf92691831))
+* remove baked-in text from bsl2025 archive hero background ([51173cc](https://github.com/hashpass-tech/hashpass.tech/commit/51173cc75b7accd003c2ed5e0c3cea5194bd595c))
+* type explicit EventInfo params in tourStopEventIds filter/map ([a201209](https://github.com/hashpass-tech/hashpass.tech/commit/a201209b05d8f24a7c974f59c9643332a16b72b0))
+
+
+### Features
+
+* real chile2026 agenda/speakers, S3 speaker photos, main explorer redesign ([199e18d](https://github.com/hashpass-tech/hashpass.tech/commit/199e18d26c08aa3e90b4498516f9a37dc51c3f94))
+### Release Highlights
+- real chile2026 agenda/speakers, S3 speaker photos, main explorer redesign; remove baked-in text from bsl2025 archive hero background; type explicit EventInfo params in tourStopEventIds filter/map; BSL explorer quick-access event switching and multi-event pass display
+
 ## [1.8.268](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.267...v1.8.268) (2026-07-27)
 
 
