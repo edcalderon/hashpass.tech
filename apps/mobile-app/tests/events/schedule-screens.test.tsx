@@ -195,10 +195,11 @@ describe('event schedule screens', () => {
   });
 
   it('loads agenda data using the derived api segment on the agenda screen', async () => {
-    mockApiRequest
-      .mockResolvedValueOnce({ success: true, data: [] })
-      .mockResolvedValueOnce({ success: true, data: { hasData: true } })
-      .mockResolvedValueOnce({ success: true, data: [] });
+    // /api/bslatam/status never existed -- the status-check retry that used
+    // to follow an empty agenda response was dead code (always 404d) and
+    // has been removed; an empty response now falls straight through to the
+    // JSON config fallback with no further apiClient calls.
+    mockApiRequest.mockResolvedValueOnce({ success: true, data: [] });
 
     let renderer: TestRenderer.ReactTestRenderer;
 
@@ -208,8 +209,7 @@ describe('event schedule screens', () => {
     });
 
     expect(mockApiRequest).toHaveBeenNthCalledWith(1, 'agenda', { apiSegment: 'bslatam' });
-    expect(mockApiRequest).toHaveBeenNthCalledWith(2, 'status', { apiSegment: 'bslatam' });
-    expect(mockApiRequest).toHaveBeenNthCalledWith(3, 'agenda', { apiSegment: 'bslatam' });
+    expect(mockApiRequest).toHaveBeenCalledTimes(1);
     expect(mockRouterReplace).not.toHaveBeenCalled();
 
     await act(async () => {

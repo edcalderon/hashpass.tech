@@ -258,39 +258,6 @@ export default function BSL2025AgendaScreen() {
           console.log('🔄 Using JSON fallback due to error');
         }
         
-        // If we get here but no data, try with status endpoint
-        console.log('ℹ️ No data in direct response, trying status endpoint...');
-        try {
-          const statusResponse = await apiClient.request('status', { apiSegment });
-          // Handle status response format: { data: { hasData: true } }
-          const statusData = statusResponse?.data || {};
-
-          if (statusData?.hasData) {
-            const agendaResponse = await apiClient.request('agenda', { apiSegment });
-            let agendaItems = [];
-            
-            // Handle agenda response format: { data: [...] }
-            if (agendaResponse?.data && Array.isArray(agendaResponse.data)) {
-              agendaItems = agendaResponse.data;
-            } else if (Array.isArray(agendaResponse)) {
-              agendaItems = agendaResponse;
-            }
-            
-            console.log('📊 Parsed agenda items from status check:', agendaItems);
-            
-            if (agendaItems.length > 0) {
-              console.log('✅ Loaded agenda with eventId:', agendaItems.length, 'items');
-              setAgenda(agendaItems);
-              setIsLive(true);
-              setServiceStatus('running');
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error loading agenda:', error);
-          console.log('🔄 Using JSON fallback due to error');
-        }
-        
         // If we get here, no data was found through any method
         console.warn('⚠️ No agenda data found, showing JSON fallback');
         console.log('📄 Event object:', event);
@@ -896,21 +863,20 @@ export default function BSL2025AgendaScreen() {
         return;
       }
       try {
-        const { data, error } = await supabase
-          .from('user_agenda_status')
-          .select('agenda_id, status, is_favorite')
-          .eq('user_id', user.id)
-          .eq('event_id', eventId)
-          .not('agenda_id', 'is', null);
-        
-        if (error) {
-          console.error('Error loading user agenda status:', error);
+        const response = await apiClient.request('agenda-status', {
+          apiSegment,
+          params: { eventId },
+        });
+
+        if (!response.success) {
+          console.error('Error loading user agenda status:', response.error);
           return;
         }
-        
+
+        const data = (response.data as any)?.data;
         const statusMap: Record<string, 'tentative' | 'confirmed'> = {};
         const favoriteMap: Record<string, boolean> = {};
-        
+
         (data || []).forEach((item: any) => {
           if (item.agenda_id) {
             const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
@@ -938,38 +904,12 @@ export default function BSL2025AgendaScreen() {
     const newStatus = currentStatus === 'confirmed' ? 'tentative' : 'confirmed';
     
     try {
-      const { data: existing } = await supabase
-        .from('user_agenda_status')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('event_id', eventId)
-        .eq('agenda_id', agendaItem.id)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from('user_agenda_status')
-          .update({
-            status: newStatus,
-            confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_agenda_status')
-          .insert({
-            user_id: user.id,
-            agenda_id: agendaItem.id,
-            event_id: eventId,
-            status: newStatus,
-            confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
-          });
-        
-        if (error) throw error;
-      }
+      const response = await apiClient.request('agenda-status', {
+        apiSegment,
+        method: 'POST',
+        body: { eventId, agendaId: agendaItem.id, status: newStatus },
+      });
+      if (!response.success) throw new Error(response.error);
 
       setUserAgendaStatus(prev => ({
         ...prev,
@@ -1000,36 +940,12 @@ export default function BSL2025AgendaScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
-      const { data: existing } = await supabase
-        .from('user_agenda_status')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('event_id', eventId)
-        .eq('agenda_id', agendaItem.id)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from('user_agenda_status')
-          .update({
-            is_favorite: newFavorite,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const currentStatus = userAgendaStatus[agendaItem.id] || 'tentative';
-        const { error } = await supabase
-          .from('user_agenda_status')
-          .insert({
-            user_id: user.id,
-            agenda_id: agendaItem.id,
-            event_id: eventId,
-            status: currentStatus,
-            is_favorite: newFavorite,
-          });
-        if (error) throw error;
-      }
+      const response = await apiClient.request('agenda-status', {
+        apiSegment,
+        method: 'POST',
+        body: { eventId, agendaId: agendaItem.id, isFavorite: newFavorite },
+      });
+      if (!response.success) throw new Error(response.error);
 
       setFavoriteStatus(prev => ({
         ...prev,
