@@ -41,7 +41,7 @@ describe('supabase-admin-bridge', () => {
         .mockResolvedValueOnce({ data: { users: [{ email: 'target@example.com' }] }, error: null });
       const client = { auth: { admin: { listUsers } } } as any;
 
-      return findSupabaseUserByEmail(client, 'Target@Example.com').then((user) => {
+      return findSupabaseUserByEmail(client, 'Target@Example.com').then((user: any) => {
         expect(user).toEqual({ email: 'target@example.com' });
         expect(listUsers).toHaveBeenCalledTimes(2);
       });
@@ -127,6 +127,26 @@ describe('supabase-admin-bridge', () => {
       const bridge = await issueSupabaseSessionBridge(client, 'user@example.com');
       expect(bridge).toBeNull();
     });
+
+    it('returns null and logs when generateLink throws unexpectedly', async () => {
+      const client = {
+        auth: {
+          admin: {
+            generateLink: jest.fn().mockRejectedValue(new Error('network down')),
+          },
+        },
+      } as any;
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const bridge = await issueSupabaseSessionBridge(client, 'user@example.com');
+
+      expect(bridge).toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Supabase Bridge] Failed to issue session bridge link:',
+        'network down'
+      );
+      warnSpy.mockRestore();
+    });
   });
 
   describe('ensureSupabaseAccountForEmail', () => {
@@ -173,6 +193,54 @@ describe('supabase-admin-bridge', () => {
           user_metadata: expect.objectContaining({ foo: 'bar', auth_provider: 'better-auth' }),
         })
       );
+    });
+
+    it('returns null when a duplicate account exists but cannot be located by email', async () => {
+      const client = {
+        auth: {
+          admin: {
+            createUser: jest.fn().mockResolvedValue({ data: null, error: { message: 'User already registered' } }),
+            listUsers: jest.fn().mockResolvedValue({ data: { users: [] }, error: null }),
+          },
+        },
+      } as any;
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await ensureSupabaseAccountForEmail(client, {
+        email: 'ghost@example.com',
+        userMetadata: {},
+      });
+
+      expect(result).toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Supabase Bridge] User already exists but could not be located for metadata update.'
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('still returns the existing id when the metadata update itself fails', async () => {
+      const client = {
+        auth: {
+          admin: {
+            createUser: jest.fn().mockResolvedValue({ data: null, error: { message: 'User already registered' } }),
+            listUsers: jest.fn().mockResolvedValue({
+              data: { users: [{ id: 'existing-uuid', email: 'dup@example.com', user_metadata: {} }] },
+              error: null,
+            }),
+            updateUserById: jest.fn().mockResolvedValue({ error: { message: 'update failed' } }),
+          },
+        },
+      } as any;
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await ensureSupabaseAccountForEmail(client, {
+        email: 'dup@example.com',
+        userMetadata: { auth_provider: 'better-auth' },
+      });
+
+      expect(result).toEqual({ id: 'existing-uuid' });
+      expect(warnSpy).toHaveBeenCalledWith('[Supabase Bridge] Metadata update failed:', 'update failed');
+      warnSpy.mockRestore();
     });
 
     it('returns null for a non-duplicate createUser error', async () => {

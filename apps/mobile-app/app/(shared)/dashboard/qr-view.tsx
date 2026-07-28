@@ -20,9 +20,17 @@ export default function QRViewScreen() {
   const passId = params.passId as string;
 
   useEffect(() => {
-    if (!user || !dbUserId) {
+    if (!user) {
       setError('User not authenticated');
       setLoading(false);
+      return;
+    }
+
+    // user is set but dbUserId hasn't landed yet — the Supabase session
+    // bridge is fire-and-forget after a Better Auth sign-in, so this is a
+    // normal transient "pending" state, not an auth failure. Keep showing
+    // the loading spinner instead of a stale "not authenticated" error.
+    if (!dbUserId) {
       return;
     }
 
@@ -34,8 +42,9 @@ export default function QRViewScreen() {
 
     try {
       setLoading(true);
+      setError(null);
       const pass = await passSystemService.getUserPassInfo(dbUserId);
-      
+
       if (!pass) {
         setError('No pass found');
         return;

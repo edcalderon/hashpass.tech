@@ -1,13 +1,13 @@
 /// <reference types="jest" />
 
-const mockAuthenticateRequest = jest.fn();
+const mockGetBetterAuthSessionUser = jest.fn();
 const mockGetSupabaseServerForRequest = jest.fn();
 const mockEnsureSupabaseAccountForEmail = jest.fn();
 const mockIssueSupabaseSessionBridge = jest.fn();
 const mockSyncPublicUserRegistry = jest.fn();
 
-jest.mock('@hashpass/auth', () => ({
-  authenticateRequest: (...args: unknown[]) => mockAuthenticateRequest(...args),
+jest.mock('@/lib/server/better-auth', () => ({
+  getBetterAuthSessionUser: (...args: unknown[]) => mockGetBetterAuthSessionUser(...args),
 }));
 
 jest.mock('@/lib/supabase-server', () => ({
@@ -26,7 +26,7 @@ jest.mock('@/lib/auth/public-user-registry', () => ({
 describe('/api/auth/supabase-bridge', () => {
   beforeEach(() => {
     jest.resetModules();
-    mockAuthenticateRequest.mockReset();
+    mockGetBetterAuthSessionUser.mockReset();
     mockGetSupabaseServerForRequest.mockReset();
     mockEnsureSupabaseAccountForEmail.mockReset();
     mockIssueSupabaseSessionBridge.mockReset();
@@ -35,7 +35,7 @@ describe('/api/auth/supabase-bridge', () => {
   });
 
   it('returns 401 when there is no valid Better Auth session', async () => {
-    mockAuthenticateRequest.mockResolvedValue({ user: null, error: 'No Better Auth session cookie provided' });
+    mockGetBetterAuthSessionUser.mockResolvedValue(null);
 
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { POST } = require('../../../app/api/auth/supabase-bridge+api');
@@ -44,12 +44,12 @@ describe('/api/auth/supabase-bridge', () => {
     );
 
     expect(response.status).toBe(401);
-    expect(await response.json()).toEqual({ error: 'No Better Auth session cookie provided' });
+    expect(await response.json()).toEqual({ error: 'No Better Auth session found' });
     expect(mockEnsureSupabaseAccountForEmail).not.toHaveBeenCalled();
   });
 
   it('returns 401 when the authenticated user has no email', async () => {
-    mockAuthenticateRequest.mockResolvedValue({ user: { id: 'ba-1', email: '' }, error: null });
+    mockGetBetterAuthSessionUser.mockResolvedValue({ id: 'ba-1', email: '' });
 
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { POST } = require('../../../app/api/auth/supabase-bridge+api');
@@ -61,9 +61,11 @@ describe('/api/auth/supabase-bridge', () => {
   });
 
   it('ensures the Supabase account exists and returns a session bridge', async () => {
-    mockAuthenticateRequest.mockResolvedValue({
-      user: { id: 'ba-1', email: 'user@example.com', first_name: 'User', last_name: 'Example' },
-      error: null,
+    mockGetBetterAuthSessionUser.mockResolvedValue({
+      id: 'ba-1',
+      email: 'user@example.com',
+      first_name: 'User',
+      last_name: 'Example',
     });
     mockEnsureSupabaseAccountForEmail.mockResolvedValue({ id: 'auth-uuid-123' });
     mockIssueSupabaseSessionBridge.mockResolvedValue({
@@ -98,10 +100,7 @@ describe('/api/auth/supabase-bridge', () => {
   });
 
   it('returns 500 when the bridge cannot be issued', async () => {
-    mockAuthenticateRequest.mockResolvedValue({
-      user: { id: 'ba-1', email: 'user@example.com' },
-      error: null,
-    });
+    mockGetBetterAuthSessionUser.mockResolvedValue({ id: 'ba-1', email: 'user@example.com' });
     mockEnsureSupabaseAccountForEmail.mockResolvedValue(null);
     mockIssueSupabaseSessionBridge.mockResolvedValue(null);
 
@@ -116,10 +115,7 @@ describe('/api/auth/supabase-bridge', () => {
   });
 
   it('returns 500 when an unexpected error is thrown', async () => {
-    mockAuthenticateRequest.mockResolvedValue({
-      user: { id: 'ba-1', email: 'user@example.com' },
-      error: null,
-    });
+    mockGetBetterAuthSessionUser.mockResolvedValue({ id: 'ba-1', email: 'user@example.com' });
     mockEnsureSupabaseAccountForEmail.mockRejectedValue(new Error('boom'));
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 

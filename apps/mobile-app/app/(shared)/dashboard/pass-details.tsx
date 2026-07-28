@@ -26,9 +26,18 @@ export default function PassDetailsScreen() {
       return;
     }
 
-    if (!user || !dbUserId) {
+    if (!user) {
       setError('User not authenticated');
       setLoading(false);
+      return;
+    }
+
+    // user is set but dbUserId hasn't landed yet — the Supabase session
+    // bridge is fire-and-forget after a Better Auth sign-in (see
+    // USER_REGISTRY.md's bridge doc), so this is a normal, transient
+    // "pending" state, not an auth failure. Keep showing the loading spinner
+    // instead of a stale "not authenticated" error until it resolves.
+    if (!dbUserId) {
       return;
     }
 
@@ -40,8 +49,9 @@ export default function PassDetailsScreen() {
 
     try {
       setLoading(true);
+      setError(null);
       const pass = await passSystemService.getUserPassInfo(dbUserId);
-      
+
       if (!pass) {
         setError('No pass found');
         return;

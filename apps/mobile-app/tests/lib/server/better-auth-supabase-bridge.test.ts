@@ -110,6 +110,43 @@ describe('syncBetterAuthUser (Supabase account bridge)', () => {
     consoleErrorSpy.mockRestore();
   });
 
+  it('omits supabase from providerIds when the bridge resolves without an id', async () => {
+    mockEnsureSupabaseAccountForEmail.mockResolvedValue(null);
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { syncBetterAuthUser } = require('../../../lib/server/better-auth');
+
+    const request = new Request('https://bsl.hashpass.tech/api/auth/callback/google');
+    const user = { id: 'ba-4', email: 'nobridge@example.com' };
+
+    await syncBetterAuthUser(user, { request });
+
+    expect(mockSyncPublicUserRegistry).toHaveBeenCalledWith(
+      request,
+      expect.objectContaining({ providerIds: { 'better-auth': 'ba-4' } })
+    );
+  });
+
+  it('stringifies a non-Error rejection when logging a failed bridge attempt', async () => {
+    mockEnsureSupabaseAccountForEmail.mockRejectedValue('plain string failure');
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { syncBetterAuthUser } = require('../../../lib/server/better-auth');
+
+    const request = new Request('https://bsl.hashpass.tech/api/auth/callback/google');
+    const user = { id: 'ba-5', email: 'stringerror@example.com' };
+
+    await syncBetterAuthUser(user, { request });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[Better Auth] Supabase account bridge failed:',
+      'plain string failure'
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+
   it('reads request from context.context.request when context.request is absent', async () => {
     mockEnsureSupabaseAccountForEmail.mockResolvedValue({ id: 'auth-uuid-456' });
 

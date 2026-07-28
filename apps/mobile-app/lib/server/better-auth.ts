@@ -270,3 +270,62 @@ export const getAuthHandler = (): BetterAuthInstance['handler'] => {
   const auth = getAuth();
   return auth ? auth.handler : createMissingAuthHandler();
 };
+
+export type BetterAuthSessionUser = {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  status?: string;
+};
+
+// Verifies the caller's Better Auth session cookie directly against this
+// app's own Better Auth instance, in-process (no network hop) — deliberately
+// bypasses @hashpass/auth's authenticateRequest(), which routes by tenant
+// hostname (packages/config/src/sso-config.ts's core tenant still has the
+// stale authProvider: 'directus'). Better Auth is now the Google sign-in path
+// for every tenant including core (see AUTH_FLOW.md), so a hostname-routed
+// check would require a Bearer token and 401 a Better-Auth-only caller on
+// hashpass.tech before ever looking at their session cookie. Any endpoint
+// whose caller is known in advance to be a Better Auth session (like the
+// supabase-bridge endpoint) should use this instead of authenticateRequest().
+export const getBetterAuthSessionUser = async (
+  request: Request
+): Promise<BetterAuthSessionUser | null> => {
+  const cookie = request.headers.get('cookie') || request.headers.get('Cookie') || '';
+  if (!cookie) return null;
+
+  try {
+    const url = new URL(request.url);
+    const sessionRequest = new Request(new URL('/api/auth/get-session', url.origin).toString(), {
+      method: 'GET',
+      headers: {
+        Cookie: cookie,
+        Accept: 'application/json',
+        'x-forwarded-host': request.headers.get('x-forwarded-host') || request.headers.get('host') || '',
+        'x-forwarded-proto': request.headers.get('x-forwarded-proto') || 'https',
+      },
+    });
+
+    const response = await getAuthHandler()(sessionRequest);
+    if (!response.ok) return null;
+
+    const payload = await response.json().catch(() => null);
+    const betterAuthUser = payload?.user || payload?.data?.user;
+    if (!betterAuthUser?.id) return null;
+
+    const [firstName, ...lastNameParts] = String(betterAuthUser.name || '').trim().split(/\s+/);
+    return {
+      id: betterAuthUser.id,
+      email: betterAuthUser.email || '',
+      first_name: betterAuthUser.first_name || betterAuthUser.firstName || firstName || '',
+      last_name: betterAuthUser.last_name || betterAuthUser.lastName || lastNameParts.join(' '),
+      role: betterAuthUser.role || 'user',
+      status: betterAuthUser.banned ? 'banned' : 'active',
+    };
+  } catch (error) {
+    console.error('[Better Auth] Direct session verification failed:', error instanceof Error ? error.message : String(error));
+    return null;
+  }
+};
