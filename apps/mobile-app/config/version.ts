@@ -22,22 +22,43 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607280739, // Updated to current timestamp
+  buildNumber: 202607282341, // Updated to current timestamp
   releaseDate: '2026-07-28',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add EAS Update (OTA) for mobile, default releases to OTA-only'
+    'hybrid BSL dev deploy -- source CloudFront, target S3 + compute',
+    'migrate BSL to a proper target-account EC2-worker pipeline'
   ],
   bugfixes: [
-    'fail production builds loudly when Supabase config is missing'
+    'skip cross-account CloudFront invalidation in BSL hybrid deploy',
+    'scope Metro cache to the workspace on the BSL EC2 worker',
+    'stop hashpass-web pipeline monitor from killing the BSL EC2 worker'
   ],
   breakingChanges: [],
-  notes: 'add EAS Update (OTA) for mobile, default releases to OTA-only; fail production builds loudly when Supabase config is missing'
+  notes: 'hybrid BSL dev deploy -- source CloudFront, target S3 + compute; migrate BSL to a proper target-account EC2-worker pipeline; skip cross-account CloudFront invalidation in BSL hybrid deploy; scope Metro cache to the workspace on the BSL EC2 worker; stop hashpass-web pipeline monitor from killing the BSL EC2 worker'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.275': {
+    version: '1.8.275',
+    buildNumber: 202607282341,
+    releaseDate: '2026-07-28',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'hybrid BSL dev deploy -- source CloudFront, target S3 + compute',
+      'migrate BSL to a proper target-account EC2-worker pipeline'
+    ],
+    bugfixes: [
+      'skip cross-account CloudFront invalidation in BSL hybrid deploy',
+      'scope Metro cache to the workspace on the BSL EC2 worker',
+      'stop hashpass-web pipeline monitor from killing the BSL EC2 worker'
+    ],
+    breakingChanges: [],
+    notes: 'hybrid BSL dev deploy -- source CloudFront, target S3 + compute; migrate BSL to a proper target-account EC2-worker pipeline; skip cross-account CloudFront invalidation in BSL hybrid deploy; scope Metro cache to the workspace on the BSL EC2 worker; stop hashpass-web pipeline monitor from killing the BSL EC2 worker'
+  },
   '1.8.274': {
     version: '1.8.274',
     buildNumber: 202607280739,
