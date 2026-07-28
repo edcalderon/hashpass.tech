@@ -217,6 +217,28 @@ This checklist is deferred until production access has been approved and the rel
 4. Use open testing only if you want a broader pre-production audience after access is granted.
 5. Publish to production only after the freeze lifts.
 
+## Troubleshooting: Upload Rejected for `AD_ID` Permission
+
+If a Fastlane/Play Console upload fails saying the app declares
+`com.google.android.gms.permission.AD_ID` but the Data Safety form says the
+app doesn't use the advertising ID: some dependency (in practice,
+`@react-native-firebase/analytics`) pulls in `AD_ID` transitively via its own
+manifest merge, even though the app itself never reads the ad ID.
+
+Fixed (v1.8.273) with a persisted Expo config plugin —
+`apps/mobile-app/plugins/withAndroidRemoveAdIdPermission.js`, registered in
+`apps/mobile-app/app.json`'s `plugins` array — that strips the permission
+from the generated manifest on every `expo prebuild` via
+`tools:node="remove"`. A one-off manual edit to `android/app/src/main/AndroidManifest.xml`
+would **not** survive the next prebuild, since `android/` is gitignored and
+regenerated from `app.json` + plugins on every build; the fix has to live in
+a plugin, not in the generated manifest itself.
+
+If you add a new dependency that pulls in `AD_ID` (or any other permission
+that conflicts with the current Data Safety declaration) again, either strip
+it the same way or update the Data Safety form to match — don't do only one
+of the two, since a mismatch is exactly what gets an upload rejected.
+
 ## Related Docs
 
 - [RELEASE_WORKFLOW.md](./RELEASE_WORKFLOW.md)

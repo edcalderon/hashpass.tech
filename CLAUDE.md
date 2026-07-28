@@ -383,6 +383,57 @@ The native app uses a 6-digit code flow, NOT magic links. Flow:
 
 See `apps/docs/docs/auth/AUTH_FLOW.md` for full details.
 
+## Better Auth ↔ Supabase Identity Bridge (as of v1.8.273)
+
+**Root cause this fixes:** Better Auth sign-ins (Google, for every tenant — see
+above) only ever wrote to `ba_users` + `public.user`. They never created a
+real Supabase `auth.users` row. Two consequences: (1) the BSL general-pass
+provisioning trigger (`trg_auth_users_upcoming_bsl_general_passes`, `db/migrations/V010`/`V011`)
+only fires on `auth.users` INSERT/UPDATE, so Better-Auth-only accounts never
+got their automatic Chile 2026 / Colombia 2026 passes; (2) `user_roles` /
+`event_roles` FK to `auth.users(id)`, so those accounts couldn't hold admin
+roles either — same root cause as the FK-violation note in `V014`.
+
+**Fix:** `syncBetterAuthUser` in `apps/mobile-app/lib/server/better-auth.ts`
+now also calls `ensureSupabaseAccountForEmail` (shared helper in
+`apps/mobile-app/lib/auth/supabase-admin-bridge.ts`, extracted from the
+existing Directus OAuth bridge in `oauth/callback+api.ts` — same
+`admin.createUser`/dedupe-by-email pattern, not a new mechanism) to create or
+find a real Supabase `auth.users` row for the same email, **before** writing
+`provider_ids.supabase` into the `public.user` registry sync. Runs on both
+`create.after` and `update.after`, so a user whose bridge failed once
+self-heals on their next profile update. This alone is enough to make the
+pass trigger fire (it's `SECURITY DEFINER`, no session needed) and to unblock
+admin-role grants (which resolve identity via `provider_ids.supabase`).
+
+A second endpoint, `POST /api/auth/supabase-bridge`, additionally issues the
+client a **real Supabase JWT session** (magic-link → `token_hash` →
+`supabase.auth.verifyOtp()`, same "session bridge" pattern the Directus flow
+already used) so the client can actually *read* RLS-gated tables (passes,
+etc.), not just have the row exist server-side. Wired into `useAuth.ts` right
+after every successful Better Auth Google sign-in (native ID-token path and
+web `handleOAuthCallback`), fire-and-forget — a bridge failure never blocks
+the Better Auth sign-in that already succeeded.
+
+**`dbUserId` (in `useAuth.ts`) — why it's a separate field from `user`:**
+`auth-session-machine.ts`'s `PROVIDER_PRIORITY` always prefers Better Auth's
+own user object over the bridged Supabase session, so `user.id` from
+`useAuth()` is Better Auth's own id format, NOT a real Supabase uuid — passing
+it into any `uuid`-typed Supabase column throws Postgres `22P02` (`invalid
+input syntax for type uuid`). `dbUserId` is sourced independently, straight
+from `supabase.auth.onAuthStateChange`/`getSession()`, so it is always a real
+uuid (or `null` before the bridge session lands) regardless of which
+provider `user` currently resolves to. **Any code querying a Supabase table
+by the signed-in user's id must use `dbUserId`, never `user.id`.** ~13 files
+were audited and fixed for this in v1.8.273 (tutorial progress, blocking,
+passes, meeting requests, networking stats, chat) — see
+`apps/docs/docs/reference/mobile-app/db-user-id-pattern.md` for the full file
+list and the reasoning for keeping this as its own field instead of folding
+it into `user`.
+
+Full architecture writeup: `apps/docs/docs/auth/USER_REGISTRY.md` and
+`apps/docs/docs/reference/mobile-app/db-user-id-pattern.md`.
+
 ## DB Schema Conventions
 
 ### Table Naming
@@ -407,6 +458,7 @@ Migration history: V004 (create), V005 (rename ba_users), V006 (singular rename 
 See `apps/docs/docs/auth/USER_REGISTRY.md` for full schema and sync paths.
 
 ## Recent Fixes
+- v1.8.273: Bridged Better Auth sign-ins to real Supabase `auth.users` accounts (root cause of missing BSL general passes + admin-role gap for Better-Auth-only accounts — see "Better Auth ↔ Supabase Identity Bridge" above); fixed the resulting `invalid input syntax for type uuid` crash (and ~13 files sharing the same anti-pattern) by introducing `dbUserId` in `useAuth.ts`; stripped the `AD_ID` permission (`plugins/withAndroidRemoveAdIdPermission.js`) that Firebase Analytics pulled in and that was rejected by Play Console's "no advertising ID" Data Safety declaration.
 - v1.8.239: **RESOLVED** the long-running native Android login/dashboard crash chain (open since ~v1.8.221). Root cause had three independent layers: (1) React Native 0.79.6's Fabric renderer fatally throws on any unregistered `top*` direct event (`topLayout`, `topAttached`, etc.) — fixed by patching RN itself (`patches/react-native@0.79.6.patch`) so `extractEvents()` synthesizes a direct event config instead of throwing; (2) the app's own `ErrorUtils` crash guard was silently overwritten by RN core's unconditional `setGlobalHandler` call during `expo-router/entry` init, so the guard was dead code from the moment it shipped — fixed by re-installing the guard in `app/_layout.tsx` after that import resolves; (3) Better Auth's native session was memory-only, so a cold-start `getSession()` network failure could look like a logout — fixed with SecureStore session caching (`packages/auth/src/providers/better-auth.ts`) plus redirect hysteresis in `app/_layout.tsx`. Confirmed fixed on a real Play-distributed device install (prior updates only had emulator/Play-parity confirmation). Full investigation log: [native-auth-dashboard-crash-handoff.md](apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md).
 - v1.8.219: Fixed the real dashboard sidebar bug (drawerContent used `useNavigation()` instead of the `navigation` prop react-navigation passes it, silently dispatching to the wrong navigator) and its visual overlap (Header's zIndex couldn't out-stack the open drawer panel on Android — now hidden while open instead); re-pinned `react-native-svg` to 15.11.2 for the Android crash and added `patches/react-native-svg@15.11.2.patch` to also fix a real web startup crash that pin reintroduces, instead of trading one platform's crash for the other. See [drawer-navigation-gotchas.md](apps/docs/docs/reference/mobile-app/drawer-navigation-gotchas.md) and [native-module-version-pinning.md](apps/docs/docs/reference/mobile-app/native-module-version-pinning.md).
 - v1.8.114: V006 migration — renamed canonical `public.users` → `public.user` (SQL singular standard); added FK constraints from all `user_*` tables → `auth.users(id)` ON DELETE CASCADE; fixed `user_profiles.user_id` text→uuid; applied to both prod and dev
