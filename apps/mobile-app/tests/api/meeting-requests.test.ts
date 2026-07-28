@@ -9,7 +9,7 @@ jest.mock('@/lib/server/resolve-notification-identity', () => ({
 }));
 
 jest.mock('@/lib/supabase-server', () => {
-  function createChain() {
+  function createChain(): { eq: jest.Mock; order: jest.Mock } {
     return {
       eq: jest.fn(() => createChain()),
       order: jest.fn().mockResolvedValue({ data: [], error: null }),
