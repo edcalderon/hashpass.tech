@@ -20,18 +20,14 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.272)
+## 📋 Latest Changes (v1.8.273)
 
 ### Bug Fixes
 
-* resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch ([fd6b36d](https://github.com/hashpass-tech/hashpass.tech/commit/fd6b36d3ce1884c5426b204ec9c484ace811fb9f))
-
-
-### Features
-
-* wire per-tenant GA4 analytics and native Firebase Analytics for Android ([2e2f8a4](https://github.com/hashpass-tech/hashpass.tech/commit/2e2f8a4b181d392f3d6d061b547ca60f881c9637))
+* bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission ([c2f17f0](https://github.com/hashpass-tech/hashpass.tech/commit/c2f17f0bc9f9ad85f6e5aadde0b18c75a02aa8b8))
+* satisfy isolated pre-push typecheck for dbUserId bridge changes ([cf71f4a](https://github.com/hashpass-tech/hashpass.tech/commit/cf71f4a6d6bcc07dbefa2a7fc15ab8223dfdb128))
 ### Release Highlights
-- wire per-tenant GA4 analytics and native Firebase Analytics for Android; resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch
+- satisfy isolated pre-push typecheck for dbUserId bridge changes; bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

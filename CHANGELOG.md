@@ -1,3 +1,13 @@
+## [1.8.273](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.272...v1.8.273) (2026-07-28)
+
+
+### Bug Fixes
+
+* bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission ([c2f17f0](https://github.com/hashpass-tech/hashpass.tech/commit/c2f17f0bc9f9ad85f6e5aadde0b18c75a02aa8b8))
+* satisfy isolated pre-push typecheck for dbUserId bridge changes ([cf71f4a](https://github.com/hashpass-tech/hashpass.tech/commit/cf71f4a6d6bcc07dbefa2a7fc15ab8223dfdb128))
+### Release Highlights
+- satisfy isolated pre-push typecheck for dbUserId bridge changes; bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission
+
 ## [1.8.272](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.271...v1.8.272) (2026-07-28)
 
 
