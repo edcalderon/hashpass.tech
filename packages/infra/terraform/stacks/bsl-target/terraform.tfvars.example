@@ -2,11 +2,11 @@
 
 aws_region = "us-east-2"
 
-# Already exists in the target account (952191196420), confirmed AVAILABLE 2026-07-28.
-connection_arn = "arn:aws:codeconnections:us-east-2:952191196420:connection/bce03f47-4812-41c4-b57f-040c9ab019d1"
+# Already exists in the target account (<target-account-id>), confirmed AVAILABLE 2026-07-28.
+connection_arn = "arn:aws:codeconnections:us-east-2:<target-account-id>:connection/bce03f47-4812-41c4-b57f-040c9ab019d1"
 
 # Already exists in the target account.
-artifact_bucket_name = "bsl-hashpass-pipelines-952191196420-us-east-2"
+artifact_bucket_name = "bsl-hashpass-pipelines-<target-account-id>-us-east-2"
 
 # Real repository -- never point this at a personal fork. See the
 # 2026-07-28 incident notes in variables.tf and

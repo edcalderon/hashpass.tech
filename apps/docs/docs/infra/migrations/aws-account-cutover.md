@@ -2,7 +2,7 @@
 
 > Status: historical reference. The live web path now runs through the target-account `hashpass.tech` web pipeline and the source-account CloudFront front door, and the current infra docs describe the active state. **Decision (2026-07-28): DNS/hosted zone hosting for `hashpass.tech`, `hashpass.club`, `hashpass.lat`, and `hashpass.info` stays on the source account indefinitely** — the source-CDN-to-target-origin shape below is the stable end state for those domains, not a transient step awaiting a DNS cutover. `bsl-dev.hashpass.tech` now uses this exact shape too (cut over 2026-07-28: source CloudFront unchanged, target S3 origin); `bsl.hashpass.tech` (prod) hasn't cut over yet and is still fully source-account SST. See `.agents/active/task-aws-account-migration.md` for the current verified account-by-account inventory and what's actually still outstanding.
 
-This playbook documents the migration from AWS account `058264267235` to AWS account `952191196420`.
+This playbook documents the migration from AWS account `<source-account-id>` to AWS account `<target-account-id>`.
 
 The rule for every phase is simple:
 
@@ -112,7 +112,7 @@ Rollback should be a traffic flip, not a rebuild.
 
 ## Operator notes
 
-- Use the target AWS credentials from the repository root `.env` when operating against account `952191196420`.
+- Use the target AWS credentials from the repository root `.env` when operating against account `<target-account-id>`.
 - Use `TARGET_AWS_ACCOUNT_ID` when you need scripts to assert the destination account explicitly.
 - Build the target static site with `pnpm run deploy:web:s3` for a local dry run, or let the new EC2 worker perform the same build and S3 sync inside AWS.
 - Keep `dev.hashpass.tech` on the CloudFront front door while the migration is in flight; use the S3 website endpoint only as the origin behind that distribution.

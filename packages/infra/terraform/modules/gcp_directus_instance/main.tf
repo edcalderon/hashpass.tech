@@ -1,8 +1,8 @@
 locals {
-  instance_name       = "${var.name_prefix}-${var.environment}-directus"
-  network_tag         = "${var.name_prefix}-${var.environment}-directus"
-  use_inline_env      = var.directus_env_inline != null && trimspace(var.directus_env_inline) != ""
-  use_inline_compose  = var.directus_compose_inline != null && trimspace(var.directus_compose_inline) != ""
+  instance_name      = "${var.name_prefix}-${var.environment}-directus"
+  network_tag        = "${var.name_prefix}-${var.environment}-directus"
+  use_inline_env     = var.directus_env_inline != null && trimspace(var.directus_env_inline) != ""
+  use_inline_compose = var.directus_compose_inline != null && trimspace(var.directus_compose_inline) != ""
 
   service_account_email = var.create_service_account ? google_service_account.this[0].email : var.service_account_email
 
@@ -15,17 +15,17 @@ locals {
   })
 
   startup_script = templatefile("${path.module}/templates/startup.sh.tftpl", {
-    project_id             = var.project_id
-    directus_env_secret_id = var.directus_env_secret_id
-    directus_env_inline    = var.directus_env_inline
-    use_inline_env         = local.use_inline_env
+    project_id              = var.project_id
+    directus_env_secret_id  = var.directus_env_secret_id
+    directus_env_inline     = var.directus_env_inline
+    use_inline_env          = local.use_inline_env
     directus_compose_inline = var.directus_compose_inline
     use_inline_compose      = local.use_inline_compose
-    domain_name            = var.domain_name
-    repository_url         = var.startup_repository_url
-    repository_ref         = var.startup_repository_ref
-    compose_path           = var.directus_compose_path
-    env_file_path          = var.directus_env_file_path
+    domain_name             = var.domain_name
+    repository_url          = var.startup_repository_url
+    repository_ref          = var.startup_repository_ref
+    compose_path            = var.directus_compose_path
+    env_file_path           = var.directus_env_file_path
   })
 }
 

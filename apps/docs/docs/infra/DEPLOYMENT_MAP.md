@@ -17,9 +17,9 @@ This is the authoritative reference for which service hosts which domain and how
 ## Account split: what's on the source account vs. the target account
 
 Two AWS accounts are in play (see `.agents/active/task-aws-account-migration.md`
-for the full, verified audit): the **source account** (`058264267235`, the
+for the full, verified audit): the **source account** (`<source-account-id>`, the
 original account, still holds DNS/CloudFront/email for all `hashpass.*`
-domains) and the **target account** (`952191196420`, the newer account,
+domains) and the **target account** (`<target-account-id>`, the newer account,
 holds the actual compute — Lambda, the Android release runner, the S3
 origins CloudFront serves). **DNS/hosted zone hosting for `hashpass.tech`,
 `hashpass.club`, `hashpass.lat`, and `hashpass.info` stays on the source
@@ -61,7 +61,7 @@ The public front door is a source-account CloudFront distribution. If the origin
 
 ```bash
 # Inspect the source front door
-terraform -chdir=packages/infra/terraform/stacks/aws plan -var-file=terraform.dev.tfvars -var='site_origin_domain_name=hashpass-production-site-952191196420-us-east-2.s3-website.us-east-2.amazonaws.com'
+terraform -chdir=packages/infra/terraform/stacks/aws plan -var-file=terraform.dev.tfvars -var='site_origin_domain_name=hashpass-production-site-<target-account-id>-us-east-2.s3-website.us-east-2.amazonaws.com'
 ```
 
 The target web pipeline publishes the S3 origin that CloudFront serves.
@@ -89,9 +89,9 @@ Patch releases also run `packages/tools/scripts/deploy-api-lambda.sh` from `infr
 
 **Prod and dev now run genuinely different deploy paths — read carefully before touching either.**
 
-**Original incident (2026-07-25 to 2026-07-28):** both `bsl-hashpass-prod`/`bsl-hashpass-dev` CodePipelines (source account, `058264267235`) had `FullRepositoryId` set to `edcalderon/hashpass.tech` (a personal fork) instead of the org repo. `bsl-hashpass-prod` silently went 3 days / ~14 releases stale (last real trigger 2026-07-25, v1.8.260) because nothing in the release automation ever pushes to that fork's `main` branch — this is what caused `bsl.hashpass.tech` to show `v1.8.273` while `hashpass.tech` was already on `v1.8.274`. Fixed the repo wiring on both source pipelines the same day. Full incident writeup: `.agents/active/task-aws-account-migration.md`.
+**Original incident (2026-07-25 to 2026-07-28):** both `bsl-hashpass-prod`/`bsl-hashpass-dev` CodePipelines (source account, `<source-account-id>`) had `FullRepositoryId` set to `edcalderon/hashpass.tech` (a personal fork) instead of the org repo. `bsl-hashpass-prod` silently went 3 days / ~14 releases stale (last real trigger 2026-07-25, v1.8.260) because nothing in the release automation ever pushes to that fork's `main` branch — this is what caused `bsl.hashpass.tech` to show `v1.8.273` while `hashpass.tech` was already on `v1.8.274`. Fixed the repo wiring on both source pipelines the same day. Full incident writeup: `.agents/active/task-aws-account-migration.md`.
 
-**`packages/infra/terraform/stacks/bsl-target`** (target account, `952191196420`) provisions a dedicated EC2 build worker (same reusable module `hashpass-web` uses — EC2 instead of CodeBuild because the target account's CodeBuild concurrent-build quota turned out to be `0` for every environment type, pre-existing and account-wide, unrelated to BSL) and two CodePipelines, `bsl-hashpass-prod` and `bsl-hashpass-dev`, both correctly wired to `hashpass-tech/hashpass.tech`.
+**`packages/infra/terraform/stacks/bsl-target`** (target account, `<target-account-id>`) provisions a dedicated EC2 build worker (same reusable module `hashpass-web` uses — EC2 instead of CodeBuild because the target account's CodeBuild concurrent-build quota turned out to be `0` for every environment type, pre-existing and account-wide, unrelated to BSL) and two CodePipelines, `bsl-hashpass-prod` and `bsl-hashpass-dev`, both correctly wired to `hashpass-tech/hashpass.tech`.
 
 **Blocker discovered building this out:** the target account still can't create new CloudFront distributions — `AccessDenied: Your account must be verified before you can add new CloudFront resources` (confirmed via a real failed `sst deploy`). This is a normal AWS anti-fraud check for new/low-usage accounts, not specific to us; an AWS Support case was submitted 2026-07-28 requesting verification (framed as an internal business-unit migration, not fraud). `hashpass-web`'s own `enable_cloudfront = true` setting for its target CloudFront has the identical problem — the target account currently has **zero** CloudFront distributions of any kind.
 

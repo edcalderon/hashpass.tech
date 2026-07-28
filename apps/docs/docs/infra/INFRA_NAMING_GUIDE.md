@@ -26,15 +26,15 @@ This guide keeps AWS and release resource names readable, consistent, and easy t
 
 ## Current BSL infra names
 
-**Target account (`952191196420`), current as of 2026-07-28** — `packages/infra/terraform/stacks/bsl-target`:
+**Target account (`<target-account-id>`), current as of 2026-07-28** — `packages/infra/terraform/stacks/bsl-target`:
 - Connection: reuses the existing target-account `bsl-hashpass-github-us-east-2` CodeConnections connection
 - Dev pipeline: `bsl-hashpass-dev` (branch `develop`) — **hybrid deploy** (plain `expo export` + S3 sync via `build-bsl-static-site.sh`, no SST), live and serving `bsl-dev.hashpass.tech` since 2026-07-28
 - Production pipeline: `bsl-hashpass-prod` (branch `main`) — still full `sst deploy` via `build-bsl-infra.sh`, blocked from ever succeeding as-is (see below)
-- Dev S3 bucket: `bsl-hashpass-bsl-dev-site-952191196420-us-east-2`
+- Dev S3 bucket: `bsl-hashpass-bsl-dev-site-<target-account-id>-us-east-2`
 - EC2 build worker custom action provider: `hashpass-bsl-ec2-build` (distinct from `hashpass-web`'s `hashpass-ec2-build` so job polling never collides)
 - Both pipelines correctly wired to `hashpass-tech/hashpass.tech` — see the incident below for why this specifically mattered.
 
-**Source account (`058264267235`)**:
+**Source account (`<source-account-id>`)**:
 - CloudFront distributions: `bsl.hashpass.tech` → `E2FCDJB1JCS7TW` (still SST-managed), `bsl-dev.hashpass.tech` → `E279RW9PP52TC0` (taken out of SST's control 2026-07-28, origin now points at the target bucket above)
 - Prod pipeline: `bsl-hashpass-prod` — repo wiring fixed 2026-07-28, still the live production path, not yet cut over to the hybrid
 - Prod CodeBuild project: `bsl-hashpass-prod-build`

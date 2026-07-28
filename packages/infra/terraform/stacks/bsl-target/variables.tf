@@ -34,7 +34,7 @@ variable "dev_branch_name" {
 }
 
 variable "artifact_bucket_name" {
-  description = "S3 bucket for CodePipeline artifacts (already exists in target: bsl-hashpass-pipelines-952191196420-us-east-2)"
+  description = "S3 bucket for CodePipeline artifacts (already exists in target: bsl-hashpass-pipelines-<target-account-id>-us-east-2)"
   type        = string
 }
 

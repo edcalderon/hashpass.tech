@@ -46,7 +46,7 @@ export ROUTE53_ZONE_ID="$(bash packages/tools/scripts/check-infra-dns.sh --print
 # check-infra-dns.sh resolves whatever hashpass.tech zone is visible under the
 # CURRENT credentials -- which on this worker is always the target account's
 # own (non-authoritative) shadow copy of the zone, never the real
-# authoritative zone in the source account (058264267235; hosted zones stay
+# authoritative zone in the source account (<source-account-id>; hosted zones stay
 # there indefinitely by design, see aws-account-cutover.md). SST writes the
 # ACM DNS validation CNAME into whatever zone ROUTE53_ZONE_ID points at, so
 # for a domain this stack has never deployed before, the certificate will sit

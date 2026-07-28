@@ -27,8 +27,8 @@ This Terraform setup deploys the live HASHPASS infra surfaces:
 - `stacks/hashpass-api-target`: target-account API Gateway + Lambda stack for `api.hashpass.tech`
 - `stacks/hashpass-web`: target-account CodePipeline + EC2 worker stack for `hashpass.tech` and `dev.hashpass.tech`
 - `stacks/bsl-target`: target-account CodePipeline + dedicated EC2 worker stack for `bsl.hashpass.tech`/`bsl-dev.hashpass.tech`, running SST's own deploy (`pnpm --filter @hashpass/infra run deploy:<stage>`) as the build action — added 2026-07-28 after the source-account BSL pipelines were found wired to a personal fork instead of the org repo (see `.agents/active/task-aws-account-migration.md`)
-- `stacks/mobile-release-target`: the real, active AWS EC2 self-hosted GitHub Actions runner for mobile Android builds (account `952191196420`), with its own `hashpass-mobile-release-target` label
-- `stacks/mobile-release-legacy-source-account`: deprecated, pre-migration stack tracking the old source account (`058264267235`) — do not apply; see its README
+- `stacks/mobile-release-target`: the real, active AWS EC2 self-hosted GitHub Actions runner for mobile Android builds (account `<target-account-id>`), with its own `hashpass-mobile-release-target` label
+- `stacks/mobile-release-legacy-source-account`: deprecated, pre-migration stack tracking the old source account (`<source-account-id>`) — do not apply; see its README
 - `modules/aws_expo_router_api`: reusable Lambda + HTTP API + custom domain module
 - `modules/aws_amplify_domain`: legacy custom domain binding module retained for archived migration references
 - `modules/aws_static_site_pipeline`: reusable S3 + CloudFront + CodePipeline site module with a custom EC2 build action
