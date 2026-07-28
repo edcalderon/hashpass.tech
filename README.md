@@ -227,8 +227,10 @@ and `POST /api/bsl/bookings`.
 
 The route migration is breaking: there is no compatibility alias, so all
 clients and integrations must ship with the new paths together. See the
+[Event API Architecture](apps/docs/docs/reference/mobile-app/event-api-architecture.md)
+for ownership and lifecycle rules, and the
 [event-scoped API routing guide](apps/docs/docs/reference/mobile-app/event-scoped-api-client.md)
-for the API ownership rules and migration table.
+for the client migration table.
 
 Seed BSL data and run its end-to-end check:
 

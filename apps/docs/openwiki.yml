@@ -28,13 +28,19 @@ sources:
     path: ../../apps/mobile-app/lib/api-client.ts
     extra_paths:
       - ../../apps/mobile-app/lib/server/event-api.ts
+      - "../../apps/mobile-app/app/api/events/[eventId]/agenda+api.ts"
+      - "../../apps/mobile-app/app/api/events/[eventId]/agenda/status+api.ts"
+      - "../../apps/mobile-app/app/api/events/[eventId]/meetings/requests+api.ts"
+      - "../../apps/mobile-app/app/api/events/[eventId]/meetings/requests/slots+api.ts"
     output: api/api-client.md
     description: >
       The central HTTP client used by all native and web screens.
       Document request(), ApiRequestOptions, eventApiPath(), shared
       /api/events/:eventId routing, BSL-only /api/bsl routing, and auth
       headers. Explain skipEventSegment for explicit shared-event paths;
-      do not describe the retired tenant route family.
+      do not describe the retired tenant route family. Generated API docs must
+      defer to reference/mobile-app/event-api-architecture.md for route
+      ownership, lifecycle behavior, isolation rules, and rollout policy.
 
   - name: API Middleware
     area: api-middleware
