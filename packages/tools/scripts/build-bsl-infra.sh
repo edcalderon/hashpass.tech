@@ -35,6 +35,20 @@ echo "  PNPM store dir: ${PNPM_STORE_DIR}"
 export CI=1
 export ROUTE53_ZONE_ID="$(bash packages/tools/scripts/check-infra-dns.sh --print-zone-id)"
 
+# check-infra-dns.sh resolves whatever hashpass.tech zone is visible under the
+# CURRENT credentials -- which on this worker is always the target account's
+# own (non-authoritative) shadow copy of the zone, never the real
+# authoritative zone in the source account (058264267235; hosted zones stay
+# there indefinitely by design, see aws-account-cutover.md). SST writes the
+# ACM DNS validation CNAME into whatever zone ROUTE53_ZONE_ID points at, so
+# for a domain this stack has never deployed before, the certificate will sit
+# PENDING_VALIDATION forever (with the SST deploy hanging silently, near-zero
+# CPU, waiting on it) until someone manually copies that validation CNAME
+# into the real source-account zone -- there is no cross-account Route53
+# role to automate this yet. Confirmed 2026-07-28 for bsl-dev.hashpass.tech.
+# Once a domain's cert is ISSUED this is a one-time cost; it won't recur on
+# later deploys of the same stage/domain.
+
 rm -rf node_modules
 
 PNPM_VERSION="$(
