@@ -1,5 +1,58 @@
 data "aws_caller_identity" "current" {}
 
+# Hybrid BSL dev (2026-07-28): the target account can't create new CloudFront
+# distributions yet (AccessDenied: "account must be verified", confirmed via
+# a real failed sst deploy -- see task-aws-account-migration.md). Rather than
+# wait on that AWS Support ticket, dev keeps its existing SOURCE-account
+# CloudFront distribution (already issued, already has its own ACM cert) and
+# just gets a plain target-account S3 bucket as its origin instead of SST's
+# placeholder.sst.dev + CloudFront-Function/KV routing. No new distribution,
+# no domain validation needed -- this bucket is a private implementation
+# detail behind an already-working public hostname.
+resource "aws_s3_bucket" "bsl_dev_site" {
+  bucket = "${var.name_prefix}-bsl-dev-site-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  tags   = merge(var.tags, { Environment = "dev", Service = "bsl-web" })
+}
+
+resource "aws_s3_bucket_website_configuration" "bsl_dev_site" {
+  bucket = aws_s3_bucket.bsl_dev_site.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "bsl_dev_site" {
+  bucket = aws_s3_bucket.bsl_dev_site.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_policy" "bsl_dev_site" {
+  bucket = aws_s3_bucket.bsl_dev_site.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadForWebsite"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.bsl_dev_site.arn}/*"
+      }
+    ]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.bsl_dev_site]
+}
+
 # Reuses the same reusable EC2 build worker module hashpass-web already uses
 # (packages/infra/terraform/stacks/hashpass-web), matching the decision
 # (2026-07-28) to build BSL's target-account pipeline on a custom EC2 worker
@@ -181,6 +234,8 @@ locals {
       BSL_SUPABASE_DB_URL_DEV           = var.supabase_db_url_dev
       BSL_SUPABASE_DB_URL               = var.supabase_db_url_dev
       EXPO_EXPORT_MAX_WORKERS           = "6"
+      SITE_BUCKET_NAME                  = aws_s3_bucket.bsl_dev_site.bucket
+      BSL_CLOUDFRONT_DOMAIN_NAME        = "bsl-dev.hashpass.tech"
     },
     var.build_environment_overrides
   )
@@ -303,7 +358,7 @@ resource "aws_codepipeline" "bsl_dev" {
       output_artifacts = ["BuildArtifact"]
 
       configuration = {
-        BuildScript          = var.build_script_path
+        BuildScript          = var.build_script_path_dev_hybrid
         OutputDirectory      = var.build_output_directory
         BuildEnvironmentJson = jsonencode(local.dev_build_environment)
       }
