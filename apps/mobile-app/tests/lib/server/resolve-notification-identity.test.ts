@@ -114,6 +114,58 @@ describe('resolveNotificationIdentity', () => {
     );
   });
 
+  it('returns a null registry id when the self-heal upsert RPC errors', async () => {
+    const getUser = jest.fn().mockResolvedValue({
+      data: { user: { id: 'auth-id-1', email: 'broken@hashpass.app', user_metadata: {} } },
+      error: null,
+    });
+    const maybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+    const eq = jest.fn().mockReturnValue({ maybeSingle });
+    const select = jest.fn().mockReturnValue({ eq });
+    const from = jest.fn().mockReturnValue({ select });
+    const rpc = jest.fn().mockResolvedValue({ data: null, error: { message: 'upsert failed' } });
+    mockExtractToken.mockReturnValue('supabase-bearer-token');
+    mockGetSupabaseServerForRequest.mockReturnValue({ auth: { getUser }, from, rpc });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/bslatam/agenda-status'));
+
+    expect(identity).toEqual({
+      supabaseUserId: 'auth-id-1',
+      registryUserId: null,
+      email: 'broken@hashpass.app',
+    });
+  });
+
+  it('returns a null registry id when the self-heal lookup throws', async () => {
+    const getUser = jest.fn().mockResolvedValue({
+      data: { user: { id: 'auth-id-2', email: 'throws@hashpass.app', user_metadata: {} } },
+      error: null,
+    });
+    const from = jest.fn(() => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () => {
+            throw new Error('network');
+          },
+        }),
+      }),
+    }));
+    mockExtractToken.mockReturnValue('supabase-bearer-token');
+    mockGetSupabaseServerForRequest.mockReturnValue({ auth: { getUser }, from });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/bslatam/agenda-status'));
+
+    expect(identity).toEqual({
+      supabaseUserId: 'auth-id-2',
+      registryUserId: null,
+      email: 'throws@hashpass.app',
+    });
+  });
+
   it('falls back from a rejected bearer lookup to the provider identity', async () => {
     const maybeSingle = jest.fn().mockResolvedValue({
       data: { id: 'registry-row-id', provider_ids: { supabase: '8f60f5d2-5948-4df1-9670-2f9177cf2fe4' } },
