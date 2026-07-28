@@ -97,9 +97,16 @@ export CI=1
 SKIP_ENV_PROPAGATE=1 BUILD_ENV="${BSL_STAGE}" npm run build:static
 cd "${ROOT_DIR}"
 
+# No CloudFront invalidation here: bsl-dev.hashpass.tech's distribution
+# lives in the SOURCE account, but this worker only has target-account
+# credentials, so deploy-static-site.sh's list-distributions/invalidation
+# lookup can't resolve it ("unable to resolve a CloudFront distribution for
+# alias bsl-dev.hashpass.tech" -- confirmed 2026-07-28). HTML/manifest
+# assets already get no-cache headers below, so staleness is bounded to
+# CloudFront's own TTL for those objects. Revisit with a real cross-account
+# invalidation path (e.g. an assumed role) once this hybrid is proven out.
 SITE_BUILD_DIR="apps/mobile-app/dist" \
 SITE_BUCKET_NAME="${SITE_BUCKET_NAME}" \
-SITE_CLOUDFRONT_DOMAIN_NAME="${BSL_CLOUDFRONT_DOMAIN_NAME:-}" \
 SITE_SKIP_API_VERSION_VERIFY=true \
   bash packages/tools/scripts/deploy-static-site.sh
 

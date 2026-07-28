@@ -235,7 +235,6 @@ locals {
       BSL_SUPABASE_DB_URL               = var.supabase_db_url_dev
       EXPO_EXPORT_MAX_WORKERS           = "6"
       SITE_BUCKET_NAME                  = aws_s3_bucket.bsl_dev_site.bucket
-      BSL_CLOUDFRONT_DOMAIN_NAME        = "bsl-dev.hashpass.tech"
     },
     var.build_environment_overrides
   )
