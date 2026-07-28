@@ -33,6 +33,14 @@ echo "  Target stage:  ${TARGET_STAGE}"
 echo "  PNPM store dir: ${PNPM_STORE_DIR}"
 
 export CI=1
+# Fresh workspace per job, but Metro's cache defaults to a persistent,
+# non-workspace-scoped location on this worker -- without pinning this, a
+# stale cache entry from an OLDER job's absolute path can get reused and
+# break module resolution (confirmed 2026-07-28, same class of bug as
+# CLAUDE.md's "Metro cache on the EC2 runner is persistent" note for the
+# mobile-release runner, just on this worker instead).
+export METRO_CACHE_DIR="${METRO_CACHE_DIR:-${ROOT_DIR}/apps/mobile-app/.expo/metro-cache}"
+rm -rf "${METRO_CACHE_DIR}"
 export ROUTE53_ZONE_ID="$(bash packages/tools/scripts/check-infra-dns.sh --print-zone-id)"
 
 # check-infra-dns.sh resolves whatever hashpass.tech zone is visible under the

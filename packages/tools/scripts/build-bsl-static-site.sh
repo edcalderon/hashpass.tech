@@ -40,6 +40,17 @@ echo "  Root dir:      ${ROOT_DIR}"
 echo "  BSL stage:     ${BSL_STAGE}"
 echo "  Site bucket:   ${SITE_BUCKET_NAME}"
 
+# Each pipeline job runs in a fresh workspace directory. Metro's cache
+# defaults to a persistent, non-workspace-scoped location on this worker, so
+# without pinning it here a stale cache entry from an OLDER job's absolute
+# path can get reused and break module resolution with a confusing
+# "Unable to resolve module .../job-<old-uuid>/..." error -- see
+# CLAUDE.md's "Metro cache on the EC2 runner is persistent" note (same class
+# of bug, different worker) and build-static-site.sh, which already does
+# this for the main site.
+export METRO_CACHE_DIR="${METRO_CACHE_DIR:-${ROOT_DIR}/apps/mobile-app/.expo/metro-cache}"
+rm -rf "${METRO_CACHE_DIR}"
+
 rm -rf node_modules
 
 PNPM_VERSION="$(
