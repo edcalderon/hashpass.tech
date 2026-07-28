@@ -27,6 +27,7 @@
       },
       "package": "com.hashpass.tech",
       "versionCode": 11071,
+      "googleServicesFile": "./config/google-services.json",
       "permissions": [
         "android.permission.CAMERA"
       ]
@@ -116,6 +117,7 @@
     },
     "plugins": [
       "expo-router",
+      "@react-native-firebase/app",
       "./plugins/withAndroidReleaseMinification",
       "./plugins/withAndroidDisableRtl",
       "./plugins/withAndroidLargeScreenSupport",

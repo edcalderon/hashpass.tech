@@ -57,16 +57,22 @@ export default function Root({
     };
   };
 
-  // G_TAG_KEY is the canonical env var; EXPO_PUBLIC_GA_MEASUREMENT_ID is the
-  // propagated form used when the script runs in SSR/static build context.
-  const gaMeasurementId =
-    readBuildEnv('EXPO_PUBLIC_GA_MEASUREMENT_ID') ||
-    readBuildEnv('G_TAG_KEY') ||
-    '';
-
   const activeSupabaseProfileId = (readBuildEnv('EXPO_PUBLIC_SUPABASE_PROFILE') ||
     readBuildEnv('SUPABASE_PROFILE') ||
     'core-production') as SupabaseProfileId;
+
+  // G_TAG_KEY is the canonical env var; EXPO_PUBLIC_GA_MEASUREMENT_ID is the
+  // propagated form used when the script runs in SSR/static build context.
+  // bsl.hashpass.tech uses its own GA4 property (EXPO_PUBLIC_GA_MEASUREMENT_ID_BSL) —
+  // this same app builds and serves both tenants, so the measurement id has
+  // to switch on the resolved Supabase profile the same way the Supabase
+  // config below does, rather than assuming one global id for every tenant.
+  const isBslTenant = activeSupabaseProfileId.startsWith('bsl');
+  const gaMeasurementId =
+    (isBslTenant ? readBuildEnv('EXPO_PUBLIC_GA_MEASUREMENT_ID_BSL') : undefined) ||
+    readBuildEnv('EXPO_PUBLIC_GA_MEASUREMENT_ID') ||
+    readBuildEnv('G_TAG_KEY') ||
+    '';
   const activeSupabaseConfig = buildSupabaseConfig(activeSupabaseProfileId);
   const runtimeSupabaseProfiles = {
     'core-development': buildSupabaseConfig('core-development'),
