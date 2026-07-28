@@ -1,37 +1,130 @@
 name: Trigger mobile release on version tag
 
 # A `v*` tag push is a reliable signal that a real release just landed on
-# main, so this keeps native mobile in sync with every web/main update
-# instead of requiring a manual `gh workflow run mobile-android-release.yml`
-# after every release. As of 2026-07-13, tags are created by
-# release-tag-on-merge.yml (fires when a develop -> main promotion PR
-# merges, tags that exact merge commit) rather than by
+# main. As of 2026-07-28, native mobile is NO LONGER dispatched
+# unconditionally on every tag: this workflow first runs
+# packages/tools/scripts/detect-mobile-native-change.js against the diff
+# between this tag and the previous one. Every release already gets its JS
+# shipped via mobile-eas-update.yml (fires independently, straight off the
+# `main` push that produced this tag -- see
+# apps/docs/docs/reference/mobile-app/eas-update-ota.md). The native
+# internal->alpha->beta chain below is only actually needed -- and only
+# dispatched -- when that diff touches something OTA genuinely can't cover
+# (native code, permissions, a dependency that might be a native module,
+# etc). Otherwise this run intentionally does nothing further: the release
+# already shipped, OTA-only, with no store review and no EC2 build.
+#
+# Tags are created by release-tag-on-merge.yml (fires when a develop -> main
+# promotion PR merges, tags that exact merge commit) rather than by
 # packages/tools/scripts/release.js's runGitTag directly — release.js's
 # `main`-branch patch path still has tag-creation logic for manual/fallback
 # use, but the normal flow no longer runs it. Either source produces the
-# same `v*.*.*` tag shape this workflow reacts to.
+# same `v*.*.*` tag shape this workflow reacts to, and the guard below
+# applies the same way regardless of which one created it.
 #
-# Dispatches internal track with auto_promote_alpha and auto_promote_beta —
-# per the release posture in CLAUDE.md, internal -> alpha -> beta (open
-# testing) all fire automatically in sequence from a single tag push.
-# Production is deliberately excluded from this chain and always requires a
-# separate, deliberate `gh workflow run` dispatch: it's the only track that
-# builds against the real backend (environment=production) and ships to real
-# users, so it keeps a manual checkpoint after beta has been validated by
-# real external testers (decided 2026-07-27).
+# When a native release IS needed, it dispatches internal track with
+# auto_promote_alpha and auto_promote_beta — per the release posture in
+# CLAUDE.md, internal -> alpha -> beta (open testing) all fire automatically
+# in sequence from a single dispatch. Production is deliberately excluded
+# from this chain and always requires a separate, deliberate
+# `gh workflow run` dispatch: it's the only track that builds against the
+# real backend (environment=production) and ships to real users, so it
+# keeps a manual checkpoint after beta has been validated by real external
+# testers (decided 2026-07-27).
+#
+# To force a native build even when the guard says OTA-only is sufficient
+# (e.g. you want fresh store visibility, or you don't trust the guard for
+# this particular release), re-run this workflow manually with
+# force_native_release=true, or just dispatch mobile-android-release.yml
+# directly as documented in CLAUDE.md.
 
 on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      force_native_release:
+        description: >-
+          Skip the native-change guard and dispatch mobile-android-release.yml
+          unconditionally, as if it always detected a native change.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
   actions: write
 
 jobs:
-  trigger-mobile-release:
+  detect-native-change:
     if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    outputs:
+      needs_native: ${{ steps.guard.outputs.needs_native }}
+      reasons: ${{ steps.guard.outputs.reasons }}
+    steps:
+      - name: Checkout with full tag history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Detect whether this release needs a native rebuild
+        id: guard
+        run: |
+          set -euo pipefail
+
+          if [ "${{ inputs.force_native_release }}" = "true" ]; then
+            echo "needs_native=true" >> "$GITHUB_OUTPUT"
+            echo "reasons=force_native_release input was set to true" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Mobile native-change guard"
+              echo "Forced via \`force_native_release=true\` input — skipping the diff check."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          RESULT=$(node packages/tools/scripts/detect-mobile-native-change.js --tag "${{ github.ref_name }}")
+          echo "$RESULT"
+
+          NEEDS_NATIVE=$(node -e "console.log(JSON.parse(process.argv[1]).needsNative)" "$RESULT")
+          PREVIOUS_TAG=$(node -e "console.log(JSON.parse(process.argv[1]).previousTag || 'none')" "$RESULT")
+          REASONS=$(node -e "const r = JSON.parse(process.argv[1]).reasons || []; console.log(r.join('; ') || 'none')" "$RESULT")
+
+          echo "needs_native=$NEEDS_NATIVE" >> "$GITHUB_OUTPUT"
+          {
+            echo "reasons<<EOF_REASONS"
+            echo "$REASONS"
+            echo "EOF_REASONS"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Mobile native-change guard"
+            echo ""
+            echo "Diffed against previous release tag: \`$PREVIOUS_TAG\`"
+            echo ""
+            if [ "$NEEDS_NATIVE" = "true" ]; then
+              echo "**Result: native release required.** Dispatching mobile-android-release.yml."
+              echo ""
+              echo "Reasons:"
+              echo '```'
+              echo "$REASONS"
+              echo '```'
+            else
+              echo "**Result: OTA-only.** This release's JS already shipped via mobile-eas-update.yml"
+              echo "(production channel, triggered off the same \`main\` push). No native code, native"
+              echo "config, or dependency changes were detected since \`$PREVIOUS_TAG\`, so no native"
+              echo "build is being dispatched."
+              echo ""
+              echo "To force one anyway, re-run this workflow with \`force_native_release=true\`, or"
+              echo "dispatch \`mobile-android-release.yml\` directly."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  trigger-mobile-release:
+    needs: [detect-native-change]
+    if: github.repository == 'hashpass-tech/hashpass.tech' && needs.detect-native-change.outputs.needs_native == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Dispatch mobile-android-release.yml for ${{ github.ref_name }}

@@ -3,6 +3,15 @@ const PRODUCTION_OWNER = 'hashpasss-team';
 const DEVELOPMENT_OWNER = 'hashpasstechs-team';
 const PRODUCTION_SLUG = 'hashpasstech';
 const DEVELOPMENT_SLUG = 'hash-pass-tech';
+// EAS Update channel, keyed to the API backend baked into the JS bundle
+// (see the "Native Android App Environment" note in CLAUDE.md) -- NOT to the
+// Play track. internal/alpha/beta all run environment=development and must
+// only ever receive OTA updates published to the "development" channel;
+// only environment=production binaries (track=production) subscribe to
+// "production". Crossing these would silently repoint one environment's
+// installed base at the other's JS bundle without a store review to catch it.
+const PRODUCTION_CHANNEL = 'production';
+const DEVELOPMENT_CHANNEL = 'development';
 const { resolveAndroidVersionCode } = require('./android-version-code');
 
 function normalizeProfile(profile) {
@@ -49,6 +58,16 @@ function resolveSlug({ env = process.env, profile, baseSlug = null } = {}) {
   return env.EXPO_SLUG_DEV || baseSlug || DEVELOPMENT_SLUG;
 }
 
+function resolveUpdateChannel({ env = process.env, profile } = {}) {
+  const selectedProfile = normalizeProfile(profile || env.EAS_BUILD_PROFILE || env.EXPO_PUBLIC_EAS_BUILD_PROFILE);
+
+  if (env.EAS_UPDATE_CHANNEL) {
+    return env.EAS_UPDATE_CHANNEL;
+  }
+
+  return !selectedProfile || selectedProfile === PRODUCTION_PROFILE ? PRODUCTION_CHANNEL : DEVELOPMENT_CHANNEL;
+}
+
 function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
   const owner = resolveOwner({
     env,
@@ -62,6 +81,7 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
     env,
     baseProjectId: baseConfig.extra?.eas?.projectId || null,
   });
+  const updateChannel = resolveUpdateChannel({ env });
   const androidVersionCode = resolveAndroidVersionCode({ env });
   const android = {
     ...(baseConfig.android || {}),
@@ -95,6 +115,24 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
     ...(slug ? { slug } : {}),
     ...(owner ? { owner } : {}),
     ...(Object.keys(android).length ? { android } : {}),
+    ...(projectId
+      ? {
+          updates: {
+            ...(baseConfig.updates || {}),
+            url: `https://u.expo.dev/${projectId}`,
+            // Fastlane builds this app via `expo prebuild` + local Gradle, not
+            // `eas build` -- EAS Build normally bakes the channel in for you,
+            // but a non-EAS-Build pipeline has to set it explicitly here so
+            // expo-updates' config plugin writes it into AndroidManifest.xml
+            // at prebuild time. See resolveUpdateChannel() above for why this
+            // tracks environment (api-dev vs api prod), not Play track.
+            requestHeaders: {
+              ...(baseConfig.updates?.requestHeaders || {}),
+              'expo-channel-name': updateChannel,
+            },
+          },
+        }
+      : {}),
     extra: {
       ...(baseConfig.extra || {}),
       ...(Object.keys(routerConfig).length ? { router: routerConfig } : {}),
@@ -111,9 +149,12 @@ function buildExpoConfig({ baseConfig = {}, env = process.env } = {}) {
 
 module.exports = {
   PRODUCTION_PROFILE,
+  PRODUCTION_CHANNEL,
+  DEVELOPMENT_CHANNEL,
   normalizeProfile,
   resolveProjectId,
   resolveOwner,
   resolveSlug,
+  resolveUpdateChannel,
   buildExpoConfig,
 };

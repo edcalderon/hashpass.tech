@@ -1,0 +1,220 @@
+name: Mobile EAS Update (OTA)
+
+# Ships JS/asset-only mobile changes straight to installed app binaries via
+# expo-updates, without a Play Store review or a mobile-android-release.yml
+# run. This is orthogonal to fastlane: fastlane still builds and submits every
+# .aab, this workflow only republishes the JS bundle those binaries already
+# fetch at runtime. See apps/docs/docs/reference/mobile-app/eas-update-ota.md
+# for the full design.
+#
+# Channel <-> branch mapping (deliberately NOT track <-> branch):
+#   - push to develop -> channel "development". Every environment=development
+#     binary (internal, alpha, beta -- see CLAUDE.md's Mobile Android Release
+#     Workflow section) is built from a tagged `main` commit, but
+#     runtimeVersion policy is "appVersion" (see apps/mobile-app/app.json),
+#     so what actually matters is the app *version string*, not which ref
+#     built it. develop is fast-forwarded to match main's version on every
+#     release-tag-on-merge.yml run, so between releases develop always carries
+#     the same version as the binaries already on Play -- an OTA push from
+#     develop lands correctly on them the whole time, with no version-skew
+#     window. This is what makes the cadence continuous: develop gets many
+#     commits/day, so this is the "ship in minutes" lane.
+#   - push to main -> channel "production". This only fires as often as the
+#     protected develop -> main promotion PR merges (main can't be pushed to
+#     directly), which matches the existing deliberately-conservative cadence
+#     of the production track itself.
+#
+# Path filter is a positive allowlist (matches this repo's infra-deploy.yml
+# convention) of directories that only ever change the JS bundle, never
+# native config. Do NOT add apps/mobile-app/android/**, app.json,
+# app.config.js, eas.json, plugins/**, or package.json (dependency changes
+# can add a native module) to this list -- those need a real
+# mobile-android-release.yml build to take effect, not just a republish.
+# apps/mobile-app/lib/eas-config.js and lib/android-version-code.js are
+# inside lib/** and are technically build-time-only code, not runtime app
+# code -- touching them can trigger a redundant OTA publish with no visible
+# change, which is harmless (the actual channel/projectId embedding only
+# takes effect on the next real native build regardless).
+#
+# The path filter above is a coarse, static allowlist -- it can't tell that
+# a single push touched BOTH an OTA-safe path (e.g. lib/**) AND a native-
+# sensitive one (e.g. a new native dependency in package.json, which isn't
+# in the allowlist and so wouldn't trigger this workflow on its own, but
+# would if the same push also edited lib/** to use it). Publishing that JS
+# to already-installed binaries would call into a native API those binaries
+# don't have yet. The "Detect whether this push is safe to publish" step
+# below re-checks the actual commit range with
+# packages/tools/scripts/detect-mobile-native-change.js (the same guard
+# mobile-release-on-tag.yml uses, just at single-push granularity instead of
+# release-tag granularity) and skips publishing if it finds native changes
+# in this push, even though the path filter already let the workflow run.
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "apps/mobile-app/app/**"
+      - "apps/mobile-app/assets/**"
+      - "apps/mobile-app/components/**"
+      - "apps/mobile-app/contexts/**"
+      - "apps/mobile-app/hooks/**"
+      - "apps/mobile-app/i18n/**"
+      - "apps/mobile-app/lib/**"
+      - "apps/mobile-app/providers/**"
+      - "apps/mobile-app/types/**"
+      - "apps/mobile-app/index.js"
+      - "apps/mobile-app/config/branding.ts"
+      - "apps/mobile-app/config/events.ts"
+      - "apps/mobile-app/config/features.ts"
+      - "apps/mobile-app/config/reanimated.ts"
+      - "apps/mobile-app/config/runtime-version.ts"
+      - "apps/mobile-app/config/sso-config.ts"
+      - "apps/mobile-app/config/supabase-profiles.ts"
+      - "apps/mobile-app/config/update-policy.json"
+      - "packages/auth/**"
+      - "packages/backend/**"
+      - "packages/config/**"
+      - "packages/emails/**"
+      - "packages/types/**"
+      - "packages/ui/**"
+      - "packages/utils/**"
+      - ".github/workflows/mobile-eas-update.yml"
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: >-
+          Override the channel to publish to. Leave blank to auto-select from
+          the triggering branch (main -> production, develop -> development).
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - production
+          - development
+      message:
+        description: >-
+          Update message shown in EAS dashboard/rollback UI. Leave blank to use
+          --auto (derives it from the triggering commit).
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: mobile-eas-update-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      CI: "1"
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_TOKEN_DEV: ${{ secrets.EXPO_TOKEN_DEV }}
+      EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
+      EAS_PROJECT_ID_DEV: ${{ vars.EAS_PROJECT_ID_DEV }}
+      EXPO_OWNER: ${{ vars.EXPO_OWNER }}
+      EXPO_OWNER_DEV: ${{ vars.EXPO_OWNER_DEV }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so the guard step below can diff github.event.before
+          # against github.sha even when a push carries many commits at once.
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.0"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Detect whether this push is safe to publish as OTA
+        id: guard
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          RESULT=$(node packages/tools/scripts/detect-mobile-native-change.js --from "${{ github.event.before }}" --to "${{ github.sha }}")
+          echo "$RESULT"
+
+          RESOLVABLE=$(node -e "console.log(JSON.parse(process.argv[1]).resolvable)" "$RESULT")
+          NEEDS_NATIVE=$(node -e "console.log(JSON.parse(process.argv[1]).needsNative)" "$RESULT")
+          REASONS=$(node -e "const r = JSON.parse(process.argv[1]).reasons || []; console.log(r.join('; ') || 'none')" "$RESULT")
+
+          echo "resolvable=$RESOLVABLE" >> "$GITHUB_OUTPUT"
+          echo "needs_native=$NEEDS_NATIVE" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## OTA publish guard"
+            echo ""
+            if [ "$RESOLVABLE" != "true" ]; then
+              echo "**Skipping OTA publish** — could not resolve a diffable commit range for this push."
+              echo ""
+              echo "$REASONS"
+            elif [ "$NEEDS_NATIVE" = "true" ]; then
+              echo "**Skipping OTA publish** — this push also touches native-sensitive files, so"
+              echo "publishing JS-only could ship code that calls into native APIs old installed"
+              echo "binaries don't have yet. This push's JS will ship as part of the native build"
+              echo "triggered by the next release tag instead."
+              echo ""
+              echo "Reasons:"
+              echo '```'
+              echo "$REASONS"
+              echo '```'
+            else
+              echo "JS-only change confirmed since the previous commit — publishing OTA update."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Resolve target channel
+        id: resolve
+        if: github.event_name != 'push' || (steps.guard.outputs.resolvable == 'true' && steps.guard.outputs.needs_native == 'false')
+        run: |
+          set -euo pipefail
+          channel="${{ inputs.channel }}"
+          if [ -z "$channel" ]; then
+            if [ "${{ github.ref_name }}" = "main" ]; then
+              channel="production"
+            else
+              channel="development"
+            fi
+          fi
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Publish OTA update (production)
+        if: steps.resolve.outputs.channel == 'production'
+        working-directory: apps/mobile-app
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.message }}" ]; then
+            EAS_BUILD_PROFILE=production node ../../packages/tools/scripts/run-mobile-eas.js update \
+              --branch production --channel production \
+              --message "${{ inputs.message }}" --non-interactive
+          else
+            npm run ota:publish
+          fi
+
+      - name: Publish OTA update (development)
+        if: steps.resolve.outputs.channel == 'development'
+        working-directory: apps/mobile-app
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.message }}" ]; then
+            EAS_BUILD_PROFILE=preview node ../../packages/tools/scripts/run-mobile-eas.js update \
+              --branch development --channel development \
+              --message "${{ inputs.message }}" --non-interactive
+          else
+            npm run ota:publish:dev
+          fi

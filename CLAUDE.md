@@ -86,6 +86,44 @@ Protected promotion flow:
 **Why:** Manual version bumps cause version skipping, inconsistency, and incorrect release ordering. The version bump living inside the reviewed PR (rather than as a separate post-merge step) closes the gap between "what was reviewed" and "what got tagged," and removes the manual post-merge steps that a human previously had to remember and run correctly by hand — see `.agents/active/task-release-flow-automation.md` for the full design and incident history behind this change.
 
 ### Mobile Android Release Workflow
+
+**Default-to-OTA posture (added 2026-07-28):** every release ships its JS via
+EAS Update (OTA) — see `apps/docs/docs/reference/mobile-app/eas-update-ota.md`
+— and a full native Android build only runs when
+`packages/tools/scripts/detect-mobile-native-change.js` detects a
+native-sensitive change (native code, `app.json`/`app.config.js`/`eas.json`,
+plugins, a dependency change in `package.json`, etc.) since the previous
+release tag. This guard runs as its own job in
+`.github/workflows/mobile-release-on-tag.yml` before it decides whether to
+dispatch `mobile-android-release.yml` at all — see step 4 below. The same
+guard, at single-push granularity, also gates `mobile-eas-update.yml` itself,
+so a push that mixes an OTA-safe change with a native one does not get
+OTA-published (see the OTA doc's "Automatic native-change guard" section).
+Force a native release anyway with `force_native_release=true` on a manual
+`mobile-release-on-tag.yml` dispatch — see that doc for the full mechanism.
+
+**`runtimeVersion` is `{ policy: "fingerprint" }`, not `appVersion`** (fixed
+2026-07-28, before it ever shipped): `appVersion` policy ties OTA matching to
+`expo.version`, but that field gets bumped on every single release
+regardless of native changes — so it would've broken OTA matching starting
+from the second release after adoption. `fingerprint` policy plus
+`apps/mobile-app/fingerprint.config.js`'s `sourceSkips: ['ExpoConfigVersions']`
+hashes the actual native-relevant project state instead, ignoring exactly
+the two fields (`expo.version`, `expo.android.versionCode`) that auto-bump
+every release. See the OTA doc's "runtimeVersion: fingerprint policy" section
+for the verification steps.
+
+**`v1.8.273` (live on Play as of 2026-07-28) has no OTA capability at all** —
+it was built before `expo-updates` existed in this repo, so the update-check
+native module simply isn't compiled into it. The next release is necessarily
+a full native build (to bake `expo-updates` in for the first time); the
+guard already forces this automatically since that release's diff touches
+`apps/mobile-app/package.json` (new dependency) and `apps/mobile-app/app.json`
+(new `runtimeVersion` key). Only releases *after* that bootstrap build reaches
+production, once users update to it, get the fully-automatic OTA-by-default
+behavior described above. See the OTA doc's "First release after adopting
+OTA needs one real native build" section.
+
 **Release posture (updated 2026-07-27):** the full progression is internal → alpha (closed testing) → beta (open testing) → production, each gated on the previous track having succeeded for the same ref. Internal publishes automatically on tag creation; alpha auto-promotes after internal succeeds on the same tag (`auto_promote_alpha=true`), and beta now auto-promotes after that auto-promoted alpha succeeds (`auto_promote_beta=true`) — so a single tag push carries a release all the way through internal → alpha → beta with no manual dispatch. Production is the deliberate exception: it never auto-promotes, by design — it's the only track that builds against the real backend (`environment=production`) and ships to real users, so it keeps a manual `gh workflow run` as the final human checkpoint after beta has been validated by real external testers.
 
 `environment` and `track` are two separate concepts, validated as a pair:
@@ -104,7 +142,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
 4. **Merge the PR.** That's the last manual step. `release-tag-on-merge.yml` fires automatically on the merge and handles everything below — do not run `npm run release:patch` on `main` or manually sync `develop`; both now happen for you:
    - Tags `github.event.pull_request.merge_commit_sha` as `vX.Y.Z` and pushes the tag to `origin` (not `upstream` — see below)
    - Fast-forwards `develop` to the same commit and pushes it to `origin`
-   - The tag push fires `.github/workflows/mobile-release-on-tag.yml`, which dispatches `mobile-android-release.yml` with `environment=development track=internal auto_promote_alpha=true auto_promote_beta=true` — the same Android build trigger as before, just one hop further upstream now, and now carrying the release through beta automatically too (see the auto-promote-beta job in that workflow)
+   - The tag push fires `.github/workflows/mobile-release-on-tag.yml`, which first runs the native-change guard (`detect-mobile-native-change.js --tag vX.Y.Z` against the previous release tag) and only dispatches `mobile-android-release.yml` with `environment=development track=internal auto_promote_alpha=true auto_promote_beta=true` if that guard finds a native-sensitive change — carrying the release through beta automatically too when it does (see the auto-promote-beta job in that workflow). If the guard finds nothing native, this job stops there: the release already shipped via `mobile-eas-update.yml`'s own `main`-push trigger (production channel), and no native build, no EC2 time, and no Play review happen for that release. Check the job summary on the `detect-native-change` job to see which path it took and why.
    - If this job fails, it comments directly on the merged PR rather than only showing a red X in the Actions tab — check there first
    - Requires the `RELEASE_AUTOMATION_TOKEN` repo secret (fine-grained PAT, this repo only, Contents read/write) to be set. Without it, the job fails loudly at a preflight step rather than silently using a token whose pushes can't trigger other workflows — GitHub's default `GITHUB_TOKEN` cannot trigger other workflows' `on: push` listeners, which is why a PAT is required here at all.
 5. **Verify the Android workflow picked up**: `gh run list --repo hashpass-tech/hashpass.tech --workflow mobile-android-release.yml --limit 3`. Only dispatch it manually for a case the auto-trigger doesn't cover — a retry on an already-tagged version, or a non-default track (`alpha`, `beta`, or `production`):

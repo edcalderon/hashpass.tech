@@ -101,6 +101,7 @@ const sidebars = {
             'reference/mobile-app/drawer-navigation-gotchas',
             'reference/mobile-app/event-scoped-api-client',
             'reference/mobile-app/db-user-id-pattern',
+            'reference/mobile-app/eas-update-ota',
           ],
         },
         {

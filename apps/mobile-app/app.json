@@ -8,6 +8,9 @@
     "icon": "./assets/images/icon.png",
     "scheme": "hashpass",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
     "splash": {
       "image": "./public/assets/splash.gif",
       "resizeMode": "contain",
