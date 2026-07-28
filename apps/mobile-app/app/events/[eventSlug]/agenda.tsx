@@ -124,6 +124,7 @@ export default function BSL2025AgendaScreen() {
     startTime: Date | null;
   }>({ visible: false, agendaItem: null, startTime: null });
   const [isConfirming, setIsConfirming] = useState(false);
+  const [speakerMapRef, setSpeakerMapRef] = useState<Map<string, { id: string; name: string; image?: string }>>(new Map());
   const eventId = event?.id || 'bsl';
   // Derive URL segment from event config so native requests use the correct path
   // e.g. event.api.basePath = '/api/bslatam' → apiSegment = 'bslatam'
@@ -312,6 +313,59 @@ export default function BSL2025AgendaScreen() {
       setFilteredAgenda([]);
     }
   }, [agenda]);
+
+  // Load speakers from database and build a map for both database IDs and config slugs
+  useEffect(() => {
+    if (!event) return;
+
+    const loadSpeakersMap = async () => {
+      try {
+        const map = new Map<string, { id: string; name: string; image?: string }>();
+
+        // Add speakers from event config (by slug)
+        if (event?.speakers && Array.isArray(event.speakers)) {
+          event.speakers.forEach((speaker: any) => {
+            if (speaker.id) {
+              map.set(speaker.id, {
+                id: speaker.id,
+                name: speaker.name,
+                image: speaker.image,
+              });
+            }
+          });
+        }
+
+        // Fetch and add speakers from database (by UUID)
+        try {
+          const { data: dbSpeakers } = await supabase
+            .from('bsl_speakers')
+            .select('id, name, image_url')
+            .not('id', 'is', null);
+
+          if (Array.isArray(dbSpeakers)) {
+            dbSpeakers.forEach((speaker: any) => {
+              if (speaker.id) {
+                map.set(speaker.id, {
+                  id: speaker.id,
+                  name: speaker.name,
+                  image: speaker.image_url,
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Failed to load database speakers:', e);
+          // Continue with config speakers only
+        }
+
+        setSpeakerMapRef(map);
+      } catch (e) {
+        console.error('Error building speaker map:', e);
+      }
+    };
+
+    loadSpeakersMap();
+  }, [event]);
 
   // Check if we're in the event period and if event is finished
   useEffect(() => {
@@ -822,18 +876,24 @@ export default function BSL2025AgendaScreen() {
   // failing for id-slug references (a hyphenated, unaccented slug rarely
   // substring-matches an accented display name), which is why agenda cards
   // were rendering the raw id slug as if it were the speaker's name.
+  // When bsl_speakers returns database rows, supplement the map with both
+  // database UUIDs and event.speakers config slugs.
   const resolveAgendaSpeaker = (
     value: string
   ): { id: string | null; displayName: string; image?: string } => {
-    if (event?.speakers) {
-      const byId = event.speakers.find((s: { id?: string }) => s.id === value);
-      if (byId) return { id: byId.id ?? null, displayName: byId.name, image: byId.image };
+    // First, try the combined map (config + database speakers)
+    const mapEntry = speakerMapRef.get(value);
+    if (mapEntry) {
+      return { id: mapEntry.id, displayName: mapEntry.name, image: mapEntry.image };
+    }
 
+    // Fallback: search by name in event.speakers
+    if (event?.speakers) {
       const byName = event.speakers.find((s: { name: string }) =>
         s.name.toLowerCase().includes(value.toLowerCase()) ||
         value.toLowerCase().includes(s.name.toLowerCase())
       );
-      if (byName?.id) return { id: byName.id, displayName: value, image: byName.image };
+      if (byName?.id) return { id: byName.id, displayName: byName.name, image: byName.image };
     }
 
     return { id: null, displayName: value };
@@ -990,13 +1050,25 @@ export default function BSL2025AgendaScreen() {
       const dayMatch = String(day).match(/(\d+)/);
       const dayNumber = dayMatch ? parseInt(dayMatch[1], 10) : null;
       if (dayNumber && dayNumber >= 1) {
+        // Parse event start date preserving its local timezone (not device timezone).
+        // Extract date components from ISO string before the T separator to avoid
+        // timezone conversion. E.g., "2026-08-05T09:00:00-04:00" → year 2026, month 8, day 5.
+        const isoMatch = event.eventStartDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) {
+          const [, year, month, date] = isoMatch;
+          const eventYear = parseInt(year, 10);
+          const eventMonth = parseInt(month, 10) - 1; // JS months are 0-indexed
+          const eventDay = parseInt(date, 10) + (dayNumber - 1);
+          return new Date(eventYear, eventMonth, eventDay);
+        }
+        // Fallback: parse as Date (may be affected by device timezone)
         const start = new Date(event.eventStartDate);
         if (!isNaN(start.getTime())) {
           return new Date(start.getFullYear(), start.getMonth(), start.getDate() + (dayNumber - 1));
         }
       }
     }
-    
+
     // Fallback: try to parse from ISO time format
     if (item.time) {
       try {
@@ -1009,7 +1081,7 @@ export default function BSL2025AgendaScreen() {
         // Ignore parse errors
       }
     }
-    
+
     return null;
   };
 
