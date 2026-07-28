@@ -29,9 +29,9 @@ variable "runner_labels" {
 }
 
 variable "instance_type" {
-  description = "EC2 instance type. t3a.large (8 GiB) handles incremental builds; upgrade to t3a.xlarge (16 GiB) if NDK recompilation OOMs."
+  description = "EC2 instance type. Restored to t3a.xlarge (4 vCPU / 16 GiB) 2026-07-28 to maximize build speed -- t3a.large (2 vCPU / 8 GiB, the default from 2026-06-19 to 2026-07-28) left the v1.8.274 internal build CPU-bound at 100% for over an hour on a fully cold cache (first native build after adding expo-updates). Downgrade back to t3a.large only if cost pressure outweighs build-speed priority again."
   type        = string
-  default     = "t3a.large"
+  default     = "t3a.xlarge"
 }
 
 variable "instance_count" {
