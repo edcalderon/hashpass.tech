@@ -213,7 +213,7 @@ which is why the real enforcement lives in `eas-config.js`, not `eas.json`.
 
 ```bash
 cd apps/mobile-app
-npm run ota:publish       # -> production channel, --auto (uses last commit message)
+npm run ota:publish       # -> production channel, last commit message
 npm run ota:publish:dev   # -> development channel
 ```
 
@@ -221,6 +221,37 @@ Both reuse `packages/tools/scripts/run-mobile-eas.js` — the same
 `EXPO_TOKEN`/`EXPO_TOKEN_DEV`/`EAS_PROJECT_ID`/`EAS_PROJECT_ID_DEV` secrets
 and vars already configured for the `android:release:eas*` backend, no new
 credentials needed.
+
+**`eas update` rejects `--branch` and `--channel` together** (fixed
+2026-07-28, caught by CI failing on the real workflow run): the scripts
+originally passed `--branch <name> --channel <name> --auto`, which `eas
+update` refuses outright — `--channel`, `--branch`, and `--auto` are
+mutually exclusive selectors, not composable flags, confirmed against the
+installed `eas-cli@20.1.0`'s own `--help` and runtime validation. Fixed to
+pass only `--channel <name>` (letting `eas` auto-create the backing branch
+of the same name on first use — verified live against the real EAS project)
+plus an explicit `--message` derived from the last commit, dropping
+`--branch`/`--auto` entirely. Also added `--platform android`: without it,
+`eas update` builds and publishes an iOS bundle too on every run, which this
+repo never ships (no `ios/` directory, no iOS store URLs configured) — pure
+wasted export/upload time.
+
+**Known blocker: `EXPO_TOKEN_DEV` lacks permission for `eas update`/`eas
+channel:*` operations.** Verified live: this robot token successfully
+authenticates as `@hashpasstechs-team` (confirmed via `eas whoami` and `eas
+project:info`, which both succeed and correctly resolve the dev project),
+but every `eas channel:list`/`eas update` call against that same project
+fails with `Entity not authorized: AppEntity[...] (action = READ)`. The
+production token (`EXPO_TOKEN`) has no such issue — this is specific to the
+dev robot token's permission scope, most likely because it was generated
+with a limited "Builds and Submissions"-only permission set in the Expo
+dashboard rather than full account access. This can't be fixed from the
+CLI or from this repo: regenerate `EXPO_TOKEN_DEV` in the Expo dashboard
+(Account Settings → Access Tokens, under the `hashpasstechs-team` account)
+with EAS Update permissions included, then update the `EXPO_TOKEN_DEV`
+GitHub secret. Until then, `ota:publish:dev` and `mobile-eas-update.yml`'s
+development-channel path will fail with this same authorization error —
+the production channel is unaffected.
 
 CI: `.github/workflows/mobile-eas-update.yml` runs these automatically on
 push (see the path allowlist above), subject to the native-change guard

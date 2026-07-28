@@ -124,6 +124,18 @@ production, once users update to it, get the fully-automatic OTA-by-default
 behavior described above. See the OTA doc's "First release after adopting
 OTA needs one real native build" section.
 
+**`eas update --branch` + `--channel` cannot be combined** (fixed 2026-07-28,
+caught by a real CI failure): `ota:publish`/`ota:publish:dev` and
+`mobile-eas-update.yml` now pass only `--channel <name>` (`eas` auto-creates
+the backing branch) plus an explicit `--message` and `--platform android` —
+no `--branch`, no `--auto`. **Separately, `EXPO_TOKEN_DEV` currently lacks
+permission for `eas update`/`eas channel:*`** (confirmed via `eas whoami`/
+`eas project:info` succeeding but `eas channel:list` failing with `Entity
+not authorized`, action=READ) — regenerate it in the Expo dashboard under
+`hashpasstechs-team` with EAS Update permissions before the development
+channel will work; production is unaffected. See the OTA doc's "Publishing"
+section for full detail.
+
 **Release posture (updated 2026-07-27):** the full progression is internal → alpha (closed testing) → beta (open testing) → production, each gated on the previous track having succeeded for the same ref. Internal publishes automatically on tag creation; alpha auto-promotes after internal succeeds on the same tag (`auto_promote_alpha=true`), and beta now auto-promotes after that auto-promoted alpha succeeds (`auto_promote_beta=true`) — so a single tag push carries a release all the way through internal → alpha → beta with no manual dispatch. Production is the deliberate exception: it never auto-promotes, by design — it's the only track that builds against the real backend (`environment=production`) and ships to real users, so it keeps a manual `gh workflow run` as the final human checkpoint after beta has been validated by real external testers.
 
 `environment` and `track` are two separate concepts, validated as a pair:

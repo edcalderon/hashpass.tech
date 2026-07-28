@@ -210,7 +210,7 @@ jobs:
           set -euo pipefail
           if [ -n "${{ inputs.message }}" ]; then
             EAS_BUILD_PROFILE=production node ../../packages/tools/scripts/run-mobile-eas.js update \
-              --branch production --channel production \
+              --channel production --platform android \
               --message "${{ inputs.message }}" --non-interactive
           else
             npm run ota:publish
@@ -223,7 +223,7 @@ jobs:
           set -euo pipefail
           if [ -n "${{ inputs.message }}" ]; then
             EAS_BUILD_PROFILE=preview node ../../packages/tools/scripts/run-mobile-eas.js update \
-              --branch development --channel development \
+              --channel development --platform android \
               --message "${{ inputs.message }}" --non-interactive
           else
             npm run ota:publish:dev
