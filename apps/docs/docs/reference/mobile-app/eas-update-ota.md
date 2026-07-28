@@ -101,7 +101,7 @@ one environment's installed base at the other environment's JS bundle with no
 store review to catch it, which is exactly the failure mode a bad channel
 mapping would produce.
 
-Channel <-> branch mapping in `mobile-eas-update.yml`:
+Channel-to-branch mapping in `mobile-eas-update.yml`:
 
 | Push to | Channel | Why |
 |---|---|---|
