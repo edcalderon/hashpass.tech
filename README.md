@@ -20,14 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.273)
+## 📋 Latest Changes (v1.8.274)
 
 ### Bug Fixes
 
-* bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission ([c2f17f0](https://github.com/hashpass-tech/hashpass.tech/commit/c2f17f0bc9f9ad85f6e5aadde0b18c75a02aa8b8))
-* satisfy isolated pre-push typecheck for dbUserId bridge changes ([cf71f4a](https://github.com/hashpass-tech/hashpass.tech/commit/cf71f4a6d6bcc07dbefa2a7fc15ab8223dfdb128))
+* fail production builds loudly when Supabase config is missing ([aa16f36](https://github.com/hashpass-tech/hashpass.tech/commit/aa16f36fad99894f80264dbbb13462efda434f36))
+
+
+### Features
+
+* add EAS Update (OTA) for mobile, default releases to OTA-only ([e919cf2](https://github.com/hashpass-tech/hashpass.tech/commit/e919cf2dd07b9927a82e90a7879626549153a322))
 ### Release Highlights
-- satisfy isolated pre-push typecheck for dbUserId bridge changes; bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission
+- add EAS Update (OTA) for mobile, default releases to OTA-only; fail production builds loudly when Supabase config is missing
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

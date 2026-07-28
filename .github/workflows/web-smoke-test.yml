@@ -35,6 +35,16 @@ jobs:
       SKIP_ENV_PROPAGATE: "1"
       EXPO_EXPORT_MAX_WORKERS: "2"
       NODE_MAX_OLD_SPACE_SIZE: "8192"
+      # apps/mobile-app/app/+html.tsx fails the static export at build time if
+      # the active profile resolves to "*-production" with no Supabase
+      # URL/key (added 2026-07-28 after bsl.hashpass.tech shipped live with
+      # Supabase silently broken). With SKIP_ENV_PROPAGATE=1 this build never
+      # ran env:propagate, so it fell back to the default "core-production"
+      # profile with nothing set. These are the same public anon-key repo
+      # Variables mobile-android-release.yml already uses for the production
+      # environment -- publishable keys, safe as Variables, not secrets.
+      EXPO_PUBLIC_SUPABASE_URL_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_URL_PROD }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

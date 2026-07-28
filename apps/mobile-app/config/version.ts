@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607280426, // Updated to current timestamp
+  buildNumber: 202607280739, // Updated to current timestamp
   releaseDate: '2026-07-28',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'add EAS Update (OTA) for mobile, default releases to OTA-only'
   ],
   bugfixes: [
-    'satisfy isolated pre-push typecheck for dbUserId bridge changes',
-    'bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission'
+    'fail production builds loudly when Supabase config is missing'
   ],
   breakingChanges: [],
-  notes: 'satisfy isolated pre-push typecheck for dbUserId bridge changes; bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission'
+  notes: 'add EAS Update (OTA) for mobile, default releases to OTA-only; fail production builds loudly when Supabase config is missing'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.274': {
+    version: '1.8.274',
+    buildNumber: 202607280739,
+    releaseDate: '2026-07-28',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add EAS Update (OTA) for mobile, default releases to OTA-only'
+    ],
+    bugfixes: [
+      'fail production builds loudly when Supabase config is missing'
+    ],
+    breakingChanges: [],
+    notes: 'add EAS Update (OTA) for mobile, default releases to OTA-only; fail production builds loudly when Supabase config is missing'
+  },
   '1.8.273': {
     version: '1.8.273',
     buildNumber: 202607280426,

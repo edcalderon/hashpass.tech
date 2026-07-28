@@ -712,6 +712,9 @@ importers:
       expo-system-ui:
         specifier: ~5.0.7
         version: 5.0.11(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react-native-web@0.20.0(patch_hash=lyhti7jhxdftt6yipx5xu47w6a)(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))
+      expo-updates:
+        specifier: ~0.28.18
+        version: 0.28.18(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       expo-web-browser:
         specifier: ~14.2.0
         version: 14.2.0(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))
@@ -6830,6 +6833,9 @@ packages:
   apg-js@4.4.0:
     resolution: {integrity: sha512-fefmXFknJmtgtNEXfPwZKYkMFX4Fyeyz+fNF6JWp87biGOPslJbCBVU158zvKRZfHBKnJDy8CMM40oLFGkXT8Q==}
 
+  arg@4.1.0:
+    resolution: {integrity: sha512-ZWc51jO3qegGkVh8Hwpv636EkbesNV5ZNQPCtRa+0qytRYPEs9IYT9qITY9buezqUH5uqyzlWLcufrzU2rffdg==}
+
   arg@5.0.2:
     resolution: {integrity: sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg==}
 
@@ -9293,6 +9299,9 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-eas-client@0.14.4:
+    resolution: {integrity: sha512-TSL1BbBFIuXchJmPgbPnB7cGpOOuSGJcQ/L7gij/+zPjExwvKm5ckA5dlSulwoFhH8zQt4vb7bfISPSAWQVWBw==}
+
   expo-file-system@18.1.11:
     resolution: {integrity: sha512-HJw/m0nVOKeqeRjPjGdvm+zBi5/NxcdPf8M8P3G2JFvH5Z8vBWqVDic2O58jnT1OFEy0XXzoH9UqFu7cHg9DTQ==}
     peerDependencies:
@@ -9424,6 +9433,9 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-structured-headers@4.1.0:
+    resolution: {integrity: sha512-2X+aUNzC/qaw7/WyUhrVHNDB0uQ5rE12XA2H/rJXaAiYQSuOeU90ladaN0IJYV9I2XlhYrjXLktLXWbO7zgbag==}
+
   expo-symbols@0.4.5:
     resolution: {integrity: sha512-ZbgvJfACPfWaJxJrUd0YzDmH9X0Ci7vb5m0/ZpDz/tnF1vQJlkovvpFEHLUmCDSLIN7/fNK8t696KSpzfm8/kg==}
     peerDependencies:
@@ -9444,6 +9456,13 @@ packages:
     resolution: {integrity: sha512-DeB+fRe0hUDPZhpJ4X4bFMAItatFBUPjw/TVSbJsaf3Exeami+2qbbJhWkcTMoYHOB73nOIcaYcWXYJnCJXO0w==}
     peerDependencies:
       expo: '*'
+
+  expo-updates@0.28.18:
+    resolution: {integrity: sha512-qbxRF8w/xPNiEWmZHDxK4XJ0ns4A9VpQg66jNeAEc8mrX9f7TG3TyLyLtydAP0F4aTNrBcSxah8K5VA90vcPig==}
+    hasBin: true
+    peerDependencies:
+      expo: '*'
+      react: '*'
 
   expo-web-browser@14.2.0:
     resolution: {integrity: sha512-6S51d8pVlDRDsgGAp8BPpwnxtyKiMWEFdezNz+5jVIyT+ctReW42uxnjRgtsdn5sXaqzhaX+Tzk/CWaKCyC0hw==}
@@ -24158,6 +24177,8 @@ snapshots:
 
   apg-js@4.4.0: {}
 
+  arg@4.1.0: {}
+
   arg@5.0.2: {}
 
   argon2@0.44.0:
@@ -27224,6 +27245,8 @@ snapshots:
       expo: 53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10)
       expo-dev-menu-interface: 1.10.0(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))
 
+  expo-eas-client@0.14.4: {}
+
   expo-file-system@18.1.11(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)):
     dependencies:
       expo: 53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10)
@@ -27454,6 +27477,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  expo-structured-headers@4.1.0: {}
+
   expo-symbols@0.4.5(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)):
     dependencies:
       expo: 53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10)
@@ -27474,6 +27499,26 @@ snapshots:
   expo-updates-interface@1.1.0(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10)):
     dependencies:
       expo: 53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10)
+
+  expo-updates@0.28.18(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0):
+    dependencies:
+      '@expo/code-signing-certificates': 0.0.6
+      '@expo/config': 11.0.13
+      '@expo/config-plugins': 10.1.2
+      '@expo/spawn-async': 1.7.2
+      arg: 4.1.0
+      chalk: 4.1.2
+      expo: 53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10)
+      expo-eas-client: 0.14.4
+      expo-manifests: 0.16.6(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))
+      expo-structured-headers: 4.1.0
+      expo-updates-interface: 1.1.0(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))
+      glob: 10.5.0
+      ignore: 5.3.2
+      react: 19.0.0
+      resolve-from: 5.0.0
+    transitivePeerDependencies:
+      - supports-color
 
   expo-web-browser@14.2.0(expo@53.0.27(@babel/core@7.29.0)(@expo/metro-runtime@5.0.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)))(bufferutil@4.1.0)(react-native-webview@13.13.5(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)(utf-8-validate@5.0.10))(react-native@0.79.6(patch_hash=uipgy62urweslyz5e7qqpnc3by)(@babel/core@7.29.0)(@types/react@19.0.14)(bufferutil@4.1.0)(react@19.0.0)(utf-8-validate@5.0.10)):
     dependencies:
@@ -35717,7 +35762,7 @@ snapshots:
 
   xml2js@0.6.0:
     dependencies:
-      sax: 1.4.4
+      sax: 1.6.0
       xmlbuilder: 11.0.1
 
   xml2js@0.6.2:

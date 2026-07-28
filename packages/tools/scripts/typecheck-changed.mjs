@@ -184,6 +184,16 @@ function collectImportSpecifiers(content) {
   // prefix/suffix, preventing merging across unrelated import statements.
   const importRegex = /^\s*import\s+(type\s+)?([^\n]*?\{[^}]*\}[^\n]*?|[^\n]*?)\s+from\s+['"]([^'"]+)['"];?/gm;
   const sideEffectRegex = /^\s*import\s+['"]([^'"]+)['"];?/gm;
+  // Dynamic import() calls (e.g. `const { X } = await import("./foo.js")`)
+  // aren't caught by the static-import regexes above, so a changed file
+  // using one (like sst.config.ts's conditional target-specific config
+  // loading) would have its dependency silently missing from the isolated
+  // typecheck sandbox — producing a "Cannot find module" false positive
+  // unrelated to any real type error in the changed file. Captures the
+  // destructuring clause (if any) the same way the static-import regex
+  // does, so the generated stub module still declares the right names.
+  const dynamicImportRegex =
+    /\b(?:const|let|var)\s+(\{[^}]*\})\s*=\s*(?:await\s+)?import\(\s*['"]([^'"]+)['"]\s*\)/g;
 
   for (const match of content.matchAll(importRegex)) {
     imports.push({
@@ -197,6 +207,14 @@ function collectImportSpecifiers(content) {
     imports.push({
       specifier: match[1],
       clause: '',
+      isTypeOnly: false,
+    });
+  }
+
+  for (const match of content.matchAll(dynamicImportRegex)) {
+    imports.push({
+      specifier: match[2],
+      clause: match[1],
       isTypeOnly: false,
     });
   }

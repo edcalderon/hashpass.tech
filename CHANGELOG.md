@@ -1,3 +1,17 @@
+## [1.8.274](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.273...v1.8.274) (2026-07-28)
+
+
+### Bug Fixes
+
+* fail production builds loudly when Supabase config is missing ([aa16f36](https://github.com/hashpass-tech/hashpass.tech/commit/aa16f36fad99894f80264dbbb13462efda434f36))
+
+
+### Features
+
+* add EAS Update (OTA) for mobile, default releases to OTA-only ([e919cf2](https://github.com/hashpass-tech/hashpass.tech/commit/e919cf2dd07b9927a82e90a7879626549153a322))
+### Release Highlights
+- add EAS Update (OTA) for mobile, default releases to OTA-only; fail production builds loudly when Supabase config is missing
+
 ## [1.8.273](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.272...v1.8.273) (2026-07-28)
 
 

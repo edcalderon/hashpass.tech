@@ -2,12 +2,15 @@
   "expo": {
     "name": "HASHPASS",
     "slug": "hash-pass-tech",
-    "version": "1.8.273",
+    "version": "1.8.274",
     "newArchEnabled": true,
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "hashpass",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
     "splash": {
       "image": "./public/assets/splash.gif",
       "resizeMode": "contain",
@@ -26,7 +29,7 @@
         "backgroundColor": "#05070C"
       },
       "package": "com.hashpass.tech",
-      "versionCode": 11073,
+      "versionCode": 11074,
       "googleServicesFile": "./config/google-services.json",
       "permissions": [
         "android.permission.CAMERA"

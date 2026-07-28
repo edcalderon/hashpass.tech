@@ -74,6 +74,31 @@ export default function Root({
     readBuildEnv('G_TAG_KEY') ||
     '';
   const activeSupabaseConfig = buildSupabaseConfig(activeSupabaseProfileId);
+
+  // Guard: this file runs at static-export build time (Node.js), not in the
+  // browser — a missing Supabase URL/key for the ACTIVE profile used to only
+  // log a console.error from lib/supabase.ts at runtime in the shipped
+  // bundle, which most users never see; the page still loaded, just with
+  // every Supabase-backed feature silently broken (e.g. "Supabase URL or
+  // Anon Key is missing for profile bsl-production" surfacing live on
+  // bsl.hashpass.tech). Only the active profile is checked — the other
+  // three entries in runtimeSupabaseProfiles below are a client-side
+  // override registry and routinely have gaps in local/dev builds that
+  // don't configure every tenant's secrets, so gating on those would break
+  // developer builds for a scenario that isn't actually broken. Failing the
+  // export here instead turns a silent, live broken deploy into a build
+  // that never ships.
+  if (
+    activeSupabaseProfileId.endsWith('-production') &&
+    (!activeSupabaseConfig.supabaseUrl || !activeSupabaseConfig.supabaseAnonKey)
+  ) {
+    throw new Error(
+      `[+html.tsx] Supabase URL or Anon Key is missing for the active build profile "${activeSupabaseProfileId}". ` +
+        'Set the profile\'s EXPO_PUBLIC_*_SUPABASE_URL/_KEY env vars (see config/supabase-profiles.ts) before building — ' +
+        'refusing to produce a static export that would silently ship with every Supabase-backed feature broken.'
+    );
+  }
+
   const runtimeSupabaseProfiles = {
     'core-development': buildSupabaseConfig('core-development'),
     'core-production': buildSupabaseConfig('core-production'),
