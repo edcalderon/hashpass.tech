@@ -1,0 +1,29 @@
+# HashPass BSL target-account pipeline Terraform variables
+
+aws_region = "us-east-2"
+
+# Already exists in the target account (952191196420), confirmed AVAILABLE 2026-07-28.
+connection_arn = "arn:aws:codeconnections:us-east-2:952191196420:connection/bce03f47-4812-41c4-b57f-040c9ab019d1"
+
+# Already exists in the target account.
+artifact_bucket_name = "bsl-hashpass-pipelines-952191196420-us-east-2"
+
+# Real repository -- never point this at a personal fork. See the
+# 2026-07-28 incident notes in variables.tf and
+# .agents/active/task-aws-account-migration.md.
+repository = "hashpass-tech/hashpass.tech"
+
+# EC2 worker sizing -- non-burstable, matches hashpass-web's pattern.
+instance_type = "m6i.large"
+
+# BSL Supabase config -- fill with real values in a local terraform.tfvars,
+# never commit real secrets here.
+supabase_url_prod             = "https://your-prod-project.supabase.co"
+supabase_key_prod             = "sb_publishable_..."
+supabase_service_role_key_prod = "eyJhbGciOi..."
+supabase_db_url_prod           = "postgresql://postgres...@aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require"
+
+supabase_url_dev             = "https://your-dev-project.supabase.co"
+supabase_key_dev             = "sb_publishable_..."
+supabase_service_role_key_dev = "eyJhbGciOi..."
+supabase_db_url_dev           = "postgresql://postgres...@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require"
