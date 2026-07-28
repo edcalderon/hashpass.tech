@@ -10,7 +10,7 @@ import * as Clipboard from 'expo-clipboard';
 
 export default function PassDetailsScreen() {
   const { colors, isDark } = useTheme();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, dbUserId, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
@@ -26,21 +26,21 @@ export default function PassDetailsScreen() {
       return;
     }
 
-    if (!user) {
+    if (!user || !dbUserId) {
       setError('User not authenticated');
       setLoading(false);
       return;
     }
 
     loadPassInfo();
-  }, [user, passId, authLoading]);
+  }, [user, dbUserId, passId, authLoading]);
 
   const loadPassInfo = async () => {
-    if (!user) return;
+    if (!user || !dbUserId) return;
 
     try {
       setLoading(true);
-      const pass = await passSystemService.getUserPassInfo(user.id);
+      const pass = await passSystemService.getUserPassInfo(dbUserId);
       
       if (!pass) {
         setError('No pass found');

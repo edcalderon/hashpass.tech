@@ -49,7 +49,7 @@ export default function RealtimeChat({
   otherParticipantAvatar,
 }: RealtimeChatProps) {
   const { isDark, colors } = useTheme();
-  const { user } = useAuth();
+  const { user, dbUserId } = useAuth();
   const { refreshNotifications } = useNotifications();
   const styles = getStyles(isDark, colors);
 
@@ -120,10 +120,13 @@ export default function RealtimeChat({
     }
   }, [chatPresence]);
 
-  // Use messages query for persistence - only when user is available
+  // Use messages query for persistence - only when user is available.
+  // This must be the real Supabase auth uid (not Better Auth's user.id) —
+  // the underlying RPCs (get_meeting_chat_messages/send_meeting_chat_message)
+  // take a uuid p_user_id/p_sender_id and 22P02 on anything else.
   const { data: persistedMessages, loading, error, storeMessages: storeMessagesFn } = useMessagesQuery({
     meetingId,
-    userId: user?.id || '', // Will be validated in the hook
+    userId: dbUserId || '', // Will be validated in the hook
   });
 
   // Use chat scroll hook
@@ -176,14 +179,14 @@ export default function RealtimeChat({
   // Update last seen when user views chat or scrolls
   useEffect(() => {
     const updateLastSeen = async () => {
-      if (!user?.id || !meetingId) return;
-      
+      if (!dbUserId || !meetingId) return;
+
       try {
         const { error } = await supabase.rpc('update_chat_last_seen', {
-          p_user_id: user.id,
+          p_user_id: dbUserId,
           p_meeting_id: meetingId,
         });
-        
+
         if (error) {
           console.error('Error updating chat last seen:', error);
         }
@@ -194,17 +197,17 @@ export default function RealtimeChat({
 
     // Update when component mounts
     updateLastSeen();
-    
+
     // Update when new messages arrive (user is viewing)
     if (allMessages.length > 0) {
       updateLastSeen();
     }
-    
+
     // Update periodically while chat is open (every 30 seconds)
     const interval = setInterval(updateLastSeen, 30000);
-    
+
     return () => clearInterval(interval);
-  }, [user?.id, meetingId, allMessages.length]);
+  }, [dbUserId, meetingId, allMessages.length]);
 
   // Listen for new incoming messages and refresh notifications
   useEffect(() => {
@@ -267,7 +270,7 @@ export default function RealtimeChat({
           messageType: 'text',
         };
         
-        await storeMessages([newChatMessage], meetingId, user?.id || '');
+        await storeMessages([newChatMessage], meetingId, dbUserId || '');
       }
 
       setNewMessage('');

@@ -43,7 +43,7 @@ const generateUserAvatarUrl = (name: string): string => {
 
 export default function MyRequestsView() {
   const { isDark, colors } = useTheme();
-  const { user } = useAuth();
+  const { dbUserId } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
   const router = useRouter();
@@ -81,15 +81,15 @@ export default function MyRequestsView() {
   const [expirationCountdown, setExpirationCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered, user:', user ? 'present' : 'null');
-    if (user) {
+    console.log('🔄 useEffect triggered, user:', dbUserId ? 'present' : 'null');
+    if (dbUserId) {
       console.log('🔄 User found, calling loadMyRequests...');
       loadMyRequests();
     } else {
       console.log('⚠️ No user found, setting loading to false');
       setLoading(false);
     }
-    
+
     const timeout = setTimeout(() => {
       if (loading && requests.length === 0) {
         console.warn('⚠️ My requests loading timeout (requests still empty), setting loading to false');
@@ -98,7 +98,7 @@ export default function MyRequestsView() {
     }, 10000);
 
     return () => clearTimeout(timeout);
-  }, [user]);
+  }, [dbUserId]);
 
   // Auto-open detail modal when requestId is provided in params
   useEffect(() => {
@@ -215,7 +215,7 @@ export default function MyRequestsView() {
 
   // Setup real-time subscriptions using the dedicated hook
   useRealtimeMeetingRequests({
-    userId: user?.id || '',
+    userId: dbUserId || '',
     onRequestInserted: handleRequestInserted,
     onRequestUpdated: handleRequestUpdated,
     onRequestDeleted: handleRequestDeleted,
@@ -225,7 +225,7 @@ export default function MyRequestsView() {
   // OLD SUBSCRIPTION CODE REMOVED - Now using useRealtimeMeetingRequests hook above
 
   const loadMyRequests = useCallback(async () => {
-    if (!user) {
+    if (!dbUserId) {
       console.log('No user found, skipping requests load');
       setLoading(false);
       return;
@@ -239,7 +239,7 @@ export default function MyRequestsView() {
       const { data: sentData, error: sentError } = await supabase
         .from('meeting_requests')
         .select('*')
-        .eq('requester_id', user.id)
+        .eq('requester_id', dbUserId)
         .order('created_at', { ascending: false });
 
       if (sentError) {
@@ -248,21 +248,21 @@ export default function MyRequestsView() {
 
       // Fetch INCOMING requests (if user is a speaker)
       // Note: meeting_requests.speaker_id is UUID (user_id from bsl_speakers), not bsl_speakers.id
-      // So we use user.id directly
+      // So we use dbUserId directly
       let incomingData: any[] = [];
       try {
         // Check if user is a speaker
         const { data: speakerRows, error: speakerErr } = await supabase
           .from('bsl_speakers')
           .select('id, user_id')
-          .eq('user_id', user.id);
+          .eq('user_id', dbUserId);
         
         if (!speakerErr && speakerRows && speakerRows.length > 0) {
           // meeting_requests.speaker_id stores the user_id (UUID), not bsl_speakers.id
           const { data: inc, error: incErr } = await supabase
             .from('meeting_requests')
             .select('*')
-            .eq('speaker_id', user.id) // Use user.id directly since speaker_id is UUID (user_id)
+            .eq('speaker_id', dbUserId) // Use dbUserId directly since speaker_id is UUID (user_id)
             .order('created_at', { ascending: false });
           
           incomingData = inc || [];
@@ -323,7 +323,7 @@ export default function MyRequestsView() {
     } finally {
       setLoading(false);
     }
-  }, [user, showError]);
+  }, [dbUserId, showError]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -380,7 +380,7 @@ export default function MyRequestsView() {
   };
 
   const confirmCancelRequest = async () => {
-    if (!selectedRequest || !user) return;
+    if (!selectedRequest || !dbUserId) return;
     
     try {
       setShowCancelConfirm(false);
@@ -388,7 +388,7 @@ export default function MyRequestsView() {
       const { data, error } = await supabase
         .rpc('cancel_meeting_request', {
           p_request_id: selectedRequest.id,
-          p_user_id: user.id
+          p_user_id: dbUserId
         });
 
       if (error) {
@@ -648,14 +648,14 @@ export default function MyRequestsView() {
   };
 
   const handleAcceptRequest = async (request: MeetingRequest, slotTime?: string) => {
-    if (!user) return;
+    if (!dbUserId) return;
     
     try {
       // Get speaker_id for current user (bsl_speakers.id expected by RPCs and slots RPC)
       const { data: speakerData } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .single();
 
       if (!speakerData) {
@@ -764,13 +764,13 @@ export default function MyRequestsView() {
   };
 
   const handleDeclineRequest = async (request: MeetingRequest) => {
-    if (!user) return;
+    if (!dbUserId) return;
     
     try {
       const { data: speakerData } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .single();
 
       if (!speakerData) {
@@ -806,13 +806,13 @@ export default function MyRequestsView() {
   };
 
   const handleBlockUser = async (request: MeetingRequest) => {
-    if (!user) return;
+    if (!dbUserId) return;
     
     try {
       const { data: speakerData } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .single();
 
       if (!speakerData) {

@@ -11,12 +11,12 @@ export interface BlockUserOptions {
 }
 
 export function useBlockUser() {
-  const { user } = useAuth();
+  const { dbUserId } = useAuth();
   const { showSuccess, showError } = useToastHelpers();
   const [loading, setLoading] = useState(false);
 
   const blockUser = async (options: BlockUserOptions): Promise<boolean> => {
-    if (!user) {
+    if (!dbUserId) {
       showError('Error', 'You must be logged in to block users');
       return false;
     }
@@ -29,7 +29,7 @@ export function useBlockUser() {
       const { data: existingBlock } = await supabase
         .from('user_blocks')
         .select('id, is_muted')
-        .eq('blocker_user_id', user.id)
+        .eq('blocker_user_id', dbUserId)
         .eq('blocked_user_id', userId)
         .single();
 
@@ -54,7 +54,7 @@ export function useBlockUser() {
       const { error: insertError } = await supabase
         .from('user_blocks')
         .insert({
-          blocker_user_id: user.id,
+          blocker_user_id: dbUserId,
           blocked_user_id: userId,
           reason: reason || null,
           is_muted: mute,
@@ -76,7 +76,7 @@ export function useBlockUser() {
   };
 
   const unblockUser = async (blockedUserId: string): Promise<boolean> => {
-    if (!user) {
+    if (!dbUserId) {
       showError('Error', 'You must be logged in to unblock users');
       return false;
     }
@@ -87,7 +87,7 @@ export function useBlockUser() {
       const { error } = await supabase
         .from('user_blocks')
         .delete()
-        .eq('blocker_user_id', user.id)
+        .eq('blocker_user_id', dbUserId)
         .eq('blocked_user_id', blockedUserId);
 
       if (error) throw error;
@@ -105,13 +105,13 @@ export function useBlockUser() {
   };
 
   const isUserBlocked = async (userId: string): Promise<boolean> => {
-    if (!user) return false;
+    if (!dbUserId) return false;
 
     try {
       const { data } = await supabase
         .from('user_blocks')
         .select('id')
-        .eq('blocker_user_id', user.id)
+        .eq('blocker_user_id', dbUserId)
         .eq('blocked_user_id', userId)
         .single();
 

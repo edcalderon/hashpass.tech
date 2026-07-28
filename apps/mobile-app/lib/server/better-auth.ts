@@ -1,6 +1,8 @@
 import { betterAuth } from 'better-auth';
 import { ENV_CONFIG, SSO_CONFIG } from '@hashpass/config';
 import { syncPublicUserRegistry } from '../auth/public-user-registry';
+import { ensureSupabaseAccountForEmail } from '../auth/supabase-admin-bridge';
+import { getSupabaseServerForRequest } from '../supabase-server';
 import { getDatabasePool, hasDatabaseConnectionString } from './database-pool';
 
 const normalizeAuthPath = (value?: string | null): string => {
@@ -101,12 +103,51 @@ const resolveRequestTenant = (request?: Request) => {
   return ENV_CONFIG.getTenant(hostname);
 };
 
-const syncBetterAuthUser = async (user: Record<string, any>, context: any) => {
+export const syncBetterAuthUser = async (user: Record<string, any>, context: any) => {
   const request = context?.request || context?.context?.request;
   if (!(request instanceof Request)) return;
   const tenant = resolveRequestTenant(request);
 
   const { firstName, lastName } = splitName(user.name);
+
+  // Better Auth's own ba_users table has no auth.users row of its own — but
+  // several things structurally require one: user_roles/event_roles FK to
+  // auth.users(id) directly (so Better-Auth-only accounts could never hold
+  // an admin role), and the BSL general-pass provisioning trigger
+  // (db/migrations/V010__provision_upcoming_bsl_general_passes.sql) only
+  // fires on auth.users INSERT/UPDATE, so Better-Auth-only signups never
+  // received their Chile/Colombia 2026 general passes. Bridging every
+  // Better Auth user into a real (shadow) Supabase account here fixes both:
+  // the pass trigger fires as a side effect of the row existing, and role
+  // grants can target a real auth.users id — PROVIDED the resulting Supabase
+  // uid is also recorded in the registry's provider_ids.supabase below,
+  // since resolveSupabaseIdentityForUser (resolve-notification-identity.ts)
+  // resolves a Better-Auth caller's supabaseUserId purely from that field —
+  // admin/event-admin checks would keep failing without it even though the
+  // shadow account exists. Runs on both create.after and update.after so a
+  // user whose bridge failed on signup self-heals on their next profile
+  // update, same as registryUserId's self-heal pattern. Never throws — a
+  // Supabase-side failure here must not break the Better Auth sign-up.
+  let supabaseUserId: string | null = null;
+  try {
+    const supabase = getSupabaseServerForRequest(request);
+    const bridged = await ensureSupabaseAccountForEmail(supabase, {
+      email: user.email,
+      userMetadata: {
+        auth_provider: 'better-auth',
+        auth_bridge: 'better_auth_hook',
+        full_name: user.name || null,
+        avatar_url: user.image || null,
+        better_auth_user_id: user.id,
+      },
+    });
+    supabaseUserId = bridged?.id ?? null;
+  } catch (error) {
+    console.error(
+      '[Better Auth] Supabase account bridge failed:',
+      error instanceof Error ? error.message : String(error)
+    );
+  }
 
   await syncPublicUserRegistry(request, {
     provider: 'better-auth',
@@ -129,6 +170,7 @@ const syncBetterAuthUser = async (user: Record<string, any>, context: any) => {
     },
     providerIds: {
       'better-auth': user.id,
+      ...(supabaseUserId ? { supabase: supabaseUserId } : {}),
     },
   });
 };

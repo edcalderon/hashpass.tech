@@ -58,7 +58,7 @@ export default function SpeakerDetail() {
   const eventId = event?.id || 'bsl';
   // e.g. event.api.basePath = '/api/bslatam' → apiSegment = 'bslatam'
   const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, dbUserId } = useAuth();
   const { t } = useTranslation('networking');
   const router = useRouter();
   const { showSuccess, showError, showWarning, showInfo } = useToastHelpers();
@@ -106,7 +106,7 @@ export default function SpeakerDetail() {
   // mockUserTicket removed - now using pass system
 
   const checkIfCurrentUserIsSpeaker = async () => {
-    if (!user) {
+    if (!dbUserId) {
       setIsCurrentUserSpeaker(false);
       return;
     }
@@ -118,7 +118,7 @@ export default function SpeakerDetail() {
         .maybeSingle() as any;
       
       // Check if this speaker's user_id matches current user
-      if (!error && speakerData && typeof speakerData === 'object' && 'user_id' in speakerData && speakerData.user_id === user.id) {
+      if (!error && speakerData && typeof speakerData === 'object' && 'user_id' in speakerData && speakerData.user_id === dbUserId) {
         setIsCurrentUserSpeaker(true);
       } else {
         setIsCurrentUserSpeaker(false);
@@ -289,16 +289,16 @@ export default function SpeakerDetail() {
   }, [id, event?.speakers]);
 
   useEffect(() => {
-    if (user && speaker) {
+    if (dbUserId && speaker) {
       loadMeetingRequestStatus();
       loadCancelledRequests();
       loadRequestLimits();
     }
-  }, [user, speaker]);
+  }, [dbUserId, speaker]);
 
   // Real-time subscription for meeting requests
   useEffect(() => {
-    if (!user || !speaker) return;
+    if (!dbUserId || !speaker) return;
 
     console.log('🔄 Setting up real-time subscription for meeting requests...');
     
@@ -310,7 +310,7 @@ export default function SpeakerDetail() {
           event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'meeting_requests',
-          filter: `requester_id=eq.${user.id}`
+          filter: `requester_id=eq.${dbUserId}`
         },
         (payload: { eventType?: string; new?: any; old?: any }) => {
           console.log('🔄 Real-time update received:', payload);
@@ -351,10 +351,10 @@ export default function SpeakerDetail() {
       console.log('🔄 Cleaning up real-time subscription...');
       subscription.unsubscribe();
     };
-  }, [user, speaker]);
+  }, [dbUserId, speaker]);
 
   const loadMeetingRequestStatus = async () => {
-    if (!user || !speaker) return;
+    if (!dbUserId || !speaker) return;
 
     setLoadingRequestStatus(true);
     try {
@@ -380,7 +380,7 @@ export default function SpeakerDetail() {
   };
 
   const loadCancelledRequests = async () => {
-    if (!user || !speaker) return;
+    if (!dbUserId || !speaker) return;
 
     setLoadingCancelledRequests(true);
     try {
@@ -404,7 +404,7 @@ export default function SpeakerDetail() {
   };
 
   const handleCancelRequest = (request: any) => {
-    if (!user || !request) return;
+    if (!dbUserId || !request) return;
     setSelectedRequestToCancel(request);
     setShowCancelModal(true);
   };
@@ -413,7 +413,7 @@ export default function SpeakerDetail() {
     console.log('🔍 Opening request details:', request);
     
     // If speaker is viewing, fetch requester details
-    if (isCurrentUserSpeaker && request.requester_id !== user?.id) {
+    if (isCurrentUserSpeaker && request.requester_id !== dbUserId) {
       try {
         // Note: profiles table doesn't exist, so we use requester_name and generate avatars
         const requesterName = request.requester_name || 'User';
@@ -439,7 +439,7 @@ export default function SpeakerDetail() {
   };
   
   const handleAcceptRequest = async (request: any, slotTime?: string) => {
-    if (!user || !isCurrentUserSpeaker) return;
+    if (!dbUserId || !isCurrentUserSpeaker) return;
     
     // If no slot provided, show slot picker first (similar to my-requests.tsx)
     if (!slotTime) {
@@ -454,7 +454,7 @@ export default function SpeakerDetail() {
       const { data: speakerData } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .single();
 
       if (!speakerData) {
@@ -523,14 +523,14 @@ export default function SpeakerDetail() {
   };
 
   const handleDeclineRequest = async (request: any) => {
-    if (!user || !isCurrentUserSpeaker) return;
+    if (!dbUserId || !isCurrentUserSpeaker) return;
     
     try {
       // Get speaker's bsl_speakers.id (TEXT) for the function
       const { data: speakerData } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .single();
 
       if (!speakerData) {
@@ -561,14 +561,14 @@ export default function SpeakerDetail() {
   };
 
   const handleBlockUser = async (request: any) => {
-    if (!user || !isCurrentUserSpeaker) return;
+    if (!dbUserId || !isCurrentUserSpeaker) return;
     
     try {
       // Get speaker's bsl_speakers.id (TEXT) for the function
       const { data: speakerData } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .single();
 
       if (!speakerData) {
@@ -600,20 +600,20 @@ export default function SpeakerDetail() {
   };
 
   const confirmCancelRequest = async () => {
-    if (!user || !selectedRequestToCancel || isCancellingRequest) return;
+    if (!dbUserId || !selectedRequestToCancel || isCancellingRequest) return;
 
     setIsCancellingRequest(true);
 
     try {
       console.log('🔄 Attempting to cancel request:', selectedRequestToCancel.id);
-      console.log('🔄 User ID:', user.id);
+      console.log('🔄 User ID:', dbUserId);
       
       // Use the new RPC function to cancel the meeting request
       // Note: Function expects UUID, not string
       const { data: cancelResult, error: cancelError } = await supabase
         .rpc('cancel_meeting_request', {
           p_request_id: selectedRequestToCancel.id,
-          p_user_id: user.id
+          p_user_id: dbUserId
         } as any) as any;
 
       console.log('🔄 Cancel response - data:', cancelResult);
@@ -687,14 +687,14 @@ export default function SpeakerDetail() {
 
 
   const loadRequestLimits = async () => {
-    if (!user || !speaker) return;
+    if (!dbUserId || !speaker) return;
     
     try {
-      console.log('🔄 Loading request limits for user:', user.id, 'speaker:', speaker.id);
+      console.log('🔄 Loading request limits for user:', dbUserId, 'speaker:', speaker.id);
       
       // Use the new function that counts actual meeting requests
       const { data, error } = await supabase.rpc('get_user_meeting_request_counts', {
-        p_user_id: user.id
+        p_user_id: dbUserId
       } as any) as any;
 
       if (error) {
@@ -788,7 +788,7 @@ export default function SpeakerDetail() {
 
   const handleRequestMeeting = async () => {
     console.log('🔵 handleRequestMeeting called');
-    console.log('User:', user?.id);
+    console.log('User:', dbUserId);
     console.log('Speaker:', speaker?.id);
     
     if (!speaker) {
@@ -807,19 +807,19 @@ export default function SpeakerDetail() {
   const submitMeetingRequestDirectly = async () => {
     console.log('🔵 submitMeetingRequestDirectly called');
     
-    if (!user || !speaker) {
+    if (!dbUserId || !user || !speaker) {
       console.log('❌ Missing required data:', { user: !!user, speaker: !!speaker });
       return;
     }
 
-    console.log('🔵 User data:', { id: user.id, email: user.email });
+    console.log('🔵 User data:', { id: dbUserId, email: user.email });
     console.log('🔵 Speaker data:', { id: speaker.id, name: speaker.name });
 
     setIsRequestingMeeting(true);
 
     try {
       const requestData: CreateMeetingRequestData = {
-        requester_id: user.id,
+        requester_id: dbUserId,
         speaker_id: speaker.id,
         speaker_name: speaker.name,
         requester_name: user.email || 'Anonymous',
@@ -959,8 +959,10 @@ export default function SpeakerDetail() {
       }
     }
 
-    // At this point, user must exist
-    if (!user) {
+    // At this point, user must exist (and dbUserId must have resolved via
+    // the Supabase bridge, or the pass/meeting-request calls below would
+    // run with a null id).
+    if (!user || !dbUserId) {
       setShowMeetingModal(false);
       const currentPath = `/events/${eventId}/speakers/${id}`;
       router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
@@ -969,7 +971,7 @@ export default function SpeakerDetail() {
 
     // Check if user has a pass
     try {
-      const passInfo = await passSystemService.getUserPassInfo(user.id, eventId);
+      const passInfo = await passSystemService.getUserPassInfo(dbUserId, eventId);
       if (!passInfo) {
         console.log('❌ User has no pass, redirecting to login...');
         // Close the modal and redirect to auth page
@@ -991,7 +993,7 @@ export default function SpeakerDetail() {
 
     try {
       const meetingData: CreateMeetingRequestData = {
-        requester_id: user.id,
+        requester_id: dbUserId,
         speaker_id: speaker.id,
         speaker_name: speaker.name,
         requester_name: user.email || 'Anonymous',
@@ -1010,7 +1012,7 @@ export default function SpeakerDetail() {
       if (meetingRequest && meetingRequest.id) {
         const newRequest = {
           id: meetingRequest.id,
-          requester_id: user.id,
+          requester_id: dbUserId,
           speaker_id: speaker.id,
           speaker_name: speaker.name,
           requester_name: user.email || 'Anonymous',
@@ -1284,7 +1286,7 @@ export default function SpeakerDetail() {
                 </View>
                 
                 <View style={styles.simpleRequestActions}>
-                  {request.status === 'pending' && request.requester_id === user?.id && (
+                  {request.status === 'pending' && request.requester_id === dbUserId && (
                     <TouchableOpacity
                       style={styles.simpleCancelButton}
                       onPress={(e) => {
@@ -1299,13 +1301,13 @@ export default function SpeakerDetail() {
                 </View>
               </View>
               
-              {request.message && request.requester_id === user?.id && (
+              {request.message && request.requester_id === dbUserId && (
                 <Text style={styles.simpleRequestMessage} numberOfLines={2}>
                   {request.message}
                 </Text>
               )}
               
-              {request.note && request.requester_id === user?.id && (
+              {request.note && request.requester_id === dbUserId && (
                 <View style={styles.simpleRequestIntentions}>
                   <Text style={styles.simpleRequestIntentionsLabel}>{t('requestView.intentions')}:</Text>
                   <Text style={styles.simpleRequestIntentionsText} numberOfLines={1}>
@@ -1347,7 +1349,7 @@ export default function SpeakerDetail() {
                   </Text>
                 </View>
                 
-                {request.message && request.requester_id === user?.id && (
+                {request.message && request.requester_id === dbUserId && (
                   <Text style={styles.cancelledRequestMessage} numberOfLines={2}>
                     {request.message}
                   </Text>
@@ -1685,7 +1687,7 @@ export default function SpeakerDetail() {
               <MaterialIcons name="close" size={24} color={colors.text.primary} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
-              {selectedRequestDetail?.requester_id === user?.id 
+              {selectedRequestDetail?.requester_id === dbUserId 
                 ? t('requestView.yourMeetingDetails')
                 : t('requestView.meetingDetails')}
             </Text>
@@ -1742,7 +1744,7 @@ export default function SpeakerDetail() {
                       }
                     ]}
                   >
-                    {selectedRequestDetail.requester_id === user?.id
+                    {selectedRequestDetail.requester_id === dbUserId
                       ? isApprovedRequestStatus(selectedRequestDetail.status)
                         ? t('requestView.yourMeetingRequestApproved')
                         : selectedRequestDetail.status === 'declined'
@@ -1815,7 +1817,7 @@ export default function SpeakerDetail() {
               {selectedRequestDetail.message && (
                 <View style={styles.detailInfoSection}>
                   <Text style={styles.detailSectionTitle}>
-                    {selectedRequestDetail.requester_id === user?.id ? t('requestView.yourMessage') : t('requestView.message')}
+                    {selectedRequestDetail.requester_id === dbUserId ? t('requestView.yourMessage') : t('requestView.message')}
                   </Text>
                   <Text style={styles.detailMessage}>{selectedRequestDetail.message}</Text>
                 </View>
@@ -1866,7 +1868,7 @@ export default function SpeakerDetail() {
               {/* Action Buttons */}
               {selectedRequestDetail.status === 'pending' && (
                 <>
-                  {selectedRequestDetail.requester_id === user?.id ? (
+                  {selectedRequestDetail.requester_id === dbUserId ? (
                     // Requester view - show cancel button
                     <View style={styles.detailActions}>
                       <TouchableOpacity

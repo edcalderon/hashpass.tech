@@ -117,6 +117,36 @@ const completeSupabaseBridgeSession = async (
   }
 };
 
+// Establishes a real Supabase session alongside a just-completed Better Auth
+// sign-in (web OAuth callback or native ID-token exchange). Without this,
+// Better-Auth-only accounts never get a Supabase auth.users row bridged in
+// time for the client to hold a matching JWT — meaning they can complete
+// sign-in but can't read their own BSL general passes or hold admin roles
+// (both are gated by a real Supabase auth.users id / auth.uid()). Fire this
+// after sign-in succeeds; never let it block or fail the sign-in itself —
+// the user is already validly signed in via Better Auth regardless of
+// whether this secondary bridge succeeds.
+const ensureSupabaseBridgeSession = async (betterAuthProvider: IAuthProvider): Promise<void> => {
+  try {
+    const provider = betterAuthProvider as unknown as BetterAuthProvider;
+    if (typeof provider.fetchSupabaseBridge !== 'function') {
+      return;
+    }
+
+    const bridge = await provider.fetchSupabaseBridge();
+    if (!bridge) {
+      return;
+    }
+
+    await completeSupabaseBridgeSession(bridge.token_hash, bridge.type, bridge.email);
+  } catch (error) {
+    console.warn(
+      '[useAuth] Supabase session bridge failed (Better Auth sign-in still valid):',
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+};
+
 const mapSupabaseUserToAuthUser = (supabaseUser: any): AuthUser => ({
   id: supabaseUser.id,
   email: supabaseUser.email || '',
@@ -307,6 +337,17 @@ export const useAuth = () => {
     getAuthViewState(authActor.getSnapshot())
   );
   const { user, isLoggedIn, isLoading } = authViewState;
+  // The real Supabase auth.users(id) UUID for the CURRENT Supabase client
+  // session, independent of PROVIDER_PRIORITY (auth-session-machine.ts always
+  // prefers betterAuth's user over supabase's when both are logged in, so
+  // `user.id` above stays the Better Auth internal id even after the
+  // dual-session bridge — see ensureSupabaseBridgeSession — establishes a
+  // real Supabase session for that same account). Any code querying a
+  // Supabase-native table directly (passes, tutorial progress, meeting
+  // requests, etc.) needs THIS id, not user.id, or it 22P02s on a
+  // Better-Auth-only session (its id isn't a UUID at all). Null until the
+  // bridge (or a native Supabase sign-in) actually completes.
+  const [dbUserId, setDbUserId] = useState<string | null>(null);
   const isInitializedRef = useRef(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const betterAuthUnsubscribeRef = useRef<(() => void) | null>(null);
@@ -522,6 +563,9 @@ export const useAuth = () => {
     // Subscribe to Supabase state changes (needed for passwordless and dual-session bridge).
     const { data: supabaseSub } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       const supabaseState = readSupabaseStateFromSession(session);
+      if (isActive) {
+        setDbUserId(session?.user?.id ?? null);
+      }
       // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
       if (!supabaseBootstrapFinished && !supabaseState.loggedIn) {
         return;
@@ -552,6 +596,9 @@ export const useAuth = () => {
         .getSession()
         .then(({ data }: any) => {
           supabaseBootstrapFinished = true;
+          if (isActive) {
+            setDbUserId(data?.session?.user?.id ?? null);
+          }
           sendProviderResolved('supabase', readSupabaseStateFromSession(data.session));
         })
         .catch((error: any) => {
@@ -660,6 +707,11 @@ export const useAuth = () => {
     // tests that want to observe it) as best-effort background work.
     sessionBootstrapPromise = Promise.resolve(null);
     sendAuthEvent({ type: 'SIGNED_OUT' });
+    // Clear synchronously alongside the SIGNED_OUT event, not left to wait on
+    // supabase.auth.signOut() below (best-effort, individually timed-out) —
+    // otherwise a slow/failed remote call leaves the previous session's id
+    // dangling as "current" after isLoggedIn has already flipped to false.
+    setDbUserId(null);
 
     // Persisted data must be gone before a native screen transition. In
     // particular, Better Auth and Directus use SecureStore while Supabase uses
@@ -853,6 +905,10 @@ export const useAuth = () => {
             sessionBootstrapPromise = Promise.resolve(session);
             markRecentAuthSuccess();
             applyAuthenticatedSession(session);
+            // Fire-and-forget: establishes a real Supabase session so passes/
+            // admin roles work for this Better-Auth-only account. Must not
+            // block or fail the sign-in the user already completed.
+            void ensureSupabaseBridgeSession(betterAuthGoogle);
             return {
               ...betterAuthResult,
               user: betterAuthResult.user ?? session.user,
@@ -1141,6 +1197,11 @@ export const useAuth = () => {
           throw new Error(betterAuthResult.error);
         }
 
+        // Fire-and-forget: establishes a real Supabase session so passes/
+        // admin roles work for this Better-Auth-only account. Must not
+        // block or fail the sign-in the user already completed.
+        void ensureSupabaseBridgeSession(betterAuthGoogle);
+
         return betterAuthResult;
       }
 
@@ -1169,5 +1230,11 @@ export const useAuth = () => {
     signIn,
     signInWithOAuth,
     handleOAuthCallback,
+    // The real Supabase auth.users(id) UUID for this session, or null until
+    // one exists (native Supabase sign-in, or the Better Auth dual-session
+    // bridge completing). Use this — not user.id — for any direct query
+    // against a Supabase-native table (passes, meeting_requests,
+    // user_tutorial_progress, notifications, etc.).
+    dbUserId,
   };
 };

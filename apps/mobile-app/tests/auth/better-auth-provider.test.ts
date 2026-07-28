@@ -18,6 +18,7 @@ jest.mock('@hashpass/config', () => ({
 const mockGetSession = jest.fn();
 const mockSignInSocial = jest.fn();
 const mockSignOut = jest.fn();
+const mockFetch = jest.fn();
 const mockGetItemAsync = jest.fn<Promise<string | null>, [string]>(async () => null);
 const mockSetItemAsync = jest.fn<Promise<void>, [string, string]>(async () => undefined);
 const mockDeleteItemAsync = jest.fn<Promise<void>, [string]>(async () => undefined);
@@ -25,6 +26,7 @@ const mockCreateAuthClient = jest.fn(() => ({
   signIn: { social: mockSignInSocial },
   signOut: mockSignOut,
   getSession: mockGetSession,
+  $fetch: mockFetch,
 }));
 
 jest.mock('better-auth/client', () => ({
@@ -75,6 +77,7 @@ describe('BetterAuthProvider', () => {
     mockGetSession.mockReset();
     mockSignInSocial.mockReset();
     mockSignOut.mockReset();
+    mockFetch.mockReset();
     mockGetItemAsync.mockReset().mockResolvedValue(null);
     mockSetItemAsync.mockReset().mockResolvedValue(undefined);
     mockDeleteItemAsync.mockReset().mockResolvedValue(undefined);
@@ -328,5 +331,56 @@ describe('BetterAuthProvider', () => {
     } finally {
       Platform.OS = originalPlatform;
     }
+  });
+
+  describe('fetchSupabaseBridge', () => {
+    it('returns the bridge payload on success', async () => {
+      mockFetch.mockResolvedValueOnce({
+        data: { token_hash: 'hash-123', type: 'magiclink', email: 'user@example.com' },
+      });
+
+      const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+      const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+      const bridge = await provider.fetchSupabaseBridge();
+
+      expect(mockFetch).toHaveBeenCalledWith('/supabase-bridge', { method: 'POST' });
+      expect(bridge).toEqual({ token_hash: 'hash-123', type: 'magiclink', email: 'user@example.com' });
+    });
+
+    it('returns null when the endpoint responds with an error', async () => {
+      mockFetch.mockResolvedValueOnce({ error: { message: 'Unauthorized' } });
+
+      const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+      const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+      const bridge = await provider.fetchSupabaseBridge();
+
+      expect(bridge).toBeNull();
+    });
+
+    it('returns null when the response is missing a token_hash', async () => {
+      mockFetch.mockResolvedValueOnce({ data: { type: 'magiclink', email: 'user@example.com' } });
+
+      const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+      const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+      const bridge = await provider.fetchSupabaseBridge();
+
+      expect(bridge).toBeNull();
+    });
+
+    it('returns null when $fetch throws', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('network down'));
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
+      const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
+
+      const bridge = await provider.fetchSupabaseBridge();
+
+      expect(bridge).toBeNull();
+      warnSpy.mockRestore();
+    });
   });
 });
