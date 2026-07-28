@@ -54,7 +54,9 @@ of truth both release workflows defer to. It diffs two git refs and reports
 whether anything under these paths changed:
 
 - `apps/mobile-app/android/**`, `apps/mobile-app/ios/**`, `apps/mobile-app/plugins/**`, `apps/mobile-app/fastlane/**` — any diff here always counts.
-- `apps/mobile-app/app.config.js`, `apps/mobile-app/eas.json`, `apps/mobile-app/Gemfile[.lock]`, `apps/mobile-app/config/google-services.json`, `apps/mobile-app/config/amplifyconfiguration.json`, `apps/mobile-app/react-native.config.js` — same, any diff counts.
+- `apps/mobile-app/app.config.js`, `apps/mobile-app/eas.json`, `apps/mobile-app/fingerprint.config.js`, `apps/mobile-app/Gemfile[.lock]`, `apps/mobile-app/config/google-services.json`, `apps/mobile-app/config/amplifyconfiguration.json`, `apps/mobile-app/react-native.config.js` — same, any diff counts.
+- `patches/**` (root) — `pnpm.patchedDependencies` in root `package.json` patches native RN/Expo packages in place (`react-native`, `react-native-svg`, `react-native-screens`, `@react-navigation/drawer`, etc). A patch edit changes native behavior without necessarily touching `apps/mobile-app/package.json`'s own dependency versions, so this needs its own check — confirmed against real history: `v1.8.265` shipped a `@react-navigation/drawer` patch with no other dependency or `app.json` change, and would have been wrongly classified OTA-safe without this rule. `mobile-android-release.yml`'s own Gradle cache key already hashes `patches/*.patch` alongside `pnpm-lock.yaml` for the same reason.
+- `apps/mobile-app/assets/images/icon.png`, `apps/mobile-app/assets/images/adaptive-icon.png` — referenced directly by `app.json` (`expo.icon`, `expo.android.adaptiveIcon.foregroundImage`) and baked into native launcher resources at prebuild time. `app.json`'s own structural diff (below) only catches the referenced *path* changing, not the image bytes at that same path changing — and OTA cannot update an already-installed app's launcher icon, so this needs an explicit file check too.
 - `package.json` (root) and `apps/mobile-app/package.json` — **structurally** diffed on just `dependencies`/`devDependencies`, ignoring everything else. Raw whole-file diffing would be useless here: the release version bump touches `"version"` in both files on literally every release (see `versioning.config.json`'s `syncFiles`), so a naive diff would always report "changed."
 - `apps/mobile-app/app.json` — same idea: structurally diffed ignoring `expo.version` and `expo.android.versionCode`, since `packages/tools/scripts/update-version.mjs` rewrites both of those on every release too. Any other change to this file (permissions, plugins list, `android`/`ios` blocks) still counts.
 
@@ -227,7 +229,11 @@ above), and can be dispatched manually with a `channel` override and a
 custom `message` — manual dispatch bypasses the guard entirely, trusting the
 operator's explicit choice. It runs on a plain `ubuntu-latest` GitHub-hosted
 runner — no EC2, no Android SDK, no Ruby/fastlane — since publishing an
-update only needs to export the JS bundle, not build native code.
+update only needs to export the JS bundle, not build native code. It does
+still need the `eas` CLI itself (`run-mobile-eas.js` shells out to it) —
+the workflow installs it with the same pinned `npm install -g eas-cli@20.1.0`
+step `mobile-android-release.yml` uses, since a plain `pnpm install` only
+installs workspace dependencies, not a global `eas` binary.
 
 ## Rollback
 

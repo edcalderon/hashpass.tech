@@ -141,6 +141,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
+      - name: Install EAS CLI
+        run: |
+          set -euo pipefail
+
+          if ! command -v eas >/dev/null 2>&1; then
+            npm install -g eas-cli@20.1.0
+          fi
+
+          eas --version
+
       - name: Detect whether this push is safe to publish as OTA
         id: guard
         if: github.event_name == 'push'

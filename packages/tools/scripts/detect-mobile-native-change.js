@@ -41,6 +41,15 @@ const NATIVE_SENSITIVE_PATH_PREFIXES = [
   'apps/mobile-app/ios/',
   'apps/mobile-app/plugins/',
   'apps/mobile-app/fastlane/',
+  // Root pnpm.patchedDependencies patches (package.json) -- these patch
+  // native RN/Expo packages in place (react-native, react-native-svg,
+  // react-native-screens, etc: see patches/*.patch and package.json's
+  // pnpm.patchedDependencies), so a patch edit changes native behavior
+  // without necessarily touching apps/mobile-app/package.json's own
+  // dependencies object. mobile-android-release.yml's own Gradle cache key
+  // already hashes patches/*.patch alongside pnpm-lock.yaml for exactly
+  // this reason.
+  'patches/',
 ];
 
 const NATIVE_SENSITIVE_EXACT_FILES = [
@@ -52,6 +61,14 @@ const NATIVE_SENSITIVE_EXACT_FILES = [
   'apps/mobile-app/config/google-services.json',
   'apps/mobile-app/config/amplifyconfiguration.json',
   'apps/mobile-app/react-native.config.js',
+  // Referenced directly by app.json (expo.icon, expo.android.adaptiveIcon.
+  // foregroundImage) and baked into native launcher resources (mipmap
+  // drawables) at prebuild time. app.json's own structural diff only
+  // catches a changed *path* string, not the referenced image's bytes
+  // changing at the same path -- OTA cannot update an installed launcher
+  // icon, so these need their own explicit check.
+  'apps/mobile-app/assets/images/icon.png',
+  'apps/mobile-app/assets/images/adaptive-icon.png',
 ];
 
 // Structurally diffed instead of raw-diffed -- see header comment.
