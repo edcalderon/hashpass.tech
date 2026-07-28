@@ -60,7 +60,7 @@ export default function SpeakerDetail() {
   const { user, isLoggedIn, dbUserId } = useAuth();
   const { t } = useTranslation('networking');
   const router = useRouter();
-  const { showSuccess, showError, showWarning, showInfo } = useToastHelpers();
+  const { showSuccess, showError, showInfo } = useToastHelpers();
   const { refreshBalance } = useBalance();
   
   const styles = getStyles(isDark, colors);
@@ -80,6 +80,11 @@ export default function SpeakerDetail() {
   const [selectedRequestToCancel, setSelectedRequestToCancel] = useState<any>(null);
   const [showRequestDetailModal, setShowRequestDetailModal] = useState(false);
   const [selectedRequestDetail, setSelectedRequestDetail] = useState<any>(null);
+  const [showSlotPicker, setShowSlotPicker] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [isAcceptingRequest, setIsAcceptingRequest] = useState(false);
   const [passRefreshTrigger, setPassRefreshTrigger] = useState(0);
   const [userPassType, setUserPassType] = useState<'general' | 'business' | 'vip'>('general');
   
@@ -310,11 +315,14 @@ export default function SpeakerDetail() {
       loadCancelledRequests();
       loadRequestLimits();
     }
-  }, [dbUserId, speaker]);
+  }, [dbUserId, speaker, isCurrentUserSpeaker]);
 
   // Real-time subscription for meeting requests
   useEffect(() => {
     if (!dbUserId || !speaker) return;
+
+    const requestOwnerId = isCurrentUserSpeaker ? speaker.user_id : dbUserId;
+    if (!requestOwnerId) return;
 
     console.log('🔄 Setting up real-time subscription for meeting requests...');
     
@@ -326,7 +334,7 @@ export default function SpeakerDetail() {
           event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'meeting_requests',
-          filter: `requester_id=eq.${dbUserId}`
+              filter: `${isCurrentUserSpeaker ? 'speaker_id' : 'requester_id'}=eq.${requestOwnerId}`
         },
         (payload: { eventType?: string; new?: any; old?: any }) => {
           console.log('🔄 Real-time update received:', payload);
@@ -334,17 +342,22 @@ export default function SpeakerDetail() {
           if (payload.eventType === 'INSERT') {
             // Add new request to UI
             const newRequest = payload.new;
-            if (newRequest.speaker_id === speaker.id) {
-              setMeetingRequests(prev => [newRequest, ...(Array.isArray(prev) ? prev : [])]);
+            if (newRequest.speaker_id === speaker.user_id || newRequest.requester_id === dbUserId) {
+              setMeetingRequests(prev => [{
+                ...newRequest,
+                _direction: isCurrentUserSpeaker ? 'incoming' : 'sent',
+              }, ...(Array.isArray(prev) ? prev : [])]);
               console.log('✅ New meeting request added to UI');
             }
           } else if (payload.eventType === 'UPDATE') {
             // Update existing request in UI
             const updatedRequest = payload.new;
-            if (updatedRequest.speaker_id === speaker.id) {
+            if (updatedRequest.speaker_id === speaker.user_id || updatedRequest.requester_id === dbUserId) {
               setMeetingRequests(prev => 
                 (Array.isArray(prev) ? prev : []).map(req => 
-                  req.id === updatedRequest.id ? updatedRequest : req
+                  req.id === updatedRequest.id
+                    ? { ...updatedRequest, _direction: isCurrentUserSpeaker ? 'incoming' : 'sent' }
+                    : req
                 )
               );
               console.log('✅ Meeting request updated in UI');
@@ -352,7 +365,7 @@ export default function SpeakerDetail() {
           } else if (payload.eventType === 'DELETE') {
             // Remove deleted request from UI
             const deletedRequest = payload.old;
-            if (deletedRequest.speaker_id === speaker.id) {
+            if (deletedRequest.speaker_id === speaker.user_id || deletedRequest.requester_id === dbUserId) {
               setMeetingRequests(prev => 
                 (Array.isArray(prev) ? prev : []).filter(req => req.id !== deletedRequest.id)
               );
@@ -367,7 +380,7 @@ export default function SpeakerDetail() {
       console.log('🔄 Cleaning up real-time subscription...');
       subscription.unsubscribe();
     };
-  }, [dbUserId, speaker]);
+  }, [dbUserId, speaker, isCurrentUserSpeaker]);
 
   const loadMeetingRequestStatus = async () => {
     if (!dbUserId || !speaker) return;
@@ -376,7 +389,7 @@ export default function SpeakerDetail() {
     try {
       const response = await apiClient.request('meeting-requests', {
         apiSegment,
-        params: { speakerId: speaker.id },
+        ...(isCurrentUserSpeaker ? {} : { params: { speakerId: speaker.id } }),
       });
 
       if (!response.success) {
@@ -385,8 +398,10 @@ export default function SpeakerDetail() {
         return;
       }
 
-      const data = (response.data as any)?.data;
-      setMeetingRequests(data || []);
+      const data = (response.data as any)?.data || [];
+      setMeetingRequests(isCurrentUserSpeaker
+        ? data.filter((request: any) => request._direction === 'incoming')
+        : data);
     } catch (error) {
       console.error('❌ Error in loadMeetingRequestStatus:', error);
       setMeetingRequests([]);
@@ -402,7 +417,9 @@ export default function SpeakerDetail() {
     try {
       const response = await apiClient.request('meeting-requests', {
         apiSegment,
-        params: { speakerId: speaker.id, status: 'cancelled' },
+        params: isCurrentUserSpeaker
+          ? { status: 'cancelled' }
+          : { speakerId: speaker.id, status: 'cancelled' },
       });
 
       if (!response.success) {
@@ -410,8 +427,10 @@ export default function SpeakerDetail() {
         return;
       }
 
-      const data = (response.data as any)?.data;
-      setCancelledRequests(data || []);
+      const data = (response.data as any)?.data || [];
+      setCancelledRequests(isCurrentUserSpeaker
+        ? data.filter((request: any) => request._direction === 'incoming')
+        : data);
     } catch (error) {
       console.error('❌ Error in loadCancelledRequests:', error);
     } finally {
@@ -454,87 +473,75 @@ export default function SpeakerDetail() {
     setShowRequestDetailModal(true);
   };
   
-  const handleAcceptRequest = async (request: any, slotTime?: string) => {
-    if (!dbUserId || !isCurrentUserSpeaker) return;
-    
-    // If no slot provided, show slot picker first (similar to my-requests.tsx)
-    if (!slotTime) {
-      // For now, just accept without slot selection
-      // TODO: Add slot picker UI
-      showInfo('Info', 'Slot selection will be added soon. Accepting request without slot.');
+  const loadAvailableSlots = async (request: any) => {
+    const speakerId = String(request?.speaker_id || speaker?.user_id || '').trim();
+    if (!speakerId || !request?.requester_id) {
+      showError('Accept Failed', 'This request is missing the scheduling information needed to choose a slot.');
       return;
     }
-    
+
+    setSelectedSlot(null);
+    setShowSlotPicker(true);
+    setLoadingSlots(true);
     try {
-      // Get speaker's bsl_speakers.id (TEXT) for the function
-      const { data: speakerData } = await supabase
-        .from('bsl_speakers')
-        .select('id')
-        .eq('user_id', dbUserId)
-        .single();
+      const response = await apiClient.request('meeting-requests/slots', {
+        apiSegment,
+        params: {
+          speakerId,
+          requesterId: request.requester_id,
+          durationMinutes: request.duration_minutes || 15,
+        },
+      });
+      if (!response.success) throw new Error(response.error);
+      setAvailableSlots((response.data as any)?.data || []);
+    } catch (error: any) {
+      console.error('❌ Error loading meeting slots:', error);
+      setAvailableSlots([]);
+      showError('Slots Unavailable', error?.message || 'Failed to load available meeting slots.');
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
 
-      if (!speakerData) {
-        showError('Error', 'You are not a speaker');
-        return;
-      }
+  const handleAcceptRequest = async (request: any, slotTime?: string) => {
+    if (!dbUserId || !isCurrentUserSpeaker || isAcceptingRequest) return;
+    if (!slotTime) {
+      await loadAvailableSlots(request);
+      return;
+    }
 
-      const { data, error } = await supabase
-        .rpc('accept_meeting_request', {
-          p_request_id: request.id,
-          p_speaker_id: speakerData.id, // Use bsl_speakers.id (TEXT), not user_id
-          p_slot_start_time: slotTime,
-          p_speaker_response: null
-        } as any) as any;
+    setIsAcceptingRequest(true);
+    try {
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment,
+        method: 'PATCH',
+        body: { requestId: request.id, action: 'accept', slotTime },
+      });
+      if (!response.success) throw new Error(response.error);
+      const data = (response.data as any)?.data;
+      if (!data?.success) throw new Error(data?.error || 'Failed to accept meeting request');
 
-      if (error) {
-        console.error('❌ RPC error:', error);
-        showError('Accept Failed', error.message || 'Failed to accept meeting request');
-        return;
-      }
+      const confirmedRequest = {
+        ...request,
+        status: 'accepted',
+        meeting_id: data.meeting_id,
+        meeting_scheduled_at: data.start_time || slotTime,
+      };
+      setSelectedRequestDetail(confirmedRequest);
+      setShowSlotPicker(false);
+      setSelectedSlot(null);
+      showSuccess('Request Accepted', 'The meeting is confirmed and has been added to both schedules.');
+      await loadMeetingRequestStatus();
 
-      // Check if RPC returned success: false (this is not a Supabase error, but a business logic error)
-      if (data && typeof data === 'object' && 'success' in data && !data.success) {
-        const errorMessage = data.error || 'Failed to accept request';
-        console.error('❌ Request acceptance failed:', errorMessage);
-        showError('Slot Conflict', errorMessage);
-        return;
-      }
-
-      if (data?.success) {
-        showSuccess('Request Accepted', 'The meeting request has been accepted');
-        setShowRequestDetailModal(false);
-        await loadMeetingRequestStatus();
-        
-        // Refresh LUKAS balance after reward
-        // Wait for database trigger to complete, then refresh multiple times to ensure update
-        const refreshBalanceWithRetry = async (attempts = 3, delay = 2000) => {
-          for (let i = 0; i < attempts; i++) {
-            try {
-              await new Promise(resolve => setTimeout(resolve, delay));
-              await refreshBalance();
-              console.log(`💰 Balance refresh attempt ${i + 1}/${attempts} after meeting acceptance`);
-              
-              // Also trigger the event directly for immediate UI update
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new Event('balance:refresh'));
-              }
-            } catch (error) {
-              console.error(`Error refreshing LUKAS balance (attempt ${i + 1}):`, error);
-            }
-          }
-        };
-        
-        // Start refreshing after initial delay
-        refreshBalanceWithRetry();
-      } else {
-        // Fallback for unexpected response format
-        console.error('❌ Unexpected response format:', data);
-        showError('Accept Failed', 'Unexpected response from server. Please try again.');
-      }
+      // The reward update is asynchronous; refresh without blocking confirmation.
+      void refreshBalance().catch((error: unknown) =>
+        console.error('Error refreshing LUKAS balance after meeting acceptance:', error),
+      );
     } catch (error: any) {
       console.error('❌ Error accepting request:', error);
-      const errorMessage = error?.message || error?.error || 'Failed to accept meeting request';
-      showError('Accept Failed', errorMessage);
+      showError('Accept Failed', error?.message || 'Failed to accept meeting request');
+    } finally {
+      setIsAcceptingRequest(false);
     }
   };
 
@@ -542,27 +549,13 @@ export default function SpeakerDetail() {
     if (!dbUserId || !isCurrentUserSpeaker) return;
     
     try {
-      // Get speaker's bsl_speakers.id (TEXT) for the function
-      const { data: speakerData } = await supabase
-        .from('bsl_speakers')
-        .select('id')
-        .eq('user_id', dbUserId)
-        .single();
-
-      if (!speakerData) {
-        showError('Error', 'You are not a speaker');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .rpc('decline_meeting_request', {
-          p_request_id: request.id,
-          p_speaker_id: speakerData.id, // Use bsl_speakers.id (TEXT), not user_id
-          p_speaker_response: null
-        } as any) as any;
-
-      if (error) throw error;
-
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment,
+        method: 'PATCH',
+        body: { requestId: request.id, action: 'decline' },
+      });
+      if (!response.success) throw new Error(response.error);
+      const data = (response.data as any)?.data;
       if (data?.success) {
         showSuccess('Request Declined', 'The meeting request has been declined');
         setShowRequestDetailModal(false);
@@ -580,28 +573,18 @@ export default function SpeakerDetail() {
     if (!dbUserId || !isCurrentUserSpeaker) return;
     
     try {
-      // Get speaker's bsl_speakers.id (TEXT) for the function
-      const { data: speakerData } = await supabase
-        .from('bsl_speakers')
-        .select('id')
-        .eq('user_id', dbUserId)
-        .single();
-
-      if (!speakerData) {
-        showError('Error', 'You are not a speaker');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .rpc('block_user_and_decline_request', {
-          p_request_id: request.id,
-          p_speaker_id: speakerData.id, // Use bsl_speakers.id (TEXT), not user_id
-          p_user_id: request.requester_id,
-          p_reason: 'User has been blocked'
-        } as any) as any;
-
-      if (error) throw error;
-
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment,
+        method: 'PATCH',
+        body: {
+          requestId: request.id,
+          action: 'block',
+          requesterId: request.requester_id,
+          reason: 'User has been blocked',
+        },
+      });
+      if (!response.success) throw new Error(response.error);
+      const data = (response.data as any)?.data;
       if (data?.success) {
         showSuccess('User Blocked', 'The user has been blocked and their request declined');
         setShowRequestDetailModal(false);
@@ -621,32 +604,16 @@ export default function SpeakerDetail() {
     setIsCancellingRequest(true);
 
     try {
-      console.log('🔄 Attempting to cancel request:', selectedRequestToCancel.id);
-      console.log('🔄 User ID:', dbUserId);
-      
-      // Use the new RPC function to cancel the meeting request
-      // Note: Function expects UUID, not string
-      const { data: cancelResult, error: cancelError } = await supabase
-        .rpc('cancel_meeting_request', {
-          p_request_id: selectedRequestToCancel.id,
-          p_user_id: dbUserId
-        } as any) as any;
-
-      console.log('🔄 Cancel response - data:', cancelResult);
-      console.log('🔄 Cancel response - error:', cancelError);
-
-      if (cancelError) {
-        console.error('❌ Cancel function error:', cancelError);
-        throw cancelError;
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment,
+        method: 'PATCH',
+        body: { requestId: selectedRequestToCancel.id, action: 'cancel' },
+      });
+      if (!response.success) throw new Error(response.error);
+      const cancelResult = (response.data as any)?.data;
+      if (!cancelResult?.success) {
+        throw new Error(cancelResult?.error || 'Failed to cancel meeting request');
       }
-
-      if (!cancelResult || !cancelResult.success) {
-        const errorMessage = cancelResult?.error || 'Failed to cancel meeting request';
-        console.error('❌ Cancel failed:', errorMessage);
-        throw new Error(errorMessage);
-      }
-
-      console.log('✅ Request cancelled successfully:', cancelResult);
 
       // Close the modal first
       setShowCancelModal(false);
@@ -1220,13 +1187,15 @@ export default function SpeakerDetail() {
         </View>
       )}
 
-        {/* Meeting Requests Status - Show requests sent to this speaker */}
-        {meetingRequests.length > 0 && !isCurrentUserSpeaker && (
+        {/* Requesters see their status; speakers see incoming requests and can respond. */}
+        {meetingRequests.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <MaterialIcons name="assignment" size={24} color={colors.primary} />
               <Text style={styles.sectionTitle}>
-                {meetingRequests.length > 1 ? t('speakerView.yourMeetingRequestsPlural') : t('speakerView.yourMeetingRequests')} ({meetingRequests.length})
+                {isCurrentUserSpeaker
+                  ? `Incoming Meeting Requests (${meetingRequests.length})`
+                  : `${meetingRequests.length > 1 ? t('speakerView.yourMeetingRequestsPlural') : t('speakerView.yourMeetingRequests')} (${meetingRequests.length})`}
               </Text>
               <TouchableOpacity 
                 onPress={loadMeetingRequestStatus}
@@ -1300,6 +1269,12 @@ export default function SpeakerDetail() {
                     {new Date(request.created_at).toLocaleDateString()}
                   </Text>
                 </View>
+
+                {isCurrentUserSpeaker && request.requester_name && (
+                  <Text style={styles.simpleRequestMessage}>
+                    From {request.requester_name}
+                  </Text>
+                )}
                 
                 <View style={styles.simpleRequestActions}>
                   {request.status === 'pending' && request.requester_id === dbUserId && (
@@ -1317,13 +1292,13 @@ export default function SpeakerDetail() {
                 </View>
               </View>
               
-              {request.message && request.requester_id === dbUserId && (
+              {request.message && (
                 <Text style={styles.simpleRequestMessage} numberOfLines={2}>
                   {request.message}
                 </Text>
               )}
               
-              {request.note && request.requester_id === dbUserId && (
+              {request.note && (
                 <View style={styles.simpleRequestIntentions}>
                   <Text style={styles.simpleRequestIntentionsLabel}>{t('requestView.intentions')}:</Text>
                   <Text style={styles.simpleRequestIntentionsText} numberOfLines={1}>
@@ -1687,6 +1662,104 @@ export default function SpeakerDetail() {
         </View>
       </Modal>
 
+      {/* Speaker slot picker: acceptance is only possible after selecting a conflict-safe slot. */}
+      <Modal
+        visible={showSlotPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          if (!isAcceptingRequest) {
+            setShowSlotPicker(false);
+            setSelectedSlot(null);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.slotPickerContent}>
+            <View style={styles.slotPickerHeader}>
+              <View>
+                <Text style={styles.slotPickerTitle}>Choose a meeting time</Text>
+                <Text style={styles.slotPickerSubtitle}>
+                  Only times that work for both attendees are shown.
+                </Text>
+              </View>
+              <TouchableOpacity
+                disabled={isAcceptingRequest}
+                onPress={() => {
+                  setShowSlotPicker(false);
+                  setSelectedSlot(null);
+                }}
+              >
+                <MaterialIcons name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {loadingSlots ? (
+              <View style={styles.slotPickerEmpty}>
+                <MaterialIcons name="hourglass-empty" size={32} color={colors.text.secondary} />
+                <Text style={styles.slotPickerSubtitle}>Loading available times…</Text>
+              </View>
+            ) : availableSlots.length === 0 ? (
+              <View style={styles.slotPickerEmpty}>
+                <MaterialIcons name="event-busy" size={32} color={colors.text.secondary} />
+                <Text style={styles.slotPickerTitle}>No compatible slots</Text>
+                <Text style={styles.slotPickerSubtitle}>
+                  Add availability in your schedule, then try again.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.slotPickerList}>
+                {availableSlots.map((slot, index) => {
+                  const slotTime = String(slot.slot_time);
+                  const selected = selectedSlot === slotTime;
+                  const startsAt = new Date(slotTime);
+                  return (
+                    <TouchableOpacity
+                      key={`${slotTime}-${index}`}
+                      style={[styles.slotPickerOption, selected && styles.slotPickerOptionSelected]}
+                      onPress={() => setSelectedSlot(slotTime)}
+                      disabled={isAcceptingRequest}
+                    >
+                      <View>
+                        <Text style={styles.slotPickerOptionTitle}>
+                          {startsAt.toLocaleDateString(undefined, {
+                            weekday: 'short', month: 'short', day: 'numeric',
+                          })}
+                        </Text>
+                        <Text style={styles.slotPickerOptionSubtitle}>
+                          {startsAt.toLocaleTimeString(undefined, {
+                            hour: 'numeric', minute: '2-digit',
+                          })} · {slot.duration_minutes || selectedRequestDetail?.duration_minutes || 15} minutes
+                        </Text>
+                      </View>
+                      {selected && <MaterialIcons name="check-circle" size={24} color={colors.primary} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.slotPickerConfirmButton,
+                (!selectedSlot || isAcceptingRequest) && styles.slotPickerConfirmButtonDisabled,
+              ]}
+              disabled={!selectedSlot || isAcceptingRequest || loadingSlots}
+              onPress={() => {
+                if (selectedRequestDetail && selectedSlot) {
+                  void handleAcceptRequest(selectedRequestDetail, selectedSlot);
+                }
+              }}
+            >
+              <MaterialIcons name={isAcceptingRequest ? "hourglass-empty" : "check-circle"} size={20} color="white" />
+              <Text style={styles.slotPickerConfirmText}>
+                {isAcceptingRequest ? 'Confirming…' : 'Confirm meeting'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Request Detail Modal */}
       <Modal
         visible={showRequestDetailModal}
@@ -1869,6 +1942,29 @@ export default function SpeakerDetail() {
                   <Text style={styles.detailMessage}>
                     {t('speakerView.requestApproved', { speakerName: selectedRequestDetail.speaker_name })}
                   </Text>
+                  {selectedRequestDetail.meeting_id && (
+                    <TouchableOpacity
+                      style={styles.detailMeetingButton}
+                      onPress={() => {
+                        setShowRequestDetailModal(false);
+                        router.push({
+                          pathname: `/events/${eventId}/networking/meeting-detail` as any,
+                          params: {
+                            meetingId: selectedRequestDetail.meeting_id,
+                            speakerName: selectedRequestDetail.speaker_name,
+                            requesterName: selectedRequestDetail.requester_name,
+                            status: 'confirmed',
+                            scheduledAt: selectedRequestDetail.meeting_scheduled_at || '',
+                            duration: selectedRequestDetail.duration_minutes || 15,
+                            isSpeaker: isCurrentUserSpeaker ? 'true' : 'false',
+                          },
+                        });
+                      }}
+                    >
+                      <MaterialIcons name="chat" size={20} color="white" />
+                      <Text style={styles.detailMeetingButtonText}>Open confirmed meeting and chat</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
 
@@ -2618,16 +2714,31 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     textAlign: 'right',
     fontWeight: '500',
   },
-  detailMessage: {
-    fontSize: 14,
-    color: colors.text.primary,
+      detailMessage: {
+        fontSize: 14,
+        color: colors.text.primary,
     lineHeight: 20,
     backgroundColor: colors.background.paper,
     padding: 12,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
+        borderWidth: 1,
+        borderColor: colors.divider,
+      },
+      detailMeetingButton: {
+        marginTop: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: colors.primary,
+        paddingVertical: 12,
+        borderRadius: 8,
+      },
+      detailMeetingButtonText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: '600',
+      },
   detailIntentionsContainer: {
     gap: 8,
   },
@@ -2847,14 +2958,95 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     letterSpacing: 0.5,
   },
   // Cancel Modal Styles - Enhanced Design
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-  },
-  cancelModalContent: {
+        padding: 20,
+      },
+      slotPickerContent: {
+        width: '100%',
+        maxWidth: 460,
+        maxHeight: '80%',
+        backgroundColor: colors.background.paper,
+        borderRadius: 16,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: colors.divider,
+      },
+      slotPickerHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: 12,
+        marginBottom: 16,
+      },
+      slotPickerTitle: {
+        color: colors.text.primary,
+        fontSize: 18,
+        fontWeight: '700',
+      },
+      slotPickerSubtitle: {
+        color: colors.text.secondary,
+        fontSize: 13,
+        lineHeight: 18,
+        marginTop: 4,
+      },
+      slotPickerEmpty: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 32,
+        gap: 8,
+      },
+      slotPickerList: {
+        flexGrow: 0,
+        marginBottom: 16,
+      },
+      slotPickerOption: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 14,
+        marginBottom: 8,
+        borderRadius: 10,
+        backgroundColor: colors.background.default,
+        borderWidth: 1,
+        borderColor: colors.divider,
+      },
+      slotPickerOptionSelected: {
+        borderColor: colors.primary,
+        backgroundColor: `${colors.primary}12`,
+        borderWidth: 2,
+      },
+      slotPickerOptionTitle: {
+        color: colors.text.primary,
+        fontSize: 15,
+        fontWeight: '600',
+      },
+      slotPickerOptionSubtitle: {
+        color: colors.text.secondary,
+        fontSize: 13,
+        marginTop: 2,
+      },
+      slotPickerConfirmButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: colors.primary,
+        borderRadius: 10,
+        paddingVertical: 14,
+      },
+      slotPickerConfirmButtonDisabled: {
+        opacity: 0.45,
+      },
+      slotPickerConfirmText: {
+        color: 'white',
+        fontSize: 15,
+        fontWeight: '700',
+      },
+      cancelModalContent: {
     backgroundColor: colors.background.paper,
     borderRadius: 20,
     padding: 0,

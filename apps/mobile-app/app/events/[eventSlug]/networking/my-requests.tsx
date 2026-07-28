@@ -13,7 +13,6 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
 import { MaterialIcons } from '@expo/vector-icons';
-import { supabase } from '../../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import LoadingScreen from '../../../../components/LoadingScreen';
@@ -548,27 +547,20 @@ export default function MyRequestsView() {
     if (!dbUserId) return;
     
     try {
-      const { data: speakerData } = await supabase
-        .from('bsl_speakers')
-        .select('id')
-        .eq('user_id', dbUserId)
-        .single();
-
-      if (!speakerData) {
-        showError('Error', 'You are not a speaker');
-        return;
-      }
-
       const requestWithId = request as MeetingRequestWithDirection;
-      const { data, error } = await supabase
-        .rpc('block_user_and_decline_request', {
-          p_request_id: request.id,
-          p_speaker_id: request.speaker_id,
-          p_user_id: requestWithId.requester_id || (request as any).requester_id,
-          p_reason: 'User has been blocked'
-        });
-
-      if (error) throw error;
+      const requesterId = requestWithId.requester_id || (request as any).requester_id;
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment,
+        method: 'PATCH',
+        body: {
+          requestId: request.id,
+          action: 'block',
+          requesterId,
+          reason: 'User has been blocked',
+        },
+      });
+      if (!response.success) throw new Error(response.error);
+      const data = (response.data as any)?.data;
 
       if (data?.success) {
         showSuccess('User Blocked', 'The user has been blocked and their request declined');

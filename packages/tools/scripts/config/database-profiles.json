@@ -21,7 +21,7 @@
       "databaseUrlEnv": ["BSL_SUPABASE_DB_URL_PROD", "SUPABASE_DB_URL_BSL_PROD", "DATABASE_URL_BSL_PROD", "PROD_BSL_DB_URL"]
     }
   },
-  "defaultGroups": ["rls-hardening", "upcoming-bsl-passes"],
+  "defaultGroups": ["rls-hardening", "upcoming-bsl-passes", "meeting-lifecycle"],
   "groups": {
     "core": ["apps/mobile-app/db/migrations/V001__init_core_schema.sql"],
     "events": ["apps/mobile-app/db/migrations/V002__meeting_requests_system.sql"],
@@ -35,6 +35,9 @@
     "upcoming-bsl-passes": [
       "db/migrations/V010__provision_upcoming_bsl_general_passes.sql",
       "db/migrations/V011__secure_upcoming_bsl_pass_provisioning.sql"
+    ],
+    "meeting-lifecycle": [
+      "db/migrations/V017__harden_meeting_request_lifecycle.sql"
     ]
   }
 }

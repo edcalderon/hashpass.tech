@@ -71,20 +71,26 @@ export async function GET(request: Request) {
     }
 
     const speaker = await speakerForUser(supabase, userId);
-    const { data: sent, error: sentError } = await supabase
+    let sentQuery = supabase
       .from("meeting_requests")
       .select("*")
-      .eq("requester_id", userId)
-      .order("created_at", { ascending: false });
+      .eq("requester_id", userId);
+    if (status) sentQuery = sentQuery.eq("status", status);
+    const { data: sent, error: sentError } = await sentQuery.order("created_at", {
+      ascending: false,
+    });
     if (sentError) throw sentError;
 
     let incoming: any[] = [];
     if (speaker) {
-      const { data, error } = await supabase
+      let incomingQuery = supabase
         .from("meeting_requests")
         .select("*")
-        .in("speaker_id", [speaker.id, userId])
-        .order("created_at", { ascending: false });
+        .eq("speaker_id", userId);
+      if (status) incomingQuery = incomingQuery.eq("status", status);
+      const { data, error } = await incomingQuery.order("created_at", {
+        ascending: false,
+      });
       if (error) throw error;
       incoming = data || [];
     }
@@ -132,12 +138,13 @@ export async function POST(request: Request) {
       p_duration_minutes: Number(body.durationMinutes) || 15,
     });
     if (error) throw error;
-    if (data?.success === false)
+    const result = Array.isArray(data) ? data[0] : data;
+    if (result?.success === false)
       return Response.json(
-        { error: data.error || "Meeting request rejected" },
+        { error: result.error || "Meeting request rejected" },
         { status: 409 },
       );
-    return Response.json({ data }, { status: 201 });
+    return Response.json({ data: result }, { status: 201 });
   } catch (error: any) {
     console.error("[meeting-requests] create error:", error);
     return Response.json(
@@ -154,6 +161,12 @@ export async function PATCH(request: Request) {
   if (!body?.requestId || !ACTIONS.has(body?.action)) {
     return Response.json(
       { error: "requestId and a valid action are required" },
+      { status: 400 },
+    );
+  }
+  if (body.action === "block" && !body.requesterId) {
+    return Response.json(
+      { error: "requesterId is required to block a request" },
       { status: 400 },
     );
   }
@@ -211,12 +224,16 @@ export async function PATCH(request: Request) {
 
     const { data, error } = await supabase.rpc(rpcName, params);
     if (error) throw error;
-    if (!data?.success)
+    const result =
+      body.action === "cancel" && data === true
+        ? { success: true, status: "cancelled" }
+        : data;
+    if (!result?.success)
       return Response.json(
-        { error: data?.error || "Meeting request update failed" },
+        { error: result?.error || "Meeting request update failed" },
         { status: 409 },
       );
-    return Response.json({ data });
+    return Response.json({ data: result });
   } catch (error: any) {
     console.error("[meeting-requests] update error:", error);
     return Response.json(
