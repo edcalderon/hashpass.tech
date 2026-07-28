@@ -33,8 +33,8 @@ describe('meeting-requests api', () => {
   });
 
   describe('GET', () => {
-    it('returns empty array when user has no supabase id', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null });
+    it('returns empty array when user has no registry id', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null, registryUserId: null });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -50,7 +50,7 @@ describe('meeting-requests api', () => {
     });
 
     it('returns 400 when speakerId is missing', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'user-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -62,7 +62,7 @@ describe('meeting-requests api', () => {
     });
 
     it('returns empty array when speakerId is not a valid UUID', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'user-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */

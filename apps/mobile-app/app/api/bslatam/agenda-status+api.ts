@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
 
-  if (!identity.supabaseUserId) {
+  if (!identity.registryUserId) {
     return Response.json({ data: [] });
   }
 
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from('user_agenda_status')
       .select('agenda_id, status, is_favorite')
-      .eq('user_id', identity.supabaseUserId)
+      .eq('user_id', identity.registryUserId)
       .eq('event_id', eventId)
       .not('agenda_id', 'is', null);
 
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   if (isResolveIdentityError(identity)) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
-  if (!identity.supabaseUserId) {
+  if (!identity.registryUserId) {
     return Response.json(
       { error: 'Account is not linked to an identity that can hold agenda status' },
       { status: 403 }
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     const { data: existing, error: lookupError } = await supabase
       .from('user_agenda_status')
       .select('id')
-      .eq('user_id', identity.supabaseUserId)
+      .eq('user_id', identity.registryUserId)
       .eq('event_id', eventId)
       .eq('agenda_id', agendaId)
       .maybeSingle();
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       const { error } = await supabase
         .from('user_agenda_status')
         .insert({
-          user_id: identity.supabaseUserId,
+          user_id: identity.registryUserId,
           event_id: eventId,
           agenda_id: agendaId,
           status: status ?? 'tentative',

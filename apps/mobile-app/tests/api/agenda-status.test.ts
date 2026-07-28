@@ -36,8 +36,8 @@ describe('agenda-status api', () => {
   });
 
   describe('GET', () => {
-    it('returns empty array when user has no supabase id', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null });
+    it('returns empty array when user has no registry id', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null, registryUserId: null });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -51,7 +51,7 @@ describe('agenda-status api', () => {
     });
 
     it('returns 400 when eventId is missing', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'user-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -78,8 +78,8 @@ describe('agenda-status api', () => {
   });
 
   describe('POST', () => {
-    it('returns 403 when user has no supabase id', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null });
+    it('returns 403 when user has no registry id', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null, registryUserId: null });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -96,7 +96,7 @@ describe('agenda-status api', () => {
     });
 
     it('returns 400 when eventId or agendaId is missing', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'user-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -114,7 +114,7 @@ describe('agenda-status api', () => {
     });
 
     it('returns 400 when neither status nor isFavorite is provided', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'user-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -132,7 +132,7 @@ describe('agenda-status api', () => {
     });
 
     it('inserts new agenda status', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'user-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */

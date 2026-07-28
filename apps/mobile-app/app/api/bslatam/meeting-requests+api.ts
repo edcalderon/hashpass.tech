@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
 
-  if (!identity.supabaseUserId) {
+  if (!identity.registryUserId) {
     return Response.json({ data: [] });
   }
 
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from('meeting_requests')
       .select('*')
-      .eq('requester_id', identity.supabaseUserId)
+      .eq('requester_id', identity.registryUserId)
       .eq('speaker_id', speakerId)
       .order('created_at', { ascending: false });
 
