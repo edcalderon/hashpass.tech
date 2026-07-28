@@ -7,12 +7,21 @@ type AuthenticatedUser = {
 };
 
 export interface ResolvedNotificationIdentity {
-  // Real Supabase auth.users(id) UUID — required to query/mutate the
-  // notifications table (its user_id column is `REFERENCES auth.users(id)`).
-  // Null when the authenticated user has never had a Supabase auth session
-  // linked to their account (e.g. Better-Auth-only users) — they simply
-  // have no notifications rows to read.
+  // Real Supabase auth.users(id) UUID. Required for tables that reference
+  // auth.users(id) directly (e.g. user_roles, user_profiles). Null when the
+  // authenticated user has never had a Supabase auth session linked to
+  // their account (e.g. Better-Auth-only users).
   supabaseUserId: string | null;
+  // public.user(id) — the canonical registry's own generated primary key,
+  // distinct from supabaseUserId. Required for tables that reference the
+  // registry directly rather than auth.users: user_agenda_status,
+  // meeting_requests, notifications (see packages/tools/scripts/sql/
+  // target-bsl-bootstrap.sql). Using supabaseUserId against those tables
+  // fails their FK constraint, since public.user.id is independently
+  // generated (uuid_generate_v4()) and only equals the auth id by
+  // coincidence — this was the cause of agenda-status POST returning 500
+  // with "Key (user_id)=(...) is not present in table user".
+  registryUserId: string | null;
   email: string;
 }
 
@@ -39,26 +48,80 @@ export async function resolveSupabaseIdentityForUser(
 ): Promise<ResolvedNotificationIdentity> {
   const email = user.email?.trim().toLowerCase() || '';
   if (!email) {
-    return { supabaseUserId: null, email: '' };
+    return { supabaseUserId: null, registryUserId: null, email: '' };
   }
 
   try {
     const { data: registryRow, error } = await (supabase as any)
       .from('user')
-      .select('provider_ids')
+      .select('id, provider_ids')
       .eq('email', email)
       .maybeSingle();
 
     if (error) {
       console.error('[resolve-notification-identity] registry lookup failed:', error);
-      return { supabaseUserId: null, email };
+      return { supabaseUserId: null, registryUserId: null, email };
     }
 
     const supabaseUserId = registryRow?.provider_ids?.supabase ?? null;
-    return { supabaseUserId, email };
+    const registryUserId = registryRow?.id ?? null;
+    return { supabaseUserId, registryUserId, email };
   } catch (registryError) {
     console.error('[resolve-notification-identity] registry lookup failed:', registryError);
-    return { supabaseUserId: null, email };
+    return { supabaseUserId: null, registryUserId: null, email };
+  }
+}
+
+// Looks up the caller's public.user(id) registry row by email, self-healing
+// (upserting) a missing row when the caller already holds a verified
+// Supabase session. A row can legitimately be missing if their auth.users
+// record predates the sync trigger, or if a native sign-in path completed
+// without ever calling syncPublicUserRegistry — in both cases the caller is
+// still a real, verified user, so this repairs the registry gap in place
+// rather than permanently failing every write for that account.
+async function resolveOrCreateRegistryUserId(
+  supabase: ReturnType<typeof getSupabaseServerForRequest>,
+  params: { email: string; authUserId: string; fullName?: string | null; avatarUrl?: string | null }
+): Promise<string | null> {
+  try {
+    const { data: existing, error } = await (supabase as any)
+      .from('user')
+      .select('id')
+      .eq('email', params.email)
+      .maybeSingle();
+
+    if (!error && existing?.id) {
+      return existing.id;
+    }
+
+    const { data: upserted, error: upsertError } = await (supabase as any).rpc(
+      'upsert_public_user_registry',
+      {
+        p_payload: {
+          provider: 'supabase',
+          auth_provider: 'supabase',
+          auth_user_id: params.authUserId,
+          email: params.email,
+          full_name: params.fullName ?? null,
+          avatar_url: params.avatarUrl ?? null,
+          role: 'user',
+          status: 'active',
+          auth_metadata: {},
+          profile_metadata: {},
+          provider_ids: { supabase: params.authUserId },
+        },
+      }
+    );
+
+    if (upsertError) {
+      console.error('[resolve-notification-identity] registry self-heal failed:', upsertError);
+      return null;
+    }
+
+    return upserted?.id ?? null;
+  } catch (e) {
+    console.error('[resolve-notification-identity] registry self-heal failed:', e);
+    return null;
   }
 }
 
@@ -78,12 +141,26 @@ export async function resolveNotificationIdentity(
   // 1. Try a direct Supabase bearer token first — covers native Android and
   //    any web session that already went through Supabase auth. If this
   //    succeeds, user.id IS already the real Supabase UUID; no further
-  //    resolution needed.
+  //    resolution needed for supabaseUserId. registryUserId (public.user.id)
+  //    is a separate id space and still needs its own lookup.
   if (token) {
     try {
       const { data, error } = await supabase.auth.getUser(token);
       if (data?.user && !error) {
-        return { supabaseUserId: data.user.id, email: data.user.email || '' };
+        const email = data.user.email?.trim().toLowerCase() || '';
+        const metadata = (data.user.user_metadata as Record<string, unknown> | undefined) || {};
+        const fullName = (metadata.full_name as string | undefined) || (metadata.name as string | undefined) || null;
+        const avatarUrl =
+          (metadata.avatar_url as string | undefined) || (metadata.picture as string | undefined) || null;
+        const registryUserId = email
+          ? await resolveOrCreateRegistryUserId(supabase, {
+              email,
+              authUserId: data.user.id,
+              fullName,
+              avatarUrl,
+            })
+          : null;
+        return { supabaseUserId: data.user.id, registryUserId, email: data.user.email || '' };
       }
     } catch {
       // fall through to the provider-routed path below

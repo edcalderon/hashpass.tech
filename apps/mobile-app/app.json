@@ -2,7 +2,7 @@
   "expo": {
     "name": "HASHPASS",
     "slug": "hash-pass-tech",
-    "version": "1.8.271",
+    "version": "1.8.272",
     "newArchEnabled": true,
     "orientation": "default",
     "icon": "./assets/images/icon.png",
@@ -26,7 +26,8 @@
         "backgroundColor": "#05070C"
       },
       "package": "com.hashpass.tech",
-      "versionCode": 11071,
+      "versionCode": 11072,
+      "googleServicesFile": "./config/google-services.json",
       "permissions": [
         "android.permission.CAMERA"
       ]
@@ -116,6 +117,7 @@
     },
     "plugins": [
       "expo-router",
+      "@react-native-firebase/app",
       "./plugins/withAndroidReleaseMinification",
       "./plugins/withAndroidDisableRtl",
       "./plugins/withAndroidLargeScreenSupport",

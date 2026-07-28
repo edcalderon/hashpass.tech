@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.271",
+  "version": "1.8.272",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",
@@ -64,6 +64,8 @@
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-firebase/analytics": "^25.1.0",
+    "@react-native-firebase/app": "^25.1.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/drawer": "^7.6.0",

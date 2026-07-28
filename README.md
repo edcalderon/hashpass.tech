@@ -20,13 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.271)
+## 📋 Latest Changes (v1.8.272)
 
 ### Bug Fixes
 
-* agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text ([046f1ce](https://github.com/hashpass-tech/hashpass.tech/commit/046f1ceb972a7f7c68c9b9a2df2ceda8d68cd7aa))
+* resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch ([fd6b36d](https://github.com/hashpass-tech/hashpass.tech/commit/fd6b36d3ce1884c5426b204ec9c484ace811fb9f))
+
+
+### Features
+
+* wire per-tenant GA4 analytics and native Firebase Analytics for Android ([2e2f8a4](https://github.com/hashpass-tech/hashpass.tech/commit/2e2f8a4b181d392f3d6d061b547ca60f881c9637))
 ### Release Highlights
-- agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text
+- wire per-tenant GA4 analytics and native Firebase Analytics for Android; resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -21,9 +21,9 @@ describe('resolveNotificationIdentity', () => {
     mockExtractToken.mockReturnValue(null);
   });
 
-  it('maps a Directus session to its linked Supabase UUID through the email registry', async () => {
+  it('maps a Directus session to its linked Supabase UUID and registry id through the email registry', async () => {
     const maybeSingle = jest.fn().mockResolvedValue({
-      data: { provider_ids: { supabase: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4' } },
+      data: { id: 'registry-row-id', provider_ids: { supabase: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4' } },
       error: null,
     });
     const eq = jest.fn().mockReturnValue({ maybeSingle });
@@ -41,33 +41,134 @@ describe('resolveNotificationIdentity', () => {
 
     expect(identity).toEqual({
       supabaseUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4',
+      registryUserId: 'registry-row-id',
       email: 'edward@hashpass.app',
     });
     expect(from).toHaveBeenCalledWith('user');
     expect(eq).toHaveBeenCalledWith('email', 'edward@hashpass.app');
   });
 
-  it('keeps the real Supabase UUID when a bearer token is valid', async () => {
+  it('keeps the real Supabase UUID and resolves the registry id when a bearer token is valid', async () => {
     const getUser = jest.fn().mockResolvedValue({
-      data: { user: { id: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4', email: 'edward@hashpass.app' } },
+      data: { user: { id: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4', email: 'edward@hashpass.app', user_metadata: {} } },
       error: null,
     });
+    const maybeSingle = jest.fn().mockResolvedValue({
+      data: { id: 'registry-row-id' },
+      error: null,
+    });
+    const eq = jest.fn().mockReturnValue({ maybeSingle });
+    const select = jest.fn().mockReturnValue({ eq });
+    const from = jest.fn().mockReturnValue({ select });
     mockExtractToken.mockReturnValue('supabase-bearer-token');
-    mockGetSupabaseServerForRequest.mockReturnValue({ auth: { getUser } });
+    mockGetSupabaseServerForRequest.mockReturnValue({ auth: { getUser }, from });
 
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
     await expect(resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/admin/access')))
       .resolves.toEqual({
         supabaseUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4',
+        registryUserId: 'registry-row-id',
         email: 'edward@hashpass.app',
       });
     expect(mockAuthenticateRequest).not.toHaveBeenCalled();
   });
 
+  it('self-heals a missing registry row for a caller with a valid bearer token', async () => {
+    const getUser = jest.fn().mockResolvedValue({
+      data: {
+        user: {
+          id: 'c598c2de-4aa4-4f2d-8a21-68bed0c166fe',
+          email: 'newuser@hashpass.app',
+          user_metadata: { full_name: 'New User' },
+        },
+      },
+      error: null,
+    });
+    const maybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+    const eq = jest.fn().mockReturnValue({ maybeSingle });
+    const select = jest.fn().mockReturnValue({ eq });
+    const from = jest.fn().mockReturnValue({ select });
+    const rpc = jest.fn().mockResolvedValue({ data: { id: 'newly-created-registry-id' }, error: null });
+    mockExtractToken.mockReturnValue('supabase-bearer-token');
+    mockGetSupabaseServerForRequest.mockReturnValue({ auth: { getUser }, from, rpc });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/bslatam/agenda-status'));
+
+    expect(identity).toEqual({
+      supabaseUserId: 'c598c2de-4aa4-4f2d-8a21-68bed0c166fe',
+      registryUserId: 'newly-created-registry-id',
+      email: 'newuser@hashpass.app',
+    });
+    expect(rpc).toHaveBeenCalledWith(
+      'upsert_public_user_registry',
+      expect.objectContaining({
+        p_payload: expect.objectContaining({
+          email: 'newuser@hashpass.app',
+          auth_user_id: 'c598c2de-4aa4-4f2d-8a21-68bed0c166fe',
+          full_name: 'New User',
+        }),
+      })
+    );
+  });
+
+  it('returns a null registry id when the self-heal upsert RPC errors', async () => {
+    const getUser = jest.fn().mockResolvedValue({
+      data: { user: { id: 'auth-id-1', email: 'broken@hashpass.app', user_metadata: {} } },
+      error: null,
+    });
+    const maybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+    const eq = jest.fn().mockReturnValue({ maybeSingle });
+    const select = jest.fn().mockReturnValue({ eq });
+    const from = jest.fn().mockReturnValue({ select });
+    const rpc = jest.fn().mockResolvedValue({ data: null, error: { message: 'upsert failed' } });
+    mockExtractToken.mockReturnValue('supabase-bearer-token');
+    mockGetSupabaseServerForRequest.mockReturnValue({ auth: { getUser }, from, rpc });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/bslatam/agenda-status'));
+
+    expect(identity).toEqual({
+      supabaseUserId: 'auth-id-1',
+      registryUserId: null,
+      email: 'broken@hashpass.app',
+    });
+  });
+
+  it('returns a null registry id when the self-heal lookup throws', async () => {
+    const getUser = jest.fn().mockResolvedValue({
+      data: { user: { id: 'auth-id-2', email: 'throws@hashpass.app', user_metadata: {} } },
+      error: null,
+    });
+    const from = jest.fn(() => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () => {
+            throw new Error('network');
+          },
+        }),
+      }),
+    }));
+    mockExtractToken.mockReturnValue('supabase-bearer-token');
+    mockGetSupabaseServerForRequest.mockReturnValue({ auth: { getUser }, from });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/bslatam/agenda-status'));
+
+    expect(identity).toEqual({
+      supabaseUserId: 'auth-id-2',
+      registryUserId: null,
+      email: 'throws@hashpass.app',
+    });
+  });
+
   it('falls back from a rejected bearer lookup to the provider identity', async () => {
     const maybeSingle = jest.fn().mockResolvedValue({
-      data: { provider_ids: { supabase: '8f60f5d2-5948-4df1-9670-2f9177cf2fe4' } },
+      data: { id: 'registry-row-id', provider_ids: { supabase: '8f60f5d2-5948-4df1-9670-2f9177cf2fe4' } },
       error: null,
     });
     const getUser = jest.fn().mockRejectedValue(new Error('invalid token'));
@@ -86,6 +187,7 @@ describe('resolveNotificationIdentity', () => {
     await expect(resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/admin/access')))
       .resolves.toEqual({
         supabaseUserId: '8f60f5d2-5948-4df1-9670-2f9177cf2fe4',
+        registryUserId: 'registry-row-id',
         email: 'event.admin@example.com',
       });
   });
@@ -119,13 +221,13 @@ describe('resolveNotificationIdentity', () => {
     } = require('../../../lib/server/resolve-notification-identity');
 
     await expect(resolveSupabaseIdentityForUser(supabase, { id: 'provider-id', email: 'user@example.com' }))
-      .resolves.toEqual({ supabaseUserId: null, email: 'user@example.com' });
+      .resolves.toEqual({ supabaseUserId: null, registryUserId: null, email: 'user@example.com' });
     await expect(resolveSupabaseIdentityForUser(supabase, { id: 'provider-id', email: 'user@example.com' }))
-      .resolves.toEqual({ supabaseUserId: null, email: 'user@example.com' });
+      .resolves.toEqual({ supabaseUserId: null, registryUserId: null, email: 'user@example.com' });
     await expect(resolveSupabaseIdentityForUser(supabase, { id: 'provider-id', email: '   ' }))
-      .resolves.toEqual({ supabaseUserId: null, email: '' });
+      .resolves.toEqual({ supabaseUserId: null, registryUserId: null, email: '' });
     expect(isResolveIdentityError({ error: 'Unauthorized', status: 401 })).toBe(true);
-    expect(isResolveIdentityError({ supabaseUserId: null, email: '' })).toBe(false);
+    expect(isResolveIdentityError({ supabaseUserId: null, registryUserId: null, email: '' })).toBe(false);
   });
 
   it('returns an unlinked identity if registry lookup throws', async () => {
@@ -136,6 +238,6 @@ describe('resolveNotificationIdentity', () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { resolveSupabaseIdentityForUser } = require('../../../lib/server/resolve-notification-identity');
     await expect(resolveSupabaseIdentityForUser(supabase, { id: 'provider-id', email: 'user@example.com' }))
-      .resolves.toEqual({ supabaseUserId: null, email: 'user@example.com' });
+      .resolves.toEqual({ supabaseUserId: null, registryUserId: null, email: 'user@example.com' });
   });
 });
