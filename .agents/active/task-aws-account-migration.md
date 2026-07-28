@@ -95,13 +95,15 @@ Found while auditing, none of these were previously accurate:
 
 ## Next Steps (in priority order)
 
-1. **Decide the BSL Terraform path's fate.** Either finish the GitHub handshake so `bsl-hashpass-dev`/`bsl-hashpass-prod` pipelines exist in target and actually deploy, or formally drop this Terraform-managed CodeBuild/CodePipeline approach in favor of the SST Console autodeploy path CLAUDE.md already documents as BSL's real deploy mechanism today. Doing both indefinitely is redundant.
-2. ~~Confirm `hashpass.info` ownership and purpose.~~ **Resolved (2026-07-28)**: it's the planned fallback SMTP domain for `.agents/pending/email-proxy-balancer.md`. Stays source-only, no further action needed here.
-3. **Reconcile `.club`/`.lat` target hosted zone records or delete them.** Since DNS zone hosting isn't moving, these incomplete 2-record target zones serve no purpose as-is — either finish syncing them (if there's a reason to keep target copies) or remove them to reduce confusion.
-4. **Recover or rebuild `mobile-release-target`'s real variable values** before anyone applies that stack again — compare against the live resources (VPC/subnet/security-group/IAM names already visible in state) to reconstruct a correct `terraform.tfvars`.
-5. ~~Decide the fate of confirmed-orphaned source-account resources~~ **Done 2026-07-28**: EC2 `i-0a2e763270ffd2b62` was already gone (terminated outside this session); CodeBuild `hashpass-infra-production-build`/`hashpass-infra-dev-build` deleted after re-confirming zero build history. (Amplify app `bsl2025.hashpass.tech` is explicitly excluded from this — see decision above, it stays as-is.)
-6. **Clean up target-account diagnostic CodeBuild projects** (`hashpass-arm-probe-*`, `hashpass-lambda-probe-*`) once confirmed no longer needed.
-7. **Identify `bitacora.hashpass.tech`.** Undocumented anywhere in this repo. Find out what it is, whether it's still needed, and if so give it the same treatment as BSL (mirror to target or explicitly leave source-only) and add it to `DEPLOYMENT_MAP.md`.
+1. **Extend the proven hybrid to `bsl.hashpass.tech` (prod).** Dev's cutover (source CloudFront + target S3/compute, see "BSL pipeline incident and migration" below) is live and validated; prod is intentionally untouched and still fully source-account SST. Repeat the same pattern once dev has a few more clean deploy cycles behind it: new S3 bucket in `bsl-target`, `build-bsl-static-site.sh` wired to prod's pipeline, repoint `E2FCDJB1JCS7TW`'s origin, then retire the source-account `bsl-hashpass-prod`/`bsl-hashpass-prod-build` pair the same way dev's were retired.
+2. **AWS Support case submitted (2026-07-28)** requesting CloudFront account verification for the target account (952191196420) — framed as an internal business-unit migration/segregation, not fraud. Once approved, `bsl-target`'s own CloudFront distributions can actually be created and the hybrid workaround becomes optional rather than required — revisit whether to migrate CloudFront itself to target at that point, or keep the hybrid shape permanently (matches `hashpass.tech`'s own already-permanent hybrid decision above).
+3. ~~Confirm `hashpass.info` ownership and purpose.~~ **Resolved (2026-07-28)**: it's the planned fallback SMTP domain for `.agents/pending/email-proxy-balancer.md`. Stays source-only, no further action needed here.
+4. **Reconcile `.club`/`.lat` target hosted zone records or delete them.** Since DNS zone hosting isn't moving, these incomplete 2-record target zones serve no purpose as-is — either finish syncing them (if there's a reason to keep target copies) or remove them to reduce confusion.
+5. **Recover or rebuild `mobile-release-target`'s real variable values** before anyone applies that stack again — compare against the live resources (VPC/subnet/security-group/IAM names already visible in state) to reconstruct a correct `terraform.tfvars`.
+6. ~~Decide the fate of confirmed-orphaned source-account resources~~ **Done 2026-07-28**: EC2 `i-0a2e763270ffd2b62` was already gone (terminated outside this session); CodeBuild `hashpass-infra-production-build`/`hashpass-infra-dev-build` deleted after re-confirming zero build history. (Amplify app `bsl2025.hashpass.tech` is explicitly excluded from this — see decision above, it stays as-is.)
+7. **Clean up target-account diagnostic CodeBuild projects** (`hashpass-arm-probe-*`, `hashpass-lambda-probe-*`) once confirmed no longer needed.
+8. **Identify `bitacora.hashpass.tech`.** Undocumented anywhere in this repo. Find out what it is, whether it's still needed, and if so give it the same treatment as BSL (mirror to target or explicitly leave source-only) and add it to `DEPLOYMENT_MAP.md`.
+9. **Take proper Terraform ownership of the source-account BSL CloudFront distributions** (`E2FCDJB1JCS7TW` prod, `E279RW9PP52TC0` dev). Dev's origin was repointed via a one-time manual `update-distribution` call, not IaC — a real `terraform import` (source-account provider) would close that gap and match this task's own "prefer Terraform over console/CLI-only changes" constraint.
 
 ## Rollback Strategy
 
@@ -115,7 +117,8 @@ Found while auditing, none of these were previously accurate:
 - [x] The migration playbook exists in docs and includes a rollback section.
 - [x] The docs navigation exposes the migration playbook.
 - [x] Target-account infrastructure is provisioned without impacting the source account, for: API/Lambda, Android runner, web static site.
-- [ ] BSL's Terraform-managed pipeline path is either completed in target or formally retired in favor of SST Console autodeploy.
+- [x] BSL dev is cut over to the target-account hybrid (source CloudFront + target S3/compute) and verified live. AWS Support case submitted for target-account CloudFront verification.
+- [ ] BSL prod (`bsl.hashpass.tech`) gets the same hybrid treatment and its source-account SST pipeline is retired.
 - [x] `hashpass.info`'s ownership/purpose is confirmed and documented — fallback SMTP domain for the pending email-proxy-balancer task.
 - [x] Legacy Amplify app `bsl2025.hashpass.tech` — decided to leave as archival, no action needed.
 - [ ] Remaining orphaned source-account resources (old runner, unused `hashpass-infra-*-build` CodeBuild projects) are either explained or decommissioned by someone with source-account access.

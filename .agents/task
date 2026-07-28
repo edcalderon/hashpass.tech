@@ -5,7 +5,7 @@
 | File | Description | Priority |
 |------|-------------|----------|
 | [active/task-hashpass-ai-assistant.md](active/task-hashpass-ai-assistant.md) | App-wide HashPass AI assistant with floating chat UI, standalone page, Bedrock RAG, and Aurora/RDS backing | 🔴 High |
-| [active/task-aws-account-migration.md](active/task-aws-account-migration.md) | Migrate HashPass AWS *services* from account `058264267235` to `952191196420` (DNS zone hosting stays on source by decision); API/Lambda/Android runner/web compute done, BSL pipeline + a few orphaned resources remain | 🔴 High |
+| [active/task-aws-account-migration.md](active/task-aws-account-migration.md) | Migrate HashPass AWS *services* from account `058264267235` to `952191196420` (DNS zone hosting stays on source by decision); API/Lambda/Android runner/web compute/BSL-dev done via a source-CDN+target-origin hybrid (AWS Support case pending for target CloudFront verification); BSL prod + a few orphaned resources remain | 🔴 High |
 | [active/task-app-publish.md](active/task-app-publish.md) | Google Play Store closed testing upload in progress + production rollout (v1.8.148) | 🔴 High |
 | [../apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md](../apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md) | Native auth resumes to landing but crashes on dashboard entry after v1.8.234; includes XState session-machine state and release evidence | 🔴 High |
 | [active/task-native-google-signin.md](active/task-native-google-signin.md) | Replace browser OAuth with native Google Sign-In SDK (no-browser flow) | 🟡 Medium |
