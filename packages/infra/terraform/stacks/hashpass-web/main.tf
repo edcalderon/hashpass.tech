@@ -25,6 +25,30 @@ locals {
     for environment in [var.environment, var.dev_environment] :
     "${var.name_prefix}-${environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   ])
+  # Path-filtered trigger (2026-07-28), mirrors the identical design in
+  # packages/infra/terraform/stacks/bsl-target -- see that stack's locals
+  # block for the full reasoning (AWS's 8-item cap per list, broad includes
+  # + precise excludes, why shared apps/mobile-app changes should trigger
+  # both pipeline families). Keep both exclude lists in sync when adding a
+  # new terraform stack or tools script that's specific to one pipeline.
+  site_trigger_includes = [
+    "apps/mobile-app/**",
+    "packages/**",
+    "package.json",
+    "pnpm-lock.yaml",
+  ]
+
+  site_trigger_excludes = [
+    "packages/infra/terraform/stacks/bsl-target/**",
+    "packages/infra/sst.config.ts",
+    "packages/infra/src/**",
+    "packages/infra/terraform/stacks/mobile-release-target/**",
+    "packages/infra/terraform/stacks/mobile-release-legacy-source-account/**",
+    "packages/infra/terraform/stacks/gcp/**",
+    "packages/tools/scripts/build-bsl-infra.sh",
+    "packages/tools/scripts/check-infra-dns.sh",
+  ]
+
   build_worker_lambda_function_names = distinct([
     for function_name in [var.lambda_function_name, var.dev_lambda_function_name] :
     trimspace(function_name) if trimspace(function_name) != ""
@@ -227,6 +251,9 @@ module "site" {
   deploy_mode                       = var.deploy_mode
   build_environment                 = local.build_environment
   tags                              = var.tags
+  enable_path_filtered_trigger      = var.enable_path_filtered_trigger
+  trigger_path_includes             = local.site_trigger_includes
+  trigger_path_excludes             = local.site_trigger_excludes
 
   depends_on = [module.build_worker, aws_codepipeline_custom_action_type.ec2_build]
 }
@@ -369,6 +396,9 @@ module "site_dev" {
   deploy_mode                       = var.deploy_mode
   build_environment                 = local.dev_build_environment
   tags                              = var.tags
+  enable_path_filtered_trigger      = var.enable_path_filtered_trigger
+  trigger_path_includes             = local.site_trigger_includes
+  trigger_path_excludes             = local.site_trigger_excludes
 
   depends_on = [module.build_worker, aws_codepipeline_custom_action_type.ec2_build]
 }

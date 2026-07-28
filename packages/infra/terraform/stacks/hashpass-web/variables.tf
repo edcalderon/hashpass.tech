@@ -288,6 +288,12 @@ variable "build_environment_overrides" {
   default     = {}
 }
 
+variable "enable_path_filtered_trigger" {
+  description = "Upgrade both site pipelines to V2 with a git file-path-filtered trigger (see bsl-target for the sibling implementation), so a push that only touches bsl-target/SST/mobile-release-target files doesn't redeploy hashpass.tech unnecessarily. Defaults to false so applying this change doesn't silently alter the live production pipeline's trigger behavior -- opt in deliberately once ready."
+  type        = bool
+  default     = false
+}
+
 variable "enable_github_actions_worker_control" {
   description = "Create an IAM OIDC role so GitHub Actions can start/stop the shared web EC2 worker and monitor CodePipeline. After enabling, copy the output github_actions_role_arn as GitHub variable AWS_WEB_PIPELINE_ROLE_ARN."
   type        = bool

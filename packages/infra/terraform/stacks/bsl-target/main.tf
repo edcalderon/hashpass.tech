@@ -97,6 +97,46 @@ resource "aws_codepipeline_custom_action_type" "ec2_build" {
 }
 
 locals {
+  # Path-filtered triggers (2026-07-28): both bsl-target and hashpass-web
+  # build from the same shared apps/mobile-app source, so genuinely shared
+  # changes SHOULD trigger both -- that's correct, not a bug. What isn't
+  # correct is BSL redeploying on a change that's purely hashpass-web infra
+  # (or vice versa), or on changes to neither pipeline's inputs at all
+  # (docs, other stacks, other apps). CodePipeline V2's native
+  # trigger.git_configuration.push.file_paths (AWS's direct equivalent of
+  # GitHub Actions' `paths:` filtering) solves this without any custom
+  # webhook/Lambda dispatcher to build or maintain -- it's declared right
+  # next to the pipeline it gates, and an execution that doesn't match never
+  # starts at all (no wasted EC2 worker minutes on a "nothing to build" run).
+  #
+  # AWS caps file_paths includes/excludes at 8 items each (confirmed via a
+  # real failed plan: "supports 8 item maximum"). Broad includes + precise
+  # excludes fits comfortably within that on both sides, and is easier to
+  # reason about than trying to enumerate every relevant path individually
+  # under a hard 8-item ceiling.
+  bsl_trigger_includes = [
+    "apps/mobile-app/**",
+    "packages/**",
+    "package.json",
+    "pnpm-lock.yaml",
+  ]
+
+  # Everything under packages/** that is hashpass-web-only or belongs to an
+  # unrelated stack -- i.e. not something a BSL deploy needs to react to.
+  # Keep this list and hashpass-web's mirror-image exclude list (see
+  # aws_static_site_pipeline module / hashpass-web stack) in sync when
+  # adding a new terraform stack or tools script.
+  bsl_trigger_excludes = [
+    "packages/infra/terraform/stacks/hashpass-web/**",
+    "packages/infra/terraform/stacks/hashpass-dns/**",
+    "packages/infra/terraform/stacks/hashpass-api-target/**",
+    "packages/infra/terraform/stacks/mobile-release-target/**",
+    "packages/infra/terraform/stacks/mobile-release-legacy-source-account/**",
+    "packages/infra/terraform/stacks/aws/**",
+    "packages/infra/terraform/stacks/gcp/**",
+    "packages/tools/scripts/build-static-site.sh",
+  ]
+
   prod_build_environment = merge(
     {
       AWS_DEFAULT_REGION                 = var.aws_region
@@ -147,8 +187,9 @@ locals {
 }
 
 resource "aws_codepipeline" "bsl_prod" {
-  name     = "bsl-hashpass-prod"
-  role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/BslHashpassPipelineRole"
+  name          = "bsl-hashpass-prod"
+  role_arn      = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/BslHashpassPipelineRole"
+  pipeline_type = "V2"
 
   artifact_store {
     location = var.artifact_bucket_name
@@ -195,14 +236,34 @@ resource "aws_codepipeline" "bsl_prod" {
     }
   }
 
+  trigger {
+    provider_type = "CodeStarSourceConnection"
+
+    git_configuration {
+      source_action_name = "Source"
+
+      push {
+        branches {
+          includes = [var.prod_branch_name]
+        }
+
+        file_paths {
+          includes = local.bsl_trigger_includes
+          excludes = local.bsl_trigger_excludes
+        }
+      }
+    }
+  }
+
   tags = merge(var.tags, { Environment = "production" })
 
   depends_on = [module.build_worker, aws_codepipeline_custom_action_type.ec2_build]
 }
 
 resource "aws_codepipeline" "bsl_dev" {
-  name     = "bsl-hashpass-dev"
-  role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/BslHashpassPipelineRole"
+  name          = "bsl-hashpass-dev"
+  role_arn      = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/BslHashpassPipelineRole"
+  pipeline_type = "V2"
 
   artifact_store {
     location = var.artifact_bucket_name
@@ -245,6 +306,25 @@ resource "aws_codepipeline" "bsl_dev" {
         BuildScript          = var.build_script_path
         OutputDirectory      = var.build_output_directory
         BuildEnvironmentJson = jsonencode(local.dev_build_environment)
+      }
+    }
+  }
+
+  trigger {
+    provider_type = "CodeStarSourceConnection"
+
+    git_configuration {
+      source_action_name = "Source"
+
+      push {
+        branches {
+          includes = [var.dev_branch_name]
+        }
+
+        file_paths {
+          includes = local.bsl_trigger_includes
+          excludes = local.bsl_trigger_excludes
+        }
       }
     }
   }
