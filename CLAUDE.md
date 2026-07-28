@@ -326,6 +326,10 @@ The last command must succeed without printing the account ID. Use `AWS_PROFILE=
 `hashpass-dns`, and pass `--region us-east-1` for direct Lambda commands against
 `hashpass-prod-expo-router-api` or `hashpass-dev-expo-router-api`.
 
+**Confirmed (2026-07-28): the `default` AWS CLI profile authenticates to the source account (`058264267235`)** — that's what "may point at the source account" above actually resolves to on this machine. Useful for read-only audits of source-account resources (DNS/CloudFront/email/legacy Amplify/old EC2 runner), but never use it for target-account Terraform applies.
+
+**For the Android runner specifically**: use `packages/infra/terraform/stacks/mobile-release-target`, never `mobile-release-legacy-source-account` (renamed 2026-07-28 from `mobile-release` — it tracked the old source-account instance and is deprecated, do not apply). `pnpm run infra:mobile-release:*` already points at the correct one. See `.agents/active/task-aws-account-migration.md` for the full, verified account-by-account inventory and open items.
+
 ## Deployment Architecture
 
 ### How Each Domain Is Deployed

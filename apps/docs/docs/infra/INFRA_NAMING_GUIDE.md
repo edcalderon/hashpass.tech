@@ -32,12 +32,26 @@ This guide keeps AWS and release resource names readable, consistent, and easy t
 - Dev CodeBuild project: `bsl-hashpass-dev-build`
 - Production CodeBuild project: `bsl-hashpass-prod-build`
 
+Verified live (2026-07-28): all five exist in the **source account**
+(`058264267235`, `us-east-2`) with real build history. The **target
+account** only has the two CodeBuild projects mirrored — no pipelines, no
+connection. See `.agents/active/task-aws-account-migration.md` for the
+open decision on finishing vs. retiring this path (SST Console autodeploy
+is BSL's actual deploy mechanism today).
+
 ## Anti-patterns
 
 - Generic names like `hashpass-infra-*` for new BSL resources
 - Embedding the raw AWS account number in repo files
 - Mixing branch names and environment names in resource names
 - Using dots in AWS resource names when a hyphenated slug is clearer
+
+**Found violating this exact rule (2026-07-28):** `hashpass-infra-production-build`
+and `hashpass-infra-dev-build`, two source-account CodeBuild projects with
+zero build history ever. Their generic naming plus complete disuse strongly
+suggests dead scaffolding predating this guide — candidate for removal
+once someone with source-account access confirms. See
+`.agents/active/task-aws-account-migration.md`.
 
 ## When to introduce a new name
 

@@ -14,6 +14,34 @@ This is the authoritative reference for which service hosts which domain and how
 | `bsl-dev.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `develop` |
 | `hashpass.club` | GitHub Pages | Next.js static | CDN | Auto — `deploy-club-docs.yml` on push to `main` |
 
+## Account split: what's on the source account vs. the target account
+
+Two AWS accounts are in play (see `.agents/active/task-aws-account-migration.md`
+for the full, verified audit): the **source account** (`058264267235`, the
+original account, still holds DNS/CloudFront/email for all `hashpass.*`
+domains) and the **target account** (`952191196420`, the newer account,
+holds the actual compute — Lambda, the Android release runner, the S3
+origins CloudFront serves). **DNS/hosted zone hosting for `hashpass.tech`,
+`hashpass.club`, `hashpass.lat`, and `hashpass.info` stays on the source
+account indefinitely by decision (2026-07-28)** — this is not a pending
+cutover, it's the intended stable state. `hashpass.club` and `hashpass.info`
+also carry live email (MX/DKIM/DMARC) on the source account; `hashpass.info`
+specifically is the planned fallback SMTP domain for
+`.agents/pending/email-proxy-balancer.md`.
+
+**Two things found live in AWS during that audit but not documented
+anywhere in this file before now:**
+
+- **`bitacora.hashpass.tech`** — a CloudFront distribution exists for this
+  hostname (source account, SST-placeholder origin, same shape as BSL) but
+  nothing in this repo's docs, scripts, or workflows references it. Purpose
+  unconfirmed (possibly a changelog/audit-log site — "bitácora" is Spanish
+  for "logbook"). Needs identification before anyone can say how to deploy
+  or maintain it.
+- **Legacy Amplify app `bsl2025.hashpass.tech`** (source account,
+  `us-east-2`) — confirmed archival/no longer maintained (2026-07-28); fine
+  to leave stale on the source account, no deploy path needed.
+
 ## Critical: The front door, API, and BSL deploy paths are independent
 
 The public surface is now split across independent deployment paths:
@@ -67,6 +95,8 @@ HASHPASS_INFRA_TARGET=bsl pnpm --filter @hashpass/infra run deploy:prod
 ```
 
 Note: requires an IAM role with Route53, CloudFront, S3, and SSM permissions. The current `hashpass-mobile-release-github-actions` role does NOT have these — use the infra role instead.
+
+**There are also `bsl-hashpass-*` CodeBuild/CodePipeline Terraform resources in both AWS accounts (per `INFRA_NAMING_GUIDE.md`) — these are not the real deploy path.** SST Console autodeploy above is what actually ships BSL. The source-account CodeBuild/CodePipeline pair (`bsl-hashpass-dev`/`bsl-hashpass-prod`) has real build history and may predate the SST migration; the target-account mirror only has the CodeBuild projects, never wired into a pipeline. See `.agents/active/task-aws-account-migration.md` for the open decision on whether to finish or retire this Terraform path.
 
 ### Manually triggering the GitHub Actions infra-deploy workflow
 
