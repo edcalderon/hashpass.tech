@@ -10,7 +10,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import EventBanner from '../../../components/EventBanner';
 import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, eventApiPath } from '@/lib/api-client';
 import { 
   getAgendaTypeColor,
   parseEventISO,
@@ -126,9 +126,8 @@ export default function BSL2025AgendaScreen() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [speakerMapRef, setSpeakerMapRef] = useState<Map<string, { id: string; name: string; image?: string }>>(new Map());
   const eventId = event?.id || 'bsl';
-  // Derive URL segment from event config so native requests use the correct path
-  // e.g. event.api.basePath = '/api/bslatam' → apiSegment = 'bslatam'
-  const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
+  const agendaApiPath = eventApiPath(eventId, 'agenda');
+  const agendaStatusApiPath = eventApiPath(eventId, 'agenda/status');
   const eventDateLabel = event?.eventDateString || event?.subtitle || 'Tour 2026';
   const eventLocationLabel = event?.tour?.city && event?.tour?.country
     ? `${event.tour.city}, ${event.tour.country}`
@@ -235,7 +234,9 @@ export default function BSL2025AgendaScreen() {
         try {
           // Try to fetch agenda directly first
           console.log('🌐 Fetching agenda data...');
-          const response = await apiClient.request('agenda', { apiSegment });
+          const response = await apiClient.request(agendaApiPath, {
+            skipEventSegment: true,
+          });
 
           // Handle the API response format: { data: [...] }
           let agendaData = [];
@@ -303,7 +304,7 @@ export default function BSL2025AgendaScreen() {
     };
 
     loadAgenda();
-  }, [event?.agenda, eventId]);
+  }, [event?.agenda, eventId, agendaApiPath]);
 
   // Ensure filteredAgenda is populated when agenda loads
   useEffect(() => {
@@ -387,9 +388,8 @@ export default function BSL2025AgendaScreen() {
     const refreshTimer = setInterval(() => {
       const refreshAgenda = async () => {
         try {
-          const response = await apiClient.request('agenda', {
-            params: { eventId },
-            apiSegment,
+          const response = await apiClient.request(agendaApiPath, {
+            skipEventSegment: true,
           });
           if (response.success && response.data) {
             let agendaData: any[] = [];
@@ -410,7 +410,7 @@ export default function BSL2025AgendaScreen() {
     }, updateInterval);
 
     return () => clearInterval(refreshTimer);
-  }, [isLive, isEventPeriod]);
+  }, [isLive, isEventPeriod, agendaApiPath]);
 
   // Group agenda by day
   useEffect(() => {
@@ -937,9 +937,8 @@ export default function BSL2025AgendaScreen() {
         return;
       }
       try {
-        const response = await apiClient.request('agenda-status', {
-          apiSegment,
-          params: { eventId },
+        const response = await apiClient.request(agendaStatusApiPath, {
+          skipEventSegment: true,
         });
 
         if (!response.success) {
@@ -967,7 +966,7 @@ export default function BSL2025AgendaScreen() {
     };
 
     loadUserAgendaStatus();
-  }, [user, eventId]);
+  }, [user, eventId, agendaStatusApiPath]);
 
   // Handle toggle confirmation
   const handleToggleConfirmation = async (agendaItem: AgendaItem, startTime: Date) => {
@@ -978,10 +977,10 @@ export default function BSL2025AgendaScreen() {
     const newStatus = currentStatus === 'confirmed' ? 'tentative' : 'confirmed';
     
     try {
-      const response = await apiClient.request('agenda-status', {
-        apiSegment,
+      const response = await apiClient.request(agendaStatusApiPath, {
+        skipEventSegment: true,
         method: 'POST',
-        body: { eventId, agendaId: agendaItem.id, status: newStatus },
+        body: { agendaId: agendaItem.id, status: newStatus },
       });
       if (!response.success) throw new Error(response.error);
 
@@ -1014,10 +1013,10 @@ export default function BSL2025AgendaScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
-      const response = await apiClient.request('agenda-status', {
-        apiSegment,
+      const response = await apiClient.request(agendaStatusApiPath, {
+        skipEventSegment: true,
         method: 'POST',
-        body: { eventId, agendaId: agendaItem.id, isFavorite: newFavorite },
+        body: { agendaId: agendaItem.id, isFavorite: newFavorite },
       });
       if (!response.success) throw new Error(response.error);
 

@@ -3,6 +3,7 @@ import {
   resolveNotificationIdentity,
   isResolveIdentityError,
 } from "@/lib/server/resolve-notification-identity";
+import { eventIdFromRequest } from "@/lib/server/event-api";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -49,6 +50,9 @@ export async function GET(request: Request) {
     );
   if (!identity.supabaseUserId) return Response.json({ data: [] });
   const userId = identity.supabaseUserId;
+  const eventId = eventIdFromRequest(request);
+  if (!eventId)
+    return Response.json({ error: "A valid event id is required" }, { status: 400 });
   const url = new URL(request.url);
   const speakerId = url.searchParams.get("speakerId");
   const status = url.searchParams.get("status");
@@ -61,7 +65,8 @@ export async function GET(request: Request) {
         .from("meeting_requests")
         .select("*")
         .eq("requester_id", userId)
-        .eq("speaker_id", speakerId);
+        .eq("speaker_id", speakerId)
+        .eq("event_id", eventId);
       if (status) query = query.eq("status", status);
       const { data, error } = await query.order("created_at", {
         ascending: false,
@@ -74,7 +79,8 @@ export async function GET(request: Request) {
     let sentQuery = supabase
       .from("meeting_requests")
       .select("*")
-      .eq("requester_id", userId);
+      .eq("requester_id", userId)
+      .eq("event_id", eventId);
     if (status) sentQuery = sentQuery.eq("status", status);
     const { data: sent, error: sentError } = await sentQuery.order("created_at", {
       ascending: false,
@@ -86,7 +92,8 @@ export async function GET(request: Request) {
       let incomingQuery = supabase
         .from("meeting_requests")
         .select("*")
-        .eq("speaker_id", userId);
+        .eq("speaker_id", userId)
+        .eq("event_id", eventId);
       if (status) incomingQuery = incomingQuery.eq("status", status);
       const { data, error } = await incomingQuery.order("created_at", {
         ascending: false,
@@ -113,6 +120,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await authenticatedIdentity(request);
   if ("response" in auth) return auth.response;
+  const eventId = eventIdFromRequest(request);
+  if (!eventId)
+    return Response.json({ error: "A valid event id is required" }, { status: 400 });
   const body = await request.json().catch(() => null);
   if (!body?.speakerId || !body?.speakerName || !body?.requesterName) {
     return Response.json(
@@ -136,6 +146,7 @@ export async function POST(request: Request) {
       p_note: body.note || null,
       p_boost_amount: Number(body.boostAmount) || 0,
       p_duration_minutes: Number(body.durationMinutes) || 15,
+      p_event_id: eventId,
     });
     if (error) throw error;
     const result = Array.isArray(data) ? data[0] : data;
@@ -157,6 +168,9 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   const auth = await authenticatedIdentity(request);
   if ("response" in auth) return auth.response;
+  const eventId = eventIdFromRequest(request);
+  if (!eventId)
+    return Response.json({ error: "A valid event id is required" }, { status: 400 });
   const body = await request.json().catch(() => null);
   if (!body?.requestId || !ACTIONS.has(body?.action)) {
     return Response.json(
@@ -173,6 +187,19 @@ export async function PATCH(request: Request) {
 
   const supabase = getSupabaseServerForRequest(request);
   try {
+    const { data: meetingRequest, error: meetingRequestError } = await supabase
+      .from("meeting_requests")
+      .select("id")
+      .eq("id", body.requestId)
+      .eq("event_id", eventId)
+      .maybeSingle();
+    if (meetingRequestError) throw meetingRequestError;
+    if (!meetingRequest)
+      return Response.json(
+        { error: "Meeting request was not found for this event" },
+        { status: 404 },
+      );
+
     let rpcName: string;
     let params: Record<string, unknown>;
     if (body.action === "cancel") {

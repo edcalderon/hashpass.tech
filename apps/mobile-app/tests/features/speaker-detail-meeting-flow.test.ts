@@ -14,7 +14,7 @@ const myRequestsSource = readFileSync(
 
 describe("speaker detail meeting lifecycle", () => {
   it("uses the authenticated meeting-request boundary and requires a slot to accept", () => {
-    expect(source).toContain("apiClient.request('meeting-requests/slots'");
+    expect(source).toContain("apiClient.request(meetingRequestSlotsPath");
     expect(source).toContain("action: 'accept'");
     expect(source).toContain("action: 'decline'");
     expect(source).toContain("action: 'block'");
@@ -32,5 +32,12 @@ describe("speaker detail meeting lifecycle", () => {
   it("uses the same authenticated boundary when blocking from the requests inbox", () => {
     expect(myRequestsSource).toContain("action: 'block'");
     expect(myRequestsSource).not.toContain(".rpc('block_user_and_decline_request'");
+  });
+
+  it("uses the event-scoped route instead of inheriting the BSL API segment", () => {
+    expect(source).toContain("eventApiPath(eventId, 'meetings/requests')");
+    expect(myRequestsSource).toContain("eventApiPath(eventId, 'meetings/requests')");
+    expect(source).not.toContain('apiSegment');
+    expect(myRequestsSource).not.toContain('apiSegment');
   });
 });

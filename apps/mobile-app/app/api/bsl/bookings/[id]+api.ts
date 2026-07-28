@@ -92,7 +92,7 @@ export async function PATCH(request: Request) {
   }
 }
 
-// GET /api/bslatam/bookings/[id] - Get booking details
+// GET /api/bsl/bookings/[id] - Get booking details
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   const supabase = getSupabaseServerForRequest(request);
   try {
@@ -151,7 +151,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-// DELETE /api/bslatam/bookings/[id] - Cancel a booking
+// DELETE /api/bsl/bookings/[id] - Cancel a booking
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   const supabase = getSupabaseServerForRequest(request);
   try {

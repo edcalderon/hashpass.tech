@@ -2,18 +2,18 @@ import type { AgendaItem, EventConfig, Speaker } from '@hashpass/types';
 
 export type { Speaker, AgendaItem, EventConfig } from '@hashpass/types';
 
-const BSL_API_BASE_PATH = '/api/bslatam';
+const BSL_API_BASE_PATH = '/api/bsl';
 // Speaker photos are hosted on our own S3 bucket (target AWS account), not
 // scraped/hotlinked from blockchainsummit.la at runtime -- see
 // hashpass-production-event-media-952191196420-us-east-2/events/chile2026/speakers/.
 const CHILE2026_SPEAKER_IMAGE_BASE =
   'https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/chile2026/speakers';
 const BSL_DATABASE = {
-  schema: 'bslatam',
+  schema: 'bsl',
   tables: {
-    speakers: 'bslatam_speakers',
-    bookings: 'bslatam_bookings',
-    attendees: 'bslatam_attendees',
+    speakers: 'bsl_speakers',
+    bookings: 'bsl_bookings',
+    attendees: 'bsl_attendees',
   },
 } as const;
 
@@ -199,11 +199,11 @@ export const EVENTS: Record<string, EventConfig> = {
       admin: '/events/bsl/admin'
     },
     database: {
-      schema: 'bslatam',
+      schema: 'bsl',
       tables: {
-        speakers: 'bslatam_speakers',
-        bookings: 'bslatam_bookings',
-        attendees: 'bslatam_attendees',
+        speakers: 'bsl_speakers',
+        bookings: 'bsl_bookings',
+        attendees: 'bsl_attendees',
         wallets: 'wallet_auth'
       }
     },
@@ -444,7 +444,7 @@ export const EVENTS: Record<string, EventConfig> = {
       favicon: '/favicon.ico'
     },
     api: {
-      basePath: '/api/bslatam',
+      basePath: '/api/bsl',
       endpoints: {
         speakers: 'speakers',
         bookings: 'bookings',
@@ -461,11 +461,11 @@ export const EVENTS: Record<string, EventConfig> = {
       admin: '/events/bsl2025/admin'
     },
     database: {
-      schema: 'bslatam',
+      schema: 'bsl',
       tables: {
-        speakers: 'bslatam_speakers',
-        bookings: 'bslatam_bookings',
-        attendees: 'bslatam_attendees'
+        speakers: 'bsl_speakers',
+        bookings: 'bsl_bookings',
+        attendees: 'bsl_attendees'
       }
     },
     tour: {

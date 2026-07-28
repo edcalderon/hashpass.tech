@@ -263,10 +263,10 @@ if [ -d "api" ]; then
   cp -r api/* dist/client/api/
   
   # Create a simple API handler if it doesn't exist
-  if [ ! -f "dist/client/api/bslatam/agenda+api.ts" ]; then
-    mkdir -p dist/client/api/bslatam
+  if [ ! -f "dist/client/api/events/[eventId]/agenda+api.ts" ]; then
+    mkdir -p "dist/client/api/events/[eventId]"
     echo "[5.6/5] Creating default API handler..."
-    cat > dist/client/api/bslatam/agenda+api.ts <<'EOL'
+    cat > "dist/client/api/events/[eventId]/agenda+api.ts" <<'EOL'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {

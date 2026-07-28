@@ -8,7 +8,7 @@ import type { CreateMeetingRequestData } from '../../../../lib/matchmaking';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useBalance } from '@contexts/BalanceContext';
 import { supabase } from '../../../../lib/supabase';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, eventApiPath } from '@/lib/api-client';
 import { passSystemService } from '../../../../lib/pass-system';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
@@ -55,8 +55,8 @@ export default function SpeakerDetail() {
   const { isDark, colors } = useTheme();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
-  // e.g. event.api.basePath = '/api/bslatam' → apiSegment = 'bslatam'
-  const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
+  const meetingRequestsPath = eventApiPath(eventId, 'meetings/requests');
+  const meetingRequestSlotsPath = eventApiPath(eventId, 'meetings/requests/slots');
   const { user, isLoggedIn, dbUserId } = useAuth();
   const { t } = useTranslation('networking');
   const router = useRouter();
@@ -107,8 +107,8 @@ export default function SpeakerDetail() {
 
   // Keep persistence and pass validation behind our authenticated API boundary.
   const createMeetingRequest = async (data: CreateMeetingRequestData) => {
-    const response = await apiClient.request('meeting-requests', {
-      apiSegment,
+    const response = await apiClient.request(meetingRequestsPath, {
+      skipEventSegment: true,
       method: 'POST',
       body: {
         speakerId: data.speaker_id, speakerName: data.speaker_name, requesterName: data.requester_name,
@@ -387,8 +387,8 @@ export default function SpeakerDetail() {
 
     setLoadingRequestStatus(true);
     try {
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment,
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true,
         ...(isCurrentUserSpeaker ? {} : { params: { speakerId: speaker.id } }),
       });
 
@@ -415,8 +415,8 @@ export default function SpeakerDetail() {
 
     setLoadingCancelledRequests(true);
     try {
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment,
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true,
         params: isCurrentUserSpeaker
           ? { status: 'cancelled' }
           : { speakerId: speaker.id, status: 'cancelled' },
@@ -484,8 +484,8 @@ export default function SpeakerDetail() {
     setShowSlotPicker(true);
     setLoadingSlots(true);
     try {
-      const response = await apiClient.request('meeting-requests/slots', {
-        apiSegment,
+      const response = await apiClient.request(meetingRequestSlotsPath, {
+        skipEventSegment: true,
         params: {
           speakerId,
           requesterId: request.requester_id,
@@ -512,8 +512,8 @@ export default function SpeakerDetail() {
 
     setIsAcceptingRequest(true);
     try {
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment,
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true,
         method: 'PATCH',
         body: { requestId: request.id, action: 'accept', slotTime },
       });
@@ -549,8 +549,8 @@ export default function SpeakerDetail() {
     if (!dbUserId || !isCurrentUserSpeaker) return;
     
     try {
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment,
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true,
         method: 'PATCH',
         body: { requestId: request.id, action: 'decline' },
       });
@@ -573,8 +573,8 @@ export default function SpeakerDetail() {
     if (!dbUserId || !isCurrentUserSpeaker) return;
     
     try {
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment,
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true,
         method: 'PATCH',
         body: {
           requestId: request.id,
@@ -604,8 +604,8 @@ export default function SpeakerDetail() {
     setIsCancellingRequest(true);
 
     try {
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment,
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true,
         method: 'PATCH',
         body: { requestId: selectedRequestToCancel.id, action: 'cancel' },
       });

@@ -14,13 +14,16 @@ const mockEq = jest.fn();
 const mockIn = jest.fn();
 const mockOrder = jest.fn().mockResolvedValue({ data: [], error: null });
 const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+const mockMeetingRequestMaybeSingle = jest
+  .fn()
+  .mockResolvedValue({ data: { id: "request-123" }, error: null });
 const mockRpc = jest.fn();
-const mockFrom = jest.fn(() => ({
-  select: jest.fn(() => createChain()),
+const mockFrom = jest.fn((table: string) => ({
+  select: jest.fn(() => createChain(table)),
 }));
 let consoleErrorSpy: jest.SpyInstance;
 
-function createChain(): {
+function createChain(table?: string): {
   eq: (...args: unknown[]) => unknown;
   in: (...args: unknown[]) => unknown;
   order: jest.Mock;
@@ -29,14 +32,17 @@ function createChain(): {
   return {
     eq: (...args: unknown[]) => {
       mockEq(...args);
-      return createChain();
+      return createChain(table);
     },
     in: (...args: unknown[]) => {
       mockIn(...args);
-      return createChain();
+      return createChain(table);
     },
     order: mockOrder,
-    maybeSingle: mockMaybeSingle,
+    maybeSingle:
+      table === "meeting_requests"
+        ? mockMeetingRequestMaybeSingle
+        : mockMaybeSingle,
   };
 }
 
@@ -55,6 +61,11 @@ describe("meeting-requests api", () => {
     mockIn.mockReset();
     mockOrder.mockClear();
     mockMaybeSingle.mockClear();
+    mockMeetingRequestMaybeSingle.mockReset();
+    mockMeetingRequestMaybeSingle.mockResolvedValue({
+      data: { id: "request-123" },
+      error: null,
+    });
     mockRpc.mockReset();
     mockFrom.mockClear();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
@@ -71,10 +82,10 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await GET(
         new Request(
-          "https://api.hashpass.tech/api/bslatam/meeting-requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
+          "https://api.hashpass.tech/api/events/bsl/meetings/requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
         ),
       );
 
@@ -90,9 +101,9 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await GET(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests"),
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests"),
       );
 
       expect(response.status).toBe(200);
@@ -116,9 +127,9 @@ describe("meeting-requests api", () => {
         });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await GET(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests"),
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests"),
       );
 
       expect(response.status).toBe(200);
@@ -142,9 +153,9 @@ describe("meeting-requests api", () => {
       });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await GET(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests"),
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests"),
       );
 
       expect(response.status).toBe(200);
@@ -160,10 +171,10 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await GET(
         new Request(
-          "https://api.hashpass.tech/api/bslatam/meeting-requests?status=cancelled",
+          "https://api.hashpass.tech/api/events/bsl/meetings/requests?status=cancelled",
         ),
       );
 
@@ -179,10 +190,10 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await GET(
         new Request(
-          "https://api.hashpass.tech/api/bslatam/meeting-requests?speakerId=claudia-sotelo",
+          "https://api.hashpass.tech/api/events/bsl/meetings/requests?speakerId=claudia-sotelo",
         ),
       );
 
@@ -198,10 +209,10 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       await GET(
         new Request(
-          "https://api.hashpass.tech/api/bslatam/meeting-requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
+          "https://api.hashpass.tech/api/events/bsl/meetings/requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
         ),
       );
 
@@ -212,6 +223,24 @@ describe("meeting-requests api", () => {
       );
     });
 
+    it("isolates a speaker request list to the event in its URL", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "auth-uuid-123",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await GET(
+        new Request(
+          "https://api.hashpass.tech/api/events/chile2026/meetings/requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
+        ),
+      );
+
+      expect(response.status).toBe(200);
+      expect(mockEq).toHaveBeenCalledWith("event_id", "chile2026");
+    });
+
     it("returns identity error if identity resolution fails", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         error: "Unauthorized",
@@ -220,10 +249,10 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(true);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await GET(
         new Request(
-          "https://api.hashpass.tech/api/bslatam/meeting-requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
+          "https://api.hashpass.tech/api/events/bsl/meetings/requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
         ),
       );
 
@@ -242,9 +271,9 @@ describe("meeting-requests api", () => {
       });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await GET(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests"),
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests"),
       );
 
       expect(response.status).toBe(500);
@@ -264,9 +293,9 @@ describe("meeting-requests api", () => {
       });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { GET } = require("../../app/api/bslatam/meeting-requests+api");
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const sentFailure = await GET(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests"),
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests"),
       );
 
       expect(sentFailure.status).toBe(500);
@@ -282,7 +311,7 @@ describe("meeting-requests api", () => {
           error: { message: "incoming query failed" },
         });
       const incomingFailure = await GET(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests"),
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests"),
       );
 
       expect(incomingFailure.status).toBe(500);
@@ -293,7 +322,7 @@ describe("meeting-requests api", () => {
       });
       const speakerFailure = await GET(
         new Request(
-          "https://api.hashpass.tech/api/bslatam/meeting-requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
+          "https://api.hashpass.tech/api/events/bsl/meetings/requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
         ),
       );
 
@@ -302,6 +331,39 @@ describe("meeting-requests api", () => {
   });
 
   describe("POST", () => {
+    it("passes the URL event id into the request creation contract", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockRpc.mockResolvedValue({
+        data: { id: "request-123", status: "pending" },
+        error: null,
+      });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await POST(
+        new Request(
+          "https://api.hashpass.tech/api/events/chile2026/meetings/requests",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              speakerId: "claudia-sotelo",
+              speakerName: "Claudia Sotelo",
+              requesterName: "Ada Lovelace",
+            }),
+          },
+        ),
+      );
+
+      expect(response.status).toBe(201);
+      expect(mockRpc).toHaveBeenCalledWith(
+        "insert_meeting_request",
+        expect.objectContaining({ p_event_id: "chile2026" }),
+      );
+    });
+
     it("normalizes the set-returning insert RPC row for the speaker screen", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
@@ -313,9 +375,9 @@ describe("meeting-requests api", () => {
       });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { POST } = require("../../app/api/bslatam/meeting-requests+api");
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await POST(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "POST",
           body: JSON.stringify({
             speakerId: "claudia-sotelo",
@@ -350,6 +412,7 @@ describe("meeting-requests api", () => {
         p_note: "Bring notes",
         p_boost_amount: 12,
         p_duration_minutes: 30,
+        p_event_id: "bsl",
       });
     });
 
@@ -361,9 +424,9 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(true);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { POST } = require("../../app/api/bslatam/meeting-requests+api");
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const unauthorized = await POST(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "POST",
           body: JSON.stringify({}),
         }),
@@ -375,7 +438,7 @@ describe("meeting-requests api", () => {
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       const unlinked = await POST(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "POST",
           body: JSON.stringify({}),
         }),
@@ -386,7 +449,7 @@ describe("meeting-requests api", () => {
         supabaseUserId: "requester-id",
       });
       const malformed = await POST(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "POST",
           body: "not-json",
         }),
@@ -394,7 +457,7 @@ describe("meeting-requests api", () => {
       expect(malformed.status).toBe(400);
 
       const incomplete = await POST(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "POST",
           body: JSON.stringify({ speakerId: "speaker-id" }),
         }),
@@ -413,9 +476,9 @@ describe("meeting-requests api", () => {
       });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { POST } = require("../../app/api/bslatam/meeting-requests+api");
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const rejected = await POST(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "POST",
           body: JSON.stringify({
             speakerId: "speaker-id",
@@ -430,7 +493,7 @@ describe("meeting-requests api", () => {
 
       mockRpc.mockRejectedValueOnce(new Error("database unavailable"));
       const failed = await POST(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "POST",
           body: JSON.stringify({
             speakerId: "speaker-id",
@@ -446,6 +509,34 @@ describe("meeting-requests api", () => {
   });
 
   describe("PATCH", () => {
+    it("does not mutate a request outside the event in the URL", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "requester-id",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockMeetingRequestMaybeSingle.mockResolvedValueOnce({
+        data: null,
+        error: null,
+      });
+      mockRpc.mockResolvedValue({ data: true, error: null });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { PATCH } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await PATCH(
+        new Request("https://api.hashpass.tech/api/events/chile2026/meetings/requests", {
+          method: "PATCH",
+          body: JSON.stringify({ requestId: "request-123", action: "cancel" }),
+        }),
+      );
+
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({
+        error: "Meeting request was not found for this event",
+      });
+      expect(mockEq).toHaveBeenCalledWith("event_id", "chile2026");
+      expect(mockRpc).not.toHaveBeenCalled();
+    });
+
     it("requires the requester id before a speaker can block a request", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
@@ -453,9 +544,9 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { PATCH } = require("../../app/api/bslatam/meeting-requests+api");
+      const { PATCH } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({ requestId: "request-123", action: "block" }),
         }),
@@ -483,9 +574,9 @@ describe("meeting-requests api", () => {
       });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { PATCH } = require("../../app/api/bslatam/meeting-requests+api");
+      const { PATCH } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({
             requestId: "request-123",
@@ -515,9 +606,9 @@ describe("meeting-requests api", () => {
       mockRpc.mockResolvedValue({ data: true, error: null });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { PATCH } = require("../../app/api/bslatam/meeting-requests+api");
+      const { PATCH } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const response = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({ requestId: "request-123", action: "cancel" }),
         }),
@@ -536,9 +627,9 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { PATCH } = require("../../app/api/bslatam/meeting-requests+api");
+      const { PATCH } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const malformed = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({ requestId: "request-123", action: "reschedule" }),
         }),
@@ -549,7 +640,7 @@ describe("meeting-requests api", () => {
         supabaseUserId: null,
       });
       const unlinked = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({ requestId: "request-123", action: "cancel" }),
         }),
@@ -564,9 +655,9 @@ describe("meeting-requests api", () => {
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { PATCH } = require("../../app/api/bslatam/meeting-requests+api");
+      const { PATCH } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const notSpeaker = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({ requestId: "request-123", action: "decline" }),
         }),
@@ -578,7 +669,7 @@ describe("meeting-requests api", () => {
         error: null,
       });
       const missingSlot = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({ requestId: "request-123", action: "accept" }),
         }),
@@ -599,9 +690,9 @@ describe("meeting-requests api", () => {
         .mockResolvedValueOnce({ data: { success: true, status: "declined" }, error: null });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { PATCH } = require("../../app/api/bslatam/meeting-requests+api");
+      const { PATCH } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const declined = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({
             requestId: "request-123",
@@ -618,7 +709,7 @@ describe("meeting-requests api", () => {
       });
 
       const blocked = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({
             requestId: "request-456",
@@ -647,9 +738,9 @@ describe("meeting-requests api", () => {
         .mockRejectedValueOnce(new Error("update unavailable"));
 
       /* eslint-disable @typescript-eslint/no-require-imports */
-      const { PATCH } = require("../../app/api/bslatam/meeting-requests+api");
+      const { PATCH } = require("../../app/api/events/[eventId]/meetings/requests+api");
       const conflict = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({ requestId: "request-123", action: "cancel" }),
         }),
@@ -657,7 +748,7 @@ describe("meeting-requests api", () => {
       expect(conflict.status).toBe(409);
 
       const failed = await PATCH(
-        new Request("https://api.hashpass.tech/api/bslatam/meeting-requests", {
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
           method: "PATCH",
           body: JSON.stringify({ requestId: "request-123", action: "cancel" }),
         }),

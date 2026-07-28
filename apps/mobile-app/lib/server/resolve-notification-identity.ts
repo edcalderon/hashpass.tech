@@ -23,7 +23,7 @@ export interface ResolvedNotificationIdentity {
   // present in table user".
   //
   // meeting_requests is NOT in this group despite an earlier version of
-  // this comment (and app/api/bslatam/meeting-requests+api.ts) treating it
+  // this comment (and app/api/events/[eventId]/meetings/requests+api.ts) treating it
   // as one — meeting_requests.requester_id has no FK constraint at all, and
   // the live write path (insert_meeting_request RPC in
   // target-bsl-bootstrap.sql) stores the caller-supplied id unchanged after

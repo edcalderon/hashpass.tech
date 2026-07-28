@@ -1070,8 +1070,8 @@ export async function sendTroubleshootingEmail(
           status: 'healthy',
           endpoints: {
             '/api/status': { accessible: true },
-            '/api/bslatam/agenda': { accessible: true },
-            '/api/bslatam/bookings': { accessible: true },
+            '/api/events/bsl/agenda': { accessible: true },
+            '/api/bsl/bookings': { accessible: true },
           },
         },
       },

@@ -11,6 +11,20 @@ let mockPendingResult: { data: unknown[] | null; error: unknown } = {
 };
 let consoleErrorSpy: jest.SpyInstance;
 
+function mockCreatePendingQuery(): {
+  eq: (...args: unknown[]) => ReturnType<typeof mockCreatePendingQuery>;
+  then: Promise<unknown>["then"];
+} {
+  return {
+    eq: (...args: unknown[]) => {
+      mockEq(...args);
+      return mockCreatePendingQuery();
+    },
+    then: (onFulfilled, onRejected) =>
+      Promise.resolve(mockPendingResult).then(onFulfilled, onRejected),
+  };
+}
+
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   resolveNotificationIdentity: (request: Request) =>
     mockResolveNotificationIdentity(request),
@@ -22,17 +36,7 @@ jest.mock("@/lib/supabase-server", () => ({
   getSupabaseServerForRequest: () => ({
     rpc: mockRpc,
     from: mockFrom.mockImplementation(() => ({
-      select: () => ({
-        eq: (...args: unknown[]) => {
-          mockEq(...args);
-          return {
-            eq: (...statusArgs: unknown[]) => {
-              mockEq(...statusArgs);
-              return Promise.resolve(mockPendingResult);
-            },
-          };
-        },
-      }),
+      select: () => mockCreatePendingQuery(),
     })),
   }),
 }));
@@ -62,10 +66,10 @@ describe("meeting-request slots api", () => {
     });
 
     /* eslint-disable @typescript-eslint/no-require-imports */
-    const { GET } = require("../../app/api/bslatam/meeting-requests/slots+api");
+    const { GET } = require("../../app/api/events/[eventId]/meetings/requests/slots+api");
     const response = await GET(
       new Request(
-        "https://api.hashpass.tech/api/bslatam/meeting-requests/slots?speakerId=speaker-user-id&requesterId=requester-user-id&durationMinutes=15",
+        "https://api.hashpass.tech/api/events/bsl/meetings/requests/slots?speakerId=speaker-user-id&requesterId=requester-user-id&durationMinutes=15",
       ),
     );
 
@@ -90,6 +94,25 @@ describe("meeting-request slots api", () => {
     });
   });
 
+  it("isolates pending-slot demand to the event in the URL", async () => {
+    mockResolveNotificationIdentity.mockResolvedValue({
+      supabaseUserId: "requester-id",
+    });
+    mockIsResolveIdentityError.mockReturnValue(false);
+    mockRpc.mockResolvedValue({ data: [], error: null });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require("../../app/api/events/[eventId]/meetings/requests/slots+api");
+    const response = await GET(
+      new Request(
+        "https://api.hashpass.tech/api/events/chile2026/meetings/requests/slots?speakerId=speaker-id",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockEq).toHaveBeenCalledWith("event_id", "chile2026");
+  });
+
   it("rejects identity errors, unlinked accounts, and missing speakers", async () => {
     mockResolveNotificationIdentity.mockResolvedValue({
       error: "Unauthorized",
@@ -98,16 +121,16 @@ describe("meeting-request slots api", () => {
     mockIsResolveIdentityError.mockReturnValue(true);
 
     /* eslint-disable @typescript-eslint/no-require-imports */
-    const { GET } = require("../../app/api/bslatam/meeting-requests/slots+api");
+    const { GET } = require("../../app/api/events/[eventId]/meetings/requests/slots+api");
     const unauthorized = await GET(
-      new Request("https://api.hashpass.tech/api/bslatam/meeting-requests/slots"),
+      new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests/slots"),
     );
     expect(unauthorized.status).toBe(401);
 
     mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null });
     mockIsResolveIdentityError.mockReturnValue(false);
     const unlinked = await GET(
-      new Request("https://api.hashpass.tech/api/bslatam/meeting-requests/slots"),
+      new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests/slots"),
     );
     expect(unlinked.status).toBe(403);
 
@@ -115,7 +138,7 @@ describe("meeting-request slots api", () => {
       supabaseUserId: "requester-id",
     });
     const missingSpeaker = await GET(
-      new Request("https://api.hashpass.tech/api/bslatam/meeting-requests/slots"),
+      new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests/slots"),
     );
     expect(missingSpeaker.status).toBe(400);
   });
@@ -136,10 +159,10 @@ describe("meeting-request slots api", () => {
       });
 
     /* eslint-disable @typescript-eslint/no-require-imports */
-    const { GET } = require("../../app/api/bslatam/meeting-requests/slots+api");
+    const { GET } = require("../../app/api/events/[eventId]/meetings/requests/slots+api");
     const response = await GET(
       new Request(
-        "https://api.hashpass.tech/api/bslatam/meeting-requests/slots?speakerId=speaker-id&requesterId=requester-id",
+        "https://api.hashpass.tech/api/events/bsl/meetings/requests/slots?speakerId=speaker-id&requesterId=requester-id",
       ),
     );
 
@@ -181,10 +204,10 @@ describe("meeting-request slots api", () => {
     };
 
     /* eslint-disable @typescript-eslint/no-require-imports */
-    const { GET } = require("../../app/api/bslatam/meeting-requests/slots+api");
+    const { GET } = require("../../app/api/events/[eventId]/meetings/requests/slots+api");
     const response = await GET(
       new Request(
-        "https://api.hashpass.tech/api/bslatam/meeting-requests/slots?speakerId=speaker-id&durationMinutes=0",
+        "https://api.hashpass.tech/api/events/bsl/meetings/requests/slots?speakerId=speaker-id&durationMinutes=0",
       ),
     );
 
@@ -223,10 +246,10 @@ describe("meeting-request slots api", () => {
     });
 
     /* eslint-disable @typescript-eslint/no-require-imports */
-    const { GET } = require("../../app/api/bslatam/meeting-requests/slots+api");
+    const { GET } = require("../../app/api/events/[eventId]/meetings/requests/slots+api");
     const slotsFailure = await GET(
       new Request(
-        "https://api.hashpass.tech/api/bslatam/meeting-requests/slots?speakerId=speaker-id",
+        "https://api.hashpass.tech/api/events/bsl/meetings/requests/slots?speakerId=speaker-id",
       ),
     );
     expect(slotsFailure.status).toBe(500);
@@ -238,7 +261,7 @@ describe("meeting-request slots api", () => {
     };
     const pendingFailure = await GET(
       new Request(
-        "https://api.hashpass.tech/api/bslatam/meeting-requests/slots?speakerId=speaker-id",
+        "https://api.hashpass.tech/api/events/bsl/meetings/requests/slots?speakerId=speaker-id",
       ),
     );
     expect(pendingFailure.status).toBe(500);

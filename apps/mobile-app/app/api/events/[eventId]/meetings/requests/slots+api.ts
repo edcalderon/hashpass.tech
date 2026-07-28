@@ -3,6 +3,7 @@ import {
   resolveNotificationIdentity,
   isResolveIdentityError,
 } from "@/lib/server/resolve-notification-identity";
+import { eventIdFromRequest } from "@/lib/server/event-api";
 
 // Returns conflict-safe speaker slots plus demand metadata. A slot with three
 // or more pending requests is marked as a hot spot so the speaker can avoid
@@ -26,6 +27,9 @@ export async function GET(request: Request) {
   const duration = Number(url.searchParams.get("durationMinutes")) || 15;
   if (!speakerId)
     return Response.json({ error: "speakerId is required" }, { status: 400 });
+  const eventId = eventIdFromRequest(request);
+  if (!eventId)
+    return Response.json({ error: "A valid event id is required" }, { status: 400 });
 
   const supabase = getSupabaseServerForRequest(request);
   try {
@@ -58,6 +62,7 @@ export async function GET(request: Request) {
         "preferred_date, preferred_time, availability_window_start, availability_window_end",
       )
       .eq("speaker_id", speakerId)
+      .eq("event_id", eventId)
       .eq("status", "pending");
     if (pendingError) throw pendingError;
 

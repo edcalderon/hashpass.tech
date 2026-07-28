@@ -11,7 +11,7 @@
 --     authenticated user (the shared client-side Supabase client, real
 --     session, auth.uid() resolves) loading their own meetings and
 --     embedding the linked slot via `slot:meeting_slots(*)`.
---   - apps/mobile-app/app/api/bslatam/bookings/[id]+api.ts: uses
+--   - apps/mobile-app/app/api/bsl/bookings/[id]+api.ts: uses
 --     getSupabaseServerForRequest(), which is the service-role client
 --     (BYPASSRLS) — actually unaffected, listed here only because it does
 --     the same embed; confirmed by reading lib/supabase-server.ts.
@@ -25,7 +25,7 @@
 -- host, or attendee — the exact same three columns meetings' own existing
 -- "meetings_select_participant" policy already uses.
 --
--- Not fixed here: apps/mobile-app/app/api/bslatam/meeting-slots/+api.ts
+-- Not fixed here: apps/mobile-app/app/api/bsl/meeting-slots/+api.ts
 -- builds its own anon-key client with no session attached
 -- (persistSession:false, no user JWT forwarded), so auth.uid() is NULL for
 -- every request it makes — no SELECT policy tied to auth.uid() can serve it.

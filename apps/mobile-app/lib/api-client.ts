@@ -38,6 +38,7 @@ export interface ApiRequestOptions {
 }
 
 const LOCALHOST_API_PATTERN = /^(https?:\/\/)?(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?(?:\/|$)/i;
+const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/i;
 const REMOTE_API_BASE_BY_ENV = {
   development: 'https://api-dev.hashpass.tech/api',
   production: 'https://api.hashpass.tech/api',
@@ -131,6 +132,21 @@ const resolveRuntimeApiBaseUrl = () => {
 export const getRuntimeApiBaseUrl = () => resolveRuntimeApiBaseUrl();
 
 /**
+ * Builds a brand-neutral path for a feature that belongs to one event.
+ * Callers use this with `skipEventSegment: true` so no event feature can
+ * accidentally inherit a tenant-specific base route such as `/api/bsl`.
+ */
+export function eventApiPath(eventId: string, resource: string) {
+  const normalizedEventId = eventId.trim().toLowerCase();
+  const normalizedResource = resource.replace(/^\/+|\/+$/g, "");
+  if (!EVENT_ID_PATTERN.test(normalizedEventId) || !normalizedResource) {
+    throw new Error("A valid event id and resource are required");
+  }
+
+  return `events/${normalizedEventId}/${normalizedResource}`;
+}
+
+/**
  * Returns the Cap widget endpoint for the active API deployment.
  *
  * The web app is served as static assets, so its origin does not host Expo API
@@ -149,7 +165,7 @@ export class EventApiClient {
   /**
    * Extract event-specific API path segment from event config
    * Examples:
-   * - '/api/bslatam' -> 'bslatam'
+   * - '/api/bsl' -> 'bsl'
    * - '/api' -> event.id (e.g., 'default')
    */
   private getEventApiSegment(event: ReturnType<typeof getCurrentEvent>): string {
@@ -160,7 +176,7 @@ export class EventApiClient {
     // Extract segment from basePath if it exists and contains more than just '/api'
     if (event.api?.basePath) {
       const basePath = event.api.basePath.trim();
-      // If basePath is '/api/bslatam', extract 'bslatam'
+      // If basePath is '/api/bsl', extract 'bsl'
       const match = basePath.match(/^\/api\/(.+)$/);
       if (match && match[1]) {
         return match[1];

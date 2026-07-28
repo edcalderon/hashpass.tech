@@ -25,7 +25,7 @@ import { useRealtimeMeetingRequests, RequestWithDirection } from '../../../../ho
 import { lukasRewardService } from '../../../../lib/lukas-reward-service';
 import { useBalance } from '@contexts/BalanceContext';
 import { useTranslation } from '../../../../i18n/i18n';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, eventApiPath } from '@/lib/api-client';
 
 // Extended type for internal use with direction tracking - now imported from hook
 type MeetingRequestWithDirection = RequestWithDirection & {
@@ -46,7 +46,8 @@ export default function MyRequestsView() {
   const { dbUserId } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
-  const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
+  const meetingRequestsPath = eventApiPath(eventId, 'meetings/requests');
+  const meetingRequestSlotsPath = eventApiPath(eventId, 'meetings/requests/slots');
   const router = useRouter();
   const params = useLocalSearchParams();
   const { showSuccess, showError } = useToastHelpers();
@@ -236,7 +237,7 @@ export default function MyRequestsView() {
       console.log('🔄 Starting loadMyRequests...');
       setLoading(true);
 
-      const response = await apiClient.request('meeting-requests', { apiSegment });
+      const response = await apiClient.request(meetingRequestsPath, { skipEventSegment: true });
       if (!response.success) throw new Error(response.error);
       const meetingRequests = (response.data as any)?.data || [];
       setRequests(meetingRequests.map((request: any) => request._direction === 'incoming'
@@ -249,7 +250,7 @@ export default function MyRequestsView() {
     } finally {
       setLoading(false);
     }
-  }, [dbUserId, showError]);
+  }, [dbUserId, showError, meetingRequestsPath]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -311,8 +312,8 @@ export default function MyRequestsView() {
     try {
       setShowCancelConfirm(false);
       
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment, method: 'PATCH', body: { requestId: selectedRequest.id, action: 'cancel' },
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true, method: 'PATCH', body: { requestId: selectedRequest.id, action: 'cancel' },
       });
       if (!response.success) throw new Error(response.error);
       const data = (response.data as any)?.data;
@@ -408,8 +409,8 @@ export default function MyRequestsView() {
         setCurrentSlotContext({ speakerId: speakerIdString, durationMinutes, requesterId });
       }
       
-      const response = await apiClient.request('meeting-requests/slots', {
-        apiSegment, params: { speakerId: speakerIdString, durationMinutes, requesterId },
+      const response = await apiClient.request(meetingRequestSlotsPath, {
+        skipEventSegment: true, params: { speakerId: speakerIdString, durationMinutes, requesterId },
       });
       if (!response.success) throw new Error(response.error);
       const data = (response.data as any)?.data || [];
@@ -438,8 +439,8 @@ export default function MyRequestsView() {
         await loadAvailableSlots(speakerIdString, request.duration_minutes || 15, (request as MeetingRequestWithDirection).requester_id);
         return;
       }
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment, method: 'PATCH', body: { requestId: request.id, action: 'accept', slotTime },
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true, method: 'PATCH', body: { requestId: request.id, action: 'accept', slotTime },
       });
       if (!response.success) { showError('Accept Failed', response.error); return; }
       const data = (response.data as any)?.data;
@@ -519,8 +520,8 @@ export default function MyRequestsView() {
     if (!dbUserId) return;
     
     try {
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment, method: 'PATCH', body: { requestId: request.id, action: 'decline' },
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true, method: 'PATCH', body: { requestId: request.id, action: 'decline' },
       });
       if (!response.success) throw new Error(response.error);
       const data = (response.data as any)?.data;
@@ -549,8 +550,8 @@ export default function MyRequestsView() {
     try {
       const requestWithId = request as MeetingRequestWithDirection;
       const requesterId = requestWithId.requester_id || (request as any).requester_id;
-      const response = await apiClient.request('meeting-requests', {
-        apiSegment,
+      const response = await apiClient.request(meetingRequestsPath, {
+        skipEventSegment: true,
         method: 'PATCH',
         body: {
           requestId: request.id,

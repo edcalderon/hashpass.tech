@@ -23,7 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
 import { supabase } from '../../../../lib/supabase';
-import { apiClient } from '../../../../lib/api-client';
+import { apiClient, eventApiPath } from '../../../../lib/api-client';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useTranslation } from '../../../../i18n/i18n';
 import type { Meeting, TimeSlot, DaySchedule } from '@/types/networking';
@@ -71,7 +71,7 @@ const MySchedule = () => {
   const { dbUserId } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
-  const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
+  const agendaApiPath = eventApiPath(eventId, 'agenda');
   const { showError, showSuccess, showWarning } = useToastHelpers();
   const { t } = useTranslation('networking');
   const navigation = useNavigation();
@@ -207,9 +207,8 @@ const MySchedule = () => {
       setLoadingAgenda(true);
       try {
         // Use apiClient to ensure correct base URL from env vars
-        const response = await apiClient.request('agenda', {
-          params: { eventId },
-          apiSegment,
+        const response = await apiClient.request(agendaApiPath, {
+          skipEventSegment: true,
         });
         // apiClient returns { data, success, error }
         // Handle different response formats
@@ -254,7 +253,7 @@ const MySchedule = () => {
       }
     };
     fetchAgenda();
-  }, [userAgendaStatus, eventId]);
+  }, [userAgendaStatus, eventId, agendaApiPath, t]);
 
   // Load user meetings (requester or speaker)
   useEffect(() => {

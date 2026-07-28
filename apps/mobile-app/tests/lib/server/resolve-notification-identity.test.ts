@@ -95,7 +95,7 @@ describe('resolveNotificationIdentity', () => {
 
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
-    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/bslatam/agenda-status'));
+    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/events/bsl/agenda/status'));
 
     expect(identity).toEqual({
       supabaseUserId: 'c598c2de-4aa4-4f2d-8a21-68bed0c166fe',
@@ -129,7 +129,7 @@ describe('resolveNotificationIdentity', () => {
 
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
-    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/bslatam/agenda-status'));
+    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/events/bsl/agenda/status'));
 
     expect(identity).toEqual({
       supabaseUserId: 'auth-id-1',
@@ -157,7 +157,7 @@ describe('resolveNotificationIdentity', () => {
 
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
-    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/bslatam/agenda-status'));
+    const identity = await resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/events/bsl/agenda/status'));
 
     expect(identity).toEqual({
       supabaseUserId: 'auth-id-2',

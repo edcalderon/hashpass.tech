@@ -206,30 +206,35 @@ Deployment split:
    ```
 4. **Start building!**
 
-### BSLatam 2025 Matchmaking Sandbox
+### BSL event routes and shared scheduling APIs
 
-Routes (web):
-- `/bslatam/home` — listado de speakers y búsqueda
-- `/bslatam/speakers/[id]` — perfil de speaker y disponibilidad
-- `/bslatam/speakers/calendar?speakerId=...&day=YYYY-MM-DD` — selector de slots
-- `/bslatam/my-bookings` — reservas del asistente
-- `/bslatam/speaker-dashboard` — panel de solicitudes del speaker
+Mobile event screens live under `/events/:eventSlug/`:
 
-API endpoints:
-- `GET /api/bslatam/speakers`
-- `GET /api/bslatam/speakers/:id`
-- `POST /api/bslatam/bookings` { speakerId, attendeeId, start, end }
-- `PATCH /api/bslatam/bookings/:id` { status }
-- `GET /api/bslatam/bookings?user=:id`
-- `POST /api/bslatam/verify-ticket` { ticketId, userId }
+- `/events/:eventSlug/agenda`
+- `/events/:eventSlug/speakers`
+- `/events/:eventSlug/networking`
+- `/events/:eventSlug/my-bookings`
 
-Database (Supabase/Postgres): see migration `archive/legacy-root/supabase/migrations/20251014090000_bslatam_matchmaking.sql`.
+Reusable scheduling APIs are event-scoped:
 
-Seeding speakers:
+- `OPTIONS, GET /api/events/:eventId/agenda`
+- `GET, POST /api/events/:eventId/agenda/status`
+- `GET, POST, PATCH /api/events/:eventId/meetings/requests`
+- `GET /api/events/:eventId/meetings/requests/slots`
+
+BSL-only APIs remain under `/api/bsl`, for example `GET /api/bsl/speakers`
+and `POST /api/bsl/bookings`.
+
+The route migration is breaking: there is no compatibility alias, so all
+clients and integrations must ship with the new paths together. See the
+[event-scoped API routing guide](apps/docs/docs/reference/mobile-app/event-scoped-api-client.md)
+for the API ownership rules and migration table.
+
+Seed BSL data and run its end-to-end check:
+
 ```bash
-export EXPO_PUBLIC_SUPABASE_URL=...
-export SUPABASE_SERVICE_ROLE_KEY=...
-npm run seed:bslatam
+pnpm run seed:bsl
+pnpm run test:e2e:bsl
 ```
 
 Env vars (email via SES / Nodemailer):
@@ -242,12 +247,9 @@ Env vars (email via SES / Nodemailer):
 
 For a complete guide on our environment management strategy, see [apps/docs/docs/infra/env/ENVIRONMENT_STRATEGY.md](apps/docs/docs/infra/env/ENVIRONMENT_STRATEGY.md).
 
-Deploy:
-```bash
-chmod +x ./packages/tools/scripts/deploy-bslatam.sh
-./packages/tools/scripts/deploy-bslatam.sh
-```
-For the main `hashpass.tech` web deployment, use the target-account pipeline and CloudFront front door. The archived Amplify helpers live in `archive/amplify/` for reference only.
+For infrastructure deployment, use `pnpm run infra:deploy:dev` or
+`pnpm run infra:deploy:prod` through the documented release workflow. The
+archived Amplify helpers are reference material only.
 
 ---
 
