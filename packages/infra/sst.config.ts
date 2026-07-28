@@ -64,6 +64,23 @@ function getPublicSupabaseEnv(stage: string) {
   );
   const profile = isProduction ? "bsl-production" : "bsl-development";
 
+  // Guard: a production stage deploy with no resolvable Supabase URL/key
+  // used to silently proceed — SST would build and ship a static site whose
+  // client bundle logs "Supabase URL or Anon Key is missing for profile
+  // bsl-production" at runtime instead of failing the deploy, which is how
+  // this reached bsl.hashpass.tech live. Only checked for the production
+  // stage: the dev stage's SST Console environment can legitimately be
+  // configured later/incompletely without blocking iteration.
+  if (isProduction && (!supabaseUrl || !supabaseAnonKey)) {
+    throw new Error(
+      `[sst.config.ts] Refusing to deploy the "production" stage: no Supabase URL/Anon Key ` +
+        "resolved from any of the EXPO_PUBLIC_BSL_SUPABASE_*_PROD (or fallback) environment " +
+        "variables. Set them in the SST Console's autodeploy environment for this app/stage " +
+        "before retrying — a deploy without them ships a static site with every Supabase-backed " +
+        "feature silently broken."
+    );
+  }
+
   return {
     EXPO_PUBLIC_SUPABASE_PROFILE: profile,
     SUPABASE_PROFILE: profile,
