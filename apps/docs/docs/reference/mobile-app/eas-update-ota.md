@@ -236,22 +236,25 @@ plus an explicit `--message` derived from the last commit, dropping
 repo never ships (no `ios/` directory, no iOS store URLs configured) — pure
 wasted export/upload time.
 
-**Known blocker: `EXPO_TOKEN_DEV` lacks permission for `eas update`/`eas
-channel:*` operations.** Verified live: this robot token successfully
-authenticates as `@hashpasstechs-team` (confirmed via `eas whoami` and `eas
-project:info`, which both succeed and correctly resolve the dev project),
-but every `eas channel:list`/`eas update` call against that same project
-fails with `Entity not authorized: AppEntity[...] (action = READ)`. The
-production token (`EXPO_TOKEN`) has no such issue — this is specific to the
-dev robot token's permission scope, most likely because it was generated
-with a limited "Builds and Submissions"-only permission set in the Expo
-dashboard rather than full account access. This can't be fixed from the
-CLI or from this repo: regenerate `EXPO_TOKEN_DEV` in the Expo dashboard
-(Account Settings → Access Tokens, under the `hashpasstechs-team` account)
-with EAS Update permissions included, then update the `EXPO_TOKEN_DEV`
-GitHub secret. Until then, `ota:publish:dev` and `mobile-eas-update.yml`'s
-development-channel path will fail with this same authorization error —
-the production channel is unaffected.
+**Local-only gotcha: the `EXPO_TOKEN_DEV` value in the repo-root `.env` file
+may not have `eas update`/`eas channel:*` permissions**, even though the
+value configured as the `EXPO_TOKEN_DEV` GitHub secret does. Verified while
+diagnosing the flag issue above: running `eas whoami`/`eas project:info`
+locally with the `.env` value for `EXPO_TOKEN_DEV` succeeds and correctly
+resolves to `@hashpasstechs-team`, but `eas channel:list`/`eas update` with
+that same local token fail with `Entity not authorized: AppEntity[...]
+(action = READ)` — most likely because that particular token was generated
+with a limited "Builds and Submissions"-only scope in the Expo dashboard.
+**This is local-environment-specific, not a CI problem**: the real
+`mobile-eas-update.yml` CI run against `develop` published to the
+development channel successfully (confirmed 2026-07-28, update group
+`f6e03fea-0802-4b0b-a92f-cfe65799b5c9`), so the `EXPO_TOKEN_DEV` GitHub
+secret is a different, correctly-scoped token already. If you need to run
+`npm run ota:publish:dev` locally, regenerate the token in the Expo
+dashboard (Account Settings → Access Tokens, under the `hashpasstechs-team`
+account) with EAS Update permissions and update your local `.env` — no
+action needed against the GitHub secret unless CI itself starts failing
+with this same error.
 
 CI: `.github/workflows/mobile-eas-update.yml` runs these automatically on
 push (see the path allowlist above), subject to the native-change guard

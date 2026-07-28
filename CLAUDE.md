@@ -128,13 +128,17 @@ OTA needs one real native build" section.
 caught by a real CI failure): `ota:publish`/`ota:publish:dev` and
 `mobile-eas-update.yml` now pass only `--channel <name>` (`eas` auto-creates
 the backing branch) plus an explicit `--message` and `--platform android` —
-no `--branch`, no `--auto`. **Separately, `EXPO_TOKEN_DEV` currently lacks
-permission for `eas update`/`eas channel:*`** (confirmed via `eas whoami`/
-`eas project:info` succeeding but `eas channel:list` failing with `Entity
-not authorized`, action=READ) — regenerate it in the Expo dashboard under
-`hashpasstechs-team` with EAS Update permissions before the development
-channel will work; production is unaffected. See the OTA doc's "Publishing"
-section for full detail.
+no `--branch`, no `--auto`. Confirmed working end-to-end in real CI on
+`develop` and PR #110 (development channel publish succeeded, update group
+`f6e03fea-0802-4b0b-a92f-cfe65799b5c9`) right after this fix. **Local-only
+gotcha**: the `EXPO_TOKEN_DEV` value in the repo-root `.env` file may lack
+`eas update`/`eas channel:*` permission even though the GitHub secret of the
+same name works fine — confirmed via `eas whoami`/`eas project:info`
+succeeding locally but `eas channel:list` failing with `Entity not
+authorized`, action=READ. Only matters if you run `ota:publish:dev` locally;
+regenerate the local token in the Expo dashboard under `hashpasstechs-team`
+with EAS Update permissions if so. See the OTA doc's "Publishing" section
+for full detail.
 
 **Release posture (updated 2026-07-27):** the full progression is internal → alpha (closed testing) → beta (open testing) → production, each gated on the previous track having succeeded for the same ref. Internal publishes automatically on tag creation; alpha auto-promotes after internal succeeds on the same tag (`auto_promote_alpha=true`), and beta now auto-promotes after that auto-promoted alpha succeeds (`auto_promote_beta=true`) — so a single tag push carries a release all the way through internal → alpha → beta with no manual dispatch. Production is the deliberate exception: it never auto-promotes, by design — it's the only track that builds against the real backend (`environment=production`) and ships to real users, so it keeps a manual `gh workflow run` as the final human checkpoint after beta has been validated by real external testers.
 
