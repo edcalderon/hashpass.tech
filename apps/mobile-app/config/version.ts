@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607272254, // Updated to current timestamp
-  releaseDate: '2026-07-27',
+  buildNumber: 202607280158, // Updated to current timestamp
+  releaseDate: '2026-07-28',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'wire per-tenant GA4 analytics and native Firebase Analytics for Android'
   ],
   bugfixes: [
-    'agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text'
+    'resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch'
   ],
   breakingChanges: [],
-  notes: 'agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text'
+  notes: 'wire per-tenant GA4 analytics and native Firebase Analytics for Android; resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.272': {
+    version: '1.8.272',
+    buildNumber: 202607280158,
+    releaseDate: '2026-07-28',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'wire per-tenant GA4 analytics and native Firebase Analytics for Android'
+    ],
+    bugfixes: [
+      'resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch'
+    ],
+    breakingChanges: [],
+    notes: 'wire per-tenant GA4 analytics and native Firebase Analytics for Android; resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch'
+  },
   '1.8.271': {
     version: '1.8.271',
     buildNumber: 202607272254,
