@@ -10,7 +10,7 @@ import * as Clipboard from 'expo-clipboard';
 
 export default function PassDetailsScreen() {
   const { colors, isDark } = useTheme();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, dbUserId, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
@@ -32,16 +32,26 @@ export default function PassDetailsScreen() {
       return;
     }
 
+    // user is set but dbUserId hasn't landed yet — the Supabase session
+    // bridge is fire-and-forget after a Better Auth sign-in (see
+    // USER_REGISTRY.md's bridge doc), so this is a normal, transient
+    // "pending" state, not an auth failure. Keep showing the loading spinner
+    // instead of a stale "not authenticated" error until it resolves.
+    if (!dbUserId) {
+      return;
+    }
+
     loadPassInfo();
-  }, [user, passId, authLoading]);
+  }, [user, dbUserId, passId, authLoading]);
 
   const loadPassInfo = async () => {
-    if (!user) return;
+    if (!user || !dbUserId) return;
 
     try {
       setLoading(true);
-      const pass = await passSystemService.getUserPassInfo(user.id);
-      
+      setError(null);
+      const pass = await passSystemService.getUserPassInfo(dbUserId);
+
       if (!pass) {
         setError('No pass found');
         return;
@@ -226,7 +236,7 @@ export default function PassDetailsScreen() {
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Access Features</Text>
           <View style={styles.featuresList}>
-            {passInfo.access_features.map((feature, index) => (
+            {passInfo.access_features.map((feature: string, index: number) => (
               <View key={index} style={styles.featureItem}>
                 <Ionicons 
                   name="checkmark-circle" 
@@ -245,7 +255,7 @@ export default function PassDetailsScreen() {
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Special Perks</Text>
           <View style={styles.featuresList}>
-            {passInfo.special_perks.map((perk, index) => (
+            {passInfo.special_perks.map((perk: string, index: number) => (
               <View key={index} style={styles.featureItem}>
                 <Ionicons 
                   name="star" 

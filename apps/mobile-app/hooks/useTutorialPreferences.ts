@@ -36,7 +36,7 @@ export interface TutorialPreferences {
 }
 
 export const useTutorialPreferences = (): TutorialPreferences => {
-  const { user, isLoggedIn } = useAuth();
+  const { isLoggedIn, dbUserId } = useAuth();
   const [mainTutorialCompleted, setMainTutorialCompleted] = useState(false);
   const [networkingTutorialCompleted, setNetworkingTutorialCompleted] = useState(false);
   const [mainTutorialProgress, setMainTutorialProgress] = useState<TutorialProgress | null>(null);
@@ -46,16 +46,16 @@ export const useTutorialPreferences = (): TutorialPreferences => {
   // Load tutorial preferences from database and fallback to AsyncStorage
   const loadPreferences = useCallback(async () => {
     try {
-      if (isLoggedIn && user?.id) {
+      if (isLoggedIn && dbUserId) {
         // Load from database
         const { data: progressData, error } = await supabase
           .from('user_tutorial_progress')
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', dbUserId);
 
         if (!error && progressData) {
-          const mainProgress = progressData.find(p => p.tutorial_type === 'main');
-          const networkingProgress = progressData.find(p => p.tutorial_type === 'networking');
+          const mainProgress = progressData.find((p: any) => p.tutorial_type === 'main');
+          const networkingProgress = progressData.find((p: any) => p.tutorial_type === 'networking');
 
           if (mainProgress) {
             const isCompleted = mainProgress.status === 'completed';
@@ -130,7 +130,7 @@ export const useTutorialPreferences = (): TutorialPreferences => {
     } finally {
       setIsReady(true);
     }
-  }, [user?.id, isLoggedIn]);
+  }, [dbUserId, isLoggedIn]);
 
   useEffect(() => {
     loadPreferences();
@@ -138,13 +138,13 @@ export const useTutorialPreferences = (): TutorialPreferences => {
 
   // Update tutorial step progress
   const updateTutorialStep = useCallback(async (type: TutorialType, stepNumber: number) => {
-    if (!user?.id) return;
+    if (!dbUserId) return;
 
     try {
       const { data: existing } = await supabase
         .from('user_tutorial_progress')
         .select('id, total_steps_completed')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .eq('tutorial_type', type)
         .maybeSingle();
 
@@ -185,7 +185,7 @@ export const useTutorialPreferences = (): TutorialPreferences => {
         const { error } = await supabase
           .from('user_tutorial_progress')
           .upsert({
-            user_id: user.id,
+            user_id: dbUserId,
             tutorial_type: type,
             status: 'in_progress',
             current_step: stepNumber,
@@ -221,16 +221,16 @@ export const useTutorialPreferences = (): TutorialPreferences => {
     } catch (error) {
       console.error('Failed to update tutorial step:', error);
     }
-  }, [user?.id]);
+  }, [dbUserId]);
 
   const markTutorialCompleted = useCallback(async (type: TutorialType) => {
     try {
-      if (user?.id) {
+      if (dbUserId) {
         // Update database
         const { data: existing } = await supabase
           .from('user_tutorial_progress')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .eq('tutorial_type', type)
           .maybeSingle();
 
@@ -247,7 +247,7 @@ export const useTutorialPreferences = (): TutorialPreferences => {
           await supabase
             .from('user_tutorial_progress')
             .upsert({
-              user_id: user.id,
+              user_id: dbUserId,
               tutorial_type: type,
               status: 'completed',
               completed_at: new Date().toISOString(),
@@ -275,15 +275,15 @@ export const useTutorialPreferences = (): TutorialPreferences => {
     } catch (error) {
       console.error('Failed to save tutorial completion:', error);
     }
-  }, [user?.id]);
+  }, [dbUserId]);
 
   const markTutorialSkipped = useCallback(async (type: TutorialType) => {
     try {
-      if (user?.id) {
+      if (dbUserId) {
         const { data: existing } = await supabase
           .from('user_tutorial_progress')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .eq('tutorial_type', type)
           .maybeSingle();
 
@@ -300,7 +300,7 @@ export const useTutorialPreferences = (): TutorialPreferences => {
           await supabase
             .from('user_tutorial_progress')
             .upsert({
-              user_id: user.id,
+              user_id: dbUserId,
               tutorial_type: type,
               status: 'skipped',
               skipped_at: new Date().toISOString(),
@@ -318,16 +318,16 @@ export const useTutorialPreferences = (): TutorialPreferences => {
     } catch (error) {
       console.error('Failed to mark tutorial as skipped:', error);
     }
-  }, [user?.id]);
+  }, [dbUserId]);
 
   const resetTutorial = useCallback(async (type: TutorialType) => {
     try {
-      if (user?.id) {
+      if (dbUserId) {
         // Delete from database
         await supabase
           .from('user_tutorial_progress')
           .delete()
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .eq('tutorial_type', type);
       }
 
@@ -353,15 +353,15 @@ export const useTutorialPreferences = (): TutorialPreferences => {
     } catch (error) {
       console.error('Failed to reset tutorial:', error);
     }
-  }, [user?.id, loadPreferences]);
+  }, [dbUserId, loadPreferences]);
 
   const resetAllTutorials = useCallback(async () => {
     try {
-      if (user?.id) {
+      if (dbUserId) {
         await supabase
           .from('user_tutorial_progress')
           .delete()
-          .eq('user_id', user.id);
+          .eq('user_id', dbUserId);
       }
 
       await Promise.all([
@@ -381,7 +381,7 @@ export const useTutorialPreferences = (): TutorialPreferences => {
     } catch (error) {
       console.error('Failed to reset all tutorials:', error);
     }
-  }, [user?.id, loadPreferences]);
+  }, [dbUserId, loadPreferences]);
 
   const reloadPreferences = useCallback(async () => {
     setIsReady(false);

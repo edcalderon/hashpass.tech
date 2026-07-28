@@ -63,7 +63,7 @@ function PassesDisplayInner({
 }: PassesDisplayProps) {
   const { t: translate } = useTranslation('passes');
   const { colors } = useTheme();
-  const { user } = useAuth();
+  const { dbUserId } = useAuth();
   const router = useRouter();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
   const [passesList, setPassesList] = useState<EventPassInfo[]>([]);
@@ -98,16 +98,16 @@ function PassesDisplayInner({
 
   useEffect(() => {
     loadPassInfo();
-  }, [user, refreshTrigger, eventId, isListMode, eventIdsKey]);
+  }, [dbUserId, refreshTrigger, eventId, isListMode, eventIdsKey]);
 
   useEffect(() => {
-    if (speakerId && user) {
+    if (speakerId && dbUserId) {
       loadRequestLimits();
     }
-  }, [speakerId, user, boostAmount, refreshTrigger]);
+  }, [speakerId, dbUserId, boostAmount, refreshTrigger]);
 
   const loadPassInfo = async () => {
-    if (!user) {
+    if (!dbUserId) {
       setLoading(false);
       setPassInfo(null);
       setPassesList([]);
@@ -118,12 +118,12 @@ function PassesDisplayInner({
     setLoading(true);
     try {
       if (isListMode) {
-        const list = await passSystemService.getUserPassesForEvents(user.id, eventIds!);
+        const list = await passSystemService.getUserPassesForEvents(dbUserId, eventIds!);
         setPassesList(list);
         setPassInfo(list[0] || null);
         onPassInfoLoaded?.(list[0] || null);
       } else {
-        const info = await passSystemService.getUserPassInfo(user.id, eventId);
+        const info = await passSystemService.getUserPassInfo(dbUserId, eventId);
         setPassInfo(info);
         setPassesList([]);
         onPassInfoLoaded?.(info);
@@ -142,11 +142,11 @@ function PassesDisplayInner({
   };
 
   const loadRequestLimits = async () => {
-    if (!user || !speakerId) return;
+    if (!dbUserId || !speakerId) return;
 
     try {
       const limits = await passSystemService.canMakeMeetingRequest(
-        user.id,
+        dbUserId,
         speakerId,
         boostAmount
       );
@@ -179,10 +179,10 @@ function PassesDisplayInner({
 
 
   const createDefaultPass = async (passType: 'general' | 'business' | 'vip' = 'general') => {
-    if (!user) return;
+    if (!dbUserId) return;
 
     try {
-      const passId = await passSystemService.createDefaultPass(user.id, passType);
+      const passId = await passSystemService.createDefaultPass(dbUserId, passType);
       if (passId) {
         Alert.alert(translate('alert.createdTitle', {}),
           undefined,
@@ -1074,7 +1074,7 @@ export default function PassesDisplay(props: PassesDisplayProps) {
 const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: number }) => {
   const { t: translate } = useTranslation('passes');
   const { colors, isDark } = useTheme();
-  const { user } = useAuth();
+  const { dbUserId } = useAuth();
   const router = useRouter();
   const [showQRModal, setShowQRModal] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -1112,20 +1112,20 @@ const PassCard = ({ pass, refreshTrigger }: { pass: PassInfo; refreshTrigger?: n
   
   // Load meeting requests when component mounts, pass changes, or refreshTrigger changes
   useEffect(() => {
-    if (user && pass.pass_id) {
+    if (dbUserId && pass.pass_id) {
       loadMeetingRequests();
     }
-  }, [user, pass.pass_id, refreshTrigger]);
-  
+  }, [dbUserId, pass.pass_id, refreshTrigger]);
+
   const loadMeetingRequests = async () => {
-    if (!user) return;
-    
+    if (!dbUserId) return;
+
     setLoadingRequests(true);
     try {
       const { data, error } = await supabase
         .from('meeting_requests')
         .select('id, speaker_name, status, boost_amount, created_at')
-        .eq('requester_id', user.id)
+        .eq('requester_id', dbUserId)
         .order('created_at', { ascending: false })
         .limit(10);
       

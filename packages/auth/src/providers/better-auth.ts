@@ -347,6 +347,41 @@ export class BetterAuthProvider implements IAuthProvider {
     return { user: session.user, session };
   }
 
+  /**
+   * Fetches a one-time Supabase session bridge for the current Better Auth
+   * session, via /api/auth/supabase-bridge (a sibling static route next to
+   * this provider's own [...auth] catch-all handler — Expo Router resolves
+   * static segments before catch-alls, same as the existing otp/delete-account
+   * routes already do). Uses the client's own $fetch so the request carries
+   * the same baseURL/cookie/native-header configuration as every other
+   * Better Auth client call (signIn.social, getSession, etc.) — this must
+   * NOT be a plain fetch(), since native has no ambient cookie jar of its own.
+   */
+  async fetchSupabaseBridge(): Promise<{ token_hash: string; type: string; email: string } | null> {
+    try {
+      const client = this.getClient() as any;
+      const result = await client.$fetch('/supabase-bridge', { method: 'POST' });
+
+      if (result?.error) {
+        return null;
+      }
+
+      const data = result?.data;
+      if (!data?.token_hash || !data?.email) {
+        return null;
+      }
+
+      return {
+        token_hash: data.token_hash,
+        type: data.type || 'magiclink',
+        email: data.email,
+      };
+    } catch (error) {
+      console.warn('[BetterAuth] Failed to fetch Supabase session bridge:', error);
+      return null;
+    }
+  }
+
   async signOut(): Promise<{ error?: string }> {
     // Clear the LOCAL session — in-memory and the persistent SecureStore cache —
     // BEFORE the network sign-out, not after. The Better Auth client's

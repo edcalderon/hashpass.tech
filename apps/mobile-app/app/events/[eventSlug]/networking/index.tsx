@@ -29,7 +29,7 @@ const CopilotTouchableOpacity = walkthroughable(TouchableOpacity);
 
 export default function NetworkingView() {
   const { isDark, colors } = useTheme();
-  const { user } = useAuth();
+  const { user, dbUserId } = useAuth();
   const { event } = useEvent();
   const router = useRouter();
   const { showSuccess, showError } = useToastHelpers();
@@ -216,7 +216,7 @@ export default function NetworkingView() {
 
   // Define loadNetworkingStats BEFORE it's used in useEffect hooks
   const loadNetworkingStats = useCallback(async (retryCount = 0, silent = false) => {
-    if (!user) {
+    if (!dbUserId) {
       console.log('No user found, skipping networking stats load');
       setStatsState((prev: StatsState) => ({ ...prev, loading: false, error: 'No user found' }));
       return;
@@ -242,7 +242,7 @@ export default function NetworkingView() {
         }));
       }
 
-      console.log(`🔄 Loading networking stats (attempt ${retryCount + 1}/${maxRetries + 1}) for user:`, user.id, silent ? '(silent update)' : '');
+      console.log(`🔄 Loading networking stats (attempt ${retryCount + 1}/${maxRetries + 1}) for user:`, dbUserId, silent ? '(silent update)' : '');
 
       // Use the RPC function for better performance and reliability.
       // .single() unwraps the RETURNS TABLE result into a plain object --
@@ -253,7 +253,7 @@ export default function NetworkingView() {
       // Add timeout to prevent stale loading states on slow mobile networks
       const statsPromise = supabase
         .rpc('get_user_meeting_request_counts', {
-          p_user_id: user.id
+          p_user_id: dbUserId
         })
         .single();
 
@@ -291,7 +291,7 @@ export default function NetworkingView() {
         const { data: speakerData, error: speakerError } = await supabase
           .from('bsl_speakers')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .single();
 
         if (!speakerError && speakerData) {
@@ -352,13 +352,13 @@ export default function NetworkingView() {
         showError('Failed to Load Stats', `Unable to load networking statistics after ${maxRetries + 1} attempts. ${errorMessage}`);
       }
     }
-  }, [user, showError]);
+  }, [dbUserId, showError]);
 
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout | null = null;
 
-    if (user) {
+    if (dbUserId) {
       loadNetworkingStats();
       
       // Safety timeout: if loading takes more than 20 seconds, show error
@@ -389,34 +389,34 @@ export default function NetworkingView() {
         clearTimeout(timeoutId);
       }
     };
-  }, [user, loadNetworkingStats]);
+  }, [dbUserId, loadNetworkingStats]);
 
   // Refresh stats when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      if (user) {
+      if (dbUserId) {
         console.log('📊 Screen focused, refreshing stats...');
         loadNetworkingStats(0, true); // Silent update when refocusing
       }
-    }, [user, loadNetworkingStats])
+    }, [dbUserId, loadNetworkingStats])
   );
 
   // Real-time subscription for meeting requests to update stats automatically
   useEffect(() => {
-    if (!user) return;
+    if (!dbUserId) return;
 
-    console.log('🔄 Setting up real-time stats subscription for user:', user.id);
+    console.log('🔄 Setting up real-time stats subscription for user:', dbUserId);
 
     // Channel for sent requests (where user is requester)
     const sentChannel = supabase
-      .channel(`networking_stats_sent_${user.id}_${Date.now()}`)
+      .channel(`networking_stats_sent_${dbUserId}_${Date.now()}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'meeting_requests',
-          filter: `requester_id=eq.${user.id}`,
+          filter: `requester_id=eq.${dbUserId}`,
         },
         (payload: any) => {
           console.log('📊 Stats: SENT request changed:', payload.eventType);
@@ -432,14 +432,14 @@ export default function NetworkingView() {
 
     // Channel for incoming requests (where user is speaker)
     const incomingChannel = supabase
-      .channel(`networking_stats_incoming_${user.id}_${Date.now()}`)
+      .channel(`networking_stats_incoming_${dbUserId}_${Date.now()}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'meeting_requests',
-          filter: `speaker_id=eq.${user.id}`,
+          filter: `speaker_id=eq.${dbUserId}`,
         },
         (payload: any) => {
           console.log('📊 Stats: INCOMING request changed:', payload.eventType);
@@ -459,7 +459,7 @@ export default function NetworkingView() {
       supabase.removeChannel(sentChannel);
       supabase.removeChannel(incomingChannel);
     };
-  }, [user, loadNetworkingStats]);
+  }, [dbUserId, loadNetworkingStats]);
 
   const handleRefresh = async () => {
     setRefreshing(true);

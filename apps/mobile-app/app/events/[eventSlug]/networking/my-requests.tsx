@@ -43,7 +43,7 @@ const generateUserAvatarUrl = (name: string): string => {
 
 export default function MyRequestsView() {
   const { isDark, colors } = useTheme();
-  const { user } = useAuth();
+  const { dbUserId } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
   const router = useRouter();
@@ -81,15 +81,15 @@ export default function MyRequestsView() {
   const [expirationCountdown, setExpirationCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered, user:', user ? 'present' : 'null');
-    if (user) {
+    console.log('🔄 useEffect triggered, user:', dbUserId ? 'present' : 'null');
+    if (dbUserId) {
       console.log('🔄 User found, calling loadMyRequests...');
       loadMyRequests();
     } else {
       console.log('⚠️ No user found, setting loading to false');
       setLoading(false);
     }
-    
+
     const timeout = setTimeout(() => {
       if (loading && requests.length === 0) {
         console.warn('⚠️ My requests loading timeout (requests still empty), setting loading to false');
@@ -98,7 +98,7 @@ export default function MyRequestsView() {
     }, 10000);
 
     return () => clearTimeout(timeout);
-  }, [user]);
+  }, [dbUserId]);
 
   // Auto-open detail modal when requestId is provided in params
   useEffect(() => {
@@ -215,7 +215,7 @@ export default function MyRequestsView() {
 
   // Setup real-time subscriptions using the dedicated hook
   useRealtimeMeetingRequests({
-    userId: user?.id || '',
+    userId: dbUserId || '',
     onRequestInserted: handleRequestInserted,
     onRequestUpdated: handleRequestUpdated,
     onRequestDeleted: handleRequestDeleted,
@@ -225,7 +225,7 @@ export default function MyRequestsView() {
   // OLD SUBSCRIPTION CODE REMOVED - Now using useRealtimeMeetingRequests hook above
 
   const loadMyRequests = useCallback(async () => {
-    if (!user) {
+    if (!dbUserId) {
       console.log('No user found, skipping requests load');
       setLoading(false);
       return;
@@ -239,7 +239,7 @@ export default function MyRequestsView() {
       const { data: sentData, error: sentError } = await supabase
         .from('meeting_requests')
         .select('*')
-        .eq('requester_id', user.id)
+        .eq('requester_id', dbUserId)
         .order('created_at', { ascending: false });
 
       if (sentError) {
@@ -248,21 +248,21 @@ export default function MyRequestsView() {
 
       // Fetch INCOMING requests (if user is a speaker)
       // Note: meeting_requests.speaker_id is UUID (user_id from bsl_speakers), not bsl_speakers.id
-      // So we use user.id directly
+      // So we use dbUserId directly
       let incomingData: any[] = [];
       try {
         // Check if user is a speaker
         const { data: speakerRows, error: speakerErr } = await supabase
           .from('bsl_speakers')
           .select('id, user_id')
-          .eq('user_id', user.id);
+          .eq('user_id', dbUserId);
         
         if (!speakerErr && speakerRows && speakerRows.length > 0) {
           // meeting_requests.speaker_id stores the user_id (UUID), not bsl_speakers.id
           const { data: inc, error: incErr } = await supabase
             .from('meeting_requests')
             .select('*')
-            .eq('speaker_id', user.id) // Use user.id directly since speaker_id is UUID (user_id)
+            .eq('speaker_id', dbUserId) // Use dbUserId directly since speaker_id is UUID (user_id)
             .order('created_at', { ascending: false });
           
           incomingData = inc || [];
@@ -290,7 +290,7 @@ export default function MyRequestsView() {
       let sentWithImages = sentData || [];
       if (sentWithImages.length > 0) {
         sentWithImages = await Promise.all(
-          sentWithImages.map(async (request) => {
+          sentWithImages.map(async (request: any) => {
             try {
               const { data: speakerData } = await supabase
                 .from('bsl_speakers')
@@ -323,7 +323,7 @@ export default function MyRequestsView() {
     } finally {
       setLoading(false);
     }
-  }, [user, showError]);
+  }, [dbUserId, showError]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -380,7 +380,7 @@ export default function MyRequestsView() {
   };
 
   const confirmCancelRequest = async () => {
-    if (!selectedRequest || !user) return;
+    if (!selectedRequest || !dbUserId) return;
     
     try {
       setShowCancelConfirm(false);
@@ -388,7 +388,7 @@ export default function MyRequestsView() {
       const { data, error } = await supabase
         .rpc('cancel_meeting_request', {
           p_request_id: selectedRequest.id,
-          p_user_id: user.id
+          p_user_id: dbUserId
         });
 
       if (error) {
@@ -428,7 +428,7 @@ export default function MyRequestsView() {
         uniqueSlots.set(slotTime, slot);
       } else {
         // If duplicate, keep the one with higher priority
-        const priority = {
+        const priority: Record<string, number> = {
           'interested': 1,
           'available': 2,
           'tentative': 3
@@ -448,12 +448,12 @@ export default function MyRequestsView() {
       const bStatus = b.slot_status || 'available';
       
       // Priority: interested > available > tentative
-      const priority = {
+      const priority: Record<string, number> = {
         'interested': 1,
         'available': 2,
         'tentative': 3
       };
-      
+
       const aPriority = priority[aStatus] || 4;
       const bPriority = priority[bStatus] || 4;
       
@@ -553,7 +553,7 @@ export default function MyRequestsView() {
 
       console.log('✅ RPC successful, received slots:', data?.length || 0, 'slots');
       if (data && data.length > 0) {
-        console.log('📅 First few slots:', data.slice(0, 3).map(s => ({
+        console.log('📅 First few slots:', data.slice(0, 3).map((s: any) => ({
           slot_time: s.slot_time,
           date: s.date,
           start_time: s.start_time,
@@ -603,15 +603,15 @@ export default function MyRequestsView() {
           
           console.log('📋 Speaker agenda status entries:', agendaCheck?.length || 0);
           if (agendaCheck && agendaCheck.length > 0) {
-            console.log('📋 Sample agenda entries:', agendaCheck.map(a => ({
+            console.log('📋 Sample agenda entries:', agendaCheck.map((a: any) => ({
               slot_time: a.slot_time,
               slot_status: a.slot_status,
               is_future: new Date(a.slot_time) > new Date()
             })));
-            
+
             // Check specifically for available/interested slots
-            const availableSlots = agendaCheck.filter(a => 
-              ['available', 'interested'].includes(a.slot_status) && 
+            const availableSlots = agendaCheck.filter((a: any) =>
+              ['available', 'interested'].includes(a.slot_status) &&
               new Date(a.slot_time) > new Date()
             );
             console.log('✅ Available/interested future slots:', availableSlots.length);
@@ -648,14 +648,14 @@ export default function MyRequestsView() {
   };
 
   const handleAcceptRequest = async (request: MeetingRequest, slotTime?: string) => {
-    if (!user) return;
+    if (!dbUserId) return;
     
     try {
       // Get speaker_id for current user (bsl_speakers.id expected by RPCs and slots RPC)
       const { data: speakerData } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .single();
 
       if (!speakerData) {
@@ -764,13 +764,13 @@ export default function MyRequestsView() {
   };
 
   const handleDeclineRequest = async (request: MeetingRequest) => {
-    if (!user) return;
+    if (!dbUserId) return;
     
     try {
       const { data: speakerData } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .single();
 
       if (!speakerData) {
@@ -806,13 +806,13 @@ export default function MyRequestsView() {
   };
 
   const handleBlockUser = async (request: MeetingRequest) => {
-    if (!user) return;
+    if (!dbUserId) return;
     
     try {
       const { data: speakerData } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .single();
 
       if (!speakerData) {
@@ -2103,7 +2103,7 @@ export default function MyRequestsView() {
                 </Text>
               </View>
               <View style={styles.cancelModalDisclaimerItem}>
-                <MaterialIcons name="close-circle" size={14} color={colors.error?.main || '#F44336'} />
+                <MaterialIcons name="cancel" size={14} color={colors.error?.main || '#F44336'} />
                 <Text style={[styles.cancelModalDisclaimerText, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }]}>
                   Boost points not refunded
                 </Text>
@@ -2552,6 +2552,11 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   detailRowLabel: {
     fontSize: 14,
     color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666'),
+  },
+  detailRowLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   detailRowValue: {
     fontSize: 14,

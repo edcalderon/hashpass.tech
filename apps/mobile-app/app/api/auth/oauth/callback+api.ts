@@ -5,6 +5,13 @@ import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registr
 import { fetchDirectus } from '../../../../lib/auth/oauth/directus-fetch';
 import { resolveFrontendOrigin, isLocalOrigin } from '../../../../lib/auth/oauth/frontend-origin';
 import { getSupabaseServerForRequest } from '../../../../lib/supabase-server';
+import {
+  normalizeEmail,
+  isDuplicateSupabaseUserError,
+  findSupabaseUserByEmail,
+  issueSupabaseSessionBridge,
+  type SupabaseSessionBridge,
+} from '../../../../lib/auth/supabase-admin-bridge';
 
 // Support both local and production Directus URLs
 const DIRECTUS_URL =
@@ -41,19 +48,12 @@ type DirectusOAuthUser = {
   user_metadata?: Record<string, any>;
 };
 
-type SupabaseSessionBridge = {
-  token_hash: string;
-  type: string;
-  email: string;
-};
-
 type DirectusSupabaseSyncResult = {
   email: string;
   bridge: SupabaseSessionBridge | null;
   user: DirectusOAuthUser | null;
 };
 
-const normalizeEmail = (value: string | null | undefined): string => value?.trim().toLowerCase() || '';
 const DEFAULT_RETURN_TO = '/dashboard/explore';
 
 const normalizeReturnToPath = (value: string | null | undefined): string => {
@@ -78,98 +78,15 @@ const normalizeReturnToPath = (value: string | null | undefined): string => {
   return normalized;
 };
 
-const isDuplicateSupabaseUserError = (errorMessage: string): boolean =>
-  /already registered|already exists|duplicate key|email.*exists/i.test(errorMessage);
-
-const findSupabaseUserByEmail = async (client: SupabaseClient, email: string) => {
-  const targetEmail = normalizeEmail(email);
-  const perPage = 200;
-
-  for (let page = 1; page <= 10; page += 1) {
-    const { data, error } = await client.auth.admin.listUsers({ page, perPage });
-    if (error) {
-      console.warn('[OAuth Callback] Supabase listUsers failed while searching by email:', error.message);
-      return null;
-    }
-
-    const users = data?.users || [];
-    const match = users.find((user) => normalizeEmail(user.email) === targetEmail);
-    if (match) {
-      return match;
-    }
-
-    if (users.length < perPage) {
-      break;
-    }
-  }
-
-  return null;
-};
-
-const issueSupabaseSessionBridge = async (
+// Directus's own opt-out flag for the bridge specifically — kept local since
+// it must not affect the shared issueSupabaseSessionBridge helper's behavior
+// for other callers (e.g. the Better Auth bridge, which is independently
+// controlled).
+const issueDirectusSupabaseSessionBridge = (
   client: SupabaseClient,
   email: string
-): Promise<SupabaseSessionBridge | null> => {
-  if (!DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED) {
-    return null;
-  }
-
-  const normalizedEmail = normalizeEmail(email);
-  if (!normalizedEmail) {
-    return null;
-  }
-
-  try {
-    const { data, error } = await client.auth.admin.generateLink({
-      type: 'magiclink',
-      email: normalizedEmail,
-    });
-
-    if (error) {
-      console.warn('[OAuth Callback] Could not issue Supabase bridge link:', error.message);
-      return null;
-    }
-
-    const rawType =
-      typeof data?.properties?.verification_type === 'string' && data.properties.verification_type.trim()
-        ? data.properties.verification_type.trim()
-        : 'magiclink';
-
-    let tokenHash =
-      typeof data?.properties?.hashed_token === 'string'
-        ? data.properties.hashed_token.trim()
-        : '';
-
-    if (!tokenHash && data?.properties?.action_link) {
-      try {
-        const actionUrl = new URL(data.properties.action_link);
-        tokenHash =
-          actionUrl.searchParams.get('token_hash') ||
-          actionUrl.searchParams.get('token') ||
-          '';
-      } catch {
-        // Keep empty token hash and fail gracefully below.
-      }
-    }
-
-    if (!tokenHash) {
-      console.warn('[OAuth Callback] Supabase bridge link generated without token hash.');
-      return null;
-    }
-
-    return {
-      token_hash: tokenHash,
-      type: rawType,
-      email: normalizedEmail,
-    };
-  } catch (error) {
-    console.warn(
-      '[OAuth Callback] Failed to issue Supabase bridge link:',
-      error instanceof Error ? error.message : String(error)
-    );
-    return null;
-  }
-};
+): Promise<SupabaseSessionBridge | null> =>
+  DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED ? issueSupabaseSessionBridge(client, email) : Promise.resolve(null);
 
 const appendSupabaseBridgeToFragment = (
   fragment: URLSearchParams,
@@ -279,7 +196,7 @@ const syncDirectusUserToSupabase = async (
     });
 
     if (!createResult.error && createResult.data?.user) {
-      const bridge = await issueSupabaseSessionBridge(client, email);
+      const bridge = await issueDirectusSupabaseSessionBridge(client, email);
       return { ...syncResultBase, bridge };
     }
 
@@ -295,7 +212,7 @@ const syncDirectusUserToSupabase = async (
     const existingUser = await findSupabaseUserByEmail(client, email);
     if (!existingUser) {
       console.warn('[OAuth Callback] Supabase sync: user already exists but could not be located for metadata update.');
-      const bridge = await issueSupabaseSessionBridge(client, email);
+      const bridge = await issueDirectusSupabaseSessionBridge(client, email);
       return { ...syncResultBase, bridge };
     }
 
@@ -321,11 +238,11 @@ const syncDirectusUserToSupabase = async (
         '[OAuth Callback] Supabase sync metadata update failed:',
         updateResult.error.message
       );
-      const bridge = await issueSupabaseSessionBridge(client, email);
+      const bridge = await issueDirectusSupabaseSessionBridge(client, email);
       return { ...syncResultBase, bridge };
     }
 
-    const bridge = await issueSupabaseSessionBridge(client, email);
+    const bridge = await issueDirectusSupabaseSessionBridge(client, email);
     return { ...syncResultBase, bridge };
   } catch (error) {
     console.warn(

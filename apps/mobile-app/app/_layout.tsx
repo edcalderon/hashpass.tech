@@ -136,7 +136,7 @@ function ThemedContent() {
   const pathname = usePathname();
   const segments = useSegments();
   const router = useRouter();
-  const { user, isLoggedIn, isLoading } = useAuth();
+  const { user, isLoggedIn, isLoading, dbUserId } = useAuth();
   const nativeUpdate = useNativeUpdateCheck();
   const [isReady, setIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -219,15 +219,15 @@ function ThemedContent() {
     void configureNativeGoogleSignin(googleWebClientId);
   }, []);
 
-  // Ensure new Directus users get default passes created
+  // Ensure new users get default passes created
   useEffect(() => {
     const ensureUserPass = async () => {
-      if (user && isLoggedIn && !isLoading) {
+      if (user && dbUserId && isLoggedIn && !isLoading) {
         try {
           // Check if user has a pass for the current event
-          const passInfo = await passSystemService.getUserPassInfo(user.id);
+          const passInfo = await passSystemService.getUserPassInfo(dbUserId);
           if (!passInfo) {
-            const passId = await passSystemService.createDefaultPass(user.id, 'general');
+            const passId = await passSystemService.createDefaultPass(dbUserId, 'general');
             if (!passId) {
               console.warn('⚠️ Failed to create default pass');
             }
@@ -240,7 +240,7 @@ function ThemedContent() {
     };
 
     ensureUserPass();
-  }, [user, isLoggedIn, isLoading]);
+  }, [user, dbUserId, isLoggedIn, isLoading]);
 
   // Check if we're in the auth flow
   const isAuthFlow = (segments[0] === '(shared)' && (segments as string[])[1] === 'auth') || pathname.startsWith('/(shared)/auth') || pathname.startsWith('/auth');

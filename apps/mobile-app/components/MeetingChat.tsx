@@ -35,7 +35,7 @@ interface MeetingChatProps {
 
 export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
   const { isDark, colors } = useTheme();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, dbUserId, isLoading: authLoading } = useAuth();
   const { showError } = useToastHelpers();
   const styles = getStyles(isDark, colors);
 
@@ -49,7 +49,7 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
 
   const loadMeetingInfo = useCallback(async () => {
     // Only check authentication after auth has finished loading
-    if (!authLoading && !user?.id) {
+    if (!authLoading && !dbUserId) {
       console.error('No user ID available for loading meeting info');
       showError('Error', 'User not authenticated');
       setLoading(false);
@@ -87,8 +87,11 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
       if (meetingData) {
         setMeeting(meetingData);
         
-        // Determine other participant
-        const isRequester = meetingData.requester_id === user.id;
+        // Determine other participant. meetings.requester_id is a real
+        // Supabase auth uuid — must compare against dbUserId, not user.id
+        // (Better Auth's own id), or this always misidentifies which side
+        // of the meeting the caller is on for a BSL session.
+        const isRequester = meetingData.requester_id === dbUserId;
         let otherUserId: string | null = null;
         let otherUserName: string | null = null;
         
@@ -112,8 +115,8 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
             const avatarUrl = speakerData.imageurl || null; // Pass null to let SpeakerAvatar handle fallback
             
             setOtherParticipant({
-              id: otherUserId,
-              name: otherUserName,
+              id: otherUserId!,
+              name: otherUserName!,
               avatar: avatarUrl, // This will be used by SpeakerAvatar component
             });
           }
@@ -127,7 +130,7 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
           const avatarUrl = generateUserAvatarUrl(otherUserName || 'User');
           
           setOtherParticipant({
-            id: otherUserId,
+            id: otherUserId || '',
             name: otherUserName || 'User',
             avatar: avatarUrl,
           });
@@ -139,7 +142,7 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
     } finally {
       setLoading(false);
     }
-  }, [authLoading, user?.id, meetingId, showError]);
+  }, [authLoading, dbUserId, meetingId, showError]);
 
   useEffect(() => {
     // Wait for auth to finish loading before checking authentication
@@ -151,14 +154,14 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
   // Update last seen when chat is viewed
   useEffect(() => {
     const updateLastSeen = async () => {
-      if (!user?.id || !meetingId) return;
-      
+      if (!dbUserId || !meetingId) return;
+
       try {
         const { error } = await supabase.rpc('update_chat_last_seen', {
-          p_user_id: user.id,
+          p_user_id: dbUserId,
           p_meeting_id: meetingId,
         });
-        
+
         if (error) {
           console.error('Error updating chat last seen:', error);
         }
@@ -169,12 +172,12 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
 
     // Update immediately when component mounts
     updateLastSeen();
-    
+
     // Update every 30 seconds while chat is open
     const interval = setInterval(updateLastSeen, 30000);
-    
+
     return () => clearInterval(interval);
-  }, [user?.id, meetingId]);
+  }, [dbUserId, meetingId]);
 
   // Show loading state while auth is loading or meeting info is loading
   if (authLoading || loading) {

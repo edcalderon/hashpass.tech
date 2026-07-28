@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607280158, // Updated to current timestamp
+  buildNumber: 202607280426, // Updated to current timestamp
   releaseDate: '2026-07-28',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'wire per-tenant GA4 analytics and native Firebase Analytics for Android'
+    // No new features
   ],
   bugfixes: [
-    'resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch'
+    'satisfy isolated pre-push typecheck for dbUserId bridge changes',
+    'bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission'
   ],
   breakingChanges: [],
-  notes: 'wire per-tenant GA4 analytics and native Firebase Analytics for Android; resolve agenda-status/notifications/meeting-requests 500s caused by an identity id-space mismatch'
+  notes: 'satisfy isolated pre-push typecheck for dbUserId bridge changes; bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.273': {
+    version: '1.8.273',
+    buildNumber: 202607280426,
+    releaseDate: '2026-07-28',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'satisfy isolated pre-push typecheck for dbUserId bridge changes',
+      'bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission'
+    ],
+    breakingChanges: [],
+    notes: 'satisfy isolated pre-push typecheck for dbUserId bridge changes; bridge Better Auth sign-ins to real Supabase accounts, fix tutorial-progress UUID crash, strip AD_ID permission'
+  },
   '1.8.272': {
     version: '1.8.272',
     buildNumber: 202607280158,

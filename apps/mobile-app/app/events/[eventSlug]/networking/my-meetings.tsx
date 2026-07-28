@@ -14,7 +14,7 @@ import { useTranslation } from '@/i18n/i18n';
 
 const MeetingsPage = () => {
   const { colors, isDark } = useTheme();
-  const { user } = useAuth();
+  const { dbUserId } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
   const { showError } = useToastHelpers();
@@ -55,23 +55,23 @@ const MeetingsPage = () => {
 
   useEffect(() => {
     loadMeetings();
-  }, [user]);
+  }, [dbUserId]);
 
   const getSpeakerIds = async () => {
     // meetings.speaker_id is bsl_speakers.id (UUID), not user_id
     // We need to get the bsl_speakers.id for the current user if they're a speaker
-    if (!user) return [];
-    
+    if (!dbUserId) return [];
+
     const { data: speakerRows } = await supabase
       .from('bsl_speakers')
       .select('id')
-      .eq('user_id', user.id);
-    
+      .eq('user_id', dbUserId);
+
     return speakerRows?.map((r: any) => r.id) || [];
   };
 
   const loadMeetings = async () => {
-    if (!user) {
+    if (!dbUserId) {
       setLoading(false);
       setMeetings([]);
       return;
@@ -88,7 +88,7 @@ const MeetingsPage = () => {
       const { data: requesterMeetings, error: requesterError } = await supabase
         .from('meetings')
         .select('*')
-        .eq('requester_id', user.id)
+        .eq('requester_id', dbUserId)
         .order('created_at', { ascending: false });
       
       if (requesterError) {
@@ -110,7 +110,7 @@ const MeetingsPage = () => {
         } else {
           // Combine and deduplicate by meeting id
           const existingIds = new Set(allMeetings.map(m => m.id));
-          const newMeetings = (speakerMeetings || []).filter(m => !existingIds.has(m.id));
+          const newMeetings = (speakerMeetings || []).filter((m: any) => !existingIds.has(m.id));
           allMeetings = [...allMeetings, ...newMeetings];
         }
       }
@@ -161,7 +161,7 @@ const MeetingsPage = () => {
               scheduledAt: meeting.scheduled_at || '',
               location: meeting.location || 'TBD',
               duration: meeting.duration_minutes || 30,
-              isSpeaker: user?.id !== meeting.requester_id ? 'true' : 'false' // Convert to string for params
+              isSpeaker: dbUserId !== meeting.requester_id ? 'true' : 'false' // Convert to string for params
             }
           });
         } else {
@@ -176,7 +176,7 @@ const MeetingsPage = () => {
               scheduledAt: meeting.scheduled_at || '',
               location: meeting.location || 'TBD',
               duration: meeting.duration_minutes || 30,
-              isSpeaker: user?.id !== meeting.requester_id ? 'true' : 'false'
+              isSpeaker: dbUserId !== meeting.requester_id ? 'true' : 'false'
             }
           });
         }
@@ -193,7 +193,7 @@ const MeetingsPage = () => {
             scheduledAt: meeting.scheduled_at || '',
             location: meeting.location || 'TBD',
             duration: meeting.duration_minutes || 30,
-            isSpeaker: user?.id !== meeting.requester_id ? 'true' : 'false'
+            isSpeaker: dbUserId !== meeting.requester_id ? 'true' : 'false'
           }
         });
       }
@@ -215,7 +215,7 @@ const MeetingsPage = () => {
       </View>
       <View style={styles.meetingDetails}>
         <Text style={styles.meetingTitle}>
-          {user?.id === item.requester_id ? `${t('meetings.meetingWith')} ${item.speaker_name}` : `${t('meetings.meetingWith')} ${item.requester_name}`}
+          {dbUserId === item.requester_id ? `${t('meetings.meetingWith')} ${item.speaker_name}` : `${t('meetings.meetingWith')} ${item.requester_name}`}
         </Text>
         {item.notes && <Text style={styles.meetingDescription} numberOfLines={2}>{item.notes}</Text>}
         <View style={styles.detailRow}>

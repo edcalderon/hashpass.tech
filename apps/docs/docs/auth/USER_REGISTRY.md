@@ -82,9 +82,51 @@ Every server-side auth route calls `syncPublicUserRegistry(request, input)` from
 - `GET /api/auth/oauth/google` — legacy compatibility callback for older links
 - `POST /api/auth/wallet/ethereum` — Ethereum wallet auth
 - `POST /api/auth/wallet/solana` — Solana wallet auth
-- Better Auth Google callback (`lib/server/better-auth.ts` `databaseHooks.user.*`)
+- Better Auth Google callback (`lib/server/better-auth.ts` `databaseHooks.user.*`) — see [Path 4](#path-4--better-auth--supabase-bridge-v18273) below, this path alone used to be a dead end for `provider_ids.supabase`
 
 Both paths call the same `upsert_public_user_registry` Postgres function so the write is always idempotent.
+
+<a id="path-4--better-auth--supabase-bridge-v18273"></a>
+
+### Path 4 — Better Auth → Supabase bridge (v1.8.273)
+
+Before v1.8.273, Better Auth's `databaseHooks.user.*` only ever wrote to
+`ba_users` + `public.user`. It never created a real Supabase `auth.users`
+row, which meant:
+
+- The BSL general-pass provisioning trigger
+  (`trg_auth_users_upcoming_bsl_general_passes`, `db/migrations/V010`/`V011`)
+  — which only fires `AFTER INSERT OR UPDATE ... ON auth.users` — never saw
+  these users, so they never received their automatic Chile 2026 / Colombia
+  2026 general passes.
+- `user_roles` / `event_roles` (`V014`) both FK to `auth.users(id)`, so
+  these accounts could not hold admin/event-admin roles either.
+
+**Fix:** `syncBetterAuthUser` (`lib/server/better-auth.ts`) now calls
+`ensureSupabaseAccountForEmail` — a helper shared with (extracted from) the
+existing Directus OAuth bridge in `oauth/callback+api.ts`, in
+`lib/auth/supabase-admin-bridge.ts` — to create-or-find a real Supabase
+`auth.users` row for the same email, **before** calling
+`syncPublicUserRegistry`, so the resulting uuid is included in
+`provider_ids.supabase` on the same write. This runs on both
+`create.after` and `update.after`, so a user whose bridge failed once
+(e.g. a transient Supabase error) self-heals on their next profile update.
+Creating the `auth.users` row alone is sufficient to make the pass trigger
+fire — it's `SECURITY DEFINER`, no live session required.
+
+A companion endpoint, `POST /api/auth/supabase-bridge+api.ts`, additionally
+issues the client a **real Supabase JWT session** (magic-link →
+`token_hash` → `supabase.auth.verifyOtp()` on the client — the same "session
+bridge" pattern `issueSupabaseSessionBridge` already implemented for
+Directus) so the client can pass RLS on tables like `passes`, not just have
+the row exist server-side. `useAuth.ts` calls it fire-and-forget right after
+every successful Better Auth Google sign-in; a bridge failure never blocks
+the sign-in itself.
+
+See [`db-user-id-pattern.md`](../reference/mobile-app/db-user-id-pattern.md)
+for the client-side consequence of this: `useAuth()`'s priority-resolved
+`user.id` is still Better Auth's own id, not this bridged uuid — client code
+that needs a real Supabase uuid must use the separate `dbUserId` field.
 
 ### Path 3 — Backfill (migration)
 
@@ -155,7 +197,9 @@ Because every user is already in `public.user` with `provider_ids` tracking all 
 | `db/migrations/V005__rename_user_tables.sql` | ba_users rename + Better Auth backfill |
 | `db/migrations/V006__rename_users_singular_add_fks.sql` | Singular rename + FK constraints on user_* tables |
 | `apps/mobile-app/lib/auth/public-user-registry.ts` | `syncPublicUserRegistry()` — TypeScript API |
-| `apps/mobile-app/lib/server/better-auth.ts` | Syncs Better Auth users via `databaseHooks`; uses `modelName: 'ba_users'` |
+| `apps/mobile-app/lib/server/better-auth.ts` | Syncs Better Auth users via `databaseHooks`; uses `modelName: 'ba_users'`; bridges to a real Supabase account (v1.8.273) |
+| `apps/mobile-app/lib/auth/supabase-admin-bridge.ts` | Shared bridge helpers (`ensureSupabaseAccountForEmail`, `issueSupabaseSessionBridge`, etc.) used by both the Directus and Better Auth flows |
+| `apps/mobile-app/app/api/auth/supabase-bridge+api.ts` | On-demand endpoint: issues a real Supabase JWT session for the current Better Auth user |
 | `apps/mobile-app/app/api/auth/otp/verify+api.ts` | Calls sync after OTP auth |
 | `apps/mobile-app/app/api/auth/oauth/callback+api.ts` | Calls sync after OAuth callback |
 | `apps/mobile-app/app/api/auth/oauth/google+api.ts` | Legacy compatibility route for older Google OAuth callbacks |

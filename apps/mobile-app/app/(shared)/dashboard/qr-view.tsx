@@ -9,7 +9,7 @@ import DynamicQRDisplay from '../../../components/DynamicQRDisplay';
 
 export default function QRViewScreen() {
   const { colors, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, dbUserId } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
@@ -26,16 +26,25 @@ export default function QRViewScreen() {
       return;
     }
 
+    // user is set but dbUserId hasn't landed yet — the Supabase session
+    // bridge is fire-and-forget after a Better Auth sign-in, so this is a
+    // normal transient "pending" state, not an auth failure. Keep showing
+    // the loading spinner instead of a stale "not authenticated" error.
+    if (!dbUserId) {
+      return;
+    }
+
     loadPassInfo();
-  }, [user, passId]);
+  }, [user, dbUserId, passId]);
 
   const loadPassInfo = async () => {
-    if (!user) return;
+    if (!user || !dbUserId) return;
 
     try {
       setLoading(true);
-      const pass = await passSystemService.getUserPassInfo(user.id);
-      
+      setError(null);
+      const pass = await passSystemService.getUserPassInfo(dbUserId);
+
       if (!pass) {
         setError('No pass found');
         return;

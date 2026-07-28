@@ -30,7 +30,7 @@ interface BlockedUser {
 
 export default function BlockedUsersView() {
   const { isDark, colors } = useTheme();
-  const { user } = useAuth();
+  const { dbUserId } = useAuth();
   const router = useRouter();
   const { showSuccess, showError } = useToastHelpers();
   const styles = getStyles(isDark, colors);
@@ -40,29 +40,29 @@ export default function BlockedUsersView() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (dbUserId) {
       loadBlockedUsers();
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [dbUserId]);
 
   const loadBlockedUsers = async () => {
-    if (!user) {
+    if (!dbUserId) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('🔄 Loading blocked users for user:', user.id);
+      console.log('🔄 Loading blocked users for user:', dbUserId);
 
       // Get blocked users for the current user (both user-to-user and speaker-to-user blocks)
       // First, check if user is a speaker
       const { data: speakerData, error: speakerError } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', dbUserId)
         .maybeSingle();
 
       if (speakerError) {
@@ -80,10 +80,10 @@ export default function BlockedUsersView() {
 
       if (speakerId) {
         // User is a speaker - get both user-to-user and speaker-to-user blocks
-        query = query.or(`blocker_user_id.eq.${user.id},speaker_id.eq.${speakerId}`);
+        query = query.or(`blocker_user_id.eq.${dbUserId},speaker_id.eq.${speakerId}`);
       } else {
         // Regular user - only get user-to-user blocks
-        query = query.eq('blocker_user_id', user.id);
+        query = query.eq('blocker_user_id', dbUserId);
       }
 
       const { data, error } = await query;
@@ -161,7 +161,7 @@ export default function BlockedUsersView() {
         .from('user_blocks')
         .delete()
         .eq('id', blockId)
-        .or(`blocker_user_id.eq.${user?.id},speaker_id.in.(SELECT id FROM bsl_speakers WHERE user_id.eq.${user?.id})`);
+        .or(`blocker_user_id.eq.${dbUserId},speaker_id.in.(SELECT id FROM bsl_speakers WHERE user_id.eq.${dbUserId})`);
 
       if (error) {
         console.error('❌ Error unblocking user:', error);

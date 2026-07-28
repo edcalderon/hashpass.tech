@@ -1,6 +1,8 @@
 import { betterAuth } from 'better-auth';
 import { ENV_CONFIG, SSO_CONFIG } from '@hashpass/config';
 import { syncPublicUserRegistry } from '../auth/public-user-registry';
+import { ensureSupabaseAccountForEmail } from '../auth/supabase-admin-bridge';
+import { getSupabaseServerForRequest } from '../supabase-server';
 import { getDatabasePool, hasDatabaseConnectionString } from './database-pool';
 
 const normalizeAuthPath = (value?: string | null): string => {
@@ -101,12 +103,51 @@ const resolveRequestTenant = (request?: Request) => {
   return ENV_CONFIG.getTenant(hostname);
 };
 
-const syncBetterAuthUser = async (user: Record<string, any>, context: any) => {
+export const syncBetterAuthUser = async (user: Record<string, any>, context: any) => {
   const request = context?.request || context?.context?.request;
   if (!(request instanceof Request)) return;
   const tenant = resolveRequestTenant(request);
 
   const { firstName, lastName } = splitName(user.name);
+
+  // Better Auth's own ba_users table has no auth.users row of its own — but
+  // several things structurally require one: user_roles/event_roles FK to
+  // auth.users(id) directly (so Better-Auth-only accounts could never hold
+  // an admin role), and the BSL general-pass provisioning trigger
+  // (db/migrations/V010__provision_upcoming_bsl_general_passes.sql) only
+  // fires on auth.users INSERT/UPDATE, so Better-Auth-only signups never
+  // received their Chile/Colombia 2026 general passes. Bridging every
+  // Better Auth user into a real (shadow) Supabase account here fixes both:
+  // the pass trigger fires as a side effect of the row existing, and role
+  // grants can target a real auth.users id — PROVIDED the resulting Supabase
+  // uid is also recorded in the registry's provider_ids.supabase below,
+  // since resolveSupabaseIdentityForUser (resolve-notification-identity.ts)
+  // resolves a Better-Auth caller's supabaseUserId purely from that field —
+  // admin/event-admin checks would keep failing without it even though the
+  // shadow account exists. Runs on both create.after and update.after so a
+  // user whose bridge failed on signup self-heals on their next profile
+  // update, same as registryUserId's self-heal pattern. Never throws — a
+  // Supabase-side failure here must not break the Better Auth sign-up.
+  let supabaseUserId: string | null = null;
+  try {
+    const supabase = getSupabaseServerForRequest(request);
+    const bridged = await ensureSupabaseAccountForEmail(supabase, {
+      email: user.email,
+      userMetadata: {
+        auth_provider: 'better-auth',
+        auth_bridge: 'better_auth_hook',
+        full_name: user.name || null,
+        avatar_url: user.image || null,
+        better_auth_user_id: user.id,
+      },
+    });
+    supabaseUserId = bridged?.id ?? null;
+  } catch (error) {
+    console.error(
+      '[Better Auth] Supabase account bridge failed:',
+      error instanceof Error ? error.message : String(error)
+    );
+  }
 
   await syncPublicUserRegistry(request, {
     provider: 'better-auth',
@@ -129,6 +170,7 @@ const syncBetterAuthUser = async (user: Record<string, any>, context: any) => {
     },
     providerIds: {
       'better-auth': user.id,
+      ...(supabaseUserId ? { supabase: supabaseUserId } : {}),
     },
   });
 };
@@ -227,4 +269,63 @@ const createMissingAuthHandler = (): BetterAuthInstance['handler'] =>
 export const getAuthHandler = (): BetterAuthInstance['handler'] => {
   const auth = getAuth();
   return auth ? auth.handler : createMissingAuthHandler();
+};
+
+export type BetterAuthSessionUser = {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  status?: string;
+};
+
+// Verifies the caller's Better Auth session cookie directly against this
+// app's own Better Auth instance, in-process (no network hop) — deliberately
+// bypasses @hashpass/auth's authenticateRequest(), which routes by tenant
+// hostname (packages/config/src/sso-config.ts's core tenant still has the
+// stale authProvider: 'directus'). Better Auth is now the Google sign-in path
+// for every tenant including core (see AUTH_FLOW.md), so a hostname-routed
+// check would require a Bearer token and 401 a Better-Auth-only caller on
+// hashpass.tech before ever looking at their session cookie. Any endpoint
+// whose caller is known in advance to be a Better Auth session (like the
+// supabase-bridge endpoint) should use this instead of authenticateRequest().
+export const getBetterAuthSessionUser = async (
+  request: Request
+): Promise<BetterAuthSessionUser | null> => {
+  const cookie = request.headers.get('cookie') || request.headers.get('Cookie') || '';
+  if (!cookie) return null;
+
+  try {
+    const url = new URL(request.url);
+    const sessionRequest = new Request(new URL('/api/auth/get-session', url.origin).toString(), {
+      method: 'GET',
+      headers: {
+        Cookie: cookie,
+        Accept: 'application/json',
+        'x-forwarded-host': request.headers.get('x-forwarded-host') || request.headers.get('host') || '',
+        'x-forwarded-proto': request.headers.get('x-forwarded-proto') || 'https',
+      },
+    });
+
+    const response = await getAuthHandler()(sessionRequest);
+    if (!response.ok) return null;
+
+    const payload = await response.json().catch(() => null);
+    const betterAuthUser = payload?.user || payload?.data?.user;
+    if (!betterAuthUser?.id) return null;
+
+    const [firstName, ...lastNameParts] = String(betterAuthUser.name || '').trim().split(/\s+/);
+    return {
+      id: betterAuthUser.id,
+      email: betterAuthUser.email || '',
+      first_name: betterAuthUser.first_name || betterAuthUser.firstName || firstName || '',
+      last_name: betterAuthUser.last_name || betterAuthUser.lastName || lastNameParts.join(' '),
+      role: betterAuthUser.role || 'user',
+      status: betterAuthUser.banned ? 'banned' : 'active',
+    };
+  } catch (error) {
+    console.error('[Better Auth] Direct session verification failed:', error instanceof Error ? error.message : String(error));
+    return null;
+  }
 };

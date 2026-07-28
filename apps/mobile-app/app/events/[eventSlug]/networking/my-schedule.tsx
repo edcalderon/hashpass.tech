@@ -68,7 +68,7 @@ const addMinutes = (date: Date, minutes: number): Date => {
 
 const MySchedule = () => {
   const { colors, isDark } = useTheme();
-  const { user } = useAuth();
+  const { dbUserId } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
   const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
@@ -148,7 +148,7 @@ const MySchedule = () => {
   // Load user confirmation statuses for agenda events, meetings, and free slots
   useEffect(() => {
     const loadUserScheduleStatus = async () => {
-      if (!user) {
+      if (!dbUserId) {
         setUserAgendaStatus({});
         setUserMeetingStatus({});
         setUserFreeSlotStatus({});
@@ -158,7 +158,7 @@ const MySchedule = () => {
         const { data, error } = await supabase
           .from('user_agenda_status')
           .select('agenda_id, meeting_id, slot_time, status, slot_status, is_favorite')
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .eq('event_id', eventId);
         
         if (error) {
@@ -200,7 +200,7 @@ const MySchedule = () => {
       }
     };
     loadUserScheduleStatus();
-  }, [user, eventId]);
+  }, [dbUserId, eventId]);
 
   useEffect(() => {
     const fetchAgenda = async () => {
@@ -259,7 +259,7 @@ const MySchedule = () => {
   // Load user meetings (requester or speaker)
   useEffect(() => {
     const loadMeetings = async () => {
-      if (!user) {
+      if (!dbUserId) {
         setMeetings([]);
         setLoadingMeetings(false);
         return;
@@ -271,7 +271,7 @@ const MySchedule = () => {
         const { data: speakerRows } = await supabase
           .from('bsl_speakers')
           .select('id')
-          .eq('user_id', user.id);
+          .eq('user_id', dbUserId);
         
         const speakerIds = speakerRows?.map((r: any) => r.id) || [];
         
@@ -282,7 +282,7 @@ const MySchedule = () => {
         const { data: requesterMeetings, error: requesterError } = await supabase
           .from('meetings')
           .select('*')
-          .eq('requester_id', user.id)
+          .eq('requester_id', dbUserId)
           .order('created_at', { ascending: false });
         
         if (requesterError) {
@@ -326,12 +326,12 @@ const MySchedule = () => {
       }
     };
     loadMeetings();
-  }, [user]);
+  }, [dbUserId]);
 
   const refreshMeetings = async () => {
     setRefreshingMeetings(true);
     try {
-      if (!user) {
+      if (!dbUserId) {
         setMeetings([]);
         return;
       }
@@ -339,7 +339,7 @@ const MySchedule = () => {
       const { data: speakerRows } = await supabase
         .from('bsl_speakers')
         .select('id')
-        .eq('user_id', user.id);
+        .eq('user_id', dbUserId);
       
       const speakerIds = speakerRows?.map((r: any) => r.id) || [];
       
@@ -349,7 +349,7 @@ const MySchedule = () => {
       const { data: requesterMeetings } = await supabase
         .from('meetings')
         .select('*')
-        .eq('requester_id', user.id)
+        .eq('requester_id', dbUserId)
         .order('created_at', { ascending: false });
       
       allMeetings = requesterMeetings || [];
@@ -570,7 +570,7 @@ const MySchedule = () => {
 
   // Handle schedule slot confirmation/unconfirmation
   const handleToggleConfirmation = async (meeting: Meeting, slotStartTime: Date) => {
-    if (!user) return;
+    if (!dbUserId) return;
     
     setIsConfirming(true);
     const isAgendaEvent = (meeting as any).isAgendaEvent;
@@ -587,7 +587,7 @@ const MySchedule = () => {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .eq('event_id', eventId)
           .eq('slot_time', slotStartTime.toISOString())
           .is('agenda_id', null)
@@ -623,7 +623,7 @@ const MySchedule = () => {
           const { error } = await (supabase
             .from('user_agenda_status') as any)
             .insert({
-              user_id: user.id,
+              user_id: dbUserId,
               slot_time: slotStartTime.toISOString(),
               event_id: eventId,
               status: newStatus,
@@ -658,7 +658,7 @@ const MySchedule = () => {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .eq('event_id', eventId)
           .eq('agenda_id', meeting.id)
           .maybeSingle();
@@ -678,7 +678,7 @@ const MySchedule = () => {
           const { error } = await (supabase
             .from('user_agenda_status') as any)
             .insert({
-              user_id: user.id,
+              user_id: dbUserId,
               agenda_id: meeting.id,
               event_id: eventId,
               status: newStatus,
@@ -703,7 +703,7 @@ const MySchedule = () => {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .eq('event_id', eventId)
           .eq('meeting_id', meeting.id)
           .maybeSingle();
@@ -723,7 +723,7 @@ const MySchedule = () => {
           const { error } = await (supabase
             .from('user_agenda_status') as any)
             .insert({
-              user_id: user.id,
+              user_id: dbUserId,
               meeting_id: meeting.id,
               event_id: eventId,
               status: newStatus,
@@ -751,7 +751,7 @@ const MySchedule = () => {
 
   // Handle free slot blocked status
   const handleToggleFreeSlotBlocked = async (slotStartTime: Date) => {
-    if (!user) return;
+    if (!dbUserId) return;
     
     setIsConfirming(true);
     const slotKey = slotStartTime.toISOString();
@@ -762,7 +762,7 @@ const MySchedule = () => {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .eq('event_id', eventId)
           .eq('slot_time', slotStartTime.toISOString())
           .is('agenda_id', null)
@@ -797,7 +797,7 @@ const MySchedule = () => {
         const { error } = await (supabase
           .from('user_agenda_status') as any)
           .insert({
-            user_id: user.id,
+            user_id: dbUserId,
             slot_time: slotStartTime.toISOString(),
             event_id: eventId,
             status: newStatus,
@@ -822,7 +822,7 @@ const MySchedule = () => {
 
   // Handle favorite toggle for confirmed agenda events
   const handleToggleFavorite = async (meeting: Meeting) => {
-    if (!user) return;
+    if (!dbUserId) return;
     
     const isAgendaEvent = (meeting as any).isAgendaEvent;
     if (!isAgendaEvent) return; // Only for agenda events
@@ -837,7 +837,7 @@ const MySchedule = () => {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', dbUserId)
           .eq('event_id', eventId)
           .eq('agenda_id', meeting.id)
           .maybeSingle();
@@ -857,7 +857,7 @@ const MySchedule = () => {
         const { error } = await (supabase
           .from('user_agenda_status') as any)
           .insert({
-            user_id: user.id,
+            user_id: dbUserId,
             agenda_id: meeting.id,
             event_id: eventId,
             status: currentStatus,

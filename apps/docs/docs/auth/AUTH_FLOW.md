@@ -1,5 +1,12 @@
 # Authentication Flow
 
+> **Passes / admin roles missing for a Better Auth user?** See
+> [USER_REGISTRY.md § Path 4 — Better Auth → Supabase bridge](USER_REGISTRY.md#path-4--better-auth--supabase-bridge-v18273)
+> (v1.8.273). Every Better Auth sign-in now also bridges to a real Supabase
+> `auth.users` account, which is what BSL pass provisioning and admin-role
+> FKs actually key off of — this flow doc covers how the user *signs in*, not
+> how their identity gets bridged afterward.
+
 ## Current Main Google Flow (as of 2026-07-08)
 
 **Better Auth is now the only web Google sign-in path for every tenant** — both

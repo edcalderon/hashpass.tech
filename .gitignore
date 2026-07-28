@@ -22,6 +22,9 @@ web-build/
 expo-env.d.ts
 sst-env.d.ts
 
+# Local Claude Code tool config
+.claude/
+
 # Terraform and IaC local state
 *.tfvars
 !terraform.tfvars.example
