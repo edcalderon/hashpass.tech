@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../../../../hooks/useTheme';
 import { useEvent } from '@contexts/EventContext';
 import { useAuth } from '../../../../hooks/useAuth';
-import { matchmakingService } from '../../../../lib/matchmaking';
 import type { CreateMeetingRequestData } from '../../../../lib/matchmaking';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useBalance } from '@contexts/BalanceContext';
@@ -100,6 +99,23 @@ export default function SpeakerDetail() {
     reason?: string;
   } | null>(null);
   const [showTicketComparison, setShowTicketComparison] = useState(false);
+
+  // Keep persistence and pass validation behind our authenticated API boundary.
+  const createMeetingRequest = async (data: CreateMeetingRequestData) => {
+    const response = await apiClient.request('meeting-requests', {
+      apiSegment,
+      method: 'POST',
+      body: {
+        speakerId: data.speaker_id, speakerName: data.speaker_name, requesterName: data.requester_name,
+        requesterCompany: data.requester_company, requesterTitle: data.requester_title,
+        requesterTicketType: data.requester_ticket_type, meetingType: data.meeting_type,
+        message: data.message, note: data.note, boostAmount: data.boost_amount, durationMinutes: data.duration_minutes,
+      },
+    });
+    if (!response.success) throw new Error(response.error);
+    const result = (response.data as any)?.data;
+    return result?.request_id ? { ...result, id: result.request_id } : result;
+  };
 
   // Mock user ticket data removed - now using pass system
 
@@ -837,7 +853,7 @@ export default function SpeakerDetail() {
       // Test if we can create a simple meeting request
       let createdRequest;
       try {
-        createdRequest = await matchmakingService.createMeetingRequest(requestData);
+        createdRequest = await createMeetingRequest(requestData);
         console.log('✅ Meeting request created successfully', createdRequest);
       } catch (error) {
         console.error('❌ Error creating meeting request:', error);
@@ -1006,7 +1022,7 @@ export default function SpeakerDetail() {
         boost_amount: 0, // No boost system yet
       };
 
-      const meetingRequest = await matchmakingService.createMeetingRequest(meetingData);
+      const meetingRequest = await createMeetingRequest(meetingData);
       
       // OPTIMISTIC UPDATE: Add the new request to UI immediately
       if (meetingRequest && meetingRequest.id) {

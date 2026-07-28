@@ -26,6 +26,7 @@ import { useRealtimeMeetingRequests, RequestWithDirection } from '../../../../ho
 import { lukasRewardService } from '../../../../lib/lukas-reward-service';
 import { useBalance } from '@contexts/BalanceContext';
 import { useTranslation } from '../../../../i18n/i18n';
+import { apiClient } from '@/lib/api-client';
 
 // Extended type for internal use with direction tracking - now imported from hook
 type MeetingRequestWithDirection = RequestWithDirection & {
@@ -46,6 +47,7 @@ export default function MyRequestsView() {
   const { dbUserId } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
+  const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
   const router = useRouter();
   const params = useLocalSearchParams();
   const { showSuccess, showError } = useToastHelpers();
@@ -235,87 +237,12 @@ export default function MyRequestsView() {
       console.log('🔄 Starting loadMyRequests...');
       setLoading(true);
 
-      // Fetch SENT requests
-      const { data: sentData, error: sentError } = await supabase
-        .from('meeting_requests')
-        .select('*')
-        .eq('requester_id', dbUserId)
-        .order('created_at', { ascending: false });
-
-      if (sentError) {
-        console.error('Error loading sent requests:', sentError);
-      }
-
-      // Fetch INCOMING requests (if user is a speaker)
-      // Note: meeting_requests.speaker_id is UUID (user_id from bsl_speakers), not bsl_speakers.id
-      // So we use dbUserId directly
-      let incomingData: any[] = [];
-      try {
-        // Check if user is a speaker
-        const { data: speakerRows, error: speakerErr } = await supabase
-          .from('bsl_speakers')
-          .select('id, user_id')
-          .eq('user_id', dbUserId);
-        
-        if (!speakerErr && speakerRows && speakerRows.length > 0) {
-          // meeting_requests.speaker_id stores the user_id (UUID), not bsl_speakers.id
-          const { data: inc, error: incErr } = await supabase
-            .from('meeting_requests')
-            .select('*')
-            .eq('speaker_id', dbUserId) // Use dbUserId directly since speaker_id is UUID (user_id)
-            .order('created_at', { ascending: false });
-          
-          incomingData = inc || [];
-          
-          // Fetch requester info for incoming requests
-          if (incomingData.length > 0) {
-            // Note: profiles table doesn't exist, so we use requester_name and generate avatars
-            incomingData = incomingData.map(request => {
-              const requesterName = request.requester_name || 'User';
-              return {
-                ...request,
-                requester_avatar: generateUserAvatarUrl(requesterName),
-                requester_full_name: requesterName,
-                requester_email: request.requester_name || '',
-              };
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to load incoming requests:', e);
-      }
-
-      // Fetch speaker images for sent requests
-      // Note: request.speaker_id is UUID (user_id), so we need to find bsl_speakers by user_id
-      let sentWithImages = sentData || [];
-      if (sentWithImages.length > 0) {
-        sentWithImages = await Promise.all(
-          sentWithImages.map(async (request: any) => {
-            try {
-              const { data: speakerData } = await supabase
-                .from('bsl_speakers')
-                .select('imageurl')
-                .eq('user_id', request.speaker_id)
-                .single();
-
-              return {
-                ...request,
-                speaker_image: speakerData?.imageurl || null
-              };
-            } catch (error) {
-              return request;
-            }
-          })
-        );
-      }
-
-      // Merge and annotate direction
-      const merged = [
-        ...(sentWithImages || []).map((r: any) => ({ ...r, _direction: 'sent' })),
-        ...(incomingData || []).map((r: any) => ({ ...r, _direction: 'incoming' })),
-      ];
-
-      setRequests(merged as any);
+      const response = await apiClient.request('meeting-requests', { apiSegment });
+      if (!response.success) throw new Error(response.error);
+      const meetingRequests = (response.data as any)?.data || [];
+      setRequests(meetingRequests.map((request: any) => request._direction === 'incoming'
+        ? { ...request, requester_avatar: generateUserAvatarUrl(request.requester_name || 'User'), requester_full_name: request.requester_name || 'User' }
+        : request));
     } catch (error) {
       console.error('❌ Error loading my requests:', error);
       showError('Error Loading Requests', 'Failed to load your meeting requests');
@@ -385,16 +312,11 @@ export default function MyRequestsView() {
     try {
       setShowCancelConfirm(false);
       
-      const { data, error } = await supabase
-        .rpc('cancel_meeting_request', {
-          p_request_id: selectedRequest.id,
-          p_user_id: dbUserId
-        });
-
-      if (error) {
-        console.error('❌ Cancel request error:', error);
-        throw error;
-      }
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment, method: 'PATCH', body: { requestId: selectedRequest.id, action: 'cancel' },
+      });
+      if (!response.success) throw new Error(response.error);
+      const data = (response.data as any)?.data;
 
       if (data?.success) {
         showSuccess(t('requestView.requestCancelled'), t('requestView.requestCancelledMessage'));
@@ -487,153 +409,14 @@ export default function MyRequestsView() {
         setCurrentSlotContext({ speakerId: speakerIdString, durationMinutes, requesterId });
       }
       
-      // Call without requester_id for now (migration not applied yet)
-      // Once migration is applied, this will automatically work with requester conflict checking
-      // TODO: After migration is applied, we can add requester_id parameter
-      const rpcParams: any = {
-        p_speaker_id: speakerIdString,
-        p_date: null,
-        p_duration_minutes: durationMinutes,
-      };
-      
-      // Note: requesterId parameter is accepted but not used until migration is applied
-      // This prevents errors while migration is pending
-      if (requesterId) {
-        console.log('⚠️ Requester conflict checking will be enabled after migration is applied');
-        // Try to include requester_id if migration is applied
-        try {
-          rpcParams.p_requester_id = requesterId;
-        } catch (e) {
-          // Fallback: if migration not applied, continue without requester_id
-          console.log('⚠️ Migration not applied, skipping requester_id parameter');
-        }
-      }
-      
-      console.log('🔍 Loading available slots with params:', {
-        speakerId,
-        durationMinutes,
-        requesterId,
-        rpcParams
+      const response = await apiClient.request('meeting-requests/slots', {
+        apiSegment, params: { speakerId: speakerIdString, durationMinutes, requesterId },
       });
-
-      const { data, error } = await supabase
-        .rpc('get_speaker_available_slots', rpcParams);
-
-      if (error) {
-        console.error('❌ RPC error loading slots:', error);
-        // If error is about missing parameter, try without requester_id
-        if (error.code === 'PGRST202' && requesterId) {
-          console.log('⚠️ Migration not applied, retrying without requester_id');
-          const { data: retryData, error: retryError } = await supabase
-            .rpc('get_speaker_available_slots', {
-              p_speaker_id: speakerId,
-              p_date: null,
-              p_duration_minutes: durationMinutes,
-            });
-          
-          if (retryError) {
-            console.error('❌ Retry RPC error:', retryError);
-            throw retryError;
-          }
-          
-          console.log('✅ Retry successful, received slots:', retryData?.length || 0);
-          setAvailableSlots(sortSlotsByPriority(retryData || []));
-          if (showPicker) {
-            setShowSlotPicker(true);
-          }
-          
-          if (showPicker && (!retryData || retryData.length === 0)) {
-            console.warn('⚠️ No slots returned after retry');
-            showError('No Available Slots', 'No available slots found. Please mark some time slots as available in your schedule.');
-          }
-          return;
-        }
-        throw error;
-      }
-
-      console.log('✅ RPC successful, received slots:', data?.length || 0, 'slots');
-      if (data && data.length > 0) {
-        console.log('📅 First few slots:', data.slice(0, 3).map((s: any) => ({
-          slot_time: s.slot_time,
-          date: s.date,
-          start_time: s.start_time,
-          is_available: s.is_available
-        })));
-      } else {
-        console.warn('⚠️ Empty slots array returned from RPC');
-        
-        // If requester_id was included and we got empty results, try without it
-        // This handles the case where requester conflicts filter out all slots
-        if (requesterId && rpcParams.p_requester_id) {
-          console.log('🔄 Empty results with requester_id, retrying without requester conflict check...');
-          const { data: retryData, error: retryError } = await supabase
-            .rpc('get_speaker_available_slots', {
-              p_speaker_id: speakerIdString,
-              p_date: null,
-              p_duration_minutes: durationMinutes,
-            });
-          
-          if (!retryError && retryData && retryData.length > 0) {
-            console.log('✅ Found', retryData.length, 'slots without requester conflict check');
-            setAvailableSlots(sortSlotsByPriority(retryData));
-            if (showPicker) {
-              setShowSlotPicker(true);
-            }
-            return; // Success, exit early
-          } else if (retryError) {
-            console.error('❌ Retry error:', retryError);
-          }
-        }
-        
-        // Check if speaker exists and has agenda status
-        const { data: speakerCheck } = await supabase
-          .from('bsl_speakers')
-          .select('id, user_id')
-          .eq('id', speakerIdString)
-          .single();
-        
-        if (speakerCheck) {
-          console.log('👤 Speaker found with ID:', speakerCheck.id, 'user_id:', speakerCheck.user_id);
-          // Check if speaker has any agenda status entries
-          const { data: agendaCheck } = await supabase
-            .from('user_agenda_status')
-            .select('slot_status, slot_time')
-            .eq('user_id', speakerCheck.user_id)
-            .limit(10);
-          
-          console.log('📋 Speaker agenda status entries:', agendaCheck?.length || 0);
-          if (agendaCheck && agendaCheck.length > 0) {
-            console.log('📋 Sample agenda entries:', agendaCheck.map((a: any) => ({
-              slot_time: a.slot_time,
-              slot_status: a.slot_status,
-              is_future: new Date(a.slot_time) > new Date()
-            })));
-
-            // Check specifically for available/interested slots
-            const availableSlots = agendaCheck.filter((a: any) =>
-              ['available', 'interested'].includes(a.slot_status) &&
-              new Date(a.slot_time) > new Date()
-            );
-            console.log('✅ Available/interested future slots:', availableSlots.length);
-            
-            if (availableSlots.length > 0 && (!data || data.length === 0)) {
-              console.warn('⚠️ Speaker has available slots but RPC returned empty. Possible requester conflict filtering.');
-            }
-          } else {
-            console.warn('⚠️ Speaker has no agenda status entries');
-          }
-        } else {
-          console.error('❌ Speaker not found with ID:', speakerIdString);
-        }
-      }
-
-      // Sort slots to prioritize "interested" status
-      setAvailableSlots(sortSlotsByPriority(data || []));
-      if (showPicker) {
-        setShowSlotPicker(true);
-      }
+      if (!response.success) throw new Error(response.error);
+      const data = (response.data as any)?.data || [];
+      setAvailableSlots(sortSlotsByPriority(data));
+      if (showPicker) setShowSlotPicker(true);
       
-      // Show warning if no slots available (only if showing picker)
       if (showPicker && (!data || data.length === 0)) {
         showError('No Available Slots', 'No available slots found. Please mark some time slots as available in your schedule.');
       }
@@ -651,46 +434,16 @@ export default function MyRequestsView() {
     if (!dbUserId) return;
     
     try {
-      // Get speaker_id for current user (bsl_speakers.id expected by RPCs and slots RPC)
-      const { data: speakerData } = await supabase
-        .from('bsl_speakers')
-        .select('id')
-        .eq('user_id', dbUserId)
-        .single();
-
-      if (!speakerData) {
-        showError('Error', 'You are not a speaker');
-        return;
-      }
-
-      // Ensure speaker ID is converted to string (UUID as TEXT)
-      const speakerIdString = String(speakerData.id);
-      console.log('🎤 Speaker ID for slot loading:', speakerIdString, 'type:', typeof speakerIdString);
-
-      // If no slot provided, show slot picker first using bsl_speakers.id (TEXT)
-      // Pass requester_id to check for conflicts with requester's existing meetings
+      const speakerIdString = String(request.speaker_id);
       if (!slotTime) {
-        await loadAvailableSlots(
-          speakerIdString, 
-          request.duration_minutes || 15,
-          request.requester_id || undefined
-        );
+        await loadAvailableSlots(speakerIdString, request.duration_minutes || 15, (request as MeetingRequestWithDirection).requester_id);
         return;
       }
-      
-      const { data, error } = await supabase
-        .rpc('accept_meeting_request', {
-          p_request_id: request.id,
-          p_speaker_id: speakerData.id, // Use bsl_speakers.id (TEXT), not user_id
-          p_slot_start_time: slotTime,
-          p_speaker_response: null
-        });
-
-      if (error) {
-        console.error('❌ RPC error:', error);
-        showError('Accept Failed', error.message || 'Failed to accept meeting request');
-        return;
-      }
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment, method: 'PATCH', body: { requestId: request.id, action: 'accept', slotTime },
+      });
+      if (!response.success) { showError('Accept Failed', response.error); return; }
+      const data = (response.data as any)?.data;
 
       // Check if RPC returned success: false (this is not a Supabase error, but a business logic error)
       if (data && typeof data === 'object' && 'success' in data && !data.success) {
@@ -767,25 +520,11 @@ export default function MyRequestsView() {
     if (!dbUserId) return;
     
     try {
-      const { data: speakerData } = await supabase
-        .from('bsl_speakers')
-        .select('id')
-        .eq('user_id', dbUserId)
-        .single();
-
-      if (!speakerData) {
-        showError('Error', 'You are not a speaker');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .rpc('decline_meeting_request', {
-          p_request_id: request.id,
-          p_speaker_id: request.speaker_id,
-          p_speaker_response: null
-        });
-
-      if (error) throw error;
+      const response = await apiClient.request('meeting-requests', {
+        apiSegment, method: 'PATCH', body: { requestId: request.id, action: 'decline' },
+      });
+      if (!response.success) throw new Error(response.error);
+      const data = (response.data as any)?.data;
 
       if (data?.success) {
         showSuccess('Request Declined', 'The meeting request has been declined');
