@@ -110,7 +110,7 @@ const MeetingsPage = () => {
         } else {
           // Combine and deduplicate by meeting id
           const existingIds = new Set(allMeetings.map(m => m.id));
-          const newMeetings = (speakerMeetings || []).filter(m => !existingIds.has(m.id));
+          const newMeetings = (speakerMeetings || []).filter((m: any) => !existingIds.has(m.id));
           allMeetings = [...allMeetings, ...newMeetings];
         }
       }

@@ -226,7 +226,7 @@ export default function PassDetailsScreen() {
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Access Features</Text>
           <View style={styles.featuresList}>
-            {passInfo.access_features.map((feature, index) => (
+            {passInfo.access_features.map((feature: string, index: number) => (
               <View key={index} style={styles.featureItem}>
                 <Ionicons 
                   name="checkmark-circle" 
@@ -245,7 +245,7 @@ export default function PassDetailsScreen() {
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Special Perks</Text>
           <View style={styles.featuresList}>
-            {passInfo.special_perks.map((perk, index) => (
+            {passInfo.special_perks.map((perk: string, index: number) => (
               <View key={index} style={styles.featureItem}>
                 <Ionicons 
                   name="star" 

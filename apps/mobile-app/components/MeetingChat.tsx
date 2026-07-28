@@ -115,8 +115,8 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
             const avatarUrl = speakerData.imageurl || null; // Pass null to let SpeakerAvatar handle fallback
             
             setOtherParticipant({
-              id: otherUserId,
-              name: otherUserName,
+              id: otherUserId!,
+              name: otherUserName!,
               avatar: avatarUrl, // This will be used by SpeakerAvatar component
             });
           }
@@ -130,7 +130,7 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
           const avatarUrl = generateUserAvatarUrl(otherUserName || 'User');
           
           setOtherParticipant({
-            id: otherUserId,
+            id: otherUserId || '',
             name: otherUserName || 'User',
             avatar: avatarUrl,
           });

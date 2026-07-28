@@ -54,8 +54,8 @@ export const useTutorialPreferences = (): TutorialPreferences => {
           .eq('user_id', dbUserId);
 
         if (!error && progressData) {
-          const mainProgress = progressData.find(p => p.tutorial_type === 'main');
-          const networkingProgress = progressData.find(p => p.tutorial_type === 'networking');
+          const mainProgress = progressData.find((p: any) => p.tutorial_type === 'main');
+          const networkingProgress = progressData.find((p: any) => p.tutorial_type === 'networking');
 
           if (mainProgress) {
             const isCompleted = mainProgress.status === 'completed';

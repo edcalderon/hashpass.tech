@@ -290,7 +290,7 @@ export default function MyRequestsView() {
       let sentWithImages = sentData || [];
       if (sentWithImages.length > 0) {
         sentWithImages = await Promise.all(
-          sentWithImages.map(async (request) => {
+          sentWithImages.map(async (request: any) => {
             try {
               const { data: speakerData } = await supabase
                 .from('bsl_speakers')
@@ -428,7 +428,7 @@ export default function MyRequestsView() {
         uniqueSlots.set(slotTime, slot);
       } else {
         // If duplicate, keep the one with higher priority
-        const priority = {
+        const priority: Record<string, number> = {
           'interested': 1,
           'available': 2,
           'tentative': 3
@@ -448,12 +448,12 @@ export default function MyRequestsView() {
       const bStatus = b.slot_status || 'available';
       
       // Priority: interested > available > tentative
-      const priority = {
+      const priority: Record<string, number> = {
         'interested': 1,
         'available': 2,
         'tentative': 3
       };
-      
+
       const aPriority = priority[aStatus] || 4;
       const bPriority = priority[bStatus] || 4;
       
@@ -553,7 +553,7 @@ export default function MyRequestsView() {
 
       console.log('✅ RPC successful, received slots:', data?.length || 0, 'slots');
       if (data && data.length > 0) {
-        console.log('📅 First few slots:', data.slice(0, 3).map(s => ({
+        console.log('📅 First few slots:', data.slice(0, 3).map((s: any) => ({
           slot_time: s.slot_time,
           date: s.date,
           start_time: s.start_time,
@@ -603,15 +603,15 @@ export default function MyRequestsView() {
           
           console.log('📋 Speaker agenda status entries:', agendaCheck?.length || 0);
           if (agendaCheck && agendaCheck.length > 0) {
-            console.log('📋 Sample agenda entries:', agendaCheck.map(a => ({
+            console.log('📋 Sample agenda entries:', agendaCheck.map((a: any) => ({
               slot_time: a.slot_time,
               slot_status: a.slot_status,
               is_future: new Date(a.slot_time) > new Date()
             })));
-            
+
             // Check specifically for available/interested slots
-            const availableSlots = agendaCheck.filter(a => 
-              ['available', 'interested'].includes(a.slot_status) && 
+            const availableSlots = agendaCheck.filter((a: any) =>
+              ['available', 'interested'].includes(a.slot_status) &&
               new Date(a.slot_time) > new Date()
             );
             console.log('✅ Available/interested future slots:', availableSlots.length);
@@ -2103,7 +2103,7 @@ export default function MyRequestsView() {
                 </Text>
               </View>
               <View style={styles.cancelModalDisclaimerItem}>
-                <MaterialIcons name="close-circle" size={14} color={colors.error?.main || '#F44336'} />
+                <MaterialIcons name="cancel" size={14} color={colors.error?.main || '#F44336'} />
                 <Text style={[styles.cancelModalDisclaimerText, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }]}>
                   Boost points not refunded
                 </Text>
@@ -2552,6 +2552,11 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   detailRowLabel: {
     fontSize: 14,
     color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666'),
+  },
+  detailRowLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   detailRowValue: {
     fontSize: 14,
