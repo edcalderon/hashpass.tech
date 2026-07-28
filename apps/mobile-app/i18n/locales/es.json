@@ -562,7 +562,14 @@
       "subtitle": "12-14 de Noviembre de 2025 • Universidad EAFIT, Medellín",
       "date": "12-14 de Noviembre de 2025",
       "exploreAllEvents": "Explorar Todos los Eventos",
-      "exploreMoreEvents": "Explorar Más Eventos"
+      "exploreMoreEvents": "Explorar Más Eventos",
+      "pastEvent": "Evento Pasado",
+      "archivedEdition": "Evento Pasado / Edición Archivada",
+      "startsIn": "El evento comienza en:",
+      "days": "DÍAS",
+      "hours": "HRS",
+      "minutes": "MIN",
+      "seconds": "SEG"
     },
     "selectEvent": "Seleccionar Evento",
     "yourPasses": "Tus Pases",
@@ -983,7 +990,13 @@
       "placeholder": "Buscar sesiones, oradores o palabras clave..."
     },
     "tabs": {
-      "sessions": "sesiones"
+      "sessions": "sesiones",
+      "day": "Día {number}",
+      "themes": {
+        "day1": "Regulación, Bancos Centrales e Infraestructura del Dinero Digital",
+        "day2": "PSAV, Compliance, Custodia y Tokenización",
+        "day3": "Stablecoins y DeFi: Integrando el Mundo Financiero Global"
+      }
     },
     "noResults": {
       "title": "No hay sesiones que coincidan con tus filtros",
@@ -1014,6 +1027,16 @@
       "removedFromFavorites": "Eliminado de favoritos",
       "addToFavoritesError": "Error al agregar a favoritos",
       "removeFromFavoritesError": "Error al eliminar de favoritos"
+    },
+    "actions": {
+      "addToFavorites": "Añadir a favoritos",
+      "removeFromFavorites": "Quitar de favoritos",
+      "markAttending": "Marcar como asistiendo",
+      "unmarkAttending": "Desmarcar asistencia"
+    },
+    "labels": {
+      "speakers": "Oradores",
+      "location": "Ubicación"
     }
   },
   "notifications": {

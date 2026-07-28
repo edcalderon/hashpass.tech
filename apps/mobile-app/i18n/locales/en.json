@@ -563,7 +563,14 @@
       "subtitle": "November 12-14, 2025 • Universidad EAFIT, Medellín",
       "date": "November 12-14, 2025",
       "exploreAllEvents": "Explore All Events",
-      "exploreMoreEvents": "Explore More Events"
+      "exploreMoreEvents": "Explore More Events",
+      "pastEvent": "Past Event",
+      "archivedEdition": "Past Event / Archived Edition",
+      "startsIn": "Event starts in:",
+      "days": "DAYS",
+      "hours": "HRS",
+      "minutes": "MIN",
+      "seconds": "SEC"
     },
     "selectEvent": "Select Event",
     "yourPasses": "Your Passes",
@@ -984,7 +991,13 @@
       "placeholder": "Search sessions, speakers, or keywords..."
     },
     "tabs": {
-      "sessions": "sessions"
+      "sessions": "sessions",
+      "day": "Day {number}",
+      "themes": {
+        "day1": "Regulation, Central Banks and Digital Money Infrastructure",
+        "day2": "PSAV, Compliance, Custody and Tokenization",
+        "day3": "Stablecoins and DeFi: Integrating the Global Financial System"
+      }
     },
     "noResults": {
       "title": "No sessions match your filters",
@@ -1015,6 +1028,16 @@
       "removedFromFavorites": "Removed from favorites",
       "addToFavoritesError": "Failed to add to favorites",
       "removeFromFavoritesError": "Failed to remove from favorites"
+    },
+    "actions": {
+      "addToFavorites": "Add to favorites",
+      "removeFromFavorites": "Remove from favorites",
+      "markAttending": "Mark as attending",
+      "unmarkAttending": "Unmark attending"
+    },
+    "labels": {
+      "speakers": "Speakers",
+      "location": "Location"
     }
   },
   "notifications": {

@@ -187,7 +187,7 @@ export default function EventBanner({
         {isArchiveEvent && (
           <View style={styles.archiveBadge}>
             <MaterialIcons name="history" size={16} color="#FFFFFF" />
-            <Text style={styles.archiveBadgeText}>Past Event</Text>
+            <Text style={styles.archiveBadgeText}>{t('banner.pastEvent')}</Text>
           </View>
         )}
 
@@ -214,7 +214,7 @@ export default function EventBanner({
           <View style={styles.finishedBadge}>
             <MaterialIcons name="celebration" size={20} color="#FFFFFF" />
             <Text style={styles.finishedBadgeText}>
-              Past Event / Archived Edition
+              {t('banner.archivedEdition')}
             </Text>
           </View>
         )}
@@ -264,26 +264,26 @@ export default function EventBanner({
             {/* Countdown Timer - Only show before event starts */}
             {showCountdown && hasValidStartDate && !suppressLiveContent && !isLive && !isEventLive && (
               <View style={styles.countdownContainer}>
-                <Text style={styles.countdownLabel}>Event starts in:</Text>
+                <Text style={styles.countdownLabel}>{t('banner.startsIn')}</Text>
                 <View style={styles.countdownTimer}>
                   <View style={styles.timeUnit}>
                     <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.days)}</Text>
-                    <Text style={styles.timeLabel}>DAYS</Text>
+                    <Text style={styles.timeLabel}>{t('banner.days')}</Text>
                   </View>
                   <Text style={styles.timeSeparator}>:</Text>
                   <View style={styles.timeUnit}>
                     <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.hours)}</Text>
-                    <Text style={styles.timeLabel}>HRS</Text>
+                    <Text style={styles.timeLabel}>{t('banner.hours')}</Text>
                   </View>
                   <Text style={styles.timeSeparator}>:</Text>
                   <View style={styles.timeUnit}>
                     <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.minutes)}</Text>
-                    <Text style={styles.timeLabel}>MIN</Text>
+                    <Text style={styles.timeLabel}>{t('banner.minutes')}</Text>
                   </View>
                   <Text style={styles.timeSeparator}>:</Text>
                   <View style={styles.timeUnit}>
                     <Text style={styles.timeValue}>{formatTimeUnit(timeLeft.seconds)}</Text>
-                    <Text style={styles.timeLabel}>SEC</Text>
+                    <Text style={styles.timeLabel}>{t('banner.seconds')}</Text>
                   </View>
                 </View>
               </View>

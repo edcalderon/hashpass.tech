@@ -493,7 +493,14 @@
       "subtitle": "2025년 11월 12-14일 • Universidad EAFIT, 메데진",
       "date": "2025년 11월 12-14일",
       "exploreAllEvents": "모든 이벤트 탐색",
-      "exploreMoreEvents": "더 많은 이벤트 탐색"
+      "exploreMoreEvents": "더 많은 이벤트 탐색",
+      "pastEvent": "지난 이벤트",
+      "archivedEdition": "지난 이벤트 / 보관된 에디션",
+      "startsIn": "이벤트 시작까지:",
+      "days": "일",
+      "hours": "시간",
+      "minutes": "분",
+      "seconds": "초"
     },
     "selectEvent": "이벤트 선택",
     "yourPasses": "나의 패스",
@@ -914,7 +921,13 @@
       "placeholder": "세션, 연사 또는 키워드 검색..."
     },
     "tabs": {
-      "sessions": "세션"
+      "sessions": "세션",
+      "day": "{number}일차",
+      "themes": {
+        "day1": "규제, 중앙은행 및 디지털 화폐 인프라",
+        "day2": "PSAV, 컴플라이언스, 보관 및 토큰화",
+        "day3": "스테이블코인 및 DeFi: 글로벌 금융 시스템 통합"
+      }
     },
     "noResults": {
       "title": "필터와 일치하는 세션이 없습니다",
@@ -945,6 +958,16 @@
       "removedFromFavorites": "즐겨찾기에서 제거됨",
       "addToFavoritesError": "즐겨찾기에 추가 실패",
       "removeFromFavoritesError": "즐겨찾기에서 제거 실패"
+    },
+    "actions": {
+      "addToFavorites": "즐겨찾기에 추가",
+      "removeFromFavorites": "즐겨찾기에서 제거",
+      "markAttending": "참석으로 표시",
+      "unmarkAttending": "참석 표시 취소"
+    },
+    "labels": {
+      "speakers": "연사",
+      "location": "장소"
     }
   },
   "notifications": {

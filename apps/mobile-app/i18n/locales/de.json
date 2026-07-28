@@ -422,7 +422,14 @@
     "banner": {
       "title": "Blockchain Summit Latam 2025",
       "subtitle": "12.-14. November 2025 • Universidad EAFIT, Medellín",
-      "date": "12.-14. November 2025"
+      "date": "12.-14. November 2025",
+      "pastEvent": "Vergangene Veranstaltung",
+      "archivedEdition": "Vergangene Veranstaltung / Archivierte Ausgabe",
+      "startsIn": "Veranstaltung beginnt in:",
+      "days": "TAGE",
+      "hours": "STD",
+      "minutes": "MIN",
+      "seconds": "SEK"
     },
     "selectEvent": "Event auswählen",
     "yourPasses": "Ihre Pässe",
@@ -828,5 +835,73 @@
     "updateNow": "Jetzt Aktualisieren",
     "updateClearing": "Cache wird geleert…",
     "updateReloading": "Wird neu geladen…"
+  },
+  "agenda": {
+    "title": "Veranstaltungsagenda",
+    "subtitle_one": "Konferenzprogramm • 1 Sitzung",
+    "subtitle_other": "Konferenzprogramm • {count} Sitzungen",
+    "date": "12.-14. November 2025 • Medellín, Kolumbien",
+    "loading": "Agenda wird geladen...",
+    "filter": {
+      "type": "Typ",
+      "speakers": "Referenten",
+      "keynote": "Hauptvortrag",
+      "panel": "Podium",
+      "break": "Pause",
+      "meal": "Mahlzeit",
+      "registration": "Anmeldung"
+    },
+    "search": {
+      "placeholder": "Sitzungen, Referenten oder Stichwörter suchen..."
+    },
+    "tabs": {
+      "sessions": "Sitzungen",
+      "day": "Tag {number}",
+      "themes": {
+        "day1": "Regulierung, Zentralbanken und digitale Geldinfrastruktur",
+        "day2": "PSAV, Compliance, Verwahrung und Tokenisierung",
+        "day3": "Stablecoins und DeFi: Integration des globalen Finanzsystems"
+      }
+    },
+    "noResults": {
+      "title": "Keine Sitzungen entsprechen Ihren Filtern",
+      "subtitle": "Passen Sie Ihre Suche oder Filter an"
+    },
+    "empty": {
+      "title": "Keine Agenda verfügbar",
+      "subtitle": "Schauen Sie später für den Veranstaltungsplan wieder vorbei",
+      "noLiveData": "Keine Live-Agendadaten"
+    },
+    "badges": {
+      "past": "VERGANGEN"
+    },
+    "locations": {
+      "mainStage": "Hauptbühne",
+      "registrationArea": "Anmeldebereich"
+    },
+    "messages": {
+      "untitledEvent": "Unbenannte Veranstaltung",
+      "eventConfirmed": "Veranstaltung bestätigt",
+      "eventConfirmedMessage": "Diese Veranstaltung wurde zu Ihrem Zeitplan hinzugefügt",
+      "eventUnconfirmed": "Veranstaltung nicht bestätigt",
+      "eventUnconfirmedMessage": "Diese Veranstaltung wurde aus Ihrem bestätigten Zeitplan entfernt",
+      "error": "Fehler",
+      "confirmError": "Bestätigung der Veranstaltung fehlgeschlagen",
+      "unconfirmError": "Aufhebung der Bestätigung fehlgeschlagen",
+      "addedToFavorites": "Zu Favoriten hinzugefügt",
+      "removedFromFavorites": "Aus Favoriten entfernt",
+      "addToFavoritesError": "Hinzufügen zu Favoriten fehlgeschlagen",
+      "removeFromFavoritesError": "Entfernen aus Favoriten fehlgeschlagen"
+    },
+    "actions": {
+      "addToFavorites": "Zu Favoriten hinzufügen",
+      "removeFromFavorites": "Aus Favoriten entfernen",
+      "markAttending": "Als teilnehmend markieren",
+      "unmarkAttending": "Teilnahme aufheben"
+    },
+    "labels": {
+      "speakers": "Referenten",
+      "location": "Ort"
+    }
   }
 }

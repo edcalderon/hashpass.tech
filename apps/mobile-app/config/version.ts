@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607272126, // Updated to current timestamp
+  buildNumber: 202607272254, // Updated to current timestamp
   releaseDate: '2026-07-27',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,18 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures',
-    'fully resolve isolated typecheck gaps in calendar.tsx',
-    'type explicit params in calendar.tsx flagged by pre-push typecheck',
-    'countdown flash, networking stats hard-fail, speaker image priority',
-    'hide scroll arrows until needed, fix Select Event scroll on web'
+    'agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text'
   ],
   breakingChanges: [],
-  notes: 'resolve BSL tenant Supabase misrouting causing subscribe/agenda/speaker failures; fully resolve isolated typecheck gaps in calendar.tsx; type explicit params in calendar.tsx flagged by pre-push typecheck; countdown flash, networking stats hard-fail, speaker image priority; hide scroll arrows until needed, fix Select Event scroll on web'
+  notes: 'agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.271': {
+    version: '1.8.271',
+    buildNumber: 202607272254,
+    releaseDate: '2026-07-27',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text'
+    ],
+    breakingChanges: [],
+    notes: 'agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text'
+  },
   '1.8.270': {
     version: '1.8.270',
     buildNumber: 202607272126,

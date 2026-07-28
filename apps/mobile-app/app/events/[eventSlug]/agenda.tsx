@@ -2,9 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, InteractionManager } from 'react-native';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
-import { MaterialIcons } from '@expo/vector-icons';
+// lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
+// font glyphs @expo/vector-icons renders directly; the raw font can show its
+// tofu/"?" fallback glyph for a window before the icon font loads on web.
+import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import EventBanner from '../../../components/EventBanner';
+import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { apiClient } from '@/lib/api-client';
 import { 
@@ -24,7 +28,7 @@ import ScheduleConfirmationModal from '../../../components/ScheduleConfirmationM
 import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
-import { useTranslation } from '../../../i18n/i18n';
+import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
 
 const { width } = Dimensions.get('window');
 
@@ -71,7 +75,7 @@ const customAgendaFilterLogic = (
       const matchesDescription = item.description?.toLowerCase().includes(query) ?? false;
       
       // Since we only have speaker IDs, we can only match against the ID itself
-      const matchesSpeaker = item.speakers?.some((speakerId: string) => 
+      const matchesSpeaker = item.speakers?.some((speakerId: string) =>
         speakerId.toLowerCase().includes(query)
       ) ?? false;
       
@@ -120,6 +124,7 @@ export default function BSL2025AgendaScreen() {
     startTime: Date | null;
   }>({ visible: false, agendaItem: null, startTime: null });
   const [isConfirming, setIsConfirming] = useState(false);
+  const [speakerMapRef, setSpeakerMapRef] = useState<Map<string, { id: string; name: string; image?: string }>>(new Map());
   const eventId = event?.id || 'bsl';
   // Derive URL segment from event config so native requests use the correct path
   // e.g. event.api.basePath = '/api/bslatam' → apiSegment = 'bslatam'
@@ -142,13 +147,29 @@ export default function BSL2025AgendaScreen() {
   const getTabLabel = (dayKey: string) => {
     // Expect keys like "Day 1 - November 12"
     const parts = dayKey.split(' - ');
-    return parts[0] || dayKey;
+    const rawLabel = parts[0] || dayKey;
+    const dayNumberMatch = rawLabel.match(/(\d+)/);
+    return dayNumberMatch ? t('tabs.day', { number: dayNumberMatch[1] }) : rawLabel;
   };
 
   const getTabTheme = (dayKey: string) => {
-    if (dayKey.includes('Day 1')) return 'Regulación, Bancos Centrales e Infraestructura del Dinero Digital';
-    if (dayKey.includes('Day 2')) return 'PSAV, Compliance, Custodia y Tokenización';
-    if (dayKey.includes('Day 3')) return 'Stablecoins y DeFi: Integrando el Mundo Financiero Global';
+    const dayNumberMatch = dayKey.match(/Day (\d+)/);
+    const dayNumber = dayNumberMatch?.[1];
+
+    // Prefer this event's own published day theme (see chile2026's
+    // dayThemes in packages/config/src/events.ts) over the generic
+    // fallback copy, which was previously the original bsl2025 hub
+    // event's themes shown for every tour-stop event regardless of which
+    // one was actually open.
+    const eventTheme = dayNumber ? (event as any)?.dayThemes?.[dayNumber] : undefined;
+    if (eventTheme) {
+      const locale = getCurrentLocale();
+      return eventTheme[locale] || eventTheme.en || eventTheme.es || '';
+    }
+
+    if (dayKey.includes('Day 1')) return t('tabs.themes.day1');
+    if (dayKey.includes('Day 2')) return t('tabs.themes.day2');
+    if (dayKey.includes('Day 3')) return t('tabs.themes.day3');
     return '';
   };
 
@@ -193,8 +214,17 @@ export default function BSL2025AgendaScreen() {
     return items;
   };
 
-  // Load agenda from database first, fallback to hardcoded config only on error
+  // Load agenda from database first, fallback to hardcoded config only on error.
+  // Gated on event being resolved: EventContext derives `event` synchronously
+  // from usePathname(), which can be null on the very first render before
+  // routing settles. Without this guard, that first run computes its JSON
+  // fallback from a null event (event?.agenda ?? EVENTS[eventId]?.agenda,
+  // with eventId itself not yet resolved either), landing on an empty
+  // agenda and briefly showing "no agenda yet" before event?.agenda changing
+  // re-triggers this effect with the real data a moment later.
   useEffect(() => {
+    if (!event) return;
+
     const loadAgenda = async () => {
       try {
         setLoading(true);
@@ -243,39 +273,6 @@ export default function BSL2025AgendaScreen() {
           console.log('🔄 Using JSON fallback due to error');
         }
         
-        // If we get here but no data, try with status endpoint
-        console.log('ℹ️ No data in direct response, trying status endpoint...');
-        try {
-          const statusResponse = await apiClient.request('status', { apiSegment });
-          // Handle status response format: { data: { hasData: true } }
-          const statusData = statusResponse?.data || {};
-
-          if (statusData?.hasData) {
-            const agendaResponse = await apiClient.request('agenda', { apiSegment });
-            let agendaItems = [];
-            
-            // Handle agenda response format: { data: [...] }
-            if (agendaResponse?.data && Array.isArray(agendaResponse.data)) {
-              agendaItems = agendaResponse.data;
-            } else if (Array.isArray(agendaResponse)) {
-              agendaItems = agendaResponse;
-            }
-            
-            console.log('📊 Parsed agenda items from status check:', agendaItems);
-            
-            if (agendaItems.length > 0) {
-              console.log('✅ Loaded agenda with eventId:', agendaItems.length, 'items');
-              setAgenda(agendaItems);
-              setIsLive(true);
-              setServiceStatus('running');
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error loading agenda:', error);
-          console.log('🔄 Using JSON fallback due to error');
-        }
-        
         // If we get here, no data was found through any method
         console.warn('⚠️ No agenda data found, showing JSON fallback');
         console.log('📄 Event object:', event);
@@ -316,6 +313,59 @@ export default function BSL2025AgendaScreen() {
       setFilteredAgenda([]);
     }
   }, [agenda]);
+
+  // Load speakers from database and build a map for both database IDs and config slugs
+  useEffect(() => {
+    if (!event) return;
+
+    const loadSpeakersMap = async () => {
+      try {
+        const map = new Map<string, { id: string; name: string; image?: string }>();
+
+        // Add speakers from event config (by slug)
+        if (event?.speakers && Array.isArray(event.speakers)) {
+          event.speakers.forEach((speaker: any) => {
+            if (speaker.id) {
+              map.set(speaker.id, {
+                id: speaker.id,
+                name: speaker.name,
+                image: speaker.image,
+              });
+            }
+          });
+        }
+
+        // Fetch and add speakers from database (by UUID)
+        try {
+          const { data: dbSpeakers } = await supabase
+            .from('bsl_speakers')
+            .select('id, name, image_url')
+            .not('id', 'is', null);
+
+          if (Array.isArray(dbSpeakers)) {
+            dbSpeakers.forEach((speaker: any) => {
+              if (speaker.id) {
+                map.set(speaker.id, {
+                  id: speaker.id,
+                  name: speaker.name,
+                  image: speaker.image_url,
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Failed to load database speakers:', e);
+          // Continue with config speakers only
+        }
+
+        setSpeakerMapRef(map);
+      } catch (e) {
+        console.error('Error building speaker map:', e);
+      }
+    };
+
+    loadSpeakersMap();
+  }, [event]);
 
   // Check if we're in the event period and if event is finished
   useEffect(() => {
@@ -395,35 +445,32 @@ export default function BSL2025AgendaScreen() {
       const uniqueDays = [...new Set(dayValues)];
       console.log('📅 Unique day values:', uniqueDays);
       
-      // Group by day, handling both simple and complex day names
+      // Group by day, handling both simple and complex day names. dayKey is
+      // purely an internal grouping/react-key value here -- it's never
+      // rendered directly (getTabLabel/getTabTheme derive the displayed,
+      // translated text from it), so the hardcoded "November N" isn't
+      // user-visible; left as-is to avoid touching this key's format, which
+      // several other places in this file pattern-match against.
       agenda.forEach(item => {
         const day = (item as any).day;
         if (day) {
           let dayKey: string;
-          let dayName: string;
-          
+
           // Extract day number from complex day names
           if (day.includes('Día 1')) {
             dayKey = 'Day 1 - November 12';
-            dayName = 'Regulación, Bancos Centrales e Infraestructura del Dinero Digital';
           } else if (day.includes('Día 2')) {
             dayKey = 'Day 2 - November 13';
-            dayName = 'PSAV, Compliance, Custodia y Tokenización';
           } else if (day.includes('Día 3')) {
             dayKey = 'Day 3 - November 14';
-            dayName = 'Stablecoins y DeFi: Integrando el Mundo Financiero Global';
           } else if (day === '1' || day === '2' || day === '3') {
             // Simple day numbers
             dayKey = `Day ${day} - November ${day === '1' ? '12' : day === '2' ? '13' : '14'}`;
-            dayName = day === '1' ? 'Regulación, Bancos Centrales e Infraestructura del Dinero Digital' :
-                     day === '2' ? 'PSAV, Compliance, Custodia y Tokenización' :
-                     'Stablecoins y DeFi: Integrando el Mundo Financiero Global';
           } else {
             // Fallback for other formats
             dayKey = day;
-            dayName = 'Event Day';
           }
-          
+
           if (!grouped[dayKey]) {
             grouped[dayKey] = [];
           }
@@ -821,20 +868,39 @@ export default function BSL2025AgendaScreen() {
       .trim();
   };
 
-  // Function to find speaker ID by name (synchronous check first)
-  const findSpeakerId = (speakerName: string): string | null => {
-    // Try to find speaker in the event speakers data first
-    if (event?.speakers) {
-      const speaker = event.speakers.find((s: { name: string; id?: string }) => 
-        s.name.toLowerCase().includes(speakerName.toLowerCase()) ||
-        speakerName.toLowerCase().includes(s.name.toLowerCase())
-      );
-      if (speaker?.id) return speaker.id;
+  // Resolves an agenda item's speaker reference to both a display name and a
+  // navigable speaker id. Newer tour-stop events (packages/config/src/
+  // events.ts's chile2026/peru2026/colombia2026 agenda data) reference
+  // speakers by id slug (e.g. 'alvaro-clarke'), not display name -- the
+  // original name-substring match below predates that and was silently
+  // failing for id-slug references (a hyphenated, unaccented slug rarely
+  // substring-matches an accented display name), which is why agenda cards
+  // were rendering the raw id slug as if it were the speaker's name.
+  // When bsl_speakers returns database rows, supplement the map with both
+  // database UUIDs and event.speakers config slugs.
+  const resolveAgendaSpeaker = (
+    value: string
+  ): { id: string | null; displayName: string; image?: string } => {
+    // First, try the combined map (config + database speakers)
+    const mapEntry = speakerMapRef.get(value);
+    if (mapEntry) {
+      return { id: mapEntry.id, displayName: mapEntry.name, image: mapEntry.image };
     }
-    
-    // Return null for now - async lookup can be added later if needed
-    return null;
+
+    // Fallback: search by name in event.speakers
+    if (event?.speakers) {
+      const byName = event.speakers.find((s: { name: string }) =>
+        s.name.toLowerCase().includes(value.toLowerCase()) ||
+        value.toLowerCase().includes(s.name.toLowerCase())
+      );
+      if (byName?.id) return { id: byName.id, displayName: byName.name, image: byName.image };
+    }
+
+    return { id: null, displayName: value };
   };
+
+  // Function to find speaker ID by name (synchronous check first)
+  const findSpeakerId = (speakerName: string): string | null => resolveAgendaSpeaker(speakerName).id;
 
   // Function to handle speaker navigation
   const handleSpeakerPress = async (speakerName: string) => {
@@ -871,21 +937,20 @@ export default function BSL2025AgendaScreen() {
         return;
       }
       try {
-        const { data, error } = await supabase
-          .from('user_agenda_status')
-          .select('agenda_id, status, is_favorite')
-          .eq('user_id', user.id)
-          .eq('event_id', eventId)
-          .not('agenda_id', 'is', null);
-        
-        if (error) {
-          console.error('Error loading user agenda status:', error);
+        const response = await apiClient.request('agenda-status', {
+          apiSegment,
+          params: { eventId },
+        });
+
+        if (!response.success) {
+          console.error('Error loading user agenda status:', response.error);
           return;
         }
-        
+
+        const data = (response.data as any)?.data;
         const statusMap: Record<string, 'tentative' | 'confirmed'> = {};
         const favoriteMap: Record<string, boolean> = {};
-        
+
         (data || []).forEach((item: any) => {
           if (item.agenda_id) {
             const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
@@ -913,38 +978,12 @@ export default function BSL2025AgendaScreen() {
     const newStatus = currentStatus === 'confirmed' ? 'tentative' : 'confirmed';
     
     try {
-      const { data: existing } = await supabase
-        .from('user_agenda_status')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('event_id', eventId)
-        .eq('agenda_id', agendaItem.id)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from('user_agenda_status')
-          .update({
-            status: newStatus,
-            confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_agenda_status')
-          .insert({
-            user_id: user.id,
-            agenda_id: agendaItem.id,
-            event_id: eventId,
-            status: newStatus,
-            confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
-          });
-        
-        if (error) throw error;
-      }
+      const response = await apiClient.request('agenda-status', {
+        apiSegment,
+        method: 'POST',
+        body: { eventId, agendaId: agendaItem.id, status: newStatus },
+      });
+      if (!response.success) throw new Error(response.error);
 
       setUserAgendaStatus(prev => ({
         ...prev,
@@ -975,36 +1014,12 @@ export default function BSL2025AgendaScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
-      const { data: existing } = await supabase
-        .from('user_agenda_status')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('event_id', eventId)
-        .eq('agenda_id', agendaItem.id)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from('user_agenda_status')
-          .update({
-            is_favorite: newFavorite,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const currentStatus = userAgendaStatus[agendaItem.id] || 'tentative';
-        const { error } = await supabase
-          .from('user_agenda_status')
-          .insert({
-            user_id: user.id,
-            agenda_id: agendaItem.id,
-            event_id: eventId,
-            status: currentStatus,
-            is_favorite: newFavorite,
-          });
-        if (error) throw error;
-      }
+      const response = await apiClient.request('agenda-status', {
+        apiSegment,
+        method: 'POST',
+        body: { eventId, agendaId: agendaItem.id, isFavorite: newFavorite },
+      });
+      if (!response.success) throw new Error(response.error);
 
       setFavoriteStatus(prev => ({
         ...prev,
@@ -1024,25 +1039,36 @@ export default function BSL2025AgendaScreen() {
 
   // Helper function to get the event's date based on day field or ISO time
   const getEventDate = (item: AgendaItem): Date | null => {
-    // First try to get the day from the item's day field
+    // Map the item's day field to an actual calendar date, derived from
+    // *this* event's real eventStartDate (day N = eventStartDate + (N-1)
+    // days). Previously hardcoded to November 12-14, 2025 -- the original
+    // bsl2025 hub event's dates -- which silently marked every tour-stop
+    // event's agenda (chile2026, peru2026, colombia2026, ...) as already
+    // past, since November 2025 predates all of them.
     const day = (item as any).day;
-    if (day) {
-      let eventDate: Date | null = null;
-      
-      // Map day to actual date
-      if (day.includes('Día 1') || day === '1') {
-        eventDate = new Date(2025, 10, 12); // November 12, 2025 (month is 0-indexed)
-      } else if (day.includes('Día 2') || day === '2') {
-        eventDate = new Date(2025, 10, 13); // November 13, 2025
-      } else if (day.includes('Día 3') || day === '3') {
-        eventDate = new Date(2025, 10, 14); // November 14, 2025
-      }
-      
-      if (eventDate) {
-        return eventDate;
+    if (day && event?.eventStartDate) {
+      const dayMatch = String(day).match(/(\d+)/);
+      const dayNumber = dayMatch ? parseInt(dayMatch[1], 10) : null;
+      if (dayNumber && dayNumber >= 1) {
+        // Parse event start date preserving its local timezone (not device timezone).
+        // Extract date components from ISO string before the T separator to avoid
+        // timezone conversion. E.g., "2026-08-05T09:00:00-04:00" → year 2026, month 8, day 5.
+        const isoMatch = event.eventStartDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) {
+          const [, year, month, date] = isoMatch;
+          const eventYear = parseInt(year, 10);
+          const eventMonth = parseInt(month, 10) - 1; // JS months are 0-indexed
+          const eventDay = parseInt(date, 10) + (dayNumber - 1);
+          return new Date(eventYear, eventMonth, eventDay);
+        }
+        // Fallback: parse as Date (may be affected by device timezone)
+        const start = new Date(event.eventStartDate);
+        if (!isNaN(start.getTime())) {
+          return new Date(start.getFullYear(), start.getMonth(), start.getDate() + (dayNumber - 1));
+        }
       }
     }
-    
+
     // Fallback: try to parse from ISO time format
     if (item.time) {
       try {
@@ -1055,7 +1081,7 @@ export default function BSL2025AgendaScreen() {
         // Ignore parse errors
       }
     }
-    
+
     return null;
   };
 
@@ -1195,6 +1221,8 @@ export default function BSL2025AgendaScreen() {
                 onPress={() => handleToggleFavorite(item)}
                 style={styles.actionButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={isFavorite ? t('actions.removeFromFavorites') : t('actions.addToFavorites')}
               >
                 <MaterialIcons
                   name={isFavorite ? 'star' : 'star-border'}
@@ -1206,6 +1234,8 @@ export default function BSL2025AgendaScreen() {
                 onPress={handleConfirmPress}
                 style={styles.actionButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={isConfirmed ? t('actions.unmarkAttending') : t('actions.markAttending')}
               >
                 <MaterialIcons
                   name={isConfirmed ? 'check-circle' : 'radio-button-unchecked'}
@@ -1222,22 +1252,35 @@ export default function BSL2025AgendaScreen() {
 
           {item.speakers && item.speakers.length > 0 && (
             <View style={styles.speakersContainer}>
-              <MaterialIcons name="people" size={16} color={colors.text.secondary} />
+              <MaterialIcons
+                name="people"
+                size={16}
+                color={colors.text.secondary}
+                accessibilityLabel={t('labels.speakers')}
+              />
               <View style={styles.speakersList}>
                 {item.speakers.map((speaker: string, index: number) => {
-                  const speakerId = findSpeakerId(speaker);
+                  const { id: speakerId, displayName, image } = resolveAgendaSpeaker(speaker);
                   const isClickable = speakerId !== null;
+                  const chipContent = (
+                    <>
+                      <SpeakerAvatar name={displayName} imageUrl={image} size={22} />
+                      <Text
+                        style={[styles.agendaSpeakers, isClickable && styles.clickableSpeaker]}
+                        numberOfLines={1}
+                      >
+                        {displayName}
+                      </Text>
+                    </>
+                  );
                   return (
                     <React.Fragment key={index}>
                       {isClickable ? (
-                        <TouchableOpacity onPress={() => handleSpeakerPress(speaker)} style={styles.speakerLink}>
-                          <Text style={[styles.agendaSpeakers, styles.clickableSpeaker]}>{speaker}</Text>
+                        <TouchableOpacity onPress={() => handleSpeakerPress(speaker)} style={styles.speakerChip}>
+                          {chipContent}
                         </TouchableOpacity>
                       ) : (
-                        <Text style={styles.agendaSpeakers}>{speaker}</Text>
-                      )}
-                      {index < (item.speakers?.length || 0) - 1 && (
-                        <Text style={styles.speakerSeparator}>, </Text>
+                        <View style={styles.speakerChip}>{chipContent}</View>
                       )}
                     </React.Fragment>
                   );
@@ -1260,7 +1303,12 @@ export default function BSL2025AgendaScreen() {
             if (location) {
               return (
                 <View style={styles.locationContainer}>
-                  <MaterialIcons name="location-on" size={16} color={colors.text.secondary} />
+                  <MaterialIcons
+                    name="location-on"
+                    size={16}
+                    color={colors.text.secondary}
+                    accessibilityLabel={t('labels.location')}
+                  />
                   <Text style={styles.agendaLocation}>{location}</Text>
                 </View>
               );
@@ -1271,11 +1319,17 @@ export default function BSL2025AgendaScreen() {
       </View>
     );
   };
-  // Show global loader while loading
-  if (loading) {
+  // Show global loader while loading. Also cover the gap between agenda
+  // finishing its load and the separate grouping effect (deps: [agenda,
+  // loading]) actually running: that effect only fires on the render AFTER
+  // `loading` flips to false, so for one frame agenda has real items but
+  // agendaByDay is still {} and activeTab still points at the unset
+  // default -- which would otherwise render the real "no agenda for this
+  // event" empty state for real data that just hasn't been grouped yet.
+  const agendaGroupingPending = agenda.length > 0 && Object.keys(agendaByDay).length === 0;
+  if (loading || agendaGroupingPending) {
     return (
       <LoadingScreen
-        icon="schedule"
         message={t('loading')}
         fullScreen={true}
       />
@@ -1376,6 +1430,20 @@ export default function BSL2025AgendaScreen() {
         />
       )}
 
+      {/* Full day title -- the tab card itself truncates the theme text to
+          fit its fixed small size (see tabTheme style), so this shows the
+          complete, untruncated day name + theme once a day is selected. */}
+      {activeTab && Object.keys(agendaByDay).length > 0 && (
+        <View style={styles.dayHeader}>
+          <Text style={styles.dayHeaderLabel} numberOfLines={1}>
+            {getTabLabel(activeTab)}
+            {!!getTabTheme(activeTab) && (
+              <Text style={styles.dayHeaderTheme}>: {getTabTheme(activeTab)}</Text>
+            )}
+          </Text>
+        </View>
+      )}
+
       {/* Tab Content */}
       <View style={styles.contentContainer}>
         {activeTab && agendaByDay[activeTab] ? (
@@ -1386,9 +1454,9 @@ export default function BSL2025AgendaScreen() {
                 const dayItems = agendaByDay[activeTab] || [];
                 return dayItems.some(dayItem => String((dayItem as any).id) === String((item as any).id));
               });
-              
+
               // Removed console.log to prevent infinite re-renders
-              
+
               if (filteredItems.length === 0) {
                 return (
                   <View style={styles.noResultsContainer}>
@@ -1398,11 +1466,23 @@ export default function BSL2025AgendaScreen() {
                   </View>
                 );
               }
-              
+
               return filteredItems.map(renderAgendaItem);
             })()}
           </View>
+        ) : agenda.length > 0 ? (
+          // We already have real agenda items (confirmed by the top-level
+          // loading gate above), but activeTab doesn't have a matching
+          // agendaByDay entry yet -- e.g. the session/deep-link effect set
+          // activeTab to a key the grouping effect hasn't produced yet.
+          // This is still a loading state, not "no agenda for this event":
+          // agenda.length > 0 already proves there IS agenda.
+          <View style={styles.agendaList}>
+            <LoadingScreen message={t('loading')} fullScreen={false} />
+          </View>
         ) : (
+          // Only reachable once agenda is confirmed empty -- the real "no
+          // agenda for this event" case, not a stand-in for still loading.
           <View style={styles.noAgendaContainer}>
             <MaterialIcons name="event-busy" size={48} color={colors.text.secondary} />
             <Text style={styles.noAgendaText}>{t('empty.title')}</Text>
@@ -1495,6 +1575,24 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  dayHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 6,
+  },
+  dayHeaderLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  dayHeaderTheme: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    textTransform: 'none',
   },
   tabLabel: {
     fontSize: 12, // Slightly smaller font for mobile
@@ -1642,30 +1740,30 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   speakersContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
+    gap: 6,
   },
   speakersList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     flex: 1,
+    gap: 8,
+    marginTop: -2,
+  },
+  speakerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: 200,
   },
   agendaSpeakers: {
     fontSize: 13,
     color: colors.text.secondary,
-    marginLeft: 6,
-    flex: 1,
+    flexShrink: 1,
   },
   clickableSpeaker: {
     color: '#007AFF',
-    textDecorationLine: 'underline',
-  },
-  speakerLink: {
-    // No additional styling needed, inherits from parent
-  },
-  speakerSeparator: {
-    fontSize: 13,
-    color: colors.text.secondary,
   },
   locationContainer: {
     flexDirection: 'row',

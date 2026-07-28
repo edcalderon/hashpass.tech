@@ -1,4 +1,6 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import { TouchableOpacity } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
 import { ScrollProvider } from '@contexts/ScrollContext';
 import { useEvent } from '@contexts/EventContext';
@@ -6,7 +8,30 @@ import { useEvent } from '@contexts/EventContext';
 export default function BSL2025Layout() {
   const { isDark, colors } = useTheme();
   const { event } = useEvent();
+  const router = useRouter();
   const eventTitle = event?.title || 'Event';
+
+  // Some entry points into this stack (redirects, deep links, tab resets)
+  // can leave a screen with no real navigation history to pop, at which
+  // point the platform default just hides the back button and strands the
+  // user. Always render a back control; fall back to the event home screen
+  // when there's genuinely nothing to go back to.
+  const renderBackButton = () => (
+    <TouchableOpacity
+      onPress={() => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace(`/events/${event?.id || 'bsl'}/home`);
+        }
+      }}
+      style={{ paddingHorizontal: 8, paddingVertical: 4 }}
+      accessibilityRole="button"
+      accessibilityLabel="Go back"
+    >
+      <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
+    </TouchableOpacity>
+  );
 
   return (
     <ScrollProvider>
@@ -24,6 +49,7 @@ export default function BSL2025Layout() {
         headerBackTitleStyle: {
           fontSize: 16,
         },
+        headerLeft: renderBackButton,
         contentStyle: {
           backgroundColor: colors.background.default,
         },

@@ -1,5 +1,4 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
-import { getSpeakerCloudinaryAvatarUrl } from '@/lib/cloudinary';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   const supabase = getSupabaseServerForRequest(request);
@@ -15,14 +14,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   if (!data) {
     return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 });
   }
-  
-  // Add Cloudinary URL to speaker data
-  const speakerWithCloudinary = {
-    ...data,
-    cloudinaryAvatarUrl: getSpeakerCloudinaryAvatarUrl(data.name, 200)
-  };
-  
-  return new Response(JSON.stringify(speakerWithCloudinary), { status: 200, headers: { 'Content-Type': 'application/json' } });
+
+  return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
 

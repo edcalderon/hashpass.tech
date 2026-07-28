@@ -1,3 +1,12 @@
+## [1.8.271](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.270...v1.8.271) (2026-07-27)
+
+
+### Bug Fixes
+
+* agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text ([046f1ce](https://github.com/hashpass-tech/hashpass.tech/commit/046f1ceb972a7f7c68c9b9a2df2ceda8d68cd7aa))
+### Release Highlights
+- agenda "past" badges on future tour-stop events, empty speaker directory, raw id in agenda speaker text
+
 ## [1.8.270](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.269...v1.8.270) (2026-07-27)
 
 
