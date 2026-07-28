@@ -10,8 +10,8 @@ This is the authoritative reference for which service hosts which domain and how
 | `dev.hashpass.tech` | Source CloudFront + Route53 | Static site from target-account S3 origin | global / us-east-1 | Auto — the development pipeline publishes the dev origin; the source front door keeps the hostname HTTPS-only |
 | `api.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | **us-east-1** | Auto — target web pipeline deploys `hashpass-prod-expo-router-api` and verifies `/api/config/versions` |
 | `api-dev.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | us-east-1 | Auto — target dev web pipeline deploys `hashpass-dev-expo-router-api` and verifies `/api/config/versions` |
-| `bsl.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `main` |
-| `bsl-dev.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `develop` |
+| `bsl.hashpass.tech` | CodePipeline + EC2 worker running `sst deploy` (SST StaticSite: S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — `bsl-hashpass-prod` pipeline on push to `main` (target account as of 2026-07-28, see below — source-account copy is superseded) |
+| `bsl-dev.hashpass.tech` | CodePipeline + EC2 worker running `sst deploy` (SST StaticSite: S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — `bsl-hashpass-dev` pipeline on push to `develop` (target account as of 2026-07-28) |
 | `hashpass.club` | GitHub Pages | Next.js static | CDN | Auto — `deploy-club-docs.yml` on push to `main` |
 
 ## Account split: what's on the source account vs. the target account
@@ -49,7 +49,7 @@ The public surface is now split across independent deployment paths:
 1. The source-account CloudFront front door serves `hashpass.tech` and `dev.hashpass.tech` and aliases both hostnames to the target-account static origins.
 2. The target-account web pipeline publishes the `hashpass.tech` S3 origin and the `dev.hashpass.tech` development origin.
 3. The same target web deploy helper packages the Expo Router API, updates the matching Lambda, and fails if the public API version endpoint is stale.
-4. The SST Console autodeploy path still serves `bsl.hashpass.tech` (us-east-2).
+4. The `bsl-hashpass-prod`/`bsl-hashpass-dev` CodePipelines (target account as of 2026-07-28) serve `bsl.hashpass.tech`/`bsl-dev.hashpass.tech` (us-east-2) by running SST's own deploy engine on a dedicated EC2 worker.
 
 These are completely independent. A failure in one does not affect the other. Check the correct dashboard when debugging.
 
@@ -85,18 +85,22 @@ Patch releases also run `packages/tools/scripts/deploy-api-lambda.sh` from `infr
 - Development must return the release version from `https://api-dev.hashpass.tech/api/config/versions`.
 - A deploy that leaves either endpoint stale is failed and must not be reported as complete.
 
-### `bsl.hashpass.tech` (SST)
+### `bsl.hashpass.tech` (CodePipeline + EC2 worker, running `sst deploy`)
 
-SST Console autodeploy handles this on every push to `main`. No manual action required.
+**Corrected 2026-07-28** — the previous version of this doc described "SST Console autodeploy" as a separate mechanism from the `bsl-hashpass-*` CodePipelines. That was wrong: the CodeBuild/EC2 step in those pipelines runs `pnpm --filter @hashpass/infra run deploy:<stage>`, which **is** SST's own deploy engine. There is one real deploy path, not two.
 
-For a manual one-off deploy:
+**Target account (`952191196420`, current, added 2026-07-28)**: `packages/infra/terraform/stacks/bsl-target` provisions a dedicated EC2 build worker (same reusable module `hashpass-web` uses, per the decision to prefer EC2 over CodeBuild — see below) and two CodePipelines, `bsl-hashpass-prod` (`main`) and `bsl-hashpass-dev` (`develop`), both correctly wired to `hashpass-tech/hashpass.tech`.
+
+**Source account (`058264267235`), superseded but not yet decommissioned**: the original `bsl-hashpass-prod`/`bsl-hashpass-dev` CodePipelines + `bsl-hashpass-prod-build`/`bsl-hashpass-dev-build` CodeBuild projects. **These had `FullRepositoryId` set to `edcalderon/hashpass.tech` (a personal fork) instead of the org repo** — `bsl-hashpass-prod` silently went 3 days / ~14 releases stale (last real trigger 2026-07-25, v1.8.260) because nothing in the release automation ever pushes to that fork's `main` branch. This is what caused `bsl.hashpass.tech` to show `v1.8.273` while `hashpass.tech` was already on `v1.8.274`. Full incident writeup: `.agents/active/task-aws-account-migration.md`.
+
+Why EC2 instead of CodeBuild for the new target pipeline: the target account's CodeBuild concurrent-build quota turned out to be `0` for every environment type (pre-existing, account-wide, unrelated to BSL — also why two other target CodeBuild projects, `hashpass-arm-probe-*`/`hashpass-lambda-probe-*`, have zero build history). Rather than wait on an AWS Support quota increase, the new pipeline uses a custom EC2 worker, matching `hashpass-web`'s existing pattern and giving more control over the build environment.
+
+For a manual one-off deploy from a workstation with target-account credentials:
 ```bash
 HASHPASS_INFRA_TARGET=bsl pnpm --filter @hashpass/infra run deploy:prod
 ```
 
-Note: requires an IAM role with Route53, CloudFront, S3, and SSM permissions. The current `hashpass-mobile-release-github-actions` role does NOT have these — use the infra role instead.
-
-**There are also `bsl-hashpass-*` CodeBuild/CodePipeline Terraform resources in both AWS accounts (per `INFRA_NAMING_GUIDE.md`) — these are not the real deploy path.** SST Console autodeploy above is what actually ships BSL. The source-account CodeBuild/CodePipeline pair (`bsl-hashpass-dev`/`bsl-hashpass-prod`) has real build history and may predate the SST migration; the target-account mirror only has the CodeBuild projects, never wired into a pipeline. See `.agents/active/task-aws-account-migration.md` for the open decision on whether to finish or retire this Terraform path.
+Note: requires an IAM role with Route53, CloudFront, S3, and SSM permissions.
 
 ### Manually triggering the GitHub Actions infra-deploy workflow
 

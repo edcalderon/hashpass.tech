@@ -26,18 +26,33 @@ This guide keeps AWS and release resource names readable, consistent, and easy t
 
 ## Current BSL infra names
 
+**Target account (`952191196420`), current as of 2026-07-28** — `packages/infra/terraform/stacks/bsl-target`:
+- Connection: reuses the existing target-account `bsl-hashpass-github-us-east-2` CodeConnections connection
+- Dev pipeline: `bsl-hashpass-dev` (branch `develop`)
+- Production pipeline: `bsl-hashpass-prod` (branch `main`)
+- EC2 build worker custom action provider: `hashpass-bsl-ec2-build` (distinct from `hashpass-web`'s `hashpass-ec2-build` so job polling never collides)
+- Both pipelines correctly wired to `hashpass-tech/hashpass.tech` — see the incident below for why this specifically mattered.
+
+**Source account (`058264267235`), superseded, not yet decommissioned**:
 - Connection: `bsl-hashpass-github-us-east-2`
 - Dev pipeline: `bsl-hashpass-dev`
 - Production pipeline: `bsl-hashpass-prod`
 - Dev CodeBuild project: `bsl-hashpass-dev-build`
 - Production CodeBuild project: `bsl-hashpass-prod-build`
 
-Verified live (2026-07-28): all five exist in the **source account**
-(`058264267235`, `us-east-2`) with real build history. The **target
-account** only has the two CodeBuild projects mirrored — no pipelines, no
-connection. See `.agents/active/task-aws-account-migration.md` for the
-open decision on finishing vs. retiring this path (SST Console autodeploy
-is BSL's actual deploy mechanism today).
+**Incident (2026-07-28):** the source-account pipelines above had
+`FullRepositoryId` set to `edcalderon/hashpass.tech` (a personal fork), not
+the org repo. `bsl-hashpass-prod` watches that fork's `main`, which nothing
+in the release automation pushes to — it silently went 3 days / ~14
+releases stale (last real trigger 2026-07-25, v1.8.260) before
+`bsl.hashpass.tech` showing `v1.8.273` while `hashpass.tech` was on
+`v1.8.274` exposed it. Also corrected a prior misunderstanding: this
+CodeBuild/CodePipeline step runs `sst deploy` directly (`pnpm --filter
+@hashpass/infra run deploy:<stage>`) — it **is** "SST Console autodeploy,"
+not a separate/legacy path running alongside it, as earlier docs assumed.
+Full writeup: `.agents/active/task-aws-account-migration.md`.
+
+**Target-account CodeBuild projects (`bsl-hashpass-prod-build`/`bsl-hashpass-dev-build`) are also now superseded** by the EC2-worker pipelines above — they were mirrored into target earlier but never wired into a pipeline, and won't be needed once the new stack is validated.
 
 ## Anti-patterns
 
