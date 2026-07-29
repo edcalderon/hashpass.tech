@@ -108,11 +108,23 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockAgendaParams,
 }));
 
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({
-    setOptions: mockNavigationSetOptions,
-  }),
-}));
+jest.mock('@react-navigation/native', () => {
+  const { useEffect } = require('react');
+  return {
+    useNavigation: () => ({
+      setOptions: mockNavigationSetOptions,
+    }),
+    // Real useFocusEffect re-runs its callback on every screen focus; tests
+    // here never simulate focus/blur, so running it once like a mount
+    // effect is enough to exercise the same data-loading code path.
+    useFocusEffect: (effect: () => void | (() => void)) => {
+      useEffect(() => {
+        const cleanup = effect();
+        return typeof cleanup === 'function' ? cleanup : undefined;
+      }, []);
+    },
+  };
+});
 
 jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: {
