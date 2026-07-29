@@ -43,7 +43,7 @@ The repository now treats `develop` as the only release source branch. Promotion
 
 ### Required checks before merge
 
-- Coverage must be at or above 33%
+- Patch coverage (Codecov's coverage of the PR's own new/changed lines) must be at or above 69%. Project-wide coverage stays on Codecov's `auto` target (don't regress much from the base commit) -- the codebase overall is nowhere near 69% today, so that's a much larger, separate effort, not a per-PR gate.
 - CodeQL or the repository security scan must pass
 - The release PR must come from `develop`, not a feature branch or stale branch
 

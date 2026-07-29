@@ -45,6 +45,14 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   const [showQRModal, setShowQRModal] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
 
+  // A card behind the front one is already non-interactive (disabled via
+  // `interactive`), but an archived pass (cancelled/expired/used/suspended)
+  // needs the QR action disabled even when it IS the front card: the
+  // wallet's unfiltered query surfaces these historical passes now, and
+  // generate_pass_qr rejects any non-active pass, so opening the modal for
+  // one just shows a generation error every time.
+  const canShowQr = interactive && !pass.isArchived;
+
   const t = (translation: { id: string; message: string }) => {
     try {
       const key = translation.id.startsWith('passes.')
@@ -485,7 +493,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
             borderRightWidth: 1,
             borderRightColor: colors.divider
           }}
-          disabled={!interactive}
+          disabled={!canShowQr}
           onPress={() => setShowQRModal(true)}
         >
           <MaterialIcons name="qr-code" size={16} color="#4A90E2" />
@@ -759,7 +767,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
             borderRightWidth: 1,
             borderRightColor: colors.divider
           }}
-          disabled={!interactive}
+          disabled={!canShowQr}
           onPress={() => {
             handleFlip();
             setShowQRModal(true);

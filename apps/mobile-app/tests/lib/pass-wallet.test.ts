@@ -5,6 +5,8 @@ import {
   countWalletPasses,
   filterWalletPasses,
   getPassTypeAccent,
+  sortWalletPasses,
+  type WalletPass,
 } from '../../lib/pass-wallet';
 import type { PassInfo } from '../../lib/pass-system';
 
@@ -91,7 +93,7 @@ describe('buildWalletPasses', () => {
       AUGUST_6_2026
     );
 
-    expect(ordered.map((pass) => pass.pass_id)).toEqual(['chile', 'colombia', 'archive']);
+    expect(ordered.map((pass: WalletPass) => pass.pass_id)).toEqual(['chile', 'colombia', 'archive']);
   });
 
   it('falls back to an event-derived key when the pass row has no real id', () => {
@@ -120,26 +122,26 @@ describe('filterWalletPasses', () => {
   });
 
   it('filters by timeline', () => {
-    expect(filterWalletPasses(passes, { timeline: 'past' }).map((p) => p.pass_id)).toEqual(['archive']);
+    expect(filterWalletPasses(passes, { timeline: 'past' }).map((p: WalletPass) => p.pass_id)).toEqual(['archive']);
   });
 
   it('filters by pass type', () => {
-    expect(filterWalletPasses(passes, { passType: 'vip' }).map((p) => p.pass_id)).toEqual(['colombia']);
+    expect(filterWalletPasses(passes, { passType: 'vip' }).map((p: WalletPass) => p.pass_id)).toEqual(['colombia']);
   });
 
   it('searches across event name, location and pass number', () => {
-    expect(filterWalletPasses(passes, { query: 'bogot' }).map((p) => p.pass_id)).toEqual(['colombia']);
-    expect(filterWalletPasses(passes, { query: 'santiago' }).map((p) => p.pass_id)).toEqual(['chile']);
+    expect(filterWalletPasses(passes, { query: 'bogot' }).map((p: WalletPass) => p.pass_id)).toEqual(['colombia']);
+    expect(filterWalletPasses(passes, { query: 'santiago' }).map((p: WalletPass) => p.pass_id)).toEqual(['chile']);
     expect(filterWalletPasses(passes, { query: 'BSL-GENERAL' })).toHaveLength(3);
   });
 
   it('ignores case and surrounding whitespace in the query', () => {
-    expect(filterWalletPasses(passes, { query: '  ChIlE  ' }).map((p) => p.pass_id)).toEqual(['chile']);
+    expect(filterWalletPasses(passes, { query: '  ChIlE  ' }).map((p: WalletPass) => p.pass_id)).toEqual(['chile']);
   });
 
   it('combines filters', () => {
     expect(
-      filterWalletPasses(passes, { timeline: 'upcoming', passType: 'general' }).map((p) => p.pass_id)
+      filterWalletPasses(passes, { timeline: 'upcoming', passType: 'general' }).map((p: WalletPass) => p.pass_id)
     ).toEqual(['chile']);
   });
 });
@@ -165,5 +167,48 @@ describe('getPassTypeAccent', () => {
     expect(getPassTypeAccent('business')).toBe('#007AFF');
     expect(getPassTypeAccent('vip')).toBe('#FF9500');
     expect(getPassTypeAccent(undefined)).toBe('#8E8E93');
+  });
+});
+
+describe('sortWalletPasses', () => {
+  const basePastPass: WalletPass = {
+    id: 'past-1',
+    pass_id: 'past-1',
+    pass_type: 'general',
+    status: 'active',
+    pass_number: 'PASS-1',
+    max_requests: 0,
+    used_requests: 0,
+    remaining_requests: 0,
+    max_boost: 0,
+    used_boost: 0,
+    remaining_boost: 0,
+    access_features: [],
+    special_perks: [],
+    eventName: 'Event',
+    eventDateLabel: '',
+    eventLocation: '',
+    accentColor: '#000',
+    timeline: 'past',
+    startsAt: null,
+    endsAt: null,
+    isArchived: false,
+    searchText: '',
+  };
+
+  it('treats a missing endsAt as the oldest possible past event, not a crash', () => {
+    // classifyTimeline never actually produces this combination (an event
+    // with no configured end date is classified 'upcoming', never 'past'),
+    // but sortWalletPasses is exported and doesn't re-derive timeline itself
+    // -- a hand-built WalletPass could still reach it, so the `?? 0`
+    // fallback here is a real defensive branch worth a direct test rather
+    // than only exercising it indirectly through buildWalletPasses.
+    const withDate: WalletPass = { ...basePastPass, id: 'past-with-date', endsAt: Date.parse('2020-01-01') };
+    const withoutDate: WalletPass = { ...basePastPass, id: 'past-without-date', endsAt: null };
+
+    expect(sortWalletPasses([withoutDate, withDate]).map((p: WalletPass) => p.id)).toEqual([
+      'past-with-date',
+      'past-without-date',
+    ]);
   });
 });

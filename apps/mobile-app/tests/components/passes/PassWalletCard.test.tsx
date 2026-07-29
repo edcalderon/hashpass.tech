@@ -6,8 +6,9 @@ import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 
 import PassNotchMask from '../../../components/passes/PassNotchMask';
-import PassTiltCard from '../../../components/passes/PassTiltCard';
+import PassTiltCard, { PassDepthLayer } from '../../../components/passes/PassTiltCard';
 import PassWalletCard from '../../../components/passes/PassWalletCard';
+import { withSpring } from 'react-native-reanimated';
 import type { WalletPass } from '../../../lib/pass-wallet';
 
 // Untyped require, matching tests/app/home.test.tsx's convention: the real
@@ -40,7 +41,7 @@ jest.mock('react-native-reanimated', () => ({
   interpolate: (value: number) => value,
   useAnimatedStyle: (factory: () => unknown) => factory(),
   useSharedValue: (value: number) => ({ value }),
-  withSpring: (value: number) => value,
+  withSpring: jest.fn((value: number) => value),
 }));
 
 jest.mock('@react-native-masked-view/masked-view', () => ({
@@ -69,6 +70,10 @@ jest.mock('../../../i18n/i18n', () => ({
         accessIncluded: 'Access included',
         requestsLeft: 'Requests left',
         boostLeft: 'Boost left',
+        // A real (non-fallback) translation, so the local t() helper's
+        // success path -- returning the translated string as-is, rather
+        // than falling back to the caller's message -- gets exercised too.
+        'type.vip': 'VIP',
       })[key] ?? key,
   }),
 }));
@@ -169,6 +174,87 @@ describe('PassWalletCard', () => {
     expect(actionButtons.length).toBeGreaterThanOrEqual(3);
     expect(actionButtons.every((button: any) => button.props.disabled)).toBe(true);
   });
+
+  it('disables QR generation for an archived pass even as the front card', () => {
+    // Regression: generate_pass_qr rejects any non-active pass, so an
+    // archived front card (cancelled/expired/used/suspended) must disable
+    // the QR action itself rather than relying on `interactive`, which only
+    // reflects stack position and is true for the front card regardless of
+    // the underlying pass's status.
+    const archivedPass: WalletPass = { ...pass, status: 'expired', isArchived: true };
+    const renderer = render(<PassWalletCard pass={archivedPass} />);
+
+    const qrButtons = renderer.root
+      .findAll((node: any) => node.type === 'Text' && node.props.children === 'QR Code')
+      .map((text: any) => text.parent);
+
+    expect(qrButtons.length).toBeGreaterThan(0);
+    expect(qrButtons.every((button: any) => button.props.disabled)).toBe(true);
+
+    // Every OTHER action stays enabled -- only the QR path is unsafe here.
+    act(() => {
+      pressText(renderer, 'Details');
+    });
+    expect(renderer.root.findByProps({ children: 'Pass Summary' })).toBeTruthy();
+  });
+
+  it.each([
+    ['business', 'B2B + Closing Party'],
+    ['general', 'General Access'],
+    ['unrecognized-type', 'Event Access'],
+  ])('renders the right access copy for pass_type=%s', (passType, expectedAccessCopy) => {
+    const renderer = render(<PassWalletCard pass={{ ...pass, pass_type: passType as any }} />);
+
+    // Front and back faces both render getPassAccess's output (image overlay
+    // and the "Access Included" section respectively), so this legitimately
+    // appears twice in one render.
+    expect(renderer.root.findAllByProps({ children: expectedAccessCopy }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: passType.toUpperCase() }).length).toBeGreaterThan(0);
+  });
+
+  it('uses the Web Share API directly when the browser supports it', async () => {
+    const nativeShare = jest.fn().mockResolvedValue(undefined);
+    Object.assign(global.navigator, { share: nativeShare });
+    const renderer = render(<PassWalletCard pass={pass} />);
+
+    await act(async () => {
+      pressText(renderer, 'Share');
+    });
+
+    expect(nativeShare).toHaveBeenCalledWith({
+      title: 'BSL Chile 2026 VIP Pass',
+      text: expect.stringContaining('BSL Chile 2026'),
+    });
+    expect(Clipboard.setStringAsync).not.toHaveBeenCalled();
+  });
+
+  it('does not treat a cancelled share sheet as an error', async () => {
+    (Clipboard.setStringAsync as jest.Mock).mockRejectedValueOnce(new Error('User cancelled the share sheet'));
+    const renderer = render(<PassWalletCard pass={pass} />);
+
+    await act(async () => {
+      pressText(renderer, 'Share');
+    });
+
+    // The message contains "cancel" -> early return, no fallback attempt,
+    // no error alert.
+    expect(Clipboard.setStringAsync).toHaveBeenCalledTimes(1);
+    expect(Alert.alert).not.toHaveBeenCalled();
+  });
+
+  it('shows an error alert when even the clipboard fallback fails', async () => {
+    (Clipboard.setStringAsync as jest.Mock)
+      .mockRejectedValueOnce(new Error('clipboard unavailable'))
+      .mockRejectedValueOnce(new Error('clipboard unavailable'));
+    const renderer = render(<PassWalletCard pass={pass} />);
+
+    await act(async () => {
+      pressText(renderer, 'Share');
+    });
+
+    expect(Clipboard.setStringAsync).toHaveBeenCalledTimes(2);
+    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Unable to share pass. Please try again.');
+  });
 });
 
 describe('PassTiltCard', () => {
@@ -189,6 +275,41 @@ describe('PassTiltCard', () => {
       pressable.props.onPressOut();
     });
     expect(onPress).toHaveBeenCalledTimes(1);
+    // disabled short-circuits handlePressIn/Out before they touch the shared
+    // value -- withSpring must never fire for a disabled card.
+    expect(withSpring).not.toHaveBeenCalled();
+  });
+
+  it('animates the press-in/press-out shared value when the card is interactive', () => {
+    const renderer = render(
+      <PassTiltCard accentColor="#34A853">
+        <Text>Pass content</Text>
+      </PassTiltCard>,
+    );
+    const pressable = renderer.root.findByType('Pressable');
+
+    act(() => {
+      pressable.props.onPressIn();
+    });
+    expect(withSpring).toHaveBeenNthCalledWith(1, 1, expect.objectContaining({ damping: 18 }));
+
+    act(() => {
+      pressable.props.onPressOut();
+    });
+    expect(withSpring).toHaveBeenNthCalledWith(2, 0, expect.objectContaining({ damping: 18 }));
+  });
+
+  it('renders the native depth layer as a plain View passthrough', () => {
+    const renderer = render(
+      <PassDepthLayer depth={12} pointerEvents="none" style={{ opacity: 0.5 }}>
+        <Text>Layer content</Text>
+      </PassDepthLayer>,
+    );
+
+    const view = renderer.root.findByType('View');
+    expect(view.props.style).toEqual({ opacity: 0.5 });
+    expect(view.props.pointerEvents).toBe('none');
+    expect(renderer.root.findByProps({ children: 'Layer content' })).toBeTruthy();
   });
 });
 
