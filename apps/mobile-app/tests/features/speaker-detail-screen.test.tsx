@@ -539,4 +539,64 @@ describe('speaker detail screen', () => {
 
     await act(async () => renderer.unmount());
   });
+
+  it('lets the assigned speaker block an incoming requester through the event API', async () => {
+    const incomingRequest = {
+      id: 'request-incoming-3', _direction: 'incoming', status: 'pending',
+      speaker_id: 'speaker-user-1', speaker_name: 'Ada Lovelace',
+      requester_id: 'requester-3', requester_name: 'Blocked Requester',
+      duration_minutes: 15, meeting_type: 'networking', message: 'Please meet.',
+      created_at: '2026-07-30T09:00:00.000Z', expires_at: '2026-08-06T09:00:00.000Z',
+    };
+    mockAuthState = {
+      user: { email: 'ada@example.test' }, isLoggedIn: true, dbUserId: 'speaker-user-1',
+    };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/speaker-1') {
+        return Promise.resolve({ success: true, data: { data: speaker } });
+      }
+      if (path === 'events/bsl/meetings/limits') {
+        return Promise.resolve({ success: true, data: { data: { remaining_requests: 3, max_requests: 3 } } });
+      }
+      if (path === 'events/bsl/meetings/requests' && options?.method === 'PATCH') {
+        return Promise.resolve({ success: true, data: { data: { success: true } } });
+      }
+      if (path === 'events/bsl/meetings/requests') {
+        return Promise.resolve({ success: true, data: { data: [incomingRequest] } });
+      }
+      return defaultApiResponse(path, options);
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+      await flushPromises();
+    });
+    await act(async () => {
+      const requesterLabel = renderer.root.findAll(
+        (node: any) => node.type === 'Text' && textContent(node) === 'From Blocked Requester',
+      )[0];
+      findPressableAncestor(requesterLabel).props.onPress();
+      await flushPromises();
+    });
+    await act(async () => {
+      findTextPressTarget(renderer, 'requestView.blockUser').props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith('events/bsl/meetings/requests', {
+      skipEventSegment: true,
+      method: 'PATCH',
+      body: {
+        requestId: 'request-incoming-3', action: 'block', requesterId: 'requester-3', reason: 'User has been blocked',
+      },
+    });
+    expect(mockShowSuccess).toHaveBeenCalledWith(
+      'User Blocked',
+      'The user has been blocked and their request declined',
+    );
+
+    await act(async () => renderer.unmount());
+  });
 });
