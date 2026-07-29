@@ -6,7 +6,9 @@ name: CodeQL
 # coverage for the repository's application and automation code.
 on:
   push:
-    branches: [main, develop]
+    # PRs already scan changes proposed from develop. Restrict push scans to
+    # main so a develop PR does not start a duplicate language matrix.
+    branches: [main]
   pull_request:
     branches: [main, develop]
   schedule:
