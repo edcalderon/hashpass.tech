@@ -243,7 +243,7 @@ locals {
       AWS_DEFAULT_REGION                 = var.aws_region
       AWS_REGION                         = var.aws_region
       CI                                 = "1"
-      TARGET_STAGE                       = "prod"
+      TARGET_STAGE                       = "production"
       EXPO_PUBLIC_SUPABASE_URL           = var.supabase_url_prod
       NEXT_PUBLIC_SUPABASE_URL           = var.supabase_url_prod
       EXPO_PUBLIC_SUPABASE_KEY           = var.supabase_key_prod
