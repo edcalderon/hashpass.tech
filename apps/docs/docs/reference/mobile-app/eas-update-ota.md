@@ -269,6 +269,53 @@ the workflow installs it with the same pinned `npm install -g eas-cli@20.1.0`
 step `mobile-android-release.yml` uses, since a plain `pnpm install` only
 installs workspace dependencies, not a global `eas` binary.
 
+## Verifying an OTA update actually applied (added 2026-07-29)
+
+Two things are easy to conflate and both showed up in a real "did OTA work?"
+investigation: whether the update *published* successfully, and whether a
+given installed app has *fetched and applied* it. They're checked
+differently.
+
+**Did it publish?** Check the `mobile-eas-update.yml` run for the push in
+question (`gh run list --repo hashpass-tech/hashpass.tech --workflow
+mobile-eas-update.yml`) — the "Publish OTA update" step logs the branch,
+runtime version (a fingerprint hash, not a version string), platform,
+update group ID, and the triggering commit directly:
+
+```
+Branch             production
+Runtime version    a10bb450181f5a948c9619e0abdce3d1dfcffc3f
+Platform           android
+Update group ID    04b3d69a-b84f-450f-aef2-3ecf51d68004
+Commit             a654bc855...
+```
+
+If that run shows `Skipping OTA publish` instead, the guard found a
+native-sensitive change in that push — see "Automatic native-change guard"
+above.
+
+**Did the installed app pick it up?** This app has no custom
+`Updates.checkForUpdateAsync()`/`fetchUpdateAsync()` code and
+`app.json`'s `expo.updates` is `{}` (all defaults), so it relies entirely
+on `expo-updates`' built-in behavior: check silently on every app launch,
+download in the background if a compatible update exists, but only
+*apply* it on the **next** cold start — not the session that downloaded it.
+A user who publishes an update and then checks their already-running app
+without a full force-close + reopen will see no change and reasonably
+suspect the update didn't work, when it's actually just waiting for a
+relaunch.
+
+The in-app "Update Status (OTA)" section (Version Details modal, right
+below Build Information — added 2026-07-29, `VersionDetailsModal.tsx`)
+answers this directly, reading `expo-updates`' own `Updates.isEmbeddedLaunch`
+/ `Updates.channel` / `Updates.updateId` / `Updates.createdAt`: "Native
+build bundle (no OTA update applied)" means the app is still running its
+originally-installed JS, "Fetched OTA update" means the currently-running
+bundle came from a real EAS Update publish, along with its channel and
+update ID so it can be cross-referenced against the publish log above.
+Force-close and reopen the app, then check this section, before concluding
+an OTA push didn't take effect.
+
 ## Rollback
 
 ```bash
