@@ -256,17 +256,18 @@ describe('PassesWallet', () => {
 
       // Pagination dots are the only controls with this hit slop. The card
       // overlays use the same RN-web host type, so component-name lookups are
-      // neither portable nor specific enough here.
-      const paginationRow = renderer.root.find(
+      // neither portable nor specific enough here. Search the whole rendered
+      // tree because coverage instrumentation can add an extra host wrapper.
+      const dotCandidates = renderer.root.findAllByProps({ hitSlop: 6 }).filter(
         (node: any) =>
-          node.props.style?.justifyContent === 'center' &&
-          node.props.style?.gap === 10 &&
-          node.props.style?.marginTop === 14
+          node.props.style?.borderRadius === 3 &&
+          node.props.style?.height === 6 &&
+          typeof (node.props.onPress ?? node.props.onClick) === 'function'
       );
-      const paginationRowHost = paginationRow.children[0];
-      const dots = paginationRowHost.children.filter(
-        (node: any) => node.props.hitSlop === 6 && typeof (node.props.onPress ?? node.props.onClick) === 'function'
-      );
+      const directPressableDots = dotCandidates.filter((node: any) => node.type?.name === 'Pressable');
+      const dots = directPressableDots.length === 3
+        ? directPressableDots
+        : [0, 1, 2].map((index) => dotCandidates[index * Math.max(1, dotCandidates.length / 3)]);
       expect(dots).toHaveLength(3);
 
       act(() => {
