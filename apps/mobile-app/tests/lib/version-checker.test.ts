@@ -65,6 +65,8 @@ function installWebGlobals() {
   };
 
   (global as any).sessionStorage = {
+    getItem: jest.fn(),
+    setItem: jest.fn(),
     clear: jest.fn(),
   };
 }
@@ -139,6 +141,27 @@ describe('version checker', () => {
     expect(wasCleared).toBe(false);
     expect(mockReload).not.toHaveBeenCalled();
     expect(mockApiGet).not.toHaveBeenCalled();
+  });
+
+  it('never retries the same forced update after a cache-clearing reload has already run', async () => {
+    mockApiGet.mockResolvedValue({
+      success: true,
+      data: {
+        currentVersion: '1.8.156',
+        versionInfo: {
+          needsUpdate: true,
+        },
+      },
+    });
+    (global as any).sessionStorage.getItem = jest.fn(() => '1.8.154:1.8.156');
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { checkVersionAndClearCache } = require('../../lib/version-checker');
+    const wasCleared = await checkVersionAndClearCache(true);
+
+    expect(wasCleared).toBe(false);
+    expect(mockCacheDelete).not.toHaveBeenCalled();
+    expect(mockReload).not.toHaveBeenCalled();
   });
 
   afterEach(() => {

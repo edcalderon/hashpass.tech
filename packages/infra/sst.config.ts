@@ -160,7 +160,7 @@ export default $config({
       };
     }
 
-    const { getBslSiteConfig } = await import("./src/domains.js");
+    const { getBslSiteConfig, BSL_SPA_FALLBACK_REWRITE } = await import("./src/domains.js");
     const site = getBslSiteConfig($app.stage);
     const zone = process.env.ROUTE53_ZONE_ID ? { zone: process.env.ROUTE53_ZONE_ID } : undefined;
 
@@ -183,6 +183,14 @@ export default $config({
       environment: {
         ...site.environment,
         ...getPublicSupabaseEnv(site.stage),
+      },
+      edge: {
+        // The active BSL front door uses an S3 website origin. Without this
+        // rewrite a direct SPA route gets index.html with HTTP 404, which
+        // turns an old cached client into an endless bootstrap/reload loop.
+        viewerRequest: {
+          injection: BSL_SPA_FALLBACK_REWRITE,
+        },
       },
     });
 
