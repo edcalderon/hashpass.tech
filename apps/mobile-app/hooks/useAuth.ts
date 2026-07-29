@@ -331,8 +331,35 @@ const warnIfProviderDisabled = (provider: string, error: unknown): void => {
   );
 };
 
+// useAuth() is called independently from several unconnected places (root
+// layout, dashboard layout, BalanceContext, NotificationContext, the auth
+// screen, ...). Each used to get its OWN authSessionMachine actor via
+// useState, meaning a signOut() dispatched from one instance's actor never
+// reached any other -- e.g. the dashboard's actor would correctly flip to
+// unauthenticated and navigate to /auth, but the root layout's own,
+// completely separate actor still held its last-cached "logged in" result,
+// so the auth screen (reading isLoggedIn from ITS OWN actor) saw a still-
+// authenticated user and immediately redirected back to the dashboard --
+// this is exactly why a real page reload "fixed" it (every actor re-
+// bootstraps from the now-actually-cleared storage) while an in-app
+// navigation did not. Sharing one module-level actor across every useAuth()
+// call site fixes this: a signOut() from any consumer is immediately
+// visible to all of them. Reference-counted start/stop below so one
+// consumer unmounting doesn't stop the actor out from under the others
+// still using it.
+let sharedAuthActor: ReturnType<typeof createAuthSessionActor> | null = null;
+let sharedAuthActorRefCount = 0;
+let sharedAuthActorStarted = false;
+
+const getSharedAuthActor = () => {
+  if (!sharedAuthActor) {
+    sharedAuthActor = createAuthSessionActor();
+  }
+  return sharedAuthActor;
+};
+
 export const useAuth = () => {
-  const [authActor] = useState(() => createAuthSessionActor());
+  const [authActor] = useState(() => getSharedAuthActor());
   const [authViewState, setAuthViewState] = useState(() =>
     getAuthViewState(authActor.getSnapshot())
   );
@@ -367,12 +394,21 @@ export const useAuth = () => {
       setAuthViewState(getAuthViewState(snapshot));
     });
 
-    authActor.start();
+    sharedAuthActorRefCount += 1;
+    if (!sharedAuthActorStarted) {
+      authActor.start();
+      sharedAuthActorStarted = true;
+    }
     setAuthViewState(getAuthViewState(authActor.getSnapshot()));
 
     return () => {
       subscription.unsubscribe();
-      authActor.stop();
+      sharedAuthActorRefCount -= 1;
+      if (sharedAuthActorRefCount <= 0) {
+        authActor.stop();
+        sharedAuthActorStarted = false;
+        sharedAuthActor = null;
+      }
     };
   }, [authActor]);
 
