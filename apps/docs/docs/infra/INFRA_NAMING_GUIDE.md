@@ -26,20 +26,20 @@ This guide keeps AWS and release resource names readable, consistent, and easy t
 
 ## Current BSL infra names
 
-**Target account (`<target-account-id>`), current as of 2026-07-28** — `packages/infra/terraform/stacks/bsl-target`:
+**Target account (`<target-account-id>`), current as of 2026-07-29** — `packages/infra/terraform/stacks/bsl-target`:
 - Connection: reuses the existing target-account `bsl-hashpass-github-us-east-2` CodeConnections connection
 - Dev pipeline: `bsl-hashpass-dev` (branch `develop`) — **hybrid deploy** (plain `expo export` + S3 sync via `build-bsl-static-site.sh`, no SST), live and serving `bsl-dev.hashpass.tech` since 2026-07-28
-- Production pipeline: `bsl-hashpass-prod` (branch `main`) — **switched to the same hybrid script 2026-07-29**; cutover not finished (CloudFront origin still points at SST's placeholder, so the source-account pipeline is still the live serving path)
+- Production pipeline: `bsl-hashpass-prod` (branch `main`) — **switched to the same hybrid script 2026-07-29 and fully cut over the same day**; CloudFront origin repointed and verified live, source-account pipeline deleted
 - Dev S3 bucket: `bsl-hashpass-bsl-dev-site-<target-account-id>-us-east-2`
 - Prod S3 bucket: `bsl-hashpass-bsl-prod-site-<target-account-id>-us-east-2`
 - EC2 build worker custom action provider: `hashpass-bsl-ec2-build` (distinct from `hashpass-web`'s `hashpass-ec2-build` so job polling never collides)
 - Both pipelines correctly wired to `hashpass-tech/hashpass.tech` — see the incident below for why this specifically mattered.
 
-**Source account (`<source-account-id>`)**:
-- CloudFront distributions: `bsl.hashpass.tech` → `E2FCDJB1JCS7TW` (still SST-managed), `bsl-dev.hashpass.tech` → `E279RW9PP52TC0` (taken out of SST's control 2026-07-28, origin now points at the target bucket above)
-- Prod pipeline: `bsl-hashpass-prod` — repo wiring fixed 2026-07-28, still the live production path, not yet cut over to the hybrid
-- Prod CodeBuild project: `bsl-hashpass-prod-build`
+**Source account (`<source-account-id>`), current as of 2026-07-29**:
+- CloudFront distributions: `bsl.hashpass.tech` → `E2FCDJB1JCS7TW`, `bsl-dev.hashpass.tech` → `E279RW9PP52TC0` — both taken out of SST's control (2026-07-28 dev, 2026-07-29 prod), origins now point at the target buckets above. These are the **only** BSL resources left in the source account, kept deliberately (same permanent hybrid shape `hashpass.tech`/`dev.hashpass.tech` already use). See `.agents/pending/task-bsl-cloudfront-distribution-migration.md` for the (blocked) follow-up to migrate the distributions themselves.
+- ~~Prod pipeline `bsl-hashpass-prod`~~ / ~~Prod CodeBuild project `bsl-hashpass-prod-build`~~ — **deleted 2026-07-29**, superseded by the target-account hybrid, same reasoning as dev below.
 - ~~Dev pipeline `bsl-hashpass-dev`~~ / ~~Dev CodeBuild project `bsl-hashpass-dev-build`~~ — **deleted 2026-07-28**, superseded by the target-account hybrid; kept running would have risked SST reverting the hybrid on the next `develop` push.
+- ~~140GB pipeline artifact/cache bucket, both SST-era web-asset buckets (dev 5.7GB, prod 3.9GB), both leftover CloudFront Functions, all three BSL IAM roles (`BslHashpassCodeBuildRole`/`BslHashpassInfraDeployRole`/`BslHashpassPipelineRole`)~~ — **deleted 2026-07-29** once confirmed orphaned by nothing else referencing them.
 
 **Incident (2026-07-25 to 2026-07-28):** the source-account pipelines above had
 `FullRepositoryId` set to `edcalderon/hashpass.tech` (a personal fork), not

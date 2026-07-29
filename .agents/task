@@ -5,7 +5,6 @@
 | File | Description | Priority |
 |------|-------------|----------|
 | [active/task-hashpass-ai-assistant.md](active/task-hashpass-ai-assistant.md) | App-wide HashPass AI assistant with floating chat UI, standalone page, Bedrock RAG, and Aurora/RDS backing | 🔴 High |
-| [active/task-aws-account-migration.md](active/task-aws-account-migration.md) | Migrate HashPass AWS *services* from account `058264267235` to `952191196420` (DNS zone hosting stays on source by decision); API/Lambda/Android runner/web compute/BSL-dev done via a source-CDN+target-origin hybrid (AWS Support case pending for target CloudFront verification); BSL prod + a few orphaned resources remain | 🔴 High |
 | [active/task-app-publish.md](active/task-app-publish.md) | Google Play Store closed testing upload in progress + production rollout (v1.8.148) | 🔴 High |
 | [../apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md](../apps/mobile-app/docs/native-auth-dashboard-crash-handoff.md) | Native auth resumes to landing but crashes on dashboard entry after v1.8.234; includes XState session-machine state and release evidence | 🔴 High |
 | [active/task-native-google-signin.md](active/task-native-google-signin.md) | Replace browser OAuth with native Google Sign-In SDK (no-browser flow) | 🟡 Medium |
@@ -18,11 +17,13 @@
 | [pending/directus-usage-and-flow.md](pending/directus-usage-and-flow.md) | Organize Directus's actual role (auth vs CMS vs deprecate), document the real Better-Auth-first auth flow, evaluate self-hosted BaaS alternatives (PocketBase, self-hosted Supabase, etc.) | 🟢 Low |
 | [pending/email-proxy-balancer.md](pending/email-proxy-balancer.md) | Brevo primary + self-hosted SMTP fallback with daily budget tracking | 🟡 Medium |
 | [pending/typescript-7-safe-migration.md](pending/typescript-7-safe-migration.md) | Safe staged migration to TypeScript 7 with TS 6 compatibility tooling, config cleanup, and benchmark validation | 🟡 Medium |
+| [pending/task-bsl-cloudfront-distribution-migration.md](pending/task-bsl-cloudfront-distribution-migration.md) | Blocked on AWS Support target-account CloudFront verification; migrate BSL + main-site distributions once unblocked, plus a few small carried-over infra items | 🟢 Low |
 
 ## Done / Archived
 
 | File | Description | Completed |
 |------|-------------|-----------|
+| [done/task-aws-account-migration.md](done/task-aws-account-migration.md) | Migrated HashPass AWS services from the source account to the target account (DNS zone hosting stays on source by decision); API/Lambda, Android runner, web compute, and both BSL environments (dev + prod) fully cut over to a source-CDN+target-compute hybrid; source account has zero remaining BSL resources | 2026-07-29 |
 | [done/task-release-flow-automation.md](done/task-release-flow-automation.md) | Merge-triggered tag & develop-sync replacing the manual release:promote/release:patch dance; validated live on v1.8.218 | 2026-07-13 |
 | [done/task-monorepo-migration.md](done/task-monorepo-migration.md) | Full monorepo migration (pnpm/turbo, packages, apps) | 2026-02-14 |
 
