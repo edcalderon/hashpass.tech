@@ -498,6 +498,7 @@ export const useAuth = () => {
   const [authViewState, setAuthViewState] = useState(() =>
     getAuthViewState(authActor.getSnapshot())
   );
+  const authViewStateRef = useRef(authViewState);
   const { user, isLoggedIn, isLoading } = authViewState;
   // The real Supabase auth.users(id) UUID for the CURRENT Supabase client
   // session, independent of PROVIDER_PRIORITY (auth-session-machine.ts always
@@ -527,33 +528,36 @@ export const useAuth = () => {
     authActor.send(event);
   }, [authActor]);
 
+  const updateAuthViewState = useCallback((nextAuthViewState: ReturnType<typeof getAuthViewState>) => {
+    // Do this before calling the React setter. Returning the existing value
+    // from a functional state updater can still schedule a render in React,
+    // which is enough for duplicate provider callbacks to re-enter nested
+    // auth-consuming dashboard UI.
+    if (hasSameAuthViewState(authViewStateRef.current, nextAuthViewState)) {
+      return;
+    }
+
+    authViewStateRef.current = nextAuthViewState;
+    setAuthViewState(nextAuthViewState);
+  }, []);
+
   useEffect(() => {
     const subscription = authActor.subscribe((snapshot: AuthSessionMachineSnapshot) => {
-      const nextAuthViewState = getAuthViewState(snapshot);
-      setAuthViewState((currentAuthViewState) =>
-        hasSameAuthViewState(currentAuthViewState, nextAuthViewState)
-          ? currentAuthViewState
-          : nextAuthViewState,
-      );
+      updateAuthViewState(getAuthViewState(snapshot));
     });
 
     if (!sharedAuthActorStarted) {
       authActor.start();
       sharedAuthActorStarted = true;
     }
-    const nextAuthViewState = getAuthViewState(authActor.getSnapshot());
-    setAuthViewState((currentAuthViewState) =>
-      hasSameAuthViewState(currentAuthViewState, nextAuthViewState)
-        ? currentAuthViewState
-        : nextAuthViewState,
-    );
+    updateAuthViewState(getAuthViewState(authActor.getSnapshot()));
 
     return () => {
       subscription.unsubscribe();
       // Deliberately does not stop the shared actor -- see the comment above
       // getSharedAuthActor().
     };
-  }, [authActor]);
+  }, [authActor, updateAuthViewState]);
 
   const applyAuthenticatedSession = useCallback((session?: AuthSession | null): boolean => {
     if (!session?.user) {

@@ -70,7 +70,9 @@ The following tests protect this behavior:
 - `tests/auth/auth-session-machine.test.ts` verifies that a duplicate Better
   Auth provider resolution retains the exact context reference.
 - `tests/auth/useAuth-native-google.test.tsx` covers a timed-out web bootstrap
-  and shares a failed bootstrap across hook remounts.
+  and shares a failed bootstrap across hook remounts. It also mounts two
+  independent `useAuth()` consumers and proves duplicate Better Auth callbacks
+  schedule no additional React renders.
 - `tests/api/auth/supabase-bridge.test.ts` and
   `tests/lib/auth/supabase-admin-bridge.test.ts` keep Supabase verification on
   the server-side bridge.
