@@ -29,8 +29,13 @@ export const getHashpassFooterLogo = (isDark: boolean): ImageSourcePropType => {
 export const getHashpassStaticHeroLogo = (
   isDark: boolean,
 ): ImageSourcePropType => {
+  // Unlike the footer, the static hero sits on the page's own background
+  // (#FFFFFF in light mode, see home.tsx's animatedBackground) -- not a
+  // dark-tinted backdrop -- so light mode needs the black logo for
+  // contrast, same as getHashpassFullLogo. Previously copied the footer's
+  // white variant here, which rendered invisible (white-on-white).
   if (Platform.OS === "web") {
-    return isDark ? HASHPASS_DARK_LOGO_WEB : HASHPASS_LIGHT_FOOTER_LOGO_WEB;
+    return isDark ? HASHPASS_DARK_LOGO_WEB : HASHPASS_LIGHT_LOGO_WEB;
   }
 
   return isDark ? HASHPASS_DARK_LOGO_NATIVE : HASHPASS_LIGHT_LOGO_NATIVE;

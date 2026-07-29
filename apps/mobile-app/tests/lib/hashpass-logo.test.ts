@@ -78,10 +78,14 @@ describe("getHashpassFooterLogo", () => {
 });
 
 describe("getHashpassStaticHeroLogo", () => {
-  it("uses the white logo on light web no-animation hero surfaces", () => {
+  it("uses the black logo on light web no-animation hero surfaces", () => {
+    // Unlike the footer, the static hero sits on the page's own light-mode
+    // background (#FFFFFF), not a dark-tinted backdrop -- so it needs the
+    // black logo for contrast, matching getHashpassFullLogo and this same
+    // function's own native branch below.
     mockPlatform.OS = "web";
 
-    expect(getHashpassStaticHeroLogo(false)).toBe("white-svg");
+    expect(getHashpassStaticHeroLogo(false)).toBe("black-svg");
   });
 
   it("keeps the white-cyan logo on dark web no-animation hero surfaces", () => {

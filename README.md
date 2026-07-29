@@ -20,18 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.276)
+## 📋 Latest Changes (v1.8.277)
 
 ### Bug Fixes
 
-* bound BSL/web EC2 worker builds with a process-group timeout ([c3e4107](https://github.com/hashpass-tech/hashpass.tech/commit/c3e41073a2b9a50ccfcc389cbdd7332e9eb48630))
-
-
-### Features
-
-* extend the BSL hybrid deploy to prod ([3ccc983](https://github.com/hashpass-tech/hashpass.tech/commit/3ccc9838865087be000dedb9f86390d36c289d93))
+* BSL prod pipeline was silently building with dev config ([a151420](https://github.com/hashpass-tech/hashpass.tech/commit/a151420da31853e7ea9f4ec054d00c3f385128bc))
 ### Release Highlights
-- extend the BSL hybrid deploy to prod; bound BSL/web EC2 worker builds with a process-group timeout
+- BSL prod pipeline was silently building with dev config
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -30,10 +30,14 @@ if [ -z "${SITE_BUCKET_NAME:-}" ]; then
   exit 1
 fi
 
-BSL_STAGE="production"
-if [ "${TARGET_STAGE}" != "production" ]; then
-  BSL_STAGE="dev"
-fi
+case "${TARGET_STAGE}" in
+  production) BSL_STAGE="production" ;;
+  dev) BSL_STAGE="dev" ;;
+  *)
+    echo "TARGET_STAGE must be exactly 'production' or 'dev', got '${TARGET_STAGE}'" >&2
+    exit 1
+    ;;
+esac
 
 echo "Building BSL static site (hybrid: target S3 + source CloudFront)"
 echo "  Root dir:      ${ROOT_DIR}"

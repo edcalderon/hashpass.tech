@@ -35,13 +35,16 @@ export interface LampBrandingConfig {
   logoAlt: string;
 }
 
-const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg');
-const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.svg');
+// webp, not svg: React Native's Image view has no SVG decoder on native
+// (Android/iOS), so these must be rasterized to render at all there. Web
+// renders webp fine too, so no platform branching is needed here.
+const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp');
+const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.webp');
 const BSL_WHITE_BRAND_LOGO = require('../assets/logos/bsl/bsl-white.webp');
-const BSL_ONTOUR_LOGO = require('../assets/logos/bsl/bsl-ontour-pro.svg');
-const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.svg');
-const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.svg');
-const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.svg');
+const BSL_ONTOUR_LOGO = require('../assets/logos/bsl/bsl-ontour-pro.webp');
+const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.webp');
+const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.webp');
+const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.webp');
 
 // Main HASHPASS Logo
 const LOGO_SLIDE_BACKGROUND = '#07111F';
@@ -165,7 +168,12 @@ export default function EventBannerCarousel({
       logoId: MAIN_HASHPASS_LOGO.id,
       logoSrcDark: MAIN_HASHPASS_LOGO.darkSrc,
       logoSrcLight: MAIN_HASHPASS_LOGO.lightSrc,
-      backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
+      // Unlike the other logo slides (always-white logo on an always-dark
+      // backdrop), this one switches the logo itself between black (light
+      // theme) and white/cyan (dark theme) -- so the backdrop must switch
+      // too, or light mode pairs a black logo with a permanently dark
+      // background and it goes unreadable.
+      backgroundColor: isDark ? MAIN_HASHPASS_LOGO.backgroundColor : '#FFFFFF',
       accentColor: MAIN_HASHPASS_LOGO.accentColor,
     },
     // Add BSL plain logo second

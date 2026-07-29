@@ -78,7 +78,19 @@ export const resolveWebOrigin = (options: ResolveWebOriginOptions = {}) => {
     typeof window !== 'undefined' ? parseOrigin(window.location?.origin) : null;
   const explicitEnvOrigin = envCandidates.map(parseOrigin).find(Boolean) || null;
 
-  if (browserOrigin && !isLocalOrigin(browserOrigin)) {
+  // The browser's own origin is ground truth for "what origin is this code
+  // currently running under" -- trust it unconditionally (not just when
+  // non-local), rather than gating a genuinely-local origin behind
+  // isLocalDevRuntime()'s env-var sniffing. That env check can be wrong
+  // (NODE_ENV/EXPO_PUBLIC_ENV not set to a recognized dev value during a
+  // real local session) while window.location.origin is still plainly
+  // localhost -- previously that caused local Google sign-in to build its
+  // callback URL against the hardcoded production fallback below instead
+  // of the local dev server. Not a security boundary: window.location.origin
+  // describes where the current tab already is, it isn't attacker-controlled
+  // the way a request header would be. allowLocal=false (native relay flows)
+  // still opts out of trusting a local origin here.
+  if (browserOrigin && (!isLocalOrigin(browserOrigin) || allowLocal)) {
     return normalizeOrigin(browserOrigin);
   }
 
