@@ -1,14 +1,19 @@
 import { Image, type ImageSourcePropType } from 'react-native';
 
-const BSL_ONTOUR_LOGO = require('../assets/logos/bsl/bsl-ontour-pro.svg');
-const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.svg');
-const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.svg');
-const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.svg');
-const BSL_ARCHIVE_LOGO = require('../assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg');
-const BSL_ARCHIVE_BANNER = require('../assets/images/bsl2025-hero.svg');
+// SVG can't be decoded by React Native's native Image view (Android/iOS have
+// no SVG image decoder, unlike browsers) -- these must be rasterized (webp)
+// for native to render them at all. Web renders fine either way. See
+// apps/docs/docs/reference/mobile-app/ for the equivalent hashpass-logo
+// PNG->WebP conversion this follows the same pattern as.
+const BSL_ONTOUR_LOGO = require('../assets/logos/bsl/bsl-ontour-pro.webp');
+const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.webp');
+const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.webp');
+const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.webp');
+const BSL_ARCHIVE_LOGO = require('../assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.webp');
+const BSL_ARCHIVE_BANNER = require('../assets/images/bsl2025-hero.webp');
 const BSL_PLAIN_LOGO = require('../assets/logos/bsl/bsl-white.webp');
-const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg');
-const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.svg');
+const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp');
+const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.webp');
 
 export interface TourBrandAsset {
   logo: ImageSourcePropType;
