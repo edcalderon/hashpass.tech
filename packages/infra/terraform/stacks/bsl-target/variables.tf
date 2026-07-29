@@ -57,13 +57,13 @@ variable "build_action_timeout" {
 }
 
 variable "build_script_path" {
-  description = "Build/deploy script path relative to the repository root -- runs the full SST deploy, not just a static build. Still used by prod until it also moves to the hybrid path."
+  description = "Legacy SST-based build/deploy script -- runs the full sst deploy, including CreateDistribution. No longer wired to either pipeline (both moved to the hybrid path 2026-07-29); kept for reference/rollback."
   type        = string
   default     = "packages/tools/scripts/build-bsl-infra.sh"
 }
 
-variable "build_script_path_dev_hybrid" {
-  description = "Dev-only hybrid build/deploy script: plain static export + S3 sync, no SST/Pulumi CloudFront creation. Repoints the existing source-account bsl-dev.hashpass.tech distribution's origin at this stack's S3 bucket instead."
+variable "build_script_path_hybrid" {
+  description = "Hybrid build/deploy script used by both prod and dev: plain static export + S3 sync, no SST/Pulumi CloudFront creation. Repoints the existing source-account distribution's origin at this stack's S3 bucket instead."
   type        = string
   default     = "packages/tools/scripts/build-bsl-static-site.sh"
 }
