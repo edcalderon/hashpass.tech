@@ -154,6 +154,20 @@ describe('PassesWallet', () => {
     expect(passSystemService.getAllUserPasses).not.toHaveBeenCalled();
   });
 
+  it('renders BSL-style flat cards without the stacked wallet controls', async () => {
+    const passes = [
+      makePass({ pass_id: 'pass-chile', event_id: 'chile2026' }),
+      makePass({ pass_id: 'pass-colombia', event_id: 'colombia2026' }),
+    ];
+    (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue(passes);
+
+    const renderer = await renderWallet({ layout: 'plain' });
+
+    expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(2);
+    expect(renderer.root.findAllByType('MockSearchAndFilter')).toHaveLength(0);
+    expect(renderer.root.findAllByProps({ name: 'chevron-right' })).toHaveLength(0);
+  });
+
   it('keeps the skeleton visible until a Supabase database identity is available', async () => {
     mockDbUserId = null;
 

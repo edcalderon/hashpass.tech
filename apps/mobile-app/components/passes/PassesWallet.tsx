@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  ScrollView,
   Text,
   TouchableOpacity,
   useWindowDimensions,
@@ -38,6 +39,7 @@ interface PassesWalletProps {
   eventIds?: string[];
   refreshTrigger?: number;
   onPassesLoaded?: (passes: PassInfo[]) => void;
+  layout?: 'stacked' | 'plain';
 }
 
 // How far each card behind the front one peeks out to the right, and how much
@@ -53,7 +55,12 @@ interface PassesWalletProps {
 const STACK_OFFSET_X = 26;
 const STACK_SCALE_STEP = 0.04;
 
-const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, onPassesLoaded }) => {
+const PassesWallet: React.FC<PassesWalletProps> = ({
+  eventIds,
+  refreshTrigger,
+  onPassesLoaded,
+  layout = 'stacked',
+}) => {
   const { colors, isDark } = useTheme();
   const { dbUserId } = useAuth();
   const { t } = useTranslation('passes');
@@ -113,7 +120,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbUserId, refreshTrigger, eventIdsKey]);
 
-  const walletPasses = useMemo(() => buildWalletPasses(passes), [passes]);
+  const walletPasses: WalletPass[] = useMemo(() => buildWalletPasses(passes), [passes]);
   const counts = useMemo(() => countWalletPasses(walletPasses), [walletPasses]);
 
   const handleFilteredData = useCallback((next: WalletPass[]) => {
@@ -165,12 +172,12 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
   // actually move (see stableIndex below) instead of always landing on the
   // first dot, which is what happened when the indicator was derived from
   // `deck` itself.
-  const stableOrder = hasFilterResult ? filteredPasses : walletPasses;
+  const stableOrder: WalletPass[] = hasFilterResult ? filteredPasses : walletPasses;
 
   // Draw order for the stack: whichever card was last tapped sits in front,
   // everything else keeps stableOrder. Deriving this rather than storing a
   // whole array keeps it correct when filtering changes the set.
-  const deck = useMemo(() => {
+  const deck: WalletPass[] = useMemo(() => {
     if (!frontId) return stableOrder;
     const promoted = stableOrder.find((pass) => pass.id === frontId);
     if (!promoted) return stableOrder;
@@ -247,6 +254,26 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
           {t('contactSupport', 'Contact support to get your event passes')}
         </Text>
       </View>
+    );
+  }
+
+  // BSL intentionally keeps the legacy flat row: its tenant currently has
+  // only two tour-stop passes, so a stack/search/filter surface adds motion
+  // and controls without helping the attendee. The main hashpass.tech tenant
+  // continues to use the stacked 3D wallet below.
+  if (layout === 'plain') {
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingRight: 20 }}
+      >
+        {walletPasses.map((pass) => (
+          <View key={pass.id} style={{ width: cardWidth, marginRight: 16 }}>
+            <PassWalletCard pass={pass} />
+          </View>
+        ))}
+      </ScrollView>
     );
   }
 
