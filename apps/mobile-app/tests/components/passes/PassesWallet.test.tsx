@@ -105,6 +105,17 @@ const renderWallet = async (props: React.ComponentProps<typeof PassesWallet> = {
   return renderer!;
 };
 
+// react-native-web currently renders TouchableOpacity and Pressable as host
+// Views with an onClick prop in react-test-renderer. Keep the interaction
+// assertions independent of that host implementation detail.
+const triggerPress = (node: any) => {
+  const handler = node.props.onPress ?? node.props.onClick;
+  if (typeof handler !== 'function') {
+    throw new Error('Expected a pressable test node');
+  }
+  handler();
+};
+
 describe('PassesWallet', () => {
   beforeEach(() => {
     mockDbUserId = 'supabase-user-id';
@@ -200,26 +211,27 @@ describe('PassesWallet', () => {
       const renderer = await renderWallet();
       expect(frontPassId(renderer)).toBe('pass-aaa');
 
-      const [leftArrow, rightArrow] = renderer.root.findAllByType('TouchableOpacity');
+      const leftArrow = renderer.root.findByProps({ name: 'chevron-left' }).parent!;
+      const rightArrow = renderer.root.findByProps({ name: 'chevron-right' }).parent!;
 
       act(() => {
-        rightArrow.props.onPress();
+        triggerPress(rightArrow);
       });
       expect(frontPassId(renderer)).toBe('pass-bbb');
 
       act(() => {
-        rightArrow.props.onPress();
+        triggerPress(rightArrow);
       });
       expect(frontPassId(renderer)).toBe('pass-ccc');
 
       act(() => {
-        rightArrow.props.onPress();
+        triggerPress(rightArrow);
       });
       // Wraps back around past the end of the stable order.
       expect(frontPassId(renderer)).toBe('pass-aaa');
 
       act(() => {
-        leftArrow.props.onPress();
+        triggerPress(leftArrow);
       });
       // Wraps the other direction from the start.
       expect(frontPassId(renderer)).toBe('pass-ccc');
@@ -228,15 +240,23 @@ describe('PassesWallet', () => {
     it('jumps straight to a pass when its pagination dot is tapped', async () => {
       const renderer = await renderWallet();
 
-      // findAllByType('Pressable') would also pick up the stack's own
-      // "tap a card behind to bring it forward" overlays -- scope to the
-      // arrows' shared parent row, which only the pagination dots live in.
-      const [leftArrow] = renderer.root.findAllByType('TouchableOpacity');
-      const dots = leftArrow.parent!.findAllByType('Pressable');
+      // Pagination dots are the only controls with this hit slop. The card
+      // overlays use the same RN-web host type, so component-name lookups are
+      // neither portable nor specific enough here.
+      const paginationRow = renderer.root.find(
+        (node: any) =>
+          node.props.style?.justifyContent === 'center' &&
+          node.props.style?.gap === 10 &&
+          node.props.style?.marginTop === 14
+      );
+      const paginationRowHost = paginationRow.children[0];
+      const dots = paginationRowHost.children.filter(
+        (node: any) => node.props.hitSlop === 6 && typeof (node.props.onPress ?? node.props.onClick) === 'function'
+      );
       expect(dots).toHaveLength(3);
 
       act(() => {
-        dots[2].props.onPress();
+        triggerPress(dots[2]);
       });
 
       expect(frontPassId(renderer)).toBe('pass-ccc');
@@ -255,10 +275,12 @@ describe('PassesWallet', () => {
         .find((view: any) =>
           view.findAllByType('MockPassWalletCard').some((card: any) => card.props.passId === 'pass-bbb')
         );
-      const overlay = behindStack!.findByType('Pressable');
+      const overlay = behindStack!.find(
+        (node: any) => node.props.style?.position === 'absolute' && typeof (node.props.onPress ?? node.props.onClick) === 'function'
+      );
 
       act(() => {
-        overlay.props.onPress();
+        triggerPress(overlay);
       });
 
       expect(frontPassId(renderer)).toBe('pass-bbb');
