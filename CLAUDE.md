@@ -351,8 +351,37 @@ On every push to `main`, **two independent auto-deploy systems** run in parallel
 - The target web deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`; if the version endpoint is stale, the deploy must fail
 - `infra-deploy.yml` also runs `packages/tools/scripts/deploy-api-lambda.sh` after the SST static deploy attempt. This is the release safety net for patch releases: the workflow must switch to the target-account `AWS_WEB_PIPELINE_ROLE_ARN`, build a fresh Expo API bundle, update `hashpass-prod-expo-router-api` on `main` and `hashpass-dev-expo-router-api` on `develop`, then verify the public version endpoint before the release can be considered complete. The SST BSL static deploy is best-effort in this workflow; the API Lambda verification remains the hard release gate.
 - Because `deploy-api-lambda.sh` syncs Lambda environment variables before uploading code, the target-account `hashpass-web-github-actions` role must allow `lambda:UpdateFunctionConfiguration` on both Expo Router API Lambda functions, in addition to `lambda:UpdateFunctionCode`.
-- `bsl.hashpass.tech` (prod) is deployed by its own dedicated CodePipeline + EC2 worker, not `infra-deploy.yml` — see `apps/docs/docs/infra/DEPLOYMENT_MAP.md`'s BSL section for the full current split between prod (still SST) and dev (hybrid, no SST).
+- `bsl.hashpass.tech` (prod) is deployed by its own dedicated CodePipeline + EC2 worker, not `infra-deploy.yml` — see `apps/docs/docs/infra/DEPLOYMENT_MAP.md`'s BSL section for the full current split between prod (cutover in progress) and dev (hybrid, no SST).
 - `infra-deploy.yml` auto-triggers on push to `main`/`develop` when infra or API paths change (Route53 + CloudFront permissions added to IAM role in v1.8.92)
+
+### A "slow" BSL/web pipeline build is usually a hang or a queue, not a slow build
+
+The EC2 pipeline workers (`modules/aws_pipeline_ec2_worker`, used by both `bsl-target` and
+`hashpass-web`) process jobs **one at a time**, and **a cancelled CodePipeline execution does not stop
+the worker's build process** — the control plane marks it `Cancelled` but nothing signals the worker, so
+the orphan keeps running and blocks every subsequent job indefinitely. Confirmed 2026-07-29: a
+`terraform apply` against a pipeline mid-execution left an orphaned `sst deploy` hung forever on an ACM
+DNS validation, blocking a real rebuild for 20+ minutes.
+
+**The tell is CPU, not elapsed time**: a genuine build pegs the worker (~90%+); a hang or a queued job
+sits near-idle (~0.3%) while still reporting `InProgress`. Check that first:
+
+```bash
+aws cloudwatch get-metric-statistics --namespace AWS/EC2 --metric-name CPUUtilization \
+  --dimensions Name=InstanceId,Value=<worker-id> --start-time <t> --end-time <t> \
+  --period 300 --statistics Average --profile hashpass
+# then, if idle:
+aws ssm send-command --instance-ids <worker-id> --document-name AWS-RunShellScript \
+  --parameters 'commands=["ps -eo pid,etimes,pcpu,args | grep -v grep | head -20","sudo journalctl -u <name-prefix>-build-runner.service -n 40 --no-pager"]' \
+  --profile hashpass
+```
+
+Two other things worth knowing: **don't `terraform apply` a pipeline while it has a running execution**
+(that's what creates the orphan), and `instance_count = 1` means dev and prod **serialize** — several
+`InProgress` executions queueing behind one worker inflates wall-clock time well past the ~10min real
+build. A `build_timeout_seconds` guard now bounds this automatically, but `user_data` only runs at boot,
+so it takes effect after an instance replacement. Full writeup: the "EC2 pipeline worker: operational
+gotchas" section of `.agents/active/task-aws-account-migration.md`.
 
 ### Checking Deployment Status
 
