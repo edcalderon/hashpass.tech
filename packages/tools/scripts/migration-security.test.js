@@ -7,6 +7,14 @@ const meetingLifecycleMigrationPath = path.join(
   root,
   'db/migrations/V018__event_scoped_meeting_rpc_contract.sql',
 );
+const meetingLimitsMigrationPath = path.join(
+  root,
+  'db/migrations/V019__event_scoped_meeting_limits_and_duration_guard.sql',
+);
+const targetBslBootstrapPath = path.join(
+  root,
+  'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
+);
 const profilePath = path.join(__dirname, 'config/database-profiles.json');
 
 describe('upcoming BSL pass provisioning migration', () => {
@@ -36,12 +44,31 @@ describe('event-scoped meeting lifecycle migration contract', () => {
     expect(migration).toMatch(/event_id[\s\S]*p_event_id/i);
   });
 
-  it('ships both lifecycle migrations through the default tenant migration command', () => {
+  it('ships all lifecycle migrations through the default tenant migration command', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
 
     expect(config.groups['meeting-lifecycle']).toEqual([
       'db/migrations/V017__harden_meeting_request_lifecycle.sql',
       'db/migrations/V018__event_scoped_meeting_rpc_contract.sql',
+      'db/migrations/V019__event_scoped_meeting_limits_and_duration_guard.sql',
     ]);
+  });
+
+  it('makes meeting request counts explicitly event-scoped for PostgREST RPC calls', () => {
+    const bootstrap = fs.readFileSync(targetBslBootstrapPath, 'utf8');
+    const functionMatch = bootstrap.match(
+      /CREATE OR REPLACE FUNCTION public\.get_user_meeting_request_counts\(([\s\S]*?)\$\$;/,
+    );
+
+    expect(functionMatch).not.toBeNull();
+    expect(functionMatch[0]).toMatch(/p_event_id\s+text/i);
+    expect(functionMatch[0]).not.toMatch(/current_setting\('app\.event_id'/i);
+  });
+
+  it('guards persisted meeting durations even outside the API boundary', () => {
+    const migration = fs.readFileSync(meetingLimitsMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/p_event_id\s+text/i);
+    expect(migration).toMatch(/duration_minutes BETWEEN 5 AND 30/i);
   });
 });

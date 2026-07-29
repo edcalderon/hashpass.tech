@@ -38,6 +38,14 @@ that own event data must include that path ID, and a lifecycle action first
 checks that the target request belongs to it. This prevents cross-event reads
 and mutations even when a client sends conflicting input.
 
+The meeting-limits route forwards that validated ID to the count provider as
+an explicit argument. Provider functions must not fall back to a session
+setting or default event, because RPC calls do not carry that ambient context.
+
+`POST /meetings/requests` accepts whole durations from **5 to 30 minutes**.
+The API rejects invalid values before calling the provider, and the
+meeting-request table enforces the same range as a database backstop.
+
 ## Scheduling lifecycle
 
 1. **Agenda** reads `event_agenda` for the path event ID. Agenda-status reads

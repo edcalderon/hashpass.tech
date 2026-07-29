@@ -8,6 +8,8 @@ import { eventIdFromRequest } from "@/lib/server/event-api";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ACTIONS = new Set(["accept", "decline", "cancel", "block"]);
+const MIN_MEETING_DURATION_MINUTES = 5;
+const MAX_MEETING_DURATION_MINUTES = 30;
 
 async function authenticatedIdentity(request: Request) {
   const identity = await resolveNotificationIdentity(request);
@@ -142,6 +144,18 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const durationMinutes = body.durationMinutes === undefined ? 15 : Number(body.durationMinutes);
+  if (
+    !Number.isFinite(durationMinutes) ||
+    !Number.isInteger(durationMinutes) ||
+    durationMinutes < MIN_MEETING_DURATION_MINUTES ||
+    durationMinutes > MAX_MEETING_DURATION_MINUTES
+  ) {
+    return Response.json(
+      { error: "durationMinutes must be between 5 and 30 minutes" },
+      { status: 400 },
+    );
+  }
 
   const supabase = getSupabaseServerForRequest(request);
   try {
@@ -157,7 +171,7 @@ export async function POST(request: Request) {
       p_message: body.message || "",
       p_note: body.note || null,
       p_boost_amount: Number(body.boostAmount) || 0,
-      p_duration_minutes: Number(body.durationMinutes) || 15,
+      p_duration_minutes: durationMinutes,
       p_event_id: eventId,
     });
     if (error) throw error;

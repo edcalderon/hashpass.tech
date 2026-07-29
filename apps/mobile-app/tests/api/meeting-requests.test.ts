@@ -461,6 +461,70 @@ describe("meeting-requests api", () => {
       });
     });
 
+    it.each([
+      ["a negative duration", -15],
+      ["a zero duration", 0],
+      ["a NaN duration", "NaN"],
+      ["an infinite duration", "Infinity"],
+      ["a duration above the 30-minute meeting limit", 31],
+    ])("rejects %s before invoking the meeting request RPC", async (_label, durationMinutes) => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await POST(
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
+          method: "POST",
+          body: JSON.stringify({
+            speakerId: "claudia-sotelo",
+            speakerName: "Claudia Sotelo",
+            requesterName: "Ada Lovelace",
+            durationMinutes,
+          }),
+        }),
+      );
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        error: "durationMinutes must be between 5 and 30 minutes",
+      });
+      expect(mockRpc).not.toHaveBeenCalled();
+    });
+
+    it("sends a supported positive duration to the meeting request RPC", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockRpc.mockResolvedValue({
+        data: { id: "request-123", status: "pending" },
+        error: null,
+      });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await POST(
+        new Request("https://api.hashpass.tech/api/events/bsl/meetings/requests", {
+          method: "POST",
+          body: JSON.stringify({
+            speakerId: "claudia-sotelo",
+            speakerName: "Claudia Sotelo",
+            requesterName: "Ada Lovelace",
+            durationMinutes: 15,
+          }),
+        }),
+      );
+
+      expect(response.status).toBe(201);
+      expect(mockRpc).toHaveBeenCalledWith(
+        "insert_meeting_request",
+        expect.objectContaining({ p_duration_minutes: 15 }),
+      );
+    });
+
     it("rejects unauthenticated, unlinked, malformed, and incomplete requests", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         error: "Unauthorized",

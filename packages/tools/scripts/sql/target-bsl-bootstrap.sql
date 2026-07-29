@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS public.meeting_requests (
   requester_ticket_type text CHECK (requester_ticket_type IN ('general', 'business', 'vip')),
   preferred_date text,
   preferred_time text,
-  duration_minutes integer NOT NULL DEFAULT 15,
+  duration_minutes integer NOT NULL DEFAULT 15 CHECK (duration_minutes BETWEEN 5 AND 30),
   meeting_type text NOT NULL DEFAULT 'networking',
   message text NOT NULL DEFAULT '',
   note text,
@@ -2114,7 +2114,11 @@ END;
 $$;
 
 DROP FUNCTION IF EXISTS public.get_user_meeting_request_counts(text);
-CREATE OR REPLACE FUNCTION public.get_user_meeting_request_counts(p_user_id text)
+DROP FUNCTION IF EXISTS public.get_user_meeting_request_counts(text, text);
+CREATE OR REPLACE FUNCTION public.get_user_meeting_request_counts(
+  p_user_id text,
+  p_event_id text
+)
 RETURNS TABLE (
   total_requests bigint,
   accepted_requests bigint,
@@ -2134,7 +2138,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_event_id text := COALESCE(NULLIF(current_setting('app.event_id', true), ''), 'bsl2025');
+  v_event_id text := NULLIF(trim(COALESCE(p_event_id, '')), '');
   v_pass RECORD;
   v_total bigint := 0;
   v_accepted bigint := 0;
@@ -2143,6 +2147,10 @@ DECLARE
   v_declined bigint := 0;
   v_cancelled bigint := 0;
 BEGIN
+  IF v_event_id IS NULL THEN
+    RAISE EXCEPTION 'A valid event id is required';
+  END IF;
+
   SELECT
     p.id,
     p.pass_type::text AS pass_type,
@@ -2214,7 +2222,7 @@ BEGIN
   END IF;
 
   SELECT * INTO v_counts
-  FROM public.get_user_meeting_request_counts(p_user_id)
+  FROM public.get_user_meeting_request_counts(p_user_id, p_event_id)
   LIMIT 1;
 
   RETURN COALESCE(v_counts.remaining_requests, 0) > 0;
@@ -3574,7 +3582,7 @@ GRANT EXECUTE ON FUNCTION public.is_speaker_active(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.is_speaker_online(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_pass_type_limits(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_default_pass(text, text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_user_meeting_request_counts(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_user_meeting_request_counts(text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_send_meeting_request(text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_make_meeting_request(text, text, numeric, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.insert_meeting_request(text, text, text, text, text, text, text, text, text, text, numeric, integer, timestamptz, text) TO authenticated;

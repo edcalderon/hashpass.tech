@@ -8,7 +8,6 @@ import type { CreateMeetingRequestData } from '../../../../lib/matchmaking';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useBalance } from '@contexts/BalanceContext';
 import { apiClient, eventApiPath } from '@/lib/api-client';
-import { passSystemService } from '../../../../lib/pass-system';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
 import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl, resolveSpeakerImage } from '../../../../lib/string-utils';
@@ -795,23 +794,33 @@ export default function SpeakerDetail() {
       return;
     }
 
-    // Check if user has a pass
+    // Revalidate entitlement through the event API immediately before sending.
+    // This keeps the browser independent of the database provider and prevents
+    // stale limits from allowing a request after the initial screen load.
     try {
-      const passInfo = await passSystemService.getUserPassInfo(dbUserId, eventId);
-      if (!passInfo) {
-        console.log('❌ User has no pass, redirecting to login...');
-        // Close the modal and redirect to auth page
+      const response = await apiClient.request(meetingRequestLimitsPath, {
+        skipEventSegment: true,
+      });
+      if (!response.success) throw new Error(response.error);
+      const limits = (response.data as any)?.data;
+      if (!limits || Number(limits.remaining_requests || 0) <= 0) {
+        showError(
+          'Meeting Request Unavailable',
+          'You do not have any meeting requests remaining for this event.',
+        );
         setShowMeetingModal(false);
-        const currentPath = `/events/${eventId}/speakers/${id}`;
-        router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
         return;
       }
+      if (limits.pass_type) {
+        setUserPassType(limits.pass_type as 'general' | 'business' | 'vip');
+      }
     } catch (error) {
-      console.error('❌ Error checking pass:', error);
-      // If error checking pass, close modal and redirect to login
+      console.error('❌ Error checking meeting request limits:', error);
+      showError(
+        'Meeting Request Unavailable',
+        'We could not verify your meeting request limits. Please try again.',
+      );
       setShowMeetingModal(false);
-      const currentPath = `/events/${eventId}/speakers/${id}`;
-      router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
       return;
     }
 

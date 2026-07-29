@@ -25,7 +25,7 @@ describe("event meeting limits api", () => {
 
   afterEach(() => mockConsoleError.mockRestore());
 
-  it("reads the authenticated caller's limits through the backend RPC", async () => {
+  it("routes the requested event's limits through the backend RPC", async () => {
     mockResolveIdentity.mockResolvedValue({ supabaseUserId: "user-1" });
     mockIsIdentityError.mockReturnValue(false);
     mockRpc.mockResolvedValue({ data: [{ remaining_requests: 2 }], error: null });
@@ -33,13 +33,14 @@ describe("event meeting limits api", () => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { GET } = require("../../app/api/events/[eventId]/meetings/limits+api");
     const response = await GET(
-      new Request("https://api.hashpass.tech/api/events/bsl/meetings/limits"),
+      new Request("https://api.hashpass.tech/api/events/chile2026/meetings/limits"),
     );
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ data: { remaining_requests: 2 } });
     expect(mockRpc).toHaveBeenCalledWith("get_user_meeting_request_counts", {
       p_user_id: "user-1",
+      p_event_id: "chile2026",
     });
   });
 

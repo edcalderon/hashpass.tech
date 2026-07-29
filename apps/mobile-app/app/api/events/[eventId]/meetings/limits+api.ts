@@ -13,13 +13,14 @@ export async function GET(request: Request) {
   if (!identity.supabaseUserId) {
     return Response.json({ error: "Meeting identity required" }, { status: 403 });
   }
-  if (!eventIdFromRequest(request)) {
+  const eventId = eventIdFromRequest(request);
+  if (!eventId) {
     return Response.json({ error: "A valid event id is required" }, { status: 400 });
   }
 
   const { data, error } = await getSupabaseServerForRequest(request).rpc(
     "get_user_meeting_request_counts",
-    { p_user_id: identity.supabaseUserId },
+    { p_user_id: identity.supabaseUserId, p_event_id: eventId },
   );
   if (error) {
     console.error("[meeting-limits] fetch error:", error);
