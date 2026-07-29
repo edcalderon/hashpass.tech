@@ -55,8 +55,8 @@ export const FEATURES: Record<string, FeatureConfig> = {
     description: 'Connect attendees with speakers for meetings',
     category: 'event',
     dependencies: ['auth'],
-    apiEndpoints: ['/api/bslatam/speakers', '/api/bslatam/bookings', '/api/bslatam/auto-match'],
-    routes: ['/bslatam/home', '/bslatam/speakers', '/bslatam/my-bookings'],
+    apiEndpoints: ['/api/bsl/speakers', '/api/bsl/bookings', '/api/bsl/auto-match'],
+    routes: ['/bsl/home', '/bsl/speakers', '/bsl/my-bookings'],
     components: ['MatchmakingHome', 'SpeakerProfile', 'BookingCalendar'],
     enabled: true
   },
@@ -66,8 +66,8 @@ export const FEATURES: Record<string, FeatureConfig> = {
     description: 'Speaker profiles and availability management',
     category: 'event',
     dependencies: ['auth'],
-    apiEndpoints: ['/api/bslatam/speakers'],
-    routes: ['/bslatam/speakers', '/bslatam/speaker-dashboard'],
+    apiEndpoints: ['/api/bsl/speakers'],
+    routes: ['/bsl/speakers', '/bsl/speaker-dashboard'],
     components: ['SpeakerList', 'SpeakerProfile', 'SpeakerDashboard'],
     enabled: true
   },
@@ -77,8 +77,8 @@ export const FEATURES: Record<string, FeatureConfig> = {
     description: 'Meeting booking and scheduling system',
     category: 'event',
     dependencies: ['auth', 'speakers'],
-    apiEndpoints: ['/api/bslatam/bookings'],
-    routes: ['/bslatam/my-bookings', '/bslatam/speakers/calendar'],
+    apiEndpoints: ['/api/bsl/bookings'],
+    routes: ['/bsl/my-bookings', '/bsl/speakers/calendar'],
     components: ['BookingList', 'BookingCalendar', 'BookingForm'],
     enabled: true
   },
@@ -88,8 +88,8 @@ export const FEATURES: Record<string, FeatureConfig> = {
     description: 'Event administration and management',
     category: 'event',
     dependencies: ['auth'],
-    apiEndpoints: ['/api/bslatam/admin'],
-    routes: ['/bslatam/admin'],
+    apiEndpoints: ['/api/bsl/admin'],
+    routes: ['/bsl/admin'],
     components: ['AdminPanel', 'EventAnalytics'],
     enabled: true
   },
@@ -101,7 +101,7 @@ export const FEATURES: Record<string, FeatureConfig> = {
     description: 'Advanced analytics and reporting',
     category: 'premium',
     dependencies: ['auth', 'admin'],
-    apiEndpoints: ['/api/bslatam/analytics'],
+    apiEndpoints: ['/api/bsl/analytics'],
     components: ['AnalyticsDashboard', 'EventMetrics'],
     enabled: false
   },
@@ -111,7 +111,7 @@ export const FEATURES: Record<string, FeatureConfig> = {
     description: 'Real-time notifications and alerts',
     category: 'premium',
     dependencies: ['auth'],
-    apiEndpoints: ['/api/bslatam/notifications'],
+    apiEndpoints: ['/api/bsl/notifications'],
     components: ['NotificationCenter', 'NotificationSettings'],
     enabled: false
   }

@@ -20,7 +20,7 @@ interface MeetingSlot {
   updated_at: string;
 }
 
-// GET /api/bslatam/meeting-slots?userId=xxx - Get available slots for a user
+// GET /api/bsl/meeting-slots?userId=xxx - Get available slots for a user
 export async function GET(request: Request): Promise<Response> {
   try {
     const supabase = getSupabaseServerForRequest(request);
@@ -90,7 +90,7 @@ export async function GET(request: Request): Promise<Response> {
   }
 }
 
-// POST /api/bslatam/meeting-slots - Generate weekly slots for current user
+// POST /api/bsl/meeting-slots - Generate weekly slots for current user
 export async function POST(request: Request): Promise<Response> {
   try {
     const supabase = getSupabaseServerForRequest(request);

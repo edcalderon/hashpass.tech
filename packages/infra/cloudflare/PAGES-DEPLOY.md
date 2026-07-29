@@ -84,7 +84,7 @@ API routes in `dist/client/_expo/functions/api/**/*` are automatically handled b
 Example routes:
 - `/api/status` → `dist/client/_expo/functions/api/status+api.js`
 - `/api/auth/otp` → `dist/client/_expo/functions/api/auth/otp+api.js`
-- `/api/bslatam/agenda` → `dist/client/_expo/functions/api/bslatam/agenda+api.js`
+- `/api/events/:eventId/agenda` → `dist/client/_expo/functions/api/events/[eventId]/agenda+api.js`
 
 ## Troubleshooting
 

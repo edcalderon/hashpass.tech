@@ -66,7 +66,12 @@ function getChangedFiles(baseCommit) {
   collectPaths(runGit(['diff', '--name-only', '--diff-filter=ACMR']), files);
   collectPaths(runGit(['ls-files', '--others', '--exclude-standard']), files);
 
-  return Array.from(files).sort();
+  // `git diff --name-only` reports both sides of a rename. Deleted source
+  // paths cannot be copied into the isolated typecheck workspace, and they
+  // no longer need validation; keep the destination path instead.
+  return Array.from(files)
+    .filter((filePath) => fs.existsSync(path.join(ROOT_DIR, filePath)))
+    .sort();
 }
 
 function isTypeScriptFile(filePath) {

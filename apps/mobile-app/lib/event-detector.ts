@@ -35,7 +35,6 @@ const TENANT_ALIASES: Record<string, string> = {
   'bsl-on-tour': 'bsl',
   'bsl-ontour': 'bsl',
   bsl: 'bsl',
-  bslatam: 'bsl',
   ontour: 'bsl',
   'bsl-2025': 'bsl2025',
   bsl2025: 'bsl2025',

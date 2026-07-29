@@ -10,7 +10,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import EventBanner from '../../../components/EventBanner';
 import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, eventApiPath } from '@/lib/api-client';
 import { 
   getAgendaTypeColor,
   parseEventISO,
@@ -22,7 +22,6 @@ import type {
 } from '../../../types/agenda';
 import { EVENTS } from '../../../config/events';
 import { useAuth } from '../../../hooks/useAuth';
-import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import ScheduleConfirmationModal from '../../../components/ScheduleConfirmationModal';
 import * as Haptics from 'expo-haptics';
@@ -126,9 +125,8 @@ export default function BSL2025AgendaScreen() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [speakerMapRef, setSpeakerMapRef] = useState<Map<string, { id: string; name: string; image?: string }>>(new Map());
   const eventId = event?.id || 'bsl';
-  // Derive URL segment from event config so native requests use the correct path
-  // e.g. event.api.basePath = '/api/bslatam' → apiSegment = 'bslatam'
-  const apiSegment = event?.api?.basePath?.replace(/^\/api\//, '') ?? eventId;
+  const agendaApiPath = eventApiPath(eventId, 'agenda');
+  const agendaStatusApiPath = eventApiPath(eventId, 'agenda/status');
   const eventDateLabel = event?.eventDateString || event?.subtitle || 'Tour 2026';
   const eventLocationLabel = event?.tour?.city && event?.tour?.country
     ? `${event.tour.city}, ${event.tour.country}`
@@ -235,7 +233,9 @@ export default function BSL2025AgendaScreen() {
         try {
           // Try to fetch agenda directly first
           console.log('🌐 Fetching agenda data...');
-          const response = await apiClient.request('agenda', { apiSegment });
+          const response = await apiClient.request(agendaApiPath, {
+            skipEventSegment: true,
+          });
 
           // Handle the API response format: { data: [...] }
           let agendaData = [];
@@ -303,7 +303,7 @@ export default function BSL2025AgendaScreen() {
     };
 
     loadAgenda();
-  }, [event?.agenda, eventId]);
+  }, [event?.agenda, eventId, agendaApiPath]);
 
   // Ensure filteredAgenda is populated when agenda loads
   useEffect(() => {
@@ -335,12 +335,13 @@ export default function BSL2025AgendaScreen() {
           });
         }
 
-        // Fetch and add speakers from database (by UUID)
+        // Fetch and add speakers from the event API (by UUID).
         try {
-          const { data: dbSpeakers } = await supabase
-            .from('bsl_speakers')
-            .select('id, name, image_url')
-            .not('id', 'is', null);
+          const response = await apiClient.request(eventApiPath(eventId, 'speakers'), {
+            skipEventSegment: true,
+          });
+          if (!response.success) throw new Error(response.error);
+          const dbSpeakers = (response.data as any)?.data || [];
 
           if (Array.isArray(dbSpeakers)) {
             dbSpeakers.forEach((speaker: any) => {
@@ -348,7 +349,7 @@ export default function BSL2025AgendaScreen() {
                 map.set(speaker.id, {
                   id: speaker.id,
                   name: speaker.name,
-                  image: speaker.image_url,
+                  image: speaker.imageurl || speaker.image_url,
                 });
               }
             });
@@ -365,7 +366,7 @@ export default function BSL2025AgendaScreen() {
     };
 
     loadSpeakersMap();
-  }, [event]);
+  }, [event, eventId]);
 
   // Check if we're in the event period and if event is finished
   useEffect(() => {
@@ -387,9 +388,8 @@ export default function BSL2025AgendaScreen() {
     const refreshTimer = setInterval(() => {
       const refreshAgenda = async () => {
         try {
-          const response = await apiClient.request('agenda', {
-            params: { eventId },
-            apiSegment,
+          const response = await apiClient.request(agendaApiPath, {
+            skipEventSegment: true,
           });
           if (response.success && response.data) {
             let agendaData: any[] = [];
@@ -410,7 +410,7 @@ export default function BSL2025AgendaScreen() {
     }, updateInterval);
 
     return () => clearInterval(refreshTimer);
-  }, [isLive, isEventPeriod]);
+  }, [isLive, isEventPeriod, agendaApiPath]);
 
   // Group agenda by day
   useEffect(() => {
@@ -876,7 +876,7 @@ export default function BSL2025AgendaScreen() {
   // failing for id-slug references (a hyphenated, unaccented slug rarely
   // substring-matches an accented display name), which is why agenda cards
   // were rendering the raw id slug as if it were the speaker's name.
-  // When bsl_speakers returns database rows, supplement the map with both
+  // When the backend speaker directory returns database rows, supplement the map with both
   // database UUIDs and event.speakers config slugs.
   const resolveAgendaSpeaker = (
     value: string
@@ -907,17 +907,15 @@ export default function BSL2025AgendaScreen() {
     // First try synchronous lookup
     let speakerId = findSpeakerId(speakerName);
     
-    // If not found, try database lookup
+    // If not found, ask the backend directory search.
     if (!speakerId) {
       try {
-        const { data } = await supabase
-          .from('bsl_speakers')
-          .select('id')
-          .ilike('name', `%${speakerName}%`)
-          .limit(1)
-          .single();
-        
-        if (data?.id) speakerId = data.id;
+        const response = await apiClient.request(eventApiPath(eventId, 'speakers'), {
+          skipEventSegment: true,
+          params: { search: speakerName },
+        });
+        const data = (response.data as any)?.data;
+        if (response.success && Array.isArray(data) && data[0]?.id) speakerId = data[0].id;
       } catch (e) {
         // Ignore errors
       }
@@ -937,9 +935,8 @@ export default function BSL2025AgendaScreen() {
         return;
       }
       try {
-        const response = await apiClient.request('agenda-status', {
-          apiSegment,
-          params: { eventId },
+        const response = await apiClient.request(agendaStatusApiPath, {
+          skipEventSegment: true,
         });
 
         if (!response.success) {
@@ -967,7 +964,7 @@ export default function BSL2025AgendaScreen() {
     };
 
     loadUserAgendaStatus();
-  }, [user, eventId]);
+  }, [user, eventId, agendaStatusApiPath]);
 
   // Handle toggle confirmation
   const handleToggleConfirmation = async (agendaItem: AgendaItem, startTime: Date) => {
@@ -978,10 +975,10 @@ export default function BSL2025AgendaScreen() {
     const newStatus = currentStatus === 'confirmed' ? 'tentative' : 'confirmed';
     
     try {
-      const response = await apiClient.request('agenda-status', {
-        apiSegment,
+      const response = await apiClient.request(agendaStatusApiPath, {
+        skipEventSegment: true,
         method: 'POST',
-        body: { eventId, agendaId: agendaItem.id, status: newStatus },
+        body: { agendaId: agendaItem.id, status: newStatus },
       });
       if (!response.success) throw new Error(response.error);
 
@@ -1014,10 +1011,10 @@ export default function BSL2025AgendaScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
-      const response = await apiClient.request('agenda-status', {
-        apiSegment,
+      const response = await apiClient.request(agendaStatusApiPath, {
+        skipEventSegment: true,
         method: 'POST',
-        body: { eventId, agendaId: agendaItem.id, isFavorite: newFavorite },
+        body: { agendaId: agendaItem.id, isFavorite: newFavorite },
       });
       if (!response.success) throw new Error(response.error);
 

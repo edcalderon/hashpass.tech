@@ -40,7 +40,7 @@ jest.mock('@hashpass/auth', () => ({
   },
 }));
 
-import { EventApiClient, getCaptchaApiEndpoint } from '../../lib/api-client';
+import { EventApiClient, eventApiPath, getCaptchaApiEndpoint } from '../../lib/api-client';
 import { Platform } from 'react-native';
 
 const envBackup: Record<string, string | undefined> = {};
@@ -99,6 +99,13 @@ afterEach(() => {
 });
 
 describe('EventApiClient credential handling', () => {
+  it('builds an event-scoped API path without inheriting a brand route', () => {
+    expect(eventApiPath).toEqual(expect.any(Function));
+    expect(eventApiPath('chile2026', 'meetings/requests')).toBe(
+      'events/chile2026/meetings/requests'
+    );
+  });
+
   it('omits credentials for public requests with skipAuth enabled', async () => {
     const fetchMock = jest.fn(async () => ({
       ok: true,

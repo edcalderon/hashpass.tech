@@ -1,4 +1,5 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
+import { eventIdFromRequest } from '@/lib/server/event-api';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,8 +16,13 @@ export async function OPTIONS() {
 
 export async function GET(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
-  const { searchParams } = new URL(request.url);
-  const eventId = searchParams.get('eventId') || 'bsl';
+  const eventId = eventIdFromRequest(request);
+  if (!eventId) {
+    return new Response(JSON.stringify({ error: 'A valid event id is required' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
 
   try {
     const { data, error } = await supabase
