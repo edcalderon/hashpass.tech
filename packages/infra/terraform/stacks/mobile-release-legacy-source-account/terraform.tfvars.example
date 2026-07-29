@@ -9,9 +9,12 @@ github_repository = "hashpass-tech/hashpass.tech"
 runner_name_prefix = "hashpass-mobile-release"
 runner_labels      = ["hashpass-mobile-release"]
 
-# t3a.large gives 2 vCPU / 8 GiB RAM — minimum for Gradle + NDK builds without OOM.
-# t3a.medium (4 GiB) caused OOM after ~18 min during native compilation.
-instance_type = "t3a.large"
+# t3a.xlarge gives 4 vCPU / 16 GiB RAM. Restored 2026-07-28 to maximize build
+# speed -- t3a.large (2 vCPU / 8 GiB, minimum viable without OOM; t3a.medium's
+# 4 GiB OOM'd after ~18 min during native compilation) left a cold-cache
+# native build CPU-bound at 100% for over an hour. Downgrade to t3a.large
+# only if cost pressure outweighs build-speed priority again.
+instance_type = "t3a.xlarge"
 
 # Leave empty to let the stack create a dedicated public VPC/subnet for the runner.
 subnet_ids = []

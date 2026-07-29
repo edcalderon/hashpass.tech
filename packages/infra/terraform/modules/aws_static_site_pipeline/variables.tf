@@ -137,3 +137,28 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# Opt-in path-filtered trigger (2026-07-28). Defaults preserve existing
+# behavior (V1 pipeline, branch-only trigger via the CodeStarSourceConnection
+# EventBridge rule) for any consumer of this module that doesn't set these --
+# only set enable_path_filtered_trigger = true where you actually want it
+# (see the bsl-target stack for the sibling implementation and the reasoning
+# behind broad includes + precise excludes to stay under AWS's 8-item cap
+# per list).
+variable "enable_path_filtered_trigger" {
+  description = "Upgrade to a V2 pipeline with a git file-path-filtered trigger instead of the V1 branch-only EventBridge trigger. Opt-in so existing consumers of this module are unaffected."
+  type        = bool
+  default     = false
+}
+
+variable "trigger_path_includes" {
+  description = "File path include patterns for the trigger (max 8, AWS-enforced). Only used when enable_path_filtered_trigger is true."
+  type        = list(string)
+  default     = []
+}
+
+variable "trigger_path_excludes" {
+  description = "File path exclude patterns for the trigger (max 8, AWS-enforced). Only used when enable_path_filtered_trigger is true."
+  type        = list(string)
+  default     = []
+}

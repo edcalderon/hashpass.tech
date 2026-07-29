@@ -1,3 +1,20 @@
+## [1.8.275](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.274...v1.8.275) (2026-07-28)
+
+
+### Bug Fixes
+
+* scope Metro cache to the workspace on the BSL EC2 worker ([053c09a](https://github.com/hashpass-tech/hashpass.tech/commit/053c09aa27284106119ad885ca28655ab1d158b8))
+* skip cross-account CloudFront invalidation in BSL hybrid deploy ([2806e87](https://github.com/hashpass-tech/hashpass.tech/commit/2806e879e5411d5b2307836b1ad09494ca7ea74e))
+* stop hashpass-web pipeline monitor from killing the BSL EC2 worker ([1815d3d](https://github.com/hashpass-tech/hashpass.tech/commit/1815d3d2ae73c66ba9445772886e9b22b76c8e4f))
+
+
+### Features
+
+* hybrid BSL dev deploy -- source CloudFront, target S3 + compute ([f57debc](https://github.com/hashpass-tech/hashpass.tech/commit/f57debce9bfcc759f5824656e4eff99dae58d472))
+* **infra:** migrate BSL to a proper target-account EC2-worker pipeline ([724ce4c](https://github.com/hashpass-tech/hashpass.tech/commit/724ce4ca85427dd3f0f833f7e69f737258b5752e))
+### Release Highlights
+- hybrid BSL dev deploy -- source CloudFront, target S3 + compute; migrate BSL to a proper target-account EC2-worker pipeline; skip cross-account CloudFront invalidation in BSL hybrid deploy; scope Metro cache to the workspace on the BSL EC2 worker; stop hashpass-web pipeline monitor from killing the BSL EC2 worker
+
 ## [1.8.274](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.273...v1.8.274) (2026-07-28)
 
 

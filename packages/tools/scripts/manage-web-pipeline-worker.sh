@@ -5,6 +5,7 @@ REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-2}}"
 PIPELINE_NAMES_RAW="${WEB_PIPELINE_NAMES:-hashpass-dev-site,hashpass-production-site}"
 PROJECT_TAG="${WEB_PIPELINE_PROJECT_TAG:-hashpass}"
 SERVICE_TAG="${WEB_PIPELINE_SERVICE_TAG:-pipeline-build-worker}"
+PROVIDER_TAG="${WEB_PIPELINE_PROVIDER_TAG:-hashpass-ec2-build}"
 GRACE_SECONDS="${WEB_PIPELINE_GRACE_SECONDS:-30}"
 START_WAIT_SECONDS="${WEB_PIPELINE_START_WAIT_SECONDS:-180}"
 POLL_SECONDS="${WEB_PIPELINE_POLL_SECONDS:-20}"
@@ -49,6 +50,7 @@ Environment variables:
   WEB_PIPELINE_NAMES
   WEB_PIPELINE_PROJECT_TAG
   WEB_PIPELINE_SERVICE_TAG
+  WEB_PIPELINE_PROVIDER_TAG
   WEB_PIPELINE_GRACE_SECONDS
   WEB_PIPELINE_START_WAIT_SECONDS
   WEB_PIPELINE_POLL_SECONDS
@@ -61,6 +63,7 @@ worker_instance_ids() {
     --filters \
       "Name=tag:Project,Values=${PROJECT_TAG}" \
       "Name=tag:Service,Values=${SERVICE_TAG}" \
+      "Name=tag:Provider,Values=${PROVIDER_TAG}" \
       "Name=instance-state-name,Values=pending,running,stopping,stopped" \
     --output json \
     | jq -r '.Reservations[]?.Instances[]?.InstanceId'
@@ -72,6 +75,7 @@ worker_instance_report() {
     --filters \
       "Name=tag:Project,Values=${PROJECT_TAG}" \
       "Name=tag:Service,Values=${SERVICE_TAG}" \
+      "Name=tag:Provider,Values=${PROVIDER_TAG}" \
       "Name=instance-state-name,Values=pending,running,stopping,stopped" \
     --output json \
     | jq -r '
@@ -177,7 +181,7 @@ log_snapshot() {
   summary ""
   summary "- Region: ${REGION}"
   summary "- Pipelines: ${PIPELINE_NAMES[*]}"
-  summary "- Worker tag filter: Project=${PROJECT_TAG}, Service=${SERVICE_TAG}"
+  summary "- Worker tag filter: Project=${PROJECT_TAG}, Service=${SERVICE_TAG}, Provider=${PROVIDER_TAG}"
   summary ""
 
   for pipeline_name in "${PIPELINE_NAMES[@]}"; do
@@ -201,7 +205,7 @@ ensure_worker_running() {
 
   mapfile -t worker_ids < <(worker_instance_ids)
   if [[ "${#worker_ids[@]}" -eq 0 ]]; then
-    log "No EC2 worker instances matched Project=${PROJECT_TAG}, Service=${SERVICE_TAG}."
+    log "No EC2 worker instances matched Project=${PROJECT_TAG}, Service=${SERVICE_TAG}, Provider=${PROVIDER_TAG}."
     return 1
   fi
 
@@ -276,7 +280,7 @@ stop_worker_if_idle() {
 
   mapfile -t worker_ids < <(worker_instance_ids)
   if [[ "${#worker_ids[@]}" -eq 0 ]]; then
-    log "No EC2 worker instances matched Project=${PROJECT_TAG}, Service=${SERVICE_TAG}."
+    log "No EC2 worker instances matched Project=${PROJECT_TAG}, Service=${SERVICE_TAG}, Provider=${PROVIDER_TAG}."
     return 1
   fi
 
@@ -434,6 +438,10 @@ main() {
         ;;
       --service-tag)
         SERVICE_TAG="$2"
+        shift 2
+        ;;
+      --provider-tag)
+        PROVIDER_TAG="$2"
         shift 2
         ;;
       --region)

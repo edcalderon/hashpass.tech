@@ -326,6 +326,10 @@ The last command must succeed without printing the account ID. Use `AWS_PROFILE=
 `hashpass-dns`, and pass `--region us-east-1` for direct Lambda commands against
 `hashpass-prod-expo-router-api` or `hashpass-dev-expo-router-api`.
 
+**Confirmed (2026-07-28): the `default` AWS CLI profile authenticates to the source account (`<source-account-id>`)** — that's what "may point at the source account" above actually resolves to on this machine. Useful for read-only audits of source-account resources (DNS/CloudFront/email/legacy Amplify/old EC2 runner), but never use it for target-account Terraform applies.
+
+**For the Android runner specifically**: use `packages/infra/terraform/stacks/mobile-release-target`, never `mobile-release-legacy-source-account` (renamed 2026-07-28 from `mobile-release` — it tracked the old source-account instance and is deprecated, do not apply). `pnpm run infra:mobile-release:*` already points at the correct one. See `.agents/active/task-aws-account-migration.md` for the full, verified account-by-account inventory and open items.
+
 ## Deployment Architecture
 
 ### How Each Domain Is Deployed
@@ -338,20 +342,21 @@ On every push to `main`, **two independent auto-deploy systems** run in parallel
 |--------|--------|-----------------|
 | `hashpass.tech` | Target-account web pipeline + source CloudFront front door | Push to `main` |
 | `api.hashpass.tech` | AWS Lambda `hashpass-prod-expo-router-api` (us-east-1) | Target web/API deployment flow |
-| `bsl.hashpass.tech` | SST StaticSite via SST Console autodeploy | Push to `main` (SST Console webhook, configured in `sst.config.ts`) |
+| `bsl.hashpass.tech` | Source-account `bsl-hashpass-prod` CodePipeline + EC2 worker, running `sst deploy` directly (not a separate "SST Console autodeploy") | Push to `main` |
+| `bsl-dev.hashpass.tech` | **Hybrid (2026-07-28):** unchanged source-account CloudFront + target-account `bsl-hashpass-dev` CodePipeline/EC2 worker running a plain static build + S3 sync, no SST | Push to `develop` |
 | Android | EC2 + Fastlane → Play Store | Auto-dispatched on `v*.*.*` tag push to `main` via `.github/workflows/mobile-release-on-tag.yml` (internal track); manual `gh workflow run` only for retries or non-default tracks (see workflow below) |
 
 **Critical facts:**
 - `api.hashpass.tech` Lambda is in **us-east-1**, deployed by the target web/API flow (NOT legacy Amplify)
 - The target web deploy helper packages the Expo Router API, updates the configured Lambda, and verifies `https://api.hashpass.tech/api/config/versions` or `https://api-dev.hashpass.tech/api/config/versions`; if the version endpoint is stale, the deploy must fail
-- `infra-deploy.yml` also runs `packages/tools/scripts/deploy-api-lambda.sh` after the SST static deploy attempt. This is the release safety net for patch releases: the workflow must switch to the target-account `AWS_WEB_PIPELINE_ROLE_ARN`, build a fresh Expo API bundle, update `hashpass-prod-expo-router-api` on `main` and `hashpass-dev-expo-router-api` on `develop`, then verify the public version endpoint before the release can be considered complete. The SST BSL static deploy is best-effort in this workflow because `bsl.hashpass.tech` also has its own SST Console autodeploy path; the API Lambda verification remains the hard release gate.
+- `infra-deploy.yml` also runs `packages/tools/scripts/deploy-api-lambda.sh` after the SST static deploy attempt. This is the release safety net for patch releases: the workflow must switch to the target-account `AWS_WEB_PIPELINE_ROLE_ARN`, build a fresh Expo API bundle, update `hashpass-prod-expo-router-api` on `main` and `hashpass-dev-expo-router-api` on `develop`, then verify the public version endpoint before the release can be considered complete. The SST BSL static deploy is best-effort in this workflow; the API Lambda verification remains the hard release gate.
 - Because `deploy-api-lambda.sh` syncs Lambda environment variables before uploading code, the target-account `hashpass-web-github-actions` role must allow `lambda:UpdateFunctionConfiguration` on both Expo Router API Lambda functions, in addition to `lambda:UpdateFunctionCode`.
-- `bsl.hashpass.tech` is deployed by **SST Console** (NOT the `infra-deploy.yml` GitHub Actions workflow)
+- `bsl.hashpass.tech` (prod) is deployed by its own dedicated CodePipeline + EC2 worker, not `infra-deploy.yml` — see `apps/docs/docs/infra/DEPLOYMENT_MAP.md`'s BSL section for the full current split between prod (still SST) and dev (hybrid, no SST).
 - `infra-deploy.yml` auto-triggers on push to `main`/`develop` when infra or API paths change (Route53 + CloudFront permissions added to IAM role in v1.8.92)
 
 ### Checking Deployment Status
 
-Historical Amplify build history is archived in `archive/amplify/README.md`. For the active stack, check the target web pipeline and the SST Console for `bsl.hashpass.tech`.
+Historical Amplify build history is archived in `archive/amplify/README.md`. For the active stack, check the target web pipeline and BSL's own CodePipelines (`bsl-hashpass-prod` on `bsl.hashpass.tech`'s account, `bsl-hashpass-dev` on the target account) — see `apps/docs/docs/infra/DEPLOYMENT_MAP.md`.
 
 ### Key Files
 - `.github/workflows/mobile-android-release.yml` — Android release CI

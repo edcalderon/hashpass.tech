@@ -20,18 +20,21 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.274)
+## 📋 Latest Changes (v1.8.275)
 
 ### Bug Fixes
 
-* fail production builds loudly when Supabase config is missing ([aa16f36](https://github.com/hashpass-tech/hashpass.tech/commit/aa16f36fad99894f80264dbbb13462efda434f36))
+* scope Metro cache to the workspace on the BSL EC2 worker ([053c09a](https://github.com/hashpass-tech/hashpass.tech/commit/053c09aa27284106119ad885ca28655ab1d158b8))
+* skip cross-account CloudFront invalidation in BSL hybrid deploy ([2806e87](https://github.com/hashpass-tech/hashpass.tech/commit/2806e879e5411d5b2307836b1ad09494ca7ea74e))
+* stop hashpass-web pipeline monitor from killing the BSL EC2 worker ([1815d3d](https://github.com/hashpass-tech/hashpass.tech/commit/1815d3d2ae73c66ba9445772886e9b22b76c8e4f))
 
 
 ### Features
 
-* add EAS Update (OTA) for mobile, default releases to OTA-only ([e919cf2](https://github.com/hashpass-tech/hashpass.tech/commit/e919cf2dd07b9927a82e90a7879626549153a322))
+* hybrid BSL dev deploy -- source CloudFront, target S3 + compute ([f57debc](https://github.com/hashpass-tech/hashpass.tech/commit/f57debce9bfcc759f5824656e4eff99dae58d472))
+* **infra:** migrate BSL to a proper target-account EC2-worker pipeline ([724ce4c](https://github.com/hashpass-tech/hashpass.tech/commit/724ce4ca85427dd3f0f833f7e69f737258b5752e))
 ### Release Highlights
-- add EAS Update (OTA) for mobile, default releases to OTA-only; fail production builds loudly when Supabase config is missing
+- hybrid BSL dev deploy -- source CloudFront, target S3 + compute; migrate BSL to a proper target-account EC2-worker pipeline; skip cross-account CloudFront invalidation in BSL hybrid deploy; scope Metro cache to the workspace on the BSL EC2 worker; stop hashpass-web pipeline monitor from killing the BSL EC2 worker
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
@@ -174,7 +177,7 @@ Deployment split:
 - Expo prebuild enables Android release minification, so Gradle emits a `mapping.txt` file for release builds.
 - The Fastlane release lane automatically uploads any Play deobfuscation files it finds in the Android build outputs (`mapping.txt` or `native-debug-symbols.zip`), so future crash traces stay readable in Play Console. This only applies to builds created after this change; the already-uploaded draft artifact will stay without deobfuscation until a new build is uploaded.
 - The full Play Console ladder and production publish checklist live in [apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md](apps/docs/docs/reference/release/PLAY_CONSOLE_RELEASE_FLOW.md).
-- The reusable Terraform stack lives in `packages/infra/terraform/stacks/mobile-release`, with convenience commands exposed as `pnpm run infra:mobile-release:plan` and `pnpm run infra:mobile-release:apply`.
+- The reusable Terraform stack lives in `packages/infra/terraform/stacks/mobile-release-target` (the runner's real, active account), with convenience commands exposed as `pnpm run infra:mobile-release:plan` and `pnpm run infra:mobile-release:apply`. `stacks/mobile-release-legacy-source-account` is a deprecated, pre-migration stack — see its README before touching it.
 - If the AWS account has no default VPC, the mobile release stack now creates a small managed public VPC and subnet automatically so the runner can provision cleanly.
 - Fastlane expects `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; the workflow writes the JSON and keystore into `.runner-secrets/` before the release starts.
 - The repo-wide `packageManager` field is the source of truth for pnpm; legacy Amplify and infra buildspecs read it through `packages/tools/scripts/resolve-pnpm-version.js` so CI stays on the same pnpm version as local releases and EAS.

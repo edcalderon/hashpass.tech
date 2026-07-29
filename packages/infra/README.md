@@ -22,8 +22,8 @@ Set `HASHPASS_INFRA_TARGET=club-docs` only if you need to inspect the archived S
 - `packages/infra/terraform/stacks/hashpass-web` as the target-account `hashpass.tech` and `dev.hashpass.tech` CodePipeline + EC2 worker stack that publishes the static origins consumed by the source CloudFront front door
 - `hashpass.club` as the canonical club site, with `club.hashpass.tech` and `docs.hashpass.tech` as DNS aliases
 - `apps/web-app` and `apps/docs` assembled into a single combined static artifact for GitHub Pages
-- `packages/infra/terraform/stacks/mobile-release` as the AWS EC2 GitHub Actions runner for mobile Android builds, including its managed public VPC when the account has no default network
-- `packages/infra/terraform/stacks/mobile-release-target` as the target-account Android runner used during the migration; it uses the distinct `hashpass-mobile-release-target` label so it does not compete with the source runner
+- `packages/infra/terraform/stacks/mobile-release-target` as the real, active AWS EC2 GitHub Actions runner for mobile Android builds (account `<target-account-id>`), including its managed public VPC when the account has no default network
+- `packages/infra/terraform/stacks/mobile-release-legacy-source-account` as a deprecated, pre-migration stack tracking the old source account (`<source-account-id>`) — do not apply; see its README
 
 ## Commands
 

@@ -333,12 +333,36 @@ resource "aws_iam_role_policy" "codepipeline" {
 }
 
 resource "aws_codepipeline" "site" {
-  name     = local.pipeline_name
-  role_arn = aws_iam_role.codepipeline.arn
+  name          = local.pipeline_name
+  role_arn      = aws_iam_role.codepipeline.arn
+  pipeline_type = var.enable_path_filtered_trigger ? "V2" : "V1"
 
   artifact_store {
     location = aws_s3_bucket.artifacts.bucket
     type     = "S3"
+  }
+
+  dynamic "trigger" {
+    for_each = var.enable_path_filtered_trigger ? [1] : []
+
+    content {
+      provider_type = "CodeStarSourceConnection"
+
+      git_configuration {
+        source_action_name = "Source"
+
+        push {
+          branches {
+            includes = [var.branch_name]
+          }
+
+          file_paths {
+            includes = var.trigger_path_includes
+            excludes = var.trigger_path_excludes
+          }
+        }
+      }
+    }
   }
 
   stage {

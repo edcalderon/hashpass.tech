@@ -10,9 +10,37 @@ This is the authoritative reference for which service hosts which domain and how
 | `dev.hashpass.tech` | Source CloudFront + Route53 | Static site from target-account S3 origin | global / us-east-1 | Auto — the development pipeline publishes the dev origin; the source front door keeps the hostname HTTPS-only |
 | `api.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | **us-east-1** | Auto — target web pipeline deploys `hashpass-prod-expo-router-api` and verifies `/api/config/versions` |
 | `api-dev.hashpass.tech` | AWS Lambda + API Gateway | Expo Router API routes | us-east-1 | Auto — target dev web pipeline deploys `hashpass-dev-expo-router-api` and verifies `/api/config/versions` |
-| `bsl.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `main` |
-| `bsl-dev.hashpass.tech` | SST StaticSite (S3 + CloudFront) | Static (Expo web export) | us-east-2 | Auto — SST Console autodeploy on push to `develop` |
+| `bsl.hashpass.tech` | CodePipeline + EC2 worker running `sst deploy` (SST StaticSite: S3 + CloudFront) — still fully source-account | Static (Expo web export) | us-east-2 | Auto — `bsl-hashpass-prod` pipeline (source account) on push to `main`; repo wiring fixed 2026-07-28, not yet cut over to the hybrid dev uses |
+| `bsl-dev.hashpass.tech` | Hybrid (cut over 2026-07-28): source-account CloudFront (unchanged, `E279RW9PP52TC0`) fronting a plain target-account S3 bucket | Static (Expo web export) | us-east-2 | Auto — `bsl-hashpass-dev` pipeline (target account, `bsl-target` stack) on push to `develop`, running `build-bsl-static-site.sh` (no SST) |
 | `hashpass.club` | GitHub Pages | Next.js static | CDN | Auto — `deploy-club-docs.yml` on push to `main` |
+
+## Account split: what's on the source account vs. the target account
+
+Two AWS accounts are in play (see `.agents/active/task-aws-account-migration.md`
+for the full, verified audit): the **source account** (`<source-account-id>`, the
+original account, still holds DNS/CloudFront/email for all `hashpass.*`
+domains) and the **target account** (`<target-account-id>`, the newer account,
+holds the actual compute — Lambda, the Android release runner, the S3
+origins CloudFront serves). **DNS/hosted zone hosting for `hashpass.tech`,
+`hashpass.club`, `hashpass.lat`, and `hashpass.info` stays on the source
+account indefinitely by decision (2026-07-28)** — this is not a pending
+cutover, it's the intended stable state. `hashpass.club` and `hashpass.info`
+also carry live email (MX/DKIM/DMARC) on the source account; `hashpass.info`
+specifically is the planned fallback SMTP domain for
+`.agents/pending/email-proxy-balancer.md`.
+
+**Two things found live in AWS during that audit but not documented
+anywhere in this file before now:**
+
+- **`bitacora.hashpass.tech`** — a CloudFront distribution exists for this
+  hostname (source account, SST-placeholder origin, same shape as BSL) but
+  nothing in this repo's docs, scripts, or workflows references it. Purpose
+  unconfirmed (possibly a changelog/audit-log site — "bitácora" is Spanish
+  for "logbook"). Needs identification before anyone can say how to deploy
+  or maintain it.
+- **Legacy Amplify app `bsl2025.hashpass.tech`** (source account,
+  `us-east-2`) — confirmed archival/no longer maintained (2026-07-28); fine
+  to leave stale on the source account, no deploy path needed.
 
 ## Critical: The front door, API, and BSL deploy paths are independent
 
@@ -21,7 +49,7 @@ The public surface is now split across independent deployment paths:
 1. The source-account CloudFront front door serves `hashpass.tech` and `dev.hashpass.tech` and aliases both hostnames to the target-account static origins.
 2. The target-account web pipeline publishes the `hashpass.tech` S3 origin and the `dev.hashpass.tech` development origin.
 3. The same target web deploy helper packages the Expo Router API, updates the matching Lambda, and fails if the public API version endpoint is stale.
-4. The SST Console autodeploy path still serves `bsl.hashpass.tech` (us-east-2).
+4. `bsl-dev.hashpass.tech` is served by a **hybrid** path (target-account `bsl-hashpass-dev` CodePipeline + EC2 worker running a plain static build/S3-sync, fronted by the *unchanged* source-account CloudFront distribution) — see below. `bsl.hashpass.tech` (prod) is still entirely on the source-account `bsl-hashpass-prod` CodePipeline running SST's own deploy engine; it has not been cut over yet.
 
 These are completely independent. A failure in one does not affect the other. Check the correct dashboard when debugging.
 
@@ -33,7 +61,7 @@ The public front door is a source-account CloudFront distribution. If the origin
 
 ```bash
 # Inspect the source front door
-terraform -chdir=packages/infra/terraform/stacks/aws plan -var-file=terraform.dev.tfvars -var='site_origin_domain_name=hashpass-production-site-952191196420-us-east-2.s3-website.us-east-2.amazonaws.com'
+terraform -chdir=packages/infra/terraform/stacks/aws plan -var-file=terraform.dev.tfvars -var='site_origin_domain_name=hashpass-production-site-<target-account-id>-us-east-2.s3-website.us-east-2.amazonaws.com'
 ```
 
 The target web pipeline publishes the S3 origin that CloudFront serves.
@@ -57,16 +85,32 @@ Patch releases also run `packages/tools/scripts/deploy-api-lambda.sh` from `infr
 - Development must return the release version from `https://api-dev.hashpass.tech/api/config/versions`.
 - A deploy that leaves either endpoint stale is failed and must not be reported as complete.
 
-### `bsl.hashpass.tech` (SST)
+### `bsl.hashpass.tech` / `bsl-dev.hashpass.tech`
 
-SST Console autodeploy handles this on every push to `main`. No manual action required.
+**Prod and dev now run genuinely different deploy paths — read carefully before touching either.**
 
-For a manual one-off deploy:
+**Original incident (2026-07-25 to 2026-07-28):** both `bsl-hashpass-prod`/`bsl-hashpass-dev` CodePipelines (source account, `<source-account-id>`) had `FullRepositoryId` set to `edcalderon/hashpass.tech` (a personal fork) instead of the org repo. `bsl-hashpass-prod` silently went 3 days / ~14 releases stale (last real trigger 2026-07-25, v1.8.260) because nothing in the release automation ever pushes to that fork's `main` branch — this is what caused `bsl.hashpass.tech` to show `v1.8.273` while `hashpass.tech` was already on `v1.8.274`. Fixed the repo wiring on both source pipelines the same day. Full incident writeup: `.agents/active/task-aws-account-migration.md`.
+
+**`packages/infra/terraform/stacks/bsl-target`** (target account, `<target-account-id>`) provisions a dedicated EC2 build worker (same reusable module `hashpass-web` uses — EC2 instead of CodeBuild because the target account's CodeBuild concurrent-build quota turned out to be `0` for every environment type, pre-existing and account-wide, unrelated to BSL) and two CodePipelines, `bsl-hashpass-prod` and `bsl-hashpass-dev`, both correctly wired to `hashpass-tech/hashpass.tech`.
+
+**Blocker discovered building this out:** the target account still can't create new CloudFront distributions — `AccessDenied: Your account must be verified before you can add new CloudFront resources` (confirmed via a real failed `sst deploy`). This is a normal AWS anti-fraud check for new/low-usage accounts, not specific to us; an AWS Support case was submitted 2026-07-28 requesting verification (framed as an internal business-unit migration, not fraud). `hashpass-web`'s own `enable_cloudfront = true` setting for its target CloudFront has the identical problem — the target account currently has **zero** CloudFront distributions of any kind.
+
+**`bsl-dev.hashpass.tech`: cut over to a hybrid, live since 2026-07-28**, rather than wait on that verification:
+- The **existing source-account CloudFront distribution** (`E279RW9PP52TC0`, already-issued ACM cert, no new domain validation needed) keeps serving the domain — untouched, still source-account.
+- Its **origin** was repointed from SST's `placeholder.sst.dev` + CloudFront-Function/KV routing to a **plain target-account S3 bucket** (`aws_s3_bucket.bsl_dev_site` in `bsl-target/main.tf`), via a one-time manual `update-distribution` call (this resource predates proper IaC ownership — a real `terraform import` is a documented follow-up, not yet done).
+- `bsl-target`'s dev CodePipeline runs `packages/tools/scripts/build-bsl-static-site.sh` — a plain `expo export` + `aws s3 sync`, no SST/Pulumi involved at all, so it never touches the blocked `CreateDistribution` codepath.
+- The now-redundant **source-account** `bsl-hashpass-dev` CodePipeline + `bsl-hashpass-dev-build` CodeBuild project were **deleted** the same day — leaving them running risked SST reconciling the distribution back to its own desired state on the next `develop` push, undoing the hybrid.
+- Verified live: `https://bsl-dev.hashpass.tech/` serves `server: AmazonS3`, confirmed via `get-distribution` that the origin is genuinely the new bucket.
+- **Known gap:** the build script does not invalidate CloudFront (the distribution is in a different account than the worker's credentials, so `deploy-static-site.sh`'s invalidation lookup can't resolve it). HTML/manifest objects get `no-cache` headers, so staleness is bounded but not instant.
+
+**`bsl.hashpass.tech` (prod): intentionally NOT cut over yet.** Still fully on the original source-account SST pipeline (own distribution `E2FCDJB1JCS7TW`, own ACM cert, `sst deploy --stage production` via `build-bsl-infra.sh`) — this continues to work and was deliberately left alone. Extending the same hybrid to prod is the natural next step once dev's shape is trusted over more than one deploy cycle (see `.agents/active/task-aws-account-migration.md`'s Next Steps).
+
+For a manual one-off SST deploy from a workstation with target-account credentials (prod only — dev no longer uses SST):
 ```bash
 HASHPASS_INFRA_TARGET=bsl pnpm --filter @hashpass/infra run deploy:prod
 ```
 
-Note: requires an IAM role with Route53, CloudFront, S3, and SSM permissions. The current `hashpass-mobile-release-github-actions` role does NOT have these — use the infra role instead.
+Note: requires an IAM role with Route53, CloudFront, S3, and SSM permissions.
 
 ### Manually triggering the GitHub Actions infra-deploy workflow
 
@@ -134,6 +178,6 @@ Or use the AWS Console → Lambda → select function → Configuration → Envi
 
 ## CloudFront Distributions
 
-SST manages the `bsl.hashpass.tech` CloudFront distribution automatically. Do not manually edit SST-created distributions — SST will overwrite changes on the next deploy.
+`hashpass.tech` and `bsl-dev.hashpass.tech` both use a source-account CloudFront distribution that fronts a target-account static origin (S3). Keep DNS and certificate validation changes in the source zone and origin changes in the target stack.
 
-`hashpass.tech` uses a source-account CloudFront distribution that fronts the target-account static origin. Keep DNS and certificate validation changes in the source zone and origin changes in the target web stack.
+`bsl.hashpass.tech` (prod) is still SST-managed — its distribution `E2FCDJB1JCS7TW` is created and updated automatically by `sst deploy`. **Do not manually edit it** the way `bsl-dev.hashpass.tech`'s was; SST will overwrite manual changes on the next prod deploy. `bsl-dev.hashpass.tech`'s distribution (`E279RW9PP52TC0`) is the opposite: it was deliberately taken *out* of SST's control on 2026-07-28 (the dev pipeline no longer runs SST at all) and its origin is a plain S3 website endpoint now — safe to inspect/manage directly (ideally via Terraform import, not yet done — see the migration task's Next Steps) since nothing will overwrite it anymore.
