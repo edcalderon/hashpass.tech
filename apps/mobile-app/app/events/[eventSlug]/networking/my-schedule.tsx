@@ -92,6 +92,45 @@ const MySchedule = () => {
   const [userMeetingStatus, setUserMeetingStatus] = useState<Record<string, 'tentative' | 'confirmed'>>({});
   const [userFreeSlotStatus, setUserFreeSlotStatus] = useState<Record<string, 'available' | 'interested' | 'blocked' | 'tentative'>>({});
   const [favoriteStatus, setFavoriteStatus] = useState<Record<string, boolean>>({});
+  // user_agenda_status.user_id is public.user(id) (the registry row), not
+  // dbUserId (auth.users id) — those are independently generated and not
+  // guaranteed to be equal. Resolved separately so this screen's queries and
+  // writes against that table match its FK, mirroring how the server
+  // resolves identity in resolve-notification-identity.ts.
+  const [registryUserId, setRegistryUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!dbUserId) {
+      setRegistryUserId(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user')
+          .select('id')
+          .filter('provider_ids->>supabase', 'eq', dbUserId)
+          .maybeSingle();
+        if (!cancelled) {
+          if (error) {
+            console.error('Error resolving registry user id:', error);
+            setRegistryUserId(null);
+          } else {
+            setRegistryUserId((data as any)?.id ?? null);
+          }
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error('Error resolving registry user id:', e);
+          setRegistryUserId(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [dbUserId]);
   const [confirmationModal, setConfirmationModal] = useState<{
     visible: boolean;
     meeting: Meeting | null;
@@ -147,7 +186,7 @@ const MySchedule = () => {
 
   // Load user confirmation statuses for agenda events, meetings, and free slots
   const loadUserScheduleStatus = useCallback(async () => {
-    if (!dbUserId) {
+    if (!registryUserId) {
       setUserAgendaStatus({});
       setUserMeetingStatus({});
       setUserFreeSlotStatus({});
@@ -157,7 +196,7 @@ const MySchedule = () => {
       const { data, error } = await supabase
         .from('user_agenda_status')
         .select('agenda_id, meeting_id, slot_time, status, slot_status, is_favorite')
-        .eq('user_id', dbUserId)
+        .eq('user_id', registryUserId)
         .eq('event_id', eventId);
 
       if (error) {
@@ -197,7 +236,7 @@ const MySchedule = () => {
     } catch (e) {
       console.error('Error loading user schedule status:', e);
     }
-  }, [dbUserId, eventId]);
+  }, [registryUserId, eventId]);
 
   useEffect(() => {
     loadUserScheduleStatus();
@@ -584,24 +623,24 @@ const MySchedule = () => {
 
   // Handle schedule slot confirmation/unconfirmation
   const handleToggleConfirmation = async (meeting: Meeting, slotStartTime: Date) => {
-    if (!dbUserId) return;
-    
+    if (!registryUserId) return;
+
     setIsConfirming(true);
     const isAgendaEvent = (meeting as any).isAgendaEvent;
     const isFreeSlot = (meeting as any).isFreeSlot;
-    
+
     // Handle free slots differently
     if (isFreeSlot) {
       const slotKey = slotStartTime.toISOString();
       const currentStatus = userFreeSlotStatus[slotKey] || 'available';
       // Toggle between available and interested for free slots
       const newStatus = currentStatus === 'available' ? 'interested' : 'available';
-      
+
       try {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('slot_time', slotStartTime.toISOString())
           .is('agenda_id', null)
@@ -619,7 +658,7 @@ const MySchedule = () => {
             })
             .eq('id', (existing as any).id);
           if (error) throw error;
-          
+
           if (newStatus === 'available') {
             setUserFreeSlotStatus(prev => {
               const next = { ...prev };
@@ -637,7 +676,7 @@ const MySchedule = () => {
           const { error } = await (supabase
             .from('user_agenda_status') as any)
             .insert({
-              user_id: dbUserId,
+              user_id: registryUserId,
               slot_time: slotStartTime.toISOString(),
               event_id: eventId,
               status: newStatus,
@@ -672,7 +711,7 @@ const MySchedule = () => {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('agenda_id', meeting.id)
           .maybeSingle();
@@ -686,19 +725,19 @@ const MySchedule = () => {
               updated_at: new Date().toISOString(),
             })
             .eq('id', (existing as any).id);
-          
+
           if (error) throw error;
         } else {
           const { error } = await (supabase
             .from('user_agenda_status') as any)
             .insert({
-              user_id: dbUserId,
+              user_id: registryUserId,
               agenda_id: meeting.id,
               event_id: eventId,
               status: newStatus,
               confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
             });
-          
+
           if (error) throw error;
         }
 
@@ -717,7 +756,7 @@ const MySchedule = () => {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('meeting_id', meeting.id)
           .maybeSingle();
@@ -731,19 +770,19 @@ const MySchedule = () => {
               updated_at: new Date().toISOString(),
             })
             .eq('id', (existing as any).id);
-          
+
           if (error) throw error;
         } else {
           const { error } = await (supabase
             .from('user_agenda_status') as any)
             .insert({
-              user_id: dbUserId,
+              user_id: registryUserId,
               meeting_id: meeting.id,
               event_id: eventId,
               status: newStatus,
               confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
             });
-          
+
           if (error) throw error;
         }
 
@@ -765,18 +804,18 @@ const MySchedule = () => {
 
   // Handle free slot blocked status
   const handleToggleFreeSlotBlocked = async (slotStartTime: Date) => {
-    if (!dbUserId) return;
-    
+    if (!registryUserId) return;
+
     setIsConfirming(true);
     const slotKey = slotStartTime.toISOString();
     const currentStatus = userFreeSlotStatus[slotKey] || 'available';
     const newStatus = currentStatus === 'blocked' ? 'available' : 'blocked';
-    
+
     try {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('slot_time', slotStartTime.toISOString())
           .is('agenda_id', null)
@@ -811,14 +850,14 @@ const MySchedule = () => {
         const { error } = await (supabase
           .from('user_agenda_status') as any)
           .insert({
-            user_id: dbUserId,
+            user_id: registryUserId,
             slot_time: slotStartTime.toISOString(),
             event_id: eventId,
             status: newStatus,
             slot_status: newStatus,
           });
         if (error) throw error;
-        
+
         setUserFreeSlotStatus(prev => ({
           ...prev,
           [slotKey]: newStatus,
@@ -836,22 +875,22 @@ const MySchedule = () => {
 
   // Handle favorite toggle for confirmed agenda events
   const handleToggleFavorite = async (meeting: Meeting) => {
-    if (!dbUserId) return;
-    
+    if (!registryUserId) return;
+
     const isAgendaEvent = (meeting as any).isAgendaEvent;
     if (!isAgendaEvent) return; // Only for agenda events
-    
+
     const currentFavorite = favoriteStatus[meeting.id] || false;
     const newFavorite = !currentFavorite;
-    
+
     // Provide haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     try {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('agenda_id', meeting.id)
           .maybeSingle();
@@ -871,7 +910,7 @@ const MySchedule = () => {
         const { error } = await (supabase
           .from('user_agenda_status') as any)
           .insert({
-            user_id: dbUserId,
+            user_id: registryUserId,
             agenda_id: meeting.id,
             event_id: eventId,
             status: currentStatus,
