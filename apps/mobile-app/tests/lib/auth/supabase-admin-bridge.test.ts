@@ -23,6 +23,11 @@ describe('supabase-admin-bridge', () => {
   describe('isDuplicateSupabaseUserError', () => {
     it('matches known duplicate-user error phrasings', () => {
       expect(isDuplicateSupabaseUserError('User already registered')).toBe(true);
+      expect(
+        isDuplicateSupabaseUserError(
+          'A user with this email address has already been registered'
+        )
+      ).toBe(true);
       expect(isDuplicateSupabaseUserError('A user with this email already exists')).toBe(true);
       expect(isDuplicateSupabaseUserError('duplicate key value violates unique constraint')).toBe(true);
     });

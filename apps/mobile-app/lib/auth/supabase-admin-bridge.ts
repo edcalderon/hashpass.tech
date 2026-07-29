@@ -17,7 +17,7 @@ export const normalizeEmail = (value: string | null | undefined): string =>
   value?.trim().toLowerCase() || '';
 
 export const isDuplicateSupabaseUserError = (errorMessage: string): boolean =>
-  /already registered|already exists|duplicate key|email.*exists/i.test(errorMessage);
+  /already (?:been )?registered|already exists|duplicate key|email.*exists/i.test(errorMessage);
 
 // Supabase's admin API has no "get user by email" lookup, only a paginated
 // listUsers — this scans pages until it finds a match or runs out of users.
