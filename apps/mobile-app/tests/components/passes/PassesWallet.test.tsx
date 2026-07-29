@@ -175,6 +175,7 @@ describe('PassesWallet', () => {
 
     expect(passSystemService.getAllUserPasses).not.toHaveBeenCalled();
     expect(renderer.root.findByProps({ children: 'Loading your pass information...' })).toBeTruthy();
+    renderer.unmount();
   });
 
   it('shows the empty-wallet state only after an authenticated lookup returns no passes', async () => {
@@ -182,6 +183,21 @@ describe('PassesWallet', () => {
 
     expect(renderer.root.findByProps({ children: 'No passes found' })).toBeTruthy();
     expect(renderer.root.findByProps({ children: 'Contact support to get your event passes' })).toBeTruthy();
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Try again' })).toBeTruthy();
+  });
+
+  it('reloads passes when the fallback retry action is pressed', async () => {
+    const renderer = await renderWallet();
+    (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([makePass()]);
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Try again' }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(passSystemService.getAllUserPasses).toHaveBeenCalledTimes(2);
+    expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
   });
 
   it('shows a recoverable no-matches state when filters exclude every loaded pass', async () => {
@@ -199,9 +215,29 @@ describe('PassesWallet', () => {
 
     const renderer = await renderWallet();
 
-    expect(renderer.root.findByProps({ children: 'No passes found' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'Unable to load your passes' })).toBeTruthy();
     expect(errorSpy).toHaveBeenCalledWith('Error loading pass wallet:', expect.any(Error));
     errorSpy.mockRestore();
+  });
+
+  it('stops waiting on a hung lookup and offers a retry action', async () => {
+    jest.useFakeTimers();
+    (passSystemService.getAllUserPasses as jest.Mock).mockImplementation(() => new Promise(() => {}));
+
+    try {
+      const renderer = await renderWallet();
+
+      await act(async () => {
+        jest.advanceTimersByTime(12_000);
+        await Promise.resolve();
+      });
+
+      expect(renderer.root.findByProps({ children: 'Passes took too long to load' })).toBeTruthy();
+      expect(renderer.root.findByProps({ accessibilityLabel: 'Try again' })).toBeTruthy();
+      renderer.unmount();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   describe('deck navigation', () => {

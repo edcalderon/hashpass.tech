@@ -645,6 +645,13 @@
     "passNumber": "Pass #{pass_number}",
     "noPassFound": "No passes found",
     "contactSupport": "Contact support to get your event passes",
+    "loadTimeoutTitle": "Passes took too long to load",
+    "loadTimeoutMessage": "Check your connection and try again.",
+    "loadErrorTitle": "Unable to load your passes",
+    "loadErrorMessage": "We could not reach your pass information right now.",
+    "sessionPendingTitle": "Your pass session is still loading",
+    "sessionPendingMessage": "Your account is still being connected. Try again in a moment.",
+    "tryAgain": "Try again",
     "noPassMessage": {
       "demo": "You need a pass to request meetings with speakers. Without a pass, you cannot send meeting requests. Choose your pass type:",
       "production": "You need a valid event pass to request meetings with speakers. Please purchase a pass to continue."

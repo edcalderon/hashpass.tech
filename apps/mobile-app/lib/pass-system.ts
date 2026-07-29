@@ -314,7 +314,7 @@ class PassSystemService {
 
       if (error) {
         console.error('Error getting passes for events:', error);
-        return [];
+        throw error;
       }
 
       if (!passRows?.length) return [];
@@ -353,7 +353,7 @@ class PassSystemService {
       }));
     } catch (error) {
       console.error('Error in getUserPassesForEvents:', error);
-      return [];
+      throw error;
     }
   }
 
@@ -385,7 +385,7 @@ class PassSystemService {
 
       if (error) {
         console.error('Error getting all user passes:', error);
-        return [];
+        throw error;
       }
 
       if (!passRows?.length) return [];
@@ -417,7 +417,7 @@ class PassSystemService {
       }));
     } catch (error) {
       console.error('Error in getAllUserPasses:', error);
-      return [];
+      throw error;
     }
   }
 
