@@ -465,4 +465,78 @@ describe('speaker detail screen', () => {
 
     await act(async () => renderer.unmount());
   });
+
+  it('lets the assigned speaker decline an incoming request through the event API', async () => {
+    const incomingRequest = {
+      id: 'request-incoming-2',
+      _direction: 'incoming',
+      status: 'pending',
+      speaker_id: 'speaker-user-1',
+      speaker_name: 'Ada Lovelace',
+      requester_id: 'requester-2',
+      requester_name: 'Casey Requester',
+      duration_minutes: 15,
+      meeting_type: 'networking',
+      message: 'Could we discuss the event?',
+      created_at: '2026-07-30T09:00:00.000Z',
+      expires_at: '2026-08-06T09:00:00.000Z',
+    };
+    mockAuthState = {
+      user: { email: 'ada@example.test' },
+      isLoggedIn: true,
+      dbUserId: 'speaker-user-1',
+    };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/speaker-1') {
+        return Promise.resolve({ success: true, data: { data: speaker } });
+      }
+      if (path === 'events/bsl/meetings/limits') {
+        return Promise.resolve({
+          success: true,
+          data: { data: { pass_type: 'business', total_requests: 0, remaining_requests: 3, max_requests: 3 } },
+        });
+      }
+      if (path === 'events/bsl/meetings/requests' && options?.method === 'PATCH') {
+        return Promise.resolve({ success: true, data: { data: { success: true } } });
+      }
+      if (path === 'events/bsl/meetings/requests') {
+        return Promise.resolve({ success: true, data: { data: [incomingRequest] } });
+      }
+      return defaultApiResponse(path, options);
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    await act(async () => {
+      const requesterLabel = renderer.root.findAll(
+        (node: any) => node.type === 'Text' && textContent(node) === 'From Casey Requester',
+      )[0];
+      findPressableAncestor(requesterLabel).props.onPress();
+      await flushPromises();
+    });
+    await act(async () => {
+      findTextPressTarget(renderer, 'requestView.decline').props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      'events/bsl/meetings/requests',
+      {
+        skipEventSegment: true,
+        method: 'PATCH',
+        body: { requestId: 'request-incoming-2', action: 'decline' },
+      },
+    );
+    expect(mockShowSuccess).toHaveBeenCalledWith(
+      'Request Declined',
+      'The meeting request has been declined',
+    );
+
+    await act(async () => renderer.unmount());
+  });
 });

@@ -117,4 +117,74 @@ describe("event networking stats api", () => {
     expect(mockRpc).not.toHaveBeenCalled();
     expect(mockFrom).not.toHaveBeenCalled();
   });
+
+  it("rejects an unlinked identity without creating a provider query", async () => {
+    mockResolveIdentity.mockResolvedValue({ supabaseUserId: null });
+    mockIsIdentityError.mockReturnValue(false);
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require("../../app/api/events/[eventId]/networking/stats+api");
+    const response = await GET(
+      new Request("https://api.hashpass.tech/api/events/bsl/networking/stats"),
+    );
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "Meeting identity required" });
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it("validates the event route before reading statistics", async () => {
+    mockResolveIdentity.mockResolvedValue({ supabaseUserId: "user-1" });
+    mockIsIdentityError.mockReturnValue(false);
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require("../../app/api/events/[eventId]/networking/stats+api");
+    const response = await GET(
+      new Request("https://api.hashpass.tech/api/events/invalid!/networking/stats"),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "A valid event id is required" });
+    expect(mockRpc).not.toHaveBeenCalled();
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it("returns zero speaker-only statistics when the identity is not a speaker", async () => {
+    mockResolveIdentity.mockResolvedValue({ supabaseUserId: "attendee-1" });
+    mockIsIdentityError.mockReturnValue(false);
+    mockRpc.mockResolvedValue({ data: { remaining_requests: 1 }, error: null });
+    results.bsl_speakers = { data: null, error: null };
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require("../../app/api/events/[eventId]/networking/stats+api");
+    const response = await GET(
+      new Request("https://api.hashpass.tech/api/events/chile2026/networking/stats"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: {
+        counts: { remaining_requests: 1 },
+        speaker: { blockedUsers: 0, speakerRequests: 0 },
+      },
+    });
+    expect(queryCalls.map((call) => call.table)).toEqual(["bsl_speakers"]);
+  });
+
+  it("returns a safe response when the server-side statistics query fails", async () => {
+    mockResolveIdentity.mockResolvedValue({ supabaseUserId: "user-1" });
+    mockIsIdentityError.mockReturnValue(false);
+    mockRpc.mockResolvedValue({ data: null, error: { message: "denied" } });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require("../../app/api/events/[eventId]/networking/stats+api");
+    const response = await GET(
+      new Request("https://api.hashpass.tech/api/events/bsl/networking/stats"),
+    );
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Failed to load networking statistics" });
+    expect(mockConsoleError).toHaveBeenCalled();
+  });
 });
