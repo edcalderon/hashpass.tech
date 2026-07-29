@@ -3,6 +3,7 @@ import { apiClient } from './api-client';
 import { compareAppVersions, getRuntimeVersion } from '../config/runtime-version';
 
 const VERSION_STORAGE_KEY = '@hashpass:last_version_check';
+const FORCED_UPDATE_RELOAD_KEY = '@hashpass:forced_update_reload';
 const VERSION_CHECK_COOLDOWN = 5 * 60 * 1000;
 
 async function getCurrentVersion(): Promise<string> {
@@ -100,7 +101,29 @@ export async function checkVersionAndClearCache(forceCheck: boolean = false): Pr
     if (currentVersion !== latestVersion && needsUpdate) {
       console.warn('[VersionChecker] ⚠️ Update available:', latestVersion);
       if (forceCheck) {
+        const updateAttempt = `${currentVersion}:${latestVersion}`;
+        try {
+          // A browser tab keeps sessionStorage through reloads. If a previous
+          // cache purge failed to replace the bundle, retrying that exact
+          // version pair can only produce another reload loop. Leave the app
+          // usable and let the regular update notice handle the next action.
+          if (sessionStorage.getItem(FORCED_UPDATE_RELOAD_KEY) === updateAttempt) {
+            console.warn('[VersionChecker] Skipping repeated forced update reload:', updateAttempt);
+            return false;
+          }
+        } catch {
+          // Storage can be blocked in privacy modes; the existing cooldown is
+          // still a safe fallback in that case.
+        }
+
         await clearAllCaches();
+        try {
+          // clearAllCaches deliberately resets sessionStorage, so persist the
+          // marker only after it completes and immediately before reloading.
+          sessionStorage.setItem(FORCED_UPDATE_RELOAD_KEY, updateAttempt);
+        } catch {
+          // See the storage fallback above.
+        }
         window.location.reload();
         return true;
       }

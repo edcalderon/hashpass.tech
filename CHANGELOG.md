@@ -1,3 +1,7 @@
+## [1.8.282](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.281...v1.8.282) (2026-07-29)
+### Released
+- prevent BSL stale-cache reload loops; repair BSL pass access provisioning
+
 ## [1.8.281](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.280...v1.8.281) (2026-07-29)
 
 

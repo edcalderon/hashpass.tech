@@ -3,6 +3,30 @@ export const BSL_DOMAINS = {
   production: "bsl.hashpass.tech",
 } as const;
 
+// BSL is a client-routed Expo web app. The current production distribution
+// uses an S3 website origin, which otherwise returns the `index.html` body
+// with a 404 status for direct routes such as `/home` and
+// `/dashboard/explore`. Rewriting only application routes at viewer request
+// keeps the HTTP response a real 200 and prevents an old client from treating
+// its own bootstrap navigation as a failed load/reload cycle.
+//
+// Keep this as a self-contained snippet: SST injects it into its CloudFront
+// viewer-request function, where `event` is already in scope.
+export const BSL_SPA_FALLBACK_REWRITE = `
+const uri = event.request.uri || "/";
+const isStaticAsset =
+  uri.startsWith("/_expo/") ||
+  uri.startsWith("/assets/") ||
+  uri.startsWith("/config/") ||
+  uri.startsWith("/api/") ||
+  uri.startsWith("/.well-known/") ||
+  /\\/[^/]+\\.[A-Za-z0-9]+$/.test(uri);
+
+if (!isStaticAsset && uri !== "/index.html") {
+  event.request.uri = "/index.html";
+}
+`;
+
 // bsl.hashpass.tech's own GA4 property, distinct from hashpass.tech's
 // (G-BY2BLQFHC9, set via the root .env for the core site's separate build
 // pipeline). This StaticSite build never reads the root .env

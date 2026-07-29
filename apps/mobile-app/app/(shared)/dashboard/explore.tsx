@@ -621,7 +621,12 @@ export default function ExploreScreen() {
                   "No passes found" for people who hold real BSL tour passes --
                   the main tenant's own event has no pass rows at all. The
                   wallet's own search/filter bar covers narrowing it down. */}
-              <PassesDisplay mode="dashboard" showTitle={false} showPassComparison={false} />
+              <PassesDisplay
+                mode="dashboard"
+                showTitle={false}
+                showPassComparison={false}
+                walletLayout={isGlobalExplorer ? 'stacked' : 'plain'}
+              />
             </CopilotView>
           </CopilotStep>
         )}

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  ScrollView,
   Text,
   TouchableOpacity,
   useWindowDimensions,
@@ -38,6 +39,7 @@ interface PassesWalletProps {
   eventIds?: string[];
   refreshTrigger?: number;
   onPassesLoaded?: (passes: PassInfo[]) => void;
+  layout?: 'stacked' | 'plain';
 }
 
 // How far each card behind the front one peeks out to the right, and how much
@@ -52,8 +54,14 @@ interface PassesWalletProps {
 // behind to peek out at all.
 const STACK_OFFSET_X = 26;
 const STACK_SCALE_STEP = 0.04;
+const PASS_LOAD_TIMEOUT_MS = 12_000;
 
-const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, onPassesLoaded }) => {
+const PassesWallet: React.FC<PassesWalletProps> = ({
+  eventIds,
+  refreshTrigger,
+  onPassesLoaded,
+  layout = 'stacked',
+}) => {
   const { colors, isDark } = useTheme();
   const { dbUserId } = useAuth();
   const { t } = useTranslation('passes');
@@ -61,6 +69,9 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
 
   const [passes, setPasses] = useState<PassInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
   const [filteredPasses, setFilteredPasses] = useState<WalletPass[]>([]);
   // UnifiedSearchAndFilter reports its result in an effect, so filteredPasses
   // is legitimately empty for one frame after mount. Without this flag that
@@ -75,31 +86,56 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
 
   useEffect(() => {
     let active = true;
+    let identityTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const load = async () => {
+      setLoadError(false);
+      setLoadTimedOut(false);
       if (!dbUserId) {
         // No Supabase identity yet (the Better Auth -> Supabase bridge may
         // still be in flight right after sign-in). Stay in the loading state
         // rather than flashing "no passes" at someone who has them.
         setPasses([]);
         setLoading(true);
+        identityTimeout = setTimeout(() => {
+          if (!active) return;
+          setLoading(false);
+          setLoadTimedOut(true);
+        }, PASS_LOAD_TIMEOUT_MS);
         return;
       }
 
       setLoading(true);
+      let requestTimeout: ReturnType<typeof setTimeout> | undefined;
       try {
         const scopedIds = eventIdsKey ? eventIdsKey.split(',').filter(Boolean) : undefined;
-        const result = scopedIds?.length
-          ? await passSystemService.getUserPassesForEvents(dbUserId, scopedIds)
-          : await passSystemService.getAllUserPasses(dbUserId);
-
+        const request = scopedIds?.length
+          ? passSystemService.getUserPassesForEvents(dbUserId, scopedIds)
+          : passSystemService.getAllUserPasses(dbUserId);
+        const result = await Promise.race([
+          request,
+          new Promise<never>((_, reject) => {
+            requestTimeout = setTimeout(
+              () => reject(new Error('PASS_LOAD_TIMEOUT')),
+              PASS_LOAD_TIMEOUT_MS,
+            );
+          }),
+        ]);
         if (!active) return;
         setPasses(result);
         onPassesLoaded?.(result);
       } catch (error) {
         console.error('Error loading pass wallet:', error);
-        if (active) setPasses([]);
+        if (active) {
+          setPasses([]);
+          if (error instanceof Error && error.message === 'PASS_LOAD_TIMEOUT') {
+            setLoadTimedOut(true);
+          } else {
+            setLoadError(true);
+          }
+        }
       } finally {
+        if (requestTimeout) clearTimeout(requestTimeout);
         if (active) setLoading(false);
       }
     };
@@ -107,13 +143,14 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
     load();
     return () => {
       active = false;
+      if (identityTimeout) clearTimeout(identityTimeout);
     };
     // onPassesLoaded is intentionally excluded: callers pass inline callbacks
     // and re-running the whole load on every parent render would thrash.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dbUserId, refreshTrigger, eventIdsKey]);
+  }, [dbUserId, refreshTrigger, eventIdsKey, retryNonce]);
 
-  const walletPasses = useMemo(() => buildWalletPasses(passes), [passes]);
+  const walletPasses: WalletPass[] = useMemo(() => buildWalletPasses(passes), [passes]);
   const counts = useMemo(() => countWalletPasses(walletPasses), [walletPasses]);
 
   const handleFilteredData = useCallback((next: WalletPass[]) => {
@@ -123,6 +160,14 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
   }, []);
 
   const handleSearchChange = useCallback(() => {}, []);
+
+  const handleRetry = useCallback(() => {
+    setHasFilterResult(false);
+    setLoadError(false);
+    setLoadTimedOut(false);
+    setLoading(true);
+    setRetryNonce((current) => current + 1);
+  }, []);
 
   const customFilterLogic = useCallback(
     (data: WalletPass[], filters: { [key: string]: any }, searchQuery: string) =>
@@ -165,12 +210,12 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
   // actually move (see stableIndex below) instead of always landing on the
   // first dot, which is what happened when the indicator was derived from
   // `deck` itself.
-  const stableOrder = hasFilterResult ? filteredPasses : walletPasses;
+  const stableOrder: WalletPass[] = hasFilterResult ? filteredPasses : walletPasses;
 
   // Draw order for the stack: whichever card was last tapped sits in front,
   // everything else keeps stableOrder. Deriving this rather than storing a
   // whole array keeps it correct when filtering changes the set.
-  const deck = useMemo(() => {
+  const deck: WalletPass[] = useMemo(() => {
     if (!frontId) return stableOrder;
     const promoted = stableOrder.find((pass) => pass.id === frontId);
     if (!promoted) return stableOrder;
@@ -206,6 +251,21 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
   // Nothing at all — distinct from "your filters matched nothing", which is a
   // recoverable state and shouldn't suggest contacting support.
   if (!walletPasses.length) {
+    const fallbackTitle = loadTimedOut
+      ? t('loadTimeoutTitle', 'Passes took too long to load')
+      : loadError
+        ? t('loadErrorTitle', 'Unable to load your passes')
+        : !dbUserId
+          ? t('sessionPendingTitle', 'Your pass session is still loading')
+          : t('noPassFound', 'No passes found');
+    const fallbackMessage = loadTimedOut
+      ? t('loadTimeoutMessage', 'Check your connection and try again.')
+      : loadError
+        ? t('loadErrorMessage', 'We could not reach your pass information right now.')
+        : !dbUserId
+          ? t('sessionPendingMessage', 'Your account is still being connected. Try again in a moment.')
+          : t('contactSupport', 'Contact support to get your event passes');
+
     return (
       <View
         style={{
@@ -233,7 +293,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
         />
         <MaterialIcons name="confirmation-number" size={40} color={colors.text.disabled} />
         <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text.primary, marginTop: 12 }}>
-          {t('noPassFound', 'No passes found')}
+          {fallbackTitle}
         </Text>
         <Text
           style={{
@@ -244,9 +304,45 @@ const PassesWallet: React.FC<PassesWalletProps> = ({ eventIds, refreshTrigger, o
             lineHeight: 18,
           }}
         >
-          {t('contactSupport', 'Contact support to get your event passes')}
+          {fallbackMessage}
         </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('tryAgain', 'Try again')}
+          onPress={handleRetry}
+          style={{
+            marginTop: 16,
+            paddingHorizontal: 18,
+            paddingVertical: 10,
+            borderRadius: 10,
+            backgroundColor: colors.primary,
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>
+            {t('tryAgain', 'Try again')}
+          </Text>
+        </Pressable>
       </View>
+    );
+  }
+
+  // BSL intentionally keeps the legacy flat row: its tenant currently has
+  // only two tour-stop passes, so a stack/search/filter surface adds motion
+  // and controls without helping the attendee. The main hashpass.tech tenant
+  // continues to use the stacked 3D wallet below.
+  if (layout === 'plain') {
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingRight: 20 }}
+      >
+        {walletPasses.map((pass) => (
+          <View key={pass.id} style={{ width: cardWidth, marginRight: 16 }}>
+            <PassWalletCard pass={pass} />
+          </View>
+        ))}
+      </ScrollView>
     );
   }
 

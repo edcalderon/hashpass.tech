@@ -72,7 +72,7 @@ describe('agenda-status api', () => {
     });
 
     it('returns 400 when the event id is missing from the URL', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: '11111111-1111-4111-8111-111111111111', registryUserId: '22222222-2222-4222-8222-222222222222' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -99,8 +99,8 @@ describe('agenda-status api', () => {
 
     it('returns the authenticated user agenda status for the URL event', async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
-        supabaseUserId: 'auth-uuid-123',
-        registryUserId: 'registry-id-123',
+        supabaseUserId: '11111111-1111-4111-8111-111111111111',
+        registryUserId: '22222222-2222-4222-8222-222222222222',
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockNot.mockResolvedValueOnce({
@@ -122,8 +122,8 @@ describe('agenda-status api', () => {
 
     it('returns a safe error when the agenda-status query fails', async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
-        supabaseUserId: 'auth-uuid-123',
-        registryUserId: 'registry-id-123',
+        supabaseUserId: '11111111-1111-4111-8111-111111111111',
+        registryUserId: '22222222-2222-4222-8222-222222222222',
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockNot.mockResolvedValueOnce({ data: null, error: new Error('offline') });
@@ -158,7 +158,7 @@ describe('agenda-status api', () => {
     });
 
     it('returns 400 when agendaId is missing', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: '11111111-1111-4111-8111-111111111111', registryUserId: '22222222-2222-4222-8222-222222222222' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -176,7 +176,7 @@ describe('agenda-status api', () => {
     });
 
     it('returns 400 when neither status nor isFavorite is provided', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: '11111111-1111-4111-8111-111111111111', registryUserId: '22222222-2222-4222-8222-222222222222' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -194,7 +194,7 @@ describe('agenda-status api', () => {
     });
 
     it('inserts new agenda status', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-uuid-123', registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: '11111111-1111-4111-8111-111111111111', registryUserId: '22222222-2222-4222-8222-222222222222' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -211,10 +211,31 @@ describe('agenda-status api', () => {
       expect(await response.json()).toEqual({ success: true });
     });
 
+    it('uses the linked Supabase UUID when the provider registry id is opaque text', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: '11111111-1111-4111-8111-111111111111',
+        registryUserId: 'better-auth-user-123',
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require('../../app/api/events/[eventId]/agenda/status+api');
+      const response = await POST(
+        new Request('https://api.hashpass.tech/api/events/chile2026/agenda/status', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ agendaId: 'agenda-1', status: 'confirmed' }),
+        })
+      );
+
+      expect(response.status).toBe(200);
+      expect(mockFrom).toHaveBeenCalledWith('user_agenda_status');
+    });
+
     it('updates an existing agenda status instead of inserting a second row', async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
-        supabaseUserId: 'auth-uuid-123',
-        registryUserId: 'registry-id-123',
+        supabaseUserId: '11111111-1111-4111-8111-111111111111',
+        registryUserId: '22222222-2222-4222-8222-222222222222',
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockMaybeSingle.mockResolvedValueOnce({ data: { id: 'status-1' }, error: null });
@@ -236,8 +257,8 @@ describe('agenda-status api', () => {
 
     it('returns a safe error when the existing-status lookup fails', async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
-        supabaseUserId: 'auth-uuid-123',
-        registryUserId: 'registry-id-123',
+        supabaseUserId: '11111111-1111-4111-8111-111111111111',
+        registryUserId: '22222222-2222-4222-8222-222222222222',
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockMaybeSingle.mockResolvedValueOnce({ data: null, error: new Error('offline') });

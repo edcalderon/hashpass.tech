@@ -37,6 +37,11 @@ interface PassesDisplayProps {
   title?: string;
   showPassComparison?: boolean;
 
+  // The main tenant uses the stacked wallet. Whitelabel event tenants can
+  // request the legacy flat card row while they only expose a small number of
+  // passes (for example BSL's Chile and Colombia passes).
+  walletLayout?: 'stacked' | 'plain';
+
   // Refresh trigger
   refreshTrigger?: number;
 }
@@ -956,6 +961,7 @@ class PassesDisplayBoundary extends React.Component<PassesDisplayProps, PassesDi
         <PassesWallet
           eventIds={this.props.eventIds}
           refreshTrigger={this.props.refreshTrigger}
+          layout={this.props.walletLayout}
           onPassesLoaded={(passes) => this.props.onPassInfoLoaded?.(passes[0] ?? null)}
         />
       );

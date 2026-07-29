@@ -2,6 +2,23 @@ import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { resolveNotificationIdentity, isResolveIdentityError } from '@/lib/server/resolve-notification-identity';
 import { eventIdFromRequest } from '@/lib/server/event-api';
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function resolveAgendaUserId(identity: {
+  registryUserId: string | null;
+  supabaseUserId: string | null;
+}): string | null {
+  // user_agenda_status.user_id is UUID-backed. Provider identities can be
+  // opaque text IDs, so keep them out of UUID comparisons and use the linked
+  // Supabase UUID when the registry value is not UUID-shaped.
+  if (identity.registryUserId && UUID_PATTERN.test(identity.registryUserId)) {
+    return identity.registryUserId;
+  }
+  return identity.supabaseUserId && UUID_PATTERN.test(identity.supabaseUserId)
+    ? identity.supabaseUserId
+    : null;
+}
+
 // GET /api/events/:eventId/agenda/status — the authenticated
 // user's per-session confirm/favorite status for one event.
 //
@@ -19,7 +36,8 @@ export async function GET(request: Request) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
 
-  if (!identity.registryUserId) {
+  const agendaUserId = resolveAgendaUserId(identity);
+  if (!agendaUserId) {
     return Response.json({ data: [] });
   }
 
@@ -33,7 +51,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from('user_agenda_status')
       .select('agenda_id, status, is_favorite')
-      .eq('user_id', identity.registryUserId)
+      .eq('user_id', agendaUserId)
       .eq('event_id', eventId)
       .not('agenda_id', 'is', null);
 
@@ -58,7 +76,8 @@ export async function POST(request: Request) {
   if (isResolveIdentityError(identity)) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
-  if (!identity.registryUserId) {
+  const agendaUserId = resolveAgendaUserId(identity);
+  if (!agendaUserId) {
     return Response.json(
       { error: 'Account is not linked to an identity that can hold agenda status' },
       { status: 403 }
@@ -86,7 +105,7 @@ export async function POST(request: Request) {
     const { data: existing, error: lookupError } = await supabase
       .from('user_agenda_status')
       .select('id')
-      .eq('user_id', identity.registryUserId)
+      .eq('user_id', agendaUserId)
       .eq('event_id', eventId)
       .eq('agenda_id', agendaId)
       .maybeSingle();
@@ -116,7 +135,7 @@ export async function POST(request: Request) {
       const { error } = await supabase
         .from('user_agenda_status')
         .insert({
-          user_id: identity.registryUserId,
+          user_id: agendaUserId,
           event_id: eventId,
           agenda_id: agendaId,
           status: status ?? 'tentative',

@@ -87,6 +87,35 @@ describe('passSystemService Supabase user id guard', () => {
     expect(resolvePassStorageEventId('peru2026')).toBe('peru2026');
   });
 
+  it('surfaces database errors while loading the wallet instead of treating them as no passes', async () => {
+    const databaseError = { code: 'PGRST000', message: 'database unavailable' };
+    const query = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({ data: null, error: databaseError }),
+    };
+    mockFrom.mockReturnValueOnce(query);
+
+    await expect(passSystemService.getAllUserPasses(supabaseUserId)).rejects.toEqual(databaseError);
+    expect(errorSpy).toHaveBeenCalledWith('Error getting all user passes:', databaseError);
+  });
+
+  it('surfaces scoped wallet database errors for the retryable UI state', async () => {
+    const databaseError = { code: 'PGRST000', message: 'database unavailable' };
+    const query = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({ data: null, error: databaseError }),
+    };
+    mockFrom.mockReturnValueOnce(query);
+
+    await expect(
+      passSystemService.getUserPassesForEvents(supabaseUserId, ['chile2026'])
+    ).rejects.toEqual(databaseError);
+    expect(errorSpy).toHaveBeenCalledWith('Error getting passes for events:', databaseError);
+  });
+
   it('does not query passes or counts with a non-UUID auth user id', async () => {
     await expect(passSystemService.getUserPassInfo(betterAuthUserId)).resolves.toBeNull();
 

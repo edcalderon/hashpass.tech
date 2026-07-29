@@ -15,6 +15,10 @@ const eventCatalogMigrationPath = path.join(
   root,
   'db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql',
 );
+const passAccessMigrationPath = path.join(
+  root,
+  'db/migrations/V021__repair_bsl_pass_access_and_backfill.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -36,6 +40,20 @@ describe('upcoming BSL pass provisioning migration', () => {
   it('ships the pass migrations through the default tenant migration command', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
     expect(config.defaultGroups).toContain('upcoming-bsl-passes');
+  });
+
+  it('keeps pass access type-safe and re-backfills every confirmed user', () => {
+    const migration = fs.readFileSync(passAccessMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/DROP POLICY IF EXISTS passes_select_own ON public\.passes/i);
+    expect(migration).toMatch(/user_id::text\s*=\s*COALESCE\(auth\.uid\(\)::text,\s*public\.get_current_user_id\(\)::text\)/i);
+    expect(migration).toContain("'chile2026'");
+    expect(migration).toContain("'colombia2026'");
+    expect(migration).toContain('create_upcoming_bsl_general_pass_for_user');
+    expect(config.groups['upcoming-bsl-passes']).toContain(
+      'db/migrations/V021__repair_bsl_pass_access_and_backfill.sql',
+    );
   });
 });
 
