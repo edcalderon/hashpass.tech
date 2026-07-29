@@ -1,0 +1,52 @@
+name: CodeQL
+
+# Replaces GitHub's default CodeQL setup so every analysis job has a bounded
+# runtime. A stalled query must fail visibly instead of occupying a PR check
+# indefinitely. The language matrix intentionally preserves the default setup
+# coverage for the repository's application and automation code.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch: {}
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+  packages: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    # The prior GitHub-managed Python job ran for more than 30 minutes while
+    # equivalent runs normally complete in about 30 seconds. This ceiling
+    # prevents a stalled query from blocking the PR indefinitely.
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, javascript-typescript, python, ruby]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
