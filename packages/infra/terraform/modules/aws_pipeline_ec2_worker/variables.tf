@@ -93,3 +93,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "build_timeout_seconds" {
+  description = "Maximum wall-clock time (seconds) worker-loop.sh lets a single BuildScript/DeployScript run before killing its entire process group and reporting the job as failed. Without this, a hang of any kind (a stuck DNS validation wait, a network stall, an orphaned process left behind when CodePipeline cancels a job out from under the worker) runs forever and blocks every subsequent job, since the worker processes one job at a time. Confirmed 2026-07-29: a cancelled bsl-hashpass-prod execution's build process was never killed and silently blocked a real rebuild for 20+ minutes until found and killed manually."
+  type        = number
+  default     = 2700
+}

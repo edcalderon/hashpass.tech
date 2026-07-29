@@ -7,6 +7,7 @@ export AWS_DEFAULT_REGION="__AWS_REGION__"
 
 ACTION_PROVIDER="__PROVIDER_NAME__"
 ACTION_VERSION="__PROVIDER_VERSION__"
+BUILD_TIMEOUT_SECONDS="__BUILD_TIMEOUT_SECONDS__"
 
 BUILD_USER="builder"
 BUILD_HOME="/home/${BUILD_USER}"
@@ -59,6 +60,7 @@ AWS_REGION=${AWS_REGION}
 AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
 ACTION_PROVIDER=${ACTION_PROVIDER}
 ACTION_VERSION=${ACTION_VERSION}
+BUILD_TIMEOUT_SECONDS=${BUILD_TIMEOUT_SECONDS}
 BUILD_HOME=${BUILD_HOME}
 BUILD_ROOT=${BUILD_ROOT}
 BUILD_BIN_DIR=${BUILD_BIN_DIR}
@@ -177,6 +179,44 @@ run_static_site_build_fallback() {
   npm run postbuild:web
 }
 
+run_with_timeout() {
+  # Runs "$@" in its own process group (via setsid) and kills the ENTIRE
+  # group -- not just the direct child -- if it's still running after
+  # BUILD_TIMEOUT_SECONDS. A plain `timeout` command only signals its
+  # direct child; build scripts here fork many descendants (pnpm, node,
+  # sst, pulumi-language-nodejs, pulumi-resource-aws, ...), and a hang deep
+  # in that tree (a stuck DNS validation wait, a network stall, or the
+  # process simply being orphaned when CodePipeline cancels the job out
+  # from under the worker mid-run) would otherwise run forever and block
+  # every subsequent job, since this worker processes one job at a time.
+  # Confirmed 2026-07-29: exactly this happened to a cancelled
+  # bsl-hashpass-prod build and silently blocked a real rebuild for 20+
+  # minutes until found and killed by hand.
+  local timeout_seconds="$1"
+  shift
+  local pid elapsed=0
+  local poll_interval=5
+
+  setsid "$@" &
+  pid=$!
+
+  while kill -0 "${pid}" 2>/dev/null; do
+    if (( elapsed >= timeout_seconds )); then
+      log "Command exceeded ${timeout_seconds}s timeout; killing its process group"
+      kill -TERM -- "-${pid}" 2>/dev/null || true
+      sleep 10
+      kill -KILL -- "-${pid}" 2>/dev/null || true
+      wait "${pid}" 2>/dev/null || true
+      return 124
+    fi
+
+    sleep "${poll_interval}"
+    elapsed=$((elapsed + poll_interval))
+  done
+
+  wait "${pid}"
+}
+
 fail_job() {
   local job_id="$1"
   local message="$2"
@@ -198,7 +238,7 @@ process_job() {
   local job_json="$1"
   local job_id nonce build_script output_directory deploy_script build_env_json deploy_bucket deploy_cf deploy_cf_domain
   local source_bucket source_key output_bucket output_key work_dir source_zip artifact_zip source_dir
-  local resolved_build_script resolved_deploy_script
+  local resolved_build_script resolved_deploy_script build_status deploy_status
 
   job_id="$(jq -r '.id' <<<"${job_json}")"
   nonce="$(jq -r '.nonce' <<<"${job_json}")"
@@ -295,13 +335,29 @@ process_job() {
   fi
 
   if [[ -n "${resolved_build_script}" ]]; then
-    if ! bash "${resolved_build_script}"; then
+    set +e
+    run_with_timeout "${BUILD_TIMEOUT_SECONDS}" bash "${resolved_build_script}"
+    build_status=$?
+    set -e
+    if [[ "${build_status}" -eq 124 ]]; then
+      fail_job "${job_id}" "build script timed out after ${BUILD_TIMEOUT_SECONDS}s: ${resolved_build_script}"
+      cleanup_job "${work_dir}"
+      return 1
+    elif [[ "${build_status}" -ne 0 ]]; then
       fail_job "${job_id}" "build script failed: ${resolved_build_script}"
       cleanup_job "${work_dir}"
       return 1
     fi
   else
-    if ! run_static_site_build_fallback; then
+    set +e
+    run_with_timeout "${BUILD_TIMEOUT_SECONDS}" bash -c "$(declare -f run_static_site_build_fallback resolve_project_root resolve_pnpm_version); run_static_site_build_fallback"
+    build_status=$?
+    set -e
+    if [[ "${build_status}" -eq 124 ]]; then
+      fail_job "${job_id}" "build script fallback timed out after ${BUILD_TIMEOUT_SECONDS}s: ${build_script}"
+      cleanup_job "${work_dir}"
+      return 1
+    elif [[ "${build_status}" -ne 0 ]]; then
       fail_job "${job_id}" "build script fallback failed: ${build_script}"
       cleanup_job "${work_dir}"
       return 1
@@ -316,7 +372,15 @@ process_job() {
       return 1
     fi
 
-    if ! bash "${resolved_deploy_script}"; then
+    set +e
+    run_with_timeout "${BUILD_TIMEOUT_SECONDS}" bash "${resolved_deploy_script}"
+    deploy_status=$?
+    set -e
+    if [[ "${deploy_status}" -eq 124 ]]; then
+      fail_job "${job_id}" "deploy script timed out after ${BUILD_TIMEOUT_SECONDS}s: ${resolved_deploy_script}"
+      cleanup_job "${work_dir}"
+      return 1
+    elif [[ "${deploy_status}" -ne 0 ]]; then
       fail_job "${job_id}" "deploy script failed: ${resolved_deploy_script}"
       cleanup_job "${work_dir}"
       return 1
