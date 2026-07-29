@@ -34,6 +34,15 @@ import {
 configureAuthService({ supabaseClient: supabase });
 
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
+// `useAuth()` is intentionally used by several independent app surfaces.
+// Unlike Directus and Supabase, Better Auth only dedupes an *in-flight*
+// getSession() request. A transport failure settles quickly, so a remounted
+// header/drawer could otherwise begin another request immediately and create
+// an auth-update/remount loop. Keep the first bootstrap result for the active
+// provider for this JS session; real sign-in/sign-out state changes replace it.
+let betterAuthBootstrapPromise: Promise<AuthSession | null> | null = null;
+let betterAuthBootstrapProvider: IAuthProvider | null = null;
+let betterAuthBootstrapSettled = false;
 let oauthHashProcessingPromise: Promise<void> | null = null;
 let oauthHashProcessed = false;
 // A dashboard logout and the next auth screen mount are separate hook
@@ -47,6 +56,11 @@ let nativeGoogleSignOutCleanup: Promise<void> | null = null;
 // hung request leaves signOut() — and any UI awaiting it, like a logout
 // button's busy state — stuck forever instead of failing visibly.
 const SIGN_OUT_STEP_TIMEOUT_MS = 8000;
+
+// Better Auth's web session lookup is an HTTP request. It is the first step
+// of the web auth bootstrap, so a request that never settles would otherwise
+// prevent the legacy and Supabase fallbacks from resolving the auth state.
+const BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
 type SignOutOptions = {
   /**
@@ -76,40 +90,55 @@ const getWebBetterAuthProvider = (): IAuthProvider => {
   return providerName === 'better-auth' ? authService : getGoogleBetterAuthProvider();
 };
 
-type SupabaseBridgeType = 'magiclink' | 'recovery' | 'invite' | 'signup' | 'email' | 'email_change';
-
-const normalizeSupabaseBridgeType = (rawType: string | null): SupabaseBridgeType => {
-  const normalized = (rawType || 'magiclink').trim().toLowerCase();
-
-  switch (normalized) {
-    case 'email':
-    case 'signup':
-    case 'invite':
-    case 'recovery':
-    case 'email_change':
-      return normalized;
-    case 'email_change_new':
-      return 'email_change';
-    default:
-      return 'magiclink';
+const getBetterAuthBootstrapSession = (provider: IAuthProvider): Promise<AuthSession | null> => {
+  if (betterAuthBootstrapProvider !== provider) {
+    betterAuthBootstrapProvider = provider;
+    betterAuthBootstrapPromise = null;
+    betterAuthBootstrapSettled = false;
   }
+
+  if (!betterAuthBootstrapPromise) {
+    betterAuthBootstrapPromise = withTimeout(
+      provider.getSession(),
+      BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS,
+      'betterAuthProvider.getSession',
+    ).finally(() => {
+      betterAuthBootstrapSettled = true;
+    });
+  }
+
+  return betterAuthBootstrapPromise!;
 };
 
-const completeSupabaseBridgeSession = async (
-  tokenHash: string,
-  typeRaw: string | null,
-  emailRaw: string
-) => {
-  const email = emailRaw.trim().toLowerCase();
-  if (!tokenHash || !email) {
+const cacheBetterAuthBootstrapSession = (provider: IAuthProvider, session: AuthSession | null): void => {
+  // onAuthStateChange immediately calls a new subscriber with its current
+  // value, commonly null. Do not let that initial callback replace the first
+  // real bootstrap request; only cache a known session or an update after the
+  // initial lookup has settled.
+  if (!session?.user && !betterAuthBootstrapSettled) {
     return;
   }
 
-  const bridgeType = normalizeSupabaseBridgeType(typeRaw);
-  const { error } = await supabase.auth.verifyOtp({
-    token_hash: tokenHash,
-    type: bridgeType,
-    email,
+  betterAuthBootstrapProvider = provider;
+  betterAuthBootstrapPromise = Promise.resolve(session);
+  betterAuthBootstrapSettled = true;
+};
+
+const setSignedOutBetterAuthBootstrap = (): void => {
+  betterAuthBootstrapPromise = Promise.resolve(null);
+  betterAuthBootstrapSettled = true;
+};
+
+export const completeSupabaseBridgeSession = async (
+  session: { access_token: string; refresh_token: string },
+) => {
+  if (!session.access_token || !session.refresh_token) {
+    return;
+  }
+
+  const { error } = await supabase.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
   });
 
   if (error) {
@@ -129,16 +158,16 @@ const completeSupabaseBridgeSession = async (
 const ensureSupabaseBridgeSession = async (betterAuthProvider: IAuthProvider): Promise<void> => {
   try {
     const provider = betterAuthProvider as unknown as BetterAuthProvider;
-    if (typeof provider.fetchSupabaseBridge !== 'function') {
+    if (typeof provider.fetchSupabaseBridgeSession !== 'function') {
       return;
     }
 
-    const bridge = await provider.fetchSupabaseBridge();
-    if (!bridge) {
+    const bridgeSession = await provider.fetchSupabaseBridgeSession();
+    if (!bridgeSession) {
       return;
     }
 
-    await completeSupabaseBridgeSession(bridge.token_hash, bridge.type, bridge.email);
+    await completeSupabaseBridgeSession(bridgeSession);
   } catch (error) {
     console.warn(
       '[useAuth] Supabase session bridge failed (Better Auth sign-in still valid):',
@@ -451,6 +480,19 @@ const sendSharedSupabaseResolved = (session: any) => {
   });
 };
 
+const hasSameAuthViewState = (
+  current: ReturnType<typeof getAuthViewState>,
+  next: ReturnType<typeof getAuthViewState>,
+): boolean =>
+  current.isLoggedIn === next.isLoggedIn &&
+  current.isLoading === next.isLoading &&
+  current.user?.id === next.user?.id &&
+  current.user?.email === next.user?.email &&
+  current.user?.first_name === next.user?.first_name &&
+  current.user?.last_name === next.user?.last_name &&
+  current.user?.role === next.user?.role &&
+  current.user?.status === next.user?.status;
+
 export const useAuth = () => {
   const [authActor] = useState(() => getSharedAuthActor());
   const [authViewState, setAuthViewState] = useState(() =>
@@ -487,14 +529,24 @@ export const useAuth = () => {
 
   useEffect(() => {
     const subscription = authActor.subscribe((snapshot: AuthSessionMachineSnapshot) => {
-      setAuthViewState(getAuthViewState(snapshot));
+      const nextAuthViewState = getAuthViewState(snapshot);
+      setAuthViewState((currentAuthViewState) =>
+        hasSameAuthViewState(currentAuthViewState, nextAuthViewState)
+          ? currentAuthViewState
+          : nextAuthViewState,
+      );
     });
 
     if (!sharedAuthActorStarted) {
       authActor.start();
       sharedAuthActorStarted = true;
     }
-    setAuthViewState(getAuthViewState(authActor.getSnapshot()));
+    const nextAuthViewState = getAuthViewState(authActor.getSnapshot());
+    setAuthViewState((currentAuthViewState) =>
+      hasSameAuthViewState(currentAuthViewState, nextAuthViewState)
+        ? currentAuthViewState
+        : nextAuthViewState,
+    );
 
     return () => {
       subscription.unsubscribe();
@@ -534,9 +586,8 @@ export const useAuth = () => {
       const access_token = hashParams.get('access_token');
       const refresh_token = hashParams.get('refresh_token');
       const email = hashParams.get('email');
-      const supabaseBridgeTokenHash = hashParams.get('sb_token_hash');
-      const supabaseBridgeType = hashParams.get('sb_type');
-      const supabaseBridgeEmail = hashParams.get('sb_email');
+      const supabaseBridgeAccessToken = hashParams.get('sb_access_token');
+      const supabaseBridgeRefreshToken = hashParams.get('sb_refresh_token');
       const signInMethod = window.localStorage?.getItem('auth_signin_method');
       const isPasswordlessMethod = signInMethod === 'magic_link' || signInMethod === 'otp_code';
 
@@ -559,23 +610,19 @@ export const useAuth = () => {
               return;
             }
 
-            if (supabaseBridgeTokenHash) {
-              const bridgeEmail = (supabaseBridgeEmail || email || result?.user?.email || '').trim().toLowerCase();
-              if (!bridgeEmail) {
-                console.warn('[useAuth] ⚠️ Supabase bridge token provided without a valid email.');
-              } else {
-                try {
-                  await completeSupabaseBridgeSession(
-                    supabaseBridgeTokenHash,
-                    supabaseBridgeType,
-                    bridgeEmail
-                  );
-                } catch (bridgeError: any) {
-                  console.warn(
-                    '[useAuth] ⚠️ Supabase dual-session bridge failed:',
-                    bridgeError?.message || String(bridgeError)
-                  );
-                }
+            if (supabaseBridgeAccessToken && supabaseBridgeRefreshToken) {
+              try {
+                await completeSupabaseBridgeSession(
+                  {
+                    access_token: supabaseBridgeAccessToken,
+                    refresh_token: supabaseBridgeRefreshToken,
+                  },
+                );
+              } catch (bridgeError: any) {
+                console.warn(
+                  '[useAuth] ⚠️ Supabase dual-session bridge failed:',
+                  bridgeError?.message || String(bridgeError)
+                );
               }
             }
 
@@ -675,6 +722,7 @@ export const useAuth = () => {
 
     if (betterAuthProvider) {
       betterAuthUnsubscribeRef.current = betterAuthProvider.onAuthStateChange((session: AuthSession | null) => {
+        cacheBetterAuthBootstrapSession(betterAuthProvider, session);
         const betterAuthState = readAuthSessionState(session);
 
         // Ignore the initial null callback until bootstrap resolves to avoid
@@ -750,8 +798,7 @@ export const useAuth = () => {
     if (betterAuthProvider) {
       let latestBetterAuthState = readAuthSessionState(null);
 
-      betterAuthProvider
-        .getSession()
+      getBetterAuthBootstrapSession(betterAuthProvider)
         .then((session: AuthSession | null) => {
           latestBetterAuthState = readAuthSessionState(session);
 
@@ -848,6 +895,7 @@ export const useAuth = () => {
     // while the provider cleanup still runs (and is still awaited by callers/
     // tests that want to observe it) as best-effort background work.
     sessionBootstrapPromise = Promise.resolve(null);
+    setSignedOutBetterAuthBootstrap();
     sendAuthEvent({ type: 'SIGNED_OUT' });
     // Clear synchronously alongside the SIGNED_OUT event, not left to wait on
     // supabase.auth.signOut() below (best-effort, individually timed-out) —
@@ -974,6 +1022,7 @@ export const useAuth = () => {
           console.warn('[useAuth] Failed to clear previous provider session before Google sign-in:', clearError);
         } finally {
           sessionBootstrapPromise = Promise.resolve(null);
+          setSignedOutBetterAuthBootstrap();
         }
       };
 

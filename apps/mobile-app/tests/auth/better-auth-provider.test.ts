@@ -333,19 +333,19 @@ describe('BetterAuthProvider', () => {
     }
   });
 
-  describe('fetchSupabaseBridge', () => {
-    it('returns the bridge payload on success', async () => {
+  describe('fetchSupabaseBridgeSession', () => {
+    it('returns the server-completed bridge session on success', async () => {
       mockFetch.mockResolvedValueOnce({
-        data: { token_hash: 'hash-123', type: 'magiclink', email: 'user@example.com' },
+        data: { session: { access_token: 'access-123', refresh_token: 'refresh-123' } },
       });
 
       const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
       const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
 
-      const bridge = await provider.fetchSupabaseBridge();
+      const bridge = await provider.fetchSupabaseBridgeSession();
 
       expect(mockFetch).toHaveBeenCalledWith('/supabase-bridge', { method: 'POST' });
-      expect(bridge).toEqual({ token_hash: 'hash-123', type: 'magiclink', email: 'user@example.com' });
+      expect(bridge).toEqual({ access_token: 'access-123', refresh_token: 'refresh-123' });
     });
 
     it('returns null when the endpoint responds with an error', async () => {
@@ -354,18 +354,18 @@ describe('BetterAuthProvider', () => {
       const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
       const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
 
-      const bridge = await provider.fetchSupabaseBridge();
+      const bridge = await provider.fetchSupabaseBridgeSession();
 
       expect(bridge).toBeNull();
     });
 
-    it('returns null when the response is missing a token_hash', async () => {
-      mockFetch.mockResolvedValueOnce({ data: { type: 'magiclink', email: 'user@example.com' } });
+    it('returns null when the response is missing a session token', async () => {
+      mockFetch.mockResolvedValueOnce({ data: { session: { access_token: 'access-123' } } });
 
       const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
       const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
 
-      const bridge = await provider.fetchSupabaseBridge();
+      const bridge = await provider.fetchSupabaseBridgeSession();
 
       expect(bridge).toBeNull();
     });
@@ -377,7 +377,7 @@ describe('BetterAuthProvider', () => {
       const { BetterAuthProvider } = require('../../../../packages/auth/src/providers/better-auth');
       const provider = new BetterAuthProvider({ baseURL: 'https://api.hashpass.tech/api/auth' });
 
-      const bridge = await provider.fetchSupabaseBridge();
+      const bridge = await provider.fetchSupabaseBridgeSession();
 
       expect(bridge).toBeNull();
       warnSpy.mockRestore();

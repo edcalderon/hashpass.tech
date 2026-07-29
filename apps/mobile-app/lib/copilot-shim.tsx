@@ -47,21 +47,34 @@ export function walkthroughable<P extends object>(
 
 function noop() {}
 
+// Keep the disabled API stable. Consumers legitimately place individual API
+// members in effect/callback dependencies; creating a new object (or `start`
+// function) on every render made those effects run again even though this
+// compatibility shim can never start a tutorial.
+const disabledCopilotEvents = {
+  on: noop,
+  off: noop,
+  emit: noop,
+};
+
+const disabledCopilotApi = {
+  start: () => false,
+  stop: noop,
+  goToNext: noop,
+  goToPrev: noop,
+  goToNth: noop,
+  handleNth: noop,
+  currentStep: null,
+  visible: false,
+  totalStepsNumber: 0,
+  copilotEvents: disabledCopilotEvents,
+};
+
+// The shim intentionally has no walkthrough implementation. Screen-level
+// auto-start and event-tracking effects must remain dormant until a real,
+// Fabric-safe implementation replaces it.
+export const COPILOT_TUTORIALS_ENABLED = false;
+
 export function useCopilot() {
-  return {
-    start: () => false,
-    stop: noop,
-    goToNext: noop,
-    goToPrev: noop,
-    goToNth: noop,
-    handleNth: noop,
-    currentStep: null,
-    visible: false,
-    totalStepsNumber: 0,
-    copilotEvents: {
-      on: noop,
-      off: noop,
-      emit: noop,
-    },
-  };
+  return disabledCopilotApi;
 }

@@ -263,9 +263,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   // Initial fetch + auto-refresh fallback. Realtime subscription (below)
   // depends on resolvedUserId, which this fetch populates. dbUserId is
-  // included so a first attempt that failed before the Supabase bridge
-  // session landed gets retried once it does, instead of staying failed
-  // for the rest of the session (see the success-only ref guard above).
+  // included so the bridge refreshes the cookie-backed identity once its
+  // Supabase session lands, and any genuinely transient first failure can
+  // still recover for the current session (see the success-only ref guard
+  // above).
   useEffect(() => {
     if (!user) return;
     fetchNotifications();

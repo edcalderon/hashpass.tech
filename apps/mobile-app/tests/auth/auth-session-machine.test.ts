@@ -70,6 +70,27 @@ describe('authSessionMachine', () => {
     });
   });
 
+  it('keeps provider state unchanged for a duplicate Better Auth resolution', () => {
+    const actor = createActor(authSessionMachine).start();
+    const session = makeSession('better-user', 'better-auth');
+
+    send(actor, {
+      type: 'PROVIDER_RESOLVED',
+      provider: 'betterAuth',
+      session,
+    });
+
+    const snapshotAfterFirstResolution = actor.getSnapshot();
+
+    send(actor, {
+      type: 'PROVIDER_RESOLVED',
+      provider: 'betterAuth',
+      session,
+    });
+
+    expect(actor.getSnapshot().context).toBe(snapshotAfterFirstResolution.context);
+  });
+
   it('waits for every provider before resolving an empty bootstrap as logged out', () => {
     const actor = createActor(authSessionMachine).start();
 

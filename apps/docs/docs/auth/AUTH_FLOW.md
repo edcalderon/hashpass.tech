@@ -7,6 +7,11 @@
 > FKs actually key off of — this flow doc covers how the user *signs in*, not
 > how their identity gets bridged afterward.
 
+> **Dashboard stability:** the Better Auth bootstrap and `useAuth()` update
+> contract is a critical runtime boundary. See
+> [AUTH_BOOTSTRAP_STABILITY.md](AUTH_BOOTSTRAP_STABILITY.md) before changing
+> provider resolution, auth subscribers, or auth-consuming dashboard UI.
+
 ## Current Main Google Flow (as of 2026-07-08)
 
 **Better Auth is now the only web Google sign-in path for every tenant** — both

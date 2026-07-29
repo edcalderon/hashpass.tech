@@ -327,16 +327,11 @@ function CustomDrawerContent({
   // an event-scoped admin has no visible way into the Admin Panel even
   // though the panel itself already supports them (see admin.tsx).
   //
-  // dbUserId is in the dependency array deliberately: right after a fresh
-  // Better Auth sign-in, `user` is already truthy and authLoading already
-  // false, but the Supabase session bridge (dbUserId) is still a
-  // fire-and-forget call in flight -- there's no usable auth token yet
-  // (Better Auth has no getApiAccessToken fallback), so this first check
-  // genuinely fails with "No authorization token provided". Without
-  // dbUserId here, that failure was permanent for the rest of the session
-  // (isUserAdmin stuck at false, no retry) even after the bridge landed a
-  // moment later. Re-running once dbUserId actually becomes available
-  // retries it with a real token instead of requiring a manual reload.
+  // dbUserId is in the dependency array deliberately. The shared identity
+  // resolver accepts a verified Better Auth cookie while the Supabase bridge
+  // is still in flight, then this effect refreshes the result after the real
+  // Supabase identity arrives. That keeps a delayed bridge from leaving the
+  // sidebar with a stale non-admin result for the rest of the session.
   React.useEffect(() => {
     let cancelled = false;
 
@@ -909,7 +904,10 @@ export default function DashboardLayout() {
   const { width: viewportWidth } = useWindowDimensions();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const styles = getStyles(isDark, colors, isMobile, insets);
+  const styles = useMemo(
+    () => getStyles(isDark, colors, isMobile, insets),
+    [colors, insets, isDark, isMobile],
+  );
   // Native mobile intentionally stops short of the full viewport width
   // (previously Math.ceil(viewportWidth), i.e. 100%): with no visible gap on
   // the right, there is no dimmed backdrop left for the drawer's own
@@ -1077,7 +1075,6 @@ export default function DashboardLayout() {
     const headerRouter = useRouter();
     const { headerOpacity, headerBackground, headerTint, headerBlur, headerBorderWidth, headerHeight, setHeaderHeight, scrollY } = useScroll();
     const { animationsEnabled } = useAnimations();
-    const { user } = useAuth();
     const copilotHook = useCopilot() as any;
     const handleNext = copilotHook?.handleNext || copilotHook?.handleNth;
     const [qrScannerVisible, setQrScannerVisible] = React.useState(false);
@@ -1352,18 +1349,20 @@ export default function DashboardLayout() {
         </RNAnimated.View>
 
         {/* Regular QR Scanner Modal */}
-        <QRScanner
-          visible={qrScannerVisible}
-          onClose={() => setQrScannerVisible(false)}
-          onScanSuccess={(result: unknown) => {
-            setQrScannerVisible(false);
-            // You can add navigation or other actions here based on scan result
-          }}
-          onScanError={(error: unknown) => {
-            console.error('QR Scan Error:', error);
-            // Error is already shown in the scanner component
-          }}
-        />
+        {qrScannerVisible && (
+          <QRScanner
+            visible
+            onClose={() => setQrScannerVisible(false)}
+            onScanSuccess={(result: unknown) => {
+              setQrScannerVisible(false);
+              // You can add navigation or other actions here based on scan result
+            }}
+            onScanError={(error: unknown) => {
+              console.error('QR Scan Error:', error);
+              // Error is already shown in the scanner component
+            }}
+          />
+        )}
 
       </RNAnimated.View>
     );

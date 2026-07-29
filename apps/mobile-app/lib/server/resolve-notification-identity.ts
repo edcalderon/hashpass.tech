@@ -1,5 +1,6 @@
 import { getSupabaseServerForRequest } from '../supabase-server';
 import { authenticateRequest, extractToken } from '@hashpass/auth';
+import { getBetterAuthSessionUser } from './better-auth';
 
 type AuthenticatedUser = {
   id: string;
@@ -175,15 +176,31 @@ export async function resolveNotificationIdentity(
     }
   }
 
-  // 2. Fall back to provider-routed verification — covers Better Auth
-  //    (cookie-backed session) and Directus (Bearer token) tenants.
+  // 2. Preserve an explicit provider bearer token's precedence. This avoids a
+  //    browser's Better Auth cookie overriding a valid Directus bearer from a
+  //    different principal when both happen to be present.
   const { user, error } = await authenticateRequest(request);
-  if (error || !user) {
-    return { error: error || 'Unauthorized', status: 401 };
-  }
-  if (!user.email) {
-    return { error: 'Authenticated user has no email on record', status: 400 };
+  if (user && !error) {
+    if (!user.email) {
+      return { error: 'Authenticated user has no email on record', status: 400 };
+    }
+    return resolveSupabaseIdentityForUser(supabase, user);
   }
 
-  return resolveSupabaseIdentityForUser(supabase, user);
+  // 3. A Better Auth session is cookie-backed. Verify it directly after a
+  //    provider bearer could not be authenticated: core still advertises
+  //    Directus in its tenant configuration, so authenticateRequest() alone
+  //    would reject a valid Better Auth cookie while the asynchronous Supabase
+  //    bridge is still creating a JWT. This also keeps notification and
+  //    admin-access requests usable if that bridge needs to retry.
+  const betterAuthUser = await getBetterAuthSessionUser(request);
+  if (betterAuthUser) {
+    if (!betterAuthUser.email) {
+      return { error: 'Authenticated user has no email on record', status: 400 };
+    }
+    return resolveSupabaseIdentityForUser(supabase, betterAuthUser);
+  }
+
+  // Neither the bearer nor the Better Auth cookie authenticated the caller.
+  return { error: error || 'Unauthorized', status: 401 };
 }

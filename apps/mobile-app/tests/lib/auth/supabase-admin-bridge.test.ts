@@ -5,6 +5,7 @@ import {
   isDuplicateSupabaseUserError,
   findSupabaseUserByEmail,
   issueSupabaseSessionBridge,
+  createSupabaseBridgeSession,
   ensureSupabaseAccountForEmail,
 } from '../../../lib/auth/supabase-admin-bridge';
 
@@ -150,6 +151,90 @@ describe('supabase-admin-bridge', () => {
         '[Supabase Bridge] Failed to issue session bridge link:',
         'network down'
       );
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('createSupabaseBridgeSession', () => {
+    it('does not verify when a one-time link cannot be issued', async () => {
+      const verifyOtp = jest.fn();
+      const client = {
+        auth: {
+          admin: {
+            generateLink: jest.fn().mockResolvedValue({ data: null, error: { message: 'link failed' } }),
+          },
+          verifyOtp,
+        },
+      } as any;
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await expect(createSupabaseBridgeSession(client, 'user@example.com')).resolves.toBeNull();
+      expect(verifyOtp).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('consumes the one-time token server-side and returns only session tokens', async () => {
+      const verifyOtp = jest.fn().mockResolvedValue({
+        data: {
+          session: {
+            access_token: 'access-123',
+            refresh_token: 'refresh-123',
+          },
+        },
+        error: null,
+      });
+      const client = {
+        auth: {
+          admin: {
+            generateLink: jest.fn().mockResolvedValue({
+              data: { properties: { hashed_token: 'hash-abc', verification_type: 'magiclink' } },
+              error: null,
+            }),
+          },
+          verifyOtp,
+        },
+      } as any;
+
+      await expect(createSupabaseBridgeSession(client, 'User@Example.com')).resolves.toEqual({
+        access_token: 'access-123',
+        refresh_token: 'refresh-123',
+      });
+      expect(verifyOtp).toHaveBeenCalledWith({ token_hash: 'hash-abc', type: 'magiclink' });
+    });
+
+    it('does not return a bridge session when server-side verification fails', async () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const client = {
+        auth: {
+          admin: {
+            generateLink: jest.fn().mockResolvedValue({
+              data: { properties: { hashed_token: 'hash-abc', verification_type: 'magiclink' } },
+              error: null,
+            }),
+          },
+          verifyOtp: jest.fn().mockResolvedValue({ data: { session: null }, error: { message: 'expired' } }),
+        },
+      } as any;
+
+      await expect(createSupabaseBridgeSession(client, 'user@example.com')).resolves.toBeNull();
+      warnSpy.mockRestore();
+    });
+
+    it('does not expose a session when server-side verification throws', async () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const client = {
+        auth: {
+          admin: {
+            generateLink: jest.fn().mockResolvedValue({
+              data: { properties: { hashed_token: 'hash-abc', verification_type: 'magiclink' } },
+              error: null,
+            }),
+          },
+          verifyOtp: jest.fn().mockRejectedValue(new Error('network down')),
+        },
+      } as any;
+
+      await expect(createSupabaseBridgeSession(client, 'user@example.com')).resolves.toBeNull();
       warnSpy.mockRestore();
     });
   });

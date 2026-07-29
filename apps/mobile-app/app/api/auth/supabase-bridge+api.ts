@@ -1,14 +1,14 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
-import { ensureSupabaseAccountForEmail, issueSupabaseSessionBridge } from '@/lib/auth/supabase-admin-bridge';
+import { createSupabaseBridgeSession, ensureSupabaseAccountForEmail } from '@/lib/auth/supabase-admin-bridge';
 import { syncPublicUserRegistry } from '@/lib/auth/public-user-registry';
 import { getBetterAuthSessionUser } from '@/lib/server/better-auth';
 
-// POST /api/auth/supabase-bridge — issues a one-time Supabase session bridge
-// (a magic-link token_hash, consumed client-side via supabase.auth.verifyOtp)
-// for the caller's OWN verified Better Auth session. Never trusts a
-// client-supplied email — getBetterAuthSessionUser() verifies the Better
-// Auth session cookie server-side and returns the email tied to that
-// session.
+// POST /api/auth/supabase-bridge — establishes a Supabase session for the
+// caller's OWN verified Better Auth session. The one-time token is issued and
+// consumed with the server's service-role client; the browser never calls
+// Supabase /auth/v1/verify or handles the token hash. Never trusts a
+// client-supplied email — getBetterAuthSessionUser() verifies the Better Auth
+// session cookie server-side and returns the email tied to that session.
 //
 // Deliberately NOT authenticateRequest() from @hashpass/auth: that routes by
 // tenant hostname, and the core tenant's authProvider is still the stale
@@ -62,14 +62,14 @@ export async function POST(request: Request) {
       });
     }
 
-    const bridge = await issueSupabaseSessionBridge(supabase, user.email);
-    if (!bridge) {
-      return Response.json({ error: 'Failed to issue Supabase session bridge' }, { status: 500 });
+    const session = await createSupabaseBridgeSession(supabase, user.email);
+    if (!session) {
+      return Response.json({ error: 'Failed to establish Supabase session bridge' }, { status: 500 });
     }
 
-    return Response.json(bridge);
+    return Response.json({ session });
   } catch (e) {
     console.error('[supabase-bridge] unexpected error:', e);
-    return Response.json({ error: 'Failed to issue Supabase session bridge' }, { status: 500 });
+    return Response.json({ error: 'Failed to establish Supabase session bridge' }, { status: 500 });
   }
 }

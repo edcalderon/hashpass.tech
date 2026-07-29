@@ -127,6 +127,10 @@ describe('oauth callback api', () => {
       },
       error: null,
     }));
+    const mockVerifyOtp = jest.fn(async () => ({
+      data: { session: { access_token: 'sb-access-123', refresh_token: 'sb-refresh-123' } },
+      error: null,
+    }));
 
     mockGetSupabaseServerForRequest.mockReturnValue({
       auth: {
@@ -137,6 +141,7 @@ describe('oauth callback api', () => {
           })),
           generateLink: mockGenerateLink,
         },
+        verifyOtp: mockVerifyOtp,
       },
     });
 
@@ -160,7 +165,8 @@ describe('oauth callback api', () => {
     expect(location).toContain('hashpass://auth/callback?returnTo=%2Fdashboard%2Fexplore');
     expect(location).toContain('access_token=access123');
     expect(location).toContain('refresh_token=refresh456');
-    expect(location).toContain('sb_token_hash=bridge-token-123');
+    expect(location).toContain('sb_access_token=sb-access-123');
+    expect(location).toContain('sb_refresh_token=sb-refresh-123');
     expect(location).toContain('directus_user=');
     expect(mockFetchDirectus).toHaveBeenCalled();
     expect(mockGenerateLink).toHaveBeenCalled();
@@ -194,6 +200,10 @@ describe('oauth callback api', () => {
       },
       error: null,
     }));
+    const mockVerifyOtp = jest.fn(async () => ({
+      data: { session: { access_token: 'sb-access-123', refresh_token: 'sb-refresh-123' } },
+      error: null,
+    }));
 
     mockGetSupabaseServerForRequest.mockReturnValue({
       auth: {
@@ -204,6 +214,7 @@ describe('oauth callback api', () => {
           })),
           generateLink: mockGenerateLink,
         },
+        verifyOtp: mockVerifyOtp,
       },
     });
 
@@ -226,7 +237,8 @@ describe('oauth callback api', () => {
     expect(location).toContain('hashpass://auth/callback?returnTo=%2Fdashboard%2Fexplore');
     expect(location).toContain('access_token=access123');
     expect(location).toContain('refresh_token=refresh456');
-    expect(location).toContain('sb_token_hash=bridge-token-123');
+    expect(location).toContain('sb_access_token=sb-access-123');
+    expect(location).toContain('sb_refresh_token=sb-refresh-123');
     expect(location).toContain('directus_user=');
     expect(mockFetchDirectus).toHaveBeenCalled();
     expect(mockGenerateLink).toHaveBeenCalled();
@@ -260,6 +272,10 @@ describe('oauth callback api', () => {
       },
       error: null,
     }));
+    const mockVerifyOtp = jest.fn(async () => ({
+      data: { session: { access_token: 'sb-access-123', refresh_token: 'sb-refresh-123' } },
+      error: null,
+    }));
 
     mockGetSupabaseServerForRequest.mockReturnValue({
       auth: {
@@ -270,6 +286,7 @@ describe('oauth callback api', () => {
           })),
           generateLink: mockGenerateLink,
         },
+        verifyOtp: mockVerifyOtp,
       },
     });
 
@@ -290,7 +307,8 @@ describe('oauth callback api', () => {
     expect(response.status).toBe(302);
     const location = response.headers.get('location') || '';
     expect(location).toContain('directus_user=');
-    expect(location).toContain('sb_token_hash=bridge-token-123');
+    expect(location).toContain('sb_access_token=sb-access-123');
+    expect(location).toContain('sb_refresh_token=sb-refresh-123');
     expect(mockFetchDirectus).toHaveBeenCalled();
     expect(mockGenerateLink).toHaveBeenCalled();
   });
