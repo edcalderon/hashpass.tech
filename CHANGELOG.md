@@ -1,3 +1,12 @@
+## [1.8.277](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.276...v1.8.277) (2026-07-29)
+
+
+### Bug Fixes
+
+* BSL prod pipeline was silently building with dev config ([a151420](https://github.com/hashpass-tech/hashpass.tech/commit/a151420da31853e7ea9f4ec054d00c3f385128bc))
+### Release Highlights
+- BSL prod pipeline was silently building with dev config
+
 ## [1.8.276](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.275...v1.8.276) (2026-07-29)
 
 

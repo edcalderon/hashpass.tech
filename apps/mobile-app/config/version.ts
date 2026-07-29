@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607290141, // Updated to current timestamp
+  buildNumber: 202607290308, // Updated to current timestamp
   releaseDate: '2026-07-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'extend the BSL hybrid deploy to prod'
+    // No new features
   ],
   bugfixes: [
-    'bound BSL/web EC2 worker builds with a process-group timeout'
+    'BSL prod pipeline was silently building with dev config'
   ],
   breakingChanges: [],
-  notes: 'extend the BSL hybrid deploy to prod; bound BSL/web EC2 worker builds with a process-group timeout'
+  notes: 'BSL prod pipeline was silently building with dev config'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.277': {
+    version: '1.8.277',
+    buildNumber: 202607290308,
+    releaseDate: '2026-07-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'BSL prod pipeline was silently building with dev config'
+    ],
+    breakingChanges: [],
+    notes: 'BSL prod pipeline was silently building with dev config'
+  },
   '1.8.276': {
     version: '1.8.276',
     buildNumber: 202607290141,
