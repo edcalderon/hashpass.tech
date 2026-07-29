@@ -538,7 +538,29 @@
     "pass": "Pass",
     "viewFullDetails": "Alle Details anzeigen",
     "flipBack": "Zurück",
-    "qrCodeModalTitle": "Ihr Pass-QR-Code"
+    "qrCodeModalTitle": "Ihr Pass-QR-Code",
+    "shareIntro": "Schau dir meinen Pass an für",
+    "wallet": {
+      "searchPlaceholder": "Deine Pässe durchsuchen",
+      "noMatches": "Keine Pässe entsprechen deinen Filtern",
+      "showMore": "Mehr anzeigen",
+      "showing": "Angezeigt",
+      "timeline": {
+        "live": "Findet gerade statt",
+        "upcoming": "Bevorstehend",
+        "past": "Vergangenes Event"
+      },
+      "filter": {
+        "when": "Wann",
+        "passType": "Pass-Typ"
+      },
+      "stat": {
+        "total": "Pässe",
+        "active": "Bevorstehend",
+        "past": "Vergangen"
+      },
+      "stackHint": "Tippe auf eine Karte dahinter, um sie nach vorne zu holen"
+    }
   },
   "networking": {
     "title": "Netzwerkzentrum",

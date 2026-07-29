@@ -609,7 +609,29 @@
     "pass": "패스",
     "viewFullDetails": "전체 세부 정보 보기",
     "flipBack": "뒤로",
-    "qrCodeModalTitle": "패스 QR 코드"
+    "qrCodeModalTitle": "패스 QR 코드",
+    "shareIntro": "제 패스를 확인해 보세요",
+    "wallet": {
+      "searchPlaceholder": "패스 검색",
+      "noMatches": "필터와 일치하는 패스가 없습니다",
+      "showMore": "더 보기",
+      "showing": "표시 중",
+      "timeline": {
+        "live": "진행 중",
+        "upcoming": "예정",
+        "past": "지난 행사"
+      },
+      "filter": {
+        "when": "시기",
+        "passType": "패스 종류"
+      },
+      "stat": {
+        "total": "패스",
+        "active": "예정",
+        "past": "지난"
+      },
+      "stackHint": "뒤에 있는 카드를 눌러 앞으로 가져오세요"
+    }
   },
   "networking": {
     "title": "네트워킹 센터",

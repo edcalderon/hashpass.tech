@@ -357,6 +357,70 @@ class PassSystemService {
     }
   }
 
+  // Every pass a user has ever held, across every event and every status.
+  //
+  // Unlike getUserPassesForEvents this takes no event list and does not
+  // filter on status: the "Your Passes" wallet shows the passes the user
+  // currently holds *and* the ones from events that already happened, so a
+  // returning attendee sees their history rather than an empty section. The
+  // caller classifies each row (see lib/pass-wallet.ts) -- this layer stays a
+  // faithful read of what's in the table.
+  //
+  // Same per-row counter reasoning as getUserPassesForEvents: deliberately
+  // not calling get_user_meeting_request_counts, whose scope comes from the
+  // Postgres session setting app.event_id and would stamp one event's usage
+  // onto every card.
+  async getAllUserPasses(userId: string): Promise<EventPassInfo[]> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('getAllUserPasses', userId);
+      return [];
+    }
+
+    try {
+      const { data: passRows, error } = await supabase
+        .from('passes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error getting all user passes:', error);
+        return [];
+      }
+
+      if (!passRows?.length) return [];
+
+      // Keep only the most recent pass per event. A re-issued pass supersedes
+      // the row it replaced; showing both would read as two tickets to the
+      // same event.
+      const latestByEvent = new Map<string, Pass>();
+      for (const pass of passRows as Pass[]) {
+        if (!latestByEvent.has(pass.event_id)) {
+          latestByEvent.set(pass.event_id, pass);
+        }
+      }
+
+      return Array.from(latestByEvent.values()).map((passData) => ({
+        event_id: passData.event_id,
+        pass_id: passData.id,
+        pass_type: passData.pass_type || 'general',
+        status: passData.status || 'active',
+        pass_number: passData.pass_number || 'Unknown',
+        max_requests: passData.max_meeting_requests || 0,
+        used_requests: passData.used_meeting_requests || 0,
+        remaining_requests: (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
+        max_boost: passData.max_boost_amount || 0,
+        used_boost: passData.used_boost_amount || 0,
+        remaining_boost: (passData.max_boost_amount || 0) - (passData.used_boost_amount || 0),
+        access_features: passData.access_features || [],
+        special_perks: passData.special_perks || [],
+      }));
+    } catch (error) {
+      console.error('Error in getAllUserPasses:', error);
+      return [];
+    }
+  }
+
   // Check if user can make meeting request
   async canMakeMeetingRequest(
     userId: string,
