@@ -19,7 +19,7 @@ import {
   isMainBranch,
   type EventInfo
 } from '../../../lib/event-detector';
-import { resolveEventImageSource } from '../../../lib/event-branding';
+import { getSelectEventCardWatermark } from '../../../lib/event-branding';
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
@@ -356,7 +356,7 @@ export default function ExploreScreen() {
         activeOpacity={0.8}
       >
         <Image
-          source={resolveEventImageSource(eventData.image) || { uri: 'https://via.placeholder.com/400x200' }}
+          source={getSelectEventCardWatermark(isDark)}
           style={[
             styles.eventImage,
             isArchiveEvent && styles.archiveEventImage,
@@ -418,7 +418,7 @@ export default function ExploreScreen() {
         activeOpacity={0.75}
       >
         <Image
-          source={resolveEventImageSource(eventData.image) || { uri: 'https://via.placeholder.com/80x80' }}
+          source={getSelectEventCardWatermark(isDark)}
           style={[
             styles.eventListRowThumb,
             { backgroundColor: isArchiveEvent ? '#08111E' : colors.background.default },
