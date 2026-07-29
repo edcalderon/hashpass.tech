@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607291504, // Updated to current timestamp
+  buildNumber: 202607291745, // Updated to current timestamp
   releaseDate: '2026-07-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'harden meeting request demo flow'
   ],
   bugfixes: [
-    // No bugfixes
+    'harden event meeting and speaker flows',
+    'complete meeting request lifecycle'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.280 release'
+  notes: 'harden meeting request demo flow; harden event meeting and speaker flows; complete meeting request lifecycle'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.281': {
+    version: '1.8.281',
+    buildNumber: 202607291745,
+    releaseDate: '2026-07-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'harden meeting request demo flow'
+    ],
+    bugfixes: [
+      'harden event meeting and speaker flows',
+      'complete meeting request lifecycle'
+    ],
+    breakingChanges: [],
+    notes: 'harden meeting request demo flow; harden event meeting and speaker flows; complete meeting request lifecycle'
+  },
   '1.8.280': {
     version: '1.8.280',
     buildNumber: 202607291504,

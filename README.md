@@ -20,10 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.280)
+## 📋 Latest Changes (v1.8.281)
 
-### Released
-- Version 1.8.280 release
+### Bug Fixes
+
+* harden event meeting and speaker flows ([37df8c6](https://github.com/hashpass-tech/hashpass.tech/commit/37df8c6509697ce96587d637416375ae49030426))
+
+
+### Features
+
+* harden meeting request demo flow ([230f84e](https://github.com/hashpass-tech/hashpass.tech/commit/230f84e08288906cae202aeb9576a568dcff1a56))
+### Release Highlights
+- harden meeting request demo flow; harden event meeting and speaker flows; complete meeting request lifecycle
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

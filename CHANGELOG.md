@@ -1,3 +1,17 @@
+## [1.8.281](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.280...v1.8.281) (2026-07-29)
+
+
+### Bug Fixes
+
+* harden event meeting and speaker flows ([37df8c6](https://github.com/hashpass-tech/hashpass.tech/commit/37df8c6509697ce96587d637416375ae49030426))
+
+
+### Features
+
+* harden meeting request demo flow ([230f84e](https://github.com/hashpass-tech/hashpass.tech/commit/230f84e08288906cae202aeb9576a568dcff1a56))
+### Release Highlights
+- harden meeting request demo flow; harden event meeting and speaker flows; complete meeting request lifecycle
+
 ## [1.8.280](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.279...v1.8.280) (2026-07-29)
 ### Released
 - Version 1.8.280 release
