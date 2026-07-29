@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607292001, // Updated to current timestamp
+  buildNumber: 202607292156, // Updated to current timestamp
   releaseDate: '2026-07-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,15 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'prevent BSL stale-cache reload loops',
-    'repair BSL pass access provisioning'
+    'eliminate agenda-status insert race and stale My Schedule counts'
   ],
   breakingChanges: [],
-  notes: 'prevent BSL stale-cache reload loops; repair BSL pass access provisioning'
+  notes: 'eliminate agenda-status insert race and stale My Schedule counts'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.283': {
+    version: '1.8.283',
+    buildNumber: 202607292156,
+    releaseDate: '2026-07-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'eliminate agenda-status insert race and stale My Schedule counts'
+    ],
+    breakingChanges: [],
+    notes: 'eliminate agenda-status insert race and stale My Schedule counts'
+  },
   '1.8.282': {
     version: '1.8.282',
     buildNumber: 202607292001,

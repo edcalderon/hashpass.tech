@@ -1,3 +1,7 @@
+## [1.8.283](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.282...v1.8.283) (2026-07-29)
+### Released
+- eliminate agenda-status insert race and stale My Schedule counts
+
 ## [1.8.282](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.281...v1.8.282) (2026-07-29)
 ### Released
 - prevent BSL stale-cache reload loops; repair BSL pass access provisioning
