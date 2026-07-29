@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
 import { MaterialIcons } from '../../../../lib/vector-icons';
 import { supabase } from '@/lib/supabase';
+import { apiClient, eventApiPath } from '@/lib/api-client';
 import { useToastHelpers } from '@contexts/ToastContext';
 import QuickAccessGrid from '@/components/explorer/QuickAccessGrid';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -40,6 +41,7 @@ export default function NetworkingView() {
   const tutorialStartedRef = useRef(false);
   const styles = getStyles(isDark, colors);
   const eventId = event?.id || 'bsl';
+  const networkingStatsPath = eventApiPath(eventId, 'networking/stats');
 
   // Reset ref when tutorial is reset (completion status changes from true to false)
   useEffect(() => {
@@ -250,79 +252,19 @@ export default function NetworkingView() {
 
       console.log(`🔄 Loading networking stats (attempt ${retryCount + 1}/${maxRetries + 1}) for user:`, dbUserId, silent ? '(silent update)' : '');
 
-      // Use the RPC function for better performance and reliability.
-      // .single() unwraps the RETURNS TABLE result into a plain object --
-      // without it, supabase-js returns an array and every statsData.field
-      // read below silently resolves to undefined, which the || 0 / ?? 0
-      // fallbacks then mask as "0 requests" instead of surfacing the shape
-      // mismatch.
-      // Add timeout to prevent stale loading states on slow mobile networks
-      const statsPromise = supabase
-        .rpc('get_user_meeting_request_counts', {
-          p_user_id: dbUserId
-        })
-        .single();
-
-      const { data: statsData, error: statsError } = await Promise.race([
-        statsPromise,
+      const statsResponse = await Promise.race([
+        apiClient.request(networkingStatsPath, { skipEventSegment: true }),
         timeoutPromise
       ]) as any;
-
-      if (statsError) {
-        console.error('❌ Stats RPC error:', statsError);
-        throw new Error(`Stats API error: ${statsError.message}`);
+      if (!statsResponse.success) {
+        throw new Error(statsResponse.error || 'Stats API request failed');
       }
-
-      // get_user_meeting_request_counts always RETURN QUERY SELECTs exactly
-      // one row (its aggregates default to 0 via COALESCE even for a user
-      // with no passes/requests at all), so a falsy result here isn't a real
-      // "nothing to show" case -- it's a transient response-shape hiccup.
-      // Degrade to zeroed-out stats instead of a hard error screen; the
-      // retry loop above will still recover it on the next attempt if the
-      // hiccup keeps happening.
-      const resolvedStats = statsData || {};
-      if (!statsData) {
-        console.warn('⚠️ Stats RPC returned no data; showing zeroed stats instead of failing');
-      } else {
-        console.log('📊 Stats RPC result:', statsData);
-      }
-
-      // Check if user is a speaker and get additional speaker-specific data
-      let speakerStats = {
+      const statsData = statsResponse.data?.data || {};
+      const resolvedStats = statsData.counts || {};
+      const speakerStats = statsData.speaker || {
         blockedUsers: 0,
         speakerRequests: 0
       };
-
-      try {
-        const { data: speakerData, error: speakerError } = await supabase
-          .from('bsl_speakers')
-          .select('id')
-          .eq('user_id', dbUserId)
-          .single();
-
-        if (!speakerError && speakerData) {
-          // Get speaker-specific stats
-          const { data: blockedData } = await supabase
-            .from('user_blocks')
-            .select('id')
-            .eq('speaker_id', speakerData.id);
-
-          const { data: speakerRequestsData } = await supabase
-            .from('meeting_requests')
-            .select('id, status')
-            .eq('speaker_id', speakerData.id);
-
-          speakerStats = {
-            blockedUsers: blockedData?.length || 0,
-            speakerRequests: speakerRequestsData?.length || 0
-          };
-
-          console.log('🎤 Speaker stats:', speakerStats);
-        }
-      } catch (speakerError) {
-        console.warn('⚠️ Could not load speaker stats:', speakerError);
-        // Don't throw here, just use default values
-      }
 
       const newStats: NetworkingStats = resolveNetworkingStats(resolvedStats, speakerStats.blockedUsers);
 
@@ -358,7 +300,7 @@ export default function NetworkingView() {
         showError('Failed to Load Stats', `Unable to load networking statistics after ${maxRetries + 1} attempts. ${errorMessage}`);
       }
     }
-  }, [dbUserId, showError]);
+  }, [dbUserId, networkingStatsPath, showError]);
 
   useEffect(() => {
     let isMounted = true;

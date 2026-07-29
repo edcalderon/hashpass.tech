@@ -28,6 +28,7 @@ specific to BSL. New reusable event features belong below `/api/events/:eventId`
 | `GET` | `/api/events/:eventId/speakers` | Read the event speaker directory for agenda and search |
 | `GET` | `/api/events/:eventId/speakers/:speakerId` | Read one speaker profile |
 | `GET` | `/api/events/:eventId/meetings/limits` | Read the caller's meeting-request allowance |
+| `GET` | `/api/events/:eventId/networking/stats` | Read the caller's event-scoped networking dashboard statistics |
 | `GET`, `POST`, `PATCH` | `/api/events/:eventId/meetings/requests` | List, create, and act on a meeting request |
 | `GET` | `/api/events/:eventId/meetings/requests/slots` | Load availability with event-scoped pending-demand metadata |
 
@@ -90,7 +91,7 @@ Do not build a shared-feature URL from `event.api.basePath`, and do not use
 
 The mobile client must not query Supabase tables or RPCs directly for this
 flow. Speaker profiles, speaker-directory search, request limits, requests,
-and availability are all read through these backend routes. This keeps client
+availability, and networking statistics are all read through these backend routes. This keeps client
 code independent of the current database provider and prevents schema or
 tenant-routing failures from leaving a screen in a loading state.
 
