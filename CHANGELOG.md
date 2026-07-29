@@ -1,3 +1,12 @@
+## [1.8.278](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.277...v1.8.278) (2026-07-29)
+
+
+### Bug Fixes
+
+* logout appeared to need two taps -- useAuth() consumers had disconnected session state ([e99e084](https://github.com/hashpass-tech/hashpass.tech/commit/e99e0841647fb1daa7d6e1efae988dc8d8313c0c))
+### Release Highlights
+- logout appeared to need two taps -- useAuth() consumers had disconnected session state
+
 ## [1.8.277](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.276...v1.8.277) (2026-07-29)
 
 

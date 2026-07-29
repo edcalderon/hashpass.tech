@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607290308, // Updated to current timestamp
+  buildNumber: 202607290403, // Updated to current timestamp
   releaseDate: '2026-07-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'BSL prod pipeline was silently building with dev config'
+    'logout appeared to need two taps -- useAuth() consumers had disconnected session state'
   ],
   breakingChanges: [],
-  notes: 'BSL prod pipeline was silently building with dev config'
+  notes: 'logout appeared to need two taps -- useAuth() consumers had disconnected session state'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.278': {
+    version: '1.8.278',
+    buildNumber: 202607290403,
+    releaseDate: '2026-07-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'logout appeared to need two taps -- useAuth() consumers had disconnected session state'
+    ],
+    breakingChanges: [],
+    notes: 'logout appeared to need two taps -- useAuth() consumers had disconnected session state'
+  },
   '1.8.277': {
     version: '1.8.277',
     buildNumber: 202607290308,
