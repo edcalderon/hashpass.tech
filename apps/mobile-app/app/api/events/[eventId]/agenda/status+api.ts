@@ -102,19 +102,6 @@ export async function POST(request: Request) {
 
   const supabase = getSupabaseServerForRequest(request);
   try {
-    const { data: existing, error: lookupError } = await supabase
-      .from('user_agenda_status')
-      .select('id')
-      .eq('user_id', agendaUserId)
-      .eq('event_id', eventId)
-      .eq('agenda_id', agendaId)
-      .maybeSingle();
-
-    if (lookupError) {
-      console.error('[agenda-status] lookup error:', lookupError);
-      return Response.json({ error: 'Failed to update agenda status' }, { status: 500 });
-    }
-
     const now = new Date().toISOString();
     const patch: Record<string, unknown> = { updated_at: now };
     if (status !== undefined) {
@@ -125,14 +112,23 @@ export async function POST(request: Request) {
       patch.is_favorite = isFavorite;
     }
 
-    if (existing) {
-      const { error } = await supabase
-        .from('user_agenda_status')
-        .update(patch)
-        .eq('id', existing.id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
+    // Update first (single atomic statement) instead of select-then-branch:
+    // two toggles for the same agenda item (e.g. favorite + confirm) posting
+    // concurrently could both see "no existing row" and both attempt INSERT,
+    // and the loser hit 23505 on idx_user_agenda_status_user_agenda. If the
+    // update touches no row, fall back to INSERT, and if THAT loses a race
+    // to a concurrent insert, retry as an update now that the row exists.
+    const { data: updated, error: updateError } = await supabase
+      .from('user_agenda_status')
+      .update(patch)
+      .eq('user_id', agendaUserId)
+      .eq('event_id', eventId)
+      .eq('agenda_id', agendaId)
+      .select('id');
+    if (updateError) throw updateError;
+
+    if (!updated || updated.length === 0) {
+      const { error: insertError } = await supabase
         .from('user_agenda_status')
         .insert({
           user_id: agendaUserId,
@@ -142,7 +138,20 @@ export async function POST(request: Request) {
           is_favorite: isFavorite ?? false,
           ...(status === 'confirmed' ? { confirmed_at: now } : {}),
         });
-      if (error) throw error;
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          const { error: retryError } = await supabase
+            .from('user_agenda_status')
+            .update(patch)
+            .eq('user_id', agendaUserId)
+            .eq('event_id', eventId)
+            .eq('agenda_id', agendaId);
+          if (retryError) throw retryError;
+        } else {
+          throw insertError;
+        }
+      }
     }
 
     return Response.json({ success: true });

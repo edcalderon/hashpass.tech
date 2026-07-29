@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useMemo, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { format, addDays, isSameDay, isToday, isPast, isFuture, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MaterialIcons } from '../../../../lib/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
 import { supabase } from '../../../../lib/supabase';
@@ -146,61 +146,72 @@ const MySchedule = () => {
   }, [meetings, meetingFilter]);
 
   // Load user confirmation statuses for agenda events, meetings, and free slots
-  useEffect(() => {
-    const loadUserScheduleStatus = async () => {
-      if (!dbUserId) {
-        setUserAgendaStatus({});
-        setUserMeetingStatus({});
-        setUserFreeSlotStatus({});
+  const loadUserScheduleStatus = useCallback(async () => {
+    if (!dbUserId) {
+      setUserAgendaStatus({});
+      setUserMeetingStatus({});
+      setUserFreeSlotStatus({});
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('user_agenda_status')
+        .select('agenda_id, meeting_id, slot_time, status, slot_status, is_favorite')
+        .eq('user_id', dbUserId)
+        .eq('event_id', eventId);
+
+      if (error) {
+        console.error('Error loading user schedule status:', error);
         return;
       }
-      try {
-        const { data, error } = await supabase
-          .from('user_agenda_status')
-          .select('agenda_id, meeting_id, slot_time, status, slot_status, is_favorite')
-          .eq('user_id', dbUserId)
-          .eq('event_id', eventId);
-        
-        if (error) {
-          console.error('Error loading user schedule status:', error);
-          return;
+
+      const agendaStatusMap: Record<string, 'tentative' | 'confirmed'> = {};
+      const meetingStatusMap: Record<string, 'tentative' | 'confirmed'> = {};
+      const freeSlotStatusMap: Record<string, 'available' | 'interested' | 'blocked' | 'tentative'> = {};
+      const favoriteMap: Record<string, boolean> = {};
+
+      (data || []).forEach((item: any) => {
+        const itemId = item.agenda_id || item.meeting_id || (item.slot_time ? new Date(item.slot_time).toISOString() : null);
+        if (!itemId) return;
+
+        if (item.agenda_id) {
+          // Map 'unconfirmed' to 'tentative' for backward compatibility
+          const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
+          agendaStatusMap[item.agenda_id] = status as 'tentative' | 'confirmed';
+          if (item.is_favorite) favoriteMap[item.agenda_id] = true;
+        } else if (item.meeting_id) {
+          const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
+          meetingStatusMap[item.meeting_id] = status as 'tentative' | 'confirmed';
+          if (item.is_favorite) favoriteMap[item.meeting_id] = true;
+        } else if (item.slot_time) {
+          // Free slot - use slot_time as key (ISO string)
+          const slotKey = new Date(item.slot_time).toISOString();
+          freeSlotStatusMap[slotKey] = (item.slot_status || item.status) as 'available' | 'interested' | 'blocked' | 'tentative';
         }
-        
-        const agendaStatusMap: Record<string, 'tentative' | 'confirmed'> = {};
-        const meetingStatusMap: Record<string, 'tentative' | 'confirmed'> = {};
-        const freeSlotStatusMap: Record<string, 'available' | 'interested' | 'blocked' | 'tentative'> = {};
-        const favoriteMap: Record<string, boolean> = {};
-        
-        (data || []).forEach((item: any) => {
-          const itemId = item.agenda_id || item.meeting_id || (item.slot_time ? new Date(item.slot_time).toISOString() : null);
-          if (!itemId) return;
-          
-          if (item.agenda_id) {
-            // Map 'unconfirmed' to 'tentative' for backward compatibility
-            const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
-            agendaStatusMap[item.agenda_id] = status as 'tentative' | 'confirmed';
-            if (item.is_favorite) favoriteMap[item.agenda_id] = true;
-          } else if (item.meeting_id) {
-            const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
-            meetingStatusMap[item.meeting_id] = status as 'tentative' | 'confirmed';
-            if (item.is_favorite) favoriteMap[item.meeting_id] = true;
-          } else if (item.slot_time) {
-            // Free slot - use slot_time as key (ISO string)
-            const slotKey = new Date(item.slot_time).toISOString();
-            freeSlotStatusMap[slotKey] = (item.slot_status || item.status) as 'available' | 'interested' | 'blocked' | 'tentative';
-          }
-        });
-        
-        setUserAgendaStatus(agendaStatusMap);
-        setUserMeetingStatus(meetingStatusMap);
-        setUserFreeSlotStatus(freeSlotStatusMap);
-        setFavoriteStatus(favoriteMap);
-      } catch (e) {
-        console.error('Error loading user schedule status:', e);
-      }
-    };
-    loadUserScheduleStatus();
+      });
+
+      setUserAgendaStatus(agendaStatusMap);
+      setUserMeetingStatus(meetingStatusMap);
+      setUserFreeSlotStatus(freeSlotStatusMap);
+      setFavoriteStatus(favoriteMap);
+    } catch (e) {
+      console.error('Error loading user schedule status:', e);
+    }
   }, [dbUserId, eventId]);
+
+  useEffect(() => {
+    loadUserScheduleStatus();
+  }, [loadUserScheduleStatus]);
+
+  // Re-fetch whenever this screen regains focus (e.g. returning from the
+  // Agenda screen after confirming/favoriting a session) — the mount-only
+  // effect above left this screen showing stale 0/4 counts when it stayed
+  // mounted in a tab navigator across screen switches.
+  useFocusEffect(
+    useCallback(() => {
+      loadUserScheduleStatus();
+    }, [loadUserScheduleStatus])
+  );
 
   useEffect(() => {
     const fetchAgenda = async () => {
