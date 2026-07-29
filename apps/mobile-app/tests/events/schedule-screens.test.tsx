@@ -2,6 +2,7 @@
 
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
+import { TouchableOpacity } from 'react-native';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -68,19 +69,29 @@ const mockThemeColors = {
   },
 };
 
-const createQueryBuilder = () => ({
+const mockUserTableMaybeSingle = jest.fn();
+const mockAgendaStatusMaybeSingle = jest.fn();
+
+const createQueryBuilder = (table: string) => ({
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
   in: jest.fn().mockReturnThis(),
   ilike: jest.fn().mockReturnThis(),
   limit: jest.fn().mockReturnThis(),
   not: jest.fn().mockReturnThis(),
+  is: jest.fn().mockReturnThis(),
+  filter: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
   single: jest.fn().mockResolvedValue({ data: null, error: null }),
+  // 'user' is the registry lookup (resolveRegistryUserId); everything else
+  // (user_agenda_status) is the toggle handlers' existing-row check.
+  maybeSingle: table === 'user' ? mockUserTableMaybeSingle : mockAgendaStatusMaybeSingle,
+  insert: jest.fn().mockResolvedValue({ error: null }),
+  update: jest.fn().mockReturnThis(),
 });
 
 const mockSupabase = {
-  from: jest.fn(() => createQueryBuilder()),
+  from: jest.fn((table: string) => createQueryBuilder(table)),
 };
 
 jest.mock('react-native-edge-to-edge', () => ({
@@ -108,11 +119,23 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockAgendaParams,
 }));
 
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({
-    setOptions: mockNavigationSetOptions,
-  }),
-}));
+jest.mock('@react-navigation/native', () => {
+  const { useEffect } = require('react');
+  return {
+    useNavigation: () => ({
+      setOptions: mockNavigationSetOptions,
+    }),
+    // Real useFocusEffect re-runs its callback on every screen focus; tests
+    // here never simulate focus/blur, so running it once like a mount
+    // effect is enough to exercise the same data-loading code path.
+    useFocusEffect: (effect: () => void | (() => void)) => {
+      useEffect(() => {
+        const cleanup = effect();
+        return typeof cleanup === 'function' ? cleanup : undefined;
+      }, []);
+    },
+  };
+});
 
 jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: {
@@ -137,6 +160,7 @@ jest.mock('../../hooks/useTheme', () => ({
 jest.mock('../../hooks/useAuth', () => ({
   useAuth: () => ({
     user: null,
+    dbUserId: 'auth-user-uuid',
   }),
 }));
 
@@ -171,7 +195,16 @@ jest.mock('@/lib/api-client', () => ({
   eventApiPath: (eventId: string, resource: string) => `events/${eventId}/${resource}`,
 }));
 jest.mock('../../lib/supabase', () => ({
-  supabase: mockSupabase,
+  // A plain `supabase: mockSupabase` property is snapshotted the one time
+  // this factory runs. Babel hoists this file's `import ... from
+  // '../../app/...'` statements above the `const mockSupabase = {...}`
+  // declaration below, so that snapshot can capture `mockSupabase` while it
+  // is still undefined. A getter re-reads the current value on every
+  // access instead, which is what actually exposed the working mock once
+  // my-schedule.tsx started calling supabase.from(...) unconditionally.
+  get supabase() {
+    return mockSupabase;
+  },
 }));
 
 import AgendaScreen from '../../app/events/[eventSlug]/agenda';
@@ -193,6 +226,10 @@ describe('event schedule screens', () => {
     mockShowError.mockReset();
     mockShowWarning.mockReset();
     mockSupabase.from.mockClear();
+    mockUserTableMaybeSingle.mockReset();
+    mockAgendaStatusMaybeSingle.mockReset();
+    mockUserTableMaybeSingle.mockResolvedValue({ data: { id: 'registry-user-id' }, error: null });
+    mockAgendaStatusMaybeSingle.mockResolvedValue({ data: null, error: null });
 
     const rn = require('react-native');
     rn.Platform.OS = mockPlatform;
@@ -240,6 +277,86 @@ describe('event schedule screens', () => {
     expect(mockNavigationSetOptions).toHaveBeenCalledWith({ title: 'mySchedule.title' });
     expect(mockApiRequest).toHaveBeenCalledWith('events/custom/agenda', {
       skipEventSegment: true,
+    });
+
+    await act(async () => {
+      renderer!.unmount();
+    });
+  });
+
+  it('drives the free-slot confirmation modal through the registry-scoped toggle handlers', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [] } });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<MyScheduleScreen />);
+      await flushPromises();
+    });
+
+    // Expand the "8 AM" hour group to render its (meeting-less) free slots.
+    const hourText = renderer!.root.findByProps({ children: '8 AM' });
+    let hourHeader = hourText.parent;
+    while (hourHeader && hourHeader.type !== TouchableOpacity) {
+      hourHeader = hourHeader.parent;
+    }
+    expect(hourHeader).toBeTruthy();
+    await act(async () => {
+      hourHeader!.props.onPress();
+    });
+
+    // Each successful toggle closes the modal (setConfirmationModal({ visible:
+    // false, ... })), which unmounts ScheduleConfirmationModal since it's only
+    // rendered while a meeting/slotStartTime is set. Re-open it before every
+    // interaction rather than reusing one stale instance.
+    const openFreeSlotModal = async () => {
+      const freeSlotButtons = renderer!.root
+        .findAllByType(TouchableOpacity)
+        .filter((node) => node.props.onPress && node.props.onPress.name === 'handleFreeSlotPress');
+      expect(freeSlotButtons.length).toBeGreaterThan(0);
+      await act(async () => {
+        freeSlotButtons[0].props.onPress();
+      });
+      const modal = renderer!.root.findByType('ScheduleConfirmationModal' as any);
+      expect(modal.props.isFreeSlot).toBe(true);
+      return modal;
+    };
+
+    // Free-slot branch, insert path (no existing row).
+    let modal = await openFreeSlotModal();
+    await act(async () => {
+      await modal.props.onConfirm();
+      await flushPromises();
+    });
+    expect(mockSupabase.from).toHaveBeenCalledWith('user_agenda_status');
+
+    // Free-slot branch, update path (existing row found this time).
+    mockAgendaStatusMaybeSingle.mockResolvedValueOnce({ data: { id: 'existing-free-slot' }, error: null });
+    modal = await openFreeSlotModal();
+    await act(async () => {
+      await modal.props.onConfirm();
+      await flushPromises();
+    });
+
+    // Not an agenda event, so this only exercises the early-return guard.
+    modal = await openFreeSlotModal();
+    await act(async () => {
+      await modal.props.onToggleFavorite();
+      await flushPromises();
+    });
+
+    // handleToggleFreeSlotBlocked, insert path.
+    modal = await openFreeSlotModal();
+    await act(async () => {
+      await modal.props.onToggleBlocked();
+      await flushPromises();
+    });
+
+    // handleToggleFreeSlotBlocked, update path.
+    mockAgendaStatusMaybeSingle.mockResolvedValueOnce({ data: { id: 'existing-blocked-slot' }, error: null });
+    modal = await openFreeSlotModal();
+    await act(async () => {
+      await modal.props.onToggleBlocked();
+      await flushPromises();
     });
 
     await act(async () => {

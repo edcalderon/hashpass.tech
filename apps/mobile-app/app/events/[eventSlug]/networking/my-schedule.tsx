@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useMemo, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { format, addDays, isSameDay, isToday, isPast, isFuture, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MaterialIcons } from '../../../../lib/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
 import { supabase } from '../../../../lib/supabase';
@@ -92,6 +92,45 @@ const MySchedule = () => {
   const [userMeetingStatus, setUserMeetingStatus] = useState<Record<string, 'tentative' | 'confirmed'>>({});
   const [userFreeSlotStatus, setUserFreeSlotStatus] = useState<Record<string, 'available' | 'interested' | 'blocked' | 'tentative'>>({});
   const [favoriteStatus, setFavoriteStatus] = useState<Record<string, boolean>>({});
+  // user_agenda_status.user_id is public.user(id) (the registry row), not
+  // dbUserId (auth.users id) — those are independently generated and not
+  // guaranteed to be equal. Resolved separately so this screen's queries and
+  // writes against that table match its FK, mirroring how the server
+  // resolves identity in resolve-notification-identity.ts.
+  const [registryUserId, setRegistryUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!dbUserId) {
+      setRegistryUserId(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user')
+          .select('id')
+          .filter('provider_ids->>supabase', 'eq', dbUserId)
+          .maybeSingle();
+        if (!cancelled) {
+          if (error) {
+            console.error('Error resolving registry user id:', error);
+            setRegistryUserId(null);
+          } else {
+            setRegistryUserId((data as any)?.id ?? null);
+          }
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error('Error resolving registry user id:', e);
+          setRegistryUserId(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [dbUserId]);
   const [confirmationModal, setConfirmationModal] = useState<{
     visible: boolean;
     meeting: Meeting | null;
@@ -146,61 +185,72 @@ const MySchedule = () => {
   }, [meetings, meetingFilter]);
 
   // Load user confirmation statuses for agenda events, meetings, and free slots
-  useEffect(() => {
-    const loadUserScheduleStatus = async () => {
-      if (!dbUserId) {
-        setUserAgendaStatus({});
-        setUserMeetingStatus({});
-        setUserFreeSlotStatus({});
+  const loadUserScheduleStatus = useCallback(async () => {
+    if (!registryUserId) {
+      setUserAgendaStatus({});
+      setUserMeetingStatus({});
+      setUserFreeSlotStatus({});
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('user_agenda_status')
+        .select('agenda_id, meeting_id, slot_time, status, slot_status, is_favorite')
+        .eq('user_id', registryUserId)
+        .eq('event_id', eventId);
+
+      if (error) {
+        console.error('Error loading user schedule status:', error);
         return;
       }
-      try {
-        const { data, error } = await supabase
-          .from('user_agenda_status')
-          .select('agenda_id, meeting_id, slot_time, status, slot_status, is_favorite')
-          .eq('user_id', dbUserId)
-          .eq('event_id', eventId);
-        
-        if (error) {
-          console.error('Error loading user schedule status:', error);
-          return;
+
+      const agendaStatusMap: Record<string, 'tentative' | 'confirmed'> = {};
+      const meetingStatusMap: Record<string, 'tentative' | 'confirmed'> = {};
+      const freeSlotStatusMap: Record<string, 'available' | 'interested' | 'blocked' | 'tentative'> = {};
+      const favoriteMap: Record<string, boolean> = {};
+
+      (data || []).forEach((item: any) => {
+        const itemId = item.agenda_id || item.meeting_id || (item.slot_time ? new Date(item.slot_time).toISOString() : null);
+        if (!itemId) return;
+
+        if (item.agenda_id) {
+          // Map 'unconfirmed' to 'tentative' for backward compatibility
+          const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
+          agendaStatusMap[item.agenda_id] = status as 'tentative' | 'confirmed';
+          if (item.is_favorite) favoriteMap[item.agenda_id] = true;
+        } else if (item.meeting_id) {
+          const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
+          meetingStatusMap[item.meeting_id] = status as 'tentative' | 'confirmed';
+          if (item.is_favorite) favoriteMap[item.meeting_id] = true;
+        } else if (item.slot_time) {
+          // Free slot - use slot_time as key (ISO string)
+          const slotKey = new Date(item.slot_time).toISOString();
+          freeSlotStatusMap[slotKey] = (item.slot_status || item.status) as 'available' | 'interested' | 'blocked' | 'tentative';
         }
-        
-        const agendaStatusMap: Record<string, 'tentative' | 'confirmed'> = {};
-        const meetingStatusMap: Record<string, 'tentative' | 'confirmed'> = {};
-        const freeSlotStatusMap: Record<string, 'available' | 'interested' | 'blocked' | 'tentative'> = {};
-        const favoriteMap: Record<string, boolean> = {};
-        
-        (data || []).forEach((item: any) => {
-          const itemId = item.agenda_id || item.meeting_id || (item.slot_time ? new Date(item.slot_time).toISOString() : null);
-          if (!itemId) return;
-          
-          if (item.agenda_id) {
-            // Map 'unconfirmed' to 'tentative' for backward compatibility
-            const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
-            agendaStatusMap[item.agenda_id] = status as 'tentative' | 'confirmed';
-            if (item.is_favorite) favoriteMap[item.agenda_id] = true;
-          } else if (item.meeting_id) {
-            const status = item.status === 'unconfirmed' ? 'tentative' : item.status;
-            meetingStatusMap[item.meeting_id] = status as 'tentative' | 'confirmed';
-            if (item.is_favorite) favoriteMap[item.meeting_id] = true;
-          } else if (item.slot_time) {
-            // Free slot - use slot_time as key (ISO string)
-            const slotKey = new Date(item.slot_time).toISOString();
-            freeSlotStatusMap[slotKey] = (item.slot_status || item.status) as 'available' | 'interested' | 'blocked' | 'tentative';
-          }
-        });
-        
-        setUserAgendaStatus(agendaStatusMap);
-        setUserMeetingStatus(meetingStatusMap);
-        setUserFreeSlotStatus(freeSlotStatusMap);
-        setFavoriteStatus(favoriteMap);
-      } catch (e) {
-        console.error('Error loading user schedule status:', e);
-      }
-    };
+      });
+
+      setUserAgendaStatus(agendaStatusMap);
+      setUserMeetingStatus(meetingStatusMap);
+      setUserFreeSlotStatus(freeSlotStatusMap);
+      setFavoriteStatus(favoriteMap);
+    } catch (e) {
+      console.error('Error loading user schedule status:', e);
+    }
+  }, [registryUserId, eventId]);
+
+  useEffect(() => {
     loadUserScheduleStatus();
-  }, [dbUserId, eventId]);
+  }, [loadUserScheduleStatus]);
+
+  // Re-fetch whenever this screen regains focus (e.g. returning from the
+  // Agenda screen after confirming/favoriting a session) — the mount-only
+  // effect above left this screen showing stale 0/4 counts when it stayed
+  // mounted in a tab navigator across screen switches.
+  useFocusEffect(
+    useCallback(() => {
+      loadUserScheduleStatus();
+    }, [loadUserScheduleStatus])
+  );
 
   useEffect(() => {
     const fetchAgenda = async () => {
@@ -573,24 +623,24 @@ const MySchedule = () => {
 
   // Handle schedule slot confirmation/unconfirmation
   const handleToggleConfirmation = async (meeting: Meeting, slotStartTime: Date) => {
-    if (!dbUserId) return;
-    
+    if (!registryUserId) return;
+
     setIsConfirming(true);
     const isAgendaEvent = (meeting as any).isAgendaEvent;
     const isFreeSlot = (meeting as any).isFreeSlot;
-    
+
     // Handle free slots differently
     if (isFreeSlot) {
       const slotKey = slotStartTime.toISOString();
       const currentStatus = userFreeSlotStatus[slotKey] || 'available';
       // Toggle between available and interested for free slots
       const newStatus = currentStatus === 'available' ? 'interested' : 'available';
-      
+
       try {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('slot_time', slotStartTime.toISOString())
           .is('agenda_id', null)
@@ -608,7 +658,7 @@ const MySchedule = () => {
             })
             .eq('id', (existing as any).id);
           if (error) throw error;
-          
+
           if (newStatus === 'available') {
             setUserFreeSlotStatus(prev => {
               const next = { ...prev };
@@ -626,7 +676,7 @@ const MySchedule = () => {
           const { error } = await (supabase
             .from('user_agenda_status') as any)
             .insert({
-              user_id: dbUserId,
+              user_id: registryUserId,
               slot_time: slotStartTime.toISOString(),
               event_id: eventId,
               status: newStatus,
@@ -661,7 +711,7 @@ const MySchedule = () => {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('agenda_id', meeting.id)
           .maybeSingle();
@@ -675,19 +725,19 @@ const MySchedule = () => {
               updated_at: new Date().toISOString(),
             })
             .eq('id', (existing as any).id);
-          
+
           if (error) throw error;
         } else {
           const { error } = await (supabase
             .from('user_agenda_status') as any)
             .insert({
-              user_id: dbUserId,
+              user_id: registryUserId,
               agenda_id: meeting.id,
               event_id: eventId,
               status: newStatus,
               confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
             });
-          
+
           if (error) throw error;
         }
 
@@ -706,7 +756,7 @@ const MySchedule = () => {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('meeting_id', meeting.id)
           .maybeSingle();
@@ -720,19 +770,19 @@ const MySchedule = () => {
               updated_at: new Date().toISOString(),
             })
             .eq('id', (existing as any).id);
-          
+
           if (error) throw error;
         } else {
           const { error } = await (supabase
             .from('user_agenda_status') as any)
             .insert({
-              user_id: dbUserId,
+              user_id: registryUserId,
               meeting_id: meeting.id,
               event_id: eventId,
               status: newStatus,
               confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
             });
-          
+
           if (error) throw error;
         }
 
@@ -754,18 +804,18 @@ const MySchedule = () => {
 
   // Handle free slot blocked status
   const handleToggleFreeSlotBlocked = async (slotStartTime: Date) => {
-    if (!dbUserId) return;
-    
+    if (!registryUserId) return;
+
     setIsConfirming(true);
     const slotKey = slotStartTime.toISOString();
     const currentStatus = userFreeSlotStatus[slotKey] || 'available';
     const newStatus = currentStatus === 'blocked' ? 'available' : 'blocked';
-    
+
     try {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('slot_time', slotStartTime.toISOString())
           .is('agenda_id', null)
@@ -800,14 +850,14 @@ const MySchedule = () => {
         const { error } = await (supabase
           .from('user_agenda_status') as any)
           .insert({
-            user_id: dbUserId,
+            user_id: registryUserId,
             slot_time: slotStartTime.toISOString(),
             event_id: eventId,
             status: newStatus,
             slot_status: newStatus,
           });
         if (error) throw error;
-        
+
         setUserFreeSlotStatus(prev => ({
           ...prev,
           [slotKey]: newStatus,
@@ -825,22 +875,22 @@ const MySchedule = () => {
 
   // Handle favorite toggle for confirmed agenda events
   const handleToggleFavorite = async (meeting: Meeting) => {
-    if (!dbUserId) return;
-    
+    if (!registryUserId) return;
+
     const isAgendaEvent = (meeting as any).isAgendaEvent;
     if (!isAgendaEvent) return; // Only for agenda events
-    
+
     const currentFavorite = favoriteStatus[meeting.id] || false;
     const newFavorite = !currentFavorite;
-    
+
     // Provide haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     try {
         const { data: existing } = await supabase
           .from('user_agenda_status')
           .select('id')
-          .eq('user_id', dbUserId)
+          .eq('user_id', registryUserId)
           .eq('event_id', eventId)
           .eq('agenda_id', meeting.id)
           .maybeSingle();
@@ -860,7 +910,7 @@ const MySchedule = () => {
         const { error } = await (supabase
           .from('user_agenda_status') as any)
           .insert({
-            user_id: dbUserId,
+            user_id: registryUserId,
             agenda_id: meeting.id,
             event_id: eventId,
             status: currentStatus,

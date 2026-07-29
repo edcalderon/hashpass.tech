@@ -4,10 +4,13 @@ const mockResolveNotificationIdentity = jest.fn();
 const mockIsResolveIdentityError = jest.fn();
 const mockFrom = jest.fn();
 const mockNot = jest.fn();
-const mockMaybeSingle = jest.fn();
 const mockInsert = jest.fn();
-const mockUpdate = jest.fn();
-const mockUpdateEq = jest.fn();
+// Resolves the `.select('id')` at the end of the update-first attempt:
+// `.update(patch).eq().eq().eq().select('id')` -> { data, error }.
+const mockUpdateSelect = jest.fn();
+// Resolves the retry-after-conflict update, which is awaited directly with
+// no `.select()`: `.update(patch).eq().eq().eq()` -> { error }.
+const mockUpdateNoSelect = jest.fn();
 let consoleErrorSpy: jest.SpyInstance;
 
 jest.mock('@/lib/server/resolve-notification-identity', () => ({
@@ -16,20 +19,31 @@ jest.mock('@/lib/server/resolve-notification-identity', () => ({
 }));
 
 jest.mock('@/lib/supabase-server', () => {
-  function createChain(): { eq: jest.Mock; not: jest.Mock; maybeSingle: jest.Mock } {
+  function createSelectChain(): { eq: jest.Mock; not: jest.Mock } {
     return {
-      eq: jest.fn(() => createChain()),
+      eq: jest.fn(() => createSelectChain()),
       not: mockNot,
-      maybeSingle: mockMaybeSingle,
     };
+  }
+
+  function createUpdateChain(): any {
+    const chain: any = {
+      eq: jest.fn(() => chain),
+      select: jest.fn(() => mockUpdateSelect()),
+      // Awaiting the chain directly (the retry path never calls .select())
+      // resolves via mockUpdateNoSelect instead.
+      then: (onFulfilled: any, onRejected: any) =>
+        Promise.resolve(mockUpdateNoSelect()).then(onFulfilled, onRejected),
+    };
+    return chain;
   }
 
   return {
     getSupabaseServerForRequest: () => ({
       from: mockFrom.mockImplementation(() => ({
-        select: jest.fn(() => createChain()),
+        select: jest.fn(() => createSelectChain()),
         insert: mockInsert,
-        update: mockUpdate,
+        update: jest.fn(() => createUpdateChain()),
       })),
     }),
   };
@@ -42,15 +56,15 @@ describe('agenda-status api', () => {
     mockIsResolveIdentityError.mockReset();
     mockFrom.mockClear();
     mockNot.mockReset();
-    mockMaybeSingle.mockReset();
     mockInsert.mockReset();
-    mockUpdate.mockReset();
-    mockUpdateEq.mockReset();
+    mockUpdateSelect.mockReset();
+    mockUpdateNoSelect.mockReset();
     mockNot.mockResolvedValue({ data: [], error: null });
-    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    // Default: the update-first attempt touches no row, so POST falls
+    // through to insert.
+    mockUpdateSelect.mockResolvedValue({ data: [], error: null });
+    mockUpdateNoSelect.mockResolvedValue({ error: null });
     mockInsert.mockResolvedValue({ error: null });
-    mockUpdate.mockReturnValue({ eq: mockUpdateEq });
-    mockUpdateEq.mockResolvedValue({ error: null });
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
@@ -193,7 +207,7 @@ describe('agenda-status api', () => {
       expect(await response.json()).toEqual({ error: 'status or isFavorite is required' });
     });
 
-    it('inserts new agenda status', async () => {
+    it('inserts new agenda status when the update-first attempt touches no row', async () => {
       mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: '11111111-1111-4111-8111-111111111111', registryUserId: '22222222-2222-4222-8222-222222222222' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
@@ -209,6 +223,7 @@ describe('agenda-status api', () => {
 
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({ success: true });
+      expect(mockInsert).toHaveBeenCalledTimes(1);
     });
 
     it('uses the linked Supabase UUID when the provider registry id is opaque text', async () => {
@@ -238,7 +253,8 @@ describe('agenda-status api', () => {
         registryUserId: '22222222-2222-4222-8222-222222222222',
       });
       mockIsResolveIdentityError.mockReturnValue(false);
-      mockMaybeSingle.mockResolvedValueOnce({ data: { id: 'status-1' }, error: null });
+      // The update-first attempt touches an existing row.
+      mockUpdateSelect.mockResolvedValueOnce({ data: [{ id: 'status-1' }], error: null });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
       const { POST } = require('../../app/api/events/[eventId]/agenda/status+api');
@@ -251,17 +267,17 @@ describe('agenda-status api', () => {
       );
 
       expect(response.status).toBe(200);
-      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockUpdateSelect).toHaveBeenCalledTimes(1);
       expect(mockInsert).not.toHaveBeenCalled();
     });
 
-    it('returns a safe error when the existing-status lookup fails', async () => {
+    it('returns a safe error when the update-first attempt fails', async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: '11111111-1111-4111-8111-111111111111',
         registryUserId: '22222222-2222-4222-8222-222222222222',
       });
       mockIsResolveIdentityError.mockReturnValue(false);
-      mockMaybeSingle.mockResolvedValueOnce({ data: null, error: new Error('offline') });
+      mockUpdateSelect.mockResolvedValueOnce({ data: null, error: new Error('offline') });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
       const { POST } = require('../../app/api/events/[eventId]/agenda/status+api');
@@ -275,6 +291,60 @@ describe('agenda-status api', () => {
 
       expect(response.status).toBe(500);
       expect(await response.json()).toEqual({ error: 'Failed to update agenda status' });
+      expect(mockInsert).not.toHaveBeenCalled();
+    });
+
+    it('retries as an update when a concurrent insert wins the race (23505)', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: '11111111-1111-4111-8111-111111111111',
+        registryUserId: '22222222-2222-4222-8222-222222222222',
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      // No existing row seen by the update-first attempt...
+      mockUpdateSelect.mockResolvedValueOnce({ data: [], error: null });
+      // ...but a concurrent request inserts first, so our insert loses the race.
+      mockInsert.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+      // The retry update (no .select()) then succeeds.
+      mockUpdateNoSelect.mockResolvedValueOnce({ error: null });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require('../../app/api/events/[eventId]/agenda/status+api');
+      const response = await POST(
+        new Request('https://api.hashpass.tech/api/events/chile2026/agenda/status', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ agendaId: 'agenda-1', isFavorite: true }),
+        })
+      );
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ success: true });
+      expect(mockInsert).toHaveBeenCalledTimes(1);
+      expect(mockUpdateNoSelect).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns a safe error when insert fails for a reason other than a conflict', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: '11111111-1111-4111-8111-111111111111',
+        registryUserId: '22222222-2222-4222-8222-222222222222',
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockUpdateSelect.mockResolvedValueOnce({ data: [], error: null });
+      mockInsert.mockResolvedValueOnce({ error: new Error('offline') });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require('../../app/api/events/[eventId]/agenda/status+api');
+      const response = await POST(
+        new Request('https://api.hashpass.tech/api/events/chile2026/agenda/status', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ agendaId: 'agenda-1', status: 'confirmed' }),
+        })
+      );
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({ error: 'Failed to update agenda status' });
+      expect(mockUpdateNoSelect).not.toHaveBeenCalled();
     });
   });
 });

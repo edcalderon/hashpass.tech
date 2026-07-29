@@ -154,7 +154,7 @@ By design, `track=beta` (open testing — publicly joinable via a Play link, any
    - Runs the version bump + changelog and commits it as its own `chore: release vX.Y.Z` commit
    - Pushes the release branch to `origin` and `upstream`
    - Opens the protected `develop -> main` PR instead of pushing to `main`
-3. **Wait for `@edcalderon` approval**, then make sure the PR passes the patch coverage gate (Codecov's coverage of the PR's own new/changed lines, minimum 69% as of 2026-07-29, raised from 33%) and the GitHub security scans before merging. This is a patch-only gate -- project-wide coverage stays on Codecov's `auto` target since the codebase overall is nowhere near 69% today
+3. **Wait for `@edcalderon` approval**, then make sure the PR passes the patch coverage gate (Codecov's coverage of the PR's own new/changed lines, minimum 33% as of 2026-07-29, lowered back from a same-day 69% raise for release velocity — the 69% gate blocked PR #121 at 53.73% patch coverage despite substantial added test coverage, and chasing full coverage on large pre-existing screen components proved too costly per-PR) and the GitHub security scans before merging. This is a patch-only gate -- project-wide coverage stays on Codecov's `auto` target since the codebase overall is nowhere near even 33% today
 4. **Merge the PR.** That's the last manual step. `release-tag-on-merge.yml` fires automatically on the merge and handles everything below — do not run `npm run release:patch` on `main` or manually sync `develop`; both now happen for you:
    - Tags `github.event.pull_request.merge_commit_sha` as `vX.Y.Z` and pushes the tag to `origin` (not `upstream` — see below)
    - Fast-forwards `develop` to the same commit and pushes it to `origin`

@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.282)
+## 📋 Latest Changes (v1.8.283)
 
 ### Released
-- prevent BSL stale-cache reload loops; repair BSL pass access provisioning
+- eliminate agenda-status insert race and stale My Schedule counts
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -564,8 +564,12 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     elevation: 8,
   },
   logoImage: {
+    // bsl-ontour-pro is 1660x791 (~2.1:1). A fixed height here (previously
+    // 280) mismatched that ratio and let the logo render oversized/clipped
+    // on narrow screens instead of scaling down with the container.
     width: '100%',
-    height: 280,
+    maxWidth: isMobile ? 320 : 480,
+    aspectRatio: 1660 / 791,
   },
   lightBeamOverlay: {
     position: 'absolute',
