@@ -168,7 +168,12 @@ export default function EventBannerCarousel({
       logoId: MAIN_HASHPASS_LOGO.id,
       logoSrcDark: MAIN_HASHPASS_LOGO.darkSrc,
       logoSrcLight: MAIN_HASHPASS_LOGO.lightSrc,
-      backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
+      // Unlike the other logo slides (always-white logo on an always-dark
+      // backdrop), this one switches the logo itself between black (light
+      // theme) and white/cyan (dark theme) -- so the backdrop must switch
+      // too, or light mode pairs a black logo with a permanently dark
+      // background and it goes unreadable.
+      backgroundColor: isDark ? MAIN_HASHPASS_LOGO.backgroundColor : '#FFFFFF',
       accentColor: MAIN_HASHPASS_LOGO.accentColor,
     },
     // Add BSL plain logo second

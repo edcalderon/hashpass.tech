@@ -123,6 +123,24 @@ describe('getSupabaseOAuthRedirectUrl', () => {
     ).toBe('https://dev.hashpass.tech/auth/callback');
   });
 
+  it('keeps localhost callbacks even when EXPO_PUBLIC_ENV/NODE_ENV is not a recognized dev value', () => {
+    // Regression: resolveWebOrigin used to only trust a local browser
+    // origin when isLocalDevRuntime() (an env-var sniff) also reported
+    // true, so a real local session with no EXPO_PUBLIC_ENV set (and
+    // NODE_ENV not one of "local"/"development"/"dev"/"staging") fell
+    // through to the hardcoded https://hashpass.tech fallback -- sending
+    // local Google sign-in through production instead of localhost.
+    setEnv('EXPO_PUBLIC_ENV', undefined);
+    setEnv('NODE_ENV', 'test');
+    (globalThis as Record<string, unknown>).window = {
+      location: {
+        origin: 'http://localhost:8081',
+      },
+    };
+
+    expect(getSupabaseOAuthRedirectUrl()).toBe('http://localhost:8081/auth/callback');
+  });
+
   it('does not use localhost for native relay callbacks', () => {
     setEnv('EXPO_PUBLIC_ENV', 'development');
     (globalThis as Record<string, unknown>).window = {
