@@ -37,7 +37,7 @@ places (see "Corrections" below).
 | `dev.hashpass.tech` | CloudFront `E2A1QBPJVGUFI4` — **origin already points at target bucket** `dev.hashpass.tech` | Same site pipeline as above (`hashpass-dev-site`) | Same shape as prod — compute on target, CDN alias on source, stable |
 | `api.hashpass.tech` / `api-dev.hashpass.tech` | Nothing found (no matching Lambda/API Gateway in source `us-east-1`) | Lambda `hashpass-prod-expo-router-api` / `hashpass-dev-expo-router-api`, API Gateway `hashpass-prod-http-api` / `hashpass-dev-http-api`, ACM certs for both hostnames `ISSUED` | **Fully migrated.** No further action. |
 | BSL dev (`bsl-dev.hashpass.tech`) | Old CodePipeline/CodeBuild **deleted 2026-07-28** — superseded by the hybrid cutover, kept running would have reverted it | **Cut over and live (2026-07-28).** Hybrid shape: source-account CloudFront `E279RW9PP52TC0` (unchanged, cert already issued) fronting a new target-account S3 bucket, deployed by `bsl-target`'s dev CodePipeline via `build-bsl-static-site.sh`. Verified serving `server: AmazonS3`, v1.8.274. |
-| BSL prod (`bsl.hashpass.tech`) | CodeBuild `bsl-hashpass-prod-build` + CodePipeline `bsl-hashpass-prod`, repo wiring fixed 2026-07-28 (was `edcalderon/hashpass.tech`, now `hashpass-tech/hashpass.tech`), currently the live interim path | **Not yet cut over.** Still fully source-account SST (own distribution `E2FCDJB1JCS7TW`, own cert) — same hybrid approach as dev is the natural next step once dev proves stable over more than one deploy cycle. `bsl-target`'s target-account `bsl-hashpass-prod` pipeline exists but can't succeed yet (still SST-based, blocked on the CloudFront account-verification ticket). |
+| BSL prod (`bsl.hashpass.tech`) | **Deleted 2026-07-29** — `bsl-hashpass-prod` CodePipeline and `bsl-hashpass-prod-build` CodeBuild project both removed after the target cutover was verified live. Zero BSL resources remain in the source account. | **Cut over and live (2026-07-29).** Hybrid shape, same as dev: source-account CloudFront `E2FCDJB1JCS7TW` (unchanged, cert already issued) repointed from SST's `placeholder.sst.dev` to the target-account bucket `bsl-hashpass-bsl-prod-site-<target-account-id>-us-east-2`, deployed by `bsl-target`'s prod CodePipeline via `build-bsl-static-site.sh`. Verified serving `server: AmazonS3`, v1.8.275. `FunctionAssociations` cleared. | **Fully migrated (compute + pipeline). CloudFront distribution itself intentionally stays on source — see "Distribution migration" note below.** |
 
 ## BSL pipeline incident and migration (2026-07-28)
 
@@ -70,10 +70,83 @@ This CodePipeline was confirmed to be the **real, working production deploy path
 - `bsl-hashpass-prod` is **not** part of this cutover yet — it's still fully on the old source-account SST pipeline (own distribution `E2FCDJB1JCS7TW`, own ACM cert, all in `<source-account-id>`), which continues to work and was intentionally left untouched. Extending the same hybrid to prod is the natural next step once dev's shape is trusted with more than one deploy cycle.
 
 **Superseded, not yet cleaned up**: the target-account `bsl-hashpass-prod-build`/`bsl-hashpass-dev-build` CodeBuild projects (no longer used now that the EC2-worker pipelines exist) — the source-account dev pipeline/CodeBuild pair from this same list was deleted above; the source-account **prod** pipeline/CodeBuild pair stays, since prod hasn't cut over.
-| Android runner | EC2 `i-0a2e763270ffd2b62` (`hashpass-mobile-release-1`) — **gone, confirmed 2026-07-28** (`describe-instances` returns `InvalidInstanceID.NotFound`; terminated by someone with source-account access outside this session, or auto-cleaned) | EC2 `i-05628f925bb57e2f1`, live, confirmed handling real builds today (internal/alpha/beta/production all succeeded 2026-07-28), resized to `t3a.xlarge` | **Fully migrated and validated.** Source instance no longer exists — nothing left to clean up here. |
+| Android runner | EC2 `i-0a2e763270ffd2b62` (`hashpass-mobile-release-1`) — **terminated 2026-07-29** (was `stopped`, not gone — an earlier check in this doc that read `InvalidInstanceID.NotFound` was wrong, possibly a stale/wrong-region query at the time). Its EBS volume auto-deleted with termination; the orphaned security group (`sg-01ef4b704d1a60780`, unreferenced) was deleted the same day. | EC2 `i-05628f925bb57e2f1`, live, confirmed handling real builds today (internal/alpha/beta/production all succeeded 2026-07-28), resized to `t3a.xlarge` | **Fully migrated and validated.** Source instance and its leftover security group are now actually deleted — nothing left to clean up here. |
 | IAM / OIDC for CI | Not checked (no reason to — GitHub Actions doesn't need source-account IAM) | GitHub OIDC provider (`token.actions.githubusercontent.com`) + roles for the mobile-release runner exist and are in active use | **Migrated.** |
 | `bitacora.hashpass.tech` | CloudFront distribution `E21D0HJJTEQMO0` exists (SST placeholder origin, same shape as BSL's distributions) | Not identified — nothing obviously matching "bitacora" found in the target-account resources inventoried | **Undocumented anywhere** — not in either migration doc, `DEPLOYMENT_MAP.md`, or any other infra doc found in this repo. Needs someone to say what this is (guess: a changelog/audit-log site — "bitácora" is Spanish for "logbook") before it can be migrated, documented, or written off. |
 | DNS zones | `hashpass.tech` (43 records), `hashpass.club` (11 records, includes MX/DKIM/DMARC/autoconfig — live email), `hashpass.lat` (5 records, includes unrelated `blockchainsummit.hashpass.lat`/`-dev` CNAMEs), `hashpass.info` (9 records, also live email) | Zones exist for `hashpass.tech` (43 records — **matches source exactly**), `hashpass.club` (2 records only), `hashpass.lat` (2 records only). **No `hashpass.info` zone in target at all.** | **Out of scope per the decision above.** `hashpass.info` is the planned fallback SMTP domain for `.agents/pending/email-proxy-balancer.md` (self-hosted mail via `webmail.tláo.com`) — its email records are real and needed, and it correctly stays source-only, no target zone required. `.club`/`.lat` target zones are stale/incomplete copies (fine to ignore or delete since zone hosting isn't moving). |
+
+## BSL prod cutover completed (2026-07-29)
+
+Executed in order, same shape as dev:
+
+1. Confirmed `bsl-target`'s `bsl-hashpass-prod` execution **Succeeded**, and the bucket
+   `s3://bsl-hashpass-bsl-prod-site-<target-account-id>-us-east-2/` had 352 objects — matching
+   dev's populated bucket count exactly.
+2. Repointed `E2FCDJB1JCS7TW`'s origin (source account) from `placeholder.sst.dev` to
+   `bsl-hashpass-bsl-prod-site-<target-account-id>-us-east-2.s3-website.us-east-2.amazonaws.com`,
+   cleared its `FunctionAssociations`. Waited for `distribution-deployed`.
+3. Verified `https://bsl.hashpass.tech/` returns `server: AmazonS3`, HTTP 200, and
+   `/config/versions.json` reports `1.8.275` — matching the version actually shipped.
+4. Deleted the source-account `bsl-hashpass-prod` CodePipeline and `bsl-hashpass-prod-build`
+   CodeBuild project (`us-east-2`).
+5. **Additional source-account cleanup, confirmed orphaned and deleted the same day**: the
+   140GB pipeline artifact/cache bucket (`bsl-hashpass-pipelines-<source-account-id>-us-east-2`,
+   used by both now-deleted pipelines), both SST-era web-asset buckets
+   (`hashpass-bsl-dev-bslwebassetsbucket-nrzodsww` 5.7GB, `hashpass-bsl-production-bslwebassetsbucket-bbrhnwmv`
+   3.9GB — superseded once each distribution's origin pointed at the target bucket instead), both
+   leftover CloudFront Functions (`hashpass-bsl-dev-...`, `hashpass-bsl-production-...` — dead once
+   `FunctionAssociations` was cleared on both distributions), and all three BSL pipeline IAM roles
+   (`BslHashpassCodeBuildRole`, `BslHashpassInfraDeployRole`, `BslHashpassPipelineRole`).
+   Final check confirmed **zero BSL-named resources of any kind remain in the source account**
+   (pipelines, CodeBuild projects, S3 buckets, IAM roles, CloudFront Functions all return empty).
+   The two CloudFront distributions themselves (`E2FCDJB1JCS7TW`, `E279RW9PP52TC0`) and their ACM
+   certs deliberately stay on source — see "Distribution migration" below.
+
+**Distribution migration (deliberately not done — blocked, tracked separately):** the CloudFront
+distributions and DNS aliases for `bsl.hashpass.tech`/`bsl-dev.hashpass.tech` stay on the source
+account for now, same as `hashpass.tech`/`dev.hashpass.tech` already do. This mirrors an
+already-accepted permanent pattern for the main site, not just a temporary gap — but for BSL
+specifically there's also a live blocker: the target account still can't create CloudFront
+distributions at all (`AccessDenied: account must be verified`, AWS Support case pending). See
+the new task `.agents/pending/task-bsl-cloudfront-distribution-migration.md` for what to do once
+that's resolved.
+
+## EC2 pipeline worker: operational gotchas found the hard way (2026-07-29)
+
+Both discovered while validating the BSL cutovers. Both apply to **every** consumer of
+`modules/aws_pipeline_ec2_worker` (`bsl-target` and `hashpass-web`), not just BSL.
+
+**1. A cancelled CodePipeline execution does NOT stop the worker's build.** CodePipeline marks the
+execution `Cancelled` on the control plane, but nothing signals the EC2 worker — its build process
+keeps running. Because the worker polls and processes jobs **one at a time**, that orphan blocks every
+subsequent job indefinitely. Observed: a `terraform apply` that changed the prod pipeline's build script
+mid-execution left an orphaned `sst deploy` running, itself hung forever waiting on an ACM DNS validation
+that could never complete in the target account. It presented as an "abnormally slow build" with a
+**near-idle CPU (~0.3%)** — the tell that distinguishes a hang from a real build.
+*Fixed* by adding `run_with_timeout` to `worker-loop.sh` (`build_timeout_seconds`, default 2700s). It uses
+`setsid` + a negative-PID kill to terminate the **entire process group** — a plain `timeout` only signals the
+direct child, which is useless here since these builds fork deep trees
+(`pnpm → node → sst → pulumi-language-nodejs → pulumi-resource-aws`).
+**Not yet applied** — `user_data` only runs at instance boot, so this needs an instance replacement
+(`terraform apply` shows destroy+recreate). Deferred while builds were in flight; apply it when the
+worker is idle.
+
+**2. `instance_count = 1` means dev and prod serialize.** Multiple `InProgress` executions across both
+BSL pipelines queue behind a single worker, so wall-clock time for any one of them can far exceed its
+real build time (~10 min). Not a bug, but worth knowing before diagnosing "slow" builds — check whether
+another execution is holding the worker before assuming the build itself is at fault.
+
+**Debugging recipe** for a suspected worker hang:
+```bash
+# 1. Is the CPU actually busy? Idle CPU + InProgress = hang or queue, not a slow build.
+aws cloudwatch get-metric-statistics --namespace AWS/EC2 --metric-name CPUUtilization \
+  --dimensions Name=InstanceId,Value=<worker-id> --start-time <t> --end-time <t> \
+  --period 300 --statistics Average --profile hashpass
+# 2. What's actually running / what does the log say?
+aws ssm send-command --instance-ids <worker-id> --document-name AWS-RunShellScript \
+  --parameters 'commands=["ps -eo pid,etimes,pcpu,args | grep -v grep | head -20","sudo journalctl -u <name-prefix>-build-runner.service -n 40 --no-pager"]' \
+  --profile hashpass
+```
 
 ## Corrections to prior documentation
 
@@ -95,8 +168,9 @@ Found while auditing, none of these were previously accurate:
 
 ## Next Steps (in priority order)
 
-1. **Extend the proven hybrid to `bsl.hashpass.tech` (prod).** Dev's cutover (source CloudFront + target S3/compute, see "BSL pipeline incident and migration" below) is live and validated; prod is intentionally untouched and still fully source-account SST. Repeat the same pattern once dev has a few more clean deploy cycles behind it: new S3 bucket in `bsl-target`, `build-bsl-static-site.sh` wired to prod's pipeline, repoint `E2FCDJB1JCS7TW`'s origin, then retire the source-account `bsl-hashpass-prod`/`bsl-hashpass-prod-build` pair the same way dev's were retired.
-2. **AWS Support case submitted (2026-07-28)** requesting CloudFront account verification for the target account (<target-account-id>) — framed as an internal business-unit migration/segregation, not fraud. Once approved, `bsl-target`'s own CloudFront distributions can actually be created and the hybrid workaround becomes optional rather than required — revisit whether to migrate CloudFront itself to target at that point, or keep the hybrid shape permanently (matches `hashpass.tech`'s own already-permanent hybrid decision above).
+1. **Finish the `bsl.hashpass.tech` (prod) cutover** — infra is applied and the first hybrid build is running, but the CloudFront origin repoint and source-pipeline retirement are still outstanding. Follow "Remaining steps to finish BSL prod" above **in order** (repointing before the bucket has content would blank the live site).
+2. **Apply the EC2 worker build timeout** (`build_timeout_seconds`, committed but not applied — needs an instance replacement, so run it while the worker is idle). Do this for `bsl-target` and, once its real `terraform.tfvars` is available, `hashpass-web` too. See "EC2 pipeline worker: operational gotchas" above for why this matters.
+3. **AWS Support case submitted (2026-07-28)** requesting CloudFront account verification for the target account (<target-account-id>) — framed as an internal business-unit migration/segregation, not fraud. Once approved, `bsl-target`'s own CloudFront distributions can actually be created and the hybrid workaround becomes optional rather than required — revisit whether to migrate CloudFront itself to target at that point, or keep the hybrid shape permanently (matches `hashpass.tech`'s own already-permanent hybrid decision above). **Note:** as of 2026-07-29 the target account still has **zero** CloudFront distributions, so nothing has been approved yet.
 3. ~~Confirm `hashpass.info` ownership and purpose.~~ **Resolved (2026-07-28)**: it's the planned fallback SMTP domain for `.agents/pending/email-proxy-balancer.md`. Stays source-only, no further action needed here.
 4. **Reconcile `.club`/`.lat` target hosted zone records or delete them.** Since DNS zone hosting isn't moving, these incomplete 2-record target zones serve no purpose as-is — either finish syncing them (if there's a reason to keep target copies) or remove them to reduce confusion.
 5. **Recover or rebuild `mobile-release-target`'s real variable values** before anyone applies that stack again — compare against the live resources (VPC/subnet/security-group/IAM names already visible in state) to reconstruct a correct `terraform.tfvars`.
@@ -117,11 +191,14 @@ Found while auditing, none of these were previously accurate:
 - [x] The migration playbook exists in docs and includes a rollback section.
 - [x] The docs navigation exposes the migration playbook.
 - [x] Target-account infrastructure is provisioned without impacting the source account, for: API/Lambda, Android runner, web static site.
-- [x] BSL dev is cut over to the target-account hybrid (source CloudFront + target S3/compute) and verified live. AWS Support case submitted for target-account CloudFront verification.
-- [ ] BSL prod (`bsl.hashpass.tech`) gets the same hybrid treatment and its source-account SST pipeline is retired.
+- [x] BSL dev is cut over to the target-account hybrid (source CloudFront + target S3/compute) and verified live.
+- [x] BSL prod is cut over to the target-account hybrid, verified live (`server: AmazonS3`, v1.8.275), and its source-account pipeline + CodeBuild project are deleted (2026-07-29).
+- [x] All BSL compute/pipeline resources are removed from the source account: pipelines, CodeBuild projects, the 140GB artifact bucket, both SST-era web-asset buckets, both CloudFront Functions, and all three BSL IAM roles (2026-07-29). Confirmed via a final empty-inventory check.
 - [x] `hashpass.info`'s ownership/purpose is confirmed and documented — fallback SMTP domain for the pending email-proxy-balancer task.
 - [x] Legacy Amplify app `bsl2025.hashpass.tech` — decided to leave as archival, no action needed.
-- [ ] Remaining orphaned source-account resources (old runner, unused `hashpass-infra-*-build` CodeBuild projects) are either explained or decommissioned by someone with source-account access.
-- [ ] `mobile-release-target`'s Terraform state has real, correct variable values recorded so it's safe to apply again.
-- [ ] `bitacora.hashpass.tech` is identified and given an explicit migration/retention decision.
-- Rollback to the source account is a documented, low-friction process. (Still true for web/API/runner; DNS rollback no longer applies since DNS isn't moving.)
+- Rollback to the source account is a documented, low-friction process for web/API/runner. BSL's pipeline-level rollback path is gone by design (source pipelines deleted); the CloudFront distributions themselves are untouched, so DNS-level rollback of the origin is still possible if ever needed.
+
+**Scoped out of this task, tracked separately going forward:**
+- CloudFront distribution migration itself (`E2FCDJB1JCS7TW`, `E279RW9PP52TC0`) — blocked on AWS Support's target-account verification; see `.agents/pending/task-bsl-cloudfront-distribution-migration.md`.
+- The EC2 pipeline worker's `build_timeout_seconds` guard (committed, not applied — needs an instance replacement) — see `.agents/pending/task-bsl-cloudfront-distribution-migration.md`'s "Other still-open infra items" section.
+- `mobile-release-target`'s Terraform variable recovery, `bitacora.hashpass.tech` identification, stale `.club`/`.lat` target zone cleanup, target-account diagnostic CodeBuild project cleanup — same doc, same section.

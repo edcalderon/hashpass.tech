@@ -41,7 +41,8 @@ locals {
   worker_user_data_step_3 = replace(local.worker_user_data_step_2, "__PROVIDER_VERSION__", var.provider_version)
   worker_user_data_step_4 = replace(local.worker_user_data_step_3, "__NAME_PREFIX__", var.name_prefix)
   worker_user_data_step_5 = replace(local.worker_user_data_step_4, "__ROOT_VOLUME_SIZE_GB__", tostring(var.root_volume_size_gb))
-  worker_user_data        = local.worker_user_data_step_5
+  worker_user_data_step_6 = replace(local.worker_user_data_step_5, "__BUILD_TIMEOUT_SECONDS__", tostring(var.build_timeout_seconds))
+  worker_user_data        = local.worker_user_data_step_6
 }
 
 data "aws_ami" "ubuntu" {
