@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Hybrid BSL deploy: builds the static export with the same domain/env config
-# SST's bsl-web StaticSite used (packages/infra/src/domains.ts), then uploads
-# it straight to a plain target-account S3 bucket and invalidates the
-# existing SOURCE-account CloudFront distribution -- no SST/Pulumi involved,
-# so it never touches CreateDistribution (blocked in the target account,
-# see .agents/active/task-aws-account-migration.md). The distribution and
-# its ACM cert already exist in the source account; only the origin was
-# repointed away from SST's placeholder.sst.dev to this bucket's S3 website
-# endpoint.
+# Hybrid BSL deploy (used by BOTH prod and dev as of 2026-07-29): builds the
+# static export with the same domain/env config SST's bsl-web StaticSite
+# used (packages/infra/src/domains.ts), then uploads it straight to a plain
+# target-account S3 bucket -- no SST/Pulumi involved, so it never touches
+# CreateDistribution (blocked in the target account, see
+# .agents/active/task-aws-account-migration.md). The existing SOURCE-account
+# CloudFront distribution and its ACM cert are untouched; only the origin
+# was repointed away from SST's placeholder.sst.dev to this bucket's S3
+# website endpoint. No CloudFront invalidation happens here (see below).
 #
 # TARGET_STAGE (sst stage name: "production" or "dev") and SITE_BUCKET_NAME
 # must be set by the CodePipeline action's BuildEnvironmentJson.
