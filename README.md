@@ -20,21 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.275)
+## 📋 Latest Changes (v1.8.276)
 
 ### Bug Fixes
 
-* scope Metro cache to the workspace on the BSL EC2 worker ([053c09a](https://github.com/hashpass-tech/hashpass.tech/commit/053c09aa27284106119ad885ca28655ab1d158b8))
-* skip cross-account CloudFront invalidation in BSL hybrid deploy ([2806e87](https://github.com/hashpass-tech/hashpass.tech/commit/2806e879e5411d5b2307836b1ad09494ca7ea74e))
-* stop hashpass-web pipeline monitor from killing the BSL EC2 worker ([1815d3d](https://github.com/hashpass-tech/hashpass.tech/commit/1815d3d2ae73c66ba9445772886e9b22b76c8e4f))
+* bound BSL/web EC2 worker builds with a process-group timeout ([c3e4107](https://github.com/hashpass-tech/hashpass.tech/commit/c3e41073a2b9a50ccfcc389cbdd7332e9eb48630))
 
 
 ### Features
 
-* hybrid BSL dev deploy -- source CloudFront, target S3 + compute ([f57debc](https://github.com/hashpass-tech/hashpass.tech/commit/f57debce9bfcc759f5824656e4eff99dae58d472))
-* **infra:** migrate BSL to a proper target-account EC2-worker pipeline ([724ce4c](https://github.com/hashpass-tech/hashpass.tech/commit/724ce4ca85427dd3f0f833f7e69f737258b5752e))
+* extend the BSL hybrid deploy to prod ([3ccc983](https://github.com/hashpass-tech/hashpass.tech/commit/3ccc9838865087be000dedb9f86390d36c289d93))
 ### Release Highlights
-- hybrid BSL dev deploy -- source CloudFront, target S3 + compute; migrate BSL to a proper target-account EC2-worker pipeline; skip cross-account CloudFront invalidation in BSL hybrid deploy; scope Metro cache to the workspace on the BSL EC2 worker; stop hashpass-web pipeline monitor from killing the BSL EC2 worker
+- extend the BSL hybrid deploy to prod; bound BSL/web EC2 worker builds with a process-group timeout
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

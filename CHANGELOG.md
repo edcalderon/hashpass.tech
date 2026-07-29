@@ -1,3 +1,17 @@
+## [1.8.276](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.275...v1.8.276) (2026-07-29)
+
+
+### Bug Fixes
+
+* bound BSL/web EC2 worker builds with a process-group timeout ([c3e4107](https://github.com/hashpass-tech/hashpass.tech/commit/c3e41073a2b9a50ccfcc389cbdd7332e9eb48630))
+
+
+### Features
+
+* extend the BSL hybrid deploy to prod ([3ccc983](https://github.com/hashpass-tech/hashpass.tech/commit/3ccc9838865087be000dedb9f86390d36c289d93))
+### Release Highlights
+- extend the BSL hybrid deploy to prod; bound BSL/web EC2 worker builds with a process-group timeout
+
 ## [1.8.275](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.274...v1.8.275) (2026-07-28)
 
 
