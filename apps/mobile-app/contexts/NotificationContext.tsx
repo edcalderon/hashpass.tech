@@ -51,7 +51,7 @@ interface NotificationProviderProps {
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, dbUserId } = useAuth();
   const { t } = useTranslation();
 
   // Track current user ID to prevent unnecessary re-fetches
@@ -79,8 +79,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return;
     }
 
-    currentUserIdRef.current = user.id;
-
     try {
       const response = await apiClient.get(
         'notifications',
@@ -91,6 +89,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         console.error('Error fetching notifications:', response.error);
         return;
       }
+
+      // Only lock in "already fetched for this user" on success. Right
+      // after a fresh Better Auth sign-in, `user` is truthy before the
+      // Supabase session bridge has landed, so there's no usable auth token
+      // yet and this request genuinely fails ("No authorization token
+      // provided"). Setting the ref before/regardless of the outcome meant
+      // that failure was permanent for the rest of the session -- the
+      // effect below now retries once the bridge lands (dbUserId changes),
+      // but only this success-only guard lets that retry actually happen
+      // instead of silently no-op'ing because user.id hasn't changed.
+      currentUserIdRef.current = user.id;
 
       const responseData = response.data as { data: Notification[]; resolvedUserId: string | null };
       setResolvedUserId(responseData.resolvedUserId);
@@ -253,11 +262,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [fetchNotifications]);
 
   // Initial fetch + auto-refresh fallback. Realtime subscription (below)
-  // depends on resolvedUserId, which this fetch populates.
+  // depends on resolvedUserId, which this fetch populates. dbUserId is
+  // included so a first attempt that failed before the Supabase bridge
+  // session landed gets retried once it does, instead of staying failed
+  // for the rest of the session (see the success-only ref guard above).
   useEffect(() => {
     if (!user) return;
     fetchNotifications();
-  }, [user, fetchNotifications]);
+  }, [user, fetchNotifications, dbUserId]);
 
   // Set up real-time subscription — scoped to the resolved Supabase auth
   // UUID, not user.id, since user.id may be a non-Supabase provider id that

@@ -301,10 +301,26 @@ export class EventApiClient {
 
       if (!authAttached) {
         const session = await authService.getSession();
+        // These are opaque placeholder markers each provider's getSession()
+        // uses for a cookie-based session that has no real bearer token
+        // (Directus's own session, Better Auth's web session before/without
+        // a Supabase bridge) -- sending one of these literally as
+        // `Authorization: Bearer <placeholder>` is worse than sending
+        // nothing, since the server correctly rejects it as an invalid
+        // token instead of falling through to cookie-based auth or the real
+        // token-exchange fallback below. 'better_auth_session' was missing
+        // from this list, so a fresh Better-Auth-only session (before the
+        // Supabase bridge session lands) sent this fake value as a bearer
+        // token, and admin-access/notifications fetches failed with "No
+        // authorization token provided" instead of using the fallback.
+        const NON_BEARER_SESSION_PLACEHOLDERS = new Set([
+          'session_based',
+          'oauth_session',
+          'better_auth_session',
+        ]);
         const isBearerUsableToken =
           !!session?.access_token &&
-          session.access_token !== 'session_based' &&
-          session.access_token !== 'oauth_session';
+          !NON_BEARER_SESSION_PLACEHOLDERS.has(session.access_token);
         if (isBearerUsableToken) {
           requestHeaders['Authorization'] = `Bearer ${session.access_token}`;
         } else {

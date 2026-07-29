@@ -108,7 +108,7 @@ function CustomDrawerContent({
   openCloseControlRef?: DrawerOpenControlRef;
 }) {
   const { colors, isDark, toggleTheme } = useTheme();
-  const { signOut, user, isLoading: authLoading } = useAuth();
+  const { signOut, user, isLoading: authLoading, dbUserId } = useAuth();
   const { event } = useEvent();
   const { locale, setLocale } = useLanguage();
   const { unreadCount } = useNotifications();
@@ -326,6 +326,17 @@ function CustomDrawerContent({
   // global admin (user_roles) — the sidebar entry must reflect that too, or
   // an event-scoped admin has no visible way into the Admin Panel even
   // though the panel itself already supports them (see admin.tsx).
+  //
+  // dbUserId is in the dependency array deliberately: right after a fresh
+  // Better Auth sign-in, `user` is already truthy and authLoading already
+  // false, but the Supabase session bridge (dbUserId) is still a
+  // fire-and-forget call in flight -- there's no usable auth token yet
+  // (Better Auth has no getApiAccessToken fallback), so this first check
+  // genuinely fails with "No authorization token provided". Without
+  // dbUserId here, that failure was permanent for the rest of the session
+  // (isUserAdmin stuck at false, no retry) even after the bridge landed a
+  // moment later. Re-running once dbUserId actually becomes available
+  // retries it with a real token instead of requiring a manual reload.
   React.useEffect(() => {
     let cancelled = false;
 
@@ -350,7 +361,7 @@ function CustomDrawerContent({
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user]);
+  }, [authLoading, user, dbUserId]);
 
   const baseMenuItems = [
     {
