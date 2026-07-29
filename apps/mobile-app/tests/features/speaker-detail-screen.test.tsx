@@ -599,4 +599,61 @@ describe('speaker detail screen', () => {
 
     await act(async () => renderer.unmount());
   });
+
+  it('cancels a requester meeting and refreshes the event-scoped request state', async () => {
+    const request = {
+      id: 'request-outgoing-1', status: 'pending', speaker_id: 'speaker-1',
+      speaker_name: 'Ada Lovelace', requester_id: 'requester-1',
+      requester_name: 'Requester', duration_minutes: 15, meeting_type: 'networking',
+      created_at: '2026-07-30T09:00:00.000Z', expires_at: '2026-08-06T09:00:00.000Z',
+    };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/speaker-1') {
+        return Promise.resolve({ success: true, data: { data: speaker } });
+      }
+      if (path === 'events/bsl/meetings/limits') {
+        return Promise.resolve({ success: true, data: { data: { remaining_requests: 3, max_requests: 3 } } });
+      }
+      if (path === 'events/bsl/meetings/requests' && options?.method === 'PATCH') {
+        return Promise.resolve({ success: true, data: { data: { success: true } } });
+      }
+      if (path === 'events/bsl/meetings/requests') {
+        return Promise.resolve({ success: true, data: { data: [request] } });
+      }
+      return defaultApiResponse(path, options);
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+      await flushPromises();
+    });
+    await act(async () => {
+      findPressableAncestor(
+        renderer.root.findAll((node: any) => node.type === 'Text' && node.props.children === 'speakerView.pendingStatus')[0],
+      ).props.onPress();
+      await flushPromises();
+    });
+    await act(async () => {
+      findTextPressTarget(renderer, 'speakerView.cancelRequest').props.onPress();
+      await flushPromises();
+    });
+    await act(async () => {
+      findTextPressTarget(renderer, 'meetingRequestModal.confirmCancel').props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith('events/bsl/meetings/requests', {
+      skipEventSegment: true, method: 'PATCH',
+      body: { requestId: 'request-outgoing-1', action: 'cancel' },
+    });
+    expect(mockShowSuccess).toHaveBeenCalledWith(
+      'Request Cancelled',
+      'Your meeting request has been cancelled successfully.',
+    );
+    expect(mockApiRequest.mock.calls.filter(([path]: [string]) => path === 'events/bsl/meetings/limits').length).toBeGreaterThan(1);
+
+    await act(async () => renderer.unmount());
+  });
 });
