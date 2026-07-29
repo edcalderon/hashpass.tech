@@ -83,7 +83,11 @@ export const getPwaDockPositionCoordinates = (
   return clampPwaDragPosition(coordinatesByDock[dockPosition], viewport);
 };
 
-export const getDefaultPwaDockPosition = (): PwaDockPosition => 'bottom-right';
+// bottom-right is where the scroll-to-top/settings/notification floating
+// controls stack on web, so defaulting the PWA install button there means
+// it launches directly on top of them. bottom-left is empty screen space by
+// default; users can still drag it anywhere in PWA_DOCK_POSITIONS.
+export const getDefaultPwaDockPosition = (): PwaDockPosition => 'bottom-left';
 
 export const getDefaultPwaDragPosition = (): PwaDragPosition => {
   return getPwaDockPositionCoordinates(getDefaultPwaDockPosition());
