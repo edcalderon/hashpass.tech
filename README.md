@@ -41,7 +41,7 @@ For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 - `archive/docs` stores historical docs, migration notes, and retired playbooks.
 - `main` now backs the production `hashpass.tech` web deployment while the archived Amplify helpers remain available under `archive/amplify/`.
 - `develop` is the integration branch for ongoing work across mobile, web, docs, and infra, and release promotion from `develop` to `main` now happens through a protected PR.
-- Code coverage is tracked with Codecov from the `apps/mobile-app` Jest coverage report. Release PRs currently require `@edcalderon` codeowner approval, a minimum 33% coverage gate, and the GitHub security scans before merge. Each GitHub repository needs its own `CODECOV_TOKEN` secret unless Codecov has been configured to treat both repos as the same project.
+- Code coverage is tracked with Codecov from the `apps/mobile-app` Jest coverage report. Release PRs currently require `@edcalderon` codeowner approval, a minimum 69% patch coverage gate (new/changed lines in the PR, not the whole project), and the GitHub security scans before merge. Each GitHub repository needs its own `CODECOV_TOKEN` secret unless Codecov has been configured to treat both repos as the same project.
 - `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` stay on the SST/CodeBuild release path.
 - `hashpass.club` publishes through GitHub Pages from the `club-v*` release workflow.
 - `club.hashpass.tech` and `docs.hashpass.tech` are Route53 aliases for the canonical club site.

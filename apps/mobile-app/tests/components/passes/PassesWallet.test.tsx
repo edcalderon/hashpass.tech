@@ -167,4 +167,101 @@ describe('PassesWallet', () => {
 
     expect(renderer.root.findByProps({ children: 'No passes match your filters' })).toBeTruthy();
   });
+
+  it('recovers to the empty-wallet state when the lookup itself fails', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    (passSystemService.getAllUserPasses as jest.Mock).mockRejectedValue(new Error('network down'));
+
+    const renderer = await renderWallet();
+
+    expect(renderer.root.findByProps({ children: 'No passes found' })).toBeTruthy();
+    expect(errorSpy).toHaveBeenCalledWith('Error loading pass wallet:', expect.any(Error));
+    errorSpy.mockRestore();
+  });
+
+  describe('deck navigation', () => {
+    // Event ids deliberately absent from packages/config/src/events.ts: every
+    // pass then falls back to the same 'upcoming' timeline with no start/end
+    // date, so buildWalletPasses's tie-break (alphabetical by event name,
+    // which falls back to the event id) gives a fully deterministic order:
+    // aaa, bbb, ccc.
+    const passes = ['aaa', 'bbb', 'ccc'].map((id) => makePass({ pass_id: `pass-${id}`, event_id: id }));
+
+    const frontPassId = (renderer: ReturnType<typeof create>) =>
+      renderer.root
+        .findAllByType('MockPassWalletCard')
+        .find((card: any) => card.props.interactive === true)?.props.passId;
+
+    beforeEach(() => {
+      (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue(passes);
+    });
+
+    it('cycles the front card forward and backward with the arrow buttons, wrapping around', async () => {
+      const renderer = await renderWallet();
+      expect(frontPassId(renderer)).toBe('pass-aaa');
+
+      const [leftArrow, rightArrow] = renderer.root.findAllByType('TouchableOpacity');
+
+      act(() => {
+        rightArrow.props.onPress();
+      });
+      expect(frontPassId(renderer)).toBe('pass-bbb');
+
+      act(() => {
+        rightArrow.props.onPress();
+      });
+      expect(frontPassId(renderer)).toBe('pass-ccc');
+
+      act(() => {
+        rightArrow.props.onPress();
+      });
+      // Wraps back around past the end of the stable order.
+      expect(frontPassId(renderer)).toBe('pass-aaa');
+
+      act(() => {
+        leftArrow.props.onPress();
+      });
+      // Wraps the other direction from the start.
+      expect(frontPassId(renderer)).toBe('pass-ccc');
+    });
+
+    it('jumps straight to a pass when its pagination dot is tapped', async () => {
+      const renderer = await renderWallet();
+
+      // findAllByType('Pressable') would also pick up the stack's own
+      // "tap a card behind to bring it forward" overlays -- scope to the
+      // arrows' shared parent row, which only the pagination dots live in.
+      const [leftArrow] = renderer.root.findAllByType('TouchableOpacity');
+      const dots = leftArrow.parent!.findAllByType('Pressable');
+      expect(dots).toHaveLength(3);
+
+      act(() => {
+        dots[2].props.onPress();
+      });
+
+      expect(frontPassId(renderer)).toBe('pass-ccc');
+    });
+
+    it('brings a card behind the front one forward when it is tapped directly', async () => {
+      const renderer = await renderWallet();
+      expect(frontPassId(renderer)).toBe('pass-aaa');
+
+      // Scope to the StackedCard wrapper that actually contains the behind
+      // card, rather than climbing from the mocked card's own .parent (which
+      // is the mock's composite instance, not the host wrapper StackedCard
+      // renders) -- more robust than assuming how many layers to climb.
+      const behindStack = renderer.root
+        .findAllByType('Animated.View')
+        .find((view: any) =>
+          view.findAllByType('MockPassWalletCard').some((card: any) => card.props.passId === 'pass-bbb')
+        );
+      const overlay = behindStack!.findByType('Pressable');
+
+      act(() => {
+        overlay.props.onPress();
+      });
+
+      expect(frontPassId(renderer)).toBe('pass-bbb');
+    });
+  });
 });
