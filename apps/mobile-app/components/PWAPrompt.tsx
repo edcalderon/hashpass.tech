@@ -47,7 +47,13 @@ const PWAPrompt = () => {
     const isDontShowAgain = window.sessionStorage.getItem(DONT_SHOW_AGAIN_KEY) === 'true';
     setDontShowAgain(isDontShowAgain);
 
-    const isStoredCollapsed = window.localStorage.getItem(COLLAPSE_KEY) === 'true';
+    // No stored preference (COLLAPSE_KEY unset) means this is a first-ever
+    // visit -- default to collapsed rather than auto-expanding the full
+    // install card, which used to pop up immediately and overlap the cookie
+    // consent banner (both show on first visit). Users can still expand it
+    // themselves via the small floating button.
+    const storedCollapseValue = window.localStorage.getItem(COLLAPSE_KEY);
+    const isStoredCollapsed = storedCollapseValue === null ? true : storedCollapseValue === 'true';
     setIsCollapsed(isStoredCollapsed);
     setDockPosition(readStoredPwaDockPosition() ?? getDefaultPwaDockPosition());
 

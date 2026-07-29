@@ -12,6 +12,11 @@ export const PWA_DRAG_POSITION_KEY = 'hashpass:pwa-install-position';
 export const PWA_DOCK_POSITIONS = ['top-left', 'bottom-left', 'bottom-right'] as const;
 export const PWA_DRAG_BUTTON_SIZE = 70;
 export const PWA_DRAG_SAFE_MARGIN = 12;
+// Bottom-docked positions need more clearance than PWA_DRAG_SAFE_MARGIN
+// alone: mobile browsers' own bottom toolbar/gesture-nav chrome eats into
+// that space, and 12px wasn't enough to keep the button from visually
+// overlapping it.
+export const PWA_DRAG_BOTTOM_SAFE_MARGIN = 40;
 export const PWA_DRAG_START_THRESHOLD = 5;
 
 export type PwaDockPosition = (typeof PWA_DOCK_POSITIONS)[number];
@@ -62,7 +67,7 @@ export const getPwaDockPositionCoordinates = (
   dockPosition: PwaDockPosition,
   viewport: PwaDragViewport = getPwaDragViewport()
 ): PwaDragPosition => {
-  const bottomTop = viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN;
+  const bottomTop = viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN;
   const rightLeft = viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN;
 
   const coordinatesByDock: Record<PwaDockPosition, PwaDragPosition> = {
