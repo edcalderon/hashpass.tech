@@ -20,13 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.279)
+## 📋 Latest Changes (v1.8.280)
 
-### Features
-
-* rebuild Your Passes as a 3D stacked wallet with search/filter ([a25c677](https://github.com/hashpass-tech/hashpass.tech/commit/a25c67728efd5c69c0cf69d33e4d9bad487c31e0))
-### Release Highlights
-- rebuild Your Passes as a 3D stacked wallet with search/filter
+### Released
+- Version 1.8.280 release
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
