@@ -3,6 +3,10 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '../../..');
 const migrationPath = path.join(root, 'db/migrations/V011__secure_upcoming_bsl_pass_provisioning.sql');
+const meetingLifecycleMigrationPath = path.join(
+  root,
+  'db/migrations/V018__event_scoped_meeting_rpc_contract.sql',
+);
 const profilePath = path.join(__dirname, 'config/database-profiles.json');
 
 describe('upcoming BSL pass provisioning migration', () => {
@@ -20,5 +24,24 @@ describe('upcoming BSL pass provisioning migration', () => {
   it('ships the pass migrations through the default tenant migration command', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
     expect(config.defaultGroups).toContain('upcoming-bsl-passes');
+  });
+});
+
+describe('event-scoped meeting lifecycle migration contract', () => {
+  it('adds event-aware request creation and availability RPCs', () => {
+    const migration = fs.readFileSync(meetingLifecycleMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/insert_meeting_request[\s\S]*p_event_id/i);
+    expect(migration).toMatch(/get_speaker_available_slots[\s\S]*p_event_id/i);
+    expect(migration).toMatch(/event_id[\s\S]*p_event_id/i);
+  });
+
+  it('ships both lifecycle migrations through the default tenant migration command', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.groups['meeting-lifecycle']).toEqual([
+      'db/migrations/V017__harden_meeting_request_lifecycle.sql',
+      'db/migrations/V018__event_scoped_meeting_rpc_contract.sql',
+    ]);
   });
 });

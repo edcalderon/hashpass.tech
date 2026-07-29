@@ -7,7 +7,6 @@ import { useAuth } from '../../../../hooks/useAuth';
 import type { CreateMeetingRequestData } from '../../../../lib/matchmaking';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useBalance } from '@contexts/BalanceContext';
-import { supabase } from '../../../../lib/supabase';
 import { apiClient, eventApiPath } from '@/lib/api-client';
 import { passSystemService } from '../../../../lib/pass-system';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
@@ -55,8 +54,10 @@ export default function SpeakerDetail() {
   const { isDark, colors } = useTheme();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
+  const speakerPath = id ? eventApiPath(eventId, `speakers/${id}`) : null;
   const meetingRequestsPath = eventApiPath(eventId, 'meetings/requests');
   const meetingRequestSlotsPath = eventApiPath(eventId, 'meetings/requests/slots');
+  const meetingRequestLimitsPath = eventApiPath(eventId, 'meetings/limits');
   const { user, isLoggedIn, dbUserId } = useAuth();
   const { t } = useTranslation('networking');
   const router = useRouter();
@@ -126,120 +127,34 @@ export default function SpeakerDetail() {
 
   // mockUserTicket removed - now using pass system
 
-  const checkIfCurrentUserIsSpeaker = async () => {
-    if (!dbUserId) {
-      setIsCurrentUserSpeaker(false);
-      return;
-    }
-
-    try {
-      // Use helper function to find speaker by UUID or slug
-      const { data: speakerData, error } = await supabase
-        .rpc('get_speaker_by_id_or_slug', { p_id: id } as any)
-        .maybeSingle() as any;
-      
-      // Check if this speaker's user_id matches current user
-      if (!error && speakerData && typeof speakerData === 'object' && 'user_id' in speakerData && speakerData.user_id === dbUserId) {
-        setIsCurrentUserSpeaker(true);
-      } else {
-        setIsCurrentUserSpeaker(false);
-      }
-    } catch (error) {
-      console.log('Error checking if user is speaker:', error);
-      setIsCurrentUserSpeaker(false);
-    }
-  };
-
   const loadSpeaker = async () => {
     try {
-      // First try to fetch from the database with timeout
-      console.log('🔍 Attempting to load speaker from database...');
-      
-      // Try to get speaker by UUID or slug using helper function
-      // Use maybeSingle() to handle cases where speaker is not found (returns null instead of error)
-      const dbPromise = supabase
-        .rpc('get_speaker_by_id_or_slug', { p_id: id } as any)
-        .maybeSingle() as any;
+      if (!speakerPath) return;
+      const response = await apiClient.request(speakerPath, { skipEventSegment: true });
+      const dbSpeaker = response.success ? (response.data as any)?.data : null;
 
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database timeout')), 5000)
-      );
-
-      try {
-        const { data: dbSpeaker, error: dbError } = await Promise.race([dbPromise, timeoutPromise]) as any;
-
-        // Handle case where speaker is not found (maybeSingle returns null)
-        if (dbError) {
-          console.log('⚠️ Database error:', dbError);
-          throw dbError;
-        }
-
-        if (dbSpeaker && dbSpeaker.id) {
-          // Check if speaker is active (has user_id) using RPC function
-          // Pass UUID as TEXT for compatibility
-          let isActive = false;
-          let isOnline = false;
-          
-          try {
-            const { data: activeData, error: activeError } = await supabase
-              .rpc('is_speaker_active', { p_speaker_id: dbSpeaker.id.toString() } as any) as any;
-            
-            if (!activeError) {
-              isActive = activeData === true;
-            } else {
-              // Fallback: check user_id directly
-              isActive = !!dbSpeaker.user_id;
-            }
-            
-            // Check if speaker is online using RPC function
-            if (isActive) {
-              const { data: onlineData, error: onlineError } = await supabase
-                .rpc('is_speaker_online', { p_speaker_id: dbSpeaker.id.toString() } as any) as any;
-              
-              if (!onlineError) {
-                isOnline = onlineData === true;
-              }
-            }
-          } catch (statusCheckError) {
-            console.log('⚠️ Could not check speaker status:', statusCheckError);
-            // Fallback: check user_id directly
-            isActive = !!dbSpeaker.user_id;
-          }
-          
-          // Use real data from database
-          // Convert UUID to string for compatibility
-          setSpeaker({
-            id: dbSpeaker.id.toString(),
-            name: dbSpeaker.name,
-            title: dbSpeaker.title,
-            company: dbSpeaker.company || '',
-            bio: dbSpeaker.bio || `Experienced professional in ${dbSpeaker.title}.`,
-            image: dbSpeaker.imageurl || getSpeakerAvatarUrl(dbSpeaker.name),
-            linkedin: dbSpeaker.linkedin || getSpeakerLinkedInUrl(dbSpeaker.name),
-            twitter: dbSpeaker.twitter || getSpeakerTwitterUrl(dbSpeaker.name),
-            tags: dbSpeaker.tags || ['Blockchain', 'FinTech', 'Innovation'],
-            availability: dbSpeaker.availability || {
-              monday: { start: '09:00', end: '17:00' },
-              tuesday: { start: '09:00', end: '17:00' },
-              wednesday: { start: '09:00', end: '17:00' },
-              thursday: { start: '09:00', end: '17:00' },
-              friday: { start: '09:00', end: '17:00' }
-            },
-            user_id: dbSpeaker.user_id,
-            isActive,
-            isOnline
-          });
-          console.log('✅ Loaded speaker from database:', dbSpeaker.name, { isActive, isOnline });
-          setLoading(false);
-          return;
-        }
-      } catch (dbError) {
-        console.log('⚠️ Database unavailable or timeout, falling back to event config...', dbError instanceof Error ? dbError.message : String(dbError));
+      if (dbSpeaker?.id) {
+        const isActive = Boolean(dbSpeaker.is_active ?? dbSpeaker.user_id);
+        setIsCurrentUserSpeaker(Boolean(dbUserId && dbSpeaker.user_id === dbUserId));
+        setSpeaker({
+          id: String(dbSpeaker.id),
+          name: dbSpeaker.name,
+          title: dbSpeaker.title,
+          company: dbSpeaker.company || '',
+          bio: dbSpeaker.bio || `Experienced professional in ${dbSpeaker.title}.`,
+          image: dbSpeaker.imageurl || dbSpeaker.image_url || getSpeakerAvatarUrl(dbSpeaker.name),
+          linkedin: dbSpeaker.linkedin || getSpeakerLinkedInUrl(dbSpeaker.name),
+          twitter: dbSpeaker.twitter || getSpeakerTwitterUrl(dbSpeaker.name),
+          tags: dbSpeaker.tags || ['Blockchain', 'FinTech', 'Innovation'],
+          availability: dbSpeaker.availability,
+          user_id: dbSpeaker.user_id,
+          isActive,
+          isOnline: Boolean(dbSpeaker.is_online),
+        });
+        return;
       }
 
       // Fallback to event config (JSON) - always available
-      console.log('📋 Loading speaker from event config (JSON fallback)...');
       const foundSpeaker = event?.speakers?.find((s: { id: string }) => s.id === id);
       
       if (foundSpeaker) {
@@ -261,15 +176,12 @@ export default function SpeakerDetail() {
             friday: { start: '09:00', end: '17:00' }
           }
         });
-        console.log('✅ Loaded speaker from event config (JSON fallback):', foundSpeaker.name);
+        setIsCurrentUserSpeaker(false);
       } else {
-        console.error('❌ Speaker not found in database or event config:', id);
         showError('Speaker Not Found', 'The requested speaker could not be found.');
       }
     } catch (error) {
       console.error('❌ Error loading speaker:', error);
-      // Even if there's an error, try the JSON fallback
-      console.log('🔄 Attempting JSON fallback after error...');
       const foundSpeaker = event?.speakers?.find((s: { id: string }) => s.id === id);
       if (foundSpeaker) {
         setSpeaker({
@@ -290,10 +202,12 @@ export default function SpeakerDetail() {
             friday: { start: '09:00', end: '17:00' }
           }
         });
-        console.log('✅ Emergency fallback successful:', foundSpeaker.name);
+        setIsCurrentUserSpeaker(false);
       } else {
         showError('Error', 'Failed to load speaker information from all sources.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -301,13 +215,12 @@ export default function SpeakerDetail() {
     if (!id) return;
     
     loadSpeaker();
-    checkIfCurrentUserIsSpeaker();
     
     // User ticket removed - now using pass system
     
     // Load user request limits
     loadRequestLimits();
-  }, [id, event?.speakers]);
+  }, [dbUserId, event?.speakers, id, speakerPath]);
 
   useEffect(() => {
     if (dbUserId && speaker) {
@@ -317,70 +230,18 @@ export default function SpeakerDetail() {
     }
   }, [dbUserId, speaker, isCurrentUserSpeaker]);
 
-  // Real-time subscription for meeting requests
+  // Keep this screen behind the authenticated event API boundary. Polling is
+  // deliberately used here until backend push delivery is available, avoiding
+  // a second browser-to-Supabase data path with different tenant semantics.
   useEffect(() => {
     if (!dbUserId || !speaker) return;
-
-    const requestOwnerId = isCurrentUserSpeaker ? speaker.user_id : dbUserId;
-    if (!requestOwnerId) return;
-
-    console.log('🔄 Setting up real-time subscription for meeting requests...');
-    
-    const subscription = supabase
-      .channel('meeting_requests_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'meeting_requests',
-              filter: `${isCurrentUserSpeaker ? 'speaker_id' : 'requester_id'}=eq.${requestOwnerId}`
-        },
-        (payload: { eventType?: string; new?: any; old?: any }) => {
-          console.log('🔄 Real-time update received:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            // Add new request to UI
-            const newRequest = payload.new;
-            if (newRequest.speaker_id === speaker.user_id || newRequest.requester_id === dbUserId) {
-              setMeetingRequests(prev => [{
-                ...newRequest,
-                _direction: isCurrentUserSpeaker ? 'incoming' : 'sent',
-              }, ...(Array.isArray(prev) ? prev : [])]);
-              console.log('✅ New meeting request added to UI');
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            // Update existing request in UI
-            const updatedRequest = payload.new;
-            if (updatedRequest.speaker_id === speaker.user_id || updatedRequest.requester_id === dbUserId) {
-              setMeetingRequests(prev => 
-                (Array.isArray(prev) ? prev : []).map(req => 
-                  req.id === updatedRequest.id
-                    ? { ...updatedRequest, _direction: isCurrentUserSpeaker ? 'incoming' : 'sent' }
-                    : req
-                )
-              );
-              console.log('✅ Meeting request updated in UI');
-            }
-          } else if (payload.eventType === 'DELETE') {
-            // Remove deleted request from UI
-            const deletedRequest = payload.old;
-            if (deletedRequest.speaker_id === speaker.user_id || deletedRequest.requester_id === dbUserId) {
-              setMeetingRequests(prev => 
-                (Array.isArray(prev) ? prev : []).filter(req => req.id !== deletedRequest.id)
-              );
-              console.log('✅ Meeting request removed from UI');
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('🔄 Cleaning up real-time subscription...');
-      subscription.unsubscribe();
+    const refresh = () => {
+      void loadMeetingRequestStatus();
+      void loadCancelledRequests();
     };
-  }, [dbUserId, speaker, isCurrentUserSpeaker]);
+    const interval = setInterval(refresh, 30000);
+    return () => clearInterval(interval);
+  }, [dbUserId, eventId, speaker, isCurrentUserSpeaker]);
 
   const loadMeetingRequestStatus = async () => {
     if (!dbUserId || !speaker) return;
@@ -675,17 +536,11 @@ export default function SpeakerDetail() {
     try {
       console.log('🔄 Loading request limits for user:', dbUserId, 'speaker:', speaker.id);
       
-      // Use the new function that counts actual meeting requests
-      const { data, error } = await supabase.rpc('get_user_meeting_request_counts', {
-        p_user_id: dbUserId
-      } as any) as any;
-
-      if (error) {
-        console.error('❌ Error calling get_user_meeting_request_counts:', error);
-        throw error;
-      }
-
-      console.log('🔄 get_user_meeting_request_counts result:', data);
+      const response = await apiClient.request(meetingRequestLimitsPath, {
+        skipEventSegment: true,
+      });
+      if (!response.success) throw new Error(response.error);
+      const data = (response.data as any)?.data;
 
       if (data) {
         setRequestLimits({
@@ -924,22 +779,10 @@ export default function SpeakerDetail() {
     // Check for authentication - prompt login if not authenticated
     if (!isLoggedIn || !user) {
       console.log('❌ No active session found, redirecting to login...');
-      // Check session directly to be sure
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        // Close the modal and redirect to auth page with return URL
-        setShowMeetingModal(false);
-        const currentPath = `/events/${eventId}/speakers/${id}`;
-        router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
-        return;
-      }
-      // If we have a session but no user in context, redirect to login to refresh
-      if (!user) {
-        setShowMeetingModal(false);
-        const currentPath = `/events/${eventId}/speakers/${id}`;
-        router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
-        return;
-      }
+      setShowMeetingModal(false);
+      const currentPath = `/events/${eventId}/speakers/${id}`;
+      router.replace(`/(shared)/auth?returnTo=${encodeURIComponent(currentPath)}`);
+      return;
     }
 
     // At this point, user must exist (and dbUserId must have resolved via

@@ -37,7 +37,8 @@
       "db/migrations/V011__secure_upcoming_bsl_pass_provisioning.sql"
     ],
     "meeting-lifecycle": [
-      "db/migrations/V017__harden_meeting_request_lifecycle.sql"
+      "db/migrations/V017__harden_meeting_request_lifecycle.sql",
+      "db/migrations/V018__event_scoped_meeting_rpc_contract.sql"
     ]
   }
 }

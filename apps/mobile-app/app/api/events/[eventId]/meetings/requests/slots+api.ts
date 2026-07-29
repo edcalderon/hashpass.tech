@@ -37,13 +37,16 @@ export async function GET(request: Request) {
       p_speaker_id: speakerId,
       p_date: null,
       p_duration_minutes: duration,
+      p_event_id: eventId,
       ...(requesterId ? { p_requester_id: requesterId } : {}),
     };
     let { data: slots, error } = await supabase.rpc(
       "get_speaker_available_slots",
       params,
     );
-    // Support tenants that have not yet added requester conflict filtering.
+    // Old RPC signatures cannot keep this shared endpoint event-safe, so only
+    // retry with the pre-V018 requester argument omitted. Event identity stays
+    // mandatory for both calls.
     if (error?.code === "PGRST202" && requesterId) {
       ({ data: slots, error } = await supabase.rpc(
         "get_speaker_available_slots",
@@ -51,6 +54,7 @@ export async function GET(request: Request) {
           p_speaker_id: speakerId,
           p_date: null,
           p_duration_minutes: duration,
+          p_event_id: eventId,
         },
       ));
     }

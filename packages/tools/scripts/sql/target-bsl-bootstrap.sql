@@ -2359,7 +2359,8 @@ CREATE OR REPLACE FUNCTION public.insert_meeting_request(
   p_note text DEFAULT NULL,
   p_boost_amount numeric DEFAULT 0,
   p_duration_minutes integer DEFAULT 15,
-  p_expires_at timestamptz DEFAULT NULL
+  p_expires_at timestamptz DEFAULT NULL,
+  p_event_id text DEFAULT NULL
 )
 RETURNS TABLE (
   id uuid,
@@ -2375,8 +2376,11 @@ AS $$
 DECLARE
   v_speaker RECORD;
   v_request_id uuid := gen_random_uuid();
-  v_event_id text := COALESCE(NULLIF(current_setting('app.event_id', true), ''), 'bsl2025');
+  v_event_id text := NULLIF(trim(COALESCE(p_event_id, '')), '');
 BEGIN
+  IF v_event_id IS NULL THEN
+    RAISE EXCEPTION 'A valid event id is required';
+  END IF;
   SELECT * INTO v_speaker
   FROM public.get_speaker_by_id_or_slug(p_speaker_id)
   LIMIT 1;
@@ -2537,7 +2541,8 @@ CREATE OR REPLACE FUNCTION public.get_speaker_available_slots(
   p_speaker_id text,
   p_date date DEFAULT NULL,
   p_duration_minutes integer DEFAULT 15,
-  p_requester_id text DEFAULT NULL
+  p_requester_id text DEFAULT NULL,
+  p_event_id text DEFAULT NULL
 )
 RETURNS TABLE (
   slot_time timestamptz,
@@ -2555,7 +2560,11 @@ AS $$
 DECLARE
   v_speaker RECORD;
   v_requester_uuid uuid;
+  v_event_id text := NULLIF(trim(COALESCE(p_event_id, '')), '');
 BEGIN
+  IF v_event_id IS NULL THEN
+    RAISE EXCEPTION 'A valid event id is required';
+  END IF;
   SELECT * INTO v_speaker
   FROM public.get_speaker_by_id_or_slug(p_speaker_id)
   LIMIT 1;
@@ -2599,6 +2608,7 @@ BEGIN
       (uas.slot_time + (p_duration_minutes || ' minutes')::interval)::time AS end_time
     FROM public.user_agenda_status uas
     WHERE uas.user_id = v_speaker.user_id
+      AND uas.event_id = v_event_id
       AND uas.slot_time IS NOT NULL
       AND uas.slot_status IN ('available', 'interested')
       AND (p_date IS NULL OR uas.slot_time::date = p_date)
@@ -2615,8 +2625,7 @@ BEGIN
   WHERE NOT EXISTS (
     SELECT 1
     FROM public.meetings m
-    WHERE m.event_id = COALESCE(NULLIF(current_setting('app.event_id', true), ''), 'bsl2025')
-      AND (
+    WHERE (
         m.speaker_id = v_speaker.id
         OR m.host_id = v_speaker.user_id
         OR m.requester_id = v_speaker.user_id
@@ -3568,10 +3577,10 @@ GRANT EXECUTE ON FUNCTION public.create_default_pass(text, text) TO authenticate
 GRANT EXECUTE ON FUNCTION public.get_user_meeting_request_counts(text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_send_meeting_request(text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_make_meeting_request(text, text, numeric, text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.insert_meeting_request(text, text, text, text, text, text, text, text, text, text, numeric, integer, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.insert_meeting_request(text, text, text, text, text, text, text, text, text, text, numeric, integer, timestamptz, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_meeting_requests_for_speaker(text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.generate_weekly_slots(text, date) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_speaker_available_slots(text, date, integer, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_speaker_available_slots(text, date, integer, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.accept_meeting_request(text, text, timestamptz, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.decline_meeting_request(text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.block_user_and_decline_request(text, text, text, text) TO authenticated;

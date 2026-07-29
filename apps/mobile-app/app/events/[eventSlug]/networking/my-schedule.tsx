@@ -282,6 +282,7 @@ const MySchedule = () => {
           .from('meetings')
           .select('*')
           .eq('requester_id', dbUserId)
+          .eq('event_id', eventId)
           .order('created_at', { ascending: false });
         
         if (requesterError) {
@@ -296,6 +297,7 @@ const MySchedule = () => {
             .from('meetings')
             .select('*')
             .in('speaker_id', speakerIds)
+            .eq('event_id', eventId)
             .order('created_at', { ascending: false });
           
           if (speakerError) {
@@ -325,7 +327,7 @@ const MySchedule = () => {
       }
     };
     loadMeetings();
-  }, [dbUserId]);
+  }, [dbUserId, eventId]);
 
   const refreshMeetings = async () => {
     setRefreshingMeetings(true);
@@ -349,6 +351,7 @@ const MySchedule = () => {
         .from('meetings')
         .select('*')
         .eq('requester_id', dbUserId)
+        .eq('event_id', eventId)
         .order('created_at', { ascending: false });
       
       allMeetings = requesterMeetings || [];
@@ -359,6 +362,7 @@ const MySchedule = () => {
           .from('meetings')
           .select('*')
           .in('speaker_id', speakerIds)
+          .eq('event_id', eventId)
           .order('created_at', { ascending: false });
         
         if (speakerMeetings) {

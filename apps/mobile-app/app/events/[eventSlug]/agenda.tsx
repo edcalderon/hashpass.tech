@@ -22,7 +22,6 @@ import type {
 } from '../../../types/agenda';
 import { EVENTS } from '../../../config/events';
 import { useAuth } from '../../../hooks/useAuth';
-import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import ScheduleConfirmationModal from '../../../components/ScheduleConfirmationModal';
 import * as Haptics from 'expo-haptics';
@@ -336,12 +335,13 @@ export default function BSL2025AgendaScreen() {
           });
         }
 
-        // Fetch and add speakers from database (by UUID)
+        // Fetch and add speakers from the event API (by UUID).
         try {
-          const { data: dbSpeakers } = await supabase
-            .from('bsl_speakers')
-            .select('id, name, image_url')
-            .not('id', 'is', null);
+          const response = await apiClient.request(eventApiPath(eventId, 'speakers'), {
+            skipEventSegment: true,
+          });
+          if (!response.success) throw new Error(response.error);
+          const dbSpeakers = (response.data as any)?.data || [];
 
           if (Array.isArray(dbSpeakers)) {
             dbSpeakers.forEach((speaker: any) => {
@@ -349,7 +349,7 @@ export default function BSL2025AgendaScreen() {
                 map.set(speaker.id, {
                   id: speaker.id,
                   name: speaker.name,
-                  image: speaker.image_url,
+                  image: speaker.imageurl || speaker.image_url,
                 });
               }
             });
@@ -366,7 +366,7 @@ export default function BSL2025AgendaScreen() {
     };
 
     loadSpeakersMap();
-  }, [event]);
+  }, [event, eventId]);
 
   // Check if we're in the event period and if event is finished
   useEffect(() => {
@@ -876,7 +876,7 @@ export default function BSL2025AgendaScreen() {
   // failing for id-slug references (a hyphenated, unaccented slug rarely
   // substring-matches an accented display name), which is why agenda cards
   // were rendering the raw id slug as if it were the speaker's name.
-  // When bsl_speakers returns database rows, supplement the map with both
+  // When the backend speaker directory returns database rows, supplement the map with both
   // database UUIDs and event.speakers config slugs.
   const resolveAgendaSpeaker = (
     value: string
@@ -907,17 +907,15 @@ export default function BSL2025AgendaScreen() {
     // First try synchronous lookup
     let speakerId = findSpeakerId(speakerName);
     
-    // If not found, try database lookup
+    // If not found, ask the backend directory search.
     if (!speakerId) {
       try {
-        const { data } = await supabase
-          .from('bsl_speakers')
-          .select('id')
-          .ilike('name', `%${speakerName}%`)
-          .limit(1)
-          .single();
-        
-        if (data?.id) speakerId = data.id;
+        const response = await apiClient.request(eventApiPath(eventId, 'speakers'), {
+          skipEventSegment: true,
+          params: { search: speakerName },
+        });
+        const data = (response.data as any)?.data;
+        if (response.success && Array.isArray(data) && data[0]?.id) speakerId = data[0].id;
       } catch (e) {
         // Ignore errors
       }

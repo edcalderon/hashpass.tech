@@ -38,6 +38,16 @@ async function speakerForUser(supabase: any, userId: string) {
   return data;
 }
 
+async function speakerForRecordId(supabase: any, speakerId: string) {
+  const { data, error } = await supabase
+    .from("bsl_speakers")
+    .select("id, user_id")
+    .eq("id", speakerId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 // One authenticated API boundary for the complete meeting-request lifecycle.
 // Clients never need to know which database function or identity representation
 // backs an operation, making this flow portable away from Supabase.
@@ -61,11 +71,13 @@ export async function GET(request: Request) {
   try {
     if (speakerId) {
       if (!UUID_PATTERN.test(speakerId)) return Response.json({ data: [] });
+      const speaker = await speakerForRecordId(supabase, speakerId);
+      if (!speaker?.user_id) return Response.json({ data: [] });
       let query = supabase
         .from("meeting_requests")
         .select("*")
         .eq("requester_id", userId)
-        .eq("speaker_id", speakerId)
+        .eq("speaker_id", speaker.user_id)
         .eq("event_id", eventId);
       if (status) query = query.eq("status", status);
       const { data, error } = await query.order("created_at", {

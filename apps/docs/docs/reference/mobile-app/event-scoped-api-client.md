@@ -36,4 +36,6 @@ proxy, and integration in the same release.
 | `/api/bslatam/agenda-status` | `/api/events/:eventId/agenda/status` |
 | `/api/bslatam/meeting-requests` | `/api/events/:eventId/meetings/requests` |
 | `/api/bslatam/meeting-requests/slots` | `/api/events/:eventId/meetings/requests/slots` |
+| Client Supabase speaker lookups | `/api/events/:eventId/speakers` and `/api/events/:eventId/speakers/:speakerId` |
+| Client meeting-limit RPC | `/api/events/:eventId/meetings/limits` |
 | Other BSL-only `/api/bslatam/:feature` routes | `/api/bsl/:feature` |

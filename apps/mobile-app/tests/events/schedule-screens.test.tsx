@@ -2,6 +2,13 @@
 
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const myScheduleSource = readFileSync(
+  resolve(__dirname, '../../app/events/[eventSlug]/networking/my-schedule.tsx'),
+  'utf8',
+);
 
 let mockWindowWidth = 1024;
 let mockPlatform: 'android' | 'ios' | 'web' = 'web';
@@ -198,7 +205,7 @@ describe('event schedule screens', () => {
   });
 
   it('loads agenda data from the shared event API on the agenda screen', async () => {
-    mockApiRequest.mockResolvedValueOnce({ success: true, data: [] });
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [] } });
 
     let renderer: TestRenderer.ReactTestRenderer;
 
@@ -210,7 +217,9 @@ describe('event schedule screens', () => {
     expect(mockApiRequest).toHaveBeenNthCalledWith(1, 'events/custom/agenda', {
       skipEventSegment: true,
     });
-    expect(mockApiRequest).toHaveBeenCalledTimes(1);
+    expect(mockApiRequest).toHaveBeenCalledWith('events/custom/speakers', {
+      skipEventSegment: true,
+    });
     expect(mockRouterReplace).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -219,7 +228,7 @@ describe('event schedule screens', () => {
   });
 
   it('loads my schedule agenda data from the shared event API', async () => {
-    mockApiRequest.mockResolvedValueOnce({ success: true, data: [] });
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [] } });
 
     let renderer: TestRenderer.ReactTestRenderer;
 
@@ -236,5 +245,18 @@ describe('event schedule screens', () => {
     await act(async () => {
       renderer!.unmount();
     });
+  });
+
+  it('event-scopes requester and speaker meeting queries on load and refresh', () => {
+    const requesterQueryScopes = myScheduleSource.match(
+      /\.eq\('requester_id', dbUserId\)\s*\.eq\('event_id', eventId\)\s*\.order\('created_at'/g,
+    ) || [];
+    const speakerQueryScopes = myScheduleSource.match(
+      /\.in\('speaker_id', speakerIds\)\s*\.eq\('event_id', eventId\)\s*\.order\('created_at'/g,
+    ) || [];
+
+    // One query runs during initial load and the other during manual refresh.
+    expect(requesterQueryScopes).toHaveLength(2);
+    expect(speakerQueryScopes).toHaveLength(2);
   });
 });

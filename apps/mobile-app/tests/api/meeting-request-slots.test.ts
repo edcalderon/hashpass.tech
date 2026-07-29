@@ -79,6 +79,7 @@ describe("meeting-request slots api", () => {
       p_date: null,
       p_duration_minutes: 15,
       p_requester_id: "requester-user-id",
+      p_event_id: "bsl",
     });
     expect(mockEq).toHaveBeenCalledWith("speaker_id", "speaker-user-id");
     expect(await response.json()).toEqual({
@@ -174,6 +175,7 @@ describe("meeting-request slots api", () => {
         p_speaker_id: "speaker-id",
         p_date: null,
         p_duration_minutes: 15,
+        p_event_id: "bsl",
       },
     );
   });
@@ -232,6 +234,7 @@ describe("meeting-request slots api", () => {
       p_speaker_id: "speaker-id",
       p_date: null,
       p_duration_minutes: 15,
+      p_event_id: "bsl",
     });
   });
 

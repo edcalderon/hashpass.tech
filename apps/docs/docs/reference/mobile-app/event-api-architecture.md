@@ -25,6 +25,9 @@ specific to BSL. New reusable event features belong below `/api/events/:eventId`
 | --- | --- | --- |
 | `OPTIONS`, `GET` | `/api/events/:eventId/agenda` | Read agenda sessions for one event |
 | `GET`, `POST` | `/api/events/:eventId/agenda/status` | Read or update the caller's session status and favorites |
+| `GET` | `/api/events/:eventId/speakers` | Read the event speaker directory for agenda and search |
+| `GET` | `/api/events/:eventId/speakers/:speakerId` | Read one speaker profile |
+| `GET` | `/api/events/:eventId/meetings/limits` | Read the caller's meeting-request allowance |
 | `GET`, `POST`, `PATCH` | `/api/events/:eventId/meetings/requests` | List, create, and act on a meeting request |
 | `GET` | `/api/events/:eventId/meetings/requests/slots` | Load availability with event-scoped pending-demand metadata |
 
@@ -76,6 +79,12 @@ await apiClient.request(path, {
 Do not build a shared-feature URL from `event.api.basePath`, and do not use
 `apiSegment` for a shared event feature. The short client migration guide is
 [Event-Scoped API Client Routing](event-scoped-api-client.md).
+
+The mobile client must not query Supabase tables or RPCs directly for this
+flow. Speaker profiles, speaker-directory search, request limits, requests,
+and availability are all read through these backend routes. This keeps client
+code independent of the current database provider and prevents schema or
+tenant-routing failures from leaving a screen in a loading state.
 
 ## Rollout and operations
 

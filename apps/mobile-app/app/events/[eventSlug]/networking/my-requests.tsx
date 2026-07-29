@@ -21,14 +21,17 @@ import * as Haptics from 'expo-haptics';
 import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 import UnifiedSearchAndFilter from '../../../../components/UnifiedSearchAndFilter';
 import { useNotifications } from '@contexts/NotificationContext';
-import { useRealtimeMeetingRequests, RequestWithDirection } from '../../../../hooks/useRealtimeMeetingRequests';
 import { lukasRewardService } from '../../../../lib/lukas-reward-service';
 import { useBalance } from '@contexts/BalanceContext';
 import { useTranslation } from '../../../../i18n/i18n';
 import { apiClient, eventApiPath } from '@/lib/api-client';
 
-// Extended type for internal use with direction tracking - now imported from hook
-type MeetingRequestWithDirection = RequestWithDirection & {
+type MeetingRequestWithDirection = MeetingRequest & {
+  _direction?: 'sent' | 'incoming';
+  speaker_image?: string | null;
+  requester_avatar?: string;
+  requester_full_name?: string;
+  requester_email?: string;
   requester_id?: string;
 };
 
@@ -126,106 +129,6 @@ export default function MyRequestsView() {
     }
   }, [params.requestId, loading, requests]);
 
-  // Real-time subscription handler callbacks
-  const handleRequestInserted = useCallback((newRequest: MeetingRequestWithDirection) => {
-    console.log('📥 New request inserted:', newRequest.id, 'direction:', newRequest._direction);
-    
-    setRequests(prev => {
-      const exists = prev.some(r => r.id === newRequest.id);
-      if (exists) {
-        console.log('⚠️ Request already exists, skipping:', newRequest.id);
-        return prev;
-      }
-      
-      console.log('✅ Adding new request to state:', newRequest.id, 'direction:', newRequest._direction);
-      
-      // Show notification for incoming requests
-      if (newRequest._direction === 'incoming') {
-        try {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        } catch (e) {
-          console.log('Error with haptic feedback:', e);
-        }
-        
-        // Show toast notification
-        const requesterName = newRequest.requester_full_name || newRequest.requester_name || 'Someone';
-        showSuccess(
-          'New Meeting Request!',
-          `${requesterName} wants to meet with you`
-        );
-        
-        // Refresh notifications
-        refreshNotifications();
-      }
-      
-      // Add to state (prepend so newest appears first)
-      return [newRequest, ...prev];
-    });
-  }, [showSuccess, refreshNotifications]);
-
-  const handleRequestUpdated = useCallback((updatedRequest: MeetingRequestWithDirection, oldStatus?: string) => {
-    console.log('🔄 Request updated:', updatedRequest.id, 'from', oldStatus, 'to', updatedRequest.status);
-    
-    setRequests(prev => {
-      const requestIndex = prev.findIndex(req => req.id === updatedRequest.id);
-      
-      if (requestIndex >= 0) {
-        // Request exists, update it
-        const existingRequest = prev[requestIndex];
-        console.log('✅ Updating existing request in state:', updatedRequest.id, 'status:', existingRequest.status, '->', updatedRequest.status);
-        
-        const updated = [...prev];
-        updated[requestIndex] = {
-          ...updatedRequest,
-          // Preserve direction and enrichment data
-          _direction: existingRequest._direction || updatedRequest._direction,
-          speaker_image: updatedRequest.speaker_image !== undefined ? updatedRequest.speaker_image : existingRequest.speaker_image,
-          requester_avatar: updatedRequest.requester_avatar || existingRequest.requester_avatar,
-          requester_full_name: updatedRequest.requester_full_name || existingRequest.requester_full_name,
-          requester_email: updatedRequest.requester_email || existingRequest.requester_email,
-        };
-        
-        return updated;
-      } else {
-        // Request not found, add it (might be a new request or state was cleared)
-        console.warn('⚠️ Request not found in state, adding it:', updatedRequest.id);
-        return [updatedRequest, ...prev];
-      }
-    });
-
-    // Show success message if status changed to accepted
-    if (oldStatus && oldStatus !== updatedRequest.status && updatedRequest.status === 'accepted') {
-      showSuccess('Request Accepted!', 'Your meeting request has been accepted');
-    }
-
-    // Refresh notifications when status changes
-    if (oldStatus && oldStatus !== updatedRequest.status) {
-      refreshNotifications();
-    }
-  }, [showSuccess, refreshNotifications]);
-
-  const handleRequestDeleted = useCallback((requestId: string) => {
-    console.log('🗑️ Request deleted:', requestId);
-    setRequests(prev => prev.filter(req => req.id !== requestId));
-  }, []);
-
-  const handleRealtimeError = useCallback((error: Error) => {
-    console.error('❌ Real-time subscription error:', error);
-    showError('Connection Error', 'Failed to receive real-time updates. Please refresh the page.');
-  }, [showError]);
-
-  // Setup real-time subscriptions using the dedicated hook
-  useRealtimeMeetingRequests({
-    userId: dbUserId || '',
-    onRequestInserted: handleRequestInserted,
-    onRequestUpdated: handleRequestUpdated,
-    onRequestDeleted: handleRequestDeleted,
-    onError: handleRealtimeError,
-  });
-
-  // OLD SUBSCRIPTION CODE REMOVED - Now using useRealtimeMeetingRequests hook above
-
   const loadMyRequests = useCallback(async () => {
     if (!dbUserId) {
       console.log('No user found, skipping requests load');
@@ -251,6 +154,17 @@ export default function MyRequestsView() {
       setLoading(false);
     }
   }, [dbUserId, showError, meetingRequestsPath]);
+
+  // The API owns event isolation and provider access. Refresh through that
+  // boundary rather than opening a client Supabase channel for this screen.
+  useEffect(() => {
+    if (!dbUserId) return;
+    const interval = setInterval(() => {
+      void loadMyRequests();
+      void refreshNotifications();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [dbUserId, loadMyRequests, refreshNotifications]);
 
   const handleRefresh = async () => {
     setRefreshing(true);

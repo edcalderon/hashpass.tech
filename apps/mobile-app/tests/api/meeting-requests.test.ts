@@ -80,6 +80,10 @@ describe("meeting-requests api", () => {
         registryUserId: null,
       });
       mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "speaker-record-id", user_id: "speaker-user-id" },
+        error: null,
+      });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
       const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
@@ -99,6 +103,10 @@ describe("meeting-requests api", () => {
         registryUserId: "registry-id-123",
       });
       mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "speaker-record-id", user_id: "speaker-user-id" },
+        error: null,
+      });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
       const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
@@ -207,6 +215,10 @@ describe("meeting-requests api", () => {
         registryUserId: "registry-id-123",
       });
       mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "speaker-record-id", user_id: "speaker-user-id" },
+        error: null,
+      });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
       const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
@@ -228,6 +240,10 @@ describe("meeting-requests api", () => {
         supabaseUserId: "auth-uuid-123",
       });
       mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "speaker-record-id", user_id: "speaker-user-id" },
+        error: null,
+      });
 
       /* eslint-disable @typescript-eslint/no-require-imports */
       const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
@@ -239,6 +255,31 @@ describe("meeting-requests api", () => {
 
       expect(response.status).toBe(200);
       expect(mockEq).toHaveBeenCalledWith("event_id", "chile2026");
+    });
+
+    it("resolves a speaker record id to its user id before filtering requests", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "auth-uuid-123",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "550e8400-e29b-41d4-a716-446655440000", user_id: "speaker-user-id" },
+        error: null,
+      });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      await GET(
+        new Request(
+          "https://api.hashpass.tech/api/events/bsl/meetings/requests?speakerId=550e8400-e29b-41d4-a716-446655440000",
+        ),
+      );
+
+      expect(mockEq).toHaveBeenCalledWith("speaker_id", "speaker-user-id");
+      expect(mockEq).not.toHaveBeenCalledWith(
+        "speaker_id",
+        "550e8400-e29b-41d4-a716-446655440000",
+      );
     });
 
     it("returns identity error if identity resolution fails", async () => {
@@ -319,6 +360,10 @@ describe("meeting-requests api", () => {
       mockOrder.mockResolvedValueOnce({
         data: null,
         error: { message: "speaker query failed" },
+      });
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "speaker-record-id", user_id: "speaker-user-id" },
+        error: null,
       });
       const speakerFailure = await GET(
         new Request(

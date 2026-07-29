@@ -40,4 +40,11 @@ describe("speaker detail meeting lifecycle", () => {
     expect(source).not.toContain('apiSegment');
     expect(myRequestsSource).not.toContain('apiSegment');
   });
+
+  it("keeps meeting updates behind the event API instead of a second client database channel", () => {
+    expect(source).toContain("loadMeetingRequestStatus");
+    expect(source).toContain("setInterval(refresh, 30000)");
+    expect(source).not.toContain("postgres_changes");
+    expect(source).not.toContain("supabase.channel");
+  });
 });
