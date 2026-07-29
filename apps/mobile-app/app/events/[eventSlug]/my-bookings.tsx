@@ -80,7 +80,7 @@ export default function MyBookings() {
 
   const handleCancelBooking = async (bookingId: string) => {
     try {
-      const result = await apiClient.delete(`/bslatam/bookings/${bookingId}`);
+      const result = await apiClient.delete(`/bsl/bookings/${bookingId}`);
       
       if (!result.success) {
         throw new Error(result.error || 'Error al cancelar la reserva');
@@ -98,7 +98,7 @@ export default function MyBookings() {
 
   const handleConfirmBooking = async (bookingId: string) => {
     try {
-      const result = await apiClient.patch(`/bslatam/bookings/${bookingId}`, {
+      const result = await apiClient.patch(`/bsl/bookings/${bookingId}`, {
         status: 'confirmed'
       });
       

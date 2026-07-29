@@ -1,7 +1,8 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { resolveNotificationIdentity, isResolveIdentityError } from '@/lib/server/resolve-notification-identity';
+import { eventIdFromRequest } from '@/lib/server/event-api';
 
-// GET /api/bslatam/agenda-status?eventId=chile2026 — the authenticated
+// GET /api/events/:eventId/agenda/status — the authenticated
 // user's per-session confirm/favorite status for one event.
 //
 // user_agenda_status.user_id is a uuid FK into public.user, but the
@@ -22,10 +23,9 @@ export async function GET(request: Request) {
     return Response.json({ data: [] });
   }
 
-  const url = new URL(request.url);
-  const eventId = url.searchParams.get('eventId');
+  const eventId = eventIdFromRequest(request);
   if (!eventId) {
-    return Response.json({ error: 'eventId is required' }, { status: 400 });
+    return Response.json({ error: 'A valid event id is required' }, { status: 400 });
   }
 
   const supabase = getSupabaseServerForRequest(request);
@@ -49,8 +49,8 @@ export async function GET(request: Request) {
   }
 }
 
-// POST /api/bslatam/agenda-status — upsert the caller's confirm/favorite
-// status for one agenda session. Body: { eventId, agendaId, status?,
+// POST /api/events/:eventId/agenda/status — upsert the caller's confirm/favorite
+// status for one agenda session. Body: { agendaId, status?,
 // isFavorite? }. Only the fields provided are changed; omit `status` to
 // toggle just the favorite flag (or vice versa) without touching the other.
 export async function POST(request: Request) {
@@ -66,13 +66,16 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => null);
-  const eventId: string | undefined = body?.eventId;
+  const eventId = eventIdFromRequest(request);
   const agendaId: string | undefined = body?.agendaId;
   const status: string | undefined = body?.status;
   const isFavorite: boolean | undefined = body?.isFavorite;
 
-  if (!eventId || !agendaId) {
-    return Response.json({ error: 'eventId and agendaId are required' }, { status: 400 });
+  if (!eventId) {
+    return Response.json({ error: 'A valid event id is required' }, { status: 400 });
+  }
+  if (!agendaId) {
+    return Response.json({ error: 'agendaId is required' }, { status: 400 });
   }
   if (status === undefined && isFavorite === undefined) {
     return Response.json({ error: 'status or isFavorite is required' }, { status: 400 });

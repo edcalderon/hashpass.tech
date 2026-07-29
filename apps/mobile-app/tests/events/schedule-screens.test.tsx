@@ -2,6 +2,13 @@
 
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const myScheduleSource = readFileSync(
+  resolve(__dirname, '../../app/events/[eventSlug]/networking/my-schedule.tsx'),
+  'utf8',
+);
 
 let mockWindowWidth = 1024;
 let mockPlatform: 'android' | 'ios' | 'web' = 'web';
@@ -15,16 +22,17 @@ const mockImpactAsync = jest.fn();
 const mockShowSuccess = jest.fn();
 const mockShowError = jest.fn();
 const mockShowWarning = jest.fn();
+const mockT = (key: string) => key;
 
 const mockEvent = {
   id: 'custom',
   api: {
-    basePath: '/api/bslatam',
+    basePath: '/api/bsl',
   },
   agenda: [],
   eventStartDate: null,
   eventEndDate: null,
-  eventDateString: 'BSLatam 2026',
+  eventDateString: 'BSL 2026',
   subtitle: 'Latin America',
   tour: {
     city: 'Bogotá',
@@ -142,7 +150,7 @@ jest.mock('@contexts/ToastContext', () => ({
 
 jest.mock('../../i18n/i18n', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: mockT,
   }),
 }));
 
@@ -154,11 +162,13 @@ jest.mock('../../lib/api-client', () => ({
   apiClient: {
     request: (...args: unknown[]) => mockApiRequest(...args),
   },
+  eventApiPath: (eventId: string, resource: string) => `events/${eventId}/${resource}`,
 }));
 jest.mock('@/lib/api-client', () => ({
   apiClient: {
     request: (...args: unknown[]) => mockApiRequest(...args),
   },
+  eventApiPath: (eventId: string, resource: string) => `events/${eventId}/${resource}`,
 }));
 jest.mock('../../lib/supabase', () => ({
   supabase: mockSupabase,
@@ -194,12 +204,8 @@ describe('event schedule screens', () => {
     };
   });
 
-  it('loads agenda data using the derived api segment on the agenda screen', async () => {
-    // /api/bslatam/status never existed -- the status-check retry that used
-    // to follow an empty agenda response was dead code (always 404d) and
-    // has been removed; an empty response now falls straight through to the
-    // JSON config fallback with no further apiClient calls.
-    mockApiRequest.mockResolvedValueOnce({ success: true, data: [] });
+  it('loads agenda data from the shared event API on the agenda screen', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [] } });
 
     let renderer: TestRenderer.ReactTestRenderer;
 
@@ -208,8 +214,12 @@ describe('event schedule screens', () => {
       await flushPromises();
     });
 
-    expect(mockApiRequest).toHaveBeenNthCalledWith(1, 'agenda', { apiSegment: 'bslatam' });
-    expect(mockApiRequest).toHaveBeenCalledTimes(1);
+    expect(mockApiRequest).toHaveBeenNthCalledWith(1, 'events/custom/agenda', {
+      skipEventSegment: true,
+    });
+    expect(mockApiRequest).toHaveBeenCalledWith('events/custom/speakers', {
+      skipEventSegment: true,
+    });
     expect(mockRouterReplace).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -217,8 +227,8 @@ describe('event schedule screens', () => {
     });
   });
 
-  it('loads my schedule agenda data using the same derived api segment', async () => {
-    mockApiRequest.mockResolvedValueOnce({ success: true, data: [] });
+  it('loads my schedule agenda data from the shared event API', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [] } });
 
     let renderer: TestRenderer.ReactTestRenderer;
 
@@ -228,13 +238,25 @@ describe('event schedule screens', () => {
     });
 
     expect(mockNavigationSetOptions).toHaveBeenCalledWith({ title: 'mySchedule.title' });
-    expect(mockApiRequest).toHaveBeenCalledWith('agenda', {
-      params: { eventId: 'custom' },
-      apiSegment: 'bslatam',
+    expect(mockApiRequest).toHaveBeenCalledWith('events/custom/agenda', {
+      skipEventSegment: true,
     });
 
     await act(async () => {
       renderer!.unmount();
     });
+  });
+
+  it('event-scopes requester and speaker meeting queries on load and refresh', () => {
+    const requesterQueryScopes = myScheduleSource.match(
+      /\.eq\('requester_id', dbUserId\)\s*\.eq\('event_id', eventId\)\s*\.order\('created_at'/g,
+    ) || [];
+    const speakerQueryScopes = myScheduleSource.match(
+      /\.in\('speaker_id', speakerIds\)\s*\.eq\('event_id', eventId\)\s*\.order\('created_at'/g,
+    ) || [];
+
+    // One query runs during initial load and the other during manual refresh.
+    expect(requesterQueryScopes).toHaveLength(2);
+    expect(speakerQueryScopes).toHaveLength(2);
   });
 });

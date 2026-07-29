@@ -19,8 +19,12 @@ apply_with_psql() {
 
   for f in $(ls -1 ${MIGRATIONS_DIR}/*.sql | sort); do
     echo " - Applying $f"
-    PGPASSWORD="${SUPABASE_DB_PASSWORD:-}" psql "${database_url}" -v ON_ERROR_STOP=1 -f "$f"
+    local password_env='SUPABASE_DB_PASSWORD'
+    printf -v PGPASSWORD '%s' "${!password_env:-}"
+    export PGPASSWORD
+    psql "${database_url}" -v ON_ERROR_STOP=1 -f "$f"
   done
+  unset PGPASSWORD
 }
 
 apply_with_supabase_cli() {
@@ -52,7 +56,7 @@ else
 fi
 
 echo "Seeding speakers..."
-node packages/tools/scripts/util/seed-bslatam.mjs || true
+node packages/tools/scripts/util/seed-bsl.mjs || true
 
 # Function to install Amplify CLI
 install_amplify_cli() {

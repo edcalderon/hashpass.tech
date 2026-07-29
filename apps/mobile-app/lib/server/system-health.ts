@@ -136,11 +136,11 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
       healthCheck.services.api.endpoints['/api/status'] = {
         accessible: true,
       };
-      healthCheck.services.api.endpoints['/api/bslatam/speakers'] = {
+      healthCheck.services.api.endpoints['/api/bsl/speakers'] = {
         accessible: false,
         error: MISSING_DATABASE_CONFIG_MESSAGE,
       };
-      healthCheck.services.api.endpoints['/api/bslatam/bookings'] = {
+      healthCheck.services.api.endpoints['/api/bsl/bookings'] = {
         accessible: false,
         error: MISSING_DATABASE_CONFIG_MESSAGE,
       };
@@ -169,11 +169,11 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
         healthCheck.services.api.endpoints['/api/status'] = {
           accessible: true,
         };
-        healthCheck.services.api.endpoints['/api/bslatam/speakers'] = {
+        healthCheck.services.api.endpoints['/api/bsl/speakers'] = {
           accessible: false,
           error: MISSING_DATABASE_CONFIG_MESSAGE,
         };
-        healthCheck.services.api.endpoints['/api/bslatam/bookings'] = {
+        healthCheck.services.api.endpoints['/api/bsl/bookings'] = {
           accessible: false,
           error: MISSING_DATABASE_CONFIG_MESSAGE,
         };
@@ -377,10 +377,10 @@ export async function getSystemHealthCheck(eventId: string = 'bsl'): Promise<Hea
       accessible: true,
     };
     if (!databaseConfigMissing) {
-      healthCheck.services.api.endpoints['/api/bslatam/speakers'] = {
+      healthCheck.services.api.endpoints['/api/bsl/speakers'] = {
         accessible: true, // Assume accessible if database is working
       };
-      healthCheck.services.api.endpoints['/api/bslatam/bookings'] = {
+      healthCheck.services.api.endpoints['/api/bsl/bookings'] = {
         accessible: true, // Assume accessible if database is working
       };
     }

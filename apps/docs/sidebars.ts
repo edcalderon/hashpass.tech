@@ -101,6 +101,7 @@ const sidebars = {
             'reference/mobile-app/drawer-navigation-gotchas',
             'reference/mobile-app/svg-native-image-rendering-gotcha',
             'reference/mobile-app/event-scoped-api-client',
+            'reference/mobile-app/event-api-architecture',
             'reference/mobile-app/db-user-id-pattern',
             'reference/mobile-app/eas-update-ota',
           ],

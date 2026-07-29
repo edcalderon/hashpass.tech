@@ -11,11 +11,11 @@ if (!attendeeId) {
 
 async function main() {
   // Verify ticket
-  let res = await fetch(`${base}/api/bslatam/verify-ticket`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticketId: `e2e-${attendeeId}`, userId: attendeeId }) });
+  let res = await fetch(`${base}/api/bsl/verify-ticket`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticketId: `e2e-${attendeeId}`, userId: attendeeId }) });
   console.log('verify-ticket', res.status);
 
   // Get speaker
-  res = await fetch(`${base}/api/bslatam/speakers/${speakerId}`);
+  res = await fetch(`${base}/api/bsl/speakers/${speakerId}`);
   const sp = await res.json();
   const day = sp.availability?.[0]?.day;
   const time = sp.availability?.[0]?.slots?.[0];
@@ -24,7 +24,7 @@ async function main() {
   const end = new Date(new Date(start).getTime() + 10*60000).toISOString();
 
   // Create booking
-  res = await fetch(`${base}/api/bslatam/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ speakerId, attendeeId, start, end }) });
+  res = await fetch(`${base}/api/bsl/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ speakerId, attendeeId, start, end }) });
   console.log('create booking', res.status);
   const created = await res.json();
   console.log('booking id', created?.data?.id);

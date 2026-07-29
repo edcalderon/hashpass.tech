@@ -3,7 +3,7 @@ import { sendSubscriptionConfirmation } from '@/lib/email';
 
 /**
  * Event-specific subscribe endpoint that proxies to the global subscribe endpoint
- * This provides backward compatibility for clients that use /api/bslatam/subscribe
+ * Keep this BSL-branded entry point separate from the global subscription API.
  */
 export async function POST(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
@@ -165,4 +165,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

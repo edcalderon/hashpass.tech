@@ -176,7 +176,7 @@ async function setupEdwardPasses() {
     
     console.log('\n🎉 Setup complete!');
     console.log('📱 The explorer view should now display Edward Calderon\'s passes');
-    console.log('🔗 Test URL: http://localhost:8081/api/bslatam/user-passes?userId=edward-calderon-unal&eventId=bsl2025');
+    console.log('🔗 Test URL: http://localhost:8081/api/bsl/user-passes?userId=edward-calderon-unal&eventId=bsl2025');
     
   } catch (error) {
     console.error('❌ Unexpected error:', error.message);
