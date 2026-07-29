@@ -11,6 +11,10 @@ const meetingLimitsMigrationPath = path.join(
   root,
   'db/migrations/V019__event_scoped_meeting_limits_and_duration_guard.sql',
 );
+const eventCatalogMigrationPath = path.join(
+  root,
+  'db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -70,5 +74,29 @@ describe('event-scoped meeting lifecycle migration contract', () => {
 
     expect(migration).toMatch(/p_event_id\s+text/i);
     expect(migration).toMatch(/duration_minutes BETWEEN 5 AND 30/i);
+  });
+});
+
+describe('canonical BSL 2026 event catalog migration contract', () => {
+  it('upserts complete metadata for every active 2026 tour stop', () => {
+    const migration = fs.readFileSync(eventCatalogMigrationPath, 'utf8');
+
+    for (const eventId of ['peru2026', 'chile2026', 'colombia2026']) {
+      expect(migration).toContain(`'${eventId}'`);
+    }
+    expect(migration).toMatch(/ON CONFLICT \(id\) DO UPDATE/i);
+    expect(migration).toMatch(/America\/Lima/);
+    expect(migration).toMatch(/America\/Santiago/);
+    expect(migration).toMatch(/America\/Bogota/);
+  });
+
+  it('ships the canonical event catalog to each tenant database profile', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('event-catalog');
+    expect(config.groups['event-catalog']).toContain(
+      'db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql',
+    );
+    expect(config.profiles['bsl-development'].databaseUrlEnv).toContain('SUPABASE_DB_URL_DEV');
   });
 });
