@@ -99,6 +99,7 @@ const sidebars = {
             'reference/mobile-app/native-module-version-pinning',
             'reference/mobile-app/local-android-debugging',
             'reference/mobile-app/drawer-navigation-gotchas',
+            'reference/mobile-app/svg-native-image-rendering-gotcha',
             'reference/mobile-app/event-scoped-api-client',
             'reference/mobile-app/db-user-id-pattern',
             'reference/mobile-app/eas-update-ota',
