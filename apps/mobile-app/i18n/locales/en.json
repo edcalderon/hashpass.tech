@@ -679,7 +679,29 @@
     "pass": "Pass",
     "viewFullDetails": "View Full Details",
     "flipBack": "Flip Back",
-    "qrCodeModalTitle": "Your Pass QR Code"
+    "qrCodeModalTitle": "Your Pass QR Code",
+    "shareIntro": "Check out my pass for",
+    "wallet": {
+      "searchPlaceholder": "Search your passes",
+      "noMatches": "No passes match your filters",
+      "showMore": "Show more",
+      "showing": "Showing",
+      "timeline": {
+        "live": "Happening now",
+        "upcoming": "Upcoming",
+        "past": "Past event"
+      },
+      "filter": {
+        "when": "When",
+        "passType": "Pass type"
+      },
+      "stat": {
+        "total": "Passes",
+        "active": "Upcoming",
+        "past": "Past"
+      },
+      "stackHint": "Tap a card behind to bring it forward"
+    }
   },
   "networking": {
     "title": "Networking Center",

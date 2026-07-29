@@ -538,7 +538,29 @@
     "pass": "Passe",
     "viewFullDetails": "Ver todos os detalhes",
     "flipBack": "Voltar",
-    "qrCodeModalTitle": "Seu código QR do passe"
+    "qrCodeModalTitle": "Seu código QR do passe",
+    "shareIntro": "Veja meu passe para",
+    "wallet": {
+      "searchPlaceholder": "Busque seus passes",
+      "noMatches": "Nenhum passe corresponde aos seus filtros",
+      "showMore": "Ver mais",
+      "showing": "Mostrando",
+      "timeline": {
+        "live": "Acontecendo agora",
+        "upcoming": "Próximo",
+        "past": "Evento passado"
+      },
+      "filter": {
+        "when": "Quando",
+        "passType": "Tipo de passe"
+      },
+      "stat": {
+        "total": "Passes",
+        "active": "Próximos",
+        "past": "Passados"
+      },
+      "stackHint": "Toque em um cartão atrás para trazê-lo à frente"
+    }
   },
   "networking": {
     "title": "Centro de Networking",

@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.278",
+  "version": "1.8.279",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",
@@ -69,6 +69,7 @@
     "@react-native-firebase/analytics": "^25.1.0",
     "@react-native-firebase/app": "^25.1.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
+    "@react-native-masked-view/masked-view": "0.3.2",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/drawer": "^7.6.0",
     "@react-navigation/native": "^7.1.18",

@@ -1,3 +1,12 @@
+## [1.8.279](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.278...v1.8.279) (2026-07-29)
+
+
+### Features
+
+* rebuild Your Passes as a 3D stacked wallet with search/filter ([a25c677](https://github.com/hashpass-tech/hashpass.tech/commit/a25c67728efd5c69c0cf69d33e4d9bad487c31e0))
+### Release Highlights
+- rebuild Your Passes as a 3D stacked wallet with search/filter
+
 ## [1.8.278](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.277...v1.8.278) (2026-07-29)
 
 

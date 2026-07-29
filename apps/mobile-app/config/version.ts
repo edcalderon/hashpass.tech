@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607290403, // Updated to current timestamp
+  buildNumber: 202607290843, // Updated to current timestamp
   releaseDate: '2026-07-29',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'rebuild Your Passes as a 3D stacked wallet with search/filter'
   ],
   bugfixes: [
-    'logout appeared to need two taps -- useAuth() consumers had disconnected session state'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'logout appeared to need two taps -- useAuth() consumers had disconnected session state'
+  notes: 'rebuild Your Passes as a 3D stacked wallet with search/filter'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.279': {
+    version: '1.8.279',
+    buildNumber: 202607290843,
+    releaseDate: '2026-07-29',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'rebuild Your Passes as a 3D stacked wallet with search/filter'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'rebuild Your Passes as a 3D stacked wallet with search/filter'
+  },
   '1.8.278': {
     version: '1.8.278',
     buildNumber: 202607290403,

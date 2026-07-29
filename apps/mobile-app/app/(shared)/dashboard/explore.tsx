@@ -491,13 +491,6 @@ export default function ExploreScreen() {
     return getEventQuickAccessItems(selectedEvent.id) as QuickAccessItem[];
   };
 
-  // Tour stop ids (Peru/Chile/Colombia/Archive), excluding the hub itself --
-  // used to show every held pass across the tour when the hub is selected,
-  // since a user can hold passes for more than one upcoming stop at once.
-  const tourStopEventIds = availableEvents
-    .filter((event: EventInfo) => event.tour && event.tour.role !== 'hub')
-    .map((event: EventInfo) => event.id);
-
   return (
     <View style={styles.container}>
       <Animated.ScrollView
@@ -622,13 +615,13 @@ export default function ExploreScreen() {
           <CopilotStep text="This is where you can view your event passes. Your passes show your ticket type and access level for the event." order={8} name="yourPasses">
             <CopilotView style={{ paddingHorizontal: 20, paddingTop: 20 }}>
               <Text style={styles.sectionTitle}>{t({ id: 'explore.yourPasses', message: 'Your Passes' })}</Text>
-              <PassesDisplay
-                mode="dashboard"
-                showTitle={false}
-                showPassComparison={false}
-                eventId={selectedEvent?.tour?.role !== 'hub' ? selectedEvent?.id : undefined}
-                eventIds={selectedEvent?.tour?.role === 'hub' ? tourStopEventIds : undefined}
-              />
+              {/* Deliberately unscoped: the wallet shows every pass the user
+                  holds, upcoming and past, in both tenants. Scoping it to the
+                  selected event is what made the main-tenant explorer report
+                  "No passes found" for people who hold real BSL tour passes --
+                  the main tenant's own event has no pass rows at all. The
+                  wallet's own search/filter bar covers narrowing it down. */}
+              <PassesDisplay mode="dashboard" showTitle={false} showPassComparison={false} />
             </CopilotView>
           </CopilotStep>
         )}
