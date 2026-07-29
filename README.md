@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.278)
+## 📋 Latest Changes (v1.8.279)
 
-### Bug Fixes
+### Features
 
-* logout appeared to need two taps -- useAuth() consumers had disconnected session state ([e99e084](https://github.com/hashpass-tech/hashpass.tech/commit/e99e0841647fb1daa7d6e1efae988dc8d8313c0c))
+* rebuild Your Passes as a 3D stacked wallet with search/filter ([a25c677](https://github.com/hashpass-tech/hashpass.tech/commit/a25c67728efd5c69c0cf69d33e4d9bad487c31e0))
 ### Release Highlights
-- logout appeared to need two taps -- useAuth() consumers had disconnected session state
+- rebuild Your Passes as a 3D stacked wallet with search/filter
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
