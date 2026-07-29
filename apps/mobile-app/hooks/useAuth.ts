@@ -374,6 +374,31 @@ const getSharedAuthActor = () => {
   return sharedAuthActor;
 };
 
+// supabase.auth.onAuthStateChange()/getSession() both funnel through gotrue-js's
+// internal navigatorLock -- an exclusive lock (via the browser's Web Locks API)
+// coordinating auth state across tabs, with a 10s default acquire timeout. Every
+// separate useAuth() call site (root layout, dashboard layout,
+// NotificationContext, BalanceContext, ...) used to register its OWN
+// onAuthStateChange subscription and run its OWN getSession() bootstrap
+// independently. Right after a fresh login, with several consumers mounted at
+// once, enough concurrent Supabase auth calls piled up to genuinely exceed that
+// 10s budget, surfacing as an uncaught NavigatorLockAcquireTimeoutError ("The
+// operation was aborted") right after sign-in. Only one subscription/bootstrap
+// call is actually needed for the whole app: every consumer already gets the
+// resulting session state via the shared authActor (PROVIDER_RESOLVED events,
+// dispatched through sendAuthEvent below regardless of which instance's
+// closure captured the callback) -- dbUserId needed its own small shared
+// broadcast since it isn't part of the actor's own state.
+let supabaseAuthSubscribed = false;
+let supabaseBootstrapPromise: ReturnType<typeof supabase.auth.getSession> | null = null;
+let sharedDbUserId: string | null = null;
+const dbUserIdListeners = new Set<(id: string | null) => void>();
+
+const broadcastDbUserId = (id: string | null) => {
+  sharedDbUserId = id;
+  dbUserIdListeners.forEach((listener) => listener(id));
+};
+
 export const useAuth = () => {
   const [authActor] = useState(() => getSharedAuthActor());
   const [authViewState, setAuthViewState] = useState(() =>
@@ -390,11 +415,10 @@ export const useAuth = () => {
   // requests, etc.) needs THIS id, not user.id, or it 22P02s on a
   // Better-Auth-only session (its id isn't a UUID at all). Null until the
   // bridge (or a native Supabase sign-in) actually completes.
-  const [dbUserId, setDbUserId] = useState<string | null>(null);
+  const [dbUserId, setDbUserId] = useState<string | null>(sharedDbUserId);
   const isInitializedRef = useRef(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const betterAuthUnsubscribeRef = useRef<(() => void) | null>(null);
-  const supabaseUnsubscribeRef = useRef<(() => void) | null>(null);
   const authenticatedSessionOverrideRef = useRef<AuthSession | null>(null);
 
   const sendAuthEvent = useCallback((event: AuthSessionMachineEvent) => {
@@ -422,6 +446,18 @@ export const useAuth = () => {
       // getSharedAuthActor().
     };
   }, [authActor]);
+
+  // Keep this instance's local dbUserId in sync with the one shared value --
+  // see broadcastDbUserId above. Independent of the authActor subscription
+  // above since dbUserId isn't part of the actor's own state.
+  useEffect(() => {
+    setDbUserId(sharedDbUserId);
+    const listener = (id: string | null) => setDbUserId(id);
+    dbUserIdListeners.add(listener);
+    return () => {
+      dbUserIdListeners.delete(listener);
+    };
+  }, []);
 
   const applyAuthenticatedSession = useCallback((session?: AuthSession | null): boolean => {
     if (!session?.user) {
@@ -607,20 +643,29 @@ export const useAuth = () => {
       });
     }
 
-    // Subscribe to Supabase state changes (needed for passwordless and dual-session bridge).
-    const { data: supabaseSub } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
-      const supabaseState = readSupabaseStateFromSession(session);
-      if (isActive) {
-        setDbUserId(session?.user?.id ?? null);
-      }
-      // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
-      if (!supabaseBootstrapFinished && !supabaseState.loggedIn) {
-        return;
-      }
+    // Subscribe to Supabase state changes (needed for passwordless and
+    // dual-session bridge) -- only once globally, ever. See the module-level
+    // comment above broadcastDbUserId for why. Deliberately never
+    // unsubscribed, for the same reason the shared authActor is never
+    // stopped: whichever instance happens to unmount first must not tear
+    // this down while other mounted consumers still rely on it. Subsequent
+    // instances skip this block entirely; the callback below keeps running
+    // forever using the first instance's closure (supabaseBootstrapFinished,
+    // sendProviderResolved), which is fine since sendAuthEvent/broadcastDbUserId
+    // reach every instance regardless of whose closure captured them.
+    if (!supabaseAuthSubscribed) {
+      supabaseAuthSubscribed = true;
+      supabase.auth.onAuthStateChange((_event: string, session: any) => {
+        const supabaseState = readSupabaseStateFromSession(session);
+        broadcastDbUserId(session?.user?.id ?? null);
+        // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
+        if (!supabaseBootstrapFinished && !supabaseState.loggedIn) {
+          return;
+        }
 
-      sendProviderResolved('supabase', supabaseState);
-    });
-    supabaseUnsubscribeRef.current = () => supabaseSub.subscription.unsubscribe();
+        sendProviderResolved('supabase', supabaseState);
+      });
+    }
 
     const startLegacyBootstrap = () => {
       if (legacyBootstrapStarted) return;
@@ -639,13 +684,13 @@ export const useAuth = () => {
           sendProviderResolved('directus', readAuthSessionState(null));
         });
 
-      supabase.auth
-        .getSession()
+      // Deduped the same way sessionBootstrapPromise dedupes authService.getSession()
+      // above: multiple mounted instances all reach this line, but the actual
+      // getSession() call (and its navigatorLock acquisition) only happens once.
+      (supabaseBootstrapPromise ?? (supabaseBootstrapPromise = supabase.auth.getSession()))
         .then(({ data }: any) => {
           supabaseBootstrapFinished = true;
-          if (isActive) {
-            setDbUserId(data?.session?.user?.id ?? null);
-          }
+          broadcastDbUserId(data?.session?.user?.id ?? null);
           sendProviderResolved('supabase', readSupabaseStateFromSession(data.session));
         })
         .catch((error: any) => {
@@ -672,9 +717,10 @@ export const useAuth = () => {
             // force-marking it logged-out: an OTP/magic-link user holds a real
             // Supabase session alongside Better Auth, and it must keep backing
             // isLoggedIn when a flaky native Better Auth getSession drops out.
-            // (supabase.auth.getSession() reads local storage — no network.)
-            supabase.auth
-              .getSession()
+            // (supabase.auth.getSession() reads local storage — no network,
+            // but still goes through the same navigatorLock as every other
+            // GoTrueClient call, hence the same shared-promise dedup.)
+            (supabaseBootstrapPromise ?? (supabaseBootstrapPromise = supabase.auth.getSession()))
               .then(({ data }: any) => {
                 supabaseBootstrapFinished = true;
                 sendProviderResolved('supabase', readSupabaseStateFromSession(data.session));
@@ -709,10 +755,9 @@ export const useAuth = () => {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
-      if (supabaseUnsubscribeRef.current) {
-        supabaseUnsubscribeRef.current();
-        supabaseUnsubscribeRef.current = null;
-      }
+      // No supabaseUnsubscribeRef cleanup here anymore -- the Supabase
+      // subscription above is a shared, session-lifetime singleton (see
+      // supabaseAuthSubscribed), not owned by this instance.
       if (betterAuthUnsubscribeRef.current) {
         betterAuthUnsubscribeRef.current();
         betterAuthUnsubscribeRef.current = null;
@@ -758,7 +803,10 @@ export const useAuth = () => {
     // supabase.auth.signOut() below (best-effort, individually timed-out) —
     // otherwise a slow/failed remote call leaves the previous session's id
     // dangling as "current" after isLoggedIn has already flipped to false.
-    setDbUserId(null);
+    // broadcastDbUserId (not the local setDbUserId) so every mounted
+    // useAuth() consumer clears it, not just whichever instance's signOut()
+    // happened to run -- same reasoning as the shared authActor fix.
+    broadcastDbUserId(null);
 
     // Persisted data must be gone before a native screen transition. In
     // particular, Better Auth and Directus use SecureStore while Supabase uses
