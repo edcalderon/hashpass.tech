@@ -466,6 +466,51 @@ describe('speaker detail screen', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('keeps acceptance safe when the event slot service cannot provide a compatible slot', async () => {
+    const incomingRequest = {
+      id: 'request-incoming-slots-fail', _direction: 'incoming', status: 'pending',
+      speaker_id: 'speaker-user-1', speaker_name: 'Ada Lovelace',
+      requester_id: 'requester-2', requester_name: 'Casey Requester', duration_minutes: 30,
+      meeting_type: 'networking', created_at: '2026-07-30T09:00:00.000Z', expires_at: '2026-08-06T09:00:00.000Z',
+    };
+    mockAuthState = {
+      user: { email: 'ada@example.test' }, isLoggedIn: true, dbUserId: 'speaker-user-1',
+    };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/speakers/speaker-1') return Promise.resolve({ success: true, data: { data: speaker } });
+      if (path === 'events/bsl/meetings/limits') return Promise.resolve({ success: true, data: { data: { remaining_requests: 3, max_requests: 3 } } });
+      if (path === 'events/bsl/meetings/requests/slots') return Promise.resolve({ success: false, error: 'No compatible slots' });
+      if (path === 'events/bsl/meetings/requests') return Promise.resolve({ success: true, data: { data: [incomingRequest] } });
+      return defaultApiResponse(path, options);
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+      await flushPromises();
+    });
+    await act(async () => {
+      const requesterLabel = renderer.root.findAll(
+        (node: any) => node.type === 'Text' && textContent(node) === 'From Casey Requester',
+      )[0];
+      findPressableAncestor(requesterLabel).props.onPress();
+      await flushPromises();
+    });
+    await act(async () => {
+      findTextPressTarget(renderer, 'requestView.accept').props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith('events/bsl/meetings/requests/slots', expect.objectContaining({
+      skipEventSegment: true,
+      params: expect.objectContaining({ speakerId: 'speaker-user-1', requesterId: 'requester-2' }),
+    }));
+    expect(mockShowError).toHaveBeenCalledWith('Slots Unavailable', 'No compatible slots');
+
+    await act(async () => renderer.unmount());
+  });
+
   it('lets the assigned speaker decline an incoming request through the event API', async () => {
     const incomingRequest = {
       id: 'request-incoming-2',

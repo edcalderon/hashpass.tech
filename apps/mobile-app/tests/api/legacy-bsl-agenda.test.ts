@@ -47,4 +47,23 @@ describe('legacy BSL agenda compatibility route', () => {
     expect(response.status).toBe(400);
     expect(mockFrom).not.toHaveBeenCalled();
   });
+
+  it('returns a safe error when the compatibility query fails', async () => {
+    mockFrom.mockReturnValue({
+      select: jest.fn(() => ({
+        eq: () => ({ order: mockOrder.mockResolvedValue({ data: null, error: new Error('offline') }) }),
+      })),
+    });
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../app/api/bsl/agenda+api');
+    const response = await GET(
+      new Request('http://localhost:8081/api/bsl/agenda?eventId=peru2026'),
+    );
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: 'Failed to fetch agenda' });
+    consoleErrorSpy.mockRestore();
+  });
 });
