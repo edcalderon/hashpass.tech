@@ -1,34 +1,10 @@
 import React from 'react';
 import Svg, { Path } from 'react-native-svg';
-
-interface PassNotchMaskProps {
-  /** Design-reference size the notch geometry is authored against. Height
-   *  always matches the real render (PASS_CARD_HEIGHT is fixed, never
-   *  responsive); width is stretched to fit via preserveAspectRatio="none"
-   *  when the actual card is narrower on small phones, which very slightly
-   *  ovals the notch circles rather than requiring the real pixel width to
-   *  be threaded down as a prop. */
-  width: number;
-  height: number;
-  cornerRadius: number;
-  notchRadius: number;
-  /** Where the notch sits, as a fraction of height (0.58 = the perforation line). */
-  notchYRatio: number;
-}
-
-const circlePath = (cx: number, cy: number, r: number) =>
-  `M ${cx - r},${cy} ` +
-  `A ${r},${r} 0 1 0 ${cx + r},${cy} ` +
-  `A ${r},${r} 0 1 0 ${cx - r},${cy} Z`;
-
-const roundedRectPath = (width: number, height: number, r: number) =>
-  `M ${r},0 H ${width - r} A ${r},${r} 0 0 1 ${width},${r} ` +
-  `V ${height - r} A ${r},${r} 0 0 1 ${width - r},${height} ` +
-  `H ${r} A ${r},${r} 0 0 1 0,${height - r} ` +
-  `V ${r} A ${r},${r} 0 0 1 ${r},0 Z`;
+import { buildNotchMaskPath, type NotchMaskGeometry } from '../../lib/pass-notch-path';
 
 /**
- * Mask geometry for MaskedView: the card's rounded-rect silhouette with two
+ * Mask geometry for MaskedView (native only -- see NotchMaskedCard.web.tsx
+ * for the web equivalent): the card's rounded-rect silhouette with two
  * circular holes subtracted at the ticket notch positions, via a single path
  * using the even-odd fill rule.
  *
@@ -41,19 +17,9 @@ const roundedRectPath = (width: number, height: number, r: number) =>
  * MaskedView reveals the true content behind the card there -- the next card
  * in the stack, or the page background, exactly like a die-cut ticket.
  */
-const PassNotchMask: React.FC<PassNotchMaskProps> = ({
-  width,
-  height,
-  cornerRadius,
-  notchRadius,
-  notchYRatio,
-}) => {
-  const notchY = height * notchYRatio;
-  const d = [
-    roundedRectPath(width, height, cornerRadius),
-    circlePath(0, notchY, notchRadius),
-    circlePath(width, notchY, notchRadius),
-  ].join(' ');
+const PassNotchMask: React.FC<NotchMaskGeometry> = (geometry) => {
+  const { width, height } = geometry;
+  const d = buildNotchMaskPath(geometry);
 
   return (
     <Svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">

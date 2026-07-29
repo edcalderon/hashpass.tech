@@ -17,7 +17,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import MaskedView from '@react-native-masked-view/masked-view';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
@@ -25,7 +24,7 @@ import { passSystemService } from '../../lib/pass-system';
 import type { WalletPass } from '../../lib/pass-wallet';
 import DynamicQRDisplay from '../DynamicQRDisplay';
 import PassTiltCard from './PassTiltCard';
-import PassNotchMask from './PassNotchMask';
+import NotchMaskedCard from './NotchMaskedCard';
 
 // The original ticket proportions. Kept exact: the layout below positions the
 // perforation, notches and stats block as percentages of this height, so
@@ -176,8 +175,8 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   const renderFrontCard = () => (
     <View style={{
       // Shadow host only. iOS clips a view's own shadow when that same view
-      // also has overflow:'hidden' (which MaskedView applies internally to
-      // its content), so the shadow has to live one layer outside the mask.
+      // also has overflow:'hidden' (which the notch mask applies internally
+      // to its content), so the shadow has to live one layer outside it.
       shadowColor: colors.text.primary,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
@@ -187,17 +186,9 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
       width: '100%',
       height: PASS_CARD_HEIGHT,
     }}>
-      <MaskedView
+      <NotchMaskedCard
         style={{ width: '100%', height: '100%' }}
-        maskElement={
-          <PassNotchMask
-            width={PASS_CARD_WIDTH}
-            height={PASS_CARD_HEIGHT}
-            cornerRadius={16}
-            notchRadius={11}
-            notchYRatio={0.58}
-          />
-        }
+        geometry={{ width: PASS_CARD_WIDTH, height: PASS_CARD_HEIGHT, cornerRadius: 16, notchRadius: 11, notchYRatio: 0.58 }}
       >
       <View style={{
         backgroundColor: colors.background.paper,
@@ -554,7 +545,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
       </View>
       </View>
       </View>
-      </MaskedView>
+      </NotchMaskedCard>
     </View>
   );
 
@@ -570,17 +561,9 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
       width: '100%',
       height: PASS_CARD_HEIGHT,
     }}>
-      <MaskedView
+      <NotchMaskedCard
         style={{ width: '100%', height: '100%' }}
-        maskElement={
-          <PassNotchMask
-            width={PASS_CARD_WIDTH}
-            height={PASS_CARD_HEIGHT}
-            cornerRadius={16}
-            notchRadius={11}
-            notchYRatio={0.58}
-          />
-        }
+        geometry={{ width: PASS_CARD_WIDTH, height: PASS_CARD_HEIGHT, cornerRadius: 16, notchRadius: 11, notchYRatio: 0.58 }}
       >
       <View style={{
         backgroundColor: colors.background.paper,
@@ -839,7 +822,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
       </View>
       </View>
       </View>
-      </MaskedView>
+      </NotchMaskedCard>
     </View>
   );
 
