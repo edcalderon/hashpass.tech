@@ -20,7 +20,7 @@ import QuickAccessGrid from '@/components/explorer/QuickAccessGrid';
 import LoadingScreen from '@/components/LoadingScreen';
 import type { NetworkingStats, StatsState, QuickAccessItem } from '@/types/networking';
 import { resolveNetworkingStats } from '@/lib/networking-stats';
-import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
+import { COPILOT_TUTORIALS_ENABLED, CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 import { useTutorialPreferences } from '@/hooks/useTutorialPreferences';
 import { useTranslation } from '@/i18n/i18n';
 
@@ -43,6 +43,8 @@ export default function NetworkingView() {
 
   // Reset ref when tutorial is reset (completion status changes from true to false)
   useEffect(() => {
+    if (!COPILOT_TUTORIALS_ENABLED) return;
+
     if (!networkingTutorialCompleted) {
       tutorialStartedRef.current = false;
     }
@@ -50,6 +52,8 @@ export default function NetworkingView() {
 
   // Auto-start tutorial for new users - only once, when everything is ready
   useEffect(() => {
+    if (!COPILOT_TUTORIALS_ENABLED) return;
+
     // Prevent multiple starts
     if (tutorialStartedRef.current) return;
     
@@ -84,10 +88,12 @@ export default function NetworkingView() {
     return () => {
       interaction.cancel();
     };
-  }, [isReady, isLoggedIn, authLoading, shouldShowTutorial, startNetworkingTutorial, networkingTutorialCompleted]);
+  }, [isReady, isLoggedIn, authLoading, shouldShowTutorial, startNetworkingTutorial, handleNth, networkingTutorialCompleted]);
 
   // Listen for tutorial events
   useEffect(() => {
+    if (!COPILOT_TUTORIALS_ENABLED) return;
+
     const handleTutorialStop = () => {
       markTutorialCompleted('networking');
     };

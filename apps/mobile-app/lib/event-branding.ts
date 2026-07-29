@@ -14,6 +14,12 @@ const BSL_ARCHIVE_BANNER = require('../assets/images/bsl2025-hero.webp');
 const BSL_PLAIN_LOGO = require('../assets/logos/bsl/bsl-white.webp');
 const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp');
 const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.webp');
+// "Select Event" card watermark, shared by every tenant (BSL and the main
+// hashpass explorer) -- not tied to a specific event, so it isn't part of
+// EVENT_IMAGE_ASSETS/TOUR_BRAND_ASSETS below. Theme-aware: dark theme uses
+// the white-fill variant, light theme the black-fill one.
+const PRESENTS_WATERMARK_DARK = require('../assets/logos/bsl/bsl-presents-pro-white.webp');
+const PRESENTS_WATERMARK_LIGHT = require('../assets/logos/bsl/bsl-presents-pro-black.webp');
 
 export interface TourBrandAsset {
   logo: ImageSourcePropType;
@@ -119,3 +125,10 @@ export const HASHPASS_BRAND_LOGOS = {
   light: HASHPASS_LIGHT_LOGO,
   plain: BSL_PLAIN_LOGO,
 };
+
+// Shared "Select Event" card watermark background, same asset for every
+// tenant/event -- replaces each event's own distinct logo for this specific
+// card's background image (the per-event logo still shows via the small
+// colored badge elsewhere on the card).
+export const getSelectEventCardWatermark = (isDark: boolean): ImageSourcePropType =>
+  isDark ? PRESENTS_WATERMARK_DARK : PRESENTS_WATERMARK_LIGHT;

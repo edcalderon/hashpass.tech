@@ -250,6 +250,41 @@ describe('EventApiClient credential handling', () => {
     }));
   });
 
+  it('does not send Better Auth\'s placeholder session marker as a literal bearer token', async () => {
+    // Regression: 'better_auth_session' was missing from the non-bearer
+    // placeholder exclusion list, so a fresh Better-Auth-only session (no
+    // real token yet, no Supabase bridge session landed) sent this fake
+    // string as `Authorization: Bearer better_auth_session` instead of
+    // falling through to getApiAccessToken -- the server correctly
+    // rejected it, surfacing as "No authorization token provided" on
+    // admin-access/notifications requests right after a fresh sign-in.
+    mockAuthSession.mockResolvedValue({
+      access_token: 'better_auth_session',
+      user: { id: 'better-auth-user-123', email: 'ada@hashpass.tech' },
+    });
+    mockApiAccessToken.mockResolvedValue('better-auth-bearer-token');
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => 'application/json' },
+      json: async () => ({ data: {} }),
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new EventApiClient();
+    await expect(client.request('admin/access', { skipEventSegment: true })).resolves.toEqual({
+      data: { data: {} },
+      success: true,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(mockApiAccessToken).toHaveBeenCalledTimes(1);
+    expect(init.headers).toEqual(expect.objectContaining({
+      Authorization: 'Bearer better-auth-bearer-token',
+    }));
+  });
+
   it('returns a friendly timeout error and does not retry aborted requests', async () => {
     jest.useFakeTimers();
 

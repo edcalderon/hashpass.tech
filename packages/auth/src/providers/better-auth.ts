@@ -348,16 +348,13 @@ export class BetterAuthProvider implements IAuthProvider {
   }
 
   /**
-   * Fetches a one-time Supabase session bridge for the current Better Auth
-   * session, via /api/auth/supabase-bridge (a sibling static route next to
-   * this provider's own [...auth] catch-all handler — Expo Router resolves
-   * static segments before catch-alls, same as the existing otp/delete-account
-   * routes already do). Uses the client's own $fetch so the request carries
-   * the same baseURL/cookie/native-header configuration as every other
-   * Better Auth client call (signIn.social, getSession, etc.) — this must
-   * NOT be a plain fetch(), since native has no ambient cookie jar of its own.
+   * Gets a Supabase session bridge for the current Better Auth session. The
+   * server issues and consumes the one-time link with its service-role client;
+   * this browser/native client only receives the resulting session tokens.
+   * Uses Better Auth's $fetch so the request carries the same cookie/native
+   * headers as getSession and social sign-in.
    */
-  async fetchSupabaseBridge(): Promise<{ token_hash: string; type: string; email: string } | null> {
+  async fetchSupabaseBridgeSession(): Promise<{ access_token: string; refresh_token: string } | null> {
     try {
       const client = this.getClient() as any;
       const result = await client.$fetch('/supabase-bridge', { method: 'POST' });
@@ -366,15 +363,14 @@ export class BetterAuthProvider implements IAuthProvider {
         return null;
       }
 
-      const data = result?.data;
-      if (!data?.token_hash || !data?.email) {
+      const data = result?.data?.session;
+      if (!data?.access_token || !data?.refresh_token) {
         return null;
       }
 
       return {
-        token_hash: data.token_hash,
-        type: data.type || 'magiclink',
-        email: data.email,
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
       };
     } catch (error) {
       console.warn('[BetterAuth] Failed to fetch Supabase session bridge:', error);

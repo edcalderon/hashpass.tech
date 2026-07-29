@@ -73,6 +73,25 @@ const toProviderSessionState = (
   };
 };
 
+// Provider clients can report their current session every time a hook mounts.
+// An unchanged identity and credential set is not a state transition. Letting
+// it through recreates the providers object, which makes XState publish a
+// snapshot and can remount navigator headers that also consume useAuth().
+const providerStateChanged = (
+  current: ProviderSessionState,
+  next: ProviderSessionState,
+): boolean =>
+  current.ready !== next.ready ||
+  current.loggedIn !== next.loggedIn ||
+  current.user?.id !== next.user?.id ||
+  current.user?.email !== next.user?.email ||
+  current.user?.role !== next.user?.role ||
+  current.user?.status !== next.user?.status ||
+  current.session?.access_token !== next.session?.access_token ||
+  current.session?.refresh_token !== next.session?.refresh_token ||
+  current.session?.expires_at !== next.session?.expires_at ||
+  current.session?.provider !== next.session?.provider;
+
 const allProvidersReady = (context: AuthSessionMachineContext): boolean =>
   Object.values(context.providers).every((provider) => provider.ready);
 
@@ -120,6 +139,7 @@ export const authSessionMachine = createMachine(
         ],
         on: {
           PROVIDER_RESOLVED: {
+            guard: 'providerResolutionChanged',
             actions: 'setProviderResolved',
           },
           SESSION_OVERRIDE: {
@@ -147,6 +167,7 @@ export const authSessionMachine = createMachine(
         ],
         on: {
           PROVIDER_RESOLVED: {
+            guard: 'providerResolutionChanged',
             actions: 'setProviderResolved',
           },
           SESSION_OVERRIDE: {
@@ -180,6 +201,7 @@ export const authSessionMachine = createMachine(
         },
         on: {
           PROVIDER_RESOLVED: {
+            guard: 'providerResolutionChanged',
             actions: 'setProviderResolved',
           },
           SESSION_OVERRIDE: {
@@ -207,6 +229,7 @@ export const authSessionMachine = createMachine(
         ],
         on: {
           PROVIDER_RESOLVED: {
+            guard: 'providerResolutionChanged',
             actions: 'setProviderResolved',
           },
           SESSION_OVERRIDE: {
@@ -264,6 +287,16 @@ export const authSessionMachine = createMachine(
       notAllProvidersReady: ({ context }) => !allProvidersReady(context),
       hasNoAuthenticatedUserAndAllProvidersReady: ({ context }) =>
         !hasAuthenticatedUser(context) && allProvidersReady(context),
+      providerResolutionChanged: ({ context, event }) => {
+        if (event.type !== 'PROVIDER_RESOLVED') {
+          return false;
+        }
+
+        return providerStateChanged(
+          context.providers[event.provider],
+          toProviderSessionState(event),
+        );
+      },
     },
   }
 );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef, useSyncExternalStore } from 'react';
 import { authService, BetterAuthProvider, getSupabaseOAuthRedirectUrl } from '@hashpass/auth';
 import type { AuthSession, AuthUser, IAuthProvider } from '@hashpass/auth';
 import { configureAuthService } from '@hashpass/auth/auth-dependencies';
@@ -34,6 +34,15 @@ import {
 configureAuthService({ supabaseClient: supabase });
 
 let sessionBootstrapPromise: Promise<AuthSession | null> | null = null;
+// `useAuth()` is intentionally used by several independent app surfaces.
+// Unlike Directus and Supabase, Better Auth only dedupes an *in-flight*
+// getSession() request. A transport failure settles quickly, so a remounted
+// header/drawer could otherwise begin another request immediately and create
+// an auth-update/remount loop. Keep the first bootstrap result for the active
+// provider for this JS session; real sign-in/sign-out state changes replace it.
+let betterAuthBootstrapPromise: Promise<AuthSession | null> | null = null;
+let betterAuthBootstrapProvider: IAuthProvider | null = null;
+let betterAuthBootstrapSettled = false;
 let oauthHashProcessingPromise: Promise<void> | null = null;
 let oauthHashProcessed = false;
 // A dashboard logout and the next auth screen mount are separate hook
@@ -47,6 +56,11 @@ let nativeGoogleSignOutCleanup: Promise<void> | null = null;
 // hung request leaves signOut() — and any UI awaiting it, like a logout
 // button's busy state — stuck forever instead of failing visibly.
 const SIGN_OUT_STEP_TIMEOUT_MS = 8000;
+
+// Better Auth's web session lookup is an HTTP request. It is the first step
+// of the web auth bootstrap, so a request that never settles would otherwise
+// prevent the legacy and Supabase fallbacks from resolving the auth state.
+const BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
 type SignOutOptions = {
   /**
@@ -76,40 +90,55 @@ const getWebBetterAuthProvider = (): IAuthProvider => {
   return providerName === 'better-auth' ? authService : getGoogleBetterAuthProvider();
 };
 
-type SupabaseBridgeType = 'magiclink' | 'recovery' | 'invite' | 'signup' | 'email' | 'email_change';
-
-const normalizeSupabaseBridgeType = (rawType: string | null): SupabaseBridgeType => {
-  const normalized = (rawType || 'magiclink').trim().toLowerCase();
-
-  switch (normalized) {
-    case 'email':
-    case 'signup':
-    case 'invite':
-    case 'recovery':
-    case 'email_change':
-      return normalized;
-    case 'email_change_new':
-      return 'email_change';
-    default:
-      return 'magiclink';
+const getBetterAuthBootstrapSession = (provider: IAuthProvider): Promise<AuthSession | null> => {
+  if (betterAuthBootstrapProvider !== provider) {
+    betterAuthBootstrapProvider = provider;
+    betterAuthBootstrapPromise = null;
+    betterAuthBootstrapSettled = false;
   }
+
+  if (!betterAuthBootstrapPromise) {
+    betterAuthBootstrapPromise = withTimeout(
+      provider.getSession(),
+      BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS,
+      'betterAuthProvider.getSession',
+    ).finally(() => {
+      betterAuthBootstrapSettled = true;
+    });
+  }
+
+  return betterAuthBootstrapPromise!;
 };
 
-const completeSupabaseBridgeSession = async (
-  tokenHash: string,
-  typeRaw: string | null,
-  emailRaw: string
-) => {
-  const email = emailRaw.trim().toLowerCase();
-  if (!tokenHash || !email) {
+const cacheBetterAuthBootstrapSession = (provider: IAuthProvider, session: AuthSession | null): void => {
+  // onAuthStateChange immediately calls a new subscriber with its current
+  // value, commonly null. Do not let that initial callback replace the first
+  // real bootstrap request; only cache a known session or an update after the
+  // initial lookup has settled.
+  if (!session?.user && !betterAuthBootstrapSettled) {
     return;
   }
 
-  const bridgeType = normalizeSupabaseBridgeType(typeRaw);
-  const { error } = await supabase.auth.verifyOtp({
-    token_hash: tokenHash,
-    type: bridgeType,
-    email,
+  betterAuthBootstrapProvider = provider;
+  betterAuthBootstrapPromise = Promise.resolve(session);
+  betterAuthBootstrapSettled = true;
+};
+
+const setSignedOutBetterAuthBootstrap = (): void => {
+  betterAuthBootstrapPromise = Promise.resolve(null);
+  betterAuthBootstrapSettled = true;
+};
+
+export const completeSupabaseBridgeSession = async (
+  session: { access_token: string; refresh_token: string },
+) => {
+  if (!session.access_token || !session.refresh_token) {
+    return;
+  }
+
+  const { error } = await supabase.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
   });
 
   if (error) {
@@ -129,16 +158,16 @@ const completeSupabaseBridgeSession = async (
 const ensureSupabaseBridgeSession = async (betterAuthProvider: IAuthProvider): Promise<void> => {
   try {
     const provider = betterAuthProvider as unknown as BetterAuthProvider;
-    if (typeof provider.fetchSupabaseBridge !== 'function') {
+    if (typeof provider.fetchSupabaseBridgeSession !== 'function') {
       return;
     }
 
-    const bridge = await provider.fetchSupabaseBridge();
-    if (!bridge) {
+    const bridgeSession = await provider.fetchSupabaseBridgeSession();
+    if (!bridgeSession) {
       return;
     }
 
-    await completeSupabaseBridgeSession(bridge.token_hash, bridge.type, bridge.email);
+    await completeSupabaseBridgeSession(bridgeSession);
   } catch (error) {
     console.warn(
       '[useAuth] Supabase session bridge failed (Better Auth sign-in still valid):',
@@ -331,11 +360,145 @@ const warnIfProviderDisabled = (provider: string, error: unknown): void => {
   );
 };
 
+// useAuth() is called independently from several unconnected places (root
+// layout, dashboard layout, BalanceContext, NotificationContext, the auth
+// screen, ...). Each used to get its OWN authSessionMachine actor via
+// useState, meaning a signOut() dispatched from one instance's actor never
+// reached any other -- e.g. the dashboard's actor would correctly flip to
+// unauthenticated and navigate to /auth, but the root layout's own,
+// completely separate actor still held its last-cached "logged in" result,
+// so the auth screen (reading isLoggedIn from ITS OWN actor) saw a still-
+// authenticated user and immediately redirected back to the dashboard --
+// this is exactly why a real page reload "fixed" it (every actor re-
+// bootstraps from the now-actually-cleared storage) while an in-app
+// navigation did not. Sharing one module-level actor across every useAuth()
+// call site fixes this: a signOut() from any consumer is immediately
+// visible to all of them.
+//
+// This actor is a session-lifetime singleton and is intentionally never
+// stopped by any one consumer unmounting: an earlier version of this fix
+// reference-counted start()/stop() so the "last" remaining consumer would
+// stop it, but a component holds its own `authActor` reference for its
+// whole lifetime (captured once via useState's lazy initializer) -- if
+// that component is ever the sole mounted consumer and unmounts+remounts
+// (ordinary React remounts during the auth-redirect churn right after
+// login are enough, no StrictMode needed), its cleanup drives the ref
+// count to zero and stops the actor, then the remount calls .start() on
+// that same already-.stop()ped actor object. XState rejects that, throwing
+// synchronously inside the effect and leaving the whole dashboard tree
+// crashed/unresponsive -- observed live as an uncaught "The operation was
+// aborted" error right after a real login (surfaced from the sibling
+// supabase.auth.onAuthStateChange effect below, consistent with this
+// effect throwing earlier in the same commit and leaving the rest of the
+// hook's setup in a broken state). Simplest correct fix: start the actor
+// once, ever, and never stop it -- same lifetime as any other app-wide
+// singleton.
+let sharedAuthActor: ReturnType<typeof createAuthSessionActor> | null = null;
+let sharedAuthActorStarted = false;
+
+const getSharedAuthActor = () => {
+  if (!sharedAuthActor) {
+    sharedAuthActor = createAuthSessionActor();
+  }
+  return sharedAuthActor;
+};
+
+// supabase.auth.onAuthStateChange()/getSession() both funnel through gotrue-js's
+// internal navigatorLock -- an exclusive lock (via the browser's Web Locks API)
+// coordinating auth state across tabs, with a 10s default acquire timeout. Every
+// separate useAuth() call site (root layout, dashboard layout,
+// NotificationContext, BalanceContext, ...) used to register its OWN
+// onAuthStateChange subscription and run its OWN getSession() bootstrap
+// independently. Right after a fresh login, with several consumers mounted at
+// once, enough concurrent Supabase auth calls piled up to genuinely exceed that
+// 10s budget, surfacing as an uncaught NavigatorLockAcquireTimeoutError ("The
+// operation was aborted") right after sign-in. Only one subscription/bootstrap
+// call is actually needed for the whole app: every consumer already gets the
+// resulting session state via the shared authActor (PROVIDER_RESOLVED events,
+// dispatched through sendAuthEvent below regardless of which instance's
+// closure captured the callback) -- dbUserId needed its own small shared
+// broadcast since it isn't part of the actor's own state.
+let supabaseAuthSubscribed = false;
+let supabaseBootstrapPromise: ReturnType<typeof supabase.auth.getSession> | null = null;
+// dbUserId is a module-level store rather than per-instance state, read
+// through useSyncExternalStore below. That's React's purpose-built API for
+// subscribing to an external mutable store, and it's what keeps a broadcast
+// safe: a hand-rolled fan-out (setDbUserId on every mounted instance) can
+// land mid-render of an unrelated component and trip React's "Cannot update
+// a component while rendering a different component" warning, and can also
+// tear (different consumers rendering different values in one pass).
+let sharedDbUserId: string | null = null;
+const dbUserIdListeners = new Set<() => void>();
+
+const broadcastDbUserId = (id: string | null) => {
+  if (sharedDbUserId === id) {
+    return;
+  }
+  sharedDbUserId = id;
+  dbUserIdListeners.forEach((notify) => notify());
+};
+
+const subscribeToDbUserId = (onStoreChange: () => void) => {
+  dbUserIdListeners.add(onStoreChange);
+  return () => {
+    dbUserIdListeners.delete(onStoreChange);
+  };
+};
+
+const getDbUserIdSnapshot = () => sharedDbUserId;
+
+// A shared, app-lifetime subscription must not close over ANY per-instance
+// state. The first version of this fix reused the mounting instance's
+// sendProviderResolved(), which early-returns on its own `isActive` flag --
+// so as soon as that first instance unmounted (e.g. the auth screen
+// unmounting right after a successful login), every subsequent Supabase auth
+// event was silently dropped app-wide. The machine then never received a
+// `supabase` PROVIDER_RESOLVED, allProvidersReady() stayed false, and
+// getAuthViewState()'s `isLoading` never flipped to false -- the dashboard
+// hung on its loading state forever. These two module-level pieces keep the
+// shared callback self-contained instead.
+let sharedSupabaseBootstrapFinished = false;
+
+const sendSharedAuthEvent = (event: AuthSessionMachineEvent) => {
+  const actor = getSharedAuthActor();
+  if (actor.getSnapshot().status === 'stopped') {
+    return;
+  }
+
+  actor.send(event);
+};
+
+const sendSharedSupabaseResolved = (session: any) => {
+  const mappedSession = mapSupabaseSessionToAuthSession(session);
+
+  sendSharedAuthEvent({
+    type: 'PROVIDER_RESOLVED',
+    provider: 'supabase',
+    session: mappedSession,
+    user: mappedSession?.user ?? null,
+    loggedIn: Boolean(mappedSession?.user),
+  });
+};
+
+const hasSameAuthViewState = (
+  current: ReturnType<typeof getAuthViewState>,
+  next: ReturnType<typeof getAuthViewState>,
+): boolean =>
+  current.isLoggedIn === next.isLoggedIn &&
+  current.isLoading === next.isLoading &&
+  current.user?.id === next.user?.id &&
+  current.user?.email === next.user?.email &&
+  current.user?.first_name === next.user?.first_name &&
+  current.user?.last_name === next.user?.last_name &&
+  current.user?.role === next.user?.role &&
+  current.user?.status === next.user?.status;
+
 export const useAuth = () => {
-  const [authActor] = useState(() => createAuthSessionActor());
+  const [authActor] = useState(() => getSharedAuthActor());
   const [authViewState, setAuthViewState] = useState(() =>
     getAuthViewState(authActor.getSnapshot())
   );
+  const authViewStateRef = useRef(authViewState);
   const { user, isLoggedIn, isLoading } = authViewState;
   // The real Supabase auth.users(id) UUID for the CURRENT Supabase client
   // session, independent of PROVIDER_PRIORITY (auth-session-machine.ts always
@@ -347,11 +510,14 @@ export const useAuth = () => {
   // requests, etc.) needs THIS id, not user.id, or it 22P02s on a
   // Better-Auth-only session (its id isn't a UUID at all). Null until the
   // bridge (or a native Supabase sign-in) actually completes.
-  const [dbUserId, setDbUserId] = useState<string | null>(null);
+  const dbUserId = useSyncExternalStore(
+    subscribeToDbUserId,
+    getDbUserIdSnapshot,
+    getDbUserIdSnapshot,
+  );
   const isInitializedRef = useRef(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const betterAuthUnsubscribeRef = useRef<(() => void) | null>(null);
-  const supabaseUnsubscribeRef = useRef<(() => void) | null>(null);
   const authenticatedSessionOverrideRef = useRef<AuthSession | null>(null);
 
   const sendAuthEvent = useCallback((event: AuthSessionMachineEvent) => {
@@ -362,19 +528,36 @@ export const useAuth = () => {
     authActor.send(event);
   }, [authActor]);
 
+  const updateAuthViewState = useCallback((nextAuthViewState: ReturnType<typeof getAuthViewState>) => {
+    // Do this before calling the React setter. Returning the existing value
+    // from a functional state updater can still schedule a render in React,
+    // which is enough for duplicate provider callbacks to re-enter nested
+    // auth-consuming dashboard UI.
+    if (hasSameAuthViewState(authViewStateRef.current, nextAuthViewState)) {
+      return;
+    }
+
+    authViewStateRef.current = nextAuthViewState;
+    setAuthViewState(nextAuthViewState);
+  }, []);
+
   useEffect(() => {
     const subscription = authActor.subscribe((snapshot: AuthSessionMachineSnapshot) => {
-      setAuthViewState(getAuthViewState(snapshot));
+      updateAuthViewState(getAuthViewState(snapshot));
     });
 
-    authActor.start();
-    setAuthViewState(getAuthViewState(authActor.getSnapshot()));
+    if (!sharedAuthActorStarted) {
+      authActor.start();
+      sharedAuthActorStarted = true;
+    }
+    updateAuthViewState(getAuthViewState(authActor.getSnapshot()));
 
     return () => {
       subscription.unsubscribe();
-      authActor.stop();
+      // Deliberately does not stop the shared actor -- see the comment above
+      // getSharedAuthActor().
     };
-  }, [authActor]);
+  }, [authActor, updateAuthViewState]);
 
   const applyAuthenticatedSession = useCallback((session?: AuthSession | null): boolean => {
     if (!session?.user) {
@@ -407,9 +590,8 @@ export const useAuth = () => {
       const access_token = hashParams.get('access_token');
       const refresh_token = hashParams.get('refresh_token');
       const email = hashParams.get('email');
-      const supabaseBridgeTokenHash = hashParams.get('sb_token_hash');
-      const supabaseBridgeType = hashParams.get('sb_type');
-      const supabaseBridgeEmail = hashParams.get('sb_email');
+      const supabaseBridgeAccessToken = hashParams.get('sb_access_token');
+      const supabaseBridgeRefreshToken = hashParams.get('sb_refresh_token');
       const signInMethod = window.localStorage?.getItem('auth_signin_method');
       const isPasswordlessMethod = signInMethod === 'magic_link' || signInMethod === 'otp_code';
 
@@ -432,23 +614,19 @@ export const useAuth = () => {
               return;
             }
 
-            if (supabaseBridgeTokenHash) {
-              const bridgeEmail = (supabaseBridgeEmail || email || result?.user?.email || '').trim().toLowerCase();
-              if (!bridgeEmail) {
-                console.warn('[useAuth] ⚠️ Supabase bridge token provided without a valid email.');
-              } else {
-                try {
-                  await completeSupabaseBridgeSession(
-                    supabaseBridgeTokenHash,
-                    supabaseBridgeType,
-                    bridgeEmail
-                  );
-                } catch (bridgeError: any) {
-                  console.warn(
-                    '[useAuth] ⚠️ Supabase dual-session bridge failed:',
-                    bridgeError?.message || String(bridgeError)
-                  );
-                }
+            if (supabaseBridgeAccessToken && supabaseBridgeRefreshToken) {
+              try {
+                await completeSupabaseBridgeSession(
+                  {
+                    access_token: supabaseBridgeAccessToken,
+                    refresh_token: supabaseBridgeRefreshToken,
+                  },
+                );
+              } catch (bridgeError: any) {
+                console.warn(
+                  '[useAuth] ⚠️ Supabase dual-session bridge failed:',
+                  bridgeError?.message || String(bridgeError)
+                );
               }
             }
 
@@ -548,6 +726,7 @@ export const useAuth = () => {
 
     if (betterAuthProvider) {
       betterAuthUnsubscribeRef.current = betterAuthProvider.onAuthStateChange((session: AuthSession | null) => {
+        cacheBetterAuthBootstrapSession(betterAuthProvider, session);
         const betterAuthState = readAuthSessionState(session);
 
         // Ignore the initial null callback until bootstrap resolves to avoid
@@ -560,20 +739,30 @@ export const useAuth = () => {
       });
     }
 
-    // Subscribe to Supabase state changes (needed for passwordless and dual-session bridge).
-    const { data: supabaseSub } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
-      const supabaseState = readSupabaseStateFromSession(session);
-      if (isActive) {
-        setDbUserId(session?.user?.id ?? null);
-      }
-      // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
-      if (!supabaseBootstrapFinished && !supabaseState.loggedIn) {
-        return;
-      }
+    // Subscribe to Supabase state changes (needed for passwordless and
+    // dual-session bridge) -- only once globally, ever, and deliberately
+    // never unsubscribed (same reasoning as the shared authActor: whichever
+    // instance happens to unmount first must not tear this down while other
+    // mounted consumers still rely on it).
+    //
+    // Everything this callback touches is module-level ON PURPOSE -- see the
+    // comment above sendSharedSupabaseResolved. It must not use this effect's
+    // sendProviderResolved/supabaseBootstrapFinished, both of which belong to
+    // whichever instance happened to mount first and go stale (permanently
+    // silencing Supabase auth events, hanging the dashboard on its loading
+    // state) the moment that instance unmounts.
+    if (!supabaseAuthSubscribed) {
+      supabaseAuthSubscribed = true;
+      supabase.auth.onAuthStateChange((_event: string, session: any) => {
+        broadcastDbUserId(session?.user?.id ?? null);
+        // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
+        if (!sharedSupabaseBootstrapFinished && !session?.user) {
+          return;
+        }
 
-      sendProviderResolved('supabase', supabaseState);
-    });
-    supabaseUnsubscribeRef.current = () => supabaseSub.subscription.unsubscribe();
+        sendSharedSupabaseResolved(session);
+      });
+    }
 
     const startLegacyBootstrap = () => {
       if (legacyBootstrapStarted) return;
@@ -592,18 +781,20 @@ export const useAuth = () => {
           sendProviderResolved('directus', readAuthSessionState(null));
         });
 
-      supabase.auth
-        .getSession()
+      // Deduped the same way sessionBootstrapPromise dedupes authService.getSession()
+      // above: multiple mounted instances all reach this line, but the actual
+      // getSession() call (and its navigatorLock acquisition) only happens once.
+      (supabaseBootstrapPromise ?? (supabaseBootstrapPromise = supabase.auth.getSession()))
         .then(({ data }: any) => {
           supabaseBootstrapFinished = true;
-          if (isActive) {
-            setDbUserId(data?.session?.user?.id ?? null);
-          }
+          sharedSupabaseBootstrapFinished = true;
+          broadcastDbUserId(data?.session?.user?.id ?? null);
           sendProviderResolved('supabase', readSupabaseStateFromSession(data.session));
         })
         .catch((error: any) => {
           console.error('[useAuth] Supabase session bootstrap failed:', error);
           supabaseBootstrapFinished = true;
+          sharedSupabaseBootstrapFinished = true;
           sendProviderResolved('supabase', readAuthSessionState(null));
         });
     };
@@ -611,8 +802,7 @@ export const useAuth = () => {
     if (betterAuthProvider) {
       let latestBetterAuthState = readAuthSessionState(null);
 
-      betterAuthProvider
-        .getSession()
+      getBetterAuthBootstrapSession(betterAuthProvider)
         .then((session: AuthSession | null) => {
           latestBetterAuthState = readAuthSessionState(session);
 
@@ -625,15 +815,19 @@ export const useAuth = () => {
             // force-marking it logged-out: an OTP/magic-link user holds a real
             // Supabase session alongside Better Auth, and it must keep backing
             // isLoggedIn when a flaky native Better Auth getSession drops out.
-            // (supabase.auth.getSession() reads local storage — no network.)
-            supabase.auth
-              .getSession()
+            // (supabase.auth.getSession() reads local storage — no network,
+            // but still goes through the same navigatorLock as every other
+            // GoTrueClient call, hence the same shared-promise dedup.)
+            (supabaseBootstrapPromise ?? (supabaseBootstrapPromise = supabase.auth.getSession()))
               .then(({ data }: any) => {
                 supabaseBootstrapFinished = true;
+                sharedSupabaseBootstrapFinished = true;
+                broadcastDbUserId(data?.session?.user?.id ?? null);
                 sendProviderResolved('supabase', readSupabaseStateFromSession(data.session));
               })
               .catch(() => {
                 supabaseBootstrapFinished = true;
+                sharedSupabaseBootstrapFinished = true;
                 sendProviderResolved('supabase', readAuthSessionState(null));
               });
             return;
@@ -662,10 +856,9 @@ export const useAuth = () => {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
-      if (supabaseUnsubscribeRef.current) {
-        supabaseUnsubscribeRef.current();
-        supabaseUnsubscribeRef.current = null;
-      }
+      // No supabaseUnsubscribeRef cleanup here anymore -- the Supabase
+      // subscription above is a shared, session-lifetime singleton (see
+      // supabaseAuthSubscribed), not owned by this instance.
       if (betterAuthUnsubscribeRef.current) {
         betterAuthUnsubscribeRef.current();
         betterAuthUnsubscribeRef.current = null;
@@ -706,12 +899,16 @@ export const useAuth = () => {
     // while the provider cleanup still runs (and is still awaited by callers/
     // tests that want to observe it) as best-effort background work.
     sessionBootstrapPromise = Promise.resolve(null);
+    setSignedOutBetterAuthBootstrap();
     sendAuthEvent({ type: 'SIGNED_OUT' });
     // Clear synchronously alongside the SIGNED_OUT event, not left to wait on
     // supabase.auth.signOut() below (best-effort, individually timed-out) —
     // otherwise a slow/failed remote call leaves the previous session's id
     // dangling as "current" after isLoggedIn has already flipped to false.
-    setDbUserId(null);
+    // Clears the shared store so every mounted useAuth() consumer sees it,
+    // not just whichever instance's signOut() happened to run -- same
+    // reasoning as the shared authActor fix.
+    broadcastDbUserId(null);
 
     // Persisted data must be gone before a native screen transition. In
     // particular, Better Auth and Directus use SecureStore while Supabase uses
@@ -829,6 +1026,7 @@ export const useAuth = () => {
           console.warn('[useAuth] Failed to clear previous provider session before Google sign-in:', clearError);
         } finally {
           sessionBootstrapPromise = Promise.resolve(null);
+          setSignedOutBetterAuthBootstrap();
         }
       };
 

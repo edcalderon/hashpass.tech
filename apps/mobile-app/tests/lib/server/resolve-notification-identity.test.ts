@@ -3,6 +3,7 @@
 const mockAuthenticateRequest = jest.fn();
 const mockExtractToken = jest.fn();
 const mockGetSupabaseServerForRequest = jest.fn();
+const mockGetBetterAuthSessionUser = jest.fn();
 
 jest.mock('@hashpass/auth', () => ({
   authenticateRequest: (...args: unknown[]) => mockAuthenticateRequest(...args),
@@ -11,6 +12,9 @@ jest.mock('@hashpass/auth', () => ({
 jest.mock('@/lib/supabase-server', () => ({
   getSupabaseServerForRequest: (...args: unknown[]) => mockGetSupabaseServerForRequest(...args),
 }));
+jest.mock('../../../lib/server/better-auth', () => ({
+  getBetterAuthSessionUser: (...args: unknown[]) => mockGetBetterAuthSessionUser(...args),
+}));
 
 describe('resolveNotificationIdentity', () => {
   beforeEach(() => {
@@ -18,10 +22,11 @@ describe('resolveNotificationIdentity', () => {
     mockAuthenticateRequest.mockReset();
     mockExtractToken.mockReset();
     mockGetSupabaseServerForRequest.mockReset();
+    mockGetBetterAuthSessionUser.mockReset();
     mockExtractToken.mockReturnValue(null);
   });
 
-  it('maps a Directus session to its linked Supabase UUID and registry id through the email registry', async () => {
+  it('keeps a valid provider bearer authoritative over a Better Auth browser cookie', async () => {
     const maybeSingle = jest.fn().mockResolvedValue({
       data: { id: 'registry-row-id', provider_ids: { supabase: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4' } },
       error: null,
@@ -33,6 +38,10 @@ describe('resolveNotificationIdentity', () => {
     mockAuthenticateRequest.mockResolvedValue({
       user: { id: 'directus-user-id', email: 'Edward@Hashpass.App' },
       error: null,
+    });
+    mockGetBetterAuthSessionUser.mockResolvedValue({
+      id: 'better-auth-user-id',
+      email: 'other-browser-user@hashpass.app',
     });
 
     /* eslint-disable @typescript-eslint/no-require-imports */
@@ -46,6 +55,8 @@ describe('resolveNotificationIdentity', () => {
     });
     expect(from).toHaveBeenCalledWith('user');
     expect(eq).toHaveBeenCalledWith('email', 'edward@hashpass.app');
+    expect(mockGetBetterAuthSessionUser).not.toHaveBeenCalled();
+    expect(mockAuthenticateRequest).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the real Supabase UUID and resolves the registry id when a bearer token is valid', async () => {
@@ -72,6 +83,7 @@ describe('resolveNotificationIdentity', () => {
         email: 'edward@hashpass.app',
       });
     expect(mockAuthenticateRequest).not.toHaveBeenCalled();
+    expect(mockGetBetterAuthSessionUser).not.toHaveBeenCalled();
   });
 
   it('self-heals a missing registry row for a caller with a valid bearer token', async () => {
@@ -190,6 +202,47 @@ describe('resolveNotificationIdentity', () => {
         registryUserId: 'registry-row-id',
         email: 'event.admin@example.com',
       });
+  });
+
+  it('accepts a valid Better Auth cookie when tenant-routed provider auth has no bearer token', async () => {
+    const maybeSingle = jest.fn().mockResolvedValue({
+      data: { id: 'registry-row-id', provider_ids: { supabase: '8f60f5d2-5948-4df1-9670-2f9177cf2fe4' } },
+      error: null,
+    });
+    mockGetSupabaseServerForRequest.mockReturnValue({
+      auth: { getUser: jest.fn() },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
+    });
+    mockGetBetterAuthSessionUser.mockResolvedValue({
+      id: 'better-auth-user-id',
+      email: 'event.admin@example.com',
+    });
+    mockAuthenticateRequest.mockResolvedValue({ user: null, error: 'No authorization token provided' });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    await expect(resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/admin/access', {
+      headers: { Cookie: 'better-auth.session_token=valid-session' },
+    }))).resolves.toEqual({
+      supabaseUserId: '8f60f5d2-5948-4df1-9670-2f9177cf2fe4',
+      registryUserId: 'registry-row-id',
+      email: 'event.admin@example.com',
+    });
+
+    expect(mockGetBetterAuthSessionUser).toHaveBeenCalledTimes(1);
+    expect(mockAuthenticateRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a verified Better Auth session that has no email', async () => {
+    mockGetSupabaseServerForRequest.mockReturnValue({ auth: { getUser: jest.fn() } });
+    mockAuthenticateRequest.mockResolvedValue({ user: null, error: 'No authorization token provided' });
+    mockGetBetterAuthSessionUser.mockResolvedValue({ id: 'better-auth-user-id', email: '' });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { resolveNotificationIdentity } = require('../../../lib/server/resolve-notification-identity');
+    await expect(resolveNotificationIdentity(new Request('https://api.hashpass.tech/api/notifications', {
+      headers: { Cookie: 'better-auth.session_token=valid-session' },
+    }))).resolves.toEqual({ error: 'Authenticated user has no email on record', status: 400 });
   });
 
   it('rejects a provider request without an authenticated user or email', async () => {

@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.277)
+## 📋 Latest Changes (v1.8.278)
 
 ### Bug Fixes
 
-* BSL prod pipeline was silently building with dev config ([a151420](https://github.com/hashpass-tech/hashpass.tech/commit/a151420da31853e7ea9f4ec054d00c3f385128bc))
+* logout appeared to need two taps -- useAuth() consumers had disconnected session state ([e99e084](https://github.com/hashpass-tech/hashpass.tech/commit/e99e0841647fb1daa7d6e1efae988dc8d8313c0c))
 ### Release Highlights
-- BSL prod pipeline was silently building with dev config
+- logout appeared to need two taps -- useAuth() consumers had disconnected session state
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

@@ -4,6 +4,7 @@ import {
   clampPwaDragPosition,
   getPwaDockPositionCoordinates,
   PWA_DOCK_POSITIONS,
+  PWA_DRAG_BOTTOM_SAFE_MARGIN,
   PWA_DRAG_BUTTON_SIZE,
   PWA_DRAG_POSITION_KEY,
   PWA_DRAG_SAFE_MARGIN,
@@ -64,11 +65,11 @@ describe('PWA drag positioning', () => {
     });
     expect(getPwaDockPositionCoordinates('bottom-left', viewport)).toEqual({
       left: PWA_DRAG_SAFE_MARGIN,
-      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
+      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
     });
     expect(getPwaDockPositionCoordinates('bottom-right', viewport)).toEqual({
       left: viewport.width - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
-      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_SAFE_MARGIN,
+      top: viewport.height - PWA_DRAG_BUTTON_SIZE - PWA_DRAG_BOTTOM_SAFE_MARGIN,
     });
   });
 

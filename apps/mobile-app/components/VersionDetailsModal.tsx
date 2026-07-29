@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Linking, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, Linking, ActivityIndicator, Platform } from 'react-native';
+import * as Updates from 'expo-updates';
 import { useTheme } from '../hooks/useTheme';
 import { MaterialIcons } from '../lib/vector-icons';
 import { useRouter } from 'expo-router';
@@ -29,6 +30,17 @@ export default function VersionDetailsModal({
 
   const versionInfo = versionService.getCurrentVersion();
   const buildInfo = versionService.getBuildInfo();
+  // expo-updates is native-only; on web these all read as safe defaults
+  // (isEmbeddedLaunch: true, channel/updateId: null) so this section hides
+  // itself there rather than showing misleading OTA info for a platform
+  // that isn't served via EAS Update at all.
+  const otaInfo = Platform.OS !== 'web' ? {
+    isEmbeddedLaunch: Updates.isEmbeddedLaunch,
+    channel: Updates.channel,
+    updateId: Updates.updateId,
+    createdAt: Updates.createdAt,
+    runtimeVersion: Updates.runtimeVersion,
+  } : null;
   const versionHistory = versionService.getVersionHistory();
   const badgeInfo = versionService.getVersionBadgeInfo(versionInfo.releaseType);
   const totalHistoryPages = Math.max(1, Math.ceil(versionHistory.length / HISTORY_ITEMS_PER_PAGE));
@@ -136,6 +148,31 @@ export default function VersionDetailsModal({
                     )}
                   </View>
                   <Text style={styles.buildText}>{t({ id: 'version.branch', message: 'Branch:' })} {buildInfo.gitBranch}</Text>
+                </View>
+              )}
+
+              {otaInfo && (
+                <View style={styles.buildInfo}>
+                  <Text style={styles.buildLabel}>{t({ id: 'version.otaInfo', message: 'Update Status (OTA):' })}</Text>
+                  <Text style={styles.buildText}>
+                    {t({ id: 'version.otaSource', message: 'Running:' })}{' '}
+                    {otaInfo.isEmbeddedLaunch
+                      ? t({ id: 'version.otaEmbedded', message: 'Native build bundle (no OTA update applied)' })
+                      : t({ id: 'version.otaFetched', message: 'Fetched OTA update' })}
+                  </Text>
+                  {otaInfo.channel && (
+                    <Text style={styles.buildText}>{t({ id: 'version.otaChannel', message: 'Channel:' })} {otaInfo.channel}</Text>
+                  )}
+                  {!otaInfo.isEmbeddedLaunch && otaInfo.updateId && (
+                    <>
+                      <Text style={styles.buildText}>{t({ id: 'version.otaUpdateId', message: 'Update ID:' })} {otaInfo.updateId}</Text>
+                      {otaInfo.createdAt && (
+                        <Text style={styles.buildText}>
+                          {t({ id: 'version.otaPublishedAt', message: 'Published:' })} {new Date(otaInfo.createdAt).toLocaleString()}
+                        </Text>
+                      )}
+                    </>
+                  )}
                 </View>
               )}
             </View>

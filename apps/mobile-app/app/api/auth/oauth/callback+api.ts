@@ -9,8 +9,8 @@ import {
   normalizeEmail,
   isDuplicateSupabaseUserError,
   findSupabaseUserByEmail,
-  issueSupabaseSessionBridge,
-  type SupabaseSessionBridge,
+  createSupabaseBridgeSession,
+  type SupabaseBridgeSession,
 } from '../../../../lib/auth/supabase-admin-bridge';
 
 // Support both local and production Directus URLs
@@ -50,7 +50,7 @@ type DirectusOAuthUser = {
 
 type DirectusSupabaseSyncResult = {
   email: string;
-  bridge: SupabaseSessionBridge | null;
+  bridgeSession: SupabaseBridgeSession | null;
   user: DirectusOAuthUser | null;
 };
 
@@ -78,27 +78,25 @@ const normalizeReturnToPath = (value: string | null | undefined): string => {
   return normalized;
 };
 
-// Directus's own opt-out flag for the bridge specifically — kept local since
-// it must not affect the shared issueSupabaseSessionBridge helper's behavior
-// for other callers (e.g. the Better Auth bridge, which is independently
-// controlled).
-const issueDirectusSupabaseSessionBridge = (
+// Directus's own opt-out flag for the bridge specifically — kept local so it
+// does not affect the Better Auth bridge. The server completes Supabase's
+// one-time verification and only forwards the resulting user session.
+const createDirectusSupabaseBridgeSession = (
   client: SupabaseClient,
   email: string
-): Promise<SupabaseSessionBridge | null> =>
-  DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED ? issueSupabaseSessionBridge(client, email) : Promise.resolve(null);
+): Promise<SupabaseBridgeSession | null> =>
+  DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED ? createSupabaseBridgeSession(client, email) : Promise.resolve(null);
 
-const appendSupabaseBridgeToFragment = (
+const appendSupabaseBridgeSessionToFragment = (
   fragment: URLSearchParams,
-  bridge: SupabaseSessionBridge | null
+  session: SupabaseBridgeSession | null
 ) => {
-  if (!bridge) {
+  if (!session) {
     return;
   }
 
-  fragment.set('sb_token_hash', bridge.token_hash);
-  fragment.set('sb_type', bridge.type);
-  fragment.set('sb_email', bridge.email);
+  fragment.set('sb_access_token', session.access_token);
+  fragment.set('sb_refresh_token', session.refresh_token);
 };
 
 const appendDirectusUserToFragment = (
@@ -152,7 +150,7 @@ const syncDirectusUserToSupabase = async (
 
     syncResultBase = {
       email,
-      bridge: null,
+      bridgeSession: null,
       user: directusUser,
     };
 
@@ -196,8 +194,8 @@ const syncDirectusUserToSupabase = async (
     });
 
     if (!createResult.error && createResult.data?.user) {
-      const bridge = await issueDirectusSupabaseSessionBridge(client, email);
-      return { ...syncResultBase, bridge };
+      const bridgeSession = await createDirectusSupabaseBridgeSession(client, email);
+      return { ...syncResultBase, bridgeSession };
     }
 
     const createErrorMessage = createResult.error?.message || '';
@@ -206,14 +204,14 @@ const syncDirectusUserToSupabase = async (
         '[OAuth Callback] Supabase sync createUser failed:',
         createErrorMessage || 'Unknown createUser error'
       );
-      return { ...syncResultBase, bridge: null };
+      return { ...syncResultBase, bridgeSession: null };
     }
 
     const existingUser = await findSupabaseUserByEmail(client, email);
     if (!existingUser) {
       console.warn('[OAuth Callback] Supabase sync: user already exists but could not be located for metadata update.');
-      const bridge = await issueDirectusSupabaseSessionBridge(client, email);
-      return { ...syncResultBase, bridge };
+      const bridgeSession = await createDirectusSupabaseBridgeSession(client, email);
+      return { ...syncResultBase, bridgeSession };
     }
 
     const existingMetadata = (existingUser.user_metadata || {}) as Record<string, any>;
@@ -238,12 +236,12 @@ const syncDirectusUserToSupabase = async (
         '[OAuth Callback] Supabase sync metadata update failed:',
         updateResult.error.message
       );
-      const bridge = await issueDirectusSupabaseSessionBridge(client, email);
-      return { ...syncResultBase, bridge };
+      const bridgeSession = await createDirectusSupabaseBridgeSession(client, email);
+      return { ...syncResultBase, bridgeSession };
     }
 
-    const bridge = await issueDirectusSupabaseSessionBridge(client, email);
-    return { ...syncResultBase, bridge };
+    const bridgeSession = await createDirectusSupabaseBridgeSession(client, email);
+    return { ...syncResultBase, bridgeSession };
   } catch (error) {
     console.warn(
       '[OAuth Callback] Supabase sync failed unexpectedly:',
@@ -567,7 +565,7 @@ export async function GET(request: Request): Promise<Response> {
       access_token: urlAccessToken,
       ...(urlRefreshToken && { refresh_token: urlRefreshToken })
     });
-    appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
+    appendSupabaseBridgeSessionToFragment(fragment, syncResult?.bridgeSession || null);
     appendDirectusUserToFragment(fragment, syncResult?.user || null);
 
     if (nativeCallbackCookie) {
@@ -613,7 +611,7 @@ export async function GET(request: Request): Promise<Response> {
                 access_token: tokens.access_token,
                 ...(tokens.refresh_token && { refresh_token: tokens.refresh_token })
               });
-              appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
+              appendSupabaseBridgeSessionToFragment(fragment, syncResult?.bridgeSession || null);
               appendDirectusUserToFragment(fragment, syncResult?.user || null);
 
               if (nativeCallbackCookie) {
@@ -676,7 +674,7 @@ export async function GET(request: Request): Promise<Response> {
           access_token: exchangedTokens.access_token,
           ...(exchangedTokens.refresh_token && { refresh_token: exchangedTokens.refresh_token })
         });
-        appendSupabaseBridgeToFragment(fragment, syncResult?.bridge || null);
+        appendSupabaseBridgeSessionToFragment(fragment, syncResult?.bridgeSession || null);
         appendDirectusUserToFragment(fragment, syncResult?.user || null);
 
         if (nativeCallbackCookie) {
@@ -733,7 +731,7 @@ export async function GET(request: Request): Promise<Response> {
   // When Directus returns with hash-based tokens, the server callback cannot read the fragment.
   // Hand off to the frontend callback so client-side auth can finalize the session.
   if (!reason && !error) {
-    console.warn('[OAuth Callback] No server-visible tokens/session. Handing off to frontend callback with hash-preserving bridge.');
+    console.warn('[OAuth Callback] No server-visible tokens/session. Handing off to frontend callback with fragment-preserving state.');
     if (nativeCallbackCookie) {
       const nativeResponse = buildNativeCallbackResponse(
         nativeCallbackCookie,

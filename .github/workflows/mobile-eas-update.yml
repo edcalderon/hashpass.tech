@@ -10,15 +10,18 @@ name: Mobile EAS Update (OTA)
 # Channel <-> branch mapping (deliberately NOT track <-> branch):
 #   - push to develop -> channel "development". Every environment=development
 #     binary (internal, alpha, beta -- see CLAUDE.md's Mobile Android Release
-#     Workflow section) is built from a tagged `main` commit, but
-#     runtimeVersion policy is "appVersion" (see apps/mobile-app/app.json),
-#     so what actually matters is the app *version string*, not which ref
-#     built it. develop is fast-forwarded to match main's version on every
-#     release-tag-on-merge.yml run, so between releases develop always carries
-#     the same version as the binaries already on Play -- an OTA push from
-#     develop lands correctly on them the whole time, with no version-skew
-#     window. This is what makes the cadence continuous: develop gets many
-#     commits/day, so this is the "ship in minutes" lane.
+#     Workflow section) is built from a tagged `main` commit. runtimeVersion
+#     policy is "fingerprint" (see apps/mobile-app/app.json and the OTA doc's
+#     "runtimeVersion: fingerprint policy" section), so compatibility is
+#     decided by a content hash of native-relevant project files, not by the
+#     app *version string* or which ref built it. The
+#     detect-mobile-native-change.js guard below (and the equivalent one at
+#     release-tag granularity) is what actually keeps this safe: as long as
+#     nothing native-sensitive changed since the last tagged build, the
+#     fingerprint stays the same and an OTA push from develop is compatible
+#     with those binaries the whole time, with no version-skew window. This
+#     is what makes the cadence continuous: develop gets many commits/day,
+#     so this is the "ship in minutes" lane.
 #   - push to main -> channel "production". This only fires as often as the
 #     protected develop -> main promotion PR merges (main can't be pushed to
 #     directly), which matches the existing deliberately-conservative cadence

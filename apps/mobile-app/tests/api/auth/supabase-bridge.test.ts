@@ -3,7 +3,7 @@
 const mockGetBetterAuthSessionUser = jest.fn();
 const mockGetSupabaseServerForRequest = jest.fn();
 const mockEnsureSupabaseAccountForEmail = jest.fn();
-const mockIssueSupabaseSessionBridge = jest.fn();
+const mockCreateSupabaseBridgeSession = jest.fn();
 const mockSyncPublicUserRegistry = jest.fn();
 
 jest.mock('@/lib/server/better-auth', () => ({
@@ -16,7 +16,7 @@ jest.mock('@/lib/supabase-server', () => ({
 
 jest.mock('@/lib/auth/supabase-admin-bridge', () => ({
   ensureSupabaseAccountForEmail: (...args: unknown[]) => mockEnsureSupabaseAccountForEmail(...args),
-  issueSupabaseSessionBridge: (...args: unknown[]) => mockIssueSupabaseSessionBridge(...args),
+  createSupabaseBridgeSession: (...args: unknown[]) => mockCreateSupabaseBridgeSession(...args),
 }));
 
 jest.mock('@/lib/auth/public-user-registry', () => ({
@@ -29,7 +29,7 @@ describe('/api/auth/supabase-bridge', () => {
     mockGetBetterAuthSessionUser.mockReset();
     mockGetSupabaseServerForRequest.mockReset();
     mockEnsureSupabaseAccountForEmail.mockReset();
-    mockIssueSupabaseSessionBridge.mockReset();
+    mockCreateSupabaseBridgeSession.mockReset();
     mockSyncPublicUserRegistry.mockReset();
     mockGetSupabaseServerForRequest.mockReturnValue({ auth: { admin: {} } });
   });
@@ -60,7 +60,7 @@ describe('/api/auth/supabase-bridge', () => {
     expect(response.status).toBe(401);
   });
 
-  it('ensures the Supabase account exists and returns a session bridge', async () => {
+  it('ensures the Supabase account exists and returns a completed session bridge', async () => {
     mockGetBetterAuthSessionUser.mockResolvedValue({
       id: 'ba-1',
       email: 'user@example.com',
@@ -68,10 +68,9 @@ describe('/api/auth/supabase-bridge', () => {
       last_name: 'Example',
     });
     mockEnsureSupabaseAccountForEmail.mockResolvedValue({ id: 'auth-uuid-123' });
-    mockIssueSupabaseSessionBridge.mockResolvedValue({
-      token_hash: 'hash-123',
-      type: 'magiclink',
-      email: 'user@example.com',
+    mockCreateSupabaseBridgeSession.mockResolvedValue({
+      access_token: 'supabase-access-token',
+      refresh_token: 'supabase-refresh-token',
     });
 
     /* eslint-disable @typescript-eslint/no-require-imports */
@@ -90,19 +89,20 @@ describe('/api/auth/supabase-bridge', () => {
         providerIds: { 'better-auth': 'ba-1', supabase: 'auth-uuid-123' },
       })
     );
-    expect(mockIssueSupabaseSessionBridge).toHaveBeenCalledWith({ auth: { admin: {} } }, 'user@example.com');
+    expect(mockCreateSupabaseBridgeSession).toHaveBeenCalledWith({ auth: { admin: {} } }, 'user@example.com');
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      token_hash: 'hash-123',
-      type: 'magiclink',
-      email: 'user@example.com',
+      session: {
+        access_token: 'supabase-access-token',
+        refresh_token: 'supabase-refresh-token',
+      },
     });
   });
 
-  it('returns 500 when the bridge cannot be issued', async () => {
+  it('returns 500 when the bridge session cannot be established', async () => {
     mockGetBetterAuthSessionUser.mockResolvedValue({ id: 'ba-1', email: 'user@example.com' });
     mockEnsureSupabaseAccountForEmail.mockResolvedValue(null);
-    mockIssueSupabaseSessionBridge.mockResolvedValue(null);
+    mockCreateSupabaseBridgeSession.mockResolvedValue(null);
 
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { POST } = require('../../../app/api/auth/supabase-bridge+api');
@@ -111,7 +111,7 @@ describe('/api/auth/supabase-bridge', () => {
     );
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ error: 'Failed to issue Supabase session bridge' });
+    expect(await response.json()).toEqual({ error: 'Failed to establish Supabase session bridge' });
   });
 
   it('returns 500 when an unexpected error is thrown', async () => {
@@ -126,7 +126,7 @@ describe('/api/auth/supabase-bridge', () => {
     );
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ error: 'Failed to issue Supabase session bridge' });
+    expect(await response.json()).toEqual({ error: 'Failed to establish Supabase session bridge' });
     errorSpy.mockRestore();
   });
 });

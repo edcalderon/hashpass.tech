@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Animated, StatusBar, Platform, InteractionManager, useWindowDimensions } from 'react-native';
 import Reanimated from 'react-native-reanimated';
 import { useScroll } from '@contexts/ScrollContext';
@@ -7,7 +7,6 @@ import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import EventBanner from '../../../components/EventBanner';
 import PassesDisplay from '../../../components/PassesDisplay';
 import { useHorizontalScrollArrows } from '../../../hooks/useHorizontalScrollArrows';
@@ -19,9 +18,9 @@ import {
   isMainBranch,
   type EventInfo
 } from '../../../lib/event-detector';
-import { resolveEventImageSource } from '../../../lib/event-branding';
+import { getSelectEventCardWatermark } from '../../../lib/event-branding';
 import { t } from '@lingui/macro';
-import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
+import { COPILOT_TUTORIALS_ENABLED, CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 import { useTutorialPreferences } from '../../../hooks/useTutorialPreferences';
 
 type QuickAccessItem = {
@@ -43,7 +42,7 @@ type QuickAccessItem = {
 // returns false from the shim), kept only so this effect's early-return
 // structure stays intact if a real, Fabric-compatible walkthrough library
 // replaces the shim later.
-const TUTORIAL_AUTO_START_ENABLED = false;
+const TUTORIAL_AUTO_START_ENABLED = COPILOT_TUTORIALS_ENABLED;
 
 const CopilotView = walkthroughable(View);
 const CopilotText = walkthroughable(Text);
@@ -142,24 +141,17 @@ export default function ExploreScreen() {
 
   // Reset ref when tutorial is reset (completion status changes or progress is cleared)
   useEffect(() => {
+    if (!TUTORIAL_AUTO_START_ENABLED) return;
+
     if (!mainTutorialCompleted && mainTutorialProgress === null) {
-      console.log('Tutorial reset detected - resetting tutorialStartedRef');
       tutorialStartedRef.current = false;
     }
   }, [mainTutorialCompleted, mainTutorialProgress]);
 
-  // Also reset ref when screen comes into focus (useful after navigation from settings)
-  useFocusEffect(
-    React.useCallback(() => {
-      if (!mainTutorialCompleted && mainTutorialProgress === null && !tutorialStartedRef.current) {
-        console.log('Screen focused with tutorial reset - ready to start tutorial');
-        tutorialStartedRef.current = false;
-      }
-    }, [mainTutorialCompleted, mainTutorialProgress])
-  );
-
   // Auto-start tutorial for new users - only once, when everything is ready
   useEffect(() => {
+    if (!TUTORIAL_AUTO_START_ENABLED) return;
+
     // Check if tutorial was reset - if progress is null and not completed, reset the ref
     if (!mainTutorialCompleted && mainTutorialProgress === null) {
       tutorialStartedRef.current = false;
@@ -200,21 +192,6 @@ export default function ExploreScreen() {
     
     if (!shouldShow) {
       console.log('Tutorial auto-start: shouldShowTutorial returned false');
-      return;
-    }
-
-    if (!TUTORIAL_AUTO_START_ENABLED) {
-      // startTutorial() measures/highlights the first CopilotStep target, which
-      // crashes the app on Fabric/newArch with "Unsupported top level event
-      // type 'topSvgLayout'/'topLayout'/'topDetached' dispatched". Copilot's
-      // overlay is already forced to "view" (see CopilotProvider in
-      // app/_layout.tsx), so this isn't Copilot's own SVG mask — it's an
-      // SVG-based element among the highlighted dashboard targets that
-      // doesn't register its layout event correctly under the new
-      // architecture. This crashed on every first login, so auto-start is
-      // disabled until the specific offending step/component is identified
-      // and fixed with a Fabric-compatible SVG version or a non-SVG target.
-      console.warn('Tutorial auto-start: disabled (Fabric/SVG layout event crash — see TUTORIAL_AUTO_START_ENABLED)');
       return;
     }
 
@@ -272,6 +249,8 @@ export default function ExploreScreen() {
 
   // Listen for tutorial events
   useEffect(() => {
+    if (!TUTORIAL_AUTO_START_ENABLED) return;
+
     if (
       !copilotEvents ||
       typeof copilotEvents.on !== 'function' ||
@@ -356,7 +335,7 @@ export default function ExploreScreen() {
         activeOpacity={0.8}
       >
         <Image
-          source={resolveEventImageSource(eventData.image) || { uri: 'https://via.placeholder.com/400x200' }}
+          source={getSelectEventCardWatermark(isDark)}
           style={[
             styles.eventImage,
             isArchiveEvent && styles.archiveEventImage,
@@ -418,7 +397,7 @@ export default function ExploreScreen() {
         activeOpacity={0.75}
       >
         <Image
-          source={resolveEventImageSource(eventData.image) || { uri: 'https://via.placeholder.com/80x80' }}
+          source={getSelectEventCardWatermark(isDark)}
           style={[
             styles.eventListRowThumb,
             { backgroundColor: isArchiveEvent ? '#08111E' : colors.background.default },
