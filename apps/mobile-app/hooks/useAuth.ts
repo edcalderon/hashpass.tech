@@ -344,11 +344,27 @@ const warnIfProviderDisabled = (provider: string, error: unknown): void => {
 // bootstraps from the now-actually-cleared storage) while an in-app
 // navigation did not. Sharing one module-level actor across every useAuth()
 // call site fixes this: a signOut() from any consumer is immediately
-// visible to all of them. Reference-counted start/stop below so one
-// consumer unmounting doesn't stop the actor out from under the others
-// still using it.
+// visible to all of them.
+//
+// This actor is a session-lifetime singleton and is intentionally never
+// stopped by any one consumer unmounting: an earlier version of this fix
+// reference-counted start()/stop() so the "last" remaining consumer would
+// stop it, but a component holds its own `authActor` reference for its
+// whole lifetime (captured once via useState's lazy initializer) -- if
+// that component is ever the sole mounted consumer and unmounts+remounts
+// (ordinary React remounts during the auth-redirect churn right after
+// login are enough, no StrictMode needed), its cleanup drives the ref
+// count to zero and stops the actor, then the remount calls .start() on
+// that same already-.stop()ped actor object. XState rejects that, throwing
+// synchronously inside the effect and leaving the whole dashboard tree
+// crashed/unresponsive -- observed live as an uncaught "The operation was
+// aborted" error right after a real login (surfaced from the sibling
+// supabase.auth.onAuthStateChange effect below, consistent with this
+// effect throwing earlier in the same commit and leaving the rest of the
+// hook's setup in a broken state). Simplest correct fix: start the actor
+// once, ever, and never stop it -- same lifetime as any other app-wide
+// singleton.
 let sharedAuthActor: ReturnType<typeof createAuthSessionActor> | null = null;
-let sharedAuthActorRefCount = 0;
 let sharedAuthActorStarted = false;
 
 const getSharedAuthActor = () => {
@@ -394,7 +410,6 @@ export const useAuth = () => {
       setAuthViewState(getAuthViewState(snapshot));
     });
 
-    sharedAuthActorRefCount += 1;
     if (!sharedAuthActorStarted) {
       authActor.start();
       sharedAuthActorStarted = true;
@@ -403,12 +418,8 @@ export const useAuth = () => {
 
     return () => {
       subscription.unsubscribe();
-      sharedAuthActorRefCount -= 1;
-      if (sharedAuthActorRefCount <= 0) {
-        authActor.stop();
-        sharedAuthActorStarted = false;
-        sharedAuthActor = null;
-      }
+      // Deliberately does not stop the shared actor -- see the comment above
+      // getSharedAuthActor().
     };
   }, [authActor]);
 
