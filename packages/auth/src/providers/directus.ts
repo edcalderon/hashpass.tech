@@ -37,6 +37,17 @@ export class DirectusAuthProvider implements IAuthProvider {
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private sessionLookupInFlight: Promise<AuthSession | null> | null = null;
   private nextSessionProbeAt = 0;
+  // Incremented on every signOut(). getSession()'s cookie/OAuth probe and
+  // refreshSession() both run async network calls that assign `this.session`
+  // and call notifyStateChange() when they resolve; clearing
+  // sessionLookupInFlight to null on sign-out (see signOut()) stops a NEW
+  // getSession() call from deduping against an old lookup, but does not
+  // cancel one already in flight. Without this guard, a lookup that started
+  // before signOut() can still resolve afterward and resurrect the session
+  // it captured, with no later local clear left to override it. Each async
+  // lookup captures the generation it started with and discards its result
+  // if the generation has since moved on.
+  private sessionGeneration = 0;
 
   constructor(url: string) {
     this.baseUrl = url.replace(/\/$/, '');
@@ -732,6 +743,10 @@ export class DirectusAuthProvider implements IAuthProvider {
     this.session = null;
     this.sessionLookupInFlight = null;
     this.nextSessionProbeAt = 0;
+    // Invalidates any getSession()/refreshSession() lookup already in
+    // flight, so its eventual resolution can't reassign this.session after
+    // this clear — see the field comment.
+    this.sessionGeneration += 1;
     await this.clearStoredSession();
     this.clearRefreshTimer();
     this.notifyStateChange(null);
@@ -774,6 +789,7 @@ export class DirectusAuthProvider implements IAuthProvider {
       return this.session;
     }
 
+    const lookupGeneration = this.sessionGeneration;
     this.sessionLookupInFlight = (async () => {
       // Try to refresh if we have a refresh token
       if (this.session?.refresh_token) {
@@ -809,6 +825,14 @@ export class DirectusAuthProvider implements IAuthProvider {
         try {
           const userResult = await this.apiClient.getCurrentUserWithSession();
 
+          // A signOut() call landed while this cookie probe was in flight.
+          // Its result reflects who was signed in when the probe started,
+          // not the current (signed-out) state — publishing it now would
+          // resurrect the session signOut() already cleared.
+          if (lookupGeneration !== this.sessionGeneration) {
+            return null;
+          }
+
           if (userResult.data) {
             console.log('📡 Retrieved session from server via cookies');
             const session: AuthSession = {
@@ -841,6 +865,9 @@ export class DirectusAuthProvider implements IAuthProvider {
 
             if (refreshResult.data?.access_token) {
               const refreshedUser = await this.apiClient.getCurrentUserWithToken(refreshResult.data.access_token);
+              if (lookupGeneration !== this.sessionGeneration) {
+                return null;
+              }
               if (refreshedUser.data) {
                 const session = this.buildSessionFromToken(
                   refreshedUser.data,
@@ -884,10 +911,15 @@ export class DirectusAuthProvider implements IAuthProvider {
     }
     if (!this.session || !this.isCookieBackedSession(this.session)) return null;
 
+    const refreshGeneration = this.sessionGeneration;
     try {
       const refreshResult = await this.apiClient.refreshSessionWithCookies();
       const tokens = refreshResult.data;
       if (!tokens?.access_token) return null;
+
+      if (refreshGeneration !== this.sessionGeneration || !this.session) {
+        return null;
+      }
 
       const refreshedSession: AuthSession = {
         ...this.session,
@@ -897,6 +929,10 @@ export class DirectusAuthProvider implements IAuthProvider {
       };
       this.session = refreshedSession;
       await this.storeSession(refreshedSession.user, refreshedSession.expires_at, false);
+      if (refreshGeneration !== this.sessionGeneration) {
+        if (!this.session) await this.clearStoredSession();
+        return null;
+      }
       this.setupRefreshTimer();
       this.notifyStateChange(refreshedSession);
       return tokens.access_token;
@@ -910,8 +946,16 @@ export class DirectusAuthProvider implements IAuthProvider {
       return { error: 'No refresh token available' };
     }
 
+    const refreshGeneration = this.sessionGeneration;
     try {
       const refreshResult = await this.apiClient.refreshToken(this.session.refresh_token);
+      // A signOut() call landed while the refresh request was in flight —
+      // this.session is null now (or belongs to a different sign-in) and
+      // must not be overwritten with a session built from the pre-logout
+      // refresh token.
+      if (refreshGeneration !== this.sessionGeneration) {
+        return { error: 'Session invalidated during refresh' };
+      }
       if (refreshResult.error || !refreshResult.data?.access_token) {
         await this.signOut();
         return { error: refreshResult.error?.message || 'Token refresh failed' };
@@ -926,6 +970,13 @@ export class DirectusAuthProvider implements IAuthProvider {
 
       this.session = updatedSession;
       await this.storeSession(updatedSession.user, updatedSession.expires_at, this.isCookieBackedSession(updatedSession));
+      // signOut() can invalidate the refresh while SecureStore is still
+      // persisting the refreshed session. Re-check after the await so a stale
+      // write cannot be published or survive logout on the next app launch.
+      if (refreshGeneration !== this.sessionGeneration) {
+        if (!this.session) await this.clearStoredSession();
+        return { error: 'Session invalidated during refresh' };
+      }
       this.setupRefreshTimer();
       this.notifyStateChange(updatedSession);
 
