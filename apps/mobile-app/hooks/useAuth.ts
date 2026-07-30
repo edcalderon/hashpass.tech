@@ -754,6 +754,19 @@ export const useAuth = () => {
     if (!supabaseAuthSubscribed) {
       supabaseAuthSubscribed = true;
       supabase.auth.onAuthStateChange((_event: string, session: any) => {
+        // Keep supabaseBootstrapPromise's cached value current, every time --
+        // signOut() above resolves it to a signed-out value so an immediate
+        // fresh useAuth() mount doesn't replay a stale pre-logout session, but
+        // that same resolved value would otherwise be replayed forever: the
+        // `supabaseBootstrapPromise ?? (supabaseBootstrapPromise = ...)` dedupe
+        // in startLegacyBootstrap() only ever re-fetches when the cache is
+        // null, and a resolved promise is never null. Without this, signing
+        // back in after a sign-out (OTP/magic link) leaves every later
+        // useAuth() mount's own bootstrap reading the old "signed out" cache,
+        // overwriting the correct state this same callback just broadcast and
+        // bouncing the user back to the auth screen.
+        supabaseBootstrapPromise = Promise.resolve({ data: { session }, error: null } as any);
+
         broadcastDbUserId(session?.user?.id ?? null);
         // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
         if (!sharedSupabaseBootstrapFinished && !session?.user) {
