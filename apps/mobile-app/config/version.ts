@@ -22,27 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607300838, // Updated to current timestamp
+  buildNumber: 202607301604, // Updated to current timestamp
   releaseDate: '2026-07-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'guard dashboard translations',
-    'add cross-platform Hashpass support SDK'
+    // No new features
   ],
   bugfixes: [
-    'clear release typecheck errors',
-    'preserve SDK cancellation and publish paths',
-    'open club legal links in new tab',
-    'link club legal pages',
-    'enable pnpm before club pages build'
+    'type the onPassesLoaded callback param in PassesDisplayBoundary'
   ],
   breakingChanges: [],
-  notes: 'guard dashboard translations; add cross-platform Hashpass support SDK; clear release typecheck errors; preserve SDK cancellation and publish paths; open club legal links in new tab; link club legal pages; enable pnpm before club pages build'
+  notes: 'type the onPassesLoaded callback param in PassesDisplayBoundary'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.290': {
+    version: '1.8.290',
+    buildNumber: 202607301604,
+    releaseDate: '2026-07-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'type the onPassesLoaded callback param in PassesDisplayBoundary'
+    ],
+    breakingChanges: [],
+    notes: 'type the onPassesLoaded callback param in PassesDisplayBoundary'
+  },
   '1.8.289': {
     version: '1.8.289',
     buildNumber: 202607300838,
