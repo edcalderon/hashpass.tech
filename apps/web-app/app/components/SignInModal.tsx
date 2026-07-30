@@ -15,7 +15,8 @@ interface SignInModalProps {
 // hashpass://auth/connect?source=web will open the app's auth flow.
 const QR_VALUE = 'hashpass://auth/connect?source=web&ref=landing';
 const APP_STORE_URL = 'https://apps.apple.com/app/hashpass';
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.hashpass';
+const PLAY_STORE_URL =
+  'https://play.google.com/store/apps/details?id=com.hashpass.tech&hl=en-US&ah=RlHQxhHQladajDZn9ZGTm7_ucMs';
 const WEB_APP_URL = 'https://hashpass.club';
 
 export function SignInModal({ open, onClose }: SignInModalProps) {

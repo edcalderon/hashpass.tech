@@ -10,6 +10,7 @@ import {
   GalleryCol,
   GalleryContainer,
 } from '@/components/blocks/animated-gallery';
+import { DownloadShowcase } from '@/components/ui/download-options-section';
 
 // ── HASHPASS event / club / membership photography ───────────────────────────
 const COL_1 = [
@@ -206,6 +207,7 @@ export function HeroSection() {
           transition: 'background-color 0.4s',
         }}
       >
+        <DownloadShowcase />
         {/* Radial glow 1 — top-right, blue/lavender, synced to hero accent */}
         <div
           aria-hidden

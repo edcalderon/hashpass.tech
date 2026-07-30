@@ -200,6 +200,38 @@ video {
   animation: fade-in 0.4s ease both;
 }
 
+/* ─── Gallery download call-to-action ───────────────────────── */
+@keyframes download-card-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes download-arrow-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+.download-showcase__card {
+  animation: download-card-float 5s ease-in-out infinite;
+}
+
+.download-showcase__app-icon {
+  position: relative;
+  animation: download-card-float 3.6s ease-in-out infinite reverse;
+}
+
+.download-showcase__arrow {
+  animation: download-arrow-bounce 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .download-showcase__card,
+  .download-showcase__app-icon,
+  .download-showcase__arrow {
+    animation: none;
+  }
+}
+
 /* ─── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
