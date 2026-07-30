@@ -911,10 +911,15 @@ export class DirectusAuthProvider implements IAuthProvider {
     }
     if (!this.session || !this.isCookieBackedSession(this.session)) return null;
 
+    const refreshGeneration = this.sessionGeneration;
     try {
       const refreshResult = await this.apiClient.refreshSessionWithCookies();
       const tokens = refreshResult.data;
       if (!tokens?.access_token) return null;
+
+      if (refreshGeneration !== this.sessionGeneration || !this.session) {
+        return null;
+      }
 
       const refreshedSession: AuthSession = {
         ...this.session,
@@ -924,6 +929,10 @@ export class DirectusAuthProvider implements IAuthProvider {
       };
       this.session = refreshedSession;
       await this.storeSession(refreshedSession.user, refreshedSession.expires_at, false);
+      if (refreshGeneration !== this.sessionGeneration) {
+        if (!this.session) await this.clearStoredSession();
+        return null;
+      }
       this.setupRefreshTimer();
       this.notifyStateChange(refreshedSession);
       return tokens.access_token;
@@ -961,6 +970,13 @@ export class DirectusAuthProvider implements IAuthProvider {
 
       this.session = updatedSession;
       await this.storeSession(updatedSession.user, updatedSession.expires_at, this.isCookieBackedSession(updatedSession));
+      // signOut() can invalidate the refresh while SecureStore is still
+      // persisting the refreshed session. Re-check after the await so a stale
+      // write cannot be published or survive logout on the next app launch.
+      if (refreshGeneration !== this.sessionGeneration) {
+        if (!this.session) await this.clearStoredSession();
+        return { error: 'Session invalidated during refresh' };
+      }
       this.setupRefreshTimer();
       this.notifyStateChange(updatedSession);
 

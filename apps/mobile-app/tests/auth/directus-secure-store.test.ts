@@ -84,4 +84,43 @@ describe('Directus native secure storage', () => {
     );
     expect(mockDeleteItemAsync).toHaveBeenCalledWith('hashpass_directus_session');
   });
+
+  it('does not publish or retain a refresh that finishes after sign-out', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { DirectusAuthProvider } = require('../../../../packages/auth/src/providers/directus');
+    const provider = new DirectusAuthProvider('https://sso.hashpass.co');
+    const session = {
+      user: nativeUser,
+      access_token: 'old-access-token',
+      refresh_token: 'old-refresh-token',
+      expires_at: Date.now() + 60_000,
+    };
+    (provider as any).session = session;
+
+    mockDirectusClient.refreshToken.mockResolvedValue({
+      data: { access_token: 'new-access-token', refresh_token: 'new-refresh-token', expires: 3600 },
+    });
+
+    let releaseStore: () => void = () => undefined;
+    const storePending = new Promise<void>((resolve) => {
+      releaseStore = resolve;
+    });
+    mockSetItemAsync.mockImplementationOnce(async () => {
+      await storePending;
+      return undefined;
+    });
+
+    const refreshPromise = provider.refreshSession();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mockSetItemAsync).toHaveBeenCalled();
+
+    const signOutPromise = provider.signOut();
+    releaseStore();
+    await signOutPromise;
+    const result = await refreshPromise;
+
+    expect(result).toEqual({ error: 'Session invalidated during refresh' });
+    expect((provider as any).session).toBeNull();
+    expect(mockDeleteItemAsync).toHaveBeenCalled();
+  });
 });
