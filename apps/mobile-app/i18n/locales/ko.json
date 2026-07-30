@@ -546,6 +546,7 @@
   "passes": {
     "title": "나의 이벤트 패스",
     "loading": "패스 정보를 불러오는 중...",
+    "loadingSubtitle": "잠시만 기다려 주세요.",
     "showFullDetails": "전체 상세보기",
     "alert": {
       "createdTitle": "패스가 생성되었습니다! 🎉",
