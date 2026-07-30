@@ -32,8 +32,8 @@ export function Footer() {
     {
       title: t('legal'),
       links: [
-        { label: t('privacy'), href: '#' },
-        { label: t('terms'), href: '#' },
+        { label: t('privacy'), href: 'https://hashpass.tech/privacy' },
+        { label: t('terms'), href: 'https://hashpass.tech/terms' },
       ],
     },
   ];
