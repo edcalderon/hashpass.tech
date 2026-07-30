@@ -113,7 +113,9 @@
       "loadingRequests": "Loading your requests...",
       "loadingSlots": "Loading slots...",
       "loadingData": "Loading data...",
-      "pleaseWait": "Please wait..."
+      "pleaseWait": "Please wait...",
+      "startingHashpass": "Starting HASHPASS",
+      "openingHashpass": "Opening HASHPASS"
     }
   },
   "auth": {

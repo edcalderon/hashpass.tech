@@ -105,7 +105,18 @@
     "profile": "Perfil"
   },
   "common": {
-    "back": "Voltar"
+    "back": "Voltar",
+    "loading": {
+      "default": "Carregando...",
+      "retrying": "Tentando novamente... ({retryCount}/3)",
+      "retryHint": "Isso está demorando mais do que o esperado, aguarde...",
+      "loadingRequests": "Carregando suas solicitações...",
+      "loadingSlots": "Carregando horários...",
+      "loadingData": "Carregando dados...",
+      "pleaseWait": "Aguarde...",
+      "startingHashpass": "Iniciando o HASHPASS",
+      "openingHashpass": "Abrindo o HASHPASS"
+    }
   },
   "auth": {
     "title": "Bem-vindo ao",

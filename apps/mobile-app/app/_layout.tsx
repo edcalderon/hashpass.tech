@@ -26,6 +26,7 @@ import SoftUpdateBanner from '../components/SoftUpdateBanner';
 import { useNativeUpdateCheck } from '../hooks/useNativeUpdateCheck';
 import * as SplashScreen from 'expo-splash-screen';
 import { I18nProvider } from '../providers/I18nProvider';
+import { useTranslation } from '../i18n/i18n';
 import { CopilotProvider } from '@lib/copilot-shim';
 import { checkVersionOnStart } from '../lib/version-checker';
 import LoadingScreen from '../components/LoadingScreen';
@@ -42,6 +43,7 @@ import {
 } from '../lib/native-navigation-options';
 import packageJson from '../package.json';
 import * as Sentry from '@sentry/react-native';
+import * as Updates from 'expo-updates';
 
 const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
   ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
@@ -133,6 +135,7 @@ function RootLayout() {
 function ThemedContent() {
   // All hooks must be called unconditionally at the top level
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation('common');
   const pathname = usePathname();
   const segments = useSegments();
   const router = useRouter();
@@ -217,6 +220,62 @@ function ThemedContent() {
     const nativeEnabled = shouldUseNativeGoogleSignin(googleWebClientId);
     if (!nativeEnabled) return;
     void configureNativeGoogleSignin(googleWebClientId);
+  }, []);
+
+  // Report OTA (EAS Update) state to Sentry on every native launch. This is
+  // the standard way to track OTA rollout/adoption without building custom
+  // backend infrastructure: tagging every event with updateId/runtimeVersion/
+  // channel lets the Sentry dashboard be filtered or alerted on by those
+  // facets -- e.g. "what fraction of active sessions are still on an old
+  // updateId" or "how many never fetched an OTA update at all"
+  // (ota_embedded_launch=true). Before this, that data only existed inside
+  // VersionDetailsModal, readable one device at a time by whoever manually
+  // opened it -- there was no aggregate visibility.
+  //
+  // Also surfaces the result of the automatic background update check
+  // (expo-updates checks for and downloads an update on every cold start;
+  // nothing previously read the result), so a real failed OTA fetch becomes
+  // a trackable Sentry issue instead of a silent no-op.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    Sentry.setTags({
+      ota_update_id: Updates.updateId ?? 'embedded',
+      ota_runtime_version: Updates.runtimeVersion ?? 'unknown',
+      ota_channel: Updates.channel ?? 'unknown',
+      ota_embedded_launch: String(Updates.isEmbeddedLaunch),
+    });
+
+    const sentryLevelFor = (
+      level: Updates.UpdatesLogEntryLevel
+    ): 'fatal' | 'error' | 'warning' | undefined => {
+      switch (level) {
+        case Updates.UpdatesLogEntryLevel.FATAL:
+          return 'fatal';
+        case Updates.UpdatesLogEntryLevel.ERROR:
+          return 'error';
+        case Updates.UpdatesLogEntryLevel.WARN:
+          return 'warning';
+        default:
+          return undefined;
+      }
+    };
+
+    Updates.readLogEntriesAsync(5 * 60 * 1000)
+      .then((entries) => {
+        entries.forEach((entry) => {
+          const sentryLevel = sentryLevelFor(entry.level);
+          if (!sentryLevel) return;
+          console.warn(`[OTA] ${entry.code}: ${entry.message}`);
+          Sentry.captureMessage(`[OTA] ${entry.code}: ${entry.message}`, {
+            level: sentryLevel,
+            tags: { ota_log_code: entry.code },
+          });
+        });
+      })
+      .catch((error) => {
+        console.warn('[OTA] Failed to read update log entries:', error);
+      });
   }, []);
 
   // Ensure new users get default passes created
@@ -363,7 +422,7 @@ function ThemedContent() {
     return (
       <LoadingScreen
         fullScreen
-        message="Starting HASHPASS"
+        message={t('loading.startingHashpass') || 'Starting HASHPASS'}
         subtitle={startupStamp}
       />
     );

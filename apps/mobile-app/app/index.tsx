@@ -2,6 +2,7 @@ import { Redirect } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import LoadingScreen from '../components/LoadingScreen';
 import packageJson from '../package.json';
+import { useTranslation } from '../i18n/i18n';
 
 const startupStamp = process.env.EXPO_PUBLIC_RELEASE_COMMIT
   ? `v${packageJson.version} · ${process.env.EXPO_PUBLIC_RELEASE_COMMIT}`
@@ -11,12 +12,13 @@ const DASHBOARD_EXPLORE_ROUTER_PATH = '/(shared)/dashboard/explore';
 
 export default function Index() {
   const { isLoading, isLoggedIn, user } = useAuth();
+  const { t } = useTranslation('common');
 
   if (isLoading) {
     return (
       <LoadingScreen
         fullScreen
-        message="Opening HASHPASS"
+        message={t('loading.openingHashpass') || 'Opening HASHPASS'}
         subtitle={startupStamp}
       />
     );
