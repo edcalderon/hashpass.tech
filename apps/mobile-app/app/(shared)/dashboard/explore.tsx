@@ -304,12 +304,14 @@ export default function ExploreScreen() {
   };
 
   const getEventBadgeLabel = (eventData: EventInfo): string => {
-    if (eventData.tour?.role === 'archive') return 'Past Event';
+    if (eventData.tour?.role === 'archive') return t({ id: 'explore.banner.pastEvent', message: 'Past Event' });
     // Hub and stops share the same "BSL ON TOUR" badge -- Peru/Chile/Colombia
     // are stops on the same 2026 tour as the hub, not separate campaigns, so
     // they carry the same brand badge instead of falling back to each
     // event's own name.
-    if (eventData.tour?.role === 'hub' || eventData.tour?.role === 'stop') return 'BSL ON TOUR';
+    if (eventData.tour?.role === 'hub' || eventData.tour?.role === 'stop') {
+      return t({ id: 'explore.banner.bslOnTour', message: 'BSL ON TOUR' });
+    }
     return eventData.name;
   };
 
@@ -509,9 +511,9 @@ export default function ExploreScreen() {
           /* GLOBAL EXPLORER MODE, nothing selected yet (hashpass.tech / main tenant) */
           /* Shows the generic HASHPASS platform banner until an event is tapped below */
           <EventBanner
-            title="HASHPASS Events"
-            subtitle="Discover and explore all available events"
-            date="Global Event Explorer"
+            title={t({ id: 'explore.global.title', message: 'HASHPASS Events' })}
+            subtitle={t({ id: 'explore.global.subtitle', message: 'Discover and explore all available events' })}
+            date={t({ id: 'explore.global.date', message: 'Global Event Explorer' })}
             backgroundColor="#6366f1"
             showCountdown={false}
             showLiveIndicator={false}
@@ -549,7 +551,10 @@ export default function ExploreScreen() {
                   {t({ id: 'explore.banner.exploreAllEvents', message: 'Explore All Events' })}
                 </Text>
                 <Text style={styles.sectionDescription}>
-                  Select an event to view its speakers, agenda, and quick access
+                  {t({
+                    id: 'explore.banner.exploreAllEventsDescription',
+                    message: 'Select an event to view its speakers, agenda, and quick access',
+                  })}
                 </Text>
                 <View>
                   {availableEvents.map((eventData: EventInfo, index: number) => renderEventListRow(eventData, index))}
@@ -612,7 +617,14 @@ export default function ExploreScreen() {
 
         {/* User Passes - Show if logged in */}
         {isLoggedIn && (
-          <CopilotStep text="This is where you can view your event passes. Your passes show your ticket type and access level for the event." order={8} name="yourPasses">
+          <CopilotStep
+            text={t({
+              id: 'explore.tutorial.yourPasses',
+              message: 'This is where you can view your event passes. Your passes show your ticket type and access level for the event.',
+            })}
+            order={8}
+            name="yourPasses"
+          >
             <CopilotView style={{ paddingHorizontal: 20, paddingTop: 20 }}>
               <Text style={styles.sectionTitle}>{t({ id: 'explore.yourPasses', message: 'Your Passes' })}</Text>
               {/* Deliberately unscoped: the wallet shows every pass the user
@@ -635,7 +647,14 @@ export default function ExploreScreen() {
             for the tenant-scoped explorer (has one from initial state); in the
             global explorer this only appears after tapping an event above. */}
         {Boolean(selectedEvent) && (
-          <CopilotStep text="Quick Access cards let you quickly navigate to important sections like Speakers, Agenda, Networking Center, and Event Information. Swipe horizontally to see all options." order={9} name="quickAccess">
+          <CopilotStep
+            text={t({
+              id: 'explore.tutorial.quickAccess',
+              message: 'Quick Access cards let you quickly navigate to important sections like Speakers, Agenda, Networking Center, and Event Information. Swipe horizontally to see all options.',
+            })}
+            order={9}
+            name="quickAccess"
+          >
             <CopilotView style={styles.section}>
               <Text style={styles.sectionTitle}>{t({ id: 'explore.quickAccess', message: 'Quick Access' })}</Text>
             <View style={styles.quickAccessContainer}>

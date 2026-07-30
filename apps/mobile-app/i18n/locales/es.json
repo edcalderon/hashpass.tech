@@ -557,11 +557,18 @@
   "explore": {
     "noEvent": "No hay evento disponible",
     "noSelection": "Ningún evento seleccionado",
+    "global": {
+      "title": "Eventos HASHPASS",
+      "subtitle": "Descubre y explora todos los eventos disponibles",
+      "date": "Explorador Global de Eventos"
+    },
     "banner": {
       "title": "Blockchain Summit Latam 2025",
       "subtitle": "12-14 de Noviembre de 2025 • Universidad EAFIT, Medellín",
       "date": "12-14 de Noviembre de 2025",
       "exploreAllEvents": "Explorar Todos los Eventos",
+      "exploreAllEventsDescription": "Selecciona un evento para ver sus oradores, agenda y acceso rápido",
+      "bslOnTour": "BSL EN GIRA",
       "exploreMoreEvents": "Explorar Más Eventos",
       "pastEvent": "Evento Pasado",
       "archivedEdition": "Evento Pasado / Edición Archivada",
@@ -574,6 +581,10 @@
     "selectEvent": "Seleccionar Evento",
     "yourPasses": "Tus Pases",
     "quickAccess": "Accesos Rápidos",
+    "tutorial": {
+      "yourPasses": "Aquí puedes ver tus pases del evento. Tus pases muestran el tipo de entrada y el nivel de acceso al evento.",
+      "quickAccess": "Las tarjetas de acceso rápido te llevan a secciones importantes como Oradores, Agenda, Centro de Networking e Información del Evento. Desliza horizontalmente para ver todas las opciones."
+    },
     "quick": {
       "speakers": {
         "title": "Oradores",
@@ -644,6 +655,13 @@
     "passNumber": "Pase #{pass_number}",
     "noPassFound": "No se encontraron pases",
     "contactSupport": "Contacta con soporte para obtener tus pases del evento",
+    "loadTimeoutTitle": "Los pases tardan demasiado en cargar",
+    "loadTimeoutMessage": "Comprueba tu conexión e inténtalo de nuevo.",
+    "loadErrorTitle": "No se pudieron cargar tus pases",
+    "loadErrorMessage": "No pudimos acceder a la información de tus pases en este momento.",
+    "sessionPendingTitle": "La sesión de tus pases todavía está cargando",
+    "sessionPendingMessage": "Tu cuenta todavía se está conectando. Inténtalo de nuevo en un momento.",
+    "tryAgain": "Intentar de nuevo",
     "noPassMessage": {
       "demo": "Necesitas un pase para solicitar reuniones con los ponentes. Sin un pase, no puedes enviar solicitudes de reunión. Elige tu tipo de pase:",
       "production": "Necesitas un pase válido del evento para solicitar reuniones con los ponentes. Por favor, compra un pase para continuar."
@@ -1042,6 +1060,12 @@
       "eventConfirmedMessage": "Este evento ha sido agregado a tu agenda",
       "eventUnconfirmed": "Evento no confirmado",
       "eventUnconfirmedMessage": "Este evento ha sido eliminado de tu agenda confirmada",
+      "addedToAgenda": "Añadido a la agenda",
+      "addedToAgendaMessage": "Esta sesión ahora está en tu agenda",
+      "removedFromAgenda": "Eliminado de la agenda",
+      "removedFromAgendaMessage": "Esta sesión se eliminó de tu agenda",
+      "signInToManageAgenda": "Inicia sesión para gestionar tu agenda",
+      "signInToManageFavorites": "Inicia sesión para gestionar tus favoritos",
       "error": "Error",
       "confirmError": "Error al confirmar el evento",
       "unconfirmError": "Error al desconfirmar el evento",
@@ -1053,6 +1077,11 @@
     "actions": {
       "addToFavorites": "Añadir a favoritos",
       "removeFromFavorites": "Quitar de favoritos",
+      "favorite": "Favorito",
+      "favorited": "En favoritos",
+      "addToAgenda": "Añadir a la agenda",
+      "removeFromAgenda": "Quitar de la agenda",
+      "onAgenda": "En la agenda",
       "markAttending": "Marcar como asistiendo",
       "unmarkAttending": "Desmarcar asistencia"
     },
