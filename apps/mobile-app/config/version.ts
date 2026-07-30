@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607300837, // Updated to current timestamp
+  buildNumber: 202607300838, // Updated to current timestamp
   releaseDate: '2026-07-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -43,6 +43,26 @@ export const CURRENT_VERSION: VersionInfo = {
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.289': {
+    version: '1.8.289',
+    buildNumber: 202607300838,
+    releaseDate: '2026-07-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'guard dashboard translations',
+      'add cross-platform Hashpass support SDK'
+    ],
+    bugfixes: [
+      'clear release typecheck errors',
+      'preserve SDK cancellation and publish paths',
+      'open club legal links in new tab',
+      'link club legal pages',
+      'enable pnpm before club pages build'
+    ],
+    breakingChanges: [],
+    notes: 'guard dashboard translations; add cross-platform Hashpass support SDK; clear release typecheck errors; preserve SDK cancellation and publish paths; open club legal links in new tab; link club legal pages; enable pnpm before club pages build'
+  },
   '1.8.288': {
     version: '1.8.288',
     buildNumber: 202607300837,
