@@ -13,7 +13,6 @@ const downloadKeys = [
   'downloadAriaLabel',
 ] as const;
 
-const localizedKeys = downloadKeys.filter((key) => key !== 'googlePlay');
 const locales = Object.keys(catalogs) as SupportedLocale[];
 const english = createTranslator(catalogs.en);
 
@@ -28,7 +27,7 @@ for (const locale of locales) {
       throw new Error(`${locale} is missing ${translationKey}`);
     }
 
-    if (locale !== 'en' && localizedKeys.includes(key) && value === english(translationKey)) {
+    if (locale !== 'en' && key !== 'googlePlay' && value === english(translationKey)) {
       throw new Error(`${locale} still uses the English value for ${translationKey}`);
     }
   }
