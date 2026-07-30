@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from '@hashpass/i18n';
 import Image from 'next/image';
 import { Download, Sparkles } from 'lucide-react';
 
@@ -19,6 +22,8 @@ function GooglePlayIcon() {
 
 /** Download call-to-action designed to float over the landing-page gallery. */
 export function DownloadShowcase() {
+  const { t } = useTranslation('download');
+
   return (
     <section
       aria-labelledby="download-hashpass-title"
@@ -37,29 +42,29 @@ export function DownloadShowcase() {
           </div>
 
           <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-blue-500/15 bg-blue-500/10 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
-            <Sparkles className="h-3 w-3" /> Available now
+            <Sparkles className="h-3 w-3" /> {t('badge')}
           </div>
           <h2 id="download-hashpass-title" className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Your next experience is one tap away.
+            {t('title')}
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Keep your passes, communities, and event connections with you. Download HASHPASS free on Android.
+            {t('description')}
           </p>
 
           <div className="mt-5 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
             <Button asChild size="lg" className="h-14 rounded-2xl bg-slate-950 px-6 !text-white shadow-xl shadow-blue-950/15 hover:bg-slate-800 dark:bg-white dark:!text-slate-950 dark:hover:bg-slate-100">
-              <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" aria-label="Get HASHPASS on Google Play">
+              <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" aria-label={t('googlePlayAriaLabel')}>
                 <GooglePlayIcon />
                 <span className="ml-3 flex flex-col items-start leading-none">
-                  <span className="text-[9px] font-medium uppercase tracking-[0.14em] opacity-70">Get it on</span>
-                  <span className="mt-1 text-base font-semibold">Google Play</span>
+                  <span className="text-[9px] font-medium uppercase tracking-[0.14em] opacity-70">{t('getItOn')}</span>
+                  <span className="mt-1 text-base font-semibold">{t('googlePlay')}</span>
                 </span>
               </a>
             </Button>
             <Button asChild size="lg" variant="outline" className="h-14 rounded-2xl border-blue-500/25 bg-white/55 px-6 !text-slate-900 shadow-lg shadow-blue-950/5 backdrop-blur-md hover:bg-white/90 dark:border-white/15 dark:bg-slate-900/80 dark:!text-white dark:hover:bg-slate-900">
-              <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer">
+              <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" aria-label={t('downloadAriaLabel')}>
                 <Image src="/hashpass-club-favicon/icon-192-v2.png" alt="" width={28} height={28} />
-                <span className="ml-3 font-semibold">Download HASHPASS</span>
+                <span className="ml-3 font-semibold">{t('downloadHashpass')}</span>
                 <Download className="ml-2 h-4 w-4 download-showcase__arrow" />
               </a>
             </Button>

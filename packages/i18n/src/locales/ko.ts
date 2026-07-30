@@ -21,6 +21,16 @@ export const ko = {
     scrollDown: '스크롤',
     scrollUp: '위로',
   },
+  download: {
+    badge: '지금 이용 가능',
+    title: '다음 경험이 단 한 번의 탭으로 시작됩니다.',
+    description: '패스, 커뮤니티, 이벤트 인맥을 언제나 함께하세요. Android에서 HASHPASS를 무료로 다운로드하세요.',
+    getItOn: '다운로드',
+    googlePlay: 'Google Play',
+    googlePlayAriaLabel: 'Google Play에서 HASHPASS 다운로드',
+    downloadHashpass: 'HASHPASS 다운로드',
+    downloadAriaLabel: 'Google Play에서 HASHPASS 앱 다운로드',
+  },
   stats: {
     activeMembers: '활성 회원',
     activeMembersValue: '2,418',
