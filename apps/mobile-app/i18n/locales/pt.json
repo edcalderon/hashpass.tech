@@ -464,6 +464,7 @@
   "passes": {
     "title": "Seus passes de evento",
     "loading": "Carregando informações do seu passe...",
+    "loadingSubtitle": "Isso deve levar apenas um momento.",
     "showFullDetails": "Mostrar todos os detalhes",
     "alert": {
       "createdTitle": "Passe criado! 🎉",
@@ -504,6 +505,13 @@
     "passNumber": "Passe #{pass_number}",
     "noPassFound": "Nenhum passe encontrado",
     "contactSupport": "Entre em contato com o suporte para obter seus passes de evento",
+    "loadTimeoutTitle": "Os passes demoraram muito para carregar",
+    "loadTimeoutMessage": "Verifique sua conexão e tente novamente.",
+    "loadErrorTitle": "Não foi possível carregar seus passes",
+    "loadErrorMessage": "Não conseguimos acessar as informações do seu passe no momento.",
+    "sessionPendingTitle": "Sua sessão de passe ainda está carregando",
+    "sessionPendingMessage": "Sua conta ainda está sendo conectada. Tente novamente em instantes.",
+    "tryAgain": "Tentar novamente",
     "noPassMessage": {
       "demo": "Você precisa de um passe para solicitar reuniões com palestrantes. Sem um passe, você não pode enviar solicitações de reunião. Escolha seu tipo de passe:",
       "production": "Você precisa de um passe de evento válido para solicitar reuniões com palestrantes. Por favor, compre um passe para continuar."

@@ -616,6 +616,7 @@
   "passes": {
     "title": "Your Event Passes",
     "loading": "Loading your pass information...",
+    "loadingSubtitle": "This should only take a moment.",
     "showFullDetails": "Show Full Details",
     "alert": {
       "createdTitle": "Pass Created! 🎉",

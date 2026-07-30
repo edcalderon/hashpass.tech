@@ -465,6 +465,7 @@
   "passes": {
     "title": "Vos passes d'événement",
     "loading": "Chargement des informations de votre passe...",
+    "loadingSubtitle": "Cela ne devrait prendre qu'un instant.",
     "showFullDetails": "Afficher tous les détails",
     "alert": {
       "createdTitle": "Passe créé ! 🎉",
@@ -505,6 +506,13 @@
     "passNumber": "Passe #{pass_number}",
     "noPassFound": "Aucun passe trouvé",
     "contactSupport": "Contactez le support pour obtenir vos passes d'événement",
+    "loadTimeoutTitle": "Le chargement des passes a pris trop de temps",
+    "loadTimeoutMessage": "Vérifiez votre connexion et réessayez.",
+    "loadErrorTitle": "Impossible de charger vos passes",
+    "loadErrorMessage": "Nous n'avons pas pu accéder à vos informations de passe pour le moment.",
+    "sessionPendingTitle": "Votre session de passe est en cours de chargement",
+    "sessionPendingMessage": "Votre compte est en cours de connexion. Réessayez dans un instant.",
+    "tryAgain": "Réessayer",
     "noPassMessage": {
       "demo": "Vous avez besoin d'un passe pour demander des réunions avec les conférenciers. Sans passe, vous ne pouvez pas envoyer de demandes de réunion. Choisissez votre type de passe :",
       "production": "Vous avez besoin d'un passe d'événement valide pour demander des réunions avec les conférenciers. Veuillez acheter un passe pour continuer."

@@ -464,6 +464,7 @@
   "passes": {
     "title": "Ihre Event-Pässe",
     "loading": "Laden Ihrer Pass-Informationen...",
+    "loadingSubtitle": "Dies sollte nur einen Moment dauern.",
     "showFullDetails": "Alle Details anzeigen",
     "alert": {
       "createdTitle": "Pass erstellt! 🎉",
@@ -504,6 +505,13 @@
     "passNumber": "Pass #{pass_number}",
     "noPassFound": "Keine Pässe gefunden",
     "contactSupport": "Kontaktieren Sie den Support, um Ihre Event-Pässe zu erhalten",
+    "loadTimeoutTitle": "Das Laden der Pässe hat zu lange gedauert",
+    "loadTimeoutMessage": "Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "loadErrorTitle": "Deine Pässe konnten nicht geladen werden",
+    "loadErrorMessage": "Wir konnten deine Pass-Informationen gerade nicht erreichen.",
+    "sessionPendingTitle": "Deine Pass-Sitzung wird noch geladen",
+    "sessionPendingMessage": "Dein Konto wird noch verbunden. Versuche es in einem Moment erneut.",
+    "tryAgain": "Erneut versuchen",
     "noPassMessage": {
       "demo": "Sie benötigen einen Pass, um Meetings mit Rednern anzufragen. Ohne Pass können Sie keine Meeting-Anfragen senden. Wählen Sie Ihren Pass-Typ:",
       "production": "Sie benötigen einen gültigen Event-Pass, um Meetings mit Rednern anzufragen. Bitte kaufen Sie einen Pass, um fortzufahren."

@@ -1,3 +1,7 @@
+## [1.8.290](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.289...v1.8.290) (2026-07-30)
+### Released
+- type the onPassesLoaded callback param in PassesDisplayBoundary
+
 ## [1.8.289](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.286...v1.8.289) (2026-07-30)
 
 

@@ -191,19 +191,34 @@ function PassesDisplayInner({
   // Dashboard mode never reaches here: PassesDisplayBoundary routes it to
   // PassesWallet before PassesDisplayInner renders.
   if (loading || initialLoad) {
+    // Mirrors the "no passes found" card below (icon-and-title row, then a
+    // message paragraph) instead of a stacked spinner+label, so loading and
+    // empty read as the same visual family within this component.
     return (
-      <View style={{ 
-        padding: 20, 
-        alignItems: 'center',
+      <View style={{
+        padding: 20,
         backgroundColor: colors.background.paper,
         borderRadius: 12,
         margin: 16,
         borderWidth: 1,
         borderColor: colors.divider
       }}>
-        <ActivityIndicator size="small" color={colors.primary} />
-        <Text style={{ color: colors.text.secondary, marginTop: 8 }}>
-          {t({ id: 'passes.loading', message: 'Loading your pass information...' })}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={{
+            fontSize: 18,
+            fontWeight: '600',
+            color: colors.text.primary,
+            marginLeft: 8
+          }}>
+            {t({ id: 'passes.loading', message: 'Loading your pass information...' })}
+          </Text>
+        </View>
+        <Text style={{
+          color: colors.text.secondary,
+          lineHeight: 20
+        }}>
+          {t({ id: 'passes.loadingSubtitle', message: 'This should only take a moment.' })}
         </Text>
       </View>
     );
@@ -962,7 +977,7 @@ class PassesDisplayBoundary extends React.Component<PassesDisplayProps, PassesDi
           eventIds={this.props.eventIds}
           refreshTrigger={this.props.refreshTrigger}
           layout={this.props.walletLayout}
-          onPassesLoaded={(passes) => this.props.onPassInfoLoaded?.(passes[0] ?? null)}
+          onPassesLoaded={(passes: PassInfo[]) => this.props.onPassInfoLoaded?.(passes[0] ?? null)}
         />
       );
     }
