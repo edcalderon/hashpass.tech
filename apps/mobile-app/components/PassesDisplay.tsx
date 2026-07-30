@@ -977,7 +977,7 @@ class PassesDisplayBoundary extends React.Component<PassesDisplayProps, PassesDi
           eventIds={this.props.eventIds}
           refreshTrigger={this.props.refreshTrigger}
           layout={this.props.walletLayout}
-          onPassesLoaded={(passes) => this.props.onPassInfoLoaded?.(passes[0] ?? null)}
+          onPassesLoaded={(passes: PassInfo[]) => this.props.onPassInfoLoaded?.(passes[0] ?? null)}
         />
       );
     }
