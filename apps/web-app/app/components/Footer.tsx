@@ -126,6 +126,9 @@ export function Footer() {
                   <li key={link.label}>
                     <a
                       href={link.href}
+                      {...(link.href.startsWith('http')
+                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                        : {})}
                       style={{
                         fontSize: 'clamp(13px, 1.5vw, 14px)',
                         color: 'var(--text-secondary)',
