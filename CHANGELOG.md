@@ -1,3 +1,51 @@
+## [1.8.289](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.286...v1.8.289) (2026-07-30)
+
+
+### Bug Fixes
+
+* enable pnpm before club pages build ([88d3c42](https://github.com/hashpass-tech/hashpass.tech/commit/88d3c4288a475336500e57e4dc9bec81b135cd72))
+* link club legal pages ([120750a](https://github.com/hashpass-tech/hashpass.tech/commit/120750a925537b756b5b0ec736aac4ed56e5a931))
+* open club legal links in new tab ([19023fe](https://github.com/hashpass-tech/hashpass.tech/commit/19023fe92f315bec85fdd7e4f73cf9482d66326f))
+
+
+### Features
+
+* add cross-platform Hashpass support SDK ([af1efa0](https://github.com/hashpass-tech/hashpass.tech/commit/af1efa00e55299c0fb0abd841d8b50578e11e271))
+### Release Highlights
+- guard dashboard translations; add cross-platform Hashpass support SDK; clear release typecheck errors; preserve SDK cancellation and publish paths; open club legal links in new tab; link club legal pages; enable pnpm before club pages build
+
+## [1.8.288](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.286...v1.8.288) (2026-07-30)
+
+
+### Bug Fixes
+
+* enable pnpm before club pages build ([88d3c42](https://github.com/hashpass-tech/hashpass.tech/commit/88d3c4288a475336500e57e4dc9bec81b135cd72))
+* link club legal pages ([120750a](https://github.com/hashpass-tech/hashpass.tech/commit/120750a925537b756b5b0ec736aac4ed56e5a931))
+* open club legal links in new tab ([19023fe](https://github.com/hashpass-tech/hashpass.tech/commit/19023fe92f315bec85fdd7e4f73cf9482d66326f))
+
+
+### Features
+
+* add cross-platform Hashpass support SDK ([af1efa0](https://github.com/hashpass-tech/hashpass.tech/commit/af1efa00e55299c0fb0abd841d8b50578e11e271))
+### Release Highlights
+- guard dashboard translations; add cross-platform Hashpass support SDK; clear release typecheck errors; preserve SDK cancellation and publish paths; open club legal links in new tab; link club legal pages; enable pnpm before club pages build
+
+## [1.8.287](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.286...v1.8.287) (2026-07-30)
+
+
+### Bug Fixes
+
+* enable pnpm before club pages build ([88d3c42](https://github.com/hashpass-tech/hashpass.tech/commit/88d3c4288a475336500e57e4dc9bec81b135cd72))
+* link club legal pages ([120750a](https://github.com/hashpass-tech/hashpass.tech/commit/120750a925537b756b5b0ec736aac4ed56e5a931))
+* open club legal links in new tab ([19023fe](https://github.com/hashpass-tech/hashpass.tech/commit/19023fe92f315bec85fdd7e4f73cf9482d66326f))
+
+
+### Features
+
+* add cross-platform Hashpass support SDK ([af1efa0](https://github.com/hashpass-tech/hashpass.tech/commit/af1efa00e55299c0fb0abd841d8b50578e11e271))
+### Release Highlights
+- guard dashboard translations; add cross-platform Hashpass support SDK; open club legal links in new tab; link club legal pages; enable pnpm before club pages build
+
 ## [1.8.286](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.285...v1.8.286) (2026-07-30)
 
 

@@ -1,0 +1,84 @@
+name: Release Hashpass SDK and CLI
+
+on:
+  push:
+    tags:
+      - "sdk-cli-v*.*.*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and pack without publishing"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: sdk-cli-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-and-publish:
+    if: github.repository == 'hashpass-tech/hashpass.tech'
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node and npm registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.22.0"
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install immutable dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify release tag and package versions
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_version="${GITHUB_REF_NAME#sdk-cli-v}"
+          sdk_version="$(node -p "require('./packages/sdk/package.json').version")"
+          cli_version="$(node -p "require('./packages/sdk-cli/package.json').version")"
+          test "$tag_version" = "$sdk_version"
+          test "$tag_version" = "$cli_version"
+          git diff --exit-code
+
+      - name: Typecheck and test SDK packages
+        run: pnpm sdk:check
+
+      - name: Verify package contents
+        run: |
+          pnpm --dir packages/sdk pack --pack-destination "$RUNNER_TEMP"
+          pnpm --dir packages/sdk-cli pack --pack-destination "$RUNNER_TEMP"
+          tar -tf "$RUNNER_TEMP/hashpass-sdk-"*.tgz
+          tar -tf "$RUNNER_TEMP/hashpass-sdk-cli-"*.tgz
+
+      - name: Publish SDK
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
+        working-directory: packages/sdk
+        run: pnpm publish --access public --provenance --no-git-checks
+
+      - name: Publish CLI
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
+        working-directory: packages/sdk-cli
+        run: pnpm publish --access public --provenance --no-git-checks
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "Hashpass SDK & CLI v${GITHUB_REF_NAME#sdk-cli-v}"

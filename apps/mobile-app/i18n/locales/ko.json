@@ -488,11 +488,18 @@
   "explore": {
     "noEvent": "사용 가능한 이벤트가 없습니다",
     "noSelection": "선택된 이벤트가 없습니다",
+    "global": {
+      "title": "HASHPASS 이벤트",
+      "subtitle": "사용 가능한 모든 이벤트를 찾아보세요",
+      "date": "글로벌 이벤트 탐색기"
+    },
     "banner": {
       "title": "블록체인 서밋 라탐 2025",
       "subtitle": "2025년 11월 12-14일 • Universidad EAFIT, 메데진",
       "date": "2025년 11월 12-14일",
       "exploreAllEvents": "모든 이벤트 탐색",
+      "exploreAllEventsDescription": "이벤트를 선택하면 연사, 일정 및 빠른 이용 메뉴를 확인할 수 있습니다",
+      "bslOnTour": "BSL 투어",
       "exploreMoreEvents": "더 많은 이벤트 탐색",
       "pastEvent": "지난 이벤트",
       "archivedEdition": "지난 이벤트 / 보관된 에디션",
@@ -505,6 +512,10 @@
     "selectEvent": "이벤트 선택",
     "yourPasses": "나의 패스",
     "quickAccess": "빠른 접근",
+    "tutorial": {
+      "yourPasses": "여기에서 이벤트 패스를 확인할 수 있습니다. 패스에는 티켓 종류와 이벤트 이용 권한이 표시됩니다.",
+      "quickAccess": "빠른 이용 카드를 통해 연사, 일정, 네트워킹 센터 및 이벤트 정보로 이동할 수 있습니다. 모든 옵션을 보려면 가로로 스와이프하세요."
+    },
     "quick": {
       "speakers": {
         "title": "연사",
@@ -575,6 +586,13 @@
     "passNumber": "패스 #{pass_number}",
     "noPassFound": "패스를 찾을 수 없습니다",
     "contactSupport": "이벤트 패스를 받으려면 지원팀에 문의하세요",
+    "loadTimeoutTitle": "패스를 불러오는 데 시간이 너무 오래 걸립니다",
+    "loadTimeoutMessage": "연결을 확인하고 다시 시도하세요.",
+    "loadErrorTitle": "패스를 불러올 수 없습니다",
+    "loadErrorMessage": "현재 패스 정보에 연결할 수 없습니다.",
+    "sessionPendingTitle": "패스 세션이 아직 로드 중입니다",
+    "sessionPendingMessage": "계정을 연결하는 중입니다. 잠시 후 다시 시도하세요.",
+    "tryAgain": "다시 시도",
     "noPassMessage": {
       "demo": "연사와의 미팅을 요청하려면 패스가 필요합니다. 패스 없이는 미팅 요청을 보낼 수 없습니다. 패스 유형을 선택하세요:",
       "production": "연사와의 미팅을 요청하려면 유효한 이벤트 패스가 필요합니다. 계속하려면 패스를 구매해주세요."
@@ -973,6 +991,12 @@
       "eventConfirmedMessage": "이 이벤트가 일정에 추가되었습니다",
       "eventUnconfirmed": "이벤트 미확인",
       "eventUnconfirmedMessage": "이 이벤트가 확인된 일정에서 제거되었습니다",
+      "addedToAgenda": "일정에 추가됨",
+      "addedToAgendaMessage": "이 세션이 일정에 추가되었습니다",
+      "removedFromAgenda": "일정에서 제거됨",
+      "removedFromAgendaMessage": "이 세션이 일정에서 제거되었습니다",
+      "signInToManageAgenda": "일정을 관리하려면 로그인하세요",
+      "signInToManageFavorites": "즐겨찾기를 관리하려면 로그인하세요",
       "error": "오류",
       "confirmError": "이벤트 확인 실패",
       "unconfirmError": "이벤트 미확인 처리 실패",
@@ -984,6 +1008,11 @@
     "actions": {
       "addToFavorites": "즐겨찾기에 추가",
       "removeFromFavorites": "즐겨찾기에서 제거",
+      "favorite": "즐겨찾기",
+      "favorited": "즐겨찾기 추가됨",
+      "addToAgenda": "일정에 추가",
+      "removeFromAgenda": "일정에서 제거",
+      "onAgenda": "일정에 있음",
       "markAttending": "참석으로 표시",
       "unmarkAttending": "참석 표시 취소"
     },

@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.286",
+  "version": "1.8.289",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",
@@ -27,7 +27,8 @@
     "ios": "EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-12288}\" expo start --ios --max-workers ${EXPO_WEB_MAX_WORKERS:-1}",
     "web": "EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-12288}\" expo start --web --max-workers ${EXPO_WEB_MAX_WORKERS:-1} --port ${EXPO_WEB_PORT:-8081}",
     "env:propagate": "node ../../packages/tools/scripts/propagate-env.js",
-    "typecheck": "node ../../packages/tools/scripts/typecheck-changed.mjs",
+    "typecheck": "node ../../packages/tools/scripts/typecheck-changed.mjs && pnpm run check:dashboard-translations",
+    "check:dashboard-translations": "node scripts/check-explorer-translations.mjs",
     "dev": "npm run env:propagate local && EXPO_NO_METRO_WORKSPACE_ROOT=1 NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-12288}\" expo start --web --max-workers ${EXPO_WEB_MAX_WORKERS:-1} --port ${EXPO_WEB_PORT:-8081}",
     "build": "if [ \"${SKIP_ENV_PROPAGATE:-0}\" != \"1\" ]; then npm run env:propagate ${BUILD_ENV:-production}; fi && npm run prebuild && node ../../packages/tools/scripts/update-sw-version.mjs && node ../../packages/tools/scripts/patch-expo-api-route-sourcemaps.mjs && NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-8192}\" expo export -p web --max-workers ${EXPO_EXPORT_MAX_WORKERS:-2} && if [ \"${SKIP_WEB_POSTBUILD:-0}\" != \"1\" ]; then npm run postbuild:web; fi",
     "build:static": "if [ \"${SKIP_ENV_PROPAGATE:-0}\" != \"1\" ]; then npm run env:propagate ${BUILD_ENV:-production}; fi && npm run prebuild && node ../../packages/tools/scripts/update-sw-version.mjs && node ../../packages/tools/scripts/patch-expo-api-route-sourcemaps.mjs && NODE_OPTIONS=\"--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-8192}\" expo export -p web --max-workers ${EXPO_EXPORT_MAX_WORKERS:-2} && if [ \"${SKIP_WEB_POSTBUILD:-0}\" != \"1\" ]; then npm run postbuild:static; fi",

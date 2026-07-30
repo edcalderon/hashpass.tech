@@ -32,8 +32,8 @@ export function Footer() {
     {
       title: t('legal'),
       links: [
-        { label: t('privacy'), href: '#' },
-        { label: t('terms'), href: '#' },
+        { label: t('privacy'), href: 'https://hashpass.tech/privacy' },
+        { label: t('terms'), href: 'https://hashpass.tech/terms' },
       ],
     },
   ];
@@ -126,6 +126,9 @@ export function Footer() {
                   <li key={link.label}>
                     <a
                       href={link.href}
+                      {...(link.href.startsWith('http')
+                        ? { target: '_blank', rel: 'noopener noreferrer' }
+                        : {})}
                       style={{
                         fontSize: 'clamp(13px, 1.5vw, 14px)',
                         color: 'var(--text-secondary)',

@@ -558,11 +558,18 @@
   "explore": {
     "noEvent": "No event available",
     "noSelection": "No event selected",
+    "global": {
+      "title": "HASHPASS Events",
+      "subtitle": "Discover and explore all available events",
+      "date": "Global Event Explorer"
+    },
     "banner": {
       "title": "Blockchain Summit Latam 2025",
       "subtitle": "November 12-14, 2025 • Universidad EAFIT, Medellín",
       "date": "November 12-14, 2025",
       "exploreAllEvents": "Explore All Events",
+      "exploreAllEventsDescription": "Select an event to view its speakers, agenda, and quick access",
+      "bslOnTour": "BSL ON TOUR",
       "exploreMoreEvents": "Explore More Events",
       "pastEvent": "Past Event",
       "archivedEdition": "Past Event / Archived Edition",
@@ -575,6 +582,10 @@
     "selectEvent": "Select Event",
     "yourPasses": "Your Passes",
     "quickAccess": "Quick Access",
+    "tutorial": {
+      "yourPasses": "This is where you can view your event passes. Your passes show your ticket type and access level for the event.",
+      "quickAccess": "Quick Access cards let you quickly navigate to important sections like Speakers, Agenda, Networking Center, and Event Information. Swipe horizontally to see all options."
+    },
     "quick": {
       "speakers": {
         "title": "Speakers",
