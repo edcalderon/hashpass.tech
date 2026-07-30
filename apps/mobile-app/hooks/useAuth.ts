@@ -900,6 +900,17 @@ export const useAuth = () => {
     // tests that want to observe it) as best-effort background work.
     sessionBootstrapPromise = Promise.resolve(null);
     setSignedOutBetterAuthBootstrap();
+    // supabaseBootstrapPromise is memoized module-level (deduped across every
+    // mounted useAuth() instance, same reasoning as sessionBootstrapPromise
+    // above) but was never reset here. A fresh useAuth() mount on the /auth
+    // screen we're about to navigate to replays this already-settled promise
+    // in startLegacyBootstrap(), which still resolves the pre-logout signed-in
+    // session (supabase.auth.signOut()'s network call is still running in the
+    // background for waitForRemoteCleanup: false callers) and re-authenticates
+    // the just-cleared session, bouncing the redirect straight back to the
+    // dashboard. Resetting it to an already-resolved "no session" value here
+    // closes that race the same way the other two bootstrap caches are closed.
+    supabaseBootstrapPromise = Promise.resolve({ data: { session: null }, error: null } as any);
     sendAuthEvent({ type: 'SIGNED_OUT' });
     // Clear synchronously alongside the SIGNED_OUT event, not left to wait on
     // supabase.auth.signOut() below (best-effort, individually timed-out) —
