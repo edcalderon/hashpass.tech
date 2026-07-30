@@ -20,7 +20,7 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.287)
+## 📋 Latest Changes (v1.8.288)
 
 ### Bug Fixes
 
@@ -33,7 +33,7 @@
 
 * add cross-platform Hashpass support SDK ([af1efa0](https://github.com/hashpass-tech/hashpass.tech/commit/af1efa00e55299c0fb0abd841d8b50578e11e271))
 ### Release Highlights
-- guard dashboard translations; add cross-platform Hashpass support SDK; open club legal links in new tab; link club legal pages; enable pnpm before club pages build
+- guard dashboard translations; add cross-platform Hashpass support SDK; clear release typecheck errors; preserve SDK cancellation and publish paths; open club legal links in new tab; link club legal pages; enable pnpm before club pages build
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
