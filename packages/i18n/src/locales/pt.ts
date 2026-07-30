@@ -21,6 +21,16 @@ export const pt = {
     scrollDown: 'Rolar',
     scrollUp: 'Topo',
   },
+  download: {
+    badge: 'Disponível agora',
+    title: 'Sua próxima experiência está a um toque.',
+    description: 'Leve seus passes, comunidades e conexões de eventos com você. Baixe o HASHPASS grátis no Android.',
+    getItOn: 'Disponível no',
+    googlePlay: 'Google Play',
+    googlePlayAriaLabel: 'Baixar o HASHPASS no Google Play',
+    downloadHashpass: 'Baixar HASHPASS',
+    downloadAriaLabel: 'Baixar o HASHPASS pelo Google Play',
+  },
   stats: {
     activeMembers: 'Membros ativos',
     activeMembersValue: '2.418',
