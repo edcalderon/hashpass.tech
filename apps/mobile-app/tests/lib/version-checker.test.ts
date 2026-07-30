@@ -164,6 +164,50 @@ describe('version checker', () => {
     expect(mockReload).not.toHaveBeenCalled();
   });
 
+  // Regression test for a production incident: an actively-browsing user
+  // (any /events/ or /dashboard page -- this app's core usage pattern) never
+  // got a version check at all, forced or soft, because checkVersionOnStart()
+  // used to just reschedule itself and return without ever establishing the
+  // periodic setInterval when the user was active at the very first check.
+  // A user who stayed active for their whole session could be stuck on a
+  // stale bundle indefinitely with no update banner and no way to discover
+  // it short of manually hard-refreshing.
+  it('still runs a periodic soft check when the user is active at startup, instead of never checking at all', async () => {
+    jest.useFakeTimers();
+    (global as any).window.location.pathname = '/events/chile2026/speakers';
+    (global as any).document = { hidden: false };
+    (global as any).window.dispatchEvent = jest.fn();
+
+    mockApiGet.mockResolvedValue({
+      success: true,
+      data: {
+        currentVersion: '1.8.156',
+        versionInfo: { needsUpdate: true },
+      },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { checkVersionOnStart } = require('../../lib/version-checker');
+    checkVersionOnStart();
+
+    // Initial 2s delay: the user is active, so the disruptive reload path
+    // must not run.
+    await jest.advanceTimersByTimeAsync(2000);
+    expect(mockReload).not.toHaveBeenCalled();
+    expect(mockApiGet).not.toHaveBeenCalled();
+
+    // The periodic interval must still have been established even though
+    // the user was active at startup -- this is the actual regression.
+    await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
+    expect(mockApiGet).toHaveBeenCalled();
+    expect(mockReload).not.toHaveBeenCalled();
+    expect(window.dispatchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'hashpass:version-update' })
+    );
+
+    jest.useRealTimers();
+  });
+
   afterEach(() => {
     jest.restoreAllMocks();
   });
