@@ -61,6 +61,7 @@ const SIGN_OUT_STEP_TIMEOUT_MS = 8000;
 // of the web auth bootstrap, so a request that never settles would otherwise
 // prevent the legacy and Supabase fallbacks from resolving the auth state.
 const BETTER_AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
+const SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS = 8000;
 
 type SignOutOptions = {
   /**
@@ -420,6 +421,13 @@ const getSharedAuthActor = () => {
 // broadcast since it isn't part of the actor's own state.
 let supabaseAuthSubscribed = false;
 let supabaseBootstrapPromise: ReturnType<typeof supabase.auth.getSession> | null = null;
+// A native Better-Auth session can survive an app restart without the
+// companion Supabase session (for example, if the bridge request was
+// interrupted while the app was backgrounded). Keep the recovery request
+// shared across all mounted auth consumers so they do not contend for
+// GoTrueClient's navigator lock.
+let nativeBetterAuthSupabaseBootstrapPromise:
+  Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>> | null = null;
 // dbUserId is a module-level store rather than per-instance state, read
 // through useSyncExternalStore below. That's React's purpose-built API for
 // subscribing to an external mutable store, and it's what keeps a broadcast
@@ -754,6 +762,19 @@ export const useAuth = () => {
     if (!supabaseAuthSubscribed) {
       supabaseAuthSubscribed = true;
       supabase.auth.onAuthStateChange((_event: string, session: any) => {
+        // Keep supabaseBootstrapPromise's cached value current, every time --
+        // signOut() above resolves it to a signed-out value so an immediate
+        // fresh useAuth() mount doesn't replay a stale pre-logout session, but
+        // that same resolved value would otherwise be replayed forever: the
+        // `supabaseBootstrapPromise ?? (supabaseBootstrapPromise = ...)` dedupe
+        // in startLegacyBootstrap() only ever re-fetches when the cache is
+        // null, and a resolved promise is never null. Without this, signing
+        // back in after a sign-out (OTP/magic link) leaves every later
+        // useAuth() mount's own bootstrap reading the old "signed out" cache,
+        // overwriting the correct state this same callback just broadcast and
+        // bouncing the user back to the auth screen.
+        supabaseBootstrapPromise = Promise.resolve({ data: { session }, error: null } as any);
+
         broadcastDbUserId(session?.user?.id ?? null);
         // Ignore initial null callback until bootstrap resolves to avoid false "logged out" redirects.
         if (!sharedSupabaseBootstrapFinished && !session?.user) {
@@ -815,10 +836,28 @@ export const useAuth = () => {
             // force-marking it logged-out: an OTP/magic-link user holds a real
             // Supabase session alongside Better Auth, and it must keep backing
             // isLoggedIn when a flaky native Better Auth getSession drops out.
-            // (supabase.auth.getSession() reads local storage — no network,
-            // but still goes through the same navigatorLock as every other
-            // GoTrueClient call, hence the same shared-promise dedup.)
-            (supabaseBootstrapPromise ?? (supabaseBootstrapPromise = supabase.auth.getSession()))
+            // Native Better-Auth sessions also need a bridge recovery after an
+            // app restart: the Better Auth cookie can persist while the
+            // Supabase refresh token is missing. In that case fetch the bridge
+            // session and read Supabase again before publishing dbUserId.
+            const betterAuthSupabaseBootstrap =
+              Platform.OS !== 'web'
+                ? (nativeBetterAuthSupabaseBootstrapPromise ??=
+                    (async () => {
+                      let result = await supabase.auth.getSession();
+                      if (!result.data?.session) {
+                        await withTimeout(
+                          ensureSupabaseBridgeSession(betterAuthProvider),
+                          SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS,
+                          'supabaseBridgeBootstrap',
+                        );
+                        result = await supabase.auth.getSession();
+                      }
+                      return result;
+                    })())
+                : (supabaseBootstrapPromise ?? (supabaseBootstrapPromise = supabase.auth.getSession()));
+
+            betterAuthSupabaseBootstrap
               .then(({ data }: any) => {
                 supabaseBootstrapFinished = true;
                 sharedSupabaseBootstrapFinished = true;
@@ -911,6 +950,7 @@ export const useAuth = () => {
     // dashboard. Resetting it to an already-resolved "no session" value here
     // closes that race the same way the other two bootstrap caches are closed.
     supabaseBootstrapPromise = Promise.resolve({ data: { session: null }, error: null } as any);
+    nativeBetterAuthSupabaseBootstrapPromise = null;
     sendAuthEvent({ type: 'SIGNED_OUT' });
     // Clear synchronously alongside the SIGNED_OUT event, not left to wait on
     // supabase.auth.signOut() below (best-effort, individually timed-out) —
