@@ -1,0 +1,35 @@
+{
+  "name": "@hashpass/sdk-cli",
+  "version": "0.1.0",
+  "description": "Hashpass CLI for authentication and AI-assisted support tickets",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "hashpass": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "prepack": "pnpm run clean && pnpm run build",
+    "test": "pnpm run clean && pnpm run build && node --test tests/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": { "node": ">=20" },
+  "publishConfig": { "access": "public", "provenance": true },
+  "dependencies": {
+    "@hashpass/sdk": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "~5.8.3"
+  }
+}
