@@ -245,7 +245,13 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const deckWidth = cardWidth + stackDepth * STACK_OFFSET_X;
 
   if (loading) {
-    return <WalletSkeleton colors={colors} label={t('loading', 'Loading your pass information...')} width={cardWidth} />;
+    return (
+      <WalletSkeleton
+        colors={colors}
+        label={t('loading', 'Loading your pass information...')}
+        sublabel={t('loadingSubtitle', 'This should only take a moment.')}
+      />
+    );
   }
 
   // Nothing at all — distinct from "your filters matched nothing", which is a
@@ -531,10 +537,15 @@ const WalletStat: React.FC<{
   </View>
 );
 
-const WalletSkeleton: React.FC<{ colors: any; label: string; width: number }> = ({
+// Mirrors the "no passes"/error fallback card below (same container, icon
+// position, and title/subtitle typography) so loading, empty, and error are
+// one consistent visual family instead of the loading state looking like a
+// different, disconnected UI (a spinner+label row floating above a separate
+// empty placeholder box).
+const WalletSkeleton: React.FC<{ colors: any; label: string; sublabel?: string }> = ({
   colors,
   label,
-  width,
+  sublabel,
 }) => {
   const pulse = useSharedValue(0.5);
 
@@ -545,25 +556,36 @@ const WalletSkeleton: React.FC<{ colors: any; label: string; width: number }> = 
   const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
   return (
-    <View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <ActivityIndicator size="small" color={colors.primary} />
-        <Text style={{ fontSize: 12, color: colors.text.secondary }}>{label}</Text>
-      </View>
-      <Animated.View
-        style={[
-          {
-            width,
-            height: PASS_CARD_HEIGHT,
-            alignSelf: 'center',
-            borderRadius: 16,
-            backgroundColor: colors.background.paper,
-            borderWidth: 1,
-            borderColor: colors.divider,
-          },
-          style,
-        ]}
-      />
+    <View
+      style={{
+        backgroundColor: colors.background.paper,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.divider,
+        paddingVertical: 34,
+        paddingHorizontal: 24,
+        alignItems: 'center',
+      }}
+    >
+      <Animated.View style={style}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </Animated.View>
+      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text.primary, marginTop: 12 }}>
+        {label}
+      </Text>
+      {sublabel ? (
+        <Text
+          style={{
+            fontSize: 12,
+            color: colors.text.secondary,
+            marginTop: 6,
+            textAlign: 'center',
+            lineHeight: 18,
+          }}
+        >
+          {sublabel}
+        </Text>
+      ) : null}
     </View>
   );
 };
