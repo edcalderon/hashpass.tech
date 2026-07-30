@@ -1,3 +1,7 @@
+## [1.8.291](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.290...v1.8.291) (2026-07-30)
+### Released
+- run periodic version checks even while the user stays active
+
 ## [1.8.290](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.289...v1.8.290) (2026-07-30)
 ### Released
 - type the onPassesLoaded callback param in PassesDisplayBoundary
