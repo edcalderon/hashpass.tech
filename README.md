@@ -20,15 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.286)
+## 📋 Latest Changes (v1.8.287)
 
 ### Bug Fixes
 
-* **club:** localize download showcase ([d543b0d](https://github.com/hashpass-tech/hashpass.tech/commit/d543b0daa690b85c0c3c438acd7d7c1cb733334f))
-* discard stale native session refreshes ([ff398a2](https://github.com/hashpass-tech/hashpass.tech/commit/ff398a23e9e60625e5afaa91921acb11dee1cab6))
-* type download translation guard ([398ce20](https://github.com/hashpass-tech/hashpass.tech/commit/398ce205544d3aa728913601e939366a0c998904))
+* enable pnpm before club pages build ([88d3c42](https://github.com/hashpass-tech/hashpass.tech/commit/88d3c4288a475336500e57e4dc9bec81b135cd72))
+* link club legal pages ([120750a](https://github.com/hashpass-tech/hashpass.tech/commit/120750a925537b756b5b0ec736aac4ed56e5a931))
+* open club legal links in new tab ([19023fe](https://github.com/hashpass-tech/hashpass.tech/commit/19023fe92f315bec85fdd7e4f73cf9482d66326f))
+
+
+### Features
+
+* add cross-platform Hashpass support SDK ([af1efa0](https://github.com/hashpass-tech/hashpass.tech/commit/af1efa00e55299c0fb0abd841d8b50578e11e271))
 ### Release Highlights
-- type download translation guard; discard stale native session refreshes; localize download showcase
+- guard dashboard translations; add cross-platform Hashpass support SDK; open club legal links in new tab; link club legal pages; enable pnpm before club pages build
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

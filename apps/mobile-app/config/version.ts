@@ -22,24 +22,43 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607300616, // Updated to current timestamp
+  buildNumber: 202607300821, // Updated to current timestamp
   releaseDate: '2026-07-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'guard dashboard translations',
+    'add cross-platform Hashpass support SDK'
   ],
   bugfixes: [
-    'type download translation guard',
-    'discard stale native session refreshes',
-    'localize download showcase'
+    'open club legal links in new tab',
+    'link club legal pages',
+    'enable pnpm before club pages build'
   ],
   breakingChanges: [],
-  notes: 'type download translation guard; discard stale native session refreshes; localize download showcase'
+  notes: 'guard dashboard translations; add cross-platform Hashpass support SDK; open club legal links in new tab; link club legal pages; enable pnpm before club pages build'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.287': {
+    version: '1.8.287',
+    buildNumber: 202607300821,
+    releaseDate: '2026-07-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'guard dashboard translations',
+      'add cross-platform Hashpass support SDK'
+    ],
+    bugfixes: [
+      'open club legal links in new tab',
+      'link club legal pages',
+      'enable pnpm before club pages build'
+    ],
+    breakingChanges: [],
+    notes: 'guard dashboard translations; add cross-platform Hashpass support SDK; open club legal links in new tab; link club legal pages; enable pnpm before club pages build'
+  },
   '1.8.286': {
     version: '1.8.286',
     buildNumber: 202607300616,
