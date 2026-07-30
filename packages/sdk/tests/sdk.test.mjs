@@ -50,6 +50,31 @@ test("returns typed API errors with request correlation", async () => {
   });
 });
 
+test("preserves caller cancellation instead of reporting a timeout", async () => {
+  const controller = new AbortController();
+  let fetchStarted;
+  const fetchReady = new Promise((resolve) => { fetchStarted = resolve; });
+  const sdk = createHashpass({
+    appId: "app_test",
+    fetch: async (_url, init) => {
+      fetchStarted();
+      await new Promise((_, reject) => {
+        init.signal.addEventListener("abort", () => reject(init.signal.reason), { once: true });
+      });
+    },
+    timeoutMs: 5_000,
+  });
+
+  const request = sdk.support.watchTicket("ticket_1", { signal: controller.signal }).next();
+  await fetchReady;
+  controller.abort(new Error("caller stopped watching"));
+  await assert.rejects(request, (error) => {
+    assert.equal(error.message, "caller stopped watching");
+    assert.notEqual(error.code, "timeout");
+    return true;
+  });
+});
+
 test("session-backed auth refreshes an expired token", async () => {
   let session = {
     accessToken: "expired",

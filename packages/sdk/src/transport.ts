@@ -23,6 +23,7 @@ export class HttpTransport {
   }
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+    if (options.signal?.aborted) throw options.signal.reason ?? new DOMException("The operation was aborted", "AbortError");
     const method = options.method ?? "GET";
     const canRetry = method === "GET" || method === "DELETE" || Boolean(options.idempotencyKey);
     let lastError: unknown;
@@ -52,6 +53,7 @@ export class HttpTransport {
     const timeout = setTimeout(() => controller.abort(new Error("request timed out")), this.#options.timeoutMs);
     const abort = () => controller.abort(options.signal?.reason);
     options.signal?.addEventListener("abort", abort, { once: true });
+    if (options.signal?.aborted) controller.abort(options.signal.reason);
 
     try {
       const token = options.authenticated === false ? null : await this.#options.auth?.getAccessToken();
@@ -73,6 +75,10 @@ export class HttpTransport {
       if (response.status === 401) await this.#options.auth?.onUnauthorized?.();
       return response;
     } catch (error) {
+      // A caller abort is an intentional cancellation, not a transport
+      // deadline. Preserve the original AbortError so watchTicket callers can
+      // stop polling without triggering timeout telemetry or retries.
+      if (options.signal?.aborted) throw error;
       if (controller.signal.aborted) {
         throw new HashpassError("Hashpass request timed out or was cancelled", { code: "timeout", cause: error });
       }
@@ -124,6 +130,10 @@ function backoff(attempt: number, policy: RetryPolicy): number {
 }
 function delay(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason ?? new DOMException("The operation was aborted", "AbortError"));
+      return;
+    }
     const timeout = setTimeout(resolve, ms);
     signal?.addEventListener("abort", () => { clearTimeout(timeout); reject(signal.reason); }, { once: true });
   });
