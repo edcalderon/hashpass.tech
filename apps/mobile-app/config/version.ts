@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607300512, // Updated to current timestamp
+  buildNumber: 202607300616, // Updated to current timestamp
   releaseDate: '2026-07-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,33 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'refresh stale bootstrap cache after sign-in, guard in-flight Directus lookups'
+    'type download translation guard',
+    'discard stale native session refreshes',
+    'localize download showcase'
   ],
   breakingChanges: [],
-  notes: 'refresh stale bootstrap cache after sign-in, guard in-flight Directus lookups'
+  notes: 'type download translation guard; discard stale native session refreshes; localize download showcase'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.286': {
+    version: '1.8.286',
+    buildNumber: 202607300616,
+    releaseDate: '2026-07-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'type download translation guard',
+      'discard stale native session refreshes',
+      'localize download showcase'
+    ],
+    breakingChanges: [],
+    notes: 'type download translation guard; discard stale native session refreshes; localize download showcase'
+  },
   '1.8.285': {
     version: '1.8.285',
     buildNumber: 202607300512,

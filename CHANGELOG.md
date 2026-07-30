@@ -1,3 +1,14 @@
+## [1.8.286](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.285...v1.8.286) (2026-07-30)
+
+
+### Bug Fixes
+
+* **club:** localize download showcase ([d543b0d](https://github.com/hashpass-tech/hashpass.tech/commit/d543b0daa690b85c0c3c438acd7d7c1cb733334f))
+* discard stale native session refreshes ([ff398a2](https://github.com/hashpass-tech/hashpass.tech/commit/ff398a23e9e60625e5afaa91921acb11dee1cab6))
+* type download translation guard ([398ce20](https://github.com/hashpass-tech/hashpass.tech/commit/398ce205544d3aa728913601e939366a0c998904))
+### Release Highlights
+- type download translation guard; discard stale native session refreshes; localize download showcase
+
 ## [1.8.285](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.284...v1.8.285) (2026-07-30)
 ### Released
 - refresh stale bootstrap cache after sign-in, guard in-flight Directus lookups

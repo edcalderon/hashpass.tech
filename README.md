@@ -20,10 +20,15 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.285)
+## 📋 Latest Changes (v1.8.286)
 
-### Released
-- refresh stale bootstrap cache after sign-in, guard in-flight Directus lookups
+### Bug Fixes
+
+* **club:** localize download showcase ([d543b0d](https://github.com/hashpass-tech/hashpass.tech/commit/d543b0daa690b85c0c3c438acd7d7c1cb733334f))
+* discard stale native session refreshes ([ff398a2](https://github.com/hashpass-tech/hashpass.tech/commit/ff398a23e9e60625e5afaa91921acb11dee1cab6))
+* type download translation guard ([398ce20](https://github.com/hashpass-tech/hashpass.tech/commit/398ce205544d3aa728913601e939366a0c998904))
+### Release Highlights
+- type download translation guard; discard stale native session refreshes; localize download showcase
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
