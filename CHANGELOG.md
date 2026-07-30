@@ -1,3 +1,7 @@
+## [1.8.285](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.284...v1.8.285) (2026-07-30)
+### Released
+- refresh stale bootstrap cache after sign-in, guard in-flight Directus lookups
+
 ## [1.8.284](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.283...v1.8.284) (2026-07-30)
 ### Released
 - wallet LUKAS balance uuid mismatch (same id-space bug, new file); stop sign-out bouncing back to dashboard, clear stale profile cache
