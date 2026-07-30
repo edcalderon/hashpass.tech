@@ -63,7 +63,7 @@ export class HttpTransport {
       if (token) headers.set("authorization", `Bearer ${token}`);
       if (options.body !== undefined) headers.set("content-type", "application/json");
       if (options.idempotencyKey) headers.set("idempotency-key", options.idempotencyKey);
-      for (const [name, value] of Object.entries(options.headers ?? {})) headers.set(name, value);
+      for (const [name, value] of Object.entries(options.headers ?? {})) headers.set(name, String(value));
 
       const requestInit: RequestInit = {
         method: options.method ?? "GET",
