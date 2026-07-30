@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607292156, // Updated to current timestamp
-  releaseDate: '2026-07-29',
+  buildNumber: 202607300222, // Updated to current timestamp
+  releaseDate: '2026-07-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'eliminate agenda-status insert race and stale My Schedule counts'
+    'wallet LUKAS balance uuid mismatch (same id-space bug, new file)',
+    'stop sign-out bouncing back to dashboard, clear stale profile cache'
   ],
   breakingChanges: [],
-  notes: 'eliminate agenda-status insert race and stale My Schedule counts'
+  notes: 'wallet LUKAS balance uuid mismatch (same id-space bug, new file); stop sign-out bouncing back to dashboard, clear stale profile cache'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.284': {
+    version: '1.8.284',
+    buildNumber: 202607300222,
+    releaseDate: '2026-07-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'wallet LUKAS balance uuid mismatch (same id-space bug, new file)',
+      'stop sign-out bouncing back to dashboard, clear stale profile cache'
+    ],
+    breakingChanges: [],
+    notes: 'wallet LUKAS balance uuid mismatch (same id-space bug, new file); stop sign-out bouncing back to dashboard, clear stale profile cache'
+  },
   '1.8.283': {
     version: '1.8.283',
     buildNumber: 202607292156,

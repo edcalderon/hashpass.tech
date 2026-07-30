@@ -1,3 +1,7 @@
+## [1.8.284](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.283...v1.8.284) (2026-07-30)
+### Released
+- wallet LUKAS balance uuid mismatch (same id-space bug, new file); stop sign-out bouncing back to dashboard, clear stale profile cache
+
 ## [1.8.283](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.282...v1.8.283) (2026-07-29)
 ### Released
 - eliminate agenda-status insert race and stale My Schedule counts
