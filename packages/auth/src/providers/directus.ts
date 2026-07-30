@@ -720,6 +720,22 @@ export class DirectusAuthProvider implements IAuthProvider {
   async signOut(): Promise<{ error?: string }> {
     const sessionToClear = this.session;
 
+    // Clear local state synchronously, before the awaited network logout call
+    // below — mirrors BetterAuthProvider.signOut()'s pattern. getUser() reads
+    // this.session directly, and callers (e.g. the mobile app's profile
+    // screen, via authService.getUser() as its useAuth() fallback) treat it
+    // as a safe synchronous read. Nulling it only after the network call
+    // meant getUser() could still return the pre-logout user for as long as
+    // that call took (fire-and-forget, individually timed out up to 8s from
+    // the app's optimistic-logout caller), which re-populated already-cleared
+    // profile UI state with stale data.
+    this.session = null;
+    this.sessionLookupInFlight = null;
+    this.nextSessionProbeAt = 0;
+    await this.clearStoredSession();
+    this.clearRefreshTimer();
+    this.notifyStateChange(null);
+
     // If we have a session, try to logout from server.
     if (sessionToClear?.access_token) {
       try {
@@ -733,13 +749,6 @@ export class DirectusAuthProvider implements IAuthProvider {
         console.debug('Sign out request failed:', error);
       }
     }
-
-    this.session = null;
-    this.sessionLookupInFlight = null;
-    this.nextSessionProbeAt = 0;
-    await this.clearStoredSession();
-    this.clearRefreshTimer();
-    this.notifyStateChange(null);
 
     return {};
   }

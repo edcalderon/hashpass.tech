@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.283)
+## 📋 Latest Changes (v1.8.284)
 
 ### Released
-- eliminate agenda-status insert race and stale My Schedule counts
+- wallet LUKAS balance uuid mismatch (same id-space bug, new file); stop sign-out bouncing back to dashboard, clear stale profile cache
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

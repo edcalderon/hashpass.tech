@@ -22,7 +22,12 @@ interface Token {
 const BlockchainTokensView = () => {
   const { colors, isDark } = useTheme();
   const { t: translate } = useTranslation('wallet');
-  const { user } = useAuth();
+  // user_balances.user_id is a real Supabase auth.users uuid; user.id can be a
+  // Better Auth id (opaque, non-uuid) for accounts signed in via that
+  // provider, which the RPC's uuid-typed p_user_id param rejects with
+  // "invalid input syntax for type uuid". dbUserId is always a real uuid (or
+  // null before it resolves) regardless of which provider `user` resolves to.
+  const { dbUserId } = useAuth();
   const { showInfo, showSuccess } = useToastHelpers();
   
   // Helper function to translate with fallback
@@ -64,7 +69,7 @@ const BlockchainTokensView = () => {
 
   // Fetch balance for a specific token
   const fetchTokenBalance = useCallback(async (tokenSymbol: string, forceRefresh: boolean = false) => {
-    if (!user?.id) {
+    if (!dbUserId) {
       if (tokenSymbol === 'LUKAS') {
         setLukasBalance(0);
         setIsLoadingBalance(false);
@@ -79,11 +84,11 @@ const BlockchainTokensView = () => {
         } else {
           setIsLoadingBalance(true);
         }
-        
-        console.log('💰 Fetching LUKAS balance for user:', user.id, 'forceRefresh:', forceRefresh);
-        
+
+        console.log('💰 Fetching LUKAS balance for user:', dbUserId, 'forceRefresh:', forceRefresh);
+
         // Force a fresh fetch - get balance directly from database
-        const balance = await lukasRewardService.getUserBalance(user.id, 'LUKAS');
+        const balance = await lukasRewardService.getUserBalance(dbUserId, 'LUKAS');
         console.log('💰 Fetched LUKAS balance:', balance);
         
         // Update state immediately
@@ -106,7 +111,7 @@ const BlockchainTokensView = () => {
         setRefreshingToken(null);
       }
     }
-  }, [user?.id, showSuccess]);
+  }, [dbUserId, showSuccess]);
 
     // Listen for balance refresh events from other components
     const handleBalanceRefresh = useCallback(() => {
@@ -126,7 +131,7 @@ const BlockchainTokensView = () => {
 
   // Initial fetch and subscription setup
   useEffect(() => {
-    if (!user?.id) {
+    if (!dbUserId) {
       setLukasBalance(0);
       setIsLoadingBalance(false);
       return;
@@ -137,7 +142,7 @@ const BlockchainTokensView = () => {
 
     // Subscribe to balance changes (real-time updates)
     const unsubscribe = lukasRewardService.subscribeToBalance(
-      user.id,
+      dbUserId,
       'LUKAS',
       (balance: UserBalance | null) => {
         console.log('💰 Balance subscription callback:', balance);
@@ -159,7 +164,7 @@ const BlockchainTokensView = () => {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [user?.id, fetchTokenBalance]);
+  }, [dbUserId, fetchTokenBalance]);
 
   // Memoize tokens array to update when balance changes
   const tokens: Token[] = React.useMemo(() => [

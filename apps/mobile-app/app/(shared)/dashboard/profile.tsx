@@ -119,12 +119,24 @@ export default function ProfileScreen() {
   }, [authLoading, resolveProfileUser]);
 
   // Always fetch raw Supabase session — it has created_at and user_metadata.avatar_url
-  // regardless of which auth provider (Directus/Supabase) is active.
+  // regardless of which auth provider (Directus/Supabase) is active. Keyed on
+  // `user` (not []) so it clears immediately on sign-out instead of leaving
+  // the pre-logout session's avatar/metadata displayed indefinitely — `user`
+  // flips to null synchronously as part of useAuth().signOut()'s optimistic
+  // SIGNED_OUT event, well before this component would otherwise re-render.
   useEffect(() => {
+    if (!user) {
+      setRawSupabaseUser(null);
+      return;
+    }
+    let cancelled = false;
     supabase.auth.getSession().then(({ data }: { data: any }) => {
-      if (data?.session?.user) setRawSupabaseUser(data.session.user);
+      if (!cancelled && data?.session?.user) setRawSupabaseUser(data.session.user);
     });
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
