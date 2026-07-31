@@ -30,7 +30,6 @@
       },
       "package": "com.hashpass.tech",
       "versionCode": 11091,
-      "googleServicesFile": "./config/google-services.json",
       "permissions": [
         "android.permission.CAMERA"
       ]
