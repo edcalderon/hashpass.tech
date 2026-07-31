@@ -119,7 +119,6 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-firebase/app",
       "./plugins/withAndroidRemoveAdIdPermission",
       "./plugins/withAndroidReleaseMinification",
       "./plugins/withAndroidDisableRtl",
