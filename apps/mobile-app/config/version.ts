@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608010531, // Updated to current timestamp
+  buildNumber: 202608011546, // Updated to current timestamp
   releaseDate: '2026-08-01',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'refine dashboard drawer branding'
   ],
   bugfixes: [
-    'the CI-commit-injection fix was ineffective for hashpass.tech too',
-    'parse escaped apostrophes when regenerating versions.json',
-    'propagate the CodeStar source revision to the BSL EC2 worker'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'the CI-commit-injection fix was ineffective for hashpass.tech too; parse escaped apostrophes when regenerating versions.json; propagate the CodeStar source revision to the BSL EC2 worker'
+  notes: 'refine dashboard drawer branding'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.298': {
+    version: '1.8.298',
+    buildNumber: 202608011546,
+    releaseDate: '2026-08-01',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'refine dashboard drawer branding'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'refine dashboard drawer branding'
+  },
   '1.8.297': {
     version: '1.8.297',
     buildNumber: 202608010524,
