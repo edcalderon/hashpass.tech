@@ -15,7 +15,8 @@ export async function GET(request: Request) {
       { error: identity.error },
       { status: identity.status },
     );
-  if (!identity.supabaseUserId)
+  const meetingUserId = identity.supabaseUserId;
+  if (!meetingUserId)
     return Response.json(
       { error: "Meeting identity required" },
       { status: 403 },
@@ -23,7 +24,6 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const speakerId = url.searchParams.get("speakerId");
-  const requesterId = url.searchParams.get("requesterId") || undefined;
   const duration = Number(url.searchParams.get("durationMinutes")) || 15;
   if (!speakerId)
     return Response.json({ error: "speakerId is required" }, { status: 400 });
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       p_date: null,
       p_duration_minutes: duration,
       p_event_id: eventId,
-      ...(requesterId ? { p_requester_id: requesterId } : {}),
+      p_requester_id: meetingUserId,
     };
     let { data: slots, error } = await supabase.rpc(
       "get_speaker_available_slots",
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     // Old RPC signatures cannot keep this shared endpoint event-safe, so only
     // retry with the pre-V018 requester argument omitted. Event identity stays
     // mandatory for both calls.
-    if (error?.code === "PGRST202" && requesterId) {
+    if (error?.code === "PGRST202") {
       ({ data: slots, error } = await supabase.rpc(
         "get_speaker_available_slots",
         {
@@ -60,12 +60,21 @@ export async function GET(request: Request) {
     }
     if (error) throw error;
 
+    const { data: speaker, error: speakerError } = await supabase
+      .from("bsl_speakers")
+      .select("user_id")
+      .eq("id", speakerId)
+      .maybeSingle();
+    if (speakerError) throw speakerError;
+    if (!speaker?.user_id)
+      return Response.json({ error: "Speaker not found" }, { status: 404 });
+
     const { data: pending, error: pendingError } = await supabase
       .from("meeting_requests")
       .select(
         "preferred_date, preferred_time, availability_window_start, availability_window_end",
       )
-      .eq("speaker_id", speakerId)
+      .eq("speaker_id", speaker.user_id)
       .eq("event_id", eventId)
       .eq("status", "pending");
     if (pendingError) throw pendingError;

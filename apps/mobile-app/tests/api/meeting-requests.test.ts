@@ -149,7 +149,7 @@ describe("meeting-requests api", () => {
       });
     });
 
-    it("queries incoming requests with the speaker user UUID instead of the speaker slug", async () => {
+    it("queries incoming requests with the Supabase speaker user id", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "auth-uuid-123",
         registryUserId: "registry-id-123",
@@ -209,7 +209,7 @@ describe("meeting-requests api", () => {
       expect(await response.json()).toEqual({ data: [] });
     });
 
-    it("queries meeting_requests by the Supabase auth id, not the registry id", async () => {
+    it("queries meeting_requests by the Supabase auth id", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "auth-uuid-123",
         registryUserId: "registry-id-123",
@@ -229,10 +229,7 @@ describe("meeting-requests api", () => {
       );
 
       expect(mockEq).toHaveBeenCalledWith("requester_id", "auth-uuid-123");
-      expect(mockEq).not.toHaveBeenCalledWith(
-        "requester_id",
-        "registry-id-123",
-      );
+      expect(mockEq).not.toHaveBeenCalledWith("requester_id", "registry-id-123");
     });
 
     it("isolates a speaker request list to the event in its URL", async () => {
@@ -379,6 +376,7 @@ describe("meeting-requests api", () => {
     it("passes the URL event id into the request creation contract", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
+        registryUserId: "registry-requester-id",
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockRpc.mockResolvedValue({
@@ -412,6 +410,7 @@ describe("meeting-requests api", () => {
     it("normalizes the set-returning insert RPC row for the speaker screen", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
+        registryUserId: "registry-requester-id",
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockRpc.mockResolvedValue({

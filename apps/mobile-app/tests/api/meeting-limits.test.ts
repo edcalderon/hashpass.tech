@@ -26,7 +26,10 @@ describe("event meeting limits api", () => {
   afterEach(() => mockConsoleError.mockRestore());
 
   it("routes the requested event's limits through the backend RPC", async () => {
-    mockResolveIdentity.mockResolvedValue({ supabaseUserId: "user-1" });
+    mockResolveIdentity.mockResolvedValue({
+      supabaseUserId: "auth-user-1",
+      registryUserId: "user-1",
+    });
     mockIsIdentityError.mockReturnValue(false);
     mockRpc.mockResolvedValue({ data: [{ remaining_requests: 2 }], error: null });
 
@@ -39,7 +42,7 @@ describe("event meeting limits api", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ data: { remaining_requests: 2 } });
     expect(mockRpc).toHaveBeenCalledWith("get_user_meeting_request_counts", {
-      p_user_id: "user-1",
+      p_user_id: "auth-user-1",
       p_event_id: "chile2026",
     });
   });

@@ -39,9 +39,21 @@ variable "artifact_bucket_name" {
 }
 
 variable "build_action_provider_name" {
-  description = "CodePipeline custom action provider name for the BSL EC2 worker. Distinct from hashpass-web's \"hashpass-ec2-build\" so the two workers' job polling never collides."
+  description = "Legacy CodePipeline custom action provider retained during the worker migration."
   type        = string
   default     = "hashpass-bsl-ec2-build"
+}
+
+variable "production_build_action_provider_name" {
+  description = "CodePipeline custom action provider used only by the BSL production worker"
+  type        = string
+  default     = "hashpass-bsl-prod-ec2-build"
+}
+
+variable "development_build_action_provider_name" {
+  description = "CodePipeline custom action provider used only by the BSL development worker"
+  type        = string
+  default     = "hashpass-bsl-dev-ec2-build"
 }
 
 variable "build_action_version" {
@@ -79,9 +91,9 @@ variable "build_output_directory" {
 # migration -- see aws-account-cutover.md phase 1 notes), sized for the same
 # kind of Node/pnpm/Expo build workload.
 variable "instance_type" {
-  description = "EC2 instance type for the BSL build worker"
+  description = "EC2 instance type for each isolated BSL build worker. m6i.xlarge provides four vCPUs for Expo export."
   type        = string
-  default     = "m6i.large"
+  default     = "m6i.xlarge"
 }
 
 variable "instance_count" {

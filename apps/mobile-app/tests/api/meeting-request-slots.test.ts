@@ -9,6 +9,10 @@ let mockPendingResult: { data: unknown[] | null; error: unknown } = {
   data: [],
   error: null,
 };
+let mockSpeakerResult: { data: { user_id: string } | null; error: unknown } = {
+  data: { user_id: "speaker-user-id" },
+  error: null,
+};
 let consoleErrorSpy: jest.SpyInstance;
 
 function mockCreatePendingQuery(): {
@@ -25,6 +29,15 @@ function mockCreatePendingQuery(): {
   };
 }
 
+function mockCreateSpeakerQuery() {
+  return {
+    eq: (...args: unknown[]) => {
+      mockEq(...args);
+      return { maybeSingle: jest.fn().mockResolvedValue(mockSpeakerResult) };
+    },
+  };
+}
+
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   resolveNotificationIdentity: (request: Request) =>
     mockResolveNotificationIdentity(request),
@@ -35,8 +48,11 @@ jest.mock("@/lib/server/resolve-notification-identity", () => ({
 jest.mock("@/lib/supabase-server", () => ({
   getSupabaseServerForRequest: () => ({
     rpc: mockRpc,
-    from: mockFrom.mockImplementation(() => ({
-      select: () => mockCreatePendingQuery(),
+    from: mockFrom.mockImplementation((table: string) => ({
+      select: () =>
+        table === "bsl_speakers"
+          ? mockCreateSpeakerQuery()
+          : mockCreatePendingQuery(),
     })),
   }),
 }));
@@ -50,6 +66,7 @@ describe("meeting-request slots api", () => {
     mockEq.mockReset();
     mockFrom.mockClear();
     mockPendingResult = { data: [], error: null };
+    mockSpeakerResult = { data: { user_id: "speaker-user-id" }, error: null };
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
   });
 
@@ -57,7 +74,8 @@ describe("meeting-request slots api", () => {
 
   it("passes the requester to the slot function so both calendars stay conflict-safe", async () => {
     mockResolveNotificationIdentity.mockResolvedValue({
-      supabaseUserId: "speaker-user-id",
+      supabaseUserId: "auth-speaker-user-id",
+      registryUserId: "speaker-user-id",
     });
     mockIsResolveIdentityError.mockReturnValue(false);
     mockRpc.mockResolvedValue({
@@ -78,7 +96,7 @@ describe("meeting-request slots api", () => {
       p_speaker_id: "speaker-user-id",
       p_date: null,
       p_duration_minutes: 15,
-      p_requester_id: "requester-user-id",
+      p_requester_id: "auth-speaker-user-id",
       p_event_id: "bsl",
     });
     expect(mockEq).toHaveBeenCalledWith("speaker_id", "speaker-user-id");
@@ -234,6 +252,7 @@ describe("meeting-request slots api", () => {
       p_speaker_id: "speaker-id",
       p_date: null,
       p_duration_minutes: 15,
+      p_requester_id: "requester-id",
       p_event_id: "bsl",
     });
   });

@@ -194,9 +194,21 @@ variable "dev_route53_a_records" {
 }
 
 variable "build_action_provider_name" {
-  description = "CodePipeline custom action provider name used by the shared EC2 worker"
+  description = "Legacy CodePipeline custom action provider retained during the worker migration"
   type        = string
   default     = "hashpass-ec2-build"
+}
+
+variable "production_build_action_provider_name" {
+  description = "CodePipeline custom action provider used only by the production worker"
+  type        = string
+  default     = "hashpass-prod-ec2-build"
+}
+
+variable "development_build_action_provider_name" {
+  description = "CodePipeline custom action provider used only by the development worker"
+  type        = string
+  default     = "hashpass-dev-ec2-build"
 }
 
 variable "build_action_version" {
@@ -247,9 +259,9 @@ variable "build_worker_instance_count" {
 }
 
 variable "build_worker_instance_type" {
-  description = "EC2 instance type for the pipeline build worker. Use a non-burstable shape for sustained builds."
+  description = "EC2 instance type for each isolated pipeline build worker. m6i.xlarge provides four vCPUs for Expo export."
   type        = string
-  default     = "m6i.large"
+  default     = "m6i.xlarge"
 }
 
 variable "build_worker_subnet_ids" {

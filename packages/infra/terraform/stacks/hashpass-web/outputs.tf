@@ -54,28 +54,38 @@ output "dev_site_domain_name" {
 }
 
 output "build_worker_instance_ids" {
-  description = "EC2 instance IDs for the shared pipeline build worker"
-  value       = module.build_worker.instance_ids
+  description = "EC2 instance IDs for the isolated production and development pipeline build workers"
+  value       = concat(module.production_build_worker.instance_ids, module.development_build_worker.instance_ids)
 }
 
 output "build_worker_public_ips" {
-  description = "Public IPs for the shared pipeline build worker"
-  value       = module.build_worker.public_ips
+  description = "Public IPs for the isolated production and development pipeline build workers"
+  value       = concat(module.production_build_worker.public_ips, module.development_build_worker.public_ips)
 }
 
 output "build_worker_private_ips" {
-  description = "Private IPs for the shared pipeline build worker"
-  value       = module.build_worker.private_ips
+  description = "Private IPs for the isolated production and development pipeline build workers"
+  value       = concat(module.production_build_worker.private_ips, module.development_build_worker.private_ips)
 }
 
 output "build_worker_dashboard_url" {
-  description = "CloudWatch dashboard URL for the shared pipeline build worker"
-  value       = module.build_worker.dashboard_url
+  description = "CloudWatch dashboard URL for the production pipeline build worker"
+  value       = module.production_build_worker.dashboard_url
+}
+
+output "development_build_worker_dashboard_url" {
+  description = "CloudWatch dashboard URL for the development pipeline build worker"
+  value       = module.development_build_worker.dashboard_url
 }
 
 output "build_worker_security_group_id" {
-  description = "Security group attached to the shared pipeline build worker"
-  value       = module.build_worker.security_group_id
+  description = "Security group attached to the production pipeline build worker"
+  value       = module.production_build_worker.security_group_id
+}
+
+output "development_build_worker_security_group_id" {
+  description = "Security group attached to the development pipeline build worker"
+  value       = module.development_build_worker.security_group_id
 }
 
 output "github_actions_role_arn" {
@@ -84,8 +94,13 @@ output "github_actions_role_arn" {
 }
 
 output "build_action_provider_name" {
-  description = "Custom CodePipeline build action provider name"
+  description = "Custom CodePipeline build action provider name for production"
   value       = module.site.build_action_provider_name
+}
+
+output "development_build_action_provider_name" {
+  description = "Custom CodePipeline build action provider name for development"
+  value       = module.site_dev.build_action_provider_name
 }
 
 output "codepipeline_name" {

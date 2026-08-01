@@ -24,8 +24,11 @@ log() {
 
 install_packages() {
   log "Installing base packages"
-  apt-get update
-  apt-get install -y \
+  # Fresh EC2 workers may receive unusable IPv6 DNS answers before an IPv6
+  # route is available. Force IPv4 and retry repository downloads so a short
+  # mirror hiccup cannot leave CodePipeline with an unserviced custom action.
+  apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 update
+  apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 install -y \
     awscli \
     build-essential \
     ca-certificates \
@@ -40,8 +43,8 @@ install_packages() {
 install_node() {
   if ! command -v node >/dev/null 2>&1; then
     log "Installing Node.js 22"
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-    apt-get install -y nodejs
+    curl -4 -fsSL https://deb.nodesource.com/setup_22.x | bash -
+    apt-get -o Acquire::ForceIPv4=true -o Acquire::Retries=3 install -y nodejs
   fi
 }
 
@@ -82,6 +85,20 @@ write_worker_script() {
 set -euo pipefail
 
 source /etc/__NAME_PREFIX__-build-runner.env
+
+# Older worker instances can be running an environment file created before
+# BUILD_TIMEOUT_SECONDS was introduced. Keep the runner operational long
+# enough to report a job result while Terraform replaces those instances.
+BUILD_TIMEOUT_SECONDS="${BUILD_TIMEOUT_SECONDS:-2700}"
+
+if ! [[ "${BUILD_TIMEOUT_SECONDS}" =~ ^[1-9][0-9]*$ ]]; then
+  printf '[hashpass-build-runner] Invalid BUILD_TIMEOUT_SECONDS: %s\n' "${BUILD_TIMEOUT_SECONDS}" >&2
+  exit 1
+fi
+
+ACTIVE_JOB_ID=""
+ACTIVE_JOB_ACKNOWLEDGED=0
+ACTIVE_JOB_RESULT_REPORTED=0
 
 log() {
   printf '[hashpass-build-runner] %s\n' "$1"
@@ -180,18 +197,8 @@ run_static_site_build_fallback() {
 }
 
 run_with_timeout() {
-  # Runs "$@" in its own process group (via setsid) and kills the ENTIRE
-  # group -- not just the direct child -- if it's still running after
-  # BUILD_TIMEOUT_SECONDS. A plain `timeout` command only signals its
-  # direct child; build scripts here fork many descendants (pnpm, node,
-  # sst, pulumi-language-nodejs, pulumi-resource-aws, ...), and a hang deep
-  # in that tree (a stuck DNS validation wait, a network stall, or the
-  # process simply being orphaned when CodePipeline cancels the job out
-  # from under the worker mid-run) would otherwise run forever and block
-  # every subsequent job, since this worker processes one job at a time.
-  # Confirmed 2026-07-29: exactly this happened to a cancelled
-  # bsl-hashpass-prod build and silently blocked a real rebuild for 20+
-  # minutes until found and killed by hand.
+  # Isolate and terminate the entire descendant group on timeout. This keeps
+  # a cancelled or hung build from blocking the worker's next job.
   local timeout_seconds="$1"
   shift
   local pid elapsed=0
@@ -225,7 +232,32 @@ fail_job() {
     --job-id "${job_id}" \
     --failure-details "type=JobFailed,message=${message}" \
     >/dev/null || true
+
+  if [[ "${job_id}" == "${ACTIVE_JOB_ID}" ]]; then
+    ACTIVE_JOB_RESULT_REPORTED=1
+  fi
 }
+
+handle_unexpected_worker_exit() {
+  local exit_status=$?
+
+  trap - EXIT
+
+  if [[ "${ACTIVE_JOB_ACKNOWLEDGED}" -eq 1 && "${ACTIVE_JOB_RESULT_REPORTED}" -eq 0 && -n "${ACTIVE_JOB_ID}" ]]; then
+    log "Worker exited before reporting a result for job ${ACTIVE_JOB_ID}; reporting failure"
+    fail_job "${ACTIVE_JOB_ID}" "pipeline worker exited unexpectedly after acknowledging the job"
+  fi
+
+  exit "${exit_status}"
+}
+
+handle_worker_interrupt() {
+  log "Worker interrupted"
+  exit 143
+}
+
+trap handle_unexpected_worker_exit EXIT
+trap handle_worker_interrupt INT TERM
 
 cleanup_job() {
   local work_dir="$1"
@@ -253,13 +285,8 @@ process_job() {
   source_key="$(jq -r '.data.inputArtifacts[0].location.s3Location.objectKey' <<<"${job_json}")"
   output_bucket="$(jq -r '.data.outputArtifacts[0].location.s3Location.bucketName' <<<"${job_json}")"
   output_key="$(jq -r '.data.outputArtifacts[0].location.s3Location.objectKey' <<<"${job_json}")"
-  # CodeStarSourceConnection stamps the resolved commit SHA onto its output
-  # artifact's `revision` field even though the artifact itself is a CODE_ZIP
-  # with no .git directory -- this worker runs as a custom CodePipeline
-  # action, not CodeBuild, so there's no CODEBUILD_RESOLVED_SOURCE_VERSION to
-  # fall back to. Exporting it here lets build scripts (e.g.
-  # build-bsl-static-site.sh) bake the real deployed commit into the bundle
-  # instead of falling back to git-info.json's stale, pre-release-commit value.
+  # CodeStar carries the resolved SHA on the artifact revision; expose it so
+  # static exports embed the actual deployed commit.
   source_revision="$(jq -r '.data.inputArtifacts[0].revision // empty' <<<"${job_json}")"
 
   if [[ -z "${job_id}" || "${job_id}" == "null" ]]; then
@@ -272,6 +299,10 @@ process_job() {
     fail_job "${job_id}" "failed to acknowledge job"
     return 1
   fi
+
+  ACTIVE_JOB_ID="${job_id}"
+  ACTIVE_JOB_ACKNOWLEDGED=1
+  ACTIVE_JOB_RESULT_REPORTED=0
 
   work_dir="$(mktemp -d "${BUILD_WORKSPACE_ROOT}/job-${job_id}.XXXXXX")"
   source_dir="${work_dir}/source"
@@ -417,6 +448,10 @@ process_job() {
     cleanup_job "${work_dir}"
     return 1
   fi
+
+  ACTIVE_JOB_RESULT_REPORTED=1
+  ACTIVE_JOB_ACKNOWLEDGED=0
+  ACTIVE_JOB_ID=""
 
   log "Completed job ${job_id}"
   cleanup_job "${work_dir}"

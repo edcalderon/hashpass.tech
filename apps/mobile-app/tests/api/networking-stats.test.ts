@@ -60,7 +60,10 @@ describe("event networking stats api", () => {
   afterEach(() => mockConsoleError.mockRestore());
 
   it("keeps counts and speaker statistics scoped to the requested event on the server", async () => {
-    mockResolveIdentity.mockResolvedValue({ supabaseUserId: "speaker-user-1" });
+    mockResolveIdentity.mockResolvedValue({
+      supabaseUserId: "auth-speaker-user-1",
+      registryUserId: "speaker-user-1",
+    });
     mockIsIdentityError.mockReturnValue(false);
     mockRpc.mockResolvedValue({ data: [{ remaining_requests: 2, sent_requests: 3 }], error: null });
 
@@ -78,14 +81,14 @@ describe("event networking stats api", () => {
       },
     });
     expect(mockRpc).toHaveBeenCalledWith("get_user_meeting_request_counts", {
-      p_user_id: "speaker-user-1",
+      p_user_id: "auth-speaker-user-1",
       p_event_id: "chile2026",
     });
     expect(queryCalls).toEqual(
       expect.arrayContaining([
         {
           table: "bsl_speakers",
-          filters: [["user_id", "speaker-user-1"]],
+          filters: [["user_id", "auth-speaker-user-1"]],
         },
         {
           table: "user_blocks",
@@ -94,7 +97,7 @@ describe("event networking stats api", () => {
         {
           table: "meeting_requests",
           filters: [
-            ["speaker_id", "speaker-user-1"],
+            ["speaker_id", "auth-speaker-user-1"],
             ["event_id", "chile2026"],
           ],
         },

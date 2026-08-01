@@ -14,7 +14,7 @@ artifact_bucket_name = "bsl-hashpass-pipelines-<target-account-id>-us-east-2"
 repository = "hashpass-tech/hashpass.tech"
 
 # EC2 worker sizing -- non-burstable, matches hashpass-web's pattern.
-instance_type = "m6i.large"
+instance_type = "m6i.xlarge"
 
 # BSL Supabase config -- fill with real values in a local terraform.tfvars,
 # never commit real secrets here.

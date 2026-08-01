@@ -113,12 +113,20 @@ resource "aws_s3_bucket_policy" "bsl_prod_site" {
 # This worker is dedicated to BSL, not shared with hashpass-web's worker --
 # each pipeline family in this repo (mobile release, hashpass-web, now BSL)
 # gets its own worker, which is the existing convention, not a new one.
-module "build_worker" {
+locals {
+  build_action_providers = {
+    legacy      = var.build_action_provider_name
+    production  = var.production_build_action_provider_name
+    development = var.development_build_action_provider_name
+  }
+}
+
+module "production_build_worker" {
   source = "../../modules/aws_pipeline_ec2_worker"
 
-  name_prefix                 = var.name_prefix
+  name_prefix                 = "${var.name_prefix}-prod"
   aws_region                  = var.aws_region
-  provider_name               = var.build_action_provider_name
+  provider_name               = var.production_build_action_provider_name
   provider_version            = var.build_action_version
   instance_count              = var.instance_count
   instance_type               = var.instance_type
@@ -144,14 +152,51 @@ module "build_worker" {
   tags                  = var.tags
 }
 
+module "development_build_worker" {
+  source = "../../modules/aws_pipeline_ec2_worker"
+
+  name_prefix                 = "${var.name_prefix}-dev"
+  aws_region                  = var.aws_region
+  provider_name               = var.development_build_action_provider_name
+  provider_version            = var.build_action_version
+  instance_count              = var.instance_count
+  instance_type               = var.instance_type
+  subnet_ids                  = var.subnet_ids
+  associate_public_ip_address = var.associate_public_ip_address
+  allowed_ssh_cidrs           = var.allowed_ssh_cidrs
+  deploy_bucket_names         = []
+  artifact_bucket_names       = [var.artifact_bucket_name]
+  lambda_function_names       = []
+  lambda_region               = var.aws_region
+  root_volume_size_gb         = var.root_volume_size_gb
+  detailed_monitoring         = var.detailed_monitoring
+  tags                        = var.tags
+}
+
+moved {
+  from = aws_iam_role_policy_attachment.worker_admin
+  to   = aws_iam_role_policy_attachment.worker_admin["production"]
+}
+
 resource "aws_iam_role_policy_attachment" "worker_admin" {
-  role       = module.build_worker.iam_role_name
+  for_each = {
+    production  = module.production_build_worker.iam_role_name
+    development = module.development_build_worker.iam_role_name
+  }
+
+  role       = each.value
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
+moved {
+  from = aws_codepipeline_custom_action_type.ec2_build
+  to   = aws_codepipeline_custom_action_type.ec2_build["legacy"]
+}
+
 resource "aws_codepipeline_custom_action_type" "ec2_build" {
+  for_each      = local.build_action_providers
   category      = "Build"
-  provider_name = var.build_action_provider_name
+  provider_name = each.value
   version       = var.build_action_version
 
   input_artifact_details {
@@ -257,7 +302,7 @@ locals {
       BSL_SUPABASE_SERVICE_ROLE_KEY      = var.supabase_service_role_key_prod
       BSL_SUPABASE_DB_URL_PROD           = var.supabase_db_url_prod
       BSL_SUPABASE_DB_URL                = var.supabase_db_url_prod
-      EXPO_EXPORT_MAX_WORKERS            = "6"
+      EXPO_EXPORT_MAX_WORKERS            = "4"
       SITE_BUCKET_NAME                   = aws_s3_bucket.bsl_prod_site.bucket
     },
     var.build_environment_overrides
@@ -282,7 +327,7 @@ locals {
       BSL_SUPABASE_SERVICE_ROLE_KEY     = var.supabase_service_role_key_dev
       BSL_SUPABASE_DB_URL_DEV           = var.supabase_db_url_dev
       BSL_SUPABASE_DB_URL               = var.supabase_db_url_dev
-      EXPO_EXPORT_MAX_WORKERS           = "6"
+      EXPO_EXPORT_MAX_WORKERS           = "4"
       SITE_BUCKET_NAME                  = aws_s3_bucket.bsl_dev_site.bucket
     },
     var.build_environment_overrides
@@ -326,7 +371,7 @@ resource "aws_codepipeline" "bsl_prod" {
       name             = "DeployInfra"
       category         = "Build"
       owner            = "Custom"
-      provider         = var.build_action_provider_name
+      provider         = var.production_build_action_provider_name
       version          = var.build_action_version
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact"]
@@ -360,7 +405,7 @@ resource "aws_codepipeline" "bsl_prod" {
 
   tags = merge(var.tags, { Environment = "production" })
 
-  depends_on = [module.build_worker, aws_codepipeline_custom_action_type.ec2_build]
+  depends_on = [module.production_build_worker, aws_codepipeline_custom_action_type.ec2_build]
 }
 
 resource "aws_codepipeline" "bsl_dev" {
@@ -400,7 +445,7 @@ resource "aws_codepipeline" "bsl_dev" {
       name             = "DeployInfra"
       category         = "Build"
       owner            = "Custom"
-      provider         = var.build_action_provider_name
+      provider         = var.development_build_action_provider_name
       version          = var.build_action_version
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact"]
@@ -434,5 +479,5 @@ resource "aws_codepipeline" "bsl_dev" {
 
   tags = merge(var.tags, { Environment = "dev" })
 
-  depends_on = [module.build_worker, aws_codepipeline_custom_action_type.ec2_build]
+  depends_on = [module.development_build_worker, aws_codepipeline_custom_action_type.ec2_build]
 }

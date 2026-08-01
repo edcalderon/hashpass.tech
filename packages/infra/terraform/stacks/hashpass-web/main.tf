@@ -25,6 +25,15 @@ locals {
     for environment in [var.environment, var.dev_environment] :
     "${var.name_prefix}-${environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   ])
+  build_action_providers = {
+    legacy      = var.build_action_provider_name
+    production  = var.production_build_action_provider_name
+    development = var.development_build_action_provider_name
+  }
+  production_build_worker_deploy_bucket_names    = [local.build_site_bucket_name]
+  development_build_worker_deploy_bucket_names   = [local.build_dev_site_bucket_name]
+  production_build_worker_artifact_bucket_names  = ["${var.name_prefix}-${var.environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"]
+  development_build_worker_artifact_bucket_names = ["${var.name_prefix}-${var.dev_environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"]
   # Path-filtered trigger (2026-07-28), mirrors the identical design in
   # packages/infra/terraform/stacks/bsl-target -- see that stack's locals
   # block for the full reasoning (AWS's 8-item cap per list, broad includes
@@ -53,6 +62,8 @@ locals {
     for function_name in [var.lambda_function_name, var.dev_lambda_function_name] :
     trimspace(function_name) if trimspace(function_name) != ""
   ])
+  production_build_worker_lambda_function_names  = [trimspace(var.lambda_function_name)]
+  development_build_worker_lambda_function_names = [trimspace(var.dev_lambda_function_name)]
 
   build_environment = merge(
     {
@@ -122,9 +133,15 @@ check "site_cloudfront_inputs" {
   }
 }
 
+moved {
+  from = aws_codepipeline_custom_action_type.ec2_build
+  to   = aws_codepipeline_custom_action_type.ec2_build["legacy"]
+}
+
 resource "aws_codepipeline_custom_action_type" "ec2_build" {
+  for_each      = local.build_action_providers
   category      = "Build"
-  provider_name = var.build_action_provider_name
+  provider_name = each.value
   version       = var.build_action_version
 
   input_artifact_details {
@@ -206,21 +223,42 @@ resource "aws_codepipeline_custom_action_type" "ec2_build" {
   })
 }
 
-module "build_worker" {
+module "production_build_worker" {
   source = "../../modules/aws_pipeline_ec2_worker"
 
-  name_prefix                 = var.name_prefix
+  name_prefix                 = "${var.name_prefix}-prod"
   aws_region                  = var.aws_region
-  provider_name               = var.build_action_provider_name
+  provider_name               = var.production_build_action_provider_name
   provider_version            = var.build_action_version
   instance_count              = var.build_worker_instance_count
   instance_type               = var.build_worker_instance_type
   subnet_ids                  = var.build_worker_subnet_ids
   associate_public_ip_address = var.build_worker_associate_public_ip_address
   allowed_ssh_cidrs           = var.build_worker_allowed_ssh_cidrs
-  deploy_bucket_names         = local.build_worker_deploy_bucket_names
-  artifact_bucket_names       = local.build_worker_artifact_bucket_names
-  lambda_function_names       = local.build_worker_lambda_function_names
+  deploy_bucket_names         = local.production_build_worker_deploy_bucket_names
+  artifact_bucket_names       = local.production_build_worker_artifact_bucket_names
+  lambda_function_names       = local.production_build_worker_lambda_function_names
+  lambda_region               = var.lambda_region
+  root_volume_size_gb         = var.build_worker_root_volume_size_gb
+  detailed_monitoring         = var.build_worker_detailed_monitoring
+  tags                        = var.tags
+}
+
+module "development_build_worker" {
+  source = "../../modules/aws_pipeline_ec2_worker"
+
+  name_prefix                 = "${var.name_prefix}-dev"
+  aws_region                  = var.aws_region
+  provider_name               = var.development_build_action_provider_name
+  provider_version            = var.build_action_version
+  instance_count              = var.build_worker_instance_count
+  instance_type               = var.build_worker_instance_type
+  subnet_ids                  = var.build_worker_subnet_ids
+  associate_public_ip_address = var.build_worker_associate_public_ip_address
+  allowed_ssh_cidrs           = var.build_worker_allowed_ssh_cidrs
+  deploy_bucket_names         = local.development_build_worker_deploy_bucket_names
+  artifact_bucket_names       = local.development_build_worker_artifact_bucket_names
+  lambda_function_names       = local.development_build_worker_lambda_function_names
   lambda_region               = var.lambda_region
   root_volume_size_gb         = var.build_worker_root_volume_size_gb
   detailed_monitoring         = var.build_worker_detailed_monitoring
@@ -242,7 +280,7 @@ module "site" {
   deploy_cloudfront_distribution_id = ""
   deploy_cloudfront_domain_name     = var.enable_cloudfront ? local.site_custom_domain_name : ""
   enable_cloudfront                 = false
-  build_action_provider_name        = var.build_action_provider_name
+  build_action_provider_name        = var.production_build_action_provider_name
   build_action_version              = var.build_action_version
   build_action_timeout              = var.build_action_timeout
   build_script_path                 = var.build_script_path
@@ -255,7 +293,7 @@ module "site" {
   trigger_path_includes             = local.site_trigger_includes
   trigger_path_excludes             = local.site_trigger_excludes
 
-  depends_on = [module.build_worker, aws_codepipeline_custom_action_type.ec2_build]
+  depends_on = [module.production_build_worker, aws_codepipeline_custom_action_type.ec2_build]
 }
 
 data "aws_route53_zone" "tech" {
@@ -387,7 +425,7 @@ module "site_dev" {
   deploy_cloudfront_distribution_id = ""
   deploy_cloudfront_domain_name     = var.dev_enable_cloudfront ? local.dev_custom_domain_name : ""
   enable_cloudfront                 = false
-  build_action_provider_name        = var.build_action_provider_name
+  build_action_provider_name        = var.development_build_action_provider_name
   build_action_version              = var.build_action_version
   build_action_timeout              = var.build_action_timeout
   build_script_path                 = var.build_script_path
@@ -400,7 +438,7 @@ module "site_dev" {
   trigger_path_includes             = local.site_trigger_includes
   trigger_path_excludes             = local.site_trigger_excludes
 
-  depends_on = [module.build_worker, aws_codepipeline_custom_action_type.ec2_build]
+  depends_on = [module.development_build_worker, aws_codepipeline_custom_action_type.ec2_build]
 }
 
 data "aws_route53_zone" "dev" {
