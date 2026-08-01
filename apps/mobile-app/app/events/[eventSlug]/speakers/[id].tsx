@@ -619,22 +619,15 @@ export default function SpeakerDetail() {
     }
   };
 
-  const handleRequestMeeting = async () => {
-    console.log('🔵 handleRequestMeeting called');
-    console.log('User:', dbUserId);
-    console.log('Speaker:', speaker?.id);
-    
+  const handleRequestMeeting = () => {
     if (!speaker) {
-      console.log('❌ Missing speaker');
       showError('Missing Information', 'Missing speaker information');
       return;
     }
 
     // Show the meeting request modal directly - authentication will be checked on submit
     // This allows users to fill out the form (message and intentions) before being prompted to login
-    console.log('🟡 Showing meeting request modal...');
     setShowMeetingModal(true);
-    console.log('🟢 Modal should now be visible');
   };
 
   const submitMeetingRequestDirectly = async () => {
