@@ -5,6 +5,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 
 const mockApiRequest = jest.fn();
 const mockShowError = jest.fn();
+const mockEvent = { id: 'chile2026', name: 'BSL Chile 2026' };
 const mockChannel = {
   on: jest.fn().mockReturnThis(),
   subscribe: jest.fn().mockReturnThis(),
@@ -39,7 +40,7 @@ jest.mock('../../hooks/useAuth', () => ({
 }));
 
 jest.mock('@contexts/EventContext', () => ({
-  useEvent: () => ({ event: { id: 'chile2026' } }),
+  useEvent: () => ({ event: mockEvent }),
 }));
 
 jest.mock('@contexts/ToastContext', () => ({
@@ -146,6 +147,8 @@ describe('networking dashboard', () => {
       .flatMap((node) => node.children)
       .join(' ');
     expect(renderedText).toContain('Your Networking Stats');
+    expect(renderedText).toContain('Networking for BSL Chile 2026');
+    expect(renderedText).toContain('Connect with speakers and attendees');
     expect(renderedText).toContain('12');
     expect(renderedText).toContain('5');
 

@@ -41,6 +41,11 @@ export default function NetworkingView() {
   const tutorialStartedRef = useRef(false);
   const styles = getStyles(isDark, colors);
   const eventId = event?.id || 'bsl';
+  const networkingEventLabel = event?.name || event?.title || eventId;
+  const networkingScopeLabel = t({
+    id: 'networking.eventScope',
+    message: 'Networking for {eventName}',
+  }).replace('{eventName}', networkingEventLabel);
   const networkingStatsPath = eventApiPath(eventId, 'networking/stats');
 
   // Reset ref when tutorial is reset (completion status changes from true to false)
@@ -529,6 +534,7 @@ export default function NetworkingView() {
         <View style={styles.header}>
           <MaterialIcons name="people-alt" size={32} color={colors.primary} />
           <Text style={styles.headerTitle}>{t({ id: 'networking.title', message: 'Networking Center' })}</Text>
+          <Text style={styles.headerEventScope}>{networkingScopeLabel}</Text>
           <Text style={styles.headerSubtitle}>{t({ id: 'networking.subtitle', message: 'Connect with speakers and attendees' })}</Text>
         </View>
 
@@ -691,6 +697,13 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 14,
     color: colors.text?.secondary || (isDark ? '#F0F0F0' : '#666666'),
     marginTop: 4,
+  },
+  headerEventScope: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary || '#1d4ed8',
+    marginTop: 6,
+    textAlign: 'center',
   },
   section: {
     padding: 20,
