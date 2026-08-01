@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608010520, // Updated to current timestamp
+  buildNumber: 202608010524, // Updated to current timestamp
   releaseDate: '2026-08-01',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -32,15 +32,31 @@ export const CURRENT_VERSION: VersionInfo = {
   bugfixes: [
     'the CI-commit-injection fix was ineffective for hashpass.tech too',
     'parse escaped apostrophes when regenerating versions.json',
-    'propagate the CodeStar source revision to the BSL EC2 worker',
-    'inject the real deployed commit into BSL\'s bundle too'
+    'propagate the CodeStar source revision to the BSL EC2 worker'
   ],
   breakingChanges: [],
-  notes: 'the CI-commit-injection fix was ineffective for hashpass.tech too; parse escaped apostrophes when regenerating versions.json; propagate the CodeStar source revision to the BSL EC2 worker; inject the real deployed commit into BSL\'s bundle too'
+  notes: 'the CI-commit-injection fix was ineffective for hashpass.tech too; parse escaped apostrophes when regenerating versions.json; propagate the CodeStar source revision to the BSL EC2 worker'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.297': {
+    version: '1.8.297',
+    buildNumber: 202608010524,
+    releaseDate: '2026-08-01',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'the CI-commit-injection fix was ineffective for hashpass.tech too',
+      'parse escaped apostrophes when regenerating versions.json',
+      'propagate the CodeStar source revision to the BSL EC2 worker'
+    ],
+    breakingChanges: [],
+    notes: 'the CI-commit-injection fix was ineffective for hashpass.tech too; parse escaped apostrophes when regenerating versions.json; propagate the CodeStar source revision to the BSL EC2 worker'
+  },
   '1.8.296': {
     version: '1.8.296',
     buildNumber: 202608010520,
