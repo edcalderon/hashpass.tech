@@ -2,9 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   useWindowDimensions,
   View,
@@ -75,6 +77,10 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const [loadTimedOut, setLoadTimedOut] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
   const [restoringIncludedPasses, setRestoringIncludedPasses] = useState(false);
+  const [claimModalVisible, setClaimModalVisible] = useState(false);
+  const [claimCode, setClaimCode] = useState('');
+  const [claimingPass, setClaimingPass] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
   const [filteredPasses, setFilteredPasses] = useState<WalletPass[]>([]);
   // UnifiedSearchAndFilter reports its result in an effect, so filteredPasses
   // is legitimately empty for one frame after mount. Without this flag that
@@ -184,8 +190,8 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     setRetryNonce((current) => current + 1);
   }, []);
 
-  const handleRestoreIncludedPasses = useCallback(async () => {
-    if (!dbUserId || restoringIncludedPasses) return;
+  const handleRestoreIncludedPasses = useCallback(async (): Promise<boolean> => {
+    if (!dbUserId || restoringIncludedPasses) return false;
 
     setRestoringIncludedPasses(true);
     try {
@@ -196,13 +202,38 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
       );
       if (restoredPassIds.some(Boolean)) {
         handleRetry();
+        return true;
       } else {
         setLoadError(true);
+        return false;
       }
     } finally {
       setRestoringIncludedPasses(false);
     }
   }, [dbUserId, handleRetry, restoringIncludedPasses]);
+
+  const handleClaimPassCode = useCallback(async () => {
+    if (!dbUserId || claimingPass) return;
+    if (!claimCode.trim()) {
+      setClaimError('Enter your pass or courtesy code.');
+      return;
+    }
+
+    setClaimingPass(true);
+    setClaimError(null);
+    try {
+      const claim = await passSystemService.claimPassByCode(dbUserId, claimCode);
+      if (!claim) {
+        setClaimError('This code is invalid, unavailable, or has already been used.');
+        return;
+      }
+      setClaimCode('');
+      setClaimModalVisible(false);
+      handleRetry();
+    } finally {
+      setClaimingPass(false);
+    }
+  }, [claimCode, claimingPass, dbUserId, handleRetry]);
 
   const customFilterLogic = useCallback(
     (data: WalletPass[], filters: { [key: string]: any }, searchQuery: string) =>
@@ -390,6 +421,80 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             Restore your complimentary BSL General passes. Paid upgrades are never changed.
           </Text>
         )}
+        {canRestoreIncludedBslPasses && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Have a pass? Claim it here"
+            onPress={() => {
+              setClaimError(null);
+              setClaimModalVisible(true);
+            }}
+            style={{ marginTop: 12, paddingVertical: 4 }}
+          >
+            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' }}>
+              Have a pass? Claim it here
+            </Text>
+          </Pressable>
+        )}
+        <Modal
+          transparent
+          animationType="fade"
+          visible={claimModalVisible}
+          onRequestClose={() => setClaimModalVisible(false)}
+        >
+          <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0, 0, 0, 0.45)' }}>
+            <View style={{ backgroundColor: colors.background.paper, borderRadius: 18, padding: 20, gap: 12 }}>
+              <Text style={{ color: colors.text.primary, fontSize: 18, fontWeight: '700' }}>Claim your pass</Text>
+              <Text style={{ color: colors.text.secondary, fontSize: 13, lineHeight: 19 }}>
+                Enter an invitation or courtesy code from the event team. Codes can be used only by the signed-in account.
+              </Text>
+              <TextInput
+                accessibilityLabel="Pass or courtesy code"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                editable={!claimingPass}
+                onChangeText={setClaimCode}
+                placeholder="Enter code"
+                placeholderTextColor={colors.text.disabled}
+                value={claimCode}
+                style={{ borderWidth: 1, borderColor: colors.divider, borderRadius: 10, color: colors.text.primary, fontSize: 15, fontWeight: '600', letterSpacing: 0.5, paddingHorizontal: 12, paddingVertical: 11 }}
+              />
+              {claimError && <Text style={{ color: '#C81000', fontSize: 12 }}>{claimError}</Text>}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Redeem pass code"
+                disabled={claimingPass}
+                onPress={handleClaimPassCode}
+                style={{ alignItems: 'center', backgroundColor: colors.primary, borderRadius: 10, opacity: claimingPass ? 0.65 : 1, paddingVertical: 11 }}
+              >
+                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>
+                  {claimingPass ? 'Redeeming…' : 'Redeem code'}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Restore BSL complimentary passes"
+                disabled={restoringIncludedPasses}
+                onPress={async () => {
+                  if (await handleRestoreIncludedPasses()) setClaimModalVisible(false);
+                }}
+                style={{ alignItems: 'center', paddingVertical: 6 }}
+              >
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
+                  Restore BSL complimentary passes
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close pass claim dialog"
+                onPress={() => setClaimModalVisible(false)}
+                style={{ alignItems: 'center', paddingVertical: 4 }}
+              >
+                <Text style={{ color: colors.text.secondary, fontSize: 13 }}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }

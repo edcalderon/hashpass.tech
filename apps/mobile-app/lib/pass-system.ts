@@ -110,6 +110,12 @@ export interface EventPassInfo extends PassInfo {
   event_id: string;
 }
 
+export interface PassClaimResult {
+  status: 'claimed' | 'already_claimed';
+  pass_id: string;
+  event_id: string;
+}
+
 export interface PassTypeLimits {
   max_requests: number;
   max_boost: number;
@@ -569,6 +575,27 @@ class PassSystemService {
       if (this.defaultPassCreations.get(creationKey) === creation) {
         this.defaultPassCreations.delete(creationKey);
       }
+    }
+  }
+
+  async claimPassByCode(userId: string, code: string): Promise<PassClaimResult | null> {
+    if (!isSupabaseAuthUserId(userId)) {
+      warnInvalidSupabaseUserId('claimPassByCode', userId);
+      return null;
+    }
+
+    const normalizedCode = code.trim().toUpperCase();
+    if (!normalizedCode) return null;
+
+    try {
+      const { data, error } = await supabase
+        .rpc('claim_event_pass_code', { p_code: normalizedCode })
+        .single();
+
+      if (error || !data) return null;
+      return data as PassClaimResult;
+    } catch {
+      return null;
     }
   }
 

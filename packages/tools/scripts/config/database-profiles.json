@@ -35,7 +35,8 @@
     "upcoming-bsl-passes": [
       "db/migrations/V010__provision_upcoming_bsl_general_passes.sql",
       "db/migrations/V011__secure_upcoming_bsl_pass_provisioning.sql",
-      "db/migrations/V021__repair_bsl_pass_access_and_backfill.sql"
+      "db/migrations/V021__repair_bsl_pass_access_and_backfill.sql",
+      "db/migrations/V030__add_secure_pass_claim_codes.sql"
     ],
     "meeting-lifecycle": [
       "db/migrations/V017__harden_meeting_request_lifecycle.sql",

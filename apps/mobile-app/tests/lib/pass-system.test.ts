@@ -242,6 +242,21 @@ describe('passSystemService Supabase user id guard', () => {
     });
   });
 
+  it('redeems a normalized pass-claim code only for the authenticated database user', async () => {
+    mockRpcSingle({
+      data: { status: 'claimed', pass_id: 'courtesy-pass', event_id: 'chile2026' },
+      error: null,
+    });
+
+    await expect(
+      passSystemService.claimPassByCode(supabaseUserId, ' bsl-2026-welcome '),
+    ).resolves.toEqual({ status: 'claimed', pass_id: 'courtesy-pass', event_id: 'chile2026' });
+
+    expect(mockRpc).toHaveBeenCalledWith('claim_event_pass_code', {
+      p_code: 'BSL-2026-WELCOME',
+    });
+  });
+
   it('reuses an in-flight default-pass creation for concurrent bootstrap calls', async () => {
     mockPassQuery({ data: [], error: null });
     mockPassQuery({ data: [], error: null });

@@ -64,6 +64,7 @@ jest.mock('../../../components/UnifiedSearchAndFilter', () => {
 
 jest.mock('../../../lib/pass-system', () => ({
   passSystemService: {
+    claimPassByCode: jest.fn(),
     createDefaultPass: jest.fn(),
     getAllUserPasses: jest.fn(),
     getUserPassesForEvents: jest.fn(),
@@ -122,6 +123,7 @@ describe('PassesWallet', () => {
     mockDbUserId = 'supabase-user-id';
     mockFilterOverride = null;
     jest.clearAllMocks();
+    (passSystemService.claimPassByCode as jest.Mock).mockResolvedValue(null);
     (passSystemService.createDefaultPass as jest.Mock).mockResolvedValue('restored-pass');
     (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([]);
     (passSystemService.getUserPassesForEvents as jest.Mock).mockResolvedValue([]);
@@ -259,6 +261,40 @@ describe('PassesWallet', () => {
     });
 
     expect(bslWallet.root.findByProps({ children: 'Unable to load your passes' })).toBeTruthy();
+  });
+
+  it('opens the pass-claim dialog and reloads after redeeming a courtesy code', async () => {
+    (passSystemService.getAllUserPasses as jest.Mock)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([makePass({ event_id: 'chile2026' })]);
+    (passSystemService.claimPassByCode as jest.Mock).mockResolvedValue({
+      status: 'claimed',
+      pass_id: 'courtesy-pass',
+      event_id: 'chile2026',
+    });
+
+    const renderer = await renderWallet({ layout: 'plain' });
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Have a pass? Claim it here' }));
+      await Promise.resolve();
+    });
+    const codeInput = renderer.root.findByProps({ accessibilityLabel: 'Pass or courtesy code' });
+    act(() => {
+      codeInput.props.onChangeText(' bsl-2026-welcome ');
+    });
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Redeem pass code' }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(passSystemService.claimPassByCode).toHaveBeenCalledWith(
+      'supabase-user-id',
+      ' bsl-2026-welcome ',
+    );
+    expect(passSystemService.getAllUserPasses).toHaveBeenCalledTimes(2);
+    expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
   });
 
   it('shows a recoverable no-matches state when filters exclude every loaded pass', async () => {

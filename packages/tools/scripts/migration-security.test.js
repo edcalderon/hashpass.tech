@@ -43,6 +43,10 @@ const speakerIdentityClaimsFollowUpMigrationPath = path.join(
   root,
   'db/migrations/V029__harden_speaker_identity_claims.sql',
 );
+const passClaimCodeMigrationPath = path.join(
+  root,
+  'db/migrations/V030__add_secure_pass_claim_codes.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -205,6 +209,27 @@ describe('verified speaker identity claim migration contract', () => {
     expect(migration).toMatch(/SET status = 'unclaimed',[\s\S]*claimed_user_id = NULL,[\s\S]*claimed_at = NULL/i);
     expect(config.groups['speaker-identity-claims']).toContain(
       'db/migrations/V029__harden_speaker_identity_claims.sql',
+    );
+  });
+});
+
+describe('pass claim-code migration contract', () => {
+  it('redeems hashed courtesy codes atomically for the authenticated pass holder', () => {
+    const migration = fs.existsSync(passClaimCodeMigrationPath)
+      ? fs.readFileSync(passClaimCodeMigrationPath, 'utf8')
+      : '';
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.pass_claim_codes/i);
+    expect(migration).toMatch(/code_hash text NOT NULL UNIQUE/i);
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.pass_code_claims/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.claim_event_pass_code/i);
+    expect(migration).toMatch(/auth\.uid\(\) IS NULL/i);
+    expect(migration).toMatch(/FOR UPDATE/i);
+    expect(migration).toMatch(/max_claims/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.claim_event_pass_code\(text\) TO authenticated/i);
+    expect(config.groups['upcoming-bsl-passes']).toContain(
+      'db/migrations/V030__add_secure_pass_claim_codes.sql',
     );
   });
 });
