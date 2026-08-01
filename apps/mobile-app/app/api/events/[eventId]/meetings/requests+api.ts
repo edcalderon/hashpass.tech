@@ -20,14 +20,19 @@ async function authenticatedIdentity(request: Request) {
         { status: identity.status },
       ),
     };
-  if (!identity.supabaseUserId)
+  // Meeting rows reference the tenant's canonical `user` table, not
+  // Supabase's auth.users table. Prefer the canonical ID for every meeting
+  // read/write, while retaining the provider ID only for legacy tenants whose
+  // meeting rows still use that same UUID domain.
+  const meetingUserId = identity.registryUserId ?? identity.supabaseUserId;
+  if (!meetingUserId)
     return {
       response: Response.json(
         { error: "Account is not linked to a meeting identity" },
         { status: 403 },
       ),
     };
-  return { identity };
+  return { identity, meetingUserId };
 }
 
 async function speakerForUser(supabase: any, userId: string) {
@@ -60,8 +65,8 @@ export async function GET(request: Request) {
       { error: identity.error },
       { status: identity.status },
     );
-  if (!identity.supabaseUserId) return Response.json({ data: [] });
-  const userId = identity.supabaseUserId;
+  const userId = identity.registryUserId ?? identity.supabaseUserId;
+  if (!userId) return Response.json({ data: [] });
   const eventId = eventIdFromRequest(request);
   if (!eventId)
     return Response.json({ error: "A valid event id is required" }, { status: 400 });
@@ -160,7 +165,7 @@ export async function POST(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
   try {
     const { data, error } = await supabase.rpc("insert_meeting_request", {
-      p_requester_id: auth.identity.supabaseUserId,
+      p_requester_id: auth.meetingUserId,
       p_speaker_id: String(body.speakerId),
       p_speaker_name: body.speakerName,
       p_requester_name: body.requesterName,
@@ -232,12 +237,12 @@ export async function PATCH(request: Request) {
       rpcName = "cancel_meeting_request";
       params = {
         p_request_id: body.requestId,
-        p_user_id: auth.identity.supabaseUserId,
+        p_user_id: auth.meetingUserId,
       };
     } else {
       const speaker = await speakerForUser(
         supabase,
-        auth.identity.supabaseUserId!,
+        auth.meetingUserId,
       );
       if (!speaker)
         return Response.json(

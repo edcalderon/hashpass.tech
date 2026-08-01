@@ -60,7 +60,10 @@ describe("event networking stats api", () => {
   afterEach(() => mockConsoleError.mockRestore());
 
   it("keeps counts and speaker statistics scoped to the requested event on the server", async () => {
-    mockResolveIdentity.mockResolvedValue({ supabaseUserId: "speaker-user-1" });
+    mockResolveIdentity.mockResolvedValue({
+      supabaseUserId: "auth-speaker-user-1",
+      registryUserId: "speaker-user-1",
+    });
     mockIsIdentityError.mockReturnValue(false);
     mockRpc.mockResolvedValue({ data: [{ remaining_requests: 2, sent_requests: 3 }], error: null });
 

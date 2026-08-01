@@ -26,7 +26,10 @@ describe("event meeting limits api", () => {
   afterEach(() => mockConsoleError.mockRestore());
 
   it("routes the requested event's limits through the backend RPC", async () => {
-    mockResolveIdentity.mockResolvedValue({ supabaseUserId: "user-1" });
+    mockResolveIdentity.mockResolvedValue({
+      supabaseUserId: "auth-user-1",
+      registryUserId: "user-1",
+    });
     mockIsIdentityError.mockReturnValue(false);
     mockRpc.mockResolvedValue({ data: [{ remaining_requests: 2 }], error: null });
 

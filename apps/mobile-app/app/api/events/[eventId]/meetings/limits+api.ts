@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   if (isResolveIdentityError(identity)) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
-  if (!identity.supabaseUserId) {
+  const meetingUserId = identity.registryUserId ?? identity.supabaseUserId;
+  if (!meetingUserId) {
     return Response.json({ error: "Meeting identity required" }, { status: 403 });
   }
   const eventId = eventIdFromRequest(request);
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await getSupabaseServerForRequest(request).rpc(
     "get_user_meeting_request_counts",
-    { p_user_id: identity.supabaseUserId, p_event_id: eventId },
+    { p_user_id: meetingUserId, p_event_id: eventId },
   );
   if (error) {
     console.error("[meeting-limits] fetch error:", error);
