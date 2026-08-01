@@ -64,6 +64,7 @@ jest.mock('../../../components/UnifiedSearchAndFilter', () => {
 
 jest.mock('../../../lib/pass-system', () => ({
   passSystemService: {
+    createDefaultPass: jest.fn(),
     getAllUserPasses: jest.fn(),
     getUserPassesForEvents: jest.fn(),
   },
@@ -121,6 +122,7 @@ describe('PassesWallet', () => {
     mockDbUserId = 'supabase-user-id';
     mockFilterOverride = null;
     jest.clearAllMocks();
+    (passSystemService.createDefaultPass as jest.Mock).mockResolvedValue('restored-pass');
     (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([]);
     (passSystemService.getUserPassesForEvents as jest.Mock).mockResolvedValue([]);
   });
@@ -175,7 +177,10 @@ describe('PassesWallet', () => {
 
     expect(passSystemService.getAllUserPasses).not.toHaveBeenCalled();
     expect(renderer.root.findByProps({ children: 'Loading your pass information...' })).toBeTruthy();
-    renderer.unmount();
+    await act(async () => {
+      renderer.unmount();
+      await Promise.resolve();
+    });
   });
 
   it('shows the empty-wallet state only after an authenticated lookup returns no passes', async () => {
@@ -200,6 +205,62 @@ describe('PassesWallet', () => {
     expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
   });
 
+  it('retries a transient wallet lookup before showing the error state', async () => {
+    (passSystemService.getAllUserPasses as jest.Mock)
+      .mockRejectedValueOnce(new Error('temporary network failure'))
+      .mockResolvedValueOnce([makePass()]);
+
+    const renderer = await renderWallet();
+
+    expect(passSystemService.getAllUserPasses).toHaveBeenCalledTimes(2);
+    expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
+  });
+
+  it('restores the included BSL passes for the signed-in holder and reloads the wallet', async () => {
+    (passSystemService.getAllUserPasses as jest.Mock)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([makePass({ event_id: 'chile2026' })]);
+
+    const renderer = await renderWallet({ layout: 'plain' });
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Restore included BSL passes' }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(passSystemService.createDefaultPass).toHaveBeenNthCalledWith(
+      1,
+      'supabase-user-id',
+      'general',
+      'chile2026',
+    );
+    expect(passSystemService.createDefaultPass).toHaveBeenNthCalledWith(
+      2,
+      'supabase-user-id',
+      'general',
+      'colombia2026',
+    );
+    expect(passSystemService.getAllUserPasses).toHaveBeenCalledTimes(2);
+    expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
+  });
+
+  it('keeps the restore action scoped to the BSL wallet and reports a failed restore', async () => {
+    (passSystemService.createDefaultPass as jest.Mock).mockResolvedValue(null);
+
+    const globalWallet = await renderWallet();
+    expect(globalWallet.root.findAllByProps({ accessibilityLabel: 'Restore included BSL passes' })).toHaveLength(0);
+
+    const bslWallet = await renderWallet({ layout: 'plain' });
+    await act(async () => {
+      triggerPress(bslWallet.root.findByProps({ accessibilityLabel: 'Restore included BSL passes' }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(bslWallet.root.findByProps({ children: 'Unable to load your passes' })).toBeTruthy();
+  });
+
   it('shows a recoverable no-matches state when filters exclude every loaded pass', async () => {
     mockFilterOverride = [];
     (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([makePass()]);
@@ -216,7 +277,7 @@ describe('PassesWallet', () => {
     const renderer = await renderWallet();
 
     expect(renderer.root.findByProps({ children: 'Unable to load your passes' })).toBeTruthy();
-    expect(errorSpy).toHaveBeenCalledWith('Error loading pass wallet:', expect.any(Error));
+    expect(errorSpy).not.toHaveBeenCalled();
     errorSpy.mockRestore();
   });
 
@@ -228,13 +289,20 @@ describe('PassesWallet', () => {
       const renderer = await renderWallet();
 
       await act(async () => {
-        jest.advanceTimersByTime(12_000);
+        jest.advanceTimersByTime(5_000);
+        await Promise.resolve();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(5_000);
         await Promise.resolve();
       });
 
       expect(renderer.root.findByProps({ children: 'Passes took too long to load' })).toBeTruthy();
       expect(renderer.root.findByProps({ accessibilityLabel: 'Try again' })).toBeTruthy();
-      renderer.unmount();
+      await act(async () => {
+        renderer.unmount();
+        await Promise.resolve();
+      });
     } finally {
       jest.useRealTimers();
     }

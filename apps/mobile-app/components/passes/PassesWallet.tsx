@@ -54,7 +54,9 @@ interface PassesWalletProps {
 // behind to peek out at all.
 const STACK_OFFSET_X = 26;
 const STACK_SCALE_STEP = 0.04;
-const PASS_LOAD_TIMEOUT_MS = 12_000;
+const PASS_LOAD_ATTEMPT_TIMEOUT_MS = 5_000;
+const PASS_LOAD_ATTEMPTS = 2;
+const RESTORABLE_BSL_EVENT_IDS = ['chile2026', 'colombia2026'] as const;
 
 const PassesWallet: React.FC<PassesWalletProps> = ({
   eventIds,
@@ -72,6 +74,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const [loadError, setLoadError] = useState(false);
   const [loadTimedOut, setLoadTimedOut] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
+  const [restoringIncludedPasses, setRestoringIncludedPasses] = useState(false);
   const [filteredPasses, setFilteredPasses] = useState<WalletPass[]>([]);
   // UnifiedSearchAndFilter reports its result in an effect, so filteredPasses
   // is legitimately empty for one frame after mount. Without this flag that
@@ -101,31 +104,44 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           if (!active) return;
           setLoading(false);
           setLoadTimedOut(true);
-        }, PASS_LOAD_TIMEOUT_MS);
+        }, PASS_LOAD_ATTEMPT_TIMEOUT_MS * PASS_LOAD_ATTEMPTS);
         return;
       }
 
       setLoading(true);
-      let requestTimeout: ReturnType<typeof setTimeout> | undefined;
       try {
         const scopedIds = eventIdsKey ? eventIdsKey.split(',').filter(Boolean) : undefined;
-        const request = scopedIds?.length
-          ? passSystemService.getUserPassesForEvents(dbUserId, scopedIds)
-          : passSystemService.getAllUserPasses(dbUserId);
-        const result = await Promise.race([
-          request,
-          new Promise<never>((_, reject) => {
-            requestTimeout = setTimeout(
-              () => reject(new Error('PASS_LOAD_TIMEOUT')),
-              PASS_LOAD_TIMEOUT_MS,
-            );
-          }),
-        ]);
+        let lastError: unknown;
+        let result: PassInfo[] | undefined;
+
+        for (let attempt = 0; attempt < PASS_LOAD_ATTEMPTS; attempt += 1) {
+          let requestTimeout: ReturnType<typeof setTimeout> | undefined;
+          try {
+            const request = scopedIds?.length
+              ? passSystemService.getUserPassesForEvents(dbUserId, scopedIds)
+              : passSystemService.getAllUserPasses(dbUserId);
+            result = await Promise.race([
+              request,
+              new Promise<never>((_, reject) => {
+                requestTimeout = setTimeout(
+                  () => reject(new Error('PASS_LOAD_TIMEOUT')),
+                  PASS_LOAD_ATTEMPT_TIMEOUT_MS,
+                );
+              }),
+            ]);
+            break;
+          } catch (error) {
+            lastError = error;
+          } finally {
+            if (requestTimeout) clearTimeout(requestTimeout);
+          }
+        }
+
+        if (!result) throw lastError ?? new Error('PASS_LOAD_FAILED');
         if (!active) return;
         setPasses(result);
         onPassesLoaded?.(result);
       } catch (error) {
-        console.error('Error loading pass wallet:', error);
         if (active) {
           setPasses([]);
           if (error instanceof Error && error.message === 'PASS_LOAD_TIMEOUT') {
@@ -135,7 +151,6 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           }
         }
       } finally {
-        if (requestTimeout) clearTimeout(requestTimeout);
         if (active) setLoading(false);
       }
     };
@@ -168,6 +183,26 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     setLoading(true);
     setRetryNonce((current) => current + 1);
   }, []);
+
+  const handleRestoreIncludedPasses = useCallback(async () => {
+    if (!dbUserId || restoringIncludedPasses) return;
+
+    setRestoringIncludedPasses(true);
+    try {
+      const restoredPassIds = await Promise.all(
+        RESTORABLE_BSL_EVENT_IDS.map((eventId) =>
+          passSystemService.createDefaultPass(dbUserId, 'general', eventId),
+        ),
+      );
+      if (restoredPassIds.some(Boolean)) {
+        handleRetry();
+      } else {
+        setLoadError(true);
+      }
+    } finally {
+      setRestoringIncludedPasses(false);
+    }
+  }, [dbUserId, handleRetry, restoringIncludedPasses]);
 
   const customFilterLogic = useCallback(
     (data: WalletPass[], filters: { [key: string]: any }, searchQuery: string) =>
@@ -243,6 +278,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   // narrow phone.
   const cardWidth = Math.min(PASS_CARD_WIDTH, windowWidth - 48 - stackDepth * STACK_OFFSET_X);
   const deckWidth = cardWidth + stackDepth * STACK_OFFSET_X;
+  const canRestoreIncludedBslPasses = layout === 'plain' && Boolean(dbUserId);
 
   if (loading) {
     return (
@@ -312,22 +348,48 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
         >
           {fallbackMessage}
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('tryAgain', 'Try again')}
-          onPress={handleRetry}
-          style={{
-            marginTop: 16,
-            paddingHorizontal: 18,
-            paddingVertical: 10,
-            borderRadius: 10,
-            backgroundColor: colors.primary,
-          }}
-        >
-          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>
-            {t('tryAgain', 'Try again')}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 16 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('tryAgain', 'Try again')}
+            onPress={handleRetry}
+            style={{
+              paddingHorizontal: 18,
+              paddingVertical: 10,
+              borderRadius: 10,
+              backgroundColor: colors.primary,
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>
+              {t('tryAgain', 'Try again')}
+            </Text>
+          </Pressable>
+          {canRestoreIncludedBslPasses && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Restore included BSL passes"
+              disabled={restoringIncludedPasses}
+              onPress={handleRestoreIncludedPasses}
+              style={{
+                paddingHorizontal: 18,
+                paddingVertical: 10,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.primary,
+                opacity: restoringIncludedPasses ? 0.65 : 1,
+              }}
+            >
+              <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
+                {restoringIncludedPasses ? 'Restoring passes…' : 'Restore included passes'}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+        {canRestoreIncludedBslPasses && (
+          <Text style={{ color: colors.text.secondary, fontSize: 11, lineHeight: 16, marginTop: 10, textAlign: 'center' }}>
+            Restore your complimentary BSL General passes. Paid upgrades are never changed.
           </Text>
-        </Pressable>
+        )}
       </View>
     );
   }

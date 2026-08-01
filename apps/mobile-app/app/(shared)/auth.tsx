@@ -2451,9 +2451,8 @@ export default function AuthScreen() {
                         style={styles.footerLink}
                         onPress={openPrivacyModal}
                       >
-                        {t("privacy.privacy", "Privacy Policy")}
+                        {`${t("privacy.privacy", "Privacy Policy")}.`}
                       </Text>
-                      .
                     </Text>
                   </View>
 
