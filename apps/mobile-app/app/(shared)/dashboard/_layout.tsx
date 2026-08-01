@@ -695,7 +695,7 @@ function CustomDrawerContent({
             style={styles.logoCardButton}
             activeOpacity={1}
             accessibilityRole="button"
-            accessibilityLabel={`${username}, ${t({ id: 'nav.memberSince', message: 'Member since' })} ${memberSince || '—'}`}
+            accessibilityLabel={t({ id: 'nav.backToLanding', message: 'Back to landing' })}
             // @ts-ignore - Web-specific hover handlers
             onMouseEnter={handleLogoHoverIn}
             onMouseLeave={handleLogoHoverOut}
@@ -743,7 +743,7 @@ function CustomDrawerContent({
               style={styles.brandUsernameButton}
               activeOpacity={0.7}
               accessibilityRole="link"
-              accessibilityLabel={t({ id: 'nav.profile', message: 'Profile' })}
+              accessibilityLabel={`${username}: ${t({ id: 'nav.profile', message: 'Profile' })}`}
             >
               <Text style={styles.brandUsername} numberOfLines={1}>{username}</Text>
             </TouchableOpacity>
@@ -1780,7 +1780,11 @@ const getStyles = (
   identityMeta: {
     flex: 1,
     minWidth: 0,
-    paddingRight: isMobile ? 0 : 2,
+    // The close button is absolute in the header, so the identity column
+    // reserves its 38/42px hit target plus a small gutter. This keeps long
+    // usernames visible and prevents the close control from intercepting
+    // profile-link taps at the edge of the drawer.
+    paddingRight: isMobile ? 46 : 50,
     justifyContent: 'center',
   },
   identityBadgeWrap: {
