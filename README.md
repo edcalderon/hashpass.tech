@@ -20,10 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.299)
+## 📋 Latest Changes (v1.8.300)
 
-### Released
-- restore Chile agenda data
+### Features
+
+* claim speaker profiles after verified signup ([f69d3e7](https://github.com/hashpass-tech/hashpass.tech/commit/f69d3e7058dff00c5620e0543db5ad5406fd385a))
+### Release Highlights
+- claim speaker profiles after verified signup; route BSL web API calls to tenant
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
