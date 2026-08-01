@@ -75,7 +75,16 @@ export async function checkVersionAndClearCache(forceCheck: boolean = false): Pr
   if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
 
   try {
-    if (!forceCheck && isUserActive()) return false;
+    // forceCheck no longer means "skip the active-user check" -- see
+    // checkVersionOnStart() below, which now always calls this on a timer
+    // regardless of activity, and decides forceCheck per-tick based on
+    // current activity instead. Gating the check itself on isUserActive()
+    // here (as this used to) meant an actively-browsing user (the app's
+    // core usage pattern: any /events/ or /dashboard page) never got even
+    // the soft 'hashpass:version-update' banner, since every non-forced
+    // call from the old caller was silently skipped -- staying stuck on a
+    // stale bundle with no way to discover an update exists short of
+    // manually hard-refreshing.
 
     // The cooldown must apply even for forced checks. checkVersionOnStart()
     // calls this with forceCheck=true on every fresh page load (after a
@@ -147,17 +156,31 @@ export async function checkVersionOnStart(): Promise<void> {
 
   setTimeout(async () => {
     try {
-      if (isUserActive()) {
-        setTimeout(() => checkVersionOnStart(), 10 * 60 * 1000);
-        return;
+      // Only take the disruptive path (clear caches + reload) while the user
+      // is idle, so an active session is never yanked out from under someone.
+      // Previously, being active at this very first check meant the whole
+      // function just rescheduled itself and returned -- the setInterval
+      // below was never created, so a user who stayed on an /events/ or
+      // /dashboard page (this app's core usage pattern) for their entire
+      // session never got a version check at all, forced or soft. Now the
+      // periodic check is always established regardless of the initial
+      // activity state; only which branch (forced reload vs. soft banner)
+      // it takes each tick depends on activity at that moment.
+      if (!isUserActive()) {
+        const wasCleared = await checkVersionAndClearCache(true);
+        if (wasCleared) return;
       }
 
-      const wasCleared = await checkVersionAndClearCache(true);
-      if (wasCleared) return;
-
       setInterval(() => {
-        if (!isUserActive()) {
+        if (isUserActive()) {
+          // Soft path: just dispatches 'hashpass:version-update' so the
+          // update banner can appear, without reloading out from under an
+          // active session.
           checkVersionAndClearCache(false).catch((error) => {
+            console.warn('[VersionChecker] Periodic check failed:', error);
+          });
+        } else {
+          checkVersionAndClearCache(true).catch((error) => {
             console.warn('[VersionChecker] Periodic check failed:', error);
           });
         }

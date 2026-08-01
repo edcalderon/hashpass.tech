@@ -650,10 +650,6 @@ jobs:
       GOOGLE_PLAY_JSON_KEY: ${{ github.workspace }}/.runner-secrets/google-play-service-account.json
       ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/.runner-secrets/hashpass-release.keystore
       GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-      # Firebase Android app config (com.hashpass.tech) — raw JSON content, same
-      # shape as apps/mobile-app/config/google-services.json. Set via:
-      #   gh secret set GOOGLE_SERVICES_ANDROID_JSON < apps/mobile-app/config/google-services.json
-      GOOGLE_SERVICES_ANDROID_JSON: ${{ secrets.GOOGLE_SERVICES_ANDROID_JSON }}
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EXPO_TOKEN_DEV: ${{ secrets.EXPO_TOKEN_DEV }}
       EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
@@ -848,24 +844,6 @@ jobs:
           printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$GOOGLE_PLAY_JSON_KEY"
           cp "$GOOGLE_PLAY_JSON_KEY" config/hashpass-eas.json
           chmod 600 "$GOOGLE_PLAY_JSON_KEY" config/hashpass-eas.json
-
-      # google-services.json is gitignored (Firebase Android app config — see
-      # apps/mobile-app/config/ and app.json's android.googleServicesFile), so
-      # a fresh checkout never has it. expo prebuild fails without it once
-      # googleServicesFile is set, so materialize it the same way the Google
-      # Play service account JSON above is written from a secret.
-      - name: Materialize Firebase google-services.json
-        run: |
-          set -euo pipefail
-
-          if [ -z "${GOOGLE_SERVICES_ANDROID_JSON:-}" ]; then
-            echo "Missing required environment variable: GOOGLE_SERVICES_ANDROID_JSON"
-            exit 1
-          fi
-
-          mkdir -p apps/mobile-app/config
-          printf '%s' "$GOOGLE_SERVICES_ANDROID_JSON" > apps/mobile-app/config/google-services.json
-          chmod 600 apps/mobile-app/config/google-services.json
 
       - name: Resolve fastlane signing secrets from Expo
         if: inputs.backend == 'fastlane'

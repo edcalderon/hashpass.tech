@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202607301604, // Updated to current timestamp
+  buildNumber: 202607302034, // Updated to current timestamp
   releaseDate: '2026-07-30',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'type the onPassesLoaded callback param in PassesDisplayBoundary'
+    'run periodic version checks even while the user stays active'
   ],
   breakingChanges: [],
-  notes: 'type the onPassesLoaded callback param in PassesDisplayBoundary'
+  notes: 'run periodic version checks even while the user stays active'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.291': {
+    version: '1.8.291',
+    buildNumber: 202607302034,
+    releaseDate: '2026-07-30',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'run periodic version checks even while the user stays active'
+    ],
+    breakingChanges: [],
+    notes: 'run periodic version checks even while the user stays active'
+  },
   '1.8.290': {
     version: '1.8.290',
     buildNumber: 202607301604,

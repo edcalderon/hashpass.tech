@@ -113,7 +113,9 @@
       "loadingRequests": "요청 로딩 중...",
       "loadingSlots": "시간대 로딩 중...",
       "loadingData": "데이터 로딩 중...",
-      "pleaseWait": "잠시만 기다려주세요..."
+      "pleaseWait": "잠시만 기다려주세요...",
+      "startingHashpass": "HASHPASS 시작 중",
+      "openingHashpass": "HASHPASS 여는 중"
     }
   },
   "auth": {
