@@ -1,3 +1,13 @@
+## [1.8.301](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.300...v1.8.301) (2026-08-01)
+
+
+### Bug Fixes
+
+* retry worker bootstrap over ipv4 ([388cd26](https://github.com/hashpass-tech/hashpass.tech/commit/388cd261dc025b8eb1630ae0732eb08afc842637))
+* use canonical identities for meetings ([fc7ce6e](https://github.com/hashpass-tech/hashpass.tech/commit/fc7ce6e09b8edfe09f1cf4d8b4ee00c8cdee20af))
+### Release Highlights
+- retry worker bootstrap over ipv4; use canonical identities for meetings; isolate and harden pipeline workers
+
 ## [1.8.300](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.299...v1.8.300) (2026-08-01)
 
 

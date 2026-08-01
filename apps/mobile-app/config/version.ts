@@ -22,22 +22,41 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608011944, // Updated to current timestamp
+  buildNumber: 202608012213, // Updated to current timestamp
   releaseDate: '2026-08-01',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'claim speaker profiles after verified signup'
+    // No new features
   ],
   bugfixes: [
-    'route BSL web API calls to tenant'
+    'retry worker bootstrap over ipv4',
+    'use canonical identities for meetings',
+    'isolate and harden pipeline workers'
   ],
   breakingChanges: [],
-  notes: 'claim speaker profiles after verified signup; route BSL web API calls to tenant'
+  notes: 'retry worker bootstrap over ipv4; use canonical identities for meetings; isolate and harden pipeline workers'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.301': {
+    version: '1.8.301',
+    buildNumber: 202608012213,
+    releaseDate: '2026-08-01',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'retry worker bootstrap over ipv4',
+      'use canonical identities for meetings',
+      'isolate and harden pipeline workers'
+    ],
+    breakingChanges: [],
+    notes: 'retry worker bootstrap over ipv4; use canonical identities for meetings; isolate and harden pipeline workers'
+  },
   '1.8.300': {
     version: '1.8.300',
     buildNumber: 202608011944,
