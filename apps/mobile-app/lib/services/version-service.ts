@@ -75,17 +75,24 @@ class VersionService {
   }
 
   public getBuildInfo() {
-    const injectedCommit =
-      process.env.EXPO_PUBLIC_RELEASE_COMMIT ||
-      process.env.GIT_COMMIT ||
-      null;
+    // The CI-injected value (set from CODEBUILD_RESOLVED_SOURCE_VERSION in
+    // build-static-site.sh) is the commit this specific bundle was actually
+    // built from. git-info.json, by contrast, is written by update-version.mjs
+    // before the release commit exists, so it always names a prior commit on
+    // develop — never the deployed artifact. Prefer the injected value; fall
+    // back to the static file only for builds that don't inject one (native
+    // Android/iOS, local dev).
+    const injectedCommitFull = resolveBuildCommit(
+      process.env.EXPO_PUBLIC_RELEASE_COMMIT || process.env.GIT_COMMIT || null
+    );
+    const injectedCommitShort = injectedCommitFull ? injectedCommitFull.slice(0, 9) : null;
     const gitCommit =
+      injectedCommitShort ||
       resolveBuildCommit((gitInfo as any).gitCommit) ||
-      resolveBuildCommit(injectedCommit) ||
       'unknown';
     const gitCommitFull =
+      injectedCommitFull ||
       resolveBuildCommit((gitInfo as any).gitCommitFull) ||
-      resolveBuildCommit(injectedCommit) ||
       gitCommit;
     const gitBranch = getRuntimeBranch();
     const gitRepoUrl = (gitInfo as any).gitRepoUrl || 'https://github.com/hashpass-tech/hashpass.tech';

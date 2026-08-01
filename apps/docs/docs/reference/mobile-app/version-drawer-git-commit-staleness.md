@@ -1,6 +1,9 @@
-# Version drawer: stale "Git Commit" field (fixed 2026-07-31)
+# Version drawer: stale "Git Commit" field (fixed 2026-07-31, corrected 2026-08-01)
 
-**Status: fixed on `develop`, not yet in a shipped release.** The version
+**Status: fixed on `develop`, not yet in a shipped release.** The first fix
+below (unskip `git-info.json` regeneration) landed in v1.8.293 but was
+itself incomplete — see "Follow-up: CI-injected commit" for the real fix.
+The version
 drawer's/quick-sheet's "Git Commit" link has been showing the wrong commit
 — frozen at `391a21b64` (a 2026-07-12 mobile-native-auth commit, completely
 unrelated to the version being displayed) — for every release since
@@ -52,6 +55,44 @@ No change was made to `version-service.ts`'s env-var fallback order — it's
 unused in practice (nothing sets those vars) but harmless to leave as a
 defensive fallback if a build pipeline ever wants to inject a commit hash
 without going through `git-info.json`.
+
+## Follow-up: CI-injected commit (2026-08-01)
+
+A P2 code-review finding on the v1.8.293 release caught what the fix above
+missed: `update-version.mjs` writes `git-info.json` **before**
+`runGitCommit()` creates the release commit (`packages/tools/scripts/release.js`),
+so the file always names the *parent* of the release commit, not the release
+commit itself — v1.8.293's `git-info.json` shipped with `684f2b807`, while
+its own release commit was `c8777983d`. And even the release commit isn't
+the artifact that actually gets deployed: the real production build is
+triggered from whatever *merge* commit GitHub creates when the promotion PR
+lands on `main` (e.g. `ab2f5e5e5` for the v1.8.292 promotion) — a SHA that
+doesn't exist yet at the point `update-version.mjs` runs on `develop`. No
+amount of "capture HEAD at the right moment" in the release script can name
+a commit that hasn't been created yet.
+
+The only place that actually knows the deployed SHA is the build itself.
+Fixed by injecting it there instead of trying to predict it upstream:
+
+- `packages/tools/scripts/build-static-site.sh` (the actual build step CodeBuild
+  runs for both `hashpass-production-site` and `hashpass-dev-site`, per
+  `packages/tools/buildspecs/hashpass-web-deploy.yml`): exports
+  `EXPO_PUBLIC_RELEASE_COMMIT` from `CODEBUILD_RESOLVED_SOURCE_VERSION` — the
+  CodeBuild-provided SHA of the commit it actually checked out — falling back
+  to local `git rev-parse HEAD` for manual/non-CodeBuild runs. `expo export`
+  inlines `EXPO_PUBLIC_*` vars at build time, so this bakes the true deployed
+  commit straight into the bundle.
+- `apps/mobile-app/lib/services/version-service.ts`'s `getBuildInfo()`: flipped
+  the priority order so the injected commit wins over the static
+  `git-info.json` value (previously backwards — the always-present-but-stale
+  static file was checked first, which is why the env-var fallback path was
+  dead code even before this fix). `git-info.json` is now only a fallback for
+  build contexts that don't inject a commit (native Android/iOS, local dev
+  web).
+
+This is now correct by construction: the displayed commit is read from the
+same environment CodeBuild resolved for this exact build, not reconstructed
+from git history on a different branch at an earlier point in time.
 
 ## Verifying after the next release ships
 
