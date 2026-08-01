@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.293)
+## 📋 Latest Changes (v1.8.294)
 
 ### Released
-- stop release:promote from skipping git-info.json regeneration; whitelist _hpv query param as CloudFront cache key on hashpass.tech
+- Version 1.8.294 release
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
