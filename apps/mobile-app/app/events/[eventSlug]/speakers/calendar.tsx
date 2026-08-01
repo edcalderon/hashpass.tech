@@ -142,10 +142,10 @@ export default function SpeakersCalendar() {
           index === self.findIndex((s: Speaker) => s.id === speaker.id)
         );
 
-            // Sort by priority order
-            const sortedEventSpeakers: Speaker[] = sortSpeakersByPriority(uniqueEventSpeakers);
-            setSpeakers(sortedEventSpeakers);
-            setLoading(false);
+        // Sort by priority order
+        const sortedEventSpeakers: Speaker[] = sortSpeakersByPriority(uniqueEventSpeakers);
+        setSpeakers(sortedEventSpeakers);
+        setLoading(false);
       } catch (error) {
         console.error('❌ Error loading speakers:', error);
         // Emergency fallback to event config
@@ -164,10 +164,10 @@ export default function SpeakersCalendar() {
           index === self.findIndex((s: Speaker) => s.id === speaker.id)
         );
         
-            // Sort by priority order
-            const sortedEmergencySpeakers: Speaker[] = sortSpeakersByPriority(uniqueEmergencySpeakers);
-            setSpeakers(sortedEmergencySpeakers);
-            setLoading(false);
+        // Sort by priority order
+        const sortedEmergencySpeakers: Speaker[] = sortSpeakersByPriority(uniqueEmergencySpeakers);
+        setSpeakers(sortedEmergencySpeakers);
+        setLoading(false);
       }
     };
 
