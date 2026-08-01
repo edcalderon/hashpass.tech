@@ -50,7 +50,8 @@
       "db/migrations/V024__expand_event_agenda_types.sql"
     ],
     "speaker-identity-claims": [
-      "db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql"
+      "db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql",
+      "db/migrations/V029__harden_speaker_identity_claims.sql"
     ]
   }
 }

@@ -39,6 +39,10 @@ const speakerIdentityClaimsMigrationPath = path.join(
   root,
   'db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql',
 );
+const speakerIdentityClaimsFollowUpMigrationPath = path.join(
+  root,
+  'db/migrations/V029__harden_speaker_identity_claims.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -173,7 +177,6 @@ describe('verified speaker identity claim migration contract', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
 
     expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.speaker_identity_claims/i);
-    expect(migration).toMatch(/email_confirmed_at IS NULL AND NEW\.confirmed_at IS NULL/i);
     expect(migration).toMatch(/UPDATE public\.bsl_speakers[\s\S]*SET user_id = p_user_id/i);
     expect(migration).toMatch(/INSERT INTO public\.event_roles[\s\S]*ON CONFLICT \(event_id, user_id, role\) DO NOTHING/i);
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.configure_speaker_identity_claim/i);
@@ -182,6 +185,26 @@ describe('verified speaker identity claim migration contract', () => {
     expect(config.defaultGroups).toContain('speaker-identity-claims');
     expect(config.groups['speaker-identity-claims']).toContain(
       'db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql',
+    );
+  });
+
+  it('requires verified email ownership, reports completed claims, and releases claims before auth deletion', () => {
+    const migration = fs.existsSync(speakerIdentityClaimsFollowUpMigrationPath)
+      ? fs.readFileSync(speakerIdentityClaimsFollowUpMigrationPath, 'utf8')
+      : '';
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/NEW\.email_confirmed_at IS NULL/i);
+    expect(migration).not.toMatch(/NEW\.confirmed_at IS NULL/i);
+    expect(migration).toMatch(/email_confirmed_at IS NOT NULL/i);
+    expect(migration).not.toMatch(/email_confirmed_at IS NOT NULL OR confirmed_at IS NOT NULL/i);
+    expect(migration).toMatch(/SELECT status[\s\S]*INTO v_claim_status[\s\S]*speaker_identity_claims/i);
+    expect(migration).toMatch(/jsonb_build_object\([\s\S]*'status', v_claim_status/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.release_speaker_identity_claim_before_auth_user_delete/i);
+    expect(migration).toMatch(/BEFORE DELETE ON auth\.users/i);
+    expect(migration).toMatch(/SET status = 'unclaimed',[\s\S]*claimed_user_id = NULL,[\s\S]*claimed_at = NULL/i);
+    expect(config.groups['speaker-identity-claims']).toContain(
+      'db/migrations/V029__harden_speaker_identity_claims.sql',
     );
   });
 });
