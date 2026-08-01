@@ -1,3 +1,7 @@
+## [1.8.293](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.292...v1.8.293) (2026-08-01)
+### Released
+- stop release:promote from skipping git-info.json regeneration; whitelist _hpv query param as CloudFront cache key on hashpass.tech
+
 ## [1.8.292](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.291...v1.8.292) (2026-08-01)
 ### Released
 - make update-modal reload guarantee a fresh bundle
