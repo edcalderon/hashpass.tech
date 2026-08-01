@@ -30,7 +30,7 @@ const mockEvent = {
   api: {
     basePath: '/api/bsl',
   },
-  agenda: [],
+  agenda: [] as any[],
   eventStartDate: null,
   eventEndDate: null,
   eventDateString: 'BSL 2026',
@@ -41,6 +41,7 @@ const mockEvent = {
     venue: 'Corferias',
   },
 };
+let mockActiveEvent = mockEvent;
 
 const mockThemeColors = {
   primary: '#d93025',
@@ -146,7 +147,7 @@ jest.mock('expo-haptics', () => ({
 
 jest.mock('@contexts/EventContext', () => ({
   useEvent: () => ({
-    event: mockEvent,
+    event: mockActiveEvent,
   }),
 }));
 
@@ -217,6 +218,7 @@ describe('event schedule screens', () => {
     mockWindowWidth = 1024;
     mockPlatform = 'web';
     mockAgendaParams = {};
+    mockActiveEvent = mockEvent;
     mockRouterPush.mockReset();
     mockRouterReplace.mockReset();
     mockNavigationSetOptions.mockReset();
@@ -258,6 +260,84 @@ describe('event schedule screens', () => {
       skipEventSegment: true,
     });
     expect(mockRouterReplace).not.toHaveBeenCalled();
+
+    await act(async () => {
+      renderer!.unmount();
+    });
+  });
+
+  it('retries the agenda request from the empty-agenda state', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [] } });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+    });
+
+    const retryButton = renderer!.root
+      .findAllByType(TouchableOpacity)
+      .find((node) => node.props.accessibilityLabel === 'empty.retry');
+
+    expect(retryButton).toBeDefined();
+
+    await act(async () => {
+      await retryButton!.props.onPress();
+      await flushPromises();
+    });
+
+    const agendaRequests = mockApiRequest.mock.calls.filter(
+      ([path]) => path === 'events/custom/agenda',
+    );
+    expect(agendaRequests).toHaveLength(2);
+
+    await act(async () => {
+      renderer!.unmount();
+    });
+  });
+
+  it('keeps the latest event agenda when an earlier event request resolves late', async () => {
+    const chileAgenda = [{
+      id: 'chile-session',
+      day: '1',
+      time: '09:00',
+      title: 'Chile opening keynote',
+      type: 'keynote',
+    }];
+    const bslEvent = { ...mockEvent, id: 'bsl', agenda: [] };
+    const chileEvent = { ...mockEvent, id: 'chile2026', agenda: chileAgenda };
+    let resolveBslAgenda!: (response: { success: boolean; data: { data: unknown[] } }) => void;
+    const bslAgendaRequest = new Promise<{ success: boolean; data: { data: unknown[] } }>((resolve) => {
+      resolveBslAgenda = resolve;
+    });
+
+    mockActiveEvent = bslEvent;
+    mockApiRequest.mockImplementation((path: string) => {
+      if (path === 'events/bsl/agenda') return bslAgendaRequest;
+      return Promise.resolve({ success: true, data: { data: [] } });
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+    });
+
+    mockActiveEvent = chileEvent;
+    await act(async () => {
+      renderer!.update(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    await act(async () => {
+      resolveBslAgenda({ success: true, data: { data: [] } });
+      await flushPromises();
+    });
+
+    const agendaFilter = renderer!.root.findByType('UnifiedSearchAndFilter' as any);
+    expect(agendaFilter.props.data).toEqual(chileAgenda);
 
     await act(async () => {
       renderer!.unmount();
