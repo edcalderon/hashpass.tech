@@ -1,3 +1,7 @@
+## [1.8.297](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.295...v1.8.297) (2026-08-01)
+### Released
+- the CI-commit-injection fix was ineffective for hashpass.tech too; parse escaped apostrophes when regenerating versions.json; propagate the CodeStar source revision to the BSL EC2 worker
+
 ## [1.8.295](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.294...v1.8.295) (2026-08-01)
 ### Released
 - inject the real deployed commit into BSL's bundle too
