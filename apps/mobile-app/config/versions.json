@@ -20,22 +20,6 @@
       "notes": "the CI-commit-injection fix was ineffective for hashpass.tech too; parse escaped apostrophes when regenerating versions.json; propagate the CodeStar source revision to the BSL EC2 worker"
     },
     {
-      "version": "1.8.296",
-      "buildNumber": 202608010520,
-      "releaseDate": "2026-08-01",
-      "releaseType": "stable",
-      "environment": "development",
-      "features": [],
-      "bugfixes": [
-        "the CI-commit-injection fix was ineffective for hashpass.tech too",
-        "parse escaped apostrophes when regenerating versions.json",
-        "propagate the CodeStar source revision to the BSL EC2 worker",
-        "inject the real deployed commit into BSL's bundle too"
-      ],
-      "breakingChanges": [],
-      "notes": "the CI-commit-injection fix was ineffective for hashpass.tech too; parse escaped apostrophes when regenerating versions.json; propagate the CodeStar source revision to the BSL EC2 worker; inject the real deployed commit into BSL's bundle too"
-    },
-    {
       "version": "1.8.295",
       "buildNumber": 202608010459,
       "releaseDate": "2026-08-01",
