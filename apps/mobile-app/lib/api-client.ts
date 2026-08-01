@@ -8,7 +8,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { getCurrentEvent } from './event-detector';
 import { authService } from '@hashpass/auth';
-import { resolvePublicSupabaseConfig, SUPABASE_PROFILES } from '../config/supabase-profiles';
+import { resolvePublicSupabaseConfig } from '../config/supabase-profiles';
 import { supabase } from './supabase';
 
 export type ApiResponse<T = any> = {
@@ -109,35 +109,7 @@ const resolveWebRuntimeApiBaseUrl = () => {
   return null;
 };
 
-/**
- * BSL web sites proxy their own API routes and authenticate against the BSL
- * tenant. Sending their Supabase token to the core API makes an otherwise
- * valid BSL administrator appear to be an ordinary user.
- */
-const resolveTenantLocalWebApiBaseUrl = () => {
-  if (Platform.OS !== 'web' || typeof window === 'undefined') {
-    return null;
-  }
-
-  const hostname = (window.location.hostname || '').trim().toLowerCase();
-  const isBslHost = SUPABASE_PROFILES.some(
-    (profile: { tenant: string; hosts: string[] }) =>
-      profile.tenant === 'bsl' && profile.hosts.includes(hostname)
-  );
-  if (!isBslHost) {
-    return null;
-  }
-
-  const origin = normalizeBaseUrl(window.location.origin || '');
-  return origin ? `${origin}/api` : null;
-};
-
 const resolveRuntimeApiBaseUrl = () => {
-  const tenantLocalBase = resolveTenantLocalWebApiBaseUrl();
-  if (tenantLocalBase) {
-    return tenantLocalBase;
-  }
-
   const envBase =
     ((process.env.EXPO_PUBLIC_API_BASE_URL || '') ||
       (Constants?.expoConfig?.extra as any)?.EXPO_PUBLIC_API_BASE_URL ||

@@ -215,35 +215,6 @@ describe('EventApiClient credential handling', () => {
     expect(mockAuthSession).not.toHaveBeenCalled();
   });
 
-  it('uses the same-origin API for BSL web hosts even when a core API URL is injected', async () => {
-    Platform.OS = 'web';
-    setEnv('EXPO_PUBLIC_API_BASE_URL', 'https://api.hashpass.tech/api');
-    setWindow({
-      location: {
-        hostname: 'bsl.hashpass.tech',
-        origin: 'https://bsl.hashpass.tech',
-      },
-      __API_BASE_URL__: 'https://api.hashpass.tech/api',
-    });
-
-    const fetchMock = jest.fn(async () => ({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      headers: {
-        get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
-      },
-      json: async () => ({ status: 'healthy' }),
-    }));
-    global.fetch = fetchMock as unknown as typeof fetch;
-
-    const client = new EventApiClient();
-    await client.request('status', { skipEventSegment: true, skipAuth: true });
-
-    const [url] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('https://bsl.hashpass.tech/api/status');
-  });
-
   it('uses the configured API base for Cap challenges on web instead of the static site origin', () => {
     Platform.OS = 'web';
     setEnv('EXPO_PUBLIC_API_BASE_URL', undefined);

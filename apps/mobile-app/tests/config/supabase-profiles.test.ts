@@ -7,6 +7,7 @@ jest.mock('expo/virtual/env', () => ({
 import {
   resolvePublicSupabaseConfig,
   resolveServerSupabaseConfig,
+  resolveSupabaseProfile,
 } from '../../config/supabase-profiles';
 
 const PUBLIC_SUPABASE_URL_ENV = ['EXPO', 'PUBLIC', 'SUPABASE', 'URL'].join('_');
@@ -28,6 +29,27 @@ const makeServiceRoleKey = (ref: string): string => {
 };
 
 describe('resolvePublicSupabaseConfig', () => {
+  it('uses a recognized BSL hostname over the ambient build profile', () => {
+    const previousProfile = process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
+
+    try {
+      process.env.EXPO_PUBLIC_SUPABASE_PROFILE = 'core-production';
+
+      expect(resolveSupabaseProfile({ hostname: 'bsl.hashpass.tech' }).id).toBe('bsl-production');
+      expect(resolveSupabaseProfile({ hostname: 'bsl-dev.hashpass.tech' }).id).toBe('bsl-development');
+      expect(resolveSupabaseProfile({
+        hostname: 'bsl.hashpass.tech',
+        profileId: 'core-production',
+      }).id).toBe('core-production');
+    } finally {
+      if (typeof previousProfile === 'string') {
+        process.env.EXPO_PUBLIC_SUPABASE_PROFILE = previousProfile;
+      } else {
+        delete process.env.EXPO_PUBLIC_SUPABASE_PROFILE;
+      }
+    }
+  });
+
   it('falls back to canonical public envs for bsl-production', () => {
     const env: Record<string, string> = {
       [PUBLIC_SUPABASE_URL_ENV]: 'https://generic-project.supabase.co',
