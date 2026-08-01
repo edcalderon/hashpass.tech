@@ -253,6 +253,14 @@ process_job() {
   source_key="$(jq -r '.data.inputArtifacts[0].location.s3Location.objectKey' <<<"${job_json}")"
   output_bucket="$(jq -r '.data.outputArtifacts[0].location.s3Location.bucketName' <<<"${job_json}")"
   output_key="$(jq -r '.data.outputArtifacts[0].location.s3Location.objectKey' <<<"${job_json}")"
+  # CodeStarSourceConnection stamps the resolved commit SHA onto its output
+  # artifact's `revision` field even though the artifact itself is a CODE_ZIP
+  # with no .git directory -- this worker runs as a custom CodePipeline
+  # action, not CodeBuild, so there's no CODEBUILD_RESOLVED_SOURCE_VERSION to
+  # fall back to. Exporting it here lets build scripts (e.g.
+  # build-bsl-static-site.sh) bake the real deployed commit into the bundle
+  # instead of falling back to git-info.json's stale, pre-release-commit value.
+  source_revision="$(jq -r '.data.inputArtifacts[0].revision // empty' <<<"${job_json}")"
 
   if [[ -z "${job_id}" || "${job_id}" == "null" ]]; then
     return 0
@@ -314,6 +322,7 @@ process_job() {
   export SITE_BUCKET_NAME="${deploy_bucket}"
   export SITE_CLOUDFRONT_DISTRIBUTION_ID="${deploy_cf}"
   export SITE_CLOUDFRONT_DOMAIN_NAME="${deploy_cf_domain}"
+  export EXPO_PUBLIC_RELEASE_COMMIT="${source_revision}"
 
   json_env_export "${build_env_json}"
 

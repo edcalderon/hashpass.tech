@@ -96,15 +96,19 @@ for (const [key, value] of Object.entries(env)) {
 }
 ")"
 
-# CODEBUILD_RESOLVED_SOURCE_VERSION is the actual commit this CodeBuild job
-# checked out and is about to build -- the artifact that's really getting
-# deployed, unlike git-info.json (written on develop before the release
-# commit even exists). expo export inlines EXPO_PUBLIC_* at build time, so
-# this bakes the true deployed commit into the bundle. Falls back to the
-# local HEAD for non-CodeBuild (manual) runs. Same fix as build-static-site.sh
-# uses for the main site -- see CDN_CACHE_BUSTING_HPV.md and
+# BSL's pipelines run this on the custom EC2 worker, not CodeBuild -- there is
+# no CODEBUILD_RESOLVED_SOURCE_VERSION here, and the source artifact is a
+# CODE_ZIP with no .git directory, so a `git rev-parse HEAD` fallback silently
+# resolves to empty. build-worker-user-data.sh.tftpl already exports
+# EXPO_PUBLIC_RELEASE_COMMIT from the CodePipeline job's
+# inputArtifacts[0].revision (the CodeStarSourceConnection-resolved commit)
+# before invoking this script, so prefer that first. CODEBUILD_RESOLVED_SOURCE_VERSION
+# and local HEAD remain as fallbacks for any future CodeBuild-based path or
+# manual runs. expo export inlines EXPO_PUBLIC_* at build time, so this bakes
+# the true deployed commit into the bundle instead of git-info.json's stale,
+# pre-release-commit value -- see CDN_CACHE_BUSTING_HPV.md and
 # version-drawer-git-commit-staleness.md.
-export EXPO_PUBLIC_RELEASE_COMMIT="${CODEBUILD_RESOLVED_SOURCE_VERSION:-$(git rev-parse HEAD 2>/dev/null || echo '')}"
+export EXPO_PUBLIC_RELEASE_COMMIT="${EXPO_PUBLIC_RELEASE_COMMIT:-${CODEBUILD_RESOLVED_SOURCE_VERSION:-$(git rev-parse HEAD 2>/dev/null || echo '')}}"
 echo "  Release commit: ${EXPO_PUBLIC_RELEASE_COMMIT:-<unknown>}"
 
 cd apps/mobile-app
