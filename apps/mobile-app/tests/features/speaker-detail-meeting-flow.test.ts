@@ -47,4 +47,10 @@ describe("speaker detail meeting lifecycle", () => {
     expect(source).not.toContain("postgres_changes");
     expect(source).not.toContain("supabase.channel");
   });
+
+  it("opens the request form without emitting modal debug logs", () => {
+    expect(source).not.toContain("handleRequestMeeting called");
+    expect(source).not.toContain("Showing meeting request modal");
+    expect(source).not.toContain("Modal should now be visible");
+  });
 });

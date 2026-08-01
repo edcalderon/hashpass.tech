@@ -471,16 +471,18 @@ export const resolveSupabaseProfile = (input?: {
   hostname?: string;
   profileId?: string | null;
 }): SupabaseProfile => {
-  const explicitProfile =
-    profileById(input?.profileId) ||
-    profileById(readProcessEnv('EXPO_PUBLIC_SUPABASE_PROFILE')) ||
-    profileById(readProcessEnv('SUPABASE_PROFILE'));
+  const explicitProfile = profileById(input?.profileId);
 
   if (explicitProfile) return explicitProfile;
 
   const host = runtimeHostname(input?.hostname);
   const matched = PROFILES.find((profile) => profile.hosts.includes(host));
   if (matched) return matched;
+
+  const buildProfile =
+    profileById(readProcessEnv('EXPO_PUBLIC_SUPABASE_PROFILE')) ||
+    profileById(readProcessEnv('SUPABASE_PROFILE'));
+  if (buildProfile) return buildProfile;
 
   return host.includes('bsl') ? profileById('bsl-production')! : profileById('core-production')!;
 };

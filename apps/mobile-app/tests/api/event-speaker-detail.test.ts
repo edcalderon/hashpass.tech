@@ -142,6 +142,10 @@ describe("speaker detail backend boundary", () => {
     expect(source).not.toMatch(/console\.log\(['"]Pass info loaded:/);
     expect(source).not.toMatch(/console\.log\(['"]Request limits loaded:/);
   });
+
+  it("does not emit speaker-detail modal debug logs in the production client", () => {
+    expect(source).not.toMatch(/console\.log\(['"]🔍 Modal state changed:/);
+  });
 });
 
 describe("agenda speaker backend boundary", () => {
@@ -157,5 +161,14 @@ describe("agenda speaker backend boundary", () => {
     expect(agendaSource).not.toMatch(
       /\bsupabase\.from\s*\(\s*["']bsl_speakers["']\s*\)/,
     );
+  });
+
+  it("does not emit speaker-loading debug logs in the production client", () => {
+    const calendarSource = readFileSync(
+      resolve(__dirname, "../../app/events/[eventSlug]/speakers/calendar.tsx"),
+      "utf8",
+    );
+
+    expect(calendarSource).not.toMatch(/console\.log\(/);
   });
 });

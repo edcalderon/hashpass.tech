@@ -35,6 +35,18 @@ const speakerSlugMigrationPath = path.join(
   root,
   'db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql',
 );
+const speakerIdentityClaimsMigrationPath = path.join(
+  root,
+  'db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql',
+);
+const speakerIdentityClaimsFollowUpMigrationPath = path.join(
+  root,
+  'db/migrations/V029__harden_speaker_identity_claims.sql',
+);
+const passClaimCodeMigrationPath = path.join(
+  root,
+  'db/migrations/V030__add_secure_pass_claim_codes.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -157,6 +169,67 @@ describe('canonical BSL 2026 event catalog migration contract', () => {
     expect(config.defaultGroups).toContain('event-catalog');
     expect(config.groups['event-catalog']).toContain(
       'db/migrations/V024__expand_event_agenda_types.sql',
+    );
+  });
+});
+
+describe('verified speaker identity claim migration contract', () => {
+  it('claims a preconfigured speaker only after verified signup and applies only preapproved event roles', () => {
+    const migration = fs.existsSync(speakerIdentityClaimsMigrationPath)
+      ? fs.readFileSync(speakerIdentityClaimsMigrationPath, 'utf8')
+      : '';
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.speaker_identity_claims/i);
+    expect(migration).toMatch(/UPDATE public\.bsl_speakers[\s\S]*SET user_id = p_user_id/i);
+    expect(migration).toMatch(/INSERT INTO public\.event_roles[\s\S]*ON CONFLICT \(event_id, user_id, role\) DO NOTHING/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.configure_speaker_identity_claim/i);
+    expect(migration).toMatch(/Only a super admin may preconfigure event_admin/i);
+    expect(migration).toMatch(/CREATE TRIGGER trg_claim_speaker_profile_on_verified_signup/i);
+    expect(config.defaultGroups).toContain('speaker-identity-claims');
+    expect(config.groups['speaker-identity-claims']).toContain(
+      'db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql',
+    );
+  });
+
+  it('requires verified email ownership, reports completed claims, and releases claims before auth deletion', () => {
+    const migration = fs.existsSync(speakerIdentityClaimsFollowUpMigrationPath)
+      ? fs.readFileSync(speakerIdentityClaimsFollowUpMigrationPath, 'utf8')
+      : '';
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/NEW\.email_confirmed_at IS NULL/i);
+    expect(migration).not.toMatch(/NEW\.confirmed_at IS NULL/i);
+    expect(migration).toMatch(/email_confirmed_at IS NOT NULL/i);
+    expect(migration).not.toMatch(/email_confirmed_at IS NOT NULL OR confirmed_at IS NOT NULL/i);
+    expect(migration).toMatch(/SELECT status[\s\S]*INTO v_claim_status[\s\S]*speaker_identity_claims/i);
+    expect(migration).toMatch(/jsonb_build_object\([\s\S]*'status', v_claim_status/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.release_speaker_identity_claim_before_auth_user_delete/i);
+    expect(migration).toMatch(/BEFORE DELETE ON auth\.users/i);
+    expect(migration).toMatch(/SET status = 'unclaimed',[\s\S]*claimed_user_id = NULL,[\s\S]*claimed_at = NULL/i);
+    expect(config.groups['speaker-identity-claims']).toContain(
+      'db/migrations/V029__harden_speaker_identity_claims.sql',
+    );
+  });
+});
+
+describe('pass claim-code migration contract', () => {
+  it('redeems hashed courtesy codes atomically for the authenticated pass holder', () => {
+    const migration = fs.existsSync(passClaimCodeMigrationPath)
+      ? fs.readFileSync(passClaimCodeMigrationPath, 'utf8')
+      : '';
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.pass_claim_codes/i);
+    expect(migration).toMatch(/code_hash text NOT NULL UNIQUE/i);
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.pass_code_claims/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.claim_event_pass_code/i);
+    expect(migration).toMatch(/auth\.uid\(\) IS NULL/i);
+    expect(migration).toMatch(/FOR UPDATE/i);
+    expect(migration).toMatch(/max_claims/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.claim_event_pass_code\(text\) TO authenticated/i);
+    expect(config.groups['upcoming-bsl-passes']).toContain(
+      'db/migrations/V030__add_secure_pass_claim_codes.sql',
     );
   });
 });

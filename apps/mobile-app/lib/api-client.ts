@@ -369,18 +369,15 @@ export class EventApiClient {
           credentials: options.skipAuth ? 'omit' : 'include',
         });
 
-        // Parse response body first (for both success and error cases)
-        let data: any;
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          try {
-            data = await response.json();
-          } catch (e) {
-            // If JSON parsing fails, use empty object
-            data = {};
+        // API Gateway can label a JSON proxy response as text/plain. Parse the
+        // body regardless of that header so valid API data is never discarded.
+        let data: any = {};
+        try {
+          data = await response.json();
+        } catch {
+          if (response.ok) {
+            throw new Error('The API returned an invalid response. Please try again.');
           }
-        } else {
-          data = {};
         }
 
         if (!response.ok) {

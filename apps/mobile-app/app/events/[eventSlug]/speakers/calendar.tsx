@@ -84,7 +84,6 @@ export default function SpeakersCalendar() {
     const loadSpeakers = async () => {
       try {
         setLoading(true);
-        console.log('🔍 Loading speakers from database...');
         
         const dbPromise = supabase
           .from('bsl_speakers')
@@ -117,16 +116,14 @@ export default function SpeakersCalendar() {
             // Sort by priority order
             const sortedSpeakers: Speaker[] = sortSpeakersByPriority(uniqueSpeakers);
             setSpeakers(sortedSpeakers);
-            console.log('✅ Loaded speakers from database:', uniqueSpeakers.length, 'unique speakers');
             setLoading(false);
             return;
           }
         } catch (dbError: any) {
-          console.log('⚠️ Database unavailable, falling back to event config...', dbError?.message);
+          // Fall back to the event configuration when the database is unavailable.
         }
 
         // Fallback to event config (JSON)
-        console.log('📋 Loading speakers from event config (JSON fallback)...');
         const eventSpeakers = event?.speakers || [];
         const formattedEventSpeakers = eventSpeakers.map((s: EventSpeakerConfig) => ({
           id: s.id,
@@ -148,7 +145,6 @@ export default function SpeakersCalendar() {
         // Sort by priority order
         const sortedEventSpeakers: Speaker[] = sortSpeakersByPriority(uniqueEventSpeakers);
         setSpeakers(sortedEventSpeakers);
-        console.log('✅ Loaded speakers from event config (JSON fallback):', uniqueEventSpeakers.length, 'unique speakers');
         setLoading(false);
       } catch (error) {
         console.error('❌ Error loading speakers:', error);
@@ -171,7 +167,6 @@ export default function SpeakersCalendar() {
         // Sort by priority order
         const sortedEmergencySpeakers: Speaker[] = sortSpeakersByPriority(uniqueEmergencySpeakers);
         setSpeakers(sortedEmergencySpeakers);
-        console.log('✅ Emergency fallback successful:', uniqueEmergencySpeakers.length, 'unique speakers');
         setLoading(false);
       }
     };

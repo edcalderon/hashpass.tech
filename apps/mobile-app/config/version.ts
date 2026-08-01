@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608011832, // Updated to current timestamp
+  buildNumber: 202608011944, // Updated to current timestamp
   releaseDate: '2026-08-01',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'claim speaker profiles after verified signup'
   ],
   bugfixes: [
-    'restore Chile agenda data'
+    'route BSL web API calls to tenant'
   ],
   breakingChanges: [],
-  notes: 'restore Chile agenda data'
+  notes: 'claim speaker profiles after verified signup; route BSL web API calls to tenant'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.300': {
+    version: '1.8.300',
+    buildNumber: 202608011944,
+    releaseDate: '2026-08-01',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'claim speaker profiles after verified signup'
+    ],
+    bugfixes: [
+      'route BSL web API calls to tenant'
+    ],
+    breakingChanges: [],
+    notes: 'claim speaker profiles after verified signup; route BSL web API calls to tenant'
+  },
   '1.8.299': {
     version: '1.8.299',
     buildNumber: 202608011832,

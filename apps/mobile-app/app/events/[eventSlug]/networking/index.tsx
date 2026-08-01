@@ -9,7 +9,7 @@ import {
   Animated,
   InteractionManager,
 } from 'react-native';
-import { useRouter, Stack, useFocusEffect } from 'expo-router';
+import { useRouter, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
@@ -40,7 +40,10 @@ export default function NetworkingView() {
   const { isLoggedIn, isLoading: authLoading } = useAuth();
   const tutorialStartedRef = useRef(false);
   const styles = getStyles(isDark, colors);
-  const eventId = event?.id || 'bsl';
+  const { eventSlug } = useLocalSearchParams<{ eventSlug?: string | string[] }>();
+  const routeEventSlug = Array.isArray(eventSlug) ? eventSlug[0] : eventSlug;
+  const eventId = event?.id || routeEventSlug || 'bsl';
+  const networkingEventLabel = event?.name || event?.title || eventId;
   const networkingStatsPath = eventApiPath(eventId, 'networking/stats');
 
   // Reset ref when tutorial is reset (completion status changes from true to false)
@@ -529,6 +532,9 @@ export default function NetworkingView() {
         <View style={styles.header}>
           <MaterialIcons name="people-alt" size={32} color={colors.primary} />
           <Text style={styles.headerTitle}>{t({ id: 'networking.title', message: 'Networking Center' })}</Text>
+          <Text style={styles.headerEventScope}>
+            {t({ id: 'networking.eventScopePrefix', message: 'Networking for' })} {networkingEventLabel}
+          </Text>
           <Text style={styles.headerSubtitle}>{t({ id: 'networking.subtitle', message: 'Connect with speakers and attendees' })}</Text>
         </View>
 
@@ -691,6 +697,13 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 14,
     color: colors.text?.secondary || (isDark ? '#F0F0F0' : '#666666'),
     marginTop: 4,
+  },
+  headerEventScope: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary || '#1d4ed8',
+    marginTop: 6,
+    textAlign: 'center',
   },
   section: {
     padding: 20,

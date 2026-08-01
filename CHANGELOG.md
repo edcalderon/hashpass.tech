@@ -1,3 +1,12 @@
+## [1.8.300](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.299...v1.8.300) (2026-08-01)
+
+
+### Features
+
+* claim speaker profiles after verified signup ([f69d3e7](https://github.com/hashpass-tech/hashpass.tech/commit/f69d3e7058dff00c5620e0543db5ad5406fd385a))
+### Release Highlights
+- claim speaker profiles after verified signup; route BSL web API calls to tenant
+
 ## [1.8.299](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.298...v1.8.299) (2026-08-01)
 ### Released
 - restore Chile agenda data

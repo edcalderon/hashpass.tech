@@ -5,6 +5,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 
 const mockApiRequest = jest.fn();
 const mockShowError = jest.fn();
+let mockEvent: { id: string; name?: string } | null = { id: 'chile2026', name: 'BSL Chile 2026' };
 const mockChannel = {
   on: jest.fn().mockReturnThis(),
   subscribe: jest.fn().mockReturnThis(),
@@ -14,6 +15,7 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: 'StackScreen' },
   useRouter: () => ({ push: jest.fn() }),
   useFocusEffect: jest.fn(),
+  useLocalSearchParams: () => ({ eventSlug: 'chile2026' }),
 }));
 
 jest.mock('../../hooks/useTheme', () => ({
@@ -39,7 +41,7 @@ jest.mock('../../hooks/useAuth', () => ({
 }));
 
 jest.mock('@contexts/EventContext', () => ({
-  useEvent: () => ({ event: { id: 'chile2026' } }),
+  useEvent: () => ({ event: mockEvent }),
 }));
 
 jest.mock('@contexts/ToastContext', () => ({
@@ -109,6 +111,7 @@ const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0
 
 describe('networking dashboard', () => {
   beforeEach(() => {
+    mockEvent = { id: 'chile2026', name: 'BSL Chile 2026' };
     mockApiRequest.mockReset();
     mockShowError.mockReset();
     mockChannel.on.mockClear();
@@ -145,9 +148,34 @@ describe('networking dashboard', () => {
       .findAll((node: any) => node.type === 'Text')
       .flatMap((node) => node.children)
       .join(' ');
-    expect(renderedText).toContain('Your Networking Stats');
-    expect(renderedText).toContain('12');
-    expect(renderedText).toContain('5');
+    const normalizedText = renderedText.replace(/\s+/g, ' ').trim();
+    expect(normalizedText).toContain('Your Networking Stats');
+    expect(normalizedText).toContain('Networking for BSL Chile 2026');
+    expect(normalizedText).toContain('Connect with speakers and attendees');
+    expect(normalizedText).toContain('12');
+    expect(normalizedText).toContain('5');
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('uses the route event slug while the event context is still loading', async () => {
+    mockEvent = null;
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: { counts: {}, speaker: {} } } });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<NetworkingView />);
+      await flushPromises();
+    });
+
+    const renderedText = renderer!.root
+      .findAll((node: any) => node.type === 'Text')
+      .flatMap((node) => node.children)
+      .join(' ');
+    expect(renderedText.replace(/\s+/g, ' ').trim()).toContain('Networking for chile2026');
+    expect(mockApiRequest).toHaveBeenCalledWith('events/chile2026/networking/stats', {
+      skipEventSegment: true,
+    });
 
     await act(async () => renderer!.unmount());
   });
