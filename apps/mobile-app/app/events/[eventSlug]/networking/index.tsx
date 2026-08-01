@@ -9,7 +9,7 @@ import {
   Animated,
   InteractionManager,
 } from 'react-native';
-import { useRouter, Stack, useFocusEffect } from 'expo-router';
+import { useRouter, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
@@ -40,12 +40,10 @@ export default function NetworkingView() {
   const { isLoggedIn, isLoading: authLoading } = useAuth();
   const tutorialStartedRef = useRef(false);
   const styles = getStyles(isDark, colors);
-  const eventId = event?.id || 'bsl';
+  const { eventSlug } = useLocalSearchParams<{ eventSlug?: string | string[] }>();
+  const routeEventSlug = Array.isArray(eventSlug) ? eventSlug[0] : eventSlug;
+  const eventId = event?.id || routeEventSlug || 'bsl';
   const networkingEventLabel = event?.name || event?.title || eventId;
-  const networkingScopeLabel = t({
-    id: 'networking.eventScope',
-    message: 'Networking for {eventName}',
-  }).replace('{eventName}', networkingEventLabel);
   const networkingStatsPath = eventApiPath(eventId, 'networking/stats');
 
   // Reset ref when tutorial is reset (completion status changes from true to false)
@@ -534,7 +532,9 @@ export default function NetworkingView() {
         <View style={styles.header}>
           <MaterialIcons name="people-alt" size={32} color={colors.primary} />
           <Text style={styles.headerTitle}>{t({ id: 'networking.title', message: 'Networking Center' })}</Text>
-          <Text style={styles.headerEventScope}>{networkingScopeLabel}</Text>
+          <Text style={styles.headerEventScope}>
+            {t({ id: 'networking.eventScopePrefix', message: 'Networking for' })} {networkingEventLabel}
+          </Text>
           <Text style={styles.headerSubtitle}>{t({ id: 'networking.subtitle', message: 'Connect with speakers and attendees' })}</Text>
         </View>
 
