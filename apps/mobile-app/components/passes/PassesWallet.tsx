@@ -310,6 +310,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const cardWidth = Math.min(PASS_CARD_WIDTH, windowWidth - 48 - stackDepth * STACK_OFFSET_X);
   const deckWidth = cardWidth + stackDepth * STACK_OFFSET_X;
   const canRestoreIncludedBslPasses = layout === 'plain' && Boolean(dbUserId);
+  const canClaimPass = Boolean(dbUserId);
 
   if (loading) {
     return (
@@ -421,7 +422,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             Restore your complimentary BSL General passes. Paid upgrades are never changed.
           </Text>
         )}
-        {canRestoreIncludedBslPasses && (
+        {canClaimPass && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Have a pass? Claim it here"
@@ -471,19 +472,21 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
                   {claimingPass ? 'Redeeming…' : 'Redeem code'}
                 </Text>
               </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Restore BSL complimentary passes"
-                disabled={restoringIncludedPasses}
-                onPress={async () => {
-                  if (await handleRestoreIncludedPasses()) setClaimModalVisible(false);
-                }}
-                style={{ alignItems: 'center', paddingVertical: 6 }}
-              >
-                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
-                  Restore BSL complimentary passes
-                </Text>
-              </Pressable>
+              {canRestoreIncludedBslPasses && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Restore BSL complimentary passes"
+                  disabled={restoringIncludedPasses}
+                  onPress={async () => {
+                    if (await handleRestoreIncludedPasses()) setClaimModalVisible(false);
+                  }}
+                  style={{ alignItems: 'center', paddingVertical: 6 }}
+                >
+                  <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
+                    Restore BSL complimentary passes
+                  </Text>
+                </Pressable>
+              )}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Close pass claim dialog"

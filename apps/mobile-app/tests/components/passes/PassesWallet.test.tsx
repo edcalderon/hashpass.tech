@@ -263,7 +263,15 @@ describe('PassesWallet', () => {
     expect(bslWallet.root.findByProps({ children: 'Unable to load your passes' })).toBeTruthy();
   });
 
-  it('opens the pass-claim dialog and reloads after redeeming a courtesy code', async () => {
+  it('offers the pass-claim dialog in both Hashpass and BSL empty wallets', async () => {
+    const hashpassWallet = await renderWallet();
+    expect(hashpassWallet.root.findByProps({ accessibilityLabel: 'Have a pass? Claim it here' })).toBeTruthy();
+
+    const bslWallet = await renderWallet({ layout: 'plain' });
+    expect(bslWallet.root.findByProps({ accessibilityLabel: 'Have a pass? Claim it here' })).toBeTruthy();
+  });
+
+  it('opens the pass-claim dialog and reloads the Hashpass wallet after redeeming a courtesy code', async () => {
     (passSystemService.getAllUserPasses as jest.Mock)
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([makePass({ event_id: 'chile2026' })]);
@@ -273,7 +281,7 @@ describe('PassesWallet', () => {
       event_id: 'chile2026',
     });
 
-    const renderer = await renderWallet({ layout: 'plain' });
+    const renderer = await renderWallet();
 
     await act(async () => {
       triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Have a pass? Claim it here' }));
@@ -295,6 +303,7 @@ describe('PassesWallet', () => {
     );
     expect(passSystemService.getAllUserPasses).toHaveBeenCalledTimes(2);
     expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
+    expect(renderer.root.findAllByProps({ accessibilityLabel: 'Restore BSL complimentary passes' })).toHaveLength(0);
   });
 
   it('shows a recoverable no-matches state when filters exclude every loaded pass', async () => {
