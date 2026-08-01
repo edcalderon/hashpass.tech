@@ -174,9 +174,10 @@ The GitHub Actions target role `hashpass-web-github-actions` must allow
 `lambda:UpdateFunctionCode`, and `lambda:UpdateFunctionConfiguration` on both
 Expo Router API Lambda ARNs because `deploy-api-lambda.sh` updates environment
 variables before uploading code.
-The recommended worker shape is `m6i.large`; the old burstable `t3a.medium`
-shape can exhaust CPU credits during Expo export and stretch the pipeline to
-25+ minutes.
+The recommended worker shape is `m6i.xlarge` (four vCPUs). Each development
+and production pipeline has its own worker, preventing a development export
+from queuing a production release. The old burstable `t3a.medium` shape can
+exhaust CPU credits during Expo export and stretch the pipeline to 25+ minutes.
 When CloudFront is available, the deploy helper invalidates it automatically;
 for the current direct-S3 fallback, the stack uses literal A records instead of
 Route 53 alias records because the alias form was not resolving cleanly in the

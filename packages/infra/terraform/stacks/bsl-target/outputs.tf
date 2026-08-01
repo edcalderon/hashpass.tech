@@ -1,11 +1,16 @@
 output "worker_instance_ids" {
-  description = "EC2 instance IDs for the BSL build worker fleet"
-  value       = module.build_worker.instance_ids
+  description = "EC2 instance IDs for the isolated BSL production and development worker fleets"
+  value       = concat(module.production_build_worker.instance_ids, module.development_build_worker.instance_ids)
 }
 
 output "worker_dashboard_url" {
-  description = "Console URL for the BSL build worker CloudWatch dashboard"
-  value       = module.build_worker.dashboard_url
+  description = "Console URL for the BSL production worker CloudWatch dashboard"
+  value       = module.production_build_worker.dashboard_url
+}
+
+output "development_worker_dashboard_url" {
+  description = "Console URL for the BSL development worker CloudWatch dashboard"
+  value       = module.development_build_worker.dashboard_url
 }
 
 output "prod_pipeline_name" {

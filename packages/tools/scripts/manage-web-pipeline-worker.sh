@@ -5,7 +5,9 @@ REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-2}}"
 PIPELINE_NAMES_RAW="${WEB_PIPELINE_NAMES:-hashpass-dev-site,hashpass-production-site}"
 PROJECT_TAG="${WEB_PIPELINE_PROJECT_TAG:-hashpass}"
 SERVICE_TAG="${WEB_PIPELINE_SERVICE_TAG:-pipeline-build-worker}"
-PROVIDER_TAG="${WEB_PIPELINE_PROVIDER_TAG:-hashpass-ec2-build}"
+# The web pipelines have separate workers so development builds cannot delay
+# production. AWS accepts a comma-separated Values list for the tag filter.
+PROVIDER_TAG="${WEB_PIPELINE_PROVIDER_TAGS:-hashpass-prod-ec2-build,hashpass-dev-ec2-build}"
 GRACE_SECONDS="${WEB_PIPELINE_GRACE_SECONDS:-30}"
 START_WAIT_SECONDS="${WEB_PIPELINE_START_WAIT_SECONDS:-180}"
 POLL_SECONDS="${WEB_PIPELINE_POLL_SECONDS:-20}"
@@ -50,7 +52,7 @@ Environment variables:
   WEB_PIPELINE_NAMES
   WEB_PIPELINE_PROJECT_TAG
   WEB_PIPELINE_SERVICE_TAG
-  WEB_PIPELINE_PROVIDER_TAG
+  WEB_PIPELINE_PROVIDER_TAGS
   WEB_PIPELINE_GRACE_SECONDS
   WEB_PIPELINE_START_WAIT_SECONDS
   WEB_PIPELINE_POLL_SECONDS

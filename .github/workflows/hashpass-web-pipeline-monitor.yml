@@ -56,7 +56,7 @@ jobs:
       WEB_PIPELINE_NAMES: ${{ vars.WEB_PIPELINE_NAMES || 'hashpass-dev-site,hashpass-production-site' }}
       WEB_PIPELINE_PROJECT_TAG: ${{ vars.WEB_PIPELINE_PROJECT_TAG || 'hashpass' }}
       WEB_PIPELINE_SERVICE_TAG: ${{ vars.WEB_PIPELINE_SERVICE_TAG || 'pipeline-build-worker' }}
-      WEB_PIPELINE_PROVIDER_TAG: ${{ vars.WEB_PIPELINE_PROVIDER_TAG || 'hashpass-ec2-build' }}
+      WEB_PIPELINE_PROVIDER_TAGS: ${{ vars.WEB_PIPELINE_PROVIDER_TAGS || 'hashpass-prod-ec2-build,hashpass-dev-ec2-build' }}
       WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '30' }}
       WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '180' }}
       WEB_PIPELINE_POLL_SECONDS: ${{ vars.WEB_PIPELINE_POLL_SECONDS || '20' }}
@@ -94,7 +94,7 @@ jobs:
             --pipelines "${WEB_PIPELINE_NAMES}" \
             --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
             --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
-            --provider-tag "${WEB_PIPELINE_PROVIDER_TAG}" \
+            --provider-tag "${WEB_PIPELINE_PROVIDER_TAGS}" \
             --region "${AWS_REGION}" \
             --grace-seconds "${WEB_PIPELINE_GRACE_SECONDS}" \
             --start-wait-seconds "${WEB_PIPELINE_START_WAIT_SECONDS}" \
@@ -109,7 +109,7 @@ jobs:
             --pipelines "${WEB_PIPELINE_NAMES}" \
             --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
             --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
-            --provider-tag "${WEB_PIPELINE_PROVIDER_TAG}" \
+            --provider-tag "${WEB_PIPELINE_PROVIDER_TAGS}" \
             --region "${AWS_REGION}" \
             --grace-seconds 0 \
             --poll-seconds "${WEB_PIPELINE_POLL_SECONDS}"
