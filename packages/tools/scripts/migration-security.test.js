@@ -35,6 +35,10 @@ const speakerSlugMigrationPath = path.join(
   root,
   'db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql',
 );
+const speakerIdentityClaimsMigrationPath = path.join(
+  root,
+  'db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -157,6 +161,27 @@ describe('canonical BSL 2026 event catalog migration contract', () => {
     expect(config.defaultGroups).toContain('event-catalog');
     expect(config.groups['event-catalog']).toContain(
       'db/migrations/V024__expand_event_agenda_types.sql',
+    );
+  });
+});
+
+describe('verified speaker identity claim migration contract', () => {
+  it('claims a preconfigured speaker only after verified signup and applies only preapproved event roles', () => {
+    const migration = fs.existsSync(speakerIdentityClaimsMigrationPath)
+      ? fs.readFileSync(speakerIdentityClaimsMigrationPath, 'utf8')
+      : '';
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/CREATE TABLE IF NOT EXISTS public\.speaker_identity_claims/i);
+    expect(migration).toMatch(/email_confirmed_at IS NULL AND NEW\.confirmed_at IS NULL/i);
+    expect(migration).toMatch(/UPDATE public\.bsl_speakers[\s\S]*SET user_id = p_user_id/i);
+    expect(migration).toMatch(/INSERT INTO public\.event_roles[\s\S]*ON CONFLICT \(event_id, user_id, role\) DO NOTHING/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.configure_speaker_identity_claim/i);
+    expect(migration).toMatch(/Only a super admin may preconfigure event_admin/i);
+    expect(migration).toMatch(/CREATE TRIGGER trg_claim_speaker_profile_on_verified_signup/i);
+    expect(config.defaultGroups).toContain('speaker-identity-claims');
+    expect(config.groups['speaker-identity-claims']).toContain(
+      'db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql',
     );
   });
 });
