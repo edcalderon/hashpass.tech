@@ -911,7 +911,8 @@
     "empty": {
       "title": "Keine Agenda verfügbar",
       "subtitle": "Schauen Sie später für den Veranstaltungsplan wieder vorbei",
-      "noLiveData": "Keine Live-Agendadaten"
+      "noLiveData": "Keine Live-Agendadaten",
+      "retry": "Agenda neu laden"
     },
     "badges": {
       "past": "VERGANGEN"

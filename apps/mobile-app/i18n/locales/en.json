@@ -1050,7 +1050,8 @@
     "empty": {
       "title": "No agenda available",
       "subtitle": "Check back later for the event schedule",
-      "noLiveData": "No live agenda data"
+      "noLiveData": "No live agenda data",
+      "retry": "Reload agenda"
     },
     "badges": {
       "past": "PAST"

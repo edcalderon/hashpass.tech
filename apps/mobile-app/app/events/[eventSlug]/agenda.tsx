@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, InteractionManager } from 'react-native';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
@@ -99,6 +99,7 @@ export default function BSL2025AgendaScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const sessionItemRefs = useRef<{ [key: string]: View | null }>({});
   const handledSessionRef = useRef<string | null>(null); // Track which session we've already handled
+  const agendaLoadRequestRef = useRef(0);
 
   const [agendaByDay, setAgendaByDay] = useState<{ [key: string]: AgendaItem[] }>({});
   const [activeTab, setActiveTab] = useState<string>('Day 1 - November 12'); // Default to Day 1
@@ -212,98 +213,69 @@ export default function BSL2025AgendaScreen() {
     return items;
   };
 
-  // Load agenda from database first, fallback to hardcoded config only on error.
-  // Gated on event being resolved: EventContext derives `event` synchronously
-  // from usePathname(), which can be null on the very first render before
-  // routing settles. Without this guard, that first run computes its JSON
-  // fallback from a null event (event?.agenda ?? EVENTS[eventId]?.agenda,
-  // with eventId itself not yet resolved either), landing on an empty
-  // agenda and briefly showing "no agenda yet" before event?.agenda changing
-  // re-triggers this effect with the real data a moment later.
+  // Load agenda from the database, with the published event schedule as a
+  // fallback. A route/tenant transition can briefly issue two requests; only
+  // the latest response may update the screen.
+  const loadAgenda = useCallback(async () => {
+    if (!event) return;
+
+    const requestId = ++agendaLoadRequestRef.current;
+    const isCurrentRequest = () => agendaLoadRequestRef.current === requestId;
+
+    setLoading(true);
+    setUsingJsonFallback(false);
+    setServiceStatus('unknown');
+
+    try {
+      let agendaData: AgendaItem[] = [];
+
+      try {
+        const response = await apiClient.request(agendaApiPath, {
+          skipEventSegment: true,
+        });
+
+        if (!isCurrentRequest()) return;
+
+        if (Array.isArray(response)) {
+          agendaData = response;
+        } else if (Array.isArray(response?.data)) {
+          agendaData = response.data;
+        } else if (Array.isArray(response?.data?.data)) {
+          agendaData = response.data.data;
+        }
+      } catch {
+        if (!isCurrentRequest()) return;
+      }
+
+      if (!isCurrentRequest()) return;
+
+      if (agendaData.length > 0) {
+        setAgenda(agendaData);
+        setIsLive(true);
+        setServiceStatus('running');
+        return;
+      }
+
+      const fallbackAgenda = event.agenda || EVENTS[eventId as keyof typeof EVENTS]?.agenda || [];
+      setAgenda(fallbackAgenda);
+      setIsLive(false);
+      setUsingJsonFallback(true);
+      setServiceStatus('stopped');
+    } finally {
+      if (isCurrentRequest()) {
+        setLoading(false);
+      }
+    }
+  }, [agendaApiPath, event, eventId]);
+
   useEffect(() => {
     if (!event) return;
 
-    const loadAgenda = async () => {
-      try {
-        setLoading(true);
-        setUsingJsonFallback(false);
-        setServiceStatus('unknown');
-        console.log('📅 Attempting to load agenda from database...');
-        
-        try {
-          // Try to fetch agenda directly first
-          console.log('🌐 Fetching agenda data...');
-          const response = await apiClient.request(agendaApiPath, {
-            skipEventSegment: true,
-          });
-
-          // Handle the API response format: { data: [...] }
-          let agendaData = [];
-          
-          try {
-            // Check if response is already the data array
-            if (Array.isArray(response)) {
-              agendaData = response;
-            }
-            // Check if response has a data property that is an array
-            else if (response?.data) {
-              if (Array.isArray(response.data)) {
-                agendaData = response.data;
-              } else if (response.data.data && Array.isArray(response.data.data)) {
-                // Handle nested data structure
-                agendaData = response.data.data;
-              }
-            }
-            
-            console.log('📊 Parsed agenda data:', agendaData);
-          } catch (error) {
-            console.error('❌ Error parsing agenda data:', error);
-            throw error; // Re-throw to trigger the fallback
-          }
-          
-          if (agendaData.length > 0) {
-            console.log('✅ Loaded live agenda from database:', agendaData.length, 'items');
-            setAgenda(agendaData);
-            setIsLive(true);
-            setServiceStatus('running');
-            return;
-          }
-        } catch (error) {
-          console.error('❌ Error loading agenda:', error);
-          console.log('🔄 Using JSON fallback due to error');
-        }
-        
-        // If we get here, no data was found through any method
-        console.warn('⚠️ No agenda data found, showing JSON fallback');
-        console.log('📄 Event object:', event);
-        console.log('📄 JSON fallback data:', event?.agenda?.length || 0, 'items');
-        
-        // Use fallback data
-        const fallbackAgenda = event?.agenda || EVENTS[eventId as keyof typeof EVENTS]?.agenda || [];
-        console.log('📄 Setting fallback agenda:', fallbackAgenda.length, 'items');
-              setAgenda(fallbackAgenda);
-              setIsLive(false);
-              setUsingJsonFallback(true);
-        setServiceStatus('stopped');
-      } catch (error) {
-        console.error('❌ Error loading agenda:', error);
-        console.log('🔄 Using JSON fallback due to error');
-        
-        // Use fallback data
-        const fallbackAgenda = event?.agenda || EVENTS[eventId as keyof typeof EVENTS]?.agenda || [];
-        console.log('📋 Using fallback agenda with', fallbackAgenda.length, 'items');
-        console.log('📄 JSON fallback data:', fallbackAgenda.length, 'items');
-        setAgenda(fallbackAgenda);
-        setIsLive(false);
-        setUsingJsonFallback(true);
-        setServiceStatus('stopped');
-      } finally {
-        setLoading(false);
-      }
+    void loadAgenda();
+    return () => {
+      agendaLoadRequestRef.current += 1;
     };
-
-    loadAgenda();
-  }, [event?.agenda, eventId, agendaApiPath]);
+  }, [event, loadAgenda]);
 
   // Ensure filteredAgenda is populated when agenda loads
   useEffect(() => {
@@ -418,33 +390,18 @@ export default function BSL2025AgendaScreen() {
     
     if (agenda.length === 0) {
       // No agenda data - clear the grouped data
-      console.log('📅 No agenda data to group, clearing agendaByDay');
       setAgendaByDay({});
       return;
     }
     
-    console.log('📅 Grouping agenda data:', agenda.length, 'items');
-    console.log('📅 First agenda item:', agenda[0]);
     const grouped: { [key: string]: AgendaItem[] } = {};
     
     // Check if agenda items have day information from database
     const hasDayInfo = agenda.some(item => (item as any).day);
-    console.log('📅 Has day info from database:', hasDayInfo);
-    
-    if (hasDayInfo) {
-      const dayValues = agenda.map(item => (item as any).day).filter(Boolean);
-      console.log('📅 Day values found:', [...new Set(dayValues)]);
-    }
     
     if (hasDayInfo) {
       // Group by day column from database
-      console.log('📅 Using database day information');
-      
       // Check if the day values are simple (1, 2, 3) or complex (with thematic names)
-      const dayValues = agenda.map(item => (item as any).day).filter(Boolean);
-      const uniqueDays = [...new Set(dayValues)];
-      console.log('📅 Unique day values:', uniqueDays);
-      
       // Group by day, handling both simple and complex day names. dayKey is
       // purely an internal grouping/react-key value here -- it's never
       // rendered directly (getTabLabel/getTabTheme derive the displayed,
@@ -481,7 +438,6 @@ export default function BSL2025AgendaScreen() {
       // Also handle items without day information
       const itemsWithoutDay = agenda.filter(item => !(item as any).day);
       if (itemsWithoutDay.length > 0) {
-        console.log('📅 Found', itemsWithoutDay.length, 'items without day info, distributing them');
         // Distribute items without day info across the days
         const dayKeys = Object.keys(grouped).sort();
         if (dayKeys.length > 0) {
@@ -507,23 +463,11 @@ export default function BSL2025AgendaScreen() {
         }
       }
       
-      console.log('📅 Grouped by database day column:', Object.keys(grouped).map(key => `${key}: ${grouped[key].length} items`));
     } else {
       // Fallback: distribute sessions across 3 days
-      console.log('📅 No day info in database, using fallback distribution');
       const day1Items = agenda.slice(0, 4); // First 4 items for Day 1
       const day2Items = agenda.slice(4, 8); // Next 4 items for Day 2
       const day3Items = agenda.slice(8); // Remaining items for Day 3
-      
-      console.log('📅 Day distribution:', {
-        day1: day1Items.length,
-        day2: day2Items.length, 
-        day3: day3Items.length
-      });
-      
-      console.log('📅 Day 1 items:', day1Items.map(item => item.title));
-      console.log('📅 Day 2 items:', day2Items.map(item => item.title));
-      console.log('📅 Day 3 items:', day3Items.map(item => item.title));
       
       // Add Day 1 items
       if (day1Items.length > 0) {
@@ -540,7 +484,6 @@ export default function BSL2025AgendaScreen() {
         grouped['Day 3 - November 14'] = day3Items;
       }
       
-      console.log('📅 Grouped after fallback distribution:', Object.keys(grouped));
     }
 
     // Sort items within each day by start time (supports DB ISO times)
@@ -564,7 +507,6 @@ export default function BSL2025AgendaScreen() {
       }
     });
 
-    console.log('📅 Final grouped data:', Object.keys(sortedGrouped).map(key => `${key}: ${sortedGrouped[key].length} items`));
     setAgendaByDay(sortedGrouped);
     
     // Set first tab as active (Day 1) - only on initial load:
@@ -578,7 +520,6 @@ export default function BSL2025AgendaScreen() {
     
     // NEVER override if user manually selected a tab
     if (userSelectedTabRef.current && currentTabExists) {
-      console.log('📅 User selected tab preserved:', activeTab);
       return; // Don't change anything if user selected it
     }
     
@@ -593,7 +534,6 @@ export default function BSL2025AgendaScreen() {
       const tabToSelect = dayOrder.find(dayKey => sortedGrouped[dayKey] && sortedGrouped[dayKey].length > 0) || availableTabs[0];
       
       if (tabToSelect) {
-        console.log('📅 Setting initial active tab to:', tabToSelect, '(from available tabs:', availableTabs, ')');
         setActiveTab(tabToSelect);
         hasSetInitialTabRef.current = true;
       }
@@ -602,11 +542,9 @@ export default function BSL2025AgendaScreen() {
       // This handles the case where the default tab already exists in the grouped data
       // BUT: if it's not Day 1 and we haven't set initial tab yet, force Day 1
       if (activeTab !== 'Day 1 - November 12' && sortedGrouped['Day 1 - November 12']) {
-        console.log('📅 Current tab is not Day 1, forcing Day 1:', activeTab, '-> Day 1 - November 12');
         setActiveTab('Day 1 - November 12');
         hasSetInitialTabRef.current = true;
       } else {
-        console.log('📅 Current tab exists, marking as set:', activeTab);
         hasSetInitialTabRef.current = true;
       }
     }
@@ -665,9 +603,6 @@ export default function BSL2025AgendaScreen() {
         
         if (foundItem) {
           sessionDayKey = providedDay;
-          console.log(`✅ Using provided day from URL: ${providedDay} for session ${sessionId}`);
-        } else {
-          console.warn(`⚠️ Session ${sessionId} not found in provided day ${providedDay}, searching all days...`);
         }
       }
     }
@@ -675,10 +610,6 @@ export default function BSL2025AgendaScreen() {
     // If not found using provided day, search in correct order (Day 1, Day 2, Day 3)
     if (!sessionDayKey) {
       const dayOrder = ['Day 1 - November 12', 'Day 2 - November 13', 'Day 3 - November 14'];
-      
-      console.log(`🔍 Searching for session ${sessionId} in agenda...`);
-      console.log(`📅 Available days:`, Object.keys(agendaByDay));
-      console.log(`📅 Day counts:`, dayOrder.map(day => ({ day, count: agendaByDay[day]?.length || 0 })));
       
       // First, try searching in the ordered days
       for (const dayKey of dayOrder) {
@@ -694,30 +625,17 @@ export default function BSL2025AgendaScreen() {
                           String(Number(itemIdStr)) === sessionIdStr ||
                           item.id === Number(sessionIdStr) ||
                           Number(itemIdStr) === Number(sessionIdStr);
-          
-          if (matches) {
-            console.log(`✅ Found match in ${dayKey}:`, {
-              itemId: item.id,
-              itemIdStr,
-              sessionId,
-              sessionIdStr,
-              title: item.title?.substring(0, 50),
-            });
-          }
-          
           return matches;
         }) || null;
         
         if (foundItem) {
           sessionDayKey = dayKey;
-          console.log(`🎯 Session ${sessionId} found in ${dayKey}`);
           break;
         }
       }
       
       // If not found in ordered days, try all days as fallback
       if (!sessionDayKey) {
-        console.log(`⚠️ Not found in ordered days, searching all days...`);
         for (const dayKey in agendaByDay) {
           if (dayOrder.includes(dayKey)) continue; // Already searched
           
@@ -734,7 +652,6 @@ export default function BSL2025AgendaScreen() {
           
           if (foundItem) {
             sessionDayKey = dayKey;
-            console.log(`🎯 Session ${sessionId} found in ${dayKey} (fallback)`);
             break;
           }
         }
@@ -754,7 +671,6 @@ export default function BSL2025AgendaScreen() {
 
     // Set the active tab to the session's day if it's different
     if (activeTab !== sessionDayKey) {
-      console.log(`📅 Setting active tab to ${sessionDayKey} for session ${sessionId} (was ${activeTab})`);
       setActiveTab(sessionDayKey);
       // Don't mark as handled yet - wait until we're on the correct tab
       // Return early - the effect will run again when activeTab changes
@@ -769,7 +685,6 @@ export default function BSL2025AgendaScreen() {
       const sessionRef = sessionItemRefs.current[sessionId];
       
       if (!sessionRef) {
-        console.warn(`[Scroll] Attempt ${attemptNumber}: Session ref not found for ID: ${sessionId}`);
         if (attemptNumber < maxAttempts) {
           // Retry with exponential backoff
           setTimeout(() => attemptScroll(attemptNumber + 1, maxAttempts), 200 * attemptNumber);
@@ -780,7 +695,6 @@ export default function BSL2025AgendaScreen() {
       }
       
       if (!scrollViewRef.current) {
-        console.warn(`[Scroll] Attempt ${attemptNumber}: ScrollView ref not found`);
         if (attemptNumber < maxAttempts) {
           setTimeout(() => attemptScroll(attemptNumber + 1, maxAttempts), 200 * attemptNumber);
         }
@@ -791,15 +705,7 @@ export default function BSL2025AgendaScreen() {
       try {
         sessionRef.measureLayout(
           scrollViewRef.current as any,
-          (x, y, width, height) => {
-            console.log(`[Scroll] ✅ Successfully measured session ${sessionId}:`, {
-              x,
-              y,
-              width,
-              height,
-              scrollY: y - 150, // Offset by 150px for header/tabs
-            });
-            
+          (_x, y, _width, _height) => {
             // Calculate scroll position with proper offset
             // Account for header, tabs, and search bar
             const headerOffset = 150; // Approximate header + tabs height
@@ -809,8 +715,6 @@ export default function BSL2025AgendaScreen() {
               y: scrollY,
               animated: true 
             });
-            
-            console.log(`[Scroll] Scrolled to y: ${scrollY} for session ${sessionId}`);
             
             // Clear URL parameters after scrolling to prevent re-triggering
             setTimeout(() => {
@@ -1479,8 +1383,6 @@ export default function BSL2025AgendaScreen() {
                 return dayItems.some(dayItem => String((dayItem as any).id) === String((item as any).id));
               });
 
-              // Removed console.log to prevent infinite re-renders
-
               if (filteredItems.length === 0) {
                 return (
                   <View style={styles.noResultsContainer}>
@@ -1515,6 +1417,17 @@ export default function BSL2025AgendaScreen() {
               <MaterialIcons name="schedule" size={16} color={colors.text.secondary} />
               <Text style={styles.noLiveText}>{t('empty.noLiveData')}</Text>
             </View>
+            <TouchableOpacity
+              accessibilityLabel={t('empty.retry')}
+              accessibilityRole="button"
+              style={styles.retryAgendaButton}
+              onPress={() => {
+                void loadAgenda();
+              }}
+            >
+              <MaterialIcons name="refresh" size={18} color={colors.primary} />
+              <Text style={styles.retryAgendaButtonText}>{t('empty.retry')}</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -1844,6 +1757,24 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.text.secondary,
     marginLeft: 4,
     fontWeight: '500',
+  },
+  retryAgendaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 44,
+    marginTop: 20,
+    paddingHorizontal: 18,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.background.paper,
+  },
+  retryAgendaButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
   },
   statusIndicatorContainer: {
     position: 'absolute',

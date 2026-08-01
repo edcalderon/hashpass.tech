@@ -1049,7 +1049,8 @@
     "empty": {
       "title": "No hay agenda disponible",
       "subtitle": "Vuelve más tarde para ver el programa del evento",
-      "noLiveData": "No hay datos de agenda en vivo"
+      "noLiveData": "No hay datos de agenda en vivo",
+      "retry": "Recargar agenda"
     },
     "badges": {
       "past": "PASADO"

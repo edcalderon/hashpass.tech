@@ -35,7 +35,7 @@ import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 const CopilotView = walkthroughable(View);
 
 // Constants
-const WORKING_HOURS = { start: 8, end: 19 }; // 8 AM to 7 PM (covers 08:00–18:30 sessions)
+const WORKING_HOURS = { start: 7, end: 19 }; // 7 AM to 7 PM (covers early event sessions)
 const TIME_SLOT_MINUTES = 15; // 15-minute time slots
 const DEFAULT_BSL_TOUR_DATES = {
   start: new Date(2025, 10, 12), // November 12, 2025 (months are 0-indexed)
@@ -58,6 +58,70 @@ const parseEventISO = (s: string) => {
   }
   return parseISO(normalized);
 };
+
+const agendaTimeRange = /^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/;
+
+const addDaysToDatePart = (datePart: string, days: number) => {
+  const date = new Date(`${datePart}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
+const getAgendaDateTimeRange = (
+  time: string | undefined,
+  day: string | number | undefined,
+  eventStartDate: string | undefined,
+  durationMinutes: number,
+) => {
+  const match = time?.trim().match(agendaTimeRange);
+  const eventDateMatch = eventStartDate?.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (!match || !eventDateMatch) return null;
+
+  const [, startHour, startMinute, endHour, endMinute] = match;
+  const dayMatch = String(day || '1').match(/\d+/);
+  const dayOffset = Math.max(0, Number(dayMatch?.[0] || 1) - 1);
+  const offset = eventStartDate?.match(/([+-]\d{2}:?\d{2})$/)?.[1] || EVENT_TZ_OFFSET;
+  const startDate = addDaysToDatePart(eventDateMatch[1], dayOffset);
+  const startTime = `${startDate}T${startHour.padStart(2, '0')}:${startMinute}:00${offset}`;
+
+  if (endHour !== undefined && endMinute !== undefined) {
+    const startMinutes = Number(startHour) * 60 + Number(startMinute);
+    const endMinutes = Number(endHour) * 60 + Number(endMinute);
+    const endDate = addDaysToDatePart(startDate, endMinutes < startMinutes ? 1 : 0);
+    return {
+      startTime,
+      endTime: `${endDate}T${endHour.padStart(2, '0')}:${endMinute}:00${offset}`,
+    };
+  }
+
+  const end = new Date(startTime);
+  end.setMinutes(end.getMinutes() + durationMinutes);
+  return { startTime, endTime: end.toISOString() };
+};
+
+const eventOffsetMinutes = (offset: string) => {
+  const match = offset.match(/^([+-])(\d{2}):?(\d{2})$/);
+  if (!match) return -300;
+  const minutes = Number(match[2]) * 60 + Number(match[3]);
+  return match[1] === '+' ? minutes : -minutes;
+};
+
+const eventClockParts = (date: Date, offset: string) => {
+  const localDate = new Date(date.getTime() + eventOffsetMinutes(offset) * 60_000);
+  return { hour: localDate.getUTCHours(), minute: localDate.getUTCMinutes() };
+};
+
+const formatEventTime = (date: Date, offset: string, includeMinutes = true) => {
+  const { hour, minute } = eventClockParts(date, offset);
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return includeMinutes
+    ? `${displayHour}:${String(minute).padStart(2, '0')} ${suffix}`
+    : `${displayHour} ${suffix}`;
+};
+
+const eventSlotStart = (date: Date, hour: number, minute: number, offset: string) =>
+  new Date(`${date.toISOString().slice(0, 10)}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00${offset}`);
 
 // Helper function to add minutes to a date
 const addMinutes = (date: Date, minutes: number): Date => {
@@ -83,6 +147,7 @@ const MySchedule = () => {
     const end = event?.eventEndDate ? new Date(event.eventEndDate) : DEFAULT_BSL_TOUR_DATES.end;
     return { start, end };
   }, [event?.eventStartDate, event?.eventEndDate]);
+  const eventTimezoneOffset = event?.eventStartDate?.match(/([+-]\d{2}:?\d{2})$/)?.[1] || EVENT_TZ_OFFSET;
   const [selectedDate, setSelectedDate] = useState<Date>(eventDates.start);
   const [expandedHours, setExpandedHours] = useState<{[key: string]: boolean}>({});
   const [dbMeetings, setDbMeetings] = useState<Meeting[]>([]);
@@ -253,6 +318,7 @@ const MySchedule = () => {
   );
 
   useEffect(() => {
+    let cancelled = false;
     const fetchAgenda = async () => {
       setLoadingAgenda(true);
       try {
@@ -274,10 +340,15 @@ const MySchedule = () => {
         }
         const toMinutes = (t?: string) => (t === 'panel' ? 60 : t === 'keynote' ? 30 : 30);
         const mapped: Meeting[] = items.map((it) => {
-          const start = it.time as string;
           const duration = toMinutes(it.type);
-          const end = new Date(start);
-          end.setMinutes(end.getMinutes() + duration);
+          const range = getAgendaDateTimeRange(
+            it.time as string | undefined,
+            it.day,
+            event?.eventStartDate,
+            duration,
+          );
+          const start = range?.startTime || (it.time as string);
+          const endTime = range?.endTime || addMinutes(parseEventISO(start), duration).toISOString();
           const agendaId = String(it.id);
           // Check user's confirmation status, default to 'tentative' for agenda events
           const userStatus = userAgendaStatus[agendaId] || 'tentative';
@@ -286,7 +357,7 @@ const MySchedule = () => {
             title: it.title || '',
             description: it.description || undefined,
             startTime: start,
-            endTime: end.toISOString(),
+            endTime,
             participants: Array.isArray(it.speakers) ? it.speakers : [],
             status: userStatus === 'confirmed' ? 'confirmed' : 'tentative',
             location: it.location || t('mySchedule.messages.tbd'),
@@ -295,15 +366,24 @@ const MySchedule = () => {
             isAgendaEvent: true, // Mark as agenda event
           } as Meeting & { isAgendaEvent?: boolean };
         });
-        setDbMeetings(mapped);
+        if (!cancelled) {
+          setDbMeetings(mapped);
+        }
       } catch (e) {
-        setDbMeetings([]);
+        if (!cancelled) {
+          setDbMeetings([]);
+        }
       } finally {
-        setLoadingAgenda(false);
+        if (!cancelled) {
+          setLoadingAgenda(false);
+        }
       }
     };
     fetchAgenda();
-  }, [userAgendaStatus, eventId, agendaApiPath, t]);
+    return () => {
+      cancelled = true;
+    };
+  }, [userAgendaStatus, eventId, agendaApiPath, event?.eventStartDate, t]);
 
   // Load user meetings (requester or speaker)
   useEffect(() => {
@@ -436,9 +516,8 @@ const MySchedule = () => {
   };
 
   // Generate time slots for a given date
-  const generateTimeSlots = (date: Date, meetings: Meeting[]): TimeSlot[] => {
+  const generateTimeSlots = useCallback((date: Date, meetings: Meeting[]): TimeSlot[] => {
     const slots: TimeSlot[] = [];
-    const now = new Date();
 
     // Calculate total minutes in the working day
     const totalWorkingMinutes = (WORKING_HOURS.end - WORKING_HOURS.start) * 60;
@@ -451,9 +530,7 @@ const MySchedule = () => {
     });
 
     for (let i = 0; i < totalSlots; i++) {
-      const startTime = new Date(date);
-      startTime.setHours(WORKING_HOURS.start);
-      startTime.setMinutes(0, 0, 0);
+      const startTime = eventSlotStart(date, WORKING_HOURS.start, 0, eventTimezoneOffset);
 
       const slotStart = addMinutes(startTime, i * TIME_SLOT_MINUTES);
       const slotEnd = addMinutes(slotStart, TIME_SLOT_MINUTES);
@@ -486,7 +563,7 @@ const MySchedule = () => {
     }
 
     return slots;
-  };
+  }, [eventTimezoneOffset]);
 
   // Combine agenda events and personal meetings, and apply user confirmation status
   const allMeetings = useMemo(() => {
@@ -542,7 +619,7 @@ const MySchedule = () => {
     }
 
     return days;
-  }, [allMeetings]);
+  }, [allMeetings, eventDates.start, eventDates.end, generateTimeSlots]);
 
   // Group time slots by hour for better organization
   const groupedSlots = useMemo(() => {
@@ -552,7 +629,7 @@ const MySchedule = () => {
     const grouped: {[hour: string]: TimeSlot[]} = {};
 
     selectedDay.timeSlots.forEach((slot: TimeSlot) => {
-      const hour = format(slot.startTime, 'h a'); // e.g. "9 AM"
+      const hour = formatEventTime(slot.startTime, eventTimezoneOffset, false);
       if (!grouped[hour]) {
         grouped[hour] = [];
       }
@@ -560,7 +637,7 @@ const MySchedule = () => {
     });
 
     return grouped;
-  }, [schedule, selectedDate]);
+  }, [schedule, selectedDate, eventTimezoneOffset]);
 
   // Calculate day statistics for calendar view
   const dayStats = useMemo(() => {
@@ -947,7 +1024,7 @@ const MySchedule = () => {
 
   // Render a single time slot
   const renderTimeSlot = (slot: TimeSlot) => {
-    const isExpanded = expandedHours[format(slot.startTime, 'h a')];
+    const isExpanded = expandedHours[formatEventTime(slot.startTime, eventTimezoneOffset, false)];
 
     if (slot.meeting) {
       const meeting = slot.meeting;
@@ -990,7 +1067,7 @@ const MySchedule = () => {
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={[styles.meetingTime, { color: colors.text.secondary }]}>
-                {format(slot.startTime, 'h:mm a')}
+                {formatEventTime(slot.startTime, eventTimezoneOffset)}
               </Text>
               <View style={[styles.statusIndicator, { backgroundColor: statusBgColor }]}> 
                 <Text style={[styles.statusText, { color: statusColor }]}> 
@@ -1104,7 +1181,7 @@ const MySchedule = () => {
                   top: 4,
                   left: 4,
                 }]}>
-                  {format(slot.startTime, 'h:mm a')}
+                  {formatEventTime(slot.startTime, eventTimezoneOffset)}
                 </Text>
                 <MaterialIcons
                   name={
@@ -1189,7 +1266,7 @@ const MySchedule = () => {
           top: 4,
           left: 4,
         }]}>
-          {format(slot.startTime, 'h:mm a')}
+          {formatEventTime(slot.startTime, eventTimezoneOffset)}
         </Text>
         <MaterialIcons
           name={
@@ -1701,7 +1778,7 @@ const MySchedule = () => {
                             <View key={`${slot.startTime.toISOString()}-${index}`} style={styles.timelineItem}>
                               <View style={styles.timelineTimeContainer}>
                                 <Text style={[styles.timelineTime, { color: colors.text.primary }]}>
-                                  {format(slot.startTime, 'h:mm a')}
+                                  {formatEventTime(slot.startTime, eventTimezoneOffset)}
                                 </Text>
                                 {index < timelineSlots.length - 1 && (
                                   <View style={[styles.timelineLine, { backgroundColor: colors.divider }]} />
@@ -1752,7 +1829,7 @@ const MySchedule = () => {
                             <View key={`${slot.startTime.toISOString()}-${index}`} style={styles.timelineItem}>
                               <View style={styles.timelineTimeContainer}>
                                 <Text style={[styles.timelineTime, { color: colors.text.primary }]}>
-                                  {format(slot.startTime, 'h:mm a')}
+                                  {formatEventTime(slot.startTime, eventTimezoneOffset)}
                                 </Text>
                                 {index < timelineSlots.length - 1 && (
                                   <View style={[styles.timelineLine, { backgroundColor: colors.divider }]} />

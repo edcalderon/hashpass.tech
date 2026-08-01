@@ -136,6 +136,12 @@ describe("speaker detail backend boundary", () => {
       /finally\s*\{[\s\S]*?set[A-Za-z]*Loading\s*\(\s*false\s*\)/,
     );
   });
+
+  it("does not emit meeting-limit debug logs in the production client", () => {
+    expect(source).not.toMatch(/console\.error\(['"]❌ Error checking meeting request limits:/);
+    expect(source).not.toMatch(/console\.log\(['"]Pass info loaded:/);
+    expect(source).not.toMatch(/console\.log\(['"]Request limits loaded:/);
+  });
 });
 
 describe("agenda speaker backend boundary", () => {

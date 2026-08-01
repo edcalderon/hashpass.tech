@@ -2,7 +2,7 @@
 
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity } from 'react-native';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -25,12 +25,12 @@ const mockShowError = jest.fn();
 const mockShowWarning = jest.fn();
 const mockT = (key: string) => key;
 
-const mockEvent = {
+const mockEvent: any = {
   id: 'custom',
   api: {
     basePath: '/api/bsl',
   },
-  agenda: [],
+  agenda: [] as any[],
   eventStartDate: null,
   eventEndDate: null,
   eventDateString: 'BSL 2026',
@@ -41,6 +41,7 @@ const mockEvent = {
     venue: 'Corferias',
   },
 };
+let mockActiveEvent = mockEvent;
 
 const mockThemeColors = {
   primary: '#d93025',
@@ -71,6 +72,7 @@ const mockThemeColors = {
 
 const mockUserTableMaybeSingle = jest.fn();
 const mockAgendaStatusMaybeSingle = jest.fn();
+let mockUserAgendaStatusRows: any[] = [];
 
 const createQueryBuilder = (table: string) => ({
   select: jest.fn().mockReturnThis(),
@@ -88,6 +90,11 @@ const createQueryBuilder = (table: string) => ({
   maybeSingle: table === 'user' ? mockUserTableMaybeSingle : mockAgendaStatusMaybeSingle,
   insert: jest.fn().mockResolvedValue({ error: null }),
   update: jest.fn().mockReturnThis(),
+  then: (onFulfilled: (value: { data: any[]; error: null }) => unknown) =>
+    Promise.resolve({
+      data: table === 'user_agenda_status' ? mockUserAgendaStatusRows : [],
+      error: null,
+    }).then(onFulfilled),
 });
 
 const mockSupabase = {
@@ -146,7 +153,7 @@ jest.mock('expo-haptics', () => ({
 
 jest.mock('@contexts/EventContext', () => ({
   useEvent: () => ({
-    event: mockEvent,
+    event: mockActiveEvent,
   }),
 }));
 
@@ -217,6 +224,7 @@ describe('event schedule screens', () => {
     mockWindowWidth = 1024;
     mockPlatform = 'web';
     mockAgendaParams = {};
+    mockActiveEvent = mockEvent;
     mockRouterPush.mockReset();
     mockRouterReplace.mockReset();
     mockNavigationSetOptions.mockReset();
@@ -228,6 +236,7 @@ describe('event schedule screens', () => {
     mockSupabase.from.mockClear();
     mockUserTableMaybeSingle.mockReset();
     mockAgendaStatusMaybeSingle.mockReset();
+    mockUserAgendaStatusRows = [];
     mockUserTableMaybeSingle.mockResolvedValue({ data: { id: 'registry-user-id' }, error: null });
     mockAgendaStatusMaybeSingle.mockResolvedValue({ data: null, error: null });
 
@@ -264,6 +273,84 @@ describe('event schedule screens', () => {
     });
   });
 
+  it('retries the agenda request from the empty-agenda state', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [] } });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+    });
+
+    const retryButton = renderer!.root
+      .findAllByType(TouchableOpacity)
+      .find((node) => node.props.accessibilityLabel === 'empty.retry');
+
+    expect(retryButton).toBeDefined();
+
+    await act(async () => {
+      await retryButton!.props.onPress();
+      await flushPromises();
+    });
+
+    const agendaRequests = mockApiRequest.mock.calls.filter(
+      ([path]) => path === 'events/custom/agenda',
+    );
+    expect(agendaRequests).toHaveLength(2);
+
+    await act(async () => {
+      renderer!.unmount();
+    });
+  });
+
+  it('keeps the latest event agenda when an earlier event request resolves late', async () => {
+    const chileAgenda = [{
+      id: 'chile-session',
+      day: '1',
+      time: '09:00',
+      title: 'Chile opening keynote',
+      type: 'keynote',
+    }];
+    const bslEvent = { ...mockEvent, id: 'bsl', agenda: [] };
+    const chileEvent = { ...mockEvent, id: 'chile2026', agenda: chileAgenda };
+    let resolveBslAgenda!: (response: { success: boolean; data: { data: unknown[] } }) => void;
+    const bslAgendaRequest = new Promise<{ success: boolean; data: { data: unknown[] } }>((resolve) => {
+      resolveBslAgenda = resolve;
+    });
+
+    mockActiveEvent = bslEvent;
+    mockApiRequest.mockImplementation((path: string) => {
+      if (path === 'events/bsl/agenda') return bslAgendaRequest;
+      return Promise.resolve({ success: true, data: { data: [] } });
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+    });
+
+    mockActiveEvent = chileEvent;
+    await act(async () => {
+      renderer!.update(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    await act(async () => {
+      resolveBslAgenda({ success: true, data: { data: [] } });
+      await flushPromises();
+    });
+
+    const agendaFilter = renderer!.root.findByType('UnifiedSearchAndFilter' as any);
+    expect(agendaFilter.props.data).toEqual(chileAgenda);
+
+    await act(async () => {
+      renderer!.unmount();
+    });
+  });
+
   it('loads my schedule agenda data from the shared event API', async () => {
     mockApiRequest.mockResolvedValue({ success: true, data: { data: [] } });
 
@@ -278,6 +365,62 @@ describe('event schedule screens', () => {
     expect(mockApiRequest).toHaveBeenCalledWith('events/custom/agenda', {
       skipEventSegment: true,
     });
+
+    await act(async () => {
+      renderer!.unmount();
+    });
+  });
+
+  it('shows a saved Chile agenda session in its occupied 7 AM slot', async () => {
+    mockActiveEvent = {
+      ...mockEvent,
+      id: 'chile2026',
+      eventStartDate: '2026-08-05T09:00:00-04:00',
+      eventEndDate: '2026-08-07T23:59:59-04:00',
+    };
+    mockUserAgendaStatusRows = [{
+      agenda_id: 'chile-early-session',
+      meeting_id: null,
+      slot_time: null,
+      status: 'confirmed',
+      slot_status: null,
+      is_favorite: false,
+    }];
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: {
+        data: [{
+          id: 'chile-early-session',
+          day: '1',
+          time: '07:30-07:45',
+          title: 'Chile early session',
+          type: 'keynote',
+          location: 'Main stage',
+        }],
+      },
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<MyScheduleScreen />);
+      for (let index = 0; index < 5; index += 1) {
+        await flushPromises();
+      }
+    });
+
+    const hourText = renderer!.root.findByProps({ children: '7 AM' });
+    let hourHeader = hourText.parent;
+    while (hourHeader && hourHeader.type !== TouchableOpacity) {
+      hourHeader = hourHeader.parent;
+    }
+    expect(
+      hourHeader!.findAllByType(Text).some((node) => node.children.join('') === '1/4'),
+    ).toBe(true);
+
+    await act(async () => {
+      hourHeader!.props.onPress();
+    });
+    expect(JSON.stringify(renderer!.toJSON())).toContain('Chile early session');
 
     await act(async () => {
       renderer!.unmount();

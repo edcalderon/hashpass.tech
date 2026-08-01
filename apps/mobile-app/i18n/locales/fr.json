@@ -912,7 +912,8 @@
     "empty": {
       "title": "Aucun programme disponible",
       "subtitle": "Revenez plus tard pour consulter le programme de l'événement",
-      "noLiveData": "Aucune donnée de programme en direct"
+      "noLiveData": "Aucune donnée de programme en direct",
+      "retry": "Recharger le programme"
     },
     "badges": {
       "past": "PASSÉ"

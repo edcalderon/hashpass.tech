@@ -656,7 +656,12 @@ export default function ExploreScreen() {
             name="quickAccess"
           >
             <CopilotView style={styles.section}>
-              <Text style={styles.sectionTitle}>{t({ id: 'explore.quickAccess', message: 'Quick Access' })}</Text>
+              <View style={styles.quickAccessHeader}>
+                <Text style={styles.sectionTitle}>{t({ id: 'explore.quickAccess', message: 'Quick Access' })}</Text>
+                <Text style={styles.quickAccessEventSubtitle}>
+                  {`${t({ id: 'explore.quickAccess.forEvent', message: 'For' })} ${selectedEvent.title}`}
+                </Text>
+              </View>
             <View style={styles.quickAccessContainer}>
               {quickAccessScroll.canScrollLeft && (
                 <Reanimated.View style={[styles.scrollArrowLeft, quickAccessScroll.leftArrowStyle]}>
@@ -867,6 +872,14 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.text.primary,
     marginBottom: 12,
     letterSpacing: 0.2,
+  },
+  quickAccessHeader: {
+    marginBottom: 12,
+  },
+  quickAccessEventSubtitle: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    marginTop: -8,
   },
   horizontalScroll: {
     paddingRight: 16,

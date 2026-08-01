@@ -814,8 +814,7 @@ export default function SpeakerDetail() {
       if (limits.pass_type) {
         setUserPassType(limits.pass_type as 'general' | 'business' | 'vip');
       }
-    } catch (error) {
-      console.error('❌ Error checking meeting request limits:', error);
+    } catch {
       showError(
         'Meeting Request Unavailable',
         'We could not verify your meeting request limits. Please try again.',
@@ -1228,13 +1227,9 @@ export default function SpeakerDetail() {
             onRequestPress={handleRequestMeeting}
             refreshTrigger={passRefreshTrigger}
             onPassInfoLoaded={(passInfo: { pass_type?: string } | null) => {
-              console.log('Pass info loaded:', passInfo);
               if (passInfo && passInfo.pass_type) {
                 setUserPassType(passInfo.pass_type as 'general' | 'business' | 'vip');
               }
-            }}
-            onRequestLimitsLoaded={(limits: unknown) => {
-              console.log('Request limits loaded:', limits);
             }}
           />
         </CopilotView>

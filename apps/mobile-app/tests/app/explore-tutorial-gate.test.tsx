@@ -28,7 +28,7 @@ const noEventTheme = {
   },
 };
 
-function loadExploreScreen() {
+function loadExploreScreen(availableEvents: Array<Record<string, unknown>> = []) {
   let React: typeof import('react');
   let TestRenderer: typeof import('react-test-renderer');
   let ExploreScreen: React.ComponentType;
@@ -49,7 +49,10 @@ function loadExploreScreen() {
         currentState: 'active',
         addEventListener: jest.fn(() => ({ remove: jest.fn() })),
       },
-      Animated: {},
+      Animated: {
+        event: jest.fn(() => jest.fn()),
+        ScrollView: 'Animated.ScrollView',
+      },
       Image: 'Image',
       InteractionManager: {
         runAfterInteractions,
@@ -134,8 +137,9 @@ function loadExploreScreen() {
       useHorizontalScrollArrows: () => ({}),
     }));
     jest.doMock('../../lib/event-detector', () => ({
-      getAvailableEvents: () => [],
-      getCurrentEvent: () => null,
+      getAvailableEvents: () => availableEvents,
+      getCurrentEvent: (eventId?: string) =>
+        availableEvents.find((event) => event.id === eventId) || null,
       getEventQuickAccessItems: () => [],
       isMainBranch: false,
       shouldShowEventSelector: () => false,
@@ -186,6 +190,28 @@ describe('ExploreScreen disabled tutorial gate', () => {
     expect(copilotEvents.on).not.toHaveBeenCalled();
     expect(copilotEvents.off).not.toHaveBeenCalled();
     expect(runAfterInteractions).not.toHaveBeenCalled();
+
+    await TestRenderer.act(async () => {
+      renderer!.unmount();
+    });
+  });
+
+  it('labels Quick Access with the currently selected event', async () => {
+    const { React, TestRenderer, ExploreScreen } = loadExploreScreen([
+      {
+        id: 'chile2026',
+        title: 'BSL Chile 2026',
+        subtitle: 'Santiago, Chile',
+        color: '#FF5B5B',
+      },
+    ]);
+    let renderer: import('react-test-renderer').ReactTestRenderer;
+
+    await TestRenderer.act(async () => {
+      renderer = TestRenderer.create(React.createElement(ExploreScreen));
+    });
+
+    expect(JSON.stringify(renderer!.toJSON())).toContain('For BSL Chile 2026');
 
     await TestRenderer.act(async () => {
       renderer!.unmount();

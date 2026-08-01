@@ -911,7 +911,8 @@
     "empty": {
       "title": "Nenhuma agenda disponível",
       "subtitle": "Volte mais tarde para ver a programação do evento",
-      "noLiveData": "Sem dados de agenda ao vivo"
+      "noLiveData": "Sem dados de agenda ao vivo",
+      "retry": "Recarregar agenda"
     },
     "badges": {
       "past": "PASSADO"
