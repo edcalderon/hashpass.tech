@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
+import { performHardReload } from '../lib/version-checker';
 
 interface VersionUpdateNotificationProps {
   currentVersion: string;
@@ -31,9 +32,7 @@ export default function VersionUpdateNotification({
     try {
       await clearAllCaches();
       setStep('reloading');
-      if (typeof window !== 'undefined') {
-        window.location.reload();
-      }
+      performHardReload();
     } catch {
       setStep('idle');
     }
