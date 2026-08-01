@@ -1940,8 +1940,9 @@ BEGIN
     s.created_at,
     s.updated_at
   FROM public.bsl_speakers s
-  WHERE s.id = p_id
+  WHERE s.id::text = p_id
      OR lower(s.name) = lower(p_id)
+     OR lower(COALESCE(to_jsonb(s)->>'slug', '')) = lower(p_id)
      OR s.user_id::text = p_id
   LIMIT 1;
 END;
@@ -2160,7 +2161,7 @@ BEGIN
     p.used_boost_amount
   INTO v_pass
   FROM public.passes p
-  WHERE p.user_id = p_user_id
+  WHERE p.user_id::text = p_user_id
     AND p.event_id = v_event_id
     AND p.status = 'active'
   ORDER BY p.created_at DESC
@@ -2212,7 +2213,7 @@ DECLARE
 BEGIN
   PERFORM 1
   FROM public.passes
-  WHERE user_id = p_user_id
+  WHERE user_id::text = p_user_id
     AND event_id = COALESCE(NULLIF(p_event_id, ''), COALESCE(NULLIF(current_setting('app.event_id', true), ''), 'bsl2025'))
     AND status = 'active'
   LIMIT 1;
@@ -2275,7 +2276,7 @@ BEGIN
     p.used_boost_amount
   INTO v_pass
   FROM public.passes p
-  WHERE p.user_id = p_user_id
+  WHERE p.user_id::text = p_user_id
     AND p.event_id = v_event_id
     AND p.status = 'active'
   ORDER BY p.created_at DESC
@@ -2324,7 +2325,7 @@ BEGIN
     WHERE (
       ub.blocked_user_id = p_user_id::uuid
       AND (
-        ub.speaker_id = v_speaker.id
+        ub.speaker_id::text = v_speaker.id
         OR ub.blocker_user_id = v_speaker.user_id
       )
     )

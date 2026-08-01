@@ -19,6 +19,22 @@ const passAccessMigrationPath = path.join(
   root,
   'db/migrations/V021__repair_bsl_pass_access_and_backfill.sql',
 );
+const agendaTypesMigrationPath = path.join(
+  root,
+  'db/migrations/V024__expand_event_agenda_types.sql',
+);
+const meetingIdentityMigrationPath = path.join(
+  root,
+  'db/migrations/V025__fix_meeting_identity_type_casts.sql',
+);
+const speakerIdentityMigrationPath = path.join(
+  root,
+  'db/migrations/V026__fix_speaker_identity_type_casts.sql',
+);
+const speakerSlugMigrationPath = path.join(
+  root,
+  'db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -73,7 +89,21 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V017__harden_meeting_request_lifecycle.sql',
       'db/migrations/V018__event_scoped_meeting_rpc_contract.sql',
       'db/migrations/V019__event_scoped_meeting_limits_and_duration_guard.sql',
+      'db/migrations/V025__fix_meeting_identity_type_casts.sql',
+      'db/migrations/V026__fix_speaker_identity_type_casts.sql',
+      'db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql',
     ]);
+  });
+
+  it('casts UUID pass owners before comparing text RPC parameters', () => {
+    const migration = fs.readFileSync(meetingIdentityMigrationPath, 'utf8');
+    const speakerMigration = fs.readFileSync(speakerIdentityMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/p\.user_id::text\s*=\s*p_user_id/);
+    expect(migration).toMatch(/user_id::text\s*=\s*p_user_id/);
+    expect(speakerMigration).toMatch(/s\.id::text\s*=\s*p_id/);
+    expect(speakerMigration).toMatch(/ub\.speaker_id::text\s*=\s*v_speaker\.id/);
+    expect(fs.readFileSync(speakerSlugMigrationPath, 'utf8')).toMatch(/to_jsonb\(s\)->>'slug'/);
   });
 
   it('makes meeting request counts explicitly event-scoped for PostgREST RPC calls', () => {
@@ -116,5 +146,17 @@ describe('canonical BSL 2026 event catalog migration contract', () => {
       'db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql',
     );
     expect(config.profiles['bsl-development'].databaseUrlEnv).toContain('SUPABASE_DB_URL_DEV');
+  });
+
+  it('ships the agenda type constraint migration through the default tenant migration command', () => {
+    const migration = fs.readFileSync(agendaTypesMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/registration/);
+    expect(migration).toMatch(/meal/);
+    expect(config.defaultGroups).toContain('event-catalog');
+    expect(config.groups['event-catalog']).toContain(
+      'db/migrations/V024__expand_event_agenda_types.sql',
+    );
   });
 });

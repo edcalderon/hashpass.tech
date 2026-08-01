@@ -40,10 +40,14 @@
     "meeting-lifecycle": [
       "db/migrations/V017__harden_meeting_request_lifecycle.sql",
       "db/migrations/V018__event_scoped_meeting_rpc_contract.sql",
-      "db/migrations/V019__event_scoped_meeting_limits_and_duration_guard.sql"
+      "db/migrations/V019__event_scoped_meeting_limits_and_duration_guard.sql",
+      "db/migrations/V025__fix_meeting_identity_type_casts.sql",
+      "db/migrations/V026__fix_speaker_identity_type_casts.sql",
+      "db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql"
     ],
     "event-catalog": [
-      "db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql"
+      "db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql",
+      "db/migrations/V024__expand_event_agenda_types.sql"
     ]
   }
 }

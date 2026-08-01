@@ -453,9 +453,9 @@ class PassSystemService {
         .single();
 
       if (error) {
-        console.error('Error checking meeting request limits:', error);
         return {
           can_request: false,
+          canSendRequest: false,
           reason: 'Error checking limits',
           pass_type: null,
           remaining_requests: 0,
@@ -466,8 +466,7 @@ class PassSystemService {
       const result = data as PassRequestLimits;
       result.canSendRequest = result.can_request; // Set alias for compatibility
       return result;
-    } catch (error) {
-      console.error('Error in canMakeMeetingRequest:', error);
+    } catch {
       return {
         can_request: false,
         canSendRequest: false,
