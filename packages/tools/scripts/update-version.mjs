@@ -54,6 +54,20 @@ function escapeJsStringLiteral(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+// Extracts and decodes a single-quoted `field: '...'` value written by
+// escapeJsStringLiteral() above. A naive `'([^']+)'` capture (the previous
+// approach here) stops at the first quote it sees, including an escaped
+// `\'` inside the value — so any release note containing an apostrophe
+// (e.g. "BSL's bundle") truncates mid-word and leaves a trailing backslash.
+// `(?:\\.|[^'\\])*` mirrors extractArrayItems()'s already-correct pattern
+// below: consume an escaped pair as a unit before checking for the closing
+// quote, then decode via decodeJsStringLiteralValue for full round-tripping.
+function matchQuotedStringField(content, fieldName) {
+  const pattern = new RegExp(`${fieldName}:\\s*'((?:\\\\.|[^'\\\\])*)'`);
+  const match = content.match(pattern);
+  return match ? decodeJsStringLiteralValue(match[1]) : null;
+}
+
 function decodeJsStringLiteralValue(rawValue) {
   let decoded = '';
 
@@ -788,9 +802,9 @@ try {
 
         // Extract fields from the entry
         const buildNumberMatch = entryContent.match(/buildNumber:\s*(\d+)/);
-        const releaseDateMatch = entryContent.match(/releaseDate:\s*'([^']+)'/);
-        const releaseTypeMatch = entryContent.match(/releaseType:\s*'([^']+)'/);
-        const notesMatch = entryContent.match(/notes:\s*'([^']+)'/);
+        const releaseDateValue = matchQuotedStringField(entryContent, 'releaseDate');
+        const releaseTypeValue = matchQuotedStringField(entryContent, 'releaseType');
+        const notesValue = matchQuotedStringField(entryContent, 'notes');
 
         // Extract arrays - handle multiline arrays
         const featuresMatch = entryContent.match(/features:\s*\[([\s\S]*?)\]/);
@@ -817,13 +831,13 @@ try {
         versions.push({
           version: entry.version,
           buildNumber: buildNumberMatch ? parseInt(buildNumberMatch[1]) : 0,
-          releaseDate: releaseDateMatch ? releaseDateMatch[1] : releaseDate,
-          releaseType: releaseTypeMatch ? releaseTypeMatch[1] : releaseType,
+          releaseDate: releaseDateValue !== null ? releaseDateValue : releaseDate,
+          releaseType: releaseTypeValue !== null ? releaseTypeValue : releaseType,
           environment: 'development',
           features: extractArrayItems(featuresMatch),
           bugfixes: extractArrayItems(bugfixesMatch),
           breakingChanges: extractArrayItems(breakingMatch),
-          notes: notesMatch ? notesMatch[1].replace(/\\'/g, "'") : `Version ${entry.version} release`
+          notes: notesValue !== null ? notesValue : `Version ${entry.version} release`
         });
       }
 
