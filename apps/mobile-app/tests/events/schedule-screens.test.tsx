@@ -2,7 +2,7 @@
 
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
-import { TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity } from 'react-native';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -25,7 +25,7 @@ const mockShowError = jest.fn();
 const mockShowWarning = jest.fn();
 const mockT = (key: string) => key;
 
-const mockEvent = {
+const mockEvent: any = {
   id: 'custom',
   api: {
     basePath: '/api/bsl',
@@ -72,6 +72,7 @@ const mockThemeColors = {
 
 const mockUserTableMaybeSingle = jest.fn();
 const mockAgendaStatusMaybeSingle = jest.fn();
+let mockUserAgendaStatusRows: any[] = [];
 
 const createQueryBuilder = (table: string) => ({
   select: jest.fn().mockReturnThis(),
@@ -89,6 +90,11 @@ const createQueryBuilder = (table: string) => ({
   maybeSingle: table === 'user' ? mockUserTableMaybeSingle : mockAgendaStatusMaybeSingle,
   insert: jest.fn().mockResolvedValue({ error: null }),
   update: jest.fn().mockReturnThis(),
+  then: (onFulfilled: (value: { data: any[]; error: null }) => unknown) =>
+    Promise.resolve({
+      data: table === 'user_agenda_status' ? mockUserAgendaStatusRows : [],
+      error: null,
+    }).then(onFulfilled),
 });
 
 const mockSupabase = {
@@ -230,6 +236,7 @@ describe('event schedule screens', () => {
     mockSupabase.from.mockClear();
     mockUserTableMaybeSingle.mockReset();
     mockAgendaStatusMaybeSingle.mockReset();
+    mockUserAgendaStatusRows = [];
     mockUserTableMaybeSingle.mockResolvedValue({ data: { id: 'registry-user-id' }, error: null });
     mockAgendaStatusMaybeSingle.mockResolvedValue({ data: null, error: null });
 
@@ -358,6 +365,62 @@ describe('event schedule screens', () => {
     expect(mockApiRequest).toHaveBeenCalledWith('events/custom/agenda', {
       skipEventSegment: true,
     });
+
+    await act(async () => {
+      renderer!.unmount();
+    });
+  });
+
+  it('shows a saved Chile agenda session in its occupied 7 AM slot', async () => {
+    mockActiveEvent = {
+      ...mockEvent,
+      id: 'chile2026',
+      eventStartDate: '2026-08-05T09:00:00-04:00',
+      eventEndDate: '2026-08-07T23:59:59-04:00',
+    };
+    mockUserAgendaStatusRows = [{
+      agenda_id: 'chile-early-session',
+      meeting_id: null,
+      slot_time: null,
+      status: 'confirmed',
+      slot_status: null,
+      is_favorite: false,
+    }];
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: {
+        data: [{
+          id: 'chile-early-session',
+          day: '1',
+          time: '07:30-07:45',
+          title: 'Chile early session',
+          type: 'keynote',
+          location: 'Main stage',
+        }],
+      },
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<MyScheduleScreen />);
+      for (let index = 0; index < 5; index += 1) {
+        await flushPromises();
+      }
+    });
+
+    const hourText = renderer!.root.findByProps({ children: '7 AM' });
+    let hourHeader = hourText.parent;
+    while (hourHeader && hourHeader.type !== TouchableOpacity) {
+      hourHeader = hourHeader.parent;
+    }
+    expect(
+      hourHeader!.findAllByType(Text).some((node) => node.children.join('') === '1/4'),
+    ).toBe(true);
+
+    await act(async () => {
+      hourHeader!.props.onPress();
+    });
+    expect(JSON.stringify(renderer!.toJSON())).toContain('Chile early session');
 
     await act(async () => {
       renderer!.unmount();
