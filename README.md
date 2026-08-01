@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.297)
+## 📋 Latest Changes (v1.8.298)
 
 ### Released
-- the CI-commit-injection fix was ineffective for hashpass.tech too; parse escaped apostrophes when regenerating versions.json; propagate the CodeStar source revision to the BSL EC2 worker
+- refine dashboard drawer branding
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
