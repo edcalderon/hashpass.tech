@@ -32,6 +32,7 @@ import { openTargetedDashboardDrawer } from '../../../lib/dashboard-drawer';
 import { t } from '@lingui/macro';
 import { CopilotStep, walkthroughable, useCopilot } from '@lib/copilot-shim';
 import { hapticLight, hapticMedium } from '../../../lib/haptics';
+import FlipWords from '../../../components/FlipWords';
 
 const ANDROID_DASHBOARD_HEADER_HEIGHT = 64;
 const ANDROID_DRAWER_EDGE_GUARD = 16;
@@ -183,15 +184,75 @@ function CustomDrawerContent({
   const insets = useSafeAreaInsets();
   const { width: viewportWidth } = useWindowDimensions();
   const compactQuickActions = viewportWidth < 480;
+  const compactDrawerBranding = viewportWidth < 390;
   const drawerSafeInsets = getDashboardDrawerInsets(insets);
-  const styles = getStyles(isDark, colors, isMobile, drawerSafeInsets, compactQuickActions);
+  const styles = getStyles(
+    isDark,
+    colors,
+    isMobile,
+    drawerSafeInsets,
+    compactQuickActions,
+    compactDrawerBranding,
+  );
   const [isUserAdmin, setIsUserAdmin] = React.useState(false);
   const [isSigningOut, setIsSigningOut] = React.useState(false);
-  const brandBadgeText =
-    event?.tour?.role === 'hub'
-      ? 'BSL ON TOUR'
-      : event?.name || event?.title || 'BSL';
+  const eventBadgeText = React.useMemo(() => {
+    const configuredBadge = event?.branding?.badge?.trim();
+    if (configuredBadge) return configuredBadge.startsWith('#') ? configuredBadge : `#${configuredBadge}`;
+    const domain = event?.domain?.split('.')[0]?.replace(/[^a-z0-9]/gi, '').toUpperCase();
+    return domain && domain !== 'HASHPASS' ? `#${domain}` : null;
+  }, [event?.branding?.badge, event?.domain]);
+  const [showEventBadge, setShowEventBadge] = React.useState(false);
+  const badgeTransitionRef = React.useRef<RNAnimated.Value | null>(null);
+  if (badgeTransitionRef.current === null) badgeTransitionRef.current = new RNAnimated.Value(1);
+  const badgeTransition = badgeTransitionRef.current;
+  const brandBadgeText = showEventBadge && eventBadgeText ? eventBadgeText : 'HASHPASS';
   const brandBadgeColor = event?.branding?.primaryColor || '#007AFF';
+  const drawerTaglineWords = React.useMemo(
+    () => t({
+      id: 'index.taglineFlipList',
+      message: '- YOUR EVENT -,- YOUR COMMUNITY -,- YOUR REWARDS -',
+    }).split(',').map((phrase) => phrase.trim()).filter(Boolean),
+    [locale],
+  );
+
+  // Keep the platform badge as the default, then gently reveal the current
+  // event domain when one is active. The event value is data-driven so an
+  // organizer can later provide a different domain/badge without changing
+  // this shell (for example, #BSL2026).
+  React.useEffect(() => {
+    if (!eventBadgeText || !animationsEnabled) {
+      setShowEventBadge(false);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      RNAnimated.sequence([
+        RNAnimated.timing(badgeTransition, { toValue: 0, duration: 220, useNativeDriver: true }),
+        RNAnimated.timing(badgeTransition, { toValue: 1, duration: 280, useNativeDriver: true }),
+      ]).start();
+      setShowEventBadge((visible) => !visible);
+    }, 4200);
+
+    return () => {
+      clearInterval(interval);
+      badgeTransition.stopAnimation();
+      badgeTransition.setValue(1);
+    };
+  }, [animationsEnabled, badgeTransition, eventBadgeText]);
+
+  const username = React.useMemo(() => {
+    const email = typeof user?.email === 'string' ? user.email.trim() : '';
+    const localPart = email.split('@')[0]?.trim();
+    return localPart ? `@${localPart}` : t({ id: 'nav.account', message: 'Account' });
+  }, [user?.email]);
+  const memberSince = React.useMemo(() => {
+    const createdAt = user?.created_at || user?.date_created;
+    if (!createdAt) return null;
+    const date = new Date(createdAt);
+    if (Number.isNaN(date.getTime())) return null;
+    return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' }).format(date);
+  }, [locale, user?.created_at, user?.date_created]);
 
   // Animated fluid gradient effect with multiple layers
   const gradientAnimation1 = useSharedValue(0);
@@ -627,54 +688,86 @@ function CustomDrawerContent({
           </>
         ) : null}
         <View style={[styles.brandingContainer, { zIndex: 1, position: 'relative' }]}>
-          <View style={styles.logoContainer}>
-            <TouchableOpacity
-              onPress={handleLogoPress}
-              onPressIn={handleLogoPressIn}
-              onPressOut={handleLogoPressOut}
-              activeOpacity={1}
-              accessibilityRole="button"
-              accessibilityLabel={t({ id: 'nav.backToLanding', message: 'Back to landing' })}
-              // @ts-ignore - Web-specific hover handlers
-              onMouseEnter={handleLogoHoverIn}
-              onMouseLeave={handleLogoHoverOut}
-            >
-              <Animated.View style={[
-                styles.logoPill,
-                {
-                  backgroundColor: isDark ? colors.primaryLight : colors.primaryDark, // Solid background matching drawer header
-                  borderColor: colors.primaryContrastText + '66', // White border with opacity
-                  zIndex: 10, // Ensure logo card is above animated background
-                },
-                logoAnimatedStyle
-              ]}>
-                <Image
-                  source={isDark
-                    ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp')
-                    : require('../../../assets/logos/hashpass/logo-full-hashpass-white.webp')
-                  }
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
-              </Animated.View>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.brandingSection}>
-            <Text style={styles.brandSubtitle}>{t({ id: 'nav.brandSubtitle', message: 'Digital Event Platform' })}</Text>
-            <View style={[styles.brandBadge, { backgroundColor: brandBadgeColor }]}>
-              <Text style={styles.brandBadgeText}>{brandBadgeText}</Text>
-            </View>
-          </View>
           <TouchableOpacity
-            onPress={closeDrawer}
-            style={styles.drawerCloseButton}
-            activeOpacity={0.75}
+            onPress={handleLogoPress}
+            onPressIn={handleLogoPressIn}
+            onPressOut={handleLogoPressOut}
+            style={styles.logoCardButton}
+            activeOpacity={1}
             accessibilityRole="button"
-            accessibilityLabel={t({ id: 'nav.closeMenu', message: 'Close navigation menu' })}
+            accessibilityLabel={`${username}, ${t({ id: 'nav.memberSince', message: 'Member since' })} ${memberSince || '—'}`}
+            // @ts-ignore - Web-specific hover handlers
+            onMouseEnter={handleLogoHoverIn}
+            onMouseLeave={handleLogoHoverOut}
           >
-            <Ionicons name="close" size={24} color={colors.text.primary} />
+            <Animated.View style={[
+              styles.logoPill,
+              {
+                backgroundColor: isDark ? colors.primaryLight : colors.primaryDark,
+                borderColor: colors.primaryContrastText + '66',
+                zIndex: 10,
+              },
+              logoAnimatedStyle,
+            ]}>
+              <Image
+                source={isDark
+                  ? require('../../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp')
+                  : require('../../../assets/logos/hashpass/logo-full-hashpass-white.webp')
+                }
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+              <View style={styles.logoCardMeta}>
+                <Text style={styles.brandSubtitle} numberOfLines={2}>
+                  {t({ id: 'nav.brandSubtitle', message: 'Digital Event Platform' })}
+                </Text>
+                <View style={styles.brandTaglineContainer} pointerEvents="none">
+                  {animationsEnabled ? (
+                    <FlipWords
+                      words={drawerTaglineWords}
+                      duration={3000}
+                      textStyle={styles.brandTaglineAnimated}
+                    />
+                  ) : (
+                    <Text style={styles.brandTaglineStatic} numberOfLines={1}>
+                      {drawerTaglineWords[0]}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </Animated.View>
           </TouchableOpacity>
+          <View style={styles.identityMeta}>
+            <TouchableOpacity
+              onPress={() => handleNavigation('./profile')}
+              style={styles.brandUsernameButton}
+              activeOpacity={0.7}
+              accessibilityRole="link"
+              accessibilityLabel={t({ id: 'nav.profile', message: 'Profile' })}
+            >
+              <Text style={styles.brandUsername} numberOfLines={1}>{username}</Text>
+            </TouchableOpacity>
+            <Text style={styles.brandMemberSince} numberOfLines={1}>
+              {t({ id: 'nav.memberSince', message: 'Member since' })} {memberSince || '—'}
+            </Text>
+            <RNAnimated.View
+              style={[styles.identityBadgeWrap, { opacity: badgeTransition }]}
+            >
+              <View style={[styles.brandBadge, { backgroundColor: brandBadgeColor }]}>
+                <Text style={styles.brandBadgeText} numberOfLines={1}>{brandBadgeText}</Text>
+              </View>
+            </RNAnimated.View>
+          </View>
         </View>
+        <TouchableOpacity
+          onPress={closeDrawer}
+          style={styles.drawerCloseButton}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={t({ id: 'nav.closeMenu', message: 'Close navigation menu' })}
+        >
+          <Ionicons name="close" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
       </View>
 
       {/* Menu Items - Scrollable on mobile */}
@@ -1525,8 +1618,10 @@ const getStyles = (
   isMobile: boolean,
   insets: DashboardDrawerInsets = {},
   compactQuickActions = false,
+  compactDrawerBranding = false,
 ) => {
   const drawerSafeInsets = getDashboardDrawerInsets(insets);
+  const brandCardSize = compactDrawerBranding ? 88 : isMobile ? 100 : 108;
 
   return StyleSheet.create({
   container: {
@@ -1619,8 +1714,8 @@ const getStyles = (
     justifyContent: 'center',
   },
   drawerHeader: {
-    paddingTop: (isMobile ? 12 : 18) + drawerSafeInsets.top,
-    paddingBottom: isMobile ? 14 : 18,
+    paddingTop: (isMobile ? 10 : 14) + drawerSafeInsets.top,
+    paddingBottom: isMobile ? 12 : 14,
     paddingLeft: 18 + drawerSafeInsets.left,
     paddingRight: 18 + drawerSafeInsets.right,
     borderBottomWidth: 1,
@@ -1654,60 +1749,134 @@ const getStyles = (
   brandingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: compactDrawerBranding ? 8 : 12,
   },
-  logoContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoCardButton: {
+    width: brandCardSize,
+    height: brandCardSize,
+    flexShrink: 0,
   },
   logoPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 24,
+    width: '100%',
+    height: '100%',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: compactDrawerBranding ? 7 : 8,
+    paddingVertical: compactDrawerBranding ? 7 : 8,
+    borderRadius: compactDrawerBranding ? 22 : 24,
     borderWidth: 2,
     boxShadow: '0 3px 6px rgba(0, 0, 0, 0.18)',
   },
   logoImage: {
-    width: 72,
-    height: 72,
+    width: compactDrawerBranding ? 62 : 70,
+    height: compactDrawerBranding ? 20 : 23,
   },
-  brandingSection: {
+  logoCardMeta: {
+    width: '100%',
+    paddingTop: compactDrawerBranding ? 4 : 5,
+    alignItems: 'center',
+  },
+  identityMeta: {
     flex: 1,
-    alignItems: 'flex-start',
+    minWidth: 0,
+    paddingRight: isMobile ? 0 : 2,
+    justifyContent: 'center',
+  },
+  identityBadgeWrap: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    marginTop: compactDrawerBranding ? 7 : 8,
   },
   drawerCloseButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    position: 'absolute',
+    top: (isMobile ? 10 : 14) + drawerSafeInsets.top,
+    right: 18 + drawerSafeInsets.right,
+    width: isMobile ? 38 : 42,
+    height: isMobile ? 38 : 42,
+    borderRadius: isMobile ? 19 : 21,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
     borderWidth: 1,
     borderColor: colors.divider,
+    zIndex: 2,
+  },
+  brandTaglineContainer: {
+    width: '100%',
+    height: compactDrawerBranding ? 12 : 14,
+    marginTop: compactDrawerBranding ? 2 : 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   brandSubtitle: {
-    fontSize: 12,
+    fontSize: compactDrawerBranding ? 5.8 : 6.8,
     fontWeight: '700',
-    color: colors.text.secondary,
-    letterSpacing: 1,
+    color: colors.primaryContrastText + 'C7',
+    letterSpacing: compactDrawerBranding ? 0.55 : 0.7,
+    lineHeight: compactDrawerBranding ? 7 : 8,
+    textAlign: 'center',
     textTransform: 'uppercase',
-    marginBottom: 10,
+    maxWidth: '100%',
+  },
+  brandTaglineAnimated: {
+    fontSize: compactDrawerBranding ? 4.8 : 5.3,
+    fontWeight: '600',
+    color: colors.primaryContrastText + 'A3',
+    letterSpacing: compactDrawerBranding ? 0.45 : 0.55,
+    lineHeight: compactDrawerBranding ? 7 : 8,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    maxWidth: '100%',
+  },
+  brandTaglineStatic: {
+    fontSize: compactDrawerBranding ? 4.8 : 5.3,
+    fontWeight: '600',
+    color: colors.primaryContrastText + 'A3',
+    letterSpacing: compactDrawerBranding ? 0.45 : 0.55,
+    lineHeight: compactDrawerBranding ? 7 : 8,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    maxWidth: '100%',
   },
   brandBadge: {
     backgroundColor: isDark ? colors.primaryLight : colors.primaryDark,
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: compactDrawerBranding ? 8 : 10,
+    paddingVertical: compactDrawerBranding ? 3 : 4,
     borderWidth: 1,
     borderColor: colors.primaryContrastText + '26',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.14)',
   },
   brandBadgeText: {
-    fontSize: 12,
+    fontSize: compactDrawerBranding ? 9 : 10,
     fontWeight: '800',
     color: colors.primaryContrastText,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
+  },
+  brandUsername: {
+    marginTop: 0,
+    fontSize: compactDrawerBranding ? 13 : isMobile ? 15 : 16,
+    lineHeight: compactDrawerBranding ? 17 : 20,
+    fontWeight: '800',
+    color: colors.text.primary,
+    maxWidth: '100%',
+  },
+  brandUsernameButton: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+  },
+  brandMemberSince: {
+    marginTop: compactDrawerBranding ? 3 : 4,
+    fontSize: compactDrawerBranding ? 8.5 : isMobile ? 9.5 : 10,
+    lineHeight: compactDrawerBranding ? 12 : 14,
+    fontWeight: '400',
+    fontStyle: 'italic',
+    letterSpacing: 0.1,
+    color: colors.text.secondary,
+    maxWidth: '100%',
   },
   drawerHeaderText: {
     fontSize: 20,

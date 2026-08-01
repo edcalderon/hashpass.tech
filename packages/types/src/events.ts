@@ -67,6 +67,8 @@ export interface EventConfig {
     secondaryColor?: string;
     logo: string;
     favicon?: string;
+    /** Optional organizer-managed short badge, e.g. #BSL2026. */
+    badge?: string;
   };
   api: {
     basePath: string;
