@@ -49,6 +49,25 @@ function isUserActive(): boolean {
   return isOnActivePage && isPageVisible;
 }
 
+export function performHardReload(): void {
+  if (typeof window === 'undefined') return;
+
+  // Plain window.location.reload() right after clearAllCaches() is not
+  // reliable: unregister() only guarantees the service worker stops
+  // matching *future* navigations per spec, but browsers vary on whether a
+  // reload of the exact same document is re-resolved against that change,
+  // so the just-unregistered worker can still serve this one final reload
+  // from its own cache-fallback path. Even with no service worker in play,
+  // a same-URL reload can still be answered by the browser's own HTTP disk
+  // cache or a stale bfcache entry instead of a real network round trip.
+  // Navigating to the same URL with a fresh, one-time query param sidesteps
+  // all of that: it's a URL no cache layer (service worker, HTTP cache, or
+  // any CDN in front) has ever seen, so it forces a genuine fetch.
+  const url = new URL(window.location.href);
+  url.searchParams.set('_hpv', Date.now().toString());
+  window.location.replace(url.toString());
+}
+
 async function clearAllCaches(): Promise<void> {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
@@ -133,7 +152,7 @@ export async function checkVersionAndClearCache(forceCheck: boolean = false): Pr
         } catch {
           // See the storage fallback above.
         }
-        window.location.reload();
+        performHardReload();
         return true;
       }
       window.dispatchEvent(

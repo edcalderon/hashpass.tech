@@ -2,7 +2,7 @@
 
 const mockGetRuntimeVersion = jest.fn();
 const mockApiGet = jest.fn();
-const mockReload = jest.fn();
+const mockReplace = jest.fn();
 const mockCacheKeys = jest.fn();
 const mockCacheDelete = jest.fn();
 const mockUnregister = jest.fn();
@@ -46,7 +46,8 @@ function installWebGlobals() {
   (global as any).window = {
     caches,
     location: {
-      reload: mockReload,
+      href: 'https://hashpass.tech/dashboard',
+      replace: mockReplace,
     },
   };
 
@@ -109,7 +110,7 @@ describe('version checker', () => {
     expect(mockCacheDelete).toHaveBeenCalled();
     expect(mockGetRegistrations).toHaveBeenCalled();
     expect(mockUnregister).toHaveBeenCalled();
-    expect(mockReload).toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith(expect.stringContaining('_hpv='));
   });
 
   // Regression test for a production incident: checkVersionOnStart() calls
@@ -139,7 +140,7 @@ describe('version checker', () => {
     const wasCleared = await checkVersionAndClearCache(true);
 
     expect(wasCleared).toBe(false);
-    expect(mockReload).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
     expect(mockApiGet).not.toHaveBeenCalled();
   });
 
@@ -161,7 +162,7 @@ describe('version checker', () => {
 
     expect(wasCleared).toBe(false);
     expect(mockCacheDelete).not.toHaveBeenCalled();
-    expect(mockReload).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
   // Regression test for a production incident: an actively-browsing user
@@ -193,14 +194,14 @@ describe('version checker', () => {
     // Initial 2s delay: the user is active, so the disruptive reload path
     // must not run.
     await jest.advanceTimersByTimeAsync(2000);
-    expect(mockReload).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
     expect(mockApiGet).not.toHaveBeenCalled();
 
     // The periodic interval must still have been established even though
     // the user was active at startup -- this is the actual regression.
     await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
     expect(mockApiGet).toHaveBeenCalled();
-    expect(mockReload).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
     expect(window.dispatchEvent).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'hashpass:version-update' })
     );

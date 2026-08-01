@@ -1,3 +1,7 @@
+## [1.8.292](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.291...v1.8.292) (2026-08-01)
+### Released
+- make update-modal reload guarantee a fresh bundle
+
 ## [1.8.291](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.290...v1.8.291) (2026-07-30)
 ### Released
 - run periodic version checks even while the user stays active

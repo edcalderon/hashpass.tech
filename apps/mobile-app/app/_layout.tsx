@@ -178,6 +178,16 @@ function ThemedContent() {
   // Check version on first load (web only) and initialize console welcome
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      // Drop the one-time cache-busting marker performHardReload() appends
+      // before a forced/manual update reload — it's only there to guarantee
+      // a real network fetch past the old service worker/HTTP cache, and
+      // has no meaning once the fresh page has already loaded.
+      if (window.location.search.includes('_hpv=')) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('_hpv');
+        window.history.replaceState(null, '', url.toString());
+      }
+
       // Check version immediately
       checkVersionOnStart().catch((error: unknown) => {
         console.error('Version check failed:', error);
