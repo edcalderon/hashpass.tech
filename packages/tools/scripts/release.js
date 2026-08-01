@@ -503,7 +503,6 @@ function runMainRelease(options, branch) {
     'packages/tools/scripts/update-version.mjs',
     releaseVersion,
     '--type=stable',
-    '--skip-git-info',
   ], options);
 
   syncJsonVersion('apps/mobile-app/config/version.production.json', releaseVersion);

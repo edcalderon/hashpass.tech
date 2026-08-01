@@ -150,7 +150,8 @@ resource "aws_cloudfront_distribution" "site" {
     compress               = true
 
     forwarded_values {
-      query_string = false
+      query_string            = true
+      query_string_cache_keys = ["_hpv"]
 
       cookies {
         forward = "none"
