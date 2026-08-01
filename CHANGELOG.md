@@ -1,3 +1,7 @@
+## [1.8.294](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.293...v1.8.294) (2026-08-01)
+### Released
+- Version 1.8.294 release
+
 ## [1.8.293](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.292...v1.8.293) (2026-08-01)
 ### Released
 - stop release:promote from skipping git-info.json regeneration; whitelist _hpv query param as CloudFront cache key on hashpass.tech

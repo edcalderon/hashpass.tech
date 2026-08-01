@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608010220, // Updated to current timestamp
+  buildNumber: 202608010325, // Updated to current timestamp
   releaseDate: '2026-08-01',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,15 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'stop release:promote from skipping git-info.json regeneration',
-    'whitelist _hpv query param as CloudFront cache key on hashpass.tech'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'stop release:promote from skipping git-info.json regeneration; whitelist _hpv query param as CloudFront cache key on hashpass.tech'
+  notes: 'Version 1.8.294 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.294': {
+    version: '1.8.294',
+    buildNumber: 202608010325,
+    releaseDate: '2026-08-01',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.8.294 release'
+  },
   '1.8.293': {
     version: '1.8.293',
     buildNumber: 202608010220,

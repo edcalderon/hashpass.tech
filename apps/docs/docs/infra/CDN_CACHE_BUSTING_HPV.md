@@ -101,3 +101,69 @@ these distributions goes live in front of the mobile-app web build, apply
 the same `query_string = true` / `query_string_cache_keys = ["_hpv"]` change
 there — otherwise this exact bug reappears on whichever distribution ends up
 serving production traffic.
+
+## BSL had the identical bug too — fixed 2026-08-01, not Terraform-managed
+
+`bsl.hashpass.tech` (`E2FCDJB1JCS7TW`) and `bsl-dev.hashpass.tech`
+(`E279RW9PP52TC0`) serve the exact same `apps/mobile-app` web build (via
+`build-bsl-static-site.sh`) and therefore the exact same
+`performHardReload()`/`?_hpv=` mechanism — but neither distribution is
+covered by the `stacks/aws` fix above; they're separate CloudFront
+distributions using the newer `CachePolicyId` mechanism rather than legacy
+`forwarded_values`, both pinned to the AWS-managed `Managed-CachingOptimized`
+policy (`658327ea-f89d-4fab-a63d-7e88639e58f6`), which has
+`QueryStringBehavior: none` — same root cause, same defeat of the cache
+buster. This one is arguably worse for BSL: per the "Known gap" notes in
+`DEPLOYMENT_MAP.md`, BSL's build script also doesn't invalidate CloudFront
+on deploy (cross-account credential limitation), so a stale edge object here
+has no forced-refresh mechanism at all until natural TTL expiry.
+
+Found while investigating a user report of `bsl.hashpass.tech` still
+showing an old version after clicking "Update Now." At the time of checking,
+the origin was actually already fresh (`curl` showed `versions.json`/`sw.js`
+correctly reporting the just-deployed version, `last-modified` ~14 minutes
+old) — so that specific report was very likely deploy-timing or a
+browser tab holding an old service worker, not this bug actively firing.
+But the underlying gap was real and is now closed pre-emptively.
+
+**Fix:** since neither distribution is Terraform-managed (both predate
+proper IaC ownership, same as noted elsewhere in `DEPLOYMENT_MAP.md`), this
+was applied via direct AWS CLI, matching how these two distributions have
+always been managed post-cutover:
+
+```bash
+# Custom cache policy: CachingOptimized clone, query strings whitelisted to _hpv
+aws cloudfront create-cache-policy --cache-policy-config file://bsl-hpv-cache-policy.json --profile default
+# → 63f0a203-7003-40af-96b6-3bac93c0645d ("hashpass-bsl-hpv-cache-key")
+
+# Applied to both distributions' DefaultCacheBehavior.CachePolicyId
+aws cloudfront get-distribution-config --id E2FCDJB1JCS7TW --profile default   # then update-distribution --if-match
+aws cloudfront get-distribution-config --id E279RW9PP52TC0 --profile default  # then update-distribution --if-match
+```
+
+The custom policy mirrors `Managed-CachingOptimized` exactly (`DefaultTTL`
+86400 / `MaxTTL` 31536000 / `MinTTL` 1, gzip+brotli enabled, no
+headers/cookies forwarded) except `QueryStringsConfig`:
+
+```json
+"QueryStringsConfig": {
+  "QueryStringBehavior": "whitelist",
+  "QueryStrings": { "Quantity": 1, "Items": ["_hpv"] }
+}
+```
+
+Verify with:
+
+```bash
+aws cloudfront get-distribution-config --id E2FCDJB1JCS7TW --profile default \
+  --query 'DistributionConfig.DefaultCacheBehavior.CachePolicyId'
+# → 63f0a203-7003-40af-96b6-3bac93c0645d for both distributions once InProgress → Deployed
+```
+
+**Not fixed by this change:** the missing on-deploy invalidation for BSL.
+That's a separate, larger fix (needs invalidation credentials reachable from
+the target-account build worker, or a cross-account role) and wasn't in
+scope here — this fix only makes the CDN cache key correctly vary when a
+client explicitly asks it to (via `_hpv`), it doesn't make deploys
+proactively push fresh content to every edge location faster than natural
+TTL/revalidation already does.
