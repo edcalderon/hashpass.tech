@@ -1,3 +1,7 @@
+## [1.8.295](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.294...v1.8.295) (2026-08-01)
+### Released
+- inject the real deployed commit into BSL's bundle too
+
 ## [1.8.294](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.293...v1.8.294) (2026-08-01)
 ### Released
 - Version 1.8.294 release
