@@ -81,14 +81,14 @@ describe("event networking stats api", () => {
       },
     });
     expect(mockRpc).toHaveBeenCalledWith("get_user_meeting_request_counts", {
-      p_user_id: "speaker-user-1",
+      p_user_id: "auth-speaker-user-1",
       p_event_id: "chile2026",
     });
     expect(queryCalls).toEqual(
       expect.arrayContaining([
         {
           table: "bsl_speakers",
-          filters: [["user_id", "speaker-user-1"]],
+          filters: [["user_id", "auth-speaker-user-1"]],
         },
         {
           table: "user_blocks",
@@ -97,7 +97,7 @@ describe("event networking stats api", () => {
         {
           table: "meeting_requests",
           filters: [
-            ["speaker_id", "speaker-user-1"],
+            ["speaker_id", "auth-speaker-user-1"],
             ["event_id", "chile2026"],
           ],
         },

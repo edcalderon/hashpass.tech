@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       { error: identity.error },
       { status: identity.status },
     );
-  const meetingUserId = identity.registryUserId ?? identity.supabaseUserId;
+  const meetingUserId = identity.supabaseUserId;
   if (!meetingUserId)
     return Response.json(
       { error: "Meeting identity required" },

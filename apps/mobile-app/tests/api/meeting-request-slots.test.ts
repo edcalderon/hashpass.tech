@@ -96,7 +96,7 @@ describe("meeting-request slots api", () => {
       p_speaker_id: "speaker-user-id",
       p_date: null,
       p_duration_minutes: 15,
-      p_requester_id: "speaker-user-id",
+      p_requester_id: "auth-speaker-user-id",
       p_event_id: "bsl",
     });
     expect(mockEq).toHaveBeenCalledWith("speaker_id", "speaker-user-id");

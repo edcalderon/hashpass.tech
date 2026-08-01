@@ -149,14 +149,14 @@ describe("meeting-requests api", () => {
       });
     });
 
-    it("queries incoming requests with the canonical speaker user id", async () => {
+    it("queries incoming requests with the Supabase speaker user id", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "auth-uuid-123",
         registryUserId: "registry-id-123",
       });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockMaybeSingle.mockResolvedValueOnce({
-        data: { id: "claudia-sotelo", user_id: "registry-id-123" },
+        data: { id: "claudia-sotelo", user_id: "auth-uuid-123" },
         error: null,
       });
 
@@ -167,7 +167,7 @@ describe("meeting-requests api", () => {
       );
 
       expect(response.status).toBe(200);
-      expect(mockEq).toHaveBeenCalledWith("speaker_id", "registry-id-123");
+      expect(mockEq).toHaveBeenCalledWith("speaker_id", "auth-uuid-123");
       expect(mockIn).not.toHaveBeenCalled();
     });
 
@@ -209,7 +209,7 @@ describe("meeting-requests api", () => {
       expect(await response.json()).toEqual({ data: [] });
     });
 
-    it("queries meeting_requests by the canonical registry id", async () => {
+    it("queries meeting_requests by the Supabase auth id", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "auth-uuid-123",
         registryUserId: "registry-id-123",
@@ -228,8 +228,8 @@ describe("meeting-requests api", () => {
         ),
       );
 
-      expect(mockEq).toHaveBeenCalledWith("requester_id", "registry-id-123");
-      expect(mockEq).not.toHaveBeenCalledWith("requester_id", "auth-uuid-123");
+      expect(mockEq).toHaveBeenCalledWith("requester_id", "auth-uuid-123");
+      expect(mockEq).not.toHaveBeenCalledWith("requester_id", "registry-id-123");
     });
 
     it("isolates a speaker request list to the event in its URL", async () => {
@@ -444,7 +444,7 @@ describe("meeting-requests api", () => {
         data: { id: "request-123", status: "pending" },
       });
       expect(mockRpc).toHaveBeenCalledWith("insert_meeting_request", {
-        p_requester_id: "registry-requester-id",
+        p_requester_id: "550e8400-e29b-41d4-a716-446655440000",
         p_speaker_id: "claudia-sotelo",
         p_speaker_name: "Claudia Sotelo",
         p_requester_name: "Ada Lovelace",

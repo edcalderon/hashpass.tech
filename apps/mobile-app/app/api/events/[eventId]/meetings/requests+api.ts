@@ -20,11 +20,9 @@ async function authenticatedIdentity(request: Request) {
         { status: identity.status },
       ),
     };
-  // Meeting rows reference the tenant's canonical `user` table, not
-  // Supabase's auth.users table. Prefer the canonical ID for every meeting
-  // read/write, while retaining the provider ID only for legacy tenants whose
-  // meeting rows still use that same UUID domain.
-  const meetingUserId = identity.registryUserId ?? identity.supabaseUserId;
+  // Meeting RPCs, passes, and claimed speaker ownership are all keyed by the
+  // Supabase auth UUID. The registry user ID is a separate identity domain.
+  const meetingUserId = identity.supabaseUserId;
   if (!meetingUserId)
     return {
       response: Response.json(
@@ -65,7 +63,7 @@ export async function GET(request: Request) {
       { error: identity.error },
       { status: identity.status },
     );
-  const userId = identity.registryUserId ?? identity.supabaseUserId;
+  const userId = identity.supabaseUserId;
   if (!userId) return Response.json({ data: [] });
   const eventId = eventIdFromRequest(request);
   if (!eventId)

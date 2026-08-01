@@ -42,7 +42,7 @@ describe("event meeting limits api", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ data: { remaining_requests: 2 } });
     expect(mockRpc).toHaveBeenCalledWith("get_user_meeting_request_counts", {
-      p_user_id: "user-1",
+      p_user_id: "auth-user-1",
       p_event_id: "chile2026",
     });
   });
