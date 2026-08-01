@@ -1,3 +1,7 @@
+## [1.8.299](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.298...v1.8.299) (2026-08-01)
+### Released
+- restore Chile agenda data
+
 ## [1.8.298](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.297...v1.8.298) (2026-08-01)
 ### Released
 - refine dashboard drawer branding

@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608011546, // Updated to current timestamp
+  buildNumber: 202608011832, // Updated to current timestamp
   releaseDate: '2026-08-01',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'refine dashboard drawer branding'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'restore Chile agenda data'
   ],
   breakingChanges: [],
-  notes: 'refine dashboard drawer branding'
+  notes: 'restore Chile agenda data'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.299': {
+    version: '1.8.299',
+    buildNumber: 202608011832,
+    releaseDate: '2026-08-01',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'restore Chile agenda data'
+    ],
+    breakingChanges: [],
+    notes: 'restore Chile agenda data'
+  },
   '1.8.298': {
     version: '1.8.298',
     buildNumber: 202608011546,
