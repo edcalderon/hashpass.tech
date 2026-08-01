@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608010325, // Updated to current timestamp
+  buildNumber: 202608010459, // Updated to current timestamp
   releaseDate: '2026-08-01',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'inject the real deployed commit into BSL\'s bundle too'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.294 release'
+  notes: 'inject the real deployed commit into BSL\'s bundle too'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.295': {
+    version: '1.8.295',
+    buildNumber: 202608010459,
+    releaseDate: '2026-08-01',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'inject the real deployed commit into BSL\'s bundle too'
+    ],
+    breakingChanges: [],
+    notes: 'inject the real deployed commit into BSL\'s bundle too'
+  },
   '1.8.294': {
     version: '1.8.294',
     buildNumber: 202608010325,

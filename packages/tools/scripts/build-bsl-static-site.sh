@@ -96,6 +96,17 @@ for (const [key, value] of Object.entries(env)) {
 }
 ")"
 
+# CODEBUILD_RESOLVED_SOURCE_VERSION is the actual commit this CodeBuild job
+# checked out and is about to build -- the artifact that's really getting
+# deployed, unlike git-info.json (written on develop before the release
+# commit even exists). expo export inlines EXPO_PUBLIC_* at build time, so
+# this bakes the true deployed commit into the bundle. Falls back to the
+# local HEAD for non-CodeBuild (manual) runs. Same fix as build-static-site.sh
+# uses for the main site -- see CDN_CACHE_BUSTING_HPV.md and
+# version-drawer-git-commit-staleness.md.
+export EXPO_PUBLIC_RELEASE_COMMIT="${CODEBUILD_RESOLVED_SOURCE_VERSION:-$(git rev-parse HEAD 2>/dev/null || echo '')}"
+echo "  Release commit: ${EXPO_PUBLIC_RELEASE_COMMIT:-<unknown>}"
+
 cd apps/mobile-app
 export CI=1
 SKIP_ENV_PROPAGATE=1 BUILD_ENV="${BSL_STAGE}" npm run build:static
