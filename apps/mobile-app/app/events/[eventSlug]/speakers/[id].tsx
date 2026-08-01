@@ -88,10 +88,6 @@ export default function SpeakerDetail() {
   const [passRefreshTrigger, setPassRefreshTrigger] = useState(0);
   const [userPassType, setUserPassType] = useState<'general' | 'business' | 'vip'>('general');
   
-  // Debug modal state changes
-  useEffect(() => {
-    console.log('🔍 Modal state changed:', showMeetingModal);
-  }, [showMeetingModal]);
   const [meetingMessage, setMeetingMessage] = useState('');
   const [selectedIntentions, setSelectedIntentions] = useState<string[]>(['none']);
   const [requestLimits, setRequestLimits] = useState<{

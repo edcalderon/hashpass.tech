@@ -229,6 +229,28 @@ describe('EventApiClient credential handling', () => {
     expect(getCaptchaApiEndpoint()).toBe('https://api.hashpass.tech/api/captcha/');
   });
 
+  it('parses JSON API Gateway responses even when the content type is text/plain', async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => 'text/plain;charset=UTF-8' },
+      json: async () => ({ data: { id: '77191639-312a-41f2-ba33-70ae9d99ed46' } }),
+    }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new EventApiClient();
+    const response = await client.request('events/chile2026/speakers/77191639-312a-41f2-ba33-70ae9d99ed46', {
+      skipEventSegment: true,
+      skipAuth: true,
+    });
+
+    expect(response).toEqual({
+      data: { data: { id: '77191639-312a-41f2-ba33-70ae9d99ed46' } },
+      success: true,
+    });
+  });
+
   it('exchanges a cookie-backed Directus session for a bearer token before calling the API', async () => {
     mockAuthSession.mockResolvedValue({
       access_token: 'session_based',
