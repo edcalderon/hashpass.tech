@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 import React from 'react';
-import { Alert } from 'react-native';
+import { Alert, ScrollView } from 'react-native';
 
 import AdminPanel from '../../app/(shared)/dashboard/admin';
 
@@ -109,6 +109,33 @@ describe('AdminPanel pass codes', () => {
     });
     await flush();
   };
+
+  it('keeps admin actions in a single horizontally scrollable tab row', async () => {
+    const renderer = await renderPanel();
+
+    const tabScroller = renderer.root
+      .findAllByType(ScrollView)
+      .find((node: any) => node.props.horizontal === true);
+
+    expect(tabScroller).toBeTruthy();
+    expect(tabScroller?.props.showsHorizontalScrollIndicator).toBe(false);
+    expect(tabScroller?.props.contentContainerStyle).toBeDefined();
+
+    act(() => {
+      tabScroller?.props.onLayout({ nativeEvent: { layout: { width: 320 } } });
+      tabScroller?.props.onContentSizeChange(960, 42);
+    });
+    expect(renderer.root.findByProps({ accessibilityLabel: 'More admin sections are available to the right' })).toBeTruthy();
+
+    act(() => {
+      tabScroller?.props.onScroll({
+        nativeEvent: {
+          contentOffset: { x: 640 },
+        },
+      });
+    });
+    expect(renderer.root.findAllByProps({ accessibilityLabel: 'More admin sections are available to the right' })).toHaveLength(0);
+  });
 
   it('lists campaign metadata without a raw code value', async () => {
     const renderer = await renderPanel();

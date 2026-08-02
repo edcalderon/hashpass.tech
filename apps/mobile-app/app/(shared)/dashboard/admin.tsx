@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal } from 'react-native';
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
@@ -108,6 +108,10 @@ export default function AdminPanel() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('passes');
+  const tabContentWidthRef = useRef(0);
+  const tabViewportWidthRef = useRef(0);
+  const [tabsOverflow, setTabsOverflow] = useState(false);
+  const [tabsAtEnd, setTabsAtEnd] = useState(true);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
   const [loading, setLoading] = useState(true);
@@ -170,6 +174,11 @@ export default function AdminPanel() {
   const [newSpeakerAccountEmail, setNewSpeakerAccountEmail] = useState('');
 
   const styles = getStyles(isDark, colors);
+  const updateTabScrollState = (offsetX = 0) => {
+    const maxOffset = Math.max(tabContentWidthRef.current - tabViewportWidthRef.current, 0);
+    setTabsOverflow(maxOffset > 4);
+    setTabsAtEnd(maxOffset <= 4 || offsetX >= maxOffset - 4);
+  };
 
   // Wait for auth to finish loading before checking admin access
   useEffect(() => {
@@ -820,15 +829,33 @@ export default function AdminPanel() {
         )}
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
+      {/* Tabs stay on one row; scroll instead of wrapping actions into a second line. */}
+      <View style={styles.tabsWrapper}>
+        <ScrollView
+          horizontal
+          style={styles.tabs}
+          contentContainerStyle={styles.tabsContent}
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          accessibilityHint="Swipe horizontally to reveal additional admin sections"
+          onLayout={({ nativeEvent }) => {
+            tabViewportWidthRef.current = nativeEvent.layout.width;
+            updateTabScrollState();
+          }}
+          onContentSizeChange={(width) => {
+            tabContentWidthRef.current = width;
+            updateTabScrollState();
+          }}
+          onScroll={({ nativeEvent }) => updateTabScrollState(nativeEvent.contentOffset.x)}
+          scrollEventThrottle={16}
+        >
         {canManagePasses && (
           <TouchableOpacity
             style={[styles.tab, activeTab === 'passes' && styles.tabActive]}
             onPress={() => setActiveTab('passes')}
           >
             <MaterialIcons name="card-membership" size={20} color={activeTab === 'passes' ? '#007AFF' : colors.text.secondary} />
-            <Text style={[styles.tabText, activeTab === 'passes' && styles.tabTextActive]}>Passes</Text>
+            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'passes' && styles.tabTextActive]}>Passes</Text>
           </TouchableOpacity>
         )}
         {canManagePasses && (
@@ -837,7 +864,7 @@ export default function AdminPanel() {
             onPress={() => setActiveTab('pass-codes')}
           >
             <MaterialIcons name="confirmation-number" size={20} color={activeTab === 'pass-codes' ? '#007AFF' : colors.text.secondary} />
-            <Text style={[styles.tabText, activeTab === 'pass-codes' && styles.tabTextActive]}>Pass Codes</Text>
+            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'pass-codes' && styles.tabTextActive]}>Pass Codes</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -845,14 +872,14 @@ export default function AdminPanel() {
           onPress={() => setActiveTab('qr-scanner')}
         >
           <MaterialIcons name="qr-code-scanner" size={20} color={activeTab === 'qr-scanner' ? '#007AFF' : colors.text.secondary} />
-          <Text style={[styles.tabText, activeTab === 'qr-scanner' && styles.tabTextActive]}>QR Scanner</Text>
+          <Text numberOfLines={1} style={[styles.tabText, activeTab === 'qr-scanner' && styles.tabTextActive]}>QR Scanner</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'meetings' && styles.tabActive]}
           onPress={() => setActiveTab('meetings')}
         >
           <MaterialIcons name="people" size={20} color={activeTab === 'meetings' ? '#007AFF' : colors.text.secondary} />
-          <Text style={[styles.tabText, activeTab === 'meetings' && styles.tabTextActive]}>Meetings</Text>
+          <Text numberOfLines={1} style={[styles.tabText, activeTab === 'meetings' && styles.tabTextActive]}>Meetings</Text>
         </TouchableOpacity>
         {canManagePasses && (
           <TouchableOpacity
@@ -860,7 +887,7 @@ export default function AdminPanel() {
             onPress={() => setActiveTab('roles')}
           >
             <MaterialIcons name="admin-panel-settings" size={20} color={activeTab === 'roles' ? '#007AFF' : colors.text.secondary} />
-            <Text style={[styles.tabText, activeTab === 'roles' && styles.tabTextActive]}>Staff & Roles</Text>
+            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'roles' && styles.tabTextActive]}>Staff & Roles</Text>
           </TouchableOpacity>
         )}
         {canManagePasses && (
@@ -869,8 +896,19 @@ export default function AdminPanel() {
             onPress={() => setActiveTab('speaker-roles')}
           >
             <MaterialIcons name="record-voice-over" size={20} color={activeTab === 'speaker-roles' ? '#007AFF' : colors.text.secondary} />
-            <Text style={[styles.tabText, activeTab === 'speaker-roles' && styles.tabTextActive]}>Speakers</Text>
+            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'speaker-roles' && styles.tabTextActive]}>Speakers</Text>
           </TouchableOpacity>
+        )}
+        </ScrollView>
+        {tabsOverflow && !tabsAtEnd && (
+          <View
+            pointerEvents="none"
+            style={styles.tabScrollHint}
+            accessibilityLabel="More admin sections are available to the right"
+          >
+            <Text style={styles.tabScrollHintText}>More</Text>
+            <MaterialIcons name="chevron-right" size={20} color="#007AFF" />
+          </View>
         )}
       </View>
 
@@ -1868,12 +1906,18 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   eventSwitcherChipTextActive: {
     color: '#fff',
   },
-  tabs: {
+  tabsWrapper: {
     backgroundColor: colors.background.paper,
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
+    position: 'relative',
+  },
+  tabs: {
+    flexGrow: 0,
+  },
+  tabsContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -1882,10 +1926,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexGrow: 1,
-    flexBasis: 102,
-    maxWidth: 176,
+    flexShrink: 0,
     minHeight: 42,
+    minWidth: 140,
     paddingHorizontal: 8,
     paddingVertical: 8,
     borderRadius: 10,
@@ -1902,6 +1945,25 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   tabTextActive: {
     color: '#007AFF',
+    fontWeight: '600',
+  },
+  tabScrollHint: {
+    alignItems: 'center',
+    backgroundColor: colors.background.paper,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.divider,
+    bottom: 0,
+    flexDirection: 'row',
+    gap: 2,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  tabScrollHintText: {
+    color: '#007AFF',
+    fontSize: 12,
     fontWeight: '600',
   },
   content: {
