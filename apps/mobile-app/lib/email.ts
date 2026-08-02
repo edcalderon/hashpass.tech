@@ -544,6 +544,7 @@ export interface MeetingEmailDetails {
   meetingLocation?: string | null;
   durationMinutes?: number | null;
   response?: string | null;
+  appUrl?: string | null;
 }
 
 const escapeEmailHtml = (value: unknown) => String(value ?? '')
@@ -587,7 +588,7 @@ export async function sendMeetingNotificationEmail(
     const participants = [details.requesterName, details.requesterTitle, details.requesterCompany, details.speakerName]
       .filter(Boolean).join(' · ');
     const row = (label: string, value?: unknown) => value ? `<tr><td style="width:34%;padding:10px 12px;color:#667085;font-size:14px;font-weight:700;vertical-align:top;border-bottom:1px solid #eaecf0">${escapeEmailHtml(label)}</td><td style="padding:10px 12px;color:#1d2939;font-size:14px;line-height:20px;vertical-align:top;border-bottom:1px solid #eaecf0">${escapeEmailHtml(value)}</td></tr>` : '';
-    const appUrl = `https://bsl.hashpass.tech/events/${encodeURIComponent(details.eventId)}/networking/my-requests`;
+    const appUrl = details.appUrl || `https://bsl.hashpass.tech/events/${encodeURIComponent(details.eventId)}/networking/my-requests`;
     const hasBslBranding = isBslEvent(details.eventId);
     const hashpassLogoUrl = getEmailAssetUrl('images/logo-full-hashpass-white.png');
     const bslLogoUrl = getEmailAssetUrl('images/BSL.svg');
