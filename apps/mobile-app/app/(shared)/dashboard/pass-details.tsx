@@ -9,6 +9,7 @@ import { EVENTS } from '../../../config/events';
 import DynamicQRDisplay from '../../../components/DynamicQRDisplay';
 import * as Clipboard from 'expo-clipboard';
 import { useTranslation } from '../../../i18n/i18n';
+import { useToastHelpers } from '../../../contexts/ToastContext';
 
 const formatEntitlement = (value: string) => value
   .replace(/[_-]+/g, ' ')
@@ -17,6 +18,7 @@ const formatEntitlement = (value: string) => value
 export default function PassDetailsScreen() {
   const { colors, isDark } = useTheme();
   const { t } = useTranslation('passes');
+  const { showSuccess, showError } = useToastHelpers();
   const { user, dbUserId, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams<{ passId?: string; eventId?: string }>();
@@ -145,13 +147,12 @@ export default function PassDetailsScreen() {
 
     try {
       await Clipboard.setStringAsync(passInfo.pass_number);
-      Alert.alert(
+      showSuccess(
         t('passNumberCopiedTitle', 'Pass number copied'),
         t('passNumberCopiedMessage', 'Your pass number has been copied to the clipboard.'),
-        [{ text: t('ok', 'OK') }],
       );
     } catch {
-      Alert.alert(
+      showError(
         t('alert.errorTitle', 'Error'),
         t('copyError', 'Unable to copy the pass number. Please try again.'),
       );
