@@ -125,16 +125,19 @@ describe('AdminPanel pass codes', () => {
       tabScroller?.props.onLayout({ nativeEvent: { layout: { width: 320 } } });
       tabScroller?.props.onContentSizeChange(960, 42);
     });
-    expect(renderer.root.findByProps({ accessibilityLabel: 'More admin sections are available to the right' })).toBeTruthy();
+    const moreButton = renderer.root.findByProps({ accessibilityLabel: 'Show more admin sections' });
+    expect(moreButton).toBeTruthy();
 
     act(() => {
-      tabScroller?.props.onScroll({
-        nativeEvent: {
-          contentOffset: { x: 640 },
-        },
-      });
+      triggerPress(moreButton);
     });
-    expect(renderer.root.findAllByProps({ accessibilityLabel: 'More admin sections are available to the right' })).toHaveLength(0);
+    const backButton = renderer.root.findByProps({ accessibilityLabel: 'Scroll admin sections back to the beginning' });
+    expect(backButton).toBeTruthy();
+
+    act(() => {
+      triggerPress(backButton);
+    });
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Show more admin sections' })).toBeTruthy();
   });
 
   it('lists campaign metadata without a raw code value', async () => {

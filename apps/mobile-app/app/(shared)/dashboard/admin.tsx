@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
@@ -108,6 +108,8 @@ export default function AdminPanel() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('passes');
+  const tabScrollRef = useRef<ScrollView>(null);
+  const tabScrollOffsetRef = useRef(0);
   const tabContentWidthRef = useRef(0);
   const tabViewportWidthRef = useRef(0);
   const [tabsOverflow, setTabsOverflow] = useState(false);
@@ -178,6 +180,26 @@ export default function AdminPanel() {
     const maxOffset = Math.max(tabContentWidthRef.current - tabViewportWidthRef.current, 0);
     setTabsOverflow(maxOffset > 4);
     setTabsAtEnd(maxOffset <= 4 || offsetX >= maxOffset - 4);
+  };
+  const scrollTabStripTo = (offsetX: number) => {
+    const maxOffset = Math.max(tabContentWidthRef.current - tabViewportWidthRef.current, 0);
+    const nextOffset = Math.max(0, Math.min(offsetX, maxOffset));
+    tabScrollOffsetRef.current = nextOffset;
+    tabScrollRef.current?.scrollTo({ x: nextOffset, animated: true });
+    updateTabScrollState(nextOffset);
+  };
+  const handleTabStripWheel = (event: any) => {
+    if (Platform.OS !== 'web') return;
+
+    const wheelEvent = event.nativeEvent || event;
+    const delta = Math.abs(wheelEvent.deltaX || 0) > Math.abs(wheelEvent.deltaY || 0)
+      ? wheelEvent.deltaX
+      : wheelEvent.deltaY;
+
+    if (!delta || tabContentWidthRef.current <= tabViewportWidthRef.current) return;
+    event.preventDefault?.();
+    wheelEvent.preventDefault?.();
+    scrollTabStripTo(tabScrollOffsetRef.current + delta);
   };
 
   // Wait for auth to finish loading before checking admin access
@@ -832,6 +854,7 @@ export default function AdminPanel() {
       {/* Tabs stay on one row; scroll instead of wrapping actions into a second line. */}
       <View style={styles.tabsWrapper}>
         <ScrollView
+          ref={tabScrollRef}
           horizontal
           style={styles.tabs}
           contentContainerStyle={styles.tabsContent}
@@ -846,15 +869,19 @@ export default function AdminPanel() {
             tabContentWidthRef.current = width;
             updateTabScrollState();
           }}
-          onScroll={({ nativeEvent }) => updateTabScrollState(nativeEvent.contentOffset.x)}
+          onScroll={({ nativeEvent }) => {
+            tabScrollOffsetRef.current = nativeEvent.contentOffset.x;
+            updateTabScrollState(nativeEvent.contentOffset.x);
+          }}
           scrollEventThrottle={16}
+          {...({ onWheel: handleTabStripWheel } as any)}
         >
         {canManagePasses && (
           <TouchableOpacity
             style={[styles.tab, activeTab === 'passes' && styles.tabActive]}
             onPress={() => setActiveTab('passes')}
           >
-            <MaterialIcons name="card-membership" size={20} color={activeTab === 'passes' ? '#007AFF' : colors.text.secondary} />
+            <MaterialIcons name="card-membership" size={20} color={activeTab === 'passes' ? '#fff' : colors.text.secondary} />
             <Text numberOfLines={1} style={[styles.tabText, activeTab === 'passes' && styles.tabTextActive]}>Passes</Text>
           </TouchableOpacity>
         )}
@@ -863,7 +890,7 @@ export default function AdminPanel() {
             style={[styles.tab, activeTab === 'pass-codes' && styles.tabActive]}
             onPress={() => setActiveTab('pass-codes')}
           >
-            <MaterialIcons name="confirmation-number" size={20} color={activeTab === 'pass-codes' ? '#007AFF' : colors.text.secondary} />
+            <MaterialIcons name="confirmation-number" size={20} color={activeTab === 'pass-codes' ? '#fff' : colors.text.secondary} />
             <Text numberOfLines={1} style={[styles.tabText, activeTab === 'pass-codes' && styles.tabTextActive]}>Pass Codes</Text>
           </TouchableOpacity>
         )}
@@ -871,14 +898,14 @@ export default function AdminPanel() {
           style={[styles.tab, activeTab === 'qr-scanner' && styles.tabActive]}
           onPress={() => setActiveTab('qr-scanner')}
         >
-          <MaterialIcons name="qr-code-scanner" size={20} color={activeTab === 'qr-scanner' ? '#007AFF' : colors.text.secondary} />
+          <MaterialIcons name="qr-code-scanner" size={20} color={activeTab === 'qr-scanner' ? '#fff' : colors.text.secondary} />
           <Text numberOfLines={1} style={[styles.tabText, activeTab === 'qr-scanner' && styles.tabTextActive]}>QR Scanner</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'meetings' && styles.tabActive]}
           onPress={() => setActiveTab('meetings')}
         >
-          <MaterialIcons name="people" size={20} color={activeTab === 'meetings' ? '#007AFF' : colors.text.secondary} />
+          <MaterialIcons name="people" size={20} color={activeTab === 'meetings' ? '#fff' : colors.text.secondary} />
           <Text numberOfLines={1} style={[styles.tabText, activeTab === 'meetings' && styles.tabTextActive]}>Meetings</Text>
         </TouchableOpacity>
         {canManagePasses && (
@@ -886,7 +913,7 @@ export default function AdminPanel() {
             style={[styles.tab, activeTab === 'roles' && styles.tabActive]}
             onPress={() => setActiveTab('roles')}
           >
-            <MaterialIcons name="admin-panel-settings" size={20} color={activeTab === 'roles' ? '#007AFF' : colors.text.secondary} />
+            <MaterialIcons name="admin-panel-settings" size={20} color={activeTab === 'roles' ? '#fff' : colors.text.secondary} />
             <Text numberOfLines={1} style={[styles.tabText, activeTab === 'roles' && styles.tabTextActive]}>Staff & Roles</Text>
           </TouchableOpacity>
         )}
@@ -895,20 +922,22 @@ export default function AdminPanel() {
             style={[styles.tab, activeTab === 'speaker-roles' && styles.tabActive]}
             onPress={() => setActiveTab('speaker-roles')}
           >
-            <MaterialIcons name="record-voice-over" size={20} color={activeTab === 'speaker-roles' ? '#007AFF' : colors.text.secondary} />
+            <MaterialIcons name="record-voice-over" size={20} color={activeTab === 'speaker-roles' ? '#fff' : colors.text.secondary} />
             <Text numberOfLines={1} style={[styles.tabText, activeTab === 'speaker-roles' && styles.tabTextActive]}>Speakers</Text>
           </TouchableOpacity>
         )}
         </ScrollView>
-        {tabsOverflow && !tabsAtEnd && (
-          <View
-            pointerEvents="none"
+        {tabsOverflow && (
+          <TouchableOpacity
+            activeOpacity={0.8}
             style={styles.tabScrollHint}
-            accessibilityLabel="More admin sections are available to the right"
+            accessibilityLabel={tabsAtEnd ? 'Scroll admin sections back to the beginning' : 'Show more admin sections'}
+            accessibilityHint={tabsAtEnd ? 'Scrolls the tab row to the left' : 'Scrolls the tab row to the right'}
+            onPress={() => scrollTabStripTo(tabsAtEnd ? 0 : tabContentWidthRef.current)}
           >
-            <Text style={styles.tabScrollHintText}>More</Text>
-            <MaterialIcons name="chevron-right" size={20} color="#007AFF" />
-          </View>
+            <MaterialIcons name={tabsAtEnd ? 'chevron-left' : 'chevron-right'} size={20} color="#007AFF" />
+            <Text style={styles.tabScrollHintText}>{tabsAtEnd ? 'Back' : 'More'}</Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -1919,7 +1948,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
+    paddingLeft: 10,
+    // Keep the final action clear of the fixed More/Back control.
+    paddingRight: 96,
     paddingVertical: 8,
   },
   tab: {
@@ -1935,8 +1966,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     gap: 6,
   },
   tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#007AFF',
+    backgroundColor: '#007AFF',
   },
   tabText: {
     fontSize: 14,
@@ -1944,7 +1974,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontWeight: '500',
   },
   tabTextActive: {
-    color: '#007AFF',
+    color: '#fff',
     fontWeight: '600',
   },
   tabScrollHint: {
@@ -1956,6 +1986,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     flexDirection: 'row',
     gap: 2,
     justifyContent: 'center',
+    minWidth: 76,
     paddingHorizontal: 8,
     position: 'absolute',
     right: 0,
