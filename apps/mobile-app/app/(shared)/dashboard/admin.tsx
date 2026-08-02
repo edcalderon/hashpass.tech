@@ -60,6 +60,9 @@ interface Pass {
   used_boost_amount: number;
   created_at: string;
   updated_at: string;
+  user_email?: string;
+  user_name?: string;
+  username?: string;
 }
 
 interface PassClaimCode {
@@ -78,6 +81,8 @@ interface User {
   id: string;
   email?: string;
   name?: string;
+  username?: string;
+  created_at?: string;
 }
 
 interface Speaker {
@@ -165,6 +170,12 @@ export default function AdminPanel() {
   // Pass Management State
   const [passes, setPasses] = useState<Pass[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersNextCursor, setUsersNextCursor] = useState<string | null>(null);
+  const userSearchCache = useRef(
+    new Map<string, { users: User[]; nextCursor: string | null }>(),
+  );
   const [passesLoading, setPassesLoading] = useState(false);
   const [showCreatePassModal, setShowCreatePassModal] = useState(false);
   const [newPassUserId, setNewPassUserId] = useState("");
@@ -594,15 +605,13 @@ export default function AdminPanel() {
   const loadPasses = async () => {
     setPassesLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("passes")
-        .select("*")
-        .eq("event_id", selectedEventId)
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      setPasses(data || []);
+      const eventId = resolvePassStorageEventId(selectedEventId);
+      const result = await apiClient.get(
+        `/admin/passes?eventId=${encodeURIComponent(eventId)}&limit=100`,
+        { skipEventSegment: true },
+      );
+      if (!result.success) throw new Error(result.error);
+      setPasses((result.data as { data?: Pass[] })?.data || []);
     } catch (error: any) {
       console.error("Error loading passes:", error);
       Alert.alert("Error", "Failed to load passes: " + error.message);
@@ -771,32 +780,51 @@ export default function AdminPanel() {
     }
   };
 
-  const loadUsers = async () => {
+  const loadUsers = async (query = "", cursor: string | null = null) => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const cacheKey = `${selectedEventId}:${normalizedQuery}`;
+    if (!cursor && userSearchCache.current.has(cacheKey)) {
+      const cached = userSearchCache.current.get(cacheKey)!;
+      setUsers(cached.users);
+      setUsersNextCursor(cached.nextCursor);
+      return;
+    }
+    setUsersLoading(true);
     try {
-      // Get unique user IDs from passes
-      const { data: passesData, error: passesError } = await supabase
-        .from("passes")
-        .select("user_id")
-        .eq("event_id", selectedEventId)
-        .limit(200);
-
-      if (passesError) throw passesError;
-
-      // Create user list from pass user_ids
-      const uniqueUserIds = [
-        ...new Set(
-          ((passesData || []) as { user_id: string }[]).map((p) => p.user_id),
-        ),
-      ];
-      setUsers(
-        uniqueUserIds.map((id) => ({ id, email: undefined, name: undefined })),
+      const eventId = resolvePassStorageEventId(selectedEventId);
+      const result = await apiClient.get(
+        `/admin/users?eventId=${encodeURIComponent(eventId)}&q=${encodeURIComponent(normalizedQuery)}&limit=25${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+        { skipEventSegment: true },
       );
+      if (!result.success) throw new Error(result.error);
+      const payload = result.data as {
+        data?: User[];
+        nextCursor?: string | null;
+      };
+      const nextUsers = cursor
+        ? [...users, ...(payload.data || [])]
+        : payload.data || [];
+      setUsers(nextUsers);
+      setUsersNextCursor(payload.nextCursor || null);
+      if (!cursor)
+        userSearchCache.current.set(cacheKey, {
+          users: nextUsers,
+          nextCursor: payload.nextCursor || null,
+        });
     } catch (error: any) {
       console.error("Error loading users:", error);
       // Fallback: empty array
       setUsers([]);
+    } finally {
+      setUsersLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!showCreatePassModal) return;
+    const timer = setTimeout(() => void loadUsers(userSearchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [showCreatePassModal, userSearchQuery, selectedEventId]);
 
   const loadSpeakers = async () => {
     try {
@@ -1029,6 +1057,9 @@ export default function AdminPanel() {
     return (
       pass.pass_number?.toLowerCase().includes(query) ||
       pass.user_id.toLowerCase().includes(query) ||
+      pass.user_email?.toLowerCase().includes(query) ||
+      pass.user_name?.toLowerCase().includes(query) ||
+      pass.username?.toLowerCase().includes(query) ||
       pass.pass_type.toLowerCase().includes(query)
     );
   });
@@ -1399,18 +1430,83 @@ export default function AdminPanel() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create New Pass</Text>
 
-            <Text style={styles.modalLabel}>User ID (UUID)</Text>
+            <Text style={styles.modalLabel}>Find an active user</Text>
             <TextInput
               style={styles.modalInput}
-              value={newPassUserId}
-              onChangeText={setNewPassUserId}
-              placeholder="Enter user UUID from auth.users"
+              value={userSearchQuery}
+              onChangeText={setUserSearchQuery}
+              placeholder="Search ID, username, name, or email"
               placeholderTextColor={colors.text.secondary}
               autoCapitalize="none"
             />
-            <Text style={[styles.modalLabel, { fontSize: 12, marginTop: 4 }]}>
-              Note: User must exist in auth.users. Use UUID format.
-            </Text>
+            <ScrollView
+              style={{ maxHeight: 230, marginTop: 8 }}
+              nestedScrollEnabled
+            >
+              {users.map((candidate) => {
+                const selected = newPassUserId === candidate.id;
+                return (
+                  <TouchableOpacity
+                    key={candidate.id}
+                    style={[
+                      styles.passCard,
+                      selected && styles.passTypeButtonActive,
+                      { marginBottom: 8 },
+                    ]}
+                    onPress={() => setNewPassUserId(candidate.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.passNumber,
+                        selected && styles.passTypeButtonTextActive,
+                      ]}
+                    >
+                      {candidate.name ||
+                        candidate.username ||
+                        candidate.email ||
+                        "Unnamed user"}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.passInfo,
+                        selected && styles.passTypeButtonTextActive,
+                      ]}
+                    >
+                      {[
+                        candidate.username ? `@${candidate.username}` : null,
+                        candidate.email,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.passInfo,
+                        selected && styles.passTypeButtonTextActive,
+                      ]}
+                    >
+                      {candidate.id}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {usersLoading && <ActivityIndicator color="#007AFF" />}
+              {!usersLoading && users.length === 0 && (
+                <Text style={styles.emptyText}>
+                  No active users match this search
+                </Text>
+              )}
+              {usersNextCursor && !usersLoading && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() =>
+                    void loadUsers(userSearchQuery, usersNextCursor)
+                  }
+                >
+                  <Text style={styles.actionButtonText}>Load more users</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
 
             <Text style={styles.modalLabel}>Pass Type</Text>
             <View style={styles.passTypeButtons}>
@@ -1892,6 +1988,17 @@ function PassManagementTab({
                 Type: {pass.pass_type.toUpperCase()}
               </Text>
               <Text style={styles.passInfo}>User: {pass.user_id}</Text>
+              {(pass.user_name || pass.username || pass.user_email) && (
+                <Text style={styles.passInfo}>
+                  {[
+                    pass.user_name,
+                    pass.username ? `@${pass.username}` : null,
+                    pass.user_email,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+              )}
               <Text style={styles.passInfo}>
                 Requests: {pass.used_meeting_requests} /{" "}
                 {pass.max_meeting_requests}
