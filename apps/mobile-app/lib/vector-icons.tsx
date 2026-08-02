@@ -320,6 +320,7 @@ const WEB_IONICONS_TO_MATERIAL_ICONS: Record<string, string> = {
   close: 'close',
   'close-circle': 'cancel',
   'cloud-download-outline': 'cloud-download',
+  'copy-outline': 'content-copy',
   'calendar-today': 'calendar-today',
   'compass-outline': 'explore',
   dialpad: 'dialpad',

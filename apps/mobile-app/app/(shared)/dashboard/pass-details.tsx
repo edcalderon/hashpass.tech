@@ -5,11 +5,18 @@ import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
 import { passSystemService, PassInfo } from '../../../lib/pass-system';
+import { EVENTS } from '../../../config/events';
 import DynamicQRDisplay from '../../../components/DynamicQRDisplay';
 import * as Clipboard from 'expo-clipboard';
+import { useTranslation } from '../../../i18n/i18n';
+
+const formatEntitlement = (value: string) => value
+  .replace(/[_-]+/g, ' ')
+  .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function PassDetailsScreen() {
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation('passes');
   const { user, dbUserId, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useLocalSearchParams<{ passId?: string; eventId?: string }>();
@@ -138,9 +145,16 @@ export default function PassDetailsScreen() {
 
     try {
       await Clipboard.setStringAsync(passInfo.pass_number);
-      Alert.alert('Pass number copied', 'Your pass number has been copied to the clipboard.', [{ text: 'OK' }]);
+      Alert.alert(
+        t('passNumberCopiedTitle', 'Pass number copied'),
+        t('passNumberCopiedMessage', 'Your pass number has been copied to the clipboard.'),
+        [{ text: t('ok', 'OK') }],
+      );
     } catch {
-      Alert.alert('Error', 'Unable to copy the pass number. Please try again.');
+      Alert.alert(
+        t('alert.errorTitle', 'Error'),
+        t('copyError', 'Unable to copy the pass number. Please try again.'),
+      );
     }
   };
 
@@ -171,6 +185,10 @@ export default function PassDetailsScreen() {
     );
   }
 
+  const event = (EVENTS as Record<string, any>)[passInfo.event_id];
+  const eventName = event?.name || passInfo.event_id;
+  const eventDate = event?.eventDateString || t('eventDateUnavailable', 'Event dates to be announced');
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
@@ -187,7 +205,7 @@ export default function PassDetailsScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pass Details</Text>
+        <Text style={styles.headerTitle}>{t('detailsTitle', 'Pass Details')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -199,7 +217,7 @@ export default function PassDetailsScreen() {
               {passSystemService.getPassTypeDisplayName(passInfo.pass_type)}
             </Text>
             <TouchableOpacity
-              accessibilityLabel="Copy pass number"
+              accessibilityLabel={t('copyPassNumber', 'Copy pass number')}
               onPress={handleCopyPassNumber}
               style={styles.passNumberAction}
             >
@@ -218,31 +236,31 @@ export default function PassDetailsScreen() {
         <View style={styles.detailsSection}>
           <DetailRow
             icon="calendar-outline"
-            label="Event"
-            value="BSL 2025"
+            label={t('event', 'Event')}
+            value={eventName}
             colors={colors}
             styles={styles}
             isDark={isDark}
           />
           <DetailRow
             icon="calendar-outline"
-            label="Date"
-            value="November 12-14, 2025"
+            label={t('date', 'Date')}
+            value={eventDate}
             colors={colors}
             styles={styles}
             isDark={isDark}
           />
           <DetailRow
             icon="ticket-outline"
-            label="Meeting Requests"
-            value={`${passInfo.used_requests} / ${passInfo.max_requests} used`}
+            label={t('meetingRequests', 'Meeting Requests')}
+            value={`${passInfo.used_requests} / ${passInfo.max_requests} ${t('used', 'used')}`}
             colors={colors}
             styles={styles}
             isDark={isDark}
           />
           <DetailRow
             icon="flash-outline"
-            label="Boost Available"
+            label={t('boostAvailable', 'Boost Available')}
             value={`${passInfo.remaining_boost} / ${passInfo.max_boost}`}
             colors={colors}
             styles={styles}
@@ -254,7 +272,7 @@ export default function PassDetailsScreen() {
       {/* Access Features */}
       {passInfo.access_features && passInfo.access_features.length > 0 && (
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Access Features</Text>
+          <Text style={styles.sectionTitle}>{t('accessFeatures', 'Access Features')}</Text>
           <View style={styles.featuresList}>
             {passInfo.access_features.map((feature: string, index: number) => (
               <View key={index} style={styles.featureItem}>
@@ -263,7 +281,7 @@ export default function PassDetailsScreen() {
                   size={20} 
                   color={isDark ? '#4ADE80' : (colors.success || '#34A853')} 
                 />
-                <Text style={styles.featureText}>{feature}</Text>
+                <Text style={styles.featureText}>{formatEntitlement(feature)}</Text>
               </View>
             ))}
           </View>
@@ -273,7 +291,7 @@ export default function PassDetailsScreen() {
       {/* Special Perks */}
       {passInfo.special_perks && passInfo.special_perks.length > 0 && (
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Special Perks</Text>
+          <Text style={styles.sectionTitle}>{t('specialPerks', 'Special Perks')}</Text>
           <View style={styles.featuresList}>
             {passInfo.special_perks.map((perk: string, index: number) => (
               <View key={index} style={styles.featureItem}>
@@ -282,7 +300,7 @@ export default function PassDetailsScreen() {
                   size={20} 
                   color={isDark ? '#FFB84D' : (colors.warning || '#FF9500')} 
                 />
-                <Text style={styles.featureText}>{perk}</Text>
+                <Text style={styles.featureText}>{formatEntitlement(perk)}</Text>
               </View>
             ))}
           </View>
@@ -291,9 +309,9 @@ export default function PassDetailsScreen() {
 
       {/* QR Code Section */}
       <View style={styles.qrSection}>
-        <Text style={styles.sectionTitle}>QR Code</Text>
+        <Text style={styles.sectionTitle}>{t('qrCode', 'QR Code')}</Text>
         <Text style={styles.sectionDescription}>
-          Present this QR code at the event entrance. It updates automatically for security.
+          {t('qrCodeDescription', 'Present this QR code at the event entrance. It updates automatically for security.')}
         </Text>
         
         <View style={styles.qrContainer}>
