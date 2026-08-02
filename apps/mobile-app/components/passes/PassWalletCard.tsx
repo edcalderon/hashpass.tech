@@ -730,7 +730,10 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         disabled={!interactive}
         onPress={() => {
           handleFlip();
-          router.push(`/dashboard/pass-details?passId=${pass.pass_id}` as any);
+          router.push({
+            pathname: '/dashboard/pass-details' as any,
+            params: { passId: pass.pass_id, eventId: pass.eventId },
+          });
         }}
         activeOpacity={0.8}
       >

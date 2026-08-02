@@ -113,8 +113,16 @@ const pass: WalletPass = {
 };
 
 const pressText = (renderer: ReturnType<typeof create>, label: string, occurrence = 0) => {
-  const text = renderer.root.findAll((node: any) => node.type === 'Text' && node.props.children === label)[occurrence];
-  text.parent?.props.onPress();
+  let target: any = renderer.root.findAll(
+    (node: any) => node.type === 'Text' && node.props.children === label,
+  )[occurrence];
+
+  while (target && typeof target.props?.onPress !== 'function') {
+    target = target.parent;
+  }
+
+  expect(target).toBeDefined();
+  target.props.onPress();
 };
 
 const render = (element: React.ReactElement) => {
@@ -151,7 +159,10 @@ describe('PassWalletCard', () => {
     act(() => {
       pressText(renderer, 'View Full Details');
     });
-    expect(routerPush).toHaveBeenCalledWith('/dashboard/pass-details?passId=pass-1');
+    expect(routerPush).toHaveBeenCalledWith({
+      pathname: '/dashboard/pass-details',
+      params: { passId: 'pass-1', eventId: 'chile2026' },
+    });
   });
 
   it('falls back to copying share text when browser sharing is unavailable', async () => {

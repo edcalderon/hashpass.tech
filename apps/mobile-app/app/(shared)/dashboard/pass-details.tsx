@@ -12,13 +12,14 @@ export default function PassDetailsScreen() {
   const { colors, isDark } = useTheme();
   const { user, dbUserId, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{ passId?: string; eventId?: string }>();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const styles = getStyles(isDark, colors);
-  const passId = params.passId as string;
+  const passId = params.passId;
+  const eventId = params.eventId;
 
   useEffect(() => {
     // Wait for auth to finish loading before checking
@@ -41,35 +42,41 @@ export default function PassDetailsScreen() {
       return;
     }
 
-    loadPassInfo();
-  }, [user, dbUserId, passId, authLoading]);
+    let isCurrent = true;
 
-  const loadPassInfo = async () => {
-    if (!user || !dbUserId) return;
+    const loadPassInfo = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        // A wallet can contain passes for multiple events. Always carry the
+        // card's event scope into this view so another active pass cannot be
+        // substituted for the selected pass.
+        const pass = await passSystemService.getUserPassInfo(dbUserId, eventId);
+        if (!isCurrent) return;
 
-    try {
-      setLoading(true);
-      setError(null);
-      const pass = await passSystemService.getUserPassInfo(dbUserId);
+        if (!pass) {
+          setError('No pass found');
+          return;
+        }
 
-      if (!pass) {
-        setError('No pass found');
-        return;
+        if (passId && pass.pass_id !== passId) {
+          setError('Pass not found');
+          return;
+        }
+
+        setPassInfo(pass);
+      } catch (err: any) {
+        if (isCurrent) setError(err.message || 'Error loading pass information');
+      } finally {
+        if (isCurrent) setLoading(false);
       }
+    };
 
-      // If passId is provided, verify it matches
-      if (passId && pass.pass_id !== passId) {
-        setError('Pass not found');
-        return;
-      }
-
-      setPassInfo(pass);
-    } catch (err: any) {
-      setError(err.message || 'Error loading pass information');
-    } finally {
-      setLoading(false);
-    }
-  };
+    void loadPassInfo();
+    return () => {
+      isCurrent = false;
+    };
+  }, [user, dbUserId, passId, eventId, authLoading]);
 
 
   const handleShare = async () => {
