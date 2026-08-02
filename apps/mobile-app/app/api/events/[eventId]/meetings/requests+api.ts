@@ -1,8 +1,4 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
-import {
-  resolveNotificationIdentity,
-  isResolveIdentityError,
-} from "@/lib/server/resolve-notification-identity";
 import { eventIdFromRequest } from "@/lib/server/event-api";
 import { authenticatedIdentity } from "@/lib/server/authenticated-meeting-identity";
 
@@ -12,6 +8,13 @@ const ACTIONS = new Set(["accept", "decline", "cancel", "block"]);
 const MIN_MEETING_DURATION_MINUTES = 5;
 const MAX_MEETING_DURATION_MINUTES = 30;
 
+function deliverMeetingEmail(details: Record<string, unknown>) {
+  // Email must never delay or roll back a successful in-app meeting action.
+  const emailModule = "@/lib/email";
+  void import(emailModule)
+    .then(({ sendMeetingNotificationEmail }) => sendMeetingNotificationEmail(details as any))
+    .catch((error) => console.error("[meeting-requests] email delivery failed:", error));
+}
 async function speakerForUser(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("bsl_speakers")
@@ -202,6 +205,19 @@ export async function POST(request: Request) {
         { error: result.error || "Meeting request rejected" },
         { status: 409 },
       );
+    deliverMeetingEmail({
+      recipientUserId: String(body.speakerId),
+      status: "requested",
+      eventId,
+      requesterName: body.requesterName,
+      requesterCompany: body.requesterCompany,
+      requesterTitle: body.requesterTitle,
+      speakerName: body.speakerName,
+      message: body.message,
+      note: body.note,
+      meetingType: body.meetingType,
+      durationMinutes,
+    });
     return Response.json({ data: result }, { status: 201 });
   } catch (error: any) {
     console.error("[meeting-requests] create error:", error);
@@ -236,7 +252,7 @@ export async function PATCH(request: Request) {
   try {
     const { data: meetingRequest, error: meetingRequestError } = await supabase
       .from("meeting_requests")
-      .select("id")
+      .select("id, requester_id, speaker_id, requester_name, requester_company, requester_title, speaker_name, message, note, meeting_type, meeting_scheduled_at, meeting_location, duration_minutes")
       .eq("id", body.requestId)
       .eq("event_id", eventId)
       .maybeSingle();
@@ -307,6 +323,24 @@ export async function PATCH(request: Request) {
         { error: result?.error || "Meeting request update failed" },
         { status: 409 },
       );
+    if (body.action === "accept" || body.action === "decline") {
+      deliverMeetingEmail({
+        recipientUserId: meetingRequest.requester_id,
+        status: body.action === "accept" ? "accepted" : "declined",
+        eventId,
+        requesterName: meetingRequest.requester_name,
+        requesterCompany: meetingRequest.requester_company,
+        requesterTitle: meetingRequest.requester_title,
+        speakerName: meetingRequest.speaker_name,
+        message: meetingRequest.message,
+        note: meetingRequest.note,
+        meetingType: meetingRequest.meeting_type,
+        meetingScheduledAt: body.action === "accept" ? body.slotTime : meetingRequest.meeting_scheduled_at,
+        meetingLocation: meetingRequest.meeting_location,
+        durationMinutes: meetingRequest.duration_minutes,
+        response: body.response,
+      });
+    }
     return Response.json({ data: result });
   } catch (error: any) {
     console.error("[meeting-requests] update error:", error);

@@ -541,15 +541,26 @@ export default function NotificationsScreen() {
             </View>
           )}
         </View>
-        
-        {unreadCount > 0 && activeTab === 'all' && (
+        <View style={styles.notificationHeaderActions}>
           <TouchableOpacity
-            style={styles.markAllButton}
-            onPress={markAllAsRead}
+            accessibilityRole="button"
+            accessibilityLabel={t('center.refresh', 'Refresh notifications')}
+            accessibilityHint={t('center.refreshHint', 'Fetch the latest notifications')}
+            disabled={refreshing || isLoading}
+            style={[styles.refreshButton, (refreshing || isLoading) && styles.refreshButtonDisabled]}
+            onPress={() => void onRefresh()}
           >
-            <Text style={styles.markAllText}>{t('center.markAllRead')}</Text>
+            <MaterialIcons name="refresh" size={18} color={colors.primary} />
+            <Text style={styles.refreshButtonText}>
+              {refreshing ? t('center.refreshing', 'Refreshing…') : t('center.refresh', 'Refresh')}
+            </Text>
           </TouchableOpacity>
-        )}
+          {unreadCount > 0 && activeTab === 'all' && (
+            <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
+              <Text style={styles.markAllText}>{t('center.markAllRead')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Tabs */}
@@ -685,6 +696,24 @@ const getStyles = (isDark: boolean, colors: any, navBarHeight: number = 0, scrol
     flexDirection: 'row',
     alignItems: 'center',
   },
+  notificationHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    minHeight: 36,
+    paddingHorizontal: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: `${colors.primary}55`,
+    backgroundColor: `${colors.primary}12`,
+  },
+  refreshButtonDisabled: { opacity: 0.55 },
+  refreshButtonText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',

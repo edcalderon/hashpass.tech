@@ -506,6 +506,68 @@ export async function sendBookingEmail(
   }
 }
 
+export type MeetingEmailStatus = 'requested' | 'accepted' | 'declined';
+export interface MeetingEmailDetails {
+  recipientUserId: string;
+  status: MeetingEmailStatus;
+  eventId: string;
+  requesterName?: string | null;
+  requesterCompany?: string | null;
+  requesterTitle?: string | null;
+  speakerName?: string | null;
+  message?: string | null;
+  note?: string | null;
+  meetingType?: string | null;
+  meetingScheduledAt?: string | null;
+  meetingLocation?: string | null;
+  durationMinutes?: number | null;
+  response?: string | null;
+}
+
+const escapeEmailHtml = (value: unknown) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+/** Sends a localized operational email without affecting the meeting workflow on delivery failure. */
+export async function sendMeetingNotificationEmail(
+  details: MeetingEmailDetails,
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
+  try {
+    const { data, error } = await supabaseServer.auth.admin.getUserById(details.recipientUserId);
+    if (error || !data.user?.email) return { success: false, error: error?.message || 'Recipient email is unavailable' };
+    const locale = (await detectUserLocale(details.recipientUserId)) === 'es' ? 'es' : 'en';
+    const es = locale === 'es';
+    const labels = es
+      ? {
+          requested: 'Nueva solicitud de reunión', accepted: 'Tu reunión fue aceptada', declined: 'Tu solicitud de reunión fue rechazada',
+          greeting: 'Hola', event: 'Evento', with: 'Participantes', purpose: 'Tipo de reunión', date: 'Fecha y hora', location: 'Ubicación', duration: 'Duración', message: 'Mensaje', response: 'Respuesta', open: 'Ver solicitudes', minutes: 'minutos',
+        }
+      : {
+          requested: 'New meeting request', accepted: 'Your meeting was accepted', declined: 'Your meeting request was declined',
+          greeting: 'Hello', event: 'Event', with: 'Participants', purpose: 'Meeting type', date: 'Date and time', location: 'Location', duration: 'Duration', message: 'Message', response: 'Response', open: 'View requests', minutes: 'minutes',
+        };
+    const statusTitle = labels[details.status];
+    const recipientName = data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email.split('@')[0];
+    const date = details.meetingScheduledAt
+      ? new Intl.DateTimeFormat(es ? 'es-ES' : 'en-US', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(details.meetingScheduledAt))
+      : es ? 'Pendiente de programación' : 'To be scheduled';
+    const participants = [details.requesterName, details.requesterTitle, details.requesterCompany, details.speakerName]
+      .filter(Boolean).map(escapeEmailHtml).join(' · ');
+    const row = (label: string, value?: unknown) => value ? `<tr><td style="padding:8px 12px;color:#667085;font-weight:600;vertical-align:top">${escapeEmailHtml(label)}</td><td style="padding:8px 12px;color:#101828">${escapeEmailHtml(value)}</td></tr>` : '';
+    const appUrl = `https://bsl.hashpass.tech/events/${encodeURIComponent(details.eventId)}/networking/my-requests`;
+    const html = `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#f8fafc;padding:24px"><div style="background:#101828;color:#fff;padding:24px;border-radius:16px 16px 0 0"><div style="font-size:12px;letter-spacing:1.2px;font-weight:700">HASHPASS</div><h1 style="margin:12px 0 0;font-size:24px">${escapeEmailHtml(statusTitle)}</h1></div><div style="background:#fff;padding:24px;border-radius:0 0 16px 16px"><p>${escapeEmailHtml(labels.greeting)} ${escapeEmailHtml(recipientName)},</p><p>${escapeEmailHtml(statusTitle)}.</p><table style="width:100%;border-collapse:collapse;background:#f8fafc;border-radius:10px">${row(labels.event, details.eventId)}${row(labels.with, participants)}${row(labels.purpose, details.meetingType)}${row(labels.date, date)}${row(labels.location, details.meetingLocation)}${row(labels.duration, details.durationMinutes ? `${details.durationMinutes} ${labels.minutes}` : undefined)}${row(labels.message, details.message)}${row(labels.response, details.response || details.note)}</table><p style="margin:24px 0 0"><a href="${appUrl}" style="display:inline-block;background:#1473e6;color:#fff;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:8px">${escapeEmailHtml(labels.open)}</a></p></div></div>`;
+    const info = await transporter.sendMail({ from: `HASHPASS <${process.env.NODEMAILER_FROM}>`, to: data.user.email, subject: `${statusTitle} · HASHPASS`, html, text: `${statusTitle}\n${labels.event}: ${details.eventId}\n${labels.with}: ${participants}\n${labels.date}: ${date}\n${labels.location}: ${details.meetingLocation || ''}\n${labels.message}: ${details.message || ''}\n${appUrl}` });
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error('[meeting-email] delivery failed:', error?.message || error);
+    return { success: false, error: error?.message || 'Email delivery failed' };
+  }
+}
+
 /**
  * Send user onboarding email with tutorial guide
  */
