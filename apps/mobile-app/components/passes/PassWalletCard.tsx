@@ -134,13 +134,31 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
           t({ id: 'passes.copiedMessage', message: 'Pass information has been copied to your clipboard. You can paste it anywhere to share.' }),
           [{ text: t({ id: 'passes.alert.ok', message: 'OK' }) }]
         );
-      } catch (clipboardError) {
-        console.error('Error copying to clipboard:', clipboardError);
+      } catch {
         Alert.alert(
           t({ id: 'passes.alert.errorTitle', message: 'Error' }),
           t({ id: 'passes.copyError', message: 'Unable to share pass. Please try again.' })
         );
       }
+    }
+  };
+
+  const handleCopyPassNumber = async () => {
+    const passNumber = pass.pass_number?.trim();
+    if (!passNumber) return;
+
+    try {
+      await Clipboard.setStringAsync(passNumber);
+      Alert.alert(
+        t({ id: 'passes.passNumberCopiedTitle', message: 'Pass number copied' }),
+        t({ id: 'passes.passNumberCopiedMessage', message: 'Your pass number has been copied to the clipboard.' }),
+        [{ text: t({ id: 'passes.alert.ok', message: 'OK' }) }],
+      );
+    } catch {
+      Alert.alert(
+        t({ id: 'passes.alert.errorTitle', message: 'Error' }),
+        t({ id: 'passes.copyError', message: 'Unable to copy the pass number. Please try again.' }),
+      );
     }
   };
 
@@ -326,24 +344,32 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
               }}>
                 {getPassAccess(pass.pass_type)}
               </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: isDark ? 'rgba(255, 255, 255, 0.9)' : colors.text.secondary,
-                  maxWidth: 140,
-                  fontFamily: 'monospace',
-                  fontWeight: '600',
-                  textShadowColor: 'rgba(0, 0, 0, 0.3)',
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 2
-                }}
-                numberOfLines={1}
-                ellipsizeMode="head"
+              <TouchableOpacity
+                accessibilityLabel={t({ id: 'passes.copyPassNumber', message: 'Copy pass number' })}
+                disabled={!interactive || !pass.pass_number?.trim()}
+                onPress={handleCopyPassNumber}
+                style={{ alignItems: 'center', flexDirection: 'row', gap: 5, maxWidth: 166 }}
               >
-                {(pass.pass_number || '').length > 12
-                  ? `#${pass.pass_number.slice(0, 6)}...${pass.pass_number.slice(-4)}`
-                  : `#${pass.pass_number || ''}`}
-              </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: isDark ? 'rgba(255, 255, 255, 0.9)' : colors.text.secondary,
+                    flexShrink: 1,
+                    fontFamily: 'monospace',
+                    fontWeight: '600',
+                    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}
+                  numberOfLines={1}
+                  ellipsizeMode="head"
+                >
+                  {(pass.pass_number || '').length > 12
+                    ? `#${pass.pass_number.slice(0, 6)}...${pass.pass_number.slice(-4)}`
+                    : `#${pass.pass_number || ''}`}
+                </Text>
+                <MaterialIcons name="content-copy" size={13} color={isDark ? '#FFFFFF' : colors.text.secondary} />
+              </TouchableOpacity>
             </View>
             <View style={{
               backgroundColor: colors.background.paper,

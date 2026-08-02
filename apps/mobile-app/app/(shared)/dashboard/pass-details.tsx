@@ -96,14 +96,10 @@ export default function PassDetailsScreen() {
         });
       } else if (Platform.OS !== 'web' && Share.share) {
         // Use React Native Share on mobile
-        const result = await Share.share({
+        await Share.share({
           message: shareMessage,
           title: `BSL 2025 ${passTypeDisplay} Pass`,
         });
-
-        if (result.action === Share.sharedAction) {
-          console.log('Pass shared successfully');
-        }
       } else {
         // Fallback: Copy to clipboard for browsers without Share API
         await Clipboard.setStringAsync(shareMessage);
@@ -131,10 +127,20 @@ export default function PassDetailsScreen() {
           'Pass information has been copied to your clipboard. You can paste it anywhere to share.',
           [{ text: 'OK' }]
         );
-      } catch (clipboardError) {
-        console.error('Error copying to clipboard:', clipboardError);
+      } catch {
         Alert.alert('Error', 'Unable to share pass. Please try again.');
       }
+    }
+  };
+
+  const handleCopyPassNumber = async () => {
+    if (!passInfo?.pass_number?.trim()) return;
+
+    try {
+      await Clipboard.setStringAsync(passInfo.pass_number);
+      Alert.alert('Pass number copied', 'Your pass number has been copied to the clipboard.', [{ text: 'OK' }]);
+    } catch {
+      Alert.alert('Error', 'Unable to copy the pass number. Please try again.');
     }
   };
 
@@ -192,7 +198,14 @@ export default function PassDetailsScreen() {
             <Text style={styles.passType}>
               {passSystemService.getPassTypeDisplayName(passInfo.pass_type)}
             </Text>
-            <Text style={styles.passNumber}>{passInfo.pass_number}</Text>
+            <TouchableOpacity
+              accessibilityLabel="Copy pass number"
+              onPress={handleCopyPassNumber}
+              style={styles.passNumberAction}
+            >
+              <Text style={styles.passNumber}>{passInfo.pass_number}</Text>
+              <Ionicons name="copy-outline" size={16} color={colors.text.secondary} />
+            </TouchableOpacity>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(passInfo.status) }]}>
             <Text style={styles.statusText}>{(passInfo.status || '').toUpperCase()}</Text>
@@ -414,6 +427,13 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontSize: 14,
       color: colors.text.secondary,
       fontFamily: 'monospace',
+    },
+    passNumberAction: {
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      gap: 6,
+      paddingVertical: 4,
     },
     statusBadge: {
       paddingHorizontal: 12,

@@ -146,6 +146,38 @@ describe('passSystemService Supabase user id guard', () => {
     expect(errorSpy).toHaveBeenCalledWith('Error getting passes for events:', databaseError);
   });
 
+  it('hydrates wallet usage from the event-scoped pass counter and prefers the active pass', async () => {
+    const archivedPass = { ...activePass, id: 'pass-archived', status: 'cancelled' };
+    const query = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({ data: [archivedPass, activePass], error: null }),
+    };
+    mockFrom.mockReturnValueOnce(query);
+    mockRpcSingle({
+      data: {
+        total_requests: 1,
+        remaining_requests: 9,
+        max_requests: 10,
+        remaining_boost: 100,
+        max_boost: 100,
+      },
+      error: null,
+    });
+
+    await expect(passSystemService.getAllUserPasses(supabaseUserId)).resolves.toEqual([
+      expect.objectContaining({
+        pass_id: 'pass-existing',
+        used_requests: 1,
+        remaining_requests: 9,
+      }),
+    ]);
+    expect(mockRpc).toHaveBeenCalledWith('get_user_meeting_request_counts', {
+      p_user_id: supabaseUserId,
+      p_event_id: 'bsl2025',
+    });
+  });
+
   it('does not query passes or counts with a non-UUID auth user id', async () => {
     await expect(passSystemService.getUserPassInfo(betterAuthUserId)).resolves.toBeNull();
 

@@ -176,6 +176,17 @@ describe('PassWalletCard', () => {
     expect(Alert.alert).toHaveBeenCalledWith('Pass Information Copied', expect.any(String), expect.any(Array));
   });
 
+  it('copies the complete pass number from the ticket face', async () => {
+    const renderer = render(<PassWalletCard pass={pass} />);
+    const copyAction = renderer.root.findByProps({ accessibilityLabel: 'Copy pass number' });
+
+    await act(async () => {
+      copyAction.props.onPress();
+    });
+
+    expect(Clipboard.setStringAsync).toHaveBeenCalledWith('VIP-1234567890');
+  });
+
   it('disables every card action when the card is behind the active pass', () => {
     const renderer = render(<PassWalletCard pass={pass} interactive={false} />);
     const actionButtons = renderer.root
