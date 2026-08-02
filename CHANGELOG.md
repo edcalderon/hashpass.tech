@@ -1,3 +1,7 @@
+## [1.8.306](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.305...v1.8.306) (2026-08-02)
+### Released
+- Version 1.8.306 release
+
 ## [1.8.305](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.303...v1.8.305) (2026-08-02)
 ### Released
 - configure event pass tiers; render pass identifiers and copy icon; open pending speaker requests; refresh wallet pass usage; silence QR rendering diagnostics; scope BSL admin tiers and slots; load selected event pass details; restore legacy pass numbers; open linked event meeting requests; consume pass limits on meeting requests; apply event pass tiers consistently; refresh meeting request notifications; verify email before speaker grants; localize pass detail comparison; restore admin bundle compilation
