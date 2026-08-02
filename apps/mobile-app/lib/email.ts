@@ -517,7 +517,9 @@ export type MeetingEmailStatus = 'requested' | 'accepted' | 'declined';
 export type NotificationLevel = 'info' | 'important' | 'critical';
 
 export interface CriticalNotificationEmailDetails {
-  recipientUserId: string;
+  recipientUserId?: string;
+  /** Explicit recipient is supported for operational preview/test sends. */
+  recipientEmail?: string;
   title: string;
   message: string;
   notificationType?: string | null;
@@ -614,11 +616,14 @@ export async function sendCriticalNotificationEmail(
   if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
 
   try {
-    const { data, error } = await supabaseServer.auth.admin.getUserById(details.recipientUserId);
-    const recipient = data.user;
-    if (error || !recipient?.email) return { success: false, error: error?.message || 'Recipient email is unavailable' };
+    const lookup = details.recipientUserId
+      ? await supabaseServer.auth.admin.getUserById(details.recipientUserId)
+      : { data: { user: null }, error: null };
+    const recipient = lookup.data.user;
+    const recipientEmail = details.recipientEmail || recipient?.email;
+    if (lookup.error || !recipientEmail) return { success: false, error: lookup.error?.message || 'Recipient email is unavailable' };
 
-    const es = (await detectUserLocale(details.recipientUserId, recipient.user_metadata)) === 'es';
+    const es = details.recipientUserId && (await detectUserLocale(details.recipientUserId, recipient?.user_metadata)) === 'es';
     const labels = es
       ? {
           preheader: 'Tienes una notificación importante de HASHPASS', greeting: 'Hola', heading: 'Notificación importante',
@@ -641,7 +646,7 @@ export async function sendCriticalNotificationEmail(
             message: `${details.speakerName || 'The speaker'} accepted your request, but it overlaps another meeting on your calendar. Open your notifications to choose which one to keep.`,
           }
       : { title: details.title, message: details.message };
-    const recipientName = recipient.user_metadata?.name || recipient.user_metadata?.full_name || recipient.email.split('@')[0];
+    const recipientName = recipient?.user_metadata?.name || recipient?.user_metadata?.full_name || recipientEmail.split('@')[0];
     const eventId = details.eventId || '';
     const hasBslBranding = isBslEvent(eventId);
     const hashpassLogoUrl = getEmailAssetUrl('images/logo-full-hashpass-white.png');
@@ -655,7 +660,7 @@ export async function sendCriticalNotificationEmail(
     const html = `<!doctype html><html lang="${es ? 'es' : 'en'}"><body style="margin:0;padding:0;background:#f5f7fa"><span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0">${escapeEmailHtml(labels.preheader)}</span><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f7fa"><tr><td align="center" style="padding:32px 12px"><table role="presentation" width="640" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:640px"><tr><td style="background:#101828;border-radius:18px 18px 0 0;padding:26px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td><img src="${hashpassLogoUrl}" alt="HASHPASS" width="146" style="display:block;width:146px;height:auto;border:0;outline:none;text-decoration:none" /></td>${bslBranding}</tr></table><div style="margin-top:22px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:34px;font-weight:700">${escapeEmailHtml(labels.heading)}</div>${hasBslBranding ? `<div style="margin-top:8px;color:#98a2b3;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:18px">${escapeEmailHtml(labels.bslEvent)}</div>` : ''}</td></tr><tr><td style="background:#ffffff;padding:28px"><p style="margin:0 0 16px;color:#1d2939;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px">${escapeEmailHtml(labels.greeting)} ${escapeEmailHtml(recipientName)},</p><h1 style="margin:0 0 12px;color:#1d2939;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:30px">${escapeEmailHtml(localizedContent.title)}</h1><p style="margin:0;color:#475467;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px">${escapeEmailHtml(localizedContent.message)}</p><table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top:26px"><tr><td style="border-radius:8px;background:#1570ef"><a href="${escapeEmailHtml(actionUrl)}" style="display:inline-block;padding:13px 19px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;line-height:20px;text-decoration:none">${escapeEmailHtml(actionLabel)}</a></td></tr></table></td></tr><tr><td style="background:#f9fafb;border-top:1px solid #eaecf0;border-radius:0 0 18px 18px;padding:22px 28px"><p style="margin:0 0 10px;color:#667085;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px">${escapeEmailHtml(labels.transactional)}</p><p style="margin:0;color:#667085;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px"><a href="https://hashpass.tech/privacy" style="color:#475467;text-decoration:underline">${escapeEmailHtml(labels.privacy)}</a><span style="padding:0 7px;color:#98a2b3">·</span><a href="mailto:${escapeEmailHtml(supportEmail)}" style="color:#475467;text-decoration:underline">${escapeEmailHtml(labels.contact)}</a></p></td></tr></table></td></tr></table></body></html>`;
     const info = await transporter.sendMail({
       from: `HASHPASS <${smtpFrom}>`,
-      to: recipient.email,
+      to: recipientEmail,
       subject: `${localizedContent.title} · HASHPASS`,
       html,
       text: `${localizedContent.title}\n\n${localizedContent.message}\n\n${actionUrl}`,
