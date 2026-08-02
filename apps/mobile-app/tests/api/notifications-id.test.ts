@@ -18,9 +18,14 @@ jest.mock('@/lib/supabase-server', () => ({
 describe('notifications/[id] api', () => {
   beforeEach(() => {
     jest.resetModules();
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
     mockResolveNotificationIdentity.mockReset();
     mockIsResolveIdentityError.mockReset();
     mockFrom.mockReset();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('PATCH', () => {
@@ -30,6 +35,18 @@ describe('notifications/[id] api', () => {
       const response = await PATCH(
         new Request('https://api.hashpass.tech/api/notifications/', { method: 'PATCH' }),
         { params: { id: '' } }
+      );
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: 'Notification ID is required' });
+    });
+
+    it('returns 400 instead of crashing when Metro omits the route context', async () => {
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { PATCH } = require('../../app/api/notifications/[id]+api');
+      const response = await PATCH(
+        new Request('https://api.hashpass.tech/api/notifications/notif-1', { method: 'PATCH' }),
+        undefined,
       );
 
       expect(response.status).toBe(400);
@@ -195,6 +212,18 @@ describe('notifications/[id] api', () => {
       const response = await DELETE(
         new Request('https://api.hashpass.tech/api/notifications/', { method: 'DELETE' }),
         { params: { id: '' } }
+      );
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: 'Notification ID is required' });
+    });
+
+    it('returns 400 instead of crashing when Metro omits the route context', async () => {
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { DELETE } = require('../../app/api/notifications/[id]+api');
+      const response = await DELETE(
+        new Request('https://api.hashpass.tech/api/notifications/notif-1', { method: 'DELETE' }),
+        undefined,
       );
 
       expect(response.status).toBe(400);
