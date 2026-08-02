@@ -353,6 +353,39 @@ describe('PassesWallet', () => {
     }
   });
 
+  it('keeps the pass-claim recovery action visible while the Supabase identity is reconnecting', async () => {
+    jest.useFakeTimers();
+    mockDbUserId = null;
+
+    try {
+      const renderer = await renderWallet({ layout: 'plain' });
+
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+        await Promise.resolve();
+      });
+
+      const claimAction = renderer.root.findByProps({ accessibilityLabel: 'Have a pass? Claim it here' });
+      expect(claimAction).toBeTruthy();
+
+      await act(async () => {
+        triggerPress(claimAction);
+        await Promise.resolve();
+      });
+
+      expect(
+        renderer.root.findByProps({ children: 'Your account is still connecting. Please try again in a moment.' }),
+      ).toBeTruthy();
+      expect(renderer.root.findByProps({ accessibilityLabel: 'Redeem pass code' }).props.disabled).toBe(true);
+      await act(async () => {
+        renderer.unmount();
+        await Promise.resolve();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   describe('deck navigation', () => {
     // Event ids deliberately absent from packages/config/src/events.ts: every
     // pass then falls back to the same 'upcoming' timeline with no start/end

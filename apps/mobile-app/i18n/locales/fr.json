@@ -446,6 +446,7 @@
     "selectEvent": "Sélectionner un événement",
     "yourPasses": "Vos passes",
     "quickAccess": "Accès rapide",
+    "quickAccess.forEvent": "Pour",
     "quick": {
       "speakers": {
         "title": "Conférenciers",

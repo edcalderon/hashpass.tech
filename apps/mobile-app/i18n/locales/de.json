@@ -445,6 +445,7 @@
     "selectEvent": "Event auswählen",
     "yourPasses": "Ihre Pässe",
     "quickAccess": "Schnellzugriff",
+    "quickAccess.forEvent": "Für",
     "quick": {
       "speakers": {
         "title": "Redner",

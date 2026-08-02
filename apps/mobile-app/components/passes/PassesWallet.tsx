@@ -310,7 +310,11 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const cardWidth = Math.min(PASS_CARD_WIDTH, windowWidth - 48 - stackDepth * STACK_OFFSET_X);
   const deckWidth = cardWidth + stackDepth * STACK_OFFSET_X;
   const canRestoreIncludedBslPasses = layout === 'plain' && Boolean(dbUserId);
-  const canClaimPass = Boolean(dbUserId);
+  // Keep the recovery action visible even while the Better Auth -> Supabase
+  // bridge is restoring. It gives the attendee an explicit next step instead
+  // of silently hiding the claim flow; the dialog explains if the account is
+  // still connecting and becomes usable as soon as dbUserId arrives.
+  const canClaimPass = true;
 
   if (loading) {
     return (
@@ -427,7 +431,9 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Have a pass? Claim it here"
             onPress={() => {
-              setClaimError(null);
+              setClaimError(
+                dbUserId ? null : 'Your account is still connecting. Please try again in a moment.',
+              );
               setClaimModalVisible(true);
             }}
             style={{ marginTop: 12, paddingVertical: 4 }}
@@ -464,9 +470,9 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Redeem pass code"
-                disabled={claimingPass}
+                disabled={claimingPass || !dbUserId}
                 onPress={handleClaimPassCode}
-                style={{ alignItems: 'center', backgroundColor: colors.primary, borderRadius: 10, opacity: claimingPass ? 0.65 : 1, paddingVertical: 11 }}
+                style={{ alignItems: 'center', backgroundColor: colors.primary, borderRadius: 10, opacity: claimingPass || !dbUserId ? 0.65 : 1, paddingVertical: 11 }}
               >
                 <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>
                   {claimingPass ? 'Redeeming…' : 'Redeem code'}

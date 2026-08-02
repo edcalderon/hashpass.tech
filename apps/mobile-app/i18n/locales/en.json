@@ -585,6 +585,7 @@
     "selectEvent": "Select Event",
     "yourPasses": "Your Passes",
     "quickAccess": "Quick Access",
+    "quickAccess.forEvent": "For",
     "tutorial": {
       "yourPasses": "This is where you can view your event passes. Your passes show your ticket type and access level for the event.",
       "quickAccess": "Quick Access cards let you quickly navigate to important sections like Speakers, Agenda, Networking Center, and Event Information. Swipe horizontally to see all options."

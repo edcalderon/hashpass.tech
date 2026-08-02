@@ -2612,7 +2612,7 @@ describe('useAuth native Google sign-in', () => {
     expect(mockSupabase.auth.verifyOtp).not.toHaveBeenCalled();
   });
 
-  it('recovers a missing Supabase bridge when a native Better Auth session is restored', async () => {
+  it.each(['android', 'web'])('recovers a missing Supabase bridge when a Better Auth session is restored on %s', async (platform) => {
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
     setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');
 
@@ -2644,7 +2644,7 @@ describe('useAuth native Google sign-in', () => {
 
     let testAct: any = null;
     jest.isolateModules(() => {
-      jest.doMock('react-native', () => ({ Platform: { OS: 'android' } }));
+      jest.doMock('react-native', () => ({ Platform: { OS: platform } }));
       jest.doMock('@hashpass/auth', () => ({
         authService: mockAuthService,
         BetterAuthProvider: mockRestoredBetterAuthProvider,

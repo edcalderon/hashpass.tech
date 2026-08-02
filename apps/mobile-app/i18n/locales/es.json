@@ -584,6 +584,7 @@
     "selectEvent": "Seleccionar Evento",
     "yourPasses": "Tus Pases",
     "quickAccess": "Accesos Rápidos",
+    "quickAccess.forEvent": "Para",
     "tutorial": {
       "yourPasses": "Aquí puedes ver tus pases del evento. Tus pases muestran el tipo de entrada y el nivel de acceso al evento.",
       "quickAccess": "Las tarjetas de acceso rápido te llevan a secciones importantes como Oradores, Agenda, Centro de Networking e Información del Evento. Desliza horizontalmente para ver todas las opciones."
