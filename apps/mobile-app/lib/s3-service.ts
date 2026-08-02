@@ -3,9 +3,16 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import fs from 'fs';
 import path from 'path';
 
+// Email assets live in a dedicated bucket in us-east-2. Do not derive this
+// from the Lambda's AWS_REGION (us-east-1), otherwise every email image URL
+// gets a redirect that many mail clients refuse to follow.
+const EMAIL_ASSETS_REGION = (
+  process.env.EMAIL_ASSETS_REGION || process.env.AWS_EMAIL_ASSETS_REGION || 'us-east-2'
+).trim();
+
 // S3 Configuration
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: EMAIL_ASSETS_REGION,
   credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY ? {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -104,7 +111,7 @@ export function getEmailAssetUrl(assetName: string): string {
   }
   
   // Use S3 bucket URL directly
-  return `https://${EMAIL_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${s3Key}`;
+  return `https://${EMAIL_BUCKET_NAME}.s3.${EMAIL_ASSETS_REGION}.amazonaws.com/${s3Key}`;
 }
 
 /**
@@ -232,4 +239,3 @@ export async function uploadAllEmailAssets(
     return results;
   }
 }
-
