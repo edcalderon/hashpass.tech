@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '../lib/vector-icons';
-import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { EventPassTier, passSystemService, PassInfo, PassRequestLimits, PassType } from '@/lib/pass-system';
@@ -9,6 +8,7 @@ import { resolveActiveEventId } from '@/lib/event-path';
 import { useTranslation } from '@/i18n/i18n';
 import * as Sentry from '@sentry/react-native';
 import PassesWallet from './passes/PassesWallet';
+import * as Clipboard from 'expo-clipboard';
 
 interface PassesDisplayProps {
   // Display mode
@@ -85,7 +85,6 @@ function PassesDisplayInner({
   const { t: translate } = useTranslation('passes');
   const { colors } = useTheme();
   const { dbUserId } = useAuth();
-  const router = useRouter();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
   const [requestLimits, setRequestLimits] = useState<PassRequestLimits | null>(null);
   const [loading, setLoading] = useState(true);
@@ -287,11 +286,34 @@ function PassesDisplayInner({
     return passSystemService.getPassTypeDisplayName(passType as any);
   };
 
-  const rawPassNumber = passInfo?.pass_number?.trim() || passInfo?.pass_id?.trim()
-    || t({ id: 'passes.unknown', message: 'Unknown' });
+  const issuedPassNumber = typeof passInfo?.pass_number === 'string'
+    ? passInfo.pass_number.trim()
+    : '';
+  const passIdFallback = typeof passInfo?.pass_id === 'string'
+    ? passInfo.pass_id.trim()
+    : '';
+  // Never render a bare "Pass #" while a bridge or legacy record is missing
+  // its issued number. A stable id-derived fallback remains copyable and lets
+  // support identify the actual pass.
+  const rawPassNumber = issuedPassNumber || passIdFallback || 'Pass number unavailable';
   const displayPassNumber = rawPassNumber.length > 12
     ? `${rawPassNumber.slice(0, 6)}...${rawPassNumber.slice(-4)}`
     : rawPassNumber;
+
+  const copyPassNumber = async () => {
+    try {
+      await Clipboard.setStringAsync(rawPassNumber);
+      Alert.alert(
+        t({ id: 'passes.passNumberCopiedTitle', message: 'Pass number copied' }),
+        t({ id: 'passes.passNumberCopiedMessage', message: 'Your pass number has been copied to the clipboard.' }),
+      );
+    } catch {
+      Alert.alert(
+        t({ id: 'passes.alert.errorTitle', message: 'Error' }),
+        t({ id: 'passes.copyError', message: 'Unable to copy the pass number. Please try again.' }),
+      );
+    }
+  };
 
   const hasExistingRequest = Boolean(
     existingRequest || requestLimits?.reason === 'existing_request',
@@ -748,10 +770,10 @@ function PassesDisplayInner({
             {getPassTypeDisplayName(passInfo.pass_type)}
           </Text>
           <TouchableOpacity
-            onPress={() => {
-              router.push('/(shared)/dashboard/pass-details');
-            }}
+            accessibilityLabel={t({ id: 'passes.copyPassNumber', message: 'Copy pass number' })}
+            onPress={copyPassNumber}
             activeOpacity={0.7}
+            style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5 }}
           >
             <Text style={{ 
               fontSize: 14, 
@@ -760,6 +782,7 @@ function PassesDisplayInner({
             }}>
               {t({ id: 'passes.passNumber', message: 'Pass #{pass_number}' }).replace('{pass_number}', displayPassNumber)}
             </Text>
+            <MaterialIcons name="content-copy" size={14} color={colors.primary} />
           </TouchableOpacity>
         </View>
         <View style={{

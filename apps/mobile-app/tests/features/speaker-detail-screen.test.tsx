@@ -87,10 +87,21 @@ jest.mock('../../components/SpeakerAvatar', () => 'SpeakerAvatar');
 jest.mock('../../components/LoadingScreen', () => 'LoadingScreen');
 jest.mock('../../components/PassesDisplay', () => {
   const { Text, TouchableOpacity } = require('react-native');
-  return ({ onRequestPress }: { onRequestPress: () => void }) => (
-    <TouchableOpacity testID="request-meeting" onPress={onRequestPress}>
-      <Text>Request meeting</Text>
-    </TouchableOpacity>
+  return ({ onRequestPress, existingRequest, onExistingRequestPress }: {
+    onRequestPress: () => void;
+    existingRequest?: { id: string } | null;
+    onExistingRequestPress?: () => void;
+  }) => (
+    <>
+      <TouchableOpacity testID="request-meeting" onPress={onRequestPress}>
+        <Text>Request meeting</Text>
+      </TouchableOpacity>
+      {existingRequest && onExistingRequestPress && (
+        <TouchableOpacity testID="view-existing-request" onPress={onExistingRequestPress}>
+          <Text>View request</Text>
+        </TouchableOpacity>
+      )}
+    </>
   );
 });
 jest.mock('@lib/copilot-shim', () => ({
@@ -371,6 +382,44 @@ describe('speaker detail screen', () => {
       'Meeting Request Sent! 🎉',
       expect.stringContaining('Ada Lovelace'),
     );
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('opens the exact pending request from the speaker pass card', async () => {
+    const pendingRequest = {
+      id: 'request-pending-1',
+      status: 'pending',
+      requester_id: 'requester-1',
+      speaker_id: 'speaker-user-1',
+    };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/bsl/meetings/requests' && !options?.method) {
+        return Promise.resolve({ success: true, data: { data: [pendingRequest] } });
+      }
+      return defaultApiResponse(path, options);
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    await act(async () => {
+      await renderer.root.findByProps({ testID: 'view-existing-request' }).props.onPress();
+    });
+
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/events/[eventSlug]/networking/my-requests',
+      params: {
+        eventSlug: 'bsl',
+        requestId: 'request-pending-1',
+        highlightRequest: 'true',
+        openRequest: 'true',
+      },
+    });
 
     await act(async () => renderer.unmount());
   });

@@ -8,7 +8,7 @@ import type { CreateMeetingRequestData } from '../../../../lib/matchmaking';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useBalance } from '@contexts/BalanceContext';
 import { apiClient, eventApiPath } from '@/lib/api-client';
-import { buildEventPath, resolveActiveEventId } from '@/lib/event-path';
+import { resolveActiveEventId } from '@/lib/event-path';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
 import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl, resolveSpeakerImage } from '../../../../lib/string-utils';
@@ -108,12 +108,33 @@ export default function SpeakerDetail() {
       )
     : null;
 
-  const openExistingRequest = () => {
-    if (!existingRequest?.id) return;
+  const openExistingRequest = async () => {
+    // Limits can report an existing request one render before the local
+    // request-status fetch has populated its id. Resolve it again on tap so
+    // the CTA always opens the concrete request detail, not a dead button.
+    let request = existingRequest;
+    if (!request && speaker?.id) {
+      try {
+        const response = await apiClient.request(meetingRequestsPath, {
+          skipEventSegment: true,
+          params: { speakerId: speaker.id },
+        });
+        if (response.success) {
+          request = ((response.data as any)?.data || []).find((item: any) =>
+            ['pending', 'requested', 'approved', 'accepted'].includes(item.status),
+          );
+        }
+      } catch {
+        // The requests screen still gives the attendee a useful recovery
+        // route if this just-in-time refresh cannot complete.
+      }
+    }
+
     router.push({
-      pathname: buildEventPath(eventId, 'networking/my-requests') as any,
+      pathname: '/events/[eventSlug]/networking/my-requests' as any,
       params: {
-        requestId: String(existingRequest.id),
+        eventSlug: eventId,
+        ...(request?.id ? { requestId: String(request.id) } : {}),
         highlightRequest: 'true',
         openRequest: 'true',
       },
@@ -1235,7 +1256,7 @@ export default function SpeakerDetail() {
             onRequestPress={handleRequestMeeting}
             eventId={eventId}
             existingRequest={existingRequest ? { id: existingRequest.id, status: existingRequest.status } : null}
-            onExistingRequestPress={existingRequest ? openExistingRequest : undefined}
+            onExistingRequestPress={openExistingRequest}
             refreshTrigger={passRefreshTrigger}
             onPassInfoLoaded={(passInfo: { pass_type?: string } | null) => {
               if (passInfo && passInfo.pass_type) {

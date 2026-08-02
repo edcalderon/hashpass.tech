@@ -7,6 +7,7 @@ const mockGetEventPassTiers = jest.fn();
 const mockCanMakeMeetingRequest = jest.fn();
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }));
+jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }));
 jest.mock('../../hooks/useTheme', () => ({
   useTheme: () => ({
     colors: {
