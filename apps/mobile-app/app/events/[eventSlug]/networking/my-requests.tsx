@@ -88,6 +88,7 @@ export default function MyRequestsView() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
+  const [acceptNote, setAcceptNote] = useState('');
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [holdTime, setHoldTime] = useState(1); // Hours
   const [expirationCountdown, setExpirationCountdown] = useState<{
@@ -336,17 +337,25 @@ export default function MyRequestsView() {
     }
   };
 
-  const handleAcceptRequest = async (request: MeetingRequest, slotTime?: string) => {
+  const handleAcceptRequest = async (request: MeetingRequest, slotTime?: string, note?: string) => {
     if (!dbUserId) return;
-    
+
     try {
       const speakerIdString = String(request.speaker_id);
       if (!slotTime) {
         await loadAvailableSlots(speakerIdString, request.duration_minutes || 15, (request as MeetingRequestWithDirection).requester_id);
         return;
       }
+      const trimmedNote = note?.trim();
       const response = await apiClient.request(meetingRequestsPath, {
-        skipEventSegment: true, method: 'PATCH', body: { requestId: request.id, action: 'accept', slotTime },
+        skipEventSegment: true,
+        method: 'PATCH',
+        body: {
+          requestId: request.id,
+          action: 'accept',
+          slotTime,
+          ...(trimmedNote ? { response: trimmedNote } : {}),
+        },
       });
       if (!response.success) { showError(t('requestView.acceptFailedTitle'), response.error); return; }
       const data = (response.data as any)?.data;
@@ -366,6 +375,7 @@ export default function MyRequestsView() {
         setConfirmedMeetingId(data.meeting_id);
         setConfirmedMeetingStatus(data.status === 'tentative' ? 'tentative' : 'confirmed');
         setShowSlotPicker(false);
+        setAcceptNote('');
         setShowSlotConfirmation(true);
         
         // Refresh LUKAS balance after reward (for both speaker and requester)
@@ -759,6 +769,17 @@ export default function MyRequestsView() {
                 </Text>
               </View>
             )}
+          </View>
+        )}
+
+        {Boolean(request.speaker_response) && (request.status === 'accepted' || request.status === 'declined' || request.status === 'rejected') && (
+          <View style={styles.cardContent}>
+            <View style={styles.noteContainer}>
+              <Text style={styles.noteLabel}>{t('requestView.response')}:</Text>
+              <Text style={styles.noteText} numberOfLines={2}>
+                {request.speaker_response}
+              </Text>
+            </View>
           </View>
         )}
 
@@ -1309,6 +1330,7 @@ export default function MyRequestsView() {
         onRequestClose={() => {
           setShowSlotPicker(false);
           setSelectedSlot(null);
+          setAcceptNote('');
           // Clear slot context when picker is closed
           setCurrentSlotContext(null);
         }}
@@ -1327,6 +1349,7 @@ export default function MyRequestsView() {
               onPress={() => {
                 setShowSlotPicker(false);
                 setSelectedSlot(null);
+                setAcceptNote('');
                 // Clear slot context when picker is closed
                 setCurrentSlotContext(null);
               }}
@@ -1408,6 +1431,7 @@ export default function MyRequestsView() {
                     setShowSlotPicker(false);
                     setShowDetailModal(false);
                     setSelectedSlot(null);
+                    setAcceptNote('');
                     setCurrentSlotContext(null);
                     // The Modal's exit needs to actually unmount (its content
                     // renders via a web portal outside this screen's tree)
@@ -1571,6 +1595,24 @@ export default function MyRequestsView() {
                 styles.slotPickerFooter,
                 { borderTopColor: colors.divider || (isDark ? '#404040' : '#e5e5e5') }
               ]}>
+                <TextInput
+                  style={[
+                    styles.declineReasonInput,
+                    {
+                      color: colors.text?.primary || (isDark ? '#FFFFFF' : '#1a1a1a'),
+                      borderColor: colors.divider || (isDark ? '#404040' : '#e0e0e0'),
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                      minHeight: 48,
+                    }
+                  ]}
+                  placeholder={t('requestView.slotPicker.notePlaceholder')}
+                  placeholderTextColor={colors.text?.secondary || (isDark ? '#888888' : '#999999')}
+                  value={acceptNote}
+                  onChangeText={setAcceptNote}
+                  multiline
+                  numberOfLines={2}
+                  maxLength={280}
+                />
                 <TouchableOpacity
                   style={[
                     styles.slotPickerConfirmButton,
@@ -1579,7 +1621,7 @@ export default function MyRequestsView() {
                   ]}
                   onPress={() => {
                     if (selectedRequest && selectedSlot) {
-                      handleAcceptRequest(selectedRequest, selectedSlot);
+                      handleAcceptRequest(selectedRequest, selectedSlot, acceptNote);
                     }
                   }}
                   disabled={loadingSlots}

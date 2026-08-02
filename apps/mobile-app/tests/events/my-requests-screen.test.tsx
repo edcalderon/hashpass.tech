@@ -148,6 +148,23 @@ const pressText = async (renderer: TestRenderer.ReactTestRenderer, label: string
   });
 };
 
+const pressTextAt = async (renderer: TestRenderer.ReactTestRenderer, label: string, index: number) => {
+  let target: any = renderer.root.findAll(
+    (node: any) => node.type === 'Text' && node.props.children === label,
+  )[index];
+
+  while (target && typeof target.props?.onPress !== 'function') {
+    target = target.parent;
+  }
+
+  expect(target).toBeDefined();
+
+  await act(async () => {
+    target.props.onPress();
+    await flushPromises();
+  });
+};
+
 const applyCurrentFilter = async (renderer: TestRenderer.ReactTestRenderer) => {
   const filter = renderer.root.findByType('UnifiedSearchAndFilter' as any);
 
@@ -316,6 +333,141 @@ describe('MyRequestsView', () => {
     expect(mockApiRequest).not.toHaveBeenCalled();
     expect(renderer.root.findAllByType('LoadingScreen' as any)).toHaveLength(0);
     expect(renderer.root.findAllByProps({ children: 'requestView.emptyState.noSentTitle' }).length).toBeGreaterThan(0);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('opens the decline reason modal and sends the typed reason with the decline action', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [incomingRequest] } });
+
+    const renderer = await renderScreen();
+    await pressText(renderer, 'requestView.tabs.incoming');
+    await applyCurrentFilter(renderer);
+
+    await pressText(renderer, 'Mariana Requester');
+
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: { success: true } } });
+
+    // First match is the detail modal's own Decline button, which opens the
+    // reason modal instead of declining immediately.
+    await pressTextAt(renderer, 'requestView.decline', 0);
+
+    const input = renderer.root.findByType('TextInput' as any);
+    await act(async () => {
+      input.props.onChangeText('Schedule conflict this week');
+      await flushPromises();
+    });
+
+    // Second match is the reason modal's own confirm button.
+    await pressTextAt(renderer, 'requestView.decline', 1);
+
+    const declineCall = mockApiRequest.mock.calls.find(
+      ([, options]: [string, any]) => options?.body?.action === 'decline',
+    );
+    expect(declineCall).toBeDefined();
+    expect(declineCall![1].body).toEqual({
+      requestId: 'incoming-1',
+      action: 'decline',
+      response: 'Schedule conflict this week',
+    });
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('shows the speaker response note on the card for accepted and declined requests', async () => {
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: {
+        data: [
+          { ...sentRequest, id: 'sent-accepted', status: 'accepted', speaker_response: 'Looking forward to it, see you then!' },
+          { ...sentRequest, id: 'sent-declined', status: 'declined', speaker_response: 'Fully booked that week, sorry.' },
+          { ...sentRequest, id: 'sent-pending', status: 'pending', speaker_response: '' },
+        ],
+      },
+    });
+
+    const renderer = await renderScreen();
+    await applyCurrentFilter(renderer);
+
+    expect(renderer.root.findAllByProps({ children: 'Looking forward to it, see you then!' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: 'Fully booked that week, sorry.' }).length).toBeGreaterThan(0);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('sends an optional note when accepting a request with a selected slot', async () => {
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: { data: [{ ...incomingRequest, speaker_id: 'speaker-user-id' }] },
+    });
+
+    const renderer = await renderScreen();
+    await pressText(renderer, 'requestView.tabs.incoming');
+    await applyCurrentFilter(renderer);
+
+    await pressText(renderer, 'Mariana Requester');
+
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: { data: [{ slot_time: '2026-08-05T14:00:00.000Z', duration_minutes: 15 }] },
+    });
+
+    await pressText(renderer, 'requestView.accept');
+
+    // Locate the rendered slot item via its unique icon rather than its
+    // (locale/timezone-dependent) formatted time text.
+    const slotIcon = renderer.root.findByProps({ name: 'access-time' });
+    let slotTouchable: any = slotIcon;
+    while (slotTouchable && typeof slotTouchable.props?.onPress !== 'function') {
+      slotTouchable = slotTouchable.parent;
+    }
+    expect(slotTouchable).toBeDefined();
+    await act(async () => {
+      slotTouchable.props.onPress();
+      await flushPromises();
+    });
+
+    const noteInput = renderer.root.findByProps({ placeholder: 'requestView.slotPicker.notePlaceholder' });
+    await act(async () => {
+      noteInput.props.onChangeText('Excited to connect, bring your deck!');
+      await flushPromises();
+    });
+
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: { data: { success: true, status: 'confirmed', meeting_id: 'meeting-1' } },
+    });
+
+    await pressText(renderer, 'requestView.slotPicker.confirmSelection');
+
+    const acceptCall = mockApiRequest.mock.calls.find(
+      ([, options]: [string, any]) => options?.body?.action === 'accept',
+    );
+    expect(acceptCall).toBeDefined();
+    expect(acceptCall![1].body).toEqual({
+      requestId: 'incoming-1',
+      action: 'accept',
+      slotTime: '2026-08-05T14:00:00.000Z',
+      response: 'Excited to connect, bring your deck!',
+    });
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('does not decline when the reason modal is dismissed via Go Back', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [incomingRequest] } });
+
+    const renderer = await renderScreen();
+    await pressText(renderer, 'requestView.tabs.incoming');
+    await applyCurrentFilter(renderer);
+
+    await pressText(renderer, 'Mariana Requester');
+    await pressTextAt(renderer, 'requestView.decline', 0);
+    await pressText(renderer, 'requestView.declineModal.goBack');
+
+    expect(
+      mockApiRequest.mock.calls.some(([, options]: [string, any]) => options?.body?.action === 'decline'),
+    ).toBe(false);
 
     await act(async () => renderer.unmount());
   });

@@ -986,7 +986,8 @@
         "confirmSelection": "Confirm Selection",
         "loadErrorTitle": "Error",
         "loadErrorMessage": "Failed to load available slots",
-        "goToSchedule": "Go to My Schedule"
+        "goToSchedule": "Go to My Schedule",
+        "notePlaceholder": "Add an optional note for the requester..."
       },
       "successModal": {
         "title": "Meeting Scheduled",

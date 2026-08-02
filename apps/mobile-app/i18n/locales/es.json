@@ -985,7 +985,8 @@
         "confirmSelection": "Confirmar Selección",
         "loadErrorTitle": "Error",
         "loadErrorMessage": "No se pudieron cargar los horarios disponibles",
-        "goToSchedule": "Ir a Mi Agenda"
+        "goToSchedule": "Ir a Mi Agenda",
+        "notePlaceholder": "Agrega una nota opcional para el solicitante..."
       },
       "successModal": {
         "title": "Reunión Agendada",

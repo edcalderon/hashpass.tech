@@ -916,7 +916,8 @@
         "confirmSelection": "선택 확인",
         "loadErrorTitle": "오류",
         "loadErrorMessage": "가능한 시간대를 불러오지 못했습니다",
-        "goToSchedule": "내 일정으로 이동"
+        "goToSchedule": "내 일정으로 이동",
+        "notePlaceholder": "요청자에게 보낼 선택적인 메모 추가..."
       },
       "successModal": {
         "title": "미팅이 예약되었습니다",
