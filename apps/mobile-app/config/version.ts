@@ -22,15 +22,20 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608020243, // Updated to current timestamp
+  buildNumber: 202608020326, // Updated to current timestamp
   releaseDate: '2026-08-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
+    'configure event pass tiers',
     'filter and prioritize active speakers',
     'manage speaker roles from admin profiles'
   ],
   bugfixes: [
+    'restore admin bundle compilation',
+    'guard profile hydration against null users',
+    'prevent web raw text nodes',
+    'align meeting notifications with auth users',
     'wait for profile roles before fallback',
     'make admin tab overflow actionable',
     'scroll admin tabs horizontally',
@@ -38,11 +43,36 @@ export const CURRENT_VERSION: VersionInfo = {
     'align meeting requests with auth identities'
   ],
   breakingChanges: [],
-  notes: 'filter and prioritize active speakers; manage speaker roles from admin profiles; wait for profile roles before fallback; make admin tab overflow actionable; scroll admin tabs horizontally; preserve active speaker ordering; align meeting requests with auth identities'
+  notes: 'configure event pass tiers; filter and prioritize active speakers; manage speaker roles from admin profiles; restore admin bundle compilation; guard profile hydration against null users; prevent web raw text nodes; align meeting notifications with auth users; wait for profile roles before fallback; make admin tab overflow actionable; scroll admin tabs horizontally; preserve active speaker ordering; align meeting requests with auth identities'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.304': {
+    version: '1.8.304',
+    buildNumber: 202608020326,
+    releaseDate: '2026-08-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'configure event pass tiers',
+      'filter and prioritize active speakers',
+      'manage speaker roles from admin profiles'
+    ],
+    bugfixes: [
+      'restore admin bundle compilation',
+      'guard profile hydration against null users',
+      'prevent web raw text nodes',
+      'align meeting notifications with auth users',
+      'wait for profile roles before fallback',
+      'make admin tab overflow actionable',
+      'scroll admin tabs horizontally',
+      'preserve active speaker ordering',
+      'align meeting requests with auth identities'
+    ],
+    breakingChanges: [],
+    notes: 'configure event pass tiers; filter and prioritize active speakers; manage speaker roles from admin profiles; restore admin bundle compilation; guard profile hydration against null users; prevent web raw text nodes; align meeting notifications with auth users; wait for profile roles before fallback; make admin tab overflow actionable; scroll admin tabs horizontally; preserve active speaker ordering; align meeting requests with auth identities'
+  },
   '1.8.303': {
     version: '1.8.303',
     buildNumber: 202608020243,
