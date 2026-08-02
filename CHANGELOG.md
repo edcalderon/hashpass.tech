@@ -1,3 +1,7 @@
+## [1.8.309](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.308...v1.8.309) (2026-08-02)
+### Released
+- repair the meeting-booking pipeline end to end, add decline reason
+
 ## [1.8.308](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.307...v1.8.308) (2026-08-02)
 
 
