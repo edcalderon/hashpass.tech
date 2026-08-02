@@ -220,6 +220,21 @@ describe('AdminPanel pass codes', () => {
           claim_error: null,
         },
       },
+      {
+        id: 'active-speaker',
+        name: 'Active Speaker',
+        title: 'Director',
+        company: 'Hashpass',
+        imageUrl: null,
+        userId: 'active-speaker-user',
+        isActive: true,
+        isAcceptingMeetings: true,
+        claim: {
+          email_normalized: 'active@example.com',
+          status: 'claimed',
+          claim_error: null,
+        },
+      },
     ];
     mockGet.mockImplementation((path: string) => {
       if (path.startsWith('/admin/speaker-roles')) {
@@ -238,6 +253,20 @@ describe('AdminPanel pass codes', () => {
     expect(mockGet).toHaveBeenCalledWith('/admin/speaker-roles?eventId=chile2026', { skipEventSegment: true });
     expect(renderer.root.findByProps({ children: 'UNASSIGNED' })).toBeTruthy();
     expect(renderer.root.findByProps({ children: 'INACTIVE' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'ACTIVE' })).toBeTruthy();
+
+    const speakerNameOrder = renderer.root
+      .findAll((node: any) => ['Active Speaker', 'Edward Calderón', 'Rodrigo Sainz'].includes(node.props.children))
+      .map((node: any) => node.props.children);
+    expect(speakerNameOrder).toEqual(['Active Speaker', 'Rodrigo Sainz', 'Edward Calderón']);
+
+    const speakerSearch = renderer.root.findByProps({ placeholder: 'Search speakers, organization, or account...' });
+    act(() => speakerSearch.props.onChangeText('rodrigo'));
+    await flush();
+    expect(renderer.root.findByProps({ children: 'Rodrigo Sainz' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ children: 'Edward Calderón' })).toHaveLength(0);
+    act(() => speakerSearch.props.onChangeText(''));
+    await flush();
 
     await act(async () => {
       triggerPress(renderer.root.findByProps({ children: 'Assign account' }).parent);
@@ -266,7 +295,7 @@ describe('AdminPanel pass codes', () => {
     }), { skipEventSegment: true });
 
     await act(async () => {
-      triggerPress(renderer.root.findByProps({ children: 'Remove access' }).parent);
+      triggerPress(renderer.root.findAllByProps({ children: 'Remove access' })[1].parent);
       await Promise.resolve();
     });
     expect(mockAlert).toHaveBeenCalledWith(

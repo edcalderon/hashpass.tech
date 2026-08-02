@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { resolveActiveEventId } from '../../../lib/event-path';
 import { apiClient } from '../../../lib/api-client';
 import { highestEventRole, EventRole, EventRoleGrant } from '../../../lib/event-admin-access';
+import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 
 type TabType = 'passes' | 'pass-codes' | 'qr-scanner' | 'meetings' | 'roles' | 'speaker-roles';
 
@@ -1634,6 +1635,23 @@ function SpeakerRoleManagementTab({
   onToggleActive,
   onRefresh,
 }: any) {
+  const speakerSearchData = useMemo(() => speakers.map((speaker: SpeakerRoleRecord) => {
+    const hasAccount = Boolean(speaker.userId);
+    const assignmentStatus = speaker.isActive ? 'Active' : hasAccount ? 'Inactive' : 'Unassigned';
+    const accountLabel = speaker.claim?.email_normalized || (hasAccount ? 'Account linked' : 'No account assigned');
+
+    return {
+      ...speaker,
+      accountLabel,
+      assignmentStatus,
+    };
+  }), [speakers]);
+  const [filteredSpeakers, setFilteredSpeakers] = useState(speakerSearchData);
+  const orderedSpeakers = useMemo(() => [...filteredSpeakers].sort((left, right) => {
+    const priority = (speaker: SpeakerRoleRecord) => speaker.isActive && speaker.userId ? 0 : speaker.userId ? 1 : 2;
+    return priority(left) - priority(right) || left.name.localeCompare(right.name);
+  }), [filteredSpeakers]);
+
   return (
     <View style={styles.tabContent}>
       <Text style={[styles.passInfo, { marginBottom: 12 }]}>Assign an existing account to a speaker profile, then control whether that speaker is available for networking.</Text>
@@ -1645,12 +1663,26 @@ function SpeakerRoleManagementTab({
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
       ) : (
-        <View style={styles.list}>
-          {speakers.map((speaker: SpeakerRoleRecord) => {
+        <>
+          <UnifiedSearchAndFilter
+            data={speakerSearchData}
+            onFilteredData={setFilteredSpeakers}
+            onSearchChange={() => undefined}
+            searchPlaceholder="Search speakers, organization, or account..."
+            searchFields={['name', 'title', 'company', 'accountLabel']}
+            filterGroups={[{
+              key: 'assignmentStatus',
+              label: 'Assignment status',
+              type: 'chips',
+              options: [],
+            }]}
+            showResultsCount
+          />
+          <View style={styles.list}>
+          {orderedSpeakers.map((speaker: SpeakerRoleRecord & { accountLabel: string; assignmentStatus: string }) => {
             const hasAccount = Boolean(speaker.userId);
             const status = speaker.isActive ? 'ACTIVE' : hasAccount ? 'INACTIVE' : 'UNASSIGNED';
             const statusColor = speaker.isActive ? '#34A853' : hasAccount ? '#8E8E93' : '#D97706';
-            const accountLabel = speaker.claim?.email_normalized || (hasAccount ? 'Account linked' : 'No account assigned');
 
             return (
               <View key={speaker.id} style={styles.passCard}>
@@ -1665,7 +1697,7 @@ function SpeakerRoleManagementTab({
                     <Text style={styles.statusBadgeText}>{status}</Text>
                   </View>
                 </View>
-                <Text style={styles.passInfo}>{accountLabel}</Text>
+                <Text style={styles.passInfo}>{speaker.accountLabel}</Text>
                 {speaker.claim?.status === 'needs_review' && speaker.claim.claim_error ? (
                   <Text style={styles.speakerRoleWarning}>{speaker.claim.claim_error}</Text>
                 ) : null}
@@ -1691,10 +1723,11 @@ function SpeakerRoleManagementTab({
               </View>
             );
           })}
-          {speakers.length === 0 && (
-            <Text style={styles.emptyText}>No speakers found for this BSL tenant</Text>
+          {orderedSpeakers.length === 0 && (
+            <Text style={styles.emptyText}>No speakers match the current search or filter</Text>
           )}
-        </View>
+          </View>
+        </>
       )}
     </View>
   );
