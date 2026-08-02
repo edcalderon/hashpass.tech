@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608020536, // Updated to current timestamp
+  buildNumber: 202608021751, // Updated to current timestamp
   releaseDate: '2026-08-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,31 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'improve networking request details',
+    'guard notification route params'
   ],
   breakingChanges: [],
-  notes: 'Version 1.8.306 release'
+  notes: 'improve networking request details; guard notification route params'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.307': {
+    version: '1.8.307',
+    buildNumber: 202608021751,
+    releaseDate: '2026-08-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'improve networking request details',
+      'guard notification route params'
+    ],
+    breakingChanges: [],
+    notes: 'improve networking request details; guard notification route params'
+  },
   '1.8.306': {
     version: '1.8.306',
     buildNumber: 202608020536,
