@@ -21,7 +21,7 @@ const {
   resolveTenant,
 } = require('./lib/tenant-config');
 
-const ROOT_DIR = path.resolve(__dirname, '../../../');
+const ROOT_DIR = process.env.HASHPASS_ENV_ROOT || path.resolve(__dirname, '../../../');
 const PROCESS_ENV_OVERRIDE_KEYS = [
   'BETTER_AUTH_SECRET',
   'BETTER_AUTH_SECRET_DEV',
@@ -145,6 +145,20 @@ function mergeBySuffix(rootConfig, environment) {
   });
 
   return targetConfig;
+}
+
+function applyTransactionalInfoOverrides(targetConfig) {
+  const infoKeys = ['HOST', 'PORT', 'USER', 'PASS', 'FROM'];
+  const hasDedicatedProvider = infoKeys.every((key) =>
+    String(targetConfig[`NODEMAILER_${key}_INFO`] || '').trim()
+  );
+  if (!hasDedicatedProvider) return;
+
+  // Keep the legacy names in sync too: deployed versions before the new
+  // provider-aware mailer still read NODEMAILER_* directly.
+  infoKeys.forEach((key) => {
+    targetConfig[`NODEMAILER_${key}`] = targetConfig[`NODEMAILER_${key}_INFO`];
+  });
 }
 
 function stripEnvironmentSuffix(value) {
@@ -456,6 +470,7 @@ if (String(options.envArg).toLowerCase() === 'local') {
 const runtime = resolveTenant(options.tenant, options.environment, options.configPath);
 const rootConfig = loadRootEnv();
 const targetConfig = mergeBySuffix(rootConfig, options.environment);
+applyTransactionalInfoOverrides(targetConfig);
 applyCanonicalTenantOverrides(targetConfig, runtime);
 validateSupabaseAnonKey(targetConfig, runtime);
 validateSupabaseServiceRoleKey(targetConfig, runtime);
@@ -581,20 +596,28 @@ try {
   const environmentPayload = JSON.stringify({ Variables: newVars });
 
   console.log(`📡 Updating ${lambdaName} in AWS ${lambdaRegion}...`);
-  execFileSync(
-    'aws',
-    [
-      'lambda',
-      'update-function-configuration',
-      '--function-name',
-      lambdaName,
-      '--region',
-      lambdaRegion,
-      '--environment',
-      environmentPayload,
-    ],
-    { stdio: 'inherit' }
-  );
+  try {
+    execFileSync(
+      'aws',
+      [
+        'lambda',
+        'update-function-configuration',
+        '--function-name',
+        lambdaName,
+        '--region',
+        lambdaRegion,
+        '--environment',
+        environmentPayload,
+      ],
+      // AWS returns the full environment map on success; never stream it into
+      // CI or agent logs because it contains credentials.
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+  } catch (error) {
+    const stderr = String(error?.stderr || '');
+    const reason = stderr.match(/\(([^)]+Exception)\)/)?.[1] || 'AWS update failed';
+    throw new Error(`Lambda environment update was rejected: ${reason}. Configuration values were redacted.`);
+  }
 
   console.log(`✅ ${options.environment} synced successfully to AWS for tenant ${runtime.tenant}!`);
 } catch (error) {
