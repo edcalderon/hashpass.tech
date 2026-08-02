@@ -164,6 +164,7 @@ export default function SpeakerDetail() {
           linkedin: getSpeakerLinkedInUrl(foundSpeaker.name),
           twitter: getSpeakerTwitterUrl(foundSpeaker.name),
           tags: ['Blockchain', 'FinTech', 'Innovation'],
+          isActive: false,
           availability: {
             monday: { start: '09:00', end: '17:00' },
             tuesday: { start: '09:00', end: '17:00' },
@@ -190,6 +191,7 @@ export default function SpeakerDetail() {
           linkedin: getSpeakerLinkedInUrl(foundSpeaker.name),
           twitter: getSpeakerTwitterUrl(foundSpeaker.name),
           tags: ['Blockchain', 'FinTech', 'Innovation'],
+          isActive: false,
           availability: {
             monday: { start: '09:00', end: '17:00' },
             tuesday: { start: '09:00', end: '17:00' },

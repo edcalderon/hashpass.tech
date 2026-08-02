@@ -243,6 +243,7 @@ describe('speaker detail screen', () => {
     });
 
     expect(renderer.root.findByProps({ children: 'Ada Lovelace' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'speakerView.inactive' })).toBeTruthy();
     expect(() => renderer.root.findByType('LoadingScreen')).toThrow();
     expect(mockShowError).not.toHaveBeenCalled();
 

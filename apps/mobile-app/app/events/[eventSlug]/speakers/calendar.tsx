@@ -132,6 +132,9 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
+          // Event configuration does not contain claim state, so never expose
+          // a fallback record as networking-active.
+          isActive: false,
           // s.image is our own hosted photo (see packages/config/src/events.ts).
           // Only fall back to the legacy Cloudinary/name-guessing lookup for
           // older speakers that were never given a real image field.
@@ -157,6 +160,7 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
+          isActive: false,
           image: resolveSpeakerImage(s.image, s.name)
         }));
 
