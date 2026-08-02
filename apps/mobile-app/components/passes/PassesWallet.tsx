@@ -60,6 +60,70 @@ const PASS_LOAD_ATTEMPT_TIMEOUT_MS = 5_000;
 const PASS_LOAD_ATTEMPTS = 2;
 const RESTORABLE_BSL_EVENT_IDS = ['chile2026', 'colombia2026'] as const;
 
+function PassCardsSkeleton({
+  colors,
+  layout,
+  label,
+}: {
+  colors: any;
+  layout: 'stacked' | 'plain';
+  label: string;
+}) {
+  const pulse = useSharedValue(0.45);
+
+  useEffect(() => {
+    pulse.value = withTiming(0.9, { duration: 700 });
+  }, [pulse]);
+
+  const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  const cardWidth = layout === 'plain' ? PASS_CARD_WIDTH : PASS_CARD_WIDTH - 12;
+
+  return (
+    <View
+      accessibilityLabel="Refreshing passes"
+      style={{ alignItems: 'center', height: PASS_CARD_HEIGHT, justifyContent: 'center', paddingHorizontal: 12 }}
+    >
+      <Animated.View
+        style={[
+          style,
+          {
+            backgroundColor: colors.background.paper,
+            borderColor: colors.divider,
+            borderRadius: 20,
+            borderWidth: 1,
+            height: PASS_CARD_HEIGHT - 18,
+            overflow: 'hidden',
+            width: cardWidth,
+          },
+        ]}
+      >
+        <View style={{ backgroundColor: colors.divider, height: 62, margin: 16, borderRadius: 10 }} />
+        <View style={{ backgroundColor: colors.divider, height: 150, marginHorizontal: 16, borderRadius: 10 }} />
+        <View style={{ flexDirection: 'row', gap: 12, margin: 16 }}>
+          <View style={{ backgroundColor: colors.divider, flex: 1, height: 48, borderRadius: 8 }} />
+          <View style={{ backgroundColor: colors.divider, flex: 1, height: 48, borderRadius: 8 }} />
+        </View>
+        <View
+          style={{
+            alignItems: 'center',
+            bottom: 0,
+            justifyContent: 'center',
+            left: 0,
+            position: 'absolute',
+            right: 0,
+            top: 0,
+          }}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ color: colors.text.primary, fontSize: 13, fontWeight: '700', marginTop: 10 }}>
+            {label}
+          </Text>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
 const PassesWallet: React.FC<PassesWalletProps> = ({
   eventIds,
   refreshTrigger,
@@ -73,6 +137,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
 
   const [passes, setPasses] = useState<PassInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [loadTimedOut, setLoadTimedOut] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
@@ -105,6 +170,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
         // still be in flight right after sign-in). Stay in the loading state
         // rather than flashing "no passes" at someone who has them.
         setPasses([]);
+        setIsRefreshing(false);
         setLoading(true);
         identityTimeout = setTimeout(() => {
           if (!active) return;
@@ -114,7 +180,12 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
         return;
       }
 
-      setLoading(true);
+      // A manual refresh should keep the wallet controls visible and replace
+      // only the current card area with a skeleton. The first load still uses
+      // the complete wallet skeleton because there is no pass area yet.
+      const hasVisiblePasses = passes.length > 0;
+      setLoading(!hasVisiblePasses);
+      setIsRefreshing(hasVisiblePasses);
       try {
         const scopedIds = eventIdsKey ? eventIdsKey.split(',').filter(Boolean) : undefined;
         let lastError: unknown;
@@ -157,7 +228,10 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           }
         }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setIsRefreshing(false);
+        }
       }
     };
 
@@ -186,9 +260,9 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     setHasFilterResult(false);
     setLoadError(false);
     setLoadTimedOut(false);
-    setLoading(true);
+    if (passes.length > 0) setIsRefreshing(true);
     setRetryNonce((current) => current + 1);
-  }, []);
+  }, [passes.length]);
 
   const handleRestoreIncludedPasses = useCallback(async (): Promise<boolean> => {
     if (!dbUserId || restoringIncludedPasses) return false;
@@ -310,7 +384,11 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const cardWidth = Math.min(PASS_CARD_WIDTH, windowWidth - 48 - stackDepth * STACK_OFFSET_X);
   const deckWidth = cardWidth + stackDepth * STACK_OFFSET_X;
   const canRestoreIncludedBslPasses = layout === 'plain' && Boolean(dbUserId);
-  const canClaimPass = Boolean(dbUserId);
+  // Keep the recovery action visible even while the Better Auth -> Supabase
+  // bridge is restoring. It gives the attendee an explicit next step instead
+  // of silently hiding the claim flow; the dialog explains if the account is
+  // still connecting and becomes usable as soon as dbUserId arrives.
+  const canClaimPass = true;
 
   if (loading) {
     return (
@@ -427,7 +505,9 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Have a pass? Claim it here"
             onPress={() => {
-              setClaimError(null);
+              setClaimError(
+                dbUserId ? null : 'Your account is still connecting. Please try again in a moment.',
+              );
               setClaimModalVisible(true);
             }}
             style={{ marginTop: 12, paddingVertical: 4 }}
@@ -464,9 +544,9 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Redeem pass code"
-                disabled={claimingPass}
+                disabled={claimingPass || !dbUserId}
                 onPress={handleClaimPassCode}
-                style={{ alignItems: 'center', backgroundColor: colors.primary, borderRadius: 10, opacity: claimingPass ? 0.65 : 1, paddingVertical: 11 }}
+                style={{ alignItems: 'center', backgroundColor: colors.primary, borderRadius: 10, opacity: claimingPass || !dbUserId ? 0.65 : 1, paddingVertical: 11 }}
               >
                 <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>
                   {claimingPass ? 'Redeeming…' : 'Redeem code'}
@@ -508,17 +588,41 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   // continues to use the stacked 3D wallet below.
   if (layout === 'plain') {
     return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingRight: 20 }}
-      >
-        {walletPasses.map((pass) => (
-          <View key={pass.id} style={{ width: cardWidth, marginRight: 16 }}>
-            <PassWalletCard pass={pass} />
-          </View>
-        ))}
-      </ScrollView>
+      <View>
+        <View style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('wallet.reload', 'Reload passes')}
+            disabled={isRefreshing}
+            onPress={handleRetry}
+            style={{ alignItems: 'center', flexDirection: 'row', gap: 6, opacity: isRefreshing ? 0.7 : 1, paddingHorizontal: 8, paddingVertical: 5 }}
+          >
+            {isRefreshing ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <MaterialIcons name="refresh" size={18} color={colors.primary} />
+            )}
+            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+              {isRefreshing ? t('wallet.refreshing', 'Refreshing passes…') : t('wallet.reload', 'Reload passes')}
+            </Text>
+          </Pressable>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingRight: 20 }}
+        >
+          {isRefreshing ? (
+            <PassCardsSkeleton colors={colors} layout="plain" label={t('wallet.refreshing', 'Refreshing passes…')} />
+          ) : (
+            walletPasses.map((pass) => (
+              <View key={pass.id} style={{ width: cardWidth, marginRight: 16 }}>
+                <PassWalletCard pass={pass} />
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </View>
     );
   }
 
@@ -526,14 +630,25 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     <View>
       {/* Summary strip */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-        <WalletStat colors={colors} value={counts.total} label={t('wallet.stat.total', 'Passes')} />
+        <WalletStat
+          colors={colors}
+          value={counts.total}
+          label={t('wallet.stat.total', 'Passes')}
+          isRefreshing={isRefreshing}
+        />
         <WalletStat
           colors={colors}
           value={counts.live + counts.upcoming}
           label={t('wallet.stat.active', 'Upcoming')}
           accent="#34A853"
+          isRefreshing={isRefreshing}
         />
-        <WalletStat colors={colors} value={counts.past} label={t('wallet.stat.past', 'Past')} />
+        <WalletStat
+          colors={colors}
+          value={counts.past}
+          label={t('wallet.stat.past', 'Past')}
+          isRefreshing={isRefreshing}
+        />
       </View>
 
       {/* Search + filters. Same bar the agenda, notifications and my-requests
@@ -550,7 +665,28 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
         />
       </View>
 
-      {deck.length === 0 ? (
+      <View style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('wallet.reload', 'Reload passes')}
+          disabled={isRefreshing}
+          onPress={handleRetry}
+          style={{ alignItems: 'center', flexDirection: 'row', gap: 6, opacity: isRefreshing ? 0.7 : 1, paddingHorizontal: 8, paddingVertical: 5 }}
+        >
+          {isRefreshing ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <MaterialIcons name="refresh" size={18} color={colors.primary} />
+          )}
+          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+            {isRefreshing ? t('wallet.refreshing', 'Refreshing passes…') : t('wallet.reload', 'Reload passes')}
+          </Text>
+        </Pressable>
+      </View>
+
+      {isRefreshing ? (
+        <PassCardsSkeleton colors={colors} layout="stacked" label={t('wallet.refreshing', 'Refreshing passes…')} />
+      ) : deck.length === 0 ? (
         <View style={{ paddingVertical: 34, alignItems: 'center' }}>
           <MaterialIcons name="search-off" size={32} color={colors.text.disabled} />
           <Text style={{ fontSize: 13, color: colors.text.secondary, marginTop: 10 }}>
@@ -688,7 +824,8 @@ const WalletStat: React.FC<{
   value: number;
   label: string;
   accent?: string;
-}> = ({ colors, value, label, accent }) => (
+  isRefreshing?: boolean;
+}> = ({ colors, value, label, accent, isRefreshing = false }) => (
   <View
     style={{
       flex: 1,
@@ -700,7 +837,16 @@ const WalletStat: React.FC<{
       borderColor: colors.divider,
     }}
   >
-    <Text style={{ fontSize: 18, fontWeight: '800', color: accent || colors.text.primary }}>{value}</Text>
+    {isRefreshing ? (
+      <ActivityIndicator
+        accessibilityLabel="Refreshing pass summary"
+        color={accent || colors.primary}
+        size="small"
+        style={{ alignSelf: 'flex-start', height: 22 }}
+      />
+    ) : (
+      <Text style={{ fontSize: 18, fontWeight: '800', color: accent || colors.text.primary }}>{value}</Text>
+    )}
     <Text style={{ fontSize: 10, color: colors.text.secondary, marginTop: 1 }} numberOfLines={1}>
       {label}
     </Text>

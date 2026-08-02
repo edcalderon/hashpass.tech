@@ -2612,14 +2612,17 @@ describe('useAuth native Google sign-in', () => {
     expect(mockSupabase.auth.verifyOtp).not.toHaveBeenCalled();
   });
 
-  it('recovers a missing Supabase bridge when a native Better Auth session is restored', async () => {
+  it.each(['android', 'web'])('retries an empty Supabase bridge when a Better Auth session is restored on %s', async (platform) => {
     setEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'google-web-client-id');
     setEnv('EXPO_PUBLIC_NATIVE_GOOGLE_SIGNIN', 'true');
 
-    const mockFetchSupabaseBridgeSession = jest.fn(async () => ({
-      access_token: 'bridge-access-token',
-      refresh_token: 'bridge-refresh-token',
-    }));
+    const mockFetchSupabaseBridgeSession = jest
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        access_token: 'bridge-access-token',
+        refresh_token: 'bridge-refresh-token',
+      });
     const restoredBetterAuthSession = {
       user: { id: 'better-auth-user', email: 'user@example.com' },
       access_token: 'better-auth-session',
@@ -2639,12 +2642,18 @@ describe('useAuth native Google sign-in', () => {
     mockSupabase.auth.getSession
       .mockReset()
       .mockResolvedValueOnce({ data: { session: null } })
+      .mockResolvedValueOnce({ data: { session: null } })
+      .mockResolvedValueOnce({ data: { session: null } })
       .mockResolvedValueOnce({ data: { session: restoredSupabaseSession } } as any);
     mockSupabase.auth.setSession.mockReset().mockResolvedValue({ data: { session: null }, error: null });
 
     let testAct: any = null;
+    const mountedHarness: {
+      remount?: () => void;
+      renderer?: { unmount: () => void };
+    } = {};
     jest.isolateModules(() => {
-      jest.doMock('react-native', () => ({ Platform: { OS: 'android' } }));
+      jest.doMock('react-native', () => ({ Platform: { OS: platform } }));
       jest.doMock('@hashpass/auth', () => ({
         authService: mockAuthService,
         BetterAuthProvider: mockRestoredBetterAuthProvider,
@@ -2682,18 +2691,32 @@ describe('useAuth native Google sign-in', () => {
         useAuth();
         return null;
       };
-      TestRenderer.act(() => {
-        TestRenderer.create(React.createElement(Harness));
-      });
+      mountedHarness.remount = () => {
+        TestRenderer.act(() => {
+          mountedHarness.renderer = TestRenderer.create(React.createElement(Harness));
+        });
+      };
+      mountedHarness.remount();
     });
 
     await waitForAuthSessionSettle(testAct);
 
     expect(mockFetchSupabaseBridgeSession).toHaveBeenCalledTimes(1);
+    expect(mockSupabase.auth.setSession).not.toHaveBeenCalled();
+    expect(mockSupabase.auth.getSession).toHaveBeenCalledTimes(2);
+
+    await testAct(async () => {
+      mountedHarness.renderer?.unmount();
+      await Promise.resolve();
+    });
+    mountedHarness.remount?.();
+    await waitForAuthSessionSettle(testAct);
+
+    expect(mockFetchSupabaseBridgeSession).toHaveBeenCalledTimes(2);
     expect(mockSupabase.auth.setSession).toHaveBeenCalledWith({
       access_token: 'bridge-access-token',
       refresh_token: 'bridge-refresh-token',
     });
-    expect(mockSupabase.auth.getSession).toHaveBeenCalledTimes(2);
+    expect(mockSupabase.auth.getSession).toHaveBeenCalledTimes(4);
   });
 });

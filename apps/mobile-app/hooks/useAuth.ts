@@ -421,12 +421,13 @@ const getSharedAuthActor = () => {
 // broadcast since it isn't part of the actor's own state.
 let supabaseAuthSubscribed = false;
 let supabaseBootstrapPromise: ReturnType<typeof supabase.auth.getSession> | null = null;
-// A native Better-Auth session can survive an app restart without the
-// companion Supabase session (for example, if the bridge request was
-// interrupted while the app was backgrounded). Keep the recovery request
-// shared across all mounted auth consumers so they do not contend for
-// GoTrueClient's navigator lock.
-let nativeBetterAuthSupabaseBootstrapPromise:
+// A Better-Auth session can outlive its companion Supabase session (for
+// example after a browser refresh or an interrupted native bridge). Keep an
+// in-flight recovery request shared across all mounted auth consumers so they
+// do not contend for GoTrueClient's navigator lock. A recovery that produces
+// no Supabase session must be evicted, however: network failures are converted
+// to an empty bridge result and should be retried by a later useAuth mount.
+let betterAuthSupabaseBootstrapPromise:
   Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>> | null = null;
 // dbUserId is a module-level store rather than per-instance state, read
 // through useSyncExternalStore below. That's React's purpose-built API for
@@ -836,26 +837,43 @@ export const useAuth = () => {
             // force-marking it logged-out: an OTP/magic-link user holds a real
             // Supabase session alongside Better Auth, and it must keep backing
             // isLoggedIn when a flaky native Better Auth getSession drops out.
-            // Native Better-Auth sessions also need a bridge recovery after an
-            // app restart: the Better Auth cookie can persist while the
-            // Supabase refresh token is missing. In that case fetch the bridge
-            // session and read Supabase again before publishing dbUserId.
+            // Better-Auth sessions on both web and native need bridge recovery:
+            // a valid Better Auth cookie can persist while the companion
+            // Supabase refresh token is absent. Without retrying the bridge on
+            // web, signed-in BSL users have no dbUserId, so their pass reads
+            // time out and their pass-claim action is hidden.
             const betterAuthSupabaseBootstrap =
-              Platform.OS !== 'web'
-                ? (nativeBetterAuthSupabaseBootstrapPromise ??=
-                    (async () => {
-                      let result = await supabase.auth.getSession();
-                      if (!result.data?.session) {
-                        await withTimeout(
-                          ensureSupabaseBridgeSession(betterAuthProvider),
-                          SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS,
-                          'supabaseBridgeBootstrap',
-                        );
-                        result = await supabase.auth.getSession();
-                      }
-                      return result;
-                    })())
-                : (supabaseBootstrapPromise ?? (supabaseBootstrapPromise = supabase.auth.getSession()));
+              betterAuthSupabaseBootstrapPromise ??
+              (async () => {
+                let result = await supabase.auth.getSession();
+                if (!result.data?.session) {
+                  await withTimeout(
+                    ensureSupabaseBridgeSession(betterAuthProvider),
+                    SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS,
+                    'supabaseBridgeBootstrap',
+                  );
+                  result = await supabase.auth.getSession();
+                }
+                return result;
+              })();
+            betterAuthSupabaseBootstrapPromise = betterAuthSupabaseBootstrap;
+
+            // Do not cache an unsuccessful bridge bootstrap. The bridge is
+            // intentionally best-effort and normalizes transient failures to
+            // an empty session, so retaining that resolved promise would make
+            // every later useAuth mount replay "no dbUserId" forever.
+            void betterAuthSupabaseBootstrap.then(
+              ({ data }: any) => {
+                if (!data?.session && betterAuthSupabaseBootstrapPromise === betterAuthSupabaseBootstrap) {
+                  betterAuthSupabaseBootstrapPromise = null;
+                }
+              },
+              () => {
+                if (betterAuthSupabaseBootstrapPromise === betterAuthSupabaseBootstrap) {
+                  betterAuthSupabaseBootstrapPromise = null;
+                }
+              },
+            );
 
             betterAuthSupabaseBootstrap
               .then(({ data }: any) => {
@@ -950,7 +968,7 @@ export const useAuth = () => {
     // dashboard. Resetting it to an already-resolved "no session" value here
     // closes that race the same way the other two bootstrap caches are closed.
     supabaseBootstrapPromise = Promise.resolve({ data: { session: null }, error: null } as any);
-    nativeBetterAuthSupabaseBootstrapPromise = null;
+    betterAuthSupabaseBootstrapPromise = null;
     sendAuthEvent({ type: 'SIGNED_OUT' });
     // Clear synchronously alongside the SIGNED_OUT event, not left to wait on
     // supabase.auth.signOut() below (best-effort, individually timed-out) —

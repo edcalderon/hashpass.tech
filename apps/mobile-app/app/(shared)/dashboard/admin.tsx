@@ -15,7 +15,7 @@ import { resolveActiveEventId } from '../../../lib/event-path';
 import { apiClient } from '../../../lib/api-client';
 import { highestEventRole, EventRole, EventRoleGrant } from '../../../lib/event-admin-access';
 
-type TabType = 'passes' | 'qr-scanner' | 'meetings' | 'roles';
+type TabType = 'passes' | 'pass-codes' | 'qr-scanner' | 'meetings' | 'roles';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -32,6 +32,18 @@ interface Pass {
   used_boost_amount: number;
   created_at: string;
   updated_at: string;
+}
+
+interface PassClaimCode {
+  id: string;
+  event_id: string;
+  label: string;
+  pass_type: PassType;
+  max_claims: number | null;
+  claimed_count: number;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
 }
 
 interface User {
@@ -102,6 +114,16 @@ export default function AdminPanel() {
   const [newPassUserId, setNewPassUserId] = useState('');
   const [newPassType, setNewPassType] = useState<PassType>('general');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Pass-code campaigns are event scoped. Raw values are only held long
+  // enough to create/display a code and are never returned by the list API.
+  const [passClaimCodes, setPassClaimCodes] = useState<PassClaimCode[]>([]);
+  const [passCodesLoading, setPassCodesLoading] = useState(false);
+  const [showCreatePassCodeModal, setShowCreatePassCodeModal] = useState(false);
+  const [newPassCode, setNewPassCode] = useState('');
+  const [newPassCodeLabel, setNewPassCodeLabel] = useState('');
+  const [newPassCodeType, setNewPassCodeType] = useState<PassType>('general');
+  const [newPassCodeLimit, setNewPassCodeLimit] = useState('');
   
   // Meeting Matcher State
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
@@ -128,13 +150,11 @@ export default function AdminPanel() {
   useEffect(() => {
     // Don't check admin access while auth is still loading
     if (authLoading) {
-      console.log('Auth still loading, waiting...');
       return;
     }
 
     // If auth finished loading and no user, redirect
     if (!user) {
-      console.log('No user found after auth load, redirecting...');
       router.replace('/(shared)/dashboard/explore');
       return;
     }
@@ -159,18 +179,15 @@ export default function AdminPanel() {
 
   const checkAdminAccess = async () => {
     if (!user) {
-      console.log('checkAdminAccess: No user, redirecting...');
       router.replace('/(shared)/dashboard/explore');
       return;
     }
 
-    console.log('Checking admin access for user:', user.id);
     setLoading(true);
 
     try {
       const access = await getCurrentAdminAccess();
       const globalAdmin = Boolean(access.globalRole);
-      console.log('Global admin check result:', globalAdmin);
 
       if (globalAdmin) {
         setIsGlobalAdmin(true);
@@ -183,13 +200,11 @@ export default function AdminPanel() {
       // Not a global admin — fall back to per-event event_admin/moderator grants.
       const eventRoles = access.eventRoles;
       if (eventRoles.length === 0) {
-        console.log('User has no global or event-scoped admin role, redirecting...');
         Alert.alert('Access Denied', 'You do not have admin privileges.');
         router.replace('/(shared)/dashboard/explore');
         return;
       }
 
-      console.log('User has event-scoped admin access for', eventRoles.map((g: EventRoleGrant) => g.eventId));
       setAccessibleEvents(eventRoles);
       setIsUserAdmin(true);
       setAdminRole(null);
@@ -219,6 +234,8 @@ export default function AdminPanel() {
     if (activeTab === 'passes') {
       await loadPasses();
       await loadUsers();
+    } else if (activeTab === 'pass-codes') {
+      await loadPassClaimCodes();
     } else if (activeTab === 'meetings') {
       await loadMeetingRequests();
       await loadSpeakers();
@@ -362,6 +379,90 @@ export default function AdminPanel() {
     }
   };
 
+  const loadPassClaimCodes = async () => {
+    setPassCodesLoading(true);
+    try {
+      const result = await apiClient.get(
+        `/admin/pass-codes?eventId=${encodeURIComponent(selectedEventId)}`,
+        { skipEventSegment: true },
+      );
+      if (!result.success) throw new Error(result.error);
+      setPassClaimCodes(((result.data as { data?: PassClaimCode[] })?.data) || []);
+    } catch (error: any) {
+      const message = error?.message || 'Unable to load pass codes.';
+      Alert.alert(
+        message.includes('Pass-code storage is not installed') ? 'Pass-code setup pending' : 'Error',
+        message,
+      );
+    } finally {
+      setPassCodesLoading(false);
+    }
+  };
+
+  const handleCreatePassCode = async () => {
+    const label = newPassCodeLabel.trim();
+    const rawCode = newPassCode.trim();
+    const limitText = newPassCodeLimit.trim();
+    const maxClaims = limitText ? Number(limitText) : null;
+    if (!label) {
+      Alert.alert('Error', 'Please give this code a label for your team.');
+      return;
+    }
+    if (limitText && (typeof maxClaims !== 'number' || !Number.isInteger(maxClaims) || maxClaims < 1)) {
+      Alert.alert('Error', 'Use a positive whole-number claim limit, or leave it blank for unlimited use.');
+      return;
+    }
+
+    try {
+      setPassCodesLoading(true);
+      const result = await apiClient.post('/admin/pass-codes', {
+        action: 'create',
+        eventId: selectedEventId,
+        code: rawCode || undefined,
+        label,
+        passType: newPassCodeType,
+        maxClaims,
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
+
+      const createdCode = (result.data as { code?: string })?.code;
+      setShowCreatePassCodeModal(false);
+      setNewPassCode('');
+      setNewPassCodeLabel('');
+      setNewPassCodeType('general');
+      setNewPassCodeLimit('');
+      await loadPassClaimCodes();
+      Alert.alert(
+        'Pass code created',
+        `Share this code now: ${createdCode || rawCode.toUpperCase()}\n\nFor security, its raw value is not stored and will not be shown again.`,
+      );
+    } catch (error: any) {
+      console.error('Error creating pass code:', error);
+      Alert.alert('Error', 'Failed to create pass code: ' + error.message);
+    } finally {
+      setPassCodesLoading(false);
+    }
+  };
+
+  const handlePassCodeStatus = async (code: PassClaimCode) => {
+    const action = code.is_active ? 'deactivate' : 'reactivate';
+    try {
+      setPassCodesLoading(true);
+      const result = await apiClient.post('/admin/pass-codes', {
+        action,
+        eventId: selectedEventId,
+        codeId: code.id,
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
+      await loadPassClaimCodes();
+    } catch (error: any) {
+      console.error('Error updating pass code:', error);
+      Alert.alert('Error', 'Failed to update pass code: ' + error.message);
+    } finally {
+      setPassCodesLoading(false);
+    }
+  };
+
   const loadUsers = async () => {
     try {
       // Get unique user IDs from passes
@@ -477,10 +578,9 @@ export default function AdminPanel() {
     }
   };
 
-  const handleQRScanSuccess = (result: QRScanResult) => {
+  const handleQRScanSuccess = (_result: QRScanResult) => {
     // Don't close scanner - keep it open to show details
     // The scanner component will handle showing the details
-    console.log('QR Scan Success:', result);
   };
 
   const handleCreateMatch = async () => {
@@ -639,6 +739,15 @@ export default function AdminPanel() {
             <Text style={[styles.tabText, activeTab === 'passes' && styles.tabTextActive]}>Passes</Text>
           </TouchableOpacity>
         )}
+        {canManagePasses && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'pass-codes' && styles.tabActive]}
+            onPress={() => setActiveTab('pass-codes')}
+          >
+            <MaterialIcons name="confirmation-number" size={20} color={activeTab === 'pass-codes' ? '#007AFF' : colors.text.secondary} />
+            <Text style={[styles.tabText, activeTab === 'pass-codes' && styles.tabTextActive]}>Pass Codes</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.tab, activeTab === 'qr-scanner' && styles.tabActive]}
           onPress={() => setActiveTab('qr-scanner')}
@@ -678,6 +787,18 @@ export default function AdminPanel() {
             onCreatePass={() => setShowCreatePassModal(true)}
             onUpdateStatus={handleUpdatePassStatus}
             onRefresh={loadPasses}
+          />
+        )}
+
+        {activeTab === 'pass-codes' && (
+          <PassCodeManagementTab
+            styles={styles}
+            colors={colors}
+            codes={passClaimCodes}
+            loading={passCodesLoading}
+            onCreate={() => setShowCreatePassCodeModal(true)}
+            onUpdateStatus={handlePassCodeStatus}
+            onRefresh={loadPassClaimCodes}
           />
         )}
 
@@ -781,6 +902,88 @@ export default function AdminPanel() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Create</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Create Pass Code Modal */}
+      <Modal
+        visible={showCreatePassCodeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCreatePassCodeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create Pass Code for {selectedEventId}</Text>
+
+            <Text style={styles.modalLabel}>Internal label</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newPassCodeLabel}
+              onChangeText={setNewPassCodeLabel}
+              placeholder="e.g. Sponsor VIP giveaway"
+              placeholderTextColor={colors.text.secondary}
+            />
+
+            <Text style={styles.modalLabel}>Code (optional)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newPassCode}
+              onChangeText={setNewPassCode}
+              placeholder="Leave blank to generate a secure code"
+              placeholderTextColor={colors.text.secondary}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+
+            <Text style={styles.modalLabel}>Pass type</Text>
+            <View style={styles.passTypeButtons}>
+              {(['general', 'business', 'vip'] as PassType[]).map(type => (
+                <TouchableOpacity
+                  key={type}
+                  style={[styles.passTypeButton, newPassCodeType === type && styles.passTypeButtonActive]}
+                  onPress={() => setNewPassCodeType(type)}
+                >
+                  <Text style={[styles.passTypeButtonText, newPassCodeType === type && styles.passTypeButtonTextActive]}>
+                    {type.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.modalLabel}>Claim limit</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newPassCodeLimit}
+              onChangeText={setNewPassCodeLimit}
+              placeholder="1 for one-time; blank for unlimited"
+              placeholderTextColor={colors.text.secondary}
+              keyboardType="number-pad"
+            />
+            <Text style={[styles.modalLabel, { fontSize: 12, marginTop: 4 }]}>
+              A code can only grant one pass to each account. The raw code is shown once after creation and is never stored.
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowCreatePassCodeModal(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleCreatePassCode}
+                disabled={passCodesLoading}
+              >
+                {passCodesLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Create code</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1015,6 +1218,65 @@ function PassManagementTab({
           ))}
           {passes.length === 0 && (
             <Text style={styles.emptyText}>No passes found</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function PassCodeManagementTab({
+  styles,
+  colors,
+  codes,
+  loading,
+  onCreate,
+  onUpdateStatus,
+  onRefresh,
+}: any) {
+  return (
+    <View style={styles.tabContent}>
+      <Text style={[styles.passInfo, { marginBottom: 12 }]}>Manage reusable promotions and one-time courtesy upgrades for this event.</Text>
+      <TouchableOpacity style={styles.createButton} onPress={onCreate}>
+        <MaterialIcons name="add" size={24} color="#fff" />
+        <Text style={styles.createButtonText}>Create Pass Code</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.actionButton, { alignSelf: 'flex-end', marginBottom: 10 }]} onPress={onRefresh}>
+        <MaterialIcons name="refresh" size={16} color="#fff" />
+        <Text style={styles.actionButtonText}>Refresh</Text>
+      </TouchableOpacity>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+      ) : (
+        <View style={styles.list}>
+          {codes.map((code: PassClaimCode) => {
+            const limit = code.max_claims === null ? 'Unlimited' : `${code.claimed_count} / ${code.max_claims}`;
+            const expires = code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'Never';
+            return (
+              <View key={code.id} style={styles.passCard}>
+                <View style={styles.passCardHeader}>
+                  <Text style={styles.passNumber}>{code.label}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: code.is_active ? '#16A34A' : '#6B7280' }]}>
+                    <Text style={styles.statusBadgeText}>{code.is_active ? 'ACTIVE' : 'INACTIVE'}</Text>
+                  </View>
+                </View>
+                <Text style={styles.passInfo}>Pass: {code.pass_type.toUpperCase()}</Text>
+                <Text style={styles.passInfo}>Claims: {limit}</Text>
+                <Text style={styles.passInfo}>Expires: {expires}</Text>
+                <View style={styles.passActions}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, !code.is_active && styles.actionButtonSuccess]}
+                    onPress={() => onUpdateStatus(code)}
+                  >
+                    <Text style={styles.actionButtonText}>{code.is_active ? 'Deactivate' : 'Reactivate'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+          {codes.length === 0 && (
+            <Text style={styles.emptyText}>No pass codes for this event yet</Text>
           )}
         </View>
       )}

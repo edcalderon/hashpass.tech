@@ -9,6 +9,7 @@ import EventBanner from '../../../../components/EventBanner';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import SpeakerSearchAndSort from '../../../../components/SpeakerSearchAndSort';
 import { sortSpeakersByPriority } from '../../../../lib/speaker-priority';
+import { isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
 import { getSpeakerAvatarUrl, resolveConfiguredSpeakerImage, resolveSpeakerImage } from '../../../../lib/string-utils';
 import LoadingScreen from '../../../../components/LoadingScreen';
 
@@ -21,7 +22,7 @@ interface Speaker {
   bio?: string;
   image?: string;
   user_id?: string;
-  isActive?: boolean; // Has user_id = active speaker
+  isActive?: boolean; // Claimed account with an active speaker profile
 }
 
 // Shape of event?.speakers entries (from packages/config/src/events.ts's
@@ -37,10 +38,58 @@ interface EventSpeakerConfig {
   image?: string;
 }
 
+function SpeakerCard({
+  speaker,
+  eventId,
+  styles,
+}: {
+  speaker: Speaker;
+  eventId: string;
+  styles: ReturnType<typeof getStyles>;
+}) {
+  const router = useRouter();
+  const isInteractive = Boolean(speaker.isActive);
+
+  return (
+    <TouchableOpacity
+      style={[styles.speakerCard, !isInteractive && styles.inactiveSpeakerCard]}
+      disabled={!isInteractive}
+      accessibilityState={{ disabled: !isInteractive }}
+      onPress={isInteractive ? () => router.push(`/events/${eventId}/speakers/${speaker.id}`) : undefined}
+    >
+      <View style={styles.speakerImageContainer}>
+        <SpeakerAvatar
+          imageUrl={speaker.image}
+          name={speaker.name}
+          size={50}
+          showBorder={false}
+        />
+        {speaker.isActive && (
+          <View style={styles.activeBadge}>
+            <View style={styles.activeIndicator} />
+          </View>
+        )}
+      </View>
+      <View style={styles.speakerInfo}>
+        <View style={styles.speakerNameRow}>
+          <Text style={styles.speakerName}>{speaker.name}</Text>
+          <View style={[styles.statusLabel, speaker.isActive ? styles.activeLabel : styles.inactiveLabel]}>
+            <Text style={[styles.statusLabelText, speaker.isActive ? styles.activeLabelText : styles.inactiveLabelText]}>
+              {speaker.isActive ? 'Active' : 'Inactive'}
+            </Text>
+          </View>
+        </View>
+        {speaker.title && <Text style={styles.speakerTitle}>{speaker.title}</Text>}
+        {speaker.company && <Text style={styles.speakerCompany}>{speaker.company}</Text>}
+      </View>
+      {isInteractive && <MaterialIcons name="chevron-right" size={20} color="#666" />}
+    </TouchableOpacity>
+  );
+}
+
 export default function SpeakersCalendar() {
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
-  const router = useRouter();
   const styles = getStyles(isDark, colors);
   const eventId = event?.id || 'bsl';
   const eventDateLabel = event?.eventDateString || event?.subtitle || '2026 Tour';
@@ -89,9 +138,10 @@ export default function SpeakersCalendar() {
           .from('bsl_speakers')
           .select('*');
 
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 5000)
-        );
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Database timeout')), 5000);
+        });
 
         try {
           const { data: dbSpeakers, error: dbError } = await Promise.race([dbPromise, timeoutPromise]) as any;
@@ -105,7 +155,7 @@ export default function SpeakersCalendar() {
               bio: s.bio || (s.title ? `Experienced professional in ${s.title}.` : undefined),
               image: s.imageurl || getSpeakerAvatarUrl(s.name),
               user_id: s.user_id || undefined,
-              isActive: !!s.user_id // Active if has user_id
+              isActive: isClaimedActiveSpeaker(s)
             }));
             
             // Remove duplicates based on ID
@@ -121,6 +171,8 @@ export default function SpeakersCalendar() {
           }
         } catch (dbError: any) {
           // Fall back to the event configuration when the database is unavailable.
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId);
         }
 
         // Fallback to event config (JSON)
@@ -131,6 +183,9 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
+          // Event configuration does not contain claim state, so never expose
+          // a fallback record as networking-active.
+          isActive: false,
           // s.image is our own hosted photo (see packages/config/src/events.ts).
           // Only fall back to the legacy Cloudinary/name-guessing lookup for
           // older speakers that were never given a real image field.
@@ -156,6 +211,7 @@ export default function SpeakersCalendar() {
           title: s.title || null,
           company: s.company || null,
           bio: (s.title && s.company) ? `Experienced professional in ${s.title} at ${s.company}.` : undefined,
+          isActive: false,
           image: resolveSpeakerImage(s.image, s.name)
         }));
 
@@ -174,48 +230,11 @@ export default function SpeakersCalendar() {
     loadSpeakers();
   }, [event?.id]); // Re-run once `event` resolves (or the route's event changes)
 
-  // Update filtered speakers when speakers change
+  // Keep every profile visible by default. SpeakerSearchAndSort always orders
+  // active, claimed profiles first and can optionally hide inactive profiles.
   useEffect(() => {
-    setFilteredSpeakers(speakers);
-  }, [speakers]);
-
-  // SpeakerCard component
-  const SpeakerCard = ({ speaker }: { speaker: Speaker }) => {
-    return (
-      <TouchableOpacity 
-        style={styles.speakerCard}
-        onPress={() => router.push(`/events/${eventId}/speakers/${speaker.id}`)}
-      >
-        <View style={styles.speakerImageContainer}>
-          <SpeakerAvatar
-            imageUrl={speaker.image}
-            name={speaker.name}
-            size={50}
-            showBorder={false}
-          />
-          {/* Active speaker badge */}
-          {speaker.isActive && (
-            <View style={styles.activeBadge}>
-              <View style={styles.activeIndicator} />
-            </View>
-          )}
-        </View>
-        <View style={styles.speakerInfo}>
-          <View style={styles.speakerNameRow}>
-            <Text style={styles.speakerName}>{speaker.name}</Text>
-            {speaker.isActive && (
-              <View style={styles.activeLabel}>
-                <Text style={styles.activeLabelText}>Active</Text>
-              </View>
-            )}
-          </View>
-          {speaker.title && <Text style={styles.speakerTitle}>{speaker.title}</Text>}
-          {speaker.company && <Text style={styles.speakerCompany}>{speaker.company}</Text>}
-        </View>
-        <MaterialIcons name="chevron-right" size={20} color="#666" />
-      </TouchableOpacity>
-    );
-  };
+    setFilteredSpeakers(showActiveOnly ? speakers.filter((speaker) => speaker.isActive) : speakers);
+  }, [speakers, showActiveOnly]);
 
   if (loading) {
     return (
@@ -255,9 +274,7 @@ export default function SpeakersCalendar() {
             onGroupedSpeakers={setGroupedSpeakers}
             onSearchChange={setSearchQuery}
             onSortChange={setSortBy}
-            onActiveFilterChange={(showActiveOnly: boolean) => {
-              setShowActiveOnly(showActiveOnly);
-            }}
+            onActiveFilterChange={setShowActiveOnly}
           />
         )}
 
@@ -267,13 +284,13 @@ export default function SpeakersCalendar() {
             <Text style={styles.sectionTitle}>
               {searchQuery 
                 ? `Search Results (${filteredSpeakers.length})`
-                : showActiveOnly 
+                : showActiveOnly
                   ? `Active Speakers (${filteredSpeakers.length})`
                   : `All Speakers (${speakers.length})`}
             </Text>
             <View style={styles.speakersList}>
               {filteredSpeakers.map(speaker => (
-                <SpeakerCard key={speaker.id} speaker={speaker} />
+                <SpeakerCard key={speaker.id} speaker={speaker} eventId={eventId} styles={styles} />
               ))}
             </View>
           </View>
@@ -332,6 +349,9 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
   },
+  inactiveSpeakerCard: {
+    opacity: 0.48,
+  },
   speakerImageContainer: {
     marginRight: 16,
     shadowColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.15)',
@@ -377,17 +397,27 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     letterSpacing: 0.2,
     flex: 1,
   },
-  activeLabel: {
-    backgroundColor: '#34A853',
+  statusLabel: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
   },
-  activeLabelText: {
+  activeLabel: {
+    backgroundColor: '#34A853',
+  },
+  inactiveLabel: {
+    backgroundColor: '#6B7280',
+  },
+  statusLabelText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FFFFFF',
     letterSpacing: 0.3,
+  },
+  activeLabelText: {
+    color: '#FFFFFF',
+  },
+  inactiveLabelText: {
+    color: '#FFFFFF',
   },
   speakerTitle: {
     fontSize: 14,

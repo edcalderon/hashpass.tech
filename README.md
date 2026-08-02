@@ -20,14 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.301)
+## 📋 Latest Changes (v1.8.302)
 
-### Bug Fixes
-
-* retry worker bootstrap over ipv4 ([388cd26](https://github.com/hashpass-tech/hashpass.tech/commit/388cd261dc025b8eb1630ae0732eb08afc842637))
-* use canonical identities for meetings ([fc7ce6e](https://github.com/hashpass-tech/hashpass.tech/commit/fc7ce6e09b8edfe09f1cf4d8b4ee00c8cdee20af))
-### Release Highlights
-- retry worker bootstrap over ipv4; use canonical identities for meetings; isolate and harden pipeline workers
+### Released
+- recover web pass sessions
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

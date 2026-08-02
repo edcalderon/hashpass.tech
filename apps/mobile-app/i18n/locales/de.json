@@ -445,6 +445,7 @@
     "selectEvent": "Event auswählen",
     "yourPasses": "Ihre Pässe",
     "quickAccess": "Schnellzugriff",
+    "quickAccess.forEvent": "Für",
     "quick": {
       "speakers": {
         "title": "Redner",
@@ -578,7 +579,9 @@
         "active": "Bevorstehend",
         "past": "Vergangen"
       },
-      "stackHint": "Tippe auf eine Karte dahinter, um sie nach vorne zu holen"
+      "stackHint": "Tippe auf eine Karte dahinter, um sie nach vorne zu holen",
+      "reload": "Pässe neu laden",
+      "refreshing": "Pässe werden aktualisiert…"
     }
   },
   "networking": {

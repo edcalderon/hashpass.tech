@@ -172,6 +172,56 @@ describe('PassesWallet', () => {
     expect(renderer.root.findAllByProps({ name: 'chevron-right' })).toHaveLength(0);
   });
 
+  it('reloads already-loaded passes from both BSL and HashPass wallet layouts', async () => {
+    (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([makePass()]);
+
+    const hashpassWallet = await renderWallet();
+    const bslWallet = await renderWallet({ layout: 'plain' });
+
+    const hashpassReload = hashpassWallet.root.findByProps({ accessibilityLabel: 'Reload passes' });
+    const bslReload = bslWallet.root.findByProps({ accessibilityLabel: 'Reload passes' });
+
+    await act(async () => {
+      triggerPress(hashpassReload);
+      await Promise.resolve();
+      triggerPress(bslReload);
+      await Promise.resolve();
+    });
+
+    expect(passSystemService.getAllUserPasses).toHaveBeenCalledTimes(4);
+    expect(hashpassWallet.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
+    expect(bslWallet.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
+  });
+
+  it('keeps loaded wallet controls visible while a reload shows a pass-card skeleton', async () => {
+    let resolveReload: ((passes: PassInfo[]) => void) | undefined;
+    (passSystemService.getAllUserPasses as jest.Mock)
+      .mockResolvedValueOnce([makePass()])
+      .mockImplementationOnce(
+        () => new Promise<PassInfo[]>((resolve) => {
+          resolveReload = resolve;
+        }),
+      );
+
+    const renderer = await renderWallet();
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Reload passes' }));
+      await Promise.resolve();
+    });
+
+    expect(renderer.root.findByProps({ children: 'Passes' })).toBeTruthy();
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Refreshing passes' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ accessibilityLabel: 'Refreshing pass summary' })).toHaveLength(3);
+    expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(0);
+    await act(async () => {
+      resolveReload?.([makePass()]);
+      await Promise.resolve();
+      renderer.unmount();
+      await Promise.resolve();
+    });
+  });
+
   it('keeps the skeleton visible until a Supabase database identity is available', async () => {
     mockDbUserId = null;
 
@@ -344,6 +394,39 @@ describe('PassesWallet', () => {
 
       expect(renderer.root.findByProps({ children: 'Passes took too long to load' })).toBeTruthy();
       expect(renderer.root.findByProps({ accessibilityLabel: 'Try again' })).toBeTruthy();
+      await act(async () => {
+        renderer.unmount();
+        await Promise.resolve();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('keeps the pass-claim recovery action visible while the Supabase identity is reconnecting', async () => {
+    jest.useFakeTimers();
+    mockDbUserId = null;
+
+    try {
+      const renderer = await renderWallet({ layout: 'plain' });
+
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+        await Promise.resolve();
+      });
+
+      const claimAction = renderer.root.findByProps({ accessibilityLabel: 'Have a pass? Claim it here' });
+      expect(claimAction).toBeTruthy();
+
+      await act(async () => {
+        triggerPress(claimAction);
+        await Promise.resolve();
+      });
+
+      expect(
+        renderer.root.findByProps({ children: 'Your account is still connecting. Please try again in a moment.' }),
+      ).toBeTruthy();
+      expect(renderer.root.findByProps({ accessibilityLabel: 'Redeem pass code' }).props.disabled).toBe(true);
       await act(async () => {
         renderer.unmount();
         await Promise.resolve();

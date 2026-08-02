@@ -515,6 +515,7 @@
     "selectEvent": "이벤트 선택",
     "yourPasses": "나의 패스",
     "quickAccess": "빠른 접근",
+    "quickAccess.forEvent": "다음 이벤트용",
     "tutorial": {
       "yourPasses": "여기에서 이벤트 패스를 확인할 수 있습니다. 패스에는 티켓 종류와 이벤트 이용 권한이 표시됩니다.",
       "quickAccess": "빠른 이용 카드를 통해 연사, 일정, 네트워킹 센터 및 이벤트 정보로 이동할 수 있습니다. 모든 옵션을 보려면 가로로 스와이프하세요."
@@ -652,7 +653,9 @@
         "active": "예정",
         "past": "지난"
       },
-      "stackHint": "뒤에 있는 카드를 눌러 앞으로 가져오세요"
+      "stackHint": "뒤에 있는 카드를 눌러 앞으로 가져오세요",
+      "reload": "패스 새로고침",
+      "refreshing": "패스를 새로고침하는 중…"
     }
   },
   "networking": {

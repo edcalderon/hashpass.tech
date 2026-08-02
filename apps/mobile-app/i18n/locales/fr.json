@@ -446,6 +446,7 @@
     "selectEvent": "Sélectionner un événement",
     "yourPasses": "Vos passes",
     "quickAccess": "Accès rapide",
+    "quickAccess.forEvent": "Pour",
     "quick": {
       "speakers": {
         "title": "Conférenciers",
@@ -579,7 +580,9 @@
         "active": "À venir",
         "past": "Passés"
       },
-      "stackHint": "Touchez une carte derrière pour la mettre devant"
+      "stackHint": "Touchez une carte derrière pour la mettre devant",
+      "reload": "Recharger les passes",
+      "refreshing": "Actualisation des passes…"
     }
   },
   "networking": {
