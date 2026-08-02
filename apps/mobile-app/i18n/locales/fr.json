@@ -530,7 +530,9 @@
       "production": "Vous avez besoin d'un passe d'événement valide pour demander des réunions avec les conférenciers. Veuillez acheter un passe pour continuer."
     },
     "passTypes": {
-      "all": "Tous les types de passes et tarifs"
+      "all": "Tous les types de passes et tarifs",
+      "open": "Ouvert",
+      "closed": "Fermé"
     },
     "passComparison": {
       "compare": "Comparez les fonctionnalités et choisissez le passe adapté à vos besoins"
@@ -544,11 +546,34 @@
       },
       "vip": {
         "networking": "+ Réseautage VIP avec les conférenciers"
+      },
+      "features": {
+        "allSessions": "Accès à toutes les sessions de la conférence",
+        "mainAreas": "Accès aux espaces principaux de l’événement",
+        "networkingSessions": "Réseautage et sessions B2B",
+        "businessLounge": "Accès au salon Business",
+        "vipNetworking": "Réseautage VIP avec les conférenciers",
+        "vipLounge": "Accès au salon VIP",
+        "prioritySeating": "Places prioritaires",
+        "networkingTools": "Outils de réseautage",
+        "businessSupport": "Support Business",
+        "conciergeService": "Service de conciergerie",
+        "premiumSwag": "Cadeaux premium",
+        "closingParty": "Soirée officielle de clôture"
       }
     },
     "purchasePass": "Acheter un passe d'événement",
     "purchasePass.description": "Choisissez parmi nos types de passes disponibles pour accéder aux réunions avec les conférenciers et aux opportunités de réseautage.",
     "currentPass": "Votre passe actuel",
+    "unknown": "Inconnu",
+    "requestAllowed": "Vous pouvez envoyer une demande de rendez-vous.",
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif",
+      "expired": "Expiré",
+      "revoked": "Révoqué",
+      "pending": "En attente"
+    },
     "canRequestMeeting": "✅ Peut demander une réunion",
     "cannotRequestMeeting": "❌ Ne peut pas demander de réunion",
     "qrCode": "Code QR",

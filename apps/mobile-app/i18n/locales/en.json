@@ -673,7 +673,9 @@
       "production": "You need a valid event pass to request meetings with speakers. Please purchase a pass to continue."
     },
     "passTypes": {
-      "all": "All Pass Types & Pricing"
+      "all": "All Pass Types & Pricing",
+      "open": "Open",
+      "closed": "Closed"
     },
     "passComparison": {
       "compare": "Compare features and choose the right pass for your needs"
@@ -687,11 +689,34 @@
       },
       "vip": {
         "networking": "+ VIP networking with speakers"
+      },
+      "features": {
+        "allSessions": "Access to all conference sessions",
+        "mainAreas": "Access to main event areas",
+        "networkingSessions": "Networking & B2B sessions",
+        "businessLounge": "Business lounge access",
+        "vipNetworking": "VIP networking with speakers",
+        "vipLounge": "VIP lounge access",
+        "prioritySeating": "Priority seating",
+        "networkingTools": "Networking tools",
+        "businessSupport": "Business support",
+        "conciergeService": "Concierge service",
+        "premiumSwag": "Premium swag",
+        "closingParty": "Official closing party"
       }
     },
     "purchasePass": "Purchase Event Pass",
     "purchasePass.description": "Choose from our available pass types to access speaker meetings and networking opportunities.",
     "currentPass": "Your Current Pass",
+    "unknown": "Unknown",
+    "requestAllowed": "You can send a meeting request.",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "expired": "Expired",
+      "revoked": "Revoked",
+      "pending": "Pending"
+    },
     "canRequestMeeting": "✅ Can Request Meeting",
     "cannotRequestMeeting": "❌ Cannot Request Meeting",
     "qrCode": "QR Code",
