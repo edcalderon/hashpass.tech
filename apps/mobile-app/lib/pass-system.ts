@@ -55,6 +55,14 @@ export interface Pass {
   updated_at: string;
 }
 
+const normalizePassNumber = (pass: Pick<Pass, 'id' | 'pass_number'>): string => {
+  const issuedNumber = typeof pass.pass_number === 'string' ? pass.pass_number.trim() : '';
+  if (issuedNumber) return issuedNumber;
+
+  const id = String(pass.id ?? '').trim();
+  return id ? `PASS-${id.slice(-8)}` : 'Unknown';
+};
+
 export interface Subpass {
   id: string;
   pass_id: string;
@@ -100,9 +108,8 @@ export interface PassInfo {
   access_features: string[];
   special_perks: string[];
   // The event this pass was issued for. Populated whenever the pass row is
-  // known (getUserPassInfo, getUserPassesForEvents); absent only in the
-  // legacy counts-only fallback (getUserPassInfoFromCounts), which has no
-  // underlying pass row to read it from.
+  // known (getUserPassInfo, getUserPassesForEvents); the counts-only fallback
+  // keeps the caller's resolved event scope even without a pass row.
   event_id?: string;
 }
 
@@ -124,8 +131,104 @@ export interface PassTypeLimits {
   monthly_limit: number;
 }
 
+export interface EventPassTier {
+  event_id: string;
+  pass_type: PassType;
+  max_meeting_requests: number;
+  max_boost_amount: number;
+  price_cents: number | null;
+  currency: string;
+  price_label: string | null;
+  updated_at?: string;
+}
+
+const DEFAULT_EVENT_PASS_TIERS: Omit<EventPassTier, 'event_id'>[] = [
+  {
+    pass_type: 'general',
+    max_meeting_requests: 10,
+    max_boost_amount: 100,
+    price_cents: 9900,
+    currency: 'USD',
+    price_label: null,
+  },
+  {
+    pass_type: 'business',
+    max_meeting_requests: 20,
+    max_boost_amount: 300,
+    price_cents: 24900,
+    currency: 'USD',
+    price_label: null,
+  },
+  {
+    pass_type: 'vip',
+    max_meeting_requests: 50,
+    max_boost_amount: 500,
+    price_cents: null,
+    currency: 'USD',
+    price_label: 'Premium',
+  },
+];
+
 class PassSystemService {
   private readonly defaultPassCreations = new Map<string, Promise<string | null>>();
+
+  private toPassInfo(passData: Pass): EventPassInfo {
+    const maxRequests = passData.max_meeting_requests || 0;
+    const usedRequests = passData.used_meeting_requests || 0;
+    const maxBoost = passData.max_boost_amount || 0;
+    const usedBoost = passData.used_boost_amount || 0;
+
+    return {
+      event_id: passData.event_id,
+      pass_id: passData.id,
+      pass_type: passData.pass_type || 'general',
+      status: passData.status || 'active',
+      pass_number: normalizePassNumber(passData),
+      max_requests: maxRequests,
+      used_requests: usedRequests,
+      remaining_requests: Math.max(0, maxRequests - usedRequests),
+      max_boost: maxBoost,
+      used_boost: usedBoost,
+      remaining_boost: Math.max(0, maxBoost - usedBoost),
+      access_features: passData.access_features || [],
+      special_perks: passData.special_perks || [],
+    };
+  }
+
+  /**
+   * A wallet card must show the same event-scoped entitlement state as the
+   * pass detail screen. The row is a safe fallback, but the RPC is the live
+   * source after a meeting request is sent.
+   */
+  private async hydratePassUsage(userId: string, passData: Pass): Promise<EventPassInfo> {
+    const fallback = this.toPassInfo(passData);
+
+    try {
+      const { data, error } = await supabase
+        .rpc('get_user_meeting_request_counts', { p_user_id: userId, p_event_id: passData.event_id })
+        .single();
+
+      if (error || !data) return fallback;
+
+      const counts = data as any;
+      const maxRequests = Number(counts.max_requests ?? fallback.max_requests);
+      const usedRequests = Number(counts.total_requests ?? fallback.used_requests);
+      const maxBoost = Number(counts.max_boost ?? fallback.max_boost);
+      const remainingRequests = Number(counts.remaining_requests ?? Math.max(0, maxRequests - usedRequests));
+      const remainingBoost = Number(counts.remaining_boost ?? Math.max(0, maxBoost - fallback.used_boost));
+
+      return {
+        ...fallback,
+        max_requests: Number.isFinite(maxRequests) ? maxRequests : fallback.max_requests,
+        used_requests: Number.isFinite(usedRequests) ? usedRequests : fallback.used_requests,
+        remaining_requests: Number.isFinite(remainingRequests) ? Math.max(0, remainingRequests) : fallback.remaining_requests,
+        max_boost: Number.isFinite(maxBoost) ? maxBoost : fallback.max_boost,
+        remaining_boost: Number.isFinite(remainingBoost) ? Math.max(0, remainingBoost) : fallback.remaining_boost,
+      };
+    } catch {
+      return fallback;
+    }
+  }
 
   private async fetchActivePass(userId: string, eventId: string): Promise<{ passData: Pass | null; error: any | null }> {
     const { data: passDataArray, error } = await supabase
@@ -160,13 +263,13 @@ class PassSystemService {
       // Handle the case where no pass exists (404/406 errors are expected)
       if (passError && (passError.code === 'PGRST116' || passError.code === '406' || passError.message?.includes('No rows'))) {
         // No pass found, fallback to counts
-        return await this.getUserPassInfoFromCounts(userId);
+        return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
       }
 
       if (passError) {
         console.error('Error getting pass data:', passError);
         // Fallback to the counting function
-        return await this.getUserPassInfoFromCounts(userId);
+        return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
       }
       
       // Extract the first (and only) pass from the array
@@ -187,28 +290,28 @@ class PassSystemService {
             } else {
               // Still no pass, fallback to counts
               console.warn('⚠️ Failed to retrieve newly created pass, falling back to counts');
-              return await this.getUserPassInfoFromCounts(userId);
+              return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
             }
           } else {
             // Failed to create pass, fallback to counts
             console.warn('⚠️ Failed to create default pass, falling back to counts');
-            return await this.getUserPassInfoFromCounts(userId);
+            return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
           }
         } catch (createError) {
           console.error('❌ Error creating default pass:', createError);
           // Fallback to counts
-          return await this.getUserPassInfoFromCounts(userId);
+          return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
         }
       }
       
       // If we still don't have passData at this point, fallback to counts
       if (!passData) {
-        return await this.getUserPassInfoFromCounts(userId);
+        return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
       }
 
       // Get meeting request counts
       const { data: countsData, error: countsError } = await supabase
-        .rpc('get_user_meeting_request_counts', { p_user_id: userId })
+        .rpc('get_user_meeting_request_counts', { p_user_id: userId, p_event_id: resolvedEventId })
         .single();
 
       if (countsError) {
@@ -219,7 +322,7 @@ class PassSystemService {
           event_id: passData.event_id,
           pass_type: passData.pass_type || 'general',
           status: passData.status || 'active',
-          pass_number: passData.pass_number || 'Unknown',
+          pass_number: normalizePassNumber(passData),
           max_requests: passData.max_meeting_requests || 0,
           used_requests: passData.used_meeting_requests || 0,
           remaining_requests: (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
@@ -239,7 +342,7 @@ class PassSystemService {
         event_id: passData.event_id,
         pass_type: passData.pass_type || 'general',
         status: passData.status || 'active',
-        pass_number: passData.pass_number || 'Unknown',
+        pass_number: normalizePassNumber(passData),
         max_requests: passData.max_meeting_requests || 0,
         used_requests: counts.total_requests || 0,
         remaining_requests: counts.remaining_requests || 0,
@@ -256,7 +359,7 @@ class PassSystemService {
   }
 
   // Fallback method using only the counts function
-  private async getUserPassInfoFromCounts(userId: string): Promise<PassInfo | null> {
+  private async getUserPassInfoFromCounts(userId: string, eventId: string): Promise<PassInfo | null> {
     if (!isSupabaseAuthUserId(userId)) {
       warnInvalidSupabaseUserId('getUserPassInfoFromCounts', userId);
       return null;
@@ -264,7 +367,7 @@ class PassSystemService {
 
     try {
       const { data, error } = await supabase
-        .rpc('get_user_meeting_request_counts', { p_user_id: userId })
+        .rpc('get_user_meeting_request_counts', { p_user_id: userId, p_event_id: eventId })
         .single();
 
       if (error) {
@@ -277,6 +380,7 @@ class PassSystemService {
       // Convert to PassInfo format
       return {
         pass_id: 'unknown',
+        event_id: eventId,
         pass_type: result.pass_type || 'general',
         status: 'active',
         pass_number: 'Unknown',
@@ -333,30 +437,9 @@ class PassSystemService {
         }
       }
 
-      // Deliberately NOT using get_user_meeting_request_counts here: it takes
-      // no event argument and resolves its scope from the Postgres session
-      // setting app.event_id, which a stateless RPC call from this client
-      // never sets -- so it always falls back to hard-coded 'bsl2025'. A
-      // single call's result would get stamped onto every pass in this list,
-      // showing the archive event's usage on the Chile/Peru/Colombia cards
-      // too. Each pass row already carries its own used/max counters, which
-      // are event-scoped by construction (see create_default_pass), so read
-      // straight from the row instead.
-      return Array.from(latestByEvent.values()).map((passData) => ({
-        event_id: passData.event_id,
-        pass_id: passData.id,
-        pass_type: passData.pass_type || 'general',
-        status: passData.status || 'active',
-        pass_number: passData.pass_number || 'Unknown',
-        max_requests: passData.max_meeting_requests || 0,
-        used_requests: passData.used_meeting_requests || 0,
-        remaining_requests: (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
-        max_boost: passData.max_boost_amount || 0,
-        used_boost: passData.used_boost_amount || 0,
-        remaining_boost: (passData.max_boost_amount || 0) - (passData.used_boost_amount || 0),
-        access_features: passData.access_features || [],
-        special_perks: passData.special_perks || [],
-      }));
+      return Promise.all(
+        Array.from(latestByEvent.values()).map((passData) => this.hydratePassUsage(userId, passData)),
+      );
     } catch (error) {
       console.error('Error in getUserPassesForEvents:', error);
       throw error;
@@ -396,31 +479,20 @@ class PassSystemService {
 
       if (!passRows?.length) return [];
 
-      // Keep only the most recent pass per event. A re-issued pass supersedes
-      // the row it replaced; showing both would read as two tickets to the
-      // same event.
+      // Keep the latest active pass per event. A re-issued active pass is the
+      // attendee's current entitlement even if an archived pass was created
+      // more recently by an old workflow.
       const latestByEvent = new Map<string, Pass>();
       for (const pass of passRows as Pass[]) {
-        if (!latestByEvent.has(pass.event_id)) {
+        const current = latestByEvent.get(pass.event_id);
+        if (!current || (pass.status === 'active' && current.status !== 'active')) {
           latestByEvent.set(pass.event_id, pass);
         }
       }
 
-      return Array.from(latestByEvent.values()).map((passData) => ({
-        event_id: passData.event_id,
-        pass_id: passData.id,
-        pass_type: passData.pass_type || 'general',
-        status: passData.status || 'active',
-        pass_number: passData.pass_number || 'Unknown',
-        max_requests: passData.max_meeting_requests || 0,
-        used_requests: passData.used_meeting_requests || 0,
-        remaining_requests: (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
-        max_boost: passData.max_boost_amount || 0,
-        used_boost: passData.used_boost_amount || 0,
-        remaining_boost: (passData.max_boost_amount || 0) - (passData.used_boost_amount || 0),
-        access_features: passData.access_features || [],
-        special_perks: passData.special_perks || [],
-      }));
+      return Promise.all(
+        Array.from(latestByEvent.values()).map((passData) => this.hydratePassUsage(userId, passData)),
+      );
     } catch (error) {
       console.error('Error in getAllUserPasses:', error);
       throw error;
@@ -666,6 +738,43 @@ class PassSystemService {
     }
   }
 
+  // The event-admin tier catalog is the source of truth for entitlements and
+  // prices shown in the comparison UI. Keep a safe local fallback while an
+  // older tenant is still awaiting the catalog migration.
+  async getEventPassTiers(eventId: string): Promise<EventPassTier[]> {
+    const storageEventId = resolvePassStorageEventId(eventId);
+    try {
+      const { data, error } = await (supabase.rpc as any)('get_event_pass_tiers', {
+        p_event_id: storageEventId,
+      }) as { data: EventPassTier[] | null; error: unknown | null };
+      if (error || !Array.isArray(data) || data.length === 0) {
+        return DEFAULT_EVENT_PASS_TIERS.map((tier) => ({ ...tier, event_id: storageEventId }));
+      }
+
+      return data
+        .filter((tier): tier is EventPassTier => (
+          tier
+          && (tier.pass_type === 'general' || tier.pass_type === 'business' || tier.pass_type === 'vip')
+        ))
+        .map((tier) => ({
+          event_id: storageEventId,
+          pass_type: tier.pass_type,
+          max_meeting_requests: Number(tier.max_meeting_requests) || 0,
+          max_boost_amount: Number(tier.max_boost_amount) || 0,
+          price_cents: tier.price_cents === null || tier.price_cents === undefined
+            ? null
+            : Number(tier.price_cents),
+          currency: typeof tier.currency === 'string' ? tier.currency : 'USD',
+          price_label: typeof tier.price_label === 'string' && tier.price_label.trim()
+            ? tier.price_label
+            : null,
+          ...(typeof tier.updated_at === 'string' ? { updated_at: tier.updated_at } : {}),
+        }));
+    } catch {
+      return DEFAULT_EVENT_PASS_TIERS.map((tier) => ({ ...tier, event_id: storageEventId }));
+    }
+  }
+
   // Fallback method with default values (used if database call fails)
   private getDefaultPassTypeLimits(passType: PassType): PassTypeLimits {
     // These are fallback values - should not be used in production
@@ -711,18 +820,18 @@ class PassSystemService {
     switch (passType) {
       case 'vip':
         return {
-          features: ['All conferences Nov 12-14', 'Networking & B2B sessions', 'VIP networking with speakers', 'VIP lounge access', 'Priority seating'],
-          perks: ['50 meeting requests', 'Concierge Service', 'Premium Swag', 'Official closing party']
+          features: ['Access to all conference sessions', 'Networking & B2B sessions', 'VIP networking with speakers', 'VIP lounge access', 'Priority seating'],
+          perks: ['Concierge Service', 'Premium Swag', 'Official closing party']
         };
       case 'business':
         return {
-          features: ['All conferences Nov 12-14', 'Networking & B2B sessions', 'Business lounge access'],
-          perks: ['20 meeting requests', 'Networking Tools', 'Business Support', 'Official closing party']
+          features: ['Access to all conference sessions', 'Networking & B2B sessions', 'Business lounge access'],
+          perks: ['Networking Tools', 'Business Support', 'Official closing party']
         };
       case 'general':
         return {
-          features: ['All conferences Nov 12-14', 'Access to main event areas'],
-          perks: ['5 meeting requests', 'Official closing party']
+          features: ['Access to all conference sessions', 'Access to main event areas'],
+          perks: ['Official closing party']
         };
       default:
         return {
@@ -866,7 +975,7 @@ class PassSystemService {
 
   // Format boost amount
   formatBoostAmount(amount: number): string {
-    return `$${amount.toFixed(2)} VOI`;
+    return `${amount.toLocaleString()} Boost points`;
   }
 
   // Get pass type display name

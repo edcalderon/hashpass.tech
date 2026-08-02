@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { MaterialIcons } from '../lib/vector-icons';
 import { useRouter } from 'expo-router';
+import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
-import { passSystemService, PassInfo, PassRequestLimits } from '@/lib/pass-system';
+import { EventPassTier, passSystemService, PassInfo, PassRequestLimits, PassType } from '@/lib/pass-system';
+import { resolveActiveEventId } from '@/lib/event-path';
 import { useTranslation } from '@/i18n/i18n';
 import * as Sentry from '@sentry/react-native';
 import PassesWallet from './passes/PassesWallet';
@@ -18,6 +19,8 @@ interface PassesDisplayProps {
   boostAmount?: number;
   showRequestButton?: boolean;
   onRequestPress?: () => void;
+  existingRequest?: { id: string; status: string } | null;
+  onExistingRequestPress?: () => void;
 
   // Which event's pass to show (speaker mode). Falls back to the
   // tenant-resolved default event when omitted.
@@ -46,12 +49,33 @@ interface PassesDisplayProps {
   refreshTrigger?: number;
 }
 
+export const formatEventPassTierPrice = (tier?: EventPassTier): string => {
+  if (!tier) return '';
+  if (tier.price_label) return tier.price_label;
+  if (tier.price_cents === null) return '';
+
+  const currency = tier.currency || 'USD';
+  const fractionDigits = tier.price_cents % 100 === 0 ? 0 : 2;
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(tier.price_cents / 100);
+  } catch {
+    return `${currency} ${(tier.price_cents / 100).toFixed(fractionDigits)}`;
+  }
+};
+
 function PassesDisplayInner({
   mode = 'dashboard',
   speakerId,
   boostAmount = 0,
   showRequestButton = false,
   onRequestPress,
+  existingRequest,
+  onExistingRequestPress,
   eventId,
   onPassInfoLoaded,
   onRequestLimitsLoaded,
@@ -67,6 +91,7 @@ function PassesDisplayInner({
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [showComparison, setShowComparison] = useState(showPassComparison);
+  const [eventPassTiers, setEventPassTiers] = useState<EventPassTier[]>([]);
 
   // Helper function to translate
   // Note: useTranslation('passes') already sets the namespace, so remove 'passes.' prefix if present
@@ -93,6 +118,81 @@ function PassesDisplayInner({
   useEffect(() => {
     loadPassInfo();
   }, [dbUserId, refreshTrigger, eventId]);
+
+  // Load the live catalog even before a pass exists. This keeps the
+  // development/demo comparison in step with the event administrator's tier
+  // configuration instead of falling back to static prices.
+  const passEventId = passInfo?.event_id || resolveActiveEventId(eventId);
+
+  useEffect(() => {
+    if (!passEventId) return;
+    let isCurrent = true;
+
+    void passSystemService.getEventPassTiers(passEventId).then((tiers: EventPassTier[]) => {
+      if (isCurrent) setEventPassTiers(tiers);
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [passEventId]);
+
+  const tiersByType = useMemo(
+    () => new Map(eventPassTiers.map((tier) => [tier.pass_type, tier])),
+    [eventPassTiers],
+  );
+  const currencyFormatters = useMemo(() => {
+    const formatters = new Map<string, Intl.NumberFormat>();
+    for (const tier of eventPassTiers) {
+      if (tier.price_cents === null) continue;
+      const currency = tier.currency || 'USD';
+      const fractionDigits = tier.price_cents % 100 === 0 ? 0 : 2;
+      const formatterKey = `${currency}:${fractionDigits}`;
+      if (formatters.has(formatterKey)) continue;
+      try {
+        formatters.set(formatterKey, new Intl.NumberFormat(undefined, {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: fractionDigits,
+          maximumFractionDigits: fractionDigits,
+        }));
+      } catch {
+        // Invalid legacy currency values use the plain-text fallback below.
+      }
+    }
+    return formatters;
+  }, [eventPassTiers]);
+
+  const getTier = (passType: PassType): EventPassTier | undefined => tiersByType.get(passType);
+  const getTierPrice = (passType: PassType) => {
+    const tier = getTier(passType);
+    if (!tier) return '';
+    if (tier.price_label) return tier.price_label;
+    if (tier.price_cents === null) return '';
+    const currency = tier.currency || 'USD';
+    const fractionDigits = tier.price_cents % 100 === 0 ? 0 : 2;
+    return currencyFormatters.get(`${currency}:${fractionDigits}`)?.format(tier.price_cents / 100)
+      ?? formatEventPassTierPrice(tier);
+  };
+
+  const translatePassDetail = (detail: string) => {
+    const translations: Record<string, { id: string; message: string }> = {
+      'Access to all conference sessions': { id: 'passes.passPerks.features.allSessions', message: 'Access to all conference sessions' },
+      'Access to main event areas': { id: 'passes.passPerks.features.mainAreas', message: 'Access to main event areas' },
+      'Networking & B2B sessions': { id: 'passes.passPerks.features.networkingSessions', message: 'Networking & B2B sessions' },
+      'Business lounge access': { id: 'passes.passPerks.features.businessLounge', message: 'Business lounge access' },
+      'VIP networking with speakers': { id: 'passes.passPerks.features.vipNetworking', message: 'VIP networking with speakers' },
+      'VIP lounge access': { id: 'passes.passPerks.features.vipLounge', message: 'VIP lounge access' },
+      'Priority seating': { id: 'passes.passPerks.features.prioritySeating', message: 'Priority seating' },
+      'Networking Tools': { id: 'passes.passPerks.features.networkingTools', message: 'Networking tools' },
+      'Business Support': { id: 'passes.passPerks.features.businessSupport', message: 'Business support' },
+      'Concierge Service': { id: 'passes.passPerks.features.conciergeService', message: 'Concierge service' },
+      'Premium Swag': { id: 'passes.passPerks.features.premiumSwag', message: 'Premium swag' },
+      'Official closing party': { id: 'passes.passPerks.features.closingParty', message: 'Official closing party' },
+    };
+    const translation = translations[detail];
+    return translation ? t(translation) : detail;
+  };
 
   useEffect(() => {
     if (speakerId && dbUserId) {
@@ -186,6 +286,38 @@ function PassesDisplayInner({
   const getPassTypeDisplayName = (passType: string) => {
     return passSystemService.getPassTypeDisplayName(passType as any);
   };
+
+  const issuedPassNumber = typeof passInfo?.pass_number === 'string'
+    ? passInfo.pass_number.trim()
+    : '';
+  const passIdFallback = typeof passInfo?.pass_id === 'string'
+    ? passInfo.pass_id.trim()
+    : '';
+  // Never render a bare "Pass #" while a bridge or legacy record is missing
+  // its issued number. A stable id-derived fallback remains copyable and lets
+  // support identify the actual pass.
+  const rawPassNumber = issuedPassNumber || passIdFallback || 'Pass number unavailable';
+  const displayPassNumber = rawPassNumber.length > 12
+    ? `${rawPassNumber.slice(0, 6)}...${rawPassNumber.slice(-4)}`
+    : rawPassNumber;
+
+  const openPassDetails = () => {
+    if (!passInfo?.pass_id) return;
+
+    router.push({
+      pathname: '/(shared)/dashboard/pass-details',
+      params: {
+        passId: passInfo.pass_id,
+        eventId: passInfo.event_id || eventId || '',
+      },
+    } as any);
+  };
+
+  const hasExistingRequest = Boolean(
+    existingRequest || requestLimits?.reason === 'existing_request',
+  );
+  const isPendingExistingRequest =
+    !existingRequest || ['pending', 'requested'].includes(existingRequest.status);
 
   // Speaker mode - show detailed pass info with request functionality.
   // Dashboard mode never reaches here: PassesDisplayBoundary routes it to
@@ -318,7 +450,7 @@ function PassesDisplayInner({
                     {t({ id: 'passes.type.general', message: 'General' })}
                   </Text>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: '#34A853' }}>
-                    $99
+                    {getTierPrice('general')}
                   </Text>
                 </View>
                 <Text style={{ fontSize: 12, color: colors.text.secondary, marginBottom: 12 }}>
@@ -329,7 +461,7 @@ function PassesDisplayInner({
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                        {feature}
+                        {translatePassDetail(feature)}
                       </Text>
                     </View>
                   ))}
@@ -337,7 +469,7 @@ function PassesDisplayInner({
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                        {perk}
+                        {translatePassDetail(perk)}
                       </Text>
                     </View>
                   ))}
@@ -360,7 +492,7 @@ function PassesDisplayInner({
                     {t({ id: 'passes.type.business', message: 'Business' })}
                   </Text>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: '#007AFF' }}>
-                    $249
+                    {getTierPrice('business')}
                   </Text>
                 </View>
                 <Text style={{ fontSize: 12, color: colors.text.secondary, marginBottom: 12 }}>
@@ -371,7 +503,7 @@ function PassesDisplayInner({
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                        {feature}
+                        {translatePassDetail(feature)}
                       </Text>
                     </View>
                   ))}
@@ -379,7 +511,7 @@ function PassesDisplayInner({
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                        {perk}
+                        {translatePassDetail(perk)}
                       </Text>
                     </View>
                   ))}
@@ -402,7 +534,7 @@ function PassesDisplayInner({
                     {t({ id: 'passes.type.vip', message: 'VIP' })}
                   </Text>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFD700' }}>
-                    Premium
+                    {getTierPrice('vip')}
                   </Text>
                 </View>
                 <Text style={{ fontSize: 12, color: colors.text.secondary, marginBottom: 12 }}>
@@ -413,7 +545,7 @@ function PassesDisplayInner({
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                        {feature}
+                        {translatePassDetail(feature)}
                       </Text>
                     </View>
                   ))}
@@ -421,7 +553,7 @@ function PassesDisplayInner({
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                       <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                        {perk}
+                        {translatePassDetail(perk)}
                       </Text>
                     </View>
                   ))}
@@ -636,20 +768,19 @@ function PassesDisplayInner({
             {getPassTypeDisplayName(passInfo.pass_type)}
           </Text>
           <TouchableOpacity
-            onPress={() => {
-              router.push('/(shared)/dashboard/pass-details');
-            }}
+            accessibilityLabel={t({ id: 'passes.viewFullDetails', message: 'View full pass details' })}
+            onPress={openPassDetails}
             activeOpacity={0.7}
+            style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5 }}
           >
             <Text style={{ 
               fontSize: 14, 
               color: colors.primary,
               textDecorationLine: 'underline'
             }}>
-              Pass #{passInfo.pass_number && passInfo.pass_number.length > 12 
-                ? `${passInfo.pass_number.slice(0, 6)}...${passInfo.pass_number.slice(-4)}` 
-                : passInfo.pass_number || 'Unknown'}
+              {`${t({ id: 'passes.pass', message: 'Pass' })} #${displayPassNumber}`}
             </Text>
+            <MaterialIcons name="open-in-new" size={14} color={colors.primary} />
           </TouchableOpacity>
         </View>
         <View style={{
@@ -663,7 +794,7 @@ function PassesDisplayInner({
             fontWeight: '600', 
             color: getPassTypeColor(passInfo.pass_type)
           }}>
-            {passInfo.status.toUpperCase()}
+            {t({ id: `passes.status.${passInfo.status}`, message: passInfo.status })}
           </Text>
         </View>
       </View>
@@ -687,7 +818,7 @@ function PassesDisplayInner({
             {passInfo.max_boost || 0}
           </Text>
           <Text style={{ fontSize: 12, color: colors.text.secondary, textAlign: 'center' }}>
-            BOOST
+            {t({ id: 'passes.boostPoints', message: 'Boost points' })}
           </Text>
         </View>
       </View>
@@ -714,7 +845,7 @@ function PassesDisplayInner({
             fontWeight: '600', 
             color: colors.text.primary
           }}>
-            {t({ id: 'passes.passTypes.all', message: 'All Pass Types & Pricing' })} {showComparison ? '(Open)' : '(Closed)'}
+            {t({ id: 'passes.passTypes.all', message: 'All Pass Types & Pricing' })} {showComparison ? `(${t({ id: 'passes.passTypes.open', message: 'Open' })})` : `(${t({ id: 'passes.passTypes.closed', message: 'Closed' })})`}
           </Text>
           <MaterialIcons 
             name={showComparison ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
@@ -758,7 +889,7 @@ function PassesDisplayInner({
                 fontSize: 12, 
                 color: colors.text.secondary
               }}>
-                {passInfo.pass_type === 'general' ? '5' : passInfo.pass_type === 'business' ? '20' : '50'} {t({ id: 'passes.meetingRequests', message: 'Meeting Requests' })} • {passInfo.pass_type === 'general' ? '100' : passInfo.pass_type === 'business' ? '300' : '500'} {t({ id: 'passes.voiBoost', message: 'VOI Boost' })}
+                {passInfo.max_requests || 0} {t({ id: 'passes.meetingRequests', message: 'Meeting Requests' })} • {passInfo.max_boost || 0} {t({ id: 'passes.boostPoints', message: 'Boost points' })}
               </Text>
             </View>
           )}
@@ -777,7 +908,7 @@ function PassesDisplayInner({
                   {t({ id: 'passes.type.general', message: 'General' })}
                 </Text>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#34A853' }}>
-                  $99
+                  {getTierPrice('general')}
                 </Text>
               </View>
               <Text style={{ fontSize: 12, color: colors.text.secondary, marginBottom: 12 }}>
@@ -788,15 +919,21 @@ function PassesDisplayInner({
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                      {feature}
+                      {translatePassDetail(feature)}
                     </Text>
                   </View>
                 ))}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
+                  <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
+                    {getTier('general')?.max_meeting_requests ?? passInfo.max_requests} {t({ id: 'passes.meetingRequests', message: 'Meeting Requests' })}
+                  </Text>
+                </View>
                 {passSystemService.getPassPerks('general').perks.map((perk: string, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                      {perk}
+                      {translatePassDetail(perk)}
                     </Text>
                   </View>
                 ))}
@@ -816,7 +953,7 @@ function PassesDisplayInner({
                   {t({ id: 'passes.type.business', message: 'Business' })}
                 </Text>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#007AFF' }}>
-                  $249
+                  {getTierPrice('business')}
                 </Text>
               </View>
               <Text style={{ fontSize: 12, color: colors.text.secondary, marginBottom: 12 }}>
@@ -827,15 +964,21 @@ function PassesDisplayInner({
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                      {feature}
+                      {translatePassDetail(feature)}
                     </Text>
                   </View>
                 ))}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
+                  <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
+                    {getTier('business')?.max_meeting_requests ?? 0} {t({ id: 'passes.meetingRequests', message: 'Meeting Requests' })}
+                  </Text>
+                </View>
                 {passSystemService.getPassPerks('business').perks.map((perk: string, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                      {perk}
+                      {translatePassDetail(perk)}
                     </Text>
                   </View>
                 ))}
@@ -855,7 +998,7 @@ function PassesDisplayInner({
                   {t({ id: 'passes.type.vip', message: 'VIP' })}
                 </Text>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#FFD700' }}>
-                  Premium
+                  {getTierPrice('vip')}
                 </Text>
               </View>
               <Text style={{ fontSize: 12, color: colors.text.secondary, marginBottom: 12 }}>
@@ -866,15 +1009,21 @@ function PassesDisplayInner({
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                      {feature}
+                      {translatePassDetail(feature)}
                     </Text>
                   </View>
                 ))}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
+                  <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
+                    {getTier('vip')?.max_meeting_requests ?? 0} {t({ id: 'passes.meetingRequests', message: 'Meeting Requests' })}
+                  </Text>
+                </View>
                 {passSystemService.getPassPerks('vip').perks.map((perk: string, index: number) => (
                   <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
                     <Text style={{ fontSize: 12, color: colors.text.secondary, marginLeft: 8 }}>
-                      {perk}
+                      {translatePassDetail(perk)}
                     </Text>
                   </View>
                 ))}
@@ -888,24 +1037,46 @@ function PassesDisplayInner({
       {passInfo && requestLimits && (
         <View style={{ 
           padding: 12,
-          backgroundColor: requestLimits.canSendRequest ? `${colors.primary}10` : `${colors.error}10`,
+          backgroundColor: requestLimits.canSendRequest ? `${colors.primary}10` : hasExistingRequest ? `${colors.warning?.main || '#FF9500'}10` : `${colors.error}10`,
           borderRadius: 8,
           marginBottom: 16
         }}>
           <Text style={{ 
             fontSize: 14, 
             fontWeight: '600', 
-            color: requestLimits.canSendRequest ? colors.primary : colors.error.main,
+            color: requestLimits.canSendRequest ? colors.primary : hasExistingRequest ? (colors.warning?.main || '#FF9500') : colors.error.main,
             marginBottom: 4
           }}>
-            {requestLimits.canSendRequest ? t({ id: 'passes.canRequestMeeting', message: '✅ Can Request Meeting' }) : t({ id: 'passes.cannotRequestMeeting', message: '❌ Cannot Request Meeting' })}
+            {requestLimits.canSendRequest
+              ? t({ id: 'passes.canRequestMeeting', message: '✅ Can Request Meeting' })
+              : hasExistingRequest
+                ? t({ id: 'passes.requestPending', message: '⏳ Meeting request pending' })
+                : t({ id: 'passes.cannotRequestMeeting', message: '❌ Cannot Request Meeting' })}
           </Text>
           <Text style={{ 
             fontSize: 12, 
             color: colors.text.secondary
           }}>
-            {requestLimits.reason || passSystemService.getPassValidationMessage(requestLimits)}
+            {requestLimits.canSendRequest
+              ? t({ id: 'passes.requestAllowed', message: 'You can send a meeting request.' })
+              : hasExistingRequest
+                ? isPendingExistingRequest
+                  ? t({ id: 'passes.requestPendingDescription', message: 'Your request is waiting for the speaker’s response.' })
+                  : t({ id: 'passes.requestInProgressDescription', message: 'You already have an active request with this speaker.' })
+                : passSystemService.getPassValidationMessage(requestLimits)}
           </Text>
+          {hasExistingRequest && onExistingRequestPress && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t({ id: 'passes.viewRequest', message: 'View request' })}
+              onPress={onExistingRequestPress}
+              style={{ alignSelf: 'flex-start', marginTop: 10 }}
+            >
+              <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
+                {t({ id: 'passes.viewRequest', message: 'View request' })}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -913,22 +1084,25 @@ function PassesDisplayInner({
       {showRequestButton && onRequestPress && (
         <TouchableOpacity
           style={{
-            backgroundColor: (passInfo && requestLimits?.canSendRequest) ? colors.primary : colors.divider,
+            backgroundColor: (passInfo && (requestLimits?.canSendRequest || hasExistingRequest)) ? colors.primary : colors.divider,
             paddingVertical: 12,
             paddingHorizontal: 24,
             borderRadius: 8,
             alignItems: 'center',
-            opacity: (passInfo && requestLimits?.canSendRequest) ? 1 : 0.5
+            opacity: (passInfo && (requestLimits?.canSendRequest || hasExistingRequest)) ? 1 : 0.5
           }}
-          onPress={(passInfo && requestLimits?.canSendRequest) ? onRequestPress : undefined}
-          disabled={!passInfo || !requestLimits?.canSendRequest}
+          onPress={(passInfo && (requestLimits?.canSendRequest || hasExistingRequest))
+            ? (hasExistingRequest ? onExistingRequestPress : onRequestPress)
+            : undefined}
+          disabled={!passInfo || (!requestLimits?.canSendRequest && !hasExistingRequest)}
         >
           <Text style={{ 
-            color: (passInfo && requestLimits?.canSendRequest) ? 'white' : colors.text.secondary,
+            color: (passInfo && (requestLimits?.canSendRequest || hasExistingRequest)) ? 'white' : colors.text.secondary,
             fontSize: 16,
             fontWeight: '600'
           }}>
-            {!passInfo ? t({ id: 'passes.button.passRequired', message: 'Pass Required' }) : 
+            {!passInfo ? t({ id: 'passes.button.passRequired', message: 'Pass Required' }) :
+             hasExistingRequest ? t({ id: 'passes.viewRequest', message: 'View request' }) :
              !requestLimits?.canSendRequest ? t({ id: 'passes.button.limitReached', message: 'Limit Reached' }) :
              t({ id: 'passes.button.requestMeeting', message: 'Request Meeting' })}
           </Text>

@@ -1,24 +1,51 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
-import { MaterialIcons } from '../../../lib/vector-icons';
-import { useTheme } from '../../../hooks/useTheme';
-import { useAuth } from '../../../hooks/useAuth';
-import type { AdminRole } from '../../../lib/admin-utils';
-import { getCurrentAdminAccess } from '../../../lib/admin-access';
-import { supabase } from '../../../lib/supabase';
-import { PassType, PassStatus, resolvePassStorageEventId } from '../../../lib/pass-system';
-import { QRScanResult } from '../../../lib/qr-system';
-import AdminQRScanner from '../../../components/AdminQRScanner';
-import LoadingScreen from '../../../components/LoadingScreen';
-import { useRouter } from 'expo-router';
-import { resolveActiveEventId } from '../../../lib/event-path';
-import { apiClient } from '../../../lib/api-client';
-import { highestEventRole, EventRole, EventRoleGrant } from '../../../lib/event-admin-access';
-import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  Modal,
+  Platform,
+} from "react-native";
+import { MaterialIcons } from "../../../lib/vector-icons";
+import { useTheme } from "../../../hooks/useTheme";
+import { useAuth } from "../../../hooks/useAuth";
+import type { AdminRole } from "../../../lib/admin-utils";
+import { getCurrentAdminAccess } from "../../../lib/admin-access";
+import { supabase } from "../../../lib/supabase";
+import {
+  EventPassTier,
+  PassType,
+  PassStatus,
+  resolvePassStorageEventId,
+} from "../../../lib/pass-system";
+import { QRScanResult } from "../../../lib/qr-system";
+import AdminQRScanner from "../../../components/AdminQRScanner";
+import LoadingScreen from "../../../components/LoadingScreen";
+import { useRouter } from "expo-router";
+import { resolveActiveEventId } from "../../../lib/event-path";
+import { apiClient } from "../../../lib/api-client";
+import {
+  highestEventRole,
+  EventRole,
+  EventRoleGrant,
+} from "../../../lib/event-admin-access";
+import UnifiedSearchAndFilter from "../../../components/UnifiedSearchAndFilter";
 
-type TabType = 'passes' | 'pass-codes' | 'qr-scanner' | 'meetings' | 'roles' | 'speaker-roles';
+type TabType =
+  | "passes"
+  | "pass-codes"
+  | "qr-scanner"
+  | "meetings"
+  | "roles"
+  | "speaker-roles";
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 interface Pass {
   id: string;
@@ -72,7 +99,7 @@ interface SpeakerRoleRecord {
   isAcceptingMeetings: boolean;
   claim: {
     email_normalized: string;
-    status: 'unclaimed' | 'claimed' | 'needs_review';
+    status: "unclaimed" | "claimed" | "needs_review";
     claim_error: string | null;
   } | null;
 }
@@ -108,7 +135,7 @@ export default function AdminPanel() {
   const { colors, isDark } = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabType>('passes');
+  const [activeTab, setActiveTab] = useState<TabType>("passes");
   const tabScrollRef = useRef<ScrollView>(null);
   const tabScrollOffsetRef = useRef(0);
   const tabContentWidthRef = useRef(0);
@@ -125,79 +152,101 @@ export default function AdminPanel() {
   // moderator (event_roles, not user_roles) is scoped to the event(s) they
   // were granted, with a switcher when they hold more than one.
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
-  const [accessibleEvents, setAccessibleEvents] = useState<EventRoleGrant[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string>(() => resolveActiveEventId());
-  const [currentEventRole, setCurrentEventRole] = useState<EventRole | null>(null);
-  
+  const [accessibleEvents, setAccessibleEvents] = useState<EventRoleGrant[]>(
+    [],
+  );
+  const [selectedEventId, setSelectedEventId] = useState<string>(() =>
+    resolveActiveEventId(),
+  );
+  const [currentEventRole, setCurrentEventRole] = useState<EventRole | null>(
+    null,
+  );
+
   // Pass Management State
   const [passes, setPasses] = useState<Pass[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [passesLoading, setPassesLoading] = useState(false);
   const [showCreatePassModal, setShowCreatePassModal] = useState(false);
-  const [newPassUserId, setNewPassUserId] = useState('');
-  const [newPassType, setNewPassType] = useState<PassType>('general');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [newPassUserId, setNewPassUserId] = useState("");
+  const [newPassType, setNewPassType] = useState<PassType>("general");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [eventPassTiers, setEventPassTiers] = useState<EventPassTier[]>([]);
+  const [passTiersLoading, setPassTiersLoading] = useState(false);
+  const [savingPassTier, setSavingPassTier] = useState<PassType | null>(null);
 
   // Pass-code campaigns are event scoped. Raw values are only held long
   // enough to create/display a code and are never returned by the list API.
   const [passClaimCodes, setPassClaimCodes] = useState<PassClaimCode[]>([]);
   const [passCodesLoading, setPassCodesLoading] = useState(false);
   const [showCreatePassCodeModal, setShowCreatePassCodeModal] = useState(false);
-  const [newPassCode, setNewPassCode] = useState('');
-  const [newPassCodeLabel, setNewPassCodeLabel] = useState('');
-  const [newPassCodeType, setNewPassCodeType] = useState<PassType>('general');
-  const [newPassCodeLimit, setNewPassCodeLimit] = useState('');
-  
+  const [newPassCode, setNewPassCode] = useState("");
+  const [newPassCodeLabel, setNewPassCodeLabel] = useState("");
+  const [newPassCodeType, setNewPassCodeType] = useState<PassType>("general");
+  const [newPassCodeLimit, setNewPassCodeLimit] = useState("");
+
   // Meeting Matcher State
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [meetingRequests, setMeetingRequests] = useState<MeetingRequest[]>([]);
   const [meetingsLoading, setMeetingsLoading] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<MeetingRequest | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<string>('');
+  const [selectedRequest, setSelectedRequest] = useState<MeetingRequest | null>(
+    null,
+  );
+  const [selectedSlot, setSelectedSlot] = useState<string>("");
 
   // Staff & Roles State
   const [eventRoles, setEventRoles] = useState<EventRoleRow[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
   const [showGrantRoleModal, setShowGrantRoleModal] = useState(false);
-  const [newRoleUserId, setNewRoleUserId] = useState('');
-  const [newRoleType, setNewRoleType] = useState<EventRole>('moderator');
+  const [newRoleUserId, setNewRoleUserId] = useState("");
+  const [newRoleType, setNewRoleType] = useState<EventRole>("moderator");
   const [globalAdmins, setGlobalAdmins] = useState<GlobalAdminRoleRow[]>([]);
   const [globalAdminsLoading, setGlobalAdminsLoading] = useState(false);
-  const [showGrantGlobalAdminModal, setShowGrantGlobalAdminModal] = useState(false);
-  const [newGlobalAdminEmail, setNewGlobalAdminEmail] = useState('');
+  const [showGrantGlobalAdminModal, setShowGrantGlobalAdminModal] =
+    useState(false);
+  const [newGlobalAdminEmail, setNewGlobalAdminEmail] = useState("");
 
   // Speaker roles are a claimed account-to-directory-profile link. They are
   // managed through an event-admin API so the browser never writes identity
   // records directly.
   const [speakerRoles, setSpeakerRoles] = useState<SpeakerRoleRecord[]>([]);
   const [speakerRolesLoading, setSpeakerRolesLoading] = useState(false);
-  const [showGrantSpeakerRoleModal, setShowGrantSpeakerRoleModal] = useState(false);
-  const [selectedSpeakerRole, setSelectedSpeakerRole] = useState<SpeakerRoleRecord | null>(null);
-  const [newSpeakerAccountEmail, setNewSpeakerAccountEmail] = useState('');
+  const [showGrantSpeakerRoleModal, setShowGrantSpeakerRoleModal] =
+    useState(false);
+  const [selectedSpeakerRole, setSelectedSpeakerRole] =
+    useState<SpeakerRoleRecord | null>(null);
+  const [newSpeakerAccountEmail, setNewSpeakerAccountEmail] = useState("");
 
   const styles = getStyles(isDark, colors);
   const updateTabScrollState = (offsetX = 0) => {
-    const maxOffset = Math.max(tabContentWidthRef.current - tabViewportWidthRef.current, 0);
+    const maxOffset = Math.max(
+      tabContentWidthRef.current - tabViewportWidthRef.current,
+      0,
+    );
     setTabsOverflow(maxOffset > 4);
     setTabsAtEnd(maxOffset <= 4 || offsetX >= maxOffset - 4);
   };
   const scrollTabStripTo = (offsetX: number) => {
-    const maxOffset = Math.max(tabContentWidthRef.current - tabViewportWidthRef.current, 0);
+    const maxOffset = Math.max(
+      tabContentWidthRef.current - tabViewportWidthRef.current,
+      0,
+    );
     const nextOffset = Math.max(0, Math.min(offsetX, maxOffset));
     tabScrollOffsetRef.current = nextOffset;
     tabScrollRef.current?.scrollTo({ x: nextOffset, animated: true });
     updateTabScrollState(nextOffset);
   };
   const handleTabStripWheel = (event: any) => {
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== "web") return;
 
     const wheelEvent = event.nativeEvent || event;
-    const delta = Math.abs(wheelEvent.deltaX || 0) > Math.abs(wheelEvent.deltaY || 0)
-      ? wheelEvent.deltaX
-      : wheelEvent.deltaY;
+    const delta =
+      Math.abs(wheelEvent.deltaX || 0) > Math.abs(wheelEvent.deltaY || 0)
+        ? wheelEvent.deltaX
+        : wheelEvent.deltaY;
 
-    if (!delta || tabContentWidthRef.current <= tabViewportWidthRef.current) return;
+    if (!delta || tabContentWidthRef.current <= tabViewportWidthRef.current)
+      return;
     event.preventDefault?.();
     wheelEvent.preventDefault?.();
     scrollTabStripTo(tabScrollOffsetRef.current + delta);
@@ -212,7 +261,7 @@ export default function AdminPanel() {
 
     // If auth finished loading and no user, redirect
     if (!user) {
-      router.replace('/(shared)/dashboard/explore');
+      router.replace("/(shared)/dashboard/explore");
       return;
     }
 
@@ -229,14 +278,18 @@ export default function AdminPanel() {
   // Moderators don't get pass management (see V013 / task decisions) — the
   // Passes tab is hidden for them, so bounce off it if it was the default.
   useEffect(() => {
-    if (!isGlobalAdmin && currentEventRole === 'moderator' && activeTab === 'passes') {
-      setActiveTab('qr-scanner');
+    if (
+      !isGlobalAdmin &&
+      currentEventRole === "moderator" &&
+      activeTab === "passes"
+    ) {
+      setActiveTab("qr-scanner");
     }
   }, [isGlobalAdmin, currentEventRole, activeTab]);
 
   const checkAdminAccess = async () => {
     if (!user) {
-      router.replace('/(shared)/dashboard/explore');
+      router.replace("/(shared)/dashboard/explore");
       return;
     }
 
@@ -257,8 +310,8 @@ export default function AdminPanel() {
       // Not a global admin — fall back to per-event event_admin/moderator grants.
       const eventRoles = access.eventRoles;
       if (eventRoles.length === 0) {
-        Alert.alert('Access Denied', 'You do not have admin privileges.');
-        router.replace('/(shared)/dashboard/explore');
+        Alert.alert("Access Denied", "You do not have admin privileges.");
+        router.replace("/(shared)/dashboard/explore");
         return;
       }
 
@@ -267,16 +320,18 @@ export default function AdminPanel() {
       setAdminRole(null);
 
       const ambientEventId = resolveActiveEventId();
-      const defaultEventId = eventRoles.some((g: EventRoleGrant) => g.eventId === ambientEventId)
+      const defaultEventId = eventRoles.some(
+        (g: EventRoleGrant) => g.eventId === ambientEventId,
+      )
         ? ambientEventId
         : eventRoles[0].eventId;
       setSelectedEventId(defaultEventId);
       setCurrentEventRole(highestEventRole(eventRoles, defaultEventId));
       setLoading(false);
     } catch (error) {
-      console.error('Error checking admin access:', error);
-      Alert.alert('Error', 'Failed to verify admin access. Please try again.');
-      router.replace('/(shared)/dashboard/explore');
+      console.error("Error checking admin access:", error);
+      Alert.alert("Error", "Failed to verify admin access. Please try again.");
+      router.replace("/(shared)/dashboard/explore");
     }
   };
 
@@ -288,20 +343,19 @@ export default function AdminPanel() {
   };
 
   const loadInitialData = async () => {
-    if (activeTab === 'passes') {
-      await loadPasses();
-      await loadUsers();
-    } else if (activeTab === 'pass-codes') {
+    if (activeTab === "passes") {
+      await Promise.all([loadPasses(), loadUsers(), loadEventPassTiers()]);
+    } else if (activeTab === "pass-codes") {
       await loadPassClaimCodes();
-    } else if (activeTab === 'meetings') {
+    } else if (activeTab === "meetings") {
       await loadMeetingRequests();
       await loadSpeakers();
-    } else if (activeTab === 'roles') {
+    } else if (activeTab === "roles") {
       await Promise.all([
         loadEventRoles(),
-        adminRole === 'super_admin' ? loadGlobalAdmins() : Promise.resolve(),
+        adminRole === "super_admin" ? loadGlobalAdmins() : Promise.resolve(),
       ]);
-    } else if (activeTab === 'speaker-roles') {
+    } else if (activeTab === "speaker-roles") {
       await loadSpeakerRoles();
     }
   };
@@ -313,33 +367,47 @@ export default function AdminPanel() {
         `/admin/speaker-roles?eventId=${encodeURIComponent(selectedEventId)}`,
         { skipEventSegment: true },
       );
-      if (!result.success) throw new Error(result.error || 'Unable to load speakers');
-      setSpeakerRoles(((result.data as { data?: SpeakerRoleRecord[] })?.data) || []);
+      if (!result.success)
+        throw new Error(result.error || "Unable to load speakers");
+      setSpeakerRoles(
+        (result.data as { data?: SpeakerRoleRecord[] })?.data || [],
+      );
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to load speaker access: ' + (error.message || 'Unknown error'));
+      Alert.alert(
+        "Error",
+        "Failed to load speaker access: " + (error.message || "Unknown error"),
+      );
     } finally {
       setSpeakerRolesLoading(false);
     }
   };
 
   const mutateSpeakerRole = async (
-    action: 'grant' | 'revoke' | 'activate' | 'deactivate',
+    action: "grant" | "revoke" | "activate" | "deactivate",
     speaker: SpeakerRoleRecord,
     targetEmail?: string,
   ) => {
     try {
       setSpeakerRolesLoading(true);
-      const result = await apiClient.post('/admin/speaker-roles', {
-        action,
-        eventId: selectedEventId,
-        speakerId: speaker.id,
-        ...(targetEmail ? { targetEmail } : {}),
-      }, { skipEventSegment: true });
-      if (!result.success) throw new Error(result.error || 'Unable to update speaker access');
+      const result = await apiClient.post(
+        "/admin/speaker-roles",
+        {
+          action,
+          eventId: selectedEventId,
+          speakerId: speaker.id,
+          ...(targetEmail ? { targetEmail } : {}),
+        },
+        { skipEventSegment: true },
+      );
+      if (!result.success)
+        throw new Error(result.error || "Unable to update speaker access");
       await loadSpeakerRoles();
       return true;
     } catch (error: any) {
-      Alert.alert('Speaker access not updated', error.message || 'Please try again.');
+      Alert.alert(
+        "Speaker access not updated",
+        error.message || "Please try again.",
+      );
       return false;
     } finally {
       setSpeakerRolesLoading(false);
@@ -348,25 +416,37 @@ export default function AdminPanel() {
 
   const handleGrantSpeakerRole = async () => {
     const email = newSpeakerAccountEmail.trim().toLowerCase();
-    if (!selectedSpeakerRole || !email.includes('@')) {
-      Alert.alert('Account email required', 'Enter the email for an existing account.');
+    if (!selectedSpeakerRole || !email.includes("@")) {
+      Alert.alert(
+        "Account email required",
+        "Enter the email for an existing account.",
+      );
       return;
     }
-    if (await mutateSpeakerRole('grant', selectedSpeakerRole, email)) {
+    if (await mutateSpeakerRole("grant", selectedSpeakerRole, email)) {
       setShowGrantSpeakerRoleModal(false);
       setSelectedSpeakerRole(null);
-      setNewSpeakerAccountEmail('');
-      Alert.alert('Speaker role granted', `${selectedSpeakerRole.name} is now active for ${selectedEventId}.`);
+      setNewSpeakerAccountEmail("");
+      Alert.alert(
+        "Speaker role granted",
+        `${selectedSpeakerRole.name} is now active for ${selectedEventId}.`,
+      );
     }
   };
 
   const handleRevokeSpeakerRole = (speaker: SpeakerRoleRecord) => {
     Alert.alert(
-      'Remove speaker access?',
+      "Remove speaker access?",
       `${speaker.name} will no longer be linked to this account or available for meeting requests.`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => { void mutateSpeakerRole('revoke', speaker); } },
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            void mutateSpeakerRole("revoke", speaker);
+          },
+        },
       ],
     );
   };
@@ -376,13 +456,13 @@ export default function AdminPanel() {
     try {
       const result = await apiClient.get(
         `/admin/roles?eventId=${encodeURIComponent(selectedEventId)}`,
-        { skipEventSegment: true }
+        { skipEventSegment: true },
       );
       if (!result.success) throw new Error(result.error);
-      setEventRoles(((result.data as { data: EventRoleRow[] })?.data) || []);
+      setEventRoles((result.data as { data: EventRoleRow[] })?.data || []);
     } catch (error: any) {
-      console.error('Error loading event roles:', error);
-      Alert.alert('Error', 'Failed to load roles: ' + error.message);
+      console.error("Error loading event roles:", error);
+      Alert.alert("Error", "Failed to load roles: " + error.message);
     } finally {
       setRolesLoading(false);
     }
@@ -390,27 +470,31 @@ export default function AdminPanel() {
 
   const handleGrantRole = async () => {
     if (!UUID_PATTERN.test(newRoleUserId.trim())) {
-      Alert.alert('Error', 'Please enter a valid user UUID');
+      Alert.alert("Error", "Please enter a valid user UUID");
       return;
     }
     try {
       setRolesLoading(true);
-      const result = await apiClient.post('/admin/roles', {
-        action: 'grant',
-        eventId: selectedEventId,
-        targetUserId: newRoleUserId.trim(),
-        role: newRoleType,
-      }, { skipEventSegment: true });
+      const result = await apiClient.post(
+        "/admin/roles",
+        {
+          action: "grant",
+          eventId: selectedEventId,
+          targetUserId: newRoleUserId.trim(),
+          role: newRoleType,
+        },
+        { skipEventSegment: true },
+      );
       if (!result.success) throw new Error(result.error);
 
-      Alert.alert('Success', `Granted ${newRoleType} for ${selectedEventId}`);
+      Alert.alert("Success", `Granted ${newRoleType} for ${selectedEventId}`);
       setShowGrantRoleModal(false);
-      setNewRoleUserId('');
-      setNewRoleType('moderator');
+      setNewRoleUserId("");
+      setNewRoleType("moderator");
       await loadEventRoles();
     } catch (error: any) {
-      console.error('Error granting role:', error);
-      Alert.alert('Error', 'Failed to grant role: ' + error.message);
+      console.error("Error granting role:", error);
+      Alert.alert("Error", "Failed to grant role: " + error.message);
     } finally {
       setRolesLoading(false);
     }
@@ -419,51 +503,75 @@ export default function AdminPanel() {
   const handleRevokeRole = async (targetUserId: string, role: EventRole) => {
     try {
       setRolesLoading(true);
-      const result = await apiClient.post('/admin/roles', {
-        action: 'revoke',
-        eventId: selectedEventId,
-        targetUserId,
-        role,
-      }, { skipEventSegment: true });
+      const result = await apiClient.post(
+        "/admin/roles",
+        {
+          action: "revoke",
+          eventId: selectedEventId,
+          targetUserId,
+          role,
+        },
+        { skipEventSegment: true },
+      );
       if (!result.success) throw new Error(result.error);
 
       await loadEventRoles();
     } catch (error: any) {
-      console.error('Error revoking role:', error);
-      Alert.alert('Error', 'Failed to revoke role: ' + error.message);
+      console.error("Error revoking role:", error);
+      Alert.alert("Error", "Failed to revoke role: " + error.message);
     } finally {
       setRolesLoading(false);
     }
   };
 
   const loadGlobalAdmins = async () => {
-    if (adminRole !== 'super_admin') return;
+    if (adminRole !== "super_admin") return;
     setGlobalAdminsLoading(true);
     try {
-      const result = await apiClient.get('/admin/global-roles', { skipEventSegment: true });
+      const result = await apiClient.get("/admin/global-roles", {
+        skipEventSegment: true,
+      });
       if (!result.success) throw new Error(result.error);
-      setGlobalAdmins(((result.data as { data?: GlobalAdminRoleRow[] })?.data) || []);
+      setGlobalAdmins(
+        (result.data as { data?: GlobalAdminRoleRow[] })?.data || [],
+      );
     } catch (error: any) {
-      console.error('Error loading global administrators:', error);
-      Alert.alert('Error', 'Failed to load global administrators: ' + error.message);
+      console.error("Error loading global administrators:", error);
+      Alert.alert(
+        "Error",
+        "Failed to load global administrators: " + error.message,
+      );
     } finally {
       setGlobalAdminsLoading(false);
     }
   };
 
-  const mutateGlobalAdmin = async (action: 'grant' | 'revoke', target: string, targetIsUserId = false) => {
+  const mutateGlobalAdmin = async (
+    action: "grant" | "revoke",
+    target: string,
+    targetIsUserId = false,
+  ) => {
     try {
       setGlobalAdminsLoading(true);
-      const result = await apiClient.post('/admin/global-roles', {
-        action,
-        ...(targetIsUserId ? { targetUserId: target } : { targetEmail: target }),
-      }, { skipEventSegment: true });
+      const result = await apiClient.post(
+        "/admin/global-roles",
+        {
+          action,
+          ...(targetIsUserId
+            ? { targetUserId: target }
+            : { targetEmail: target }),
+        },
+        { skipEventSegment: true },
+      );
       if (!result.success) throw new Error(result.error);
       await loadGlobalAdmins();
       return true;
     } catch (error: any) {
-      console.error('Error updating global administrator:', error);
-      Alert.alert('Error', 'Failed to update global administrator: ' + error.message);
+      console.error("Error updating global administrator:", error);
+      Alert.alert(
+        "Error",
+        "Failed to update global administrator: " + error.message,
+      );
       return false;
     } finally {
       setGlobalAdminsLoading(false);
@@ -472,14 +580,14 @@ export default function AdminPanel() {
 
   const handleGrantGlobalAdmin = async () => {
     const email = newGlobalAdminEmail.trim().toLowerCase();
-    if (!email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
+    if (!email.includes("@")) {
+      Alert.alert("Error", "Please enter a valid email address");
       return;
     }
-    if (await mutateGlobalAdmin('grant', email)) {
+    if (await mutateGlobalAdmin("grant", email)) {
       setShowGrantGlobalAdminModal(false);
-      setNewGlobalAdminEmail('');
-      Alert.alert('Success', `${email} is now a global admin`);
+      setNewGlobalAdminEmail("");
+      Alert.alert("Success", `${email} is now a global admin`);
     }
   };
 
@@ -487,19 +595,75 @@ export default function AdminPanel() {
     setPassesLoading(true);
     try {
       const { data, error } = await supabase
-        .from('passes')
-        .select('*')
-        .eq('event_id', selectedEventId)
-        .order('created_at', { ascending: false })
+        .from("passes")
+        .select("*")
+        .eq("event_id", selectedEventId)
+        .order("created_at", { ascending: false })
         .limit(100);
 
       if (error) throw error;
       setPasses(data || []);
     } catch (error: any) {
-      console.error('Error loading passes:', error);
-      Alert.alert('Error', 'Failed to load passes: ' + error.message);
+      console.error("Error loading passes:", error);
+      Alert.alert("Error", "Failed to load passes: " + error.message);
     } finally {
       setPassesLoading(false);
+    }
+  };
+
+  const loadEventPassTiers = async () => {
+    setPassTiersLoading(true);
+    try {
+      const result = await apiClient.get(
+        `/admin/pass-tiers?eventId=${encodeURIComponent(resolvePassStorageEventId(selectedEventId))}`,
+        { skipEventSegment: true },
+      );
+      if (!result.success)
+        throw new Error(result.error || "Unable to load pass tier settings");
+      setEventPassTiers(
+        (result.data as { data?: EventPassTier[] })?.data || [],
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        "Failed to load pass tier settings: " +
+          (error.message || "Unknown error"),
+      );
+    } finally {
+      setPassTiersLoading(false);
+    }
+  };
+
+  const updateEventPassTier = async (tier: EventPassTier) => {
+    try {
+      setSavingPassTier(tier.pass_type);
+      const result = await apiClient.post(
+        "/admin/pass-tiers",
+        {
+          eventId: resolvePassStorageEventId(selectedEventId),
+          passType: tier.pass_type,
+          maxMeetingRequests: tier.max_meeting_requests,
+          maxBoostAmount: tier.max_boost_amount,
+          priceCents: tier.price_cents,
+          currency: tier.currency,
+          priceLabel: tier.price_label,
+        },
+        { skipEventSegment: true },
+      );
+      if (!result.success)
+        throw new Error(result.error || "Unable to update pass tier settings");
+      await loadEventPassTiers();
+      Alert.alert(
+        "Pass tier updated",
+        `${tier.pass_type.toUpperCase()} settings now apply to new passes and pass-code claims.`,
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Pass tier not updated",
+        error.message || "Please try again.",
+      );
+    } finally {
+      setSavingPassTier(null);
     }
   };
 
@@ -511,11 +675,15 @@ export default function AdminPanel() {
         { skipEventSegment: true },
       );
       if (!result.success) throw new Error(result.error);
-      setPassClaimCodes(((result.data as { data?: PassClaimCode[] })?.data) || []);
+      setPassClaimCodes(
+        (result.data as { data?: PassClaimCode[] })?.data || [],
+      );
     } catch (error: any) {
-      const message = error?.message || 'Unable to load pass codes.';
+      const message = error?.message || "Unable to load pass codes.";
       Alert.alert(
-        message.includes('Pass-code storage is not installed') ? 'Pass-code setup pending' : 'Error',
+        message.includes("Pass-code storage is not installed")
+          ? "Pass-code setup pending"
+          : "Error",
         message,
       );
     } finally {
@@ -529,59 +697,75 @@ export default function AdminPanel() {
     const limitText = newPassCodeLimit.trim();
     const maxClaims = limitText ? Number(limitText) : null;
     if (!label) {
-      Alert.alert('Error', 'Please give this code a label for your team.');
+      Alert.alert("Error", "Please give this code a label for your team.");
       return;
     }
-    if (limitText && (typeof maxClaims !== 'number' || !Number.isInteger(maxClaims) || maxClaims < 1)) {
-      Alert.alert('Error', 'Use a positive whole-number claim limit, or leave it blank for unlimited use.');
+    if (
+      limitText &&
+      (typeof maxClaims !== "number" ||
+        !Number.isInteger(maxClaims) ||
+        maxClaims < 1)
+    ) {
+      Alert.alert(
+        "Error",
+        "Use a positive whole-number claim limit, or leave it blank for unlimited use.",
+      );
       return;
     }
 
     try {
       setPassCodesLoading(true);
-      const result = await apiClient.post('/admin/pass-codes', {
-        action: 'create',
-        eventId: selectedEventId,
-        code: rawCode || undefined,
-        label,
-        passType: newPassCodeType,
-        maxClaims,
-      }, { skipEventSegment: true });
+      const result = await apiClient.post(
+        "/admin/pass-codes",
+        {
+          action: "create",
+          eventId: selectedEventId,
+          code: rawCode || undefined,
+          label,
+          passType: newPassCodeType,
+          maxClaims,
+        },
+        { skipEventSegment: true },
+      );
       if (!result.success) throw new Error(result.error);
 
       const createdCode = (result.data as { code?: string })?.code;
       setShowCreatePassCodeModal(false);
-      setNewPassCode('');
-      setNewPassCodeLabel('');
-      setNewPassCodeType('general');
-      setNewPassCodeLimit('');
+      setNewPassCode("");
+      setNewPassCodeLabel("");
+      setNewPassCodeType("general");
+      setNewPassCodeLimit("");
       await loadPassClaimCodes();
       Alert.alert(
-        'Pass code created',
+        "Pass code created",
         `Share this code now: ${createdCode || rawCode.toUpperCase()}\n\nFor security, its raw value is not stored and will not be shown again.`,
       );
     } catch (error: any) {
-      console.error('Error creating pass code:', error);
-      Alert.alert('Error', 'Failed to create pass code: ' + error.message);
+      console.error("Error creating pass code:", error);
+      Alert.alert("Error", "Failed to create pass code: " + error.message);
     } finally {
       setPassCodesLoading(false);
     }
   };
 
   const handlePassCodeStatus = async (code: PassClaimCode) => {
-    const action = code.is_active ? 'deactivate' : 'reactivate';
+    const action = code.is_active ? "deactivate" : "reactivate";
     try {
       setPassCodesLoading(true);
-      const result = await apiClient.post('/admin/pass-codes', {
-        action,
-        eventId: selectedEventId,
-        codeId: code.id,
-      }, { skipEventSegment: true });
+      const result = await apiClient.post(
+        "/admin/pass-codes",
+        {
+          action,
+          eventId: selectedEventId,
+          codeId: code.id,
+        },
+        { skipEventSegment: true },
+      );
       if (!result.success) throw new Error(result.error);
       await loadPassClaimCodes();
     } catch (error: any) {
-      console.error('Error updating pass code:', error);
-      Alert.alert('Error', 'Failed to update pass code: ' + error.message);
+      console.error("Error updating pass code:", error);
+      Alert.alert("Error", "Failed to update pass code: " + error.message);
     } finally {
       setPassCodesLoading(false);
     }
@@ -591,18 +775,24 @@ export default function AdminPanel() {
     try {
       // Get unique user IDs from passes
       const { data: passesData, error: passesError } = await supabase
-        .from('passes')
-        .select('user_id')
-        .eq('event_id', selectedEventId)
+        .from("passes")
+        .select("user_id")
+        .eq("event_id", selectedEventId)
         .limit(200);
 
       if (passesError) throw passesError;
-      
+
       // Create user list from pass user_ids
-      const uniqueUserIds = [...new Set(((passesData || []) as { user_id: string }[]).map(p => p.user_id))];
-      setUsers(uniqueUserIds.map(id => ({ id, email: undefined, name: undefined })));
+      const uniqueUserIds = [
+        ...new Set(
+          ((passesData || []) as { user_id: string }[]).map((p) => p.user_id),
+        ),
+      ];
+      setUsers(
+        uniqueUserIds.map((id) => ({ id, email: undefined, name: undefined })),
+      );
     } catch (error: any) {
-      console.error('Error loading users:', error);
+      console.error("Error loading users:", error);
       // Fallback: empty array
       setUsers([]);
     }
@@ -611,15 +801,15 @@ export default function AdminPanel() {
   const loadSpeakers = async () => {
     try {
       const { data, error } = await supabase
-        .from('bsl_speakers')
-        .select('id, name, title, company, user_id')
-        .order('name')
+        .from("bsl_speakers")
+        .select("id, name, title, company, user_id")
+        .order("name")
         .limit(200);
 
       if (error) throw error;
       setSpeakers(data || []);
     } catch (error: any) {
-      console.error('Error loading speakers:', error);
+      console.error("Error loading speakers:", error);
     }
   };
 
@@ -627,16 +817,18 @@ export default function AdminPanel() {
     setMeetingsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('meeting_requests')
-        .select('id, requester_id, speaker_id, requester_name, speaker_name, status, created_at')
-        .order('created_at', { ascending: false })
+        .from("meeting_requests")
+        .select(
+          "id, requester_id, speaker_id, requester_name, speaker_name, status, created_at",
+        )
+        .order("created_at", { ascending: false })
         .limit(100);
 
       if (error) throw error;
       setMeetingRequests(data || []);
     } catch (error: any) {
-      console.error('Error loading meeting requests:', error);
-      Alert.alert('Error', 'Failed to load meeting requests: ' + error.message);
+      console.error("Error loading meeting requests:", error);
+      Alert.alert("Error", "Failed to load meeting requests: " + error.message);
     } finally {
       setMeetingsLoading(false);
     }
@@ -644,61 +836,78 @@ export default function AdminPanel() {
 
   const handleCreatePass = async () => {
     if (!newPassUserId.trim()) {
-      Alert.alert('Error', 'Please enter a user ID or email');
+      Alert.alert("Error", "Please enter a user ID or email");
       return;
     }
 
     try {
       setPassesLoading(true);
-      
+
       // Check if input is email or UUID
       let userId = newPassUserId.trim();
-      const isEmail = userId.includes('@');
-      
+      const isEmail = userId.includes("@");
+
       // If email, we need to find the user ID (this would require an API endpoint)
       // For now, assume it's a UUID
       if (isEmail) {
-        Alert.alert('Info', 'Email lookup requires API endpoint. Please use user UUID for now.');
+        Alert.alert(
+          "Info",
+          "Email lookup requires API endpoint. Please use user UUID for now.",
+        );
         return;
       }
 
-      const result = await apiClient.post('/admin/passes', {
-        action: 'create',
-        eventId: resolvePassStorageEventId(selectedEventId),
-        userId,
-        passType: newPassType,
-      }, { skipEventSegment: true });
+      const result = await apiClient.post(
+        "/admin/passes",
+        {
+          action: "create",
+          eventId: resolvePassStorageEventId(selectedEventId),
+          userId,
+          passType: newPassType,
+        },
+        { skipEventSegment: true },
+      );
       if (!result.success) throw new Error(result.error);
 
       const createdPassId = (result.data as { data: { id: string } }).data.id;
-      Alert.alert('Success', `Pass created successfully! Pass ID: ${createdPassId}`);
+      Alert.alert(
+        "Success",
+        `Pass created successfully! Pass ID: ${createdPassId}`,
+      );
       setShowCreatePassModal(false);
-      setNewPassUserId('');
-      setNewPassType('general');
+      setNewPassUserId("");
+      setNewPassType("general");
       await loadPasses();
     } catch (error: any) {
-      console.error('Error creating pass:', error);
-      Alert.alert('Error', 'Failed to create pass: ' + error.message);
+      console.error("Error creating pass:", error);
+      Alert.alert("Error", "Failed to create pass: " + error.message);
     } finally {
       setPassesLoading(false);
     }
   };
 
-  const handleUpdatePassStatus = async (passId: string, newStatus: PassStatus) => {
+  const handleUpdatePassStatus = async (
+    passId: string,
+    newStatus: PassStatus,
+  ) => {
     try {
-      const result = await apiClient.post('/admin/passes', {
-        action: 'update',
-        eventId: resolvePassStorageEventId(selectedEventId),
-        passId,
-        status: newStatus,
-      }, { skipEventSegment: true });
+      const result = await apiClient.post(
+        "/admin/passes",
+        {
+          action: "update",
+          eventId: resolvePassStorageEventId(selectedEventId),
+          passId,
+          status: newStatus,
+        },
+        { skipEventSegment: true },
+      );
       if (!result.success) throw new Error(result.error);
 
-      Alert.alert('Success', 'Pass status updated');
+      Alert.alert("Success", "Pass status updated");
       await loadPasses();
     } catch (error: any) {
-      console.error('Error updating pass:', error);
-      Alert.alert('Error', 'Failed to update pass: ' + error.message);
+      console.error("Error updating pass:", error);
+      Alert.alert("Error", "Failed to update pass: " + error.message);
     }
   };
 
@@ -709,73 +918,87 @@ export default function AdminPanel() {
 
   const handleCreateMatch = async () => {
     if (!selectedRequest || !selectedSlot) {
-      Alert.alert('Error', 'Please select a request and time slot');
+      Alert.alert("Error", "Please select a request and time slot");
       return;
     }
 
     try {
       setMeetingsLoading(true);
-      
+
       // meeting_requests.speaker_id is UUID (user_id), not bsl_speakers.id
       // We need to find the bsl_speakers.id from the user_id
       const { data: speakerData, error: speakerError } = await supabase
-        .from('bsl_speakers')
-        .select('id')
-        .eq('user_id', selectedRequest.speaker_id)
+        .from("bsl_speakers")
+        .select("id")
+        .eq("user_id", selectedRequest.speaker_id)
         .single();
 
       if (speakerError || !speakerData) {
         // Try alternative: maybe speaker_id is already bsl_speakers.id
-        const speaker = speakers.find(s => s.id === selectedRequest.speaker_id || s.user_id === selectedRequest.speaker_id);
+        const speaker = speakers.find(
+          (s) =>
+            s.id === selectedRequest.speaker_id ||
+            s.user_id === selectedRequest.speaker_id,
+        );
         if (!speaker || !speaker.id) {
-          throw new Error('Speaker not found. Please ensure the speaker has a bsl_speakers record.');
+          throw new Error(
+            "Speaker not found. Please ensure the speaker has a bsl_speakers record.",
+          );
         }
-        
-        const { data, error } = await supabase
-          .rpc('accept_meeting_request', {
-            p_request_id: selectedRequest.id,
-            p_speaker_id: speaker.id,
-            p_slot_start_time: selectedSlot,
-            p_speaker_response: 'Meeting scheduled by admin'
-          });
+
+        const { data, error } = await supabase.rpc("accept_meeting_request", {
+          p_request_id: selectedRequest.id,
+          p_speaker_id: speaker.id,
+          p_slot_start_time: selectedSlot,
+          p_speaker_response: "Meeting scheduled by admin",
+        });
 
         if (error) throw error;
 
-        if (data && typeof data === 'object' && 'success' in data && !data.success) {
-          throw new Error(data.error || 'Failed to create match');
+        if (
+          data &&
+          typeof data === "object" &&
+          "success" in data &&
+          !data.success
+        ) {
+          throw new Error(data.error || "Failed to create match");
         }
 
-        Alert.alert('Success', 'Meeting match created successfully!');
+        Alert.alert("Success", "Meeting match created successfully!");
         setShowMatchModal(false);
         setSelectedRequest(null);
-        setSelectedSlot('');
+        setSelectedSlot("");
         await loadMeetingRequests();
         return;
       }
 
       // Use the found speaker ID
-      const { data, error } = await supabase
-        .rpc('accept_meeting_request', {
-          p_request_id: selectedRequest.id,
-          p_speaker_id: speakerData.id,
-          p_slot_start_time: selectedSlot,
-          p_speaker_response: 'Meeting scheduled by admin'
-        });
+      const { data, error } = await supabase.rpc("accept_meeting_request", {
+        p_request_id: selectedRequest.id,
+        p_speaker_id: speakerData.id,
+        p_slot_start_time: selectedSlot,
+        p_speaker_response: "Meeting scheduled by admin",
+      });
 
       if (error) throw error;
 
-      if (data && typeof data === 'object' && 'success' in data && !data.success) {
-        throw new Error(data.error || 'Failed to create match');
+      if (
+        data &&
+        typeof data === "object" &&
+        "success" in data &&
+        !data.success
+      ) {
+        throw new Error(data.error || "Failed to create match");
       }
 
-      Alert.alert('Success', 'Meeting match created successfully!');
+      Alert.alert("Success", "Meeting match created successfully!");
       setShowMatchModal(false);
       setSelectedRequest(null);
-      setSelectedSlot('');
+      setSelectedSlot("");
       await loadMeetingRequests();
     } catch (error: any) {
-      console.error('Error creating match:', error);
-      Alert.alert('Error', 'Failed to create match: ' + error.message);
+      console.error("Error creating match:", error);
+      Alert.alert("Error", "Failed to create match: " + error.message);
     } finally {
       setMeetingsLoading(false);
     }
@@ -783,21 +1006,24 @@ export default function AdminPanel() {
 
   const getAvailableSlots = async (speakerId: string) => {
     try {
-      const { data, error } = await supabase
-        .rpc('get_speaker_available_slots', {
+      const { data, error } = await supabase.rpc(
+        "get_speaker_available_slots",
+        {
           p_speaker_id: speakerId,
-          p_duration_minutes: 15
-        });
+          p_event_id: selectedEventId,
+          p_duration_minutes: 15,
+        },
+      );
 
       if (error) throw error;
       return data || [];
     } catch (error: any) {
-      console.error('Error loading slots:', error);
+      console.error("Error loading slots:", error);
       return [];
     }
   };
 
-  const filteredPasses = passes.filter(pass => {
+  const filteredPasses = passes.filter((pass) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -807,7 +1033,7 @@ export default function AdminPanel() {
     );
   });
 
-  const filteredRequests = meetingRequests.filter(req => {
+  const filteredRequests = meetingRequests.filter((req) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -818,14 +1044,19 @@ export default function AdminPanel() {
   });
 
   if (loading) {
-    return <LoadingScreen icon="admin-panel-settings" message="Checking admin access..." />;
+    return (
+      <LoadingScreen
+        icon="admin-panel-settings"
+        message="Checking admin access..."
+      />
+    );
   }
 
   if (!isUserAdmin) {
     return null; // Will redirect
   }
 
-  const canManagePasses = isGlobalAdmin || currentEventRole === 'event_admin';
+  const canManagePasses = isGlobalAdmin || currentEventRole === "event_admin";
 
   return (
     <View style={styles.container}>
@@ -833,17 +1064,30 @@ export default function AdminPanel() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Admin Panel</Text>
         <Text style={styles.headerSubtitle}>
-          Role: {isGlobalAdmin ? (adminRole || 'Admin') : `${currentEventRole || 'admin'} @ ${selectedEventId}`}
+          Role:{" "}
+          {isGlobalAdmin
+            ? adminRole || "Admin"
+            : `${currentEventRole || "admin"} @ ${selectedEventId}`}
         </Text>
         {!isGlobalAdmin && accessibleEvents.length > 1 && (
           <View style={styles.eventSwitcher}>
             {accessibleEvents.map((grant) => (
               <TouchableOpacity
                 key={grant.eventId}
-                style={[styles.eventSwitcherChip, selectedEventId === grant.eventId && styles.eventSwitcherChipActive]}
+                style={[
+                  styles.eventSwitcherChip,
+                  selectedEventId === grant.eventId &&
+                    styles.eventSwitcherChipActive,
+                ]}
                 onPress={() => handleSelectEvent(grant.eventId)}
               >
-                <Text style={[styles.eventSwitcherChipText, selectedEventId === grant.eventId && styles.eventSwitcherChipTextActive]}>
+                <Text
+                  style={[
+                    styles.eventSwitcherChipText,
+                    selectedEventId === grant.eventId &&
+                      styles.eventSwitcherChipTextActive,
+                  ]}
+                >
                   {grant.eventId}
                 </Text>
               </TouchableOpacity>
@@ -877,89 +1121,194 @@ export default function AdminPanel() {
           scrollEventThrottle={16}
           {...({ onWheel: handleTabStripWheel } as any)}
         >
-        {canManagePasses && (
+          {canManagePasses && (
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "passes" && styles.tabActive]}
+              onPress={() => setActiveTab("passes")}
+            >
+              <MaterialIcons
+                name="card-membership"
+                size={20}
+                color={activeTab === "passes" ? "#fff" : colors.text.secondary}
+              />
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.tabText,
+                  activeTab === "passes" && styles.tabTextActive,
+                ]}
+              >
+                Passes
+              </Text>
+            </TouchableOpacity>
+          )}
+          {canManagePasses && (
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === "pass-codes" && styles.tabActive,
+              ]}
+              onPress={() => setActiveTab("pass-codes")}
+            >
+              <MaterialIcons
+                name="confirmation-number"
+                size={20}
+                color={
+                  activeTab === "pass-codes" ? "#fff" : colors.text.secondary
+                }
+              />
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.tabText,
+                  activeTab === "pass-codes" && styles.tabTextActive,
+                ]}
+              >
+                Pass Codes
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'passes' && styles.tabActive]}
-            onPress={() => setActiveTab('passes')}
+            style={[styles.tab, activeTab === "qr-scanner" && styles.tabActive]}
+            onPress={() => setActiveTab("qr-scanner")}
           >
-            <MaterialIcons name="card-membership" size={20} color={activeTab === 'passes' ? '#fff' : colors.text.secondary} />
-            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'passes' && styles.tabTextActive]}>Passes</Text>
+            <MaterialIcons
+              name="qr-code-scanner"
+              size={20}
+              color={
+                activeTab === "qr-scanner" ? "#fff" : colors.text.secondary
+              }
+            />
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.tabText,
+                activeTab === "qr-scanner" && styles.tabTextActive,
+              ]}
+            >
+              QR Scanner
+            </Text>
           </TouchableOpacity>
-        )}
-        {canManagePasses && (
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'pass-codes' && styles.tabActive]}
-            onPress={() => setActiveTab('pass-codes')}
+            style={[styles.tab, activeTab === "meetings" && styles.tabActive]}
+            onPress={() => setActiveTab("meetings")}
           >
-            <MaterialIcons name="confirmation-number" size={20} color={activeTab === 'pass-codes' ? '#fff' : colors.text.secondary} />
-            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'pass-codes' && styles.tabTextActive]}>Pass Codes</Text>
+            <MaterialIcons
+              name="people"
+              size={20}
+              color={activeTab === "meetings" ? "#fff" : colors.text.secondary}
+            />
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.tabText,
+                activeTab === "meetings" && styles.tabTextActive,
+              ]}
+            >
+              Meetings
+            </Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'qr-scanner' && styles.tabActive]}
-          onPress={() => setActiveTab('qr-scanner')}
-        >
-          <MaterialIcons name="qr-code-scanner" size={20} color={activeTab === 'qr-scanner' ? '#fff' : colors.text.secondary} />
-          <Text numberOfLines={1} style={[styles.tabText, activeTab === 'qr-scanner' && styles.tabTextActive]}>QR Scanner</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'meetings' && styles.tabActive]}
-          onPress={() => setActiveTab('meetings')}
-        >
-          <MaterialIcons name="people" size={20} color={activeTab === 'meetings' ? '#fff' : colors.text.secondary} />
-          <Text numberOfLines={1} style={[styles.tabText, activeTab === 'meetings' && styles.tabTextActive]}>Meetings</Text>
-        </TouchableOpacity>
-        {canManagePasses && (
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'roles' && styles.tabActive]}
-            onPress={() => setActiveTab('roles')}
-          >
-            <MaterialIcons name="admin-panel-settings" size={20} color={activeTab === 'roles' ? '#fff' : colors.text.secondary} />
-            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'roles' && styles.tabTextActive]}>Staff & Roles</Text>
-          </TouchableOpacity>
-        )}
-        {canManagePasses && (
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'speaker-roles' && styles.tabActive]}
-            onPress={() => setActiveTab('speaker-roles')}
-          >
-            <MaterialIcons name="record-voice-over" size={20} color={activeTab === 'speaker-roles' ? '#fff' : colors.text.secondary} />
-            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'speaker-roles' && styles.tabTextActive]}>Speakers</Text>
-          </TouchableOpacity>
-        )}
+          {canManagePasses && (
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "roles" && styles.tabActive]}
+              onPress={() => setActiveTab("roles")}
+            >
+              <MaterialIcons
+                name="admin-panel-settings"
+                size={20}
+                color={activeTab === "roles" ? "#fff" : colors.text.secondary}
+              />
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.tabText,
+                  activeTab === "roles" && styles.tabTextActive,
+                ]}
+              >
+                Staff & Roles
+              </Text>
+            </TouchableOpacity>
+          )}
+          {canManagePasses && (
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === "speaker-roles" && styles.tabActive,
+              ]}
+              onPress={() => setActiveTab("speaker-roles")}
+            >
+              <MaterialIcons
+                name="record-voice-over"
+                size={20}
+                color={
+                  activeTab === "speaker-roles" ? "#fff" : colors.text.secondary
+                }
+              />
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.tabText,
+                  activeTab === "speaker-roles" && styles.tabTextActive,
+                ]}
+              >
+                Speakers
+              </Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
         {tabsOverflow && (
           <TouchableOpacity
             activeOpacity={0.8}
             style={styles.tabScrollHint}
-            accessibilityLabel={tabsAtEnd ? 'Scroll admin sections back to the beginning' : 'Show more admin sections'}
-            accessibilityHint={tabsAtEnd ? 'Scrolls the tab row to the left' : 'Scrolls the tab row to the right'}
-            onPress={() => scrollTabStripTo(tabsAtEnd ? 0 : tabContentWidthRef.current)}
+            accessibilityLabel={
+              tabsAtEnd
+                ? "Scroll admin sections back to the beginning"
+                : "Show more admin sections"
+            }
+            accessibilityHint={
+              tabsAtEnd
+                ? "Scrolls the tab row to the left"
+                : "Scrolls the tab row to the right"
+            }
+            onPress={() =>
+              scrollTabStripTo(tabsAtEnd ? 0 : tabContentWidthRef.current)
+            }
           >
-            <MaterialIcons name={tabsAtEnd ? 'chevron-left' : 'chevron-right'} size={20} color="#007AFF" />
-            <Text style={styles.tabScrollHintText}>{tabsAtEnd ? 'Back' : 'More'}</Text>
+            <MaterialIcons
+              name={tabsAtEnd ? "chevron-left" : "chevron-right"}
+              size={20}
+              color="#007AFF"
+            />
+            <Text style={styles.tabScrollHintText}>
+              {tabsAtEnd ? "Back" : "More"}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === 'passes' && (
+        {activeTab === "passes" && (
           <PassManagementTab
             styles={styles}
             colors={colors}
             passes={filteredPasses}
             users={users}
             loading={passesLoading}
+            eventPassTiers={eventPassTiers}
+            passTiersLoading={passTiersLoading}
+            savingPassTier={savingPassTier}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onCreatePass={() => setShowCreatePassModal(true)}
             onUpdateStatus={handleUpdatePassStatus}
             onRefresh={loadPasses}
+            onRefreshTiers={loadEventPassTiers}
+            onUpdateTier={updateEventPassTier}
           />
         )}
 
-        {activeTab === 'pass-codes' && (
+        {activeTab === "pass-codes" && (
           <PassCodeManagementTab
             styles={styles}
             colors={colors}
@@ -971,7 +1320,7 @@ export default function AdminPanel() {
           />
         )}
 
-        {activeTab === 'qr-scanner' && (
+        {activeTab === "qr-scanner" && (
           <QRScannerTab
             styles={styles}
             colors={colors}
@@ -979,7 +1328,7 @@ export default function AdminPanel() {
           />
         )}
 
-        {activeTab === 'meetings' && (
+        {activeTab === "meetings" && (
           <MeetingMatcherTab
             styles={styles}
             colors={colors}
@@ -996,38 +1345,43 @@ export default function AdminPanel() {
           />
         )}
 
-        {activeTab === 'roles' && (
+        {activeTab === "roles" && (
           <RolesTab
             styles={styles}
             colors={colors}
             eventId={selectedEventId}
             roles={eventRoles}
             loading={rolesLoading}
-            canGrantEventAdmin={adminRole === 'super_admin'}
-            canManageGlobalAdmins={adminRole === 'super_admin'}
+            canGrantEventAdmin={adminRole === "super_admin"}
+            canManageGlobalAdmins={adminRole === "super_admin"}
             globalAdmins={globalAdmins}
             globalAdminsLoading={globalAdminsLoading}
             onGrantGlobalAdmin={() => setShowGrantGlobalAdminModal(true)}
-            onRevokeGlobalAdmin={(userId: string) => mutateGlobalAdmin('revoke', userId, true)}
+            onRevokeGlobalAdmin={(userId: string) =>
+              mutateGlobalAdmin("revoke", userId, true)
+            }
             onGrantPress={() => setShowGrantRoleModal(true)}
             onRevoke={handleRevokeRole}
             onRefresh={loadEventRoles}
           />
         )}
 
-        {activeTab === 'speaker-roles' && (
+        {activeTab === "speaker-roles" && (
           <SpeakerRoleManagementTab
             styles={styles}
             speakers={speakerRoles}
             loading={speakerRolesLoading}
             onAssign={(speaker: SpeakerRoleRecord) => {
               setSelectedSpeakerRole(speaker);
-              setNewSpeakerAccountEmail('');
+              setNewSpeakerAccountEmail("");
               setShowGrantSpeakerRoleModal(true);
             }}
             onRevoke={handleRevokeSpeakerRole}
             onToggleActive={(speaker: SpeakerRoleRecord) => {
-              void mutateSpeakerRole(speaker.isActive ? 'deactivate' : 'activate', speaker);
+              void mutateSpeakerRole(
+                speaker.isActive ? "deactivate" : "activate",
+                speaker,
+              );
             }}
             onRefresh={loadSpeakerRoles}
           />
@@ -1044,7 +1398,7 @@ export default function AdminPanel() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create New Pass</Text>
-            
+
             <Text style={styles.modalLabel}>User ID (UUID)</Text>
             <TextInput
               style={styles.modalInput}
@@ -1060,13 +1414,21 @@ export default function AdminPanel() {
 
             <Text style={styles.modalLabel}>Pass Type</Text>
             <View style={styles.passTypeButtons}>
-              {(['general', 'business', 'vip'] as PassType[]).map(type => (
+              {(["general", "business", "vip"] as PassType[]).map((type) => (
                 <TouchableOpacity
                   key={type}
-                  style={[styles.passTypeButton, newPassType === type && styles.passTypeButtonActive]}
+                  style={[
+                    styles.passTypeButton,
+                    newPassType === type && styles.passTypeButtonActive,
+                  ]}
                   onPress={() => setNewPassType(type)}
                 >
-                  <Text style={[styles.passTypeButtonText, newPassType === type && styles.passTypeButtonTextActive]}>
+                  <Text
+                    style={[
+                      styles.passTypeButtonText,
+                      newPassType === type && styles.passTypeButtonTextActive,
+                    ]}
+                  >
                     {type.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -1088,7 +1450,14 @@ export default function AdminPanel() {
                 {passesLoading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Create</Text>
+                  <Text
+                    style={[
+                      styles.modalButtonText,
+                      styles.modalButtonTextConfirm,
+                    ]}
+                  >
+                    Create
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1105,7 +1474,9 @@ export default function AdminPanel() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Pass Code for {selectedEventId}</Text>
+            <Text style={styles.modalTitle}>
+              Create Pass Code for {selectedEventId}
+            </Text>
 
             <Text style={styles.modalLabel}>Internal label</Text>
             <TextInput
@@ -1129,13 +1500,22 @@ export default function AdminPanel() {
 
             <Text style={styles.modalLabel}>Pass type</Text>
             <View style={styles.passTypeButtons}>
-              {(['general', 'business', 'vip'] as PassType[]).map(type => (
+              {(["general", "business", "vip"] as PassType[]).map((type) => (
                 <TouchableOpacity
                   key={type}
-                  style={[styles.passTypeButton, newPassCodeType === type && styles.passTypeButtonActive]}
+                  style={[
+                    styles.passTypeButton,
+                    newPassCodeType === type && styles.passTypeButtonActive,
+                  ]}
                   onPress={() => setNewPassCodeType(type)}
                 >
-                  <Text style={[styles.passTypeButtonText, newPassCodeType === type && styles.passTypeButtonTextActive]}>
+                  <Text
+                    style={[
+                      styles.passTypeButtonText,
+                      newPassCodeType === type &&
+                        styles.passTypeButtonTextActive,
+                    ]}
+                  >
                     {type.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -1152,7 +1532,8 @@ export default function AdminPanel() {
               keyboardType="number-pad"
             />
             <Text style={[styles.modalLabel, { fontSize: 12, marginTop: 4 }]}>
-              A code can only grant one pass to each account. The raw code is shown once after creation and is never stored.
+              A code can only grant one pass to each account. The raw code is
+              shown once after creation and is never stored.
             </Text>
 
             <View style={styles.modalButtons}>
@@ -1170,7 +1551,14 @@ export default function AdminPanel() {
                 {passCodesLoading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Create code</Text>
+                  <Text
+                    style={[
+                      styles.modalButtonText,
+                      styles.modalButtonTextConfirm,
+                    ]}
+                  >
+                    Create code
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1196,7 +1584,7 @@ export default function AdminPanel() {
           onCancel={() => {
             setShowMatchModal(false);
             setSelectedRequest(null);
-            setSelectedSlot('');
+            setSelectedSlot("");
           }}
           loading={meetingsLoading}
           onLoadSlots={getAvailableSlots}
@@ -1212,7 +1600,9 @@ export default function AdminPanel() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Grant Role for {selectedEventId}</Text>
+            <Text style={styles.modalTitle}>
+              Grant Role for {selectedEventId}
+            </Text>
 
             <Text style={styles.modalLabel}>User ID (UUID)</Text>
             <TextInput
@@ -1227,27 +1617,49 @@ export default function AdminPanel() {
             <Text style={styles.modalLabel}>Role</Text>
             <View style={styles.passTypeButtons}>
               <TouchableOpacity
-                style={[styles.passTypeButton, newRoleType === 'moderator' && styles.passTypeButtonActive]}
-                onPress={() => setNewRoleType('moderator')}
+                style={[
+                  styles.passTypeButton,
+                  newRoleType === "moderator" && styles.passTypeButtonActive,
+                ]}
+                onPress={() => setNewRoleType("moderator")}
               >
-                <Text style={[styles.passTypeButtonText, newRoleType === 'moderator' && styles.passTypeButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.passTypeButtonText,
+                    newRoleType === "moderator" &&
+                      styles.passTypeButtonTextActive,
+                  ]}
+                >
                   MODERATOR
                 </Text>
               </TouchableOpacity>
-              {adminRole === 'super_admin' && (
+              {adminRole === "super_admin" && (
                 <TouchableOpacity
-                  style={[styles.passTypeButton, newRoleType === 'event_admin' && styles.passTypeButtonActive]}
-                  onPress={() => setNewRoleType('event_admin')}
+                  style={[
+                    styles.passTypeButton,
+                    newRoleType === "event_admin" &&
+                      styles.passTypeButtonActive,
+                  ]}
+                  onPress={() => setNewRoleType("event_admin")}
                 >
-                  <Text style={[styles.passTypeButtonText, newRoleType === 'event_admin' && styles.passTypeButtonTextActive]}>
+                  <Text
+                    style={[
+                      styles.passTypeButtonText,
+                      newRoleType === "event_admin" &&
+                        styles.passTypeButtonTextActive,
+                    ]}
+                  >
                     EVENT ADMIN
                   </Text>
                 </TouchableOpacity>
               )}
             </View>
-            {adminRole !== 'super_admin' && (
-              <Text style={[styles.modalLabel, { fontSize: 12, marginTop: -12 }]}>
-                Only a super admin can grant event_admin. You can grant moderator.
+            {adminRole !== "super_admin" && (
+              <Text
+                style={[styles.modalLabel, { fontSize: 12, marginTop: -12 }]}
+              >
+                Only a super admin can grant event_admin. You can grant
+                moderator.
               </Text>
             )}
 
@@ -1266,7 +1678,14 @@ export default function AdminPanel() {
                 {rolesLoading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Grant</Text>
+                  <Text
+                    style={[
+                      styles.modalButtonText,
+                      styles.modalButtonTextConfirm,
+                    ]}
+                  >
+                    Grant
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1296,7 +1715,8 @@ export default function AdminPanel() {
               keyboardType="email-address"
             />
             <Text style={[styles.modalLabel, { fontSize: 12, marginTop: 4 }]}>
-              Global admins can manage event operations but cannot grant global admin access.
+              Global admins can manage event operations but cannot grant global
+              admin access.
             </Text>
 
             <View style={styles.modalButtons}>
@@ -1314,7 +1734,14 @@ export default function AdminPanel() {
                 {globalAdminsLoading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Grant</Text>
+                  <Text
+                    style={[
+                      styles.modalButtonText,
+                      styles.modalButtonTextConfirm,
+                    ]}
+                  >
+                    Grant
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1333,7 +1760,9 @@ export default function AdminPanel() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Assign Speaker Account</Text>
             <Text style={styles.modalLabel}>
-              {selectedSpeakerRole ? `Speaker: ${selectedSpeakerRole.name}` : 'Speaker'}
+              {selectedSpeakerRole
+                ? `Speaker: ${selectedSpeakerRole.name}`
+                : "Speaker"}
             </Text>
             <Text style={styles.modalLabel}>Existing account email</Text>
             <TextInput
@@ -1347,7 +1776,8 @@ export default function AdminPanel() {
               keyboardType="email-address"
             />
             <Text style={[styles.modalLabel, { fontSize: 12, marginTop: 4 }]}>
-              This activates the linked speaker profile. The account must already exist.
+              This activates the linked speaker profile. The account must
+              already exist.
             </Text>
 
             <View style={styles.modalButtons}>
@@ -1366,7 +1796,14 @@ export default function AdminPanel() {
                 {speakerRolesLoading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Assign</Text>
+                  <Text
+                    style={[
+                      styles.modalButtonText,
+                      styles.modalButtonTextConfirm,
+                    ]}
+                  >
+                    Assign
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1391,14 +1828,33 @@ function PassManagementTab({
   passes,
   users,
   loading,
+  eventPassTiers,
+  passTiersLoading,
+  savingPassTier,
   searchQuery,
   onSearchChange,
   onCreatePass,
   onUpdateStatus,
-  onRefresh
+  onRefresh,
+  onRefreshTiers,
+  onUpdateTier,
 }: any) {
   return (
     <View style={styles.tabContent}>
+      <PassTierSettings
+        styles={styles}
+        key={eventPassTiers
+          .map(
+            (tier: EventPassTier) =>
+              `${tier.event_id}:${tier.pass_type}:${tier.updated_at || ""}`,
+          )
+          .join("|")}
+        tiers={eventPassTiers}
+        loading={passTiersLoading}
+        savingPassType={savingPassTier}
+        onRefresh={onRefreshTiers}
+        onSave={onUpdateTier}
+      />
       <View style={styles.searchContainer}>
         <MaterialIcons name="search" size={20} color={colors.text.secondary} />
         <TextInput
@@ -1423,31 +1879,39 @@ function PassManagementTab({
             <View key={pass.id} style={styles.passCard}>
               <View style={styles.passCardHeader}>
                 <Text style={styles.passNumber}>{pass.pass_number}</Text>
-                <View style={[styles.statusBadge, styles[`statusBadge${pass.status}`]]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    styles[`statusBadge${pass.status}`],
+                  ]}
+                >
                   <Text style={styles.statusBadgeText}>{pass.status}</Text>
                 </View>
               </View>
-              <Text style={styles.passInfo}>Type: {pass.pass_type.toUpperCase()}</Text>
+              <Text style={styles.passInfo}>
+                Type: {pass.pass_type.toUpperCase()}
+              </Text>
               <Text style={styles.passInfo}>User: {pass.user_id}</Text>
               <Text style={styles.passInfo}>
-                Requests: {pass.used_meeting_requests} / {pass.max_meeting_requests}
+                Requests: {pass.used_meeting_requests} /{" "}
+                {pass.max_meeting_requests}
               </Text>
               <Text style={styles.passInfo}>
                 Boost: {pass.used_boost_amount} / {pass.max_boost_amount}
               </Text>
               <View style={styles.passActions}>
-                {pass.status === 'active' && (
+                {pass.status === "active" && (
                   <TouchableOpacity
                     style={styles.actionButton}
-                    onPress={() => onUpdateStatus(pass.id, 'suspended')}
+                    onPress={() => onUpdateStatus(pass.id, "suspended")}
                   >
                     <Text style={styles.actionButtonText}>Suspend</Text>
                   </TouchableOpacity>
                 )}
-                {pass.status === 'suspended' && (
+                {pass.status === "suspended" && (
                   <TouchableOpacity
                     style={[styles.actionButton, styles.actionButtonSuccess]}
-                    onPress={() => onUpdateStatus(pass.id, 'active')}
+                    onPress={() => onUpdateStatus(pass.id, "active")}
                   >
                     <Text style={styles.actionButtonText}>Activate</Text>
                   </TouchableOpacity>
@@ -1464,6 +1928,155 @@ function PassManagementTab({
   );
 }
 
+function PassTierSettings({
+  styles,
+  tiers,
+  loading,
+  savingPassType,
+  onRefresh,
+  onSave,
+}: {
+  styles: any;
+  tiers: EventPassTier[];
+  loading: boolean;
+  savingPassType: PassType | null;
+  onRefresh: () => void;
+  onSave: (tier: EventPassTier) => void;
+}) {
+  const draftsRef = useRef<EventPassTier[]>(tiers);
+
+  const updateDraft = (passType: PassType, update: Partial<EventPassTier>) => {
+    draftsRef.current = draftsRef.current.map((tier) =>
+      tier.pass_type === passType ? { ...tier, ...update } : tier,
+    );
+  };
+
+  return (
+    <View style={[styles.list, { marginBottom: 20 }]}>
+      <View style={styles.passCard}>
+        <View style={styles.passCardHeader}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.passNumber}>Pass tier settings</Text>
+            <Text style={styles.passInfo}>
+              Controls the price and new-pass allowances for this event.
+              Existing passes keep their issued limits.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={onRefresh}
+            disabled={loading}
+          >
+            <MaterialIcons name="refresh" size={16} color="#fff" />
+            <Text style={styles.actionButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+      ) : (
+        tiers.map((tier) => {
+          const priceValue =
+            tier.price_cents === null ? "" : String(tier.price_cents / 100);
+          const isSaving = savingPassType === tier.pass_type;
+          return (
+            <View key={tier.pass_type} style={styles.passCard}>
+              <Text style={styles.passNumber}>
+                {tier.pass_type.toUpperCase()}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalLabel}>Meeting requests</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    defaultValue={String(tier.max_meeting_requests)}
+                    onChangeText={(value) =>
+                      updateDraft(tier.pass_type, {
+                        max_meeting_requests:
+                          Number(value.replace(/[^0-9]/g, "")) || 0,
+                      })
+                    }
+                    keyboardType="number-pad"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalLabel}>Boost points</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    defaultValue={String(tier.max_boost_amount)}
+                    onChangeText={(value) =>
+                      updateDraft(tier.pass_type, {
+                        max_boost_amount:
+                          Number(value.replace(/[^0-9]/g, "")) || 0,
+                      })
+                    }
+                    keyboardType="number-pad"
+                  />
+                </View>
+              </View>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalLabel}>Price ({tier.currency})</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    defaultValue={priceValue}
+                    onChangeText={(value) => {
+                      const normalized = value.replace(/[^0-9.]/g, "");
+                      updateDraft(tier.pass_type, {
+                        price_cents: normalized
+                          ? Math.round(Number(normalized) * 100)
+                          : null,
+                      });
+                    }}
+                    keyboardType="decimal-pad"
+                    placeholder="e.g. 99"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalLabel}>Price label (optional)</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    defaultValue={tier.price_label || ""}
+                    onChangeText={(value) =>
+                      updateDraft(tier.pass_type, {
+                        price_label: value || null,
+                      })
+                    }
+                    placeholder="e.g. Premium"
+                  />
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  styles.actionButtonSuccess,
+                  { alignSelf: "flex-start" },
+                ]}
+                onPress={() => {
+                  const draft = draftsRef.current.find(
+                    (item) => item.pass_type === tier.pass_type,
+                  );
+                  if (draft) onSave(draft);
+                }}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.actionButtonText}>
+                    Save {tier.pass_type}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          );
+        })
+      )}
+    </View>
+  );
+}
+
 function PassCodeManagementTab({
   styles,
   colors,
@@ -1475,12 +2088,21 @@ function PassCodeManagementTab({
 }: any) {
   return (
     <View style={styles.tabContent}>
-      <Text style={[styles.passInfo, { marginBottom: 12 }]}>Manage reusable promotions and one-time courtesy upgrades for this event.</Text>
+      <Text style={[styles.passInfo, { marginBottom: 12 }]}>
+        Manage reusable promotions and one-time courtesy upgrades for this
+        event.
+      </Text>
       <TouchableOpacity style={styles.createButton} onPress={onCreate}>
         <MaterialIcons name="add" size={24} color="#fff" />
         <Text style={styles.createButtonText}>Create Pass Code</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.actionButton, { alignSelf: 'flex-end', marginBottom: 10 }]} onPress={onRefresh}>
+      <TouchableOpacity
+        style={[
+          styles.actionButton,
+          { alignSelf: "flex-end", marginBottom: 10 },
+        ]}
+        onPress={onRefresh}
+      >
         <MaterialIcons name="refresh" size={16} color="#fff" />
         <Text style={styles.actionButtonText}>Refresh</Text>
       </TouchableOpacity>
@@ -1490,32 +2112,55 @@ function PassCodeManagementTab({
       ) : (
         <View style={styles.list}>
           {codes.map((code: PassClaimCode) => {
-            const limit = code.max_claims === null ? 'Unlimited' : `${code.claimed_count} / ${code.max_claims}`;
-            const expires = code.expires_at ? new Date(code.expires_at).toLocaleDateString() : 'Never';
+            const limit =
+              code.max_claims === null
+                ? "Unlimited"
+                : `${code.claimed_count} / ${code.max_claims}`;
+            const expires = code.expires_at
+              ? new Date(code.expires_at).toLocaleDateString()
+              : "Never";
             return (
               <View key={code.id} style={styles.passCard}>
                 <View style={styles.passCardHeader}>
                   <Text style={styles.passNumber}>{code.label}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: code.is_active ? '#16A34A' : '#6B7280' }]}>
-                    <Text style={styles.statusBadgeText}>{code.is_active ? 'ACTIVE' : 'INACTIVE'}</Text>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      {
+                        backgroundColor: code.is_active ? "#16A34A" : "#6B7280",
+                      },
+                    ]}
+                  >
+                    <Text style={styles.statusBadgeText}>
+                      {code.is_active ? "ACTIVE" : "INACTIVE"}
+                    </Text>
                   </View>
                 </View>
-                <Text style={styles.passInfo}>Pass: {code.pass_type.toUpperCase()}</Text>
+                <Text style={styles.passInfo}>
+                  Pass: {code.pass_type.toUpperCase()}
+                </Text>
                 <Text style={styles.passInfo}>Claims: {limit}</Text>
                 <Text style={styles.passInfo}>Expires: {expires}</Text>
                 <View style={styles.passActions}>
                   <TouchableOpacity
-                    style={[styles.actionButton, !code.is_active && styles.actionButtonSuccess]}
+                    style={[
+                      styles.actionButton,
+                      !code.is_active && styles.actionButtonSuccess,
+                    ]}
                     onPress={() => onUpdateStatus(code)}
                   >
-                    <Text style={styles.actionButtonText}>{code.is_active ? 'Deactivate' : 'Reactivate'}</Text>
+                    <Text style={styles.actionButtonText}>
+                      {code.is_active ? "Deactivate" : "Reactivate"}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
             );
           })}
           {codes.length === 0 && (
-            <Text style={styles.emptyText}>No pass codes for this event yet</Text>
+            <Text style={styles.emptyText}>
+              No pass codes for this event yet
+            </Text>
           )}
         </View>
       )}
@@ -1538,32 +2183,55 @@ function RolesTab({
   onRevokeGlobalAdmin,
   onGrantPress,
   onRevoke,
-  onRefresh
+  onRefresh,
 }: any) {
   return (
     <View style={styles.tabContent}>
       {canManageGlobalAdmins && (
         <>
-          <Text style={[styles.passNumber, { marginBottom: 8 }]}>Global Administrators</Text>
-          <Text style={[styles.passInfo, { marginBottom: 12 }]}>Only a super admin can grant or revoke this role.</Text>
-          <TouchableOpacity style={styles.createButton} onPress={onGrantGlobalAdmin}>
+          <Text style={[styles.passNumber, { marginBottom: 8 }]}>
+            Global Administrators
+          </Text>
+          <Text style={[styles.passInfo, { marginBottom: 12 }]}>
+            Only a super admin can grant or revoke this role.
+          </Text>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={onGrantGlobalAdmin}
+          >
             <MaterialIcons name="admin-panel-settings" size={24} color="#fff" />
             <Text style={styles.createButtonText}>Grant Global Admin</Text>
           </TouchableOpacity>
           {globalAdminsLoading ? (
-            <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+            <ActivityIndicator
+              size="large"
+              color="#007AFF"
+              style={styles.loader}
+            />
           ) : (
             <View style={[styles.list, { marginBottom: 24 }]}>
               {globalAdmins.map((roleRow: GlobalAdminRoleRow) => (
                 <View key={roleRow.id} style={styles.passCard}>
                   <View style={styles.passCardHeader}>
                     <Text style={styles.passNumber}>{roleRow.user_id}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: roleRow.role === 'super_admin' ? '#DC2626' : '#7C3AED' }]}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor:
+                            roleRow.role === "super_admin"
+                              ? "#DC2626"
+                              : "#7C3AED",
+                        },
+                      ]}
+                    >
                       <Text style={styles.statusBadgeText}>{roleRow.role}</Text>
                     </View>
                   </View>
-                  <Text style={styles.passInfo}>Granted: {new Date(roleRow.created_at).toLocaleDateString()}</Text>
-                  {roleRow.role === 'admin' && (
+                  <Text style={styles.passInfo}>
+                    Granted: {new Date(roleRow.created_at).toLocaleDateString()}
+                  </Text>
+                  {roleRow.role === "admin" && (
                     <View style={styles.passActions}>
                       <TouchableOpacity
                         style={styles.actionButton}
@@ -1576,11 +2244,15 @@ function RolesTab({
                 </View>
               ))}
               {globalAdmins.length === 0 && (
-                <Text style={styles.emptyText}>No standard global administrators granted</Text>
+                <Text style={styles.emptyText}>
+                  No standard global administrators granted
+                </Text>
               )}
             </View>
           )}
-          <Text style={[styles.passNumber, { marginBottom: 8 }]}>Event Staff</Text>
+          <Text style={[styles.passNumber, { marginBottom: 8 }]}>
+            Event Staff
+          </Text>
         </>
       )}
       <TouchableOpacity style={styles.createButton} onPress={onGrantPress}>
@@ -1596,16 +2268,26 @@ function RolesTab({
             <View key={roleRow.id} style={styles.passCard}>
               <View style={styles.passCardHeader}>
                 <Text style={styles.passNumber}>{roleRow.user_id}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: roleRow.role === 'event_admin' ? '#007AFF' : '#8E8E93' }]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    {
+                      backgroundColor:
+                        roleRow.role === "event_admin" ? "#007AFF" : "#8E8E93",
+                    },
+                  ]}
+                >
                   <Text style={styles.statusBadgeText}>{roleRow.role}</Text>
                 </View>
               </View>
               <Text style={styles.passInfo}>Event: {eventId}</Text>
               <Text style={styles.passInfo}>
                 Granted: {new Date(roleRow.granted_at).toLocaleDateString()}
-                {roleRow.expires_at ? ` · Expires: ${new Date(roleRow.expires_at).toLocaleDateString()}` : ''}
+                {roleRow.expires_at
+                  ? ` · Expires: ${new Date(roleRow.expires_at).toLocaleDateString()}`
+                  : ""}
               </Text>
-              {(roleRow.role === 'moderator' || canGrantEventAdmin) && (
+              {(roleRow.role === "moderator" || canGrantEventAdmin) && (
                 <View style={styles.passActions}>
                   <TouchableOpacity
                     style={styles.actionButton}
@@ -1618,7 +2300,9 @@ function RolesTab({
             </View>
           ))}
           {roles.length === 0 && (
-            <Text style={styles.emptyText}>No staff roles granted for this event yet</Text>
+            <Text style={styles.emptyText}>
+              No staff roles granted for this event yet
+            </Text>
           )}
         </View>
       )}
@@ -1635,27 +2319,52 @@ function SpeakerRoleManagementTab({
   onToggleActive,
   onRefresh,
 }: any) {
-  const speakerSearchData = useMemo(() => speakers.map((speaker: SpeakerRoleRecord) => {
-    const hasAccount = Boolean(speaker.userId);
-    const assignmentStatus = speaker.isActive ? 'Active' : hasAccount ? 'Inactive' : 'Unassigned';
-    const accountLabel = speaker.claim?.email_normalized || (hasAccount ? 'Account linked' : 'No account assigned');
+  const speakerSearchData = useMemo(
+    () =>
+      speakers.map((speaker: SpeakerRoleRecord) => {
+        const hasAccount = Boolean(speaker.userId);
+        const assignmentStatus = speaker.isActive
+          ? "Active"
+          : hasAccount
+            ? "Inactive"
+            : "Unassigned";
+        const accountLabel =
+          speaker.claim?.email_normalized ||
+          (hasAccount ? "Account linked" : "No account assigned");
 
-    return {
-      ...speaker,
-      accountLabel,
-      assignmentStatus,
-    };
-  }), [speakers]);
+        return {
+          ...speaker,
+          accountLabel,
+          assignmentStatus,
+        };
+      }),
+    [speakers],
+  );
   const [filteredSpeakers, setFilteredSpeakers] = useState(speakerSearchData);
-  const orderedSpeakers = useMemo(() => [...filteredSpeakers].sort((left, right) => {
-    const priority = (speaker: SpeakerRoleRecord) => speaker.isActive && speaker.userId ? 0 : speaker.userId ? 1 : 2;
-    return priority(left) - priority(right) || left.name.localeCompare(right.name);
-  }), [filteredSpeakers]);
+  const orderedSpeakers = useMemo(
+    () =>
+      [...filteredSpeakers].sort((left, right) => {
+        const priority = (speaker: SpeakerRoleRecord) =>
+          speaker.isActive && speaker.userId ? 0 : speaker.userId ? 1 : 2;
+        return (
+          priority(left) - priority(right) ||
+          left.name.localeCompare(right.name)
+        );
+      }),
+    [filteredSpeakers],
+  );
 
   return (
     <View style={styles.tabContent}>
-      <Text style={[styles.passInfo, { marginBottom: 12 }]}>Assign an existing account to a speaker profile, then control whether that speaker is available for networking.</Text>
-      <TouchableOpacity style={[styles.actionButton, styles.speakerRefreshButton]} onPress={onRefresh} disabled={loading}>
+      <Text style={[styles.passInfo, { marginBottom: 12 }]}>
+        Assign an existing account to a speaker profile, then control whether
+        that speaker is available for networking.
+      </Text>
+      <TouchableOpacity
+        style={[styles.actionButton, styles.speakerRefreshButton]}
+        onPress={onRefresh}
+        disabled={loading}
+      >
         <MaterialIcons name="refresh" size={16} color="#fff" />
         <Text style={styles.actionButtonText}>Refresh</Text>
       </TouchableOpacity>
@@ -1669,63 +2378,114 @@ function SpeakerRoleManagementTab({
             onFilteredData={setFilteredSpeakers}
             onSearchChange={() => undefined}
             searchPlaceholder="Search speakers, organization, or account..."
-            searchFields={['name', 'title', 'company', 'accountLabel']}
-            filterGroups={[{
-              key: 'assignmentStatus',
-              label: 'Assignment status',
-              type: 'chips',
-              options: [],
-            }]}
+            searchFields={["name", "title", "company", "accountLabel"]}
+            filterGroups={[
+              {
+                key: "assignmentStatus",
+                label: "Assignment status",
+                type: "chips",
+                options: [],
+              },
+            ]}
             showResultsCount
           />
           <View style={styles.list}>
-          {orderedSpeakers.map((speaker: SpeakerRoleRecord & { accountLabel: string; assignmentStatus: string }) => {
-            const hasAccount = Boolean(speaker.userId);
-            const status = speaker.isActive ? 'ACTIVE' : hasAccount ? 'INACTIVE' : 'UNASSIGNED';
-            const statusColor = speaker.isActive ? '#34A853' : hasAccount ? '#8E8E93' : '#D97706';
+            {orderedSpeakers.map(
+              (
+                speaker: SpeakerRoleRecord & {
+                  accountLabel: string;
+                  assignmentStatus: string;
+                },
+              ) => {
+                const hasAccount = Boolean(speaker.userId);
+                const status = speaker.isActive
+                  ? "ACTIVE"
+                  : hasAccount
+                    ? "INACTIVE"
+                    : "UNASSIGNED";
+                const statusColor = speaker.isActive
+                  ? "#34A853"
+                  : hasAccount
+                    ? "#8E8E93"
+                    : "#D97706";
 
-            return (
-              <View key={speaker.id} style={styles.passCard}>
-                <View style={styles.passCardHeader}>
-                  <View style={styles.speakerRoleTitleWrap}>
-                    <Text style={styles.passNumber}>{speaker.name}</Text>
-                    {(speaker.title || speaker.company) ? (
-                      <Text style={styles.passInfo}>{[speaker.title, speaker.company].filter(Boolean).join(' · ')}</Text>
-                    ) : null}
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-                    <Text style={styles.statusBadgeText}>{status}</Text>
-                  </View>
-                </View>
-                <Text style={styles.passInfo}>{speaker.accountLabel}</Text>
-                {speaker.claim?.status === 'needs_review' && speaker.claim.claim_error ? (
-                  <Text style={styles.speakerRoleWarning}>{speaker.claim.claim_error}</Text>
-                ) : null}
-                <View style={styles.passActions}>
-                  {!hasAccount ? (
-                    <TouchableOpacity style={[styles.actionButton, styles.actionButtonSuccess]} onPress={() => onAssign(speaker)}>
-                      <Text style={styles.actionButtonText}>Assign account</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <>
-                      <TouchableOpacity
-                        style={[styles.actionButton, speaker.isActive ? undefined : styles.actionButtonSuccess]}
-                        onPress={() => onToggleActive(speaker)}
+                return (
+                  <View key={speaker.id} style={styles.passCard}>
+                    <View style={styles.passCardHeader}>
+                      <View style={styles.speakerRoleTitleWrap}>
+                        <Text style={styles.passNumber}>{speaker.name}</Text>
+                        {speaker.title || speaker.company ? (
+                          <Text style={styles.passInfo}>
+                            {[speaker.title, speaker.company]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: statusColor },
+                        ]}
                       >
-                        <Text style={styles.actionButtonText}>{speaker.isActive ? 'Deactivate' : 'Activate'}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.actionButton} onPress={() => onRevoke(speaker)}>
-                        <Text style={styles.actionButtonText}>Remove access</Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-            );
-          })}
-          {orderedSpeakers.length === 0 && (
-            <Text style={styles.emptyText}>No speakers match the current search or filter</Text>
-          )}
+                        <Text style={styles.statusBadgeText}>{status}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.passInfo}>{speaker.accountLabel}</Text>
+                    {speaker.claim?.status === "needs_review" &&
+                    speaker.claim.claim_error ? (
+                      <Text style={styles.speakerRoleWarning}>
+                        {speaker.claim.claim_error}
+                      </Text>
+                    ) : null}
+                    <View style={styles.passActions}>
+                      {!hasAccount ? (
+                        <TouchableOpacity
+                          style={[
+                            styles.actionButton,
+                            styles.actionButtonSuccess,
+                          ]}
+                          onPress={() => onAssign(speaker)}
+                        >
+                          <Text style={styles.actionButtonText}>
+                            Assign account
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <>
+                          <TouchableOpacity
+                            style={[
+                              styles.actionButton,
+                              speaker.isActive
+                                ? undefined
+                                : styles.actionButtonSuccess,
+                            ]}
+                            onPress={() => onToggleActive(speaker)}
+                          >
+                            <Text style={styles.actionButtonText}>
+                              {speaker.isActive ? "Deactivate" : "Activate"}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => onRevoke(speaker)}
+                          >
+                            <Text style={styles.actionButtonText}>
+                              Remove access
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                );
+              },
+            )}
+            {orderedSpeakers.length === 0 && (
+              <Text style={styles.emptyText}>
+                No speakers match the current search or filter
+              </Text>
+            )}
           </View>
         </>
       )}
@@ -1762,7 +2522,7 @@ function MeetingMatcherTab({
   searchQuery,
   onSearchChange,
   onMatchPress,
-  onRefresh
+  onRefresh,
 }: any) {
   return (
     <View style={styles.tabContent}>
@@ -1785,15 +2545,26 @@ function MeetingMatcherTab({
             <View key={request.id} style={styles.requestCard}>
               <View style={styles.requestCardHeader}>
                 <View>
-                  <Text style={styles.requestTitle}>{request.requester_name}</Text>
-                  <Text style={styles.requestSubtitle}>→ {request.speaker_name}</Text>
+                  <Text style={styles.requestTitle}>
+                    {request.requester_name}
+                  </Text>
+                  <Text style={styles.requestSubtitle}>
+                    → {request.speaker_name}
+                  </Text>
                 </View>
-                <View style={[styles.statusBadge, styles[`statusBadge${request.status}`]]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    styles[`statusBadge${request.status}`],
+                  ]}
+                >
                   <Text style={styles.statusBadgeText}>{request.status}</Text>
                 </View>
               </View>
-              <Text style={styles.requestInfo}>Created: {new Date(request.created_at).toLocaleDateString()}</Text>
-              {request.status === 'pending' && (
+              <Text style={styles.requestInfo}>
+                Created: {new Date(request.created_at).toLocaleDateString()}
+              </Text>
+              {request.status === "pending" && (
                 <TouchableOpacity
                   style={styles.matchButton}
                   onPress={() => onMatchPress(request)}
@@ -1824,7 +2595,7 @@ function MatchMeetingModal({
   onConfirm,
   onCancel,
   loading,
-  onLoadSlots
+  onLoadSlots,
 }: any) {
   const [slots, setSlots] = useState<any[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -1838,13 +2609,13 @@ function MatchMeetingModal({
   const loadSlots = async () => {
     if (!request) return;
     setLoadingSlots(true);
-    
+
     // meeting_requests.speaker_id is UUID (user_id), need to find bsl_speakers.id
     try {
       const { data: speakerData } = await supabase
-        .from('bsl_speakers')
-        .select('id')
-        .eq('user_id', request.speaker_id)
+        .from("bsl_speakers")
+        .select("id")
+        .eq("user_id", request.speaker_id)
         .single();
 
       if (speakerData) {
@@ -1852,16 +2623,19 @@ function MatchMeetingModal({
         setSlots(availableSlots);
       } else {
         // Fallback: try finding by id
-        const speaker = speakers.find((s: Speaker) => s.id === request.speaker_id || s.user_id === request.speaker_id);
+        const speaker = speakers.find(
+          (s: Speaker) =>
+            s.id === request.speaker_id || s.user_id === request.speaker_id,
+        );
         if (speaker && speaker.id) {
           const availableSlots = await onLoadSlots(speaker.id);
           setSlots(availableSlots);
         }
       }
     } catch (error) {
-      console.error('Error loading slots:', error);
+      console.error("Error loading slots:", error);
     }
-    
+
     setLoadingSlots(false);
   };
 
@@ -1871,8 +2645,10 @@ function MatchMeetingModal({
     <View style={styles.modalOverlay}>
       <View style={styles.modalContent}>
         <Text style={styles.modalTitle}>Create Meeting Match</Text>
-        
-        <Text style={styles.modalLabel}>Requester: {request.requester_name}</Text>
+
+        <Text style={styles.modalLabel}>
+          Requester: {request.requester_name}
+        </Text>
         <Text style={styles.modalLabel}>Speaker: {request.speaker_name}</Text>
 
         <Text style={styles.modalLabel}>Select Time Slot</Text>
@@ -1883,10 +2659,19 @@ function MatchMeetingModal({
             {slots.map((slot: any, index: number) => (
               <TouchableOpacity
                 key={index}
-                style={[styles.slotOption, selectedSlot === slot.slot_time && styles.slotOptionActive]}
+                style={[
+                  styles.slotOption,
+                  selectedSlot === slot.slot_time && styles.slotOptionActive,
+                ]}
                 onPress={() => onSlotChange(slot.slot_time)}
               >
-                <Text style={[styles.slotOptionText, selectedSlot === slot.slot_time && styles.slotOptionTextActive]}>
+                <Text
+                  style={[
+                    styles.slotOptionText,
+                    selectedSlot === slot.slot_time &&
+                      styles.slotOptionTextActive,
+                  ]}
+                >
                   {new Date(slot.slot_time).toLocaleString()}
                 </Text>
               </TouchableOpacity>
@@ -1912,7 +2697,11 @@ function MatchMeetingModal({
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Create Match</Text>
+              <Text
+                style={[styles.modalButtonText, styles.modalButtonTextConfirm]}
+              >
+                Create Match
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -1921,423 +2710,424 @@ function MatchMeetingModal({
   );
 }
 
-const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.default,
-  },
-  header: {
-    padding: 20,
-    backgroundColor: colors.background.paper,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text.primary,
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: colors.text.secondary,
-  },
-  eventSwitcher: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-  },
-  eventSwitcherChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: colors.background.default,
-  },
-  eventSwitcherChipActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  eventSwitcherChipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.text.secondary,
-  },
-  eventSwitcherChipTextActive: {
-    color: '#fff',
-  },
-  tabsWrapper: {
-    backgroundColor: colors.background.paper,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-    position: 'relative',
-  },
-  tabs: {
-    flexGrow: 0,
-  },
-  tabsContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingLeft: 10,
-    // Keep the final action clear of the fixed More/Back control.
-    paddingRight: 96,
-    paddingVertical: 8,
-  },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    minHeight: 42,
-    minWidth: 140,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 6,
-  },
-  tabActive: {
-    backgroundColor: '#007AFF',
-  },
-  tabText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  tabScrollHint: {
-    alignItems: 'center',
-    backgroundColor: colors.background.paper,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.divider,
-    bottom: 0,
-    flexDirection: 'row',
-    gap: 2,
-    justifyContent: 'center',
-    minWidth: 76,
-    paddingHorizontal: 8,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  tabScrollHintText: {
-    color: '#007AFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-  },
-  tabContent: {
-    padding: 20,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text.primary,
-  },
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    gap: 8,
-  },
-  createButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  list: {
-    gap: 12,
-  },
-  passCard: {
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  passCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  passNumber: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusBadgeactive: {
-    backgroundColor: '#34A853',
-  },
-  statusBadgesuspended: {
-    backgroundColor: '#FF9500',
-  },
-  statusBadgeexpired: {
-    backgroundColor: '#8E8E93',
-  },
-  statusBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  passInfo: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginBottom: 4,
-  },
-  passActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  actionButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#FF3B30',
-    borderRadius: 8,
-  },
-  actionButtonSuccess: {
-    backgroundColor: '#34A853',
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  speakerRefreshButton: {
-    alignSelf: 'flex-end',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-  },
-  speakerRoleTitleWrap: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  speakerRoleWarning: {
-    color: '#D97706',
-    fontSize: 13,
-    marginTop: 4,
-  },
-  qrScannerCard: {
-    alignItems: 'center',
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    padding: 32,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  qrScannerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  qrScannerDescription: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  scanButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-  },
-  scanButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  requestCard: {
-    backgroundColor: colors.background.paper,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    marginBottom: 12,
-  },
-  requestCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  requestTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  requestSubtitle: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginTop: 4,
-  },
-  requestInfo: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    marginBottom: 12,
-  },
-  matchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    padding: 12,
-    gap: 8,
-  },
-  matchButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: colors.background.paper,
-    borderRadius: 16,
-    padding: 24,
-    width: '90%',
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: 20,
-  },
-  modalLabel: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  modalInput: {
-    backgroundColor: colors.background.default,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: colors.text.primary,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  passTypeButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  passTypeButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: colors.background.default,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    alignItems: 'center',
-  },
-  passTypeButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  passTypeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  passTypeButtonTextActive: {
-    color: '#fff',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalButtonCancel: {
-    backgroundColor: colors.background.default,
-  },
-  modalButtonConfirm: {
-    backgroundColor: '#007AFF',
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  modalButtonTextConfirm: {
-    color: '#fff',
-  },
-  slotsList: {
-    maxHeight: 200,
-    marginBottom: 20,
-  },
-  slotOption: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: colors.background.default,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-  },
-  slotOptionActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  slotOptionText: {
-    fontSize: 14,
-    color: colors.text.primary,
-  },
-  slotOptionTextActive: {
-    color: '#fff',
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: colors.text.secondary,
-    fontSize: 14,
-    marginTop: 32,
-  },
-  loader: {
-    marginTop: 32,
-  },
-});
+const getStyles = (isDark: boolean, colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background.default,
+    },
+    header: {
+      padding: 20,
+      backgroundColor: colors.background.paper,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: colors.text.primary,
+      marginBottom: 4,
+    },
+    headerSubtitle: {
+      fontSize: 14,
+      color: colors.text.secondary,
+    },
+    eventSwitcher: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 12,
+    },
+    eventSwitcherChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      backgroundColor: colors.background.default,
+    },
+    eventSwitcherChipActive: {
+      backgroundColor: "#007AFF",
+      borderColor: "#007AFF",
+    },
+    eventSwitcherChipText: {
+      fontSize: 13,
+      fontWeight: "500",
+      color: colors.text.secondary,
+    },
+    eventSwitcherChipTextActive: {
+      color: "#fff",
+    },
+    tabsWrapper: {
+      backgroundColor: colors.background.paper,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+      position: "relative",
+    },
+    tabs: {
+      flexGrow: 0,
+    },
+    tabsContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingLeft: 10,
+      // Keep the final action clear of the fixed More/Back control.
+      paddingRight: 96,
+      paddingVertical: 8,
+    },
+    tab: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+      minHeight: 42,
+      minWidth: 140,
+      paddingHorizontal: 8,
+      paddingVertical: 8,
+      borderRadius: 10,
+      gap: 6,
+    },
+    tabActive: {
+      backgroundColor: "#007AFF",
+    },
+    tabText: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      fontWeight: "500",
+    },
+    tabTextActive: {
+      color: "#fff",
+      fontWeight: "600",
+    },
+    tabScrollHint: {
+      alignItems: "center",
+      backgroundColor: colors.background.paper,
+      borderLeftWidth: 1,
+      borderLeftColor: colors.divider,
+      bottom: 0,
+      flexDirection: "row",
+      gap: 2,
+      justifyContent: "center",
+      minWidth: 76,
+      paddingHorizontal: 8,
+      position: "absolute",
+      right: 0,
+      top: 0,
+    },
+    tabScrollHintText: {
+      color: "#007AFF",
+      fontSize: 12,
+      fontWeight: "600",
+    },
+    content: {
+      flex: 1,
+    },
+    tabContent: {
+      padding: 20,
+    },
+    searchContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.background.paper,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginBottom: 16,
+      gap: 8,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text.primary,
+    },
+    createButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#007AFF",
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      gap: 8,
+    },
+    createButtonText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    list: {
+      gap: 12,
+    },
+    passCard: {
+      backgroundColor: colors.background.paper,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    passCardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    passNumber: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: colors.text.primary,
+    },
+    statusBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    statusBadgeactive: {
+      backgroundColor: "#34A853",
+    },
+    statusBadgesuspended: {
+      backgroundColor: "#FF9500",
+    },
+    statusBadgeexpired: {
+      backgroundColor: "#8E8E93",
+    },
+    statusBadgeText: {
+      color: "#fff",
+      fontSize: 12,
+      fontWeight: "600",
+    },
+    passInfo: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      marginBottom: 4,
+    },
+    passActions: {
+      flexDirection: "row",
+      gap: 8,
+      marginTop: 12,
+    },
+    actionButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: "#FF3B30",
+      borderRadius: 8,
+    },
+    actionButtonSuccess: {
+      backgroundColor: "#34A853",
+    },
+    actionButtonText: {
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    speakerRefreshButton: {
+      alignSelf: "flex-end",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 12,
+    },
+    speakerRoleTitleWrap: {
+      flex: 1,
+      paddingRight: 12,
+    },
+    speakerRoleWarning: {
+      color: "#D97706",
+      fontSize: 13,
+      marginTop: 4,
+    },
+    qrScannerCard: {
+      alignItems: "center",
+      backgroundColor: colors.background.paper,
+      borderRadius: 12,
+      padding: 32,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    qrScannerTitle: {
+      fontSize: 20,
+      fontWeight: "600",
+      color: colors.text.primary,
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    qrScannerDescription: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      textAlign: "center",
+      marginBottom: 24,
+    },
+    scanButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#007AFF",
+      borderRadius: 12,
+      padding: 16,
+      gap: 8,
+    },
+    scanButtonText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    requestCard: {
+      backgroundColor: colors.background.paper,
+      borderRadius: 12,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      marginBottom: 12,
+    },
+    requestCardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: 12,
+    },
+    requestTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.text.primary,
+    },
+    requestSubtitle: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      marginTop: 4,
+    },
+    requestInfo: {
+      fontSize: 12,
+      color: colors.text.secondary,
+      marginBottom: 12,
+    },
+    matchButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#007AFF",
+      borderRadius: 8,
+      padding: 12,
+      gap: 8,
+    },
+    matchButtonText: {
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalContent: {
+      backgroundColor: colors.background.paper,
+      borderRadius: 16,
+      padding: 24,
+      width: "90%",
+      maxHeight: "80%",
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: "600",
+      color: colors.text.primary,
+      marginBottom: 20,
+    },
+    modalLabel: {
+      fontSize: 14,
+      color: colors.text.secondary,
+      marginBottom: 8,
+      marginTop: 12,
+    },
+    modalInput: {
+      backgroundColor: colors.background.default,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      color: colors.text.primary,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    passTypeButtons: {
+      flexDirection: "row",
+      gap: 8,
+      marginBottom: 20,
+    },
+    passTypeButton: {
+      flex: 1,
+      padding: 12,
+      borderRadius: 8,
+      backgroundColor: colors.background.default,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      alignItems: "center",
+    },
+    passTypeButtonActive: {
+      backgroundColor: "#007AFF",
+      borderColor: "#007AFF",
+    },
+    passTypeButtonText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.text.primary,
+    },
+    passTypeButtonTextActive: {
+      color: "#fff",
+    },
+    modalButtons: {
+      flexDirection: "row",
+      gap: 12,
+      marginTop: 20,
+    },
+    modalButton: {
+      flex: 1,
+      padding: 16,
+      borderRadius: 8,
+      alignItems: "center",
+    },
+    modalButtonCancel: {
+      backgroundColor: colors.background.default,
+    },
+    modalButtonConfirm: {
+      backgroundColor: "#007AFF",
+    },
+    modalButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.text.primary,
+    },
+    modalButtonTextConfirm: {
+      color: "#fff",
+    },
+    slotsList: {
+      maxHeight: 200,
+      marginBottom: 20,
+    },
+    slotOption: {
+      padding: 12,
+      borderRadius: 8,
+      backgroundColor: colors.background.default,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    slotOptionActive: {
+      backgroundColor: "#007AFF",
+      borderColor: "#007AFF",
+    },
+    slotOptionText: {
+      fontSize: 14,
+      color: colors.text.primary,
+    },
+    slotOptionTextActive: {
+      color: "#fff",
+    },
+    emptyText: {
+      textAlign: "center",
+      color: colors.text.secondary,
+      fontSize: 14,
+      marginTop: 32,
+    },
+    loader: {
+      marginTop: 32,
+    },
+  });

@@ -507,7 +507,7 @@
       "event": "Acesso ao evento"
     },
     "meetingRequests": "Solicitações de reunião",
-    "voiBoost": "Impulso VOI",
+    "boostPoints": "Pontos de impulso",
     "passSummary": "Resumo do passe",
     "quickOverview": "Visão geral rápida",
     "requestsLeft": "Solicitações restantes",
@@ -529,7 +529,9 @@
       "production": "Você precisa de um passe de evento válido para solicitar reuniões com palestrantes. Por favor, compre um passe para continuar."
     },
     "passTypes": {
-      "all": "Todos os tipos de passe e preços"
+      "all": "Todos os tipos de passe e preços",
+      "open": "Aberto",
+      "closed": "Fechado"
     },
     "passComparison": {
       "compare": "Compare recursos e escolha o passe certo para suas necessidades"
@@ -543,11 +545,38 @@
       },
       "vip": {
         "networking": "+ Networking VIP com palestrantes"
+      },
+      "features": {
+        "allSessions": "Acesso a todas as sessões da conferência",
+        "mainAreas": "Acesso às áreas principais do evento",
+        "networkingSessions": "Networking e sessões B2B",
+        "businessLounge": "Acesso ao lounge Business",
+        "vipNetworking": "Networking VIP com palestrantes",
+        "vipLounge": "Acesso ao lounge VIP",
+        "prioritySeating": "Assentos prioritários",
+        "networkingTools": "Ferramentas de networking",
+        "businessSupport": "Suporte Business",
+        "conciergeService": "Serviço de concierge",
+        "premiumSwag": "Brindes premium",
+        "closingParty": "Festa oficial de encerramento"
       }
     },
     "purchasePass": "Comprar passe de evento",
     "purchasePass.description": "Escolha entre nossos tipos de passe disponíveis para acessar reuniões com palestrantes e oportunidades de networking.",
     "currentPass": "Seu passe atual",
+    "unknown": "Desconhecido",
+    "requestAllowed": "Você pode enviar uma solicitação de reunião.",
+    "requestPending": "⏳ Solicitação de reunião pendente",
+    "requestPendingDescription": "Sua solicitação está aguardando a resposta do palestrante.",
+    "requestInProgressDescription": "Você já tem uma solicitação ativa com este palestrante.",
+    "viewRequest": "Ver solicitação",
+    "status": {
+      "active": "Ativo",
+      "inactive": "Inativo",
+      "expired": "Expirado",
+      "revoked": "Revogado",
+      "pending": "Pendente"
+    },
     "canRequestMeeting": "✅ Pode solicitar reunião",
     "cannotRequestMeeting": "❌ Não pode solicitar reunião",
     "qrCode": "Código QR",

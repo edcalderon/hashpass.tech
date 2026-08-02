@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import { lukasRewardService } from '../../../../lib/lukas-reward-service';
 import { useBalance } from '@contexts/BalanceContext';
 import { useTranslation } from '../../../../i18n/i18n';
 import { apiClient, eventApiPath } from '@/lib/api-client';
+import { resolveActiveEventId } from '@/lib/event-path';
 
 type MeetingRequestWithDirection = MeetingRequest & {
   _direction?: 'sent' | 'incoming';
@@ -48,11 +49,13 @@ export default function MyRequestsView() {
   const { isDark, colors } = useTheme();
   const { dbUserId } = useAuth();
   const { event } = useEvent();
-  const eventId = event?.id || 'bsl';
+  const params = useLocalSearchParams<{ eventSlug?: string | string[]; requestId?: string | string[] }>();
+  const routeEventSlug = Array.isArray(params.eventSlug) ? params.eventSlug[0] : params.eventSlug;
+  const requestedRequestId = Array.isArray(params.requestId) ? params.requestId[0] : params.requestId;
+  const eventId = resolveActiveEventId(routeEventSlug || event?.id);
   const meetingRequestsPath = eventApiPath(eventId, 'meetings/requests');
   const meetingRequestSlotsPath = eventApiPath(eventId, 'meetings/requests/slots');
   const router = useRouter();
-  const params = useLocalSearchParams();
   const { showSuccess, showError } = useToastHelpers();
   const { notifications, refreshNotifications } = useNotifications();
   const { refreshBalance } = useBalance();
@@ -84,6 +87,7 @@ export default function MyRequestsView() {
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [holdTime, setHoldTime] = useState(1); // Hours
   const [expirationCountdown, setExpirationCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+  const openedRequestId = useRef<string | null>(null);
 
   useEffect(() => {
     console.log('🔄 useEffect triggered, user:', dbUserId ? 'present' : 'null');
@@ -105,29 +109,20 @@ export default function MyRequestsView() {
     return () => clearTimeout(timeout);
   }, [dbUserId]);
 
-  // Auto-open detail modal when requestId is provided in params
+  // Deep links from the speaker card must use the route event (not a stale
+  // event context) and open the matching request once its event-scoped list
+  // finishes loading.
   useEffect(() => {
-    if (params.requestId && !loading && requests.length > 0) {
-      const requestId = params.requestId as string;
-      const request = requests.find(r => r.id === requestId);
-      
-      if (request) {
-        // Set the correct tab based on request direction
-        if (request._direction === 'incoming') {
-          setActiveTab('incoming');
-        } else {
-          setActiveTab('sent');
-        }
-        
-        // Open the detail modal
-        setSelectedRequest(request as MeetingRequest);
-        setShowDetailModal(true);
-        
-        // Clear the params to prevent reopening on re-render
-        // Note: We can't directly modify params, but this will only run once
-      }
+    if (!requestedRequestId || loading || openedRequestId.current === requestedRequestId) return;
+
+    const request = requests.find((item) => String(item.id) === String(requestedRequestId));
+    if (request) {
+      setActiveTab(request._direction === 'incoming' ? 'incoming' : 'sent');
+      setSelectedRequest(request as MeetingRequest);
+      setShowDetailModal(true);
+      openedRequestId.current = requestedRequestId;
     }
-  }, [params.requestId, loading, requests]);
+  }, [requestedRequestId, loading, requests]);
 
   const loadMyRequests = useCallback(async () => {
     if (!dbUserId) {

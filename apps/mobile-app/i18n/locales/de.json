@@ -507,7 +507,7 @@
       "event": "Event-Zugang"
     },
     "meetingRequests": "Meeting-Anfragen",
-    "voiBoost": "VOI-Boost",
+    "boostPoints": "Boost-Punkte",
     "passSummary": "Pass-Zusammenfassung",
     "quickOverview": "Schnellübersicht",
     "requestsLeft": "Verbleibende Anfragen",
@@ -529,7 +529,9 @@
       "production": "Sie benötigen einen gültigen Event-Pass, um Meetings mit Rednern anzufragen. Bitte kaufen Sie einen Pass, um fortzufahren."
     },
     "passTypes": {
-      "all": "Alle Pass-Typen & Preise"
+      "all": "Alle Pass-Typen & Preise",
+      "open": "Geöffnet",
+      "closed": "Geschlossen"
     },
     "passComparison": {
       "compare": "Vergleichen Sie Funktionen und wählen Sie den richtigen Pass für Ihre Bedürfnisse"
@@ -543,11 +545,38 @@
       },
       "vip": {
         "networking": "+ VIP-Networking mit Rednern"
+      },
+      "features": {
+        "allSessions": "Zugang zu allen Konferenzsitzungen",
+        "mainAreas": "Zugang zu den Hauptbereichen der Veranstaltung",
+        "networkingSessions": "Networking- und B2B-Sitzungen",
+        "businessLounge": "Zugang zur Business-Lounge",
+        "vipNetworking": "VIP-Networking mit Rednern",
+        "vipLounge": "Zugang zur VIP-Lounge",
+        "prioritySeating": "Bevorzugte Sitzplätze",
+        "networkingTools": "Networking-Tools",
+        "businessSupport": "Business-Support",
+        "conciergeService": "Concierge-Service",
+        "premiumSwag": "Premium-Geschenke",
+        "closingParty": "Offizielle Abschlussfeier"
       }
     },
     "purchasePass": "Event-Pass kaufen",
     "purchasePass.description": "Wählen Sie aus unseren verfügbaren Pass-Typen, um auf Redner-Meetings und Networking-Möglichkeiten zuzugreifen.",
     "currentPass": "Ihr aktueller Pass",
+    "unknown": "Unbekannt",
+    "requestAllowed": "Sie können eine Meeting-Anfrage senden.",
+    "requestPending": "⏳ Meeting-Anfrage ausstehend",
+    "requestPendingDescription": "Ihre Anfrage wartet auf die Antwort des Sprechers.",
+    "requestInProgressDescription": "Sie haben bereits eine aktive Anfrage bei diesem Sprecher.",
+    "viewRequest": "Anfrage anzeigen",
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "expired": "Abgelaufen",
+      "revoked": "Widerrufen",
+      "pending": "Ausstehend"
+    },
     "canRequestMeeting": "✅ Kann Meeting anfragen",
     "cannotRequestMeeting": "❌ Kann kein Meeting anfragen",
     "qrCode": "QR-Code",

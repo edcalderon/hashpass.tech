@@ -211,6 +211,25 @@ which is why the real enforcement lives in `eas-config.js`, not `eas.json`.
 
 ## Publishing
 
+## In-app update lifecycle
+
+The app uses the standard mobile OTA lifecycle rather than silently replacing
+JavaScript during an active user flow:
+
+1. `expo-updates` checks at native startup.
+2. The application also checks when it returns to the foreground, throttled to
+   once every five minutes, and downloads a compatible update in the
+   background.
+3. Once downloaded, the app shows **Restart to update**. The user chooses when
+   to reload, preventing a meeting request, pass scan, or form from being lost.
+4. The Version Information drawer shows whether the running bundle is embedded
+   or OTA-fetched, its EAS channel, update ID, publish time, and a manual
+   **Check for OTA updates** / **Restart to apply downloaded update** action.
+
+This gives support both device-level traceability and a safe recovery path.
+Sentry receives the update ID, runtime version, channel, and embedded-launch
+state on every native launch for rollout/adoption monitoring.
+
 ```bash
 cd apps/mobile-app
 npm run ota:publish       # -> production channel, last commit message

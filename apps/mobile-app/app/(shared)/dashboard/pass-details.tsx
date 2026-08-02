@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Share, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Share, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
 import { passSystemService, PassInfo } from '../../../lib/pass-system';
+import { EVENTS } from '../../../config/events';
 import DynamicQRDisplay from '../../../components/DynamicQRDisplay';
 import * as Clipboard from 'expo-clipboard';
+import { useTranslation } from '../../../i18n/i18n';
+import { useToastHelpers } from '../../../contexts/ToastContext';
+
+const formatEntitlement = (value: string) => value
+  .replace(/[_-]+/g, ' ')
+  .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function PassDetailsScreen() {
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation('passes');
+  const { showSuccess, showError } = useToastHelpers();
   const { user, dbUserId, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{ passId?: string; eventId?: string }>();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const styles = getStyles(isDark, colors);
-  const passId = params.passId as string;
+  const passId = params.passId;
+  const eventId = params.eventId;
 
   useEffect(() => {
     // Wait for auth to finish loading before checking
@@ -41,35 +51,41 @@ export default function PassDetailsScreen() {
       return;
     }
 
-    loadPassInfo();
-  }, [user, dbUserId, passId, authLoading]);
+    let isCurrent = true;
 
-  const loadPassInfo = async () => {
-    if (!user || !dbUserId) return;
+    const loadPassInfo = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        // A wallet can contain passes for multiple events. Always carry the
+        // card's event scope into this view so another active pass cannot be
+        // substituted for the selected pass.
+        const pass = await passSystemService.getUserPassInfo(dbUserId, eventId);
+        if (!isCurrent) return;
 
-    try {
-      setLoading(true);
-      setError(null);
-      const pass = await passSystemService.getUserPassInfo(dbUserId);
+        if (!pass) {
+          setError('No pass found');
+          return;
+        }
 
-      if (!pass) {
-        setError('No pass found');
-        return;
+        if (passId && pass.pass_id !== passId) {
+          setError('Pass not found');
+          return;
+        }
+
+        setPassInfo(pass);
+      } catch (err: any) {
+        if (isCurrent) setError(err.message || 'Error loading pass information');
+      } finally {
+        if (isCurrent) setLoading(false);
       }
+    };
 
-      // If passId is provided, verify it matches
-      if (passId && pass.pass_id !== passId) {
-        setError('Pass not found');
-        return;
-      }
-
-      setPassInfo(pass);
-    } catch (err: any) {
-      setError(err.message || 'Error loading pass information');
-    } finally {
-      setLoading(false);
-    }
-  };
+    void loadPassInfo();
+    return () => {
+      isCurrent = false;
+    };
+  }, [user, dbUserId, passId, eventId, authLoading]);
 
 
   const handleShare = async () => {
@@ -89,21 +105,16 @@ export default function PassDetailsScreen() {
         });
       } else if (Platform.OS !== 'web' && Share.share) {
         // Use React Native Share on mobile
-        const result = await Share.share({
+        await Share.share({
           message: shareMessage,
           title: `BSL 2025 ${passTypeDisplay} Pass`,
         });
-
-        if (result.action === Share.sharedAction) {
-          console.log('Pass shared successfully');
-        }
       } else {
         // Fallback: Copy to clipboard for browsers without Share API
         await Clipboard.setStringAsync(shareMessage);
-        Alert.alert(
-          'Pass Information Copied',
-          'Pass information has been copied to your clipboard. You can paste it anywhere to share.',
-          [{ text: 'OK' }]
+        showSuccess(
+          t('copiedTitle', 'Pass Information Copied'),
+          t('copiedMessage', 'Pass information has been copied to your clipboard. You can paste it anywhere to share.'),
         );
       }
     } catch (error: any) {
@@ -119,15 +130,30 @@ export default function PassDetailsScreen() {
         
         
         await Clipboard.setStringAsync(shareMessage);
-        Alert.alert(
-          'Pass Information Copied',
-          'Pass information has been copied to your clipboard. You can paste it anywhere to share.',
-          [{ text: 'OK' }]
+        showSuccess(
+          t('copiedTitle', 'Pass Information Copied'),
+          t('copiedMessage', 'Pass information has been copied to your clipboard. You can paste it anywhere to share.'),
         );
-      } catch (clipboardError) {
-        console.error('Error copying to clipboard:', clipboardError);
-        Alert.alert('Error', 'Unable to share pass. Please try again.');
+      } catch {
+        showError(t('alert.errorTitle', 'Error'), t('copyError', 'Unable to share pass. Please try again.'));
       }
+    }
+  };
+
+  const handleCopyPassNumber = async () => {
+    if (!passInfo?.pass_number?.trim()) return;
+
+    try {
+      await Clipboard.setStringAsync(passInfo.pass_number);
+      showSuccess(
+        t('passNumberCopiedTitle', 'Pass number copied'),
+        t('passNumberCopiedMessage', 'Your pass number has been copied to the clipboard.'),
+      );
+    } catch {
+      showError(
+        t('alert.errorTitle', 'Error'),
+        t('copyError', 'Unable to copy the pass number. Please try again.'),
+      );
     }
   };
 
@@ -158,6 +184,10 @@ export default function PassDetailsScreen() {
     );
   }
 
+  const event = (EVENTS as Record<string, any>)[passInfo.event_id];
+  const eventName = event?.name || passInfo.event_id;
+  const eventDate = event?.eventDateString || t('eventDateUnavailable', 'Event dates to be announced');
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
@@ -174,7 +204,7 @@ export default function PassDetailsScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pass Details</Text>
+        <Text style={styles.headerTitle}>{t('detailsTitle', 'Pass Details')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -185,7 +215,14 @@ export default function PassDetailsScreen() {
             <Text style={styles.passType}>
               {passSystemService.getPassTypeDisplayName(passInfo.pass_type)}
             </Text>
-            <Text style={styles.passNumber}>{passInfo.pass_number}</Text>
+            <TouchableOpacity
+              accessibilityLabel={t('copyPassNumber', 'Copy pass number')}
+              onPress={handleCopyPassNumber}
+              style={styles.passNumberAction}
+            >
+              <Text style={styles.passNumber}>{passInfo.pass_number}</Text>
+              <Ionicons name="copy-outline" size={16} color={colors.text.secondary} />
+            </TouchableOpacity>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(passInfo.status) }]}>
             <Text style={styles.statusText}>{(passInfo.status || '').toUpperCase()}</Text>
@@ -198,31 +235,31 @@ export default function PassDetailsScreen() {
         <View style={styles.detailsSection}>
           <DetailRow
             icon="calendar-outline"
-            label="Event"
-            value="BSL 2025"
+            label={t('event', 'Event')}
+            value={eventName}
             colors={colors}
             styles={styles}
             isDark={isDark}
           />
           <DetailRow
             icon="calendar-outline"
-            label="Date"
-            value="November 12-14, 2025"
+            label={t('date', 'Date')}
+            value={eventDate}
             colors={colors}
             styles={styles}
             isDark={isDark}
           />
           <DetailRow
             icon="ticket-outline"
-            label="Meeting Requests"
-            value={`${passInfo.used_requests} / ${passInfo.max_requests} used`}
+            label={t('meetingRequests', 'Meeting Requests')}
+            value={`${passInfo.used_requests} / ${passInfo.max_requests} ${t('used', 'used')}`}
             colors={colors}
             styles={styles}
             isDark={isDark}
           />
           <DetailRow
             icon="flash-outline"
-            label="Boost Available"
+            label={t('boostAvailable', 'Boost Available')}
             value={`${passInfo.remaining_boost} / ${passInfo.max_boost}`}
             colors={colors}
             styles={styles}
@@ -234,7 +271,7 @@ export default function PassDetailsScreen() {
       {/* Access Features */}
       {passInfo.access_features && passInfo.access_features.length > 0 && (
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Access Features</Text>
+          <Text style={styles.sectionTitle}>{t('accessFeatures', 'Access Features')}</Text>
           <View style={styles.featuresList}>
             {passInfo.access_features.map((feature: string, index: number) => (
               <View key={index} style={styles.featureItem}>
@@ -243,7 +280,7 @@ export default function PassDetailsScreen() {
                   size={20} 
                   color={isDark ? '#4ADE80' : (colors.success || '#34A853')} 
                 />
-                <Text style={styles.featureText}>{feature}</Text>
+                <Text style={styles.featureText}>{formatEntitlement(feature)}</Text>
               </View>
             ))}
           </View>
@@ -253,7 +290,7 @@ export default function PassDetailsScreen() {
       {/* Special Perks */}
       {passInfo.special_perks && passInfo.special_perks.length > 0 && (
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Special Perks</Text>
+          <Text style={styles.sectionTitle}>{t('specialPerks', 'Special Perks')}</Text>
           <View style={styles.featuresList}>
             {passInfo.special_perks.map((perk: string, index: number) => (
               <View key={index} style={styles.featureItem}>
@@ -262,7 +299,7 @@ export default function PassDetailsScreen() {
                   size={20} 
                   color={isDark ? '#FFB84D' : (colors.warning || '#FF9500')} 
                 />
-                <Text style={styles.featureText}>{perk}</Text>
+                <Text style={styles.featureText}>{formatEntitlement(perk)}</Text>
               </View>
             ))}
           </View>
@@ -271,9 +308,9 @@ export default function PassDetailsScreen() {
 
       {/* QR Code Section */}
       <View style={styles.qrSection}>
-        <Text style={styles.sectionTitle}>QR Code</Text>
+        <Text style={styles.sectionTitle}>{t('qrCode', 'QR Code')}</Text>
         <Text style={styles.sectionDescription}>
-          Present this QR code at the event entrance. It updates automatically for security.
+          {t('qrCodeDescription', 'Present this QR code at the event entrance. It updates automatically for security.')}
         </Text>
         
         <View style={styles.qrContainer}>
@@ -407,6 +444,13 @@ const getStyles = (isDark: boolean, colors: any) =>
       fontSize: 14,
       color: colors.text.secondary,
       fontFamily: 'monospace',
+    },
+    passNumberAction: {
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      gap: 6,
+      paddingVertical: 4,
     },
     statusBadge: {
       paddingHorizontal: 12,

@@ -8,6 +8,7 @@ import type { CreateMeetingRequestData } from '../../../../lib/matchmaking';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useBalance } from '@contexts/BalanceContext';
 import { apiClient, eventApiPath } from '@/lib/api-client';
+import { resolveActiveEventId } from '@/lib/event-path';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
 import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl, resolveSpeakerImage } from '../../../../lib/string-utils';
@@ -50,10 +51,10 @@ interface Speaker {
 // UserTicket interface removed - now using pass system
 
 export default function SpeakerDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, eventSlug } = useLocalSearchParams<{ id: string; eventSlug?: string }>();
   const { isDark, colors } = useTheme();
   const { event } = useEvent();
-  const eventId = event?.id || 'bsl';
+  const eventId = resolveActiveEventId(eventSlug || event?.id);
   const speakerPath = id ? eventApiPath(eventId, `speakers/${id}`) : null;
   const meetingRequestsPath = eventApiPath(eventId, 'meetings/requests');
   const meetingRequestSlotsPath = eventApiPath(eventId, 'meetings/requests/slots');
@@ -101,6 +102,44 @@ export default function SpeakerDetail() {
     reason?: string;
   } | null>(null);
   const [showTicketComparison, setShowTicketComparison] = useState(false);
+  const existingRequest = !isCurrentUserSpeaker
+    ? meetingRequests.find((request) =>
+        ['pending', 'requested', 'approved', 'accepted'].includes(request.status),
+      )
+    : null;
+
+  const openExistingRequest = async () => {
+    // Limits can report an existing request one render before the local
+    // request-status fetch has populated its id. Resolve it again on tap so
+    // the CTA always opens the concrete request detail, not a dead button.
+    let request = existingRequest;
+    if (!request && speaker?.id) {
+      try {
+        const response = await apiClient.request(meetingRequestsPath, {
+          skipEventSegment: true,
+          params: { speakerId: speaker.id },
+        });
+        if (response.success) {
+          request = ((response.data as any)?.data || []).find((item: any) =>
+            ['pending', 'requested', 'approved', 'accepted'].includes(item.status),
+          );
+        }
+      } catch {
+        // The requests screen still gives the attendee a useful recovery
+        // route if this just-in-time refresh cannot complete.
+      }
+    }
+
+    router.push({
+      pathname: '/events/[eventSlug]/networking/my-requests' as any,
+      params: {
+        eventSlug: eventId,
+        ...(request?.id ? { requestId: String(request.id) } : {}),
+        highlightRequest: 'true',
+        openRequest: 'true',
+      },
+    });
+  };
 
   // Keep persistence and pass validation behind our authenticated API boundary.
   const createMeetingRequest = async (data: CreateMeetingRequestData) => {
@@ -1215,6 +1254,9 @@ export default function SpeakerDetail() {
             speakerId={speaker.id}
             showRequestButton={true}
             onRequestPress={handleRequestMeeting}
+            eventId={eventId}
+            existingRequest={existingRequest ? { id: existingRequest.id, status: existingRequest.status } : null}
+            onExistingRequestPress={openExistingRequest}
             refreshTrigger={passRefreshTrigger}
             onPassInfoLoaded={(passInfo: { pass_type?: string } | null) => {
               if (passInfo && passInfo.pass_type) {

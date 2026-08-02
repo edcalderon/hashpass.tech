@@ -1,3 +1,11 @@
+## [1.8.305](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.303...v1.8.305) (2026-08-02)
+### Released
+- configure event pass tiers; render pass identifiers and copy icon; open pending speaker requests; refresh wallet pass usage; silence QR rendering diagnostics; scope BSL admin tiers and slots; load selected event pass details; restore legacy pass numbers; open linked event meeting requests; consume pass limits on meeting requests; apply event pass tiers consistently; refresh meeting request notifications; verify email before speaker grants; localize pass detail comparison; restore admin bundle compilation
+
+## [1.8.304](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.302...v1.8.304) (2026-08-02)
+### Released
+- configure event pass tiers; filter and prioritize active speakers; manage speaker roles from admin profiles; restore admin bundle compilation; guard profile hydration against null users; prevent web raw text nodes; align meeting notifications with auth users; wait for profile roles before fallback; make admin tab overflow actionable; scroll admin tabs horizontally; preserve active speaker ordering; align meeting requests with auth identities
+
 ## [1.8.303](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.302...v1.8.303) (2026-08-02)
 ### Released
 - filter and prioritize active speakers; manage speaker roles from admin profiles; wait for profile roles before fallback; make admin tab overflow actionable; scroll admin tabs horizontally; preserve active speaker ordering; align meeting requests with auth identities

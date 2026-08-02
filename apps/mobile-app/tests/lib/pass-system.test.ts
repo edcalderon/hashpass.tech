@@ -87,6 +87,36 @@ describe('passSystemService Supabase user id guard', () => {
     expect(resolvePassStorageEventId('peru2026')).toBe('peru2026');
   });
 
+  it('uses event tier catalog values and keeps generic perk copy date-free', async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: [{
+        event_id: 'chile2026',
+        pass_type: 'general',
+        max_meeting_requests: 10,
+        max_boost_amount: 100,
+        price_cents: 9900,
+        currency: 'USD',
+        price_label: null,
+      }],
+      error: null,
+    });
+
+    await expect(passSystemService.getEventPassTiers('bsl')).resolves.toEqual([{
+      event_id: 'chile2026',
+      pass_type: 'general',
+      max_meeting_requests: 10,
+      max_boost_amount: 100,
+      price_cents: 9900,
+      currency: 'USD',
+      price_label: null,
+    }]);
+    expect(mockRpc).toHaveBeenCalledWith('get_event_pass_tiers', { p_event_id: 'chile2026' });
+    expect(passSystemService.getPassPerks('general').features).toEqual(expect.arrayContaining([
+      'Access to all conference sessions',
+    ]));
+    expect(passSystemService.getPassPerks('general').features.join(' ')).not.toMatch(/\b\w+\s+\d{1,2}(?:-\d{1,2})?\b/);
+  });
+
   it('surfaces database errors while loading the wallet instead of treating them as no passes', async () => {
     const databaseError = { code: 'PGRST000', message: 'database unavailable' };
     const query = {
@@ -114,6 +144,38 @@ describe('passSystemService Supabase user id guard', () => {
       passSystemService.getUserPassesForEvents(supabaseUserId, ['chile2026'])
     ).rejects.toEqual(databaseError);
     expect(errorSpy).toHaveBeenCalledWith('Error getting passes for events:', databaseError);
+  });
+
+  it('hydrates wallet usage from the event-scoped pass counter and prefers the active pass', async () => {
+    const archivedPass = { ...activePass, id: 'pass-archived', status: 'cancelled' };
+    const query = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockResolvedValue({ data: [archivedPass, activePass], error: null }),
+    };
+    mockFrom.mockReturnValueOnce(query);
+    mockRpcSingle({
+      data: {
+        total_requests: 1,
+        remaining_requests: 9,
+        max_requests: 10,
+        remaining_boost: 100,
+        max_boost: 100,
+      },
+      error: null,
+    });
+
+    await expect(passSystemService.getAllUserPasses(supabaseUserId)).resolves.toEqual([
+      expect.objectContaining({
+        pass_id: 'pass-existing',
+        used_requests: 1,
+        remaining_requests: 9,
+      }),
+    ]);
+    expect(mockRpc).toHaveBeenCalledWith('get_user_meeting_request_counts', {
+      p_user_id: supabaseUserId,
+      p_event_id: 'bsl2025',
+    });
   });
 
   it('does not query passes or counts with a non-UUID auth user id', async () => {

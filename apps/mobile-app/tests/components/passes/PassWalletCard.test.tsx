@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 import React from 'react';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 
@@ -20,6 +20,8 @@ const { act, create } = require('react-test-renderer');
 
 const routerPush = jest.fn();
 const share = jest.fn();
+const mockShowSuccess = jest.fn();
+const mockShowError = jest.fn();
 
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
@@ -78,6 +80,10 @@ jest.mock('../../../i18n/i18n', () => ({
   }),
 }));
 
+jest.mock('../../../contexts/ToastContext', () => ({
+  useToastHelpers: () => ({ showSuccess: mockShowSuccess, showError: mockShowError }),
+}));
+
 jest.mock('../../../lib/vector-icons', () => ({ MaterialIcons: 'MaterialIcons' }));
 jest.mock('../../../components/DynamicQRDisplay', () => 'DynamicQRDisplay');
 jest.mock('../../../lib/pass-system', () => ({
@@ -113,8 +119,16 @@ const pass: WalletPass = {
 };
 
 const pressText = (renderer: ReturnType<typeof create>, label: string, occurrence = 0) => {
-  const text = renderer.root.findAll((node: any) => node.type === 'Text' && node.props.children === label)[occurrence];
-  text.parent?.props.onPress();
+  let target: any = renderer.root.findAll(
+    (node: any) => node.type === 'Text' && node.props.children === label,
+  )[occurrence];
+
+  while (target && typeof target.props?.onPress !== 'function') {
+    target = target.parent;
+  }
+
+  expect(target).toBeDefined();
+  target.props.onPress();
 };
 
 const render = (element: React.ReactElement) => {
@@ -151,7 +165,10 @@ describe('PassWalletCard', () => {
     act(() => {
       pressText(renderer, 'View Full Details');
     });
-    expect(routerPush).toHaveBeenCalledWith('/dashboard/pass-details?passId=pass-1');
+    expect(routerPush).toHaveBeenCalledWith({
+      pathname: '/dashboard/pass-details',
+      params: { passId: 'pass-1', eventId: 'chile2026' },
+    });
   });
 
   it('falls back to copying share text when browser sharing is unavailable', async () => {
@@ -162,7 +179,19 @@ describe('PassWalletCard', () => {
     });
 
     expect(Clipboard.setStringAsync).toHaveBeenCalledWith(expect.stringContaining('BSL Chile 2026'));
-    expect(Alert.alert).toHaveBeenCalledWith('Pass Information Copied', expect.any(String), expect.any(Array));
+    expect(mockShowSuccess).toHaveBeenCalledWith('Pass Information Copied', expect.any(String));
+  });
+
+  it('copies the complete pass number from the ticket face', async () => {
+    const renderer = render(<PassWalletCard pass={pass} />);
+    const copyAction = renderer.root.findByProps({ accessibilityLabel: 'Copy pass number' });
+
+    await act(async () => {
+      copyAction.props.onPress();
+    });
+
+    expect(Clipboard.setStringAsync).toHaveBeenCalledWith('VIP-1234567890');
+    expect(mockShowSuccess).toHaveBeenCalledWith('Pass number copied', expect.any(String));
   });
 
   it('disables every card action when the card is behind the active pass', () => {
@@ -237,12 +266,12 @@ describe('PassWalletCard', () => {
     });
 
     // The message contains "cancel" -> early return, no fallback attempt,
-    // no error alert.
+    // no error toast.
     expect(Clipboard.setStringAsync).toHaveBeenCalledTimes(1);
-    expect(Alert.alert).not.toHaveBeenCalled();
+    expect(mockShowError).not.toHaveBeenCalled();
   });
 
-  it('shows an error alert when even the clipboard fallback fails', async () => {
+  it('shows an error toast when even the clipboard fallback fails', async () => {
     (Clipboard.setStringAsync as jest.Mock)
       .mockRejectedValueOnce(new Error('clipboard unavailable'))
       .mockRejectedValueOnce(new Error('clipboard unavailable'));
@@ -253,7 +282,7 @@ describe('PassWalletCard', () => {
     });
 
     expect(Clipboard.setStringAsync).toHaveBeenCalledTimes(2);
-    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Unable to share pass. Please try again.');
+    expect(mockShowError).toHaveBeenCalledWith('Error', 'Unable to share pass. Please try again.');
   });
 });
 

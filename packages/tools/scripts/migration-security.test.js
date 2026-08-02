@@ -47,6 +47,22 @@ const passClaimCodeMigrationPath = path.join(
   root,
   'db/migrations/V030__add_secure_pass_claim_codes.sql',
 );
+const eventPassTierDefaultIssuanceMigrationPath = path.join(
+  root,
+  'db/migrations/V037__apply_event_tiers_to_default_passes.sql',
+);
+const meetingPassConsumptionMigrationPath = path.join(
+  root,
+  'db/migrations/V038__consume_pass_entitlements_for_meeting_requests.sql',
+);
+const passNumberBackfillMigrationPath = path.join(
+  root,
+  'db/migrations/V039__backfill_missing_pass_numbers.sql',
+);
+const eventAdminScopeAndSlotMigrationPath = path.join(
+  root,
+  'db/migrations/V040__fix_event_admin_scope_and_slot_overloads.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -68,6 +84,32 @@ describe('upcoming BSL pass provisioning migration', () => {
   it('ships the pass migrations through the default tenant migration command', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
     expect(config.defaultGroups).toContain('upcoming-bsl-passes');
+  });
+
+  it('uses configured event tiers for trigger and self-service default passes', () => {
+    const migration = fs.readFileSync(eventPassTierDefaultIssuanceMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.create_upcoming_bsl_general_pass_for_user/i);
+    expect(migration).toMatch(/FROM public\.event_pass_tiers[\s\S]*event_id = p_event_id[\s\S]*pass_type = 'general'/i);
+    expect(migration).toMatch(/v_tier\.max_meeting_requests/i);
+    expect(migration).toMatch(/v_tier\.max_boost_amount/i);
+    expect(migration).not.toMatch(/get_pass_type_limits/i);
+    expect(config.groups['event-pass-tiers']).toContain(
+      'db/migrations/V037__apply_event_tiers_to_default_passes.sql',
+    );
+  });
+
+  it('backfills legacy blank pass numbers through the default tenant migration plan', () => {
+    const migration = fs.readFileSync(passNumberBackfillMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/UPDATE public\.passes/i);
+    expect(migration).toMatch(/NULLIF\(btrim\(COALESCE\(pass_number, ''\)\), ''\) IS NULL/i);
+    expect(migration).toMatch(/BSL-' \|\| upper\(COALESCE\(pass_type::text, 'general'\)\)/i);
+    expect(config.groups['event-pass-tiers']).toContain(
+      'db/migrations/V039__backfill_missing_pass_numbers.sql',
+    );
   });
 
   it('keeps pass access type-safe and re-backfills every confirmed user', () => {
@@ -105,7 +147,29 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V026__fix_speaker_identity_type_casts.sql',
       'db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql',
       'db/migrations/V032__align_meeting_request_foreign_keys_with_auth.sql',
+      'db/migrations/V034__align_notifications_with_auth_identities.sql',
+      'db/migrations/V038__consume_pass_entitlements_for_meeting_requests.sql',
+      'db/migrations/V040__fix_event_admin_scope_and_slot_overloads.sql',
     ]);
+  });
+
+  it('keeps BSL hub administrators authorized for their tour events and exposes one slot RPC signature', () => {
+    const migration = fs.readFileSync(eventAdminScopeAndSlotMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/metadata\s*->>\s*'hubEventId'/i);
+    expect(migration).toMatch(/DROP FUNCTION IF EXISTS public\.get_speaker_available_slots\(text, date, integer\)/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.get_speaker_available_slots\([\s\S]*p_event_id text DEFAULT NULL/i);
+  });
+
+  it('consumes the event pass when a meeting request is sent', () => {
+    const migration = fs.readFileSync(meetingPassConsumptionMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.insert_meeting_request/i);
+    expect(migration).toMatch(/p\.event_id = v_event_id/i);
+    expect(migration).toMatch(/used_meeting_requests = COALESCE\(p\.used_meeting_requests, 0\) \+ 1/i);
+    expect(migration).toMatch(/used_boost_amount = COALESCE\(p\.used_boost_amount, 0\)/i);
+    expect(migration).toMatch(/v_pass\.max_meeting_requests, 0\) - COALESCE\(v_pass\.used_meeting_requests, 0\)/i);
+    expect(migration).not.toMatch(/status NOT IN \('cancelled', 'expired'\)/i);
   });
 
   it('casts UUID pass owners before comparing text RPC parameters', () => {

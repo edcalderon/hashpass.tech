@@ -650,7 +650,7 @@
       "event": "Acceso al evento"
     },
     "meetingRequests": "Solicitudes de Reunión",
-    "voiBoost": "Impulso VOI",
+    "boostPoints": "Puntos de impulso",
     "passSummary": "Resumen del Pase",
     "quickOverview": "Vista Rápida",
     "requestsLeft": "Solicitudes Restantes",
@@ -672,7 +672,9 @@
       "production": "Necesitas un pase válido del evento para solicitar reuniones con los ponentes. Por favor, compra un pase para continuar."
     },
     "passTypes": {
-      "all": "Todos los Tipos de Pase y Precios"
+      "all": "Todos los Tipos de Pase y Precios",
+      "open": "Abierto",
+      "closed": "Cerrado"
     },
     "passComparison": {
       "compare": "Compara características y elige el pase adecuado para tus necesidades"
@@ -686,11 +688,38 @@
       },
       "vip": {
         "networking": "+ Networking VIP con ponentes"
+      },
+      "features": {
+        "allSessions": "Acceso a todas las sesiones de la conferencia",
+        "mainAreas": "Acceso a las áreas principales del evento",
+        "networkingSessions": "Networking y sesiones B2B",
+        "businessLounge": "Acceso al lounge Business",
+        "vipNetworking": "Networking VIP con ponentes",
+        "vipLounge": "Acceso al lounge VIP",
+        "prioritySeating": "Asientos preferenciales",
+        "networkingTools": "Herramientas de networking",
+        "businessSupport": "Soporte Business",
+        "conciergeService": "Servicio de concierge",
+        "premiumSwag": "Regalos premium",
+        "closingParty": "Fiesta oficial de clausura"
       }
     },
     "purchasePass": "Comprar Pase del Evento",
     "purchasePass.description": "Elige entre nuestros tipos de pase disponibles para acceder a reuniones con ponentes y oportunidades de networking.",
     "currentPass": "Tu Pase Actual",
+    "unknown": "Desconocido",
+    "requestAllowed": "Puedes enviar una solicitud de reunión.",
+    "requestPending": "⏳ Solicitud de reunión pendiente",
+    "requestPendingDescription": "Tu solicitud está esperando la respuesta del ponente.",
+    "requestInProgressDescription": "Ya tienes una solicitud activa con este ponente.",
+    "viewRequest": "Ver solicitud",
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "expired": "Vencido",
+      "revoked": "Revocado",
+      "pending": "Pendiente"
+    },
     "canRequestMeeting": "✅ Puede Solicitar Reunión",
     "cannotRequestMeeting": "❌ No Puede Solicitar Reunión",
     "qrCode": "Código QR",

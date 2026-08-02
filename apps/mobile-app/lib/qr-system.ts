@@ -438,15 +438,11 @@ class QRSystemService {
     // If baseUrl is provided, use URL format
     if (baseUrl) {
       const url = `${baseUrl}/qr/verify?token=${encodeURIComponent(cleanToken)}`;
-      console.log('📦 Generated QR payload (URL format):', url.substring(0, 100));
       return url;
     }
 
     // Default: JSON format (most reliable for scanning)
     const jsonPayload = JSON.stringify(payload);
-    console.log('📦 Generated QR payload (JSON format):', jsonPayload);
-    console.log('✅ Token included in payload:', cleanToken);
-    
     return jsonPayload;
   }
 
@@ -515,4 +511,3 @@ class QRSystemService {
 
 export const qrSystemService = new QRSystemService();
 export default qrSystemService;
-

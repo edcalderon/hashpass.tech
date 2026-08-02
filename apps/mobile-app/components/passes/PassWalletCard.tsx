@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   ImageBackground,
   Modal,
   Platform,
@@ -20,6 +19,7 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
+import { useToastHelpers } from '../../contexts/ToastContext';
 import { passSystemService } from '../../lib/pass-system';
 import type { WalletPass } from '../../lib/pass-wallet';
 import DynamicQRDisplay from '../DynamicQRDisplay';
@@ -41,6 +41,7 @@ interface PassWalletCardProps {
 const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = true }) => {
   const { t: translate } = useTranslation('passes');
   const { colors, isDark } = useTheme();
+  const { showSuccess, showError } = useToastHelpers();
   const router = useRouter();
   const [showQRModal, setShowQRModal] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -114,10 +115,9 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         });
       } else {
         await Clipboard.setStringAsync(shareMessage);
-        Alert.alert(
+        showSuccess(
           t({ id: 'passes.copiedTitle', message: 'Pass Information Copied' }),
           t({ id: 'passes.copiedMessage', message: 'Pass information has been copied to your clipboard. You can paste it anywhere to share.' }),
-          [{ text: t({ id: 'passes.alert.ok', message: 'OK' }) }]
         );
       }
     } catch (error: any) {
@@ -129,18 +129,34 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         const passTypeDisplay = passSystemService.getPassTypeDisplayName(pass.pass_type);
         const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventShortName}!\n\nPass Number: ${pass.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
         await Clipboard.setStringAsync(shareMessage);
-        Alert.alert(
+        showSuccess(
           t({ id: 'passes.copiedTitle', message: 'Pass Information Copied' }),
           t({ id: 'passes.copiedMessage', message: 'Pass information has been copied to your clipboard. You can paste it anywhere to share.' }),
-          [{ text: t({ id: 'passes.alert.ok', message: 'OK' }) }]
         );
-      } catch (clipboardError) {
-        console.error('Error copying to clipboard:', clipboardError);
-        Alert.alert(
+      } catch {
+        showError(
           t({ id: 'passes.alert.errorTitle', message: 'Error' }),
           t({ id: 'passes.copyError', message: 'Unable to share pass. Please try again.' })
         );
       }
+    }
+  };
+
+  const handleCopyPassNumber = async () => {
+    const passNumber = pass.pass_number?.trim();
+    if (!passNumber) return;
+
+    try {
+      await Clipboard.setStringAsync(passNumber);
+      showSuccess(
+        t({ id: 'passes.passNumberCopiedTitle', message: 'Pass number copied' }),
+        t({ id: 'passes.passNumberCopiedMessage', message: 'Your pass number has been copied to the clipboard.' }),
+      );
+    } catch {
+      showError(
+        t({ id: 'passes.alert.errorTitle', message: 'Error' }),
+        t({ id: 'passes.copyError', message: 'Unable to copy the pass number. Please try again.' }),
+      );
     }
   };
 
@@ -326,24 +342,32 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
               }}>
                 {getPassAccess(pass.pass_type)}
               </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: isDark ? 'rgba(255, 255, 255, 0.9)' : colors.text.secondary,
-                  maxWidth: 140,
-                  fontFamily: 'monospace',
-                  fontWeight: '600',
-                  textShadowColor: 'rgba(0, 0, 0, 0.3)',
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 2
-                }}
-                numberOfLines={1}
-                ellipsizeMode="head"
+              <TouchableOpacity
+                accessibilityLabel={t({ id: 'passes.copyPassNumber', message: 'Copy pass number' })}
+                disabled={!interactive || !pass.pass_number?.trim()}
+                onPress={handleCopyPassNumber}
+                style={{ alignItems: 'center', flexDirection: 'row', gap: 5, maxWidth: 166 }}
               >
-                {(pass.pass_number || '').length > 12
-                  ? `#${pass.pass_number.slice(0, 6)}...${pass.pass_number.slice(-4)}`
-                  : `#${pass.pass_number || ''}`}
-              </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: isDark ? 'rgba(255, 255, 255, 0.9)' : colors.text.secondary,
+                    flexShrink: 1,
+                    fontFamily: 'monospace',
+                    fontWeight: '600',
+                    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}
+                  numberOfLines={1}
+                  ellipsizeMode="head"
+                >
+                  {(pass.pass_number || '').length > 12
+                    ? `#${pass.pass_number.slice(0, 6)}...${pass.pass_number.slice(-4)}`
+                    : `#${pass.pass_number || ''}`}
+                </Text>
+                <MaterialIcons name="content-copy" size={13} color={isDark ? '#FFFFFF' : colors.text.secondary} />
+              </TouchableOpacity>
             </View>
             <View style={{
               backgroundColor: colors.background.paper,
@@ -730,7 +754,10 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         disabled={!interactive}
         onPress={() => {
           handleFlip();
-          router.push(`/dashboard/pass-details?passId=${pass.pass_id}` as any);
+          router.push({
+            pathname: '/dashboard/pass-details' as any,
+            params: { passId: pass.pass_id, eventId: pass.eventId },
+          });
         }}
         activeOpacity={0.8}
       >
