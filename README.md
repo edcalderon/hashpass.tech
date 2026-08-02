@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.305)
+## 📋 Latest Changes (v1.8.306)
 
 ### Released
-- configure event pass tiers; render pass identifiers and copy icon; open pending speaker requests; refresh wallet pass usage; silence QR rendering diagnostics; scope BSL admin tiers and slots; load selected event pass details; restore legacy pass numbers; open linked event meeting requests; consume pass limits on meeting requests; apply event pass tiers consistently; refresh meeting request notifications; verify email before speaker grants; localize pass detail comparison; restore admin bundle compilation
+- Version 1.8.306 release
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

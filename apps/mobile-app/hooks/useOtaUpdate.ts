@@ -39,7 +39,9 @@ export function useOtaUpdate() {
       return false;
     } catch {
       // OTA delivery is opportunistic. A network failure must never interrupt
-      // event access; the next foreground transition retries it.
+      // event access; clear the throttle so the next foreground transition
+      // can retry immediately rather than waiting five minutes.
+      lastCheckAt.current = 0;
       setState('error');
       return false;
     }

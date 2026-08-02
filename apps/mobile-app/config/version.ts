@@ -22,35 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608020454, // Updated to current timestamp
+  buildNumber: 202608020536, // Updated to current timestamp
   releaseDate: '2026-08-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'configure event pass tiers'
+    // No new features
   ],
   bugfixes: [
-    'render pass identifiers and copy icon',
-    'open pending speaker requests',
-    'refresh wallet pass usage',
-    'silence QR rendering diagnostics',
-    'scope BSL admin tiers and slots',
-    'load selected event pass details',
-    'restore legacy pass numbers',
-    'open linked event meeting requests',
-    'consume pass limits on meeting requests',
-    'apply event pass tiers consistently',
-    'refresh meeting request notifications',
-    'verify email before speaker grants',
-    'localize pass detail comparison',
-    'restore admin bundle compilation'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'configure event pass tiers; render pass identifiers and copy icon; open pending speaker requests; refresh wallet pass usage; silence QR rendering diagnostics; scope BSL admin tiers and slots; load selected event pass details; restore legacy pass numbers; open linked event meeting requests; consume pass limits on meeting requests; apply event pass tiers consistently; refresh meeting request notifications; verify email before speaker grants; localize pass detail comparison; restore admin bundle compilation'
+  notes: 'Version 1.8.306 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.306': {
+    version: '1.8.306',
+    buildNumber: 202608020536,
+    releaseDate: '2026-08-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.8.306 release'
+  },
   '1.8.305': {
     version: '1.8.305',
     buildNumber: 202608020454,
