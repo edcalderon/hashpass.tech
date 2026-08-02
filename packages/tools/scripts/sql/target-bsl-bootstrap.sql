@@ -235,6 +235,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   message text NOT NULL,
   is_read boolean NOT NULL DEFAULT false,
   is_urgent boolean NOT NULL DEFAULT false,
+  level text NOT NULL DEFAULT 'info' CHECK (level IN ('info', 'important', 'critical')),
   is_archived boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   read_at timestamptz,
@@ -3138,6 +3139,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.create_notification(uuid, text, text, text, uuid, uuid, boolean, uuid);
 DROP FUNCTION IF EXISTS public.create_notification(uuid, text, text, text, uuid, text, boolean, uuid);
 CREATE OR REPLACE FUNCTION public.create_notification(
   p_user_id uuid,
@@ -3147,7 +3149,8 @@ CREATE OR REPLACE FUNCTION public.create_notification(
   p_meeting_request_id uuid DEFAULT NULL,
   p_speaker_id text DEFAULT NULL,
   p_is_urgent boolean DEFAULT false,
-  p_meeting_id uuid DEFAULT NULL
+  p_meeting_id uuid DEFAULT NULL,
+  p_level text DEFAULT NULL
 )
 RETURNS uuid
 LANGUAGE plpgsql
@@ -3156,7 +3159,12 @@ SET search_path = public
 AS $$
 DECLARE
   v_id uuid;
+  v_level text := COALESCE(p_level, CASE WHEN p_is_urgent THEN 'critical' ELSE 'info' END);
 BEGIN
+  IF v_level NOT IN ('info', 'important', 'critical') THEN
+    RAISE EXCEPTION 'Invalid notification level: %', v_level USING ERRCODE = '22023';
+  END IF;
+
   INSERT INTO public.notifications (
     user_id,
     type,
@@ -3165,7 +3173,8 @@ BEGIN
     meeting_request_id,
     speaker_id,
     is_urgent,
-    meeting_id
+    meeting_id,
+    level
   ) VALUES (
     p_user_id,
     p_type,
@@ -3173,8 +3182,9 @@ BEGIN
     p_message,
     p_meeting_request_id,
     p_speaker_id,
-    p_is_urgent,
-    p_meeting_id
+    p_is_urgent OR v_level = 'critical',
+    p_meeting_id,
+    v_level
   )
   RETURNING id INTO v_id;
 
@@ -3595,7 +3605,7 @@ GRANT EXECUTE ON FUNCTION public.decline_meeting_request(text, text, text) TO au
 GRANT EXECUTE ON FUNCTION public.block_user_and_decline_request(text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.cancel_meeting_request(text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.expire_old_meeting_requests() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.create_notification(uuid, text, text, text, uuid, text, boolean, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_notification(uuid, text, text, text, uuid, text, boolean, uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_notification(uuid, text, text, text, uuid, uuid, boolean, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.send_prioritized_notification(text, text, text, text, numeric, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.book_meeting_slot(text, text, text) TO anon, authenticated;

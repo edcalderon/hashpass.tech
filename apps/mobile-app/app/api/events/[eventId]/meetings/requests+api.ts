@@ -19,6 +19,15 @@ function deliverMeetingEmail(details: Record<string, unknown>) {
     .then(({ sendMeetingNotificationEmail }) => sendMeetingNotificationEmail(details as any))
     .catch((error) => console.error("[meeting-requests] email delivery failed:", error));
 }
+
+function deliverCriticalNotificationEmail(details: Record<string, unknown>) {
+  // Critical delivery is an escalation after the database notification exists;
+  // it must never delay or roll back the user action that created it.
+  const emailModule = "@/lib/email";
+  void import(emailModule)
+    .then(({ sendCriticalNotificationEmail }) => sendCriticalNotificationEmail(details as any))
+    .catch((error) => console.error("[meeting-requests] critical notification email failed:", error));
+}
 async function speakerForUser(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("bsl_speakers")
@@ -343,6 +352,17 @@ export async function PATCH(request: Request) {
         meetingLocation: meetingRequest.meeting_location,
         durationMinutes: meetingRequest.duration_minutes,
         response: body.response,
+      });
+    }
+    if (result?.requires_resolution === true || result?.status === 'tentative') {
+      deliverCriticalNotificationEmail({
+        recipientUserId: meetingRequest.requester_id,
+        notificationType: 'meeting_slot_conflict',
+        title: 'Scheduling conflict — action required',
+        message: `${meetingRequest.speaker_name || 'The speaker'} accepted your request, but it overlaps another meeting on your calendar.`,
+        speakerName: meetingRequest.speaker_name,
+        eventId,
+        actionUrl: `https://bsl.hashpass.tech/events/${encodeURIComponent(eventId)}/networking/my-requests`,
       });
     }
     return Response.json({ data: result });

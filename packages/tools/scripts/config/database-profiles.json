@@ -58,7 +58,8 @@
       "db/migrations/V048__fix_speaker_id_type_comparison.sql",
       "db/migrations/V049__drop_dead_accepted_status_literal.sql",
       "db/migrations/V050__resolve_agenda_status_registry_id.sql",
-      "db/migrations/V051__fix_meetings_speaker_id_write_type_divergence.sql"
+      "db/migrations/V051__fix_meetings_speaker_id_write_type_divergence.sql",
+      "db/migrations/V052__notification_levels_and_critical_delivery.sql"
     ],
     "event-catalog": [
       "db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql",
