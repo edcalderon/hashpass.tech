@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Share, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Share, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
@@ -112,10 +112,9 @@ export default function PassDetailsScreen() {
       } else {
         // Fallback: Copy to clipboard for browsers without Share API
         await Clipboard.setStringAsync(shareMessage);
-        Alert.alert(
-          'Pass Information Copied',
-          'Pass information has been copied to your clipboard. You can paste it anywhere to share.',
-          [{ text: 'OK' }]
+        showSuccess(
+          t('copiedTitle', 'Pass Information Copied'),
+          t('copiedMessage', 'Pass information has been copied to your clipboard. You can paste it anywhere to share.'),
         );
       }
     } catch (error: any) {
@@ -131,13 +130,12 @@ export default function PassDetailsScreen() {
         
         
         await Clipboard.setStringAsync(shareMessage);
-        Alert.alert(
-          'Pass Information Copied',
-          'Pass information has been copied to your clipboard. You can paste it anywhere to share.',
-          [{ text: 'OK' }]
+        showSuccess(
+          t('copiedTitle', 'Pass Information Copied'),
+          t('copiedMessage', 'Pass information has been copied to your clipboard. You can paste it anywhere to share.'),
         );
       } catch {
-        Alert.alert('Error', 'Unable to share pass. Please try again.');
+        showError(t('alert.errorTitle', 'Error'), t('copyError', 'Unable to share pass. Please try again.'));
       }
     }
   };

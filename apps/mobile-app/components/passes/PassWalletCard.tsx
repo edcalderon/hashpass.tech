@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   ImageBackground,
   Modal,
   Platform,
@@ -20,6 +19,7 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '../../lib/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n/i18n';
+import { useToastHelpers } from '../../contexts/ToastContext';
 import { passSystemService } from '../../lib/pass-system';
 import type { WalletPass } from '../../lib/pass-wallet';
 import DynamicQRDisplay from '../DynamicQRDisplay';
@@ -41,6 +41,7 @@ interface PassWalletCardProps {
 const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = true }) => {
   const { t: translate } = useTranslation('passes');
   const { colors, isDark } = useTheme();
+  const { showSuccess, showError } = useToastHelpers();
   const router = useRouter();
   const [showQRModal, setShowQRModal] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -114,10 +115,9 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         });
       } else {
         await Clipboard.setStringAsync(shareMessage);
-        Alert.alert(
+        showSuccess(
           t({ id: 'passes.copiedTitle', message: 'Pass Information Copied' }),
           t({ id: 'passes.copiedMessage', message: 'Pass information has been copied to your clipboard. You can paste it anywhere to share.' }),
-          [{ text: t({ id: 'passes.alert.ok', message: 'OK' }) }]
         );
       }
     } catch (error: any) {
@@ -129,13 +129,12 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
         const passTypeDisplay = passSystemService.getPassTypeDisplayName(pass.pass_type);
         const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventShortName}!\n\nPass Number: ${pass.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
         await Clipboard.setStringAsync(shareMessage);
-        Alert.alert(
+        showSuccess(
           t({ id: 'passes.copiedTitle', message: 'Pass Information Copied' }),
           t({ id: 'passes.copiedMessage', message: 'Pass information has been copied to your clipboard. You can paste it anywhere to share.' }),
-          [{ text: t({ id: 'passes.alert.ok', message: 'OK' }) }]
         );
       } catch {
-        Alert.alert(
+        showError(
           t({ id: 'passes.alert.errorTitle', message: 'Error' }),
           t({ id: 'passes.copyError', message: 'Unable to share pass. Please try again.' })
         );
@@ -149,13 +148,12 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
 
     try {
       await Clipboard.setStringAsync(passNumber);
-      Alert.alert(
+      showSuccess(
         t({ id: 'passes.passNumberCopiedTitle', message: 'Pass number copied' }),
         t({ id: 'passes.passNumberCopiedMessage', message: 'Your pass number has been copied to the clipboard.' }),
-        [{ text: t({ id: 'passes.alert.ok', message: 'OK' }) }],
       );
     } catch {
-      Alert.alert(
+      showError(
         t({ id: 'passes.alert.errorTitle', message: 'Error' }),
         t({ id: 'passes.copyError', message: 'Unable to copy the pass number. Please try again.' }),
       );
