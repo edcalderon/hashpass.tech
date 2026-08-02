@@ -724,7 +724,8 @@
         "past": "Past"
       },
       "stackHint": "Tap a card behind to bring it forward",
-      "reload": "Reload passes"
+      "reload": "Reload passes",
+      "refreshing": "Refreshing passes…"
     }
   },
   "networking": {

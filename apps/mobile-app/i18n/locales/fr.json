@@ -581,7 +581,8 @@
         "past": "Passés"
       },
       "stackHint": "Touchez une carte derrière pour la mettre devant",
-      "reload": "Recharger les passes"
+      "reload": "Recharger les passes",
+      "refreshing": "Actualisation des passes…"
     }
   },
   "networking": {

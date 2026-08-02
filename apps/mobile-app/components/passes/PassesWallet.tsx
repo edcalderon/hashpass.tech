@@ -60,6 +60,70 @@ const PASS_LOAD_ATTEMPT_TIMEOUT_MS = 5_000;
 const PASS_LOAD_ATTEMPTS = 2;
 const RESTORABLE_BSL_EVENT_IDS = ['chile2026', 'colombia2026'] as const;
 
+function PassCardsSkeleton({
+  colors,
+  layout,
+  label,
+}: {
+  colors: any;
+  layout: 'stacked' | 'plain';
+  label: string;
+}) {
+  const pulse = useSharedValue(0.45);
+
+  useEffect(() => {
+    pulse.value = withTiming(0.9, { duration: 700 });
+  }, [pulse]);
+
+  const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  const cardWidth = layout === 'plain' ? PASS_CARD_WIDTH : PASS_CARD_WIDTH - 12;
+
+  return (
+    <View
+      accessibilityLabel="Refreshing passes"
+      style={{ alignItems: 'center', height: PASS_CARD_HEIGHT, justifyContent: 'center', paddingHorizontal: 12 }}
+    >
+      <Animated.View
+        style={[
+          style,
+          {
+            backgroundColor: colors.background.paper,
+            borderColor: colors.divider,
+            borderRadius: 20,
+            borderWidth: 1,
+            height: PASS_CARD_HEIGHT - 18,
+            overflow: 'hidden',
+            width: cardWidth,
+          },
+        ]}
+      >
+        <View style={{ backgroundColor: colors.divider, height: 62, margin: 16, borderRadius: 10 }} />
+        <View style={{ backgroundColor: colors.divider, height: 150, marginHorizontal: 16, borderRadius: 10 }} />
+        <View style={{ flexDirection: 'row', gap: 12, margin: 16 }}>
+          <View style={{ backgroundColor: colors.divider, flex: 1, height: 48, borderRadius: 8 }} />
+          <View style={{ backgroundColor: colors.divider, flex: 1, height: 48, borderRadius: 8 }} />
+        </View>
+        <View
+          style={{
+            alignItems: 'center',
+            bottom: 0,
+            justifyContent: 'center',
+            left: 0,
+            position: 'absolute',
+            right: 0,
+            top: 0,
+          }}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ color: colors.text.primary, fontSize: 13, fontWeight: '700', marginTop: 10 }}>
+            {label}
+          </Text>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
 const PassesWallet: React.FC<PassesWalletProps> = ({
   eventIds,
   refreshTrigger,
@@ -529,12 +593,17 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('wallet.reload', 'Reload passes')}
+            disabled={isRefreshing}
             onPress={handleRetry}
-            style={{ alignItems: 'center', flexDirection: 'row', gap: 6, paddingHorizontal: 8, paddingVertical: 5 }}
+            style={{ alignItems: 'center', flexDirection: 'row', gap: 6, opacity: isRefreshing ? 0.7 : 1, paddingHorizontal: 8, paddingVertical: 5 }}
           >
-            <MaterialIcons name="refresh" size={18} color={colors.primary} />
+            {isRefreshing ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <MaterialIcons name="refresh" size={18} color={colors.primary} />
+            )}
             <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
-              {t('wallet.reload', 'Reload passes')}
+              {isRefreshing ? t('wallet.refreshing', 'Refreshing passes…') : t('wallet.reload', 'Reload passes')}
             </Text>
           </Pressable>
         </View>
@@ -544,7 +613,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           contentContainerStyle={{ paddingRight: 20 }}
         >
           {isRefreshing ? (
-            <PassCardsSkeleton colors={colors} layout="plain" />
+            <PassCardsSkeleton colors={colors} layout="plain" label={t('wallet.refreshing', 'Refreshing passes…')} />
           ) : (
             walletPasses.map((pass) => (
               <View key={pass.id} style={{ width: cardWidth, marginRight: 16 }}>
@@ -589,18 +658,23 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('wallet.reload', 'Reload passes')}
+          disabled={isRefreshing}
           onPress={handleRetry}
-          style={{ alignItems: 'center', flexDirection: 'row', gap: 6, paddingHorizontal: 8, paddingVertical: 5 }}
+          style={{ alignItems: 'center', flexDirection: 'row', gap: 6, opacity: isRefreshing ? 0.7 : 1, paddingHorizontal: 8, paddingVertical: 5 }}
         >
-          <MaterialIcons name="refresh" size={18} color={colors.primary} />
+          {isRefreshing ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <MaterialIcons name="refresh" size={18} color={colors.primary} />
+          )}
           <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
-            {t('wallet.reload', 'Reload passes')}
+            {isRefreshing ? t('wallet.refreshing', 'Refreshing passes…') : t('wallet.reload', 'Reload passes')}
           </Text>
         </Pressable>
       </View>
 
       {isRefreshing ? (
-        <PassCardsSkeleton colors={colors} layout="stacked" />
+        <PassCardsSkeleton colors={colors} layout="stacked" label={t('wallet.refreshing', 'Refreshing passes…')} />
       ) : deck.length === 0 ? (
         <View style={{ paddingVertical: 34, alignItems: 'center' }}>
           <MaterialIcons name="search-off" size={32} color={colors.text.disabled} />
@@ -807,46 +881,6 @@ const WalletSkeleton: React.FC<{ colors: any; label: string; sublabel?: string }
           {sublabel}
         </Text>
       ) : null}
-    </View>
-  );
-};
-
-const PassCardsSkeleton: React.FC<{ colors: any; layout: 'stacked' | 'plain' }> = ({ colors, layout }) => {
-  const pulse = useSharedValue(0.45);
-
-  useEffect(() => {
-    pulse.value = withTiming(0.9, { duration: 700 });
-  }, [pulse]);
-
-  const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
-  const cardWidth = layout === 'plain' ? PASS_CARD_WIDTH : PASS_CARD_WIDTH - 12;
-
-  return (
-    <View
-      accessibilityLabel="Refreshing passes"
-      style={{ alignItems: 'center', height: PASS_CARD_HEIGHT, justifyContent: 'center', paddingHorizontal: 12 }}
-    >
-      <Animated.View
-        style={[
-          style,
-          {
-            backgroundColor: colors.background.paper,
-            borderColor: colors.divider,
-            borderRadius: 20,
-            borderWidth: 1,
-            height: PASS_CARD_HEIGHT - 18,
-            overflow: 'hidden',
-            width: cardWidth,
-          },
-        ]}
-      >
-        <View style={{ backgroundColor: colors.divider, height: 62, margin: 16, borderRadius: 10 }} />
-        <View style={{ backgroundColor: colors.divider, height: 150, marginHorizontal: 16, borderRadius: 10 }} />
-        <View style={{ flexDirection: 'row', gap: 12, margin: 16 }}>
-          <View style={{ backgroundColor: colors.divider, flex: 1, height: 48, borderRadius: 8 }} />
-          <View style={{ backgroundColor: colors.divider, flex: 1, height: 48, borderRadius: 8 }} />
-        </View>
-      </Animated.View>
     </View>
   );
 };

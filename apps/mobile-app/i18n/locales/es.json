@@ -723,7 +723,8 @@
         "past": "Pasados"
       },
       "stackHint": "Toca una tarjeta de atrás para traerla al frente",
-      "reload": "Recargar pases"
+      "reload": "Recargar pases",
+      "refreshing": "Actualizando pases…"
     }
   },
   "networking": {

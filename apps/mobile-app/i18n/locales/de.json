@@ -580,7 +580,8 @@
         "past": "Vergangen"
       },
       "stackHint": "Tippe auf eine Karte dahinter, um sie nach vorne zu holen",
-      "reload": "Pässe neu laden"
+      "reload": "Pässe neu laden",
+      "refreshing": "Pässe werden aktualisiert…"
     }
   },
   "networking": {

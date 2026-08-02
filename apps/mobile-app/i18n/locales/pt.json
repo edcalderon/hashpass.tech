@@ -580,7 +580,8 @@
         "past": "Passados"
       },
       "stackHint": "Toque em um cartão atrás para trazê-lo à frente",
-      "reload": "Recarregar passes"
+      "reload": "Recarregar passes",
+      "refreshing": "Atualizando passes…"
     }
   },
   "networking": {
