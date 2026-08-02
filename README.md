@@ -20,10 +20,18 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.309)
+## 📋 Latest Changes (v1.8.310)
 
-### Released
-- repair the meeting-booking pipeline end to end, add decline reason
+### Bug Fixes
+
+* retain meeting request identity resolution ([8eb3b3a](https://github.com/hashpass-tech/hashpass.tech/commit/8eb3b3a0867f9902734f19e4b6673c3d33a1e0b2))
+
+
+### Features
+
+* refresh notifications and email meeting updates ([1f9995a](https://github.com/hashpass-tech/hashpass.tech/commit/1f9995afd05d1c15c2aa49d8a3c06022f372938b))
+### Release Highlights
+- refresh notifications and email meeting updates; retain meeting request identity resolution
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
