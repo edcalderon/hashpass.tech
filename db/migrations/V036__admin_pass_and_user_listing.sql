@@ -29,7 +29,7 @@ BEGIN
     COALESCE(u.raw_user_meta_data->>'name', u.raw_user_meta_data->>'full_name')::text,
     u.raw_user_meta_data->>'username'
   FROM public.passes p JOIN auth.users u ON u.id::text = p.user_id::text
-  WHERE p.event_id = p_event_id AND p.status = 'active'
+  WHERE p.event_id = p_event_id AND p.status IN ('active', 'suspended')
     AND (p_cursor IS NULL OR (p.created_at, p.id) < (
       SELECT pc.created_at, pc.id FROM public.passes pc WHERE pc.id = p_cursor
     ))

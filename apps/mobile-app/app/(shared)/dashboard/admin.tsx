@@ -176,6 +176,7 @@ export default function AdminPanel() {
   const userSearchCache = useRef(
     new Map<string, { users: User[]; nextCursor: string | null }>(),
   );
+  const latestUserSearchRequest = useRef(0);
   const [passesLoading, setPassesLoading] = useState(false);
   const [showCreatePassModal, setShowCreatePassModal] = useState(false);
   const [newPassUserId, setNewPassUserId] = useState("");
@@ -780,11 +781,16 @@ export default function AdminPanel() {
     }
   };
 
-  const loadUsers = async (query = "", cursor: string | null = null) => {
+  const loadUsers = async (
+    query = "",
+    cursor: string | null = null,
+    requestId = ++latestUserSearchRequest.current,
+  ) => {
     const normalizedQuery = query.trim().toLowerCase();
     const cacheKey = `${selectedEventId}:${normalizedQuery}`;
     if (!cursor && userSearchCache.current.has(cacheKey)) {
       const cached = userSearchCache.current.get(cacheKey)!;
+      if (requestId !== latestUserSearchRequest.current) return;
       setUsers(cached.users);
       setUsersNextCursor(cached.nextCursor);
       return;
@@ -801,6 +807,7 @@ export default function AdminPanel() {
         data?: User[];
         nextCursor?: string | null;
       };
+      if (requestId !== latestUserSearchRequest.current) return;
       const nextUsers = cursor
         ? [...users, ...(payload.data || [])]
         : payload.data || [];
@@ -814,15 +821,19 @@ export default function AdminPanel() {
     } catch (error: any) {
       console.error("Error loading users:", error);
       // Fallback: empty array
-      setUsers([]);
+      if (requestId === latestUserSearchRequest.current) setUsers([]);
     } finally {
-      setUsersLoading(false);
+      if (requestId === latestUserSearchRequest.current) setUsersLoading(false);
     }
   };
 
   useEffect(() => {
+    const requestId = ++latestUserSearchRequest.current;
     if (!showCreatePassModal) return;
-    const timer = setTimeout(() => void loadUsers(userSearchQuery), 300);
+    const timer = setTimeout(
+      () => void loadUsers(userSearchQuery, null, requestId),
+      300,
+    );
     return () => clearTimeout(timer);
   }, [showCreatePassModal, userSearchQuery, selectedEventId]);
 
