@@ -54,6 +54,17 @@ describe("POST /api/admin/passes", () => {
     );
   };
 
+  const postRaw = async (body: string) => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { POST } = require("../../app/api/admin/passes+api");
+    return POST(
+      new Request("https://api.hashpass.tech/api/admin/passes", {
+        method: "POST",
+        body,
+      }),
+    );
+  };
+
   const get = async (query = "eventId=chile2026&limit=50") => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { GET } = require("../../app/api/admin/passes+api");
@@ -87,6 +98,40 @@ describe("POST /api/admin/passes", () => {
     });
   });
 
+  it("returns a bounded page and cursor when more passes are available", async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({
+        data: [{ id: "pass-1" }, { id: "pass-2" }, { id: "pass-3" }],
+        error: null,
+      });
+    const response = await get("eventId=chile2026&limit=2&cursor=pass-0");
+    expect(await response.json()).toEqual({
+      data: [{ id: "pass-1" }, { id: "pass-2" }],
+      nextCursor: "pass-2",
+    });
+    expect(mockRpc).toHaveBeenLastCalledWith("admin_list_event_passes", {
+      p_actor_user_id: actorId,
+      p_event_id: "chile2026",
+      p_limit: 2,
+      p_cursor: "pass-0",
+    });
+  });
+
+  it("rejects rate-limited and malformed listing requests before authorization", async () => {
+    mockRateLimitOk.mockReturnValueOnce(false);
+    expect((await get()).status).toBe(429);
+    expect((await get("eventId=invalid/event")).status).toBe(400);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("returns a server error when the pass listing RPC fails", async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "missing RPC" } });
+    expect((await get()).status).toBe(500);
+  });
+
   it("rejects invalid input before authorization or database mutation", async () => {
     const response = await post({
       action: "create",
@@ -95,6 +140,31 @@ describe("POST /api/admin/passes", () => {
       passType: "vip",
     });
     expect(response.status).toBe(400);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed JSON, missing updates, and unsupported pass values", async () => {
+    expect((await postRaw("not-json")).status).toBe(400);
+    expect(
+      (await post({ action: "update", eventId: "chile2026", passId: "pass-1" }))
+        .status,
+    ).toBe(400);
+    expect(
+      (await post({
+        action: "create",
+        eventId: "chile2026",
+        userId: targetId,
+        passType: "other",
+      })).status,
+    ).toBe(400);
+    expect(
+      (await post({
+        action: "update",
+        eventId: "chile2026",
+        passId: "pass-1",
+        status: "revoked",
+      })).status,
+    ).toBe(400);
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
@@ -138,5 +208,18 @@ describe("POST /api/admin/passes", () => {
         p_pass_type: "vip",
       }),
     );
+  });
+
+  it("returns a server error when an authorized pass mutation RPC fails", async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "write failed" } });
+    const response = await post({
+      action: "update",
+      eventId: "chile2026",
+      passId: "pass-1",
+      status: "suspended",
+    });
+    expect(response.status).toBe(500);
   });
 });
