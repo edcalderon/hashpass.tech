@@ -12,9 +12,22 @@ type NotificationRouteContext = {
   };
 };
 
+// Metro's dev server does not reliably populate the route context's `params`
+// for +api.ts handlers (confirmed via live reproduction, not just theory),
+// so `context?.params?.id` alone silently 400s on requests that carry a
+// perfectly valid id in the URL. Fall back to parsing it from the path
+// itself, matching this repo's established pattern for dynamic API route
+// segments (see eventIdFromRequest in lib/server/event-api.ts).
+function notificationIdFromRequest(request: Request): string | null {
+  const pathSegments = new URL(request.url).pathname.split('/').filter(Boolean);
+  const notificationsIndex = pathSegments.indexOf('notifications');
+  const id = notificationsIndex >= 0 ? pathSegments[notificationsIndex + 1] : undefined;
+  return id ? decodeURIComponent(id) : null;
+}
+
 // PATCH /api/notifications/[id] — mark a single notification read/unread or archived.
 export async function PATCH(request: Request, context?: NotificationRouteContext) {
-  const notificationId = context?.params?.id?.trim();
+  const notificationId = context?.params?.id?.trim() || notificationIdFromRequest(request);
   if (!notificationId) {
     return Response.json({ error: 'Notification ID is required' }, { status: 400 });
   }
@@ -70,7 +83,7 @@ export async function PATCH(request: Request, context?: NotificationRouteContext
 
 // DELETE /api/notifications/[id] — delete a single notification.
 export async function DELETE(request: Request, context?: NotificationRouteContext) {
-  const notificationId = context?.params?.id?.trim();
+  const notificationId = context?.params?.id?.trim() || notificationIdFromRequest(request);
   if (!notificationId) {
     return Response.json({ error: 'Notification ID is required' }, { status: 400 });
   }

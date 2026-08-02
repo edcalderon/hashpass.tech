@@ -92,8 +92,8 @@ export default function BSL2025Layout() {
           headerBackTitle: eventTitle,
         }}
       />
-      <Stack.Screen 
-        name="networking" 
+      <Stack.Screen
+        name="networking/index"
         options={{
           title: 'Networking',
           headerBackTitle: eventTitle,
@@ -126,8 +126,8 @@ export default function BSL2025Layout() {
           headerShown: false, // Hide header - blocked.tsx has its own custom header
         }}
       />
-      <Stack.Screen 
-        name="meeting-chat" 
+      <Stack.Screen
+        name="networking/meeting-chat"
         options={{
           title: 'Meeting Chat',
           headerBackTitle: 'Speaker Dashboard',
@@ -143,27 +143,6 @@ export default function BSL2025Layout() {
           headerBackVisible: false,
           gestureEnabled: true,
           gestureDirection: 'vertical',
-        }}
-      />
-      <Stack.Screen
-        name="speakers/index"
-        options={{
-          title: 'Featured Speakers',
-          headerBackTitle: 'Event',
-        }}
-      />
-      <Stack.Screen
-        name="speakers/[id]"
-        options={{
-          title: 'Speaker Details',
-          headerBackTitle: 'Speakers',
-        }}
-      />
-      <Stack.Screen
-        name="speakers/calendar"
-        options={{
-          title: 'All Speakers',
-          headerBackTitle: 'Speakers',
         }}
       />
       </Stack>

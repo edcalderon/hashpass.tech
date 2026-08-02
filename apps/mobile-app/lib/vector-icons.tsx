@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
+  CirclePlus,
   ClipboardList,
   Clock,
   CloudDownload,
@@ -138,6 +139,9 @@ function GoogleIcon({ size = 24, color = '#4285F4', style }: { size?: number; co
 
 const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   add: Plus,
+  'add-circle-outline': CirclePlus,
+  'expand-less': ChevronUp,
+  'expand-more': ChevronDown,
   'admin-panel-settings': Cog,
   analytics: ChartBar,
   'bar-chart': ChartBar,

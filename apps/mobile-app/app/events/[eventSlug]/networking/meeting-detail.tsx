@@ -11,6 +11,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from '@/i18n/i18n';
 import { MaterialIcons } from '../../../../lib/vector-icons';
+import { apiClient, eventApiPath } from '@/lib/api-client';
 
 // Helper function to generate user avatar URL
 const generateUserAvatarUrl = (name: string): string => {
@@ -20,16 +21,19 @@ const generateUserAvatarUrl = (name: string): string => {
 
 export default function MeetingDetailScreen() {
   const { colors, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, dbUserId } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
   const router = useRouter();
-  const { showError } = useToastHelpers();
+  const { showError, showSuccess } = useToastHelpers();
   const { t } = useTranslation('networking');
   const params = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [meeting, setMeeting] = useState<any>(null);
   const [isSpeaker, setIsSpeaker] = useState(params.isSpeaker === 'true');
+  const [conflictingMeetings, setConflictingMeetings] = useState<any[]>([]);
+  const [loadingConflicts, setLoadingConflicts] = useState(false);
+  const [resolvingConflict, setResolvingConflict] = useState(false);
   const styles = getStyles(isDark, colors);
 
   useEffect(() => {
@@ -88,8 +92,10 @@ export default function MeetingDetailScreen() {
           return;
         }
 
-        // Determine if current user is speaker or requester
-        const isRequester = meetingData.requester_id === user?.id;
+        // Determine if current user is speaker or requester. meetingData.requester_id
+        // is a real Supabase auth.users uuid, so it must be compared against dbUserId,
+        // not Better Auth's user.id (see CLAUDE.md's dbUserId-vs-user.id rule).
+        const isRequester = meetingData.requester_id === dbUserId;
         setIsSpeaker(!isRequester);
 
         // Load speaker details
@@ -140,7 +146,69 @@ export default function MeetingDetailScreen() {
     };
 
     loadMeetingDetails();
-  }, [params.meetingId, user?.id]);
+  }, [params.meetingId, dbUserId]);
+
+  // A 'tentative' meeting means it was accepted despite overlapping another
+  // meeting on the requester's own calendar. Only the requester resolves it.
+  useEffect(() => {
+    const loadConflicts = async () => {
+      if (meeting?.status !== 'tentative' || isSpeaker || !dbUserId || !meeting?.scheduled_at) {
+        setConflictingMeetings([]);
+        return;
+      }
+      try {
+        setLoadingConflicts(true);
+        const startTime = meeting.scheduled_at;
+        const endTime = new Date(
+          new Date(startTime).getTime() + (Number(meeting.duration) || 15) * 60000
+        ).toISOString();
+        const { data, error } = await supabase
+          .from('meetings')
+          .select('id, speaker_name, requester_name, scheduled_at, end_time, status')
+          .eq('requester_id', dbUserId)
+          .neq('id', meeting.id)
+          .in('status', ['scheduled', 'confirmed', 'accepted', 'tentative', 'in_progress'])
+          .lt('scheduled_at', endTime)
+          .gt('end_time', startTime);
+        if (error) throw error;
+        setConflictingMeetings(data || []);
+      } catch (error) {
+        console.error('Error loading conflicting meetings:', error);
+      } finally {
+        setLoadingConflicts(false);
+      }
+    };
+
+    loadConflicts();
+  }, [meeting?.id, meeting?.status, isSpeaker, dbUserId]);
+
+  const handleResolveConflict = async (action: 'replace' | 'keep_existing') => {
+    if (!meeting?.id) return;
+    try {
+      setResolvingConflict(true);
+      const response = await apiClient.request(eventApiPath(eventId, 'meetings/conflicts/resolve'), {
+        skipEventSegment: true,
+        method: 'POST',
+        body: { meetingId: meeting.id, action },
+      });
+      if (!response.success) {
+        showError('Could Not Resolve Conflict', response.error);
+        return;
+      }
+      showSuccess(
+        action === 'replace' ? 'Meeting Confirmed' : 'Meeting Cancelled',
+        action === 'replace'
+          ? 'This meeting is now confirmed and the conflicting meeting was cancelled.'
+          : 'This meeting was cancelled and your existing meeting was kept.'
+      );
+      router.back();
+    } catch (error: any) {
+      console.error('Error resolving meeting slot conflict:', error);
+      showError('Could Not Resolve Conflict', error?.message || 'Please try again.');
+    } finally {
+      setResolvingConflict(false);
+    }
+  };
 
   const handleBack = () => {
     router.back();
@@ -308,6 +376,49 @@ export default function MeetingDetailScreen() {
               </Text>
             </View>
           </View>
+
+          {meeting.status === 'tentative' && !isSpeaker && (
+            <View style={[styles.detailSection, styles.conflictCard]}>
+              <View style={styles.conflictHeader}>
+                <MaterialIcons name="warning" size={20} color="#FF9800" />
+                <Text style={styles.conflictTitle}>Scheduling Conflict</Text>
+              </View>
+              <Text style={styles.conflictDescription}>
+                This meeting overlaps with another meeting on your calendar. Choose which one to keep.
+              </Text>
+              {loadingConflicts ? (
+                <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 12 }} />
+              ) : (
+                <>
+                  {conflictingMeetings.map((conflict) => (
+                    <View key={conflict.id} style={styles.conflictItem}>
+                      <MaterialIcons name="event-busy" size={16} color={colors.text?.secondary || (isDark ? '#cccccc' : '#666666')} />
+                      <Text style={styles.conflictItemText}>
+                        {conflict.speaker_name || conflict.requester_name || 'Meeting'}
+                        {conflict.scheduled_at ? ` — ${format(parseISO(conflict.scheduled_at), 'MMM d, h:mm a')}` : ''}
+                      </Text>
+                    </View>
+                  ))}
+                  <View style={styles.conflictActions}>
+                    <TouchableOpacity
+                      style={[styles.conflictButton, styles.conflictButtonPrimary]}
+                      onPress={() => handleResolveConflict('replace')}
+                      disabled={resolvingConflict}
+                    >
+                      <Text style={styles.conflictButtonPrimaryText}>Replace With This Meeting</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.conflictButton, styles.conflictButtonSecondary]}
+                      onPress={() => handleResolveConflict('keep_existing')}
+                      disabled={resolvingConflict}
+                    >
+                      <Text style={styles.conflictButtonSecondaryText}>Keep Existing Meeting</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
 
           {meeting.message && (
             <View style={styles.detailSection}>
@@ -549,5 +660,65 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   closeButton: {
     padding: 8,
+  },
+  conflictCard: {
+    backgroundColor: isDark ? 'rgba(255, 152, 0, 0.12)' : 'rgba(255, 152, 0, 0.08)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(255, 152, 0, 0.35)' : 'rgba(255, 152, 0, 0.25)',
+  },
+  conflictHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  conflictTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text?.primary || (isDark ? '#ffffff' : '#000000'),
+    marginLeft: 8,
+  },
+  conflictDescription: {
+    fontSize: 14,
+    color: colors.text?.secondary || (isDark ? '#cccccc' : '#666666'),
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  conflictItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  conflictItemText: {
+    fontSize: 14,
+    color: colors.text?.primary || (isDark ? '#ffffff' : '#000000'),
+    marginLeft: 8,
+  },
+  conflictActions: {
+    marginTop: 16,
+    gap: 10,
+  },
+  conflictButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  conflictButtonPrimary: {
+    backgroundColor: '#FF9800',
+  },
+  conflictButtonPrimaryText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  conflictButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#FF9800',
+  },
+  conflictButtonSecondaryText: {
+    color: '#FF9800',
+    fontWeight: '600',
+    fontSize: 15,
   },
 });

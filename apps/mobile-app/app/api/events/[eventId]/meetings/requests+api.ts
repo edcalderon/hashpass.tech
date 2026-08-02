@@ -4,34 +4,13 @@ import {
   isResolveIdentityError,
 } from "@/lib/server/resolve-notification-identity";
 import { eventIdFromRequest } from "@/lib/server/event-api";
+import { authenticatedIdentity } from "@/lib/server/authenticated-meeting-identity";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ACTIONS = new Set(["accept", "decline", "cancel", "block"]);
 const MIN_MEETING_DURATION_MINUTES = 5;
 const MAX_MEETING_DURATION_MINUTES = 30;
-
-async function authenticatedIdentity(request: Request) {
-  const identity = await resolveNotificationIdentity(request);
-  if (isResolveIdentityError(identity))
-    return {
-      response: Response.json(
-        { error: identity.error },
-        { status: identity.status },
-      ),
-    };
-  // Meeting RPCs, passes, and claimed speaker ownership are all keyed by the
-  // Supabase auth UUID. The registry user ID is a separate identity domain.
-  const meetingUserId = identity.supabaseUserId;
-  if (!meetingUserId)
-    return {
-      response: Response.json(
-        { error: "Account is not linked to a meeting identity" },
-        { status: 403 },
-      ),
-    };
-  return { identity, meetingUserId };
-}
 
 async function speakerForUser(supabase: any, userId: string) {
   const { data, error } = await supabase

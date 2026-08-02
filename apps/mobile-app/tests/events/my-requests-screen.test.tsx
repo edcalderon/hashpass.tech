@@ -193,7 +193,7 @@ describe('MyRequestsView', () => {
     expect(renderer.root.findAllByProps({ children: 'Sofía Speaker' }).length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ children: 'ACCEPTED' }).length).toBeGreaterThan(0);
 
-    await pressText(renderer, 'Incoming');
+    await pressText(renderer, 'requestView.tabs.incoming');
     await applyCurrentFilter(renderer);
 
     expect(renderer.root.findAllByProps({ children: 'Mariana Requester' }).length).toBeGreaterThan(0);
@@ -299,11 +299,11 @@ describe('MyRequestsView', () => {
     const renderer = await renderScreen();
 
     expect(mockShowError).toHaveBeenCalledWith(
-      'Error Loading Requests',
-      'Failed to load your meeting requests',
+      'requestView.loadErrorTitle',
+      'requestView.loadErrorMessage',
     );
     expect(renderer.root.findAllByType('LoadingScreen' as any)).toHaveLength(0);
-    expect(renderer.root.findAllByProps({ children: 'No Sent Requests' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: 'requestView.emptyState.noSentTitle' }).length).toBeGreaterThan(0);
 
     await act(async () => renderer.unmount());
   });
@@ -315,7 +315,7 @@ describe('MyRequestsView', () => {
 
     expect(mockApiRequest).not.toHaveBeenCalled();
     expect(renderer.root.findAllByType('LoadingScreen' as any)).toHaveLength(0);
-    expect(renderer.root.findAllByProps({ children: 'No Sent Requests' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: 'requestView.emptyState.noSentTitle' }).length).toBeGreaterThan(0);
 
     await act(async () => renderer.unmount());
   });

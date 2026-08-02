@@ -973,7 +973,72 @@
       "confirmHold": "Confirm Hold",
       "requestHeld": "Request Held",
       "requestHeldMessage": "Request held for {hours} hour(s)",
-      "pending": "PENDING"
+      "pending": "PENDING",
+      "slotPicker": {
+        "title": "Select Time Slot",
+        "subtitle": "Choose an available time slot for the meeting",
+        "loading": "Loading available slots...",
+        "emptyTitle": "No available slots found",
+        "emptySubtitle": "Please mark some time slots as available in your schedule",
+        "tryAgain": "Try Again",
+        "interested": "Interested",
+        "scheduling": "Scheduling...",
+        "confirmSelection": "Confirm Selection",
+        "loadErrorTitle": "Error",
+        "loadErrorMessage": "Failed to load available slots",
+        "goToSchedule": "Go to My Schedule"
+      },
+      "successModal": {
+        "title": "Meeting Scheduled",
+        "titleTentative": "Meeting Accepted",
+        "addedToBothCalendars": "Added to both calendars",
+        "conflictMessage": "Awaiting the requester to resolve a scheduling conflict",
+        "viewMeeting": "View Meeting",
+        "defaultUserName": "User"
+      },
+      "loadErrorTitle": "Error Loading Requests",
+      "loadErrorMessage": "Failed to load your meeting requests",
+      "refreshErrorTitle": "Refresh Error",
+      "refreshErrorMessage": "Failed to refresh requests. Please try again.",
+      "cancelFailedTitle": "Cancellation Failed",
+      "cancelFailedMessage": "Failed to cancel meeting request. Please try again.",
+      "acceptFailedTitle": "Accept Failed",
+      "acceptFailedMessage": "Failed to accept meeting request",
+      "unexpectedResponseMessage": "Unexpected response from server. Please try again.",
+      "slotConflictTitle": "Slot Conflict",
+      "slotConflictActionTitle": "Slot Conflict — Action Needed",
+      "slotConflictActionMessage": "The meeting was accepted, but it overlaps with an existing meeting on the requester's calendar. Open Meeting Details to choose which one to keep.",
+      "acceptedTitle": "Request Accepted! 🎉",
+      "acceptedMessage": "The meeting has been scheduled successfully. You earned 1 LUKAS! 💎",
+      "declinedTitle": "Request Declined",
+      "declinedMessage": "The meeting request has been declined",
+      "declineFailedTitle": "Decline Failed",
+      "declineFailedMessage": "Failed to decline meeting request",
+      "userBlockedTitle": "User Blocked",
+      "userBlockedMessage": "The user has been blocked and their request declined",
+      "blockFailedTitle": "Block Failed",
+      "blockFailedMessage": "Failed to block user",
+      "tabs": {
+        "sent": "Sent",
+        "incoming": "Incoming"
+      },
+      "searchPlaceholder": "Search requests...",
+      "emptyState": {
+        "noSentTitle": "No Sent Requests",
+        "noSentDescription": "You haven't sent any meeting requests yet. Start networking by requesting meetings with speakers.",
+        "noIncomingTitle": "No Incoming Requests",
+        "noIncomingDescription": "You don't have any incoming meeting requests at the moment.",
+        "browseSpeakers": "Browse Speakers",
+        "noResultsTitle": "No Results",
+        "noResultsDescription": "No requests match your current filters. Try adjusting your search or filters."
+      },
+      "cancelModal": {
+        "title": "Cancel Meeting Request?",
+        "confirmMessage": "Are you sure you want to cancel this meeting request?",
+        "limitRestored": "Request limit restored",
+        "boostNotRefunded": "Boost points not refunded",
+        "keepRequest": "Keep Request"
+      }
     },
     "speakerView": {
       "connect": "Connect",
