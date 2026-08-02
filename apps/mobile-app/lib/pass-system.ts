@@ -124,6 +124,44 @@ export interface PassTypeLimits {
   monthly_limit: number;
 }
 
+export interface EventPassTier {
+  event_id: string;
+  pass_type: PassType;
+  max_meeting_requests: number;
+  max_boost_amount: number;
+  price_cents: number | null;
+  currency: string;
+  price_label: string | null;
+  updated_at?: string;
+}
+
+const DEFAULT_EVENT_PASS_TIERS: Omit<EventPassTier, 'event_id'>[] = [
+  {
+    pass_type: 'general',
+    max_meeting_requests: 10,
+    max_boost_amount: 100,
+    price_cents: 9900,
+    currency: 'USD',
+    price_label: null,
+  },
+  {
+    pass_type: 'business',
+    max_meeting_requests: 20,
+    max_boost_amount: 300,
+    price_cents: 24900,
+    currency: 'USD',
+    price_label: null,
+  },
+  {
+    pass_type: 'vip',
+    max_meeting_requests: 50,
+    max_boost_amount: 500,
+    price_cents: null,
+    currency: 'USD',
+    price_label: 'Premium',
+  },
+];
+
 class PassSystemService {
   private readonly defaultPassCreations = new Map<string, Promise<string | null>>();
 
@@ -666,6 +704,43 @@ class PassSystemService {
     }
   }
 
+  // The event-admin tier catalog is the source of truth for entitlements and
+  // prices shown in the comparison UI. Keep a safe local fallback while an
+  // older tenant is still awaiting the catalog migration.
+  async getEventPassTiers(eventId: string): Promise<EventPassTier[]> {
+    const storageEventId = resolvePassStorageEventId(eventId);
+    try {
+      const { data, error } = await (supabase.rpc as any)('get_event_pass_tiers', {
+        p_event_id: storageEventId,
+      }) as { data: EventPassTier[] | null; error: unknown | null };
+      if (error || !Array.isArray(data) || data.length === 0) {
+        return DEFAULT_EVENT_PASS_TIERS.map((tier) => ({ ...tier, event_id: storageEventId }));
+      }
+
+      return data
+        .filter((tier): tier is EventPassTier => (
+          tier
+          && (tier.pass_type === 'general' || tier.pass_type === 'business' || tier.pass_type === 'vip')
+        ))
+        .map((tier) => ({
+          event_id: storageEventId,
+          pass_type: tier.pass_type,
+          max_meeting_requests: Number(tier.max_meeting_requests) || 0,
+          max_boost_amount: Number(tier.max_boost_amount) || 0,
+          price_cents: tier.price_cents === null || tier.price_cents === undefined
+            ? null
+            : Number(tier.price_cents),
+          currency: typeof tier.currency === 'string' ? tier.currency : 'USD',
+          price_label: typeof tier.price_label === 'string' && tier.price_label.trim()
+            ? tier.price_label
+            : null,
+          ...(typeof tier.updated_at === 'string' ? { updated_at: tier.updated_at } : {}),
+        }));
+    } catch {
+      return DEFAULT_EVENT_PASS_TIERS.map((tier) => ({ ...tier, event_id: storageEventId }));
+    }
+  }
+
   // Fallback method with default values (used if database call fails)
   private getDefaultPassTypeLimits(passType: PassType): PassTypeLimits {
     // These are fallback values - should not be used in production
@@ -711,18 +786,18 @@ class PassSystemService {
     switch (passType) {
       case 'vip':
         return {
-          features: ['All conferences Nov 12-14', 'Networking & B2B sessions', 'VIP networking with speakers', 'VIP lounge access', 'Priority seating'],
-          perks: ['50 meeting requests', 'Concierge Service', 'Premium Swag', 'Official closing party']
+          features: ['Access to all conference sessions', 'Networking & B2B sessions', 'VIP networking with speakers', 'VIP lounge access', 'Priority seating'],
+          perks: ['Concierge Service', 'Premium Swag', 'Official closing party']
         };
       case 'business':
         return {
-          features: ['All conferences Nov 12-14', 'Networking & B2B sessions', 'Business lounge access'],
-          perks: ['20 meeting requests', 'Networking Tools', 'Business Support', 'Official closing party']
+          features: ['Access to all conference sessions', 'Networking & B2B sessions', 'Business lounge access'],
+          perks: ['Networking Tools', 'Business Support', 'Official closing party']
         };
       case 'general':
         return {
-          features: ['All conferences Nov 12-14', 'Access to main event areas'],
-          perks: ['5 meeting requests', 'Official closing party']
+          features: ['Access to all conference sessions', 'Access to main event areas'],
+          perks: ['Official closing party']
         };
       default:
         return {
@@ -866,7 +941,7 @@ class PassSystemService {
 
   // Format boost amount
   formatBoostAmount(amount: number): string {
-    return `$${amount.toFixed(2)} VOI`;
+    return `${amount.toLocaleString()} Boost points`;
   }
 
   // Get pass type display name

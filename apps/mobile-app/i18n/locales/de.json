@@ -507,7 +507,7 @@
       "event": "Event-Zugang"
     },
     "meetingRequests": "Meeting-Anfragen",
-    "voiBoost": "VOI-Boost",
+    "boostPoints": "Boost-Punkte",
     "passSummary": "Pass-Zusammenfassung",
     "quickOverview": "Schnellübersicht",
     "requestsLeft": "Verbleibende Anfragen",

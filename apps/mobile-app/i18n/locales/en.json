@@ -651,7 +651,7 @@
       "event": "Event Access"
     },
     "meetingRequests": "Meeting Requests",
-    "voiBoost": "VOI Boost",
+    "boostPoints": "Boost points",
     "passSummary": "Pass Summary",
     "quickOverview": "Quick Overview",
     "requestsLeft": "Requests Left",

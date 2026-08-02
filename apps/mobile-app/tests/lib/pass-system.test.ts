@@ -87,6 +87,36 @@ describe('passSystemService Supabase user id guard', () => {
     expect(resolvePassStorageEventId('peru2026')).toBe('peru2026');
   });
 
+  it('uses event tier catalog values and keeps generic perk copy date-free', async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: [{
+        event_id: 'chile2026',
+        pass_type: 'general',
+        max_meeting_requests: 10,
+        max_boost_amount: 100,
+        price_cents: 9900,
+        currency: 'USD',
+        price_label: null,
+      }],
+      error: null,
+    });
+
+    await expect(passSystemService.getEventPassTiers('bsl')).resolves.toEqual([{
+      event_id: 'chile2026',
+      pass_type: 'general',
+      max_meeting_requests: 10,
+      max_boost_amount: 100,
+      price_cents: 9900,
+      currency: 'USD',
+      price_label: null,
+    }]);
+    expect(mockRpc).toHaveBeenCalledWith('get_event_pass_tiers', { p_event_id: 'chile2026' });
+    expect(passSystemService.getPassPerks('general').features).toEqual(expect.arrayContaining([
+      'Access to all conference sessions',
+    ]));
+    expect(passSystemService.getPassPerks('general').features.join(' ')).not.toMatch(/\b\w+\s+\d{1,2}(?:-\d{1,2})?\b/);
+  });
+
   it('surfaces database errors while loading the wallet instead of treating them as no passes', async () => {
     const databaseError = { code: 'PGRST000', message: 'database unavailable' };
     const query = {

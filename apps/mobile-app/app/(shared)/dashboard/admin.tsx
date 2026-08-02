@@ -6,7 +6,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import type { AdminRole } from '../../../lib/admin-utils';
 import { getCurrentAdminAccess } from '../../../lib/admin-access';
 import { supabase } from '../../../lib/supabase';
-import { PassType, PassStatus, resolvePassStorageEventId } from '../../../lib/pass-system';
+import { EventPassTier, PassType, PassStatus, resolvePassStorageEventId } from '../../../lib/pass-system';
 import { QRScanResult } from '../../../lib/qr-system';
 import AdminQRScanner from '../../../components/AdminQRScanner';
 import LoadingScreen from '../../../components/LoadingScreen';
@@ -137,6 +137,9 @@ export default function AdminPanel() {
   const [newPassUserId, setNewPassUserId] = useState('');
   const [newPassType, setNewPassType] = useState<PassType>('general');
   const [searchQuery, setSearchQuery] = useState('');
+  const [eventPassTiers, setEventPassTiers] = useState<EventPassTier[]>([]);
+  const [passTiersLoading, setPassTiersLoading] = useState(false);
+  const [savingPassTier, setSavingPassTier] = useState<PassType | null>(null);
 
   // Pass-code campaigns are event scoped. Raw values are only held long
   // enough to create/display a code and are never returned by the list API.
@@ -289,8 +292,7 @@ export default function AdminPanel() {
 
   const loadInitialData = async () => {
     if (activeTab === 'passes') {
-      await loadPasses();
-      await loadUsers();
+      await Promise.all([loadPasses(), loadUsers(), loadEventPassTiers()]);
     } else if (activeTab === 'pass-codes') {
       await loadPassClaimCodes();
     } else if (activeTab === 'meetings') {
@@ -500,6 +502,44 @@ export default function AdminPanel() {
       Alert.alert('Error', 'Failed to load passes: ' + error.message);
     } finally {
       setPassesLoading(false);
+    }
+  };
+
+  const loadEventPassTiers = async () => {
+    setPassTiersLoading(true);
+    try {
+      const result = await apiClient.get(
+        `/admin/pass-tiers?eventId=${encodeURIComponent(resolvePassStorageEventId(selectedEventId))}`,
+        { skipEventSegment: true },
+      );
+      if (!result.success) throw new Error(result.error || 'Unable to load pass tier settings');
+      setEventPassTiers(((result.data as { data?: EventPassTier[] })?.data) || []);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to load pass tier settings: ' + (error.message || 'Unknown error'));
+    } finally {
+      setPassTiersLoading(false);
+    }
+  };
+
+  const updateEventPassTier = async (tier: EventPassTier) => {
+    try {
+      setSavingPassTier(tier.pass_type);
+      const result = await apiClient.post('/admin/pass-tiers', {
+        eventId: resolvePassStorageEventId(selectedEventId),
+        passType: tier.pass_type,
+        maxMeetingRequests: tier.max_meeting_requests,
+        maxBoostAmount: tier.max_boost_amount,
+        priceCents: tier.price_cents,
+        currency: tier.currency,
+        priceLabel: tier.price_label,
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error || 'Unable to update pass tier settings');
+      await loadEventPassTiers();
+      Alert.alert('Pass tier updated', `${tier.pass_type.toUpperCase()} settings now apply to new passes and pass-code claims.`);
+    } catch (error: any) {
+      Alert.alert('Pass tier not updated', error.message || 'Please try again.');
+    } finally {
+      setSavingPassTier(null);
     }
   };
 
@@ -951,11 +991,16 @@ export default function AdminPanel() {
             passes={filteredPasses}
             users={users}
             loading={passesLoading}
+            eventPassTiers={eventPassTiers}
+            passTiersLoading={passTiersLoading}
+            savingPassTier={savingPassTier}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onCreatePass={() => setShowCreatePassModal(true)}
             onUpdateStatus={handleUpdatePassStatus}
             onRefresh={loadPasses}
+            onRefreshTiers={loadEventPassTiers}
+            onUpdateTier={updateEventPassTier}
           />
         )}
 
@@ -1391,14 +1436,28 @@ function PassManagementTab({
   passes,
   users,
   loading,
+  eventPassTiers,
+  passTiersLoading,
+  savingPassTier,
   searchQuery,
   onSearchChange,
   onCreatePass,
   onUpdateStatus,
-  onRefresh
+  onRefresh,
+  onRefreshTiers,
+  onUpdateTier,
 }: any) {
   return (
     <View style={styles.tabContent}>
+      <PassTierSettings
+        styles={styles}
+        key={eventPassTiers.map((tier) => `${tier.event_id}:${tier.pass_type}:${tier.updated_at || ''}`).join('|')}
+        tiers={eventPassTiers}
+        loading={passTiersLoading}
+        savingPassType={savingPassTier}
+        onRefresh={onRefreshTiers}
+        onSave={onUpdateTier}
+      />
       <View style={styles.searchContainer}>
         <MaterialIcons name="search" size={20} color={colors.text.secondary} />
         <TextInput
@@ -1460,6 +1519,113 @@ function PassManagementTab({
           )}
         </View>
       )}
+    </View>
+  );
+}
+
+function PassTierSettings({
+  styles,
+  tiers,
+  loading,
+  savingPassType,
+  onRefresh,
+  onSave,
+}: {
+  styles: any;
+  tiers: EventPassTier[];
+  loading: boolean;
+  savingPassType: PassType | null;
+  onRefresh: () => void;
+  onSave: (tier: EventPassTier) => void;
+}) {
+  const draftsRef = useRef<EventPassTier[]>(tiers);
+
+  const updateDraft = (passType: PassType, update: Partial<EventPassTier>) => {
+    draftsRef.current = draftsRef.current.map((tier) => (
+      tier.pass_type === passType ? { ...tier, ...update } : tier
+    )));
+  };
+
+  return (
+    <View style={[styles.list, { marginBottom: 20 }]}>
+      <View style={styles.passCard}>
+        <View style={styles.passCardHeader}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.passNumber}>Pass tier settings</Text>
+            <Text style={styles.passInfo}>Controls the price and new-pass allowances for this event. Existing passes keep their issued limits.</Text>
+          </View>
+          <TouchableOpacity style={styles.actionButton} onPress={onRefresh} disabled={loading}>
+            <MaterialIcons name="refresh" size={16} color="#fff" />
+            <Text style={styles.actionButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+      ) : tiers.map((tier) => {
+        const priceValue = tier.price_cents === null ? '' : String(tier.price_cents / 100);
+        const isSaving = savingPassType === tier.pass_type;
+        return (
+          <View key={tier.pass_type} style={styles.passCard}>
+            <Text style={styles.passNumber}>{tier.pass_type.toUpperCase()}</Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Meeting requests</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  defaultValue={String(tier.max_meeting_requests)}
+                  onChangeText={(value) => updateDraft(tier.pass_type, { max_meeting_requests: Number(value.replace(/[^0-9]/g, '')) || 0 })}
+                  keyboardType="number-pad"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Boost points</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  defaultValue={String(tier.max_boost_amount)}
+                  onChangeText={(value) => updateDraft(tier.pass_type, { max_boost_amount: Number(value.replace(/[^0-9]/g, '')) || 0 })}
+                  keyboardType="number-pad"
+                />
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Price ({tier.currency})</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  defaultValue={priceValue}
+                  onChangeText={(value) => {
+                    const normalized = value.replace(/[^0-9.]/g, '');
+                    updateDraft(tier.pass_type, { price_cents: normalized ? Math.round(Number(normalized) * 100) : null });
+                  }}
+                  keyboardType="decimal-pad"
+                  placeholder="e.g. 99"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Price label (optional)</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  defaultValue={tier.price_label || ''}
+                  onChangeText={(value) => updateDraft(tier.pass_type, { price_label: value || null })}
+                  placeholder="e.g. Premium"
+                />
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonSuccess, { alignSelf: 'flex-start' }]}
+              onPress={() => {
+                const draft = draftsRef.current.find((item) => item.pass_type === tier.pass_type);
+                if (draft) onSave(draft);
+              }}
+              disabled={isSaving}
+            >
+              {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionButtonText}>Save {tier.pass_type}</Text>}
+            </TouchableOpacity>
+          </View>
+        );
+      })}
     </View>
   );
 }
