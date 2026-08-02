@@ -927,6 +927,7 @@
       "speaker": "Speaker",
       "requester": "Requester",
       "expiresIn": "Expires In",
+      "days": "DAYS",
       "hoursAbbr": "HRS",
       "minutes": "MIN",
       "seconds": "SEC",

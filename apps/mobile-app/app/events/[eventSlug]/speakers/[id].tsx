@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../../../../hooks/useTheme';
@@ -48,6 +48,30 @@ interface Speaker {
   isOnline?: boolean; // User is currently online (last_seen within last 5 minutes)
 }
 
+type AttendeeProfile = {
+  fullName: string | null;
+  title: string | null;
+  company: string | null;
+};
+
+const isAttendeeProfile = (value: unknown): value is AttendeeProfile => {
+  if (!value || typeof value !== 'object') return false;
+  const attendee = value as Record<string, unknown>;
+  return (typeof attendee.fullName === 'string' || attendee.fullName === null) &&
+    (typeof attendee.title === 'string' || attendee.title === null) &&
+    (typeof attendee.company === 'string' || attendee.company === null);
+};
+
+const requestIdentityFromProfile = (user: any, attendeeProfile: AttendeeProfile | null) => {
+  const metadataName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+  const accountName = [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim();
+  return {
+    name: attendeeProfile?.fullName?.trim() || metadataName || accountName || user?.email || 'Anonymous',
+    title: attendeeProfile?.title?.trim() || undefined,
+    company: attendeeProfile?.company?.trim() || undefined,
+  };
+};
+
 // UserTicket interface removed - now using pass system
 
 export default function SpeakerDetail() {
@@ -89,6 +113,7 @@ export default function SpeakerDetail() {
   const [isAcceptingRequest, setIsAcceptingRequest] = useState(false);
   const [passRefreshTrigger, setPassRefreshTrigger] = useState(0);
   const [userPassType, setUserPassType] = useState<'general' | 'business' | 'vip'>('general');
+  const attendeeProfileRef = useRef<AttendeeProfile | null>(null);
   
   const [meetingMessage, setMeetingMessage] = useState('');
   const [selectedIntentions, setSelectedIntentions] = useState<string[]>(['none']);
@@ -258,6 +283,29 @@ export default function SpeakerDetail() {
     // Load user request limits
     loadRequestLimits();
   }, [dbUserId, event?.speakers, id, speakerPath]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isLoggedIn) {
+      attendeeProfileRef.current = null;
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    apiClient.request('/profile/attendee', { skipEventSegment: true })
+      .then((response: any) => {
+        const data = response.success ? (response.data as any)?.data : null;
+        if (!cancelled) attendeeProfileRef.current = isAttendeeProfile(data) ? data : null;
+      })
+      .catch(() => {
+        if (!cancelled) attendeeProfileRef.current = null;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, user?.id]);
 
   useEffect(() => {
     if (dbUserId && speaker) {
@@ -678,6 +726,8 @@ export default function SpeakerDetail() {
       return;
     }
 
+    const requesterIdentity = requestIdentityFromProfile(user, attendeeProfileRef.current);
+
     console.log('🔵 User data:', { id: dbUserId, email: user.email });
     console.log('🔵 Speaker data:', { id: speaker.id, name: speaker.name });
 
@@ -688,9 +738,9 @@ export default function SpeakerDetail() {
         requester_id: dbUserId,
         speaker_id: speaker.id,
         speaker_name: speaker.name,
-        requester_name: user.email || 'Anonymous',
-        requester_company: 'Your Company',
-        requester_title: 'Your Title',
+        requester_name: requesterIdentity.name,
+        requester_company: requesterIdentity.company,
+        requester_title: requesterIdentity.title,
         requester_ticket_type: 'general', // Default ticket type, will be validated by pass system
         meeting_type: 'networking',
         message: '', // No message
@@ -823,6 +873,8 @@ export default function SpeakerDetail() {
       return;
     }
 
+    const requesterIdentity = requestIdentityFromProfile(user, attendeeProfileRef.current);
+
     // Revalidate entitlement through the event API immediately before sending.
     // This keeps the browser independent of the database provider and prevents
     // stale limits from allowing a request after the initial screen load.
@@ -859,9 +911,9 @@ export default function SpeakerDetail() {
         requester_id: dbUserId,
         speaker_id: speaker.id,
         speaker_name: speaker.name,
-        requester_name: user.email || 'Anonymous',
-        requester_company: 'Your Company', // Would come from user profile
-        requester_title: 'Your Title', // Would come from user profile
+        requester_name: requesterIdentity.name,
+        requester_company: requesterIdentity.company,
+        requester_title: requesterIdentity.title,
         requester_ticket_type: userPassType, // Use actual pass type from user's pass
         meeting_type: 'networking',
         message: meetingMessage || '', // Allow empty message
@@ -878,9 +930,9 @@ export default function SpeakerDetail() {
           requester_id: dbUserId,
           speaker_id: speaker.id,
           speaker_name: speaker.name,
-          requester_name: user.email || 'Anonymous',
-          requester_company: 'Your Company',
-          requester_title: 'Your Title',
+          requester_name: requesterIdentity.name,
+          requester_company: requesterIdentity.company,
+          requester_title: requesterIdentity.title,
           requester_ticket_type: 'business',
           meeting_type: 'networking',
           message: meetingMessage || '',

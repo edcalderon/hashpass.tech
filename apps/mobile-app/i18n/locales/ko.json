@@ -857,6 +857,7 @@
       "speaker": "연사",
       "requester": "요청자",
       "expiresIn": "만료까지",
+      "days": "일",
       "hoursAbbr": "시간",
       "minutes": "분",
       "seconds": "초",

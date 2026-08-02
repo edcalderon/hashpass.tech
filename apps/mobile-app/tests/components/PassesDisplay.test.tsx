@@ -99,10 +99,13 @@ describe('PassesDisplay', () => {
       await new Promise((resolve) => setTimeout(resolve, 320));
     });
 
-    const requestControl = renderer.root.findAll((node: any) =>
+    const requestControls = renderer.root.findAll((node: any) =>
       typeof node.props?.onPress === 'function'
       && node.findAllByProps({ children: 'View request' }).length > 0,
-    )[0];
+    );
+    expect(requestControls).toHaveLength(1);
+
+    const requestControl = requestControls[0];
     expect(requestControl).toBeDefined();
     await act(async () => requestControl.props.onPress());
     expect(onExistingRequestPress).toHaveBeenCalledTimes(1);

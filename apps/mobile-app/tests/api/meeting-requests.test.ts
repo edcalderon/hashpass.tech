@@ -17,10 +17,26 @@ const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null })
 const mockMeetingRequestMaybeSingle = jest
   .fn()
   .mockResolvedValue({ data: { id: "request-123" }, error: null });
+const mockSpeakerIn = jest.fn().mockResolvedValue({ data: [], error: null });
 const mockRpc = jest.fn();
-const mockFrom = jest.fn((table: string) => ({
-  select: jest.fn(() => createChain(table)),
-}));
+const mockFrom = jest.fn((table: string) => table === "bsl_speakers"
+  ? { select: jest.fn(() => createSpeakerChain()) }
+  : { select: jest.fn(() => createChain(table)) });
+
+function createSpeakerChain(): {
+  eq: (...args: unknown[]) => unknown;
+  in: (...args: unknown[]) => unknown;
+  maybeSingle: jest.Mock;
+} {
+  return {
+    eq: (...args: unknown[]) => {
+      mockEq(...args);
+      return createSpeakerChain();
+    },
+    in: (...args: unknown[]) => mockSpeakerIn(...args),
+    maybeSingle: mockMaybeSingle,
+  };
+}
 let consoleErrorSpy: jest.SpyInstance;
 
 function createChain(table?: string): {
@@ -59,13 +75,17 @@ describe("meeting-requests api", () => {
     mockIsResolveIdentityError.mockReset();
     mockEq.mockReset();
     mockIn.mockReset();
-    mockOrder.mockClear();
-    mockMaybeSingle.mockClear();
+    mockOrder.mockReset();
+    mockOrder.mockResolvedValue({ data: [], error: null });
+    mockMaybeSingle.mockReset();
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
     mockMeetingRequestMaybeSingle.mockReset();
     mockMeetingRequestMaybeSingle.mockResolvedValue({
       data: { id: "request-123" },
       error: null,
     });
+    mockSpeakerIn.mockReset();
+    mockSpeakerIn.mockResolvedValue({ data: [], error: null });
     mockRpc.mockReset();
     mockFrom.mockClear();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
@@ -146,6 +166,91 @@ describe("meeting-requests api", () => {
           { id: "sent-request", _direction: "sent" },
           { id: "incoming-request", _direction: "incoming" },
         ],
+      });
+    });
+
+    it("adds the claimed speaker’s current role and company to request details", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "auth-uuid-123",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { id: "speaker-record-id", user_id: "speaker-user-id" },
+        error: null,
+      });
+      mockOrder
+        .mockResolvedValueOnce({
+          data: [{ id: "sent-request", speaker_id: "speaker-user-id" }],
+          error: null,
+        })
+        .mockResolvedValueOnce({ data: [], error: null });
+      mockSpeakerIn.mockResolvedValueOnce({
+        data: [{
+          user_id: "speaker-user-id",
+          title: "Founder & CEO",
+          company: "Hashpass",
+          imageurl: "https://cdn.hashpass.tech/edward.png",
+        }],
+        error: null,
+      });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await GET(
+        new Request("https://api.hashpass.tech/api/events/chile2026/meetings/requests"),
+      );
+
+      expect(await response.json()).toEqual({
+        data: [{
+          id: "sent-request",
+          speaker_id: "speaker-user-id",
+          speaker_title: "Founder & CEO",
+          speaker_company: "Hashpass",
+          speaker_image: "https://cdn.hashpass.tech/edward.png",
+          _direction: "sent",
+        }],
+      });
+      expect(mockSpeakerIn).toHaveBeenCalledWith("user_id", ["speaker-user-id"]);
+    });
+
+    it("preserves requests when a speaker no longer has a live profile record", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: "auth-uuid-123" });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      mockOrder.mockResolvedValueOnce({
+        data: [{ id: "sent-request", speaker_id: "removed-speaker-user-id" }], error: null,
+      });
+      mockSpeakerIn.mockResolvedValueOnce({ data: [], error: null });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await GET(
+        new Request("https://api.hashpass.tech/api/events/chile2026/meetings/requests"),
+      );
+
+      await expect(response.json()).resolves.toEqual({
+        data: [{ id: "sent-request", speaker_id: "removed-speaker-user-id", _direction: "sent" }],
+      });
+    });
+
+    it("returns the request list when the speaker profile enrichment lookup fails", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: "auth-uuid-123" });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      mockOrder.mockResolvedValueOnce({
+        data: [{ id: "sent-request", speaker_id: "speaker-user-id" }], error: null,
+      });
+      mockSpeakerIn.mockResolvedValueOnce({ data: null, error: { message: "profile lookup failed" } });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await GET(
+        new Request("https://api.hashpass.tech/api/events/chile2026/meetings/requests"),
+      );
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        data: [{ id: "sent-request", speaker_id: "speaker-user-id", _direction: "sent" }],
       });
     });
 

@@ -1,3 +1,7 @@
+## [1.8.307](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.306...v1.8.307) (2026-08-02)
+### Released
+- improve networking request details; guard notification route params
+
 ## [1.8.306](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.305...v1.8.306) (2026-08-02)
 ### Released
 - Version 1.8.306 release

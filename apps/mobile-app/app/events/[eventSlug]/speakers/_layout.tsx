@@ -82,6 +82,14 @@ export default function SpeakersLayout() {
         } as any}
       />
       <Stack.Screen
+        name="dashboard"
+        options={{
+          title: 'Speaker Dashboard',
+          headerBackTitle: eventTitle,
+          headerBackTitleVisible: true,
+        } as any}
+      />
+      <Stack.Screen
         name="[id]"
         options={({ route }) => ({
           title: 'Speaker Details',

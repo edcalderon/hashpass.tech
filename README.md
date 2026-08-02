@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.306)
+## 📋 Latest Changes (v1.8.307)
 
 ### Released
-- Version 1.8.306 release
+- improve networking request details; guard notification route params
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

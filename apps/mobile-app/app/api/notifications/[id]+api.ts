@@ -6,9 +6,16 @@ type NotificationUpdateBody = {
   is_archived?: boolean;
 };
 
+type NotificationRouteContext = {
+  params?: {
+    id?: string;
+  };
+};
+
 // PATCH /api/notifications/[id] — mark a single notification read/unread or archived.
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  if (!params.id) {
+export async function PATCH(request: Request, context?: NotificationRouteContext) {
+  const notificationId = context?.params?.id?.trim();
+  if (!notificationId) {
     return Response.json({ error: 'Notification ID is required' }, { status: 400 });
   }
 
@@ -46,7 +53,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const { error } = await (supabase as any)
       .from('notifications')
       .update(update)
-      .eq('id', params.id)
+      .eq('id', notificationId)
       .eq('user_id', identity.supabaseUserId);
 
     if (error) {
@@ -62,8 +69,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 }
 
 // DELETE /api/notifications/[id] — delete a single notification.
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  if (!params.id) {
+export async function DELETE(request: Request, context?: NotificationRouteContext) {
+  const notificationId = context?.params?.id?.trim();
+  if (!notificationId) {
     return Response.json({ error: 'Notification ID is required' }, { status: 400 });
   }
 
@@ -80,7 +88,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const { error } = await supabase
       .from('notifications')
       .delete()
-      .eq('id', params.id)
+      .eq('id', notificationId)
       .eq('user_id', identity.supabaseUserId);
 
     if (error) {

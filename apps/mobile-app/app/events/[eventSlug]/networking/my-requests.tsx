@@ -86,7 +86,12 @@ export default function MyRequestsView() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [holdTime, setHoldTime] = useState(1); // Hours
-  const [expirationCountdown, setExpirationCountdown] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+  const [expirationCountdown, setExpirationCountdown] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
   const openedRequestId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -498,23 +503,25 @@ export default function MyRequestsView() {
     }
 
     const updateCountdown = () => {
-      const now = new Date();
-      const expires = new Date(selectedRequest.expires_at!);
-      const diffMs = expires.getTime() - now.getTime();
+      const expiresAtMs = Date.parse(selectedRequest.expires_at!);
+      if (!Number.isFinite(expiresAtMs)) {
+        setExpirationCountdown(null);
+        return;
+      }
+
+      const diffMs = expiresAtMs - Date.now();
       
       if (diffMs <= 0) {
-        setExpirationCountdown({ hours: 0, minutes: 0, seconds: 0 });
+        setExpirationCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
         return;
       }
       
-      // Cap hours at 6 (maximum boost time) to prevent display issues
-      // If it's more than 6 hours, something is wrong with the data
-      const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const hours = Math.min(totalHours, 6); // Cap at 6 hours max
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
       
-      setExpirationCountdown({ hours, minutes, seconds });
+      setExpirationCountdown({ days, hours, minutes, seconds });
     };
 
     updateCountdown();
@@ -808,7 +815,14 @@ export default function MyRequestsView() {
                   <Text style={styles.speakerDetailName}>
                     {selectedRequest.speaker_name}
                   </Text>
-                  <Text style={styles.speakerDetailTitle}>{t('requestView.speaker')}</Text>
+                  <Text style={styles.speakerDetailTitle}>
+                    {selectedRequest.speaker_title || t('requestView.speaker')}
+                  </Text>
+                  {selectedRequest.speaker_company && (
+                    <Text style={[styles.speakerDetailTitle, { marginTop: 2 }]}>
+                      {selectedRequest.speaker_company}
+                    </Text>
+                  )}
                 </View>
               </View>
             </View>
@@ -864,6 +878,13 @@ export default function MyRequestsView() {
               <View style={styles.detailSection}>
                 <Text style={styles.detailLabel}>{t('requestView.expiresIn')}</Text>
                 <View style={styles.countdownContainer}>
+                  <View style={styles.countdownUnit}>
+                    <Text style={styles.countdownValue}>
+                      {String(expirationCountdown.days).padStart(2, '0')}
+                    </Text>
+                    <Text style={styles.countdownLabel}>{t('requestView.days')}</Text>
+                  </View>
+                  <Text style={styles.countdownSeparator}>:</Text>
                   <View style={styles.countdownUnit}>
                     <Text style={styles.countdownValue}>
                       {String(expirationCountdown.hours).padStart(2, '0')}
