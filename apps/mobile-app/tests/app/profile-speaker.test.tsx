@@ -11,6 +11,8 @@ const mockUpdateUser = jest.fn();
 const mockUpsert = jest.fn();
 const mockShowSuccess = jest.fn();
 const mockShowError = jest.fn();
+const mockAuthServiceGetUser = jest.fn();
+const mockAuthServiceGetSession = jest.fn();
 const profileUser = {
   id: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4',
   email: 'edward@hashpass.app',
@@ -19,10 +21,11 @@ const profileUser = {
   created_at: '2026-05-02T00:00:00.000Z',
   user_metadata: { full_name: 'Edward Calderón' },
 };
+let mockAuthHookUser: typeof profileUser | null = profileUser;
 let mountedRenderer: ReturnType<typeof create> | null = null;
 
 jest.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({ user: profileUser, isLoading: false }),
+  useAuth: () => ({ user: mockAuthHookUser, isLoading: false }),
 }));
 jest.mock('../../hooks/useTheme', () => ({
   useTheme: () => ({
@@ -41,8 +44,8 @@ jest.mock('@contexts/ToastContext', () => ({
 }));
 jest.mock('@hashpass/auth', () => ({
   authService: {
-    getUser: () => profileUser,
-    getSession: () => Promise.resolve({ user: profileUser }),
+    getUser: () => mockAuthServiceGetUser(),
+    getSession: () => mockAuthServiceGetSession(),
   },
 }));
 jest.mock('../../lib/admin-access', () => ({
@@ -108,6 +111,9 @@ describe('ProfileScreen speaker information', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuthHookUser = profileUser;
+    mockAuthServiceGetUser.mockReturnValue(profileUser);
+    mockAuthServiceGetSession.mockResolvedValue({ user: profileUser });
     mockGetCurrentAdminAccess.mockResolvedValue({
       globalRole: 'super_admin',
       globalRoles: ['super_admin'],
@@ -171,6 +177,16 @@ describe('ProfileScreen speaker information', () => {
     await flush();
 
     expect(renderer.root.findByProps({ children: 'Super Admin · Event Admin · bsl · Speaker' })).toBeTruthy();
+  });
+
+  it('handles a null auth profile while the first session resolves', async () => {
+    mockAuthHookUser = null;
+    mockAuthServiceGetUser.mockReturnValue(null);
+    mockAuthServiceGetSession.mockResolvedValue({ user: profileUser });
+
+    const renderer = await renderProfile();
+
+    expect(renderer.root.findAllByProps({ children: 'Edward Calderón' })).not.toHaveLength(0);
   });
 
   it('updates the linked speaker profile through the self-scoped API', async () => {

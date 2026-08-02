@@ -81,6 +81,8 @@ export default function ProfileScreen() {
   const [speakerCompany, setSpeakerCompany] = useState('');
 
   const hasProfileContent = useCallback((candidate?: AuthUser | null): boolean => {
+    if (!candidate) return false;
+
     const hasName = Boolean(
       candidate.first_name?.trim() ||
       candidate.last_name?.trim() ||
