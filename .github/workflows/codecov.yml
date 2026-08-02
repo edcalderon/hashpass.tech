@@ -44,7 +44,10 @@ jobs:
         uses: codecov/codecov-action@v7
         with:
           files: ./apps/mobile-app/coverage/lcov.info
-          fail_ci_if_error: true
+          # The coverage test command above remains the required gate. Upload
+          # failures are external/transient (and push + PR runs can upload the
+          # same report concurrently), so they must not block a valid release.
+          fail_ci_if_error: false
           verbose: true
           version: v11.2.8
           token: ${{ env.CODECOV_TOKEN }}
