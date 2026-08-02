@@ -11,6 +11,7 @@ import { apiClient, eventApiPath } from '@/lib/api-client';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
 import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl, resolveSpeakerImage } from '../../../../lib/string-utils';
+import { isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
 import LoadingScreen from '../../../../components/LoadingScreen';
 import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
 import { useTranslation } from '../../../../i18n/i18n';
@@ -42,7 +43,7 @@ interface Speaker {
     twitter?: string;
   };
   user_id?: string;
-  isActive?: boolean; // Has user_id = active
+  isActive?: boolean; // Claimed account with an active speaker profile
   isOnline?: boolean; // User is currently online (last_seen within last 5 minutes)
 }
 
@@ -129,7 +130,7 @@ export default function SpeakerDetail() {
       const dbSpeaker = response.success ? (response.data as any)?.data : null;
 
       if (dbSpeaker?.id) {
-        const isActive = Boolean(dbSpeaker.is_active ?? dbSpeaker.user_id);
+        const isActive = isClaimedActiveSpeaker(dbSpeaker);
         setIsCurrentUserSpeaker(Boolean(dbUserId && dbSpeaker.user_id === dbUserId));
         setSpeaker({
           id: String(dbSpeaker.id),

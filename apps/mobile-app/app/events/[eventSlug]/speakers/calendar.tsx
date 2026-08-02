@@ -9,6 +9,7 @@ import EventBanner from '../../../../components/EventBanner';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import SpeakerSearchAndSort from '../../../../components/SpeakerSearchAndSort';
 import { sortSpeakersByPriority } from '../../../../lib/speaker-priority';
+import { isClaimedActiveSpeaker } from '../../../../lib/speaker-status';
 import { getSpeakerAvatarUrl, resolveConfiguredSpeakerImage, resolveSpeakerImage } from '../../../../lib/string-utils';
 import LoadingScreen from '../../../../components/LoadingScreen';
 
@@ -21,7 +22,7 @@ interface Speaker {
   bio?: string;
   image?: string;
   user_id?: string;
-  isActive?: boolean; // Has user_id = active speaker
+  isActive?: boolean; // Claimed account with an active speaker profile
 }
 
 // Shape of event?.speakers entries (from packages/config/src/events.ts's
@@ -50,7 +51,7 @@ export default function SpeakersCalendar() {
   const [groupedSpeakers, setGroupedSpeakers] = useState<{ [key: string]: Speaker[] }>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('name');
-  const [showActiveOnly, setShowActiveOnly] = useState(false);
+  const [showActiveOnly, setShowActiveOnly] = useState(true);
   const [loading, setLoading] = useState(true);
 
   // Check if event is finished
@@ -105,7 +106,7 @@ export default function SpeakersCalendar() {
               bio: s.bio || (s.title ? `Experienced professional in ${s.title}.` : undefined),
               image: s.imageurl || getSpeakerAvatarUrl(s.name),
               user_id: s.user_id || undefined,
-              isActive: !!s.user_id // Active if has user_id
+              isActive: isClaimedActiveSpeaker(s)
             }));
             
             // Remove duplicates based on ID
@@ -174,10 +175,12 @@ export default function SpeakersCalendar() {
     loadSpeakers();
   }, [event?.id]); // Re-run once `event` resolves (or the route's event changes)
 
-  // Update filtered speakers when speakers change
+  // Keep the first directory view focused on speakers who are currently
+  // available for networking. The filter control can reveal inactive or
+  // unclaimed profiles when needed.
   useEffect(() => {
-    setFilteredSpeakers(speakers);
-  }, [speakers]);
+    setFilteredSpeakers(showActiveOnly ? speakers.filter((speaker) => speaker.isActive) : speakers);
+  }, [speakers, showActiveOnly]);
 
   // SpeakerCard component
   const SpeakerCard = ({ speaker }: { speaker: Speaker }) => {

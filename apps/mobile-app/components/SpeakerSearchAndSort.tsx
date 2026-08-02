@@ -36,7 +36,7 @@ export default function SpeakerSearchAndSort({
   const { isDark, colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name');
-  const [showActiveOnly, setShowActiveOnly] = useState(false);
+  const [showActiveOnly, setShowActiveOnly] = useState(true);
   const [showFiltersDropdown, setShowFiltersDropdown] = useState(false);
   const styles = getStyles(isDark, colors);
   

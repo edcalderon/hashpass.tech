@@ -208,6 +208,26 @@ describe('speaker detail screen', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('shows an inactive status for an unclaimed speaker, even when its legacy record is enabled', async () => {
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
+      path === 'events/bsl/speakers/speaker-1'
+        ? Promise.resolve({
+          success: true,
+          data: { data: { ...speaker, user_id: null, is_active: true } },
+        })
+        : defaultApiResponse(path, options),
+    );
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+
+    expect(renderer.root.findByProps({ children: 'speakerView.inactive' })).toBeTruthy();
+    await act(async () => renderer.unmount());
+  });
+
   it('recovers from an event API error with the configured speaker instead of remaining in loading', async () => {
     mockEventSpeakers = [{ ...speaker, image: 'ada.png' }];
     mockApiRequest.mockImplementation((path: string, options?: { method?: string }) =>
