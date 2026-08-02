@@ -1,4 +1,8 @@
 import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+import {
+  resolveNotificationIdentity,
+  isResolveIdentityError,
+} from "@/lib/server/resolve-notification-identity";
 import { eventIdFromRequest } from "@/lib/server/event-api";
 import { authenticatedIdentity } from "@/lib/server/authenticated-meeting-identity";
 
