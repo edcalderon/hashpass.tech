@@ -212,6 +212,7 @@ describe('PassesWallet', () => {
 
     expect(renderer.root.findByProps({ children: 'Passes' })).toBeTruthy();
     expect(renderer.root.findByProps({ accessibilityLabel: 'Refreshing passes' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ accessibilityLabel: 'Refreshing pass summary' })).toHaveLength(3);
     expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(0);
     await act(async () => {
       resolveReload?.([makePass()]);

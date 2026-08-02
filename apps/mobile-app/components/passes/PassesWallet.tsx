@@ -630,14 +630,25 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
     <View>
       {/* Summary strip */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-        <WalletStat colors={colors} value={counts.total} label={t('wallet.stat.total', 'Passes')} />
+        <WalletStat
+          colors={colors}
+          value={counts.total}
+          label={t('wallet.stat.total', 'Passes')}
+          isRefreshing={isRefreshing}
+        />
         <WalletStat
           colors={colors}
           value={counts.live + counts.upcoming}
           label={t('wallet.stat.active', 'Upcoming')}
           accent="#34A853"
+          isRefreshing={isRefreshing}
         />
-        <WalletStat colors={colors} value={counts.past} label={t('wallet.stat.past', 'Past')} />
+        <WalletStat
+          colors={colors}
+          value={counts.past}
+          label={t('wallet.stat.past', 'Past')}
+          isRefreshing={isRefreshing}
+        />
       </View>
 
       <View style={{ alignItems: 'flex-end', marginBottom: 10 }}>
@@ -813,7 +824,8 @@ const WalletStat: React.FC<{
   value: number;
   label: string;
   accent?: string;
-}> = ({ colors, value, label, accent }) => (
+  isRefreshing?: boolean;
+}> = ({ colors, value, label, accent, isRefreshing = false }) => (
   <View
     style={{
       flex: 1,
@@ -825,7 +837,16 @@ const WalletStat: React.FC<{
       borderColor: colors.divider,
     }}
   >
-    <Text style={{ fontSize: 18, fontWeight: '800', color: accent || colors.text.primary }}>{value}</Text>
+    {isRefreshing ? (
+      <ActivityIndicator
+        accessibilityLabel="Refreshing pass summary"
+        color={accent || colors.primary}
+        size="small"
+        style={{ alignSelf: 'flex-start', height: 22 }}
+      />
+    ) : (
+      <Text style={{ fontSize: 18, fontWeight: '800', color: accent || colors.text.primary }}>{value}</Text>
+    )}
     <Text style={{ fontSize: 10, color: colors.text.secondary, marginTop: 1 }} numberOfLines={1}>
       {label}
     </Text>
