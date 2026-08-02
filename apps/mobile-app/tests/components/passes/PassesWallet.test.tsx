@@ -356,6 +356,32 @@ describe('PassesWallet', () => {
     expect(renderer.root.findAllByProps({ accessibilityLabel: 'Restore BSL complimentary passes' })).toHaveLength(0);
   });
 
+  it('keeps the claim dialog open with clear validation for blank or unavailable codes', async () => {
+    const renderer = await renderWallet({ layout: 'plain' });
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Have a pass? Claim it here' }));
+      await Promise.resolve();
+    });
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Redeem pass code' }));
+      await Promise.resolve();
+    });
+    expect(renderer.root.findByProps({ children: 'Enter your pass or courtesy code.' })).toBeTruthy();
+
+    const codeInput = renderer.root.findByProps({ accessibilityLabel: 'Pass or courtesy code' });
+    act(() => {
+      codeInput.props.onChangeText('used-code');
+    });
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Redeem pass code' }));
+      await Promise.resolve();
+    });
+
+    expect(passSystemService.claimPassByCode).toHaveBeenCalledWith('supabase-user-id', 'used-code');
+    expect(renderer.root.findByProps({ children: 'This code is invalid, unavailable, or has already been used.' })).toBeTruthy();
+  });
+
   it('shows a recoverable no-matches state when filters exclude every loaded pass', async () => {
     mockFilterOverride = [];
     (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([makePass()]);
