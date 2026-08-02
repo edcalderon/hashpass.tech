@@ -640,20 +640,6 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
         <WalletStat colors={colors} value={counts.past} label={t('wallet.stat.past', 'Past')} />
       </View>
 
-      {/* Search + filters. Same bar the agenda, notifications and my-requests
-          screens use, so filtering behaves identically everywhere. */}
-      <View style={{ marginHorizontal: -20 }}>
-        <UnifiedSearchAndFilter<WalletPass>
-          data={walletPasses}
-          onFilteredData={handleFilteredData}
-          onSearchChange={handleSearchChange}
-          searchPlaceholder={t('wallet.searchPlaceholder', 'Search your passes')}
-          filterGroups={filterGroups}
-          customFilterLogic={customFilterLogic}
-          showResultsCount={false}
-        />
-      </View>
-
       <View style={{ alignItems: 'flex-end', marginBottom: 10 }}>
         <Pressable
           accessibilityRole="button"
@@ -671,6 +657,20 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
             {isRefreshing ? t('wallet.refreshing', 'Refreshing passes…') : t('wallet.reload', 'Reload passes')}
           </Text>
         </Pressable>
+      </View>
+
+      {/* Search + filters. Same bar the agenda, notifications and my-requests
+          screens use, so filtering behaves identically everywhere. */}
+      <View style={{ marginHorizontal: -20 }}>
+        <UnifiedSearchAndFilter<WalletPass>
+          data={walletPasses}
+          onFilteredData={handleFilteredData}
+          onSearchChange={handleSearchChange}
+          searchPlaceholder={t('wallet.searchPlaceholder', 'Search your passes')}
+          filterGroups={filterGroups}
+          customFilterLogic={customFilterLogic}
+          showResultsCount={false}
+        />
       </View>
 
       {isRefreshing ? (
