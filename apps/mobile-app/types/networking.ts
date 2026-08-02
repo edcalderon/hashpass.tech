@@ -29,6 +29,8 @@ export interface MeetingRequest {
   id: string;
   speaker_id: string;
   speaker_name: string;
+  speaker_title?: string | null;
+  speaker_company?: string | null;
   speaker_image?: string;
   requester_name: string;
   requester_company: string;

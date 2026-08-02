@@ -45,6 +45,12 @@ type SpeakerProfile = {
   imageUrl: string | null;
 };
 
+type AttendeeProfile = {
+  fullName: string | null;
+  title: string | null;
+  company: string | null;
+};
+
 const isSpeakerProfile = (value: unknown): value is SpeakerProfile => {
   if (!value || typeof value !== 'object') return false;
   const speaker = value as Record<string, unknown>;
@@ -53,6 +59,14 @@ const isSpeakerProfile = (value: unknown): value is SpeakerProfile => {
     (typeof speaker.title === 'string' || speaker.title === null) &&
     (typeof speaker.company === 'string' || speaker.company === null) &&
     (typeof speaker.imageUrl === 'string' || speaker.imageUrl === null);
+};
+
+const isAttendeeProfile = (value: unknown): value is AttendeeProfile => {
+  if (!value || typeof value !== 'object') return false;
+  const attendee = value as Record<string, unknown>;
+  return (typeof attendee.fullName === 'string' || attendee.fullName === null) &&
+    (typeof attendee.title === 'string' || attendee.title === null) &&
+    (typeof attendee.company === 'string' || attendee.company === null);
 };
 
 export default function ProfileScreen() {
@@ -73,12 +87,17 @@ export default function ProfileScreen() {
   const [rawSupabaseUser, setRawSupabaseUser] = useState<any>(null);
   const [adminAccess, setAdminAccess] = useState<AdminAccess | null>(null);
   const [speakerProfile, setSpeakerProfile] = useState<SpeakerProfile | null>(null);
+  const [attendeeProfile, setAttendeeProfile] = useState<AttendeeProfile | null>(null);
   const [rolesLoading, setRolesLoading] = useState(true);
   const [showSpeakerModal, setShowSpeakerModal] = useState(false);
   const [savingSpeaker, setSavingSpeaker] = useState(false);
   const [speakerName, setSpeakerName] = useState('');
   const [speakerTitle, setSpeakerTitle] = useState('');
   const [speakerCompany, setSpeakerCompany] = useState('');
+  const [showAttendeeModal, setShowAttendeeModal] = useState(false);
+  const [savingAttendee, setSavingAttendee] = useState(false);
+  const [attendeeTitle, setAttendeeTitle] = useState('');
+  const [attendeeCompany, setAttendeeCompany] = useState('');
 
   const hasProfileContent = useCallback((candidate?: AuthUser | null): boolean => {
     if (!candidate) return false;
@@ -174,6 +193,7 @@ export default function ProfileScreen() {
         if (!authLoading && !cancelled) {
           setAdminAccess(null);
           setSpeakerProfile(null);
+          setAttendeeProfile(null);
           setRolesLoading(false);
         }
         return;
@@ -181,9 +201,10 @@ export default function ProfileScreen() {
 
       setRolesLoading(true);
       try {
-        const [accessResult, speakerResult] = await Promise.allSettled([
+        const [accessResult, speakerResult, attendeeResult] = await Promise.allSettled([
           getCurrentAdminAccess(),
           apiClient.get('/profile/speaker', { skipEventSegment: true }),
+          apiClient.get('/profile/attendee', { skipEventSegment: true }),
         ]);
         if (cancelled) return;
 
@@ -193,6 +214,12 @@ export default function ProfileScreen() {
           setSpeakerProfile(isSpeakerProfile(data) ? data : null);
         } else {
           setSpeakerProfile(null);
+        }
+        if (attendeeResult.status === 'fulfilled' && attendeeResult.value.success) {
+          const data = (attendeeResult.value.data as { data?: unknown } | undefined)?.data;
+          setAttendeeProfile(isAttendeeProfile(data) ? data : null);
+        } else {
+          setAttendeeProfile(null);
         }
       } finally {
         if (!cancelled) setRolesLoading(false);
@@ -344,6 +371,33 @@ export default function ProfileScreen() {
       showError('Update Failed', error.message || 'Unable to update speaker information');
     } finally {
       setSavingSpeaker(false);
+    }
+  };
+
+  const openAttendeeEditor = () => {
+    setAttendeeTitle(attendeeProfile?.title || '');
+    setAttendeeCompany(attendeeProfile?.company || '');
+    setShowAttendeeModal(true);
+  };
+
+  const saveAttendeeProfile = async () => {
+    setSavingAttendee(true);
+    try {
+      const response = await apiClient.request('/profile/attendee', {
+        skipEventSegment: true,
+        method: 'PATCH',
+        body: { title: attendeeTitle, company: attendeeCompany },
+      });
+      if (!response.success) throw new Error(response.error || 'Unable to update attendee information');
+      const data = (response.data as { data?: unknown } | undefined)?.data;
+      if (!isAttendeeProfile(data)) throw new Error('Attendee profile response was incomplete');
+      setAttendeeProfile(data);
+      setShowAttendeeModal(false);
+      showSuccess('Attendee Information Updated', 'Your role and company will appear on meeting requests.');
+    } catch (error: any) {
+      showError('Update Failed', error.message || 'Unable to update attendee information');
+    } finally {
+      setSavingAttendee(false);
     }
   };
 
@@ -524,6 +578,39 @@ export default function ProfileScreen() {
             </View>
           </View>
 
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Attendee Information</Text>
+            <View style={styles.infoCard}>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconContainer}>
+                  <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Role or Title</Text>
+                  <Text style={styles.infoValue}>{attendeeProfile?.title || 'Not set'}</Text>
+                </View>
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconContainer}>
+                  <Ionicons name="business-outline" size={22} color={colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Company</Text>
+                  <Text style={styles.infoValue}>{attendeeProfile?.company || 'Not set'}</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.speakerEditButton}
+                onPress={openAttendeeEditor}
+                accessibilityLabel="Edit attendee information"
+              >
+                <MaterialIcons name="edit" size={18} color={colors.primary} />
+                <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Attendee Information</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {speakerProfile ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Speaker Information</Text>
@@ -667,6 +754,60 @@ export default function ProfileScreen() {
                 Select an avatar style to update your profile picture
               </Text>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showAttendeeModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAttendeeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.speakerModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Attendee Information</Text>
+              <TouchableOpacity
+                onPress={() => setShowAttendeeModal(false)}
+                style={styles.modalCloseButton}
+                disabled={savingAttendee}
+              >
+                <Ionicons name="close" size={24} color={colors.text?.primary || '#000'} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.fieldLabel}>Role or Title</Text>
+            <TextInput
+              value={attendeeTitle}
+              onChangeText={setAttendeeTitle}
+              style={styles.speakerInput}
+              placeholder="e.g. Product Manager"
+              placeholderTextColor={colors.text?.secondary || '#6B7280'}
+              autoCapitalize="words"
+              accessibilityLabel="Attendee role or title"
+            />
+            <Text style={styles.fieldLabel}>Company</Text>
+            <TextInput
+              value={attendeeCompany}
+              onChangeText={setAttendeeCompany}
+              style={styles.speakerInput}
+              placeholder="Your company or organisation"
+              placeholderTextColor={colors.text?.secondary || '#6B7280'}
+              autoCapitalize="words"
+              accessibilityLabel="Attendee company"
+            />
+            <TouchableOpacity
+              style={[styles.speakerSaveButton, { backgroundColor: colors.primary }, savingAttendee && styles.actionButtonDisabled]}
+              onPress={saveAttendeeProfile}
+              disabled={savingAttendee}
+              accessibilityLabel="Save attendee information"
+            >
+              {savingAttendee ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.speakerSaveButtonText}>Save Attendee Information</Text>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

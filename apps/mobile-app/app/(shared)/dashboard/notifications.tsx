@@ -10,7 +10,7 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../i18n/i18n';
 import { translateNotification } from '../../../lib/notification-translations';
-import { buildEventPath } from '../../../lib/event-path';
+import { buildNotificationEventPath } from '../../../lib/notification-navigation';
 
 type TabType = 'all' | 'archive';
 
@@ -37,9 +37,9 @@ export default function NotificationsScreen() {
   // Filter notifications by tab (all vs archive)
   const tabFilteredNotifications = useMemo(() => {
     if (activeTab === 'archive') {
-      return notifications.filter(n => n.is_archived === true);
+      return notifications.filter((n: any) => n.is_archived === true);
     }
-    return notifications.filter(n => !n.is_archived);
+    return notifications.filter((n: any) => !n.is_archived);
   }, [notifications, activeTab]);
 
   const onRefresh = async () => {
@@ -56,7 +56,7 @@ export default function NotificationsScreen() {
     
     if (notificationId && shouldHighlight) {
       // Find the notification
-      const notification = notifications.find(n => n.id === notificationId);
+      const notification = notifications.find((n: any) => n.id === notificationId);
       if (notification && !notification.is_read) {
         // Mark as read when navigating from dropdown
         markAsRead(notificationId).catch(console.error);
@@ -94,7 +94,7 @@ export default function NotificationsScreen() {
     if (notification.type === 'chat_message' && notification.meeting_id) {
       // Navigate to meeting chat
       router.push({
-        pathname: buildEventPath(undefined, 'networking/meeting-detail') as any,
+        pathname: buildNotificationEventPath(notification, null, 'networking/meeting-detail') as any,
         params: {
           meetingId: notification.meeting_id,
           openChat: 'true'
@@ -107,6 +107,7 @@ export default function NotificationsScreen() {
           .from('meeting_requests')
           .select(`
             id,
+            event_id,
             speaker_id,
             speaker_name,
             requester_id,
@@ -125,7 +126,7 @@ export default function NotificationsScreen() {
         if (error) {
           console.error('Error fetching meeting request:', error);
           // Fallback: navigate to my-requests page
-          router.push(buildEventPath(undefined, 'networking/my-requests') as any);
+          router.push(buildNotificationEventPath(notification, null, 'networking/my-requests') as any);
           return;
         }
 
@@ -142,7 +143,7 @@ export default function NotificationsScreen() {
           // Navigate to my-requests page instead of meeting-detail
           // This allows users to see the request in context and take actions
           router.push({
-            pathname: buildEventPath(undefined, 'networking/my-requests') as any,
+            pathname: buildNotificationEventPath(notification, meetingRequest, 'networking/my-requests') as any,
             params: {
               requestId: (meetingRequest as any).id,
               highlightRequest: 'true'
@@ -150,22 +151,22 @@ export default function NotificationsScreen() {
           });
         } else {
           // Fallback: navigate to my-requests page
-          router.push(buildEventPath(undefined, 'networking/my-requests') as any);
+          router.push(buildNotificationEventPath(notification, null, 'networking/my-requests') as any);
         }
       } catch (error) {
         console.error('Error navigating to meeting detail:', error);
         // Fallback: navigate to my-requests page
-        router.push(buildEventPath(undefined, 'networking/my-requests') as any);
+        router.push(buildNotificationEventPath(notification, null, 'networking/my-requests') as any);
       }
     } else if (notification.speaker_id) {
       // Navigate to speaker details
-      router.push(buildEventPath(undefined, `speakers/${notification.speaker_id}`) as any);
+      router.push(buildNotificationEventPath(notification, null, `speakers/${notification.speaker_id}`) as any);
     }
   };
 
   const handleToggleReadStatus = async (notificationId: string) => {
     // Prevent double-clicking and ensure proper state update
-    const notification = notifications.find(n => n.id === notificationId);
+    const notification = notifications.find((n: any) => n.id === notificationId);
     if (!notification || markingAsRead.has(notificationId)) return;
 
     setMarkingAsRead(prev => new Set(prev).add(notificationId));
@@ -553,10 +554,10 @@ export default function NotificationsScreen() {
           <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
             {t('center.all')}
           </Text>
-          {activeTab === 'all' && tabFilteredNotifications.filter(n => !n.is_read).length > 0 && (
+          {activeTab === 'all' && tabFilteredNotifications.filter((n: any) => !n.is_read).length > 0 && (
             <View style={styles.tabBadge}>
               <Text style={styles.tabBadgeText}>
-                {tabFilteredNotifications.filter(n => !n.is_read).length}
+                {tabFilteredNotifications.filter((n: any) => !n.is_read).length}
               </Text>
             </View>
           )}
@@ -625,7 +626,7 @@ export default function NotificationsScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
-          {displayNotifications.map((notification) => (
+          {displayNotifications.map((notification: any) => (
             <View
               key={notification.id}
               ref={(ref) => {

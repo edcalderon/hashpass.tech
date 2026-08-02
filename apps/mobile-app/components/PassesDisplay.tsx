@@ -1065,18 +1065,6 @@ function PassesDisplayInner({
                   : t({ id: 'passes.requestInProgressDescription', message: 'You already have an active request with this speaker.' })
                 : passSystemService.getPassValidationMessage(requestLimits)}
           </Text>
-          {hasExistingRequest && onExistingRequestPress && (
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={t({ id: 'passes.viewRequest', message: 'View request' })}
-              onPress={onExistingRequestPress}
-              style={{ alignSelf: 'flex-start', marginTop: 10 }}
-            >
-              <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
-                {t({ id: 'passes.viewRequest', message: 'View request' })}
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
       )}
 

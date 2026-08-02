@@ -108,6 +108,11 @@ describe('ProfileScreen speaker information', () => {
     company: 'Hashpass',
     imageUrl: 'https://cdn.hashpass.tech/speakers/edward.png',
   };
+  const attendee = {
+    fullName: 'Edward Calderón',
+    title: 'Product Strategist',
+    company: 'Hashpass Labs',
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -120,8 +125,14 @@ describe('ProfileScreen speaker information', () => {
       eventRoles: [{ eventId: 'bsl', role: 'event_admin' }],
       effectiveRole: { role: 'super_admin', scope: 'global', eventIds: [] },
     });
-    mockApiGet.mockResolvedValue({ success: true, data: { data: speaker } });
-    mockApiRequest.mockResolvedValue({ success: true, data: { data: speaker } });
+    mockApiGet.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: { data: path === '/profile/attendee' ? attendee : speaker },
+    }));
+    mockApiRequest.mockImplementation((path: string) => Promise.resolve({
+      success: true,
+      data: { data: path === '/profile/attendee' ? attendee : speaker },
+    }));
     mockGetSession.mockResolvedValue({
       data: { session: { user: { ...profileUser, user_metadata: {} } } },
     });
@@ -129,8 +140,10 @@ describe('ProfileScreen speaker information', () => {
     mockUpsert.mockResolvedValue({ error: null });
   });
 
-  afterEach(() => {
-    mountedRenderer?.unmount();
+  afterEach(async () => {
+    if (mountedRenderer) {
+      await act(async () => mountedRenderer?.unmount());
+    }
     mountedRenderer = null;
   });
 
@@ -153,6 +166,39 @@ describe('ProfileScreen speaker information', () => {
     expect(renderer.root.findByProps({ children: 'Speaker Information' })).toBeTruthy();
     expect(renderer.root.findByProps({ children: 'Founder & CEO' })).toBeTruthy();
     expect(renderer.root.findAll((node: any) => node.props?.source?.uri === speaker.imageUrl)).not.toHaveLength(0);
+  });
+
+  it('shows editable attendee information for every signed-in user', async () => {
+    const renderer = await renderProfile();
+
+    expect(mockApiGet).toHaveBeenCalledWith('/profile/attendee', { skipEventSegment: true });
+    expect(renderer.root.findByProps({ children: 'Attendee Information' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: attendee.title })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: attendee.company })).toBeTruthy();
+  });
+
+  it('saves attendee title and company through the self-scoped profile API', async () => {
+    const renderer = await renderProfile();
+    await act(async () => {
+      pressText(renderer, 'Edit Attendee Information');
+      await Promise.resolve();
+    });
+    act(() => renderer.root.findByProps({ accessibilityLabel: 'Attendee role or title' }).props.onChangeText('Chief Product Officer'));
+    act(() => renderer.root.findByProps({ accessibilityLabel: 'Attendee company' }).props.onChangeText('Hashpass'));
+    await act(async () => {
+      pressText(renderer, 'Save Attendee Information');
+      await Promise.resolve();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith('/profile/attendee', {
+      skipEventSegment: true,
+      method: 'PATCH',
+      body: { title: 'Chief Product Officer', company: 'Hashpass' },
+    });
+    expect(mockShowSuccess).toHaveBeenCalledWith(
+      'Attendee Information Updated',
+      'Your role and company will appear on meeting requests.',
+    );
   });
 
   it('keeps the role label in a loading state until access has resolved', async () => {

@@ -130,6 +130,18 @@ const speaker = {
 const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 function defaultApiResponse(path: string, options?: { method?: string }) {
+  if (path === '/profile/attendee') {
+    return Promise.resolve({
+      success: true,
+      data: {
+        data: {
+          fullName: 'Grace Hopper',
+          title: 'Rear Admiral',
+          company: 'United States Navy',
+        },
+      },
+    });
+  }
   if (path === 'events/bsl/speakers/speaker-1') {
     return Promise.resolve({ success: true, data: { data: speaker } });
   }
@@ -374,7 +386,9 @@ describe('speaker detail screen', () => {
         body: expect.objectContaining({
           speakerId: 'speaker-1',
           speakerName: 'Ada Lovelace',
-          requesterName: 'requester@example.test',
+          requesterName: 'Grace Hopper',
+          requesterTitle: 'Rear Admiral',
+          requesterCompany: 'United States Navy',
         }),
       }),
     );

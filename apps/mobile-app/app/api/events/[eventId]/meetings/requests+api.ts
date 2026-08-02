@@ -53,6 +53,46 @@ async function speakerForRecordId(supabase: any, speakerId: string) {
   return data;
 }
 
+type RequestSpeakerProfile = {
+  user_id: string;
+  title: string | null;
+  company: string | null;
+  imageurl: string | null;
+};
+
+async function addSpeakerProfileDetails(supabase: any, requests: any[]) {
+  const speakerIds = [...new Set(
+    requests
+      .map((request) => request.speaker_id)
+      .filter((speakerId): speakerId is string => typeof speakerId === 'string' && speakerId.length > 0),
+  )];
+  if (!speakerIds.length) return requests;
+
+  const { data, error } = await supabase
+    .from('bsl_speakers')
+    .select('user_id, title, company, imageurl')
+    .in('user_id', speakerIds);
+  if (error) {
+    console.error('[meeting-requests] speaker profile lookup error:', error);
+    return requests;
+  }
+
+  const speakerProfiles = new Map(
+    ((data || []) as RequestSpeakerProfile[]).map((profile) => [profile.user_id, profile]),
+  );
+  return requests.map((request) => {
+    const speaker = speakerProfiles.get(request.speaker_id);
+    return speaker
+      ? {
+        ...request,
+        speaker_title: speaker.title,
+        speaker_company: speaker.company,
+        speaker_image: speaker.imageurl,
+      }
+      : request;
+  });
+}
+
 // One authenticated API boundary for the complete meeting-request lifecycle.
 // Clients never need to know which database function or identity representation
 // backs an operation, making this flow portable away from Supabase.
@@ -89,7 +129,7 @@ export async function GET(request: Request) {
         ascending: false,
       });
       if (error) throw error;
-      return Response.json({ data: data || [] });
+      return Response.json({ data: await addSpeakerProfileDetails(supabase, data || []) });
     }
 
     const speaker = await speakerForUser(supabase, userId);
@@ -119,12 +159,11 @@ export async function GET(request: Request) {
       incoming = data || [];
     }
 
-    return Response.json({
-      data: [
+    const requests = [
         ...(sent || []).map((item: any) => ({ ...item, _direction: "sent" })),
         ...incoming.map((item: any) => ({ ...item, _direction: "incoming" })),
-      ],
-    });
+      ];
+    return Response.json({ data: await addSpeakerProfileDetails(supabase, requests) });
   } catch (error) {
     console.error("[meeting-requests] fetch error:", error);
     return Response.json(

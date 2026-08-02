@@ -219,6 +219,50 @@ describe('MyRequestsView', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('shows the speaker’s actual role and company in request details', async () => {
+    mockParams = { eventSlug: 'chile2026', requestId: 'sent-1' };
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: {
+        data: [{
+          ...sentRequest,
+          speaker_title: 'Founder & CEO',
+          speaker_company: 'Hashpass',
+        }],
+      },
+    });
+
+    const renderer = await renderScreen();
+    try {
+      expect(renderer.root.findByProps({ children: 'Founder & CEO' })).toBeTruthy();
+      expect(renderer.root.findByProps({ children: 'Hashpass' })).toBeTruthy();
+    } finally {
+      await act(async () => renderer.unmount());
+    }
+  });
+
+  it('shows the actual expiry with a days unit when a request expires days from now', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-08-01T10:13:18.000Z'));
+    mockParams = { eventSlug: 'chile2026', requestId: 'sent-1' };
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: {
+        data: [{
+          ...sentRequest,
+          expires_at: '2026-08-03T20:03:00.000Z',
+        }],
+      },
+    });
+
+    const renderer = await renderScreen();
+
+    expect(renderer.root.findAllByProps({ children: '02' }).length).toBeGreaterThan(0);
+    expect(renderer.root.findAllByProps({ children: 'requestView.days' }).length).toBeGreaterThan(0);
+
+    await act(async () => renderer.unmount());
+  });
+
   it('leaves the loading state and reports an error when the request load fails', async () => {
     mockApiRequest.mockResolvedValue({ success: false, error: 'Service unavailable' });
 
