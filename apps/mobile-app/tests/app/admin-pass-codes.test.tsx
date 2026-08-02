@@ -161,4 +161,88 @@ describe('AdminPanel pass codes', () => {
       codeId: '8f60f5d2-5948-4df1-9670-2f9177cf2fe4',
     }, { skipEventSegment: true });
   });
+
+  it('lets an event manager assign, activate, and review speaker account access', async () => {
+    const managedSpeakers = [
+      {
+        id: 'edward-calderon',
+        name: 'Edward Calderón',
+        title: 'Founder & CEO',
+        company: 'Hashpass',
+        imageUrl: null,
+        userId: null,
+        isActive: false,
+        isAcceptingMeetings: true,
+        claim: null,
+      },
+      {
+        id: 'rodrigo-sainz',
+        name: 'Rodrigo Sainz',
+        title: 'CEO',
+        company: 'BSL',
+        imageUrl: null,
+        userId: 'speaker-user',
+        isActive: false,
+        isAcceptingMeetings: true,
+        claim: {
+          email_normalized: 'r@blockchainsummit.la',
+          status: 'claimed',
+          claim_error: null,
+        },
+      },
+    ];
+    mockGet.mockImplementation((path: string) => {
+      if (path.startsWith('/admin/speaker-roles')) {
+        return Promise.resolve({ success: true, data: { data: managedSpeakers } });
+      }
+      return Promise.resolve({ success: true, data: { data: [] } });
+    });
+    const renderer = await renderPanel();
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Speakers' }).parent);
+      await Promise.resolve();
+    });
+    await flush();
+
+    expect(mockGet).toHaveBeenCalledWith('/admin/speaker-roles?eventId=chile2026', { skipEventSegment: true });
+    expect(renderer.root.findByProps({ children: 'UNASSIGNED' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'INACTIVE' })).toBeTruthy();
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Assign account' }).parent);
+      await Promise.resolve();
+    });
+    const emailInput = renderer.root.findByProps({ placeholder: 'speaker@example.com' });
+    act(() => emailInput.props.onChangeText('edward@hashpass.app'));
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Assign' }).parent);
+      await Promise.resolve();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/admin/speaker-roles', expect.objectContaining({
+      action: 'grant',
+      eventId: 'chile2026',
+      speakerId: 'edward-calderon',
+      targetEmail: 'edward@hashpass.app',
+    }), { skipEventSegment: true });
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Activate' }).parent);
+      await Promise.resolve();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/admin/speaker-roles', expect.objectContaining({
+      action: 'activate',
+      speakerId: 'rodrigo-sainz',
+    }), { skipEventSegment: true });
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Remove access' }).parent);
+      await Promise.resolve();
+    });
+    expect(mockAlert).toHaveBeenCalledWith(
+      'Remove speaker access?',
+      expect.stringContaining('Rodrigo Sainz'),
+      expect.any(Array),
+    );
+  });
 });

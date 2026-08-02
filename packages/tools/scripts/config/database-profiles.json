@@ -54,7 +54,8 @@
     ],
     "speaker-identity-claims": [
       "db/migrations/V028__claim_speaker_profiles_on_verified_signup.sql",
-      "db/migrations/V029__harden_speaker_identity_claims.sql"
+      "db/migrations/V029__harden_speaker_identity_claims.sql",
+      "db/migrations/V033__enable_event_admin_speaker_role_management.sql"
     ]
   }
 }

@@ -9,6 +9,7 @@ import {
 
 export type AdminAccess = {
   globalRole: AdminRole | null;
+  globalRoles: AdminRole[];
   eventRoles: EventRoleGrant[];
   effectiveRole: EffectiveRole;
 };
@@ -53,6 +54,7 @@ export async function getCurrentAdminAccess(): Promise<AdminAccess> {
 
   const access = (result.data as { data?: unknown })?.data as {
     globalRole?: unknown;
+    globalRoles?: unknown;
     eventRoles?: unknown;
     effectiveRole?: unknown;
   } | undefined;
@@ -66,6 +68,20 @@ export async function getCurrentAdminAccess(): Promise<AdminAccess> {
     : [];
 
   const globalRoleCandidate = access?.globalRole;
-  const globalRole = isAdminRole(globalRoleCandidate) ? globalRoleCandidate : null;
-  return { globalRole, eventRoles, effectiveRole: readEffectiveRole(access?.effectiveRole, globalRole, eventRoles) };
+  const globalRoles = Array.isArray(access?.globalRoles)
+    ? access.globalRoles.filter(isAdminRole)
+    : isAdminRole(globalRoleCandidate)
+      ? [globalRoleCandidate]
+      : [];
+  const globalRole = globalRoles.includes('super_admin')
+    ? 'super_admin'
+    : globalRoles.includes('admin')
+      ? 'admin'
+      : null;
+  return {
+    globalRole,
+    globalRoles,
+    eventRoles,
+    effectiveRole: readEffectiveRole(access?.effectiveRole, globalRole, eventRoles),
+  };
 }

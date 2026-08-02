@@ -18,6 +18,7 @@ describe('getCurrentAdminAccess', () => {
       data: {
         data: {
           globalRole: 'admin',
+          globalRoles: ['admin'],
           eventRoles: [
             { eventId: 'bsl', role: 'event_admin' },
             { eventId: 'side-event', role: 'moderator' },
@@ -38,6 +39,7 @@ describe('getCurrentAdminAccess', () => {
 
     await expect(getCurrentAdminAccess()).resolves.toEqual({
       globalRole: 'admin',
+      globalRoles: ['admin'],
       eventRoles: [
         { eventId: 'bsl', role: 'event_admin' },
         { eventId: 'side-event', role: 'moderator' },
@@ -64,6 +66,7 @@ describe('getCurrentAdminAccess', () => {
 
     await expect(getCurrentAdminAccess()).resolves.toEqual({
       globalRole: null,
+      globalRoles: [],
       eventRoles: [],
       effectiveRole: { role: 'user', scope: 'none', eventIds: [] },
     });
@@ -88,6 +91,7 @@ describe('getCurrentAdminAccess', () => {
 
     await expect(getCurrentAdminAccess()).resolves.toEqual({
       globalRole: null,
+      globalRoles: [],
       eventRoles: [
         { eventId: 'bsl', role: 'moderator' },
         { eventId: 'bsl', role: 'moderator' },

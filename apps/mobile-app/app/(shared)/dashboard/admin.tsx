@@ -15,7 +15,7 @@ import { resolveActiveEventId } from '../../../lib/event-path';
 import { apiClient } from '../../../lib/api-client';
 import { highestEventRole, EventRole, EventRoleGrant } from '../../../lib/event-admin-access';
 
-type TabType = 'passes' | 'pass-codes' | 'qr-scanner' | 'meetings' | 'roles';
+type TabType = 'passes' | 'pass-codes' | 'qr-scanner' | 'meetings' | 'roles' | 'speaker-roles';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -58,6 +58,22 @@ interface Speaker {
   title?: string;
   company?: string;
   user_id?: string;
+}
+
+interface SpeakerRoleRecord {
+  id: string;
+  name: string;
+  title: string | null;
+  company: string | null;
+  imageUrl: string | null;
+  userId: string | null;
+  isActive: boolean;
+  isAcceptingMeetings: boolean;
+  claim: {
+    email_normalized: string;
+    status: 'unclaimed' | 'claimed' | 'needs_review';
+    claim_error: string | null;
+  } | null;
 }
 
 interface MeetingRequest {
@@ -143,6 +159,15 @@ export default function AdminPanel() {
   const [globalAdminsLoading, setGlobalAdminsLoading] = useState(false);
   const [showGrantGlobalAdminModal, setShowGrantGlobalAdminModal] = useState(false);
   const [newGlobalAdminEmail, setNewGlobalAdminEmail] = useState('');
+
+  // Speaker roles are a claimed account-to-directory-profile link. They are
+  // managed through an event-admin API so the browser never writes identity
+  // records directly.
+  const [speakerRoles, setSpeakerRoles] = useState<SpeakerRoleRecord[]>([]);
+  const [speakerRolesLoading, setSpeakerRolesLoading] = useState(false);
+  const [showGrantSpeakerRoleModal, setShowGrantSpeakerRoleModal] = useState(false);
+  const [selectedSpeakerRole, setSelectedSpeakerRole] = useState<SpeakerRoleRecord | null>(null);
+  const [newSpeakerAccountEmail, setNewSpeakerAccountEmail] = useState('');
 
   const styles = getStyles(isDark, colors);
 
@@ -244,7 +269,74 @@ export default function AdminPanel() {
         loadEventRoles(),
         adminRole === 'super_admin' ? loadGlobalAdmins() : Promise.resolve(),
       ]);
+    } else if (activeTab === 'speaker-roles') {
+      await loadSpeakerRoles();
     }
+  };
+
+  const loadSpeakerRoles = async () => {
+    setSpeakerRolesLoading(true);
+    try {
+      const result = await apiClient.get(
+        `/admin/speaker-roles?eventId=${encodeURIComponent(selectedEventId)}`,
+        { skipEventSegment: true },
+      );
+      if (!result.success) throw new Error(result.error || 'Unable to load speakers');
+      setSpeakerRoles(((result.data as { data?: SpeakerRoleRecord[] })?.data) || []);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to load speaker access: ' + (error.message || 'Unknown error'));
+    } finally {
+      setSpeakerRolesLoading(false);
+    }
+  };
+
+  const mutateSpeakerRole = async (
+    action: 'grant' | 'revoke' | 'activate' | 'deactivate',
+    speaker: SpeakerRoleRecord,
+    targetEmail?: string,
+  ) => {
+    try {
+      setSpeakerRolesLoading(true);
+      const result = await apiClient.post('/admin/speaker-roles', {
+        action,
+        eventId: selectedEventId,
+        speakerId: speaker.id,
+        ...(targetEmail ? { targetEmail } : {}),
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error || 'Unable to update speaker access');
+      await loadSpeakerRoles();
+      return true;
+    } catch (error: any) {
+      Alert.alert('Speaker access not updated', error.message || 'Please try again.');
+      return false;
+    } finally {
+      setSpeakerRolesLoading(false);
+    }
+  };
+
+  const handleGrantSpeakerRole = async () => {
+    const email = newSpeakerAccountEmail.trim().toLowerCase();
+    if (!selectedSpeakerRole || !email.includes('@')) {
+      Alert.alert('Account email required', 'Enter the email for an existing account.');
+      return;
+    }
+    if (await mutateSpeakerRole('grant', selectedSpeakerRole, email)) {
+      setShowGrantSpeakerRoleModal(false);
+      setSelectedSpeakerRole(null);
+      setNewSpeakerAccountEmail('');
+      Alert.alert('Speaker role granted', `${selectedSpeakerRole.name} is now active for ${selectedEventId}.`);
+    }
+  };
+
+  const handleRevokeSpeakerRole = (speaker: SpeakerRoleRecord) => {
+    Alert.alert(
+      'Remove speaker access?',
+      `${speaker.name} will no longer be linked to this account or available for meeting requests.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => { void mutateSpeakerRole('revoke', speaker); } },
+      ],
+    );
   };
 
   const loadEventRoles = async () => {
@@ -771,6 +863,15 @@ export default function AdminPanel() {
             <Text style={[styles.tabText, activeTab === 'roles' && styles.tabTextActive]}>Staff & Roles</Text>
           </TouchableOpacity>
         )}
+        {canManagePasses && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'speaker-roles' && styles.tabActive]}
+            onPress={() => setActiveTab('speaker-roles')}
+          >
+            <MaterialIcons name="record-voice-over" size={20} color={activeTab === 'speaker-roles' ? '#007AFF' : colors.text.secondary} />
+            <Text style={[styles.tabText, activeTab === 'speaker-roles' && styles.tabTextActive]}>Speakers</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Content */}
@@ -843,6 +944,24 @@ export default function AdminPanel() {
             onGrantPress={() => setShowGrantRoleModal(true)}
             onRevoke={handleRevokeRole}
             onRefresh={loadEventRoles}
+          />
+        )}
+
+        {activeTab === 'speaker-roles' && (
+          <SpeakerRoleManagementTab
+            styles={styles}
+            speakers={speakerRoles}
+            loading={speakerRolesLoading}
+            onAssign={(speaker: SpeakerRoleRecord) => {
+              setSelectedSpeakerRole(speaker);
+              setNewSpeakerAccountEmail('');
+              setShowGrantSpeakerRoleModal(true);
+            }}
+            onRevoke={handleRevokeSpeakerRole}
+            onToggleActive={(speaker: SpeakerRoleRecord) => {
+              void mutateSpeakerRole(speaker.isActive ? 'deactivate' : 'activate', speaker);
+            }}
+            onRefresh={loadSpeakerRoles}
           />
         )}
       </ScrollView>
@@ -1135,6 +1254,58 @@ export default function AdminPanel() {
         </View>
       </Modal>
 
+      {/* Grant Speaker Role Modal */}
+      <Modal
+        visible={showGrantSpeakerRoleModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowGrantSpeakerRoleModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Assign Speaker Account</Text>
+            <Text style={styles.modalLabel}>
+              {selectedSpeakerRole ? `Speaker: ${selectedSpeakerRole.name}` : 'Speaker'}
+            </Text>
+            <Text style={styles.modalLabel}>Existing account email</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newSpeakerAccountEmail}
+              onChangeText={setNewSpeakerAccountEmail}
+              placeholder="speaker@example.com"
+              placeholderTextColor={colors.text.secondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+            />
+            <Text style={[styles.modalLabel, { fontSize: 12, marginTop: 4 }]}>
+              This activates the linked speaker profile. The account must already exist.
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowGrantSpeakerRoleModal(false)}
+                disabled={speakerRolesLoading}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleGrantSpeakerRole}
+                disabled={speakerRolesLoading}
+              >
+                {speakerRolesLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Assign</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* QR Scanner */}
       <AdminQRScanner
         visible={showQRScanner}
@@ -1387,6 +1558,81 @@ function RolesTab({
   );
 }
 
+function SpeakerRoleManagementTab({
+  styles,
+  speakers,
+  loading,
+  onAssign,
+  onRevoke,
+  onToggleActive,
+  onRefresh,
+}: any) {
+  return (
+    <View style={styles.tabContent}>
+      <Text style={[styles.passInfo, { marginBottom: 12 }]}>Assign an existing account to a speaker profile, then control whether that speaker is available for networking.</Text>
+      <TouchableOpacity style={[styles.actionButton, styles.speakerRefreshButton]} onPress={onRefresh} disabled={loading}>
+        <MaterialIcons name="refresh" size={16} color="#fff" />
+        <Text style={styles.actionButtonText}>Refresh</Text>
+      </TouchableOpacity>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+      ) : (
+        <View style={styles.list}>
+          {speakers.map((speaker: SpeakerRoleRecord) => {
+            const hasAccount = Boolean(speaker.userId);
+            const status = speaker.isActive ? 'ACTIVE' : hasAccount ? 'INACTIVE' : 'UNASSIGNED';
+            const statusColor = speaker.isActive ? '#34A853' : hasAccount ? '#8E8E93' : '#D97706';
+            const accountLabel = speaker.claim?.email_normalized || (hasAccount ? 'Account linked' : 'No account assigned');
+
+            return (
+              <View key={speaker.id} style={styles.passCard}>
+                <View style={styles.passCardHeader}>
+                  <View style={styles.speakerRoleTitleWrap}>
+                    <Text style={styles.passNumber}>{speaker.name}</Text>
+                    {(speaker.title || speaker.company) ? (
+                      <Text style={styles.passInfo}>{[speaker.title, speaker.company].filter(Boolean).join(' · ')}</Text>
+                    ) : null}
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+                    <Text style={styles.statusBadgeText}>{status}</Text>
+                  </View>
+                </View>
+                <Text style={styles.passInfo}>{accountLabel}</Text>
+                {speaker.claim?.status === 'needs_review' && speaker.claim.claim_error ? (
+                  <Text style={styles.speakerRoleWarning}>{speaker.claim.claim_error}</Text>
+                ) : null}
+                <View style={styles.passActions}>
+                  {!hasAccount ? (
+                    <TouchableOpacity style={[styles.actionButton, styles.actionButtonSuccess]} onPress={() => onAssign(speaker)}>
+                      <Text style={styles.actionButtonText}>Assign account</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.actionButton, speaker.isActive ? undefined : styles.actionButtonSuccess]}
+                        onPress={() => onToggleActive(speaker)}
+                      >
+                        <Text style={styles.actionButtonText}>{speaker.isActive ? 'Deactivate' : 'Activate'}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.actionButton} onPress={() => onRevoke(speaker)}>
+                        <Text style={styles.actionButtonText}>Remove access</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+          {speakers.length === 0 && (
+            <Text style={styles.emptyText}>No speakers found for this BSL tenant</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
 // QR Scanner Tab Component
 function QRScannerTab({ styles, colors, onScanPress }: any) {
   return (
@@ -1623,17 +1869,26 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: '#fff',
   },
   tabs: {
-    flexDirection: 'row',
     backgroundColor: colors.background.paper,
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   tab: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    flexGrow: 1,
+    flexBasis: 102,
+    maxWidth: 176,
+    minHeight: 42,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: 10,
     gap: 6,
   },
   tabActive: {
@@ -1748,6 +2003,22 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  speakerRefreshButton: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  speakerRoleTitleWrap: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  speakerRoleWarning: {
+    color: '#D97706',
+    fontSize: 13,
+    marginTop: 4,
   },
   qrScannerCard: {
     alignItems: 'center',

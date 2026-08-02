@@ -63,6 +63,9 @@ export async function GET(request: Request) {
   return Response.json({
     data: {
       globalRole,
+      // Keep every active grant available to the profile and account UI. The
+      // singular value above remains for existing authorization consumers.
+      globalRoles,
       eventRoles,
       effectiveRole: getEffectiveRole(globalRole, eventRoles),
     },

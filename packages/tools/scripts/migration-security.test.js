@@ -104,6 +104,7 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V025__fix_meeting_identity_type_casts.sql',
       'db/migrations/V026__fix_speaker_identity_type_casts.sql',
       'db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql',
+      'db/migrations/V032__align_meeting_request_foreign_keys_with_auth.sql',
     ]);
   });
 
@@ -209,6 +210,22 @@ describe('verified speaker identity claim migration contract', () => {
     expect(migration).toMatch(/SET status = 'unclaimed',[\s\S]*claimed_user_id = NULL,[\s\S]*claimed_at = NULL/i);
     expect(config.groups['speaker-identity-claims']).toContain(
       'db/migrations/V029__harden_speaker_identity_claims.sql',
+    );
+  });
+
+  it('lets event admins manage an existing speaker account assignment through an audited RPC', () => {
+    const migrationPath = path.join(root, 'db/migrations/V033__enable_event_admin_speaker_role_management.sql');
+    const migration = fs.readFileSync(migrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.admin_manage_speaker_role/i);
+    expect(migration).toMatch(/has_event_admin_access\(p_actor_user_id, p_event_id, false\)/i);
+    expect(migration).toMatch(/FROM auth\.users/i);
+    expect(migration).toMatch(/UPDATE public\.bsl_speakers[\s\S]*SET user_id = v_target_user_id/i);
+    expect(migration).toMatch(/INSERT INTO public\.admin_action_log/i);
+    expect(migration).toMatch(/p_action NOT IN \('grant', 'revoke', 'activate', 'deactivate'\)/i);
+    expect(config.groups['speaker-identity-claims']).toContain(
+      'db/migrations/V033__enable_event_admin_speaker_role_management.sql',
     );
   });
 });
