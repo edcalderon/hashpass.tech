@@ -193,6 +193,34 @@ describe('PassesWallet', () => {
     expect(bslWallet.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
   });
 
+  it('keeps loaded wallet controls visible while a reload shows a pass-card skeleton', async () => {
+    let resolveReload: ((passes: PassInfo[]) => void) | undefined;
+    (passSystemService.getAllUserPasses as jest.Mock)
+      .mockResolvedValueOnce([makePass()])
+      .mockImplementationOnce(
+        () => new Promise<PassInfo[]>((resolve) => {
+          resolveReload = resolve;
+        }),
+      );
+
+    const renderer = await renderWallet();
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Reload passes' }));
+      await Promise.resolve();
+    });
+
+    expect(renderer.root.findByProps({ children: 'Passes' })).toBeTruthy();
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Refreshing passes' })).toBeTruthy();
+    expect(renderer.root.findAllByType('MockPassWalletCard')).toHaveLength(0);
+    await act(async () => {
+      resolveReload?.([makePass()]);
+      await Promise.resolve();
+      renderer.unmount();
+      await Promise.resolve();
+    });
+  });
+
   it('keeps the skeleton visible until a Supabase database identity is available', async () => {
     mockDbUserId = null;
 
