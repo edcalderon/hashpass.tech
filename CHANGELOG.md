@@ -1,3 +1,12 @@
+## [1.8.308](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.307...v1.8.308) (2026-08-02)
+
+
+### Features
+
+* improve admin pass and user management ([e18f648](https://github.com/hashpass-tech/hashpass.tech/commit/e18f648b2082a649e6280a11c6c4f2d01f28faf6))
+### Release Highlights
+- improve admin pass and user management
+
 ## [1.8.307](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.306...v1.8.307) (2026-08-02)
 ### Released
 - improve networking request details; guard notification route params
