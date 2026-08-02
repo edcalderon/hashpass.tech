@@ -47,6 +47,28 @@ setting or default event, because RPC calls do not carry that ambient context.
 The API rejects invalid values before calling the provider, and the
 meeting-request table enforces the same range as a database backstop.
 
+## Participant identity and notifications
+
+Meeting requests, meeting passes, claimed speaker ownership, and notifications
+all use the authenticated Supabase UUID (`auth.users.id`). The registry's
+`public.user.id` is a separate identifier and is still used only by registry-
+backed records such as agenda status. Providers must not substitute one for
+the other when creating a request or notification.
+
+For BSL, apply `V034__align_notifications_with_auth_identities.sql` through
+the registered tenant plan before testing meeting requests:
+
+```bash
+npm run db:migrate:bsl:prod
+node packages/tools/scripts/migrate-tenant-db.mjs --profile bsl-development
+```
+
+Use the documented Supabase pooler URL for development migrations. A direct
+`db.<project-ref>.supabase.co` endpoint may be IPv6-only in some build or
+local environments. If request creation returns a `notifications_user_id_fkey`
+error, confirm V034 is recorded in `public.hashpass_schema_migrations`; do not
+work around it by writing registry IDs into meeting requests.
+
 ## Scheduling lifecycle
 
 1. **Agenda** reads `event_agenda` for the path event ID. Agenda-status reads
