@@ -1038,6 +1038,12 @@
         "limitRestored": "Request limit restored",
         "boostNotRefunded": "Boost points not refunded",
         "keepRequest": "Keep Request"
+      },
+      "declineModal": {
+        "title": "Decline Meeting Request?",
+        "description": "Let the requester know why (optional)",
+        "placeholder": "e.g. Schedule conflict, not a good fit right now...",
+        "goBack": "Go Back"
       }
     },
     "speakerView": {

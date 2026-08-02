@@ -1037,6 +1037,12 @@
         "limitRestored": "Límite de solicitudes restaurado",
         "boostNotRefunded": "Los puntos de impulso no se reembolsan",
         "keepRequest": "Mantener Solicitud"
+      },
+      "declineModal": {
+        "title": "¿Rechazar Solicitud de Reunión?",
+        "description": "Cuéntale al solicitante por qué (opcional)",
+        "placeholder": "ej. Conflicto de horario, no es un buen momento...",
+        "goBack": "Volver"
       }
     },
     "speakerView": {

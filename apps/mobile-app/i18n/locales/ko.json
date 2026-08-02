@@ -968,6 +968,12 @@
         "limitRestored": "요청 한도가 복원되었습니다",
         "boostNotRefunded": "부스트 포인트는 환불되지 않습니다",
         "keepRequest": "요청 유지"
+      },
+      "declineModal": {
+        "title": "미팅 요청을 거절하시겠습니까?",
+        "description": "요청자에게 이유를 알려주세요 (선택 사항)",
+        "placeholder": "예: 일정 충돌, 지금은 적절하지 않음...",
+        "goBack": "돌아가기"
       }
     },
     "speakerView": {
