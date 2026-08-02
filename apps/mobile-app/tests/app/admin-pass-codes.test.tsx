@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 import React from 'react';
-import { Alert } from 'react-native';
+import { Alert, ScrollView } from 'react-native';
 
 import AdminPanel from '../../app/(shared)/dashboard/admin';
 
@@ -110,6 +110,36 @@ describe('AdminPanel pass codes', () => {
     await flush();
   };
 
+  it('keeps admin actions in a single horizontally scrollable tab row', async () => {
+    const renderer = await renderPanel();
+
+    const tabScroller = renderer.root
+      .findAllByType(ScrollView)
+      .find((node: any) => node.props.horizontal === true);
+
+    expect(tabScroller).toBeTruthy();
+    expect(tabScroller?.props.showsHorizontalScrollIndicator).toBe(false);
+    expect(tabScroller?.props.contentContainerStyle).toBeDefined();
+
+    act(() => {
+      tabScroller?.props.onLayout({ nativeEvent: { layout: { width: 320 } } });
+      tabScroller?.props.onContentSizeChange(960, 42);
+    });
+    const moreButton = renderer.root.findByProps({ accessibilityLabel: 'Show more admin sections' });
+    expect(moreButton).toBeTruthy();
+
+    act(() => {
+      triggerPress(moreButton);
+    });
+    const backButton = renderer.root.findByProps({ accessibilityLabel: 'Scroll admin sections back to the beginning' });
+    expect(backButton).toBeTruthy();
+
+    act(() => {
+      triggerPress(backButton);
+    });
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Show more admin sections' })).toBeTruthy();
+  });
+
   it('lists campaign metadata without a raw code value', async () => {
     const renderer = await renderPanel();
     await openPassCodes(renderer);
@@ -160,5 +190,118 @@ describe('AdminPanel pass codes', () => {
       eventId: 'chile2026',
       codeId: '8f60f5d2-5948-4df1-9670-2f9177cf2fe4',
     }, { skipEventSegment: true });
+  });
+
+  it('lets an event manager assign, activate, and review speaker account access', async () => {
+    const managedSpeakers = [
+      {
+        id: 'edward-calderon',
+        name: 'Edward Calderón',
+        title: 'Founder & CEO',
+        company: 'Hashpass',
+        imageUrl: null,
+        userId: null,
+        isActive: false,
+        isAcceptingMeetings: true,
+        claim: null,
+      },
+      {
+        id: 'rodrigo-sainz',
+        name: 'Rodrigo Sainz',
+        title: 'CEO',
+        company: 'BSL',
+        imageUrl: null,
+        userId: 'speaker-user',
+        isActive: false,
+        isAcceptingMeetings: true,
+        claim: {
+          email_normalized: 'r@blockchainsummit.la',
+          status: 'claimed',
+          claim_error: null,
+        },
+      },
+      {
+        id: 'active-speaker',
+        name: 'Active Speaker',
+        title: 'Director',
+        company: 'Hashpass',
+        imageUrl: null,
+        userId: 'active-speaker-user',
+        isActive: true,
+        isAcceptingMeetings: true,
+        claim: {
+          email_normalized: 'active@example.com',
+          status: 'claimed',
+          claim_error: null,
+        },
+      },
+    ];
+    mockGet.mockImplementation((path: string) => {
+      if (path.startsWith('/admin/speaker-roles')) {
+        return Promise.resolve({ success: true, data: { data: managedSpeakers } });
+      }
+      return Promise.resolve({ success: true, data: { data: [] } });
+    });
+    const renderer = await renderPanel();
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Speakers' }).parent);
+      await Promise.resolve();
+    });
+    await flush();
+
+    expect(mockGet).toHaveBeenCalledWith('/admin/speaker-roles?eventId=chile2026', { skipEventSegment: true });
+    expect(renderer.root.findByProps({ children: 'UNASSIGNED' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'INACTIVE' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'ACTIVE' })).toBeTruthy();
+
+    const speakerNameOrder = renderer.root
+      .findAll((node: any) => ['Active Speaker', 'Edward Calderón', 'Rodrigo Sainz'].includes(node.props.children))
+      .map((node: any) => node.props.children);
+    expect(speakerNameOrder).toEqual(['Active Speaker', 'Rodrigo Sainz', 'Edward Calderón']);
+
+    const speakerSearch = renderer.root.findByProps({ placeholder: 'Search speakers, organization, or account...' });
+    act(() => speakerSearch.props.onChangeText('rodrigo'));
+    await flush();
+    expect(renderer.root.findByProps({ children: 'Rodrigo Sainz' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ children: 'Edward Calderón' })).toHaveLength(0);
+    act(() => speakerSearch.props.onChangeText(''));
+    await flush();
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Assign account' }).parent);
+      await Promise.resolve();
+    });
+    const emailInput = renderer.root.findByProps({ placeholder: 'speaker@example.com' });
+    act(() => emailInput.props.onChangeText('edward@hashpass.app'));
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Assign' }).parent);
+      await Promise.resolve();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/admin/speaker-roles', expect.objectContaining({
+      action: 'grant',
+      eventId: 'chile2026',
+      speakerId: 'edward-calderon',
+      targetEmail: 'edward@hashpass.app',
+    }), { skipEventSegment: true });
+
+    await act(async () => {
+      triggerPress(renderer.root.findByProps({ children: 'Activate' }).parent);
+      await Promise.resolve();
+    });
+    expect(mockPost).toHaveBeenCalledWith('/admin/speaker-roles', expect.objectContaining({
+      action: 'activate',
+      speakerId: 'rodrigo-sainz',
+    }), { skipEventSegment: true });
+
+    await act(async () => {
+      triggerPress(renderer.root.findAllByProps({ children: 'Remove access' })[1].parent);
+      await Promise.resolve();
+    });
+    expect(mockAlert).toHaveBeenCalledWith(
+      'Remove speaker access?',
+      expect.stringContaining('Rodrigo Sainz'),
+      expect.any(Array),
+    );
   });
 });

@@ -15,21 +15,15 @@ export interface ResolvedNotificationIdentity {
   supabaseUserId: string | null;
   // public.user(id) — the canonical registry's own generated primary key,
   // distinct from supabaseUserId. Required for tables that reference the
-  // registry directly rather than auth.users: user_agenda_status and
-  // notifications (see packages/tools/scripts/sql/target-bsl-bootstrap.sql).
+  // registry directly rather than auth.users, such as user_agenda_status.
   // Using supabaseUserId against those tables fails their FK constraint,
   // since public.user.id is independently generated (uuid_generate_v4()) and
   // only equals the auth id by coincidence — this was the cause of
   // agenda-status POST returning 500 with "Key (user_id)=(...) is not
   // present in table user".
   //
-  // meeting_requests is NOT in this group despite an earlier version of
-  // this comment (and app/api/events/[eventId]/meetings/requests+api.ts) treating it
-  // as one — meeting_requests.requester_id has no FK constraint at all, and
-  // the live write path (insert_meeting_request RPC in
-  // target-bsl-bootstrap.sql) stores the caller-supplied id unchanged after
-  // validating it against passes.user_id (the auth.users id) via
-  // can_make_meeting_request. Use supabaseUserId for meeting_requests.
+  // Meeting requests and notifications use supabaseUserId. Their pass checks,
+  // claimed speaker ownership, and foreign keys all target auth.users(id).
   registryUserId: string | null;
   email: string;
 }
@@ -137,10 +131,8 @@ async function resolveOrCreateRegistryUserId(
 // Resolves the authenticated caller's real Supabase auth UUID, regardless of
 // which auth provider (Supabase, Better Auth, Directus) actually issued
 // their session. Providers other than Supabase use their own id format
-// (e.g. Better Auth's non-UUID ids), which can't be used directly against
-// notifications.user_id — it's resolved via the canonical public.user
-// registry (provider_ids->>'supabase'), kept in sync by a trigger on
-// auth.users.
+// (e.g. Better Auth's non-UUID ids), which are resolved through the canonical
+// public.user registry and its provider_ids->>'supabase' link.
 export async function resolveNotificationIdentity(
   request: Request
 ): Promise<ResolvedNotificationIdentity | ResolveIdentityError> {

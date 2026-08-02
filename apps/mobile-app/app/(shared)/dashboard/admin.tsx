@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, Platform } from 'react-native';
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAuth } from '../../../hooks/useAuth';
@@ -14,8 +14,9 @@ import { useRouter } from 'expo-router';
 import { resolveActiveEventId } from '../../../lib/event-path';
 import { apiClient } from '../../../lib/api-client';
 import { highestEventRole, EventRole, EventRoleGrant } from '../../../lib/event-admin-access';
+import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 
-type TabType = 'passes' | 'pass-codes' | 'qr-scanner' | 'meetings' | 'roles';
+type TabType = 'passes' | 'pass-codes' | 'qr-scanner' | 'meetings' | 'roles' | 'speaker-roles';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -60,6 +61,22 @@ interface Speaker {
   user_id?: string;
 }
 
+interface SpeakerRoleRecord {
+  id: string;
+  name: string;
+  title: string | null;
+  company: string | null;
+  imageUrl: string | null;
+  userId: string | null;
+  isActive: boolean;
+  isAcceptingMeetings: boolean;
+  claim: {
+    email_normalized: string;
+    status: 'unclaimed' | 'claimed' | 'needs_review';
+    claim_error: string | null;
+  } | null;
+}
+
 interface MeetingRequest {
   id: string;
   requester_id: string;
@@ -92,6 +109,12 @@ export default function AdminPanel() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('passes');
+  const tabScrollRef = useRef<ScrollView>(null);
+  const tabScrollOffsetRef = useRef(0);
+  const tabContentWidthRef = useRef(0);
+  const tabViewportWidthRef = useRef(0);
+  const [tabsOverflow, setTabsOverflow] = useState(false);
+  const [tabsAtEnd, setTabsAtEnd] = useState(true);
   const [isUserAdmin, setIsUserAdmin] = useState(false);
   const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,7 +167,41 @@ export default function AdminPanel() {
   const [showGrantGlobalAdminModal, setShowGrantGlobalAdminModal] = useState(false);
   const [newGlobalAdminEmail, setNewGlobalAdminEmail] = useState('');
 
+  // Speaker roles are a claimed account-to-directory-profile link. They are
+  // managed through an event-admin API so the browser never writes identity
+  // records directly.
+  const [speakerRoles, setSpeakerRoles] = useState<SpeakerRoleRecord[]>([]);
+  const [speakerRolesLoading, setSpeakerRolesLoading] = useState(false);
+  const [showGrantSpeakerRoleModal, setShowGrantSpeakerRoleModal] = useState(false);
+  const [selectedSpeakerRole, setSelectedSpeakerRole] = useState<SpeakerRoleRecord | null>(null);
+  const [newSpeakerAccountEmail, setNewSpeakerAccountEmail] = useState('');
+
   const styles = getStyles(isDark, colors);
+  const updateTabScrollState = (offsetX = 0) => {
+    const maxOffset = Math.max(tabContentWidthRef.current - tabViewportWidthRef.current, 0);
+    setTabsOverflow(maxOffset > 4);
+    setTabsAtEnd(maxOffset <= 4 || offsetX >= maxOffset - 4);
+  };
+  const scrollTabStripTo = (offsetX: number) => {
+    const maxOffset = Math.max(tabContentWidthRef.current - tabViewportWidthRef.current, 0);
+    const nextOffset = Math.max(0, Math.min(offsetX, maxOffset));
+    tabScrollOffsetRef.current = nextOffset;
+    tabScrollRef.current?.scrollTo({ x: nextOffset, animated: true });
+    updateTabScrollState(nextOffset);
+  };
+  const handleTabStripWheel = (event: any) => {
+    if (Platform.OS !== 'web') return;
+
+    const wheelEvent = event.nativeEvent || event;
+    const delta = Math.abs(wheelEvent.deltaX || 0) > Math.abs(wheelEvent.deltaY || 0)
+      ? wheelEvent.deltaX
+      : wheelEvent.deltaY;
+
+    if (!delta || tabContentWidthRef.current <= tabViewportWidthRef.current) return;
+    event.preventDefault?.();
+    wheelEvent.preventDefault?.();
+    scrollTabStripTo(tabScrollOffsetRef.current + delta);
+  };
 
   // Wait for auth to finish loading before checking admin access
   useEffect(() => {
@@ -244,7 +301,74 @@ export default function AdminPanel() {
         loadEventRoles(),
         adminRole === 'super_admin' ? loadGlobalAdmins() : Promise.resolve(),
       ]);
+    } else if (activeTab === 'speaker-roles') {
+      await loadSpeakerRoles();
     }
+  };
+
+  const loadSpeakerRoles = async () => {
+    setSpeakerRolesLoading(true);
+    try {
+      const result = await apiClient.get(
+        `/admin/speaker-roles?eventId=${encodeURIComponent(selectedEventId)}`,
+        { skipEventSegment: true },
+      );
+      if (!result.success) throw new Error(result.error || 'Unable to load speakers');
+      setSpeakerRoles(((result.data as { data?: SpeakerRoleRecord[] })?.data) || []);
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to load speaker access: ' + (error.message || 'Unknown error'));
+    } finally {
+      setSpeakerRolesLoading(false);
+    }
+  };
+
+  const mutateSpeakerRole = async (
+    action: 'grant' | 'revoke' | 'activate' | 'deactivate',
+    speaker: SpeakerRoleRecord,
+    targetEmail?: string,
+  ) => {
+    try {
+      setSpeakerRolesLoading(true);
+      const result = await apiClient.post('/admin/speaker-roles', {
+        action,
+        eventId: selectedEventId,
+        speakerId: speaker.id,
+        ...(targetEmail ? { targetEmail } : {}),
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error || 'Unable to update speaker access');
+      await loadSpeakerRoles();
+      return true;
+    } catch (error: any) {
+      Alert.alert('Speaker access not updated', error.message || 'Please try again.');
+      return false;
+    } finally {
+      setSpeakerRolesLoading(false);
+    }
+  };
+
+  const handleGrantSpeakerRole = async () => {
+    const email = newSpeakerAccountEmail.trim().toLowerCase();
+    if (!selectedSpeakerRole || !email.includes('@')) {
+      Alert.alert('Account email required', 'Enter the email for an existing account.');
+      return;
+    }
+    if (await mutateSpeakerRole('grant', selectedSpeakerRole, email)) {
+      setShowGrantSpeakerRoleModal(false);
+      setSelectedSpeakerRole(null);
+      setNewSpeakerAccountEmail('');
+      Alert.alert('Speaker role granted', `${selectedSpeakerRole.name} is now active for ${selectedEventId}.`);
+    }
+  };
+
+  const handleRevokeSpeakerRole = (speaker: SpeakerRoleRecord) => {
+    Alert.alert(
+      'Remove speaker access?',
+      `${speaker.name} will no longer be linked to this account or available for meeting requests.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => { void mutateSpeakerRole('revoke', speaker); } },
+      ],
+    );
   };
 
   const loadEventRoles = async () => {
@@ -728,15 +852,38 @@ export default function AdminPanel() {
         )}
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
+      {/* Tabs stay on one row; scroll instead of wrapping actions into a second line. */}
+      <View style={styles.tabsWrapper}>
+        <ScrollView
+          ref={tabScrollRef}
+          horizontal
+          style={styles.tabs}
+          contentContainerStyle={styles.tabsContent}
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          accessibilityHint="Swipe horizontally to reveal additional admin sections"
+          onLayout={({ nativeEvent }) => {
+            tabViewportWidthRef.current = nativeEvent.layout.width;
+            updateTabScrollState();
+          }}
+          onContentSizeChange={(width) => {
+            tabContentWidthRef.current = width;
+            updateTabScrollState();
+          }}
+          onScroll={({ nativeEvent }) => {
+            tabScrollOffsetRef.current = nativeEvent.contentOffset.x;
+            updateTabScrollState(nativeEvent.contentOffset.x);
+          }}
+          scrollEventThrottle={16}
+          {...({ onWheel: handleTabStripWheel } as any)}
+        >
         {canManagePasses && (
           <TouchableOpacity
             style={[styles.tab, activeTab === 'passes' && styles.tabActive]}
             onPress={() => setActiveTab('passes')}
           >
-            <MaterialIcons name="card-membership" size={20} color={activeTab === 'passes' ? '#007AFF' : colors.text.secondary} />
-            <Text style={[styles.tabText, activeTab === 'passes' && styles.tabTextActive]}>Passes</Text>
+            <MaterialIcons name="card-membership" size={20} color={activeTab === 'passes' ? '#fff' : colors.text.secondary} />
+            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'passes' && styles.tabTextActive]}>Passes</Text>
           </TouchableOpacity>
         )}
         {canManagePasses && (
@@ -744,31 +891,53 @@ export default function AdminPanel() {
             style={[styles.tab, activeTab === 'pass-codes' && styles.tabActive]}
             onPress={() => setActiveTab('pass-codes')}
           >
-            <MaterialIcons name="confirmation-number" size={20} color={activeTab === 'pass-codes' ? '#007AFF' : colors.text.secondary} />
-            <Text style={[styles.tabText, activeTab === 'pass-codes' && styles.tabTextActive]}>Pass Codes</Text>
+            <MaterialIcons name="confirmation-number" size={20} color={activeTab === 'pass-codes' ? '#fff' : colors.text.secondary} />
+            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'pass-codes' && styles.tabTextActive]}>Pass Codes</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={[styles.tab, activeTab === 'qr-scanner' && styles.tabActive]}
           onPress={() => setActiveTab('qr-scanner')}
         >
-          <MaterialIcons name="qr-code-scanner" size={20} color={activeTab === 'qr-scanner' ? '#007AFF' : colors.text.secondary} />
-          <Text style={[styles.tabText, activeTab === 'qr-scanner' && styles.tabTextActive]}>QR Scanner</Text>
+          <MaterialIcons name="qr-code-scanner" size={20} color={activeTab === 'qr-scanner' ? '#fff' : colors.text.secondary} />
+          <Text numberOfLines={1} style={[styles.tabText, activeTab === 'qr-scanner' && styles.tabTextActive]}>QR Scanner</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'meetings' && styles.tabActive]}
           onPress={() => setActiveTab('meetings')}
         >
-          <MaterialIcons name="people" size={20} color={activeTab === 'meetings' ? '#007AFF' : colors.text.secondary} />
-          <Text style={[styles.tabText, activeTab === 'meetings' && styles.tabTextActive]}>Meetings</Text>
+          <MaterialIcons name="people" size={20} color={activeTab === 'meetings' ? '#fff' : colors.text.secondary} />
+          <Text numberOfLines={1} style={[styles.tabText, activeTab === 'meetings' && styles.tabTextActive]}>Meetings</Text>
         </TouchableOpacity>
         {canManagePasses && (
           <TouchableOpacity
             style={[styles.tab, activeTab === 'roles' && styles.tabActive]}
             onPress={() => setActiveTab('roles')}
           >
-            <MaterialIcons name="admin-panel-settings" size={20} color={activeTab === 'roles' ? '#007AFF' : colors.text.secondary} />
-            <Text style={[styles.tabText, activeTab === 'roles' && styles.tabTextActive]}>Staff & Roles</Text>
+            <MaterialIcons name="admin-panel-settings" size={20} color={activeTab === 'roles' ? '#fff' : colors.text.secondary} />
+            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'roles' && styles.tabTextActive]}>Staff & Roles</Text>
+          </TouchableOpacity>
+        )}
+        {canManagePasses && (
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'speaker-roles' && styles.tabActive]}
+            onPress={() => setActiveTab('speaker-roles')}
+          >
+            <MaterialIcons name="record-voice-over" size={20} color={activeTab === 'speaker-roles' ? '#fff' : colors.text.secondary} />
+            <Text numberOfLines={1} style={[styles.tabText, activeTab === 'speaker-roles' && styles.tabTextActive]}>Speakers</Text>
+          </TouchableOpacity>
+        )}
+        </ScrollView>
+        {tabsOverflow && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.tabScrollHint}
+            accessibilityLabel={tabsAtEnd ? 'Scroll admin sections back to the beginning' : 'Show more admin sections'}
+            accessibilityHint={tabsAtEnd ? 'Scrolls the tab row to the left' : 'Scrolls the tab row to the right'}
+            onPress={() => scrollTabStripTo(tabsAtEnd ? 0 : tabContentWidthRef.current)}
+          >
+            <MaterialIcons name={tabsAtEnd ? 'chevron-left' : 'chevron-right'} size={20} color="#007AFF" />
+            <Text style={styles.tabScrollHintText}>{tabsAtEnd ? 'Back' : 'More'}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -843,6 +1012,24 @@ export default function AdminPanel() {
             onGrantPress={() => setShowGrantRoleModal(true)}
             onRevoke={handleRevokeRole}
             onRefresh={loadEventRoles}
+          />
+        )}
+
+        {activeTab === 'speaker-roles' && (
+          <SpeakerRoleManagementTab
+            styles={styles}
+            speakers={speakerRoles}
+            loading={speakerRolesLoading}
+            onAssign={(speaker: SpeakerRoleRecord) => {
+              setSelectedSpeakerRole(speaker);
+              setNewSpeakerAccountEmail('');
+              setShowGrantSpeakerRoleModal(true);
+            }}
+            onRevoke={handleRevokeSpeakerRole}
+            onToggleActive={(speaker: SpeakerRoleRecord) => {
+              void mutateSpeakerRole(speaker.isActive ? 'deactivate' : 'activate', speaker);
+            }}
+            onRefresh={loadSpeakerRoles}
           />
         )}
       </ScrollView>
@@ -1135,6 +1322,58 @@ export default function AdminPanel() {
         </View>
       </Modal>
 
+      {/* Grant Speaker Role Modal */}
+      <Modal
+        visible={showGrantSpeakerRoleModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowGrantSpeakerRoleModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Assign Speaker Account</Text>
+            <Text style={styles.modalLabel}>
+              {selectedSpeakerRole ? `Speaker: ${selectedSpeakerRole.name}` : 'Speaker'}
+            </Text>
+            <Text style={styles.modalLabel}>Existing account email</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newSpeakerAccountEmail}
+              onChangeText={setNewSpeakerAccountEmail}
+              placeholder="speaker@example.com"
+              placeholderTextColor={colors.text.secondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+            />
+            <Text style={[styles.modalLabel, { fontSize: 12, marginTop: 4 }]}>
+              This activates the linked speaker profile. The account must already exist.
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowGrantSpeakerRoleModal(false)}
+                disabled={speakerRolesLoading}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleGrantSpeakerRole}
+                disabled={speakerRolesLoading}
+              >
+                {speakerRolesLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={[styles.modalButtonText, styles.modalButtonTextConfirm]}>Assign</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* QR Scanner */}
       <AdminQRScanner
         visible={showQRScanner}
@@ -1387,6 +1626,113 @@ function RolesTab({
   );
 }
 
+function SpeakerRoleManagementTab({
+  styles,
+  speakers,
+  loading,
+  onAssign,
+  onRevoke,
+  onToggleActive,
+  onRefresh,
+}: any) {
+  const speakerSearchData = useMemo(() => speakers.map((speaker: SpeakerRoleRecord) => {
+    const hasAccount = Boolean(speaker.userId);
+    const assignmentStatus = speaker.isActive ? 'Active' : hasAccount ? 'Inactive' : 'Unassigned';
+    const accountLabel = speaker.claim?.email_normalized || (hasAccount ? 'Account linked' : 'No account assigned');
+
+    return {
+      ...speaker,
+      accountLabel,
+      assignmentStatus,
+    };
+  }), [speakers]);
+  const [filteredSpeakers, setFilteredSpeakers] = useState(speakerSearchData);
+  const orderedSpeakers = useMemo(() => [...filteredSpeakers].sort((left, right) => {
+    const priority = (speaker: SpeakerRoleRecord) => speaker.isActive && speaker.userId ? 0 : speaker.userId ? 1 : 2;
+    return priority(left) - priority(right) || left.name.localeCompare(right.name);
+  }), [filteredSpeakers]);
+
+  return (
+    <View style={styles.tabContent}>
+      <Text style={[styles.passInfo, { marginBottom: 12 }]}>Assign an existing account to a speaker profile, then control whether that speaker is available for networking.</Text>
+      <TouchableOpacity style={[styles.actionButton, styles.speakerRefreshButton]} onPress={onRefresh} disabled={loading}>
+        <MaterialIcons name="refresh" size={16} color="#fff" />
+        <Text style={styles.actionButtonText}>Refresh</Text>
+      </TouchableOpacity>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+      ) : (
+        <>
+          <UnifiedSearchAndFilter
+            data={speakerSearchData}
+            onFilteredData={setFilteredSpeakers}
+            onSearchChange={() => undefined}
+            searchPlaceholder="Search speakers, organization, or account..."
+            searchFields={['name', 'title', 'company', 'accountLabel']}
+            filterGroups={[{
+              key: 'assignmentStatus',
+              label: 'Assignment status',
+              type: 'chips',
+              options: [],
+            }]}
+            showResultsCount
+          />
+          <View style={styles.list}>
+          {orderedSpeakers.map((speaker: SpeakerRoleRecord & { accountLabel: string; assignmentStatus: string }) => {
+            const hasAccount = Boolean(speaker.userId);
+            const status = speaker.isActive ? 'ACTIVE' : hasAccount ? 'INACTIVE' : 'UNASSIGNED';
+            const statusColor = speaker.isActive ? '#34A853' : hasAccount ? '#8E8E93' : '#D97706';
+
+            return (
+              <View key={speaker.id} style={styles.passCard}>
+                <View style={styles.passCardHeader}>
+                  <View style={styles.speakerRoleTitleWrap}>
+                    <Text style={styles.passNumber}>{speaker.name}</Text>
+                    {(speaker.title || speaker.company) ? (
+                      <Text style={styles.passInfo}>{[speaker.title, speaker.company].filter(Boolean).join(' · ')}</Text>
+                    ) : null}
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+                    <Text style={styles.statusBadgeText}>{status}</Text>
+                  </View>
+                </View>
+                <Text style={styles.passInfo}>{speaker.accountLabel}</Text>
+                {speaker.claim?.status === 'needs_review' && speaker.claim.claim_error ? (
+                  <Text style={styles.speakerRoleWarning}>{speaker.claim.claim_error}</Text>
+                ) : null}
+                <View style={styles.passActions}>
+                  {!hasAccount ? (
+                    <TouchableOpacity style={[styles.actionButton, styles.actionButtonSuccess]} onPress={() => onAssign(speaker)}>
+                      <Text style={styles.actionButtonText}>Assign account</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.actionButton, speaker.isActive ? undefined : styles.actionButtonSuccess]}
+                        onPress={() => onToggleActive(speaker)}
+                      >
+                        <Text style={styles.actionButtonText}>{speaker.isActive ? 'Deactivate' : 'Activate'}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.actionButton} onPress={() => onRevoke(speaker)}>
+                        <Text style={styles.actionButtonText}>Remove access</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+          {orderedSpeakers.length === 0 && (
+            <Text style={styles.emptyText}>No speakers match the current search or filter</Text>
+          )}
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
+
 // QR Scanner Tab Component
 function QRScannerTab({ styles, colors, onScanPress }: any) {
   return (
@@ -1622,23 +1968,38 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   eventSwitcherChipTextActive: {
     color: '#fff',
   },
-  tabs: {
-    flexDirection: 'row',
+  tabsWrapper: {
     backgroundColor: colors.background.paper,
     borderBottomWidth: 1,
     borderBottomColor: colors.divider,
+    position: 'relative',
+  },
+  tabs: {
+    flexGrow: 0,
+  },
+  tabsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingLeft: 10,
+    // Keep the final action clear of the fixed More/Back control.
+    paddingRight: 96,
+    paddingVertical: 8,
   },
   tab: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    flexShrink: 0,
+    minHeight: 42,
+    minWidth: 140,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: 10,
     gap: 6,
   },
   tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#007AFF',
+    backgroundColor: '#007AFF',
   },
   tabText: {
     fontSize: 14,
@@ -1646,7 +2007,27 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontWeight: '500',
   },
   tabTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  tabScrollHint: {
+    alignItems: 'center',
+    backgroundColor: colors.background.paper,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.divider,
+    bottom: 0,
+    flexDirection: 'row',
+    gap: 2,
+    justifyContent: 'center',
+    minWidth: 76,
+    paddingHorizontal: 8,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  tabScrollHintText: {
     color: '#007AFF',
+    fontSize: 12,
     fontWeight: '600',
   },
   content: {
@@ -1748,6 +2129,22 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  speakerRefreshButton: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  speakerRoleTitleWrap: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  speakerRoleWarning: {
+    color: '#D97706',
+    fontSize: 13,
+    marginTop: 4,
   },
   qrScannerCard: {
     alignItems: 'center',

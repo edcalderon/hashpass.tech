@@ -24,8 +24,8 @@ describe('notifications api', () => {
   });
 
   describe('GET', () => {
-    it('returns empty list when user has no registry id', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: null });
+    it('returns empty list when user has no Supabase identity', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -48,16 +48,17 @@ describe('notifications api', () => {
       expect(await response.json()).toEqual({ error: 'Unauthorized' });
     });
 
-    it('returns notifications for the resolved registry id', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+    it('returns notifications for the resolved Supabase identity', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
+      const filterByUser = jest.fn().mockReturnValue({
+        order: () => ({
+          limit: jest.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      });
       mockFrom.mockReturnValue({
         select: () => ({
-          eq: () => ({
-            order: () => ({
-              limit: jest.fn().mockResolvedValue({ data: [], error: null }),
-            }),
-          }),
+          eq: filterByUser,
         }),
       });
 
@@ -66,11 +67,12 @@ describe('notifications api', () => {
       const response = await GET(new Request('https://api.hashpass.tech/api/notifications?limit=10'));
 
       expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ data: [], resolvedUserId: 'registry-id-123' });
+      expect(await response.json()).toEqual({ data: [], resolvedUserId: 'auth-id-123' });
+      expect(filterByUser).toHaveBeenCalledWith('user_id', 'auth-id-123');
     });
 
     it('returns 500 when the notifications query errors', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         select: () => ({
@@ -91,7 +93,7 @@ describe('notifications api', () => {
     });
 
     it('returns 500 when the notifications query throws unexpectedly', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         select: () => {
@@ -109,8 +111,8 @@ describe('notifications api', () => {
   });
 
   describe('PATCH', () => {
-    it('returns success without querying when user has no registry id', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: null });
+    it('returns success without querying when user has no Supabase identity', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -134,7 +136,7 @@ describe('notifications api', () => {
     });
 
     it('marks all unread notifications as read', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         update: () => ({
@@ -153,7 +155,7 @@ describe('notifications api', () => {
     });
 
     it('returns 500 when marking as read errors', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         update: () => ({
@@ -172,7 +174,7 @@ describe('notifications api', () => {
     });
 
     it('returns 500 when marking as read throws unexpectedly', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         update: () => {

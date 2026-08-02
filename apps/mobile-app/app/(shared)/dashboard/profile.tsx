@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet, StatusBar, Modal, ActivityIndicator, TextInput } from 'react-native';
 import { useAuth } from '../../../hooks/useAuth';
 import { useTheme } from '../../../hooks/useTheme';
 import { useScroll } from '@contexts/ScrollContext';
@@ -8,8 +8,9 @@ import { supabase } from '../../../lib/supabase';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { authService } from '@hashpass/auth';
 import type { AuthUser } from '@hashpass/auth';
-import { canLoadCurrentAdminAccess, getCurrentAdminAccess } from '../../../lib/admin-access';
-import { formatEffectiveRole, type EffectiveRole } from '../../../lib/role-summary';
+import { canLoadCurrentAdminAccess, getCurrentAdminAccess, type AdminAccess } from '../../../lib/admin-access';
+import { getProfileRoleLabels } from '../../../lib/profile-roles';
+import { apiClient } from '../../../lib/api-client';
 
 // DiceBear PNG format — React Native Image cannot render SVG so we use /png endpoints
 const generateAvatarUrl = (name: string, style: 'avataaars' | 'fun-emoji' | 'bottts' = 'avataaars'): string => {
@@ -36,6 +37,24 @@ const AVATAR_STYLES = [
   { key: 'ui-avatar', label: 'Simple', icon: 'face' },
 ] as const;
 
+type SpeakerProfile = {
+  id: string;
+  name: string;
+  title: string | null;
+  company: string | null;
+  imageUrl: string | null;
+};
+
+const isSpeakerProfile = (value: unknown): value is SpeakerProfile => {
+  if (!value || typeof value !== 'object') return false;
+  const speaker = value as Record<string, unknown>;
+  return typeof speaker.id === 'string' &&
+    typeof speaker.name === 'string' &&
+    (typeof speaker.title === 'string' || speaker.title === null) &&
+    (typeof speaker.company === 'string' || speaker.company === null) &&
+    (typeof speaker.imageUrl === 'string' || speaker.imageUrl === null);
+};
+
 export default function ProfileScreen() {
   const { user, isLoading: authLoading } = useAuth();
   const { isDark, colors } = useTheme();
@@ -52,9 +71,18 @@ export default function ProfileScreen() {
   const [retryingProfile, setRetryingProfile] = useState(false);
   // Raw Supabase user — always has created_at + user_metadata.avatar_url regardless of auth provider
   const [rawSupabaseUser, setRawSupabaseUser] = useState<any>(null);
-  const [effectiveRole, setEffectiveRole] = useState<EffectiveRole | null>(null);
+  const [adminAccess, setAdminAccess] = useState<AdminAccess | null>(null);
+  const [speakerProfile, setSpeakerProfile] = useState<SpeakerProfile | null>(null);
+  const [rolesLoading, setRolesLoading] = useState(true);
+  const [showSpeakerModal, setShowSpeakerModal] = useState(false);
+  const [savingSpeaker, setSavingSpeaker] = useState(false);
+  const [speakerName, setSpeakerName] = useState('');
+  const [speakerTitle, setSpeakerTitle] = useState('');
+  const [speakerCompany, setSpeakerCompany] = useState('');
 
   const hasProfileContent = useCallback((candidate?: AuthUser | null): boolean => {
+    if (!candidate) return false;
+
     const hasName = Boolean(
       candidate.first_name?.trim() ||
       candidate.last_name?.trim() ||
@@ -141,22 +169,37 @@ export default function ProfileScreen() {
   useEffect(() => {
     let cancelled = false;
 
-    const loadRole = async () => {
+    const loadProfileRoles = async () => {
       if (!canLoadCurrentAdminAccess(user, authLoading)) {
-        if (!authLoading && !cancelled) setEffectiveRole(null);
+        if (!authLoading && !cancelled) {
+          setAdminAccess(null);
+          setSpeakerProfile(null);
+          setRolesLoading(false);
+        }
         return;
       }
 
+      setRolesLoading(true);
       try {
-        const access = await getCurrentAdminAccess();
-        if (!cancelled) setEffectiveRole(access.effectiveRole);
-      } catch (error) {
-        console.error('Unable to load profile role:', error);
-        if (!cancelled) setEffectiveRole(null);
+        const [accessResult, speakerResult] = await Promise.allSettled([
+          getCurrentAdminAccess(),
+          apiClient.get('/profile/speaker', { skipEventSegment: true }),
+        ]);
+        if (cancelled) return;
+
+        setAdminAccess(accessResult.status === 'fulfilled' ? accessResult.value : null);
+        if (speakerResult.status === 'fulfilled' && speakerResult.value.success) {
+          const data = (speakerResult.value.data as { data?: unknown } | undefined)?.data;
+          setSpeakerProfile(isSpeakerProfile(data) ? data : null);
+        } else {
+          setSpeakerProfile(null);
+        }
+      } finally {
+        if (!cancelled) setRolesLoading(false);
       }
     };
 
-    loadRole();
+    loadProfileRoles();
     return () => {
       cancelled = true;
     };
@@ -177,6 +220,10 @@ export default function ProfileScreen() {
   };
 
   const getCurrentAvatarUrl = (): string => {
+    // A claimed speaker profile is the public identity attendees see. Prefer
+    // that photo by default; changing the avatar below updates both records.
+    if (speakerProfile?.imageUrl) return speakerProfile.imageUrl;
+
     // Priority 1: Supabase user_metadata (Google OAuth sets avatar_url / picture here)
     // Raw Supabase session is the most reliable source across all auth paths
     const supabaseMeta = rawSupabaseUser?.user_metadata;
@@ -196,6 +243,19 @@ export default function ProfileScreen() {
     const name = getDisplayName() || 'hashpass-user';
     return generateUIAvatarUrl(name);
   };
+
+  const updateLinkedSpeaker = useCallback(async (updates: Record<string, string>) => {
+    const response = await apiClient.request('/profile/speaker', {
+      skipEventSegment: true,
+      method: 'PATCH',
+      body: updates,
+    });
+    if (!response.success) throw new Error(response.error || 'Unable to update speaker information');
+    const data = (response.data as { data?: unknown } | undefined)?.data;
+    if (!isSpeakerProfile(data)) throw new Error('Speaker profile response was incomplete');
+    setSpeakerProfile(data);
+    return data;
+  }, []);
 
   const handleAvatarPress = () => {
     setShowAvatarModal(true);
@@ -228,6 +288,10 @@ export default function ProfileScreen() {
       });
       if (metaError) throw metaError;
 
+      if (speakerProfile) {
+        await updateLinkedSpeaker({ imageUrl: avatarUrl });
+      }
+
       // Also persist to user_profiles table so other parts of the app read it consistently
       const { error: dbError } = await (supabase as any)
         .from('user_profiles')
@@ -253,10 +317,41 @@ export default function ProfileScreen() {
     }
   };
 
+  const openSpeakerEditor = () => {
+    if (!speakerProfile) return;
+    setSpeakerName(speakerProfile.name);
+    setSpeakerTitle(speakerProfile.title || '');
+    setSpeakerCompany(speakerProfile.company || '');
+    setShowSpeakerModal(true);
+  };
+
+  const saveSpeakerProfile = async () => {
+    if (!speakerProfile || !speakerName.trim()) {
+      showError('Speaker name required', 'Enter the name attendees should see.');
+      return;
+    }
+
+    setSavingSpeaker(true);
+    try {
+      await updateLinkedSpeaker({
+        name: speakerName,
+        title: speakerTitle,
+        company: speakerCompany,
+      });
+      setShowSpeakerModal(false);
+      showSuccess('Speaker Information Updated', 'Your attendee-facing speaker profile is up to date.');
+    } catch (error: any) {
+      showError('Update Failed', error.message || 'Unable to update speaker information');
+    } finally {
+      setSavingSpeaker(false);
+    }
+  };
+
   const userName = getDisplayName();
   const userEmail = activeUser?.email?.trim() || '';
   const userNameDisplay = userName || 'Not available';
   const userEmailDisplay = userEmail || 'Not available';
+  const profileRoleLabels = getProfileRoleLabels(adminAccess, Boolean(speakerProfile));
   
   // Member since — try multiple sources in priority order:
   // rawSupabaseUser.created_at is always set by Supabase regardless of auth provider
@@ -399,10 +494,17 @@ export default function ProfileScreen() {
                   <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Role</Text>
-                  <Text style={styles.infoValue}>
-                    {effectiveRole ? formatEffectiveRole(effectiveRole) : 'Role unavailable'}
-                  </Text>
+                  <Text style={styles.infoLabel}>Roles</Text>
+                  {rolesLoading ? (
+                    <View style={styles.rolesLoadingState} accessibilityLabel="Loading account roles">
+                      <ActivityIndicator size="small" color={colors.primary} />
+                      <Text style={styles.rolesLoadingText}>Loading roles…</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.infoValue}>
+                      {profileRoleLabels.length ? profileRoleLabels.join(' · ') : 'General User'}
+                    </Text>
+                  )}
                 </View>
               </View>
 
@@ -421,6 +523,51 @@ export default function ProfileScreen() {
               </View>
             </View>
           </View>
+
+          {speakerProfile ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Speaker Information</Text>
+              <View style={styles.infoCard}>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIconContainer}>
+                    <Ionicons name="mic-outline" size={22} color={colors.primary} />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Speaker Name</Text>
+                    <Text style={styles.infoValue}>{speakerProfile.name}</Text>
+                  </View>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIconContainer}>
+                    <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Display Role</Text>
+                    <Text style={styles.infoValue}>{speakerProfile.title || 'Not set'}</Text>
+                  </View>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIconContainer}>
+                    <Ionicons name="business-outline" size={22} color={colors.primary} />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Company</Text>
+                    <Text style={styles.infoValue}>{speakerProfile.company || 'Not set'}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.speakerEditButton}
+                  onPress={openSpeakerEditor}
+                  accessibilityLabel="Edit speaker information"
+                >
+                  <MaterialIcons name="edit" size={18} color={colors.primary} />
+                  <Text style={[styles.speakerEditButtonText, { color: colors.primary }]}>Edit Speaker Information</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
 
           {/* Quick Actions */}
           <View style={styles.section}>
@@ -520,6 +667,70 @@ export default function ProfileScreen() {
                 Select an avatar style to update your profile picture
               </Text>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showSpeakerModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSpeakerModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.speakerModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Speaker Information</Text>
+              <TouchableOpacity
+                onPress={() => setShowSpeakerModal(false)}
+                style={styles.modalCloseButton}
+                disabled={savingSpeaker}
+              >
+                <Ionicons name="close" size={24} color={colors.text?.primary || '#000'} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.fieldLabel}>Name</Text>
+            <TextInput
+              value={speakerName}
+              onChangeText={setSpeakerName}
+              style={styles.speakerInput}
+              placeholder="Your speaker name"
+              placeholderTextColor={colors.text?.secondary || '#6B7280'}
+              autoCapitalize="words"
+              accessibilityLabel="Speaker name"
+            />
+            <Text style={styles.fieldLabel}>Display Role</Text>
+            <TextInput
+              value={speakerTitle}
+              onChangeText={setSpeakerTitle}
+              style={styles.speakerInput}
+              placeholder="e.g. Founder & CEO"
+              placeholderTextColor={colors.text?.secondary || '#6B7280'}
+              autoCapitalize="words"
+              accessibilityLabel="Speaker display role"
+            />
+            <Text style={styles.fieldLabel}>Company</Text>
+            <TextInput
+              value={speakerCompany}
+              onChangeText={setSpeakerCompany}
+              style={styles.speakerInput}
+              placeholder="Your company or organisation"
+              placeholderTextColor={colors.text?.secondary || '#6B7280'}
+              autoCapitalize="words"
+              accessibilityLabel="Speaker company"
+            />
+            <TouchableOpacity
+              style={[styles.speakerSaveButton, { backgroundColor: colors.primary }, savingSpeaker && styles.actionButtonDisabled]}
+              onPress={saveSpeakerProfile}
+              disabled={savingSpeaker}
+              accessibilityLabel="Save speaker information"
+            >
+              {savingSpeaker ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.speakerSaveButtonText}>Save Speaker Information</Text>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -696,6 +907,16 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontWeight: '500',
     color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000'),
   },
+  rolesLoadingState: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    minHeight: 22,
+  },
+  rolesLoadingText: {
+    color: colors.text?.secondary || (isDark ? '#CCCCCC' : '#666666'),
+    fontSize: 15,
+  },
   divider: {
     height: 1,
     backgroundColor: isDark ? '#333333' : '#E0E0E0',
@@ -741,6 +962,21 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 13,
     color: colors.text?.secondary || (isDark ? '#CCCCCC' : '#666666'),
   },
+  speakerEditButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+    minHeight: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary || '#6366f1',
+  },
+  speakerEditButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -752,6 +988,13 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderTopRightRadius: 24,
     maxHeight: '80%',
     paddingBottom: 40,
+  },
+  speakerModalContent: {
+    backgroundColor: isDark ? colors.background?.default || '#1a1a1a' : colors.background?.paper || '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -768,6 +1011,35 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   modalCloseButton: {
     padding: 4,
+  },
+  fieldLabel: {
+    marginTop: 16,
+    marginBottom: 7,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000'),
+  },
+  speakerInput: {
+    minHeight: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: isDark ? '#444444' : '#D1D5DB',
+    paddingHorizontal: 14,
+    color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000'),
+    backgroundColor: isDark ? '#202020' : '#F9FAFB',
+    fontSize: 16,
+  },
+  speakerSaveButton: {
+    minHeight: 48,
+    marginTop: 24,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speakerSaveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   avatarGrid: {
     padding: 20,

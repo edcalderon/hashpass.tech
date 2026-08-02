@@ -16,7 +16,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (isResolveIdentityError(identity)) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
-  if (!identity.registryUserId) {
+  if (!identity.supabaseUserId) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -47,7 +47,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       .from('notifications')
       .update(update)
       .eq('id', params.id)
-      .eq('user_id', identity.registryUserId);
+      .eq('user_id', identity.supabaseUserId);
 
     if (error) {
       console.error('[notifications] update error:', error);
@@ -71,7 +71,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   if (isResolveIdentityError(identity)) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
-  if (!identity.registryUserId) {
+  if (!identity.supabaseUserId) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -81,7 +81,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       .from('notifications')
       .delete()
       .eq('id', params.id)
-      .eq('user_id', identity.registryUserId);
+      .eq('user_id', identity.supabaseUserId);
 
     if (error) {
       console.error('[notifications] delete error:', error);

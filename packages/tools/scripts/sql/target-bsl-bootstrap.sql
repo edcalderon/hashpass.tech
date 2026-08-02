@@ -985,7 +985,7 @@ BEGIN
     ) THEN
       ALTER TABLE public.meeting_requests
         ADD CONSTRAINT meeting_requests_requester_id_fkey
-        FOREIGN KEY (requester_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+        FOREIGN KEY (requester_id) REFERENCES auth.users(id) ON DELETE CASCADE;
     END IF;
 
     IF NOT EXISTS (
@@ -997,7 +997,7 @@ BEGIN
     ) THEN
       ALTER TABLE public.meeting_requests
         ADD CONSTRAINT meeting_requests_speaker_id_fkey
-        FOREIGN KEY (speaker_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+        FOREIGN KEY (speaker_id) REFERENCES auth.users(id) ON DELETE CASCADE;
     END IF;
 
     IF NOT EXISTS (

@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   // No linked Supabase auth identity — the user has never had a session that
   // could have owned notifications rows. Empty list, not an error.
-  if (!identity.registryUserId) {
+  if (!identity.supabaseUserId) {
     return Response.json({ data: [], resolvedUserId: null });
   }
 
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', identity.registryUserId)
+      .eq('user_id', identity.supabaseUserId)
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       return Response.json({ error: 'Failed to fetch notifications' }, { status: 500 });
     }
 
-    return Response.json({ data: data || [], resolvedUserId: identity.registryUserId });
+    return Response.json({ data: data || [], resolvedUserId: identity.supabaseUserId });
   } catch (error) {
     console.error('[notifications] unexpected fetch error:', error);
     return Response.json({ error: 'Failed to fetch notifications' }, { status: 500 });
@@ -46,7 +46,7 @@ export async function PATCH(request: Request) {
   if (isResolveIdentityError(identity)) {
     return Response.json({ error: identity.error }, { status: identity.status });
   }
-  if (!identity.registryUserId) {
+  if (!identity.supabaseUserId) {
     return Response.json({ success: true });
   }
 
@@ -55,7 +55,7 @@ export async function PATCH(request: Request) {
     const { error } = await (supabase as any)
       .from('notifications')
       .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq('user_id', identity.registryUserId)
+      .eq('user_id', identity.supabaseUserId)
       .eq('is_read', false);
 
     if (error) {

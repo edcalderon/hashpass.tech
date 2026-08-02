@@ -532,8 +532,6 @@ export default function SpeakerDetail() {
     if (!dbUserId || !speaker) return;
     
     try {
-      console.log('🔄 Loading request limits for user:', dbUserId, 'speaker:', speaker.id);
-      
       const response = await apiClient.request(meetingRequestLimitsPath, {
         skipEventSegment: true,
       });

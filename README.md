@@ -20,10 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.302)
+## 📋 Latest Changes (v1.8.303)
 
 ### Released
-- recover web pass sessions
+- filter and prioritize active speakers; manage speaker roles from admin profiles; wait for profile roles before fallback; make admin tab overflow actionable; scroll admin tabs horizontally; preserve active speaker ordering; align meeting requests with auth identities
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

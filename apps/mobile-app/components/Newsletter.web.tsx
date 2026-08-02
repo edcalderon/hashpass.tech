@@ -468,7 +468,7 @@ const Newsletter = ({ mode }: Props) => {
                                     </>
                                 ) : (
                                     <>
-                                        {t('successMessage')} <span className='font-bold'>{email}</span>. {t('successMessageEmail')}
+                                        {t('successMessage')} <span className='font-bold'>{email}</span><span>. </span>{t('successMessageEmail')}
                                     </>
                                 )}
                             </p>

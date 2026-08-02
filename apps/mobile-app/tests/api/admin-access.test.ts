@@ -55,6 +55,7 @@ describe('GET /api/admin/access', () => {
     await expect(response.json()).resolves.toEqual({
       data: {
         globalRole: 'super_admin',
+        globalRoles: ['admin', 'super_admin'],
         eventRoles: [{ eventId: 'bsl', role: 'event_admin' }],
         effectiveRole: {
           role: 'super_admin',
@@ -88,6 +89,7 @@ describe('GET /api/admin/access', () => {
     await expect(response.json()).resolves.toEqual({
       data: {
         globalRole: null,
+        globalRoles: [],
         eventRoles: [{ eventId: 'bsl', role: 'event_admin' }],
         effectiveRole: {
           role: 'event_admin',
@@ -121,6 +123,7 @@ describe('GET /api/admin/access', () => {
     await expect(response.json()).resolves.toEqual({
       data: {
         globalRole: null,
+        globalRoles: [],
         eventRoles: [],
         effectiveRole: { role: 'user', scope: 'none', eventIds: [] },
       },
