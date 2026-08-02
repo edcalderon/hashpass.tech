@@ -176,7 +176,14 @@ const applyCurrentFilter = async (renderer: TestRenderer.ReactTestRenderer) => {
 
 describe('MyRequestsView', () => {
   beforeEach(() => {
-    jest.useRealTimers();
+    // Real timers here let several production fire-and-forget setTimeout
+    // calls (balance-refresh retries, post-accept/decline reload delays)
+    // actually fire during the full multi-file coverage run's ~80s wall
+    // clock, well after their own test has torn down -- Jest then reports
+    // "Cannot log after tests are done" for their console.error calls and
+    // flips the whole run's exit code to 1 despite every test passing.
+    // Fake timers let those callbacks get cleared with the test instead.
+    jest.useFakeTimers();
     jest.clearAllMocks();
     jest.spyOn(console, 'log').mockImplementation();
     jest.spyOn(console, 'warn').mockImplementation();
@@ -191,6 +198,7 @@ describe('MyRequestsView', () => {
   });
 
   afterEach(() => {
+    jest.clearAllTimers();
     jest.useRealTimers();
     jest.restoreAllMocks();
   });
@@ -468,6 +476,37 @@ describe('MyRequestsView', () => {
     expect(
       mockApiRequest.mock.calls.some(([, options]: [string, any]) => options?.body?.action === 'decline'),
     ).toBe(false);
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('keeps the modal open and preserves the typed reason when the decline request fails', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: { data: [incomingRequest] } });
+
+    const renderer = await renderScreen();
+    await pressText(renderer, 'requestView.tabs.incoming');
+    await applyCurrentFilter(renderer);
+
+    await pressText(renderer, 'Mariana Requester');
+
+    mockApiRequest.mockRejectedValue(new Error('network error'));
+
+    await pressTextAt(renderer, 'requestView.decline', 0);
+
+    const input = renderer.root.findByType('TextInput' as any);
+    await act(async () => {
+      input.props.onChangeText('Schedule conflict this week');
+      await flushPromises();
+    });
+
+    await pressTextAt(renderer, 'requestView.decline', 1);
+
+    // A failed PATCH must not close the modal or discard the speaker's
+    // typed reason -- the draft is only cleared once decline succeeds.
+    expect(mockShowError).toHaveBeenCalled();
+    const inputAfter = renderer.root.findByType('TextInput' as any);
+    expect(inputAfter.props.value).toBe('Schedule conflict this week');
+    expect(renderer.root.findAllByProps({ children: 'requestView.declineModal.goBack' }).length).toBeGreaterThan(0);
 
     await act(async () => renderer.unmount());
   });

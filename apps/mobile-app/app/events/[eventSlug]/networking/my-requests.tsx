@@ -88,6 +88,10 @@ export default function MyRequestsView() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
+  const dismissDeclineModal = () => {
+    setShowDeclineModal(false);
+    setDeclineReason('');
+  };
   const [acceptNote, setAcceptNote] = useState('');
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [holdTime, setHoldTime] = useState(1); // Hours
@@ -438,8 +442,8 @@ export default function MyRequestsView() {
     }
   };
 
-  const handleDeclineRequest = async (request: MeetingRequest, reason?: string) => {
-    if (!dbUserId) return;
+  const handleDeclineRequest = async (request: MeetingRequest, reason?: string): Promise<boolean> => {
+    if (!dbUserId) return false;
 
     try {
       const trimmedReason = reason?.trim();
@@ -464,12 +468,14 @@ export default function MyRequestsView() {
         }, 500);
 
         setShowDetailModal(false);
+        return true;
       } else {
         throw new Error(data?.error || t('requestView.declineFailedMessage'));
       }
     } catch (error: any) {
       console.error('❌ Error declining request:', error);
       showError(t('requestView.declineFailedTitle'), error.message || t('requestView.declineFailedMessage'));
+      return false;
     }
   };
 
@@ -1911,7 +1917,7 @@ export default function MyRequestsView() {
         visible={showDeclineModal}
         animationType="fade"
         transparent={true}
-        onRequestClose={() => setShowDeclineModal(false)}
+        onRequestClose={dismissDeclineModal}
       >
         <View style={styles.modalOverlay}>
           <View style={[
@@ -1923,7 +1929,7 @@ export default function MyRequestsView() {
           ]}>
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => setShowDeclineModal(false)}
+              onPress={dismissDeclineModal}
             >
               <MaterialIcons name="close" size={24} color={colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666')} />
             </TouchableOpacity>
@@ -1978,7 +1984,7 @@ export default function MyRequestsView() {
                     borderColor: colors.divider || (isDark ? '#404040' : '#e0e0e0'),
                   }
                 ]}
-                onPress={() => setShowDeclineModal(false)}
+                onPress={dismissDeclineModal}
               >
                 <Text style={[
                   styles.actionButtonText,
@@ -1996,12 +2002,12 @@ export default function MyRequestsView() {
                     backgroundColor: colors.error?.main || '#F44336',
                   }
                 ]}
-                onPress={() => {
-                  if (selectedRequest) {
-                    handleDeclineRequest(selectedRequest, declineReason);
+                onPress={async () => {
+                  if (!selectedRequest) return;
+                  const declined = await handleDeclineRequest(selectedRequest, declineReason);
+                  if (declined) {
+                    dismissDeclineModal();
                   }
-                  setShowDeclineModal(false);
-                  setDeclineReason('');
                 }}
               >
                 <MaterialIcons name="cancel" size={20} color="white" />
