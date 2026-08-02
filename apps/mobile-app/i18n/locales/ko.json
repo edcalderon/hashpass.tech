@@ -653,7 +653,8 @@
         "active": "예정",
         "past": "지난"
       },
-      "stackHint": "뒤에 있는 카드를 눌러 앞으로 가져오세요"
+      "stackHint": "뒤에 있는 카드를 눌러 앞으로 가져오세요",
+      "reload": "패스 새로고침"
     }
   },
   "networking": {

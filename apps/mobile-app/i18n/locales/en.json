@@ -723,7 +723,8 @@
         "active": "Upcoming",
         "past": "Past"
       },
-      "stackHint": "Tap a card behind to bring it forward"
+      "stackHint": "Tap a card behind to bring it forward",
+      "reload": "Reload passes"
     }
   },
   "networking": {

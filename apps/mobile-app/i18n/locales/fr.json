@@ -580,7 +580,8 @@
         "active": "À venir",
         "past": "Passés"
       },
-      "stackHint": "Touchez une carte derrière pour la mettre devant"
+      "stackHint": "Touchez une carte derrière pour la mettre devant",
+      "reload": "Recharger les passes"
     }
   },
   "networking": {

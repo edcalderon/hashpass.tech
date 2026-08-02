@@ -172,6 +172,27 @@ describe('PassesWallet', () => {
     expect(renderer.root.findAllByProps({ name: 'chevron-right' })).toHaveLength(0);
   });
 
+  it('reloads already-loaded passes from both BSL and HashPass wallet layouts', async () => {
+    (passSystemService.getAllUserPasses as jest.Mock).mockResolvedValue([makePass()]);
+
+    const hashpassWallet = await renderWallet();
+    const bslWallet = await renderWallet({ layout: 'plain' });
+
+    const hashpassReload = hashpassWallet.root.findByProps({ accessibilityLabel: 'Reload passes' });
+    const bslReload = bslWallet.root.findByProps({ accessibilityLabel: 'Reload passes' });
+
+    await act(async () => {
+      triggerPress(hashpassReload);
+      await Promise.resolve();
+      triggerPress(bslReload);
+      await Promise.resolve();
+    });
+
+    expect(passSystemService.getAllUserPasses).toHaveBeenCalledTimes(4);
+    expect(hashpassWallet.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
+    expect(bslWallet.root.findAllByType('MockPassWalletCard')).toHaveLength(1);
+  });
+
   it('keeps the skeleton visible until a Supabase database identity is available', async () => {
     mockDbUserId = null;
 

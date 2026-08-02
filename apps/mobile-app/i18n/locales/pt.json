@@ -579,7 +579,8 @@
         "active": "Próximos",
         "past": "Passados"
       },
-      "stackHint": "Toque em um cartão atrás para trazê-lo à frente"
+      "stackHint": "Toque em um cartão atrás para trazê-lo à frente",
+      "reload": "Recarregar passes"
     }
   },
   "networking": {

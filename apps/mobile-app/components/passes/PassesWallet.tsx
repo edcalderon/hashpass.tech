@@ -514,17 +514,32 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   // continues to use the stacked 3D wallet below.
   if (layout === 'plain') {
     return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingRight: 20 }}
-      >
-        {walletPasses.map((pass) => (
-          <View key={pass.id} style={{ width: cardWidth, marginRight: 16 }}>
-            <PassWalletCard pass={pass} />
-          </View>
-        ))}
-      </ScrollView>
+      <View>
+        <View style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('wallet.reload', 'Reload passes')}
+            onPress={handleRetry}
+            style={{ alignItems: 'center', flexDirection: 'row', gap: 6, paddingHorizontal: 8, paddingVertical: 5 }}
+          >
+            <MaterialIcons name="refresh" size={18} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+              {t('wallet.reload', 'Reload passes')}
+            </Text>
+          </Pressable>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingRight: 20 }}
+        >
+          {walletPasses.map((pass) => (
+            <View key={pass.id} style={{ width: cardWidth, marginRight: 16 }}>
+              <PassWalletCard pass={pass} />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
     );
   }
 
@@ -540,6 +555,20 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
           accent="#34A853"
         />
         <WalletStat colors={colors} value={counts.past} label={t('wallet.stat.past', 'Past')} />
+      </View>
+
+      <View style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('wallet.reload', 'Reload passes')}
+          onPress={handleRetry}
+          style={{ alignItems: 'center', flexDirection: 'row', gap: 6, paddingHorizontal: 8, paddingVertical: 5 }}
+        >
+          <MaterialIcons name="refresh" size={18} color={colors.primary} />
+          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>
+            {t('wallet.reload', 'Reload passes')}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Search + filters. Same bar the agenda, notifications and my-requests
