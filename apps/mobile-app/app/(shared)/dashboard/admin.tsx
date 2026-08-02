@@ -1445,7 +1445,10 @@ export default function AdminPanel() {
             <TextInput
               style={styles.modalInput}
               value={userSearchQuery}
-              onChangeText={setUserSearchQuery}
+              onChangeText={(query) => {
+                setUserSearchQuery(query);
+                setNewPassUserId("");
+              }}
               placeholder="Search ID, username, name, or email"
               placeholderTextColor={colors.text.secondary}
               autoCapitalize="none"

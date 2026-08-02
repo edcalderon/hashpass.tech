@@ -65,7 +65,7 @@ const eventAdminScopeAndSlotMigrationPath = path.join(
 );
 const adminPassAndUserListingMigrationPath = path.join(
   root,
-  'db/migrations/V036__admin_pass_and_user_listing.sql',
+  'db/migrations/V041__admin_pass_and_user_listing.sql',
 );
 const targetBslBootstrapPath = path.join(
   root,
@@ -132,17 +132,19 @@ describe('upcoming BSL pass provisioning migration', () => {
 });
 
 describe('admin pass management migration contract', () => {
-  it('ships the admin RPCs through the default tenant migration command and keeps suspended passes manageable', () => {
+  it('ships the admin RPCs through the default tenant migration command with compatible numeric fields and all pass statuses', () => {
     const migration = fs.readFileSync(adminPassAndUserListingMigrationPath, 'utf8');
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
 
     expect(config.defaultGroups).toContain('admin-pass-management');
     expect(config.groups['admin-pass-management']).toContain(
-      'db/migrations/V036__admin_pass_and_user_listing.sql',
+      'db/migrations/V041__admin_pass_and_user_listing.sql',
     );
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.admin_list_event_passes/i);
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.admin_search_active_users/i);
-    expect(migration).toMatch(/p\.status IN \('active', 'suspended'\)/i);
+    expect(migration).toMatch(/max_boost_amount numeric, used_boost_amount numeric/i);
+    expect(migration).toMatch(/p\.max_boost_amount::numeric, p\.used_boost_amount::numeric/i);
+    expect(migration).not.toMatch(/WHERE p\.event_id = p_event_id AND p\.status/i);
   });
 });
 

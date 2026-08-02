@@ -13,7 +13,7 @@ CREATE OR REPLACE FUNCTION public.admin_list_event_passes(
 RETURNS TABLE (
   id text, user_id text, event_id text, pass_type text, status text,
   pass_number text, max_meeting_requests integer, used_meeting_requests integer,
-  max_boost_amount integer, used_boost_amount integer, created_at timestamptz,
+  max_boost_amount numeric, used_boost_amount numeric, created_at timestamptz,
   updated_at timestamptz, user_email text, user_name text, username text
 )
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, pg_temp AS $$
@@ -24,12 +24,12 @@ BEGIN
   RETURN QUERY
   SELECT p.id, p.user_id, p.event_id, p.pass_type::text, p.status::text,
     p.pass_number, p.max_meeting_requests, p.used_meeting_requests,
-    p.max_boost_amount, p.used_boost_amount, p.created_at, p.updated_at,
+    p.max_boost_amount::numeric, p.used_boost_amount::numeric, p.created_at, p.updated_at,
     u.email::text,
     COALESCE(u.raw_user_meta_data->>'name', u.raw_user_meta_data->>'full_name')::text,
     u.raw_user_meta_data->>'username'
   FROM public.passes p JOIN auth.users u ON u.id::text = p.user_id::text
-  WHERE p.event_id = p_event_id AND p.status IN ('active', 'suspended')
+  WHERE p.event_id = p_event_id
     AND (p_cursor IS NULL OR (p.created_at, p.id) < (
       SELECT pc.created_at, pc.id FROM public.passes pc WHERE pc.id = p_cursor
     ))
