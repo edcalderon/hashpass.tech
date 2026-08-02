@@ -22,24 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608012213, // Updated to current timestamp
-  releaseDate: '2026-08-01',
+  buildNumber: 202608020044, // Updated to current timestamp
+  releaseDate: '2026-08-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'retry worker bootstrap over ipv4',
-    'use canonical identities for meetings',
-    'isolate and harden pipeline workers'
+    'recover web pass sessions'
   ],
   breakingChanges: [],
-  notes: 'retry worker bootstrap over ipv4; use canonical identities for meetings; isolate and harden pipeline workers'
+  notes: 'recover web pass sessions'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.302': {
+    version: '1.8.302',
+    buildNumber: 202608020044,
+    releaseDate: '2026-08-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'recover web pass sessions'
+    ],
+    breakingChanges: [],
+    notes: 'recover web pass sessions'
+  },
   '1.8.301': {
     version: '1.8.301',
     buildNumber: 202608012213,

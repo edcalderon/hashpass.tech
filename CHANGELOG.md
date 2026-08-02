@@ -1,3 +1,7 @@
+## [1.8.302](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.301...v1.8.302) (2026-08-02)
+### Released
+- recover web pass sessions
+
 ## [1.8.301](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.300...v1.8.301) (2026-08-01)
 
 
