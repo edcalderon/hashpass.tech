@@ -55,6 +55,31 @@ describe('/api/admin/pass-tiers', () => {
     await expect(response.json()).resolves.toEqual({ data: [{ pass_type: 'general' }] });
   });
 
+  it('returns the authorization response without querying tier data', async () => {
+    mockAuthorizeEventAdmin.mockResolvedValue({
+      response: Response.json({ error: 'Forbidden' }, { status: 403 }),
+    });
+    const response = await get('chile2026');
+    expect(response.status).toBe(403);
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed event IDs before authorization', async () => {
+    const response = await get('../chile2026');
+    expect(response.status).toBe(400);
+    expect(mockAuthorizeEventAdmin).not.toHaveBeenCalled();
+  });
+
+  it('returns a safe error when listing configured tiers fails', async () => {
+    const order = jest.fn().mockResolvedValue({ data: null, error: { message: 'database unavailable' } });
+    const eq = jest.fn(() => ({ order }));
+    const select = jest.fn(() => ({ eq }));
+    mockFrom.mockReturnValue({ select });
+    const response = await get('chile2026');
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: 'Unable to load pass tiers' });
+  });
+
   it('rejects incomplete tier settings before authorization', async () => {
     const response = await post({ eventId: 'chile2026', passType: 'general', maxMeetingRequests: -1 });
     expect(response.status).toBe(400);
@@ -86,5 +111,26 @@ describe('/api/admin/pass-tiers', () => {
       p_currency: 'USD',
       p_price_label: null,
     });
+  });
+
+  it('handles rate limits, invalid JSON, and database update failures safely', async () => {
+    mockRateLimitOk.mockReturnValueOnce(false);
+    let response = await post({});
+    expect(response.status).toBe(429);
+
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { POST } = require('../../app/api/admin/pass-tiers+api');
+    response = await POST(new Request('https://api.hashpass.tech/api/admin/pass-tiers', {
+      method: 'POST', body: '{',
+    }));
+    expect(response.status).toBe(400);
+
+    mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'write failed' } });
+    response = await post({
+      eventId: 'chile2026', passType: 'general', maxMeetingRequests: 10,
+      maxBoostAmount: 100, priceCents: 9900, currency: 'USD', priceLabel: null,
+    });
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: 'Unable to update pass tier' });
   });
 });

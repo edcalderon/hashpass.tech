@@ -1010,6 +1010,7 @@ export default function AdminPanel() {
         "get_speaker_available_slots",
         {
           p_speaker_id: speakerId,
+          p_event_id: selectedEventId,
           p_duration_minutes: 15,
         },
       );

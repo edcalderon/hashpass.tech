@@ -59,6 +59,10 @@ const passNumberBackfillMigrationPath = path.join(
   root,
   'db/migrations/V039__backfill_missing_pass_numbers.sql',
 );
+const eventAdminScopeAndSlotMigrationPath = path.join(
+  root,
+  'db/migrations/V040__fix_event_admin_scope_and_slot_overloads.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -145,7 +149,16 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V032__align_meeting_request_foreign_keys_with_auth.sql',
       'db/migrations/V034__align_notifications_with_auth_identities.sql',
       'db/migrations/V038__consume_pass_entitlements_for_meeting_requests.sql',
+      'db/migrations/V040__fix_event_admin_scope_and_slot_overloads.sql',
     ]);
+  });
+
+  it('keeps BSL hub administrators authorized for their tour events and exposes one slot RPC signature', () => {
+    const migration = fs.readFileSync(eventAdminScopeAndSlotMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/metadata\s*->>\s*'hubEventId'/i);
+    expect(migration).toMatch(/DROP FUNCTION IF EXISTS public\.get_speaker_available_slots\(text, date, integer\)/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.get_speaker_available_slots\([\s\S]*p_event_id text DEFAULT NULL/i);
   });
 
   it('consumes the event pass when a meeting request is sent', () => {

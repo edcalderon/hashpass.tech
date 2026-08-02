@@ -49,6 +49,25 @@ interface PassesDisplayProps {
   refreshTrigger?: number;
 }
 
+export const formatEventPassTierPrice = (tier?: EventPassTier): string => {
+  if (!tier) return '';
+  if (tier.price_label) return tier.price_label;
+  if (tier.price_cents === null) return '';
+
+  const currency = tier.currency || 'USD';
+  const fractionDigits = tier.price_cents % 100 === 0 ? 0 : 2;
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(tier.price_cents / 100);
+  } catch {
+    return `${currency} ${(tier.price_cents / 100).toFixed(fractionDigits)}`;
+  }
+};
+
 function PassesDisplayInner({
   mode = 'dashboard',
   speakerId,
@@ -153,7 +172,7 @@ function PassesDisplayInner({
     const currency = tier.currency || 'USD';
     const fractionDigits = tier.price_cents % 100 === 0 ? 0 : 2;
     return currencyFormatters.get(`${currency}:${fractionDigits}`)?.format(tier.price_cents / 100)
-      ?? `${currency} ${(tier.price_cents / 100).toFixed(fractionDigits)}`;
+      ?? formatEventPassTierPrice(tier);
   };
 
   const translatePassDetail = (detail: string) => {
