@@ -8,6 +8,7 @@ import type { CreateMeetingRequestData } from '../../../../lib/matchmaking';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useBalance } from '@contexts/BalanceContext';
 import { apiClient, eventApiPath } from '@/lib/api-client';
+import { buildEventPath, resolveActiveEventId } from '@/lib/event-path';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import PassesDisplay from '../../../../components/PassesDisplay';
 import { getSpeakerAvatarUrl, getSpeakerLinkedInUrl, getSpeakerTwitterUrl, resolveSpeakerImage } from '../../../../lib/string-utils';
@@ -50,10 +51,10 @@ interface Speaker {
 // UserTicket interface removed - now using pass system
 
 export default function SpeakerDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, eventSlug } = useLocalSearchParams<{ id: string; eventSlug?: string }>();
   const { isDark, colors } = useTheme();
   const { event } = useEvent();
-  const eventId = event?.id || 'bsl';
+  const eventId = resolveActiveEventId(eventSlug || event?.id);
   const speakerPath = id ? eventApiPath(eventId, `speakers/${id}`) : null;
   const meetingRequestsPath = eventApiPath(eventId, 'meetings/requests');
   const meetingRequestSlotsPath = eventApiPath(eventId, 'meetings/requests/slots');
@@ -110,8 +111,12 @@ export default function SpeakerDetail() {
   const openExistingRequest = () => {
     if (!existingRequest?.id) return;
     router.push({
-      pathname: `/events/${eventId}/networking/my-requests` as any,
-      params: { requestId: existingRequest.id, highlightRequest: 'true' },
+      pathname: buildEventPath(eventId, 'networking/my-requests') as any,
+      params: {
+        requestId: String(existingRequest.id),
+        highlightRequest: 'true',
+        openRequest: 'true',
+      },
     });
   };
 
