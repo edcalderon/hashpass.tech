@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Modal,
+  TextInput,
 } from 'react-native';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../../../hooks/useTheme';
@@ -85,6 +86,13 @@ export default function MyRequestsView() {
     requesterId?: string;
   } | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const dismissDeclineModal = () => {
+    setShowDeclineModal(false);
+    setDeclineReason('');
+  };
+  const [acceptNote, setAcceptNote] = useState('');
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [holdTime, setHoldTime] = useState(1); // Hours
   const [expirationCountdown, setExpirationCountdown] = useState<{
@@ -333,17 +341,25 @@ export default function MyRequestsView() {
     }
   };
 
-  const handleAcceptRequest = async (request: MeetingRequest, slotTime?: string) => {
+  const handleAcceptRequest = async (request: MeetingRequest, slotTime?: string, note?: string) => {
     if (!dbUserId) return;
-    
+
     try {
       const speakerIdString = String(request.speaker_id);
       if (!slotTime) {
         await loadAvailableSlots(speakerIdString, request.duration_minutes || 15, (request as MeetingRequestWithDirection).requester_id);
         return;
       }
+      const trimmedNote = note?.trim();
       const response = await apiClient.request(meetingRequestsPath, {
-        skipEventSegment: true, method: 'PATCH', body: { requestId: request.id, action: 'accept', slotTime },
+        skipEventSegment: true,
+        method: 'PATCH',
+        body: {
+          requestId: request.id,
+          action: 'accept',
+          slotTime,
+          ...(trimmedNote ? { response: trimmedNote } : {}),
+        },
       });
       if (!response.success) { showError(t('requestView.acceptFailedTitle'), response.error); return; }
       const data = (response.data as any)?.data;
@@ -363,6 +379,7 @@ export default function MyRequestsView() {
         setConfirmedMeetingId(data.meeting_id);
         setConfirmedMeetingStatus(data.status === 'tentative' ? 'tentative' : 'confirmed');
         setShowSlotPicker(false);
+        setAcceptNote('');
         setShowSlotConfirmation(true);
         
         // Refresh LUKAS balance after reward (for both speaker and requester)
@@ -425,12 +442,19 @@ export default function MyRequestsView() {
     }
   };
 
-  const handleDeclineRequest = async (request: MeetingRequest) => {
-    if (!dbUserId) return;
-    
+  const handleDeclineRequest = async (request: MeetingRequest, reason?: string): Promise<boolean> => {
+    if (!dbUserId) return false;
+
     try {
+      const trimmedReason = reason?.trim();
       const response = await apiClient.request(meetingRequestsPath, {
-        skipEventSegment: true, method: 'PATCH', body: { requestId: request.id, action: 'decline' },
+        skipEventSegment: true,
+        method: 'PATCH',
+        body: {
+          requestId: request.id,
+          action: 'decline',
+          ...(trimmedReason ? { response: trimmedReason } : {}),
+        },
       });
       if (!response.success) throw new Error(response.error);
       const data = (response.data as any)?.data;
@@ -444,12 +468,14 @@ export default function MyRequestsView() {
         }, 500);
 
         setShowDetailModal(false);
+        return true;
       } else {
         throw new Error(data?.error || t('requestView.declineFailedMessage'));
       }
     } catch (error: any) {
       console.error('❌ Error declining request:', error);
       showError(t('requestView.declineFailedTitle'), error.message || t('requestView.declineFailedMessage'));
+      return false;
     }
   };
 
@@ -749,6 +775,17 @@ export default function MyRequestsView() {
                 </Text>
               </View>
             )}
+          </View>
+        )}
+
+        {Boolean(request.speaker_response) && (request.status === 'accepted' || request.status === 'declined' || request.status === 'rejected') && (
+          <View style={styles.cardContent}>
+            <View style={styles.noteContainer}>
+              <Text style={styles.noteLabel}>{t('requestView.response')}:</Text>
+              <Text style={styles.noteText} numberOfLines={2}>
+                {request.speaker_response}
+              </Text>
+            </View>
           </View>
         )}
 
@@ -1060,7 +1097,7 @@ export default function MyRequestsView() {
                     
                     <TouchableOpacity
                       style={[styles.actionButton, styles.declineButton]}
-                      onPress={() => handleDeclineRequest(selectedRequest)}
+                      onPress={() => setShowDeclineModal(true)}
                     >
                       <MaterialIcons name="cancel" size={20} color="white" />
                       <Text style={styles.actionButtonText}>{t('requestView.decline')}</Text>
@@ -1299,6 +1336,7 @@ export default function MyRequestsView() {
         onRequestClose={() => {
           setShowSlotPicker(false);
           setSelectedSlot(null);
+          setAcceptNote('');
           // Clear slot context when picker is closed
           setCurrentSlotContext(null);
         }}
@@ -1317,6 +1355,7 @@ export default function MyRequestsView() {
               onPress={() => {
                 setShowSlotPicker(false);
                 setSelectedSlot(null);
+                setAcceptNote('');
                 // Clear slot context when picker is closed
                 setCurrentSlotContext(null);
               }}
@@ -1398,6 +1437,7 @@ export default function MyRequestsView() {
                     setShowSlotPicker(false);
                     setShowDetailModal(false);
                     setSelectedSlot(null);
+                    setAcceptNote('');
                     setCurrentSlotContext(null);
                     // The Modal's exit needs to actually unmount (its content
                     // renders via a web portal outside this screen's tree)
@@ -1561,6 +1601,24 @@ export default function MyRequestsView() {
                 styles.slotPickerFooter,
                 { borderTopColor: colors.divider || (isDark ? '#404040' : '#e5e5e5') }
               ]}>
+                <TextInput
+                  style={[
+                    styles.declineReasonInput,
+                    {
+                      color: colors.text?.primary || (isDark ? '#FFFFFF' : '#1a1a1a'),
+                      borderColor: colors.divider || (isDark ? '#404040' : '#e0e0e0'),
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                      minHeight: 48,
+                    }
+                  ]}
+                  placeholder={t('requestView.slotPicker.notePlaceholder')}
+                  placeholderTextColor={colors.text?.secondary || (isDark ? '#888888' : '#999999')}
+                  value={acceptNote}
+                  onChangeText={setAcceptNote}
+                  multiline
+                  numberOfLines={2}
+                  maxLength={280}
+                />
                 <TouchableOpacity
                   style={[
                     styles.slotPickerConfirmButton,
@@ -1569,7 +1627,7 @@ export default function MyRequestsView() {
                   ]}
                   onPress={() => {
                     if (selectedRequest && selectedSlot) {
-                      handleAcceptRequest(selectedRequest, selectedSlot);
+                      handleAcceptRequest(selectedRequest, selectedSlot, acceptNote);
                     }
                   }}
                   disabled={loadingSlots}
@@ -1848,6 +1906,112 @@ export default function MyRequestsView() {
               >
                 <MaterialIcons name="cancel" size={20} color="white" />
                 <Text style={styles.actionButtonText}>{t('requestView.cancelRequest')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Decline Reason Modal */}
+      <Modal
+        visible={showDeclineModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={dismissDeclineModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[
+            styles.cancelModalContent,
+            {
+              backgroundColor: colors.background?.paper || (isDark ? '#1e1e1e' : '#ffffff'),
+              borderColor: colors.divider || (isDark ? '#333333' : '#e0e0e0'),
+            }
+          ]}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={dismissDeclineModal}
+            >
+              <MaterialIcons name="close" size={24} color={colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666')} />
+            </TouchableOpacity>
+
+            <View style={styles.cancelModalHeader}>
+              <View style={[
+                styles.warningIconContainer,
+                {
+                  backgroundColor: isDark ? 'rgba(255, 152, 0, 0.15)' : 'rgba(255, 152, 0, 0.1)',
+                }
+              ]}>
+                <MaterialIcons
+                  name="cancel"
+                  size={24}
+                  color={colors.warning?.main || '#FF9800'}
+                />
+              </View>
+              <Text style={[styles.cancelModalTitle, { color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000') }]}>
+                {t('requestView.declineModal.title')}
+              </Text>
+            </View>
+
+            <Text style={[styles.cancelModalWarningText, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666'), marginBottom: 8 }]}>
+              {t('requestView.declineModal.description')}
+            </Text>
+
+            <TextInput
+              style={[
+                styles.declineReasonInput,
+                {
+                  color: colors.text?.primary || (isDark ? '#FFFFFF' : '#1a1a1a'),
+                  borderColor: colors.divider || (isDark ? '#404040' : '#e0e0e0'),
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                }
+              ]}
+              placeholder={t('requestView.declineModal.placeholder')}
+              placeholderTextColor={colors.text?.secondary || (isDark ? '#888888' : '#999999')}
+              value={declineReason}
+              onChangeText={setDeclineReason}
+              multiline
+              numberOfLines={3}
+              maxLength={280}
+            />
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  styles.cancelConfirmButton,
+                  {
+                    backgroundColor: isDark ? '#2a2a2a' : '#f5f5f5',
+                    borderColor: colors.divider || (isDark ? '#404040' : '#e0e0e0'),
+                  }
+                ]}
+                onPress={dismissDeclineModal}
+              >
+                <Text style={[
+                  styles.actionButtonText,
+                  { color: colors.text?.primary || (isDark ? '#FFFFFF' : '#1a1a1a') }
+                ]}>
+                  {t('requestView.declineModal.goBack')}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  styles.confirmCancelButton,
+                  {
+                    backgroundColor: colors.error?.main || '#F44336',
+                  }
+                ]}
+                onPress={async () => {
+                  if (!selectedRequest) return;
+                  const declined = await handleDeclineRequest(selectedRequest, declineReason);
+                  if (declined) {
+                    dismissDeclineModal();
+                  }
+                }}
+              >
+                <MaterialIcons name="cancel" size={20} color="white" />
+                <Text style={styles.actionButtonText}>{t('requestView.decline')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -3085,6 +3249,15 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '500',
+  },
+  declineReasonInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginBottom: 16,
   },
   cancelModalDisclaimer: {
     flexDirection: 'row',

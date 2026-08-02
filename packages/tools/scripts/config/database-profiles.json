@@ -51,7 +51,14 @@
       "db/migrations/V038__consume_pass_entitlements_for_meeting_requests.sql",
       "db/migrations/V040__fix_event_admin_scope_and_slot_overloads.sql",
       "db/migrations/V043__meeting_slot_conflict_resolution.sql",
-      "db/migrations/V044__default_free_speaker_slots.sql"
+      "db/migrations/V044__default_free_speaker_slots.sql",
+      "db/migrations/V045__drop_stale_meeting_lifecycle_overloads.sql",
+      "db/migrations/V046__fix_meeting_identity_fk_targets.sql",
+      "db/migrations/V047__fix_agenda_status_confirmed_value.sql",
+      "db/migrations/V048__fix_speaker_id_type_comparison.sql",
+      "db/migrations/V049__drop_dead_accepted_status_literal.sql",
+      "db/migrations/V050__resolve_agenda_status_registry_id.sql",
+      "db/migrations/V051__fix_meetings_speaker_id_write_type_divergence.sql"
     ],
     "event-catalog": [
       "db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql",
