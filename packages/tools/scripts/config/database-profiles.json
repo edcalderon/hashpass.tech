@@ -46,7 +46,8 @@
       "db/migrations/V025__fix_meeting_identity_type_casts.sql",
       "db/migrations/V026__fix_speaker_identity_type_casts.sql",
       "db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql",
-      "db/migrations/V032__align_meeting_request_foreign_keys_with_auth.sql"
+      "db/migrations/V032__align_meeting_request_foreign_keys_with_auth.sql",
+      "db/migrations/V034__align_notifications_with_auth_identities.sql"
     ],
     "event-catalog": [
       "db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql",

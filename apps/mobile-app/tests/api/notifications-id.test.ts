@@ -51,8 +51,8 @@ describe('notifications/[id] api', () => {
       expect(await response.json()).toEqual({ error: 'Unauthorized' });
     });
 
-    it('returns 404 when user has no registry id', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: null });
+    it('returns 404 when user has no Supabase identity', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -67,7 +67,7 @@ describe('notifications/[id] api', () => {
     });
 
     it('returns 400 when body has neither is_read nor is_archived', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -86,7 +86,7 @@ describe('notifications/[id] api', () => {
     });
 
     it('marks a notification as read', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         update: () => ({
@@ -112,7 +112,7 @@ describe('notifications/[id] api', () => {
     });
 
     it('archiving also marks the notification as read', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         update: () => ({
@@ -138,7 +138,7 @@ describe('notifications/[id] api', () => {
     });
 
     it('returns 500 when the update errors', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         update: () => ({
@@ -164,7 +164,7 @@ describe('notifications/[id] api', () => {
     });
 
     it('returns 500 when the update throws unexpectedly', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         update: () => {
@@ -216,8 +216,8 @@ describe('notifications/[id] api', () => {
       expect(await response.json()).toEqual({ error: 'Unauthorized' });
     });
 
-    it('returns 404 when user has no registry id', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: null });
+    it('returns 404 when user has no Supabase identity', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: null });
       mockIsResolveIdentityError.mockReturnValue(false);
 
       /* eslint-disable @typescript-eslint/no-require-imports */
@@ -232,7 +232,7 @@ describe('notifications/[id] api', () => {
     });
 
     it('deletes a notification', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         delete: () => ({
@@ -254,7 +254,7 @@ describe('notifications/[id] api', () => {
     });
 
     it('returns 500 when the delete errors', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         delete: () => ({
@@ -276,7 +276,7 @@ describe('notifications/[id] api', () => {
     });
 
     it('returns 500 when the delete throws unexpectedly', async () => {
-      mockResolveNotificationIdentity.mockResolvedValue({ registryUserId: 'registry-id-123' });
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
       mockFrom.mockReturnValue({
         delete: () => {
