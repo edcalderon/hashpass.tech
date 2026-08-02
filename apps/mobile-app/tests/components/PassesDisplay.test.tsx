@@ -37,6 +37,11 @@ import PassesDisplay from '../../components/PassesDisplay';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { act, create } = require('react-test-renderer');
 
+const textContent = (node: any): string => {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  return (node.children || []).map(textContent).join('');
+};
+
 describe('PassesDisplay', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -100,5 +105,36 @@ describe('PassesDisplay', () => {
     expect(requestControl).toBeDefined();
     await act(async () => requestControl.props.onPress());
     expect(onExistingRequestPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses configured fractional event-tier prices in the no-pass comparison', async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+    mockGetUserPassInfo.mockResolvedValue(null);
+    mockGetEventPassTiers.mockResolvedValue([
+      { event_id: 'chile2026', pass_type: 'general', max_meeting_requests: 10, max_boost_amount: 100, price_cents: 9950, currency: 'USD', price_label: null },
+      { event_id: 'chile2026', pass_type: 'business', max_meeting_requests: 20, max_boost_amount: 300, price_cents: 24900, currency: 'USD', price_label: null },
+      { event_id: 'chile2026', pass_type: 'vip', max_meeting_requests: 50, max_boost_amount: 500, price_cents: null, currency: 'USD', price_label: 'Premium' },
+    ]);
+
+    try {
+      let renderer: any;
+      await act(async () => {
+        renderer = create(
+          <PassesDisplay mode="speaker" eventId="chile2026" showPassComparison />,
+        );
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 320));
+      });
+
+      expect(mockGetEventPassTiers).toHaveBeenCalledWith('chile2026');
+      expect(
+        renderer.root.findAllByType('Text').map((node: any) => textContent(node)),
+      ).toEqual(expect.arrayContaining([expect.stringMatching(/99\.50/)]));
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
   });
 });

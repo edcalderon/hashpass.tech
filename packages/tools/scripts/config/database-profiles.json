@@ -60,7 +60,8 @@
     ],
     "event-pass-tiers": [
       "db/migrations/V035__configure_event_pass_tiers.sql",
-      "db/migrations/V036__require_verified_email_for_admin_speaker_grants.sql"
+      "db/migrations/V036__require_verified_email_for_admin_speaker_grants.sql",
+      "db/migrations/V037__apply_event_tiers_to_default_passes.sql"
     ]
   }
 }

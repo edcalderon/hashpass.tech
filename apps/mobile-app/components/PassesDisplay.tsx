@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { EventPassTier, passSystemService, PassInfo, PassRequestLimits, PassType } from '@/lib/pass-system';
+import { resolveActiveEventId } from '@/lib/event-path';
 import { useTranslation } from '@/i18n/i18n';
 import * as Sentry from '@sentry/react-native';
 import PassesWallet from './passes/PassesWallet';
@@ -99,7 +100,10 @@ function PassesDisplayInner({
     loadPassInfo();
   }, [dbUserId, refreshTrigger, eventId]);
 
-  const passEventId = passInfo?.event_id || eventId;
+  // Load the live catalog even before a pass exists. This keeps the
+  // development/demo comparison in step with the event administrator's tier
+  // configuration instead of falling back to static prices.
+  const passEventId = passInfo?.event_id || resolveActiveEventId(eventId);
 
   useEffect(() => {
     if (!passEventId) return;
@@ -120,12 +124,18 @@ function PassesDisplayInner({
   );
   const currencyFormatters = useMemo(() => {
     const formatters = new Map<string, Intl.NumberFormat>();
-    for (const currency of new Set(eventPassTiers.map((tier) => tier.currency || 'USD'))) {
+    for (const tier of eventPassTiers) {
+      if (tier.price_cents === null) continue;
+      const currency = tier.currency || 'USD';
+      const fractionDigits = tier.price_cents % 100 === 0 ? 0 : 2;
+      const formatterKey = `${currency}:${fractionDigits}`;
+      if (formatters.has(formatterKey)) continue;
       try {
-        formatters.set(currency, new Intl.NumberFormat(undefined, {
+        formatters.set(formatterKey, new Intl.NumberFormat(undefined, {
           style: 'currency',
           currency,
-          maximumFractionDigits: 0,
+          minimumFractionDigits: fractionDigits,
+          maximumFractionDigits: fractionDigits,
         }));
       } catch {
         // Invalid legacy currency values use the plain-text fallback below.
@@ -141,8 +151,9 @@ function PassesDisplayInner({
     if (tier.price_label) return tier.price_label;
     if (tier.price_cents === null) return '';
     const currency = tier.currency || 'USD';
-    return currencyFormatters.get(currency)?.format(tier.price_cents / 100)
-      ?? `${currency} ${(tier.price_cents / 100).toFixed(0)}`;
+    const fractionDigits = tier.price_cents % 100 === 0 ? 0 : 2;
+    return currencyFormatters.get(`${currency}:${fractionDigits}`)?.format(tier.price_cents / 100)
+      ?? `${currency} ${(tier.price_cents / 100).toFixed(fractionDigits)}`;
   };
 
   const translatePassDetail = (detail: string) => {

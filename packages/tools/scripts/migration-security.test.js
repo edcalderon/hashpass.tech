@@ -47,6 +47,10 @@ const passClaimCodeMigrationPath = path.join(
   root,
   'db/migrations/V030__add_secure_pass_claim_codes.sql',
 );
+const eventPassTierDefaultIssuanceMigrationPath = path.join(
+  root,
+  'db/migrations/V037__apply_event_tiers_to_default_passes.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -68,6 +72,20 @@ describe('upcoming BSL pass provisioning migration', () => {
   it('ships the pass migrations through the default tenant migration command', () => {
     const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
     expect(config.defaultGroups).toContain('upcoming-bsl-passes');
+  });
+
+  it('uses configured event tiers for trigger and self-service default passes', () => {
+    const migration = fs.readFileSync(eventPassTierDefaultIssuanceMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.create_upcoming_bsl_general_pass_for_user/i);
+    expect(migration).toMatch(/FROM public\.event_pass_tiers[\s\S]*event_id = p_event_id[\s\S]*pass_type = 'general'/i);
+    expect(migration).toMatch(/v_tier\.max_meeting_requests/i);
+    expect(migration).toMatch(/v_tier\.max_boost_amount/i);
+    expect(migration).not.toMatch(/get_pass_type_limits/i);
+    expect(config.groups['event-pass-tiers']).toContain(
+      'db/migrations/V037__apply_event_tiers_to_default_passes.sql',
+    );
   });
 
   it('keeps pass access type-safe and re-backfills every confirmed user', () => {
@@ -105,6 +123,7 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V026__fix_speaker_identity_type_casts.sql',
       'db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql',
       'db/migrations/V032__align_meeting_request_foreign_keys_with_auth.sql',
+      'db/migrations/V034__align_notifications_with_auth_identities.sql',
     ]);
   });
 
