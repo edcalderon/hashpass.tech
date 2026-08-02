@@ -400,6 +400,78 @@ describe('speaker detail screen', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('falls back to account metadata when the attendee profile response is invalid', async () => {
+    (mockAuthState.user as any).user_metadata = { full_name: 'Fallback Requester' };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === '/profile/attendee') {
+        return Promise.resolve({ success: true, data: { data: { fullName: false } } });
+      }
+      if (path === 'events/bsl/meetings/limits') {
+        return Promise.resolve({
+          success: true,
+          data: { data: { pass_type: 'business', total_requests: 0, remaining_requests: 3, max_requests: 3 } },
+        });
+      }
+      return defaultApiResponse(path, options);
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+    await act(async () => {
+      renderer.root.findByProps({ testID: 'request-meeting' }).props.onPress();
+    });
+    await act(async () => {
+      findTextPressTarget(renderer, 'meetingRequestModal.sendRequest').props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      'events/bsl/meetings/requests',
+      expect.objectContaining({
+        body: expect.objectContaining({
+          requesterName: 'Fallback Requester', requesterTitle: undefined, requesterCompany: undefined,
+        }),
+      }),
+    );
+    await act(async () => renderer.unmount());
+  });
+
+  it('uses account metadata when loading the attendee profile fails', async () => {
+    (mockAuthState.user as any).user_metadata = { name: 'Recovered Requester' };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === '/profile/attendee') return Promise.reject(new Error('profile unavailable'));
+      if (path === 'events/bsl/meetings/limits') {
+        return Promise.resolve({
+          success: true,
+          data: { data: { pass_type: 'business', total_requests: 0, remaining_requests: 3, max_requests: 3 } },
+        });
+      }
+      return defaultApiResponse(path, options);
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<SpeakerDetail />);
+      await flushPromises();
+    });
+    await act(async () => {
+      renderer.root.findByProps({ testID: 'request-meeting' }).props.onPress();
+    });
+    await act(async () => {
+      findTextPressTarget(renderer, 'meetingRequestModal.sendRequest').props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      'events/bsl/meetings/requests',
+      expect.objectContaining({ body: expect.objectContaining({ requesterName: 'Recovered Requester' }) }),
+    );
+    await act(async () => renderer.unmount());
+  });
+
   it('opens the exact pending request from the speaker pass card', async () => {
     const pendingRequest = {
       id: 'request-pending-1',

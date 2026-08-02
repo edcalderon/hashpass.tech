@@ -75,8 +75,10 @@ describe("meeting-requests api", () => {
     mockIsResolveIdentityError.mockReset();
     mockEq.mockReset();
     mockIn.mockReset();
-    mockOrder.mockClear();
-    mockMaybeSingle.mockClear();
+    mockOrder.mockReset();
+    mockOrder.mockResolvedValue({ data: [], error: null });
+    mockMaybeSingle.mockReset();
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
     mockMeetingRequestMaybeSingle.mockReset();
     mockMeetingRequestMaybeSingle.mockResolvedValue({
       data: { id: "request-123" },
@@ -209,6 +211,47 @@ describe("meeting-requests api", () => {
         }],
       });
       expect(mockSpeakerIn).toHaveBeenCalledWith("user_id", ["speaker-user-id"]);
+    });
+
+    it("preserves requests when a speaker no longer has a live profile record", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: "auth-uuid-123" });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      mockOrder.mockResolvedValueOnce({
+        data: [{ id: "sent-request", speaker_id: "removed-speaker-user-id" }], error: null,
+      });
+      mockSpeakerIn.mockResolvedValueOnce({ data: [], error: null });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await GET(
+        new Request("https://api.hashpass.tech/api/events/chile2026/meetings/requests"),
+      );
+
+      await expect(response.json()).resolves.toEqual({
+        data: [{ id: "sent-request", speaker_id: "removed-speaker-user-id", _direction: "sent" }],
+      });
+    });
+
+    it("returns the request list when the speaker profile enrichment lookup fails", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: "auth-uuid-123" });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      mockOrder.mockResolvedValueOnce({
+        data: [{ id: "sent-request", speaker_id: "speaker-user-id" }], error: null,
+      });
+      mockSpeakerIn.mockResolvedValueOnce({ data: null, error: { message: "profile lookup failed" } });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await GET(
+        new Request("https://api.hashpass.tech/api/events/chile2026/meetings/requests"),
+      );
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({
+        data: [{ id: "sent-request", speaker_id: "speaker-user-id", _direction: "sent" }],
+      });
     });
 
     it("queries incoming requests with the Supabase speaker user id", async () => {
