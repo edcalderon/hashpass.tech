@@ -23,7 +23,9 @@ import CookieConsentBanner from '../components/CookieConsentBanner';
 import VersionUpdateNotification from '../components/VersionUpdateNotification';
 import ForceUpdateScreen from '../components/ForceUpdateScreen';
 import SoftUpdateBanner from '../components/SoftUpdateBanner';
+import OtaUpdateBanner from '../components/OtaUpdateBanner';
 import { useNativeUpdateCheck } from '../hooks/useNativeUpdateCheck';
+import { useOtaUpdate } from '../hooks/useOtaUpdate';
 import * as SplashScreen from 'expo-splash-screen';
 import { I18nProvider } from '../providers/I18nProvider';
 import { useTranslation } from '../i18n/i18n';
@@ -141,6 +143,7 @@ function ThemedContent() {
   const router = useRouter();
   const { user, isLoggedIn, isLoading, dbUserId } = useAuth();
   const nativeUpdate = useNativeUpdateCheck();
+  const otaUpdate = useOtaUpdate();
   const [isReady, setIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [versionUpdate, setVersionUpdate] = useState<{ currentVersion: string; latestVersion: string } | null>(null);
@@ -501,6 +504,9 @@ function ThemedContent() {
           storeUrl={nativeUpdate.storeUrl}
           storeWebUrl={nativeUpdate.storeWebUrl}
         />
+      )}
+      {Platform.OS !== 'web' && otaUpdate.state === 'ready' && (
+        <OtaUpdateBanner onApply={otaUpdate.applyUpdate} />
       )}
     </>
   );

@@ -267,6 +267,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   timeline: Activity,
   'wb-sunny': Sun,
   sync: RefreshCw,
+  'system-update': RefreshCw,
   tune: SlidersHorizontal,
   'video-call': Video,
   'volume-off': VolumeX,

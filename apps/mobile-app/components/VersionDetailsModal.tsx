@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { versionService } from '../lib/services/version-service';
 import type { VersionInfo } from '../config/version';
 import { t } from '@lingui/macro';
+import { useOtaUpdate } from '../hooks/useOtaUpdate';
 
 const HISTORY_ITEMS_PER_PAGE = 9;
 
@@ -27,6 +28,7 @@ export default function VersionDetailsModal({
   const router = useRouter();
   const styles = getStyles(isDark, colors);
   const [historyPage, setHistoryPage] = useState(1);
+  const otaUpdate = useOtaUpdate();
 
   const versionInfo = versionService.getCurrentVersion();
   const buildInfo = versionService.getBuildInfo();
@@ -173,6 +175,29 @@ export default function VersionDetailsModal({
                       )}
                     </>
                   )}
+                  <TouchableOpacity
+                    accessibilityLabel={t({ id: 'version.otaCheck', message: 'Check for OTA updates' })}
+                    onPress={() => {
+                      if (otaUpdate.state === 'ready') {
+                        void otaUpdate.applyUpdate();
+                      } else {
+                        void otaUpdate.checkForUpdate(true);
+                      }
+                    }}
+                    disabled={otaUpdate.state === 'checking' || otaUpdate.state === 'downloading'}
+                    style={[styles.otaAction, { borderColor: colors.primary }]}
+                  >
+                    {otaUpdate.state === 'checking' || otaUpdate.state === 'downloading'
+                      ? <ActivityIndicator size="small" color={colors.primary} />
+                      : <MaterialIcons name={otaUpdate.state === 'ready' ? 'refresh' : 'system-update'} size={16} color={colors.primary} />}
+                    <Text style={[styles.otaActionText, { color: colors.primary }]}>
+                      {otaUpdate.state === 'ready'
+                        ? t({ id: 'version.otaRestart', message: 'Restart to apply downloaded update' })
+                        : otaUpdate.state === 'checking' || otaUpdate.state === 'downloading'
+                          ? t({ id: 'version.otaChecking', message: 'Checking for OTA update…' })
+                          : t({ id: 'version.otaCheck', message: 'Check for OTA updates' })}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
@@ -410,12 +435,24 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     color: colors.text.secondary,
     marginBottom: 8,
   },
-  versionNotes: {
+    versionNotes: {
     fontSize: 14,
     color: colors.text.primary,
     lineHeight: 20,
     marginBottom: 12,
-  },
+    },
+    otaAction: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      borderWidth: 1,
+      borderRadius: 8,
+      marginTop: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+    },
+    otaActionText: { fontSize: 13, fontWeight: '600' },
   buildInfo: {
     marginTop: 12,
     paddingTop: 12,
