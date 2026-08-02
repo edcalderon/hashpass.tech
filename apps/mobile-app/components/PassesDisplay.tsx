@@ -780,7 +780,7 @@ function PassesDisplayInner({
               color: colors.primary,
               textDecorationLine: 'underline'
             }}>
-              {t({ id: 'passes.passNumber', message: 'Pass #{pass_number}' }).replace('{pass_number}', displayPassNumber)}
+              {`${t({ id: 'passes.pass', message: 'Pass' })} #${displayPassNumber}`}
             </Text>
             <MaterialIcons name="content-copy" size={14} color={colors.primary} />
           </TouchableOpacity>
