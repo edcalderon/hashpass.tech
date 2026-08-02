@@ -149,6 +149,30 @@ describe('ProfileScreen speaker information', () => {
     expect(renderer.root.findAll((node: any) => node.props?.source?.uri === speaker.imageUrl)).not.toHaveLength(0);
   });
 
+  it('keeps the role label in a loading state until access has resolved', async () => {
+    let resolveAccess: (value: any) => void = () => undefined;
+    mockGetCurrentAdminAccess.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveAccess = resolve;
+    }));
+
+    const renderer = await renderProfile();
+    expect(renderer.root.findByProps({ accessibilityLabel: 'Loading account roles' })).toBeTruthy();
+    expect(renderer.root.findAllByProps({ children: 'General User' })).toHaveLength(0);
+
+    await act(async () => {
+      resolveAccess({
+        globalRole: 'super_admin',
+        globalRoles: ['super_admin'],
+        eventRoles: [{ eventId: 'bsl', role: 'event_admin' }],
+        effectiveRole: { role: 'super_admin', scope: 'global', eventIds: [] },
+      });
+      await Promise.resolve();
+    });
+    await flush();
+
+    expect(renderer.root.findByProps({ children: 'Super Admin · Event Admin · bsl · Speaker' })).toBeTruthy();
+  });
+
   it('updates the linked speaker profile through the self-scoped API', async () => {
     const renderer = await renderProfile();
     await act(async () => {

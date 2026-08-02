@@ -73,6 +73,7 @@ export default function ProfileScreen() {
   const [rawSupabaseUser, setRawSupabaseUser] = useState<any>(null);
   const [adminAccess, setAdminAccess] = useState<AdminAccess | null>(null);
   const [speakerProfile, setSpeakerProfile] = useState<SpeakerProfile | null>(null);
+  const [rolesLoading, setRolesLoading] = useState(true);
   const [showSpeakerModal, setShowSpeakerModal] = useState(false);
   const [savingSpeaker, setSavingSpeaker] = useState(false);
   const [speakerName, setSpeakerName] = useState('');
@@ -171,22 +172,28 @@ export default function ProfileScreen() {
         if (!authLoading && !cancelled) {
           setAdminAccess(null);
           setSpeakerProfile(null);
+          setRolesLoading(false);
         }
         return;
       }
 
-      const [accessResult, speakerResult] = await Promise.allSettled([
-        getCurrentAdminAccess(),
-        apiClient.get('/profile/speaker', { skipEventSegment: true }),
-      ]);
-      if (cancelled) return;
+      setRolesLoading(true);
+      try {
+        const [accessResult, speakerResult] = await Promise.allSettled([
+          getCurrentAdminAccess(),
+          apiClient.get('/profile/speaker', { skipEventSegment: true }),
+        ]);
+        if (cancelled) return;
 
-      setAdminAccess(accessResult.status === 'fulfilled' ? accessResult.value : null);
-      if (speakerResult.status === 'fulfilled' && speakerResult.value.success) {
-        const data = (speakerResult.value.data as { data?: unknown } | undefined)?.data;
-        setSpeakerProfile(isSpeakerProfile(data) ? data : null);
-      } else {
-        setSpeakerProfile(null);
+        setAdminAccess(accessResult.status === 'fulfilled' ? accessResult.value : null);
+        if (speakerResult.status === 'fulfilled' && speakerResult.value.success) {
+          const data = (speakerResult.value.data as { data?: unknown } | undefined)?.data;
+          setSpeakerProfile(isSpeakerProfile(data) ? data : null);
+        } else {
+          setSpeakerProfile(null);
+        }
+      } finally {
+        if (!cancelled) setRolesLoading(false);
       }
     };
 
@@ -486,9 +493,16 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Roles</Text>
-                  <Text style={styles.infoValue}>
-                    {profileRoleLabels.length ? profileRoleLabels.join(' · ') : 'General User'}
-                  </Text>
+                  {rolesLoading ? (
+                    <View style={styles.rolesLoadingState} accessibilityLabel="Loading account roles">
+                      <ActivityIndicator size="small" color={colors.primary} />
+                      <Text style={styles.rolesLoadingText}>Loading roles…</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.infoValue}>
+                      {profileRoleLabels.length ? profileRoleLabels.join(' · ') : 'General User'}
+                    </Text>
+                  )}
                 </View>
               </View>
 
@@ -890,6 +904,16 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000'),
+  },
+  rolesLoadingState: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    minHeight: 22,
+  },
+  rolesLoadingText: {
+    color: colors.text?.secondary || (isDark ? '#CCCCCC' : '#666666'),
+    fontSize: 15,
   },
   divider: {
     height: 1,
