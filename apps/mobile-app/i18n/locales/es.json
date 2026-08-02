@@ -972,7 +972,72 @@
       "confirmHold": "Confirmar Mantenimiento",
       "requestHeld": "Solicitud Mantenida",
       "requestHeldMessage": "Solicitud mantenida por {hours} hora(s)",
-      "pending": "PENDIENTE"
+      "pending": "PENDIENTE",
+      "slotPicker": {
+        "title": "Seleccionar Horario",
+        "subtitle": "Elige un horario disponible para la reunión",
+        "loading": "Cargando horarios disponibles...",
+        "emptyTitle": "No se encontraron horarios disponibles",
+        "emptySubtitle": "Marca algunos horarios como disponibles en tu agenda",
+        "tryAgain": "Intentar de Nuevo",
+        "interested": "Interesado",
+        "scheduling": "Agendando...",
+        "confirmSelection": "Confirmar Selección",
+        "loadErrorTitle": "Error",
+        "loadErrorMessage": "No se pudieron cargar los horarios disponibles",
+        "goToSchedule": "Ir a Mi Agenda"
+      },
+      "successModal": {
+        "title": "Reunión Agendada",
+        "titleTentative": "Solicitud Aceptada",
+        "addedToBothCalendars": "Agregada a ambas agendas",
+        "conflictMessage": "Esperando que el solicitante resuelva un conflicto de horario",
+        "viewMeeting": "Ver Reunión",
+        "defaultUserName": "Usuario"
+      },
+      "loadErrorTitle": "Error al Cargar Solicitudes",
+      "loadErrorMessage": "No se pudieron cargar tus solicitudes de reunión",
+      "refreshErrorTitle": "Error al Actualizar",
+      "refreshErrorMessage": "No se pudieron actualizar las solicitudes. Inténtalo de nuevo.",
+      "cancelFailedTitle": "Error al Cancelar",
+      "cancelFailedMessage": "No se pudo cancelar la solicitud de reunión. Inténtalo de nuevo.",
+      "acceptFailedTitle": "Error al Aceptar",
+      "acceptFailedMessage": "No se pudo aceptar la solicitud de reunión",
+      "unexpectedResponseMessage": "Respuesta inesperada del servidor. Inténtalo de nuevo.",
+      "slotConflictTitle": "Conflicto de Horario",
+      "slotConflictActionTitle": "Conflicto de Horario — Acción Requerida",
+      "slotConflictActionMessage": "La reunión fue aceptada, pero se superpone con una reunión existente en la agenda del solicitante. Abre los Detalles de la Reunión para elegir cuál mantener.",
+      "acceptedTitle": "¡Solicitud Aceptada! 🎉",
+      "acceptedMessage": "La reunión ha sido agendada exitosamente. ¡Ganaste 1 LUKAS! 💎",
+      "declinedTitle": "Solicitud Rechazada",
+      "declinedMessage": "La solicitud de reunión ha sido rechazada",
+      "declineFailedTitle": "Error al Rechazar",
+      "declineFailedMessage": "No se pudo rechazar la solicitud de reunión",
+      "userBlockedTitle": "Usuario Bloqueado",
+      "userBlockedMessage": "El usuario ha sido bloqueado y su solicitud rechazada",
+      "blockFailedTitle": "Error al Bloquear",
+      "blockFailedMessage": "No se pudo bloquear al usuario",
+      "tabs": {
+        "sent": "Enviadas",
+        "incoming": "Recibidas"
+      },
+      "searchPlaceholder": "Buscar solicitudes...",
+      "emptyState": {
+        "noSentTitle": "Sin Solicitudes Enviadas",
+        "noSentDescription": "Aún no has enviado ninguna solicitud de reunión. Empieza a conectar solicitando reuniones con los ponentes.",
+        "noIncomingTitle": "Sin Solicitudes Recibidas",
+        "noIncomingDescription": "No tienes solicitudes de reunión entrantes por el momento.",
+        "browseSpeakers": "Explorar Ponentes",
+        "noResultsTitle": "Sin Resultados",
+        "noResultsDescription": "Ninguna solicitud coincide con tus filtros actuales. Intenta ajustar tu búsqueda o filtros."
+      },
+      "cancelModal": {
+        "title": "¿Cancelar Solicitud de Reunión?",
+        "confirmMessage": "¿Estás seguro de que quieres cancelar esta solicitud de reunión?",
+        "limitRestored": "Límite de solicitudes restaurado",
+        "boostNotRefunded": "Los puntos de impulso no se reembolsan",
+        "keepRequest": "Mantener Solicitud"
+      }
     },
     "speakerView": {
       "connect": "Conectar",

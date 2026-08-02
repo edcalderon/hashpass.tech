@@ -100,6 +100,17 @@ export default function NotificationsScreen() {
           openChat: 'true'
         }
       });
+    } else if (notification.type === 'meeting_slot_conflict' && notification.meeting_id) {
+      // This meeting already exists (tentative, pending the requester's decision) —
+      // route straight to meeting-detail instead of the generic meeting_request_id
+      // branch below, which would send it to my-requests instead. Must be checked
+      // first since this notification also carries a non-null meeting_request_id.
+      router.push({
+        pathname: buildNotificationEventPath(notification, null, 'networking/meeting-detail') as any,
+        params: {
+          meetingId: notification.meeting_id,
+        }
+      });
     } else if (notification.meeting_request_id) {
       try {
         // Fetch meeting request details to get all necessary data

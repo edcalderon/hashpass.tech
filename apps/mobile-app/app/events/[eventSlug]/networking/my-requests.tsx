@@ -56,7 +56,7 @@ export default function MyRequestsView() {
   const meetingRequestsPath = eventApiPath(eventId, 'meetings/requests');
   const meetingRequestSlotsPath = eventApiPath(eventId, 'meetings/requests/slots');
   const router = useRouter();
-  const { showSuccess, showError } = useToastHelpers();
+  const { showSuccess, showError, showWarning } = useToastHelpers();
   const { notifications, refreshNotifications } = useNotifications();
   const { refreshBalance } = useBalance();
   const { t } = useTranslation('networking');
@@ -77,6 +77,7 @@ export default function MyRequestsView() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [confirmedMeetingId, setConfirmedMeetingId] = useState<string | null>(null);
+  const [confirmedMeetingStatus, setConfirmedMeetingStatus] = useState<'confirmed' | 'tentative'>('confirmed');
   // Track current slot loading context to reload after acceptance
   const [currentSlotContext, setCurrentSlotContext] = useState<{
     speakerId: string;
@@ -95,12 +96,9 @@ export default function MyRequestsView() {
   const openedRequestId = useRef<string | null>(null);
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered, user:', dbUserId ? 'present' : 'null');
     if (dbUserId) {
-      console.log('🔄 User found, calling loadMyRequests...');
       loadMyRequests();
     } else {
-      console.log('⚠️ No user found, setting loading to false');
       setLoading(false);
     }
 
@@ -131,13 +129,11 @@ export default function MyRequestsView() {
 
   const loadMyRequests = useCallback(async () => {
     if (!dbUserId) {
-      console.log('No user found, skipping requests load');
       setLoading(false);
       return;
     }
 
     try {
-      console.log('🔄 Starting loadMyRequests...');
       setLoading(true);
 
       const response = await apiClient.request(meetingRequestsPath, { skipEventSegment: true });
@@ -148,7 +144,7 @@ export default function MyRequestsView() {
         : request));
     } catch (error) {
       console.error('❌ Error loading my requests:', error);
-      showError('Error Loading Requests', 'Failed to load your meeting requests');
+      showError(t('requestView.loadErrorTitle'), t('requestView.loadErrorMessage'));
       setRequests([]);
     } finally {
       setLoading(false);
@@ -169,14 +165,12 @@ export default function MyRequestsView() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      console.log('🔄 Manual refresh triggered');
       await loadMyRequests();
       // Refresh notifications after reloading requests
       refreshNotifications();
-      console.log('✅ Manual refresh completed');
     } catch (error) {
       console.error('❌ Error refreshing requests:', error);
-      showError('Refresh Error', 'Failed to refresh requests. Please try again.');
+      showError(t('requestView.refreshErrorTitle'), t('requestView.refreshErrorMessage'));
     } finally {
       setRefreshing(false);
     }
@@ -185,26 +179,23 @@ export default function MyRequestsView() {
   // Manual reload handler (for header button) - Force refresh with haptic feedback
   const handleManualReload = useCallback(async () => {
     try {
-      console.log('🔄 Manual reload triggered');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setRefreshing(true);
-      
+
       // Force reload by clearing state first, then loading fresh data
       setRequests([]);
-      
+
       await loadMyRequests();
       refreshNotifications();
-      
+
       // Additional haptic feedback on success
       setTimeout(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }, 300);
-      
-      console.log('✅ Manual reload completed');
     } catch (error) {
       console.error('❌ Error in manual reload:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      showError('Refresh Error', 'Failed to refresh requests. Please try again.');
+      showError(t('requestView.refreshErrorTitle'), t('requestView.refreshErrorMessage'));
     } finally {
       setRefreshing(false);
     }
@@ -247,7 +238,7 @@ export default function MyRequestsView() {
       }
     } catch (error: any) {
       console.error('❌ Error cancelling request:', error);
-      showError('Cancellation Failed', error?.message || 'Failed to cancel meeting request. Please try again.');
+      showError(t('requestView.cancelFailedTitle'), error?.message || t('requestView.cancelFailedMessage'));
     }
   };
 
@@ -330,14 +321,12 @@ export default function MyRequestsView() {
       const data = (response.data as any)?.data || [];
       setAvailableSlots(sortSlotsByPriority(data));
       if (showPicker) setShowSlotPicker(true);
-      
-      if (showPicker && (!data || data.length === 0)) {
-        showError('No Available Slots', 'No available slots found. Please mark some time slots as available in your schedule.');
-      }
+      // The empty state is already shown inline in the slot picker modal
+      // (with a retry button), so no separate toast is needed here.
     } catch (error: any) {
       console.error('❌ Error loading slots:', error);
       if (showPicker) {
-        showError('Error', 'Failed to load available slots');
+        showError(t('requestView.slotPicker.loadErrorTitle'), t('requestView.slotPicker.loadErrorMessage'));
       }
     } finally {
       setLoadingSlots(false);
@@ -356,14 +345,14 @@ export default function MyRequestsView() {
       const response = await apiClient.request(meetingRequestsPath, {
         skipEventSegment: true, method: 'PATCH', body: { requestId: request.id, action: 'accept', slotTime },
       });
-      if (!response.success) { showError('Accept Failed', response.error); return; }
+      if (!response.success) { showError(t('requestView.acceptFailedTitle'), response.error); return; }
       const data = (response.data as any)?.data;
 
       // Check if RPC returned success: false (this is not a Supabase error, but a business logic error)
       if (data && typeof data === 'object' && 'success' in data && !data.success) {
-        const errorMessage = data.error || 'Failed to accept request';
+        const errorMessage = data.error || t('requestView.acceptFailedMessage');
         console.error('❌ Request acceptance failed:', errorMessage);
-        showError('Slot Conflict', errorMessage);
+        showError(t('requestView.slotConflictTitle'), errorMessage);
         // Close slot picker if open
         setShowSlotPicker(false);
         return;
@@ -372,6 +361,7 @@ export default function MyRequestsView() {
       if (data?.success) {
         // Show confirmation modal with meeting details
         setConfirmedMeetingId(data.meeting_id);
+        setConfirmedMeetingStatus(data.status === 'tentative' ? 'tentative' : 'confirmed');
         setShowSlotPicker(false);
         setShowSlotConfirmation(true);
         
@@ -382,8 +372,7 @@ export default function MyRequestsView() {
             try {
               await new Promise(resolve => setTimeout(resolve, delay));
               await refreshBalance();
-              console.log(`💰 Balance refresh attempt ${i + 1}/${attempts} after meeting acceptance`);
-              
+
               // Also trigger the event directly for immediate UI update
               if (typeof window !== 'undefined') {
                 window.dispatchEvent(new Event('balance:refresh'));
@@ -400,7 +389,6 @@ export default function MyRequestsView() {
         // Reload available slots to reflect the newly accepted meeting
         // This ensures slots are up-to-date if user opens slot picker again
         if (currentSlotContext) {
-          console.log('🔄 Reloading available slots after acceptance...');
           setTimeout(async () => {
             // Reload slots in background without showing picker
             await loadAvailableSlots(
@@ -417,16 +405,23 @@ export default function MyRequestsView() {
           await loadMyRequests();
         }, 500);
         
-        showSuccess('Request Accepted! 🎉', 'The meeting has been scheduled successfully. You earned 1 LUKAS! 💎');
+        if (data.status === 'tentative') {
+          showWarning(
+            t('requestView.slotConflictActionTitle'),
+            t('requestView.slotConflictActionMessage')
+          );
+        } else {
+          showSuccess(t('requestView.acceptedTitle'), t('requestView.acceptedMessage'));
+        }
       } else {
         // Fallback for unexpected response format
         console.error('❌ Unexpected response format:', data);
-        showError('Accept Failed', 'Unexpected response from server. Please try again.');
+        showError(t('requestView.acceptFailedTitle'), t('requestView.unexpectedResponseMessage'));
       }
     } catch (error: any) {
       console.error('❌ Error accepting request:', error);
-      const errorMessage = error?.message || error?.error || 'Failed to accept meeting request';
-      showError('Accept Failed', errorMessage);
+      const errorMessage = error?.message || error?.error || t('requestView.acceptFailedMessage');
+      showError(t('requestView.acceptFailedTitle'), errorMessage);
     }
   };
 
@@ -441,20 +436,20 @@ export default function MyRequestsView() {
       const data = (response.data as any)?.data;
 
       if (data?.success) {
-        showSuccess('Request Declined', 'The meeting request has been declined');
-        
+        showSuccess(t('requestView.declinedTitle'), t('requestView.declinedMessage'));
+
         // Force reload to ensure UI is updated
         setTimeout(async () => {
           await loadMyRequests();
         }, 500);
-        
+
         setShowDetailModal(false);
       } else {
-        throw new Error(data?.error || 'Failed to decline request');
+        throw new Error(data?.error || t('requestView.declineFailedMessage'));
       }
     } catch (error: any) {
       console.error('❌ Error declining request:', error);
-      showError('Decline Failed', error.message || 'Failed to decline meeting request');
+      showError(t('requestView.declineFailedTitle'), error.message || t('requestView.declineFailedMessage'));
     }
   };
 
@@ -478,20 +473,20 @@ export default function MyRequestsView() {
       const data = (response.data as any)?.data;
 
       if (data?.success) {
-        showSuccess('User Blocked', 'The user has been blocked and their request declined');
-        
+        showSuccess(t('requestView.userBlockedTitle'), t('requestView.userBlockedMessage'));
+
         // Force reload to ensure UI is updated
         setTimeout(async () => {
           await loadMyRequests();
         }, 500);
-        
+
         setShowDetailModal(false);
       } else {
-        throw new Error(data?.error || 'Failed to block user');
+        throw new Error(data?.error || t('requestView.blockFailedMessage'));
       }
     } catch (error: any) {
       console.error('❌ Error blocking user:', error);
-      showError('Block Failed', error.message || 'Failed to block user');
+      showError(t('requestView.blockFailedTitle'), error.message || t('requestView.blockFailedMessage'));
     }
   };
 
@@ -748,7 +743,7 @@ export default function MyRequestsView() {
             )}
             {Boolean(request.note) && (
               <View style={styles.noteContainer}>
-                <Text style={styles.noteLabel}>Intentions:</Text>
+                <Text style={styles.noteLabel}>{t('requestView.intentions')}:</Text>
                 <Text style={styles.noteText} numberOfLines={2}>
                   {request.note}
                 </Text>
@@ -1178,7 +1173,7 @@ export default function MyRequestsView() {
       <Stack.Screen 
         options={{ 
           title: t('requestView.yourRequest'),
-          headerBackTitle: 'Back',
+          headerBackTitle: tCommon('back'),
           headerRight: () => (
             <TouchableOpacity
               onPress={handleManualReload}
@@ -1207,7 +1202,7 @@ export default function MyRequestsView() {
             color={activeTab === 'sent' ? colors.primary : (isDark ? '#888' : '#666')} 
           />
           <Text style={[styles.tabText, activeTab === 'sent' && styles.activeTabText]}>
-            Sent
+            {t('requestView.tabs.sent')}
           </Text>
           {sentCount > 0 && (
             <View style={styles.tabBadge}>
@@ -1226,7 +1221,7 @@ export default function MyRequestsView() {
             color={activeTab === 'incoming' ? colors.primary : (isDark ? '#888' : '#666')} 
           />
           <Text style={[styles.tabText, activeTab === 'incoming' && styles.activeTabText]}>
-            Incoming
+            {t('requestView.tabs.incoming')}
           </Text>
           {incomingCount > 0 && (
             <View style={styles.tabBadge}>
@@ -1242,7 +1237,7 @@ export default function MyRequestsView() {
           data={tabFilteredRequests}
           onFilteredData={setFilteredRequests}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Search requests..."
+          searchPlaceholder={t('requestView.searchPlaceholder')}
           searchFields={['speaker_name', 'requester_name', 'message', 'note', 'requester_company']}
           filterGroups={filterGroups}
           showResultsCount={true}
@@ -1266,12 +1261,12 @@ export default function MyRequestsView() {
               color={isDark ? '#666666' : '#999999'} 
             />
             <Text style={styles.emptyTitle}>
-              {activeTab === 'sent' ? 'No Sent Requests' : 'No Incoming Requests'}
+              {activeTab === 'sent' ? t('requestView.emptyState.noSentTitle') : t('requestView.emptyState.noIncomingTitle')}
             </Text>
             <Text style={styles.emptyDescription}>
               {activeTab === 'sent'
-                ? "You haven't sent any meeting requests yet. Start networking by requesting meetings with speakers."
-                : "You don't have any incoming meeting requests at the moment."}
+                ? t('requestView.emptyState.noSentDescription')
+                : t('requestView.emptyState.noIncomingDescription')}
             </Text>
             {activeTab === 'sent' && (
               <TouchableOpacity
@@ -1279,16 +1274,16 @@ export default function MyRequestsView() {
                 onPress={() => router.push(`/events/${eventId}/speakers` as any)}
               >
                 <MaterialIcons name="search" size={20} color="white" />
-                <Text style={styles.browseButtonText}>Browse Speakers</Text>
+                <Text style={styles.browseButtonText}>{t('requestView.emptyState.browseSpeakers')}</Text>
               </TouchableOpacity>
             )}
           </View>
         ) : (
           <View style={styles.emptyState}>
             <MaterialIcons name="filter-list" size={64} color={isDark ? '#666666' : '#999999'} />
-            <Text style={styles.emptyTitle}>No Results</Text>
+            <Text style={styles.emptyTitle}>{t('requestView.emptyState.noResultsTitle')}</Text>
             <Text style={styles.emptyDescription}>
-              No requests match your current filters. Try adjusting your search or filters.
+              {t('requestView.emptyState.noResultsDescription')}
             </Text>
           </View>
         )}
@@ -1343,10 +1338,10 @@ export default function MyRequestsView() {
                 />
               </View>
               <Text style={[styles.slotPickerTitle, { color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000') }]}>
-                Select Time Slot
+                {t('requestView.slotPicker.title')}
               </Text>
               <Text style={[styles.slotPickerSubtitle, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }]}>
-                Choose an available time slot for the meeting
+                {t('requestView.slotPicker.subtitle')}
               </Text>
             </View>
 
@@ -1354,7 +1349,7 @@ export default function MyRequestsView() {
               <View style={styles.slotPickerLoadingContainer}>
                 <MaterialIcons name="hourglass-empty" size={32} color={colors.text?.secondary || (isDark ? '#888888' : '#999999')} />
                 <Text style={[styles.slotPickerLoadingText, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }]}>
-                  Loading available slots...
+                  {t('requestView.slotPicker.loading')}
                 </Text>
               </View>
             ) : availableSlots.length === 0 ? (
@@ -1363,18 +1358,62 @@ export default function MyRequestsView() {
                   styles.slotPickerEmptyIconContainer,
                   { backgroundColor: (colors.text?.secondary || '#999999') + '15' }
                 ]}>
-                  <MaterialIcons 
-                    name="schedule" 
-                    size={48} 
-                    color={colors.text?.secondary || (isDark ? '#888888' : '#999999')} 
+                  <MaterialIcons
+                    name="schedule"
+                    size={48}
+                    color={colors.text?.secondary || (isDark ? '#888888' : '#999999')}
                   />
                 </View>
                 <Text style={[styles.slotPickerEmptyText, { color: colors.text?.primary || (isDark ? '#E0E0E0' : '#333333') }]}>
-                  No available slots found
+                  {t('requestView.slotPicker.emptyTitle')}
                 </Text>
                 <Text style={[styles.slotPickerEmptySubtext, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }]}>
-                  Please mark some time slots as available in your schedule
+                  {t('requestView.slotPicker.emptySubtitle')}
                 </Text>
+                <TouchableOpacity
+                  style={[styles.slotPickerTryAgainButton, { backgroundColor: colors.primary || '#007AFF' }]}
+                  onPress={() => {
+                    if (currentSlotContext) {
+                      loadAvailableSlots(
+                        currentSlotContext.speakerId,
+                        currentSlotContext.durationMinutes,
+                        currentSlotContext.requesterId,
+                        true
+                      );
+                    }
+                  }}
+                  disabled={loadingSlots || !currentSlotContext}
+                  activeOpacity={0.8}
+                >
+                  <MaterialIcons name="refresh" size={18} color="white" />
+                  <Text style={styles.slotPickerTryAgainButtonText}>{t('requestView.slotPicker.tryAgain')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.slotPickerScheduleLinkButton}
+                  onPress={() => {
+                    // Close the whole modal stack (slot picker sits on top of
+                    // the request detail drawer), not just the slot picker —
+                    // otherwise the detail drawer is still open underneath
+                    // when the user comes back to this screen.
+                    setShowSlotPicker(false);
+                    setShowDetailModal(false);
+                    setSelectedSlot(null);
+                    setCurrentSlotContext(null);
+                    // The Modal's exit needs to actually unmount (its content
+                    // renders via a web portal outside this screen's tree)
+                    // before pushing a new route, or the push can land behind
+                    // the still-closing overlay with no visible effect.
+                    setTimeout(() => {
+                      router.push(`/events/${eventId}/networking/my-schedule` as any);
+                    }, 50);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="event-note" size={16} color={colors.primary || '#007AFF'} />
+                  <Text style={[styles.slotPickerScheduleLinkButtonText, { color: colors.primary || '#007AFF' }]}>
+                    {t('requestView.slotPicker.goToSchedule')}
+                  </Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <ScrollView 
@@ -1489,7 +1528,7 @@ export default function MyRequestsView() {
                                 ]}>
                                   <MaterialIcons name="favorite" size={12} color="white" />
                                   <Text style={styles.slotPickerInterestedBadgeText}>
-                                    Interested
+                                    {t('requestView.slotPicker.interested')}
                                   </Text>
                                 </View>
                               )}
@@ -1498,7 +1537,7 @@ export default function MyRequestsView() {
                               styles.slotPickerDurationText,
                               { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }
                             ]}>
-                              {slot.duration_minutes || 15} minutes
+                              {slot.duration_minutes || 15} {t('requestView.minutesLabel')}
                             </Text>
                           </View>
                         </View>
@@ -1539,12 +1578,12 @@ export default function MyRequestsView() {
                   {loadingSlots ? (
                     <>
                       <MaterialIcons name="hourglass-empty" size={20} color="white" />
-                      <Text style={styles.slotPickerConfirmButtonText}>Scheduling...</Text>
+                      <Text style={styles.slotPickerConfirmButtonText}>{t('requestView.slotPicker.scheduling')}</Text>
                     </>
                   ) : (
                     <>
                       <MaterialIcons name="check-circle" size={20} color="white" />
-                      <Text style={styles.slotPickerConfirmButtonText}>Confirm Selection</Text>
+                      <Text style={styles.slotPickerConfirmButtonText}>{t('requestView.slotPicker.confirmSelection')}</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -1588,7 +1627,9 @@ export default function MyRequestsView() {
 
             {/* Title */}
             <Text style={[styles.successModalTitle, { color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000') }]}>
-              Meeting Scheduled
+              {confirmedMeetingStatus === 'tentative'
+                ? t('requestView.successModal.titleTentative')
+                : t('requestView.successModal.title')}
             </Text>
 
             {/* Meeting Summary */}
@@ -1601,7 +1642,7 @@ export default function MyRequestsView() {
                     color={colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666')}
                   />
                   <Text style={[styles.successMeetingText, { color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000') }]}>
-                    {selectedRequest.requester_name || 'User'}
+                    {selectedRequest.requester_name || t('requestView.successModal.defaultUserName')}
                   </Text>
                 </View>
 
@@ -1631,7 +1672,7 @@ export default function MyRequestsView() {
                     color={colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666')}
                   />
                   <Text style={[styles.successMeetingText, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }]}>
-                    {selectedRequest.duration_minutes || 15} minutes
+                    {selectedRequest.duration_minutes || 15} {t('requestView.minutesLabel')}
                   </Text>
                 </View>
               </View>
@@ -1639,7 +1680,9 @@ export default function MyRequestsView() {
 
             {/* Subtle Info Message */}
             <Text style={[styles.successModalMessage, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }]}>
-              Added to both calendars
+              {confirmedMeetingStatus === 'tentative'
+                ? t('requestView.successModal.conflictMessage')
+                : t('requestView.successModal.addedToBothCalendars')}
             </Text>
 
             {/* Action Button */}
@@ -1661,7 +1704,7 @@ export default function MyRequestsView() {
                       meetingId: confirmedMeetingId,
                       speakerName: selectedRequest?.speaker_name || '',
                       requesterName: selectedRequest?.requester_name || '',
-                      status: 'tentative',
+                      status: confirmedMeetingStatus,
                       scheduledAt: selectedSlot || '',
                       duration: selectedRequest?.duration_minutes || 15,
                       isSpeaker: 'true'
@@ -1672,7 +1715,7 @@ export default function MyRequestsView() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.successActionButtonText}>View Meeting</Text>
+              <Text style={styles.successActionButtonText}>{t('requestView.successModal.viewMeeting')}</Text>
             </TouchableOpacity>
 
             {/* Close Button */}
@@ -1734,7 +1777,7 @@ export default function MyRequestsView() {
                 />
               </View>
               <Text style={[styles.cancelModalTitle, { color: colors.text?.primary || (isDark ? '#FFFFFF' : '#000000') }]}>
-                Cancel Meeting Request?
+                {t('requestView.cancelModal.title')}
               </Text>
             </View>
 
@@ -1752,7 +1795,7 @@ export default function MyRequestsView() {
                 color={colors.warning?.main || '#FF9800'}
               />
               <Text style={[styles.cancelModalWarningText, { color: colors.text?.primary || (isDark ? '#FFFFFF' : '#1a1a1a') }]}>
-                Are you sure you want to cancel this meeting request?
+                {t('requestView.cancelModal.confirmMessage')}
               </Text>
             </View>
 
@@ -1761,13 +1804,13 @@ export default function MyRequestsView() {
               <View style={styles.cancelModalDisclaimerItem}>
                 <MaterialIcons name="check-circle" size={14} color={colors.warning?.main || '#FF9800'} />
                 <Text style={[styles.cancelModalDisclaimerText, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }]}>
-                  Request limit restored
+                  {t('requestView.cancelModal.limitRestored')}
                 </Text>
               </View>
               <View style={styles.cancelModalDisclaimerItem}>
                 <MaterialIcons name="cancel" size={14} color={colors.error?.main || '#F44336'} />
                 <Text style={[styles.cancelModalDisclaimerText, { color: colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666') }]}>
-                  Boost points not refunded
+                  {t('requestView.cancelModal.boostNotRefunded')}
                 </Text>
               </View>
             </View>
@@ -1789,10 +1832,10 @@ export default function MyRequestsView() {
                   styles.actionButtonText,
                   { color: colors.text?.primary || (isDark ? '#FFFFFF' : '#1a1a1a') }
                 ]}>
-                  Keep Request
+                  {t('requestView.cancelModal.keepRequest')}
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[
                   styles.actionButton,
@@ -1804,7 +1847,7 @@ export default function MyRequestsView() {
                 onPress={confirmCancelRequest}
               >
                 <MaterialIcons name="cancel" size={20} color="white" />
-                <Text style={styles.actionButtonText}>Cancel Request</Text>
+                <Text style={styles.actionButtonText}>{t('requestView.cancelRequest')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2796,6 +2839,35 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 20,
+  },
+  slotPickerTryAgainButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  slotPickerTryAgainButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  slotPickerScheduleLinkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  slotPickerScheduleLinkButtonText: {
+    fontWeight: '600',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
   slotPickerList: {
     maxHeight: 400,

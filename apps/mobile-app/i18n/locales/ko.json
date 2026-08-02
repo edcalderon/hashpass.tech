@@ -903,7 +903,72 @@
       "confirmHold": "보류 확인",
       "requestHeld": "요청 보류됨",
       "requestHeldMessage": "요청이 {hours}시간 동안 보류되었습니다",
-      "pending": "대기 중"
+      "pending": "대기 중",
+      "slotPicker": {
+        "title": "시간대 선택",
+        "subtitle": "미팅을 위한 가능한 시간대를 선택하세요",
+        "loading": "가능한 시간대를 불러오는 중...",
+        "emptyTitle": "가능한 시간대가 없습니다",
+        "emptySubtitle": "일정에서 가능한 시간대를 표시해 주세요",
+        "tryAgain": "다시 시도",
+        "interested": "관심 있음",
+        "scheduling": "일정 예약 중...",
+        "confirmSelection": "선택 확인",
+        "loadErrorTitle": "오류",
+        "loadErrorMessage": "가능한 시간대를 불러오지 못했습니다",
+        "goToSchedule": "내 일정으로 이동"
+      },
+      "successModal": {
+        "title": "미팅이 예약되었습니다",
+        "titleTentative": "요청이 수락되었습니다",
+        "addedToBothCalendars": "양쪽 일정에 모두 추가되었습니다",
+        "conflictMessage": "요청자가 일정 충돌을 해결하기를 기다리는 중입니다",
+        "viewMeeting": "미팅 보기",
+        "defaultUserName": "사용자"
+      },
+      "loadErrorTitle": "요청 불러오기 오류",
+      "loadErrorMessage": "미팅 요청을 불러오지 못했습니다",
+      "refreshErrorTitle": "새로고침 오류",
+      "refreshErrorMessage": "요청을 새로고침하지 못했습니다. 다시 시도해 주세요.",
+      "cancelFailedTitle": "취소 실패",
+      "cancelFailedMessage": "미팅 요청을 취소하지 못했습니다. 다시 시도해 주세요.",
+      "acceptFailedTitle": "수락 실패",
+      "acceptFailedMessage": "미팅 요청을 수락하지 못했습니다",
+      "unexpectedResponseMessage": "서버로부터 예기치 않은 응답을 받았습니다. 다시 시도해 주세요.",
+      "slotConflictTitle": "시간대 충돌",
+      "slotConflictActionTitle": "시간대 충돌 — 조치가 필요합니다",
+      "slotConflictActionMessage": "미팅이 수락되었지만 요청자의 일정에 있는 기존 미팅과 겹칩니다. 미팅 세부정보를 열어 유지할 미팅을 선택하세요.",
+      "acceptedTitle": "요청이 수락되었습니다! 🎉",
+      "acceptedMessage": "미팅이 성공적으로 예약되었습니다. 1 LUKAS를 획득했습니다! 💎",
+      "declinedTitle": "요청이 거절되었습니다",
+      "declinedMessage": "미팅 요청이 거절되었습니다",
+      "declineFailedTitle": "거절 실패",
+      "declineFailedMessage": "미팅 요청을 거절하지 못했습니다",
+      "userBlockedTitle": "사용자가 차단되었습니다",
+      "userBlockedMessage": "사용자가 차단되었으며 요청이 거절되었습니다",
+      "blockFailedTitle": "차단 실패",
+      "blockFailedMessage": "사용자를 차단하지 못했습니다",
+      "tabs": {
+        "sent": "보낸 요청",
+        "incoming": "받은 요청"
+      },
+      "searchPlaceholder": "요청 검색...",
+      "emptyState": {
+        "noSentTitle": "보낸 요청 없음",
+        "noSentDescription": "아직 보낸 미팅 요청이 없습니다. 스피커에게 미팅을 요청하여 네트워킹을 시작하세요.",
+        "noIncomingTitle": "받은 요청 없음",
+        "noIncomingDescription": "현재 받은 미팅 요청이 없습니다.",
+        "browseSpeakers": "스피커 둘러보기",
+        "noResultsTitle": "결과 없음",
+        "noResultsDescription": "현재 필터와 일치하는 요청이 없습니다. 검색어나 필터를 조정해 보세요."
+      },
+      "cancelModal": {
+        "title": "미팅 요청을 취소하시겠습니까?",
+        "confirmMessage": "이 미팅 요청을 취소하시겠습니까?",
+        "limitRestored": "요청 한도가 복원되었습니다",
+        "boostNotRefunded": "부스트 포인트는 환불되지 않습니다",
+        "keepRequest": "요청 유지"
+      }
     },
     "speakerView": {
       "connect": "연결",

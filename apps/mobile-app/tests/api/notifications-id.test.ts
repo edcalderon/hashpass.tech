@@ -41,16 +41,36 @@ describe('notifications/[id] api', () => {
       expect(await response.json()).toEqual({ error: 'Notification ID is required' });
     });
 
-    it('returns 400 instead of crashing when Metro omits the route context', async () => {
+    it('recovers the id from the URL when Metro omits the route context', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockFrom.mockReturnValue({
+        update: () => ({
+          eq: (field: string, value: string) => ({
+            eq: jest.fn().mockImplementation((field2: string, value2: string) => {
+              expect(field).toBe('id');
+              expect(value).toBe('notif-1');
+              expect(field2).toBe('user_id');
+              expect(value2).toBe('auth-id-123');
+              return Promise.resolve({ error: null });
+            }),
+          }),
+        }),
+      });
+
       /* eslint-disable @typescript-eslint/no-require-imports */
       const { PATCH } = require('../../app/api/notifications/[id]+api');
       const response = await PATCH(
-        new Request('https://api.hashpass.tech/api/notifications/notif-1', { method: 'PATCH' }),
+        new Request('https://api.hashpass.tech/api/notifications/notif-1', {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ is_read: true }),
+        }),
         undefined,
       );
 
-      expect(response.status).toBe(400);
-      expect(await response.json()).toEqual({ error: 'Notification ID is required' });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ success: true });
     });
 
     it('returns identity error if identity resolution fails', async () => {
@@ -218,7 +238,23 @@ describe('notifications/[id] api', () => {
       expect(await response.json()).toEqual({ error: 'Notification ID is required' });
     });
 
-    it('returns 400 instead of crashing when Metro omits the route context', async () => {
+    it('recovers the id from the URL when Metro omits the route context', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockFrom.mockReturnValue({
+        delete: () => ({
+          eq: (field: string, value: string) => ({
+            eq: jest.fn().mockImplementation((field2: string, value2: string) => {
+              expect(field).toBe('id');
+              expect(value).toBe('notif-1');
+              expect(field2).toBe('user_id');
+              expect(value2).toBe('auth-id-123');
+              return Promise.resolve({ error: null });
+            }),
+          }),
+        }),
+      });
+
       /* eslint-disable @typescript-eslint/no-require-imports */
       const { DELETE } = require('../../app/api/notifications/[id]+api');
       const response = await DELETE(
@@ -226,8 +262,8 @@ describe('notifications/[id] api', () => {
         undefined,
       );
 
-      expect(response.status).toBe(400);
-      expect(await response.json()).toEqual({ error: 'Notification ID is required' });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ success: true });
     });
 
     it('returns identity error if identity resolution fails', async () => {

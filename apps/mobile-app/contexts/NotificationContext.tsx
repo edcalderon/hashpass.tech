@@ -8,7 +8,7 @@ import { buildEventPath } from '../lib/event-path';
 
 export interface Notification {
   id: string;
-  type: 'meeting_request' | 'meeting_accepted' | 'meeting_declined' | 'meeting_reminder' | 'meeting_expired' | 'meeting_cancelled' | 'boost_received' | 'system_alert' | 'chat_message';
+  type: 'meeting_request' | 'meeting_accepted' | 'meeting_declined' | 'meeting_reminder' | 'meeting_expired' | 'meeting_cancelled' | 'meeting_slot_conflict' | 'boost_received' | 'system_alert' | 'chat_message';
   title: string;
   message: string;
   is_read: boolean;
