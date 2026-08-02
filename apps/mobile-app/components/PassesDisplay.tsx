@@ -101,7 +101,7 @@ function PassesDisplayInner({
     if (!passEventId) return;
     let isCurrent = true;
 
-    void passSystemService.getEventPassTiers(passEventId).then((tiers) => {
+    void passSystemService.getEventPassTiers(passEventId).then((tiers: EventPassTier[]) => {
       if (isCurrent) setEventPassTiers(tiers);
     });
 
