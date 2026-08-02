@@ -51,6 +51,10 @@ const eventPassTierDefaultIssuanceMigrationPath = path.join(
   root,
   'db/migrations/V037__apply_event_tiers_to_default_passes.sql',
 );
+const meetingPassConsumptionMigrationPath = path.join(
+  root,
+  'db/migrations/V038__consume_pass_entitlements_for_meeting_requests.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -124,7 +128,19 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V027__support_speaker_slugs_in_meeting_rpc.sql',
       'db/migrations/V032__align_meeting_request_foreign_keys_with_auth.sql',
       'db/migrations/V034__align_notifications_with_auth_identities.sql',
+      'db/migrations/V038__consume_pass_entitlements_for_meeting_requests.sql',
     ]);
+  });
+
+  it('consumes the event pass when a meeting request is sent', () => {
+    const migration = fs.readFileSync(meetingPassConsumptionMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.insert_meeting_request/i);
+    expect(migration).toMatch(/p\.event_id = v_event_id/i);
+    expect(migration).toMatch(/used_meeting_requests = COALESCE\(p\.used_meeting_requests, 0\) \+ 1/i);
+    expect(migration).toMatch(/used_boost_amount = COALESCE\(p\.used_boost_amount, 0\)/i);
+    expect(migration).toMatch(/v_pass\.max_meeting_requests, 0\) - COALESCE\(v_pass\.used_meeting_requests, 0\)/i);
+    expect(migration).not.toMatch(/status NOT IN \('cancelled', 'expired'\)/i);
   });
 
   it('casts UUID pass owners before comparing text RPC parameters', () => {
