@@ -422,9 +422,11 @@ const getSharedAuthActor = () => {
 let supabaseAuthSubscribed = false;
 let supabaseBootstrapPromise: ReturnType<typeof supabase.auth.getSession> | null = null;
 // A Better-Auth session can outlive its companion Supabase session (for
-// example after a browser refresh or an interrupted native bridge). Keep the
-// recovery request shared across all mounted auth consumers so they do not
-// contend for GoTrueClient's navigator lock.
+// example after a browser refresh or an interrupted native bridge). Keep an
+// in-flight recovery request shared across all mounted auth consumers so they
+// do not contend for GoTrueClient's navigator lock. A recovery that produces
+// no Supabase session must be evicted, however: network failures are converted
+// to an empty bridge result and should be retried by a later useAuth mount.
 let betterAuthSupabaseBootstrapPromise:
   Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>> | null = null;
 // dbUserId is a module-level store rather than per-instance state, read
@@ -841,19 +843,37 @@ export const useAuth = () => {
             // web, signed-in BSL users have no dbUserId, so their pass reads
             // time out and their pass-claim action is hidden.
             const betterAuthSupabaseBootstrap =
-              (betterAuthSupabaseBootstrapPromise ??=
-                (async () => {
-                  let result = await supabase.auth.getSession();
-                  if (!result.data?.session) {
-                    await withTimeout(
-                      ensureSupabaseBridgeSession(betterAuthProvider),
-                      SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS,
-                      'supabaseBridgeBootstrap',
-                    );
-                    result = await supabase.auth.getSession();
-                  }
-                  return result;
-                })());
+              betterAuthSupabaseBootstrapPromise ??
+              (async () => {
+                let result = await supabase.auth.getSession();
+                if (!result.data?.session) {
+                  await withTimeout(
+                    ensureSupabaseBridgeSession(betterAuthProvider),
+                    SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS,
+                    'supabaseBridgeBootstrap',
+                  );
+                  result = await supabase.auth.getSession();
+                }
+                return result;
+              })();
+            betterAuthSupabaseBootstrapPromise = betterAuthSupabaseBootstrap;
+
+            // Do not cache an unsuccessful bridge bootstrap. The bridge is
+            // intentionally best-effort and normalizes transient failures to
+            // an empty session, so retaining that resolved promise would make
+            // every later useAuth mount replay "no dbUserId" forever.
+            void betterAuthSupabaseBootstrap.then(
+              ({ data }: any) => {
+                if (!data?.session && betterAuthSupabaseBootstrapPromise === betterAuthSupabaseBootstrap) {
+                  betterAuthSupabaseBootstrapPromise = null;
+                }
+              },
+              () => {
+                if (betterAuthSupabaseBootstrapPromise === betterAuthSupabaseBootstrap) {
+                  betterAuthSupabaseBootstrapPromise = null;
+                }
+              },
+            );
 
             betterAuthSupabaseBootstrap
               .then(({ data }: any) => {
