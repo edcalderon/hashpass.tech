@@ -50,8 +50,8 @@
       "db/migrations/V034__align_notifications_with_auth_identities.sql",
       "db/migrations/V038__consume_pass_entitlements_for_meeting_requests.sql",
       "db/migrations/V040__fix_event_admin_scope_and_slot_overloads.sql",
-      "db/migrations/V041__meeting_slot_conflict_resolution.sql",
-      "db/migrations/V042__default_free_speaker_slots.sql"
+      "db/migrations/V043__meeting_slot_conflict_resolution.sql",
+      "db/migrations/V044__default_free_speaker_slots.sql"
     ],
     "event-catalog": [
       "db/migrations/V020__seed_canonical_bsl_2026_event_catalog.sql",

@@ -72,7 +72,7 @@ BEGIN
       -- meeting_slots has no event_id column, so a globally-marked-free row
       -- must still fall inside the resolved event's own calendar window
       -- when one is configured. Null-tolerant: hub-level events without a
-      -- seeded window (bsl, bsl2025) keep the pre-V041 unfiltered behavior.
+      -- seeded window (bsl, bsl2025) keep the pre-V043 unfiltered behavior.
       AND (v_event_starts_at IS NULL OR ms.start_time >= v_event_starts_at)
       AND (v_event_ends_at IS NULL OR ms.start_time <= v_event_ends_at)
 
