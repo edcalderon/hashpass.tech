@@ -4,10 +4,29 @@ import React from 'react';
 import { act, create } from 'react-test-renderer';
 
 const mockRouterPush = jest.fn();
-const mockDbSpeakers = [
+type DbSpeaker = {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  user_id: string | null;
+  is_active: boolean;
+};
+
+type EventSpeaker = {
+  id: string;
+  name: string;
+  title?: string;
+  company?: string;
+  image?: string;
+};
+
+const defaultDbSpeakers = (): DbSpeaker[] => [
   { id: 'inactive-speaker', name: 'Inactive Speaker', title: 'Advisor', company: 'Hashpass', user_id: null, is_active: true },
   { id: 'active-speaker', name: 'Active Speaker', title: 'Founder', company: 'Hashpass', user_id: 'claimed-auth-user', is_active: true },
 ];
+let mockDbSpeakers: DbSpeaker[] = defaultDbSpeakers();
+let mockEventSpeakers: EventSpeaker[] = [];
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockRouterPush }),
@@ -20,7 +39,7 @@ jest.mock('@contexts/EventContext', () => ({
       eventDateString: 'BSL Chile 2026',
       eventStartDate: '2026-08-05T09:00:00-04:00',
       eventEndDate: '2026-08-07T23:59:59-04:00',
-      speakers: [],
+      speakers: mockEventSpeakers,
     },
   }),
 }));
@@ -61,6 +80,8 @@ const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0
 describe('speaker directory', () => {
   beforeEach(() => {
     mockRouterPush.mockReset();
+    mockDbSpeakers = defaultDbSpeakers();
+    mockEventSpeakers = [];
   });
 
   it('shows all speakers while disabling the unclaimed profiles', async () => {
@@ -82,6 +103,35 @@ describe('speaker directory', () => {
     expect(typeof activeCard.props.onPress).toBe('function');
     expect(inactiveCard.props.disabled).toBe(true);
     expect(inactiveCard.props.onPress).toBeUndefined();
+    expect(cards.map((card: any) => card.props.accessibilityState.disabled)).toEqual([false, true]);
+    expect(renderer!.root.findByProps({ children: 'Inactive' })).toBeTruthy();
+
+    act(() => activeCard.props.onPress());
+    expect(mockRouterPush).toHaveBeenCalledWith('/events/chile2026/speakers/active-speaker');
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('uses non-interactive fallback speakers when the database returns no records', async () => {
+    mockDbSpeakers = [];
+    mockEventSpeakers = [{
+      id: 'configured-speaker',
+      name: 'Configured Speaker',
+      title: 'Moderator',
+      company: 'Hashpass',
+      image: '/speaker.png',
+    }];
+
+    let renderer: ReturnType<typeof create>;
+    await act(async () => {
+      renderer = create(<SpeakersCalendar />);
+      await flushPromises();
+    });
+
+    const cards = renderer!.root.findAll((node: any) => node.props?.accessibilityState?.disabled !== undefined);
+    expect(cards).toHaveLength(1);
+    expect(cards[0].props.disabled).toBe(true);
+    expect(renderer!.root.findByProps({ children: 'Configured Speaker' })).toBeTruthy();
     expect(renderer!.root.findByProps({ children: 'Inactive' })).toBeTruthy();
 
     await act(async () => renderer!.unmount());

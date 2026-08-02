@@ -230,12 +230,6 @@ export default function SpeakersCalendar() {
     loadSpeakers();
   }, [event?.id]); // Re-run once `event` resolves (or the route's event changes)
 
-  // Keep every profile visible by default. SpeakerSearchAndSort always orders
-  // active, claimed profiles first and can optionally hide inactive profiles.
-  useEffect(() => {
-    setFilteredSpeakers(showActiveOnly ? speakers.filter((speaker) => speaker.isActive) : speakers);
-  }, [speakers, showActiveOnly]);
-
   if (loading) {
     return (
       <LoadingScreen
