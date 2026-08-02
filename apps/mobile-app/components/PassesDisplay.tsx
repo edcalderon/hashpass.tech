@@ -18,6 +18,8 @@ interface PassesDisplayProps {
   boostAmount?: number;
   showRequestButton?: boolean;
   onRequestPress?: () => void;
+  existingRequest?: { id: string; status: string } | null;
+  onExistingRequestPress?: () => void;
 
   // Which event's pass to show (speaker mode). Falls back to the
   // tenant-resolved default event when omitted.
@@ -52,6 +54,8 @@ function PassesDisplayInner({
   boostAmount = 0,
   showRequestButton = false,
   onRequestPress,
+  existingRequest,
+  onExistingRequestPress,
   eventId,
   onPassInfoLoaded,
   onRequestLimitsLoaded,
@@ -252,6 +256,12 @@ function PassesDisplayInner({
   const getPassTypeDisplayName = (passType: string) => {
     return passSystemService.getPassTypeDisplayName(passType as any);
   };
+
+  const hasExistingRequest = Boolean(
+    existingRequest || requestLimits?.reason === 'existing_request',
+  );
+  const isPendingExistingRequest =
+    !existingRequest || ['pending', 'requested'].includes(existingRequest.status);
 
   // Speaker mode - show detailed pass info with request functionality.
   // Dashboard mode never reaches here: PassesDisplayBoundary routes it to
@@ -972,17 +982,21 @@ function PassesDisplayInner({
       {passInfo && requestLimits && (
         <View style={{ 
           padding: 12,
-          backgroundColor: requestLimits.canSendRequest ? `${colors.primary}10` : `${colors.error}10`,
+          backgroundColor: requestLimits.canSendRequest ? `${colors.primary}10` : hasExistingRequest ? `${colors.warning?.main || '#FF9500'}10` : `${colors.error}10`,
           borderRadius: 8,
           marginBottom: 16
         }}>
           <Text style={{ 
             fontSize: 14, 
             fontWeight: '600', 
-            color: requestLimits.canSendRequest ? colors.primary : colors.error.main,
+            color: requestLimits.canSendRequest ? colors.primary : hasExistingRequest ? (colors.warning?.main || '#FF9500') : colors.error.main,
             marginBottom: 4
           }}>
-            {requestLimits.canSendRequest ? t({ id: 'passes.canRequestMeeting', message: '✅ Can Request Meeting' }) : t({ id: 'passes.cannotRequestMeeting', message: '❌ Cannot Request Meeting' })}
+            {requestLimits.canSendRequest
+              ? t({ id: 'passes.canRequestMeeting', message: '✅ Can Request Meeting' })
+              : hasExistingRequest
+                ? t({ id: 'passes.requestPending', message: '⏳ Meeting request pending' })
+                : t({ id: 'passes.cannotRequestMeeting', message: '❌ Cannot Request Meeting' })}
           </Text>
           <Text style={{ 
             fontSize: 12, 
@@ -990,8 +1004,24 @@ function PassesDisplayInner({
           }}>
             {requestLimits.canSendRequest
               ? t({ id: 'passes.requestAllowed', message: 'You can send a meeting request.' })
-              : requestLimits.reason || passSystemService.getPassValidationMessage(requestLimits)}
+              : hasExistingRequest
+                ? isPendingExistingRequest
+                  ? t({ id: 'passes.requestPendingDescription', message: 'Your request is waiting for the speaker’s response.' })
+                  : t({ id: 'passes.requestInProgressDescription', message: 'You already have an active request with this speaker.' })
+                : passSystemService.getPassValidationMessage(requestLimits)}
           </Text>
+          {hasExistingRequest && onExistingRequestPress && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t({ id: 'passes.viewRequest', message: 'View request' })}
+              onPress={onExistingRequestPress}
+              style={{ alignSelf: 'flex-start', marginTop: 10 }}
+            >
+              <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>
+                {t({ id: 'passes.viewRequest', message: 'View request' })}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -999,22 +1029,25 @@ function PassesDisplayInner({
       {showRequestButton && onRequestPress && (
         <TouchableOpacity
           style={{
-            backgroundColor: (passInfo && requestLimits?.canSendRequest) ? colors.primary : colors.divider,
+            backgroundColor: (passInfo && (requestLimits?.canSendRequest || hasExistingRequest)) ? colors.primary : colors.divider,
             paddingVertical: 12,
             paddingHorizontal: 24,
             borderRadius: 8,
             alignItems: 'center',
-            opacity: (passInfo && requestLimits?.canSendRequest) ? 1 : 0.5
+            opacity: (passInfo && (requestLimits?.canSendRequest || hasExistingRequest)) ? 1 : 0.5
           }}
-          onPress={(passInfo && requestLimits?.canSendRequest) ? onRequestPress : undefined}
-          disabled={!passInfo || !requestLimits?.canSendRequest}
+          onPress={(passInfo && (requestLimits?.canSendRequest || hasExistingRequest))
+            ? (hasExistingRequest ? onExistingRequestPress : onRequestPress)
+            : undefined}
+          disabled={!passInfo || (!requestLimits?.canSendRequest && !hasExistingRequest)}
         >
           <Text style={{ 
-            color: (passInfo && requestLimits?.canSendRequest) ? 'white' : colors.text.secondary,
+            color: (passInfo && (requestLimits?.canSendRequest || hasExistingRequest)) ? 'white' : colors.text.secondary,
             fontSize: 16,
             fontWeight: '600'
           }}>
-            {!passInfo ? t({ id: 'passes.button.passRequired', message: 'Pass Required' }) : 
+            {!passInfo ? t({ id: 'passes.button.passRequired', message: 'Pass Required' }) :
+             hasExistingRequest ? t({ id: 'passes.viewRequest', message: 'View request' }) :
              !requestLimits?.canSendRequest ? t({ id: 'passes.button.limitReached', message: 'Limit Reached' }) :
              t({ id: 'passes.button.requestMeeting', message: 'Request Meeting' })}
           </Text>

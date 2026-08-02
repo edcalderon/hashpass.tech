@@ -566,6 +566,10 @@
     "currentPass": "Ihr aktueller Pass",
     "unknown": "Unbekannt",
     "requestAllowed": "Sie können eine Meeting-Anfrage senden.",
+    "requestPending": "⏳ Meeting-Anfrage ausstehend",
+    "requestPendingDescription": "Ihre Anfrage wartet auf die Antwort des Sprechers.",
+    "requestInProgressDescription": "Sie haben bereits eine aktive Anfrage bei diesem Sprecher.",
+    "viewRequest": "Anfrage anzeigen",
     "status": {
       "active": "Aktiv",
       "inactive": "Inaktiv",

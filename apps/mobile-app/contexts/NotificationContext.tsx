@@ -65,7 +65,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const unreadCount = notifications.filter(n => !n.is_read && !n.is_archived).length;
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (force = false) => {
     if (!user) {
       setNotifications([]);
       setResolvedUserId(null);
@@ -74,8 +74,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return;
     }
 
-    // Prevent fetching if user hasn't changed
-    if (currentUserIdRef.current === user.id) {
+    // Initial identity resolution may call this effect more than once. Keep
+    // that path quiet, but let explicit and timed refreshes fetch new rows.
+    if (!force && currentUserIdRef.current === user.id) {
       return;
     }
 
@@ -258,7 +259,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     setIsLoading(true);
     // Force refresh by resetting the user ID ref
     currentUserIdRef.current = null;
-    await fetchNotifications();
+    await fetchNotifications(true);
   }, [fetchNotifications]);
 
   // Initial fetch + auto-refresh fallback. Realtime subscription (below)
@@ -385,7 +386,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     if (!user) return;
 
     const interval = setInterval(() => {
-      fetchNotifications();
+      void fetchNotifications(true);
     }, 30000);
 
     return () => clearInterval(interval);

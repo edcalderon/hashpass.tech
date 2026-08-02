@@ -709,6 +709,10 @@
     "currentPass": "Tu Pase Actual",
     "unknown": "Desconocido",
     "requestAllowed": "Puedes enviar una solicitud de reunión.",
+    "requestPending": "⏳ Solicitud de reunión pendiente",
+    "requestPendingDescription": "Tu solicitud está esperando la respuesta del ponente.",
+    "requestInProgressDescription": "Ya tienes una solicitud activa con este ponente.",
+    "viewRequest": "Ver solicitud",
     "status": {
       "active": "Activo",
       "inactive": "Inactivo",

@@ -566,6 +566,10 @@
     "currentPass": "Seu passe atual",
     "unknown": "Desconhecido",
     "requestAllowed": "Você pode enviar uma solicitação de reunião.",
+    "requestPending": "⏳ Solicitação de reunião pendente",
+    "requestPendingDescription": "Sua solicitação está aguardando a resposta do palestrante.",
+    "requestInProgressDescription": "Você já tem uma solicitação ativa com este palestrante.",
+    "viewRequest": "Ver solicitação",
     "status": {
       "active": "Ativo",
       "inactive": "Inativo",

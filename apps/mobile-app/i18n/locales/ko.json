@@ -640,6 +640,10 @@
     "currentPass": "현재 패스",
     "unknown": "알 수 없음",
     "requestAllowed": "미팅 요청을 보낼 수 있습니다.",
+    "requestPending": "⏳ 미팅 요청 대기 중",
+    "requestPendingDescription": "요청이 발표자의 응답을 기다리고 있습니다.",
+    "requestInProgressDescription": "이 발표자에게 이미 활성 요청이 있습니다.",
+    "viewRequest": "요청 보기",
     "status": {
       "active": "활성",
       "inactive": "비활성",

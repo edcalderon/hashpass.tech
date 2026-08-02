@@ -4,6 +4,7 @@ import React from 'react';
 
 const mockGetUserPassInfo = jest.fn();
 const mockGetEventPassTiers = jest.fn();
+const mockCanMakeMeetingRequest = jest.fn();
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }));
 jest.mock('../../hooks/useTheme', () => ({
@@ -24,7 +25,7 @@ jest.mock('../../lib/pass-system', () => ({
     getUserPassInfo: (...args: unknown[]) => mockGetUserPassInfo(...args),
     getEventPassTiers: (...args: unknown[]) => mockGetEventPassTiers(...args),
     getPassPerks: () => ({ features: [], perks: [] }),
-    canMakeMeetingRequest: jest.fn(),
+    canMakeMeetingRequest: (...args: unknown[]) => mockCanMakeMeetingRequest(...args),
     getPassValidationMessage: jest.fn(),
     getPassTypeColor: () => '#34A853',
     getPassTypeDisplayName: () => 'General Pass',
@@ -45,6 +46,14 @@ describe('PassesDisplay', () => {
       max_boost: 100, used_boost: 0, remaining_boost: 100, access_features: [], special_perks: [],
     });
     mockGetEventPassTiers.mockResolvedValue([]);
+    mockCanMakeMeetingRequest.mockResolvedValue({
+      can_request: false,
+      canSendRequest: false,
+      reason: 'existing_request',
+      pass_type: 'general',
+      remaining_requests: 9,
+      remaining_boost: 100,
+    });
   });
 
   it('renders the actual issued pass limits and uses Boost points rather than VOI', async () => {
@@ -61,5 +70,35 @@ describe('PassesDisplay', () => {
     expect(mockGetEventPassTiers).toHaveBeenCalledWith('chile2026');
     expect(renderer.root.findAllByProps({ children: 'Boost points' }).length).toBeGreaterThan(0);
     expect(renderer.root.findAllByProps({ children: 'VOI Boost' })).toHaveLength(0);
+  });
+
+  it('links an existing pending request instead of presenting it as a limit error', async () => {
+    const onExistingRequestPress = jest.fn();
+    let renderer: any;
+    await act(async () => {
+      renderer = create(
+        <PassesDisplay
+          mode="speaker"
+          eventId="chile2026"
+          speakerId="speaker-1"
+          showRequestButton
+          onRequestPress={jest.fn()}
+          existingRequest={{ id: 'request-1', status: 'pending' }}
+          onExistingRequestPress={onExistingRequestPress}
+        />,
+      );
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+
+    const requestControl = renderer.root.findAll((node: any) =>
+      typeof node.props?.onPress === 'function'
+      && node.findAllByProps({ children: 'View request' }).length > 0,
+    )[0];
+    expect(requestControl).toBeDefined();
+    await act(async () => requestControl.props.onPress());
+    expect(onExistingRequestPress).toHaveBeenCalledTimes(1);
   });
 });

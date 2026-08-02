@@ -567,6 +567,10 @@
     "currentPass": "Votre passe actuel",
     "unknown": "Inconnu",
     "requestAllowed": "Vous pouvez envoyer une demande de rendez-vous.",
+    "requestPending": "⏳ Demande de réunion en attente",
+    "requestPendingDescription": "Votre demande attend la réponse de l’intervenant.",
+    "requestInProgressDescription": "Vous avez déjà une demande active avec cet intervenant.",
+    "viewRequest": "Voir la demande",
     "status": {
       "active": "Actif",
       "inactive": "Inactif",

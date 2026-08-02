@@ -710,6 +710,10 @@
     "currentPass": "Your Current Pass",
     "unknown": "Unknown",
     "requestAllowed": "You can send a meeting request.",
+    "requestPending": "⏳ Meeting request pending",
+    "requestPendingDescription": "Your request is waiting for the speaker’s response.",
+    "requestInProgressDescription": "You already have an active request with this speaker.",
+    "viewRequest": "View request",
     "status": {
       "active": "Active",
       "inactive": "Inactive",

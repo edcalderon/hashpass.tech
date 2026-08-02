@@ -101,6 +101,19 @@ export default function SpeakerDetail() {
     reason?: string;
   } | null>(null);
   const [showTicketComparison, setShowTicketComparison] = useState(false);
+  const existingRequest = !isCurrentUserSpeaker
+    ? meetingRequests.find((request) =>
+        ['pending', 'requested', 'approved', 'accepted'].includes(request.status),
+      )
+    : null;
+
+  const openExistingRequest = () => {
+    if (!existingRequest?.id) return;
+    router.push({
+      pathname: `/events/${eventId}/networking/my-requests` as any,
+      params: { requestId: existingRequest.id, highlightRequest: 'true' },
+    });
+  };
 
   // Keep persistence and pass validation behind our authenticated API boundary.
   const createMeetingRequest = async (data: CreateMeetingRequestData) => {
@@ -1215,6 +1228,9 @@ export default function SpeakerDetail() {
             speakerId={speaker.id}
             showRequestButton={true}
             onRequestPress={handleRequestMeeting}
+            eventId={eventId}
+            existingRequest={existingRequest ? { id: existingRequest.id, status: existingRequest.status } : null}
+            onExistingRequestPress={existingRequest ? openExistingRequest : undefined}
             refreshTrigger={passRefreshTrigger}
             onPassInfoLoaded={(passInfo: { pass_type?: string } | null) => {
               if (passInfo && passInfo.pass_type) {
