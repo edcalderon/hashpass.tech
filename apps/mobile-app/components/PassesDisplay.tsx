@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,7 +9,6 @@ import { resolveActiveEventId } from '@/lib/event-path';
 import { useTranslation } from '@/i18n/i18n';
 import * as Sentry from '@sentry/react-native';
 import PassesWallet from './passes/PassesWallet';
-import * as Clipboard from 'expo-clipboard';
 
 interface PassesDisplayProps {
   // Display mode
@@ -85,6 +85,7 @@ function PassesDisplayInner({
   const { t: translate } = useTranslation('passes');
   const { colors } = useTheme();
   const { dbUserId } = useAuth();
+  const router = useRouter();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
   const [requestLimits, setRequestLimits] = useState<PassRequestLimits | null>(null);
   const [loading, setLoading] = useState(true);
@@ -300,19 +301,16 @@ function PassesDisplayInner({
     ? `${rawPassNumber.slice(0, 6)}...${rawPassNumber.slice(-4)}`
     : rawPassNumber;
 
-  const copyPassNumber = async () => {
-    try {
-      await Clipboard.setStringAsync(rawPassNumber);
-      Alert.alert(
-        t({ id: 'passes.passNumberCopiedTitle', message: 'Pass number copied' }),
-        t({ id: 'passes.passNumberCopiedMessage', message: 'Your pass number has been copied to the clipboard.' }),
-      );
-    } catch {
-      Alert.alert(
-        t({ id: 'passes.alert.errorTitle', message: 'Error' }),
-        t({ id: 'passes.copyError', message: 'Unable to copy the pass number. Please try again.' }),
-      );
-    }
+  const openPassDetails = () => {
+    if (!passInfo?.pass_id) return;
+
+    router.push({
+      pathname: '/(shared)/dashboard/pass-details',
+      params: {
+        passId: passInfo.pass_id,
+        eventId: passInfo.event_id || eventId || '',
+      },
+    } as any);
   };
 
   const hasExistingRequest = Boolean(
@@ -770,8 +768,8 @@ function PassesDisplayInner({
             {getPassTypeDisplayName(passInfo.pass_type)}
           </Text>
           <TouchableOpacity
-            accessibilityLabel={t({ id: 'passes.copyPassNumber', message: 'Copy pass number' })}
-            onPress={copyPassNumber}
+            accessibilityLabel={t({ id: 'passes.viewFullDetails', message: 'View full pass details' })}
+            onPress={openPassDetails}
             activeOpacity={0.7}
             style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5 }}
           >
@@ -782,7 +780,7 @@ function PassesDisplayInner({
             }}>
               {`${t({ id: 'passes.pass', message: 'Pass' })} #${displayPassNumber}`}
             </Text>
-            <MaterialIcons name="content-copy" size={14} color={colors.primary} />
+            <MaterialIcons name="open-in-new" size={14} color={colors.primary} />
           </TouchableOpacity>
         </View>
         <View style={{

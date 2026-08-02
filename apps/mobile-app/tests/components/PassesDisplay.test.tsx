@@ -5,9 +5,9 @@ import React from 'react';
 const mockGetUserPassInfo = jest.fn();
 const mockGetEventPassTiers = jest.fn();
 const mockCanMakeMeetingRequest = jest.fn();
+const mockRouterPush = jest.fn();
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }));
-jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockRouterPush }) }));
 jest.mock('../../hooks/useTheme', () => ({
   useTheme: () => ({
     colors: {
@@ -127,6 +127,26 @@ describe('PassesDisplay', () => {
     expect(renderer.root.findAllByType('Text').map((node: any) => textContent(node))).toEqual(
       expect.arrayContaining([expect.stringMatching(/Pass #legacy.*5678/)]),
     );
+  });
+
+  it('opens the selected pass details from a speaker card', async () => {
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<PassesDisplay mode="speaker" eventId="chile2026" />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+
+    await act(async () => {
+      renderer.root.findByProps({ accessibilityLabel: 'View full pass details' }).props.onPress();
+    });
+
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      pathname: '/(shared)/dashboard/pass-details',
+      params: { passId: 'pass-1', eventId: 'chile2026' },
+    });
   });
 
   it('formats configured fractional tier prices without mutating the renderer environment', () => {
