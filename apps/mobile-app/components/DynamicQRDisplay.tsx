@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { qrSystemService, QRCode } from '../lib/qr-system';
-import { passSystemService } from '../lib/pass-system';
-import { qrScannerService } from '../lib/qr-scanner-service';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import QRCodeSvg from 'react-native-qrcode-svg';
-import Svg, { Image as SvgImage } from 'react-native-svg';
 
 interface DynamicQRDisplayProps {
   passId: string;
@@ -24,8 +21,6 @@ interface DynamicQRDisplayProps {
 
 export default function DynamicQRDisplay({
   passId,
-  passNumber,
-  passType,
   size = 200,
   showRefreshButton = true,
   autoRefresh = true,
@@ -38,7 +33,6 @@ export default function DynamicQRDisplay({
   const [qrCode, setQrCode] = useState<QRCode | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [timeUntilExpiry, setTimeUntilExpiry] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -95,8 +89,6 @@ export default function DynamicQRDisplay({
         const expiryTime = new Date(qrCode.expires_at!).getTime();
         const now = Date.now();
         const remaining = Math.max(0, Math.floor((expiryTime - now) / 1000));
-        setTimeUntilExpiry(remaining);
-
         if (remaining <= 0) {
           // QR expired, refresh it
           refreshQR();
@@ -137,43 +129,9 @@ export default function DynamicQRDisplay({
       // Fetch the full QR code details
       const qrDetails = await qrSystemService.getQRById(result.qrId);
       if (qrDetails) {
-        // Validate QR code has required fields
         if (!qrDetails.token) {
-          console.error('❌ QR code missing token:', qrDetails);
           throw new Error('Generated QR code is missing token');
         }
-        
-        console.log('✅ QR code generated successfully');
-        console.log('🔑 Token:', qrDetails.token);
-        console.log('📊 QR details:', {
-          id: qrDetails.id,
-          token: qrDetails.token,
-          status: qrDetails.status,
-          expires_at: qrDetails.expires_at,
-        });
-        
-        // Test QR payload generation
-        const testPayload = qrSystemService.generateQRPayload(qrDetails.token);
-        console.log('🧪 Test payload:', testPayload);
-        
-        // Test parsing the payload
-        const testParsed = qrScannerService.parseQRData(testPayload);
-        console.log('🧪 Test parsed:', testParsed);
-        
-        if (!testParsed.isValid || !testParsed.token) {
-          console.error('❌ QR payload test failed!', testParsed);
-          throw new Error('QR payload format validation failed');
-        }
-        
-        if (testParsed.token !== qrDetails.token) {
-          console.error('❌ Token mismatch!', {
-            original: qrDetails.token,
-            parsed: testParsed.token,
-          });
-          throw new Error('QR token mismatch in payload');
-        }
-        
-        console.log('✅ QR payload validation passed');
         setQrCode(qrDetails);
       } else {
         throw new Error('Failed to fetch QR code details');
@@ -215,24 +173,12 @@ export default function DynamicQRDisplay({
     }
   };
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const getQRPayload = (token: string): string => {
     if (!token) {
-      console.error('❌ getQRPayload: No token provided');
       throw new Error('QR token is required');
     }
-    
-    console.log('🔑 Generating QR payload for token:', token.substring(0, 50));
-    const payload = qrSystemService.generateQRPayload(token);
-    console.log('✅ QR payload generated, length:', payload.length);
-    console.log('📄 Payload preview:', payload.substring(0, 150));
-    
-    return payload;
+
+    return qrSystemService.generateQRPayload(token);
   };
 
   const animatedRefreshStyle = useAnimatedStyle(() => {
@@ -278,7 +224,6 @@ export default function DynamicQRDisplay({
 
   // Validate QR code has token before generating payload
   if (!qrCode.token) {
-    console.error('❌ QR code missing token:', qrCode);
     return (
       <View style={styles.container}>
         <View style={styles.errorContainer}>
@@ -292,21 +237,18 @@ export default function DynamicQRDisplay({
     );
   }
 
-  console.log('🎯 Generating QR code for token:', qrCode.token);
   const qrPayload = getQRPayload(qrCode.token);
-  console.log('✅ QR payload ready for display, length:', qrPayload.length);
-  
-  const logoSource = (() => {
-    try {
-      return { uri: Image.resolveAssetSource(require('../assets/android-chrome-192x192.webp')).uri };
-    } catch {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        return { uri: `${window.location.origin}/favicon.ico` };
-      }
-      const baseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace('/rest/v1', '') || 'https://hashpass.co';
-      return { uri: `${baseUrl}/favicon.ico` };
-    }
-  })();
+  // react-native-svg's <Image> logo path emits invalid CSS on web in some
+  // browsers. The QR remains fully scannable without a center logo there.
+  const logoProps = Platform.OS === 'web'
+    ? {}
+    : {
+        logo: { uri: Image.resolveAssetSource(require('../assets/android-chrome-192x192.webp')).uri },
+        logoSize: size * 0.2,
+        logoBackgroundColor: 'transparent',
+        logoMargin: 2,
+        logoBorderRadius: 8,
+      };
 
   return (
     <View style={styles.container}>
@@ -318,14 +260,9 @@ export default function DynamicQRDisplay({
             size={size}
             color={isDark ? '#FFFFFF' : '#000000'}
             backgroundColor={isDark ? '#1A1A1A' : '#FFFFFF'}
-            logo={logoSource}
-            logoSize={size * 0.2}
-            logoBackgroundColor="transparent"
-            logoMargin={2}
-            logoBorderRadius={8}
             quietZone={size * 0.05}
             ecl="L"
-            enableLinearGradient={false}
+            {...logoProps}
           />
           
           {/* Status Badge */}
