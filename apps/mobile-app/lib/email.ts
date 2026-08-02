@@ -84,13 +84,18 @@ interface EmailTranslations {
 }
 
 // Validate required environment variables
-const requiredEnvVars = [
-  'NODEMAILER_HOST',
-  'NODEMAILER_PORT',
-  'NODEMAILER_USER',
-  'NODEMAILER_PASS',
-  'NODEMAILER_FROM'
-];
+// Prefer the dedicated transactional provider when configured. The legacy
+// NODEMAILER_* names remain a safe fallback for existing environments.
+const smtpConfig = {
+  host: process.env.NODEMAILER_HOST_INFO || process.env.NODEMAILER_HOST || '',
+  port: process.env.NODEMAILER_PORT_INFO || process.env.NODEMAILER_PORT || '587',
+  user: process.env.NODEMAILER_USER_INFO || process.env.NODEMAILER_USER || '',
+  pass: process.env.NODEMAILER_PASS_INFO || process.env.NODEMAILER_PASS || '',
+  from: process.env.NODEMAILER_FROM_INFO || process.env.NODEMAILER_FROM || '',
+};
+const requiredEnvVars = Object.entries(smtpConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => `transactional SMTP ${key}`);
 
 // Check if all required environment variables are set
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -102,27 +107,29 @@ if (missingVars.length > 0) {
 const emailEnabled = missingVars.length === 0;
 console.log('[email] enabled:', emailEnabled, missingVars.length ? `(missing: ${missingVars.join(', ')})` : '');
 
-const smtpHost = process.env.NODEMAILER_HOST || '';
+const smtpHost = smtpConfig.host;
+const smtpFrom = smtpConfig.from;
 const isBrevo = smtpHost.includes('brevo.com') || smtpHost.includes('sendinblue.com');
 
 const transporter = emailEnabled ? nodemailer.createTransport({
   host: smtpHost,
-  port: parseInt(process.env.NODEMAILER_PORT || '587'),
+  port: parseInt(smtpConfig.port, 10),
   secure: false,
   auth: {
-    user: process.env.NODEMAILER_USER,
-    pass: process.env.NODEMAILER_PASS,
+    user: smtpConfig.user,
+    pass: smtpConfig.pass,
   },
   // Add connection timeout
   connectionTimeout: 10000, // 10 seconds
   // Add TLS options
-  tls: {
-    // Do not fail on invalid certs
-    rejectUnauthorized: process.env.NODE_ENV === 'production',
-    // For Brevo/Sendinblue, allow hostname mismatch but still verify certificate
-    servername: isBrevo ? 'smtp-relay.sendinblue.com' : undefined,
-    checkServerIdentity: isBrevo ? () => undefined : undefined,
-  },
+  tls: isBrevo
+    ? {
+        rejectUnauthorized: process.env.NODE_ENV === 'production',
+        // Brevo's relay may present a hostname that differs from the relay alias.
+        servername: 'smtp-relay.sendinblue.com',
+        checkServerIdentity: () => undefined,
+      }
+    : { rejectUnauthorized: process.env.NODE_ENV === 'production' },
   requireTLS: true,
 }) : null;
 
@@ -427,7 +434,7 @@ export async function sendSubscriptionConfirmation(
     });
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject,
       html,
@@ -499,7 +506,7 @@ export async function sendBookingEmail(
       ${payload.start ? `<p>Fecha y hora: ${payload.start}</p>` : ''}
       ${payload.location ? `<p>Ubicación: ${payload.location}</p>` : ''}
     `;
-    const info = await transporter.sendMail({ from: `HASHPASS <${process.env.NODEMAILER_FROM}>`, to, subject, html });
+    const info = await transporter.sendMail({ from: `HASHPASS <${smtpFrom}>`, to, subject, html });
     return { success: true, messageId: info.messageId };
   } catch (e: any) {
     return { success: false, error: e?.message || 'Email failed' };
@@ -508,7 +515,8 @@ export async function sendBookingEmail(
 
 export type MeetingEmailStatus = 'requested' | 'accepted' | 'declined';
 export interface MeetingEmailDetails {
-  recipientUserId: string;
+  recipientUserId?: string;
+  recipientEmail?: string;
   status: MeetingEmailStatus;
   eventId: string;
   requesterName?: string | null;
@@ -537,9 +545,12 @@ export async function sendMeetingNotificationEmail(
 ): Promise<{ success: boolean; error?: string; messageId?: string }> {
   if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
   try {
-    const { data, error } = await supabaseServer.auth.admin.getUserById(details.recipientUserId);
-    if (error || !data.user?.email) return { success: false, error: error?.message || 'Recipient email is unavailable' };
-    const locale = (await detectUserLocale(details.recipientUserId)) === 'es' ? 'es' : 'en';
+    const recipient = details.recipientUserId
+      ? await supabaseServer.auth.admin.getUserById(details.recipientUserId)
+      : { data: { user: null }, error: null };
+    const recipientEmail = details.recipientEmail || recipient.data.user?.email;
+    if (recipient.error || !recipientEmail) return { success: false, error: recipient.error?.message || 'Recipient email is unavailable' };
+    const locale = details.recipientUserId && (await detectUserLocale(details.recipientUserId)) === 'es' ? 'es' : 'en';
     const es = locale === 'es';
     const labels = es
       ? {
@@ -551,7 +562,7 @@ export async function sendMeetingNotificationEmail(
           greeting: 'Hello', event: 'Event', with: 'Participants', purpose: 'Meeting type', date: 'Date and time', location: 'Location', duration: 'Duration', message: 'Message', response: 'Response', open: 'View requests', minutes: 'minutes',
         };
     const statusTitle = labels[details.status];
-    const recipientName = data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email.split('@')[0];
+    const recipientName = recipient.data.user?.user_metadata?.name || recipient.data.user?.user_metadata?.full_name || recipientEmail.split('@')[0];
     const date = details.meetingScheduledAt
       ? new Intl.DateTimeFormat(es ? 'es-ES' : 'en-US', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(details.meetingScheduledAt))
       : es ? 'Pendiente de programación' : 'To be scheduled';
@@ -560,7 +571,7 @@ export async function sendMeetingNotificationEmail(
     const row = (label: string, value?: unknown) => value ? `<tr><td style="padding:8px 12px;color:#667085;font-weight:600;vertical-align:top">${escapeEmailHtml(label)}</td><td style="padding:8px 12px;color:#101828">${escapeEmailHtml(value)}</td></tr>` : '';
     const appUrl = `https://bsl.hashpass.tech/events/${encodeURIComponent(details.eventId)}/networking/my-requests`;
     const html = `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#f8fafc;padding:24px"><div style="background:#101828;color:#fff;padding:24px;border-radius:16px 16px 0 0"><div style="font-size:12px;letter-spacing:1.2px;font-weight:700">HASHPASS</div><h1 style="margin:12px 0 0;font-size:24px">${escapeEmailHtml(statusTitle)}</h1></div><div style="background:#fff;padding:24px;border-radius:0 0 16px 16px"><p>${escapeEmailHtml(labels.greeting)} ${escapeEmailHtml(recipientName)},</p><p>${escapeEmailHtml(statusTitle)}.</p><table style="width:100%;border-collapse:collapse;background:#f8fafc;border-radius:10px">${row(labels.event, details.eventId)}${row(labels.with, participants)}${row(labels.purpose, details.meetingType)}${row(labels.date, date)}${row(labels.location, details.meetingLocation)}${row(labels.duration, details.durationMinutes ? `${details.durationMinutes} ${labels.minutes}` : undefined)}${row(labels.message, details.message)}${row(labels.response, details.response || details.note)}</table><p style="margin:24px 0 0"><a href="${appUrl}" style="display:inline-block;background:#1473e6;color:#fff;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:8px">${escapeEmailHtml(labels.open)}</a></p></div></div>`;
-    const info = await transporter.sendMail({ from: `HASHPASS <${process.env.NODEMAILER_FROM}>`, to: data.user.email, subject: `${statusTitle} · HASHPASS`, html, text: `${statusTitle}\n${labels.event}: ${details.eventId}\n${labels.with}: ${participants}\n${labels.date}: ${date}\n${labels.location}: ${details.meetingLocation || ''}\n${labels.message}: ${details.message || ''}\n${appUrl}` });
+    const info = await transporter.sendMail({ from: `HASHPASS <${smtpFrom}>`, to: recipientEmail, subject: `${statusTitle} · HASHPASS`, html, text: `${statusTitle}\n${labels.event}: ${details.eventId}\n${labels.with}: ${participants}\n${labels.date}: ${date}\n${labels.location}: ${details.meetingLocation || ''}\n${labels.message}: ${details.message || ''}\n${appUrl}` });
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
     console.error('[meeting-email] delivery failed:', error?.message || error);
@@ -726,7 +737,7 @@ export async function sendUserOnboardingEmail(
     }
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject: subject,
       html: htmlContent,
@@ -823,7 +834,7 @@ export async function sendWelcomeEmail(
     });
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject,
       html: htmlContent,
@@ -1013,7 +1024,7 @@ export async function sendSpeakerOnboardingEmail(
     }
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject: subject,
       html: htmlContent,
@@ -1455,7 +1466,7 @@ export async function sendTroubleshootingEmail(
     }
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject: subject,
       html: htmlContent,
