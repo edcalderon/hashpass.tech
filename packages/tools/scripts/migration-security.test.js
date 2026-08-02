@@ -55,6 +55,10 @@ const meetingPassConsumptionMigrationPath = path.join(
   root,
   'db/migrations/V038__consume_pass_entitlements_for_meeting_requests.sql',
 );
+const passNumberBackfillMigrationPath = path.join(
+  root,
+  'db/migrations/V039__backfill_missing_pass_numbers.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -89,6 +93,18 @@ describe('upcoming BSL pass provisioning migration', () => {
     expect(migration).not.toMatch(/get_pass_type_limits/i);
     expect(config.groups['event-pass-tiers']).toContain(
       'db/migrations/V037__apply_event_tiers_to_default_passes.sql',
+    );
+  });
+
+  it('backfills legacy blank pass numbers through the default tenant migration plan', () => {
+    const migration = fs.readFileSync(passNumberBackfillMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/UPDATE public\.passes/i);
+    expect(migration).toMatch(/NULLIF\(btrim\(COALESCE\(pass_number, ''\)\), ''\) IS NULL/i);
+    expect(migration).toMatch(/BSL-' \|\| upper\(COALESCE\(pass_type::text, 'general'\)\)/i);
+    expect(config.groups['event-pass-tiers']).toContain(
+      'db/migrations/V039__backfill_missing_pass_numbers.sql',
     );
   });
 

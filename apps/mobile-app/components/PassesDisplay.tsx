@@ -268,6 +268,12 @@ function PassesDisplayInner({
     return passSystemService.getPassTypeDisplayName(passType as any);
   };
 
+  const rawPassNumber = passInfo?.pass_number?.trim() || passInfo?.pass_id?.trim()
+    || t({ id: 'passes.unknown', message: 'Unknown' });
+  const displayPassNumber = rawPassNumber.length > 12
+    ? `${rawPassNumber.slice(0, 6)}...${rawPassNumber.slice(-4)}`
+    : rawPassNumber;
+
   const hasExistingRequest = Boolean(
     existingRequest || requestLimits?.reason === 'existing_request',
   );
@@ -733,9 +739,7 @@ function PassesDisplayInner({
               color: colors.primary,
               textDecorationLine: 'underline'
             }}>
-              {t({ id: 'passes.passNumber', message: 'Pass #{pass_number}' }).replace('{pass_number}', passInfo.pass_number && passInfo.pass_number.length > 12
-                ? `${passInfo.pass_number.slice(0, 6)}...${passInfo.pass_number.slice(-4)}` 
-                : passInfo.pass_number || t({ id: 'passes.unknown', message: 'Unknown' }))}
+              {t({ id: 'passes.passNumber', message: 'Pass #{pass_number}' }).replace('{pass_number}', displayPassNumber)}
             </Text>
           </TouchableOpacity>
         </View>

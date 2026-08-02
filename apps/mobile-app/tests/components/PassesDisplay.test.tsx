@@ -107,6 +107,27 @@ describe('PassesDisplay', () => {
     expect(onExistingRequestPress).toHaveBeenCalledTimes(1);
   });
 
+  it('shows a stable fallback number when a legacy pass has a blank number', async () => {
+    mockGetUserPassInfo.mockResolvedValue({
+      pass_id: 'legacy-pass-12345678', event_id: 'chile2026', pass_type: 'general', status: 'active', pass_number: '   ',
+      max_requests: 10, used_requests: 0, remaining_requests: 10,
+      max_boost: 100, used_boost: 0, remaining_boost: 100, access_features: [], special_perks: [],
+    });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<PassesDisplay mode="speaker" eventId="chile2026" />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+
+    expect(renderer.root.findAllByType('Text').map((node: any) => textContent(node))).toEqual(
+      expect.arrayContaining([expect.stringMatching(/Pass #legacy.*5678/)]),
+    );
+  });
+
   it('uses configured fractional event-tier prices in the no-pass comparison', async () => {
     const originalNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';

@@ -55,6 +55,14 @@ export interface Pass {
   updated_at: string;
 }
 
+const normalizePassNumber = (pass: Pick<Pass, 'id' | 'pass_number'>): string => {
+  const issuedNumber = typeof pass.pass_number === 'string' ? pass.pass_number.trim() : '';
+  if (issuedNumber) return issuedNumber;
+
+  const id = String(pass.id ?? '').trim();
+  return id ? `PASS-${id.slice(-8)}` : 'Unknown';
+};
+
 export interface Subpass {
   id: string;
   pass_id: string;
@@ -100,9 +108,8 @@ export interface PassInfo {
   access_features: string[];
   special_perks: string[];
   // The event this pass was issued for. Populated whenever the pass row is
-  // known (getUserPassInfo, getUserPassesForEvents); absent only in the
-  // legacy counts-only fallback (getUserPassInfoFromCounts), which has no
-  // underlying pass row to read it from.
+  // known (getUserPassInfo, getUserPassesForEvents); the counts-only fallback
+  // keeps the caller's resolved event scope even without a pass row.
   event_id?: string;
 }
 
@@ -198,13 +205,13 @@ class PassSystemService {
       // Handle the case where no pass exists (404/406 errors are expected)
       if (passError && (passError.code === 'PGRST116' || passError.code === '406' || passError.message?.includes('No rows'))) {
         // No pass found, fallback to counts
-        return await this.getUserPassInfoFromCounts(userId);
+        return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
       }
 
       if (passError) {
         console.error('Error getting pass data:', passError);
         // Fallback to the counting function
-        return await this.getUserPassInfoFromCounts(userId);
+        return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
       }
       
       // Extract the first (and only) pass from the array
@@ -225,28 +232,28 @@ class PassSystemService {
             } else {
               // Still no pass, fallback to counts
               console.warn('⚠️ Failed to retrieve newly created pass, falling back to counts');
-              return await this.getUserPassInfoFromCounts(userId);
+              return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
             }
           } else {
             // Failed to create pass, fallback to counts
             console.warn('⚠️ Failed to create default pass, falling back to counts');
-            return await this.getUserPassInfoFromCounts(userId);
+            return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
           }
         } catch (createError) {
           console.error('❌ Error creating default pass:', createError);
           // Fallback to counts
-          return await this.getUserPassInfoFromCounts(userId);
+          return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
         }
       }
       
       // If we still don't have passData at this point, fallback to counts
       if (!passData) {
-        return await this.getUserPassInfoFromCounts(userId);
+        return await this.getUserPassInfoFromCounts(userId, resolvedEventId);
       }
 
       // Get meeting request counts
       const { data: countsData, error: countsError } = await supabase
-        .rpc('get_user_meeting_request_counts', { p_user_id: userId })
+        .rpc('get_user_meeting_request_counts', { p_user_id: userId, p_event_id: resolvedEventId })
         .single();
 
       if (countsError) {
@@ -257,7 +264,7 @@ class PassSystemService {
           event_id: passData.event_id,
           pass_type: passData.pass_type || 'general',
           status: passData.status || 'active',
-          pass_number: passData.pass_number || 'Unknown',
+          pass_number: normalizePassNumber(passData),
           max_requests: passData.max_meeting_requests || 0,
           used_requests: passData.used_meeting_requests || 0,
           remaining_requests: (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
@@ -277,7 +284,7 @@ class PassSystemService {
         event_id: passData.event_id,
         pass_type: passData.pass_type || 'general',
         status: passData.status || 'active',
-        pass_number: passData.pass_number || 'Unknown',
+        pass_number: normalizePassNumber(passData),
         max_requests: passData.max_meeting_requests || 0,
         used_requests: counts.total_requests || 0,
         remaining_requests: counts.remaining_requests || 0,
@@ -294,7 +301,7 @@ class PassSystemService {
   }
 
   // Fallback method using only the counts function
-  private async getUserPassInfoFromCounts(userId: string): Promise<PassInfo | null> {
+  private async getUserPassInfoFromCounts(userId: string, eventId: string): Promise<PassInfo | null> {
     if (!isSupabaseAuthUserId(userId)) {
       warnInvalidSupabaseUserId('getUserPassInfoFromCounts', userId);
       return null;
@@ -302,7 +309,7 @@ class PassSystemService {
 
     try {
       const { data, error } = await supabase
-        .rpc('get_user_meeting_request_counts', { p_user_id: userId })
+        .rpc('get_user_meeting_request_counts', { p_user_id: userId, p_event_id: eventId })
         .single();
 
       if (error) {
@@ -315,6 +322,7 @@ class PassSystemService {
       // Convert to PassInfo format
       return {
         pass_id: 'unknown',
+        event_id: eventId,
         pass_type: result.pass_type || 'general',
         status: 'active',
         pass_number: 'Unknown',
@@ -385,7 +393,7 @@ class PassSystemService {
         pass_id: passData.id,
         pass_type: passData.pass_type || 'general',
         status: passData.status || 'active',
-        pass_number: passData.pass_number || 'Unknown',
+        pass_number: normalizePassNumber(passData),
         max_requests: passData.max_meeting_requests || 0,
         used_requests: passData.used_meeting_requests || 0,
         remaining_requests: (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
@@ -449,7 +457,7 @@ class PassSystemService {
         pass_id: passData.id,
         pass_type: passData.pass_type || 'general',
         status: passData.status || 'active',
-        pass_number: passData.pass_number || 'Unknown',
+        pass_number: normalizePassNumber(passData),
         max_requests: passData.max_meeting_requests || 0,
         used_requests: passData.used_meeting_requests || 0,
         remaining_requests: (passData.max_meeting_requests || 0) - (passData.used_meeting_requests || 0),
