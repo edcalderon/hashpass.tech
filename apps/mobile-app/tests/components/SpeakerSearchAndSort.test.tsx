@@ -18,12 +18,13 @@ jest.mock('../../hooks/useTheme', () => ({
 jest.mock('../../lib/vector-icons', () => ({ MaterialIcons: 'MaterialIcons' }));
 
 describe('SpeakerSearchAndSort', () => {
-  it('initially returns only speakers with claimed, active profiles', async () => {
+  it('returns every speaker while keeping claimed, active profiles first', async () => {
     const onFilteredSpeakers = jest.fn();
     const onGroupedSpeakers = jest.fn();
+    const onActiveFilterChange = jest.fn();
     const speakers = [
-      { id: 'active', name: 'Active Speaker', title: null, company: null, isActive: true },
       { id: 'unclaimed', name: 'Unclaimed Speaker', title: null, company: null, isActive: false },
+      { id: 'active', name: 'Active Speaker', title: null, company: null, isActive: true },
     ];
 
     let renderer: ReturnType<typeof create>;
@@ -35,11 +36,23 @@ describe('SpeakerSearchAndSort', () => {
           onGroupedSpeakers={onGroupedSpeakers}
           onSearchChange={jest.fn()}
           onSortChange={jest.fn()}
+          onActiveFilterChange={onActiveFilterChange}
         />,
       );
     });
 
-    expect(onFilteredSpeakers).toHaveBeenLastCalledWith([speakers[0]]);
+    expect(onFilteredSpeakers).toHaveBeenLastCalledWith([speakers[1], speakers[0]]);
+
+    await act(async () => {
+      renderer!.root.findByProps({ testID: 'speaker-sort-filter-button' }).props.onPress();
+    });
+    expect(renderer!.root.findByProps({ testID: 'show-active-speakers-toggle' })).toBeTruthy();
+
+    await act(async () => {
+      renderer!.root.findByProps({ testID: 'show-active-speakers-toggle' }).props.onPress();
+    });
+    expect(onActiveFilterChange).toHaveBeenLastCalledWith(true);
+    expect(onFilteredSpeakers).toHaveBeenLastCalledWith([speakers[1]]);
     await act(async () => renderer!.unmount());
   });
 });
