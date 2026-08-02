@@ -1,3 +1,7 @@
+## [1.8.303](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.302...v1.8.303) (2026-08-02)
+### Released
+- filter and prioritize active speakers; manage speaker roles from admin profiles; wait for profile roles before fallback; make admin tab overflow actionable; scroll admin tabs horizontally; preserve active speaker ordering; align meeting requests with auth identities
+
 ## [1.8.302](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.301...v1.8.302) (2026-08-02)
 ### Released
 - recover web pass sessions

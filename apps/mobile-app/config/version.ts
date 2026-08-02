@@ -22,22 +22,47 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608020044, // Updated to current timestamp
+  buildNumber: 202608020243, // Updated to current timestamp
   releaseDate: '2026-08-02',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'filter and prioritize active speakers',
+    'manage speaker roles from admin profiles'
   ],
   bugfixes: [
-    'recover web pass sessions'
+    'wait for profile roles before fallback',
+    'make admin tab overflow actionable',
+    'scroll admin tabs horizontally',
+    'preserve active speaker ordering',
+    'align meeting requests with auth identities'
   ],
   breakingChanges: [],
-  notes: 'recover web pass sessions'
+  notes: 'filter and prioritize active speakers; manage speaker roles from admin profiles; wait for profile roles before fallback; make admin tab overflow actionable; scroll admin tabs horizontally; preserve active speaker ordering; align meeting requests with auth identities'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.303': {
+    version: '1.8.303',
+    buildNumber: 202608020243,
+    releaseDate: '2026-08-02',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'filter and prioritize active speakers',
+      'manage speaker roles from admin profiles'
+    ],
+    bugfixes: [
+      'wait for profile roles before fallback',
+      'make admin tab overflow actionable',
+      'scroll admin tabs horizontally',
+      'preserve active speaker ordering',
+      'align meeting requests with auth identities'
+    ],
+    breakingChanges: [],
+    notes: 'filter and prioritize active speakers; manage speaker roles from admin profiles; wait for profile roles before fallback; make admin tab overflow actionable; scroll admin tabs horizontally; preserve active speaker ordering; align meeting requests with auth identities'
+  },
   '1.8.302': {
     version: '1.8.302',
     buildNumber: 202608020044,
