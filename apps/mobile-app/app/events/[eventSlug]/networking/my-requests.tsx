@@ -707,7 +707,7 @@ export default function MyRequestsView() {
               </View>
             </View>
             
-            {displaySubtitle && (
+            {Boolean(displaySubtitle) && (
               <Text style={styles.subtitle} numberOfLines={1}>
                 {displaySubtitle}
               </Text>
@@ -739,14 +739,14 @@ export default function MyRequestsView() {
           </View>
         </View>
 
-        {(request.message || request.note) && (
+        {Boolean(request.message || request.note) && (
           <View style={styles.cardContent}>
-            {request.message && (
+            {Boolean(request.message) && (
               <Text style={styles.messageText} numberOfLines={2}>
                 {request.message}
               </Text>
             )}
-            {request.note && (
+            {Boolean(request.note) && (
               <View style={styles.noteContainer}>
                 <Text style={styles.noteLabel}>Intentions:</Text>
                 <Text style={styles.noteText} numberOfLines={2}>
@@ -818,7 +818,7 @@ export default function MyRequestsView() {
                   <Text style={styles.speakerDetailTitle}>
                     {selectedRequest.speaker_title || t('requestView.speaker')}
                   </Text>
-                  {selectedRequest.speaker_company && (
+                  {Boolean(selectedRequest.speaker_company) && (
                     <Text style={[styles.speakerDetailTitle, { marginTop: 2 }]}>
                       {selectedRequest.speaker_company}
                     </Text>
@@ -842,7 +842,7 @@ export default function MyRequestsView() {
                     <Text style={styles.speakerDetailName}>
                       {(selectedRequest as any).requester_full_name || selectedRequest.requester_name}
                     </Text>
-                    {selectedRequest.requester_ticket_type && (
+                    {Boolean(selectedRequest.requester_ticket_type) && (
                       <View style={[
                         styles.ticketBadge,
                         selectedRequest.requester_ticket_type.toLowerCase() === 'vip' && styles.vipBadge
@@ -859,12 +859,12 @@ export default function MyRequestsView() {
                     )}
                   </View>
                   <Text style={styles.speakerDetailTitle}>{t('requestView.requester')}</Text>
-                  {selectedRequest.requester_title && (
+                  {Boolean(selectedRequest.requester_title) && (
                     <Text style={[styles.speakerDetailTitle, { marginTop: 4 }]}>
                       {selectedRequest.requester_title}
                     </Text>
                   )}
-                  {selectedRequest.requester_company && (
+                  {Boolean(selectedRequest.requester_company) && (
                     <Text style={[styles.speakerDetailTitle, { marginTop: 2 }]}>
                       {selectedRequest.requester_company}
                     </Text>
@@ -919,14 +919,14 @@ export default function MyRequestsView() {
               </View>
             </View>
 
-            {selectedRequest.message && (
+            {Boolean(selectedRequest.message) && (
               <View style={styles.detailSection}>
                 <Text style={styles.detailLabel}>{t('requestView.message')}</Text>
                 <Text style={styles.detailValue}>{selectedRequest.message}</Text>
               </View>
             )}
 
-            {selectedRequest.note && (
+            {Boolean(selectedRequest.note) && (
               <View style={styles.detailSection}>
                 <Text style={styles.detailLabel}>{t('requestView.intentions')}</Text>
                 <Text style={styles.detailValue}>{selectedRequest.note}</Text>
@@ -989,11 +989,11 @@ export default function MyRequestsView() {
               </View>
             </View>
 
-            {selectedRequest.speaker_response && (
+            {Boolean(selectedRequest.speaker_response) && (
               <View style={styles.detailSection}>
                 <Text style={styles.detailLabel}>{t('requestView.response')}</Text>
                 <Text style={styles.detailValue}>{selectedRequest.speaker_response}</Text>
-                {selectedRequest.speaker_response_at && (
+                {Boolean(selectedRequest.speaker_response_at) && (
                   <Text style={styles.responseDate}>
                     {formatDate(selectedRequest.speaker_response_at)}
                   </Text>
