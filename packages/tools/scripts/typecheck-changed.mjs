@@ -105,6 +105,42 @@ function isLocalSpecifier(specifier, matchers) {
   return matchers.some((matcher) => matcher.test(specifier));
 }
 
+// Mirrors tsconfig.json's compilerOptions.paths entries (e.g. "@/*": ["./*"],
+// "@hashpass/auth": ["../../packages/auth/src"]) so a stub for an aliased
+// specifier lands at the same physical location TypeScript's own paths-based
+// resolution would look for it — not a literal "@" folder. Each pattern has
+// at most one '*' in this repo, matching TS's own single-wildcard rule.
+function loadPathAliasEntries(tsconfigPath) {
+  const raw = fs.readFileSync(tsconfigPath, 'utf8');
+  const config = JSON.parse(raw);
+  const paths = config?.compilerOptions?.paths ?? {};
+
+  return Object.entries(paths).map(([pattern, targets]) => {
+    const target = Array.isArray(targets) ? targets[0] : targets;
+    const starIndex = pattern.indexOf('*');
+    return { pattern, target, starIndex };
+  });
+}
+
+function resolveAliasTarget(specifier, aliasEntries) {
+  for (const { pattern, target, starIndex } of aliasEntries) {
+    if (starIndex === -1) {
+      if (specifier === pattern) return target;
+      continue;
+    }
+
+    const prefix = pattern.slice(0, starIndex);
+    const suffix = pattern.slice(starIndex + 1);
+    if (!specifier.startsWith(prefix) || !specifier.endsWith(suffix)) continue;
+    if (specifier.length < prefix.length + suffix.length) continue;
+
+    const captured = specifier.slice(prefix.length, specifier.length - suffix.length);
+    return target.replace('*', captured);
+  }
+
+  return null;
+}
+
 function splitTopLevelCommaList(value) {
   return value
     .split(',')
@@ -227,11 +263,17 @@ function collectImportSpecifiers(content) {
   return imports;
 }
 
-function resolveTempModulePath(tempBaseDir, sourceFilePath, specifier) {
-  const sourceDir = isRelativeSpecifier(specifier)
-    ? path.dirname(sourceFilePath)
-    : tempBaseDir;
-  const resolved = path.resolve(sourceDir, specifier);
+function resolveTempModulePath(tempBaseDir, sourceFilePath, specifier, aliasEntries) {
+  let resolved;
+  if (isRelativeSpecifier(specifier)) {
+    resolved = path.resolve(path.dirname(sourceFilePath), specifier);
+  } else {
+    // Non-relative specifiers are only reached here when isLocalSpecifier()
+    // matched one of tsconfig's paths patterns, so this should always find a
+    // target; the raw specifier is a defensive fallback, not an expected path.
+    const aliasTarget = resolveAliasTarget(specifier, aliasEntries) ?? specifier;
+    resolved = path.resolve(tempBaseDir, aliasTarget);
+  }
 
   if (resolved.endsWith('.d.ts')) {
     return resolved;
@@ -258,6 +300,15 @@ function linkNodeModules(sourceDir, targetDir) {
 }
 
 function writeStubModule(stubPath, stubInfo) {
+  // If the aliased import target is itself one of the changed files, it was
+  // already copied into the sandbox with its real types intact — a stub at
+  // the same resolved location would create an ambiguous duplicate module
+  // (and silently mask the real file's types behind an `any` stub). Skip it.
+  const basePath = stubPath.replace(/\.d\.ts$/, '');
+  if (fs.existsSync(`${basePath}.ts`) || fs.existsSync(`${basePath}.tsx`)) {
+    return;
+  }
+
   const lines = ['/* eslint-disable @typescript-eslint/no-explicit-any */'];
 
   if (stubInfo.defaultImport) {
@@ -358,6 +409,7 @@ function main() {
     .filter(isTypeScriptFile)
     .filter(f => !f.startsWith('apps/web-app/') && !f.startsWith('apps/docs/') && !f.startsWith('archive/'));
   const localSpecifierMatchers = loadLocalSpecifierMatchers(MOBILE_APP_TSCONFIG);
+  const pathAliasEntries = loadPathAliasEntries(MOBILE_APP_TSCONFIG);
 
   if (changedFiles.length === 0) {
     console.log('No changed or uncommitted TypeScript files to typecheck.');
@@ -390,7 +442,7 @@ function main() {
         continue;
       }
 
-      const stubPath = resolveTempModulePath(tempBaseDir, tempFilePath, spec.specifier);
+      const stubPath = resolveTempModulePath(tempBaseDir, tempFilePath, spec.specifier, pathAliasEntries);
       if (!stubModules.has(stubPath)) {
         stubModules.set(stubPath, {
           defaultImport: '',
@@ -457,7 +509,10 @@ function main() {
       skipLibCheck: true,
       tsBuildInfoFile: tempBuildInfoPath,
       baseUrl: tempBaseDir,
-      paths: {},
+      // Inherit the real "@/*"-style paths from MOBILE_APP_TSCONFIG (not
+      // overridden here) so TS resolves an aliased import of another changed
+      // file to that file's real (copied) types, matching resolveTempModulePath
+      // below — and only falls through to a stub for genuinely unchanged deps.
     },
     files,
     include: [],
