@@ -532,6 +532,7 @@ export interface MeetingEmailDetails {
   recipientUserId?: string;
   recipientEmail?: string;
   status: MeetingEmailStatus;
+  recipientRole?: 'requester' | 'speaker';
   eventId: string;
   requesterName?: string | null;
   requesterCompany?: string | null;
@@ -585,7 +586,21 @@ export async function sendMeetingNotificationEmail(
           greeting: 'Hello', event: 'Event', with: 'Participants', purpose: 'Meeting type', date: 'Date and time', location: 'Location', duration: 'Duration', message: 'Message', response: 'Response', open: 'View requests', minutes: 'minutes',
           privacy: 'Privacy policy', contact: 'Contact', transactional: 'This is a transactional email related to your HASHPASS account.', bslEvent: 'BSL event',
         };
-    const statusTitle = labels[details.status];
+    const statusTitle = details.recipientRole === 'speaker'
+      ? (es
+        ? {
+            requested: 'Nueva solicitud de reunión',
+            accepted: 'Reunión aceptada — confirmación',
+            declined: 'Solicitud de reunión rechazada — confirmación',
+          }[details.status]
+        : {
+            requested: 'New meeting request',
+            accepted: 'Meeting accepted — confirmation',
+            declined: 'Meeting request declined — confirmation',
+          }[details.status])
+      : details.recipientRole === 'requester' && details.status === 'requested'
+        ? (es ? 'Tu solicitud de reunión fue enviada' : 'Your meeting request was sent')
+        : labels[details.status];
     const recipientName = recipient.data.user?.user_metadata?.name || recipient.data.user?.user_metadata?.full_name || recipientEmail.split('@')[0];
     const date = details.meetingScheduledAt
       ? new Intl.DateTimeFormat(es ? 'es-ES' : 'en-US', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(details.meetingScheduledAt))
