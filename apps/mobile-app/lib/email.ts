@@ -556,6 +556,73 @@ const escapeEmailHtml = (value: unknown) => String(value ?? '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
+export type AdminCampaignTemplate = 'branded' | 'raw';
+
+export interface AdminCampaignEmail {
+  to?: string;
+  subject: string;
+  heading: string;
+  message: string;
+  actionUrl?: string;
+  actionLabel?: string;
+  /** Resolves HASHPASS + event (e.g. BSL) branding for the 'branded' template. */
+  eventId?: string;
+  /** 'branded' (default): full HASHPASS/event header, card body, footer — matches notification emails. 'raw': minimal unbranded shell for a quick plain-text-style send. */
+  template?: AdminCampaignTemplate;
+}
+
+export interface AdminCampaignRender {
+  subject: string;
+  html: string;
+  text: string;
+  template: AdminCampaignTemplate;
+}
+
+/**
+ * Renders the admin campaign email without sending it, so the preview
+ * endpoint and the actual send path always produce byte-identical output.
+ */
+export function renderAdminCampaignEmail(details: AdminCampaignEmail): AdminCampaignRender {
+  const template: AdminCampaignTemplate = details.template === 'raw' ? 'raw' : 'branded';
+  const text = `${details.heading}\n\n${details.message}${details.actionUrl ? `\n\n${details.actionUrl}` : ''}`;
+
+  if (template === 'raw') {
+    const action = details.actionUrl
+      ? `<p style="margin:24px 0 0"><a href="${escapeEmailHtml(details.actionUrl)}" style="color:#007aff;font-weight:700">${escapeEmailHtml(details.actionLabel || 'Open HASHPASS')}</a></p>`
+      : '';
+    const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#1d2939"><h1 style="margin:0 0 12px;font-size:20px;line-height:26px">${escapeEmailHtml(details.heading)}</h1><div style="white-space:pre-wrap;font-size:15px;line-height:22px;color:#344054">${escapeEmailHtml(details.message)}</div>${action}</body></html>`;
+    return { subject: details.subject, html, text, template };
+  }
+
+  const eventBranding = details.eventId ? getEventEmailBranding(details.eventId) : { isBsl: false } as ReturnType<typeof getEventEmailBranding>;
+  const hasBslBranding = eventBranding.isBsl;
+  const hashpassLogoUrl = getEmailAssetUrl('images/logo-full-hashpass-white-cyan.png');
+  const bslLogoUrl = eventBranding.logoAssetPath ? getEmailAssetUrl(eventBranding.logoAssetPath) : '';
+  const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
+  const privacyUrl = 'https://hashpass.tech/privacy';
+  const bslBranding = hasBslBranding
+    ? `<td align="right" style="padding-left:18px;border-left:1px solid #344054"><a href="${escapeEmailHtml(eventBranding.eventUrl)}" style="display:block;text-decoration:none"><img src="${bslLogoUrl}" alt="${escapeEmailHtml(eventBranding.logoAlt)}" width="118" style="display:block;width:118px;height:auto;border:0;outline:none;text-decoration:none" /></a></td>`
+    : '';
+  const action = details.actionUrl
+    ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top:26px"><tr><td style="border-radius:8px;background:#344054"><a href="${escapeEmailHtml(details.actionUrl)}" style="display:inline-block;padding:13px 19px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;line-height:20px;text-decoration:none">${escapeEmailHtml(details.actionLabel || 'Open HASHPASS')}</a></td></tr></table>`
+    : '';
+  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#f5f7fa"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f7fa"><tr><td align="center" style="padding:32px 12px"><table role="presentation" width="640" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:640px"><tr><td style="background:#101828;border-radius:18px 18px 0 0;padding:26px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td><img src="${hashpassLogoUrl}" alt="HASHPASS" width="146" style="display:block;width:146px;height:auto;border:0;outline:none;text-decoration:none" /><div style="margin-top:8px;color:#d0d5dd;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:16px">Digital event platform</div></td>${bslBranding}</tr></table>${hasBslBranding ? `<div style="margin-top:14px;color:#d0d5dd;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:18px"><strong style="color:#ffffff">${escapeEmailHtml(eventBranding.eventTag)}</strong><span style="padding:0 7px;color:#667085">·</span><a href="${escapeEmailHtml(eventBranding.eventUrl)}" style="color:#d0d5dd;text-decoration:none">blockchainsummit.la</a></div>` : ''}</td></tr><tr><td style="background:#ffffff;padding:28px"><h1 style="margin:0 0 16px;color:#1d2939;font-family:Arial,Helvetica,sans-serif;font-size:26px;line-height:32px">${escapeEmailHtml(details.heading)}</h1><div style="white-space:pre-wrap;color:#475467;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px">${escapeEmailHtml(details.message)}</div>${action}</td></tr><tr><td style="background:#f9fafb;border-top:1px solid #eaecf0;border-radius:0 0 18px 18px;padding:22px 28px"><p style="margin:0 0 10px;color:#667085;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px">This event message was sent by a HASHPASS administrator${hasBslBranding ? ` for ${escapeEmailHtml(eventBranding.eventTag)}` : ''}.</p><p style="margin:0;color:#667085;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px"><a href="${privacyUrl}" style="color:#475467;text-decoration:underline">Privacy policy</a><span style="padding:0 7px;color:#98a2b3">·</span><a href="mailto:${escapeEmailHtml(supportEmail)}" style="color:#475467;text-decoration:underline">Contact</a></p></td></tr></table></td></tr></table></body></html>`;
+
+  return { subject: details.subject, html, text, template };
+}
+
+/** Delivers an administrator-authored event message using the branded (default) or raw template. */
+export async function sendAdminCampaignEmail(details: AdminCampaignEmail & { to: string }) {
+  if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
+  const { subject, html, text } = renderAdminCampaignEmail(details);
+  try {
+    const info = await transporter.sendMail({ from: `HASHPASS <${smtpFrom}>`, to: details.to, subject, html, text });
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Email delivery failed' };
+  }
+}
+
 /** Sends a localized operational email without affecting the meeting workflow on delivery failure. */
 export async function sendMeetingNotificationEmail(
   details: MeetingEmailDetails,

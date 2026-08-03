@@ -71,6 +71,18 @@ const meetingChatRealtimeMigrationPath = path.join(
   root,
   'db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql',
 );
+const adminMatchmakingAndEmailAuditMigrationPath = path.join(
+  root,
+  'db/migrations/V055__admin_matchmaking_and_email_audit.sql',
+);
+const adminEmailDeliveryTemplateMigrationPath = path.join(
+  root,
+  'db/migrations/V056__admin_email_delivery_template.sql',
+);
+const adminEventScopedAttendeesMigrationPath = path.join(
+  root,
+  'db/migrations/V057__admin_event_scoped_attendees.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -149,6 +161,33 @@ describe('admin pass management migration contract', () => {
     expect(migration).toMatch(/max_boost_amount numeric, used_boost_amount numeric/i);
     expect(migration).toMatch(/p\.max_boost_amount::numeric, p\.used_boost_amount::numeric/i);
     expect(migration).not.toMatch(/WHERE p\.event_id = p_event_id AND p\.status/i);
+  });
+});
+
+describe('admin matchmaking and email campaign migration contract', () => {
+  it('ships the audit tables, template column, and event-scoped attendee resolver through the default tenant migration command', () => {
+    const auditMigration = fs.readFileSync(adminMatchmakingAndEmailAuditMigrationPath, 'utf8');
+    const templateMigration = fs.readFileSync(adminEmailDeliveryTemplateMigrationPath, 'utf8');
+    const attendeesMigration = fs.readFileSync(adminEventScopedAttendeesMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('admin-matchmaking-communications');
+    expect(config.groups['admin-matchmaking-communications']).toEqual([
+      'db/migrations/V055__admin_matchmaking_and_email_audit.sql',
+      'db/migrations/V056__admin_email_delivery_template.sql',
+      'db/migrations/V057__admin_event_scoped_attendees.sql',
+    ]);
+
+    expect(auditMigration).toMatch(/CREATE TABLE IF NOT EXISTS public\.admin_email_deliveries/i);
+    expect(auditMigration).toMatch(/CREATE TABLE IF NOT EXISTS public\.admin_matchmaking_runs/i);
+    expect(templateMigration).toMatch(/ADD COLUMN IF NOT EXISTS template text NOT NULL DEFAULT 'branded'/i);
+
+    // Resolves attendees through the passes table (real event membership),
+    // not a platform-wide user search — see admin_search_active_users above,
+    // which intentionally stays unscoped for its other (global search) callers.
+    expect(attendeesMigration).toMatch(/CREATE OR REPLACE FUNCTION public\.admin_list_event_attendees/i);
+    expect(attendeesMigration).toMatch(/FROM public\.passes p\s*\n\s*WHERE p\.event_id = p_event_id/i);
+    expect(attendeesMigration).toMatch(/has_event_admin_access/i);
   });
 });
 
