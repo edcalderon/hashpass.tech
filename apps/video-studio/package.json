@@ -8,6 +8,8 @@
     "render": "node scripts/render.mjs",
     "still": "remotion still",
     "record:web": "node ../../packages/tools/scripts/record-web-demo.mjs",
+    "narration:generate": "node scripts/generate-narration.mjs",
+    "audio:generate": "node scripts/generate-audio-bed.mjs",
     "typecheck": "tsc --noEmit",
     "upgrade": "remotion upgrade"
   },

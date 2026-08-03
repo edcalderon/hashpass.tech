@@ -263,9 +263,48 @@ Then wire the file up the same way as a web recording (set `src` in
 pnpm video-studio:render                 # renders every composition to out/*.mp4
 pnpm --filter hashpass-video-studio render AppTutorialEN   # just one
 pnpm --filter hashpass-video-studio render AppTutorialES
+pnpm --filter hashpass-video-studio render AppTutorialNarratedEN
+pnpm --filter hashpass-video-studio render AppTutorialNarratedES
 pnpm --filter hashpass-video-studio render BslShowcase
 ```
 
 `out/`, `public/recordings/*` (contents, not the folders), and
 `.recording-state/` are gitignored — they're large/sensitive artifacts
 regenerated from the compositions/flows, not source.
+
+## Narrated variant (voice + music + transition SFX)
+
+`AppTutorialNarratedEN` / `AppTutorialNarratedES` are a second cut of the
+same recordings/layout as `AppTutorialEN`/`ES`, adding:
+
+- **Per-screen voiceover** — `src/content/narration.json` (source of truth,
+  read by both the TS composition and the plain-JS generation script) holds
+  one line per step, synthesized via **edge-tts**, Microsoft Edge's free
+  neural TTS (the same service behind Edge's "Read aloud" — no API key, just
+  `pip install edge-tts`):
+  ```bash
+  pnpm --filter hashpass-video-studio narration:generate
+  # -> public/audio/narration/{en,es}/<slug>.mp3
+  ```
+  Voices: `en-US-AriaNeural` / `es-ES-ElviraNeural`. Each line was sized to
+  comfortably fit inside its clip's real trimmed duration — check with
+  `ffprobe` if you edit `narration.json` or re-time a clip.
+- **Background music + transition whoosh** — there's no music-generation
+  tool available in this environment, and sourcing a real track would mean
+  clearing an actual license, so `scripts/generate-audio-bed.mjs`
+  synthesizes both purely with ffmpeg's audio filters (sine-wave chord pad +
+  filtered pink noise) — an original, license-free first pass, not a
+  polished library track:
+  ```bash
+  pnpm --filter hashpass-video-studio audio:generate
+  # -> public/audio/music/elegant-bed.mp3 (~100s, loops the whole composition)
+  # -> public/audio/sfx/transition.mp3    (short whoosh at every clip boundary)
+  ```
+  Swap either file for a licensed asset later if a richer result is needed —
+  nothing else changes, `AppTutorialNarrated.tsx` just reads those two paths.
+
+`AppTutorialNarrated.tsx` is a separate component from `AppTutorial.tsx`
+(not an optional-audio flag on it) — the plain silent cut stays simple, this
+one is clearly the "with voice + music" variant. Music sits at low volume
+(`MUSIC_VOLUME` in that file) so narration stays clear; narration starts a
+few frames into each clip so it doesn't land exactly on the cut.

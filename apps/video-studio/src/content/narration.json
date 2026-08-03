@@ -1,0 +1,54 @@
+{
+  "en": [
+    {
+      "slug": "landing",
+      "text": "Welcome to HASHPASS — your digital event platform. Discover events, connect with your community, and manage your passes, all in one place."
+    },
+    {
+      "slug": "sign-up",
+      "text": "Getting started is easy. Sign in instantly with a one-time code by email, or continue with Google in a single tap."
+    },
+    {
+      "slug": "dashboard",
+      "text": "Once you're in, your dashboard puts everything front and center — explore every event on the HASHPASS network and jump straight into your passes."
+    },
+    {
+      "slug": "profile",
+      "text": "Keep your attendee profile up to date. Add your role and company so organizers and speakers know exactly who they're meeting."
+    },
+    {
+      "slug": "events",
+      "text": "Switch between every event on the tour in a tap — Chile, Colombia, Peru, and more — each with its own agenda, speakers, and quick access to everything you need."
+    },
+    {
+      "slug": "pwa",
+      "text": "And you can carry HASHPASS with you everywhere. Install it straight from your browser to launch it like a native app from your home screen, or find HASHPASS on the Google Play Store."
+    }
+  ],
+  "es": [
+    {
+      "slug": "landing",
+      "text": "Bienvenido a HASHPASS, tu plataforma digital de eventos. Descubre eventos, conecta con tu comunidad y gestiona tus pases, todo en un solo lugar."
+    },
+    {
+      "slug": "sign-up",
+      "text": "Empezar es muy fácil. Inicia sesión al instante con un código de un solo uso por correo, o continúa con Google con un solo toque."
+    },
+    {
+      "slug": "dashboard",
+      "text": "Una vez dentro, tu panel lo pone todo al alcance de la mano: explora cada evento en la red de HASHPASS y accede directo a tus pases."
+    },
+    {
+      "slug": "profile",
+      "text": "Mantén actualizado tu perfil de asistente. Añade tu cargo y empresa para que organizadores y ponentes sepan exactamente con quién se reúnen."
+    },
+    {
+      "slug": "events",
+      "text": "Cambia entre cada evento de la gira con un toque: Chile, Colombia, Perú y más, cada uno con su propia agenda, ponentes y acceso rápido a todo lo que necesitas."
+    },
+    {
+      "slug": "pwa",
+      "text": "Y puedes llevar HASHPASS contigo a todas partes. Instálala directamente desde tu navegador para abrirla como una app nativa desde tu pantalla de inicio, o búscala en Google Play."
+    }
+  ]
+}

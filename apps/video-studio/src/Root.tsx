@@ -1,9 +1,11 @@
 import React from 'react';
 import {Composition} from 'remotion';
 import {AppTutorial} from './compositions/AppTutorial';
+import {AppTutorialNarrated} from './compositions/AppTutorialNarrated';
 import {BslShowcase} from './compositions/BslShowcase';
 import {CLIP_FRAMES, FPS, HEIGHT, INTRO_FRAMES, OUTRO_FRAMES, WIDTH} from './constants';
 import {appTutorialStepsEn, appTutorialStepsEs, bslShowcaseClips} from './content/clips';
+import {narrationEn, narrationEs} from './content/narration';
 import {layoutClips} from './lib/clip-layout';
 
 // Real recordings vary a lot in length (a landing scroll vs. a 30s OTP
@@ -65,6 +67,54 @@ export const RemotionRoot: React.FC = () => {
             durationInFrames: INTRO_FRAMES + layout.totalDuration + OUTRO_FRAMES,
             props: {
               layout: layout.items,
+              introTitle: 'Guía de HASHPASS',
+              introSubtitle: 'Primeros pasos',
+              outroTitle: 'Plataforma Digital de Eventos',
+              outroSubtitle: 'Tu Evento · Tu Comunidad · Tus Beneficios',
+            },
+          };
+        }}
+      />
+      <Composition
+        id="AppTutorialNarratedEN"
+        component={AppTutorialNarrated}
+        durationInFrames={INTRO_FRAMES + appTutorialStepsEn.length * CLIP_FRAMES + OUTRO_FRAMES}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        defaultProps={{layout: [], narration: narrationEn, locale: 'en' as const}}
+        calculateMetadata={async () => {
+          const layout = await layoutClips(appTutorialStepsEn);
+          return {
+            durationInFrames: INTRO_FRAMES + layout.totalDuration + OUTRO_FRAMES,
+            props: {
+              layout: layout.items,
+              narration: narrationEn,
+              locale: 'en' as const,
+              introTitle: 'HASHPASS Walkthrough',
+              introSubtitle: 'Getting started',
+              outroTitle: 'Digital Event Platform',
+              outroSubtitle: 'Your Event · Your Community · Your Rewards',
+            },
+          };
+        }}
+      />
+      <Composition
+        id="AppTutorialNarratedES"
+        component={AppTutorialNarrated}
+        durationInFrames={INTRO_FRAMES + appTutorialStepsEs.length * CLIP_FRAMES + OUTRO_FRAMES}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        defaultProps={{layout: [], narration: narrationEs, locale: 'es' as const}}
+        calculateMetadata={async () => {
+          const layout = await layoutClips(appTutorialStepsEs);
+          return {
+            durationInFrames: INTRO_FRAMES + layout.totalDuration + OUTRO_FRAMES,
+            props: {
+              layout: layout.items,
+              narration: narrationEs,
+              locale: 'es' as const,
               introTitle: 'Guía de HASHPASS',
               introSubtitle: 'Primeros pasos',
               outroTitle: 'Plataforma Digital de Eventos',
