@@ -1423,6 +1423,9 @@
     "chapterProfile": "Update attendee profile",
     "chapterEvents": "Browse events & speakers",
     "chapterPwa": "Install as an app",
-    "webOnlyNotice": "This demo is available on the web at hashpass.tech/demo."
+    "webOnlyNotice": "This demo is available on the web at hashpass.tech/demo.",
+    "bslChapterEventLanding": "Event landing & pass claim",
+    "bslChapterAgendaBrowse": "Agenda & speakers",
+    "bslChapterMeetingRequest": "Meeting request & schedule"
   }
 }

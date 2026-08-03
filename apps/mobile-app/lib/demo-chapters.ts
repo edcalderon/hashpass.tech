@@ -46,7 +46,25 @@ export const demoVideoSources = {
   },
 } as const;
 
+// BslShowcaseNarrated dubs the same single (English-UI) recording for both
+// narrated locales rather than separate en/es captures — see Root.tsx's
+// BslShowcaseNarratedEN/ES comment — so, unlike demoChaptersEn/Es above,
+// one chapter list covers both languages.
+export const bslChapters: DemoChapter[] = [
+  { slug: 'bsl-event-landing', titleKey: 'bslChapterEventLanding', startSeconds: 3 },
+  { slug: 'bsl-agenda-browse', titleKey: 'bslChapterAgendaBrowse', startSeconds: 13.48 },
+  { slug: 'bsl-meeting-request', titleKey: 'bslChapterMeetingRequest', startSeconds: 23.88 },
+];
+
 export const demoBslShowcase = {
-  src: '/demo/videos/bsl-showcase.mp4',
-  poster: '/demo/posters/bsl-showcase.jpg',
-};
+  en: {
+    narrated: '/demo/videos/bsl-showcase-narrated-en.mp4',
+    silent: '/demo/videos/bsl-showcase.mp4',
+    poster: '/demo/posters/bsl-showcase.jpg',
+  },
+  es: {
+    narrated: '/demo/videos/bsl-showcase-narrated-es.mp4',
+    silent: '/demo/videos/bsl-showcase.mp4',
+    poster: '/demo/posters/bsl-showcase.jpg',
+  },
+} as const;

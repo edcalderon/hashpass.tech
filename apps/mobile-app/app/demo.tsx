@@ -10,6 +10,7 @@ import { DemoVideoPlayer } from '../components/DemoVideoPlayer';
 import { DemoCaptionBar } from '../components/DemoCaptionBar';
 import QuickSettingsPanel from '../components/QuickSettingsPanel';
 import {
+  bslChapters,
   demoBslShowcase,
   demoChaptersEn,
   demoChaptersEs,
@@ -17,6 +18,7 @@ import {
   type DemoVideoLocale,
 } from '../lib/demo-chapters';
 import { demoCaptionsEn, demoCaptionsEs, type DemoCaptionCue } from '../lib/demo-captions';
+import { bslCaptionsEn, bslCaptionsEs } from '../lib/demo-bsl-captions';
 import { demoCaptionTextByLocale } from '../lib/demo-captions-i18n';
 
 // The header sits on a plain flat page background on every theme, unlike the
@@ -70,13 +72,26 @@ export default function DemoPage() {
 
   const uiLocale = getCurrentLocale();
   const audioLocale: DemoVideoLocale = uiLocale === 'es' ? 'es' : 'en';
-  const chapters = audioLocale === 'en' ? demoChaptersEn : demoChaptersEs;
-  const captionCues: DemoCaptionCue[] = getDemoCaptionCues(uiLocale, audioLocale);
+  const tutorialChapters = audioLocale === 'en' ? demoChaptersEn : demoChaptersEs;
+  const tutorialCaptionCues: DemoCaptionCue[] = getDemoCaptionCues(uiLocale, audioLocale);
   const source = demoVideoSources[audioLocale];
   // Always the narrated cut — the separate mute/CC icons on the video frame
   // now cover what a "silent" source used to be for, so there's no longer a
   // second video file to switch between.
   const videoSrc = source.narrated;
+
+  const bslSource = demoBslShowcase[audioLocale];
+  const bslVideoSrc = bslSource.narrated;
+  // BslShowcaseNarrated has real EN and ES voice tracks (unlike the app
+  // tutorial's non-ES-non-EN locales, which dub English audio) — no
+  // translated-text-over-English-audio fallback needed here, just the
+  // matching-language cue set, falling back to EN captions for every other
+  // UI locale since there's no ES-quality translation for those yet.
+  const bslCaptionCues = audioLocale === 'es' ? bslCaptionsEs : bslCaptionsEn;
+
+  const chapters = tab === 'tutorial' ? tutorialChapters : bslChapters;
+  const captionCues = tab === 'tutorial' ? tutorialCaptionCues : bslCaptionCues;
+
   const logoSource =
     Platform.OS === 'web' && !isDark ? HASHPASS_HEADER_LOGO_LIGHT_WEB : getHashpassFullLogo(isDark);
 
@@ -135,13 +150,21 @@ export default function DemoPage() {
           active={tab === 'tutorial'}
           label={t('appTutorialTab') || 'App walkthrough'}
           colors={colors}
-          onPress={() => setTab('tutorial')}
+          onPress={() => {
+            setTab('tutorial');
+            setActiveChapter(0);
+            setCurrentCaption(null);
+          }}
         />
         <TabButton
           active={tab === 'bsl'}
           label={t('bslShowcaseTab') || 'BSL On Tour showcase'}
           colors={colors}
-          onPress={() => setTab('bsl')}
+          onPress={() => {
+            setTab('bsl');
+            setActiveChapter(0);
+            setCurrentCaption(null);
+          }}
         />
       </Animated.View>
 
@@ -211,18 +234,67 @@ export default function DemoPage() {
         </Animated.View>
       ) : (
         <Animated.View key="bsl" entering={FadeIn.duration(350)}>
-          <Animated.View entering={FadeInUp.duration(500).delay(100)} style={styles.videoCard}>
+          <Animated.View entering={FadeInUp.duration(500).delay(200)} style={styles.videoCard}>
             <View style={styles.videoFrame}>
               <DemoVideoPlayer
-                src={demoBslShowcase.src}
-                poster={demoBslShowcase.poster}
+                ref={videoRef}
+                src={bslVideoSrc}
+                poster={bslSource.poster}
+                muted={muted}
+                onTimeUpdate={onTimeUpdate}
                 fallbackText={t('webOnlyNotice') || 'This demo is available on the web at hashpass.tech/demo.'}
               />
+
+              <View style={styles.mediaControls}>
+                <MediaControlButton
+                  icon={muted ? 'volume-off' : 'volume-up'}
+                  active={!muted}
+                  colors={colors}
+                  onPress={() => setMuted((m) => !m)}
+                  accessibilityLabel={muted ? 'Unmute' : 'Mute'}
+                />
+                <MediaControlButton
+                  icon={showCaptions ? 'subtitles' : 'subtitles-off'}
+                  active={showCaptions}
+                  colors={colors}
+                  onPress={() => setShowCaptions((s) => !s)}
+                  accessibilityLabel="Toggle captions"
+                  label="CC"
+                />
+              </View>
             </View>
+
+            <DemoCaptionBar text={showCaptions ? currentCaption : null} visible={showCaptions} colors={colors} />
           </Animated.View>
+
           <Text style={styles.caption}>
             {t('bslShowcaseSubtitle') || 'The event platform in action at Blockchain Summit Latam'}
           </Text>
+
+          <Text style={styles.sectionHeading}>{t('chapters') || 'Chapters'}</Text>
+          <View style={styles.chapterGrid}>
+            {bslChapters.map((chapter, index) => {
+              const active = index === activeChapter;
+              return (
+                <Animated.View key={chapter.slug} entering={FadeIn.duration(300).delay(80 * index)}>
+                  <TouchableOpacity
+                    style={[styles.chapterButton, active && styles.chapterButtonActive]}
+                    onPress={() => seekTo(chapter.startSeconds, index)}
+                    activeOpacity={0.7}
+                  >
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={16}
+                      color={active ? colors.primary : colors.text.secondary}
+                    />
+                    <Text style={[styles.chapterButtonText, active && styles.chapterButtonTextActive]}>
+                      {t(chapter.titleKey) || chapter.slug}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
+          </View>
         </Animated.View>
       )}
     </ScrollView>

@@ -1,0 +1,8 @@
+1
+00:00:00,100 --> 00:00:03,450
+Encontraste a alguien con quien quieres reunirte?
+
+2
+00:00:03,400 --> 00:00:12,037
+Envía una solicitud de reunión con un toque, añade una nota breve sobre el motivo, y asegura tu cita uno a uno antes de que comience el evento.
+

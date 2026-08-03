@@ -5,7 +5,7 @@ import {AppTutorialNarrated} from './compositions/AppTutorialNarrated';
 import {BslShowcase} from './compositions/BslShowcase';
 import {CLIP_FRAMES, FPS, HEIGHT, INTRO_FRAMES, OUTRO_FRAMES, WIDTH} from './constants';
 import {appTutorialStepsEn, appTutorialStepsEs, bslShowcaseClips} from './content/clips';
-import {narrationEn, narrationEs} from './content/narration';
+import {bslNarrationEn, bslNarrationEs, narrationEn, narrationEs} from './content/narration';
 import {layoutClips} from './lib/clip-layout';
 
 // Real recordings vary a lot in length (a landing scroll vs. a 30s OTP
@@ -119,6 +119,64 @@ export const RemotionRoot: React.FC = () => {
               introSubtitle: 'Primeros pasos',
               outroTitle: 'Plataforma Digital de Eventos',
               outroSubtitle: 'Tu Evento · Tu Comunidad · Tus Beneficios',
+            },
+          };
+        }}
+      />
+      {/*
+        BslShowcaseNarrated reuses AppTutorialNarrated directly rather than a
+        separate component — that component isn't actually tutorial-specific
+        (it just renders whatever `layout`/`narration` props it's given over
+        BrandBumper + RecordingSlot + the music/SFX beds), and the BSL
+        recordings aren't split into separate EN/ES visual captures the way
+        appTutorialSteps are — both narrated locales dub the same English-UI
+        recording, same as demo.tsx's caption translations for non-EN/ES
+        locales on the app-tutorial page.
+      */}
+      <Composition
+        id="BslShowcaseNarratedEN"
+        component={AppTutorialNarrated}
+        durationInFrames={INTRO_FRAMES + bslShowcaseClips.length * CLIP_FRAMES + OUTRO_FRAMES}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        defaultProps={{layout: [], narration: bslNarrationEn, locale: 'en' as const}}
+        calculateMetadata={async () => {
+          const layout = await layoutClips(bslShowcaseClips);
+          return {
+            durationInFrames: INTRO_FRAMES + layout.totalDuration + OUTRO_FRAMES,
+            props: {
+              layout: layout.items,
+              narration: bslNarrationEn,
+              locale: 'en' as const,
+              introTitle: 'BSL On Tour',
+              introSubtitle: 'Powered by HASHPASS',
+              outroTitle: 'Get your pass',
+              outroSubtitle: 'bsl.hashpass.tech',
+            },
+          };
+        }}
+      />
+      <Composition
+        id="BslShowcaseNarratedES"
+        component={AppTutorialNarrated}
+        durationInFrames={INTRO_FRAMES + bslShowcaseClips.length * CLIP_FRAMES + OUTRO_FRAMES}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        defaultProps={{layout: [], narration: bslNarrationEs, locale: 'es' as const}}
+        calculateMetadata={async () => {
+          const layout = await layoutClips(bslShowcaseClips);
+          return {
+            durationInFrames: INTRO_FRAMES + layout.totalDuration + OUTRO_FRAMES,
+            props: {
+              layout: layout.items,
+              narration: bslNarrationEs,
+              locale: 'es' as const,
+              introTitle: 'BSL On Tour',
+              introSubtitle: 'Con tecnología de HASHPASS',
+              outroTitle: 'Consigue tu pase',
+              outroSubtitle: 'bsl.hashpass.tech',
             },
           };
         }}

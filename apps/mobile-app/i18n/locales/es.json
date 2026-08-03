@@ -1422,6 +1422,9 @@
     "chapterProfile": "Actualizar perfil de asistente",
     "chapterEvents": "Explorar eventos y oradores",
     "chapterPwa": "Instalar como app",
-    "webOnlyNotice": "Esta demo está disponible en la web en hashpass.tech/demo."
+    "webOnlyNotice": "Esta demo está disponible en la web en hashpass.tech/demo.",
+    "bslChapterEventLanding": "Página del evento y reclamo de pase",
+    "bslChapterAgendaBrowse": "Agenda y ponentes",
+    "bslChapterMeetingRequest": "Solicitud de reunión y agenda"
   }
 }

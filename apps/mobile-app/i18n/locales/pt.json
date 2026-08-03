@@ -1034,6 +1034,9 @@
     "chapterProfile": "Atualizar perfil do participante",
     "chapterEvents": "Explorar eventos e palestrantes",
     "chapterPwa": "Instalar como aplicativo",
-    "webOnlyNotice": "Esta demonstração está disponível na web em hashpass.tech/demo."
+    "webOnlyNotice": "Esta demonstração está disponível na web em hashpass.tech/demo.",
+    "bslChapterEventLanding": "Página do evento e resgate do passe",
+    "bslChapterAgendaBrowse": "Agenda e palestrantes",
+    "bslChapterMeetingRequest": "Solicitação de reunião e agenda"
   }
 }

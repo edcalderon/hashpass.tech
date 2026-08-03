@@ -13,19 +13,25 @@
 // actual copy/labels for this event's hero, agenda tabs, and CTA, then
 // replace the getByText() guesses with the real ones.
 export default async function bslShowcaseFlow(page) {
-  await page.waitForTimeout(1500);
+  // The app's own boot splash ("Starting HASHPASS") eats the first ~8-9s of
+  // every fresh recording (same as every other flow in this repo — see
+  // README.md's "real captures need a real session" trim-start note), so
+  // this needs generous scroll/hold time afterward — BslShowcaseNarrated's
+  // voiceover for this clip runs 7-8s, which has to fit inside whatever's
+  // left after trimStartSeconds cuts that lead-in.
+  await page.waitForTimeout(2000);
 
   // Hero / pass claim CTA.
   const claimCta = page.getByText(/claim|get your pass/i).first();
   if (await claimCta.isVisible().catch(() => false)) {
     await claimCta.hover();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
   }
 
   // Scroll through the agenda / speaker sections.
-  for (let i = 0; i < 5; i += 1) {
-    await page.mouse.wheel(0, 300);
-    await page.waitForTimeout(600);
+  for (let i = 0; i < 8; i += 1) {
+    await page.mouse.wheel(0, 260);
+    await page.waitForTimeout(700);
   }
 
   // Agenda tab, if present on this route.
@@ -34,6 +40,10 @@ export default async function bslShowcaseFlow(page) {
     await agendaTab.click();
     await page.waitForTimeout(1500);
     await page.mouse.wheel(0, 400);
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(1500);
   }
+
+  // Final hold on whatever's on screen — this is the part of the clip that
+  // actually plays under the tail of the narration.
+  await page.waitForTimeout(3000);
 }

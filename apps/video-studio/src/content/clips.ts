@@ -119,12 +119,25 @@ export const bslShowcaseClips: ClipSlot[] = [
     src: 'bsl/event-landing.webm',
     title: 'Event landing & pass claim',
     caption: 'bsl.hashpass.tech',
-    trimStartSeconds: 5.7,
+    // Re-recorded fresh (the original capture this composition shipped
+    // with was lost from the gitignored public/recordings/ cache) — real
+    // content doesn't paint until ~8-9s in, same app-boot-splash lead-in
+    // documented above.
+    trimStartSeconds: 8,
   },
-  {src: 'bsl/agenda-browse.webm', title: 'BSL On Tour hero + agenda browse', trimStartSeconds: 3.5},
-  // Needs a real authenticated session (OTP or Google) — not something an
-  // agent can complete unattended. Record with flows/auth-otp.mjs or
-  // flows/auth-google.mjs (--save-state), then flows/dashboard-request-meeting.mjs
-  // (--use-state) pointed at a chile2026 speaker profile.
-  {title: 'Meeting request & schedule'},
+  {
+    src: 'bsl/agenda-browse.webm',
+    title: 'BSL On Tour hero + agenda browse',
+    trimStartSeconds: 8,
+  },
+  {
+    src: 'bsl/meeting-request.webm',
+    title: 'Meeting request & schedule',
+    caption: 'Networking, chile2026',
+    // Real content (the speaker list) doesn't paint until ~8s in — the
+    // recording's own flow (flows/bsl-meeting-request.mjs) spends its first
+    // several seconds on app boot + the profile page's client-side
+    // pass/entitlement check before "Request Meeting" even appears.
+    trimStartSeconds: 8,
+  },
 ];
