@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608030537, // Updated to current timestamp
+  buildNumber: 202608031846, // Updated to current timestamp
   releaseDate: '2026-08-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'add admin matchmaking and email campaigns'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'redirect immediately after logout'
   ],
   breakingChanges: [],
-  notes: 'add admin matchmaking and email campaigns'
+  notes: 'redirect immediately after logout'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.315': {
+    version: '1.8.315',
+    buildNumber: 202608031846,
+    releaseDate: '2026-08-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'redirect immediately after logout'
+    ],
+    breakingChanges: [],
+    notes: 'redirect immediately after logout'
+  },
   '1.8.314': {
     version: '1.8.314',
     buildNumber: 202608030537,
