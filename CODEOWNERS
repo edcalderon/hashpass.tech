@@ -1,2 +1,2 @@
-# Global repository owner for protected release and review paths.
-* @edcalderon
+# Default reviewer for all pull requests and protected release paths.
+* @jack-kernel
