@@ -94,6 +94,41 @@ describe('/api/admin/matchmaking', () => {
     expect(mockRpc).not.toHaveBeenCalledWith('admin_search_active_users', expect.anything());
   });
 
+  it('GET surfaces a 500 when the attendee list cannot be resolved', async () => {
+    mockListEventAttendees.mockRejectedValueOnce(new Error('Forbidden'));
+    const response = await get('chile2026');
+    expect(response.status).toBe(500);
+    const body = await response.json();
+    expect(body.error).toBe('Forbidden');
+  });
+
+  it('POST surfaces a 500 when the attendee list cannot be resolved', async () => {
+    mockListEventAttendees.mockRejectedValueOnce(new Error('Forbidden'));
+    const response = await post({ eventId: 'chile2026', mode: 'manual', pairs: [{ userId: attendeeId, speakerId }] });
+    expect(response.status).toBe(500);
+    const body = await response.json();
+    expect(body.error).toBe('Forbidden');
+    expect(mockRpc).not.toHaveBeenCalledWith('insert_meeting_request', expect.anything());
+  });
+
+  it('random mode pairs every requested attendee with a speaker and creates the matches', async () => {
+    const secondAttendee = { id: outsiderId, email: 'second@example.com', name: null, username: null, ticketType: null };
+    mockListEventAttendees.mockResolvedValue([attendee, secondAttendee]);
+    mockRpc.mockImplementation((name: string, params: any) =>
+      name === 'insert_meeting_request'
+        ? Promise.resolve({ data: [{ id: `req-${params.p_requester_id}`, requester_id: params.p_requester_id, speaker_id: speakerUserId, status: 'pending', created_at: '2026-08-03T00:00:00Z' }], error: null })
+        : Promise.resolve({ data: null, error: null }));
+
+    const response = await post({ eventId: 'chile2026', mode: 'random', count: 2 });
+    const body = await response.json();
+
+    expect(body.data.created).toHaveLength(2);
+    expect(body.data.failures).toEqual([]);
+    const requesterIds = mockRpc.mock.calls.filter(([name]) => name === 'insert_meeting_request').map(([, params]) => params.p_requester_id);
+    expect(new Set(requesterIds)).toEqual(new Set([attendeeId, outsiderId]));
+    expect(mockSendMeetingNotificationEmail).toHaveBeenCalledTimes(4);
+  });
+
   it('rejects a manual pair whose user is not registered for the event', async () => {
     const response = await post({
       eventId: 'chile2026',

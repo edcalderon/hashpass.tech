@@ -78,7 +78,52 @@ describe('/api/admin/communications', () => {
     }));
   };
 
+  const get = async (eventId: string) => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { GET } = require('../../app/api/admin/communications+api');
+    return GET(new Request(`https://api.hashpass.tech/api/admin/communications?eventId=${eventId}`));
+  };
+
   const draft = { eventId: 'chile2026', audience: 'attendees', subject: 'Hi', heading: 'Welcome', message: 'See you soon' };
+
+  it('GET returns the delivery history for the event', async () => {
+    const deliveries = [{ id: 'd1', event_id: 'chile2026', status: 'sent' }];
+    fromByTable.set('admin_email_deliveries', makeChain({ data: deliveries, error: null }));
+    const response = await get('chile2026');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ data: deliveries });
+  });
+
+  it('GET surfaces a 500 when the delivery history query fails', async () => {
+    fromByTable.set('admin_email_deliveries', makeChain({ data: null, error: { message: 'db down' } }));
+    const response = await get('chile2026');
+    expect(response.status).toBe(500);
+  });
+
+  it('resolves the speakers audience through bsl_speakers, deduped by user id', async () => {
+    const speakerUserId = 'cc60f5d2-5948-4df1-9670-2f9177cf2fe4';
+    fromByTable.set('bsl_speakers', makeChain({ data: [{ user_id: speakerUserId }], error: null }));
+    mockGetUserById.mockResolvedValue({ data: { user: { email: 'speaker@example.com' } } });
+
+    const response = await post({ ...draft, audience: 'speakers' });
+    const body = await response.json();
+
+    expect(mockGetUserById).toHaveBeenCalledWith(speakerUserId);
+    expect(mockSendAdminCampaignEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'speaker@example.com' }));
+    expect(body.data).toEqual({ sent: 1, failed: 0, total: 1 });
+  });
+
+  it('resolves the selected audience by looking up each explicit user id, deduping repeats', async () => {
+    const selectedId = 'dd60f5d2-5948-4df1-9670-2f9177cf2fe4';
+    mockGetUserById.mockResolvedValue({ data: { user: { email: 'picked@example.com' } } });
+
+    const response = await post({ ...draft, audience: 'selected', userIds: [selectedId, selectedId] });
+    const body = await response.json();
+
+    expect(mockGetUserById).toHaveBeenCalledTimes(1);
+    expect(mockSendAdminCampaignEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'picked@example.com' }));
+    expect(body.data).toEqual({ sent: 1, failed: 0, total: 1 });
+  });
 
   it('resolves the attendees audience through the event-scoped attendee list, not a platform-wide user search', async () => {
     const response = await post(draft);

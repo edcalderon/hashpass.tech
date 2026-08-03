@@ -128,4 +128,31 @@ describe('listEventAttendees', () => {
     const failingRpc = jest.fn().mockResolvedValueOnce({ data: null, error: { message: 'forbidden' } });
     await expect(listEventAttendees({ rpc: failingRpc }, userId, 'chile2026')).rejects.toEqual({ message: 'forbidden' });
   });
+
+  it('treats a null data page as empty instead of throwing', async () => {
+    const mockRpc = jest.fn().mockResolvedValueOnce({ data: null, error: null });
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { listEventAttendees } = require('../../../lib/server/event-admin');
+    expect(await listEventAttendees({ rpc: mockRpc }, userId, 'chile2026')).toEqual([]);
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops instead of looping forever if a "more pages" signal arrives with no usable cursor', async () => {
+    const pageSize = 200;
+    // 199 valid rows, then the pageSize-th (index 199, the last row of the
+    // returned page) has no id, plus one more row past the page boundary to
+    // signal "more pages exist" (201 total). Must break instead of retrying
+    // with an empty cursor forever.
+    const rows = Array.from({ length: pageSize - 1 }, (_, i) => ({ id: `user-${i}`, email: `user${i}@example.com`, name: null, username: null, ticket_type: 'general' }));
+    rows.push({ id: undefined as any, email: 'user199@example.com', name: null, username: null, ticket_type: 'general' });
+    rows.push({ id: 'user-200', email: 'user200@example.com', name: null, username: null, ticket_type: 'general' });
+    const mockRpc = jest.fn().mockResolvedValueOnce({ data: rows, error: null });
+
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { listEventAttendees } = require('../../../lib/server/event-admin');
+    const attendees = await listEventAttendees({ rpc: mockRpc }, userId, 'chile2026');
+
+    expect(attendees).toHaveLength(pageSize);
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+  });
 });
