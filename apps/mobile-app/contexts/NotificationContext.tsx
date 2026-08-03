@@ -81,13 +81,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
 
     try {
-      const response = await apiClient.get(
-        'notifications',
-        { params: { limit: 50 }, skipEventSegment: true }
-      );
+      // Fetch chat messages and event/system updates independently. Grouping
+      // chats is intentionally a presentation concern, so it must not happen
+      // after a single combined limit has already hidden older updates.
+      const [messagesResponse, updatesResponse] = await Promise.all([
+        apiClient.get('notifications', { params: { limit: 50, category: 'messages' }, skipEventSegment: true }),
+        apiClient.get('notifications', { params: { limit: 50, category: 'updates' }, skipEventSegment: true }),
+      ]);
 
-      if (!response.success || !response.data) {
-        console.error('Error fetching notifications:', response.error);
+      if (!messagesResponse.success || !messagesResponse.data || !updatesResponse.success || !updatesResponse.data) {
+        console.error('Error fetching notifications:', messagesResponse.error || updatesResponse.error);
         return;
       }
 
@@ -102,11 +105,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       // instead of silently no-op'ing because user.id hasn't changed.
       currentUserIdRef.current = user.id;
 
-      const responseData = response.data as { data: Notification[]; resolvedUserId: string | null };
-      setResolvedUserId(responseData.resolvedUserId);
+      const messagesData = messagesResponse.data as { data: Notification[]; resolvedUserId: string | null };
+      const updatesData = updatesResponse.data as { data: Notification[]; resolvedUserId: string | null };
+      setResolvedUserId(messagesData.resolvedUserId || updatesData.resolvedUserId);
 
       // Translate notifications
-      const translatedNotifications = (responseData.data || []).map((notification: any) => {
+      const translatedNotifications = [...(messagesData.data || []), ...(updatesData.data || [])]
+        .sort((first, second) => Date.parse(second.created_at) - Date.parse(first.created_at))
+        .map((notification: any) => {
         const translated = translateNotification(notification, t);
         return {
           ...notification,

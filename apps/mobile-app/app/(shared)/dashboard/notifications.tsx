@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, StatusBar } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
-import { useNotifications } from '@contexts/NotificationContext';
+import { useNotifications, type Notification } from '@contexts/NotificationContext';
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
@@ -46,9 +46,9 @@ export default function NotificationsScreen() {
   }, [notifications, activeTab]);
 
   const tabUnreadCounts = useMemo(() => ({
-    all: getNotificationsForInboxTab(notifications, 'all').filter((notification) => !notification.is_read).length,
-    messages: getNotificationsForInboxTab(notifications, 'messages').filter((notification) => !notification.is_read).length,
-    updates: getNotificationsForInboxTab(notifications, 'updates').filter((notification) => !notification.is_read).length,
+    all: getNotificationsForInboxTab(notifications, 'all').filter((notification: Notification) => !notification.is_read).length,
+    messages: getNotificationsForInboxTab(notifications, 'messages').filter((notification: Notification) => !notification.is_read).length,
+    updates: getNotificationsForInboxTab(notifications, 'updates').filter((notification: Notification) => !notification.is_read).length,
     archive: getNotificationsForInboxTab(notifications, 'archive').length,
   }), [notifications]);
 
@@ -215,7 +215,7 @@ export default function NotificationsScreen() {
     await Promise.all(notification.notificationIds.map((id: string) => archiveNotification(id)));
   };
 
-  const handleDeleteNotification = async (notificationId: string) => {
+  const handleDeleteNotification = async (notification: NotificationInboxItem) => {
     Alert.alert(
       t('center.deleteTitle'),
       t('center.deleteMessage'),
@@ -225,7 +225,10 @@ export default function NotificationsScreen() {
           text: t('center.delete'), 
           style: 'destructive',
           onPress: async () => {
-            await deleteNotification(notificationId);
+            // Archive cards can represent all alerts from one chat. Delete
+            // every represented row so the same conversation does not appear
+            // again with its next-most-recent notification.
+            await Promise.all(notification.notificationIds.map((id: string) => deleteNotification(id)));
             // Clear filtered notifications to refresh the view
             setFilteredNotifications([]);
           }
@@ -402,7 +405,7 @@ export default function NotificationsScreen() {
             style={styles.closeButton}
             onPress={(e) => {
               e.stopPropagation();
-              handleDeleteNotification(notification.id);
+              handleDeleteNotification(notification);
             }}
           >
             <MaterialIcons name="close" size={20} color={colors.text.secondary} />

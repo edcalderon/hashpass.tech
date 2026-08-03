@@ -71,6 +71,28 @@ describe('notifications api', () => {
       expect(filterByUser).toHaveBeenCalledWith('user_id', 'auth-id-123');
     });
 
+    it('filters messages and updates before applying the notification limit', async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      const order = jest.fn().mockReturnValue({
+        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
+      });
+      const typeFilter = jest.fn().mockReturnValue({ order });
+      const filterByUser = jest.fn().mockReturnValue({ eq: typeFilter, neq: typeFilter });
+      mockFrom.mockReturnValue({
+        select: () => ({ eq: filterByUser }),
+      });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { GET } = require('../../app/api/notifications+api');
+      await GET(new Request('https://api.hashpass.tech/api/notifications?category=messages'));
+      expect(typeFilter).toHaveBeenCalledWith('type', 'chat_message');
+
+      typeFilter.mockClear();
+      await GET(new Request('https://api.hashpass.tech/api/notifications?category=updates'));
+      expect(typeFilter).toHaveBeenCalledWith('type', 'chat_message');
+    });
+
     it('returns 500 when the notifications query errors', async () => {
       mockResolveNotificationIdentity.mockResolvedValue({ supabaseUserId: 'auth-id-123' });
       mockIsResolveIdentityError.mockReturnValue(false);
