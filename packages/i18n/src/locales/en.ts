@@ -129,6 +129,25 @@ export const en = {
     pt: 'Português',
     de: 'Deutsch',
   },
+  demo: {
+    eyebrow: 'See it in action',
+    title: 'Watch HASHPASS in action',
+    subtitle:
+      'A full walkthrough of the app, screen by screen — from landing page to installing HASHPASS on your home screen.',
+    withNarration: 'With narration',
+    silent: 'Silent',
+    chapters: 'Chapters',
+    appTutorialTitle: 'App walkthrough',
+    appTutorialSubtitle: 'Landing, sign-up, dashboard, profile, events, and installing the app',
+    bslShowcaseTitle: 'BSL On Tour showcase',
+    bslShowcaseSubtitle: 'The event platform in action at Blockchain Summit Latam',
+    chapterLanding: 'Landing page',
+    chapterSignUp: 'Sign up — OTP or magic link',
+    chapterDashboard: 'Enter the dashboard',
+    chapterProfile: 'Update attendee profile',
+    chapterEvents: 'Browse events & speakers',
+    chapterPwa: 'Install as an app',
+  },
 } as const;
 
 export type EnMessages = typeof en;
