@@ -22,23 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608030359, // Updated to current timestamp
+  buildNumber: 202608030537, // Updated to current timestamp
   releaseDate: '2026-08-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'brand event emails with regional BSL logos'
+    'add admin matchmaking and email campaigns'
   ],
   bugfixes: [
-    'configure Lingui version translations',
-    'publish email branding assets reliably'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'brand event emails with regional BSL logos; configure Lingui version translations; publish email branding assets reliably'
+  notes: 'add admin matchmaking and email campaigns'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.314': {
+    version: '1.8.314',
+    buildNumber: 202608030537,
+    releaseDate: '2026-08-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'add admin matchmaking and email campaigns'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'add admin matchmaking and email campaigns'
+  },
   '1.8.313': {
     version: '1.8.313',
     buildNumber: 202608030359,

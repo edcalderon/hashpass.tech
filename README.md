@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.313)
+## 📋 Latest Changes (v1.8.314)
 
-### Bug Fixes
+### Features
 
-* **mobile:** configure Lingui version translations ([e0f10ea](https://github.com/hashpass-tech/hashpass.tech/commit/e0f10ea15dd80faa09365c5632d5a607f7e09744))
+* add admin matchmaking and email campaigns ([e38a6f7](https://github.com/hashpass-tech/hashpass.tech/commit/e38a6f7cc354609e9e5c85dd62186bf69deef067))
 ### Release Highlights
-- brand event emails with regional BSL logos; configure Lingui version translations; publish email branding assets reliably
+- add admin matchmaking and email campaigns
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
