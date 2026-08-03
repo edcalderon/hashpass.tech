@@ -134,6 +134,49 @@ describe('chat-encryption', () => {
 
       await expect(ensureChatKeyPair('user-123')).rejects.toThrow(/Failed to publish chat public key/);
     });
+
+    it('throws when the publish RPC returns an unsuccessful response', async () => {
+      mockRpc.mockResolvedValue({ data: { success: false, error: 'key rejected' }, error: null });
+
+      await expect(ensureChatKeyPair('user-123')).rejects.toThrow(/key rejected/);
+    });
+  });
+
+  describe('web key storage', () => {
+    const platform = require('react-native').Platform as { OS: string };
+    const originalPlatform = platform.OS;
+    const originalWindow = global.window;
+
+    afterEach(() => {
+      platform.OS = originalPlatform;
+      Object.defineProperty(global, 'window', { value: originalWindow, configurable: true });
+    });
+
+    it('stores and reuses the private key in localStorage on web', async () => {
+      const stored = new Map<string, string>();
+      platform.OS = 'web';
+      Object.defineProperty(global, 'window', {
+        configurable: true,
+        value: { localStorage: { getItem: jest.fn((key: string) => stored.get(key) || null), setItem: jest.fn((key: string, value: string) => stored.set(key, value)) } },
+      });
+      mockRpc.mockResolvedValue({ data: { success: true }, error: null });
+
+      const first = await ensureChatKeyPair('web-user');
+      const second = await ensureChatKeyPair('web-user');
+
+      expect(second).toEqual(first);
+      expect(mockRpc).toHaveBeenCalledTimes(1);
+      expect(stored.get('hashpass_chat_privkey_v1_web-user')).toEqual(expect.any(String));
+    });
+
+    it('does not persist a web key when localStorage is unavailable', async () => {
+      platform.OS = 'web';
+      Object.defineProperty(global, 'window', { configurable: true, value: undefined });
+      mockRpc.mockResolvedValue({ data: { success: true }, error: null });
+
+      await expect(ensureChatKeyPair('web-no-storage')).resolves.toBeInstanceOf(Uint8Array);
+      expect(mockRpc).toHaveBeenCalled();
+    });
   });
 
   describe('fetchParticipantPublicKey', () => {
