@@ -30,3 +30,45 @@ export async function authorizeEventAdmin(request: Request, eventId: string) {
 
   return { userId: identity.supabaseUserId, supabase } as const;
 }
+
+export interface EventAttendee {
+  id: string;
+  email: string;
+  name: string | null;
+  username: string | null;
+  ticketType: string | null;
+}
+
+/**
+ * Fully paginates admin_list_event_attendees (event-membership resolved
+ * through passes, not a platform-wide user search) so callers get the
+ * complete attendee list for the event rather than a single capped page.
+ */
+export async function listEventAttendees(
+  supabase: ReturnType<typeof getSupabaseServerForRequest>,
+  actorUserId: string,
+  eventId: string,
+): Promise<EventAttendee[]> {
+  const pageSize = 200;
+  const attendees: EventAttendee[] = [];
+  let cursor: string | null = null;
+  for (;;) {
+    const { data, error } = await supabase.rpc('admin_list_event_attendees', {
+      p_actor_user_id: actorUserId,
+      p_event_id: eventId,
+      p_query: '',
+      p_limit: pageSize,
+      p_cursor: cursor,
+    });
+    if (error) throw error;
+    const rows: any[] = data || [];
+    const page = rows.slice(0, pageSize);
+    for (const row of page) {
+      if (row.email) attendees.push({ id: row.id, email: row.email, name: row.name, username: row.username, ticketType: row.ticket_type });
+    }
+    if (rows.length <= pageSize || page.length === 0) break;
+    cursor = page[page.length - 1]?.id || null;
+    if (!cursor) break;
+  }
+  return attendees;
+}

@@ -1,6 +1,6 @@
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
 import { renderAdminCampaignEmail, sendAdminCampaignEmail, type AdminCampaignTemplate } from '@/lib/email';
-import { authorizeEventAdmin } from '@/lib/server/event-admin';
+import { authorizeEventAdmin, listEventAttendees } from '@/lib/server/event-admin';
 
 const audiences = new Set(['attendees', 'speakers', 'all', 'selected']);
 const templates = new Set<AdminCampaignTemplate>(['branded', 'raw']);
@@ -37,8 +37,12 @@ export async function POST(request: Request) {
     for (const row of data || []) { const u = await auth.supabase.auth.admin.getUserById(row.user_id); if (u.data.user?.email) recipients.push({ id: row.user_id, email: u.data.user.email }); }
   }
   if (audience === 'attendees' || audience === 'all') {
-    const { data } = await auth.supabase.rpc('admin_search_active_users', { p_actor_user_id: auth.userId, p_event_id: eventId, p_query: '', p_limit: 500, p_cursor: null });
-    recipients.push(...(data || []).filter((u: any) => u.email).map((u: any) => ({ id: u.id, email: u.email })));
+    try {
+      const attendees = await listEventAttendees(auth.supabase, auth.userId, eventId);
+      recipients.push(...attendees.map(a => ({ id: a.id, email: a.email })));
+    } catch (error: any) {
+      return Response.json({ error: error?.message || 'Unable to resolve event attendees' }, { status: 500 });
+    }
   }
   if (audience === 'selected') {
     for (const id of [...new Set(Array.isArray(body.userIds) ? body.userIds.slice(0, 100) : [])] as string[]) { const u = await auth.supabase.auth.admin.getUserById(id); if (u.data.user?.email) recipients.push({ id, email: u.data.user.email }); }
