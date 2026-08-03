@@ -16,7 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRealtimeChat, type ChatMessage } from '../hooks/useRealtimeChat';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { shouldSendMessageOnWebEnter } from '../lib/chat-input';
-import { getChatEmojiCategory, CHAT_EMOJI_CATEGORIES, type ChatEmojiCategoryId } from '../lib/chat-emojis';
+import { getChatEmojiCategory, CHAT_EMOJI_CATEGORIES, type ChatEmojiCategory, type ChatEmojiCategoryId } from '../lib/chat-emojis';
 import SpeakerAvatar from './SpeakerAvatar';
 import { supabase } from '../lib/supabase';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -498,7 +498,7 @@ export default function RealtimeChat({
       {showEmojiPicker && (
         <View style={styles.emojiPicker} accessibilityLabel="Emoji picker">
           <View style={styles.emojiCategoryRow}>
-            {CHAT_EMOJI_CATEGORIES.map((category) => (
+            {CHAT_EMOJI_CATEGORIES.map((category: ChatEmojiCategory) => (
               <TouchableOpacity
                 key={category.id}
                 style={[styles.emojiCategoryButton, emojiCategory === category.id && styles.emojiCategoryButtonActive]}
@@ -515,7 +515,7 @@ export default function RealtimeChat({
             ))}
           </View>
           <View style={styles.emojiGrid}>
-            {getChatEmojiCategory(emojiCategory).emojis.map((emoji) => (
+            {getChatEmojiCategory(emojiCategory).emojis.map((emoji: string) => (
               <TouchableOpacity
                 key={emoji}
                 style={styles.emojiOption}
@@ -530,19 +530,6 @@ export default function RealtimeChat({
         </View>
       )}
       <View style={styles.inputContainer}>
-        <TouchableOpacity
-          style={[styles.emojiButton, showEmojiPicker && styles.emojiButtonActive]}
-          onPress={() => setShowEmojiPicker((visible) => !visible)}
-          disabled={otherKeyMissing}
-          accessibilityRole="button"
-          accessibilityLabel="Add emoji"
-        >
-          <MaterialIcons
-            name="emoji-emotions"
-            size={22}
-            color={otherKeyMissing ? (isDark ? '#666666' : '#aaaaaa') : (colors.primary || '#007AFF')}
-          />
-        </TouchableOpacity>
         <TextInput
           style={styles.textInput}
           ref={messageInputRef}
@@ -567,6 +554,19 @@ export default function RealtimeChat({
           }}
           {...(Platform.OS === 'web' ? { onKeyDownCapture: handleWebEnter } : {})}
         />
+        <TouchableOpacity
+          style={[styles.emojiButton, showEmojiPicker && styles.emojiButtonActive]}
+          onPress={() => setShowEmojiPicker((visible) => !visible)}
+          disabled={otherKeyMissing}
+          accessibilityRole="button"
+          accessibilityLabel="Add emoji"
+        >
+          <MaterialIcons
+            name="emoji-emotions"
+            size={22}
+            color={otherKeyMissing ? (isDark ? '#666666' : '#aaaaaa') : (colors.primary || '#007AFF')}
+          />
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.sendButton, (!newMessage.trim() || sending || otherKeyMissing) && styles.sendButtonDisabled]}
           onPress={handleSendMessage}
@@ -681,7 +681,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 8,
+    marginRight: 6,
   },
   statusText: {
     fontSize: 12,
@@ -818,7 +818,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   ownMessageTime: {
     textAlign: 'right',
-    marginRight: 8,
+    marginRight: 6,
   },
   incomingMessageTime: {
     textAlign: 'left',
