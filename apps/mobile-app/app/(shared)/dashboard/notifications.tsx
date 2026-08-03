@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, StatusBar } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
-import { useNotifications } from '@contexts/NotificationContext';
+import { useNotifications, type Notification } from '@contexts/NotificationContext';
 import { MaterialIcons } from '../../../lib/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
@@ -11,8 +11,12 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useTranslation } from '../../../i18n/i18n';
 import { translateNotification } from '../../../lib/notification-translations';
 import { buildNotificationEventPath } from '../../../lib/notification-navigation';
-
-type TabType = 'all' | 'archive';
+import {
+  getNotificationsForInboxTab,
+  groupChatNotifications,
+  type NotificationInboxItem,
+  type NotificationInboxTab,
+} from '../../../lib/notification-inbox';
 
 export default function NotificationsScreen() {
   const { isDark, colors } = useTheme();
@@ -29,18 +33,24 @@ export default function NotificationsScreen() {
   const notificationRefs = useRef<{ [key: string]: View | null }>({});
 
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [activeTab, setActiveTab] = useState<NotificationInboxTab>('all');
   const [filteredNotifications, setFilteredNotifications] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [markingAsRead, setMarkingAsRead] = useState<Set<string>>(new Set());
 
-  // Filter notifications by tab (all vs archive)
+  // Separate the inbox by intent. Messages stay available in All, but their
+  // dedicated tab avoids letting a busy conversation bury action-required
+  // event updates.
   const tabFilteredNotifications = useMemo(() => {
-    if (activeTab === 'archive') {
-      return notifications.filter((n: any) => n.is_archived === true);
-    }
-    return notifications.filter((n: any) => !n.is_archived);
+    return getNotificationsForInboxTab(notifications, activeTab);
   }, [notifications, activeTab]);
+
+  const tabUnreadCounts = useMemo(() => ({
+    all: getNotificationsForInboxTab(notifications, 'all').filter((notification: Notification) => !notification.is_read).length,
+    messages: getNotificationsForInboxTab(notifications, 'messages').filter((notification: Notification) => !notification.is_read).length,
+    updates: getNotificationsForInboxTab(notifications, 'updates').filter((notification: Notification) => !notification.is_read).length,
+    archive: getNotificationsForInboxTab(notifications, 'archive').length,
+  }), [notifications]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -84,10 +94,15 @@ export default function NotificationsScreen() {
     };
   }, [params.notificationId, params.highlightNotification, notifications, markAsRead]);
 
-  const handleNotificationPress = async (notification: any) => {
-    // Mark as read when clicked in notification center
-    if (!notification.is_read) {
-      await markAsRead(notification.id);
+  const handleNotificationPress = async (notification: NotificationInboxItem) => {
+    // A grouped chat row represents one conversation. Opening it consumes all
+    // unread alerts in that conversation, not only the newest alert.
+    const unreadIds = notification.notificationIds.filter((id: string) => {
+      const item = notifications.find((candidate: { id: string; is_read: boolean }) => candidate.id === id);
+      return item && !item.is_read;
+    });
+    if (unreadIds.length > 0) {
+      await Promise.all(unreadIds.map((id: string) => markAsRead(id)));
     }
     
     // Navigate based on notification type
@@ -176,32 +191,31 @@ export default function NotificationsScreen() {
     }
   };
 
-  const handleToggleReadStatus = async (notificationId: string) => {
+  const handleToggleReadStatus = async (notification: NotificationInboxItem) => {
     // Prevent double-clicking and ensure proper state update
-    const notification = notifications.find((n: any) => n.id === notificationId);
-    if (!notification || markingAsRead.has(notificationId)) return;
+    if (markingAsRead.has(notification.id)) return;
 
-    setMarkingAsRead(prev => new Set(prev).add(notificationId));
+    setMarkingAsRead(prev => new Set(prev).add(notification.id));
     try {
       if (notification.is_read) {
-        await markAsUnread(notificationId);
+        await Promise.all(notification.notificationIds.map((id: string) => markAsUnread(id)));
       } else {
-        await markAsRead(notificationId);
+        await Promise.all(notification.notificationIds.map((id: string) => markAsRead(id)));
       }
     } finally {
       setMarkingAsRead(prev => {
         const next = new Set(prev);
-        next.delete(notificationId);
+        next.delete(notification.id);
         return next;
       });
     }
   };
 
-  const handleArchiveNotification = async (notificationId: string) => {
-    await archiveNotification(notificationId);
+  const handleArchiveNotification = async (notification: NotificationInboxItem) => {
+    await Promise.all(notification.notificationIds.map((id: string) => archiveNotification(id)));
   };
 
-  const handleDeleteNotification = async (notificationId: string) => {
+  const handleDeleteNotification = async (notification: NotificationInboxItem) => {
     Alert.alert(
       t('center.deleteTitle'),
       t('center.deleteMessage'),
@@ -211,7 +225,10 @@ export default function NotificationsScreen() {
           text: t('center.delete'), 
           style: 'destructive',
           onPress: async () => {
-            await deleteNotification(notificationId);
+            // Archive cards can represent all alerts from one chat. Delete
+            // every represented row so the same conversation does not appear
+            // again with its next-most-recent notification.
+            await Promise.all(notification.notificationIds.map((id: string) => deleteNotification(id)));
             // Clear filtered notifications to refresh the view
             setFilteredNotifications([]);
           }
@@ -367,7 +384,7 @@ export default function NotificationsScreen() {
     },
   ];
 
-  const NotificationCard = ({ notification }: { notification: any }) => {
+  const NotificationCard = ({ notification }: { notification: NotificationInboxItem }) => {
     const iconName = getNotificationIcon(notification.type);
     const iconColor = getNotificationColor(notification.type, notification.is_urgent);
     const isUnread = !notification.is_read;
@@ -388,7 +405,7 @@ export default function NotificationsScreen() {
             style={styles.closeButton}
             onPress={(e) => {
               e.stopPropagation();
-              handleDeleteNotification(notification.id);
+              handleDeleteNotification(notification);
             }}
           >
             <MaterialIcons name="close" size={20} color={colors.text.secondary} />
@@ -431,12 +448,12 @@ export default function NotificationsScreen() {
                     <Text style={styles.urgentText}>{t('center.urgent')}</Text>
                   </View>
                 )}
-                {activeTab === 'all' && !markingAsRead.has(notification.id) && (
+                {activeTab !== 'archive' && !markingAsRead.has(notification.id) && (
                   <TouchableOpacity
                     style={styles.markReadButtonInline}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleToggleReadStatus(notification.id);
+                      handleToggleReadStatus(notification);
                     }}
                     disabled={markingAsRead.has(notification.id)}
                   >
@@ -447,7 +464,7 @@ export default function NotificationsScreen() {
                     />
                   </TouchableOpacity>
                 )}
-                {activeTab === 'all' && markingAsRead.has(notification.id) && (
+                {activeTab !== 'archive' && markingAsRead.has(notification.id) && (
                   <View style={styles.markReadButtonInline}>
                     <MaterialIcons name="hourglass-empty" size={16} color={colors.text.secondary} />
                   </View>
@@ -462,6 +479,16 @@ export default function NotificationsScreen() {
             ]}>
               {translatedNotification.message}
             </Text>
+            {notification.type === 'chat_message' && notification.notificationCount > 1 && (
+              <View style={styles.conversationSummary}>
+                <MaterialIcons name="chat-bubble-outline" size={14} color={iconColor} />
+                <Text style={styles.conversationSummaryText}>
+                  {notification.unreadMessageCount > 0
+                    ? `${notification.unreadMessageCount} unread in this conversation`
+                    : `${notification.notificationCount} messages in this conversation`}
+                </Text>
+              </View>
+            )}
             
             <Text style={styles.notificationTime}>
               {formatTimeAgo(notification.created_at)}
@@ -470,14 +497,14 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
 
         {/* Bottom Right Action Buttons - Only in All Tab */}
-        {activeTab === 'all' && (
+        {activeTab !== 'archive' && (
           <View style={styles.bottomActionButtons}>
             <TouchableOpacity
               style={[
                 styles.toggleReadButton,
                 notification.is_read && styles.toggleReadButtonRead
               ]}
-              onPress={() => handleToggleReadStatus(notification.id)}
+              onPress={() => handleToggleReadStatus(notification)}
               disabled={markingAsRead.has(notification.id)}
             >
               {markingAsRead.has(notification.id) ? (
@@ -496,7 +523,7 @@ export default function NotificationsScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.archiveButtonBottom}
-              onPress={() => handleArchiveNotification(notification.id)}
+              onPress={() => handleArchiveNotification(notification)}
             >
               <MaterialIcons 
                 name="archive" 
@@ -516,10 +543,15 @@ export default function NotificationsScreen() {
     );
   };
 
-  // Use filtered notifications if search/filters are active, otherwise use tab-filtered notifications
-  const displayNotifications = filteredNotifications.length > 0 
-    ? filteredNotifications 
+  // Group chat messages after filtering, so results never duplicate a
+  // conversation while still honouring search and advanced filters.
+  const sourceNotifications = filteredNotifications.length > 0
+    ? filteredNotifications
     : tabFilteredNotifications;
+  const displayNotifications = useMemo(
+    () => groupChatNotifications(sourceNotifications),
+    [sourceNotifications],
+  );
 
   if (isLoading && notifications.length === 0) {
     return (
@@ -536,7 +568,7 @@ export default function NotificationsScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>{t('center.title')}</Text>
-          {unreadCount > 0 && activeTab === 'all' && (
+          {unreadCount > 0 && activeTab !== 'archive' && (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
             </View>
@@ -556,7 +588,7 @@ export default function NotificationsScreen() {
               {refreshing ? t('center.refreshing', 'Refreshing…') : t('center.refresh', 'Refresh')}
             </Text>
           </TouchableOpacity>
-          {unreadCount > 0 && activeTab === 'all' && (
+          {unreadCount > 0 && activeTab !== 'archive' && (
             <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
               <Text style={styles.markAllText}>{t('center.markAllRead')}</Text>
             </TouchableOpacity>
@@ -564,46 +596,33 @@ export default function NotificationsScreen() {
         </View>
       </View>
 
-      {/* Tabs */}
+      {/* Inbox tabs */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'all' && styles.activeTab]}
-          onPress={() => {
-            setActiveTab('all');
-            setFilteredNotifications([]);
-            setSearchQuery('');
-          }}
-        >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>
-            {t('center.all')}
-          </Text>
-          {activeTab === 'all' && tabFilteredNotifications.filter((n: any) => !n.is_read).length > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>
-                {tabFilteredNotifications.filter((n: any) => !n.is_read).length}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'archive' && styles.activeTab]}
-          onPress={() => {
-            setActiveTab('archive');
-            setFilteredNotifications([]);
-            setSearchQuery('');
-          }}
-        >
-          <Text style={[styles.tabText, activeTab === 'archive' && styles.activeTabText]}>
-            {t('center.archive')}
-          </Text>
-          {activeTab === 'archive' && tabFilteredNotifications.length > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>
-                {tabFilteredNotifications.length}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        {([
+          ['all', t('center.all')],
+          ['messages', t('center.messages', 'Messages')],
+          ['updates', t('center.updates', 'Updates')],
+          ['archive', t('center.archive')],
+        ] as const).map(([tab, label]) => (
+          <TouchableOpacity
+            key={tab}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === tab }}
+            style={[styles.tab, activeTab === tab && styles.activeTab]}
+            onPress={() => {
+              setActiveTab(tab);
+              setFilteredNotifications([]);
+              setSearchQuery('');
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{label}</Text>
+            {tabUnreadCounts[tab] > 0 && (
+              <View style={styles.tabBadge}>
+                <Text style={styles.tabBadgeText}>{tabUnreadCounts[tab]}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Filter Section */}
@@ -622,17 +641,27 @@ export default function NotificationsScreen() {
       {displayNotifications.length === 0 ? (
         <View style={styles.emptyContainer}>
           <MaterialIcons 
-            name={activeTab === 'archive' ? 'archive' : 'notifications-none'} 
+            name={activeTab === 'archive' ? 'archive' : activeTab === 'messages' ? 'chat-bubble-outline' : 'notifications-none'}
             size={64} 
             color={colors.text.secondary} 
           />
           <Text style={styles.emptyTitle}>
-            {activeTab === 'archive' ? t('center.noArchivedNotifications') : t('center.noNotifications')}
+            {activeTab === 'archive'
+              ? t('center.noArchivedNotifications')
+              : activeTab === 'messages'
+                ? t('center.noMessages', 'No messages')
+                : activeTab === 'updates'
+                  ? t('center.noUpdates', 'No updates')
+                  : t('center.noNotifications')}
           </Text>
           <Text style={styles.emptyMessage}>
-            {activeTab === 'archive' 
+            {activeTab === 'archive'
               ? t('center.noArchivedNotificationsMessage')
-              : t('center.noNotificationsMessage')}
+              : activeTab === 'messages'
+                ? t('center.noMessagesMessage', 'New chat messages will appear here.')
+                : activeTab === 'updates'
+                  ? t('center.noUpdatesMessage', 'Meeting and event updates will appear here.')
+                  : t('center.noNotificationsMessage')}
           </Text>
         </View>
       ) : (
@@ -929,6 +958,17 @@ const getStyles = (isDark: boolean, colors: any, navBarHeight: number = 0, scrol
   notificationTime: {
     fontSize: 12,
     color: colors.text.secondary,
+  },
+  conversationSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 7,
+  },
+  conversationSummaryText: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    fontWeight: '600',
   },
   actionButtons: {
     flexDirection: 'row',

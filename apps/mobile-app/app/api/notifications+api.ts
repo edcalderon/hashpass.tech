@@ -1,7 +1,10 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { resolveNotificationIdentity, isResolveIdentityError } from '@/lib/server/resolve-notification-identity';
 
-// GET /api/notifications?limit=50 — list the authenticated user's notifications
+// GET /api/notifications?limit=50&category=messages|updates — list the
+// authenticated user's notifications. Categories are queried independently so
+// a busy conversation cannot push action-required event updates out of the
+// inbox window before the client separates the tabs.
 export async function GET(request: Request) {
   const identity = await resolveNotificationIdentity(request);
   if (isResolveIdentityError(identity)) {
@@ -17,13 +20,22 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const limitParam = Number(url.searchParams.get('limit'));
   const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 100) : 50;
+  const category = url.searchParams.get('category');
 
   const supabase = getSupabaseServerForRequest(request);
   try {
-    const { data, error } = await supabase
+    let query = (supabase as any)
       .from('notifications')
       .select('*')
-      .eq('user_id', identity.supabaseUserId)
+      .eq('user_id', identity.supabaseUserId);
+
+    if (category === 'messages') {
+      query = query.eq('type', 'chat_message');
+    } else if (category === 'updates') {
+      query = query.neq('type', 'chat_message');
+    }
+
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .limit(limit);
 

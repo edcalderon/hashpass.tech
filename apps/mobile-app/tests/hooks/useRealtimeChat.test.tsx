@@ -223,6 +223,38 @@ describe('useRealtimeChat', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('refreshes immediately when the peer broadcasts that a persisted message is available', async () => {
+    mockDecryptChatMessage.mockReturnValue('Delivered through broadcast refresh');
+    let historyRows: any[] = [];
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === 'get_meeting_chat_messages') {
+        return Promise.resolve({ data: { success: true, messages: historyRows }, error: null });
+      }
+      return Promise.resolve({ data: { success: true }, error: null });
+    });
+
+    const renderer = await renderHook({
+      meetingId: 'meeting-1',
+      roomName: 'room-1',
+      username: 'Me',
+      userId: 'my-user-id',
+      otherParticipantId: 'other-user',
+    });
+
+    historyRows = [
+      { id: 'broadcast-1', sender_id: 'other-user', ciphertext: 'aa', nonce: 'bb', message_type: 'text', created_at: '2026-08-05T10:15:00Z' },
+    ];
+    await act(async () => {
+      latestChannelHandlers['meeting-chat-message-available']?.({ payload: { meetingId: 'meeting-1', messageId: 'broadcast-1' } });
+      await flushPromises();
+    });
+
+    expect(latest!.messages).toEqual([
+      expect.objectContaining({ id: 'broadcast-1', content: 'Delivered through broadcast refresh' }),
+    ]);
+    await act(async () => renderer.unmount());
+  });
+
   it('sends a message: encrypts, persists via RPC, then optimistically appends the plaintext', async () => {
     mockEncryptChatMessage.mockReturnValue({ ciphertext: 'ee', nonce: 'ff' });
     mockRpc.mockImplementation((fn: string, args: any) => {

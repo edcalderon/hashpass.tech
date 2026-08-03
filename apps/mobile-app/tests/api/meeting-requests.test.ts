@@ -2,12 +2,18 @@
 
 const mockResolveNotificationIdentity = jest.fn();
 const mockIsResolveIdentityError = jest.fn();
+const mockSendMeetingNotificationEmail = jest.fn().mockResolvedValue({ success: true });
 
 jest.mock("@/lib/server/resolve-notification-identity", () => ({
   resolveNotificationIdentity: (request: Request) =>
     mockResolveNotificationIdentity(request),
   isResolveIdentityError: (identity: unknown) =>
     mockIsResolveIdentityError(identity),
+}));
+
+jest.mock("@/lib/email", () => ({
+  sendMeetingNotificationEmail: (...args: unknown[]) => mockSendMeetingNotificationEmail(...args),
+  sendCriticalNotificationEmail: jest.fn().mockResolvedValue({ success: true }),
 }));
 
 const mockEq = jest.fn();
@@ -87,6 +93,7 @@ describe("meeting-requests api", () => {
     mockSpeakerIn.mockReset();
     mockSpeakerIn.mockResolvedValue({ data: [], error: null });
     mockRpc.mockReset();
+    mockSendMeetingNotificationEmail.mockClear();
     mockFrom.mockClear();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
   });
@@ -478,6 +485,34 @@ describe("meeting-requests api", () => {
   });
 
   describe("POST", () => {
+    it("emails both the speaker and requester when a meeting request is created", async () => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "requester-auth-id",
+        registryUserId: "registry-requester-id",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockRpc.mockResolvedValue({
+        data: { success: true, id: "request-123", speaker_id: "speaker-auth-id" },
+        error: null,
+      });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { POST } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await POST(new Request("https://api.hashpass.tech/api/events/chile2026/meetings/requests", {
+        method: "POST",
+        body: JSON.stringify({ speakerId: "claudia-sotelo", speakerName: "Claudia Sotelo", requesterName: "Ada Lovelace" }),
+      }));
+
+      expect(response.status).toBe(201);
+      expect(mockSendMeetingNotificationEmail).toHaveBeenCalledTimes(2);
+      expect(mockSendMeetingNotificationEmail).toHaveBeenCalledWith(expect.objectContaining({
+        recipientUserId: "speaker-auth-id", recipientRole: "speaker", status: "requested",
+      }));
+      expect(mockSendMeetingNotificationEmail).toHaveBeenCalledWith(expect.objectContaining({
+        recipientUserId: "requester-auth-id", recipientRole: "requester", status: "requested",
+      }));
+    });
+
     it("passes the URL event id into the request creation contract", async () => {
       mockResolveNotificationIdentity.mockResolvedValue({
         supabaseUserId: "550e8400-e29b-41d4-a716-446655440000",
@@ -809,6 +844,49 @@ describe("meeting-requests api", () => {
       expect(await response.json()).toEqual({
         data: { success: true, status: "confirmed", meeting_id: "meeting-123" },
       });
+    });
+
+    it.each(["accept", "decline"])("emails both participants when a speaker chooses to %s", async (action) => {
+      mockResolveNotificationIdentity.mockResolvedValue({
+        supabaseUserId: "speaker-auth-id",
+        registryUserId: "registry-speaker-id",
+      });
+      mockIsResolveIdentityError.mockReturnValue(false);
+      mockMeetingRequestMaybeSingle.mockResolvedValueOnce({
+        data: {
+          id: "request-123",
+          requester_id: "requester-auth-id",
+          requester_name: "Ada Lovelace",
+          speaker_name: "Claudia Sotelo",
+          message: "Let's meet",
+          meeting_type: "networking",
+          duration_minutes: 15,
+        },
+        error: null,
+      });
+      mockMaybeSingle.mockResolvedValueOnce({ data: { id: "speaker-record-id" }, error: null });
+      mockRpc.mockResolvedValue({ data: { success: true, status: action === "accept" ? "confirmed" : "declined" }, error: null });
+
+      /* eslint-disable @typescript-eslint/no-require-imports */
+      const { PATCH } = require("../../app/api/events/[eventId]/meetings/requests+api");
+      const response = await PATCH(new Request("https://api.hashpass.tech/api/events/chile2026/meetings/requests", {
+        method: "PATCH",
+        body: JSON.stringify({
+          requestId: "request-123",
+          action,
+          ...(action === "accept" ? { slotTime: "2026-08-15T14:00:00.000Z" } : {}),
+        }),
+      }));
+
+      expect(response.status).toBe(200);
+      expect(mockSendMeetingNotificationEmail).toHaveBeenCalledTimes(2);
+      const expectedStatus = action === "accept" ? "accepted" : "declined";
+      expect(mockSendMeetingNotificationEmail).toHaveBeenCalledWith(expect.objectContaining({
+        recipientUserId: "requester-auth-id", recipientRole: "requester", status: expectedStatus,
+      }));
+      expect(mockSendMeetingNotificationEmail).toHaveBeenCalledWith(expect.objectContaining({
+        recipientUserId: "speaker-auth-id", recipientRole: "speaker", status: expectedStatus,
+      }));
     });
 
     it("treats the Boolean result from the current cancel RPC as a success", async () => {

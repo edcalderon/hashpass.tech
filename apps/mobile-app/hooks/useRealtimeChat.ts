@@ -40,6 +40,7 @@ export interface ChatMessage {
 }
 
 const EVENT_PRESENCE_TYPE = 'presence';
+const EVENT_MESSAGE_AVAILABLE = 'meeting-chat-message-available';
 const PRESENCE_INTERVAL = 30000; // 30 seconds
 
 export function useRealtimeChat({ meetingId, roomName, username, userId, otherParticipantId }: UseRealtimeChatProps) {
@@ -57,6 +58,7 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
   const presenceIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const refreshMessagesRef = useRef<() => void>(() => undefined);
 
   const decryptRow = useCallback((row: any): ChatMessage => {
     const priv = myPrivateKeyRef.current;
@@ -134,6 +136,10 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
       }
     };
 
+    refreshMessagesRef.current = () => {
+      void loadHistory();
+    };
+
     void loadHistory(true);
 
     const dbChannel = supabase
@@ -162,6 +168,7 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
     return () => {
       cancelled = true;
       clearInterval(reconciliationInterval);
+      refreshMessagesRef.current = () => undefined;
       setIsMessageChannelConnected(false);
       supabase.removeChannel(dbChannel);
     };
@@ -198,6 +205,14 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
           ...current,
           [presenceData.userId]: { isOnline: presenceData.isOnline, lastSeen: new Date(presenceData.lastSeen) },
         }));
+      })
+      // Postgres Changes remains the source of truth, but local Supabase
+      // instances can subscribe successfully before their publication is
+      // active. This broadcast is sent only after the message RPC persisted
+      // a row, so it gives the peer an immediate, encrypted-history refresh
+      // without exposing message content in the realtime payload.
+      .on('broadcast', { event: EVENT_MESSAGE_AVAILABLE }, () => {
+        refreshMessagesRef.current();
       })
       .subscribe(async (status: string) => {
         if (status === 'SUBSCRIBED') {
@@ -270,6 +285,21 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
       });
       if (rpcError) throw new Error(rpcError.message);
       if (!data?.success) throw new Error(data?.error || 'Failed to send message');
+
+      // Notify the other open chat immediately. The recipient fetches the
+      // persisted ciphertext through its authorized history RPC; no plaintext
+      // or encryption material crosses the broadcast channel.
+      try {
+        await presenceChannelRef.current?.send({
+          type: 'broadcast',
+          event: EVENT_MESSAGE_AVAILABLE,
+          payload: { meetingId, messageId: data.id },
+        });
+      } catch (broadcastError) {
+        // Persistence already succeeded; postgres_changes and the bounded
+        // reconciliation refresh will still deliver the message.
+        console.warn('[useRealtimeChat] Message broadcast failed:', broadcastError);
+      }
 
       // Optimistic append -- the sender already knows the plaintext, no
       // need to wait for the realtime echo (which is de-duped by id above

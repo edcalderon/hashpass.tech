@@ -1,3 +1,33 @@
+## [1.8.312](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.309...v1.8.312) (2026-08-03)
+
+
+### Bug Fixes
+
+* retain meeting request identity resolution ([8eb3b3a](https://github.com/hashpass-tech/hashpass.tech/commit/8eb3b3a0867f9902734f19e4b6673c3d33a1e0b2))
+* use dedicated transactional email provider ([17d79d6](https://github.com/hashpass-tech/hashpass.tech/commit/17d79d6a047dcad7d6dd5041dbef1239c90a775d))
+
+
+### Features
+
+* refresh notifications and email meeting updates ([1f9995a](https://github.com/hashpass-tech/hashpass.tech/commit/1f9995afd05d1c15c2aa49d8a3c06022f372938b))
+### Release Highlights
+- notify both meeting participants by email; organize notifications by inbox; add emoji chat composer; end-to-end encrypted persistent meeting chat, replacing broadcast-only messaging; escalate critical notifications by email; per-day tabs in the meeting slot picker; refresh notifications and email meeting updates; refresh chats from live broadcasts; submit web chat messages on enter; deliver meeting chats in realtime; show current speaker request status; safely sync transactional mail settings; deliver meeting emails reliably; support critical email template previews; use dedicated transactional email provider; retain meeting request identity resolution
+
+## [1.8.311](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.309...v1.8.311) (2026-08-03)
+
+
+### Bug Fixes
+
+* retain meeting request identity resolution ([8eb3b3a](https://github.com/hashpass-tech/hashpass.tech/commit/8eb3b3a0867f9902734f19e4b6673c3d33a1e0b2))
+* use dedicated transactional email provider ([17d79d6](https://github.com/hashpass-tech/hashpass.tech/commit/17d79d6a047dcad7d6dd5041dbef1239c90a775d))
+
+
+### Features
+
+* refresh notifications and email meeting updates ([1f9995a](https://github.com/hashpass-tech/hashpass.tech/commit/1f9995afd05d1c15c2aa49d8a3c06022f372938b))
+### Release Highlights
+- organize notifications by inbox; add emoji chat composer; end-to-end encrypted persistent meeting chat, replacing broadcast-only messaging; escalate critical notifications by email; per-day tabs in the meeting slot picker; refresh notifications and email meeting updates; refresh chats from live broadcasts; submit web chat messages on enter; deliver meeting chats in realtime; show current speaker request status; safely sync transactional mail settings; deliver meeting emails reliably; support critical email template previews; use dedicated transactional email provider; retain meeting request identity resolution
+
 ## [1.8.310](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.309...v1.8.310) (2026-08-02)
 
 

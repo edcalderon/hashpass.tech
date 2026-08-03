@@ -5,6 +5,7 @@ import {
 } from "@/lib/server/resolve-notification-identity";
 import { eventIdFromRequest } from "@/lib/server/event-api";
 import { authenticatedIdentity } from "@/lib/server/authenticated-meeting-identity";
+import { sendCriticalNotificationEmail, sendMeetingNotificationEmail } from "@/lib/email";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -16,7 +17,6 @@ async function deliverMeetingEmail(details: Record<string, unknown>) {
   // Await email completion in Lambda so the runtime cannot freeze it after the
   // response. Delivery failure remains non-blocking for the meeting action.
   try {
-    const { sendMeetingNotificationEmail } = await import("@/lib/email");
     await sendMeetingNotificationEmail(details as any);
   } catch (error) {
     console.error("[meeting-requests] email delivery failed:", error);
@@ -27,7 +27,6 @@ async function deliverCriticalNotificationEmail(details: Record<string, unknown>
   // Critical delivery is an escalation after the database notification exists;
   // it must never delay or roll back the user action that created it.
   try {
-    const { sendCriticalNotificationEmail } = await import("@/lib/email");
     await sendCriticalNotificationEmail(details as any);
   } catch (error) {
     console.error("[meeting-requests] critical notification email failed:", error);
@@ -236,9 +235,8 @@ export async function POST(request: Request) {
         { error: result.error || "Meeting request rejected" },
         { status: 409 },
       );
-    const recipientUserId = typeof result?.speaker_id === 'string' ? result.speaker_id : null;
-    if (recipientUserId) await deliverMeetingEmail({
-      recipientUserId,
+    const speakerUserId = typeof result?.speaker_id === 'string' ? result.speaker_id : null;
+    const meetingEmailDetails = {
       status: "requested",
       eventId,
       requesterName: body.requesterName,
@@ -250,6 +248,18 @@ export async function POST(request: Request) {
       meetingType: body.meetingType,
       durationMinutes,
       appUrl: `${meetingFrontendOrigin(request)}/events/${encodeURIComponent(eventId)}/networking/my-requests`,
+    } as const;
+    // Both people receive a clear transactional record: the speaker gets the
+    // action request, while the requester gets confirmation that it was sent.
+    if (speakerUserId) await deliverMeetingEmail({
+      ...meetingEmailDetails,
+      recipientUserId: speakerUserId,
+      recipientRole: 'speaker',
+    });
+    if (auth.meetingUserId !== speakerUserId) await deliverMeetingEmail({
+      ...meetingEmailDetails,
+      recipientUserId: auth.meetingUserId,
+      recipientRole: 'requester',
     });
     return Response.json({ data: result }, { status: 201 });
   } catch (error: any) {
@@ -357,8 +367,7 @@ export async function PATCH(request: Request) {
         { status: 409 },
       );
     if (body.action === "accept" || body.action === "decline") {
-      await deliverMeetingEmail({
-        recipientUserId: meetingRequest.requester_id,
+      const meetingEmailDetails = {
         status: body.action === "accept" ? "accepted" : "declined",
         eventId,
         requesterName: meetingRequest.requester_name,
@@ -373,6 +382,19 @@ export async function PATCH(request: Request) {
         durationMinutes: meetingRequest.duration_minutes,
         response: body.response,
         appUrl: `${meetingFrontendOrigin(request)}/events/${encodeURIComponent(eventId)}/networking/my-requests`,
+      } as const;
+      // Both participants receive the lifecycle outcome. The current
+      // authenticated speaker made the response; the requester receives the
+      // outcome that affects their schedule.
+      await deliverMeetingEmail({
+        ...meetingEmailDetails,
+        recipientUserId: meetingRequest.requester_id,
+        recipientRole: 'requester',
+      });
+      if (auth.meetingUserId !== meetingRequest.requester_id) await deliverMeetingEmail({
+        ...meetingEmailDetails,
+        recipientUserId: auth.meetingUserId,
+        recipientRole: 'speaker',
       });
     }
     if (result?.requires_resolution === true || result?.status === 'tentative') {
