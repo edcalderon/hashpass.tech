@@ -65,6 +65,11 @@ jest.mock('../../lib/services/version-service', () => ({
 jest.mock('../../hooks/useOtaUpdate', () => ({
   useOtaUpdate: () => ({ state: mockOtaState, applyUpdate: mockApplyUpdate, checkForUpdate: mockCheckForUpdate }),
 }));
+// handleCheckForUpdates compares against packageJson.version directly (not
+// the mocked versionService above), so without this mock the "current
+// version" here silently tracks the real repo version and this test starts
+// failing every time a release bumps it past the nativeVersion fixtures below.
+jest.mock('../../package.json', () => ({ version: '1.8.313' }));
 
 import VersionQuickSheet from '../../components/VersionQuickSheet';
 

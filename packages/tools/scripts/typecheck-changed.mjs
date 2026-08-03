@@ -135,7 +135,7 @@ function resolveAliasTarget(specifier, aliasEntries) {
     if (specifier.length < prefix.length + suffix.length) continue;
 
     const captured = specifier.slice(prefix.length, specifier.length - suffix.length);
-    return target.replace('*', captured);
+    return target.replaceAll('*', captured);
   }
 
   return null;

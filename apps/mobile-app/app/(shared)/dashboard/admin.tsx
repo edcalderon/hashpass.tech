@@ -35,7 +35,6 @@ import {
   EventRoleGrant,
 } from "../../../lib/event-admin-access";
 import UnifiedSearchAndFilter from "../../../components/UnifiedSearchAndFilter";
-import EmailPreviewFrame from "../../../components/EmailPreviewFrame";
 
 type TabType =
   | "passes"
@@ -2793,7 +2792,14 @@ function CommunicationsTab({ styles, colors, subject, heading, message, audience
         <Text style={styles.requestTitle}>{preview.subject}</Text>
         {preview.html ? (
           <View style={styles.emailPreviewWrap}>
-            <EmailPreviewFrame html={preview.html} />
+            {/* Deferred require: react-native-webview pulls in a real native
+                module at import time, which would crash every test that
+                renders this screen (not just the Emails tab) if imported
+                statically at module scope. */}
+            {(() => {
+              const EmailPreviewFrame = require("../../../components/EmailPreviewFrame").default;
+              return <EmailPreviewFrame html={preview.html} />;
+            })()}
           </View>
         ) : (
           <Text style={styles.requestInfo}>{preview.message}</Text>
