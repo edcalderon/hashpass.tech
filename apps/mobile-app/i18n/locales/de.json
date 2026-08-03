@@ -216,7 +216,7 @@
   },
   "privacy": {
     "title": "Datenschutzrichtlinie",
-    "lastUpdated": "Zuletzt aktualisiert: 4. November 2025",
+    "lastUpdated": "Zuletzt aktualisiert: 8. Juli 2026",
     "introduction": {
       "title": "1. Einführung",
       "text": "HASHPASS (\"wir\", \"unser\" oder \"uns\") ist dem Schutz Ihrer Privatsphäre verpflichtet. Diese Datenschutzrichtlinie erklärt, wie wir Ihre Informationen sammeln, verwenden, offenlegen und schützen, wenn Sie unsere digitale Event-Plattform und unsere Dienste (den \"Service\") nutzen. Bitte lesen Sie diese Datenschutzrichtlinie sorgfältig. Wenn Sie den Bedingungen dieser Datenschutzrichtlinie nicht zustimmen, greifen Sie bitte nicht auf den Service zu."
@@ -243,7 +243,7 @@
     },
     "cookies": {
       "title": "7. Cookies und Tracking",
-      "text": "Wir verwenden Cookies und ähnliche Tracking-Technologien, um die Aktivität auf unserem Service zu verfolgen und bestimmte Informationen zu speichern. Sie können Ihren Browser anweisen, alle Cookies abzulehnen oder anzuzeigen, wenn ein Cookie gesendet wird."
+      "text": "Wir verwenden Cookies und ähnliche Tracking-Technologien, um Ihre Sitzung aufrechtzuerhalten, Einstellungen zu speichern und die Nutzung unseres Services zu analysieren. Zu den verwendeten Cookies gehören:\n\n• Essenzielle Cookies: erforderlich für Authentifizierung und Sicherheit (Sitzungstoken, CSRF-Token).\n• Analyse-Cookies: von Google Analytics gesetzt, um zu messen, wie Besucher mit unserer Website interagieren (siehe Abschnitt 8).\n\nSie können Ihren Browser anweisen, alle Cookies abzulehnen oder Sie zu benachrichtigen, wenn ein Cookie gesendet wird. Wenn Sie essenzielle Cookies deaktivieren, können Sie sich nicht anmelden."
     },
     "changes": {
       "title": "8. Änderungen an dieser Datenschutzrichtlinie",
@@ -907,7 +907,46 @@
     "updateLater": "Später",
     "updateNow": "Jetzt Aktualisieren",
     "updateClearing": "Cache wird geleert…",
-    "updateReloading": "Wird neu geladen…"
+    "updateReloading": "Wird neu geladen…",
+    "quickTitle": "Version",
+    "buildInfoShort": "Build-Informationen",
+    "playCheck": "Nach Google-Play-Updates suchen",
+    "playChecking": "Suche nach Google-Play-Updates…",
+    "playUpToDate": "Du verwendest die neueste native Version",
+    "playAvailable": "v{version} ist verfügbar",
+    "playUpdate": "Aktualisieren",
+    "playError": "Prüfung nicht möglich — zum Wiederholen tippen",
+    "otaSection": "In-App-Updates",
+    "otaDownloading": "OTA-Update wird heruntergeladen…",
+    "otaChecking": "Suche nach OTA-Updates…",
+    "otaReady": "OTA-Update bereit",
+    "otaRestart": "Neustart",
+    "otaError": "OTA-Prüfung fehlgeschlagen — zum Wiederholen tippen",
+    "otaCheck": "Nach OTA-Updates suchen",
+    "otaHint": "Lädt App-Updates ohne Google Play zu öffnen.",
+    "close": "Schließen",
+    "expandDetails": "Details erweitern",
+    "otaInfo": "Update-Status (OTA):",
+    "otaSource": "Ausführung:",
+    "otaEmbedded": "Native Build-Version (kein OTA-Update angewendet)",
+    "otaFetched": "OTA-Update geladen",
+    "otaChannel": "Kanal:",
+    "otaUpdateId": "Update-ID:",
+    "otaPublishedAt": "Veröffentlicht:",
+    "otaCheckLegacy": "Nach OTA-Updates suchen",
+    "otaRestartLegacy": "Neustart zum Anwenden des geladenen Updates",
+    "otaCheckingLegacy": "Suche nach OTA-Update…",
+    "statusUnknown": "Status unbekannt",
+    "statusHealthy": "Alle Systeme funktionieren",
+    "statusDegraded": "Einige Systeme haben Probleme",
+    "statusUnhealthy": "Systeme haben Probleme",
+    "statusChecking": "Systemstatus wird geprüft…",
+    "showing": "{start}-{end} von {total} werden angezeigt",
+    "previous": "Zurück",
+    "pageOf": "Seite {page} von {total}",
+    "next": "Weiter",
+    "of": "von",
+    "page": "Seite"
   },
   "agenda": {
     "title": "Veranstaltungsagenda",
