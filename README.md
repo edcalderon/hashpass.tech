@@ -20,18 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.310)
+## 📋 Latest Changes (v1.8.311)
 
 ### Bug Fixes
 
 * retain meeting request identity resolution ([8eb3b3a](https://github.com/hashpass-tech/hashpass.tech/commit/8eb3b3a0867f9902734f19e4b6673c3d33a1e0b2))
+* use dedicated transactional email provider ([17d79d6](https://github.com/hashpass-tech/hashpass.tech/commit/17d79d6a047dcad7d6dd5041dbef1239c90a775d))
 
 
 ### Features
 
 * refresh notifications and email meeting updates ([1f9995a](https://github.com/hashpass-tech/hashpass.tech/commit/1f9995afd05d1c15c2aa49d8a3c06022f372938b))
 ### Release Highlights
-- refresh notifications and email meeting updates; retain meeting request identity resolution
+- organize notifications by inbox; add emoji chat composer; end-to-end encrypted persistent meeting chat, replacing broadcast-only messaging; escalate critical notifications by email; per-day tabs in the meeting slot picker; refresh notifications and email meeting updates; refresh chats from live broadcasts; submit web chat messages on enter; deliver meeting chats in realtime; show current speaker request status; safely sync transactional mail settings; deliver meeting emails reliably; support critical email template previews; use dedicated transactional email provider; retain meeting request identity resolution
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
