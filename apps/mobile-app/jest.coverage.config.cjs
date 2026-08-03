@@ -27,4 +27,13 @@ module.exports = {
     '!**/*.spec.{ts,tsx}',
   ],
   testPathIgnorePatterns: ['/node_modules/', '/dist/', '/.expo/'],
+  // jest-expo's preset only transforms RN/Expo-family packages (see its
+  // jest-preset.js), leaving everything else in node_modules as raw ESM.
+  // @noble/ciphers, @noble/curves, and @noble/hashes (the chat-encryption
+  // crypto libs) ship pure ESM with no CJS build, so this extends that same
+  // allow-list with @noble rather than replacing it outright.
+  transformIgnorePatterns: [
+    '/node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@noble/.*)',
+    '/node_modules/react-native-reanimated/plugin/',
+  ],
 };

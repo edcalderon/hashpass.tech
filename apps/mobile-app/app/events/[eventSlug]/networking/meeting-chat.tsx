@@ -18,7 +18,7 @@ export default function MeetingChatPage() {
     requesterName?: string;
   }>();
   const { colors } = useTheme();
-  const { user } = useAuth();
+  const { user, dbUserId } = useAuth();
   const { t } = useTranslation('common');
   const [loading, setLoading] = useState(true);
   const [meetingInfo, setMeetingInfo] = useState<any>(null);
@@ -31,7 +31,7 @@ export default function MeetingChatPage() {
       Alert.alert('Error', 'No meeting ID provided');
       router.back();
     }
-  }, [meetingId]);
+  }, [meetingId, dbUserId]);
 
   const loadMeetingInfo = async () => {
     try {
@@ -46,15 +46,19 @@ export default function MeetingChatPage() {
       }
       
       // Otherwise, fetch meeting details to build title
-      if (meetingId && user?.id) {
+      if (meetingId && dbUserId) {
         const { data: meetingData, error } = await supabase
           .from('meetings')
           .select('speaker_name, requester_name, speaker_id, requester_id')
           .eq('id', meetingId)
           .single();
-        
+
         if (meetingData && !error) {
-          const isRequester = meetingData.requester_id === user.id;
+          // meetings.requester_id is a real Supabase auth uuid -- must
+          // compare against dbUserId, not user.id (Better Auth's own id),
+          // the same identity rule as everywhere else in the networking
+          // flows (see CLAUDE.md's dbUserId section).
+          const isRequester = meetingData.requester_id === dbUserId;
           const userName = user.user_metadata?.full_name?.split(' ')[0] || user.email?.split('@')[0] || 'You';
           const otherName = isRequester 
             ? (meetingData.speaker_name?.split(' ')[0] || 'Speaker')

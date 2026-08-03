@@ -13,10 +13,8 @@ import {
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRealtimeChat, ChatMessage } from '../hooks/useRealtimeChat';
+import { useRealtimeChat, type ChatMessage } from '../hooks/useRealtimeChat';
 import { useChatScroll } from '../hooks/useChatScroll';
-import { useMessagesQuery } from '../hooks/useMessagesQuery';
-import { storeMessages } from '../lib/store-messages';
 import SpeakerAvatar from './SpeakerAvatar';
 import { supabase } from '../lib/supabase';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -25,8 +23,6 @@ interface RealtimeChatProps {
   roomName: string;
   username: string;
   meetingId: string;
-  messages?: ChatMessage[];
-  onMessage?: (messages: ChatMessage[]) => void;
   otherParticipantId?: string; // User ID of the other participant
   otherParticipantName?: string; // Name of the other participant
   otherParticipantAvatar?: string; // Avatar URL of the other participant
@@ -38,12 +34,10 @@ const generateUserAvatarUrl = (name: string): string => {
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 };
 
-export default function RealtimeChat({ 
-  roomName, 
-  username, 
+export default function RealtimeChat({
+  roomName,
+  username,
   meetingId,
-  messages: initialMessages,
-  onMessage,
   otherParticipantId,
   otherParticipantName,
   otherParticipantAvatar,
@@ -105,11 +99,25 @@ export default function RealtimeChat({
     loadOtherAvatar();
   }, [otherParticipantAvatar, otherParticipantName, otherParticipantId, user]);
 
-  // Use real-time chat hook with presence tracking
-  const { messages: realtimeMessages, sendMessage, isConnected, presence: chatPresence } = useRealtimeChat({
+  // Use real-time chat hook: loads + persists + decrypts message history,
+  // subscribes to new rows via postgres_changes, and tracks presence.
+  // userId must be the real Supabase auth uuid (dbUserId), not Better
+  // Auth's own user.id -- it's used directly for key generation and every
+  // chat RPC (p_user_id/p_sender_id are uuid, and it's also what
+  // encryption keys are stored under).
+  const {
+    messages,
+    sendMessage,
+    isConnected,
+    presence: chatPresence,
+    loading,
+    error,
+    otherKeyMissing,
+  } = useRealtimeChat({
+    meetingId,
     roomName,
     username,
-    userId: user?.id || '',
+    userId: dbUserId || '',
     otherParticipantId,
   });
 
@@ -119,15 +127,6 @@ export default function RealtimeChat({
       setPresence(chatPresence);
     }
   }, [chatPresence]);
-
-  // Use messages query for persistence - only when user is available.
-  // This must be the real Supabase auth uid (not Better Auth's user.id) —
-  // the underlying RPCs (get_meeting_chat_messages/send_meeting_chat_message)
-  // take a uuid p_user_id/p_sender_id and 22P02 on anything else.
-  const { data: persistedMessages, loading, error, storeMessages: storeMessagesFn } = useMessagesQuery({
-    meetingId,
-    userId: dbUserId || '', // Will be validated in the hook
-  });
 
   // Use chat scroll hook
   const { containerRef, scrollToBottom } = useChatScroll();
@@ -159,17 +158,9 @@ export default function RealtimeChat({
     return () => clearInterval(interval);
   }, [otherParticipantId, meetingId]);
 
-  // Combine initial messages, persisted messages, and real-time messages
-  // Remove duplicates by message ID
-  const allMessages = [
-    ...(initialMessages || []),
-    ...(persistedMessages || []),
-    ...realtimeMessages,
-  ]
-    .filter((msg, index, self) => 
-      index === self.findIndex((m) => m.id === msg.id)
-    )
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  // The hook already dedupes (history load + realtime + optimistic send
+  // all merge into one state) and returns messages in chronological order.
+  const allMessages = messages;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -209,70 +200,26 @@ export default function RealtimeChat({
     return () => clearInterval(interval);
   }, [dbUserId, meetingId, allMessages.length]);
 
-  // Listen for new incoming messages and refresh notifications
+  // Listen for new incoming messages and refresh notifications. sender_id
+  // is always a real uuid now (set by the hook from meeting_chat_messages),
+  // so this is a plain equality check against dbUserId -- no more
+  // email/username substring fallback matching needed.
   useEffect(() => {
-    const incomingMessages = allMessages.filter(msg => {
-      const messageUserId = msg.user.id;
-      const currentUserId = user?.id;
-      const currentUserEmail = user?.email;
-      const currentUsername = username;
-      
-      return !(
-        messageUserId === currentUserId || 
-        messageUserId === currentUserEmail || 
-        messageUserId === currentUsername ||
-        (currentUserId && messageUserId.includes(currentUserId)) ||
-        (currentUserEmail && messageUserId.includes(currentUserEmail))
-      );
-    });
-    
-    // If there are new incoming messages, refresh notifications
+    const incomingMessages = allMessages.filter((msg) => msg.user.id !== dbUserId);
+
     if (incomingMessages.length > 0) {
       refreshNotifications();
     }
-  }, [allMessages.length, user?.id, username, refreshNotifications]);
+  }, [allMessages.length, dbUserId, refreshNotifications]);
 
-  // Handle message sending
+  // Handle message sending -- encryption + persistence both happen inside
+  // sendMessage; this just owns the input/sending UI state.
   const handleSendMessage = async () => {
     if (!newMessage.trim() || sending) return;
 
     setSending(true);
     try {
-      // Send via real-time chat
       await sendMessage(newMessage.trim(), 'text');
-      
-      // Store in database
-      if (onMessage) {
-        const newChatMessage: ChatMessage = {
-          id: crypto.randomUUID(),
-          content: newMessage.trim(),
-          user: {
-            name: username,
-            id: user?.id || username,
-          },
-          createdAt: new Date().toISOString(),
-          messageType: 'text',
-        };
-        
-        onMessage([...allMessages, newChatMessage]);
-      }
-
-      // Also store via the query hook
-      if (storeMessagesFn) {
-        const newChatMessage: ChatMessage = {
-          id: crypto.randomUUID(),
-          content: newMessage.trim(),
-          user: {
-            name: username,
-            id: user?.id || username,
-          },
-          createdAt: new Date().toISOString(),
-          messageType: 'text',
-        };
-        
-        await storeMessages([newChatMessage], meetingId, dbUserId || '');
-      }
-
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -287,19 +234,10 @@ export default function RealtimeChat({
   };
 
   const renderMessage = (message: ChatMessage, index: number) => {
-    // More robust check for own message - check all possible ID formats
-    const messageUserId = message.user.id;
-    const currentUserId = user?.id;
-    const currentUserEmail = user?.email;
-    const currentUsername = username;
-    
-    const isOwnMessage = 
-      messageUserId === currentUserId || 
-      messageUserId === currentUserEmail || 
-      messageUserId === currentUsername ||
-      (currentUserId && messageUserId.includes(currentUserId)) ||
-      (currentUserEmail && messageUserId.includes(currentUserEmail));
-    
+    // sender_id is always dbUserId's real uuid (set server-side from the
+    // authenticated RPC caller), so this is a plain equality check.
+    const isOwnMessage = message.user.id === dbUserId;
+
     const isSystemMessage = message.messageType === 'system';
     const isMeetingUpdate = message.messageType === 'meeting_update';
     
@@ -509,6 +447,19 @@ export default function RealtimeChat({
         {allMessages.map((message, index) => renderMessage(message, index))}
       </ScrollView>
 
+      {/* Secure chat requires both sides' public keys -- the other
+          participant's is only published once they've opened chat on some
+          device. Block sending (not just show a toast on failure) so the
+          composer honestly reflects whether a send can succeed. */}
+      {otherKeyMissing && (
+        <View style={styles.keyWaitingBanner}>
+          <MaterialIcons name="lock-clock" size={16} color={colors.text?.secondary || (isDark ? '#a0a0a0' : '#666666')} />
+          <Text style={styles.keyWaitingText}>
+            Waiting for {otherParticipantName || 'the other participant'} to open secure chat for the first time.
+          </Text>
+        </View>
+      )}
+
       {/* Message Input */}
       <View style={styles.inputContainer}>
         <TextInput
@@ -519,11 +470,12 @@ export default function RealtimeChat({
           placeholderTextColor={colors.text.secondary}
           multiline
           maxLength={500}
+          editable={!otherKeyMissing}
         />
         <TouchableOpacity
-          style={[styles.sendButton, (!newMessage.trim() || sending) && styles.sendButtonDisabled]}
+          style={[styles.sendButton, (!newMessage.trim() || sending || otherKeyMissing) && styles.sendButtonDisabled]}
           onPress={handleSendMessage}
-          disabled={!newMessage.trim() || sending}
+          disabled={!newMessage.trim() || sending || otherKeyMissing}
         >
           {sending ? (
             <ActivityIndicator size="small" color="white" />
@@ -806,6 +758,21 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontStyle: 'italic',
     padding: 8,
     fontSize: 13,
+  },
+  keyWaitingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: isDark ? 'rgba(255, 152, 0, 0.1)' : 'rgba(255, 152, 0, 0.08)',
+    borderTopWidth: 1,
+    borderTopColor: isDark ? '#333333' : '#f0f0f0',
+  },
+  keyWaitingText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.text?.secondary || (isDark ? '#cccccc' : '#666666'),
   },
   inputContainer: {
     flexDirection: 'row',

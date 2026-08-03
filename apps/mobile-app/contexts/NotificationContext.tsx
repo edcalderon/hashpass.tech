@@ -320,10 +320,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
             browserNotification.onclick = () => {
               window.focus();
-              // Navigate to meeting chat if it's a chat message
+              // Navigate straight to the dedicated chat screen -- meeting-detail
+              // never read openChat, so this link silently landed on the wrong screen.
               if (newNotification.type === 'chat_message' && (newNotification as any).meeting_id) {
                 const meetingId = (newNotification as any).meeting_id;
-                window.location.href = `${buildEventPath(undefined, 'networking/meeting-detail')}?meetingId=${meetingId}&openChat=true`;
+                window.location.href = `${buildEventPath(undefined, 'networking/meeting-chat')}?meetingId=${meetingId}`;
               }
               browserNotification.close();
             };

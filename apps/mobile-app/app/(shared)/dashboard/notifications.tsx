@@ -92,12 +92,13 @@ export default function NotificationsScreen() {
     
     // Navigate based on notification type
     if (notification.type === 'chat_message' && notification.meeting_id) {
-      // Navigate to meeting chat
+      // Navigate straight to the dedicated chat screen -- meeting-detail
+      // doesn't read openChat (that param was silently dropped), it just
+      // shows the meeting detail with no way to open chat from there.
       router.push({
-        pathname: buildNotificationEventPath(notification, null, 'networking/meeting-detail') as any,
+        pathname: buildNotificationEventPath(notification, null, 'networking/meeting-chat') as any,
         params: {
           meetingId: notification.meeting_id,
-          openChat: 'true'
         }
       });
     } else if (notification.type === 'meeting_slot_conflict' && notification.meeting_id) {
