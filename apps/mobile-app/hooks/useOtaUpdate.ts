@@ -4,6 +4,11 @@ import * as Updates from 'expo-updates';
 
 export type OtaUpdateState = 'unsupported' | 'idle' | 'checking' | 'downloading' | 'ready' | 'error';
 
+interface UseOtaUpdateOptions {
+  /** Start the automatic launch/foreground checks only while the owner is visible. */
+  autoCheck?: boolean;
+}
+
 const FOREGROUND_RECHECK_MS = 5 * 60 * 1000;
 
 /**
@@ -11,7 +16,7 @@ const FOREGROUND_RECHECK_MS = 5 * 60 * 1000;
  * Applying is deliberately left to the caller: restarting an attendee in the
  * middle of a meeting flow is worse than asking them to restart once ready.
  */
-export function useOtaUpdate() {
+export function useOtaUpdate({ autoCheck = true }: UseOtaUpdateOptions = {}) {
   const [state, setState] = useState<OtaUpdateState>(Platform.OS === 'web' ? 'unsupported' : 'idle');
   const lastCheckAt = useRef(0);
 
@@ -53,12 +58,13 @@ export function useOtaUpdate() {
   }, [state]);
 
   useEffect(() => {
+    if (!autoCheck) return;
     void checkForUpdate(true);
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') void checkForUpdate();
     });
     return () => subscription.remove();
-  }, [checkForUpdate]);
+  }, [autoCheck, checkForUpdate]);
 
   return { state, checkForUpdate, applyUpdate };
 }

@@ -217,7 +217,7 @@
   },
   "privacy": {
     "title": "Privacy Policy",
-    "lastUpdated": "Last Updated: November 4, 2025",
+    "lastUpdated": "Last Updated: July 8, 2026",
     "introduction": {
       "title": "1. Introduction",
       "text": "HASHPASS (\"we,\" \"our,\" or \"us\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our digital event platform and services (the \"Service\"). Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the Service."
@@ -244,7 +244,7 @@
     },
     "cookies": {
       "title": "7. Cookies and Tracking",
-      "text": "We use cookies and similar tracking technologies to track activity on our Service and hold certain information. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent."
+      "text": "We use cookies and similar tracking technologies to maintain your session, remember preferences, and analyze usage of our Service. Cookies we use include:\n\n• Essential cookies: required for authentication and security (session tokens, CSRF tokens).\n• Analytics cookies: set by Google Analytics to measure how visitors interact with our website (see Section 8).\n\nYou can instruct your browser to refuse all cookies or to notify you when a cookie is being sent. Disabling essential cookies will prevent you from signing in."
     },
     "changes": {
       "title": "8. Changes to This Privacy Policy",

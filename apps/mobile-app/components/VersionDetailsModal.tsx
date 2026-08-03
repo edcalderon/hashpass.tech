@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { versionService } from '../lib/services/version-service';
 import type { VersionInfo } from '../config/version';
 import { t } from '@lingui/macro';
+import { i18n } from '../i18n/i18n';
 import { useOtaUpdate } from '../hooks/useOtaUpdate';
 
 const HISTORY_ITEMS_PER_PAGE = 9;
@@ -276,7 +277,10 @@ export default function VersionDetailsModal({
             {versionHistory.length > HISTORY_ITEMS_PER_PAGE && (
               <View style={styles.paginationContainer}>
                 <Text style={styles.paginationSummary}>
-                  {t({ id: 'version.showing', message: 'Showing' })} {historyStartIndex}-{historyEndIndex} {t({ id: 'version.of', message: 'of' })} {versionHistory.length}
+                  {i18n._(
+                    { id: 'version.showing', message: 'Showing {start}-{end} of {total}' },
+                    { start: historyStartIndex, end: historyEndIndex, total: versionHistory.length },
+                  )}
                 </Text>
                 <View style={styles.paginationControls}>
                   <TouchableOpacity

@@ -217,7 +217,7 @@
   },
   "privacy": {
     "title": "Politique de confidentialité",
-    "lastUpdated": "Dernière mise à jour : 4 novembre 2025",
+    "lastUpdated": "Dernière mise à jour : 8 juillet 2026",
     "introduction": {
       "title": "1. Introduction",
       "text": "HASHPASS (\"nous\", \"notre\" ou \"nos\") s'engage à protéger votre vie privée. Cette politique de confidentialité explique comment nous collectons, utilisons, divulguons et protégeons vos informations lorsque vous utilisez notre plateforme d'événements numériques et nos services (le \"Service\"). Veuillez lire attentivement cette politique de confidentialité. Si vous n'êtes pas d'accord avec les termes de cette politique de confidentialité, veuillez ne pas accéder au Service."
@@ -244,7 +244,7 @@
     },
     "cookies": {
       "title": "7. Cookies et suivi",
-      "text": "Nous utilisons des cookies et des technologies de suivi similaires pour suivre l'activité sur notre Service et conserver certaines informations. Vous pouvez demander à votre navigateur de refuser tous les cookies ou d'indiquer quand un cookie est envoyé."
+      "text": "Nous utilisons des cookies et des technologies de suivi similaires pour maintenir votre session, mémoriser vos préférences et analyser l'utilisation de notre Service. Les cookies utilisés comprennent :\n\n• Cookies essentiels : nécessaires à l'authentification et à la sécurité (jetons de session, jetons CSRF).\n• Cookies analytiques : définis par Google Analytics pour mesurer la manière dont les visiteurs interagissent avec notre site (voir la section 8).\n\nVous pouvez demander à votre navigateur de refuser tous les cookies ou de vous avertir lorsqu'un cookie est envoyé. La désactivation des cookies essentiels vous empêchera de vous connecter."
     },
     "changes": {
       "title": "8. Modifications de cette politique de confidentialité",

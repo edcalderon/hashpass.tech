@@ -52,15 +52,15 @@ import { useOtaUpdate } from '../../hooks/useOtaUpdate';
 let latest: ReturnType<typeof useOtaUpdate> | null = null;
 const appStateListener = () => require('react-native').AppState.addEventListener as jest.Mock;
 
-function CaptureOtaUpdate() {
-  latest = useOtaUpdate();
+function CaptureOtaUpdate({ autoCheck = true }: { autoCheck?: boolean }) {
+  latest = useOtaUpdate({ autoCheck });
   return null;
 }
 
-const renderHook = async () => {
+const renderHook = async (autoCheck = true) => {
   let renderer!: TestRenderer.ReactTestRenderer;
   await act(async () => {
-    renderer = TestRenderer.create(React.createElement(CaptureOtaUpdate));
+    renderer = TestRenderer.create(React.createElement(CaptureOtaUpdate, { autoCheck }));
   });
   return renderer;
 };
@@ -81,6 +81,16 @@ describe('useOtaUpdate', () => {
     expect(mockCheckForUpdate).toHaveBeenCalledTimes(1);
     expect(latest?.state).toBe('idle');
     expect(appStateListener()).toHaveBeenCalledWith('change', expect.any(Function));
+
+    await act(async () => renderer.unmount());
+  });
+
+  it('stays passive when its owner is hidden', async () => {
+    const renderer = await renderHook(false);
+
+    expect(mockCheckForUpdate).not.toHaveBeenCalled();
+    expect(appStateListener()).not.toHaveBeenCalled();
+    expect(latest?.state).toBe('idle');
 
     await act(async () => renderer.unmount());
   });

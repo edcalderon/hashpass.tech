@@ -64,7 +64,10 @@ export default function VersionQuickSheet({
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
   const [storeUrl, setStoreUrl] = useState<string | null>(null);
   const [storeWebUrl, setStoreWebUrl] = useState<string | null>(null);
-  const otaUpdate = useOtaUpdate();
+  // The app shell and details modal own the always-on OTA lifecycle. Keep the
+  // quick sheet passive while hidden so mounting it does not start a third
+  // check/download listener; when opened it may perform a foreground check.
+  const otaUpdate = useOtaUpdate({ autoCheck: visible });
 
   const versionInfo = versionService.getCurrentVersion();
   const badgeInfo = versionService.getVersionBadgeInfo(versionInfo.releaseType);
