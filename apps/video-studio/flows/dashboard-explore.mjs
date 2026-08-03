@@ -10,6 +10,8 @@
 // so anything keyed off real profile data shows its empty state, not a
 // crash. Good enough for the dashboard chrome/navigation itself; swap in a
 // real --use-state session once one exists for fully populated footage.
+import {dismissCookieBanner} from './lib/dismiss-cookie-banner.mjs';
+
 export default async function dashboardExploreFlow(page) {
   // This route fetches the events list client-side, so real content
   // typically doesn't paint until ~7s into the recording (recording starts
@@ -17,8 +19,19 @@ export default async function dashboardExploreFlow(page) {
   // before scrolling so the scroll itself lands on real content.
   await page.waitForTimeout(7500);
 
-  for (let i = 0; i < 6; i += 1) {
+  // The cookie banner sits fixed at the bottom, covering the "Your Passes"
+  // section this flow is scrolling down to show — clear it first.
+  await dismissCookieBanner(page);
+
+  for (let i = 0; i < 5; i += 1) {
     await page.mouse.wheel(0, 260);
     await page.waitForTimeout(700);
   }
+
+  // Keep scrolling specifically until "Your Passes" / "Tus Pases" is
+  // actually on screen, rather than a fixed scroll count that might stop
+  // short of it depending on how many events/quick-access cards render.
+  const passesHeading = page.getByText(/your passes|tus pases/i).first();
+  await passesHeading.scrollIntoViewIfNeeded().catch(() => {});
+  await page.waitForTimeout(2000);
 }

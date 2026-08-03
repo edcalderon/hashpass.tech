@@ -3,7 +3,7 @@ import {Composition} from 'remotion';
 import {AppTutorial} from './compositions/AppTutorial';
 import {BslShowcase} from './compositions/BslShowcase';
 import {CLIP_FRAMES, FPS, HEIGHT, INTRO_FRAMES, OUTRO_FRAMES, WIDTH} from './constants';
-import {appTutorialSteps, bslShowcaseClips} from './content/clips';
+import {appTutorialStepsEn, appTutorialStepsEs, bslShowcaseClips} from './content/clips';
 import {layoutClips} from './lib/clip-layout';
 
 // Real recordings vary a lot in length (a landing scroll vs. a 30s OTP
@@ -32,17 +32,44 @@ export const RemotionRoot: React.FC = () => {
         }}
       />
       <Composition
-        id="AppTutorial"
+        id="AppTutorialEN"
         component={AppTutorial}
-        durationInFrames={INTRO_FRAMES + appTutorialSteps.length * CLIP_FRAMES + OUTRO_FRAMES}
+        durationInFrames={INTRO_FRAMES + appTutorialStepsEn.length * CLIP_FRAMES + OUTRO_FRAMES}
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
         calculateMetadata={async () => {
-          const layout = await layoutClips(appTutorialSteps);
+          const layout = await layoutClips(appTutorialStepsEn);
           return {
             durationInFrames: INTRO_FRAMES + layout.totalDuration + OUTRO_FRAMES,
-            props: {layout: layout.items},
+            props: {
+              layout: layout.items,
+              introTitle: 'HASHPASS Walkthrough',
+              introSubtitle: 'Getting started',
+              outroTitle: 'Digital Event Platform',
+              outroSubtitle: 'Your Event · Your Community · Your Rewards',
+            },
+          };
+        }}
+      />
+      <Composition
+        id="AppTutorialES"
+        component={AppTutorial}
+        durationInFrames={INTRO_FRAMES + appTutorialStepsEs.length * CLIP_FRAMES + OUTRO_FRAMES}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        calculateMetadata={async () => {
+          const layout = await layoutClips(appTutorialStepsEs);
+          return {
+            durationInFrames: INTRO_FRAMES + layout.totalDuration + OUTRO_FRAMES,
+            props: {
+              layout: layout.items,
+              introTitle: 'Guía de HASHPASS',
+              introSubtitle: 'Primeros pasos',
+              outroTitle: 'Plataforma Digital de Eventos',
+              outroSubtitle: 'Tu Evento · Tu Comunidad · Tus Beneficios',
+            },
           };
         }}
       />

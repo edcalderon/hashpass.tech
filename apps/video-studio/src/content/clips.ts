@@ -16,6 +16,14 @@ export type ClipSlot = {
    * air out of the final cut without needing to re-record.
    */
   trimStartSeconds?: number;
+  /** Overlay a "GET IT ON Google Play" badge — for the final install-CTA clip. */
+  showPlayStoreBadge?: boolean;
+  /**
+   * Corner for the title chip — default top-left. Override to top-right for
+   * clips whose recorded content itself renders something in the top-left
+   * corner (e.g. the PWA install card), so the chip doesn't sit on top of it.
+   */
+  titleCorner?: 'top-left' | 'top-right';
 };
 
 // HASHPASS app walkthrough / tutorial — core basics first: landing, sign up
@@ -26,7 +34,7 @@ export type ClipSlot = {
 // using the matching flow script in apps/video-studio/flows/ (README.md has
 // the exact commands, including carrying an authenticated session from the
 // sign-in recording into the dashboard recordings).
-export const appTutorialSteps: ClipSlot[] = [
+export const appTutorialStepsEn: ClipSlot[] = [
   {src: 'landing/hero.webm', title: 'Landing page', caption: 'hashpass.tech/home', trimStartSeconds: 9},
   {
     src: 'auth/otp/sign-in-form.webm',
@@ -34,18 +42,70 @@ export const appTutorialSteps: ClipSlot[] = [
     caption: 'Email sign-in',
     trimStartSeconds: 8,
   },
-  {src: 'dashboard/explore.webm', title: 'Enter the dashboard', caption: 'Post-login explore', trimStartSeconds: 7},
-  // Recorded via the dev-only auth bypass (apps/mobile-app/lib/auth/dev-bypass.ts)
-  // to reach the route without a real session — but that bypass leaves
-  // `user` null, and this screen has nothing to show without a real
-  // attendee profile (perpetual loading skeleton, not a rendering bug).
-  // Needs a real --save-state session from flows/auth-otp.mjs or
-  // flows/auth-google.mjs to record for real.
-  {title: 'Update attendee profile'},
+  {src: 'dashboard/explore.webm', title: 'Enter the dashboard', caption: 'Post-login explore', trimStartSeconds: 3},
+  {
+    src: 'dashboard/profile-update.webm',
+    title: 'Update attendee profile',
+    caption: 'Role & company',
+    trimStartSeconds: 4,
+  },
   {
     src: 'dashboard/speakers/browse-events.webm',
     title: 'Browse events & speakers',
+    trimStartSeconds: 5,
+  },
+  {
+    src: 'pwa/install.webm',
+    title: 'Install as an app',
+    caption: 'Add to your home screen',
+    trimStartSeconds: 5,
+    showPlayStoreBadge: true,
+    titleCorner: 'top-right',
+  },
+];
+
+// Same tutorial, recorded with the browser context locale set to es-ES (see
+// packages/tools/scripts/record-web-demo.mjs's --locale flag) — the app's
+// own i18n (apps/mobile-app/i18n/i18n.ts) picks up the browser locale on
+// load, no in-app language switch needed. One real gap: the attendee
+// profile screen (app/(shared)/dashboard/profile.tsx) hardcodes its English
+// strings rather than using the i18n t() helper, so that clip's on-screen
+// chrome ("Attendee Information", "Edit Attendee Information", etc.) stays
+// English even here — a real characteristic of the current app, not a
+// recording bug. Titles/captions below are translated regardless, since
+// those are this composition's own text, not the recorded app's.
+export const appTutorialStepsEs: ClipSlot[] = [
+  {src: 'landing/hero-es.webm', title: 'Página de inicio', caption: 'hashpass.tech/home', trimStartSeconds: 9},
+  {
+    src: 'auth/otp/sign-in-form-es.webm',
+    title: 'Registro — OTP o enlace mágico',
+    caption: 'Inicio de sesión por correo',
+    trimStartSeconds: 4,
+  },
+  {
+    src: 'dashboard/explore-es.webm',
+    title: 'Entrar al panel',
+    caption: 'Explorador tras iniciar sesión',
     trimStartSeconds: 3,
+  },
+  {
+    src: 'dashboard/profile-update-es.webm',
+    title: 'Actualizar perfil de asistente',
+    caption: 'Rol y empresa',
+    trimStartSeconds: 5,
+  },
+  {
+    src: 'dashboard/speakers/browse-events-es.webm',
+    title: 'Explorar eventos y oradores',
+    trimStartSeconds: 3,
+  },
+  {
+    src: 'pwa/install-es.webm',
+    title: 'Instalar como app',
+    caption: 'Añádela a tu pantalla de inicio',
+    trimStartSeconds: 5,
+    showPlayStoreBadge: true,
+    titleCorner: 'top-right',
   },
 ];
 

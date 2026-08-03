@@ -1,9 +1,10 @@
 # hashpass-video-studio
 
 Remotion-based studio for cutting HASHPASS marketing/demo videos — the app
-tutorial (landing → sign-in → dashboard networking), the BSL On Tour
-showcase, and future promo cuts — as versioned React code instead of a
-`.aep`/`.prproj` binary nobody else on the team can open or diff.
+tutorial (landing → sign-up → dashboard → profile → events → PWA install, in
+**English and Spanish**), the BSL On Tour showcase, and future promo cuts —
+as versioned React code instead of a `.aep`/`.prproj` binary nobody else on
+the team can open or diff.
 
 ## Why Remotion (and not something else)
 
@@ -41,27 +42,24 @@ straight into the studio without leaving the `dev:all` session.
 ```
 src/
   index.ts                 # registerRoot entry point
-  Root.tsx                  # registers the two compositions, sizes each via calculateMetadata
+  Root.tsx                  # registers BslShowcase, AppTutorialEN, AppTutorialES via calculateMetadata
   constants.ts               # fps/resolution/intro-outro/placeholder-clip timing
-  content/clips.ts            # the clip manifest — see "Adding a real recording"
+  content/clips.ts            # the clip manifests (EN + ES) — see "Adding a real recording"
   lib/clip-layout.ts           # auto-sizes each clip's Sequence to its real recording length
   components/
-    BrandBumper.tsx            # intro/outro title card (HASHPASS logo + copy)
+    BrandBumper.tsx            # intro/outro title card (HASHPASS logo + copy, translatable props)
     RecordingSlot.tsx           # renders a clip if present, else a placeholder card
+    PlayStoreBadge.tsx           # "GET IT ON Google Play" badge overlay for the install-CTA clip
   compositions/
-    AppTutorial.tsx              # landing → OTP sign-in → Google sign-in → find speakers → request meeting
-    BslShowcase.tsx               # BSL On Tour showcase reel
-flows/                              # Playwright step scripts, one per recording (see below)
+    AppTutorial.tsx               # shared component for both AppTutorialEN/ES (Root.tsx passes the language's steps + bumper copy)
+    BslShowcase.tsx                # BSL On Tour showcase reel
+flows/                               # Playwright step scripts, one per recording (see below)
+  lib/dismiss-cookie-banner.mjs       # shared helper: dismiss the cookie-consent banner before scrolling/clicking
 public/
-  brand/                             # HASHPASS logo SVGs (copied from apps/web-app/public)
-  recordings/                         # raw screen captures land here, one folder per flow (gitignored)
-    landing/
-    auth/otp/
-    auth/google/
-    dashboard/speakers/
-    dashboard/meetings/
-    bsl/
-scripts/render.mjs                     # renders every composition to out/*.mp4
+  brand/                                # HASHPASS logo SVGs (copied from apps/web-app/public)
+  recordings/                            # raw screen captures land here, one folder per flow (gitignored)
+    landing/  auth/otp/  auth/google/  dashboard/  dashboard/speakers/  pwa/  bsl/
+scripts/render.mjs                        # renders every composition to out/*.mp4
 ```
 
 Every composition boots and previews correctly with **zero recordings** —
@@ -73,33 +71,64 @@ install` and fills in incrementally as real footage lands.
 
 - **BslShowcase**: event landing + agenda-browse are real recordings; the
   meeting-request clip is still a placeholder (needs a real authenticated
-  session — see the auth caveat below).
-- **AppTutorial**: landing, OTP/magic-link sign-in form, dashboard entry, and
-  browse-events-&-speakers are real recordings; attendee-profile update is
-  still a placeholder — it needs a *real* logged-in user (see below), the
-  dev auth bypass alone renders a permanent loading skeleton for it.
+  session — see the auth section below).
+- **AppTutorialEN / AppTutorialES**: all 6 steps are real recordings —
+  landing, OTP/magic-link sign-up, dashboard entry, attendee-profile update,
+  browse events & speakers (with an actual event switch demonstrated), and
+  installing the app as a PWA.
 
-### Real captures need a real session — what an agent can and can't record
+### Real captures need a real session — how this got unblocked
 
-Two of the app's core flows can't be completed unattended:
+Two of the app's core flows can't be completed unattended by an agent:
 
 - **OTP sign-in** needs a real inbox to read the 6-digit code.
 - **Google sign-in** is actively blocked for automated browsers by Google's
   own bot detection, headed or not.
 
-For screens that just need *any* logged-in state to render (not
-account-specific data), `apps/mobile-app/lib/auth/dev-bypass.ts` is a
-dev-only escape hatch: set `EXPO_PUBLIC_DEV_AUTH_BYPASS=true` in the mobile
-app's env (propagates from the root `.env`) and restart the dev server —
-gated so it's structurally inert outside `__DEV__` (never affects a release
-build). It skips the redirect-to-`/auth` guard, but `user`/`dbUserId` stay
-`null`. That was enough for the dashboard-explore and events/speakers
-recordings (public data, doesn't depend on the signed-in user), but the
-**attendee profile screen has nothing to show without a real user object**
-— it renders a permanent skeleton loader under the bypass, not a bug, just
-nothing to record. Get a real one via `flows/auth-otp.mjs` or
-`flows/auth-google.mjs` with `--save-state`, then reuse that session with
-`--use-state` for the profile (and any other account-specific) recording.
+For the dashboard/profile/events recordings, `packages/tools/scripts/create-demo-session.mjs`
+mints a **real** Supabase session for a dedicated demo account
+(`video-studio-demo@hashpass.tech`) without going through either of those —
+it mirrors exactly what the app's own server-side OTP flow does
+(`admin.generateLink()` + a direct GoTrue `/verify` call), the same two-step
+dance a human completes by reading a real email, just without the email
+round-trip. It also upserts the `public.user` registry row the demo
+account's `auth.users` id needs — most downstream tables (`user_profiles`,
+etc.) FK against `public.user.id`, and that registry sync normally only
+happens inside the app's own auth API routes, which this path skips:
+
+```bash
+node packages/tools/scripts/create-demo-session.mjs
+# writes apps/video-studio/.recording-state/demo-session.json
+```
+
+The result is a Playwright `storageState` JSON — pass it straight to
+`--use-state` on any recording. It contains live session tokens; it's
+gitignored (`apps/video-studio/.recording-state/`) and must never be
+committed.
+
+For screens that just need *any* logged-in state and don't touch real
+account data, `apps/mobile-app/lib/auth/dev-bypass.ts` is a lighter dev-only
+alternative (`EXPO_PUBLIC_DEV_AUTH_BYPASS=true`, `__DEV__`-gated) — but the
+attendee-profile screen specifically renders a permanent loading skeleton
+under it (`user` stays `null`), so that one needs the real demo session.
+
+### Recording in Spanish
+
+`record-web-demo.mjs --locale es-ES` is all it takes — the app's i18n
+(`apps/mobile-app/i18n/i18n.ts`) picks its initial language from the
+browser's own locale (`expo-localization`) on first load, with no stored
+override and no in-app language-switch click needed. `content/clips.ts`
+exports `appTutorialStepsEn` and `appTutorialStepsEs` (own translated
+titles/captions), and `Root.tsx` registers them as separate compositions,
+`AppTutorialEN` / `AppTutorialES`, each with its own translated intro/outro
+bumper copy passed as props to the shared `AppTutorial` component.
+
+One real, honest gap: the attendee-profile screen
+(`app/(shared)/dashboard/profile.tsx`) hardcodes its English strings rather
+than using the app's `t()` helper, so that one clip's on-screen chrome
+("Attendee Information", "Edit Attendee Information", etc.) stays English
+even in the ES composition — a real characteristic of the current app, not
+a recording bug.
 
 ### Clips auto-size to the real recording length
 
@@ -112,12 +141,30 @@ frame-count math when you drop in a new recording. Clips still missing a
 `src` fall back to a fixed placeholder length (`CLIP_FRAMES` in
 `constants.ts`).
 
+Every real capture also has a few seconds of blank page-load baked into its
+start (Playwright's video starts recording at browser-context creation,
+before the navigation even begins — a warmup pre-navigation doesn't fix it,
+since the delay is client-side data fetching, not asset loading). Rather
+than re-recording, set `trimStartSeconds` on the `ClipSlot` to skip that
+dead air — check a new capture's early frames first:
+
+```bash
+ffmpeg -i public/recordings/<file>.webm -ss 00:00:0N -frames:v 1 -update 1 out.png
+# try a few values of N; once file size jumps from ~8.6KB (blank) to real
+# content, that's roughly your trim point
+```
+
+Metro serves from its warm bundle cache on repeat recordings against an
+already-running dev server, so later captures of the *same route* in a
+session often paint much faster than the first — don't assume every clip
+needs the same trim.
+
 ## Adding a real recording
 
 1. Capture footage (see below) — it lands in the matching
    `public/recordings/<flow>/` folder.
 2. Set `src: '<flow>/<file>.webm'` on the matching entry in
-   `src/content/clips.ts`.
+   `src/content/clips.ts` (`appTutorialStepsEn`/`Es` or `bslShowcaseClips`).
 
 That's it — no other code changes. `RecordingSlot` picks it up and the
 composition automatically re-times itself to the clip's real length.
@@ -130,57 +177,43 @@ check the printed port). Use the Playwright recorder in
 `packages/tools/scripts/record-web-demo.mjs`, exposed as `record:web`.
 `--name` may include the flow's subfolder, e.g. `landing/hero`.
 
-| Step | Composition slot | Flow script | Status / notes |
-|---|---|---|---|
-| Landing page | `AppTutorial` #1 | `flows/landing.mjs` | ✅ Recorded. No auth needed. |
-| Sign up — OTP or magic link | `AppTutorial` #2 | *(none — plain `--duration`)* | ✅ Recorded (form only, code not entered — see auth caveat above). |
-| Enter the dashboard | `AppTutorial` #3 | `flows/dashboard-explore.mjs` | ✅ Recorded via the dev auth bypass. |
-| Update attendee profile | `AppTutorial` #4 | `flows/dashboard-profile.mjs` | ⬜ Placeholder — needs a real session (dev bypass renders an empty skeleton here, see above). |
-| Browse events & speakers | `AppTutorial` #5 | `flows/dashboard-events-speakers.mjs` | ✅ Recorded via the dev auth bypass. |
-| Google sign-in (not in the core steps yet) | — | `flows/auth-google.mjs` | Needs `--headed --channel chrome`; Google blocks automated Chromium regardless, treat as a manual capture the script just kicks off. |
-| BSL event landing + agenda | `BslShowcase` #1–2 | `flows/bsl-showcase.mjs` (#1), plain `--duration` (#2) | ✅ Recorded. No auth needed. |
-| BSL meeting request & schedule | `BslShowcase` #3 | `flows/dashboard-find-speakers.mjs`, `flows/dashboard-request-meeting.mjs` | ⬜ Placeholder — needs a real session; `dashboard-request-meeting.mjs` stops before the final submit unless `CONFIRM_SEND=1`. |
-
-Recordings above that finished at page-load-blank for the first several
-seconds (client-side data fetching, not asset loading — a warmup
-pre-navigation didn't fix it) were kept and trimmed with `trimStartSeconds`
-on the matching `ClipSlot` in `clips.ts` instead of re-recorded — check a
-new capture's early frames (`ffmpeg -i file.webm -ss 00:00:0N -frames:v 1
--update 1 out.png` for a few values of `N`) before assuming it needs a
-trim; Metro serves from its warm bundle cache on repeat recordings against
-an already-running dev server, so later captures of the *same route* in a
-session often paint much faster than the first.
+| Step | Flow script | Auth needed |
+|---|---|---|
+| Landing page | `flows/landing.mjs` | None |
+| Sign up — OTP or magic link | *(none — plain `--duration`)* | None (form only, code not entered) |
+| Enter the dashboard | `flows/dashboard-explore.mjs` | Real session or dev bypass |
+| Update attendee profile | `flows/dashboard-profile.mjs` | **Real session required** |
+| Browse events & speakers | `flows/dashboard-events-speakers.mjs` | Real session or dev bypass |
+| Install as an app (PWA) | `flows/pwa-install.mjs` | None |
+| Google sign-in (not in the core 6 steps yet) | `flows/auth-google.mjs` | — (this *is* the sign-in) |
+| BSL event landing + agenda | `flows/bsl-showcase.mjs` (+ plain `--duration`) | None |
+| BSL meeting request & schedule | `flows/dashboard-find-speakers.mjs`, `flows/dashboard-request-meeting.mjs` | **Real session required** |
 
 ```bash
-# Landing — no auth, no flags needed:
+# 1. Mint a real demo session once (see "Real captures need a real session" above):
+node packages/tools/scripts/create-demo-session.mjs
+
+# 2. Landing / sign-up form / PWA install — no auth needed:
 pnpm --filter hashpass-video-studio record:web -- \
-  --url http://localhost:8081/home \
-  --name landing/hero \
+  --url http://localhost:8081/home --name landing/hero \
   --flow apps/video-studio/flows/landing.mjs
 
-# OTP sign-in — headed, saves the resulting session for reuse below:
-AUTH_DEMO_EMAIL=you@example.com \
 pnpm --filter hashpass-video-studio record:web -- \
-  --url http://localhost:8081/auth \
-  --name auth/otp/sign-in --headed \
-  --flow apps/video-studio/flows/auth-otp.mjs \
-  --save-state apps/video-studio/.recording-state/otp-session.json
+  --url http://localhost:8081/home --name pwa/install \
+  --flow apps/video-studio/flows/pwa-install.mjs
 
-# Account-specific screens (profile, meeting request) — reuse that real
-# session instead of logging in again:
+# 3. Dashboard / profile / events — reuse the demo session:
 pnpm --filter hashpass-video-studio record:web -- \
-  --url http://localhost:8081/dashboard/profile \
-  --name dashboard/profile \
+  --url http://localhost:8081/dashboard/profile --name dashboard/profile-update \
   --flow apps/video-studio/flows/dashboard-profile.mjs \
-  --use-state apps/video-studio/.recording-state/otp-session.json
+  --use-state apps/video-studio/.recording-state/demo-session.json
 
-# Screens that just need *any* logged-in state (not real account data) can
-# skip all of the above via the dev-only auth bypass instead — see the auth
-# caveat section. No --use-state needed:
+# 4. Same again with --locale es-ES for the Spanish take, e.g.:
 pnpm --filter hashpass-video-studio record:web -- \
-  --url http://localhost:8081/dashboard/explore \
-  --name dashboard/explore \
-  --flow apps/video-studio/flows/dashboard-explore.mjs
+  --url http://localhost:8081/dashboard/explore --name dashboard/explore-es \
+  --flow apps/video-studio/flows/dashboard-explore.mjs \
+  --use-state apps/video-studio/.recording-state/demo-session.json \
+  --locale es-ES
 ```
 
 - Omit `--flow` for a quick single-screen capture — it just loads `--url`
@@ -191,12 +224,16 @@ pnpm --filter hashpass-video-studio record:web -- \
   of Playwright's bundled Chromium, which helps (but doesn't guarantee)
   getting past Google's automated-browser detection.
 - `--save-state <path>` / `--use-state <path>` persist and reuse a login
-  session (cookies + localStorage) across separate recordings, so the
-  dashboard flows don't need their own login each time. State files are
-  gitignored (`apps/video-studio/.recording-state/`) — they contain live
-  session tokens, never commit them.
+  session (cookies + localStorage) across separate recordings. State files
+  are gitignored — they contain live session tokens, never commit them.
+- `--locale es-ES` records the app in Spanish — see "Recording in Spanish"
+  above.
+- `flows/lib/dismiss-cookie-banner.mjs` is a shared helper — import it in
+  any new flow that scrolls into or clicks something near the bottom of the
+  viewport, since the cookie-consent banner sits fixed there on first visit
+  and both obscures content and intercepts clicks until dismissed.
 - Every flow script has real selectors pulled from the actual app copy
-  ("Send Code", "Sign in with Google", "Find Speakers", "Request Meeting",
+  ("Send Code", "Sign in with Google", "Find Speakers", "Install HASHPASS",
   etc. — see `flows/*.mjs`), not placeholders. If the app's copy changes,
   update the matching regex there.
 - Output is `.webm` (Playwright's native format) — Remotion's `OffthreadVideo`
@@ -223,8 +260,10 @@ Then wire the file up the same way as a web recording (set `src` in
 ## Rendering
 
 ```bash
-pnpm video-studio:render                 # renders both compositions to out/*.mp4
-pnpm --filter hashpass-video-studio render BslShowcase   # just one
+pnpm video-studio:render                 # renders every composition to out/*.mp4
+pnpm --filter hashpass-video-studio render AppTutorialEN   # just one
+pnpm --filter hashpass-video-studio render AppTutorialES
+pnpm --filter hashpass-video-studio render BslShowcase
 ```
 
 `out/`, `public/recordings/*` (contents, not the folders), and

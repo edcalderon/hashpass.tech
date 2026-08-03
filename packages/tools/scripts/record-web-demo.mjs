@@ -40,6 +40,12 @@
 // closer to a normal browser fingerprint, but there is no fully reliable
 // unattended way around Google's bot checks here — treat the Google
 // sign-in recording as a manual, headed capture, not a scripted one.
+//
+// `--locale es-ES` records the app in Spanish: the app's i18n
+// (apps/mobile-app/i18n/i18n.ts) picks its initial language from the
+// browser's own locale (expo-localization) on first load, with no stored
+// override — no in-app language-switcher click needed, just set the
+// browser context's locale before navigating.
 import {chromium} from 'playwright';
 import {existsSync, mkdirSync, renameSync} from 'node:fs';
 import {dirname, join, resolve} from 'node:path';
@@ -81,7 +87,7 @@ async function main() {
   if (!args.url || !args.name) {
     console.error(
       'Usage: record-web-demo.mjs --url <url> --name <output-name> [--flow <path>] [--duration ms] ' +
-        '[--headed] [--channel chrome] [--use-state <path>] [--save-state <path>] [--skip-warmup]',
+        '[--headed] [--channel chrome] [--use-state <path>] [--save-state <path>] [--skip-warmup] [--locale es-ES]',
     );
     process.exit(1);
   }
@@ -107,9 +113,11 @@ async function main() {
   // bakes several seconds of blank/loading screen into the start of every
   // clip. Warm the browser's HTTP cache with a throwaway, unrecorded
   // navigation first so the real (recorded) navigation paints near-instantly.
+  const locale = typeof args.locale === 'string' ? args.locale : undefined;
+
   if (!args['skip-warmup']) {
     console.log('Warming up (pre-fetching the page so the recording starts on real content)...');
-    const warmupContext = await browser.newContext({viewport: {width, height}, storageState: useStatePath});
+    const warmupContext = await browser.newContext({viewport: {width, height}, storageState: useStatePath, locale});
     const warmupPage = await warmupContext.newPage();
     try {
       await warmupPage.goto(args.url, {waitUntil: 'networkidle', timeout: 30000});
@@ -123,6 +131,7 @@ async function main() {
     viewport: {width, height},
     recordVideo: {dir: RECORDINGS_DIR, size: {width, height}},
     storageState: useStatePath,
+    locale,
   });
   const page = await context.newPage();
 
