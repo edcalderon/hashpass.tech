@@ -21,6 +21,7 @@ interface PassesDisplayProps {
   onRequestPress?: () => void;
   existingRequest?: { id: string; status: string } | null;
   onExistingRequestPress?: () => void;
+  requestStatusLoading?: boolean;
 
   // Which event's pass to show (speaker mode). Falls back to the
   // tenant-resolved default event when omitted.
@@ -76,6 +77,7 @@ function PassesDisplayInner({
   onRequestPress,
   existingRequest,
   onExistingRequestPress,
+  requestStatusLoading = false,
   eventId,
   onPassInfoLoaded,
   onRequestLimitsLoaded,
@@ -313,9 +315,10 @@ function PassesDisplayInner({
     } as any);
   };
 
-  const hasExistingRequest = Boolean(
-    existingRequest || requestLimits?.reason === 'existing_request',
-  );
+  // The entitlement endpoint only reports that an active request exists; it
+  // does not include its status. Never turn that incomplete hint into a
+  // “pending” card—the speaker-detail request query is the source of truth.
+  const hasExistingRequest = Boolean(existingRequest);
   const isPendingExistingRequest =
     !existingRequest || ['pending', 'requested'].includes(existingRequest.status);
 
@@ -1047,7 +1050,9 @@ function PassesDisplayInner({
             color: requestLimits.canSendRequest ? colors.primary : hasExistingRequest ? (colors.warning?.main || '#FF9500') : colors.error.main,
             marginBottom: 4
           }}>
-            {requestLimits.canSendRequest
+            {requestStatusLoading
+              ? t({ id: 'passes.checkingRequest', message: 'Checking meeting request status…' })
+              : requestLimits.canSendRequest
               ? t({ id: 'passes.canRequestMeeting', message: '✅ Can Request Meeting' })
               : hasExistingRequest
                 ? t({ id: 'passes.requestPending', message: '⏳ Meeting request pending' })
@@ -1057,7 +1062,9 @@ function PassesDisplayInner({
             fontSize: 12, 
             color: colors.text.secondary
           }}>
-            {requestLimits.canSendRequest
+            {requestStatusLoading
+              ? t({ id: 'passes.checkingRequestDescription', message: 'Confirming the latest response from this speaker.' })
+              : requestLimits.canSendRequest
               ? t({ id: 'passes.requestAllowed', message: 'You can send a meeting request.' })
               : hasExistingRequest
                 ? isPendingExistingRequest
@@ -1072,24 +1079,25 @@ function PassesDisplayInner({
       {showRequestButton && onRequestPress && (
         <TouchableOpacity
           style={{
-            backgroundColor: (passInfo && (requestLimits?.canSendRequest || hasExistingRequest)) ? colors.primary : colors.divider,
+            backgroundColor: (passInfo && !requestStatusLoading && (requestLimits?.canSendRequest || hasExistingRequest)) ? colors.primary : colors.divider,
             paddingVertical: 12,
             paddingHorizontal: 24,
             borderRadius: 8,
             alignItems: 'center',
-            opacity: (passInfo && (requestLimits?.canSendRequest || hasExistingRequest)) ? 1 : 0.5
+            opacity: (passInfo && !requestStatusLoading && (requestLimits?.canSendRequest || hasExistingRequest)) ? 1 : 0.5
           }}
-          onPress={(passInfo && (requestLimits?.canSendRequest || hasExistingRequest))
+          onPress={(passInfo && !requestStatusLoading && (requestLimits?.canSendRequest || hasExistingRequest))
             ? (hasExistingRequest ? onExistingRequestPress : onRequestPress)
             : undefined}
-          disabled={!passInfo || (!requestLimits?.canSendRequest && !hasExistingRequest)}
+          disabled={!passInfo || requestStatusLoading || (!requestLimits?.canSendRequest && !hasExistingRequest)}
         >
           <Text style={{ 
-            color: (passInfo && (requestLimits?.canSendRequest || hasExistingRequest)) ? 'white' : colors.text.secondary,
+            color: (passInfo && !requestStatusLoading && (requestLimits?.canSendRequest || hasExistingRequest)) ? 'white' : colors.text.secondary,
             fontSize: 16,
             fontWeight: '600'
           }}>
             {!passInfo ? t({ id: 'passes.button.passRequired', message: 'Pass Required' }) :
+             requestStatusLoading ? t({ id: 'passes.button.checking', message: 'Checking requests…' }) :
              hasExistingRequest ? t({ id: 'passes.viewRequest', message: 'View request' }) :
              !requestLimits?.canSendRequest ? t({ id: 'passes.button.limitReached', message: 'Limit Reached' }) :
              t({ id: 'passes.button.requestMeeting', message: 'Request Meeting' })}

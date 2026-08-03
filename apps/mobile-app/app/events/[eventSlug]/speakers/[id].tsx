@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '../../../../hooks/useTheme';
 import { useEvent } from '@contexts/EventContext';
@@ -126,6 +126,7 @@ export default function SpeakerDetail() {
     requestLimit: number;
     reason?: string;
   } | null>(null);
+  const [loadingRequestLimits, setLoadingRequestLimits] = useState(false);
   const [showTicketComparison, setShowTicketComparison] = useState(false);
   const existingRequest = !isCurrentUserSpeaker
     ? meetingRequests.find((request) =>
@@ -617,7 +618,7 @@ export default function SpeakerDetail() {
 
   const loadRequestLimits = async () => {
     if (!dbUserId || !speaker) return;
-    
+    setLoadingRequestLimits(true);
     try {
       const response = await apiClient.request(meetingRequestLimitsPath, {
         skipEventSegment: true,
@@ -661,6 +662,8 @@ export default function SpeakerDetail() {
         requestLimit: 0,
         reason: 'Error loading request limits',
       });
+    } finally {
+      setLoadingRequestLimits(false);
     }
   };
 
@@ -1309,6 +1312,7 @@ export default function SpeakerDetail() {
             eventId={eventId}
             existingRequest={existingRequest ? { id: existingRequest.id, status: existingRequest.status } : null}
             onExistingRequestPress={openExistingRequest}
+            requestStatusLoading={loadingRequestStatus}
             refreshTrigger={passRefreshTrigger}
             onPassInfoLoaded={(passInfo: { pass_type?: string } | null) => {
               if (passInfo && passInfo.pass_type) {
@@ -1361,7 +1365,12 @@ export default function SpeakerDetail() {
             <Text style={styles.requestLimitsTitle}>{t('speakerView.yourRequestStatus')}</Text>
           </View>
           
-          <View style={styles.requestLimitsContent}>
+          {loadingRequestLimits ? (
+            <View style={styles.requestLimitsLoading}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.requestLimitsLoadingText}>Loading pass entitlements…</Text>
+            </View>
+          ) : <View style={styles.requestLimitsContent}>
             <View style={styles.requestLimitsRow}>
               <Text style={styles.requestLimitsLabel}>{t('speakerView.ticketType')}</Text>
               <Text style={[styles.requestLimitsValue, { 
@@ -1396,7 +1405,7 @@ export default function SpeakerDetail() {
                 </Text>
               </View>
             )}
-          </View>
+          </View>}
           
           {requestLimits && !requestLimits.canSendRequest && (
             <View style={styles.requestLimitsWarning}>
@@ -2134,6 +2143,16 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   requestLimitsContent: {
     gap: 8,
+  },
+  requestLimitsLoading: {
+    minHeight: 86,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  requestLimitsLoadingText: {
+    fontSize: 14,
+    color: colors.text.secondary,
   },
   requestLimitsRow: {
     flexDirection: 'row',

@@ -971,3 +971,28 @@ describe("meeting-requests api", () => {
     });
   });
 });
+
+describe('meetingFrontendOrigin', () => {
+  const originalBslSiteUrl = process.env.EXPO_PUBLIC_BSL_SITE_URL;
+
+  afterEach(() => {
+    if (originalBslSiteUrl === undefined) delete process.env.EXPO_PUBLIC_BSL_SITE_URL;
+    else process.env.EXPO_PUBLIC_BSL_SITE_URL = originalBslSiteUrl;
+  });
+
+  it('uses the development BSL site for API development requests', () => {
+    delete process.env.EXPO_PUBLIC_BSL_SITE_URL;
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { meetingFrontendOrigin } = require('../../app/api/events/[eventId]/meetings/requests+api');
+    expect(meetingFrontendOrigin(new Request('https://api-dev.hashpass.tech/api/events/bsl/meetings/requests')))
+      .toBe('https://bsl-dev.hashpass.tech');
+  });
+
+  it('prefers an explicitly configured BSL site origin', () => {
+    process.env.EXPO_PUBLIC_BSL_SITE_URL = 'https://preview-bsl.hashpass.tech/path';
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { meetingFrontendOrigin } = require('../../app/api/events/[eventId]/meetings/requests+api');
+    expect(meetingFrontendOrigin(new Request('https://api.hashpass.tech/api/events/bsl/meetings/requests')))
+      .toBe('https://preview-bsl.hashpass.tech');
+  });
+});

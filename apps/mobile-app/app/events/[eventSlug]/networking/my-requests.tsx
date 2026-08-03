@@ -77,6 +77,7 @@ export default function MyRequestsView() {
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedSlotDay, setSelectedSlotDay] = useState<string | null>(null);
   const [confirmedMeetingId, setConfirmedMeetingId] = useState<string | null>(null);
   const [confirmedMeetingStatus, setConfirmedMeetingStatus] = useState<'confirmed' | 'tentative'>('confirmed');
   // Track current slot loading context to reload after acceptance
@@ -301,6 +302,39 @@ export default function MyRequestsView() {
     });
   };
 
+  // Group the (already priority-sorted) slots by local calendar day so the
+  // picker can show one tab per event day, mirroring my-schedule's day-pill
+  // pattern instead of one long undifferentiated list.
+  const slotsByDay = useMemo(() => {
+    const map = new Map<string, { date: Date; slots: typeof availableSlots }>();
+    for (const slot of availableSlots) {
+      const slotDate = new Date(slot.slot_time);
+      const dayKey = slotDate.toDateString();
+      if (!map.has(dayKey)) {
+        map.set(dayKey, { date: slotDate, slots: [] });
+      }
+      map.get(dayKey)!.slots.push(slot);
+    }
+    return Array.from(map.entries())
+      .sort(([, a], [, b]) => a.date.getTime() - b.date.getTime())
+      .map(([dayKey, { date, slots }]) => ({ dayKey, date, slots }));
+  }, [availableSlots]);
+
+  // Default to the first day with slots whenever the picker loads fresh
+  // data, and fall back the same way if the previously selected day no
+  // longer has any slots left (e.g. after accepting one).
+  useEffect(() => {
+    if (slotsByDay.length === 0) {
+      if (selectedSlotDay !== null) setSelectedSlotDay(null);
+      return;
+    }
+    if (!slotsByDay.some((day) => day.dayKey === selectedSlotDay)) {
+      setSelectedSlotDay(slotsByDay[0].dayKey);
+    }
+  }, [slotsByDay, selectedSlotDay]);
+
+  const selectedDaySlots = slotsByDay.find((day) => day.dayKey === selectedSlotDay)?.slots || [];
+
   const loadAvailableSlots = async (
     speakerId: string, 
     durationMinutes: number = 15, 
@@ -371,6 +405,7 @@ export default function MyRequestsView() {
         showError(t('requestView.slotConflictTitle'), errorMessage);
         // Close slot picker if open
         setShowSlotPicker(false);
+        setSelectedSlotDay(null);
         return;
       }
 
@@ -379,6 +414,7 @@ export default function MyRequestsView() {
         setConfirmedMeetingId(data.meeting_id);
         setConfirmedMeetingStatus(data.status === 'tentative' ? 'tentative' : 'confirmed');
         setShowSlotPicker(false);
+        setSelectedSlotDay(null);
         setAcceptNote('');
         setShowSlotConfirmation(true);
         
@@ -1336,6 +1372,7 @@ export default function MyRequestsView() {
         onRequestClose={() => {
           setShowSlotPicker(false);
           setSelectedSlot(null);
+          setSelectedSlotDay(null);
           setAcceptNote('');
           // Clear slot context when picker is closed
           setCurrentSlotContext(null);
@@ -1355,6 +1392,7 @@ export default function MyRequestsView() {
               onPress={() => {
                 setShowSlotPicker(false);
                 setSelectedSlot(null);
+                setSelectedSlotDay(null);
                 setAcceptNote('');
                 // Clear slot context when picker is closed
                 setCurrentSlotContext(null);
@@ -1383,6 +1421,65 @@ export default function MyRequestsView() {
                 {t('requestView.slotPicker.subtitle')}
               </Text>
             </View>
+
+            {/* Day tabs -- one per event day with available slots, matching
+                the day-pill pattern from the My Schedule view so slot
+                selection feels consistent across the app. */}
+            {!loadingSlots && slotsByDay.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.slotPickerDayTabs}
+                contentContainerStyle={styles.slotPickerDayTabsContent}
+              >
+                {slotsByDay.map((day, dayIndex) => {
+                  const isSelectedDay = day.dayKey === selectedSlotDay;
+                  return (
+                    <TouchableOpacity
+                      key={day.dayKey}
+                      testID={`slotPickerDayTab-${dayIndex}`}
+                      style={[
+                        styles.slotPickerDayTab,
+                        {
+                          backgroundColor: isSelectedDay
+                            ? (colors.primary || '#007AFF')
+                            : (colors.background?.default || (isDark ? '#2a2a2a' : '#f8f8f8')),
+                          borderColor: isSelectedDay
+                            ? (colors.primary || '#007AFF')
+                            : (colors.divider || (isDark ? '#404040' : '#e5e5e5')),
+                        }
+                      ]}
+                      onPress={() => setSelectedSlotDay(day.dayKey)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.slotPickerDayTabName,
+                        { color: isSelectedDay ? '#FFFFFF' : (colors.text?.secondary || (isDark ? '#B0B0B0' : '#666666')) }
+                      ]}>
+                        {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </Text>
+                      <Text style={[
+                        styles.slotPickerDayTabNumber,
+                        { color: isSelectedDay ? '#FFFFFF' : (colors.text?.primary || (isDark ? '#FFFFFF' : '#000000')) }
+                      ]}>
+                        {day.date.getDate()}
+                      </Text>
+                      <View style={[
+                        styles.slotPickerDayTabBadge,
+                        { backgroundColor: isSelectedDay ? 'rgba(255, 255, 255, 0.3)' : (colors.primary || '#007AFF') + '20' }
+                      ]}>
+                        <Text style={[
+                          styles.slotPickerDayTabBadgeText,
+                          { color: isSelectedDay ? '#FFFFFF' : (colors.primary || '#007AFF') }
+                        ]}>
+                          {day.slots.length}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
 
             {loadingSlots ? (
               <View style={styles.slotPickerLoadingContainer}>
@@ -1437,6 +1534,7 @@ export default function MyRequestsView() {
                     setShowSlotPicker(false);
                     setShowDetailModal(false);
                     setSelectedSlot(null);
+                    setSelectedSlotDay(null);
                     setAcceptNote('');
                     setCurrentSlotContext(null);
                     // The Modal's exit needs to actually unmount (its content
@@ -1461,7 +1559,7 @@ export default function MyRequestsView() {
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={styles.slotPickerListContent}
               >
-                {availableSlots.map((slot, index) => {
+                {selectedDaySlots.map((slot, index) => {
                   const slotDate = new Date(slot.slot_time);
                   const isSelected = selectedSlot === slot.slot_time;
                   const isInterested = slot.slot_status === 'interested';
@@ -2968,6 +3066,44 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  slotPickerDayTabs: {
+    marginHorizontal: -24,
+    marginBottom: 16,
+  },
+  slotPickerDayTabsContent: {
+    paddingHorizontal: 24,
+    gap: 10,
+  },
+  slotPickerDayTab: {
+    width: 60,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slotPickerDayTabName: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  slotPickerDayTabNumber: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  slotPickerDayTabBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slotPickerDayTabBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   slotPickerLoadingContainer: {
     padding: 60,

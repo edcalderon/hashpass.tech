@@ -84,13 +84,18 @@ interface EmailTranslations {
 }
 
 // Validate required environment variables
-const requiredEnvVars = [
-  'NODEMAILER_HOST',
-  'NODEMAILER_PORT',
-  'NODEMAILER_USER',
-  'NODEMAILER_PASS',
-  'NODEMAILER_FROM'
-];
+// Prefer the dedicated transactional provider when configured. The legacy
+// NODEMAILER_* names remain a safe fallback for existing environments.
+const smtpConfig = {
+  host: process.env.NODEMAILER_HOST_INFO || process.env.NODEMAILER_HOST || '',
+  port: process.env.NODEMAILER_PORT_INFO || process.env.NODEMAILER_PORT || '587',
+  user: process.env.NODEMAILER_USER_INFO || process.env.NODEMAILER_USER || '',
+  pass: process.env.NODEMAILER_PASS_INFO || process.env.NODEMAILER_PASS || '',
+  from: process.env.NODEMAILER_FROM_INFO || process.env.NODEMAILER_FROM || '',
+};
+const requiredEnvVars = Object.entries(smtpConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => `transactional SMTP ${key}`);
 
 // Check if all required environment variables are set
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -102,27 +107,29 @@ if (missingVars.length > 0) {
 const emailEnabled = missingVars.length === 0;
 console.log('[email] enabled:', emailEnabled, missingVars.length ? `(missing: ${missingVars.join(', ')})` : '');
 
-const smtpHost = process.env.NODEMAILER_HOST || '';
+const smtpHost = smtpConfig.host;
+const smtpFrom = smtpConfig.from;
 const isBrevo = smtpHost.includes('brevo.com') || smtpHost.includes('sendinblue.com');
 
 const transporter = emailEnabled ? nodemailer.createTransport({
   host: smtpHost,
-  port: parseInt(process.env.NODEMAILER_PORT || '587'),
+  port: parseInt(smtpConfig.port, 10),
   secure: false,
   auth: {
-    user: process.env.NODEMAILER_USER,
-    pass: process.env.NODEMAILER_PASS,
+    user: smtpConfig.user,
+    pass: smtpConfig.pass,
   },
   // Add connection timeout
   connectionTimeout: 10000, // 10 seconds
   // Add TLS options
-  tls: {
-    // Do not fail on invalid certs
-    rejectUnauthorized: process.env.NODE_ENV === 'production',
-    // For Brevo/Sendinblue, allow hostname mismatch but still verify certificate
-    servername: isBrevo ? 'smtp-relay.sendinblue.com' : undefined,
-    checkServerIdentity: isBrevo ? () => undefined : undefined,
-  },
+  tls: isBrevo
+    ? {
+        rejectUnauthorized: process.env.NODE_ENV === 'production',
+        // Brevo's relay may present a hostname that differs from the relay alias.
+        servername: 'smtp-relay.sendinblue.com',
+        checkServerIdentity: () => undefined,
+      }
+    : { rejectUnauthorized: process.env.NODE_ENV === 'production' },
   requireTLS: true,
 }) : null;
 
@@ -427,7 +434,7 @@ export async function sendSubscriptionConfirmation(
     });
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject,
       html,
@@ -499,10 +506,176 @@ export async function sendBookingEmail(
       ${payload.start ? `<p>Fecha y hora: ${payload.start}</p>` : ''}
       ${payload.location ? `<p>Ubicación: ${payload.location}</p>` : ''}
     `;
-    const info = await transporter.sendMail({ from: `HASHPASS <${process.env.NODEMAILER_FROM}>`, to, subject, html });
+    const info = await transporter.sendMail({ from: `HASHPASS <${smtpFrom}>`, to, subject, html });
     return { success: true, messageId: info.messageId };
   } catch (e: any) {
     return { success: false, error: e?.message || 'Email failed' };
+  }
+}
+
+export type MeetingEmailStatus = 'requested' | 'accepted' | 'declined';
+export type NotificationLevel = 'info' | 'important' | 'critical';
+
+export interface CriticalNotificationEmailDetails {
+  recipientUserId?: string;
+  /** Explicit recipient is supported for operational preview/test sends. */
+  recipientEmail?: string;
+  title: string;
+  message: string;
+  notificationType?: string | null;
+  speakerName?: string | null;
+  eventId?: string | null;
+  actionUrl?: string | null;
+  actionLabel?: string | null;
+}
+export interface MeetingEmailDetails {
+  recipientUserId?: string;
+  recipientEmail?: string;
+  status: MeetingEmailStatus;
+  eventId: string;
+  requesterName?: string | null;
+  requesterCompany?: string | null;
+  requesterTitle?: string | null;
+  speakerName?: string | null;
+  message?: string | null;
+  note?: string | null;
+  meetingType?: string | null;
+  meetingScheduledAt?: string | null;
+  meetingLocation?: string | null;
+  durationMinutes?: number | null;
+  response?: string | null;
+  appUrl?: string | null;
+}
+
+const escapeEmailHtml = (value: unknown) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const isBslEvent = (eventId: string) => /(^|[-_\s])bsl(?:[-_\s\d]|$)|blockchain\s*summit|^(chile|colombia|peru)\d{4}$/i.test(eventId);
+
+const bslEventTag = (eventId: string) => {
+  const normalized = eventId.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return `#${normalized.startsWith('bsl') ? normalized : `bsl${normalized}`}`;
+};
+
+/** Sends a localized operational email without affecting the meeting workflow on delivery failure. */
+export async function sendMeetingNotificationEmail(
+  details: MeetingEmailDetails,
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
+  try {
+    const recipient = details.recipientUserId
+      ? await supabaseServer.auth.admin.getUserById(details.recipientUserId)
+      : { data: { user: null }, error: null };
+    const recipientEmail = details.recipientEmail || recipient.data.user?.email;
+    if (recipient.error || !recipientEmail) return { success: false, error: recipient.error?.message || 'Recipient email is unavailable' };
+    const locale = details.recipientUserId && (await detectUserLocale(details.recipientUserId)) === 'es' ? 'es' : 'en';
+    const es = locale === 'es';
+    const labels = es
+      ? {
+          requested: 'Nueva solicitud de reunión', accepted: 'Tu reunión fue aceptada', declined: 'Tu solicitud de reunión fue rechazada',
+          greeting: 'Hola', event: 'Evento', with: 'Participantes', purpose: 'Tipo de reunión', date: 'Fecha y hora', location: 'Ubicación', duration: 'Duración', message: 'Mensaje', response: 'Respuesta', open: 'Ver solicitudes', minutes: 'minutos',
+          privacy: 'Política de privacidad', contact: 'Contacto', transactional: 'Este es un correo transaccional relacionado con tu cuenta HASHPASS.', bslEvent: 'Evento BSL',
+        }
+      : {
+          requested: 'New meeting request', accepted: 'Your meeting was accepted', declined: 'Your meeting request was declined',
+          greeting: 'Hello', event: 'Event', with: 'Participants', purpose: 'Meeting type', date: 'Date and time', location: 'Location', duration: 'Duration', message: 'Message', response: 'Response', open: 'View requests', minutes: 'minutes',
+          privacy: 'Privacy policy', contact: 'Contact', transactional: 'This is a transactional email related to your HASHPASS account.', bslEvent: 'BSL event',
+        };
+    const statusTitle = labels[details.status];
+    const recipientName = recipient.data.user?.user_metadata?.name || recipient.data.user?.user_metadata?.full_name || recipientEmail.split('@')[0];
+    const date = details.meetingScheduledAt
+      ? new Intl.DateTimeFormat(es ? 'es-ES' : 'en-US', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(details.meetingScheduledAt))
+      : es ? 'Pendiente de programación' : 'To be scheduled';
+    const participants = [details.requesterName, details.requesterTitle, details.requesterCompany, details.speakerName]
+      .filter(Boolean).join(' · ');
+    const row = (label: string, value?: unknown) => value ? `<tr><td style="width:34%;padding:10px 12px;color:#667085;font-size:14px;font-weight:700;vertical-align:top;border-bottom:1px solid #eaecf0">${escapeEmailHtml(label)}</td><td style="padding:10px 12px;color:#1d2939;font-size:14px;line-height:20px;vertical-align:top;border-bottom:1px solid #eaecf0">${escapeEmailHtml(value)}</td></tr>` : '';
+    const appUrl = details.appUrl || `https://bsl.hashpass.tech/events/${encodeURIComponent(details.eventId)}/networking/my-requests`;
+    const hasBslBranding = isBslEvent(details.eventId);
+    const eventTag = bslEventTag(details.eventId);
+    const hashpassLogoUrl = getEmailAssetUrl('images/logo-full-hashpass-white-cyan.png');
+    const bslLogoUrl = getEmailAssetUrl('images/BSL-Logo-fondo-oscuro-2024.png');
+    const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
+    const privacyUrl = 'https://hashpass.tech/privacy';
+    const bslBranding = hasBslBranding
+      ? `<td align="right" style="padding-left:18px;border-left:1px solid #b4233d"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td style="background:#ffffff;border-radius:6px;padding:5px 8px"><img src="${bslLogoUrl}" alt="BSL" height="20" style="display:block;height:20px;width:auto;border:0;outline:none;text-decoration:none" /></td></tr></table></td>`
+      : '';
+    const html = `<!doctype html><html lang="${es ? 'es' : 'en'}"><body style="margin:0;padding:0;background:#f5f7fa"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f7fa"><tr><td align="center" style="padding:32px 12px"><table role="presentation" width="640" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:640px"><tr><td style="background:#101828;border-radius:18px 18px 0 0;padding:26px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td><img src="${hashpassLogoUrl}" alt="" width="146" style="display:block;width:146px;height:auto;border:0;outline:none;text-decoration:none" /><div style="margin-top:8px;color:#d0d5dd;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:16px">Digital event platform</div></td>${bslBranding}</tr></table><div style="margin-top:22px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:34px;font-weight:700">${escapeEmailHtml(statusTitle)}</div>${hasBslBranding ? `<div style="margin-top:9px;color:#d0d5dd;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:18px"><strong style="color:#ffffff">${escapeEmailHtml(eventTag)}</strong><span style="padding:0 7px;color:#667085">·</span><a href="https://blockchainsummit.la" style="color:#d0d5dd;text-decoration:none">blockchainsummit.la</a></div>` : ''}</td></tr><tr><td style="background:#ffffff;padding:28px"><p style="margin:0 0 16px;color:#1d2939;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px">${escapeEmailHtml(labels.greeting)} ${escapeEmailHtml(recipientName)},</p><p style="margin:0 0 22px;color:#344054;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px">${escapeEmailHtml(statusTitle)}.</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #eaecf0;border-radius:12px;background:#f9fafb">${row(labels.event, details.eventId)}${row(labels.with, participants)}${row(labels.purpose, details.meetingType)}${row(labels.date, date)}${row(labels.location, details.meetingLocation)}${row(labels.duration, details.durationMinutes ? `${details.durationMinutes} ${labels.minutes}` : undefined)}${row(labels.message, details.message)}${row(labels.response, details.response || details.note)}</table><table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top:26px"><tr><td style="border-radius:8px;background:#344054"><a href="${appUrl}" style="display:inline-block;padding:13px 19px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;line-height:20px;text-decoration:none">${escapeEmailHtml(labels.open)}</a></td></tr></table></td></tr><tr><td style="background:#f9fafb;border-top:1px solid #eaecf0;border-radius:0 0 18px 18px;padding:22px 28px"><p style="margin:0 0 10px;color:#667085;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px">${escapeEmailHtml(labels.transactional)}</p><p style="margin:0;color:#667085;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px"><a href="${privacyUrl}" style="color:#475467;text-decoration:underline">${escapeEmailHtml(labels.privacy)}</a><span style="padding:0 7px;color:#98a2b3">·</span><a href="mailto:${escapeEmailHtml(supportEmail)}" style="color:#475467;text-decoration:underline">${escapeEmailHtml(labels.contact)}</a></p></td></tr></table></td></tr></table></body></html>`;
+    const info = await transporter.sendMail({ from: `HASHPASS <${smtpFrom}>`, to: recipientEmail, subject: `${statusTitle} · HASHPASS`, html, text: `${statusTitle}\n${labels.event}: ${details.eventId}\n${labels.with}: ${participants}\n${labels.date}: ${date}\n${labels.location}: ${details.meetingLocation || ''}\n${labels.message}: ${details.message || ''}\n${appUrl}` });
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error('[meeting-email] delivery failed:', error?.message || error);
+    return { success: false, error: error?.message || 'Email delivery failed' };
+  }
+}
+
+/**
+ * Delivers the email escalation for a notification that has already been
+ * persisted with level = `critical`. Keeping this template beside the meeting
+ * template gives every notification producer one localized, branded path.
+ */
+export async function sendCriticalNotificationEmail(
+  details: CriticalNotificationEmailDetails,
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
+
+  try {
+    const lookup = details.recipientUserId
+      ? await supabaseServer.auth.admin.getUserById(details.recipientUserId)
+      : { data: { user: null }, error: null };
+    const recipient = lookup.data.user;
+    const recipientEmail = details.recipientEmail || recipient?.email;
+    if (lookup.error || !recipientEmail) return { success: false, error: lookup.error?.message || 'Recipient email is unavailable' };
+
+    const es = details.recipientUserId && (await detectUserLocale(details.recipientUserId, recipient?.user_metadata)) === 'es';
+    const labels = es
+      ? {
+          preheader: 'Tienes una notificación importante de HASHPASS', greeting: 'Hola', heading: 'Notificación importante',
+          open: 'Ver notificaciones', privacy: 'Política de privacidad', contact: 'Contacto',
+          transactional: 'Este es un correo transaccional relacionado con tu cuenta HASHPASS.', bslEvent: 'Evento BSL',
+        }
+      : {
+          preheader: 'You have an important HASHPASS notification', greeting: 'Hello', heading: 'Important notification',
+          open: 'View notifications', privacy: 'Privacy policy', contact: 'Contact',
+          transactional: 'This is a transactional email related to your HASHPASS account.', bslEvent: 'BSL event',
+        };
+    const localizedContent = details.notificationType === 'meeting_slot_conflict'
+      ? es
+        ? {
+            title: 'Conflicto de horario: se requiere una acción',
+            message: `${details.speakerName || 'El ponente'} aceptó tu solicitud, pero coincide con otra reunión en tu calendario. Abre tus notificaciones para elegir cuál conservar.`,
+          }
+        : {
+            title: 'Scheduling conflict — action required',
+            message: `${details.speakerName || 'The speaker'} accepted your request, but it overlaps another meeting on your calendar. Open your notifications to choose which one to keep.`,
+          }
+      : { title: details.title, message: details.message };
+    const recipientName = recipient?.user_metadata?.name || recipient?.user_metadata?.full_name || recipientEmail.split('@')[0];
+    const eventId = details.eventId || '';
+    const hasBslBranding = isBslEvent(eventId);
+    const hashpassLogoUrl = getEmailAssetUrl('images/logo-full-hashpass-white.png');
+    const bslLogoUrl = getEmailAssetUrl('images/BSL-Logo-fondo-oscuro-2024.png');
+    const actionUrl = details.actionUrl || 'https://bsl.hashpass.tech/dashboard/notifications';
+    const actionLabel = details.actionLabel || labels.open;
+    const supportEmail = process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech';
+    const bslBranding = hasBslBranding
+      ? `<td align="right" style="padding-left:18px;border-left:1px solid #b4233d"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td style="background:#ffffff;border-radius:6px;padding:5px 8px"><img src="${bslLogoUrl}" alt="BSL" height="20" style="display:block;height:20px;width:auto;border:0;outline:none;text-decoration:none" /></td></tr></table></td>`
+      : '';
+    const html = `<!doctype html><html lang="${es ? 'es' : 'en'}"><body style="margin:0;padding:0;background:#f5f7fa"><span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0">${escapeEmailHtml(labels.preheader)}</span><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f7fa"><tr><td align="center" style="padding:32px 12px"><table role="presentation" width="640" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:640px"><tr><td style="background:#7a1022;border-top:5px solid #f04438;border-radius:18px 18px 0 0;padding:26px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td><img src="${hashpassLogoUrl}" alt="HASHPASS" width="146" style="display:block;width:146px;height:auto;border:0;outline:none;text-decoration:none" /></td>${bslBranding}</tr></table><div style="margin-top:22px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:34px;font-weight:700">${escapeEmailHtml(labels.heading)}</div>${hasBslBranding ? `<div style="margin-top:8px;color:#ffd0d5;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:18px;font-weight:600">${escapeEmailHtml(labels.bslEvent)}</div>` : ''}</td></tr><tr><td style="background:#ffffff;padding:28px"><p style="margin:0 0 16px;color:#1d2939;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px">${escapeEmailHtml(labels.greeting)} ${escapeEmailHtml(recipientName)},</p><h1 style="margin:0 0 12px;color:#1d2939;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:30px">${escapeEmailHtml(localizedContent.title)}</h1><p style="margin:0;color:#475467;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:24px">${escapeEmailHtml(localizedContent.message)}</p><table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top:26px"><tr><td style="border-radius:8px;background:#b4233d"><a href="${escapeEmailHtml(actionUrl)}" style="display:inline-block;padding:13px 19px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;line-height:20px;text-decoration:none">${escapeEmailHtml(actionLabel)}</a></td></tr></table></td></tr><tr><td style="background:#f9fafb;border-top:1px solid #eaecf0;border-radius:0 0 18px 18px;padding:22px 28px"><p style="margin:0 0 10px;color:#667085;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px">${escapeEmailHtml(labels.transactional)}</p><p style="margin:0;color:#667085;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px"><a href="https://hashpass.tech/privacy" style="color:#475467;text-decoration:underline">${escapeEmailHtml(labels.privacy)}</a><span style="padding:0 7px;color:#98a2b3">·</span><a href="mailto:${escapeEmailHtml(supportEmail)}" style="color:#475467;text-decoration:underline">${escapeEmailHtml(labels.contact)}</a></p></td></tr></table></td></tr></table></body></html>`;
+    const info = await transporter.sendMail({
+      from: `HASHPASS <${smtpFrom}>`,
+      to: recipientEmail,
+      subject: `${localizedContent.title} · HASHPASS`,
+      html,
+      text: `${localizedContent.title}\n\n${localizedContent.message}\n\n${actionUrl}`,
+    });
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error('[critical-notification-email] delivery failed:', error?.message || error);
+    return { success: false, error: error?.message || 'Email delivery failed' };
   }
 }
 
@@ -664,7 +837,7 @@ export async function sendUserOnboardingEmail(
     }
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject: subject,
       html: htmlContent,
@@ -761,7 +934,7 @@ export async function sendWelcomeEmail(
     });
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject,
       html: htmlContent,
@@ -951,7 +1124,7 @@ export async function sendSpeakerOnboardingEmail(
     }
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject: subject,
       html: htmlContent,
@@ -1393,7 +1566,7 @@ export async function sendTroubleshootingEmail(
     }
 
     const mailOptions = {
-      from: `HASHPASS <${process.env.NODEMAILER_FROM}>`,
+      from: `HASHPASS <${smtpFrom}>`,
       to: email,
       subject: subject,
       html: htmlContent,

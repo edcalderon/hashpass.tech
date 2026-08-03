@@ -12,12 +12,6 @@ import { supabase } from '../lib/supabase';
 import { useToastHelpers } from '../contexts/ToastContext';
 import RealtimeChat from './RealtimeChat';
 
-// Helper function to generate user avatar URL
-const generateUserAvatarUrl = (name: string): string => {
-  const seed = name.toLowerCase().replace(/\s+/g, '-');
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
-};
-
 interface Meeting {
   id: string;
   speaker_name: string;
@@ -107,32 +101,23 @@ export default function MeetingChat({ meetingId, onClose }: MeetingChatProps) {
           if (speakerData?.user_id) {
             otherUserId = speakerData.user_id;
             otherUserName = meetingData.speaker_name || speakerData.name;
-            
-            // ALWAYS use speaker's image from bsl_speakers
-            // Use imageurl from bsl_speakers, which will be handled by SpeakerAvatar component
-            // SpeakerAvatar will prioritize local optimized avatars, then S3, then generate initials
-            // Pass imageurl directly so SpeakerAvatar can handle the fallback chain properly
-            const avatarUrl = speakerData.imageurl || null; // Pass null to let SpeakerAvatar handle fallback
-            
-            setOtherParticipant({
-              id: otherUserId!,
-              name: otherUserName!,
-              avatar: avatarUrl, // This will be used by SpeakerAvatar component
-            });
           }
         } else {
           // User is speaker, other is requester
           otherUserId = meetingData.requester_id;
           otherUserName = meetingData.requester_name;
           
-          // Generate avatar for requester (we can't query auth.users directly from client)
-          // In production, you might want to create an API endpoint to fetch user metadata
-          const avatarUrl = generateUserAvatarUrl(otherUserName || 'User');
-          
+        }
+
+        if (otherUserId) {
+          const { data: participant } = await supabase.rpc('get_meeting_chat_participant', {
+            p_meeting_id: meetingId,
+            p_other_user_id: otherUserId,
+          });
           setOtherParticipant({
-            id: otherUserId || '',
-            name: otherUserName || 'User',
-            avatar: avatarUrl,
+            id: otherUserId,
+            name: participant?.success ? (participant.name || otherUserName || 'User') : (otherUserName || 'User'),
+            avatar: participant?.success ? (participant.avatar_url || undefined) : undefined,
           });
         }
       }

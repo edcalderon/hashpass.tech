@@ -72,6 +72,9 @@ Supabase `uuid` column):
 - `apps/mobile-app/hooks/useBlockUser.ts`
 - `apps/mobile-app/components/RealtimeChat.tsx`
 - `apps/mobile-app/components/MeetingChat.tsx`
+- `apps/mobile-app/app/events/[eventSlug]/networking/meeting-chat.tsx` (the
+  route wrapper around `MeetingChat.tsx` -- missed in the original v1.8.273
+  audit, found and fixed alongside the [e2e meeting chat rework](./e2e-meeting-chat.md))
 - `apps/mobile-app/components/PassesDisplay.tsx`
 - `apps/mobile-app/app/events/[eventSlug]/networking/my-schedule.tsx`
 - `apps/mobile-app/app/events/[eventSlug]/networking/my-meetings.tsx`

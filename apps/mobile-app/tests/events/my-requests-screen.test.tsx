@@ -462,6 +462,48 @@ describe('MyRequestsView', () => {
     await act(async () => renderer.unmount());
   });
 
+  it('groups available slots into per-day tabs and filters the list by the selected day', async () => {
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: { data: [{ ...incomingRequest, speaker_id: 'speaker-user-id' }] },
+    });
+
+    const renderer = await renderScreen();
+    await pressText(renderer, 'requestView.tabs.incoming');
+    await applyCurrentFilter(renderer);
+
+    await pressText(renderer, 'Mariana Requester');
+
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: {
+        data: [
+          { slot_time: '2026-08-05T14:00:00.000Z', duration_minutes: 15 },
+          { slot_time: '2026-08-05T14:15:00.000Z', duration_minutes: 15 },
+          { slot_time: '2026-08-06T14:00:00.000Z', duration_minutes: 15 },
+        ],
+      },
+    });
+
+    await pressText(renderer, 'requestView.accept');
+
+    // The first (earliest) day tab is selected by default, so only its two
+    // slots should be rendered.
+    expect(renderer.root.findAllByProps({ name: 'access-time' }).length).toBe(2);
+
+    // Press the second day tab and confirm the list now shows only that
+    // day's single slot.
+    const secondDayTab = renderer.root.findByProps({ testID: 'slotPickerDayTab-1' });
+    await act(async () => {
+      secondDayTab.props.onPress();
+      await flushPromises();
+    });
+
+    expect(renderer.root.findAllByProps({ name: 'access-time' }).length).toBe(1);
+
+    await act(async () => renderer.unmount());
+  });
+
   it('does not decline when the reason modal is dismissed via Go Back', async () => {
     mockApiRequest.mockResolvedValue({ success: true, data: { data: [incomingRequest] } });
 

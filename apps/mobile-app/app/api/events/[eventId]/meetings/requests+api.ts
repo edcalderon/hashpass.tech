@@ -12,6 +12,40 @@ const ACTIONS = new Set(["accept", "decline", "cancel", "block"]);
 const MIN_MEETING_DURATION_MINUTES = 5;
 const MAX_MEETING_DURATION_MINUTES = 30;
 
+async function deliverMeetingEmail(details: Record<string, unknown>) {
+  // Await email completion in Lambda so the runtime cannot freeze it after the
+  // response. Delivery failure remains non-blocking for the meeting action.
+  try {
+    const { sendMeetingNotificationEmail } = await import("@/lib/email");
+    await sendMeetingNotificationEmail(details as any);
+  } catch (error) {
+    console.error("[meeting-requests] email delivery failed:", error);
+  }
+}
+
+async function deliverCriticalNotificationEmail(details: Record<string, unknown>) {
+  // Critical delivery is an escalation after the database notification exists;
+  // it must never delay or roll back the user action that created it.
+  try {
+    const { sendCriticalNotificationEmail } = await import("@/lib/email");
+    await sendCriticalNotificationEmail(details as any);
+  } catch (error) {
+    console.error("[meeting-requests] critical notification email failed:", error);
+  }
+}
+
+export function meetingFrontendOrigin(request: Request): string {
+  const configuredOrigin = process.env.EXPO_PUBLIC_BSL_SITE_URL || process.env.BSL_FRONTEND_URL;
+  if (configuredOrigin) {
+    try { return new URL(configuredOrigin).origin; } catch { /* use deployment fallback */ }
+  }
+  try {
+    if (new URL(request.url).hostname.toLowerCase() === 'api-dev.hashpass.tech') {
+      return 'https://bsl-dev.hashpass.tech';
+    }
+  } catch { /* use production fallback */ }
+  return 'https://bsl.hashpass.tech';
+}
 async function speakerForUser(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("bsl_speakers")
@@ -202,6 +236,21 @@ export async function POST(request: Request) {
         { error: result.error || "Meeting request rejected" },
         { status: 409 },
       );
+    const recipientUserId = typeof result?.speaker_id === 'string' ? result.speaker_id : null;
+    if (recipientUserId) await deliverMeetingEmail({
+      recipientUserId,
+      status: "requested",
+      eventId,
+      requesterName: body.requesterName,
+      requesterCompany: body.requesterCompany,
+      requesterTitle: body.requesterTitle,
+      speakerName: body.speakerName,
+      message: body.message,
+      note: body.note,
+      meetingType: body.meetingType,
+      durationMinutes,
+      appUrl: `${meetingFrontendOrigin(request)}/events/${encodeURIComponent(eventId)}/networking/my-requests`,
+    });
     return Response.json({ data: result }, { status: 201 });
   } catch (error: any) {
     console.error("[meeting-requests] create error:", error);
@@ -236,7 +285,7 @@ export async function PATCH(request: Request) {
   try {
     const { data: meetingRequest, error: meetingRequestError } = await supabase
       .from("meeting_requests")
-      .select("id")
+      .select("id, requester_id, speaker_id, requester_name, requester_company, requester_title, speaker_name, message, note, meeting_type, meeting_scheduled_at, meeting_location, duration_minutes")
       .eq("id", body.requestId)
       .eq("event_id", eventId)
       .maybeSingle();
@@ -307,6 +356,36 @@ export async function PATCH(request: Request) {
         { error: result?.error || "Meeting request update failed" },
         { status: 409 },
       );
+    if (body.action === "accept" || body.action === "decline") {
+      await deliverMeetingEmail({
+        recipientUserId: meetingRequest.requester_id,
+        status: body.action === "accept" ? "accepted" : "declined",
+        eventId,
+        requesterName: meetingRequest.requester_name,
+        requesterCompany: meetingRequest.requester_company,
+        requesterTitle: meetingRequest.requester_title,
+        speakerName: meetingRequest.speaker_name,
+        message: meetingRequest.message,
+        note: meetingRequest.note,
+        meetingType: meetingRequest.meeting_type,
+        meetingScheduledAt: body.action === "accept" ? body.slotTime : meetingRequest.meeting_scheduled_at,
+        meetingLocation: meetingRequest.meeting_location,
+        durationMinutes: meetingRequest.duration_minutes,
+        response: body.response,
+        appUrl: `${meetingFrontendOrigin(request)}/events/${encodeURIComponent(eventId)}/networking/my-requests`,
+      });
+    }
+    if (result?.requires_resolution === true || result?.status === 'tentative') {
+      await deliverCriticalNotificationEmail({
+        recipientUserId: meetingRequest.requester_id,
+        notificationType: 'meeting_slot_conflict',
+        title: 'Scheduling conflict — action required',
+        message: `${meetingRequest.speaker_name || 'The speaker'} accepted your request, but it overlaps another meeting on your calendar.`,
+        speakerName: meetingRequest.speaker_name,
+        eventId,
+        actionUrl: `${meetingFrontendOrigin(request)}/events/${encodeURIComponent(eventId)}/networking/my-requests`,
+      });
+    }
     return Response.json({ data: result });
   } catch (error: any) {
     console.error("[meeting-requests] update error:", error);
