@@ -24,7 +24,8 @@
   "defaultGroups": ["rls-hardening", "upcoming-bsl-passes", "meeting-lifecycle", "event-catalog", "speaker-identity-claims", "event-pass-tiers", "admin-pass-management", "meeting-chat-e2e"],
   "groups": {
     "meeting-chat-e2e": [
-      "db/migrations/V053__e2e_encrypted_persistent_meeting_chat.sql"
+      "db/migrations/V053__e2e_encrypted_persistent_meeting_chat.sql",
+      "db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql"
     ],
     "core": ["apps/mobile-app/db/migrations/V001__init_core_schema.sql"],
     "events": ["apps/mobile-app/db/migrations/V002__meeting_requests_system.sql"],

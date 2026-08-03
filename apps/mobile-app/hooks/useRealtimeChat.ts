@@ -47,6 +47,7 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isMessageChannelConnected, setIsMessageChannelConnected] = useState(false);
   const [presence, setPresence] = useState<{ [userId: string]: { isOnline: boolean; lastSeen: Date } }>({});
   const [keysReady, setKeysReady] = useState(false);
   const [otherKeyMissing, setOtherKeyMissing] = useState(false);
@@ -110,9 +111,9 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
 
     let cancelled = false;
 
-    const loadHistory = async () => {
+    const loadHistory = async (showLoading = false) => {
       try {
-        setLoading(true);
+        if (showLoading) setLoading(true);
         setError(null);
         const { data, error: rpcError } = await supabase.rpc('get_meeting_chat_messages', {
           p_meeting_id: meetingId,
@@ -129,11 +130,11 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
           setError(err instanceof Error ? err.message : 'Failed to load messages');
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && showLoading) setLoading(false);
       }
     };
 
-    loadHistory();
+    void loadHistory(true);
 
     const dbChannel = supabase
       .channel(`meeting_chat_messages:${meetingId}`)
@@ -145,10 +146,23 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
           setMessages((current) => (current.some((m) => m.id === decrypted.id) ? current : [...current, decrypted]));
         }
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        if (cancelled) return;
+        setIsMessageChannelConnected(status === 'SUBSCRIBED');
+        if (status === 'SUBSCRIBED') void loadHistory();
+      });
+
+    // Reconcile in the background as a safety net for an interrupted socket
+    // or a local Supabase instance that is applying its realtime publication.
+    // Normal delivery is still the immediate postgres_changes subscription.
+    const reconciliationInterval = setInterval(() => {
+      void loadHistory();
+    }, 8000);
 
     return () => {
       cancelled = true;
+      clearInterval(reconciliationInterval);
+      setIsMessageChannelConnected(false);
       supabase.removeChannel(dbChannel);
     };
   }, [keysReady, meetingId, userId, decryptRow]);
@@ -278,5 +292,15 @@ export function useRealtimeChat({ meetingId, roomName, username, userId, otherPa
     setMessages([]);
   }, []);
 
-  return { messages, sendMessage, isConnected, clearMessages, presence, loading, error, keysReady, otherKeyMissing };
+  return {
+    messages,
+    sendMessage,
+    isConnected: isConnected && isMessageChannelConnected,
+    clearMessages,
+    presence,
+    loading,
+    error,
+    keysReady,
+    otherKeyMissing,
+  };
 }

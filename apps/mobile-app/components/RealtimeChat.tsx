@@ -15,6 +15,7 @@ import { useAuth } from '../hooks/useAuth';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRealtimeChat, type ChatMessage } from '../hooks/useRealtimeChat';
 import { useChatScroll } from '../hooks/useChatScroll';
+import { shouldSendMessageOnWebEnter } from '../lib/chat-input';
 import SpeakerAvatar from './SpeakerAvatar';
 import { supabase } from '../lib/supabase';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -453,10 +454,18 @@ export default function RealtimeChat({
           composer honestly reflects whether a send can succeed. */}
       {otherKeyMissing && (
         <View style={styles.keyWaitingBanner}>
-          <MaterialIcons name="lock-clock" size={16} color={colors.text?.secondary || (isDark ? '#a0a0a0' : '#666666')} />
-          <Text style={styles.keyWaitingText}>
-            Waiting for {otherParticipantName || 'the other participant'} to open secure chat for the first time.
-          </Text>
+          <MaterialIcons
+            name="info-outline"
+            size={20}
+            color={isDark ? '#f7b955' : '#9a6700'}
+            accessibilityLabel="Secure chat setup information"
+          />
+          <View style={styles.keyWaitingCopy}>
+            <Text style={styles.keyWaitingTitle}>Secure chat is being set up</Text>
+            <Text style={styles.keyWaitingText}>
+              Waiting for {otherParticipantName || 'the other participant'} to open this chat for the first time. Then you can send private messages.
+            </Text>
+          </View>
         </View>
       )}
 
@@ -471,6 +480,12 @@ export default function RealtimeChat({
           multiline
           maxLength={500}
           editable={!otherKeyMissing}
+          onKeyPress={(event) => {
+            if (shouldSendMessageOnWebEnter(event)) {
+              event.preventDefault();
+              void handleSendMessage();
+            }
+          }}
         />
         <TouchableOpacity
           style={[styles.sendButton, (!newMessage.trim() || sending || otherKeyMissing) && styles.sendButtonDisabled]}
@@ -761,18 +776,27 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   keyWaitingBanner: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: isDark ? 'rgba(255, 152, 0, 0.1)' : 'rgba(255, 152, 0, 0.08)',
     borderTopWidth: 1,
     borderTopColor: isDark ? '#333333' : '#f0f0f0',
   },
-  keyWaitingText: {
+  keyWaitingCopy: {
     flex: 1,
+  },
+  keyWaitingTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text?.primary || (isDark ? '#ffffff' : '#000000'),
+    marginBottom: 2,
+  },
+  keyWaitingText: {
     fontSize: 12,
     color: colors.text?.secondary || (isDark ? '#cccccc' : '#666666'),
+    lineHeight: 17,
   },
   inputContainer: {
     flexDirection: 'row',

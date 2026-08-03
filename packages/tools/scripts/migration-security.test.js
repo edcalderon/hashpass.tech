@@ -67,6 +67,10 @@ const adminPassAndUserListingMigrationPath = path.join(
   root,
   'db/migrations/V041__admin_pass_and_user_listing.sql',
 );
+const meetingChatRealtimeMigrationPath = path.join(
+  root,
+  'db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql',
+);
 const targetBslBootstrapPath = path.join(
   root,
   'packages/tools/scripts/sql/target-bsl-bootstrap.sql',
@@ -171,6 +175,16 @@ describe('event-scoped meeting lifecycle migration contract', () => {
       'db/migrations/V034__align_notifications_with_auth_identities.sql',
       'db/migrations/V038__consume_pass_entitlements_for_meeting_requests.sql',
       'db/migrations/V040__fix_event_admin_scope_and_slot_overloads.sql',
+      'db/migrations/V043__meeting_slot_conflict_resolution.sql',
+      'db/migrations/V044__default_free_speaker_slots.sql',
+      'db/migrations/V045__drop_stale_meeting_lifecycle_overloads.sql',
+      'db/migrations/V046__fix_meeting_identity_fk_targets.sql',
+      'db/migrations/V047__fix_agenda_status_confirmed_value.sql',
+      'db/migrations/V048__fix_speaker_id_type_comparison.sql',
+      'db/migrations/V049__drop_dead_accepted_status_literal.sql',
+      'db/migrations/V050__resolve_agenda_status_registry_id.sql',
+      'db/migrations/V051__fix_meetings_speaker_id_write_type_divergence.sql',
+      'db/migrations/V052__notification_levels_and_critical_delivery.sql',
     ]);
   });
 
@@ -220,6 +234,22 @@ describe('event-scoped meeting lifecycle migration contract', () => {
 
     expect(migration).toMatch(/p_event_id\s+text/i);
     expect(migration).toMatch(/duration_minutes BETWEEN 5 AND 30/i);
+  });
+});
+
+describe('encrypted meeting chat realtime contract', () => {
+  it('publishes chat messages and provides participants’ public profile avatars', () => {
+    const migration = fs.readFileSync(meetingChatRealtimeMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('meeting-chat-e2e');
+    expect(config.groups['meeting-chat-e2e']).toContain(
+      'db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql',
+    );
+    expect(migration).toMatch(/ALTER PUBLICATION supabase_realtime ADD TABLE public\.meeting_chat_messages/i);
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.get_meeting_chat_participant/i);
+    expect(migration).toMatch(/profile\.avatar_url/i);
+    expect(migration).toMatch(/speaker\.imageurl/i);
   });
 });
 
