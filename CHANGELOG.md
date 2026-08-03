@@ -1,3 +1,12 @@
+## [1.8.313](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.312...v1.8.313) (2026-08-03)
+
+
+### Bug Fixes
+
+* **mobile:** configure Lingui version translations ([e0f10ea](https://github.com/hashpass-tech/hashpass.tech/commit/e0f10ea15dd80faa09365c5632d5a607f7e09744))
+### Release Highlights
+- brand event emails with regional BSL logos; configure Lingui version translations; publish email branding assets reliably
+
 ## [1.8.312](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.309...v1.8.312) (2026-08-03)
 
 

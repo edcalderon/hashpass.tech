@@ -22,36 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608030119, // Updated to current timestamp
+  buildNumber: 202608030359, // Updated to current timestamp
   releaseDate: '2026-08-03',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'notify both meeting participants by email',
-    'organize notifications by inbox',
-    'add emoji chat composer',
-    'end-to-end encrypted persistent meeting chat, replacing broadcast-only messaging',
-    'escalate critical notifications by email',
-    'per-day tabs in the meeting slot picker',
-    'refresh notifications and email meeting updates'
+    'brand event emails with regional BSL logos'
   ],
   bugfixes: [
-    'refresh chats from live broadcasts',
-    'submit web chat messages on enter',
-    'deliver meeting chats in realtime',
-    'show current speaker request status',
-    'safely sync transactional mail settings',
-    'deliver meeting emails reliably',
-    'support critical email template previews',
-    'use dedicated transactional email provider',
-    'retain meeting request identity resolution'
+    'configure Lingui version translations',
+    'publish email branding assets reliably'
   ],
   breakingChanges: [],
-  notes: 'notify both meeting participants by email; organize notifications by inbox; add emoji chat composer; end-to-end encrypted persistent meeting chat, replacing broadcast-only messaging; escalate critical notifications by email; per-day tabs in the meeting slot picker; refresh notifications and email meeting updates; refresh chats from live broadcasts; submit web chat messages on enter; deliver meeting chats in realtime; show current speaker request status; safely sync transactional mail settings; deliver meeting emails reliably; support critical email template previews; use dedicated transactional email provider; retain meeting request identity resolution'
+  notes: 'brand event emails with regional BSL logos; configure Lingui version translations; publish email branding assets reliably'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.313': {
+    version: '1.8.313',
+    buildNumber: 202608030359,
+    releaseDate: '2026-08-03',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'brand event emails with regional BSL logos'
+    ],
+    bugfixes: [
+      'configure Lingui version translations',
+      'publish email branding assets reliably'
+    ],
+    breakingChanges: [],
+    notes: 'brand event emails with regional BSL logos; configure Lingui version translations; publish email branding assets reliably'
+  },
   '1.8.312': {
     version: '1.8.312',
     buildNumber: 202608030119,
