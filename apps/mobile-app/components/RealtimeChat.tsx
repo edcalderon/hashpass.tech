@@ -16,6 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRealtimeChat, type ChatMessage } from '../hooks/useRealtimeChat';
 import { useChatScroll } from '../hooks/useChatScroll';
 import { shouldSendMessageOnWebEnter } from '../lib/chat-input';
+import { getChatEmojiCategory, CHAT_EMOJI_CATEGORIES, type ChatEmojiCategoryId } from '../lib/chat-emojis';
 import SpeakerAvatar from './SpeakerAvatar';
 import { supabase } from '../lib/supabase';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -35,8 +36,6 @@ const generateUserAvatarUrl = (name: string): string => {
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 };
 
-const CHAT_EMOJIS = ['👍', '😊', '🎉', '❤️', '👋', '😂', '🔥', '👏'];
-
 export default function RealtimeChat({
   roomName,
   username,
@@ -53,6 +52,7 @@ export default function RealtimeChat({
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiCategory, setEmojiCategory] = useState<ChatEmojiCategoryId>('reactions');
   const messageInputRef = useRef<TextInput>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [otherUserAvatar, setOtherUserAvatar] = useState<string | null>(null);
@@ -497,17 +497,36 @@ export default function RealtimeChat({
       {/* Message Input */}
       {showEmojiPicker && (
         <View style={styles.emojiPicker} accessibilityLabel="Emoji picker">
-          {CHAT_EMOJIS.map((emoji) => (
-            <TouchableOpacity
-              key={emoji}
-              style={styles.emojiOption}
-              onPress={() => appendEmoji(emoji)}
-              accessibilityRole="button"
-              accessibilityLabel={`Add ${emoji} emoji`}
-            >
-              <Text style={styles.emojiText}>{emoji}</Text>
-            </TouchableOpacity>
-          ))}
+          <View style={styles.emojiCategoryRow}>
+            {CHAT_EMOJI_CATEGORIES.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[styles.emojiCategoryButton, emojiCategory === category.id && styles.emojiCategoryButtonActive]}
+                onPress={() => setEmojiCategory(category.id)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: emojiCategory === category.id }}
+                accessibilityLabel={category.label}
+              >
+                <Text style={styles.emojiCategoryIcon}>{category.icon}</Text>
+                <Text style={[styles.emojiCategoryLabel, emojiCategory === category.id && styles.emojiCategoryLabelActive]}>
+                  {category.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.emojiGrid}>
+            {getChatEmojiCategory(emojiCategory).emojis.map((emoji) => (
+              <TouchableOpacity
+                key={emoji}
+                style={styles.emojiOption}
+                onPress={() => appendEmoji(emoji)}
+                accessibilityRole="button"
+                accessibilityLabel={`Add ${emoji} emoji`}
+              >
+                <Text style={styles.emojiText}>{emoji}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       )}
       <View style={styles.inputContainer}>
@@ -868,15 +887,44 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     backgroundColor: colors.background?.paper || (isDark ? '#1a1a1a' : '#ffffff'),
   },
   emojiPicker: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 4,
     borderTopWidth: 1,
     borderTopColor: isDark ? '#333333' : '#f0f0f0',
     backgroundColor: colors.background?.paper || (isDark ? '#1a1a1a' : '#ffffff'),
+  },
+  emojiCategoryRow: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 8,
+  },
+  emojiCategoryButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 42,
+    paddingVertical: 4,
+    borderRadius: 9,
+  },
+  emojiCategoryButtonActive: {
+    backgroundColor: isDark ? '#283449' : '#e8f0fe',
+  },
+  emojiCategoryIcon: {
+    fontSize: 16,
+  },
+  emojiCategoryLabel: {
+    color: colors.text.secondary,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  emojiCategoryLabelActive: {
+    color: colors.primary || '#007AFF',
+  },
+  emojiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
   },
   emojiOption: {
     width: 40,
