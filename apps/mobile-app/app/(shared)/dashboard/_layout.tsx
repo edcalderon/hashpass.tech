@@ -544,15 +544,16 @@ function CustomDrawerContent({
     setIsSigningOut(true);
     closeDrawer();
 
-    try {
-      // Wait only for durable local cache removal. Remote token revocation and
-      // native Google cleanup continue in the background, but the next app
-      // launch cannot resurrect this user from SecureStore or AsyncStorage.
-      await signOut({ waitForRemoteCleanup: false });
-    } catch (error) {
+    // signOut() synchronously publishes SIGNED_OUT before its first await, so
+    // every auth guard sees the logged-out state right away. Do not make this
+    // route change wait for SecureStore/AsyncStorage cleanup: either store can
+    // be slow or hang after the session was already removed from app state,
+    // which used to leave the user looking at a live dashboard until a refresh.
+    // The hook continues clearing persistent/native/provider sessions in the
+    // background and logs any cleanup failure without restoring the session.
+    void signOut({ waitForRemoteCleanup: false }).catch((error: unknown) => {
       console.error('Error signing out:', error);
-    }
-
+    });
     router.replace('/(shared)/auth' as any);
   };
 
