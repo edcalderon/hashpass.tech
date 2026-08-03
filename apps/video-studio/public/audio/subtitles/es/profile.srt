@@ -1,0 +1,8 @@
+1
+00:00:00,100 --> 00:00:03,275
+Mantén actualizado tu perfil de asistente.
+
+2
+00:00:03,225 --> 00:00:08,712
+Añade tu cargo y empresa para que organizadores y ponentes sepan con quién se reúnen.
+

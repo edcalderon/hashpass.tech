@@ -1,0 +1,8 @@
+1
+00:00:00,100 --> 00:00:03,000
+Keep your attendee profile up to date.
+
+2
+00:00:02,950 --> 00:00:08,212
+Add your role and company so organizers and speakers know exactly who they're meeting.
+

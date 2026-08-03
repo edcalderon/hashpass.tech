@@ -1,0 +1,8 @@
+1
+00:00:00,100 --> 00:00:02,400
+Getting started is easy.
+
+2
+00:00:02,350 --> 00:00:08,462
+Sign in instantly with a one-time code by email, or continue with Google in a single tap.
+

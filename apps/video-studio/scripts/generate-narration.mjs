@@ -15,12 +15,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const NARRATION_JSON = join(ROOT, 'src/content/narration.json');
 const OUT_DIR = join(ROOT, 'public/audio/narration');
+const SUBS_OUT_DIR = join(ROOT, 'public/audio/subtitles');
 
 // Voices picked for a warm, professional product-demo tone; es-ES to match
 // the --locale es-ES used when recording the Spanish app footage.
 const VOICES = {
   en: 'en-US-AriaNeural',
-  es: 'es-ES-ElviraNeural',
+  es: 'es-ES-AlvaroNeural', // male
 };
 
 function main() {
@@ -42,15 +43,21 @@ function main() {
     if (!lines) continue;
 
     const langDir = join(OUT_DIR, lang);
+    const subsLangDir = join(SUBS_OUT_DIR, lang);
     mkdirSync(langDir, {recursive: true});
+    mkdirSync(subsLangDir, {recursive: true});
 
     for (const {slug, text} of lines) {
       const outPath = join(langDir, `${slug}.mp3`);
+      const subPath = join(subsLangDir, `${slug}.srt`);
       console.log(`[${lang}] ${slug}: "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}"`);
 
+      // --write-subtitles gives real sentence-level cues with accurate
+      // timing (not word-by-word flashing) — used to build the below-video
+      // captions for viewers watching without sound.
       const result = spawnSync(
         'edge-tts',
-        ['--voice', voice, '--text', text, '--write-media', outPath],
+        ['--voice', voice, '--text', text, '--write-media', outPath, '--write-subtitles', subPath],
         {stdio: 'inherit'},
       );
 
@@ -62,6 +69,8 @@ function main() {
   }
 
   console.log(`\nNarration audio written to ${OUT_DIR}`);
+  console.log(`Per-clip subtitles written to ${SUBS_OUT_DIR}`);
+  console.log('Run scripts/generate-captions.mjs next to build the merged, video-timeline-relative caption data.');
 }
 
 main();

@@ -1016,5 +1016,24 @@
       "speakers": "Palestrantes",
       "location": "Local"
     }
+  },
+  "demo": {
+    "eyebrow": "Veja em ação",
+    "title": "Veja o HASHPASS em ação",
+    "subtitle": "Um passeio completo pelo aplicativo, tela por tela — da página inicial até a instalação do HASHPASS na sua tela inicial.",
+    "appTutorialTab": "Tour pelo aplicativo",
+    "bslShowcaseTab": "Demonstração do BSL On Tour",
+    "withNarration": "Com narração",
+    "silent": "Sem som",
+    "chapters": "Capítulos",
+    "appTutorialSubtitle": "Início, cadastro, painel, perfil, eventos e instalação do aplicativo",
+    "bslShowcaseSubtitle": "A plataforma de eventos em ação no Blockchain Summit Latam",
+    "chapterLanding": "Página inicial",
+    "chapterSignUp": "Cadastro — código OTP ou link mágico",
+    "chapterDashboard": "Entrar no painel",
+    "chapterProfile": "Atualizar perfil do participante",
+    "chapterEvents": "Explorar eventos e palestrantes",
+    "chapterPwa": "Instalar como aplicativo",
+    "webOnlyNotice": "Esta demonstração está disponível na web em hashpass.tech/demo."
   }
 }

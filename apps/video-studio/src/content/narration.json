@@ -2,7 +2,7 @@
   "en": [
     {
       "slug": "landing",
-      "text": "Welcome to HASHPASS — your digital event platform. Discover events, connect with your community, and manage your passes, all in one place."
+      "text": "Welcome to Hash Pass — your digital event platform. Discover events, connect with your community, and manage your passes, all in one place."
     },
     {
       "slug": "sign-up",
@@ -10,7 +10,7 @@
     },
     {
       "slug": "dashboard",
-      "text": "Once you're in, your dashboard puts everything front and center — explore every event on the HASHPASS network and jump straight into your passes."
+      "text": "Once you're in, your dashboard puts everything front and center — explore every event on the Hash Pass network and jump straight into your passes."
     },
     {
       "slug": "profile",
@@ -22,25 +22,25 @@
     },
     {
       "slug": "pwa",
-      "text": "And you can carry HASHPASS with you everywhere. Install it straight from your browser to launch it like a native app from your home screen, or find HASHPASS on the Google Play Store."
+      "text": "And you can carry Hash Pass with you everywhere. Install it straight from your browser to launch it like a native app from your home screen, or find Hash Pass on the Google Play Store."
     }
   ],
   "es": [
     {
       "slug": "landing",
-      "text": "Bienvenido a HASHPASS, tu plataforma digital de eventos. Descubre eventos, conecta con tu comunidad y gestiona tus pases, todo en un solo lugar."
+      "text": "Bienvenido a Hash Pass, tu plataforma digital de eventos. Descubre eventos, conecta con tu comunidad y gestiona tus pases, todo en un solo lugar."
     },
     {
       "slug": "sign-up",
-      "text": "Empezar es muy fácil. Inicia sesión al instante con un código de un solo uso por correo, o continúa con Google con un solo toque."
+      "text": "Empezar es muy fácil. Inicia sesión al instante con un código por correo, o continúa con Google con un toque."
     },
     {
       "slug": "dashboard",
-      "text": "Una vez dentro, tu panel lo pone todo al alcance de la mano: explora cada evento en la red de HASHPASS y accede directo a tus pases."
+      "text": "Una vez dentro, tu panel lo pone todo al alcance de la mano: explora cada evento en la red de Hash Pass y accede directo a tus pases."
     },
     {
       "slug": "profile",
-      "text": "Mantén actualizado tu perfil de asistente. Añade tu cargo y empresa para que organizadores y ponentes sepan exactamente con quién se reúnen."
+      "text": "Mantén actualizado tu perfil de asistente. Añade tu cargo y empresa para que organizadores y ponentes sepan con quién se reúnen."
     },
     {
       "slug": "events",
@@ -48,7 +48,7 @@
     },
     {
       "slug": "pwa",
-      "text": "Y puedes llevar HASHPASS contigo a todas partes. Instálala directamente desde tu navegador para abrirla como una app nativa desde tu pantalla de inicio, o búscala en Google Play."
+      "text": "Y puedes llevar Hash Pass contigo a todas partes. Instálala directamente desde tu navegador para abrirla como una app nativa desde tu pantalla de inicio, o búscala en Google Play."
     }
   ]
 }

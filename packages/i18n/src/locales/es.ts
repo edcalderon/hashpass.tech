@@ -129,23 +129,4 @@ export const es = {
     pt: 'Português',
     de: 'Deutsch',
   },
-  demo: {
-    eyebrow: 'Míralo en acción',
-    title: 'Mira HASHPASS en acción',
-    subtitle:
-      'Un recorrido completo por la app, pantalla a pantalla — desde la página de inicio hasta instalar HASHPASS en tu pantalla de inicio.',
-    withNarration: 'Con narración',
-    silent: 'Sin narración',
-    chapters: 'Capítulos',
-    appTutorialTitle: 'Recorrido por la app',
-    appTutorialSubtitle: 'Inicio, registro, panel, perfil, eventos e instalación de la app',
-    bslShowcaseTitle: 'Muestra de BSL On Tour',
-    bslShowcaseSubtitle: 'La plataforma de eventos en acción en Blockchain Summit Latam',
-    chapterLanding: 'Página de inicio',
-    chapterSignUp: 'Registro — OTP o enlace mágico',
-    chapterDashboard: 'Entrar al panel',
-    chapterProfile: 'Actualizar perfil de asistente',
-    chapterEvents: 'Explorar eventos y oradores',
-    chapterPwa: 'Instalar como app',
-  },
 } as const;

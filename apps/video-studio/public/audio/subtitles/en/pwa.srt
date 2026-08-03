@@ -1,0 +1,8 @@
+1
+00:00:00,100 --> 00:00:03,362
+And you can carry Hash Pass with you everywhere.
+
+2
+00:00:03,312 --> 00:00:11,025
+Install it straight from your browser to launch it like a native app from your home screen, or find Hash Pass on the Google Play Store.
+

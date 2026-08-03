@@ -1335,5 +1335,24 @@
     "next": "다음",
     "of": "중",
     "page": "페이지"
+  },
+  "demo": {
+    "eyebrow": "실제로 확인해보세요",
+    "title": "HASHPASS를 실제로 확인해보세요",
+    "subtitle": "홈 화면부터 HASHPASS를 홈 화면에 설치하기까지, 화면별로 앱을 자세히 살펴보세요.",
+    "appTutorialTab": "앱 둘러보기",
+    "bslShowcaseTab": "BSL On Tour 소개",
+    "withNarration": "내레이션 포함",
+    "silent": "무음",
+    "chapters": "챕터",
+    "appTutorialSubtitle": "홈, 가입, 대시보드, 프로필, 이벤트, 앱 설치",
+    "bslShowcaseSubtitle": "블록체인 서밋 라탐에서 실제로 작동하는 이벤트 플랫폼",
+    "chapterLanding": "홈 화면",
+    "chapterSignUp": "가입 — OTP 또는 매직 링크",
+    "chapterDashboard": "대시보드 열기",
+    "chapterProfile": "참가자 프로필 업데이트",
+    "chapterEvents": "이벤트 및 발표자 둘러보기",
+    "chapterPwa": "앱으로 설치하기",
+    "webOnlyNotice": "이 데모는 hashpass.tech/demo 웹사이트에서 확인할 수 있습니다."
   }
 }

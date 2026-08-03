@@ -1,0 +1,4 @@
+1
+00:00:00,100 --> 00:00:08,400
+Una vez dentro, tu panel lo pone todo al alcance de la mano: explora cada evento en la red de Hash Pass y accede directo a tus pases.
+
