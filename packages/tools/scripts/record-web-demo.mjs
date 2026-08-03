@@ -81,7 +81,7 @@ async function main() {
   if (!args.url || !args.name) {
     console.error(
       'Usage: record-web-demo.mjs --url <url> --name <output-name> [--flow <path>] [--duration ms] ' +
-        '[--headed] [--channel chrome] [--use-state <path>] [--save-state <path>]',
+        '[--headed] [--channel chrome] [--use-state <path>] [--save-state <path>] [--skip-warmup]',
     );
     process.exit(1);
   }
@@ -100,6 +100,23 @@ async function main() {
   if (useStatePath && !existsSync(useStatePath)) {
     console.error(`--use-state file not found: ${useStatePath}`);
     process.exit(1);
+  }
+
+  // Recording starts the moment the context/page exist, before goto even
+  // begins — so a cold first navigation (page not yet fetched/hydrated)
+  // bakes several seconds of blank/loading screen into the start of every
+  // clip. Warm the browser's HTTP cache with a throwaway, unrecorded
+  // navigation first so the real (recorded) navigation paints near-instantly.
+  if (!args['skip-warmup']) {
+    console.log('Warming up (pre-fetching the page so the recording starts on real content)...');
+    const warmupContext = await browser.newContext({viewport: {width, height}, storageState: useStatePath});
+    const warmupPage = await warmupContext.newPage();
+    try {
+      await warmupPage.goto(args.url, {waitUntil: 'networkidle', timeout: 30000});
+    } catch (error) {
+      console.warn('Warmup navigation failed (continuing anyway):', error.message);
+    }
+    await warmupContext.close();
   }
 
   const context = await browser.newContext({

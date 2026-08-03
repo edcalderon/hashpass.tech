@@ -69,6 +69,38 @@ Every composition boots and previews correctly with **zero recordings** —
 whose `src` isn't set yet, so the studio is usable from the first `pnpm
 install` and fills in incrementally as real footage lands.
 
+### Status
+
+- **BslShowcase**: event landing + agenda-browse are real recordings; the
+  meeting-request clip is still a placeholder (needs a real authenticated
+  session — see the auth caveat below).
+- **AppTutorial**: landing, OTP/magic-link sign-in form, dashboard entry, and
+  browse-events-&-speakers are real recordings; attendee-profile update is
+  still a placeholder — it needs a *real* logged-in user (see below), the
+  dev auth bypass alone renders a permanent loading skeleton for it.
+
+### Real captures need a real session — what an agent can and can't record
+
+Two of the app's core flows can't be completed unattended:
+
+- **OTP sign-in** needs a real inbox to read the 6-digit code.
+- **Google sign-in** is actively blocked for automated browsers by Google's
+  own bot detection, headed or not.
+
+For screens that just need *any* logged-in state to render (not
+account-specific data), `apps/mobile-app/lib/auth/dev-bypass.ts` is a
+dev-only escape hatch: set `EXPO_PUBLIC_DEV_AUTH_BYPASS=true` in the mobile
+app's env (propagates from the root `.env`) and restart the dev server —
+gated so it's structurally inert outside `__DEV__` (never affects a release
+build). It skips the redirect-to-`/auth` guard, but `user`/`dbUserId` stay
+`null`. That was enough for the dashboard-explore and events/speakers
+recordings (public data, doesn't depend on the signed-in user), but the
+**attendee profile screen has nothing to show without a real user object**
+— it renders a permanent skeleton loader under the bypass, not a bug, just
+nothing to record. Get a real one via `flows/auth-otp.mjs` or
+`flows/auth-google.mjs` with `--save-state`, then reuse that session with
+`--use-state` for the profile (and any other account-specific) recording.
+
 ### Clips auto-size to the real recording length
 
 Real captures vary a lot — a landing-page scroll is ~10s, an OTP or Google
@@ -98,14 +130,26 @@ check the printed port). Use the Playwright recorder in
 `packages/tools/scripts/record-web-demo.mjs`, exposed as `record:web`.
 `--name` may include the flow's subfolder, e.g. `landing/hero`.
 
-| Step | Composition slot | Flow script | Notes |
+| Step | Composition slot | Flow script | Status / notes |
 |---|---|---|---|
-| Landing page | `Landing page` | `flows/landing.mjs` | No auth needed. |
-| Sign in — email OTP | `Sign in with email OTP` | `flows/auth-otp.mjs` | Needs `AUTH_DEMO_EMAIL` + `--headed` — pauses for you to read the real code from the inbox. |
-| Sign in — Google | `Sign in with Google` | `flows/auth-google.mjs` | Needs `--headed --channel chrome` — Google actively blocks plain automated Chromium, this is a manual capture the script just kicks off. |
-| Find speakers | `Find speakers` | `flows/dashboard-find-speakers.mjs` | Needs an authenticated session (see below). |
-| Request a meeting | `Request a meeting` | `flows/dashboard-request-meeting.mjs` | Needs an authenticated session; stops before the final submit unless `CONFIRM_SEND=1`. |
-| BSL On Tour showcase | `bslShowcaseClips` entries | `flows/bsl-showcase.mjs` | Point `--url` at a real event, e.g. `/events/chile2026/home`. |
+| Landing page | `AppTutorial` #1 | `flows/landing.mjs` | ✅ Recorded. No auth needed. |
+| Sign up — OTP or magic link | `AppTutorial` #2 | *(none — plain `--duration`)* | ✅ Recorded (form only, code not entered — see auth caveat above). |
+| Enter the dashboard | `AppTutorial` #3 | `flows/dashboard-explore.mjs` | ✅ Recorded via the dev auth bypass. |
+| Update attendee profile | `AppTutorial` #4 | `flows/dashboard-profile.mjs` | ⬜ Placeholder — needs a real session (dev bypass renders an empty skeleton here, see above). |
+| Browse events & speakers | `AppTutorial` #5 | `flows/dashboard-events-speakers.mjs` | ✅ Recorded via the dev auth bypass. |
+| Google sign-in (not in the core steps yet) | — | `flows/auth-google.mjs` | Needs `--headed --channel chrome`; Google blocks automated Chromium regardless, treat as a manual capture the script just kicks off. |
+| BSL event landing + agenda | `BslShowcase` #1–2 | `flows/bsl-showcase.mjs` (#1), plain `--duration` (#2) | ✅ Recorded. No auth needed. |
+| BSL meeting request & schedule | `BslShowcase` #3 | `flows/dashboard-find-speakers.mjs`, `flows/dashboard-request-meeting.mjs` | ⬜ Placeholder — needs a real session; `dashboard-request-meeting.mjs` stops before the final submit unless `CONFIRM_SEND=1`. |
+
+Recordings above that finished at page-load-blank for the first several
+seconds (client-side data fetching, not asset loading — a warmup
+pre-navigation didn't fix it) were kept and trimmed with `trimStartSeconds`
+on the matching `ClipSlot` in `clips.ts` instead of re-recorded — check a
+new capture's early frames (`ffmpeg -i file.webm -ss 00:00:0N -frames:v 1
+-update 1 out.png` for a few values of `N`) before assuming it needs a
+trim; Metro serves from its warm bundle cache on repeat recordings against
+an already-running dev server, so later captures of the *same route* in a
+session often paint much faster than the first.
 
 ```bash
 # Landing — no auth, no flags needed:
@@ -122,12 +166,21 @@ pnpm --filter hashpass-video-studio record:web -- \
   --flow apps/video-studio/flows/auth-otp.mjs \
   --save-state apps/video-studio/.recording-state/otp-session.json
 
-# Dashboard flows — reuse that session instead of logging in again:
+# Account-specific screens (profile, meeting request) — reuse that real
+# session instead of logging in again:
 pnpm --filter hashpass-video-studio record:web -- \
-  --url http://localhost:8081/events/chile2026/networking \
-  --name dashboard/speakers/find-speakers \
-  --flow apps/video-studio/flows/dashboard-find-speakers.mjs \
+  --url http://localhost:8081/dashboard/profile \
+  --name dashboard/profile \
+  --flow apps/video-studio/flows/dashboard-profile.mjs \
   --use-state apps/video-studio/.recording-state/otp-session.json
+
+# Screens that just need *any* logged-in state (not real account data) can
+# skip all of the above via the dev-only auth bypass instead — see the auth
+# caveat section. No --use-state needed:
+pnpm --filter hashpass-video-studio record:web -- \
+  --url http://localhost:8081/dashboard/explore \
+  --name dashboard/explore \
+  --flow apps/video-studio/flows/dashboard-explore.mjs
 ```
 
 - Omit `--flow` for a quick single-screen capture — it just loads `--url`

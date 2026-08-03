@@ -35,7 +35,8 @@ export async function layoutClips(clips: ClipSlot[]): Promise<ClipLayout> {
     if (clip.src) {
       try {
         const metadata = await getVideoMetadata(staticFile(`recordings/${clip.src}`));
-        durationInFrames = Math.max(1, Math.round(metadata.durationInSeconds * FPS));
+        const trimmedSeconds = metadata.durationInSeconds - (clip.trimStartSeconds ?? 0);
+        durationInFrames = Math.max(1, Math.round(trimmedSeconds * FPS));
       } catch (error) {
         console.warn(`Could not read duration for recordings/${clip.src}, using placeholder length.`, error);
       }

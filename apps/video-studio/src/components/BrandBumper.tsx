@@ -30,8 +30,12 @@ export const BrandBumper: React.FC<BrandBumperProps> = ({title, subtitle, varian
         opacity: fadeOut,
       }}
     >
+      {/* Despite the filename, -black.svg is the complete asset with the
+          near-white (#fcfcfc) fills meant for dark backgrounds — -white.svg
+          is missing an entire group (11 paths vs. 33) and renders low-contrast
+          slate-gray on black. */}
       <Img
-        src={staticFile('brand/logo-full-hashpass-white.svg')}
+        src={staticFile('brand/logo-full-hashpass-black.svg')}
         style={{width: 520, transform: `scale(${logoScale})`}}
       />
       <div
