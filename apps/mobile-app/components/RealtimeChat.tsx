@@ -942,7 +942,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 6,
   },
   emojiButtonActive: {
     backgroundColor: isDark ? '#283449' : '#e8f0fe',
@@ -954,7 +954,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginRight: 8,
+    marginRight: 6,
     fontSize: 16,
     color: colors.text?.primary || (isDark ? '#ffffff' : '#000000'),
     backgroundColor: colors.background?.default || (isDark ? '#000000' : '#ffffff'),
