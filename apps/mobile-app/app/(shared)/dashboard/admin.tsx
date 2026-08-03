@@ -41,6 +41,7 @@ type TabType =
   | "pass-codes"
   | "qr-scanner"
   | "meetings"
+  | "emails"
   | "roles"
   | "speaker-roles";
 
@@ -205,6 +206,13 @@ export default function AdminPanel() {
     null,
   );
   const [selectedSlot, setSelectedSlot] = useState<string>("");
+  const [randomMatchCount, setRandomMatchCount] = useState("5");
+  const [campaignSubject, setCampaignSubject] = useState("");
+  const [campaignHeading, setCampaignHeading] = useState("");
+  const [campaignMessage, setCampaignMessage] = useState("");
+  const [campaignAudience, setCampaignAudience] = useState("attendees");
+  const [campaignPreview, setCampaignPreview] = useState<any>(null);
+  const [campaignSending, setCampaignSending] = useState(false);
 
   // Staff & Roles State
   const [eventRoles, setEventRoles] = useState<EventRoleRow[]>([]);
@@ -1043,6 +1051,29 @@ export default function AdminPanel() {
     }
   };
 
+  const generateRandomMatches = async () => {
+    setMeetingsLoading(true);
+    try {
+      const result = await apiClient.post('/admin/matchmaking', { eventId: selectedEventId, mode: 'random', count: Number(randomMatchCount) || 1 }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
+      const summary = (result.data as any).data;
+      Alert.alert('Matches generated', `${summary.created.length} matches created; ${summary.failures.length} skipped. Notifications and email delivery were triggered.`);
+      await loadMeetingRequests();
+    } catch (error: any) { Alert.alert('Unable to generate matches', error.message); }
+    finally { setMeetingsLoading(false); }
+  };
+
+  const submitCampaign = async (preview: boolean) => {
+    setCampaignSending(true);
+    try {
+      const result = await apiClient.post('/admin/communications', { eventId: selectedEventId, audience: campaignAudience, subject: campaignSubject, heading: campaignHeading, message: campaignMessage, preview }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
+      if (preview) setCampaignPreview((result.data as any).data);
+      else Alert.alert('Campaign complete', `${(result.data as any).data.sent} sent, ${(result.data as any).data.failed} failed.`);
+    } catch (error: any) { Alert.alert('Campaign error', error.message); }
+    finally { setCampaignSending(false); }
+  };
+
   const getAvailableSlots = async (speakerId: string) => {
     try {
       const { data, error } = await supabase.rpc(
@@ -1250,6 +1281,10 @@ export default function AdminPanel() {
               Meetings
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity style={[styles.tab, activeTab === "emails" && styles.tabActive]} onPress={() => setActiveTab("emails")}>
+            <MaterialIcons name="email" size={20} color={activeTab === "emails" ? "#fff" : colors.text.secondary} />
+            <Text numberOfLines={1} style={[styles.tabText, activeTab === "emails" && styles.tabTextActive]}>Emails</Text>
+          </TouchableOpacity>
           {canManagePasses && (
             <TouchableOpacity
               style={[styles.tab, activeTab === "roles" && styles.tabActive]}
@@ -1384,8 +1419,13 @@ export default function AdminPanel() {
               setShowMatchModal(true);
             }}
             onRefresh={loadMeetingRequests}
+            randomMatchCount={randomMatchCount}
+            onRandomMatchCountChange={setRandomMatchCount}
+            onRandomMatch={generateRandomMatches}
           />
         )}
+
+        {activeTab === "emails" && <CommunicationsTab styles={styles} colors={colors} subject={campaignSubject} heading={campaignHeading} message={campaignMessage} audience={campaignAudience} preview={campaignPreview} sending={campaignSending} onSubject={setCampaignSubject} onHeading={setCampaignHeading} onMessage={setCampaignMessage} onAudience={setCampaignAudience} onPreview={() => submitCampaign(true)} onSend={() => submitCampaign(false)} />}
 
         {activeTab === "roles" && (
           <RolesTab
@@ -2644,9 +2684,20 @@ function MeetingMatcherTab({
   onSearchChange,
   onMatchPress,
   onRefresh,
+  randomMatchCount,
+  onRandomMatchCountChange,
+  onRandomMatch,
 }: any) {
   return (
     <View style={styles.tabContent}>
+      <View style={styles.requestCard}>
+        <Text style={styles.requestTitle}>Admin matchmaking</Text>
+        <Text style={styles.requestInfo}>Create random attendee-to-speaker matches, or use a pending request below for a manual match. Both participants receive an in-app notification and email.</Text>
+        <TextInput style={styles.searchInput} keyboardType="number-pad" value={randomMatchCount} onChangeText={onRandomMatchCountChange} placeholder="Number of random matches" placeholderTextColor={colors.text.secondary} />
+        <TouchableOpacity style={styles.matchButton} onPress={onRandomMatch} disabled={loading}>
+          <MaterialIcons name="shuffle" size={20} color="#fff" /><Text style={styles.matchButtonText}>Generate random matches</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.searchContainer}>
         <MaterialIcons name="search" size={20} color={colors.text.secondary} />
         <TextInput
@@ -2703,6 +2754,21 @@ function MeetingMatcherTab({
       )}
     </View>
   );
+}
+
+function CommunicationsTab({ styles, colors, subject, heading, message, audience, preview, sending, onSubject, onHeading, onMessage, onAudience, onPreview, onSend }: any) {
+  return <View style={styles.tabContent}>
+    <Text style={styles.requestTitle}>Email communications</Text>
+    <Text style={styles.requestInfo}>Compose a global event announcement, preview the exact content, then deliver it to attendees, speakers, or everyone. Delivery outcomes are retained in the audit log.</Text>
+    <View style={{ flexDirection: 'row', gap: 8, marginVertical: 12 }}>
+      {['attendees', 'speakers', 'all'].map(value => <TouchableOpacity key={value} style={[styles.slotOption, audience === value && styles.slotOptionActive]} onPress={() => onAudience(value)}><Text style={[styles.slotOptionText, audience === value && styles.slotOptionTextActive]}>{value}</Text></TouchableOpacity>)}
+    </View>
+    <TextInput style={styles.searchInput} value={subject} onChangeText={onSubject} placeholder="Email subject" placeholderTextColor={colors.text.secondary} />
+    <TextInput style={styles.searchInput} value={heading} onChangeText={onHeading} placeholder="Email heading" placeholderTextColor={colors.text.secondary} />
+    <TextInput style={[styles.searchInput, { minHeight: 140, textAlignVertical: 'top' }]} value={message} onChangeText={onMessage} multiline placeholder="Message" placeholderTextColor={colors.text.secondary} />
+    {preview && <View style={styles.requestCard}><Text style={styles.requestSubtitle}>Preview: {preview.subject}</Text><Text style={styles.requestTitle}>{preview.heading}</Text><Text style={styles.requestInfo}>{preview.message}</Text></View>}
+    <View style={{ flexDirection: 'row', gap: 12 }}><TouchableOpacity style={[styles.matchButton, { flex: 1 }]} onPress={onPreview} disabled={sending}><Text style={styles.matchButtonText}>Preview</Text></TouchableOpacity><TouchableOpacity style={[styles.matchButton, { flex: 1 }]} onPress={onSend} disabled={sending}><MaterialIcons name="send" size={18} color="#fff"/><Text style={styles.matchButtonText}>{sending ? 'Sending…' : 'Send campaign'}</Text></TouchableOpacity></View>
+  </View>;
 }
 
 // Match Meeting Modal Component

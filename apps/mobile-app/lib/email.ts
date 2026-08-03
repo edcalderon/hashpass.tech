@@ -556,6 +556,30 @@ const escapeEmailHtml = (value: unknown) => String(value ?? '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
+export interface AdminCampaignEmail {
+  to: string;
+  subject: string;
+  heading: string;
+  message: string;
+  actionUrl?: string;
+  actionLabel?: string;
+}
+
+/** Delivers an administrator-authored event message using a safe branded shell. */
+export async function sendAdminCampaignEmail(details: AdminCampaignEmail) {
+  if (!emailEnabled || !transporter) return { success: false, error: 'Email service is not configured' };
+  const action = details.actionUrl
+    ? `<p style="margin:28px 0 0"><a href="${escapeEmailHtml(details.actionUrl)}" style="display:inline-block;padding:13px 20px;border-radius:8px;background:#007aff;color:#fff;text-decoration:none;font-weight:700">${escapeEmailHtml(details.actionLabel || 'Open HASHPASS')}</a></p>`
+    : '';
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f7fa;font-family:Arial,sans-serif"><table width="100%" role="presentation"><tr><td align="center" style="padding:32px 12px"><table width="640" role="presentation" style="max-width:640px;width:100%"><tr><td style="padding:26px 28px;background:#101828;color:#fff;border-radius:18px 18px 0 0"><strong style="font-size:22px">HASHPASS</strong></td></tr><tr><td style="padding:30px 28px;background:#fff"><h1 style="margin:0 0 16px;font-size:26px;color:#1d2939">${escapeEmailHtml(details.heading)}</h1><div style="white-space:pre-wrap;color:#475467;font-size:16px;line-height:24px">${escapeEmailHtml(details.message)}</div>${action}</td></tr><tr><td style="padding:20px 28px;background:#f9fafb;color:#667085;font-size:12px;border-radius:0 0 18px 18px">This event message was sent by a HASHPASS administrator.</td></tr></table></td></tr></table></body></html>`;
+  try {
+    const info = await transporter.sendMail({ from: `HASHPASS <${smtpFrom}>`, to: details.to, subject: details.subject, html, text: `${details.heading}\n\n${details.message}\n\n${details.actionUrl || ''}` });
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    return { success: false, error: error?.message || 'Email delivery failed' };
+  }
+}
+
 /** Sends a localized operational email without affecting the meeting workflow on delivery failure. */
 export async function sendMeetingNotificationEmail(
   details: MeetingEmailDetails,
