@@ -1,8 +1,9 @@
 import { rateLimitOk } from '@/lib/bsl/rateLimit';
-import { sendAdminCampaignEmail } from '@/lib/email';
+import { renderAdminCampaignEmail, sendAdminCampaignEmail, type AdminCampaignTemplate } from '@/lib/email';
 import { authorizeEventAdmin } from '@/lib/server/event-admin';
 
 const audiences = new Set(['attendees', 'speakers', 'all', 'selected']);
+const templates = new Set<AdminCampaignTemplate>(['branded', 'raw']);
 const clean = (value: unknown, max: number) => String(value || '').trim().slice(0, max);
 
 export async function GET(request: Request) {
@@ -22,9 +23,13 @@ export async function POST(request: Request) {
   if ('response' in auth) return auth.response;
   const subject = clean(body.subject, 160), heading = clean(body.heading, 160), message = clean(body.message, 10000);
   const audience = clean(body.audience, 20);
+  const template: AdminCampaignTemplate = templates.has(body.template) ? body.template : 'branded';
   if (!subject || !heading || !message || !audiences.has(audience)) return Response.json({ error: 'Subject, heading, message and a valid audience are required' }, { status: 400 });
-  const preview = { subject, heading, message, actionUrl: clean(body.actionUrl, 1000), actionLabel: clean(body.actionLabel, 80) };
-  if (body.preview === true) return Response.json({ data: preview });
+  const draft = { subject, heading, message, actionUrl: clean(body.actionUrl, 1000), actionLabel: clean(body.actionLabel, 80), eventId, template };
+  if (body.preview === true) {
+    const rendered = renderAdminCampaignEmail(draft);
+    return Response.json({ data: { ...draft, html: rendered.html, text: rendered.text } });
+  }
 
   let recipients: { id: string; email: string }[] = [];
   if (audience === 'speakers' || audience === 'all') {
@@ -39,7 +44,7 @@ export async function POST(request: Request) {
     for (const id of [...new Set(Array.isArray(body.userIds) ? body.userIds.slice(0, 100) : [])] as string[]) { const u = await auth.supabase.auth.admin.getUserById(id); if (u.data.user?.email) recipients.push({ id, email: u.data.user.email }); }
   }
   recipients = [...new Map(recipients.map(r => [r.id, r])).values()];
-  const results = await Promise.all(recipients.map(async recipient => ({ recipient, result: await sendAdminCampaignEmail({ to: recipient.email, ...preview }) })));
-  await auth.supabase.from('admin_email_deliveries').insert(results.map(({ recipient, result }) => ({ event_id: eventId, sent_by: auth.userId, recipient_user_id: recipient.id, recipient_email: recipient.email, audience, subject, heading, message, status: result.success ? 'sent' : 'failed', provider_message_id: result.messageId || null, error: result.error || null })));
+  const results = await Promise.all(recipients.map(async recipient => ({ recipient, result: await sendAdminCampaignEmail({ to: recipient.email, ...draft }) })));
+  await auth.supabase.from('admin_email_deliveries').insert(results.map(({ recipient, result }) => ({ event_id: eventId, sent_by: auth.userId, recipient_user_id: recipient.id, recipient_email: recipient.email, audience, subject, heading, message, template, status: result.success ? 'sent' : 'failed', provider_message_id: result.messageId || null, error: result.error || null })));
   return Response.json({ data: { sent: results.filter(r => r.result.success).length, failed: results.filter(r => !r.result.success).length, total: results.length } });
 }

@@ -35,6 +35,7 @@ import {
   EventRoleGrant,
 } from "../../../lib/event-admin-access";
 import UnifiedSearchAndFilter from "../../../components/UnifiedSearchAndFilter";
+import EmailPreviewFrame from "../../../components/EmailPreviewFrame";
 
 type TabType =
   | "passes"
@@ -211,6 +212,7 @@ export default function AdminPanel() {
   const [campaignHeading, setCampaignHeading] = useState("");
   const [campaignMessage, setCampaignMessage] = useState("");
   const [campaignAudience, setCampaignAudience] = useState("attendees");
+  const [campaignTemplate, setCampaignTemplate] = useState<"branded" | "raw">("branded");
   const [campaignPreview, setCampaignPreview] = useState<any>(null);
   const [campaignSending, setCampaignSending] = useState(false);
 
@@ -1066,7 +1068,7 @@ export default function AdminPanel() {
   const submitCampaign = async (preview: boolean) => {
     setCampaignSending(true);
     try {
-      const result = await apiClient.post('/admin/communications', { eventId: selectedEventId, audience: campaignAudience, subject: campaignSubject, heading: campaignHeading, message: campaignMessage, preview }, { skipEventSegment: true });
+      const result = await apiClient.post('/admin/communications', { eventId: selectedEventId, audience: campaignAudience, subject: campaignSubject, heading: campaignHeading, message: campaignMessage, template: campaignTemplate, preview }, { skipEventSegment: true });
       if (!result.success) throw new Error(result.error);
       if (preview) setCampaignPreview((result.data as any).data);
       else Alert.alert('Campaign complete', `${(result.data as any).data.sent} sent, ${(result.data as any).data.failed} failed.`);
@@ -1425,7 +1427,7 @@ export default function AdminPanel() {
           />
         )}
 
-        {activeTab === "emails" && <CommunicationsTab styles={styles} colors={colors} subject={campaignSubject} heading={campaignHeading} message={campaignMessage} audience={campaignAudience} preview={campaignPreview} sending={campaignSending} onSubject={setCampaignSubject} onHeading={setCampaignHeading} onMessage={setCampaignMessage} onAudience={setCampaignAudience} onPreview={() => submitCampaign(true)} onSend={() => submitCampaign(false)} />}
+        {activeTab === "emails" && <CommunicationsTab styles={styles} colors={colors} subject={campaignSubject} heading={campaignHeading} message={campaignMessage} audience={campaignAudience} template={campaignTemplate} preview={campaignPreview} sending={campaignSending} onSubject={setCampaignSubject} onHeading={setCampaignHeading} onMessage={setCampaignMessage} onAudience={setCampaignAudience} onTemplate={setCampaignTemplate} onPreview={() => submitCampaign(true)} onSend={() => submitCampaign(false)} />}
 
         {activeTab === "roles" && (
           <RolesTab
@@ -2756,17 +2758,49 @@ function MeetingMatcherTab({
   );
 }
 
-function CommunicationsTab({ styles, colors, subject, heading, message, audience, preview, sending, onSubject, onHeading, onMessage, onAudience, onPreview, onSend }: any) {
+function CommunicationsTab({ styles, colors, subject, heading, message, audience, template, preview, sending, onSubject, onHeading, onMessage, onAudience, onTemplate, onPreview, onSend }: any) {
   return <View style={styles.tabContent}>
     <Text style={styles.requestTitle}>Email communications</Text>
-    <Text style={styles.requestInfo}>Compose a global event announcement, preview the exact content, then deliver it to attendees, speakers, or everyone. Delivery outcomes are retained in the audit log.</Text>
-    <View style={{ flexDirection: 'row', gap: 8, marginVertical: 12 }}>
+    <Text style={styles.requestInfo}>Compose a global event announcement, preview the exact rendered email, then deliver it to attendees, speakers, or everyone. Delivery outcomes are retained in the audit log.</Text>
+
+    <Text style={styles.campaignFieldLabel}>Audience</Text>
+    <View style={styles.campaignPillRow}>
       {['attendees', 'speakers', 'all'].map(value => <TouchableOpacity key={value} style={[styles.slotOption, audience === value && styles.slotOptionActive]} onPress={() => onAudience(value)}><Text style={[styles.slotOptionText, audience === value && styles.slotOptionTextActive]}>{value}</Text></TouchableOpacity>)}
     </View>
+
+    <Text style={styles.campaignFieldLabel}>Template</Text>
+    <View style={styles.campaignPillRow}>
+      <TouchableOpacity style={[styles.slotOption, template === 'branded' && styles.slotOptionActive]} onPress={() => onTemplate('branded')}>
+        <Text style={[styles.slotOptionText, template === 'branded' && styles.slotOptionTextActive]}>HASHPASS template</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={[styles.slotOption, template === 'raw' && styles.slotOptionActive]} onPress={() => onTemplate('raw')}>
+        <Text style={[styles.slotOptionText, template === 'raw' && styles.slotOptionTextActive]}>Raw (unbranded)</Text>
+      </TouchableOpacity>
+    </View>
+    <Text style={styles.requestInfo}>
+      {template === 'branded'
+        ? 'Uses the same branded header, card layout, and footer as HASHPASS notification emails, including event branding when applicable.'
+        : 'Sends a minimal, unbranded shell — useful for quick internal or plain-text-style messages.'}
+    </Text>
+
     <TextInput style={styles.searchInput} value={subject} onChangeText={onSubject} placeholder="Email subject" placeholderTextColor={colors.text.secondary} />
     <TextInput style={styles.searchInput} value={heading} onChangeText={onHeading} placeholder="Email heading" placeholderTextColor={colors.text.secondary} />
     <TextInput style={[styles.searchInput, { minHeight: 140, textAlignVertical: 'top' }]} value={message} onChangeText={onMessage} multiline placeholder="Message" placeholderTextColor={colors.text.secondary} />
-    {preview && <View style={styles.requestCard}><Text style={styles.requestSubtitle}>Preview: {preview.subject}</Text><Text style={styles.requestTitle}>{preview.heading}</Text><Text style={styles.requestInfo}>{preview.message}</Text></View>}
+
+    {preview && (
+      <View style={styles.requestCard}>
+        <Text style={styles.requestSubtitle}>Rendered preview · {preview.template === 'raw' ? 'raw' : 'HASHPASS template'}</Text>
+        <Text style={styles.requestTitle}>{preview.subject}</Text>
+        {preview.html ? (
+          <View style={styles.emailPreviewWrap}>
+            <EmailPreviewFrame html={preview.html} />
+          </View>
+        ) : (
+          <Text style={styles.requestInfo}>{preview.message}</Text>
+        )}
+      </View>
+    )}
+
     <View style={{ flexDirection: 'row', gap: 12 }}><TouchableOpacity style={[styles.matchButton, { flex: 1 }]} onPress={onPreview} disabled={sending}><Text style={styles.matchButtonText}>Preview</Text></TouchableOpacity><TouchableOpacity style={[styles.matchButton, { flex: 1 }]} onPress={onSend} disabled={sending}><MaterialIcons name="send" size={18} color="#fff"/><Text style={styles.matchButtonText}>{sending ? 'Sending…' : 'Send campaign'}</Text></TouchableOpacity></View>
   </View>;
 }
@@ -3307,6 +3341,28 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     slotOptionTextActive: {
       color: "#fff",
+    },
+    campaignFieldLabel: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.text.secondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+      marginBottom: 8,
+      marginTop: 4,
+    },
+    campaignPillRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 12,
+    },
+    emailPreviewWrap: {
+      marginTop: 12,
+      borderRadius: 12,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.divider,
     },
     emptyText: {
       textAlign: "center",
