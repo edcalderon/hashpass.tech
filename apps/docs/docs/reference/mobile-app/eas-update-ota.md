@@ -230,6 +230,28 @@ This gives support both device-level traceability and a safe recovery path.
 Sentry receives the update ID, runtime version, channel, and embedded-launch
 state on every native launch for rollout/adoption monitoring.
 
+### Version drawer checks: Play Store versus OTA
+
+The mobile Version drawer exposes two independent checks:
+
+- **Check for Play Store updates** calls `/api/config/versions` and compares
+  the installed native version with `nativeVersion`. A newer native artifact
+  opens the platform store URL (using the Android `market://` link first and
+  the web URL as a fallback). This check does not treat an OTA-only
+  `currentVersion` as a store release.
+- **Check for OTA updates** asks `useOtaUpdate` to check the active EAS
+  channel. It reports checking, downloading, ready-to-restart, and retryable
+  error states. A downloaded update is not applied while the user is in the
+  middle of a flow; choose **Restart** or relaunch the app to apply it.
+
+The Version Information details view also reports whether the running bundle
+is embedded or OTA-fetched, its runtime version, channel, update ID, and
+publish time. When diagnosing a stale screen, first run the relevant check,
+then fully close and reopen the app before comparing the displayed build.
+The Play Store check and OTA check can legitimately report different states:
+the former concerns a native binary and the latter concerns the JavaScript
+bundle loaded by an already-installed binary.
+
 ```bash
 cd apps/mobile-app
 npm run ota:publish       # -> production channel, last commit message
