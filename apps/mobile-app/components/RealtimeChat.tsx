@@ -681,7 +681,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 6,
+    marginRight: 8,
   },
   statusText: {
     fontSize: 12,
@@ -818,7 +818,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   ownMessageTime: {
     textAlign: 'right',
-    marginRight: 6,
+    marginRight: 8,
   },
   incomingMessageTime: {
     textAlign: 'left',
