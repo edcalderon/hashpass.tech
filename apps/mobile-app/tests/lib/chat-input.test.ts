@@ -21,6 +21,10 @@ describe('shouldSendMessageOnWebEnter', () => {
     expect(shouldSendMessageOnWebEnter({ nativeEvent: { key: 'Enter', isComposing: true } })).toBe(false);
   });
 
+  it('also accepts the browser event shape forwarded by React Native Web', () => {
+    expect(shouldSendMessageOnWebEnter({ key: 'Enter' })).toBe(true);
+  });
+
   it('does not alter native keyboard behaviour', () => {
     mockPlatform.OS = 'ios';
     expect(shouldSendMessageOnWebEnter({ nativeEvent: { key: 'Enter' } })).toBe(false);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -50,6 +50,7 @@ export default function RealtimeChat({
 
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const messageInputRef = useRef<TextInput>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [otherUserAvatar, setOtherUserAvatar] = useState<string | null>(null);
   const [presence, setPresence] = useState<{ [userId: string]: { isOnline: boolean; lastSeen: Date } }>({});
@@ -161,7 +162,7 @@ export default function RealtimeChat({
 
   // The hook already dedupes (history load + realtime + optimistic send
   // all merge into one state) and returns messages in chronological order.
-  const allMessages = messages;
+  const allMessages: ChatMessage[] = messages;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -473,6 +474,7 @@ export default function RealtimeChat({
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.textInput}
+          ref={messageInputRef}
           value={newMessage}
           onChangeText={setNewMessage}
           placeholder="Type your message..."
@@ -480,11 +482,20 @@ export default function RealtimeChat({
           multiline
           maxLength={500}
           editable={!otherKeyMissing}
+          // React Native Web normally forwards Enter through onKeyPress.
+          // onSubmitEditing is retained as a browser fallback for multiline
+          // inputs where key events are intercepted by a host container.
+          blurOnSubmit={Platform.OS === 'web'}
           onKeyPress={(event) => {
             if (shouldSendMessageOnWebEnter(event)) {
               event.preventDefault();
               void handleSendMessage();
             }
+          }}
+          onSubmitEditing={() => {
+            if (Platform.OS !== 'web') return;
+            void handleSendMessage();
+            setTimeout(() => messageInputRef.current?.focus(), 0);
           }}
         />
         <TouchableOpacity

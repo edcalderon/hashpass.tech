@@ -1,7 +1,10 @@
 import { Platform } from 'react-native';
 
 type ChatInputKeyEvent = {
-  nativeEvent: { key?: string; shiftKey?: boolean; isComposing?: boolean };
+  key?: string;
+  shiftKey?: boolean;
+  isComposing?: boolean;
+  nativeEvent?: { key?: string; shiftKey?: boolean; isComposing?: boolean };
 };
 
 /**
@@ -9,9 +12,10 @@ type ChatInputKeyEvent = {
  * Keep that behaviour for Shift+Enter (and IME composition), but use plain
  * Enter as the familiar web-chat send shortcut.
  */
-export const shouldSendMessageOnWebEnter = (event: ChatInputKeyEvent) => (
-  Platform.OS === 'web'
-  && event.nativeEvent.key === 'Enter'
-  && !event.nativeEvent.shiftKey
-  && !event.nativeEvent.isComposing
-);
+export const shouldSendMessageOnWebEnter = (event: ChatInputKeyEvent) => {
+  const key = event.nativeEvent?.key ?? event.key;
+  const shiftKey = event.nativeEvent?.shiftKey ?? event.shiftKey;
+  const isComposing = event.nativeEvent?.isComposing ?? event.isComposing;
+
+  return Platform.OS === 'web' && key === 'Enter' && !shiftKey && !isComposing;
+};
