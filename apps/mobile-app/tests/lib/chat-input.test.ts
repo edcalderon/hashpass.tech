@@ -25,6 +25,11 @@ describe('shouldSendMessageOnWebEnter', () => {
     expect(shouldSendMessageOnWebEnter({ key: 'Enter' })).toBe(true);
   });
 
+  it('only sends the standard Enter key, preserving every other key for text and emoji input', () => {
+    expect(shouldSendMessageOnWebEnter({ key: '😊' })).toBe(false);
+    expect(shouldSendMessageOnWebEnter({ key: 'a' })).toBe(false);
+  });
+
   it('does not alter native keyboard behaviour', () => {
     mockPlatform.OS = 'ios';
     expect(shouldSendMessageOnWebEnter({ nativeEvent: { key: 'Enter' } })).toBe(false);

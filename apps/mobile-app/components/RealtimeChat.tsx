@@ -35,6 +35,8 @@ const generateUserAvatarUrl = (name: string): string => {
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 };
 
+const CHAT_EMOJIS = ['👍', '😊', '🎉', '❤️', '👋', '😂', '🔥', '👏'];
+
 export default function RealtimeChat({
   roomName,
   username,
@@ -50,6 +52,7 @@ export default function RealtimeChat({
 
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messageInputRef = useRef<TextInput>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [otherUserAvatar, setOtherUserAvatar] = useState<string | null>(null);
@@ -223,11 +226,32 @@ export default function RealtimeChat({
     try {
       await sendMessage(newMessage.trim(), 'text');
       setNewMessage('');
+      setShowEmojiPicker(false);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
       setSending(false);
     }
+  };
+
+  const handleWebEnter = (event: any) => {
+    if (
+      event.defaultPrevented
+      || event.isDefaultPrevented?.()
+      || !shouldSendMessageOnWebEnter(event)
+    ) return;
+
+    // Capture phase runs before React Native Web's textarea handler, so the
+    // browser never inserts a newline for a plain Enter key.
+    event.preventDefault?.();
+    event.stopPropagation?.();
+    void handleSendMessage();
+  };
+
+  const appendEmoji = (emoji: string) => {
+    setNewMessage((message) => `${message}${emoji}`);
+    setShowEmojiPicker(false);
+    setTimeout(() => messageInputRef.current?.focus(), 0);
   };
 
   const formatTime = (timestamp: string) => {
@@ -471,7 +495,35 @@ export default function RealtimeChat({
       )}
 
       {/* Message Input */}
+      {showEmojiPicker && (
+        <View style={styles.emojiPicker} accessibilityLabel="Emoji picker">
+          {CHAT_EMOJIS.map((emoji) => (
+            <TouchableOpacity
+              key={emoji}
+              style={styles.emojiOption}
+              onPress={() => appendEmoji(emoji)}
+              accessibilityRole="button"
+              accessibilityLabel={`Add ${emoji} emoji`}
+            >
+              <Text style={styles.emojiText}>{emoji}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
       <View style={styles.inputContainer}>
+        <TouchableOpacity
+          style={[styles.emojiButton, showEmojiPicker && styles.emojiButtonActive]}
+          onPress={() => setShowEmojiPicker((visible) => !visible)}
+          disabled={otherKeyMissing}
+          accessibilityRole="button"
+          accessibilityLabel="Add emoji"
+        >
+          <MaterialIcons
+            name="emoji-emotions"
+            size={22}
+            color={otherKeyMissing ? (isDark ? '#666666' : '#aaaaaa') : (colors.primary || '#007AFF')}
+          />
+        </TouchableOpacity>
         <TextInput
           style={styles.textInput}
           ref={messageInputRef}
@@ -487,16 +539,14 @@ export default function RealtimeChat({
           // inputs where key events are intercepted by a host container.
           blurOnSubmit={Platform.OS === 'web'}
           onKeyPress={(event) => {
-            if (shouldSendMessageOnWebEnter(event)) {
-              event.preventDefault();
-              void handleSendMessage();
-            }
+            handleWebEnter(event);
           }}
           onSubmitEditing={() => {
             if (Platform.OS !== 'web') return;
             void handleSendMessage();
             setTimeout(() => messageInputRef.current?.focus(), 0);
           }}
+          {...(Platform.OS === 'web' ? { onKeyDownCapture: handleWebEnter } : {})}
         />
         <TouchableOpacity
           style={[styles.sendButton, (!newMessage.trim() || sending || otherKeyMissing) && styles.sendButtonDisabled]}
@@ -817,6 +867,38 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderTopColor: isDark ? '#333333' : '#f0f0f0',
     backgroundColor: colors.background?.paper || (isDark ? '#1a1a1a' : '#ffffff'),
   },
+  emojiPicker: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    borderTopWidth: 1,
+    borderTopColor: isDark ? '#333333' : '#f0f0f0',
+    backgroundColor: colors.background?.paper || (isDark ? '#1a1a1a' : '#ffffff'),
+  },
+  emojiOption: {
+    width: 40,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  emojiText: {
+    fontSize: 21,
+  },
+  emojiButton: {
+    width: 40,
+    height: 44,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  emojiButtonActive: {
+    backgroundColor: isDark ? '#283449' : '#e8f0fe',
+  },
   textInput: {
     flex: 1,
     borderWidth: 1,
@@ -824,7 +906,7 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginRight: 12,
+    marginRight: 8,
     fontSize: 16,
     color: colors.text?.primary || (isDark ? '#ffffff' : '#000000'),
     backgroundColor: colors.background?.default || (isDark ? '#000000' : '#ffffff'),
