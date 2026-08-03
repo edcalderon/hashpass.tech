@@ -14,16 +14,6 @@ apps/web-app/.next/
 apps/web-app/.vercel/
 apps/web-app/out/
 lambda-deployment.zip
-
-# Remotion video studio: rendered output and raw screen recordings are
-# large binaries that don't belong in git — keep only the folder structure.
-apps/video-studio/out/
-apps/video-studio/public/recordings/**
-!apps/video-studio/public/recordings/**/
-!apps/video-studio/public/recordings/**/.gitkeep
-# Playwright storage-state files capture live session cookies/tokens for
-# recording authenticated flows (dashboard, speakers, meetings) — never commit.
-apps/video-studio/.recording-state/
 package-lock.json
 
 # Expo

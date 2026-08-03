@@ -4,11 +4,9 @@ set -euo pipefail
 MOBILE_PID=""
 CLUB_PID=""
 DOCS_PID=""
-VIDEO_STUDIO_PID=""
 declare -a RESERVED_PORTS=()
 CLUB_PORT="${CLUB_PORT:-3000}"
 DOCS_PORT="${DOCS_PORT:-3101}"
-VIDEO_STUDIO_PORT="${VIDEO_STUDIO_PORT:-3105}"
 # Keep the Expo web app on 8081 so it stays out of the club app's 3000 slot.
 MOBILE_PORT="${MOBILE_PORT:-8081}"
 NODE_MAX_OLD_SPACE_SIZE="${NODE_MAX_OLD_SPACE_SIZE:-12288}"
@@ -109,11 +107,6 @@ stop_background_apps() {
     kill "${DOCS_PID}" >/dev/null 2>&1 || true
     wait "${DOCS_PID}" >/dev/null 2>&1 || true
   fi
-
-  if [[ -n "${VIDEO_STUDIO_PID}" ]]; then
-    kill "${VIDEO_STUDIO_PID}" >/dev/null 2>&1 || true
-    wait "${VIDEO_STUDIO_PID}" >/dev/null 2>&1 || true
-  fi
 }
 
 cleanup() {
@@ -136,9 +129,8 @@ trap cleanup EXIT INT TERM
 MOBILE_PORT="$(claim_port "mobile app" "${MOBILE_PORT}")"
 CLUB_PORT="$(claim_port "club web app" "${CLUB_PORT}")"
 DOCS_PORT="$(claim_port "docs app" "${DOCS_PORT}")"
-VIDEO_STUDIO_PORT="$(claim_port "video studio" "${VIDEO_STUDIO_PORT}")"
 
-echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}, video-studio=${VIDEO_STUDIO_PORT}"
+echo "Using ports: mobile=${MOBILE_PORT}, club=${CLUB_PORT}, docs=${DOCS_PORT}"
 
 echo "Starting Directus (detached)..."
 pnpm --filter hashpass-directus run up
@@ -157,13 +149,6 @@ echo "Starting docs app on port ${DOCS_PORT}..."
 ) &
 DOCS_PID=$!
 
-echo "Starting video studio (Remotion) on port ${VIDEO_STUDIO_PORT}..."
-(
-  cd apps/video-studio
-  pnpm exec remotion studio --port "${VIDEO_STUDIO_PORT}"
-) &
-VIDEO_STUDIO_PID=$!
-
 wait_for_directus
 
 echo "Starting mobile app..."
@@ -175,7 +160,7 @@ echo "Starting mobile app..."
 MOBILE_PID=$!
 
 set +e
-wait -n "$MOBILE_PID" "$CLUB_PID" "$DOCS_PID" "$VIDEO_STUDIO_PID"
+wait -n "$MOBILE_PID" "$CLUB_PID" "$DOCS_PID"
 status=$?
 set -e
 
