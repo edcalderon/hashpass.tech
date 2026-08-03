@@ -33,7 +33,7 @@ export default function PrivacyTermsModal({ visible, type, onClose }: PrivacyTer
       return (
         <>
           <Text style={styles.lastUpdated} selectable={false}>
-            {t({ id: 'privacy.lastUpdated', message: 'Last Updated: November 4, 2025' })}
+            {t({ id: 'privacy.lastUpdated', message: 'Last Updated: July 8, 2026' })}
           </Text>
 
           <Text style={styles.sectionTitle} selectable={false}>
@@ -102,7 +102,7 @@ export default function PrivacyTermsModal({ visible, type, onClose }: PrivacyTer
           <Text style={styles.sectionText} selectable={false}>
             {t({ 
               id: 'privacy.cookies.text', 
-              message: 'We use cookies and similar tracking technologies to track activity on our Service and hold certain information. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.' 
+              message: 'We use cookies and similar tracking technologies to maintain your session, remember preferences, and analyze usage of our Service. Cookies we use include:\n\n• Essential cookies: required for authentication and security (session tokens, CSRF tokens).\n• Analytics cookies: set by Google Analytics to measure how visitors interact with our website (see Section 8).\n\nYou can instruct your browser to refuse all cookies or to notify you when a cookie is being sent. Disabling essential cookies will prevent you from signing in.'
             })}
           </Text>
 
@@ -365,4 +365,3 @@ const getStyles = (isDark: boolean, colors: any, screenWidth: number) => StyleSh
     marginBottom: 16,
   },
 });
-

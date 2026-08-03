@@ -78,18 +78,18 @@ export default function VersionDetailsModal({
   };
 
   const getStatusText = (): string => {
-    if (!status) return 'Unknown';
+    if (!status) return t({ id: 'version.statusUnknown', message: 'Status unknown' });
     switch (status) {
       case 'healthy':
-        return 'All systems operational';
+        return t({ id: 'version.statusHealthy', message: 'All systems operational' });
       case 'degraded':
-        return 'Some systems experiencing issues';
+        return t({ id: 'version.statusDegraded', message: 'Some systems experiencing issues' });
       case 'unhealthy':
-        return 'Systems experiencing problems';
+        return t({ id: 'version.statusUnhealthy', message: 'Systems experiencing problems' });
       case 'checking':
-        return 'Checking system status...';
+        return t({ id: 'version.statusChecking', message: 'Checking system status…' });
       default:
-        return 'Status unknown';
+        return t({ id: 'version.statusUnknown', message: 'Status unknown' });
     }
   };
 
@@ -276,7 +276,7 @@ export default function VersionDetailsModal({
             {versionHistory.length > HISTORY_ITEMS_PER_PAGE && (
               <View style={styles.paginationContainer}>
                 <Text style={styles.paginationSummary}>
-                  {`Showing ${historyStartIndex}-${historyEndIndex} of ${versionHistory.length}`}
+                  {t({ id: 'version.showing', message: 'Showing' })} {historyStartIndex}-{historyEndIndex} {t({ id: 'version.of', message: 'of' })} {versionHistory.length}
                 </Text>
                 <View style={styles.paginationControls}>
                   <TouchableOpacity
@@ -298,12 +298,12 @@ export default function VersionDetailsModal({
                         safeHistoryPage === 1 && styles.paginationButtonTextDisabled,
                       ]}
                     >
-                      Previous
+                      {t({ id: 'version.previous', message: 'Previous' })}
                     </Text>
                   </TouchableOpacity>
 
                   <Text style={styles.paginationPageText}>
-                    {`Page ${safeHistoryPage} of ${totalHistoryPages}`}
+                    {t({ id: 'version.page', message: 'Page' })} {safeHistoryPage} {t({ id: 'version.of', message: 'of' })} {totalHistoryPages}
                   </Text>
 
                   <TouchableOpacity
@@ -320,7 +320,7 @@ export default function VersionDetailsModal({
                         safeHistoryPage === totalHistoryPages && styles.paginationButtonTextDisabled,
                       ]}
                     >
-                      Next
+                      {t({ id: 'version.next', message: 'Next' })}
                     </Text>
                     <MaterialIcons
                       name="chevron-right"

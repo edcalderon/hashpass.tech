@@ -6,6 +6,8 @@ import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
 import { compareAppVersions } from '../config/runtime-version';
 import packageJson from '../package.json';
+import { useOtaUpdate } from '../hooks/useOtaUpdate';
+import { useTranslation } from '../i18n/i18n';
 
 type StatusState = 'healthy' | 'degraded' | 'unhealthy' | 'checking' | 'unknown';
 type UpdateCheckState = 'idle' | 'checking' | 'up-to-date' | 'update-available' | 'error';
@@ -57,10 +59,12 @@ export default function VersionQuickSheet({
 }: VersionQuickSheetProps) {
   const { isDark, colors } = useTheme();
   const styles = getStyles(isDark, colors);
+  const { t } = useTranslation('version');
   const [updateCheckState, setUpdateCheckState] = useState<UpdateCheckState>('idle');
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
   const [storeUrl, setStoreUrl] = useState<string | null>(null);
   const [storeWebUrl, setStoreWebUrl] = useState<string | null>(null);
+  const otaUpdate = useOtaUpdate();
 
   const versionInfo = versionService.getCurrentVersion();
   const badgeInfo = versionService.getVersionBadgeInfo(versionInfo.releaseType);
@@ -80,7 +84,10 @@ export default function VersionQuickSheet({
         return;
       }
       const data = response.data;
-      const latest: string | null = data.currentVersion ?? null;
+      // Only a version with a native Play artifact belongs in this flow.
+      // currentVersion can be newer because of web/OTA-only releases and must
+      // never send users to the store for a binary that does not exist there.
+      const latest: string | null = data.nativeVersion ?? data.currentVersion ?? null;
       setAvailableVersion(latest);
       const url: string | null = Platform.OS === 'android'
         ? (data.androidStoreUrl ?? null)
@@ -139,7 +146,7 @@ export default function VersionQuickSheet({
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.headerRow}>
-              <Text style={styles.title}>Version</Text>
+              <Text style={styles.title}>{t('quickTitle', 'Version')}</Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                 <MaterialIcons name="close" size={20} color={colors.text.secondary} />
               </TouchableOpacity>
@@ -152,15 +159,15 @@ export default function VersionQuickSheet({
               </View>
             </View>
 
-            <Text style={styles.releaseText}>Released: {versionInfo.releaseDate}</Text>
+            <Text style={styles.releaseText}>{t('released', 'Released:')} {versionInfo.releaseDate}</Text>
             <Text style={styles.notesText}>{versionInfo.notes}</Text>
 
             <View style={styles.buildInfoCard}>
-              <Text style={styles.buildLabel}>Build Information</Text>
-              <Text style={styles.buildText}>Build ID: {buildInfo.buildId}</Text>
-              <Text style={styles.buildText}>Build Time: {new Date(buildInfo.buildTime).toLocaleString()}</Text>
+              <Text style={styles.buildLabel}>{t('buildInfoShort', 'Build Information')}</Text>
+              <Text style={styles.buildText}>{t('buildId', 'Build ID:')} {buildInfo.buildId}</Text>
+              <Text style={styles.buildText}>{t('buildTime', 'Build Time:')} {new Date(buildInfo.buildTime).toLocaleString()}</Text>
               <View style={styles.buildRow}>
-                <Text style={styles.buildText}>Git Commit: </Text>
+                <Text style={styles.buildText}>{t('gitCommit', 'Git Commit:')} </Text>
                 {buildInfo.gitCommitUrl && buildInfo.gitCommit !== 'unknown' ? (
                   <TouchableOpacity
                     onPress={() => Linking.openURL(buildInfo.gitCommitUrl)}
@@ -173,7 +180,7 @@ export default function VersionQuickSheet({
                   <Text style={styles.buildText}>{buildInfo.gitCommit}</Text>
                 )}
               </View>
-              <Text style={styles.buildText}>Branch: {buildInfo.gitBranch}</Text>
+              <Text style={styles.buildText}>{t('branch', 'Branch:')} {buildInfo.gitBranch}</Text>
             </View>
 
             {showStatusIndicator && status && (
@@ -185,21 +192,21 @@ export default function VersionQuickSheet({
 
             <View style={styles.updateCheckSection}>
               {updateCheckState === 'idle' && (
-                <TouchableOpacity style={styles.checkButton} onPress={handleCheckForUpdates}>
+                <TouchableOpacity style={styles.checkButton} onPress={handleCheckForUpdates} accessibilityLabel="Check for Play Store updates">
                   <MaterialIcons name="system-update" size={16} color={colors.primary} />
-                  <Text style={styles.checkButtonText}>Check for updates</Text>
+                  <Text style={styles.checkButtonText}>{t('playCheck', 'Check for Play Store updates')}</Text>
                 </TouchableOpacity>
               )}
               {updateCheckState === 'checking' && (
                 <View style={styles.checkResult}>
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.checkResultText}>Checking for updates...</Text>
+                  <Text style={styles.checkResultText}>{t('playChecking', 'Checking for Play Store updates…')}</Text>
                 </View>
               )}
               {updateCheckState === 'up-to-date' && (
                 <View style={styles.checkResult}>
                   <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
-                  <Text style={[styles.checkResultText, { color: '#4CAF50' }]}>You're on the latest version</Text>
+                  <Text style={[styles.checkResultText, { color: '#4CAF50' }]}>{t('playUpToDate', "You're on the latest native version")}</Text>
                 </View>
               )}
               {updateCheckState === 'update-available' && (
@@ -207,28 +214,71 @@ export default function VersionQuickSheet({
                   <View style={styles.checkResult}>
                     <MaterialIcons name="new-releases" size={16} color={colors.primary} />
                     <Text style={[styles.checkResultText, { color: colors.primary }]}>
-                      v{availableVersion} is available
+                      {t('playAvailable', 'v{version} is available', { version: availableVersion })}
                     </Text>
                   </View>
                   <TouchableOpacity style={styles.updateNowButton} onPress={handleOpenStore}>
-                    <Text style={styles.updateNowText}>Update</Text>
+                    <Text style={styles.updateNowText}>{t('playUpdate', 'Update')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
               {updateCheckState === 'error' && (
                 <TouchableOpacity style={styles.checkResult} onPress={handleCheckForUpdates}>
                   <MaterialIcons name="error-outline" size={16} color={colors.text.secondary} />
-                  <Text style={styles.checkResultText}>Couldn't check — tap to retry</Text>
+                  <Text style={styles.checkResultText}>{t('playError', "Couldn't check — tap to retry")}</Text>
                 </TouchableOpacity>
               )}
             </View>
 
+            {Platform.OS !== 'web' && otaUpdate.state !== 'unsupported' && (
+              <View style={styles.otaSection}>
+                <Text style={styles.otaSectionTitle}>{t('otaSection', 'In-app updates')}</Text>
+                {otaUpdate.state === 'checking' || otaUpdate.state === 'downloading' ? (
+                  <View style={styles.checkResult}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={styles.checkResultText}>
+                      {otaUpdate.state === 'downloading' ? t('otaDownloading', 'Downloading OTA update…') : t('otaChecking', 'Checking for OTA updates…')}
+                    </Text>
+                  </View>
+                ) : otaUpdate.state === 'ready' ? (
+                  <View style={styles.updateAvailableRow}>
+                    <View style={styles.checkResult}>
+                      <MaterialIcons name="cloud-download" size={16} color="#4CAF50" />
+                      <Text style={[styles.checkResultText, { color: '#4CAF50' }]}>{t('otaReady', 'OTA update ready')}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.updateNowButton}
+                      accessibilityLabel="Restart to apply OTA update"
+                      onPress={() => { void otaUpdate.applyUpdate(); }}
+                    >
+                      <Text style={styles.updateNowText}>{t('otaRestart', 'Restart')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : otaUpdate.state === 'error' ? (
+                  <TouchableOpacity style={styles.checkResult} onPress={() => { void otaUpdate.checkForUpdate(true); }}>
+                    <MaterialIcons name="error-outline" size={16} color={colors.text.secondary} />
+                    <Text style={styles.checkResultText}>{t('otaError', 'OTA check failed — tap to retry')}</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.checkButton}
+                    accessibilityLabel="Check for OTA updates"
+                    onPress={() => { void otaUpdate.checkForUpdate(true); }}
+                  >
+                    <MaterialIcons name="cloud-sync" size={16} color={colors.primary} />
+                    <Text style={styles.checkButtonText}>{t('otaCheck', 'Check for OTA updates')}</Text>
+                  </TouchableOpacity>
+                )}
+                <Text style={styles.otaHint}>{t('otaHint', 'Downloads app updates without opening Google Play.')}</Text>
+              </View>
+            )}
+
             <View style={styles.actionsRow}>
               <TouchableOpacity style={styles.secondaryButton} onPress={onClose}>
-                <Text style={styles.secondaryButtonText}>Close</Text>
+                <Text style={styles.secondaryButtonText}>{t('close', 'Close')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.primaryButton} onPress={onExpand}>
-                <Text style={styles.primaryButtonText}>Expand details</Text>
+                <Text style={styles.primaryButtonText}>{t('expandDetails', 'Expand details')}</Text>
                 <MaterialIcons name="open-in-full" size={14} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
@@ -377,6 +427,23 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     updateCheckSection: {
       marginBottom: 12,
+    },
+    otaSection: {
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+      paddingTop: 10,
+      marginBottom: 12,
+    },
+    otaSectionTitle: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.text.primary,
+      marginBottom: 4,
+    },
+    otaHint: {
+      fontSize: 11,
+      color: colors.text.secondary,
+      marginTop: 2,
     },
     checkButton: {
       flexDirection: 'row',
