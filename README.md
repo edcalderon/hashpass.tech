@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.321)
+## 📋 Latest Changes (v1.8.322)
 
 ### Bug Fixes
 
-* **admin:** select BSL project for local event APIs ([d13e97b](https://github.com/hashpass-tech/hashpass.tech/commit/d13e97b8aa3e9bba8885bec2940e67708bb99aef))
+* **admin:** persist and refresh pass edits ([3d402d3](https://github.com/hashpass-tech/hashpass.tech/commit/3d402d33efa4488355642bcaf50a9e827e456b0f))
 ### Release Highlights
-- select BSL project for local event APIs
+- persist and refresh pass edits
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

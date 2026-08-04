@@ -1,3 +1,12 @@
+## [1.8.322](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.321...v1.8.322) (2026-08-04)
+
+
+### Bug Fixes
+
+* **admin:** persist and refresh pass edits ([3d402d3](https://github.com/hashpass-tech/hashpass.tech/commit/3d402d33efa4488355642bcaf50a9e827e456b0f))
+### Release Highlights
+- persist and refresh pass edits
+
 ## [1.8.321](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.320...v1.8.321) (2026-08-04)
 
 
