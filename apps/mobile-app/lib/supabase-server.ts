@@ -207,7 +207,16 @@ function getSupabaseServer(input?: Request | { hostname?: string; profileId?: st
   return supabaseServerClients.get(profileId)!;
 }
 
-export const getSupabaseServerForRequest = (request: Request) => getSupabaseServer(request);
+/**
+ * Resolve the server client for a request, optionally overriding hostname
+ * inference. Local Expo requests all arrive as `localhost`, but event-scoped
+ * BSL admin routes still need the BSL Supabase project rather than the core
+ * project selected by that hostname.
+ */
+export const getSupabaseServerForRequest = (
+  request: Request,
+  profileId?: string,
+) => (profileId ? getSupabaseServer({ profileId }) : getSupabaseServer(request));
 
 // Check if we're in a browser/client environment BEFORE creating the Proxy
 const isBrowser = typeof window !== 'undefined';

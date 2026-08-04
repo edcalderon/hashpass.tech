@@ -1,11 +1,23 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
+import { hostnameFromRequest } from '@/config/supabase-profiles';
 import {
   isResolveIdentityError,
   resolveNotificationIdentity,
 } from '@/lib/server/resolve-notification-identity';
 
 export async function authorizeEventAdmin(request: Request, eventId: string) {
-  const identity = await resolveNotificationIdentity(request);
+  const bslEvent = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(eventId);
+  const host = hostnameFromRequest(request);
+  const bslProfile = bslEvent
+    ? host === 'bsl-dev.hashpass.tech' ||
+        host === 'api-dev.hashpass.tech' ||
+        host === 'localhost' ||
+        host === '127.0.0.1'
+      ? 'bsl-development'
+      : 'bsl-production'
+    : undefined;
+
+  const identity = await resolveNotificationIdentity(request, bslProfile);
   if (isResolveIdentityError(identity)) {
     return { response: Response.json({ error: identity.error }, { status: identity.status }) } as const;
   }
@@ -13,7 +25,10 @@ export async function authorizeEventAdmin(request: Request, eventId: string) {
     return { response: Response.json({ error: 'Account is not linked to an administrative identity' }, { status: 403 }) } as const;
   }
 
-  const supabase = getSupabaseServerForRequest(request);
+  // Local Expo API calls use localhost regardless of the event tenant. Select
+  // the BSL project explicitly for BSL event IDs so admin requests do not hit
+  // the core development database (where the BSL admin RPCs are absent).
+  const supabase = getSupabaseServerForRequest(request, bslProfile);
   const { data, error } = await supabase.rpc('has_event_admin_access', {
     p_user_id: identity.supabaseUserId,
     p_event_id: eventId,

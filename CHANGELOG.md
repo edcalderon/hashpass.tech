@@ -1,3 +1,12 @@
+## [1.8.321](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.320...v1.8.321) (2026-08-04)
+
+
+### Bug Fixes
+
+* **admin:** select BSL project for local event APIs ([d13e97b](https://github.com/hashpass-tech/hashpass.tech/commit/d13e97b8aa3e9bba8885bec2940e67708bb99aef))
+### Release Highlights
+- select BSL project for local event APIs
+
 ## [1.8.320](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.319...v1.8.320) (2026-08-04)
 
 
