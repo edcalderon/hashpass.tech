@@ -411,21 +411,25 @@ export default function EventBannerCarousel({
 }
 
 const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleSheet.create({
+  // Keep logo-only and event-banner slides in one fixed viewport so swiping
+  // between tour stops never changes the surrounding landing-page layout.
   container: {
     width: '100%',
     marginBottom: 32,
   },
   scrollView: {
     flexGrow: 0,
+    height: isMobile ? 420 : 460,
   },
   scrollContent: {
     alignItems: 'center',
+    height: isMobile ? 420 : 460,
   },
   slide: {
     width: Dimensions.get('window').width,
     paddingHorizontal: 16,
     justifyContent: 'center',
-    minHeight: 400,
+    height: isMobile ? 420 : 460,
   },
   downloadSection: {
     padding: 32,
@@ -528,9 +532,9 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
   },
   eventBannerWrapper: {
     width: '100%',
+    height: isMobile ? 420 : 460,
     borderRadius: 16,
     overflow: 'hidden',
-    minHeight: 360,
   },
   indicatorsContainer: {
     flexDirection: 'row',
@@ -550,12 +554,12 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     backgroundColor: isDark ? '#FFFFFF' : '#000000',
   },
   logoSlideContainer: {
-    flex: 1,
+    width: '100%',
+    height: isMobile ? 420 : 460,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
     borderRadius: 16,
-    minHeight: 360,
     overflow: 'hidden',
     position: 'relative',
     shadowOffset: { width: 0, height: -20 },
