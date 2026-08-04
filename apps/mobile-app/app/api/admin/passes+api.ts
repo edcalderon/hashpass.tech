@@ -83,6 +83,10 @@ export async function POST(request: Request) {
   const passId = typeof body.passId === "string" ? body.passId.trim() : null;
   const passType = typeof body.passType === "string" ? body.passType : null;
   const status = typeof body.status === "string" ? body.status : null;
+  const maxMeetingRequests = body.maxMeetingRequests == null ? null : Number(body.maxMeetingRequests);
+  const usedMeetingRequests = body.usedMeetingRequests == null ? null : Number(body.usedMeetingRequests);
+  const maxBoostAmount = body.maxBoostAmount == null ? null : Number(body.maxBoostAmount);
+  const usedBoostAmount = body.usedBoostAmount == null ? null : Number(body.usedBoostAmount);
 
   if (
     (action !== "create" && action !== "update") ||
@@ -107,7 +111,7 @@ export async function POST(request: Request) {
   }
   if (
     action === "update" &&
-    (!passId || (passType === null && status === null))
+    (!passId || (passType === null && status === null && maxMeetingRequests === null && usedMeetingRequests === null && maxBoostAmount === null && usedBoostAmount === null))
   ) {
     return Response.json(
       { error: "A passId and at least one change are required" },
@@ -127,18 +131,29 @@ export async function POST(request: Request) {
   const authorization = await authorizeEventAdmin(request, eventId);
   if ("response" in authorization) return authorization.response;
 
-  const { data, error } = await authorization.supabase.rpc(
-    "admin_mutate_event_pass",
-    {
-      p_actor_user_id: authorization.userId,
-      p_event_id: eventId,
-      p_action: action,
-      p_user_id: userId,
-      p_pass_id: passId,
-      p_pass_type: passType,
-      p_status: status,
-    },
-  );
+  const usageEdit = action === "update" &&
+    maxMeetingRequests !== null && usedMeetingRequests !== null &&
+    maxBoostAmount !== null && usedBoostAmount !== null &&
+    passType === null && status === null;
+  const { data, error } = usageEdit
+    ? await authorization.supabase.rpc("admin_update_event_pass_usage", {
+        p_actor_user_id: authorization.userId,
+        p_event_id: eventId,
+        p_pass_id: passId,
+        p_max_meeting_requests: maxMeetingRequests,
+        p_used_meeting_requests: usedMeetingRequests,
+        p_max_boost_amount: maxBoostAmount,
+        p_used_boost_amount: usedBoostAmount,
+      })
+    : await authorization.supabase.rpc("admin_mutate_event_pass", {
+        p_actor_user_id: authorization.userId,
+        p_event_id: eventId,
+        p_action: action,
+        p_user_id: userId,
+        p_pass_id: passId,
+        p_pass_type: passType,
+        p_status: status,
+      });
   if (error) {
     console.error("Administrative pass mutation failed:", error.message);
     return Response.json({ error: "Unable to update pass" }, { status: 500 });

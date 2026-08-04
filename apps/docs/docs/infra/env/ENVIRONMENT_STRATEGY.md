@@ -124,3 +124,34 @@ bash packages/tools/scripts/util/setup-parameters.sh sync production
 4. **Legacy isolation**: Keep AWS SSM `/hashpass/dev/` and
    `/hashpass/production/` as compatibility paths until migration is approved;
    do not delete them during this cutover.
+
+---
+
+## 6. Secrets Management vs. KMS
+
+HASHPASS uses two complementary security services. They are not interchangeable:
+
+| Service | Responsibility | HASHPASS examples |
+| :--- | :--- | :--- |
+| **Secrets Management** | Stores, scopes, synchronizes, rotates, and audits secret values by environment. | Supabase keys, database passwords, API tokens, OAuth credentials, JWT signing secrets. |
+| **KMS** | Creates and protects non-exportable cryptographic keys used to encrypt, decrypt, sign, or verify data. | Envelope-encrypting exports/backups, encrypting sensitive fields, or signing release/artifact metadata. |
+
+### Default rule
+
+Put credentials and configuration secrets in the HASHPASS Secrets Management
+project, in the matching `dev` or `production` environment. Do not put a
+database password or API token directly in KMS: KMS is a cryptographic key
+service, not an environment-scoped secret registry.
+
+Use KMS only when a workload needs application-controlled cryptography in
+addition to the encryption already provided by its storage or cloud service.
+The recommended pattern is envelope encryption: the application asks KMS to
+protect a data-encryption key, stores the encrypted key with the ciphertext,
+and keeps only the KMS key identifier in Secrets Management. The KMS key must
+remain non-exportable and access must be limited by workload identity.
+
+AWS SSM/KMS resources currently used by HashPass are retained as legacy
+runtime compatibility or cryptographic infrastructure. New secret values go
+to Secrets Management; existing SSM values are not deleted until a separately
+approved migration confirms every consumer. KMS keys are never deleted as part
+of ordinary secret rotation.

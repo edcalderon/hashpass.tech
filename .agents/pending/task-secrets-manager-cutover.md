@@ -12,9 +12,12 @@ Management project (`hashpass-6d6h`):
 - environment `hashpass-dev` for development;
 - environment `hashpass-production` for production.
 
-AWS SSM Parameter Store/KMS remains a legacy runtime compatibility path. Do not
-create new secrets there, and do not delete existing values until a separately
-approved migration has moved every consumer.
+AWS SSM Parameter Store remains a legacy runtime compatibility path for
+existing projected values. KMS is a complementary cryptographic-key service,
+not a replacement secret registry: use it for envelope encryption/signing,
+while credentials and configuration values remain in Secrets Management. Do
+not create new secrets in SSM/KMS, and do not delete existing values or keys
+until a separately approved migration has moved every consumer.
 
 Provider URL: `https://secrets.cig.technology/`  
 Provider API credentials must be supplied through the approved CLI/CI
@@ -65,6 +68,8 @@ from tracked files.
 - [ ] Lambda and migration workflows consume projected values successfully.
 - [ ] Rotation, rollback, audit logging, and incident recovery are tested.
 - [ ] Existing AWS values remain available until every consumer is migrated.
+- [ ] KMS key usage is documented separately from secret storage, with no
+      credentials placed directly in KMS.
 
 ## Non-goals
 
@@ -72,4 +77,3 @@ from tracked files.
   screenshots, logs, or git history.
 - Do not delete AWS SSM/KMS state as part of initial provider adoption.
 - Do not change application database schemas in this task.
-
