@@ -22,22 +22,61 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608040404, // Updated to current timestamp
+  buildNumber: 202608040740, // Updated to current timestamp
   releaseDate: '2026-08-04',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'refine shareable agenda workflow',
+    'branded per-day shareable agenda image + full share sheet',
+    '"Share my day" live schedule link',
+    'agenda type legend, My Schedule status filter, meeting-request link, favorites counter',
+    'consistent My Schedule cards + search, translate type badges',
+    'add "View in agenda" link on My Schedule item cards',
+    'add refresh button to Event Agenda screen',
+    'add Collapse all button to My Schedule'
   ],
   bugfixes: [
-    'distinguish "no auth payload" from "exchange failed" in magic-link errors'
+    'My Schedule collapse toggle, search auto-expand, sticky share',
+    'translate CONFIRMED/TENTATIVE badge on My Schedule cards',
+    'agenda times rendered in wrong timezone; sync chile2026 data',
+    'stop My Schedule suggestions bleeding one item across hours',
+    'remove stale placeholder workshop items from agenda',
+    'agenda confirm/unconfirm read-write identity mismatch + UX'
   ],
   breakingChanges: [],
-  notes: 'distinguish "no auth payload" from "exchange failed" in magic-link errors'
+  notes: 'refine shareable agenda workflow; branded per-day shareable agenda image + full share sheet; "Share my day" live schedule link; agenda type legend, My Schedule status filter, meeting-request link, favorites counter; consistent My Schedule cards + search, translate type badges; add "View in agenda" link on My Schedule item cards; add refresh button to Event Agenda screen; add Collapse all button to My Schedule; My Schedule collapse toggle, search auto-expand, sticky share; translate CONFIRMED/TENTATIVE badge on My Schedule cards; agenda times rendered in wrong timezone; sync chile2026 data; stop My Schedule suggestions bleeding one item across hours; remove stale placeholder workshop items from agenda; agenda confirm/unconfirm read-write identity mismatch + UX'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.319': {
+    version: '1.8.319',
+    buildNumber: 202608040740,
+    releaseDate: '2026-08-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'refine shareable agenda workflow',
+      'branded per-day shareable agenda image + full share sheet',
+      '"Share my day" live schedule link',
+      'agenda type legend, My Schedule status filter, meeting-request link, favorites counter',
+      'consistent My Schedule cards + search, translate type badges',
+      'add "View in agenda" link on My Schedule item cards',
+      'add refresh button to Event Agenda screen',
+      'add Collapse all button to My Schedule'
+    ],
+    bugfixes: [
+      'My Schedule collapse toggle, search auto-expand, sticky share',
+      'translate CONFIRMED/TENTATIVE badge on My Schedule cards',
+      'agenda times rendered in wrong timezone; sync chile2026 data',
+      'stop My Schedule suggestions bleeding one item across hours',
+      'remove stale placeholder workshop items from agenda',
+      'agenda confirm/unconfirm read-write identity mismatch + UX'
+    ],
+    breakingChanges: [],
+    notes: 'refine shareable agenda workflow; branded per-day shareable agenda image + full share sheet; "Share my day" live schedule link; agenda type legend, My Schedule status filter, meeting-request link, favorites counter; consistent My Schedule cards + search, translate type badges; add "View in agenda" link on My Schedule item cards; add refresh button to Event Agenda screen; add Collapse all button to My Schedule; My Schedule collapse toggle, search auto-expand, sticky share; translate CONFIRMED/TENTATIVE badge on My Schedule cards; agenda times rendered in wrong timezone; sync chile2026 data; stop My Schedule suggestions bleeding one item across hours; remove stale placeholder workshop items from agenda; agenda confirm/unconfirm read-write identity mismatch + UX'
+  },
   '1.8.318': {
     version: '1.8.318',
     buildNumber: 202608040404,
