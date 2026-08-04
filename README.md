@@ -20,30 +20,17 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.319)
+## 📋 Latest Changes (v1.8.320)
 
 ### Bug Fixes
 
-* **chile2026:** remove stale placeholder workshop items from agenda ([e43f0b7](https://github.com/hashpass-tech/hashpass.tech/commit/e43f0b7dc6e7e4c8799aa383ca9ac947a2e98158))
-* **mobile:** agenda confirm/unconfirm read-write identity mismatch + UX ([21435c4](https://github.com/hashpass-tech/hashpass.tech/commit/21435c4b47d502aba60ffc461f18716b671c756b))
-* **mobile:** agenda times rendered in wrong timezone; sync chile2026 data ([431e307](https://github.com/hashpass-tech/hashpass.tech/commit/431e3073fc58fda42abbdba25829da9a500286c5))
-* **mobile:** My Schedule collapse toggle, search auto-expand, sticky share ([916b720](https://github.com/hashpass-tech/hashpass.tech/commit/916b7205e59a11bec966586930d84f4cebb89a35))
-* **mobile:** stop My Schedule suggestions bleeding one item across hours ([f348a33](https://github.com/hashpass-tech/hashpass.tech/commit/f348a337b298e1011eaab5304100bb8641cd12ea))
-* **mobile:** translate CONFIRMED/TENTATIVE badge on My Schedule cards ([32ead37](https://github.com/hashpass-tech/hashpass.tech/commit/32ead37e5448c41102141daa745a90bb50876781))
-
-
-### Features
-
-* **mobile:** "Share my day" live schedule link ([f79fbf9](https://github.com/hashpass-tech/hashpass.tech/commit/f79fbf9565368d96dddd66f92b17897d573f0f99))
-* **mobile:** add "View in agenda" link on My Schedule item cards ([aff1196](https://github.com/hashpass-tech/hashpass.tech/commit/aff119675c53da3e75dda51732f43d599b1dd1c5))
-* **mobile:** add Collapse all button to My Schedule ([0f30c7d](https://github.com/hashpass-tech/hashpass.tech/commit/0f30c7d44abf968def9812764dd26885e56afccc))
-* **mobile:** add refresh button to Event Agenda screen ([d819a35](https://github.com/hashpass-tech/hashpass.tech/commit/d819a350e71817891cc68e4199b402df03241d44))
-* **mobile:** agenda type legend, My Schedule status filter, meeting-request link, favorites counter ([13ffafc](https://github.com/hashpass-tech/hashpass.tech/commit/13ffafc63b3cf9de3ec6bff6482e5ba89362ea4a))
-* **mobile:** branded per-day shareable agenda image + full share sheet ([f68fa3d](https://github.com/hashpass-tech/hashpass.tech/commit/f68fa3d04e082d3c6a215194a7a8dd0407852246))
-* **mobile:** consistent My Schedule cards + search, translate type badges ([52be1d9](https://github.com/hashpass-tech/hashpass.tech/commit/52be1d995c139055fe7e14d7de68662d123da252))
-* **mobile:** refine shareable agenda workflow ([0cf85a6](https://github.com/hashpass-tech/hashpass.tech/commit/0cf85a6f0efe356f724ff539196b7369a838f3bf))
+* **home:** keep hero wordmark high contrast ([5bc9105](https://github.com/hashpass-tech/hashpass.tech/commit/5bc910595e9fdf1c7d9382b19c5e53690a6de630))
+* **home:** map hero to white wordmark asset ([7277fcf](https://github.com/hashpass-tech/hashpass.tech/commit/7277fcff8dd7107aeb22e45cfa0148073e605899))
+* **home:** use red-accent white hero logo ([baa99d8](https://github.com/hashpass-tech/hashpass.tech/commit/baa99d858e02d3e87dbb1538ddd2af9227107750))
+* **home:** use white hero wordmark in light mode ([20174b0](https://github.com/hashpass-tech/hashpass.tech/commit/20174b08420f224c11602052ed337dbeb05fe946))
+* **web:** bundle landing carousel logos ([28fb177](https://github.com/hashpass-tech/hashpass.tech/commit/28fb177f9476bad40d3ee5be4f19adafdb66a073))
 ### Release Highlights
-- refine shareable agenda workflow; branded per-day shareable agenda image + full share sheet; "Share my day" live schedule link; agenda type legend, My Schedule status filter, meeting-request link, favorites counter; consistent My Schedule cards + search, translate type badges; add "View in agenda" link on My Schedule item cards; add refresh button to Event Agenda screen; add Collapse all button to My Schedule; My Schedule collapse toggle, search auto-expand, sticky share; translate CONFIRMED/TENTATIVE badge on My Schedule cards; agenda times rendered in wrong timezone; sync chile2026 data; stop My Schedule suggestions bleeding one item across hours; remove stale placeholder workshop items from agenda; agenda confirm/unconfirm read-write identity mismatch + UX
+- use red-accent white hero logo; map hero to white wordmark asset; keep hero wordmark high contrast; use white hero wordmark in light mode; bundle landing carousel logos
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
