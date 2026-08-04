@@ -25,7 +25,7 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{}}
+        defaultProps={{layout: []}}
         calculateMetadata={async () => {
           const layout = await layoutClips(bslShowcaseClips);
           return {
@@ -41,7 +41,13 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{}}
+        defaultProps={{
+          layout: [],
+          introTitle: 'HASHPASS Walkthrough',
+          introSubtitle: 'Getting started',
+          outroTitle: 'Digital Event Platform',
+          outroSubtitle: 'Your Event · Your Community · Your Rewards',
+        }}
         calculateMetadata={async () => {
           const layout = await layoutClips(appTutorialStepsEn);
           return {
@@ -63,7 +69,13 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{}}
+        defaultProps={{
+          layout: [],
+          introTitle: 'Guía de HASHPASS',
+          introSubtitle: 'Primeros pasos',
+          outroTitle: 'Plataforma Digital de Eventos',
+          outroSubtitle: 'Tu Evento · Tu Comunidad · Tus Beneficios',
+        }}
         calculateMetadata={async () => {
           const layout = await layoutClips(appTutorialStepsEs);
           return {
