@@ -176,7 +176,7 @@ export async function GET(request: Request) {
     // Keep the known fingerprints here as a stable runtime fallback; the
     // un-fingerprinted path remains a fallback for local/dev servers.
     const fingerprintedAssets: Record<string, string> = {
-      hashpass: '/assets/assets/logos/hashpass/logo-full-hashpass-white.9bb128f7eed25f84da87bdabcfdd58ae.svg',
+      hashpass: '/assets/assets/logos/hashpass/logo-full-hashpass-white-cyan.9be139d428aa2da59a319380a009159e.svg',
       bsl: '/assets/assets/logos/bsl/bsl-ontour-pro.8fc2f93c785298ed1a7ed070649b093e.webp',
       peru2026: '/assets/assets/logos/bsl/bsl-peru-pro.c7755041c0886c98664bcdabccc558bc.webp',
       chile2026: '/assets/assets/logos/bsl/bsl-chile-pro.0cc613e9f73290ffe4ca404a67f11062.webp',
@@ -199,7 +199,7 @@ export async function GET(request: Request) {
         return assetPath;
       }
     };
-    const hashpassLogoUrl = publicAssetUrl('/assets/logos/hashpass/logo-full-hashpass-white.svg', 'hashpass');
+    const hashpassLogoUrl = publicAssetUrl('/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg', 'hashpass');
     const eventLogoUrl = publicAssetUrl(
       event?.brandingLogo || event?.image || '/assets/logos/bsl/bsl-ontour-pro.svg',
       eventId,
@@ -207,7 +207,7 @@ export async function GET(request: Request) {
     const inlineSvgAsset = async (assetUrl: string, kind: 'hashpass' | 'event') => {
       try {
         const assetRelativePath = kind === 'hashpass'
-          ? 'apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-white.svg'
+          ? 'apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg'
           : eventId === 'chile2026'
             ? 'apps/mobile-app/assets/logos/bsl/bsl-chile-pro.svg'
             : eventId === 'peru2026'
@@ -240,7 +240,7 @@ export async function GET(request: Request) {
             // the current deployment yet; the final fallback below still
             // keeps the snapshot branded instead of showing a broken icon.
             const sourcePath = kind === 'hashpass'
-              ? '/assets/logos/hashpass/logo-full-hashpass-white.svg'
+              ? '/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg'
               : `/assets/logos/bsl/${eventId === 'chile2026' ? 'bsl-chile-pro' : eventId === 'peru2026' ? 'bsl-peru-pro' : eventId === 'colombia2026' ? 'bsl-colombia-pro' : 'bsl-ontour-pro'}.svg`;
             const sourceResponse = await fetch(publicAssetUrl(sourcePath));
             if (!sourceResponse.ok) {
