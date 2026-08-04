@@ -87,6 +87,10 @@ export async function POST(request: Request) {
   const usedMeetingRequests = body.usedMeetingRequests == null ? null : Number(body.usedMeetingRequests);
   const maxBoostAmount = body.maxBoostAmount == null ? null : Number(body.maxBoostAmount);
   const usedBoostAmount = body.usedBoostAmount == null ? null : Number(body.usedBoostAmount);
+  const usageFields = [body.maxMeetingRequests, body.usedMeetingRequests, body.maxBoostAmount, body.usedBoostAmount];
+  const usageFieldCount = usageFields.filter((value) => value !== undefined && value !== null).length;
+  const hasUsageFields = usageFieldCount > 0;
+  const hasCompleteUsage = usageFieldCount === usageFields.length;
 
   if (
     (action !== "create" && action !== "update") ||
@@ -127,13 +131,29 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  if (action === "update" && hasUsageFields && !hasCompleteUsage) {
+    return Response.json(
+      { error: "All usage and limit fields must be provided together" },
+      { status: 400 },
+    );
+  }
+  if (action === "update" && hasCompleteUsage && (passType !== null || status !== null)) {
+    return Response.json(
+      { error: "Usage changes cannot be combined with tier or status changes" },
+      { status: 400 },
+    );
+  }
+  if (action === "update" && hasCompleteUsage && [maxMeetingRequests, usedMeetingRequests, maxBoostAmount, usedBoostAmount].some((value) => value === null || !Number.isFinite(value))) {
+    return Response.json(
+      { error: "Usage and limit fields must be finite numbers" },
+      { status: 400 },
+    );
+  }
 
   const authorization = await authorizeEventAdmin(request, eventId);
   if ("response" in authorization) return authorization.response;
 
-  const usageEdit = action === "update" &&
-    maxMeetingRequests !== null && usedMeetingRequests !== null &&
-    maxBoostAmount !== null && usedBoostAmount !== null &&
+  const usageEdit = action === "update" && hasCompleteUsage &&
     passType === null && status === null;
   const { data, error } = usageEdit
     ? await authorization.supabase.rpc("admin_update_event_pass_usage", {

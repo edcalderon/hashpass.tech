@@ -990,7 +990,9 @@ export default function AdminPanel() {
       }, { skipEventSegment: true });
       if (!result.success) throw new Error(result.error);
       const refreshed = await loadPasses();
-      setSelectedPass(refreshed.find((pass) => pass.id === passId) || null);
+      const updatedPass = refreshed.find((pass) => pass.id === passId) || null;
+      setSelectedPass(updatedPass);
+      if (updatedPass) setPassDraft({ maxRequests: String(updatedPass.max_meeting_requests), usedRequests: String(updatedPass.used_meeting_requests), maxBoost: String(updatedPass.max_boost_amount), usedBoost: String(updatedPass.used_boost_amount) });
       setPassFeedback(`Pass tier changed to ${passType.toUpperCase()}.`);
     } catch (error: any) {
       Alert.alert("Unable to update pass", error.message || "Please try again.");

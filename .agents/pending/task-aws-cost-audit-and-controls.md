@@ -74,7 +74,7 @@ No resource was stopped, deleted, resized, or reconfigured during this audit.
 
 ### Build-runner finding
 
-Account `952191196420` does contain the mobile build runner, but it was stopped
+The target billing account does contain the mobile build runner, but it was stopped
 at audit time:
 
 - instance `i-05628f925bb57e2f1`, tagged `hashpass-mobile-release`;
