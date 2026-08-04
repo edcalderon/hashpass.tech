@@ -169,16 +169,40 @@ export async function GET(request: Request) {
       colombia2026: '#bsl2026colombia',
       bsl: '#bsl2026',
     } as Record<string, string>)[eventId] || '#hashpass';
-    const publicAssetUrl = (assetPath: string) => {
+    // Expo's static export fingerprints assets (for example
+    // `/assets/assets/logos/bsl/bsl-chile-pro.<hash>.webp`). The API runs in a
+    // separate server bundle, so the source paths in EVENTS are not publicly
+    // addressable and produce broken-image icons in generated snapshots.
+    // Keep the known fingerprints here as a stable runtime fallback; the
+    // un-fingerprinted path remains a fallback for local/dev servers.
+    const fingerprintedAssets: Record<string, string> = {
+      hashpass: '/assets/assets/logos/hashpass/logo-full-hashpass-white.9bb128f7eed25f84da87bdabcfdd58ae.svg',
+      bsl: '/assets/assets/logos/bsl/bsl-ontour-pro.8fc2f93c785298ed1a7ed070649b093e.webp',
+      peru2026: '/assets/assets/logos/bsl/bsl-peru-pro.c7755041c0886c98664bcdabccc558bc.webp',
+      chile2026: '/assets/assets/logos/bsl/bsl-chile-pro.0cc613e9f73290ffe4ca404a67f11062.webp',
+      colombia2026: '/assets/assets/logos/bsl/bsl-colombia-pro.7a8022818a351b52c1450d19983bdfde.webp',
+    };
+    const requestHostname = url.hostname.toLowerCase();
+    const configuredSiteOrigin = process.env.EXPO_PUBLIC_BSL_SITE_URL || process.env.BSL_FRONTEND_URL;
+    const staticSiteOrigin = requestHostname === 'localhost' || requestHostname === '127.0.0.1'
+      ? url.origin
+      : requestHostname === 'api-dev.hashpass.tech'
+        ? 'https://bsl-dev.hashpass.tech'
+        : configuredSiteOrigin || (event?.domain ? `https://${event.domain}` : url.origin);
+    const publicAssetUrl = (assetPath: string, assetKey?: string) => {
       try {
-        return new URL(assetPath, url.origin).toString();
+        const resolvedPath = assetKey && fingerprintedAssets[assetKey]
+          ? fingerprintedAssets[assetKey]
+          : assetPath;
+        return new URL(resolvedPath, staticSiteOrigin).toString();
       } catch {
         return assetPath;
       }
     };
-    const hashpassLogoUrl = publicAssetUrl('/assets/logos/hashpass/logo-full-hashpass-white.svg');
+    const hashpassLogoUrl = publicAssetUrl('/assets/logos/hashpass/logo-full-hashpass-white.svg', 'hashpass');
     const eventLogoUrl = publicAssetUrl(
-      event?.brandingLogo || event?.image || '/assets/logos/bsl/bsl-ontour-pro.svg'
+      event?.brandingLogo || event?.image || '/assets/logos/bsl/bsl-ontour-pro.svg',
+      eventId,
     );
     const inlineSvgAsset = async (assetUrl: string, kind: 'hashpass' | 'event') => {
       try {
@@ -196,8 +220,29 @@ export async function GET(request: Request) {
           assetSvg = await readFile(path.resolve(process.cwd(), assetRelativePath), 'utf8');
         } catch {
           const assetResponse = await fetch(assetUrl);
-          if (!assetResponse.ok) return assetUrl;
-          assetSvg = await assetResponse.text();
+          if (!assetResponse.ok) {
+            // Try the source path when a newly-exported fingerprint is not in
+            // the current deployment yet; the final fallback below still
+            // keeps the snapshot branded instead of showing a broken icon.
+            const sourcePath = kind === 'hashpass'
+              ? '/assets/logos/hashpass/logo-full-hashpass-white.svg'
+              : `/assets/logos/bsl/${eventId === 'chile2026' ? 'bsl-chile-pro' : eventId === 'peru2026' ? 'bsl-peru-pro' : eventId === 'colombia2026' ? 'bsl-colombia-pro' : 'bsl-ontour-pro'}.svg`;
+            const sourceResponse = await fetch(publicAssetUrl(sourcePath));
+            if (!sourceResponse.ok) {
+              const fallbackSvg = kind === 'hashpass'
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="190" height="42"><text x="0" y="30" fill="#fff" font-family="Arial" font-size="28" font-weight="800">HASHPASS</text></svg>'
+                : '<svg xmlns="http://www.w3.org/2000/svg" width="260" height="82"><circle cx="34" cy="41" r="27" fill="none" stroke="#fff" stroke-width="5"/><text x="72" y="47" fill="#fff" font-family="Arial" font-size="17" font-weight="700">BLOCKCHAIN SUMMIT LATAM</text></svg>';
+              return `data:image/svg+xml;base64,${Buffer.from(fallbackSvg, 'utf8').toString('base64')}`;
+            }
+            assetSvg = await sourceResponse.text();
+          } else {
+            const contentType = assetResponse.headers.get('content-type') || '';
+            if (!contentType.includes('svg')) {
+              const bytes = Buffer.from(await assetResponse.arrayBuffer());
+              return `data:${contentType || 'image/webp'};base64,${bytes.toString('base64')}`;
+            }
+            assetSvg = await assetResponse.text();
+          }
         }
         return `data:image/svg+xml;base64,${Buffer.from(assetSvg, 'utf8').toString('base64')}`;
       } catch {
