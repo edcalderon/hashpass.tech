@@ -217,7 +217,22 @@ export async function GET(request: Request) {
                 : 'apps/mobile-app/assets/logos/bsl/bsl-ontour-pro.svg';
         let assetSvg: string;
         try {
-          assetSvg = await readFile(path.resolve(process.cwd(), assetRelativePath), 'utf8');
+          const assetCandidates = [
+            path.resolve(process.cwd(), assetRelativePath),
+            path.resolve(process.cwd(), assetRelativePath.replace(/^apps\/mobile-app\//, '')),
+            path.resolve(process.cwd(), 'server', assetRelativePath.replace(/^apps\/mobile-app\//, '')),
+          ];
+          let loaded: string | null = null;
+          for (const candidate of assetCandidates) {
+            try {
+              loaded = await readFile(candidate, 'utf8');
+              break;
+            } catch {
+              // Try the next packaging layout.
+            }
+          }
+          if (!loaded) throw new Error('Branded SVG is not present in the server bundle');
+          assetSvg = loaded;
         } catch {
           const assetResponse = await fetch(assetUrl);
           if (!assetResponse.ok) {
@@ -317,8 +332,6 @@ export async function GET(request: Request) {
   <rect width="${cardWidth}" height="${cardHeight}" fill="url(#bg)" />
   <rect width="${cardWidth}" height="420" fill="url(#heroFade)" />
 
-  <text x="60" y="68" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="3" fill="#FFFFFF">HASHPASS</text>
-  <text x="${cardWidth - 60}" y="68" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="900" letter-spacing="2" fill="#FFFFFF">BSL</text>
   <image href="${escapeXml(hashpassLogoHref)}" xlink:href="${escapeXml(hashpassLogoHref)}" x="60" y="38" width="190" height="42" preserveAspectRatio="xMinYMid meet" />
   <image href="${escapeXml(eventLogoHref)}" xlink:href="${escapeXml(eventLogoHref)}" x="760" y="30" width="260" height="82" preserveAspectRatio="xMaxYMid meet" />
   <text x="60" y="${titleY}" font-family="Helvetica, Arial, sans-serif" font-size="46" font-weight="800" fill="#FFFFFF">
