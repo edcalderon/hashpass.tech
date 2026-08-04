@@ -11,6 +11,7 @@ import {
   Modal,
   Platform,
   PanResponder,
+  useWindowDimensions,
 } from "react-native";
 import { MaterialIcons } from "../../../lib/vector-icons";
 import { useTheme } from "../../../hooks/useTheme";
@@ -2186,6 +2187,16 @@ function PassManagementTab({
   const [columnFilters, setColumnFilters] = useState({ pass: "", owner: "", tier: "", usage: "", status: "" });
   const [showColumnFilters, setShowColumnFilters] = useState(false);
   const [sort, setSort] = useState<{ key: "pass" | "owner" | "tier" | "usage" | "status"; direction: "asc" | "desc" }>({ key: "pass", direction: "asc" });
+  const { width: viewportWidth } = useWindowDimensions();
+  const tableWidth = Math.max(760, viewportWidth - 40);
+  // Keep row padding and the trailing details affordance inside the measured
+  // scroll width instead of scaling data columns over the whole viewport.
+  const columnLayoutWidth = Math.max(716, tableWidth - 44);
+  const displayColumnWidths = useMemo(() => {
+    const baseTotal = Object.values(columnWidths).reduce((total, width) => total + width, 0);
+    const scale = baseTotal > 0 ? Math.max(1, columnLayoutWidth / baseTotal) : 1;
+    return Object.fromEntries(Object.entries(columnWidths).map(([key, width]) => [key, Math.round(width * scale)])) as typeof columnWidths;
+  }, [columnWidths, columnLayoutWidth]);
   const pageSize = 20;
   useEffect(() => setPage(1), [searchQuery, passTypeFilter, passStatusFilter, passes.length]);
   const resizeResponders = useMemo(() => {
@@ -2218,7 +2229,7 @@ function PassManagementTab({
             <Text style={styles.passNumber}>Pass registry</Text>
             <Text style={styles.passInfo}>Search, filter, revoke, and upgrade passes issued for this event.</Text>
           </View>
-          <TouchableOpacity style={styles.actionButton} onPress={onRefresh} disabled={loading}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Reload passes" style={styles.actionButton} onPress={onRefresh} disabled={loading}>
             <MaterialIcons name="refresh" size={16} color="#fff" />
             <Text style={styles.actionButtonText}>Refresh</Text>
           </TouchableOpacity>
@@ -2298,15 +2309,15 @@ function PassManagementTab({
                 keyboardShouldPersistTaps="handled"
                 showsHorizontalScrollIndicator={Platform.OS === "web"}
                 scrollEventThrottle={16}
-                style={{ borderWidth: 1, borderColor: colors.divider, borderRadius: 10 }}
-                contentContainerStyle={{ minWidth: 760 }}
+                style={{ width: "100%", borderWidth: 1, borderColor: colors.divider, borderRadius: 10 }}
+                contentContainerStyle={{ minWidth: tableWidth }}
               >
-              <View style={{ minWidth: 760 }}>
+              <View style={{ width: tableWidth, minWidth: tableWidth }}>
                 <View style={{ flexDirection: "row", backgroundColor: colors.background.paper, paddingVertical: 10, paddingHorizontal: 12 }}>
-                  {([["Pass", "pass"], ["Owner", "owner"], ["Tier", "tier"], ["Usage", "usage"], ["Status", "status"]] as const).map(([label, key]) => <TouchableOpacity key={key} onPress={() => toggleSort(key)} style={{ width: columnWidths[key], flexDirection: "row", alignItems: "center" }}><Text style={{ flex: 1, fontSize: 12, fontWeight: "700", color: colors.text.secondary }}>{label}</Text><MaterialIcons name={sort.key === key ? (sort.direction === "asc" ? "arrow-upward" : "arrow-downward") : "unfold-more"} size={14} color={colors.text.secondary} /><View {...resizeResponders[key].panHandlers} style={{ width: 3, height: 28, marginLeft: 5, borderRadius: 2, backgroundColor: colors.primaryLight }} /></TouchableOpacity>)}
+                  {([["Pass", "pass"], ["Owner", "owner"], ["Tier", "tier"], ["Usage", "usage"], ["Status", "status"]] as const).map(([label, key]) => <TouchableOpacity key={key} onPress={() => toggleSort(key)} style={{ width: displayColumnWidths[key], flexDirection: "row", alignItems: "center" }}><Text style={{ flex: 1, fontSize: 12, fontWeight: "700", color: colors.text.secondary }}>{label}</Text><MaterialIcons name={sort.key === key ? (sort.direction === "asc" ? "arrow-upward" : "arrow-downward") : "unfold-more"} size={14} color={colors.text.secondary} /><View {...resizeResponders[key].panHandlers} style={{ width: 3, height: 28, marginLeft: 5, borderRadius: 2, backgroundColor: colors.primaryLight }} /></TouchableOpacity>)}
                 </View>
                 {showColumnFilters && <View style={{ flexDirection: "row", paddingVertical: 6, paddingHorizontal: 12 }}>
-                  {([["pass", "Filter pass"], ["owner", "Filter owner"], ["tier", "Filter tier"], ["usage", "Min requests"], ["status", "Filter status"]] as const).map(([key, placeholder]) => <TextInput key={key} value={columnFilters[key]} onChangeText={(value) => setColumnFilters((current) => ({ ...current, [key]: value }))} placeholder={placeholder} placeholderTextColor={colors.text.secondary} keyboardType={key === "usage" ? "numeric" : "default"} style={{ width: columnWidths[key], paddingHorizontal: 6, paddingVertical: 5, fontSize: 11, color: colors.text.primary, borderWidth: 1, borderColor: colors.divider, borderRadius: 5 }} />)}
+                  {([["pass", "Filter pass"], ["owner", "Filter owner"], ["tier", "Filter tier"], ["usage", "Min requests"], ["status", "Filter status"]] as const).map(([key, placeholder]) => <TextInput key={key} value={columnFilters[key]} onChangeText={(value) => setColumnFilters((current) => ({ ...current, [key]: value }))} placeholder={placeholder} placeholderTextColor={colors.text.secondary} keyboardType={key === "usage" ? "numeric" : "default"} style={{ width: displayColumnWidths[key], paddingHorizontal: 6, paddingVertical: 5, fontSize: 11, color: colors.text.primary, borderWidth: 1, borderColor: colors.divider, borderRadius: 5 }} />)}
                 </View>}
                 {visiblePasses.map((pass: Pass) => (
                   <ScrollView
@@ -2318,14 +2329,14 @@ function PassManagementTab({
                     keyboardShouldPersistTaps="handled"
                     scrollEventThrottle={16}
                     style={{ borderTopWidth: 1, borderTopColor: colors.divider }}
-                    contentContainerStyle={{ minWidth: 760 }}
+                    contentContainerStyle={{ minWidth: tableWidth }}
                   >
-                    <TouchableOpacity accessibilityRole="button" onPress={() => onPassPress(pass)} style={{ flexDirection: "row", alignItems: "center", minHeight: 58, paddingVertical: 9, paddingHorizontal: 12, minWidth: 760 }}>
-                      <View style={{ width: columnWidths.pass }}><Text numberOfLines={1} style={styles.passNumber}>{pass.pass_number}</Text><Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.secondary }}>{pass.user_id}</Text></View>
-                      <View style={{ width: columnWidths.owner }}><Text numberOfLines={1} style={{ fontSize: 13, color: colors.text.primary }}>{pass.user_name || pass.username || "Unnamed user"}</Text><Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.secondary }}>{pass.user_email || "No email"}</Text></View>
-                      <Text style={{ width: columnWidths.tier, fontSize: 12, fontWeight: "600", color: colors.text.primary }}>{pass.pass_type.toUpperCase()}</Text>
-                      <Text style={{ width: columnWidths.usage, fontSize: 12, color: colors.text.secondary }}>{pass.used_meeting_requests}/{pass.max_meeting_requests} req · {pass.used_boost_amount}/{pass.max_boost_amount} boost</Text>
-                      <View style={{ width: columnWidths.status }}><View style={[styles.statusBadge, styles[`statusBadge${pass.status}`]]}><Text style={styles.statusBadgeText}>{pass.status}</Text></View></View>
+                    <TouchableOpacity accessibilityRole="button" onPress={() => onPassPress(pass)} style={{ flexDirection: "row", alignItems: "center", minHeight: 58, paddingVertical: 9, paddingHorizontal: 12, minWidth: tableWidth }}>
+                      <View style={{ width: displayColumnWidths.pass }}><Text numberOfLines={1} style={styles.passNumber}>{pass.pass_number}</Text><Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.secondary }}>{pass.user_id}</Text></View>
+                      <View style={{ width: displayColumnWidths.owner }}><Text numberOfLines={1} style={{ fontSize: 13, color: colors.text.primary }}>{pass.user_name || pass.username || "Unnamed user"}</Text><Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.secondary }}>{pass.user_email || "No email"}</Text></View>
+                      <Text style={{ width: displayColumnWidths.tier, fontSize: 12, fontWeight: "600", color: colors.text.primary }}>{pass.pass_type.toUpperCase()}</Text>
+                      <Text style={{ width: displayColumnWidths.usage, fontSize: 12, color: colors.text.secondary }}>{pass.used_meeting_requests}/{pass.max_meeting_requests} req · {pass.used_boost_amount}/{pass.max_boost_amount} boost</Text>
+                      <View style={{ width: displayColumnWidths.status }}><View style={[styles.statusBadge, styles[`statusBadge${pass.status}`]]}><Text style={styles.statusBadgeText}>{pass.status}</Text></View></View>
                       <MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />
                     </TouchableOpacity>
                   </ScrollView>
