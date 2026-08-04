@@ -19,6 +19,7 @@
 // eventStartDate's trailing +/-HH:MM (BSL's original Medellín/Bogotá hub).
 // Kept explicit so changed-file typechecks include this shared dependency.
 // Shared by agenda summary controls and time-aware past-session filtering.
+// Kept in the changed-file validation set for My Schedule consumers.
 export const DEFAULT_EVENT_TZ_OFFSET = '-05:00';
 
 /** Extracts an event's real fixed UTC offset from its eventStartDate (e.g. "2026-08-05T09:00:00-04:00" -> "-04:00"). */

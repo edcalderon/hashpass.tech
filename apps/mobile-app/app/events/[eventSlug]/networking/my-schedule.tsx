@@ -2513,7 +2513,7 @@ const MySchedule = () => {
                                         onPress={() => requestRemoveAgendaSession(meeting, slot.startTime)}
                                         accessibilityLabel={t('mySchedule.removeSession', 'Remove session from plan')}
                                       >
-                                        <MaterialIcons name="delete-outline" size={18} color={colors.text.secondary} />
+                                        <MaterialIcons name="close" size={16} color={colors.text.secondary} />
                                       </TouchableOpacity>
                                     )}
                                   </View>
@@ -2765,7 +2765,18 @@ const styles = StyleSheet.create({
   snapshotSecondaryButton: { alignItems: 'center', paddingTop: 14 },
   snapshotSecondaryButtonText: { fontSize: 14, fontWeight: '600' },
   timelineTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, flex: 1 },
-  timelineRemoveButton: { position: 'absolute', right: 0, top: -4, padding: 6, zIndex: 4 },
+  timelineRemoveButton: {
+    position: 'absolute',
+    right: 0,
+    top: -4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(127,127,127,0.14)',
+    zIndex: 4,
+  },
   removeSessionCard: { margin: 24, borderRadius: 18, padding: 24, alignItems: 'center' },
   removeSessionTitle: { fontSize: 20, fontWeight: '800', marginTop: 10, textAlign: 'center' },
   removeSessionMessage: { fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8 },

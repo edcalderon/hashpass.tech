@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Animated, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 import { MaterialIcons } from '../lib/vector-icons';
@@ -127,22 +127,24 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       
       {/* Toast Container - Using absolute positioning to avoid blocking interactions */}
       {toasts.length > 0 && (
-        <View style={styles.toastContainer} pointerEvents="box-none">
-          <SafeAreaView edges={['top', 'left', 'right']} style={styles.toastSafeArea} pointerEvents="box-none">
-            {toasts.map((toast, index) => (
-              <ToastItem
-                key={toast.id}
-                toast={toast}
-                index={index}
-                onHide={() => hideToast(toast.id)}
-                getToastStyles={getToastStyles}
-                getToastIcon={getToastIcon}
-                colors={colors}
-                isDark={isDark}
-              />
-            ))}
-          </SafeAreaView>
-        </View>
+        <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => {}}>
+          <View style={styles.toastContainer} pointerEvents="box-none">
+            <SafeAreaView edges={['top', 'left', 'right']} style={styles.toastSafeArea} pointerEvents="box-none">
+              {toasts.map((toast, index) => (
+                <ToastItem
+                  key={toast.id}
+                  toast={toast}
+                  index={index}
+                  onHide={() => hideToast(toast.id)}
+                  getToastStyles={getToastStyles}
+                  getToastIcon={getToastIcon}
+                  colors={colors}
+                  isDark={isDark}
+                />
+              ))}
+            </SafeAreaView>
+          </View>
+        </Modal>
       )}
     </>
   );
