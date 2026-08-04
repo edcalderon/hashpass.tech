@@ -1,3 +1,12 @@
+## [1.8.323](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.322...v1.8.323) (2026-08-04)
+
+
+### Bug Fixes
+
+* **admin-passes:** fill responsive table and reload ([ed689f9](https://github.com/hashpass-tech/hashpass.tech/commit/ed689f9b3a4f43de3179bdea0d2b45c10a24f7d9))
+### Release Highlights
+- fill responsive table and reload
+
 ## [1.8.322](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.321...v1.8.322) (2026-08-04)
 
 
