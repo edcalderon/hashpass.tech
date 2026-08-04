@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608040913, // Updated to current timestamp
+  buildNumber: 202608040946, // Updated to current timestamp
   releaseDate: '2026-08-04',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,18 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'use red-accent white hero logo',
-    'map hero to white wordmark asset',
-    'keep hero wordmark high contrast',
-    'use white hero wordmark in light mode',
-    'bundle landing carousel logos'
+    'select BSL project for local event APIs'
   ],
   breakingChanges: [],
-  notes: 'use red-accent white hero logo; map hero to white wordmark asset; keep hero wordmark high contrast; use white hero wordmark in light mode; bundle landing carousel logos'
+  notes: 'select BSL project for local event APIs'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.321': {
+    version: '1.8.321',
+    buildNumber: 202608040946,
+    releaseDate: '2026-08-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'select BSL project for local event APIs'
+    ],
+    breakingChanges: [],
+    notes: 'select BSL project for local event APIs'
+  },
   '1.8.320': {
     version: '1.8.320',
     buildNumber: 202608040913,
