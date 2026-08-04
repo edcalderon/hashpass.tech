@@ -90,6 +90,7 @@ const customAgendaFilterLogic = (
 };
 
 export default function BSL2025AgendaScreen() {
+  const isCompactLayout = width < 600;
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
   const router = useRouter();
@@ -1141,12 +1142,12 @@ export default function BSL2025AgendaScreen() {
         </View>
 
         <View style={styles.agendaItemContent}>
-          <View style={styles.agendaTitleRow}>
+          <View style={[styles.agendaTitleRow, isCompactLayout && styles.agendaTitleRowCompact]}>
             <Text style={styles.agendaTitle}>{cleanSessionTitle(item.title)}</Text>
-            <View style={styles.actionButtons}>
+            <View style={[styles.actionButtons, isCompactLayout && styles.actionButtonsCompact]}>
               <TouchableOpacity
                 onPress={() => handleToggleFavorite(item)}
-                style={styles.actionButton}
+                style={[styles.actionButton, isCompactLayout && styles.actionButtonCompact]}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 accessibilityRole="button"
                 accessibilityLabel={isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites')}
@@ -1162,7 +1163,7 @@ export default function BSL2025AgendaScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleAgendaAction(item, startTime)}
-                style={styles.actionButton}
+                style={[styles.actionButton, isCompactLayout && styles.actionButtonCompact]}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 accessibilityRole="button"
                 accessibilityLabel={isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda')}
@@ -1732,6 +1733,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     marginBottom: 8,
     gap: 8,
   },
+  agendaTitleRowCompact: {
+    flexDirection: 'column',
+    gap: 12,
+  },
   agendaTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -1744,6 +1749,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  actionButtonsCompact: {
+    width: '100%',
+    flexDirection: 'row',
+  },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1754,6 +1763,13 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.divider,
     backgroundColor: colors.background.paper,
+  },
+  actionButtonCompact: {
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 42,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
   },
   actionButtonLabel: {
     fontSize: 10,
