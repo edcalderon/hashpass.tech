@@ -872,16 +872,17 @@
       },
       "viewMeetingRequest": "Ver solicitud de reunión",
       "favorites": "Favoritos",
-      "shareMyDay": "Compartir mi día",
-      "shareMessage": "Mira mi agenda en {eventName}: {url}",
+      "shareMessage": "Sigue mi agenda en vivo en {eventName}: {url}",
       "shareLinkCopied": "Enlace copiado al portapapeles",
       "shareLinkFailed": "No se pudo crear el enlace para compartir. Inténtalo de nuevo.",
       "shareLinkInvalid": "Este enlace no es válido o ha expirado.",
-      "myDayAt": "Mi agenda en {eventName}",
+      "myDayAt": "Agenda en vivo en {eventName}",
       "liveUpdating": "En vivo — se actualiza automáticamente",
       "noConfirmedSessions": "Aún no hay sesiones confirmadas.",
       "lastUpdated": "Actualizado {time}",
-      "poweredBy": "Desarrollado por HASHPASS"
+      "poweredBy": "Desarrollado por HASHPASS",
+      "shareMyAgenda": "Compartir mi agenda",
+      "expandAll": "Expandir todo"
     },
     "tips": {
       "title": "Consejos de Networking",

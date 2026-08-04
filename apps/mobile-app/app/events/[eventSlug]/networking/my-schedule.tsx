@@ -656,6 +656,25 @@ const MySchedule = () => {
     return grouped;
   }, [schedule, selectedDate, eventTimezoneOffset, visibleMeetingIds]);
 
+  // When a search/filter is actively narrowing results (visibleMeetingIds
+  // set and smaller than the full list), auto-expand every hour group that
+  // still has a match in it -- otherwise a match inside a collapsed hour
+  // group would be invisible even though it "found" something.
+  useEffect(() => {
+    if (!visibleMeetingIds || visibleMeetingIds.size >= allMeetings.length) return;
+    setExpandedHours((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      Object.keys(groupedSlots).forEach((hour) => {
+        if (!next[hour]) {
+          next[hour] = true;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [visibleMeetingIds, groupedSlots, allMeetings.length]);
+
   // Deep-link from the Agenda tab's "check your agenda" link: select the
   // right day, expand the matching hour group, and scroll to it so the just
   // confirmed/unconfirmed item is actually visible instead of landing on
@@ -1073,9 +1092,9 @@ const MySchedule = () => {
         .replace('{url}', shareUrl);
 
       if (Platform.OS === 'web' && typeof navigator !== 'undefined' && (navigator as any).share) {
-        await (navigator as any).share({ title: t('mySchedule.shareMyDay', 'Share my day'), text: message, url: shareUrl });
+        await (navigator as any).share({ title: t('mySchedule.shareMyAgenda', 'Share my agenda'), text: message, url: shareUrl });
       } else if (Platform.OS !== 'web') {
-        await Share.share({ message, title: t('mySchedule.shareMyDay', 'Share my day') });
+        await Share.share({ message, title: t('mySchedule.shareMyAgenda', 'Share my agenda') });
       } else {
         await navigator.clipboard.writeText(shareUrl);
         showSuccess(t('mySchedule.shareLinkCopied', 'Share link copied to clipboard'));
@@ -1612,6 +1631,28 @@ const MySchedule = () => {
     ]}>
       <SystemBars style={isDark ? 'light' : 'dark'} />
 
+      {/* Sticky, floats over the Resumen de Agenda card -- rendered outside
+          the ScrollView so it stays fixed on screen instead of scrolling
+          away with the content beneath it. */}
+      <TouchableOpacity
+        onPress={handleShareMyDay}
+        disabled={isSharingDay}
+        accessibilityLabel={t('mySchedule.shareMyAgenda', 'Share my agenda')}
+        style={[
+          styles.shareStickyButton,
+          { backgroundColor: colors.primary, shadowColor: '#000000' },
+        ]}
+      >
+        {isSharingDay ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <MaterialIcons name="share" size={16} color="#FFFFFF" />
+        )}
+        <Text style={styles.shareStickyButtonText}>
+          {t('mySchedule.shareMyAgenda', 'Share my agenda')}
+        </Text>
+      </TouchableOpacity>
+
       {/* Scrollable Content - Includes Calendar and Time Slots */}
       <ScrollView
         ref={scrollViewRef}
@@ -1632,21 +1673,6 @@ const MySchedule = () => {
               <Text style={[styles.calendarTitle, { color: colors.text.primary }]}>
                 {t('mySchedule.scheduleOverview')}
               </Text>
-              <TouchableOpacity
-                onPress={handleShareMyDay}
-                disabled={isSharingDay}
-                accessibilityLabel={t('mySchedule.shareMyDay', 'Share my day')}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
-              >
-                {isSharingDay ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <MaterialIcons name="share" size={16} color={colors.primary} />
-                )}
-                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
-                  {t('mySchedule.shareMyDay', 'Share my day')}
-                </Text>
-              </TouchableOpacity>
             </View>
             <View style={styles.calendarWeek}>
             {dayStats.map((dayStat) => {
@@ -1814,18 +1840,35 @@ const MySchedule = () => {
         )}
 
         <View style={[styles.calendarHeader, { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 8 }]}>
-          {Object.values(expandedHours).some(Boolean) && (
-            <TouchableOpacity
-              onPress={() => setExpandedHours({})}
-              accessibilityLabel={t('mySchedule.collapseAll', 'Collapse all')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
-            >
-              <MaterialIcons name="expand-less" size={18} color={colors.primary} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
-                {t('mySchedule.collapseAll', 'Collapse all')}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={() => {
+              const anyExpanded = Object.values(expandedHours).some(Boolean);
+              if (anyExpanded) {
+                setExpandedHours({});
+              } else {
+                const allHours: { [hour: string]: boolean } = {};
+                Object.keys(groupedSlots).forEach((hour) => { allHours[hour] = true; });
+                setExpandedHours(allHours);
+              }
+            }}
+            accessibilityLabel={
+              Object.values(expandedHours).some(Boolean)
+                ? t('mySchedule.collapseAll', 'Collapse all')
+                : t('mySchedule.expandAll', 'Expand all')
+            }
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+          >
+            <MaterialIcons
+              name={Object.values(expandedHours).some(Boolean) ? 'expand-less' : 'expand-more'}
+              size={18}
+              color={colors.primary}
+            />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+              {Object.values(expandedHours).some(Boolean)
+                ? t('mySchedule.collapseAll', 'Collapse all')
+                : t('mySchedule.expandAll', 'Expand all')}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => loadUserScheduleStatus()}
             disabled={isReloadingStatus}
@@ -2207,6 +2250,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  shareStickyButton: {
+    position: 'absolute',
+    top: 8,
+    right: 12,
+    zIndex: 20,
+    elevation: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+  },
+  shareStickyButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   scrollContent: {
     flex: 1,

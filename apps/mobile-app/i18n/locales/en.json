@@ -873,16 +873,17 @@
       },
       "viewMeetingRequest": "View meeting request",
       "favorites": "Favorites",
-      "shareMyDay": "Share my day",
-      "shareMessage": "Check out my schedule at {eventName}: {url}",
+      "shareMessage": "Follow my live agenda at {eventName}: {url}",
       "shareLinkCopied": "Share link copied to clipboard",
       "shareLinkFailed": "Could not create the share link. Please try again.",
       "shareLinkInvalid": "This share link is invalid or has expired.",
-      "myDayAt": "My schedule at {eventName}",
+      "myDayAt": "Live agenda at {eventName}",
       "liveUpdating": "Live — updates automatically",
       "noConfirmedSessions": "No confirmed sessions yet.",
       "lastUpdated": "Last updated {time}",
-      "poweredBy": "Powered by HASHPASS"
+      "poweredBy": "Powered by HASHPASS",
+      "shareMyAgenda": "Share my agenda",
+      "expandAll": "Expand all"
     },
     "tips": {
       "title": "Networking Tips",
