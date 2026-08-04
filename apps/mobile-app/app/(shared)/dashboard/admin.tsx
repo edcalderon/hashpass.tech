@@ -2188,7 +2188,16 @@ function PassManagementTab({
   const [sort, setSort] = useState<{ key: "pass" | "owner" | "tier" | "usage" | "status"; direction: "asc" | "desc" }>({ key: "pass", direction: "asc" });
   const pageSize = 20;
   useEffect(() => setPage(1), [searchQuery, passTypeFilter, passStatusFilter, passes.length]);
-  const resizeResponders = useMemo(() => Object.fromEntries(Object.keys(columnWidths).map((key) => [key, PanResponder.create({ onStartShouldSetPanResponder: () => true, onMoveShouldSetPanResponder: () => true, onPanResponderMove: (_, gesture) => setColumnWidths((current) => ({ ...current, [key]: Math.max(70, current[key as keyof typeof current] + gesture.dx) })) })])), [columnWidths]);
+  const resizeResponders = useMemo(() => {
+    // Some lightweight native test environments omit PanResponder entirely;
+    // keep the table renderable there while preserving drag handles in-app.
+    const createResponder = (PanResponder as any)?.create;
+    return Object.fromEntries(Object.keys(columnWidths).map((key) => [key, createResponder ? createResponder({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_: unknown, gesture: { dx: number }) => setColumnWidths((current) => ({ ...current, [key]: Math.max(70, current[key as keyof typeof current] + gesture.dx) })),
+    }) : { panHandlers: {} }]));
+  }, [columnWidths]);
   const tablePasses = passes.filter((pass: Pass) => {
     const owner = `${pass.user_name || pass.username || ""} ${pass.user_email || ""}`.toLowerCase();
     const usage = Number(columnFilters.usage);
