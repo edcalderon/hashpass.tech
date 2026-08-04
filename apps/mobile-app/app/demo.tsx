@@ -35,7 +35,7 @@ const HASHPASS_HEADER_LOGO_LIGHT_WEB = require('../assets/logos/hashpass/logo-fu
 // still plays the English audio track (demoVideoSources falls back to 'en'
 // for any non-'es' locale below), so its captions reuse the English cue
 // timing and only swap in translated text — see demo-captions-i18n.ts.
-function getDemoCaptionCues(uiLocale: string, audioLocale: DemoVideoLocale): DemoCaptionCue[] {
+export function getDemoCaptionCues(uiLocale: string, audioLocale: DemoVideoLocale): DemoCaptionCue[] {
   if (audioLocale === 'es') return demoCaptionsEs;
   const translated = demoCaptionTextByLocale[uiLocale];
   if (!translated) return demoCaptionsEn;
@@ -123,7 +123,12 @@ export default function DemoPage() {
       <QuickSettingsPanel forceVisible />
 
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBackPress} activeOpacity={0.7}>
+        <TouchableOpacity
+          testID="demo-back-button"
+          style={styles.backButton}
+          onPress={handleBackPress}
+          activeOpacity={0.7}
+        >
           <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.placeholder} />
@@ -147,6 +152,7 @@ export default function DemoPage() {
 
       <Animated.View entering={FadeInUp.duration(500).delay(150)} style={styles.tabRow}>
         <TabButton
+          testID="demo-tab-tutorial"
           active={tab === 'tutorial'}
           label={t('appTutorialTab') || 'App walkthrough'}
           colors={colors}
@@ -157,6 +163,7 @@ export default function DemoPage() {
           }}
         />
         <TabButton
+          testID="demo-tab-bsl"
           active={tab === 'bsl'}
           label={t('bslShowcaseTab') || 'BSL On Tour showcase'}
           colors={colors}
@@ -183,6 +190,7 @@ export default function DemoPage() {
 
               <View style={styles.mediaControls}>
                 <MediaControlButton
+                  testID="demo-mute-button"
                   icon={muted ? 'volume-off' : 'volume-up'}
                   active={!muted}
                   colors={colors}
@@ -190,6 +198,7 @@ export default function DemoPage() {
                   accessibilityLabel={muted ? 'Unmute' : 'Mute'}
                 />
                 <MediaControlButton
+                  testID="demo-cc-button"
                   icon={showCaptions ? 'subtitles' : 'subtitles-off'}
                   active={showCaptions}
                   colors={colors}
@@ -214,6 +223,7 @@ export default function DemoPage() {
               return (
                 <Animated.View key={chapter.slug} entering={FadeIn.duration(300).delay(80 * index)}>
                   <TouchableOpacity
+                    testID={`demo-chapter-${chapter.slug}`}
                     style={[styles.chapterButton, active && styles.chapterButtonActive]}
                     onPress={() => seekTo(chapter.startSeconds, index)}
                     activeOpacity={0.7}
@@ -247,6 +257,7 @@ export default function DemoPage() {
 
               <View style={styles.mediaControls}>
                 <MediaControlButton
+                  testID="demo-mute-button"
                   icon={muted ? 'volume-off' : 'volume-up'}
                   active={!muted}
                   colors={colors}
@@ -254,6 +265,7 @@ export default function DemoPage() {
                   accessibilityLabel={muted ? 'Unmute' : 'Mute'}
                 />
                 <MediaControlButton
+                  testID="demo-cc-button"
                   icon={showCaptions ? 'subtitles' : 'subtitles-off'}
                   active={showCaptions}
                   colors={colors}
@@ -278,6 +290,7 @@ export default function DemoPage() {
               return (
                 <Animated.View key={chapter.slug} entering={FadeIn.duration(300).delay(80 * index)}>
                   <TouchableOpacity
+                    testID={`demo-chapter-${chapter.slug}`}
                     style={[styles.chapterButton, active && styles.chapterButtonActive]}
                     onPress={() => seekTo(chapter.startSeconds, index)}
                     activeOpacity={0.7}
@@ -306,14 +319,17 @@ function TabButton({
   label,
   colors,
   onPress,
+  testID,
 }: {
   active: boolean;
   label: string;
   colors: ReturnType<typeof useTheme>['colors'];
   onPress: () => void;
+  testID?: string;
 }) {
   return (
     <TouchableOpacity
+      testID={testID}
       onPress={onPress}
       activeOpacity={0.7}
       style={[
@@ -338,6 +354,7 @@ function MediaControlButton({
   onPress,
   accessibilityLabel,
   label,
+  testID,
 }: {
   icon: string;
   active: boolean;
@@ -345,6 +362,7 @@ function MediaControlButton({
   onPress: () => void;
   accessibilityLabel: string;
   label?: string;
+  testID?: string;
 }) {
   // Always a solid dark backing regardless of active state — these overlay
   // arbitrary video frames (sometimes near-white screens), so contrast can't
@@ -353,6 +371,7 @@ function MediaControlButton({
   // white), which stays legible on the solid backing either way.
   return (
     <TouchableOpacity
+      testID={testID}
       onPress={onPress}
       activeOpacity={0.75}
       accessibilityLabel={accessibilityLabel}
