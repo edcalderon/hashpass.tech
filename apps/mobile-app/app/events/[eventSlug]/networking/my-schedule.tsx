@@ -974,20 +974,44 @@ const MySchedule = () => {
 
   const restoreRemovedAgendaSession = async (meeting: Meeting, previousStatus: 'confirmed' | 'tentative') => {
     if (!registryUserId) return;
-    const { error } = await (supabase.from('user_agenda_status') as any).upsert({
-      user_id: registryUserId,
-      event_id: eventId,
-      agenda_id: meeting.id,
-      status: previousStatus,
-      confirmed_at: previousStatus === 'confirmed' ? new Date().toISOString() : null,
-    }, { onConflict: 'user_id,event_id,agenda_id' });
-    if (error) throw error;
-    setRemovedAgendaIds((prev) => {
-      const next = new Set(prev);
-      next.delete(meeting.id);
-      return next;
-    });
-    setUserAgendaStatus((prev) => ({ ...prev, [meeting.id]: previousStatus }));
+    try {
+      const { data: existing, error: lookupError } = await supabase
+        .from('user_agenda_status')
+        .select('id')
+        .eq('user_id', registryUserId)
+        .eq('event_id', eventId)
+        .eq('agenda_id', meeting.id)
+        .maybeSingle();
+      if (lookupError) throw lookupError;
+
+      const payload = {
+        status: previousStatus,
+        confirmed_at: previousStatus === 'confirmed' ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      };
+      if (existing?.id) {
+        const { error } = await (supabase.from('user_agenda_status') as any).update(payload).eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase.from('user_agenda_status') as any).insert({
+          ...payload,
+          user_id: registryUserId,
+          event_id: eventId,
+          agenda_id: meeting.id,
+        });
+        if (error) throw error;
+      }
+      setRemovedAgendaIds((prev) => {
+        const next = new Set(prev);
+        next.delete(meeting.id);
+        return next;
+      });
+      setUserAgendaStatus((prev) => ({ ...prev, [meeting.id]: previousStatus }));
+      showSuccess(t('mySchedule.sessionRestored', 'Session restored to your plan'));
+    } catch (error) {
+      console.error('Error restoring removed agenda session:', error);
+      showError(t('mySchedule.errors.title'), t('mySchedule.errors.failedToRestore', 'Could not restore this session.'));
+    }
   };
 
   const confirmRemoveAgendaSession = async () => {
@@ -2741,7 +2765,7 @@ const styles = StyleSheet.create({
   snapshotSecondaryButton: { alignItems: 'center', paddingTop: 14 },
   snapshotSecondaryButtonText: { fontSize: 14, fontWeight: '600' },
   timelineTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, flex: 1 },
-  timelineRemoveButton: { padding: 3, marginTop: -2 },
+  timelineRemoveButton: { position: 'absolute', right: 0, top: -4, padding: 6, zIndex: 4 },
   removeSessionCard: { margin: 24, borderRadius: 18, padding: 24, alignItems: 'center' },
   removeSessionTitle: { fontSize: 20, fontWeight: '800', marginTop: 10, textAlign: 'center' },
   removeSessionMessage: { fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8 },
@@ -3218,6 +3242,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 8,
     marginBottom: 4,
+    position: 'relative',
   },
   timelineEventTitle: {
     fontSize: 14,
@@ -3228,6 +3253,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
+    marginRight: 28,
   },
   timelineStatusText: {
     fontSize: 10,
