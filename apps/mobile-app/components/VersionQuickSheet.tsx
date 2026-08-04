@@ -88,10 +88,17 @@ export default function VersionQuickSheet({
         return;
       }
       const data = response.data;
-      // Only a version with a native Play artifact belongs in this flow.
-      // currentVersion can be newer because of web/OTA-only releases and must
-      // never send users to the store for a binary that does not exist there.
-      const latest: string | null = data.nativeVersion ?? data.currentVersion ?? null;
+      // On native, only a version with a real Play/App Store artifact
+      // belongs in this flow — currentVersion can be newer than nativeVersion
+      // because of web/OTA-only releases, and must never send a native user
+      // to the store for a binary that doesn't exist there. On web there is
+      // no store at all: nativeVersion intentionally trails web-only
+      // releases (it only bumps on real native builds), so comparing against
+      // it here would report almost every newer web bundle as "up to date"
+      // and never offer the reload. Web must compare against currentVersion.
+      const latest: string | null = Platform.OS === 'web'
+        ? (data.currentVersion ?? null)
+        : (data.nativeVersion ?? data.currentVersion ?? null);
       setAvailableVersion(latest);
       const url: string | null = Platform.OS === 'android'
         ? (data.androidStoreUrl ?? null)

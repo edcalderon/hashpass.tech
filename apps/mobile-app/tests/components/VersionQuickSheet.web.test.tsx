@@ -114,6 +114,21 @@ describe('VersionQuickSheet on web', () => {
     expect(textContent(renderer)).toContain("You're on the latest version");
   });
 
+  it('compares against currentVersion (not the far-behind nativeVersion) on web', async () => {
+    // Regression: nativeVersion only bumps on real native builds and
+    // intentionally trails web-only/OTA releases — comparing against it on
+    // web would report almost every newer web bundle as "up to date" and
+    // never offer the reload.
+    mockApiGet.mockResolvedValueOnce({
+      success: true,
+      data: { nativeVersion: '1.8.101', currentVersion: '1.8.317' },
+    });
+    const renderer = renderSheet();
+    await pressLabel(renderer, 'Check for updates');
+    expect(textContent(renderer)).toContain('v1.8.317 is available');
+    expect(textContent(renderer)).not.toContain('latest version');
+  });
+
   it('clears caches and hard-reloads instead of a plain reload when Update is pressed', async () => {
     const renderer = renderSheet();
     await pressLabel(renderer, 'Check for updates');

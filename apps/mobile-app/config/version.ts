@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608040249, // Updated to current timestamp
+  buildNumber: 202608040404, // Updated to current timestamp
   releaseDate: '2026-08-04',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'stop mislabeling web update-checks as Play Store, add a real native update modal'
+    'distinguish "no auth payload" from "exchange failed" in magic-link errors'
   ],
   breakingChanges: [],
-  notes: 'stop mislabeling web update-checks as Play Store, add a real native update modal'
+  notes: 'distinguish "no auth payload" from "exchange failed" in magic-link errors'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.318': {
+    version: '1.8.318',
+    buildNumber: 202608040404,
+    releaseDate: '2026-08-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'distinguish "no auth payload" from "exchange failed" in magic-link errors'
+    ],
+    breakingChanges: [],
+    notes: 'distinguish "no auth payload" from "exchange failed" in magic-link errors'
+  },
   '1.8.317': {
     version: '1.8.317',
     buildNumber: 202608040249,

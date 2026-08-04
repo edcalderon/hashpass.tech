@@ -82,6 +82,13 @@ export default function VersionUpdateNotification({
       transparent
       animationType="fade"
       statusBarTranslucent
+      onRequestClose={() => {
+        // Android's hardware/system back button fires this instead of a
+        // backdrop press — without a handler, RN swallows the back event
+        // and the modal traps the user with no way to dismiss it via back.
+        // Same "not while an update is in flight" guard as the backdrop.
+        if (!isUpdating) handleLater();
+      }}
     >
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={isUpdating ? undefined : handleLater} />
