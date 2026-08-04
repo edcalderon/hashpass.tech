@@ -171,6 +171,8 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   check: Check,
   'check-circle': CircleCheck,
   'checkmark-circle': CircleCheck,
+  'check-box': CircleCheck,
+  'check-box-outline-blank': Circle,
   'chevron-down': ChevronDown,
   'chevron-left': ChevronLeft,
   'chevron-right': ChevronRight,
