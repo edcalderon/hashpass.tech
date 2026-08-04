@@ -303,7 +303,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
           marginTop: index * 12,
         },
       ]}
-      pointerEvents="box-none"
+      pointerEvents="auto"
     >
       <Pressable
         style={[
@@ -378,6 +378,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
                 toast.action?.onPress();
                 handleHide();
               }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text style={[styles.actionButtonText, { color: icon.color }]}>
                 {toast.action.label}
@@ -484,12 +485,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionButton: {
+    alignSelf: 'center',
+    minWidth: 92,
+    zIndex: 5,
+    elevation: 5,
     marginTop: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1.5,
-    alignSelf: 'center',
   },
   actionButtonText: {
     fontSize: 14,
