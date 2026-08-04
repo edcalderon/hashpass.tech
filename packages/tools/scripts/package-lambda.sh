@@ -48,6 +48,15 @@ cp "$PROJECT_ROOT/packages/infra/lambda/package.json" "$PACKAGE_DIR/"
 echo "3. Copying build output into Lambda server root..."
 cp -r "$BUILD_DIR" "$PACKAGE_DIR/server"
 
+# API-generated agenda images inline these branded SVGs at runtime. Keep the
+# source files in the Lambda package because the Expo server bundle itself does
+# not include the original asset tree (only the static client has fingerprinted
+# copies).
+echo "3b. Copying agenda image brand assets..."
+mkdir -p "$PACKAGE_DIR/assets/logos/hashpass" "$PACKAGE_DIR/assets/logos/bsl"
+cp "$PROJECT_ROOT/apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-white.svg" "$PACKAGE_DIR/assets/logos/hashpass/"
+cp "$PROJECT_ROOT/apps/mobile-app/assets/logos/bsl/"bsl-*-pro.svg "$PACKAGE_DIR/assets/logos/bsl/"
+
 BETTER_AUTH_ROUTE="$PACKAGE_DIR/server/_expo/functions/api/auth/[...auth]+api.js"
 if [ ! -f "$BETTER_AUTH_ROUTE" ]; then
   echo "❌ Better Auth API routes are missing from the Expo server export."

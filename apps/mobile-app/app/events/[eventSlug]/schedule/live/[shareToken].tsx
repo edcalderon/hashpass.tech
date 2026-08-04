@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { useTheme } from '../../../../../hooks/useTheme';
-import { useTranslation } from '../../../../../i18n/i18n';
+import { getCurrentLocale, useTranslation } from '../../../../../i18n/i18n';
 import { apiClient, eventApiPath } from '../../../../../lib/api-client';
 import { getTourBrandAsset } from '../../../../../lib/event-branding';
 import { getEventTzOffset, parseAgendaTime, formatEventClock } from '../../../../../lib/event-time';
@@ -28,10 +29,23 @@ type PublicScheduleItem = {
 // for how the link gets minted from My Schedule.
 const POLL_INTERVAL_MS = 20_000;
 
+function formatLastUpdated(date: Date): string {
+  try {
+    return new Intl.DateTimeFormat(getCurrentLocale(), {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  } catch {
+    // Keep the footer useful in runtimes without Intl date-style support.
+    return date.toLocaleString();
+  }
+}
+
 export default function PublicLiveSchedule() {
   const { eventSlug, shareToken } = useLocalSearchParams<{ eventSlug: string; shareToken: string }>();
   const { colors, isDark } = useTheme();
   const { t } = useTranslation('networking');
+  const navigation = useNavigation();
   const [items, setItems] = useState<PublicScheduleItem[] | null>(null);
   const [ownerHandle, setOwnerHandle] = useState('@hashpass.attendee');
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +56,16 @@ export default function PublicLiveSchedule() {
   const event = (EVENTS as any)[eventId];
   const brand = getTourBrandAsset(eventId);
   const eventTzOffset = getEventTzOffset(event?.eventStartDate);
+
+  // Expo Router otherwise derives the header from the dynamic filename and
+  // exposes `schedule/live/[shareToken]` to users. Keep the token private in
+  // the URL, but present a useful, human-readable title in the navigation bar.
+  useEffect(() => {
+    const title = ownerHandle !== '@hashpass.attendee'
+      ? `${ownerHandle} · ${t('mySchedule.liveAgendaTitle', 'Live agenda')}`
+      : t('mySchedule.liveAgendaTitle', 'Live agenda');
+    navigation.setOptions({ title });
+  }, [navigation, ownerHandle, t]);
 
   const load = useCallback(async (isManualRefresh = false) => {
     if (!eventId || !shareToken) return;
@@ -155,7 +179,10 @@ export default function PublicLiveSchedule() {
 
         {lastUpdated && (
           <Text style={[styles.lastUpdated, { color: colors.text.secondary }]}>
-            {t('mySchedule.lastUpdated', 'Last updated {time}').replace('{time}', lastUpdated.toLocaleTimeString())}
+            {t('mySchedule.lastUpdated', 'Last updated {time}')
+              .replace('{time}', '')
+              .replace(/\s*[:：]\s*$/, '')
+              .trim()} · {formatLastUpdated(lastUpdated)}
           </Text>
         )}
 

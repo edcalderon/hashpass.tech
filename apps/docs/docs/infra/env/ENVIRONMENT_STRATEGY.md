@@ -6,11 +6,11 @@ This document outlines the standardized approach for managing environment variab
 
 We use a strictly standardized set of environment profiles to ensure consistency between developer machines and AWS infrastructure.
 
-| Profile | Purpose | AWS Namespace/Resource | Example Base URL |
+| Profile | Purpose | Secret namespace | Example Base URL |
 | :--- | :--- | :--- | :--- |
-| **`local`** | Personal development on your machine. | **Blocked from AWS** | `http://localhost:8055` |
-| **`dev`** | Shared staging/development on AWS. | `/hashpass/dev/` / `*-dev` | `https://sso-dev.hashpass.co` |
-| **`production`**| Live production environment on AWS. | `/hashpass/production/` / `*-prod`| `https://sso.hashpass.co` |
+| **`local`** | Personal development on your machine. | local `.env` only | `http://localhost:8055` |
+| **`dev`** | Shared staging/development. | Secrets Management `hashpass-dev` | `https://sso-dev.hashpass.co` |
+| **`production`**| Live production environment. | Secrets Management `hashpass-production` | `https://sso.hashpass.co` |
 
 > Deployment split:
 > - `hashpass.tech` / `core` is served through the source-account CloudFront front door, which points at the target-account static origin while the legacy Amplify app is retired.
@@ -25,9 +25,12 @@ We use a strictly standardized set of environment profiles to ensure consistency
 
 ---
 
-## 2. The "Source of Truth" (`.env`)
+## 2. The source of truth
 
-The **root `.env` file** is the single source of truth. It contains:
+The **HASHPASS Secrets Management project `hashpass-6d6h`** is the source of
+truth for shared and runtime secrets. Its environments are `hashpass-dev` and
+`hashpass-production`. The root `.env` is only a local-development projection
+and must never be treated as the authoritative store. It contains:
 1. **Global Variables**: Used by all environments unless overridden.
 2. **Environment Overrides**: Key-value pairs with suffixes like `_DEV` or `_PROD`.
 
@@ -52,8 +55,10 @@ npm run env:propagate [local|dev|production]
 - Sets `NODE_ENV` and `EXPO_PUBLIC_ENV`.
 - The standalone Next.js app in `apps/web-app` does not use this Expo propagation path; it should receive its own deployment envs through the GitHub Pages club build workflow.
 
-### B. `sync-env.js` (Root → AWS Lambda)
-Resolves the repository root from `packages/tools/scripts/` and synchronizes critical environment variables directly to AWS Lambda functions.
+### B. `sync-env.js` (secret provider → AWS Lambda)
+Resolves the repository root from `packages/tools/scripts/` and synchronizes
+critical environment variables to AWS Lambda functions. New secret values must
+come from Secrets Management; do not add new values to AWS SSM/KMS.
 ```bash
 # Syncs _DEV overrides to hashpass-dev-expo-router-api
 node packages/tools/scripts/sync-env.js dev
@@ -63,15 +68,16 @@ node packages/tools/scripts/sync-env.js production
 ```
 - **Security Rule**: `local` profile is blocked from syncing to AWS.
 
-### C. `setup-parameters.sh` (Root → AWS Parameter Store)
-Manages secrets and configurations in AWS SSM Parameter Store surgically.
+### C. Legacy `setup-parameters.sh` (AWS SSM compatibility)
+Manages existing AWS SSM compatibility values only. Do not use it to create
+new secrets or parameters during the cutover.
 ```bash
 # Recommended: Create/Update parameters and delete stale ones
 bash packages/tools/scripts/util/setup-parameters.sh sync [dev|production]
 
 # Other commands: list, verify, delete
 ```
-- **Namespace**: Parameters are stored under `/hashpass/[env]/`.
+- **Legacy namespace**: Existing parameters remain under `/hashpass/[env]/`.
 - **BSL Better Auth**: The sync command also normalizes the BSL Better Auth subtree under `/hashpass/[env]/bsl/better-auth/`.
 - **Surgical Sync**: The `sync` command identifies parameters that exist on AWS but are not in the script's list and deletes them (cleaning "stale" parameters).
 
@@ -102,9 +108,9 @@ bash packages/tools/scripts/util/setup-parameters.sh sync dev
 # 1. Ensure _PROD overrides are set in root .env
 # 2. Propagate production settings
 npm run env:propagate production
-# 3. Update Production Lambda
+# 3. Resolve new secrets from Secrets Management, then update Production Lambda
 node packages/tools/scripts/sync-env.js production
-# 4. Sync Production Parameter Store, including BSL Better Auth aliases
+# 4. Do not create new SSM parameters; update legacy values only when required
 bash packages/tools/scripts/util/setup-parameters.sh sync production
 ```
 
@@ -113,5 +119,39 @@ bash packages/tools/scripts/util/setup-parameters.sh sync production
 ## 5. Security Best Practices
 1. **Never commit `.env`**: The root `.env` contains secrets. it is in `.gitignore`. Use `.env.example` to document keys.
 2. **Blocked Local Sync**: Our tools are hardened to prevent `localhost` values from being pushed to AWS via the `local` target.
-3. **SecureString**: Secrets like `GOOGLE_CLIENT_SECRET` or `ADMIN_PASSWORD` are automatically stored as `SecureString` in AWS SSM.
-4. **Namespace Isolation**: Environments are strictly separated by paths (`/dev/` vs `/production/`) to prevent accidental crosstalk.
+3. **New secret policy**: Create new secrets in the matching Secrets
+   Management environment. Never commit provider tokens or plaintext values.
+4. **Legacy isolation**: Keep AWS SSM `/hashpass/dev/` and
+   `/hashpass/production/` as compatibility paths until migration is approved;
+   do not delete them during this cutover.
+
+---
+
+## 6. Secrets Management vs. KMS
+
+HASHPASS uses two complementary security services. They are not interchangeable:
+
+| Service | Responsibility | HASHPASS examples |
+| :--- | :--- | :--- |
+| **Secrets Management** | Stores, scopes, synchronizes, rotates, and audits secret values by environment. | Supabase keys, database passwords, API tokens, OAuth credentials, JWT signing secrets. |
+| **KMS** | Creates and protects non-exportable cryptographic keys used to encrypt, decrypt, sign, or verify data. | Envelope-encrypting exports/backups, encrypting sensitive fields, or signing release/artifact metadata. |
+
+### Default rule
+
+Put credentials and configuration secrets in the HASHPASS Secrets Management
+project, in the matching `dev` or `production` environment. Do not put a
+database password or API token directly in KMS: KMS is a cryptographic key
+service, not an environment-scoped secret registry.
+
+Use KMS only when a workload needs application-controlled cryptography in
+addition to the encryption already provided by its storage or cloud service.
+The recommended pattern is envelope encryption: the application asks KMS to
+protect a data-encryption key, stores the encrypted key with the ciphertext,
+and keeps only the KMS key identifier in Secrets Management. The KMS key must
+remain non-exportable and access must be limited by workload identity.
+
+AWS SSM/KMS resources currently used by HashPass are retained as legacy
+runtime compatibility or cryptographic infrastructure. New secret values go
+to Secrets Management; existing SSM values are not deleted until a separately
+approved migration confirms every consumer. KMS keys are never deleted as part
+of ordinary secret rotation.

@@ -36,7 +36,13 @@ Release flow:
 - `release:club` / `release:club-dev` target the standalone Next.js app pipelines
 - `release:all:dev` / `release:all:prod` fan out to every configured tenant only when you ask for it, including the club tenants once their app ids are configured
 
-BSL deployment and sync helpers use the `/hashpass/[env]/` SSM namespace. Keep those scripts separate from the legacy `core` track. The same sync flow also normalizes `/hashpass/[env]/bsl/better-auth/` and keeps `EXPO_PUBLIC_SUPABASE_KEY` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` aligned for browser compatibility. `packages/tools/scripts/propagate-env.js` and `packages/tools/scripts/sync-env.js` both resolve the repo root before writing files or syncing AWS state.
+BSL deployment and sync helpers now treat the HASHPASS Secrets Management
+project (`hashpass-6d6h`) as the source for new secrets, using `hashpass-dev`
+and `hashpass-production`. The `/hashpass/[env]/` SSM namespace is legacy
+compatibility state only; do not add new secrets there. Keep the BSL flow
+separate from the legacy `core` track. `packages/tools/scripts/propagate-env.js`
+and `packages/tools/scripts/sync-env.js` both resolve the repo root before
+writing files or syncing runtime state.
 
 The branch-aware release flow:
 

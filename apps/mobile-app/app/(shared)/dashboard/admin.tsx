@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Modal,
   Platform,
+  PanResponder,
 } from "react-native";
 import { MaterialIcons } from "../../../lib/vector-icons";
 import { useTheme } from "../../../hooks/useTheme";
@@ -183,6 +184,11 @@ export default function AdminPanel() {
   const [showCreatePassModal, setShowCreatePassModal] = useState(false);
   const [selectedPass, setSelectedPass] = useState<Pass | null>(null);
   const [showPassDetailsModal, setShowPassDetailsModal] = useState(false);
+  const [passEditMode, setPassEditMode] = useState(false);
+  const [passDraft, setPassDraft] = useState({ maxRequests: "", usedRequests: "", maxBoost: "", usedBoost: "" });
+  const [pendingPassAction, setPendingPassAction] = useState<{ kind: "usage" | "tier" | "status"; passType?: PassType; status?: PassStatus } | null>(null);
+  const [passActionLoading, setPassActionLoading] = useState(false);
+  const [passFeedback, setPassFeedback] = useState<string | null>(null);
   const [newPassUserId, setNewPassUserId] = useState("");
   const [newPassType, setNewPassType] = useState<PassType>("general");
   const [searchQuery, setSearchQuery] = useState("");
@@ -619,7 +625,7 @@ export default function AdminPanel() {
     }
   };
 
-  const loadPasses = async () => {
+  const loadPasses = async (): Promise<Pass[]> => {
     setPassesLoading(true);
     try {
       const eventId = resolvePassStorageEventId(selectedEventId);
@@ -634,9 +640,11 @@ export default function AdminPanel() {
         cursor = payload.nextCursor || null;
       } while (cursor && allPasses.length < 5000);
       setPasses(allPasses);
+      return allPasses;
     } catch (error: any) {
       console.error("Error loading passes:", error);
       Alert.alert("Error", "Failed to load passes: " + error.message);
+      return [];
     } finally {
       setPassesLoading(false);
     }
@@ -963,8 +971,9 @@ export default function AdminPanel() {
       );
       if (!result.success) throw new Error(result.error);
 
-      Alert.alert("Success", "Pass status updated");
-      await loadPasses();
+      const refreshed = await loadPasses();
+      setSelectedPass(refreshed.find((pass) => pass.id === passId) || null);
+      setPassFeedback("Pass status updated successfully.");
     } catch (error: any) {
       console.error("Error updating pass:", error);
       Alert.alert("Error", "Failed to update pass: " + error.message);
@@ -980,10 +989,56 @@ export default function AdminPanel() {
         passType,
       }, { skipEventSegment: true });
       if (!result.success) throw new Error(result.error);
-      Alert.alert("Pass updated", `Pass tier changed to ${passType.toUpperCase()}.`);
-      await loadPasses();
+      const refreshed = await loadPasses();
+      const updatedPass = refreshed.find((pass) => pass.id === passId) || null;
+      setSelectedPass(updatedPass);
+      if (updatedPass) setPassDraft({ maxRequests: String(updatedPass.max_meeting_requests), usedRequests: String(updatedPass.used_meeting_requests), maxBoost: String(updatedPass.max_boost_amount), usedBoost: String(updatedPass.used_boost_amount) });
+      setPassFeedback(`Pass tier changed to ${passType.toUpperCase()}.`);
     } catch (error: any) {
       Alert.alert("Unable to update pass", error.message || "Please try again.");
+    }
+  };
+
+  const handleUpdatePassUsage = async () => {
+    if (!selectedPass) return;
+    const values = Object.fromEntries(Object.entries(passDraft).map(([key, value]) => [key, Number(value)]));
+    if (Object.values(values).some((value) => !Number.isFinite(value) || value < 0)) { Alert.alert("Invalid values", "Usage and limits must be non-negative numbers."); return; }
+    setPendingPassAction({ kind: "usage" });
+  };
+
+  const executePassUsageUpdate = async () => {
+    if (!selectedPass) return;
+    const values = Object.fromEntries(Object.entries(passDraft).map(([key, value]) => [key, Number(value)]));
+    try {
+      setPassActionLoading(true);
+      const result = await apiClient.post("/admin/passes", { action: "update", eventId: resolvePassStorageEventId(selectedEventId), passId: selectedPass.id, maxMeetingRequests: values.maxRequests, usedMeetingRequests: values.usedRequests, maxBoostAmount: values.maxBoost, usedBoostAmount: values.usedBoost }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error || "Unable to update pass");
+      const refreshed = await loadPasses();
+      setSelectedPass(refreshed.find((pass) => pass.id === selectedPass.id) || null);
+      setPassEditMode(false);
+      setPassFeedback("Usage and limits saved successfully.");
+    } catch (error: any) {
+      setPassFeedback(error.message || "Unable to update pass.");
+    } finally {
+      setPassActionLoading(false);
+      setPendingPassAction(null);
+    }
+  };
+
+  const confirmPendingPassAction = async () => {
+    if (!pendingPassAction || !selectedPass) return;
+    const action = pendingPassAction;
+    if (action.kind === "usage") return executePassUsageUpdate();
+    setPendingPassAction(null);
+    setPassActionLoading(true);
+    try {
+      if (action.kind === "tier" && action.passType) {
+        await handleUpdatePassType(selectedPass.id, action.passType);
+      } else if (action.kind === "status" && action.status) {
+        await handleUpdatePassStatus(selectedPass.id, action.status);
+      }
+    } finally {
+      setPassActionLoading(false);
     }
   };
 
@@ -1424,7 +1479,7 @@ export default function AdminPanel() {
             onPassTypeFilterChange={setPassTypeFilter}
             onPassStatusFilterChange={setPassStatusFilter}
             onCreatePass={() => setShowCreatePassModal(true)}
-            onPassPress={(pass: Pass) => { setSelectedPass(pass); setShowPassDetailsModal(true); }}
+            onPassPress={(pass: Pass) => { setSelectedPass(pass); setPassFeedback(null); setPendingPassAction(null); setPassEditMode(false); setPassDraft({ maxRequests: String(pass.max_meeting_requests), usedRequests: String(pass.used_meeting_requests), maxBoost: String(pass.max_boost_amount), usedBoost: String(pass.used_boost_amount) }); setShowPassDetailsModal(true); }}
             onUpdateStatus={handleUpdatePassStatus}
             onUpdateType={handleUpdatePassType}
             onRefresh={loadPasses}
@@ -1539,29 +1594,69 @@ export default function AdminPanel() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Pass details</Text>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.passModalScrollContent}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={styles.modalTitle}>{passEditMode ? "Edit pass" : "Pass details"}</Text>
+              {selectedPass && <TouchableOpacity accessibilityRole="button" accessibilityLabel={passEditMode ? "Preview pass" : "Edit pass"} onPress={() => setPassEditMode((value) => !value)} style={{ padding: 10, borderRadius: 10, backgroundColor: colors.background.paper }}><MaterialIcons name={passEditMode ? "eye" : "edit"} size={20} color={colors.primary} /><Text style={{ fontSize: 11, color: colors.primary, marginTop: 2 }}>{passEditMode ? "Preview" : "Edit"}</Text></TouchableOpacity>}
+            </View>
             {selectedPass && (
               <>
                 <Text style={styles.passNumber}>{selectedPass.pass_number}</Text>
                 <Text style={styles.passInfo}>{selectedPass.user_name || selectedPass.username || selectedPass.user_email || selectedPass.user_id}</Text>
                 <Text style={styles.passInfo}>{selectedPass.user_email || selectedPass.user_id}</Text>
-                <Text style={styles.passInfo}>Status: {selectedPass.status}</Text>
-                <Text style={styles.modalLabel}>Change tier</Text>
-                <View style={styles.passTypeButtons}>
-                  {(["general", "business", "vip"] as PassType[]).map((type) => (
-                    <TouchableOpacity key={type} style={[styles.passTypeButton, selectedPass.pass_type === type && styles.passTypeButtonActive]} onPress={() => { void handleUpdatePassType(selectedPass.id, type); setSelectedPass({ ...selectedPass, pass_type: type }); }}>
-                      <Text style={[styles.passTypeButtonText, selectedPass.pass_type === type && styles.passTypeButtonTextActive]}>{type.toUpperCase()}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 }}>
+                  <View style={[styles.statusBadge, styles.passTypeButtonActive, { paddingHorizontal: 12 }]}><Text style={styles.statusBadgeText}>{selectedPass.pass_type.toUpperCase()} TIER</Text></View>
+                  {selectedPass.username && <Text style={styles.passInfo}>@{selectedPass.username}</Text>}
                 </View>
-                <TouchableOpacity style={[styles.actionButton, selectedPass.status === "active" ? undefined : styles.actionButtonSuccess]} onPress={() => { const nextStatus: PassStatus = selectedPass.status === "active" ? "suspended" : "active"; void handleUpdatePassStatus(selectedPass.id, nextStatus); setSelectedPass({ ...selectedPass, status: nextStatus }); }}>
-                  <Text style={styles.actionButtonText}>{selectedPass.status === "active" ? "Revoke / suspend pass" : "Reactivate pass"}</Text>
-                </TouchableOpacity>
+                <View style={{ marginTop: 14, padding: 14, borderRadius: 12, backgroundColor: colors.background.paper }}>
+                  <Text style={[styles.modalLabel, { marginBottom: 8 }]}>Pass overview</Text>
+                  <Text style={styles.passInfo}>Status: <Text style={{ fontWeight: "700", color: selectedPass.status === "active" ? colors.success.main : colors.warning.main }}>{selectedPass.status}</Text></Text>
+                  <Text style={styles.passInfo}>Requests used: {selectedPass.used_meeting_requests} / {selectedPass.max_meeting_requests}</Text>
+                  <Text style={styles.passInfo}>Boost points used: {selectedPass.used_boost_amount} / {selectedPass.max_boost_amount}</Text>
+                  <Text style={styles.passInfo}>Event: {selectedPass.event_id}</Text>
+                  <Text style={styles.passInfo}>Pass ID: {selectedPass.id}</Text>
+                  <Text style={styles.passInfo}>Created: {new Date(selectedPass.created_at).toLocaleString()}</Text>
+                  <Text style={styles.passInfo}>Updated: {new Date(selectedPass.updated_at).toLocaleString()}</Text>
+                </View>
+                {passFeedback && <View style={styles.passFeedback}><MaterialIcons name="check-circle" size={18} color="#188038" /><Text style={styles.passFeedbackText}>{passFeedback}</Text></View>}
+                {passEditMode && <>
+                  <Text style={styles.modalLabel}>Usage and limits</Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                    {([["maxRequests", "Request limit"], ["usedRequests", "Requests used"], ["maxBoost", "Boost limit"], ["usedBoost", "Boost used"]] as const).map(([key, label]) => <View key={key} style={{ flex: 1, minWidth: 150 }}><Text style={styles.passInfo}>{label}</Text><TextInput value={passDraft[key]} onChangeText={(value) => setPassDraft((current) => ({ ...current, [key]: value.replace(/[^0-9]/g, "") }))} keyboardType="numeric" style={styles.modalInput} /></View>)}
+                  </View>
+                  <TouchableOpacity style={[styles.actionButton, { marginTop: 12, opacity: passActionLoading ? 0.65 : 1 }]} onPress={() => void handleUpdatePassUsage()} disabled={passActionLoading}><Text style={styles.actionButtonText}>{passActionLoading ? "Saving changes…" : "Save usage changes"}</Text></TouchableOpacity>
+                  <Text style={styles.modalLabel}>Change tier</Text>
+                  <View style={styles.passTypeButtons}>
+                    {(["general", "business", "vip"] as PassType[]).map((type) => (
+                      <TouchableOpacity key={type} style={[styles.passTypeButton, selectedPass.pass_type === type && styles.passTypeButtonActive]} onPress={() => setPendingPassAction({ kind: "tier", passType: type })}>
+                        <Text style={[styles.passTypeButtonText, selectedPass.pass_type === type && styles.passTypeButtonTextActive]}>{type.toUpperCase()}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <TouchableOpacity style={[styles.actionButton, selectedPass.status === "active" ? undefined : styles.actionButtonSuccess]} onPress={() => { const nextStatus: PassStatus = selectedPass.status === "active" ? "suspended" : "active"; setPendingPassAction({ kind: "status", status: nextStatus }); }} disabled={passActionLoading}>
+                    <Text style={styles.actionButtonText}>{selectedPass.status === "active" ? "Suspend pass" : "Reactivate pass"}</Text>
+                  </TouchableOpacity>
+                </>}
               </>
             )}
             <TouchableOpacity style={[styles.modalButton, styles.modalButtonCancel, { marginTop: 16 }]} onPress={() => setShowPassDetailsModal(false)}>
               <Text style={styles.modalButtonText}>Close</Text>
             </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={Boolean(pendingPassAction)} transparent animationType="fade" onRequestClose={() => !passActionLoading && setPendingPassAction(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmCard}>
+            <View style={styles.confirmIcon}><MaterialIcons name="help-outline" size={26} color={colors.primary} /></View>
+            <Text style={styles.confirmTitle}>{pendingPassAction?.kind === "usage" ? "Save pass changes?" : pendingPassAction?.kind === "tier" ? "Change pass tier?" : "Update pass status?"}</Text>
+            <Text style={styles.confirmText}>{pendingPassAction?.kind === "usage" ? "The request and boost limits will be updated for this pass." : pendingPassAction?.kind === "tier" ? `This pass will be changed to ${pendingPassAction.passType?.toUpperCase()} and its tier defaults applied.` : `This pass will be marked ${pendingPassAction?.status}.`}</Text>
+            <View style={styles.confirmActions}>
+              <TouchableOpacity style={styles.confirmCancel} onPress={() => setPendingPassAction(null)} disabled={passActionLoading}><Text style={styles.confirmCancelText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.confirmPrimary} onPress={() => void confirmPendingPassAction()} disabled={passActionLoading}>{passActionLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmPrimaryText}>Confirm</Text>}</TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -2085,6 +2180,36 @@ function PassManagementTab({
   onUpdateType,
   onRefresh,
 }: any) {
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [page, setPage] = useState(1);
+  const [columnWidths, setColumnWidths] = useState({ pass: 190, owner: 220, tier: 90, usage: 120, status: 90 });
+  const [columnFilters, setColumnFilters] = useState({ pass: "", owner: "", tier: "", usage: "", status: "" });
+  const [showColumnFilters, setShowColumnFilters] = useState(false);
+  const [sort, setSort] = useState<{ key: "pass" | "owner" | "tier" | "usage" | "status"; direction: "asc" | "desc" }>({ key: "pass", direction: "asc" });
+  const pageSize = 20;
+  useEffect(() => setPage(1), [searchQuery, passTypeFilter, passStatusFilter, passes.length]);
+  const resizeResponders = useMemo(() => {
+    // Some lightweight native test environments omit PanResponder entirely;
+    // keep the table renderable there while preserving drag handles in-app.
+    const createResponder = (PanResponder as any)?.create;
+    return Object.fromEntries(Object.keys(columnWidths).map((key) => [key, createResponder ? createResponder({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_: unknown, gesture: { dx: number }) => setColumnWidths((current) => ({ ...current, [key]: Math.max(70, current[key as keyof typeof current] + gesture.dx) })),
+    }) : { panHandlers: {} }]));
+  }, [columnWidths]);
+  const tablePasses = passes.filter((pass: Pass) => {
+    const owner = `${pass.user_name || pass.username || ""} ${pass.user_email || ""}`.toLowerCase();
+    const usage = Number(columnFilters.usage);
+    return (!columnFilters.pass || pass.pass_number.toLowerCase().includes(columnFilters.pass.toLowerCase())) && (!columnFilters.owner || owner.includes(columnFilters.owner.toLowerCase())) && (!columnFilters.tier || pass.pass_type.toLowerCase().includes(columnFilters.tier.toLowerCase())) && (!columnFilters.status || pass.status.toLowerCase().includes(columnFilters.status.toLowerCase())) && (!columnFilters.usage || (!Number.isNaN(usage) && pass.used_meeting_requests >= usage));
+  }).sort((a: Pass, b: Pass) => {
+    const value = (pass: Pass) => sort.key === "pass" ? pass.pass_number : sort.key === "owner" ? (pass.user_name || pass.user_email || pass.user_id) : sort.key === "tier" ? pass.pass_type : sort.key === "status" ? pass.status : pass.used_meeting_requests;
+    const av = value(a), bv = value(b); return (av < bv ? -1 : av > bv ? 1 : 0) * (sort.direction === "asc" ? 1 : -1);
+  });
+  const pageCount = Math.max(1, Math.ceil(tablePasses.length / pageSize));
+  const visiblePasses = tablePasses.slice((page - 1) * pageSize, page * pageSize);
+  const toggleSort = (key: typeof sort.key) => setSort((current) => current.key === key ? { key, direction: current.direction === "asc" ? "desc" : "asc" } : { key, direction: "asc" });
+
   return (
     <View style={styles.tabContent}>
       <View style={styles.passCard}>
@@ -2128,13 +2253,88 @@ function PassManagementTab({
         <MaterialIcons name="add" size={24} color="#fff" />
         <Text style={styles.createButtonText}>Create New Pass</Text>
       </TouchableOpacity>
-      <Text style={styles.passInfo}>{passes.length} matching pass{passes.length === 1 ? "" : "es"}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <Text style={styles.passInfo}>{passes.length} matching pass{passes.length === 1 ? "" : "es"}</Text>
+        <View style={{ flexDirection: "row", gap: 4 }}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Toggle column search filters" onPress={() => setShowColumnFilters((value) => !value)} style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: showColumnFilters ? colors.primary : colors.background.paper }}>
+            <MaterialIcons name="search" size={16} color={showColumnFilters ? "#fff" : colors.text.secondary} />
+            <Text style={{ fontSize: 12, fontWeight: "700", color: showColumnFilters ? "#fff" : colors.text.secondary }}>{showColumnFilters ? "Hide filters" : "Search"}</Text>
+          </TouchableOpacity>
+          {(["table", "cards"] as const).map((mode) => (
+            <TouchableOpacity
+              key={mode}
+              accessibilityRole="button"
+              accessibilityLabel={`${mode} view`}
+              onPress={() => setViewMode(mode)}
+              style={{ flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, backgroundColor: viewMode === mode ? colors.primary : colors.background.paper }}
+            >
+              <MaterialIcons name={mode === "table" ? "list" : "dashboard"} size={16} color={viewMode === mode ? "#fff" : colors.text.secondary} />
+              <Text style={{ fontSize: 12, fontWeight: "700", color: viewMode === mode ? "#fff" : colors.text.secondary }}>{mode === "table" ? "Table" : "Cards"}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
+        <View style={{ gap: 8 }}>
+          {[1, 2, 3, 4, 5].map((row) => (
+            <View key={row} style={{ height: 52, borderRadius: 8, backgroundColor: colors.background.paper, opacity: 0.75 }} />
+          ))}
+          <ActivityIndicator size="small" color="#007AFF" style={styles.loader} />
+        </View>
       ) : (
         <View style={styles.list}>
-          {passes.map((pass: Pass) => (
+          {viewMode === "table" && visiblePasses.length > 0 && (
+            <View>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 5, marginBottom: 6 }}>
+                <MaterialIcons name="info-outline" size={15} color={colors.text.secondary} />
+                <Text style={{ fontSize: 11, color: colors.text.secondary }}>Swipe horizontally to see more</Text>
+              </View>
+              <ScrollView
+                horizontal
+                nestedScrollEnabled
+                directionalLockEnabled
+                alwaysBounceHorizontal
+                keyboardShouldPersistTaps="handled"
+                showsHorizontalScrollIndicator={Platform.OS === "web"}
+                scrollEventThrottle={16}
+                style={{ borderWidth: 1, borderColor: colors.divider, borderRadius: 10 }}
+                contentContainerStyle={{ minWidth: 760 }}
+              >
+              <View style={{ minWidth: 760 }}>
+                <View style={{ flexDirection: "row", backgroundColor: colors.background.paper, paddingVertical: 10, paddingHorizontal: 12 }}>
+                  {([["Pass", "pass"], ["Owner", "owner"], ["Tier", "tier"], ["Usage", "usage"], ["Status", "status"]] as const).map(([label, key]) => <TouchableOpacity key={key} onPress={() => toggleSort(key)} style={{ width: columnWidths[key], flexDirection: "row", alignItems: "center" }}><Text style={{ flex: 1, fontSize: 12, fontWeight: "700", color: colors.text.secondary }}>{label}</Text><MaterialIcons name={sort.key === key ? (sort.direction === "asc" ? "arrow-upward" : "arrow-downward") : "unfold-more"} size={14} color={colors.text.secondary} /><View {...resizeResponders[key].panHandlers} style={{ width: 3, height: 28, marginLeft: 5, borderRadius: 2, backgroundColor: colors.primaryLight }} /></TouchableOpacity>)}
+                </View>
+                {showColumnFilters && <View style={{ flexDirection: "row", paddingVertical: 6, paddingHorizontal: 12 }}>
+                  {([["pass", "Filter pass"], ["owner", "Filter owner"], ["tier", "Filter tier"], ["usage", "Min requests"], ["status", "Filter status"]] as const).map(([key, placeholder]) => <TextInput key={key} value={columnFilters[key]} onChangeText={(value) => setColumnFilters((current) => ({ ...current, [key]: value }))} placeholder={placeholder} placeholderTextColor={colors.text.secondary} keyboardType={key === "usage" ? "numeric" : "default"} style={{ width: columnWidths[key], paddingHorizontal: 6, paddingVertical: 5, fontSize: 11, color: colors.text.primary, borderWidth: 1, borderColor: colors.divider, borderRadius: 5 }} />)}
+                </View>}
+                {visiblePasses.map((pass: Pass) => (
+                  <ScrollView
+                    key={pass.id}
+                    horizontal
+                    nestedScrollEnabled
+                    directionalLockEnabled
+                    showsHorizontalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    scrollEventThrottle={16}
+                    style={{ borderTopWidth: 1, borderTopColor: colors.divider }}
+                    contentContainerStyle={{ minWidth: 760 }}
+                  >
+                    <TouchableOpacity accessibilityRole="button" onPress={() => onPassPress(pass)} style={{ flexDirection: "row", alignItems: "center", minHeight: 58, paddingVertical: 9, paddingHorizontal: 12, minWidth: 760 }}>
+                      <View style={{ width: columnWidths.pass }}><Text numberOfLines={1} style={styles.passNumber}>{pass.pass_number}</Text><Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.secondary }}>{pass.user_id}</Text></View>
+                      <View style={{ width: columnWidths.owner }}><Text numberOfLines={1} style={{ fontSize: 13, color: colors.text.primary }}>{pass.user_name || pass.username || "Unnamed user"}</Text><Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.secondary }}>{pass.user_email || "No email"}</Text></View>
+                      <Text style={{ width: columnWidths.tier, fontSize: 12, fontWeight: "600", color: colors.text.primary }}>{pass.pass_type.toUpperCase()}</Text>
+                      <Text style={{ width: columnWidths.usage, fontSize: 12, color: colors.text.secondary }}>{pass.used_meeting_requests}/{pass.max_meeting_requests} req · {pass.used_boost_amount}/{pass.max_boost_amount} boost</Text>
+                      <View style={{ width: columnWidths.status }}><View style={[styles.statusBadge, styles[`statusBadge${pass.status}`]]}><Text style={styles.statusBadgeText}>{pass.status}</Text></View></View>
+                      <MaterialIcons name="chevron-right" size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                  </ScrollView>
+                ))}
+              </View>
+              </ScrollView>
+            </View>
+          )}
+          {viewMode === "cards" && visiblePasses.map((pass: Pass) => (
             <View key={pass.id} style={styles.passCard}>
               <View style={styles.passCardHeader}>
                 <TouchableOpacity onPress={() => onPassPress(pass)} accessibilityRole="button">
@@ -2196,6 +2396,13 @@ function PassManagementTab({
               </View>
             </View>
           ))}
+          {!loading && passes.length > 0 && (
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 14 }}>
+              <TouchableOpacity disabled={page <= 1} onPress={() => setPage((value) => Math.max(1, value - 1))} style={{ padding: 8, opacity: page <= 1 ? 0.35 : 1 }}><MaterialIcons name="chevron-left" size={20} color={colors.text.primary} /></TouchableOpacity>
+              <Text style={{ fontSize: 12, color: colors.text.secondary }}>Page {page} of {pageCount}</Text>
+              <TouchableOpacity disabled={page >= pageCount} onPress={() => setPage((value) => Math.min(pageCount, value + 1))} style={{ padding: 8, opacity: page >= pageCount ? 0.35 : 1 }}><MaterialIcons name="chevron-right" size={20} color={colors.text.primary} /></TouchableOpacity>
+            </View>
+          )}
           {passes.length === 0 && (
             <Text style={styles.emptyText}>No passes found</Text>
           )}
@@ -3391,7 +3598,96 @@ const getStyles = (isDark: boolean, colors: any) =>
       borderRadius: 16,
       padding: 24,
       width: "90%",
-      maxHeight: "80%",
+      maxHeight: "88%",
+      shadowColor: "#000",
+      shadowOpacity: 0.18,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 8,
+    },
+    passModalScrollContent: {
+      paddingBottom: 8,
+    },
+    passFeedback: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      padding: 12,
+      marginTop: 12,
+      borderRadius: 10,
+      backgroundColor: "#E8F5E9",
+      borderWidth: 1,
+      borderColor: "#A5D6A7",
+    },
+    passFeedbackText: {
+      flex: 1,
+      color: "#176B2C",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    confirmCard: {
+      width: "88%",
+      maxWidth: 420,
+      backgroundColor: colors.background.paper,
+      borderRadius: 20,
+      padding: 24,
+      shadowColor: "#000",
+      shadowOpacity: 0.24,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 12,
+    },
+    confirmIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.background.default,
+      marginBottom: 14,
+    },
+    confirmTitle: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: colors.text.primary,
+      marginBottom: 8,
+    },
+    confirmText: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.text.secondary,
+      marginBottom: 22,
+    },
+    confirmActions: {
+      flexDirection: "row",
+      gap: 10,
+    },
+    confirmCancel: {
+      flex: 1,
+      paddingVertical: 13,
+      borderRadius: 10,
+      alignItems: "center",
+      backgroundColor: colors.background.default,
+      borderWidth: 1,
+      borderColor: colors.divider,
+    },
+    confirmCancelText: {
+      color: colors.text.primary,
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    confirmPrimary: {
+      flex: 1,
+      paddingVertical: 13,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.primary,
+    },
+    confirmPrimaryText: {
+      color: "#fff",
+      fontSize: 15,
+      fontWeight: "700",
     },
     modalTitle: {
       fontSize: 20,

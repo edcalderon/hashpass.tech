@@ -1,6 +1,6 @@
 {
   "name": "hashpass-mobile-app",
-  "version": "1.8.321",
+  "version": "1.8.322",
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "main": "index.js",

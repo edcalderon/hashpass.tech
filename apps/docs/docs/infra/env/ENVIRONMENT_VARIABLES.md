@@ -4,7 +4,9 @@ This is the current source of truth for the environment variables used by the HA
 
 ## How Values Flow
 
-- Root `.env` is the canonical source for shared values and environment-specific overrides.
+- Secrets Management is the canonical source for shared and runtime secrets;
+  root `.env` is a local-development projection and may contain local
+  overrides only.
 - `npm run env:propagate dev` and `npm run env:propagate production` call `packages/tools/scripts/propagate-env.js`, which now resolves the repository root before writing `apps/mobile-app/.env` and related files for the Expo/mobile runtime.
 - The standalone `apps/web-app` Next.js app should consume its own deployment-scoped environment variables and does not participate in the Expo propagation flow.
 - `node packages/tools/scripts/sync-env.js dev` and `node packages/tools/scripts/sync-env.js production` update runtime env exports from the root `.env` using the same repo-root resolver.

@@ -4,6 +4,7 @@ import {
   Activity,
   Apple,
   ArrowDown,
+  ArrowUpDown,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
@@ -143,6 +144,9 @@ function GoogleIcon({ size = 24, color = '#4285F4', style }: { size?: number; co
 }
 
 const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
+  // Keep every Material icon used by web/native shared screens mapped here;
+  // unmapped names intentionally fall back to CircleHelp, so add new names
+  // before using them in UI copy or controls.
   add: Plus,
   'add-circle-outline': CirclePlus,
   'expand-less': ChevronUp,
@@ -155,6 +159,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   'arrow-downward': ArrowDown,
   'arrow-forward': ArrowRight,
   'arrow-upward': ArrowUp,
+  'unfold-more': ArrowUpDown,
   assignment: ClipboardList,
   block: X,
   bolt: Zap,

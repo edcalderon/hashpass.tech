@@ -4,8 +4,18 @@ BEGIN;
 
 CREATE INDEX IF NOT EXISTS idx_passes_event_status_created_id
   ON public.passes(event_id, status, created_at DESC, id DESC);
-CREATE INDEX IF NOT EXISTS idx_auth_users_email_lower
-  ON auth.users(lower(email));
+-- Supabase owns auth.users; managed pooler roles may not have permission to
+-- create indexes in that schema. The admin query remains correct without this
+-- optional optimization, so do not fail the whole migration in that case.
+DO $$
+BEGIN
+  CREATE INDEX IF NOT EXISTS idx_auth_users_email_lower
+    ON auth.users(lower(email));
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'Skipping optional auth.users email index: provider-owned schema';
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION public.admin_list_event_passes(
   p_actor_user_id uuid, p_event_id text, p_limit integer DEFAULT 50, p_cursor text DEFAULT NULL

@@ -244,7 +244,7 @@ export default function UnifiedSearchAndFilter<T extends BaseItem>({
   }, [data, onFilteredData]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, showFiltersDropdown && styles.containerWithFloatingFilters]}>
       {/* Top Row: Search Input + Filter Button */}
       <View style={styles.topRow}>
         {/* Search Input - expands to left */}
@@ -345,6 +345,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: colors.background.default,
   },
+  containerWithFloatingFilters: {
+    zIndex: 30,
+    elevation: 30,
+  },
   // Top Row Layout
   topRow: {
     flexDirection: 'row',
@@ -414,6 +418,10 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   // Filters Dropdown
   filtersDropdown: {
+    position: 'absolute',
+    top: 64,
+    left: 20,
+    right: 20,
     backgroundColor: colors.background.paper,
     borderRadius: 12,
     marginTop: 8,
@@ -424,7 +432,8 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 24,
+    zIndex: 40,
     maxHeight: 400, // Maximum height before scrolling
   },
   filtersTitle: {

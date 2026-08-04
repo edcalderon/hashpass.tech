@@ -23,7 +23,7 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { format, addDays, isSameDay, isToday, isPast, isFuture } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MaterialIcons } from '../../../../lib/vector-icons';
-import { getTourBrandAsset, HASHPASS_BRAND_LOGOS } from '../../../../lib/event-branding';
+import { getTourBrandAsset } from '../../../../lib/event-branding';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../../components/UnifiedSearchAndFilter';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -122,7 +122,6 @@ const MySchedule = () => {
   const { dbUserId, user } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
-  const previewEventBrand = getTourBrandAsset(eventId) || getTourBrandAsset('bsl');
   const agendaApiPath = eventApiPath(eventId, 'agenda');
   const { showError, showSuccess, showWarning } = useToastHelpers();
   const { t } = useTranslation('networking');
@@ -1232,12 +1231,19 @@ const MySchedule = () => {
   };
 
   const shareCtaMessage = (shareUrl: string) => {
+    const eventHashtags: Record<string, string> = {
+      bsl: '#bsl #bsl2026',
+      chile2026: '#bsl #bsl2026 #bslchile2026',
+      colombia2026: '#bsl #bsl2026 #bslcolombia2026',
+      peru2026: '#bsl #bsl2026 #bslperu2026',
+    };
+    const hashtags = eventHashtags[eventId] || '#bsl #bsl2026';
     const message = t(
       'mySchedule.shareMessage',
       'Join me — this is my agenda at {eventName}, see you at the event! {url}',
       { eventName: event?.name || eventId, url: shareUrl },
     );
-    return message;
+    return `${message} ${hashtags}`;
   };
 
   const openShareIntent = async (platform: 'whatsapp' | 'x' | 'facebook') => {
@@ -1264,6 +1270,7 @@ const MySchedule = () => {
       await Clipboard.setStringAsync(value);
     }
     showSuccess(successMessage);
+    setShareSheet((prev) => ({ ...prev, visible: false }));
   };
 
   const handleDownloadImage = async () => {
@@ -1315,16 +1322,19 @@ const MySchedule = () => {
         link.download = shareSheet.imageFileName || `${eventId}-my-agenda-day1.png`;
         link.click();
         setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+        setShareSheet((prev) => ({ ...prev, visible: false }));
       } catch (error) {
         console.warn('[schedule-share] PNG conversion failed; downloading SVG', error);
         const link = document.createElement('a');
         link.href = shareSheet.imageUrl;
         link.download = (shareSheet.imageFileName || `${eventId}-my-agenda-day1.png`).replace(/\.png$/, '.svg');
         link.click();
+        setShareSheet((prev) => ({ ...prev, visible: false }));
       }
     } else {
       const { Linking } = await import('react-native');
       await Linking.openURL(shareSheet.imageUrl);
+      setShareSheet((prev) => ({ ...prev, visible: false }));
     }
   };
 
@@ -2159,21 +2169,29 @@ const MySchedule = () => {
                   {t('mySchedule.snapshotPrompt', 'Review your day before sharing. You can keep editing your agenda.')}
                 </Text>
                 <View style={styles.snapshotFrame}>
-                  <RNImage
-                    source={HASHPASS_BRAND_LOGOS.dark}
-                    resizeMode="contain"
-                    style={styles.snapshotHashpassLogo}
-                  />
-                  <RNImage
-                    source={previewEventBrand?.logo}
-                    resizeMode="contain"
-                    style={styles.snapshotEventLogo}
-                  />
-                  <RNImage
-                    source={{ uri: shareSheet.imageUrl }}
-                    resizeMode="contain"
-                    style={[styles.snapshotImage, { transform: [{ scale: previewScale }] }]}
-                  />
+                  <ScrollView
+                    horizontal
+                    nestedScrollEnabled
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.snapshotPanOuter}
+                  >
+                    <ScrollView
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.snapshotPanInner}
+                    >
+                      <View style={[styles.snapshotScaledCanvas, {
+                        width: `${previewScale * 100}%`,
+                        height: `${previewScale * 100}%`,
+                      }]}>
+                        <RNImage
+                          source={{ uri: shareSheet.imageUrl }}
+                          resizeMode="contain"
+                          style={styles.snapshotImage}
+                        />
+                      </View>
+                    </ScrollView>
+                  </ScrollView>
                 </View>
                 <View style={styles.snapshotZoomRow}>
                   <TouchableOpacity style={styles.snapshotZoomButton} onPress={() => setPreviewScale((scale) => Math.max(0.8, scale - 0.1))}>
@@ -2730,27 +2748,22 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: '#08091D',
+  },
+  snapshotPanOuter: {
+    minWidth: '100%',
+    minHeight: '100%',
+  },
+  snapshotPanInner: {
+    minWidth: '100%',
+    minHeight: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+  },
+  snapshotScaledCanvas: {
+    minWidth: '100%',
+    minHeight: '100%',
   },
   snapshotImage: { width: '100%', height: '100%' },
-  snapshotHashpassLogo: {
-    position: 'absolute',
-    zIndex: 2,
-    top: 12,
-    left: 14,
-    width: 92,
-    height: 24,
-  },
-  snapshotEventLogo: {
-    position: 'absolute',
-    zIndex: 2,
-    top: 10,
-    right: 14,
-    width: 92,
-    height: 30,
-  },
   snapshotZoomRow: {
     flexDirection: 'row',
     alignItems: 'center',
