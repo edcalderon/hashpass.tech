@@ -236,6 +236,29 @@ describe('web Supabase client initialization', () => {
     expect((result.error as any)?.code).toBe('no_auth_payload_in_callback_url');
   });
 
+  it('uses a different error code for a recognized-but-unusable payload (e.g. token without email)', async () => {
+    // Regression: the no-payload error above must be gated on !hasAuthParams
+    // specifically. A callback URL that DOES have a recognized auth param —
+    // just not a usable combination for any exchange method (a `token`
+    // with no matching `email`, here) — is a genuinely different failure
+    // and must not be mislabeled as "no payload at all", which would
+    // wrongly point debugging at the Supabase redirect allowlist instead
+    // of the real cause.
+    const queryParams = require('expo-auth-session/build/QueryParams');
+    queryParams.getQueryParams.mockReturnValueOnce({
+      params: { token: 'incomplete-otp-token' },
+      errorCode: null,
+    });
+
+    require('../../lib/supabase');
+    const { createSessionFromUrl } = require('../../lib/supabase');
+
+    const result = await createSessionFromUrl('https://hashpass.tech/auth/callback?token=incomplete-otp-token');
+
+    expect(result.session).toBeNull();
+    expect((result.error as any)?.code).toBe('incomplete_auth_payload_in_callback_url');
+  });
+
   it('falls back to direct URL parsing when Expo query parsing misses the callback code', async () => {
     const queryParams = require('expo-auth-session/build/QueryParams');
     queryParams.getQueryParams.mockReturnValueOnce({

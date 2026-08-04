@@ -371,26 +371,45 @@ export const createSessionFromUrl = async (url: string): Promise<{
     console.warn(
       '⚠️ createSessionFromUrl: reached the end with no session and no error — none of the ' +
       'access_token/token_hash+token/code exchange methods matched, and no existing session ' +
-      'was found. If this followed a real magic-link click, check the Supabase project\'s ' +
-      '"Redirect URLs" allowlist: if the requested redirect_to was rejected, GoTrue silently ' +
-      'falls back to the Site URL without the auth payload, landing here with nothing to exchange.'
+      'was found.' +
+      (hasAuthParams
+        ? ' The URL DID contain recognized auth params, so this is a real payload that every ' +
+          'exchange method still rejected as unusable (e.g. a token without its matching email, ' +
+          'or a lone refresh_token) — not a missing-payload case.'
+        : ' If this followed a real magic-link click, check the Supabase project\'s "Redirect ' +
+          'URLs" allowlist: if the requested redirect_to was rejected, GoTrue silently falls ' +
+          'back to the Site URL without the auth payload, landing here with nothing to exchange.')
     );
 
     // Surface this as a distinct, named error instead of `error: null` —
     // callback.tsx's caller falls back to a single generic "no session was
     // established" message whenever `error` is falsy, which made this case
     // (genuinely no auth payload in the URL — almost always a Supabase
-    // "Redirect URLs" allowlist mismatch for this domain, see the warning
-    // above) indistinguishable from "a real code/token was present but its
-    // exchange failed" (e.g. a one-time code already consumed by an email
-    // client's link-prescanner). Both need a completely different fix, so
-    // this needs to be visible in error tracking, not just a console.warn
-    // that's easy to miss among everything else callback.tsx logs.
+    // "Redirect URLs" allowlist mismatch for this domain) indistinguishable
+    // from "a real code/token was present but its exchange failed" (e.g. a
+    // one-time code already consumed by an email client's link-prescanner).
+    // Both need a completely different fix, so this needs to be visible in
+    // error tracking, not just a console.warn that's easy to miss. Gated
+    // specifically on `!hasAuthParams` — a URL that DID have recognized
+    // params (just not a usable combination for any exchange method, e.g.
+    // `token` without `email`, or a lone `refresh_token`) is a genuinely
+    // different failure mode and must not be mislabeled as "no payload at
+    // all", which would wrongly point debugging at the redirect allowlist.
+    if (!hasAuthParams) {
+      return {
+        session: null,
+        user: null,
+        error: Object.assign(new Error('No auth payload in the callback URL (redirect_to likely rejected)'), {
+          code: 'no_auth_payload_in_callback_url',
+        }),
+      };
+    }
+
     return {
       session: null,
       user: null,
-      error: Object.assign(new Error('No auth payload in the callback URL (redirect_to likely rejected)'), {
-        code: 'no_auth_payload_in_callback_url',
+      error: Object.assign(new Error('Callback URL had recognized auth params, but none formed a usable payload for any exchange method'), {
+        code: 'incomplete_auth_payload_in_callback_url',
       }),
     };
 
