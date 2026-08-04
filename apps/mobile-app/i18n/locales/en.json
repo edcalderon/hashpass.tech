@@ -116,7 +116,10 @@
       "pleaseWait": "Please wait...",
       "startingHashpass": "Starting HASHPASS",
       "openingHashpass": "Opening HASHPASS"
-    }
+    },
+    "undo": "Undo",
+    "cancel": "Cancel",
+    "remove": "Remove"
   },
   "auth": {
     "title": "Welcome to",
@@ -830,6 +833,7 @@
         "failedToUnblock": "Failed to unblock slot",
         "failedToAddToFavorites": "Failed to add to favorites",
         "failedToRemoveFromFavorites": "Failed to remove from favorites"
+        ,"failedToRestore": "Could not restore this session."
       },
       "messages": {
         "addedToFavorites": "Added to favorites",
@@ -888,7 +892,20 @@
       "copyImageLink": "Copy image link (for Instagram, etc.)",
       "copyLiveLink": "Copy live tracking link",
       "imageLinkCopied": "Image link copied — paste it into Instagram or anywhere else",
-      "shareThisDay": "Share this day"
+      "shareThisDay": "Share this day",
+      "shareMyDay": "Share this day",
+      "generateSnapshot": "Generate shareable agenda snapshot",
+      "snapshotPreview": "Your shareable agenda snapshot",
+      "snapshotPrompt": "Review your day before sharing. You can keep editing your agenda.",
+      "snapshotConfirm": "Are you sure you want to share this agenda?",
+      "confirmShare": "Confirm and share",
+      "keepEditing": "Keep editing",
+      "removeSession": "Remove session from plan",
+      "removeSessionTitle": "Remove this session?",
+      "removeSessionMessage": "This will remove the session from your day plan. You can undo it briefly after removal.",
+      "sessionRemoved": "Session removed from your plan",
+      "sessionRestored": "Session restored to your plan",
+      "excludePastSessions": "Exclude sessions that have already passed"
     },
     "tips": {
       "title": "Networking Tips",

@@ -116,7 +116,10 @@
       "pleaseWait": "Por favor espera...",
       "startingHashpass": "Iniciando HASHPASS",
       "openingHashpass": "Abriendo HASHPASS"
-    }
+    },
+    "undo": "Deshacer",
+    "cancel": "Cancelar",
+    "remove": "Eliminar"
   },
   "auth": {
     "title": "Bienvenido a",
@@ -887,7 +890,20 @@
       "copyImageLink": "Copiar enlace de la imagen (para Instagram, etc.)",
       "copyLiveLink": "Copiar enlace de seguimiento en vivo",
       "imageLinkCopied": "Enlace de la imagen copiado — pégalo en Instagram o donde quieras",
-      "shareThisDay": "Compartir este día"
+      "shareThisDay": "Compartir este día",
+      "shareMyDay": "Compartir este día",
+      "generateSnapshot": "Generar instantánea de agenda para compartir",
+      "snapshotPreview": "Vista previa de tu agenda compartible",
+      "snapshotPrompt": "Revisa tu día antes de compartir. Puedes seguir editando tu agenda.",
+      "snapshotConfirm": "¿Seguro que quieres compartir esta agenda?",
+      "confirmShare": "Confirmar y compartir",
+      "keepEditing": "Seguir editando",
+      "removeSession": "Eliminar sesión del plan",
+      "removeSessionTitle": "¿Eliminar esta sesión?",
+      "removeSessionMessage": "La sesión se eliminará de tu plan del día. Podrás deshacerlo durante unos segundos.",
+      "sessionRemoved": "Sesión eliminada de tu plan",
+      "sessionRestored": "Sesión restaurada en tu plan",
+      "excludePastSessions": "Excluir sesiones que ya han pasado"
     },
     "tips": {
       "title": "Consejos de Networking",
