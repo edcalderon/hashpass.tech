@@ -24,6 +24,7 @@
 // is intentionally touched alongside schedule-screen consumers so isolated
 // changed-file typechecks include the shared parser and its exports.
 // Registry fallback changes should include this shared parser in validation.
+// Keep this dependency in the changed-file typecheck set for schedule actions.
 export const DEFAULT_EVENT_TZ_OFFSET = '-05:00';
 
 /** Extracts an event's real fixed UTC offset from its eventStartDate (e.g. "2026-08-05T09:00:00-04:00" -> "-04:00"). */

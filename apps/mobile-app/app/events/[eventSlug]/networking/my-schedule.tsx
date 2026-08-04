@@ -1263,6 +1263,7 @@ const MySchedule = () => {
       await Clipboard.setStringAsync(value);
     }
     showSuccess(successMessage);
+    setShareSheet((prev) => ({ ...prev, visible: false }));
   };
 
   const handleDownloadImage = async () => {
@@ -1314,16 +1315,19 @@ const MySchedule = () => {
         link.download = shareSheet.imageFileName || `${eventId}-my-agenda-day1.png`;
         link.click();
         setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+        setShareSheet((prev) => ({ ...prev, visible: false }));
       } catch (error) {
         console.warn('[schedule-share] PNG conversion failed; downloading SVG', error);
         const link = document.createElement('a');
         link.href = shareSheet.imageUrl;
         link.download = (shareSheet.imageFileName || `${eventId}-my-agenda-day1.png`).replace(/\.png$/, '.svg');
         link.click();
+        setShareSheet((prev) => ({ ...prev, visible: false }));
       }
     } else {
       const { Linking } = await import('react-native');
       await Linking.openURL(shareSheet.imageUrl);
+      setShareSheet((prev) => ({ ...prev, visible: false }));
     }
   };
 
