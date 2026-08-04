@@ -39,7 +39,7 @@ function getDemoCaptionCues(uiLocale: string, audioLocale: DemoVideoLocale): Dem
   if (audioLocale === 'es') return demoCaptionsEs;
   const translated = demoCaptionTextByLocale[uiLocale];
   if (!translated) return demoCaptionsEn;
-  return demoCaptionsEn.map((cue, i) => ({ ...cue, text: translated[i] ?? cue.text }));
+  return demoCaptionsEn.map((cue: DemoCaptionCue, i: number) => ({ ...cue, text: translated[i] ?? cue.text }));
 }
 
 type Tab = 'tutorial' | 'bsl';

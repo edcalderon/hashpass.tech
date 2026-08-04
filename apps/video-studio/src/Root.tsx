@@ -25,6 +25,7 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
+        defaultProps={{}}
         calculateMetadata={async () => {
           const layout = await layoutClips(bslShowcaseClips);
           return {
@@ -40,6 +41,7 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
+        defaultProps={{}}
         calculateMetadata={async () => {
           const layout = await layoutClips(appTutorialStepsEn);
           return {
@@ -61,6 +63,7 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
+        defaultProps={{}}
         calculateMetadata={async () => {
           const layout = await layoutClips(appTutorialStepsEs);
           return {
@@ -82,7 +85,15 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{layout: [], narration: narrationEn, locale: 'en' as const}}
+        defaultProps={{
+          layout: [],
+          narration: narrationEn,
+          locale: 'en' as const,
+          introTitle: 'HASHPASS Walkthrough',
+          introSubtitle: 'Getting started',
+          outroTitle: 'Digital Event Platform',
+          outroSubtitle: 'Your Event · Your Community · Your Rewards',
+        }}
         calculateMetadata={async () => {
           const layout = await layoutClips(appTutorialStepsEn);
           return {
@@ -106,7 +117,15 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{layout: [], narration: narrationEs, locale: 'es' as const}}
+        defaultProps={{
+          layout: [],
+          narration: narrationEs,
+          locale: 'es' as const,
+          introTitle: 'Guía de HASHPASS',
+          introSubtitle: 'Primeros pasos',
+          outroTitle: 'Plataforma Digital de Eventos',
+          outroSubtitle: 'Tu Evento · Tu Comunidad · Tus Beneficios',
+        }}
         calculateMetadata={async () => {
           const layout = await layoutClips(appTutorialStepsEs);
           return {
@@ -140,7 +159,15 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{layout: [], narration: bslNarrationEn, locale: 'en' as const}}
+        defaultProps={{
+          layout: [],
+          narration: bslNarrationEn,
+          locale: 'en' as const,
+          introTitle: 'BSL On Tour',
+          introSubtitle: 'Powered by HASHPASS',
+          outroTitle: 'Get your pass',
+          outroSubtitle: 'bsl.hashpass.tech',
+        }}
         calculateMetadata={async () => {
           const layout = await layoutClips(bslShowcaseClips);
           return {
@@ -164,7 +191,15 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={WIDTH}
         height={HEIGHT}
-        defaultProps={{layout: [], narration: bslNarrationEs, locale: 'es' as const}}
+        defaultProps={{
+          layout: [],
+          narration: bslNarrationEs,
+          locale: 'es' as const,
+          introTitle: 'BSL On Tour',
+          introSubtitle: 'Con tecnología de HASHPASS',
+          outroTitle: 'Consigue tu pase',
+          outroSubtitle: 'bsl.hashpass.tech',
+        }}
         calculateMetadata={async () => {
           const layout = await layoutClips(bslShowcaseClips);
           return {
