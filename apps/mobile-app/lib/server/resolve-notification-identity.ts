@@ -134,9 +134,10 @@ async function resolveOrCreateRegistryUserId(
 // (e.g. Better Auth's non-UUID ids), which are resolved through the canonical
 // public.user registry and its provider_ids->>'supabase' link.
 export async function resolveNotificationIdentity(
-  request: Request
+  request: Request,
+  profileId?: string,
 ): Promise<ResolvedNotificationIdentity | ResolveIdentityError> {
-  const supabase = getSupabaseServerForRequest(request);
+  const supabase = getSupabaseServerForRequest(request, profileId);
   const token = extractToken(request);
 
   // 1. Try a direct Supabase bearer token first — covers native Android and
