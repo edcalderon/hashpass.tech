@@ -2507,15 +2507,6 @@ const MySchedule = () => {
                                     <Text style={[styles.timelineEventTitle, { color: colors.text.primary }]} numberOfLines={2}>
                                       {meeting.title || t('agenda.messages.untitledEvent')}
                                     </Text>
-                                    {isAgendaEvent && (
-                                      <TouchableOpacity
-                                        style={styles.timelineRemoveButton}
-                                        onPress={() => requestRemoveAgendaSession(meeting, slot.startTime)}
-                                        accessibilityLabel={t('mySchedule.removeSession', 'Remove session from plan')}
-                                      >
-                                        <MaterialIcons name="close" size={16} color={colors.text.secondary} />
-                                      </TouchableOpacity>
-                                    )}
                                   </View>
                                   <View style={[
                                     styles.timelineStatusBadge,
@@ -2528,6 +2519,15 @@ const MySchedule = () => {
                                       {isConfirmed ? t('mySchedule.status.confirmed') : t('mySchedule.status.tentative')}
                                     </Text>
                                   </View>
+                                  {isAgendaEvent && (
+                                    <TouchableOpacity
+                                      style={styles.timelineRemoveButton}
+                                      onPress={() => requestRemoveAgendaSession(meeting, slot.startTime)}
+                                      accessibilityLabel={t('mySchedule.removeSession', 'Remove session from plan')}
+                                    >
+                                      <MaterialIcons name="close" size={16} color={colors.text.secondary} />
+                                    </TouchableOpacity>
+                                  )}
                                 </View>
                                 {meeting.location && (
                                   <View style={styles.timelineLocation}>
