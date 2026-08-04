@@ -46,7 +46,6 @@ import CrystalForgeBackground from "../components/CrystalForgeBackground";
 import AnimatedGradientBackground from "../components/AnimatedGradientBackground";
 import { Svg, Path } from "react-native-svg";
 import {
-  getHashpassFullLogo,
   getHashpassFooterLogo,
   getHashpassStaticHeroLogo,
 } from "../lib/hashpass-logo";
@@ -462,10 +461,9 @@ export default function HomeScreen() {
 
   const words: string[] = t("taglineFlipList").split(",");
   const staticTaglineWords: string[] = resolveHeroTaglineWords(words);
-  const heroLogoSource =
-    animationLevel === "none"
-      ? getHashpassStaticHeroLogo(isDark)
-      : getHashpassFullLogo(isDark);
+  // The hero background remains dark/red in light theme too; keep the
+  // high-contrast white wordmark for both animated and static variants.
+  const heroLogoSource = getHashpassStaticHeroLogo(isDark);
   const isSignOutPending = signOutStatus === "pending";
   const signOutStatusMessage =
     signOutStatus === "success"

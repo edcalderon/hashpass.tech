@@ -90,7 +90,11 @@ const sidebars = {
         {
           type: 'category',
           label: 'Admin',
-          items: ['reference/admin/admin-event-control-center'],
+          items: [
+            'reference/admin/admin-event-control-center',
+            'reference/admin/bsl-schema-source-of-truth',
+            'reference/admin/bsl-schema-relational-audit',
+          ],
         },
         {
           type: 'category',

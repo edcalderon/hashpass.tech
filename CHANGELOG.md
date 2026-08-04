@@ -1,3 +1,16 @@
+## [1.8.320](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.319...v1.8.320) (2026-08-04)
+
+
+### Bug Fixes
+
+* **home:** keep hero wordmark high contrast ([5bc9105](https://github.com/hashpass-tech/hashpass.tech/commit/5bc910595e9fdf1c7d9382b19c5e53690a6de630))
+* **home:** map hero to white wordmark asset ([7277fcf](https://github.com/hashpass-tech/hashpass.tech/commit/7277fcff8dd7107aeb22e45cfa0148073e605899))
+* **home:** use red-accent white hero logo ([baa99d8](https://github.com/hashpass-tech/hashpass.tech/commit/baa99d858e02d3e87dbb1538ddd2af9227107750))
+* **home:** use white hero wordmark in light mode ([20174b0](https://github.com/hashpass-tech/hashpass.tech/commit/20174b08420f224c11602052ed337dbeb05fe946))
+* **web:** bundle landing carousel logos ([28fb177](https://github.com/hashpass-tech/hashpass.tech/commit/28fb177f9476bad40d3ee5be4f19adafdb66a073))
+### Release Highlights
+- use red-accent white hero logo; map hero to white wordmark asset; keep hero wordmark high contrast; use white hero wordmark in light mode; bundle landing carousel logos
+
 ## [1.8.319](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.318...v1.8.319) (2026-08-04)
 
 

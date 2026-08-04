@@ -38,6 +38,7 @@ import UnifiedSearchAndFilter from "../../../components/UnifiedSearchAndFilter";
 
 type TabType =
   | "passes"
+  | "pass-settings"
   | "pass-codes"
   | "qr-scanner"
   | "meetings"
@@ -180,9 +181,13 @@ export default function AdminPanel() {
   const latestUserSearchRequest = useRef(0);
   const [passesLoading, setPassesLoading] = useState(false);
   const [showCreatePassModal, setShowCreatePassModal] = useState(false);
+  const [selectedPass, setSelectedPass] = useState<Pass | null>(null);
+  const [showPassDetailsModal, setShowPassDetailsModal] = useState(false);
   const [newPassUserId, setNewPassUserId] = useState("");
   const [newPassType, setNewPassType] = useState<PassType>("general");
   const [searchQuery, setSearchQuery] = useState("");
+  const [passTypeFilter, setPassTypeFilter] = useState<PassType | "all">("all");
+  const [passStatusFilter, setPassStatusFilter] = useState<PassStatus | "all">("all");
   const [eventPassTiers, setEventPassTiers] = useState<EventPassTier[]>([]);
   const [passTiersLoading, setPassTiersLoading] = useState(false);
   const [savingPassTier, setSavingPassTier] = useState<PassType | null>(null);
@@ -365,7 +370,9 @@ export default function AdminPanel() {
 
   const loadInitialData = async () => {
     if (activeTab === "passes") {
-      await Promise.all([loadPasses(), loadUsers(), loadEventPassTiers()]);
+      await Promise.all([loadPasses(), loadUsers()]);
+    } else if (activeTab === "pass-settings") {
+      await loadEventPassTiers();
     } else if (activeTab === "pass-codes") {
       await loadPassClaimCodes();
     } else if (activeTab === "meetings") {
@@ -616,12 +623,17 @@ export default function AdminPanel() {
     setPassesLoading(true);
     try {
       const eventId = resolvePassStorageEventId(selectedEventId);
-      const result = await apiClient.get(
-        `/admin/passes?eventId=${encodeURIComponent(eventId)}&limit=100`,
-        { skipEventSegment: true },
-      );
-      if (!result.success) throw new Error(result.error);
-      setPasses((result.data as { data?: Pass[] })?.data || []);
+      const allPasses: Pass[] = [];
+      let cursor: string | null = null;
+      do {
+        const query = `/admin/passes?eventId=${encodeURIComponent(eventId)}&limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+        const result = await apiClient.get(query, { skipEventSegment: true });
+        if (!result.success) throw new Error(result.error);
+        const payload = result.data as { data?: Pass[]; nextCursor?: string | null };
+        allPasses.push(...(payload.data || []));
+        cursor = payload.nextCursor || null;
+      } while (cursor && allPasses.length < 5000);
+      setPasses(allPasses);
     } catch (error: any) {
       console.error("Error loading passes:", error);
       Alert.alert("Error", "Failed to load passes: " + error.message);
@@ -959,6 +971,22 @@ export default function AdminPanel() {
     }
   };
 
+  const handleUpdatePassType = async (passId: string, passType: PassType) => {
+    try {
+      const result = await apiClient.post("/admin/passes", {
+        action: "update",
+        eventId: resolvePassStorageEventId(selectedEventId),
+        passId,
+        passType,
+      }, { skipEventSegment: true });
+      if (!result.success) throw new Error(result.error);
+      Alert.alert("Pass updated", `Pass tier changed to ${passType.toUpperCase()}.`);
+      await loadPasses();
+    } catch (error: any) {
+      Alert.alert("Unable to update pass", error.message || "Please try again.");
+    }
+  };
+
   const handleQRScanSuccess = (_result: QRScanResult) => {
     // Don't close scanner - keep it open to show details
     // The scanner component will handle showing the details
@@ -1095,6 +1123,8 @@ export default function AdminPanel() {
   };
 
   const filteredPasses = passes.filter((pass) => {
+    if (passTypeFilter !== "all" && pass.pass_type !== passTypeFilter) return false;
+    if (passStatusFilter !== "all" && pass.status !== passStatusFilter) return false;
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -1213,6 +1243,21 @@ export default function AdminPanel() {
                 ]}
               >
                 Passes
+              </Text>
+            </TouchableOpacity>
+          )}
+          {canManagePasses && (
+            <TouchableOpacity
+              style={[styles.tab, activeTab === "pass-settings" && styles.tabActive]}
+              onPress={() => setActiveTab("pass-settings")}
+            >
+              <MaterialIcons
+                name="tune"
+                size={20}
+                color={activeTab === "pass-settings" ? "#fff" : colors.text.secondary}
+              />
+              <Text numberOfLines={1} style={[styles.tabText, activeTab === "pass-settings" && styles.tabTextActive]}>
+                Pass Settings
               </Text>
             </TouchableOpacity>
           )}
@@ -1371,19 +1416,33 @@ export default function AdminPanel() {
             styles={styles}
             colors={colors}
             passes={filteredPasses}
-            users={users}
             loading={passesLoading}
-            eventPassTiers={eventPassTiers}
-            passTiersLoading={passTiersLoading}
-            savingPassTier={savingPassTier}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            passTypeFilter={passTypeFilter}
+            passStatusFilter={passStatusFilter}
+            onPassTypeFilterChange={setPassTypeFilter}
+            onPassStatusFilterChange={setPassStatusFilter}
             onCreatePass={() => setShowCreatePassModal(true)}
+            onPassPress={(pass: Pass) => { setSelectedPass(pass); setShowPassDetailsModal(true); }}
             onUpdateStatus={handleUpdatePassStatus}
+            onUpdateType={handleUpdatePassType}
             onRefresh={loadPasses}
-            onRefreshTiers={loadEventPassTiers}
-            onUpdateTier={updateEventPassTier}
           />
+        )}
+
+        {activeTab === "pass-settings" && (
+          <View style={styles.tabContent}>
+            <PassTierSettings
+              styles={styles}
+              key={eventPassTiers.map((tier) => `${tier.event_id}:${tier.pass_type}:${tier.updated_at || ""}`).join("|")}
+              tiers={eventPassTiers}
+              loading={passTiersLoading}
+              savingPassType={savingPassTier}
+              onRefresh={loadEventPassTiers}
+              onSave={updateEventPassTier}
+            />
+          </View>
         )}
 
         {activeTab === "pass-codes" && (
@@ -1470,6 +1529,42 @@ export default function AdminPanel() {
           />
         )}
       </ScrollView>
+
+      {/* Pass details / administrative controls */}
+      <Modal
+        visible={showPassDetailsModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowPassDetailsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Pass details</Text>
+            {selectedPass && (
+              <>
+                <Text style={styles.passNumber}>{selectedPass.pass_number}</Text>
+                <Text style={styles.passInfo}>{selectedPass.user_name || selectedPass.username || selectedPass.user_email || selectedPass.user_id}</Text>
+                <Text style={styles.passInfo}>{selectedPass.user_email || selectedPass.user_id}</Text>
+                <Text style={styles.passInfo}>Status: {selectedPass.status}</Text>
+                <Text style={styles.modalLabel}>Change tier</Text>
+                <View style={styles.passTypeButtons}>
+                  {(["general", "business", "vip"] as PassType[]).map((type) => (
+                    <TouchableOpacity key={type} style={[styles.passTypeButton, selectedPass.pass_type === type && styles.passTypeButtonActive]} onPress={() => { void handleUpdatePassType(selectedPass.id, type); setSelectedPass({ ...selectedPass, pass_type: type }); }}>
+                      <Text style={[styles.passTypeButtonText, selectedPass.pass_type === type && styles.passTypeButtonTextActive]}>{type.toUpperCase()}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TouchableOpacity style={[styles.actionButton, selectedPass.status === "active" ? undefined : styles.actionButtonSuccess]} onPress={() => { const nextStatus: PassStatus = selectedPass.status === "active" ? "suspended" : "active"; void handleUpdatePassStatus(selectedPass.id, nextStatus); setSelectedPass({ ...selectedPass, status: nextStatus }); }}>
+                  <Text style={styles.actionButtonText}>{selectedPass.status === "active" ? "Revoke / suspend pass" : "Reactivate pass"}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            <TouchableOpacity style={[styles.modalButton, styles.modalButtonCancel, { marginTop: 16 }]} onPress={() => setShowPassDetailsModal(false)}>
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Create Pass Modal */}
       <Modal
@@ -1977,35 +2072,47 @@ function PassManagementTab({
   styles,
   colors,
   passes,
-  users,
   loading,
-  eventPassTiers,
-  passTiersLoading,
-  savingPassTier,
   searchQuery,
   onSearchChange,
+  passTypeFilter,
+  passStatusFilter,
+  onPassTypeFilterChange,
+  onPassStatusFilterChange,
   onCreatePass,
+  onPassPress,
   onUpdateStatus,
+  onUpdateType,
   onRefresh,
-  onRefreshTiers,
-  onUpdateTier,
 }: any) {
   return (
     <View style={styles.tabContent}>
-      <PassTierSettings
-        styles={styles}
-        key={eventPassTiers
-          .map(
-            (tier: EventPassTier) =>
-              `${tier.event_id}:${tier.pass_type}:${tier.updated_at || ""}`,
-          )
-          .join("|")}
-        tiers={eventPassTiers}
-        loading={passTiersLoading}
-        savingPassType={savingPassTier}
-        onRefresh={onRefreshTiers}
-        onSave={onUpdateTier}
-      />
+      <View style={styles.passCard}>
+        <View style={styles.passCardHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.passNumber}>Pass registry</Text>
+            <Text style={styles.passInfo}>Search, filter, revoke, and upgrade passes issued for this event.</Text>
+          </View>
+          <TouchableOpacity style={styles.actionButton} onPress={onRefresh} disabled={loading}>
+            <MaterialIcons name="refresh" size={16} color="#fff" />
+            <Text style={styles.actionButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+          {(["all", "general", "business", "vip"] as const).map((type) => (
+            <TouchableOpacity key={type} style={[styles.passTypeButton, passTypeFilter === type && styles.passTypeButtonActive]} onPress={() => onPassTypeFilterChange(type)}>
+              <Text style={[styles.passTypeButtonText, passTypeFilter === type && styles.passTypeButtonTextActive]}>{type === "all" ? "All tiers" : type.toUpperCase()}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+          {(["all", "active", "suspended", "used", "expired", "cancelled"] as const).map((status) => (
+            <TouchableOpacity key={status} style={[styles.filterChip, passStatusFilter === status && styles.filterChipActive]} onPress={() => onPassStatusFilterChange(status)}>
+              <Text style={[styles.filterChipText, passStatusFilter === status && styles.filterChipTextActive]}>{status === "all" ? "All status" : status}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
       <View style={styles.searchContainer}>
         <MaterialIcons name="search" size={20} color={colors.text.secondary} />
         <TextInput
@@ -2021,6 +2128,7 @@ function PassManagementTab({
         <MaterialIcons name="add" size={24} color="#fff" />
         <Text style={styles.createButtonText}>Create New Pass</Text>
       </TouchableOpacity>
+      <Text style={styles.passInfo}>{passes.length} matching pass{passes.length === 1 ? "" : "es"}</Text>
 
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />
@@ -2029,7 +2137,9 @@ function PassManagementTab({
           {passes.map((pass: Pass) => (
             <View key={pass.id} style={styles.passCard}>
               <View style={styles.passCardHeader}>
-                <Text style={styles.passNumber}>{pass.pass_number}</Text>
+                <TouchableOpacity onPress={() => onPassPress(pass)} accessibilityRole="button">
+                  <Text style={styles.passNumber}>{pass.pass_number}</Text>
+                </TouchableOpacity>
                 <View
                   style={[
                     styles.statusBadge,
@@ -2062,6 +2172,11 @@ function PassManagementTab({
                 Boost: {pass.used_boost_amount} / {pass.max_boost_amount}
               </Text>
               <View style={styles.passActions}>
+                {(["general", "business", "vip"] as PassType[]).filter((type) => type !== pass.pass_type).map((type) => (
+                  <TouchableOpacity key={type} style={[styles.actionButton, type === "vip" && styles.actionButtonWarning]} onPress={() => onUpdateType(pass.id, type)}>
+                    <Text style={styles.actionButtonText}>Upgrade {type.toUpperCase()}</Text>
+                  </TouchableOpacity>
+                ))}
                 {pass.status === "active" && (
                   <TouchableOpacity
                     style={styles.actionButton}
@@ -3131,6 +3246,7 @@ const getStyles = (isDark: boolean, colors: any) =>
     passActions: {
       flexDirection: "row",
       gap: 8,
+      flexWrap: "wrap",
       marginTop: 12,
     },
     actionButton: {
@@ -3141,6 +3257,30 @@ const getStyles = (isDark: boolean, colors: any) =>
     },
     actionButtonSuccess: {
       backgroundColor: "#34A853",
+    },
+    actionButtonWarning: {
+      backgroundColor: "#D97706",
+    },
+    filterChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.divider,
+      backgroundColor: colors.background.default,
+    },
+    filterChipActive: {
+      backgroundColor: "#007AFF",
+      borderColor: "#007AFF",
+    },
+    filterChipText: {
+      color: colors.text.secondary,
+      fontSize: 12,
+      fontWeight: "600",
+      textTransform: "capitalize",
+    },
+    filterChipTextActive: {
+      color: "#fff",
     },
     actionButtonText: {
       color: "#fff",
