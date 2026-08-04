@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
+  Share,
 } from 'react-native';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { useTheme } from '../../../../hooks/useTheme';
@@ -1050,6 +1051,43 @@ const MySchedule = () => {
     [userAgendaStatus, userMeetingStatus]
   );
 
+  const [isSharingDay, setIsSharingDay] = useState(false);
+
+  // "Share my day": mints (or reuses) a public share token for this event
+  // via POST /schedule/share-token, then shares the resulting read-only
+  // live link -- see app/events/[eventSlug]/schedule/live/[shareToken].tsx
+  // for what the recipient sees.
+  const handleShareMyDay = async () => {
+    setIsSharingDay(true);
+    try {
+      const response = await apiClient.request(`${eventApiPath(eventId, 'schedule')}/share-token`, {
+        method: 'POST',
+        skipEventSegment: true,
+      });
+      if (!response.success || !response.data?.shareToken) {
+        throw new Error(response.error || 'Failed to create share link');
+      }
+      const shareUrl = `https://hashpass.tech/events/${eventId}/schedule/live/${response.data.shareToken}`;
+      const message = t('mySchedule.shareMessage', 'Check out my schedule at {eventName}: {url}')
+        .replace('{eventName}', event?.name || eventId)
+        .replace('{url}', shareUrl);
+
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && (navigator as any).share) {
+        await (navigator as any).share({ title: t('mySchedule.shareMyDay', 'Share my day'), text: message, url: shareUrl });
+      } else if (Platform.OS !== 'web') {
+        await Share.share({ message, title: t('mySchedule.shareMyDay', 'Share my day') });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        showSuccess(t('mySchedule.shareLinkCopied', 'Share link copied to clipboard'));
+      }
+    } catch (error: any) {
+      if (error?.message?.includes('cancel') || error?.name === 'AbortError') return;
+      showError(t('mySchedule.errors.title'), t('mySchedule.shareLinkFailed', 'Could not create the share link. Please try again.'));
+    } finally {
+      setIsSharingDay(false);
+    }
+  };
+
   // Resolves an agenda item's speaker slug/name to a display name, avatar
   // image, and navigable speaker id -- same config-lookup strategy as
   // agenda.tsx's resolveAgendaSpeaker (minus its DB-directory fallback,
@@ -1594,6 +1632,21 @@ const MySchedule = () => {
               <Text style={[styles.calendarTitle, { color: colors.text.primary }]}>
                 {t('mySchedule.scheduleOverview')}
               </Text>
+              <TouchableOpacity
+                onPress={handleShareMyDay}
+                disabled={isSharingDay}
+                accessibilityLabel={t('mySchedule.shareMyDay', 'Share my day')}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+              >
+                {isSharingDay ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <MaterialIcons name="share" size={16} color={colors.primary} />
+                )}
+                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+                  {t('mySchedule.shareMyDay', 'Share my day')}
+                </Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.calendarWeek}>
             {dayStats.map((dayStat) => {

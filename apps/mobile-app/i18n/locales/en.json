@@ -872,7 +872,17 @@
         "status": "Status"
       },
       "viewMeetingRequest": "View meeting request",
-      "favorites": "Favorites"
+      "favorites": "Favorites",
+      "shareMyDay": "Share my day",
+      "shareMessage": "Check out my schedule at {eventName}: {url}",
+      "shareLinkCopied": "Share link copied to clipboard",
+      "shareLinkFailed": "Could not create the share link. Please try again.",
+      "shareLinkInvalid": "This share link is invalid or has expired.",
+      "myDayAt": "My schedule at {eventName}",
+      "liveUpdating": "Live — updates automatically",
+      "noConfirmedSessions": "No confirmed sessions yet.",
+      "lastUpdated": "Last updated {time}",
+      "poweredBy": "Powered by HASHPASS"
     },
     "tips": {
       "title": "Networking Tips",
