@@ -131,9 +131,10 @@ export default function BSL2025AgendaScreen() {
     startTime: Date | null;
   }>({ visible: false, agendaItem: null, startTime: null });
   const [isConfirming, setIsConfirming] = useState(false);
-  const [agendaActionResult, setAgendaActionResult] = useState<{ visible: boolean; added: boolean }>({
+  const [agendaActionResult, setAgendaActionResult] = useState<{ visible: boolean; added: boolean; slotStartTime: Date | null }>({
     visible: false,
     added: true,
+    slotStartTime: null,
   });
   const [speakerMapRef, setSpeakerMapRef] = useState<Map<string, { id: string; name: string; image?: string }>>(new Map());
   const eventId = event?.id || 'bsl';
@@ -904,7 +905,7 @@ export default function BSL2025AgendaScreen() {
       }));
 
       setConfirmationModal({ visible: false, agendaItem: null, startTime: null });
-      setAgendaActionResult({ visible: true, added: newStatus === 'confirmed' });
+      setAgendaActionResult({ visible: true, added: newStatus === 'confirmed', slotStartTime: startTime });
     } catch (error) {
       console.error('Error toggling confirmation:', error);
       showError(t('messages.error'), newStatus === 'confirmed' ? t('messages.confirmError') : t('messages.unconfirmError'));
@@ -1290,22 +1291,6 @@ export default function BSL2025AgendaScreen() {
           eventImage={event?.image}
         />
 
-        {agenda.length > 0 && (
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 8 }}>
-            <TouchableOpacity
-              onPress={() => { void loadAgenda(); }}
-              disabled={loading}
-              accessibilityLabel={t('refreshAgenda', 'Refresh agenda')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
-            >
-              <MaterialIcons name="refresh" size={18} color={colors.primary} style={loading ? { opacity: 0.5 } : undefined} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
-                {t('refresh', 'Refresh')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* Tab Navigation - Centered with consistent sizing */}
         {Object.keys(agendaByDay).length > 0 && (
           <View style={styles.tabContainer}>
@@ -1376,6 +1361,22 @@ export default function BSL2025AgendaScreen() {
           customFilterLogic={customAgendaFilterLogic}
           showResultsCount={true}
         />
+      )}
+
+      {agenda.length > 0 && (
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 8 }}>
+          <TouchableOpacity
+            onPress={() => { void loadAgenda(); }}
+            disabled={loading}
+            accessibilityLabel={t('refreshAgenda', 'Refresh agenda')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+          >
+            <MaterialIcons name="refresh" size={18} color={colors.primary} style={loading ? { opacity: 0.5 } : undefined} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+              {t('refresh', 'Refresh')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Full day title -- the tab card itself truncates the theme text to
@@ -1461,6 +1462,7 @@ export default function BSL2025AgendaScreen() {
             (confirmationModal.agendaItem.type === 'keynote' ? t('locations.mainStage') : 
              confirmationModal.agendaItem.type === 'registration' ? t('locations.registrationArea') : undefined)}
           startTime={confirmationModal.startTime}
+          eventTzOffset={eventTzOffset}
           isConfirmed={(userAgendaStatus[confirmationModal.agendaItem.id] || 'tentative') === 'confirmed'}
           onConfirm={() => handleToggleConfirmation(confirmationModal.agendaItem!, confirmationModal.startTime!)}
           onCancel={() => setConfirmationModal({ visible: false, agendaItem: null, startTime: null })}
@@ -1471,8 +1473,13 @@ export default function BSL2025AgendaScreen() {
           isFavorite={favoriteStatus[confirmationModal.agendaItem.id] || false}
           onToggleFavorite={() => confirmationModal.agendaItem && handleToggleFavorite(confirmationModal.agendaItem)}
           onViewAgenda={() => {
+            const slotStartTime = confirmationModal.startTime;
             setConfirmationModal({ visible: false, agendaItem: null, startTime: null });
-            router.push(`/events/${eventId}/networking/my-schedule` as any);
+            router.push(
+              (slotStartTime
+                ? `/events/${eventId}/networking/my-schedule?scrollTo=${encodeURIComponent(slotStartTime.toISOString())}`
+                : `/events/${eventId}/networking/my-schedule`) as any
+            );
           }}
         />
       )}
@@ -1481,8 +1488,13 @@ export default function BSL2025AgendaScreen() {
         added={agendaActionResult.added}
         onClose={() => setAgendaActionResult((prev) => ({ ...prev, visible: false }))}
         onViewAgenda={() => {
+          const slotStartTime = agendaActionResult.slotStartTime;
           setAgendaActionResult((prev) => ({ ...prev, visible: false }));
-          router.push(`/events/${eventId}/networking/my-schedule` as any);
+          router.push(
+            (slotStartTime
+              ? `/events/${eventId}/networking/my-schedule?scrollTo=${encodeURIComponent(slotStartTime.toISOString())}`
+              : `/events/${eventId}/networking/my-schedule`) as any
+          );
         }}
       />
     </ScrollView>

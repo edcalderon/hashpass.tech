@@ -55,37 +55,20 @@ export const formatClock = (d: Date): string => {
   return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
-// Timezone handling
-// Default fallback offset (BSL's original Medellín/Bogotá hub, UTC-5) for
-// events that don't specify their own. Real per-event offset should be
-// passed in explicitly (derived from event.eventStartDate's trailing
-// +/-HH:MM) — Chile, for example, is UTC-4, not UTC-5.
-export const EVENT_TZ_OFFSET = '-05:00';
-
-export const endsWithZ = (s: string): boolean => s.endsWith('Z');
-export const hasOtherOffset = (s: string): boolean => /[+-]\d{2}:?\d{0,2}$/.test(s);
-
-export const parseEventISO = (s: string, eventTzOffset: string = EVENT_TZ_OFFSET): Date => {
-  if (!s) return new Date(NaN);
-  if (endsWithZ(s) || hasOtherOffset(s)) return new Date(s);
-  // If no timezone is specified, assume it's in the event's timezone
-  return new Date(`${s}${eventTzOffset}`);
-};
-
-// Extracts the wall-clock hour/minute a Date represents in a *fixed* offset,
-// independent of the viewer's device/browser timezone. Date.getHours() /
-// .getMinutes() report the runtime's local timezone, not the event's real
-// location — that mismatch is what made agenda times render up to an hour
-// off (e.g. showing Colombia's -05:00 wall clock for a Chile, -04:00 event)
-// depending on where the viewer's device/server happened to be.
-const clockPartsAtOffset = (date: Date, offset: string) => {
-  const match = offset.match(/^([+-])(\d{2}):?(\d{2})$/);
-  const offsetMinutes = match
-    ? (Number(match[2]) * 60 + Number(match[3])) * (match[1] === '-' ? -1 : 1)
-    : -300;
-  const shifted = new Date(date.getTime() + offsetMinutes * 60_000);
-  return { hour: shifted.getUTCHours(), minute: shifted.getUTCMinutes() };
-};
+// Timezone handling — delegates to lib/event-time.ts, the single source of
+// truth for event-local time math, re-exported here for backward
+// compatibility with existing `from 'types/agenda'` imports. Do not
+// reimplement offset/clock math in this file; add it to event-time.ts and
+// import it instead, so every screen that displays an event time stays in
+// sync with a single implementation.
+export {
+  DEFAULT_EVENT_TZ_OFFSET as EVENT_TZ_OFFSET,
+  getEventTzOffset,
+  parseEventISO,
+  toAbsoluteISO,
+  eventClockParts as clockPartsAtOffset,
+} from '../lib/event-time';
+import { parseEventISO, eventClockParts as clockPartsAtOffset, DEFAULT_EVENT_TZ_OFFSET as EVENT_TZ_OFFSET } from '../lib/event-time';
 
 export const formatTimeRange = (
   item: { time?: string | null; duration_minutes?: number; type?: string },

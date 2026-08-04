@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -16,7 +17,7 @@ import {
 } from 'react-native';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { useTheme } from '../../../../hooks/useTheme';
-import { format, addDays, isSameDay, isToday, isPast, isFuture, parseISO } from 'date-fns';
+import { format, addDays, isSameDay, isToday, isPast, isFuture } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MaterialIcons } from '../../../../lib/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -42,22 +43,18 @@ const DEFAULT_BSL_TOUR_DATES = {
   end: new Date(2025, 10, 14)    // November 14, 2025
 };
 
-// Interpret all incoming times as event-local wall clock (Medellín, UTC-05)
-// - If string ends with 'Z', replace with -05:00 so 08:00:00Z -> 08:00:00-05:00
-// - If it already has an explicit offset (e.g., +01:00), keep as is
-// - If it has no offset, append -05:00
-const EVENT_TZ_OFFSET = '-05:00';
-const endsWithZ = (s: string) => /[zZ]$/.test(s);
-const hasOtherOffset = (s: string) => /[+-]\d{2}:?\d{2}$/.test(s);
-const parseEventISO = (s: string) => {
-  let normalized = s;
-  if (endsWithZ(s)) {
-    normalized = s.slice(0, -1) + EVENT_TZ_OFFSET;
-  } else if (!hasOtherOffset(s)) {
-    normalized = s + EVENT_TZ_OFFSET;
-  }
-  return parseISO(normalized);
-};
+// Time parsing/formatting delegates to lib/event-time.ts, the single source
+// of truth for event-local time math shared with agenda.tsx and
+// ScheduleConfirmationModal — see that file's header comment for why this
+// exists (three independent copies of this logic had drifted, causing the
+// same session to show different times on different screens).
+import {
+  DEFAULT_EVENT_TZ_OFFSET as EVENT_TZ_OFFSET,
+  parseEventISO as parseEventISOWithDefaultOffset,
+  formatEventClock,
+  toAbsoluteISO,
+} from '../../../../lib/event-time';
+const parseEventISO = (s: string, eventTzOffset: string = EVENT_TZ_OFFSET) => parseEventISOWithDefaultOffset(s, eventTzOffset);
 
 const agendaTimeRange = /^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/;
 
@@ -99,26 +96,10 @@ const getAgendaDateTimeRange = (
   return { startTime, endTime: end.toISOString() };
 };
 
-const eventOffsetMinutes = (offset: string) => {
-  const match = offset.match(/^([+-])(\d{2}):?(\d{2})$/);
-  if (!match) return -300;
-  const minutes = Number(match[2]) * 60 + Number(match[3]);
-  return match[1] === '+' ? minutes : -minutes;
-};
-
-const eventClockParts = (date: Date, offset: string) => {
-  const localDate = new Date(date.getTime() + eventOffsetMinutes(offset) * 60_000);
-  return { hour: localDate.getUTCHours(), minute: localDate.getUTCMinutes() };
-};
-
-const formatEventTime = (date: Date, offset: string, includeMinutes = true) => {
-  const { hour, minute } = eventClockParts(date, offset);
-  const suffix = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour % 12 || 12;
-  return includeMinutes
-    ? `${displayHour}:${String(minute).padStart(2, '0')} ${suffix}`
-    : `${displayHour} ${suffix}`;
-};
+// formatEventClock() replaces this file's old local formatEventTime() —
+// same signature (date, offset, includeMinutes), now shared with
+// agenda.tsx/ScheduleConfirmationModal via lib/event-time.ts.
+const formatEventTime = formatEventClock;
 
 const eventSlotStart = (date: Date, hour: number, minute: number, offset: string) =>
   new Date(`${date.toISOString().slice(0, 10)}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00${offset}`);
@@ -130,18 +111,6 @@ const addMinutes = (date: Date, minutes: number): Date => {
   return result;
 };
 
-// Serializes a Date as an explicitly-offset ISO string ("+00:00") instead of
-// Date.toISOString()'s bare "Z" suffix. Computed startTime/endTime values get
-// re-parsed later through parseEventISO (e.g. in generateTimeSlots's slot
-// matching) — parseEventISO treats a bare "Z" suffix as an untagged legacy
-// timestamp and reinterprets it as Medellín (-05:00) wall-clock time, which
-// silently shifts an already-correct absolute instant by up to 5 hours. That
-// mis-shifted endTime is what caused a single real agenda item (e.g. a
-// 30-minute "Welcome cocktail") to appear to span 5+ hours and swallow every
-// later session's slot on My Schedule. "+00:00" matches parseEventISO's
-// hasOtherOffset check, so it's preserved as-is on re-parse instead.
-const toAbsoluteISO = (date: Date): string => date.toISOString().replace('Z', '+00:00');
-
 const MySchedule = () => {
   const { colors, isDark } = useTheme();
   const { dbUserId, user } = useAuth();
@@ -151,6 +120,8 @@ const MySchedule = () => {
   const { showError, showSuccess, showWarning } = useToastHelpers();
   const { t } = useTranslation('networking');
   const navigation = useNavigation();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ scrollTo?: string }>();
   useLayoutEffect(() => {
     navigation.setOptions({ title: t('mySchedule.title') } as any);
   }, [navigation, t]);
@@ -162,6 +133,9 @@ const MySchedule = () => {
   const eventTimezoneOffset = event?.eventStartDate?.match(/([+-]\d{2}:?\d{2})$/)?.[1] || EVENT_TZ_OFFSET;
   const [selectedDate, setSelectedDate] = useState<Date>(eventDates.start);
   const [expandedHours, setExpandedHours] = useState<{[key: string]: boolean}>({});
+  const scrollViewRef = useRef<ScrollView>(null);
+  const hourGroupRefs = useRef<{ [hour: string]: View | null }>({});
+  const handledScrollToRef = useRef<string | null>(null);
   const [dbMeetings, setDbMeetings] = useState<Meeting[]>([]);
   const [loadingAgenda, setLoadingAgenda] = useState<boolean>(false);
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
@@ -667,6 +641,38 @@ const MySchedule = () => {
 
     return grouped;
   }, [schedule, selectedDate, eventTimezoneOffset]);
+
+  // Deep-link from the Agenda tab's "check your agenda" link: select the
+  // right day, expand the matching hour group, and scroll to it so the just
+  // confirmed/unconfirmed item is actually visible instead of landing on
+  // whatever day/scroll position this screen happened to be at.
+  useEffect(() => {
+    if (!params.scrollTo || params.scrollTo === handledScrollToRef.current) return;
+    if (schedule.length === 0) return;
+
+    const target = new Date(params.scrollTo);
+    if (isNaN(target.getTime())) return;
+
+    const targetDay = schedule.find((day: DaySchedule) => isSameDay(day.date, target));
+    if (!targetDay) return;
+
+    handledScrollToRef.current = params.scrollTo;
+    setSelectedDate(targetDay.date);
+    const hour = formatEventTime(target, eventTimezoneOffset, false);
+    setExpandedHours(prev => ({ ...prev, [hour]: true }));
+
+    // Wait a tick for the hour group to expand and lay out before measuring.
+    setTimeout(() => {
+      const node = hourGroupRefs.current[hour];
+      const scrollNode = scrollViewRef.current;
+      if (!node || !scrollNode) return;
+      (node as any).measureLayout(
+        scrollNode,
+        (_x: number, y: number) => scrollNode.scrollTo({ y: Math.max(0, y - 12), animated: true }),
+        () => {},
+      );
+    }, 150);
+  }, [params.scrollTo, schedule, eventTimezoneOffset]);
 
   // Calculate day statistics for calendar view
   const dayStats = useMemo(() => {
@@ -1370,18 +1376,21 @@ const MySchedule = () => {
     const isExpanded = expandedHours[hour] ?? false;
 
     return (
-      <View key={hour} style={[
-        styles.hourGroup,
-        {
-          backgroundColor: colors.background.paper,
-          borderColor: colors.divider,
-          shadowColor: '#000000',
-          shadowOpacity: isDark ? 0.4 : 0.1,
-          shadowOffset: { width: 0, height: 2 },
-          shadowRadius: 4,
-          elevation: isDark ? 4 : 2,
-        }
-      ]}>
+      <View
+        key={hour}
+        ref={(el) => { hourGroupRefs.current[hour] = el; }}
+        style={[
+          styles.hourGroup,
+          {
+            backgroundColor: colors.background.paper,
+            borderColor: colors.divider,
+            shadowColor: '#000000',
+            shadowOpacity: isDark ? 0.4 : 0.1,
+            shadowOffset: { width: 0, height: 2 },
+            shadowRadius: 4,
+            elevation: isDark ? 4 : 2,
+          }
+        ]}>
         <TouchableOpacity
           style={[
             styles.hourHeader,
@@ -1427,7 +1436,8 @@ const MySchedule = () => {
       <SystemBars style={isDark ? 'light' : 'dark'} />
 
       {/* Scrollable Content - Includes Calendar and Time Slots */}
-      <ScrollView 
+      <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollContent}
         contentContainerStyle={styles.scrollContentContainer}
         showsVerticalScrollIndicator={true}
@@ -1623,6 +1633,7 @@ const MySchedule = () => {
           title={confirmationModal.meeting.title || t('agenda.messages.untitledEvent')}
           location={confirmationModal.meeting.location}
           startTime={confirmationModal.slotStartTime}
+          eventTzOffset={eventTimezoneOffset}
           isConfirmed={(confirmationModal.meeting as any).isFreeSlot
             ? (userFreeSlotStatus[confirmationModal.slotStartTime.toISOString()] || 'available') === 'interested'
             : (confirmationModal.meeting as any).isAgendaEvent
