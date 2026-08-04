@@ -1,13 +1,13 @@
 import { Platform, type ImageSourcePropType } from "react-native";
 
-const HASHPASS_DARK_LOGO_WEB = require("../assets/logos/hashpass/logo-full-hashpass-white-cyan.svg");
+const HASHPASS_DARK_LOGO_WEB = { uri: "/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg" };
 const HASHPASS_DARK_LOGO_NATIVE = require("../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp");
-const HASHPASS_LIGHT_LOGO_WEB = require("../assets/logos/hashpass/logo-full-hashpass-black.svg");
+const HASHPASS_LIGHT_LOGO_WEB = { uri: "/assets/logos/hashpass/logo-full-hashpass-black.svg" };
 const HASHPASS_LIGHT_LOGO_NATIVE = require("../assets/logos/hashpass/logo-full-hashpass-black.webp");
 
 // Footer-specific: on light web the footer has a dark-tinted gradient background,
 // so use the white logo there instead of the black hero logo.
-const HASHPASS_LIGHT_FOOTER_LOGO_WEB = require("../assets/logos/hashpass/logo-full-hashpass-white.svg");
+const HASHPASS_LIGHT_FOOTER_LOGO_WEB = { uri: "/assets/logos/hashpass/logo-full-hashpass-white.svg" };
 
 export const getHashpassFullLogo = (isDark: boolean): ImageSourcePropType => {
   if (Platform.OS === "web") {

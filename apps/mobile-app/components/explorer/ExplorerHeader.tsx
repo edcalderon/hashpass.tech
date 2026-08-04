@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import { useTheme } from '../../hooks/useTheme';
 
-const DEFAULT_LOGO_SOURCE = require('../../assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg');
-const DEFAULT_LOGO_URI = Image.resolveAssetSource(DEFAULT_LOGO_SOURCE)?.uri ?? '';
+// Keep web SVGs as concrete public URLs. Resolving a bundled SVG through
+// Metro can produce `/logos/bsl`, which is a directory and triggers ENOENT.
+const DEFAULT_LOGO_URI = '/assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg';
 
 interface ExplorerHeaderProps {
   title: string;
