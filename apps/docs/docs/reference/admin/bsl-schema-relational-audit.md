@@ -1,5 +1,7 @@
 # BSL database schema and relation audit
 
+> Canonical baseline: [BSL database schema source of truth](./bsl-schema-source-of-truth.md).
+
 Status: review baseline (2026-08-04)
 
 This document is the canonical review boundary for the BSL development and
