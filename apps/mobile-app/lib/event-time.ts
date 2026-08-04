@@ -42,6 +42,24 @@ export const parseEventISO = (s: string | null | undefined, eventTzOffset: strin
   return new Date(`${s}${eventTzOffset}`);
 };
 
+/** Parse an agenda time that may be a wall-clock range such as `08:30-09:30`. */
+export const parseAgendaTime = (
+  value: string | null | undefined,
+  eventStartDate?: string | null,
+  day?: string | number | null,
+  eventTzOffset: string = DEFAULT_EVENT_TZ_OFFSET,
+): Date => {
+  const direct = parseEventISO(value, eventTzOffset);
+  if (!Number.isNaN(direct.getTime())) return direct;
+  const timeMatch = String(value || '').match(/^\s*(\d{1,2}):(\d{2})/);
+  const dateMatch = eventStartDate?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!timeMatch || !dateMatch) return new Date(NaN);
+  const dayNumber = Math.max(1, Number.parseInt(String(day || '1'), 10) || 1);
+  const base = new Date(Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]) + dayNumber - 1));
+  const date = base.toISOString().slice(0, 10);
+  return new Date(`${date}T${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}:00${eventTzOffset}`);
+};
+
 /**
  * Serializes a Date as an explicitly-offset ISO string ("+00:00") instead of
  * Date.toISOString()'s bare "Z" suffix. Needed whenever a *computed* instant

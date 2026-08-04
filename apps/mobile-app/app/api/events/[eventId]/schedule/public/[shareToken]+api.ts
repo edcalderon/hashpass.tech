@@ -34,11 +34,23 @@ export async function GET(request: Request) {
       return Response.json({ error: 'This share link is invalid or has expired' }, { status: 404 });
     }
 
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('user_profiles')
       .select('full_name')
       .eq('user_id', share.user_id)
       .maybeSingle();
+    if (!profile) {
+      const { data: registry } = await (supabase as any)
+        .from('user')
+        .select('provider_ids')
+        .eq('id', share.user_id)
+        .maybeSingle();
+      const supabaseUserId = registry?.provider_ids?.supabase;
+      if (supabaseUserId) {
+        const result = await supabase.from('user_profiles').select('full_name').eq('user_id', supabaseUserId).maybeSingle();
+        profile = result.data;
+      }
+    }
     const fullName = typeof profile?.full_name === 'string' ? profile.full_name.trim() : '';
     const ownerHandle = fullName
       ? `@${fullName.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '').slice(0, 32)}`

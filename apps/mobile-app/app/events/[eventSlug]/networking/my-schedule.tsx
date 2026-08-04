@@ -30,7 +30,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
 import { supabase } from '../../../../lib/supabase';
-import { apiClient, eventApiPath } from '../../../../lib/api-client';
+import { apiClient, eventApiPath, getRuntimeApiBaseUrl } from '../../../../lib/api-client';
 import { useToastHelpers } from '@contexts/ToastContext';
 import { useTranslation, getCurrentLocale } from '../../../../i18n/i18n';
 import type { Meeting, TimeSlot, DaySchedule } from '@/types/networking';
@@ -1212,7 +1212,8 @@ const MySchedule = () => {
       const locale = getCurrentLocale();
       const origin = resolveShareOrigin();
       const shareUrl = `${origin}/events/${eventId}/schedule/live/${response.data.shareToken}`;
-      const imageUrl = `${origin}/api/events/${eventId}/schedule/public/${response.data.shareToken}/image?day=${dayNumber}&locale=${locale}${omitPast ? '&excludePast=1' : ''}`;
+      const apiOrigin = getRuntimeApiBaseUrl().replace(/\/$/, '');
+      const imageUrl = `${apiOrigin}/${eventApiPath(eventId, 'schedule')}/public/${response.data.shareToken}/image?day=${dayNumber}&locale=${locale}${omitPast ? '&excludePast=1' : ''}`;
       setPreviewScale(1);
       setShareSheet({
         visible: true,

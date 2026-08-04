@@ -6,7 +6,7 @@ import { useTheme } from '../../../../../hooks/useTheme';
 import { useTranslation } from '../../../../../i18n/i18n';
 import { apiClient, eventApiPath } from '../../../../../lib/api-client';
 import { getTourBrandAsset } from '../../../../../lib/event-branding';
-import { getEventTzOffset, parseEventISO, formatEventClock } from '../../../../../lib/event-time';
+import { getEventTzOffset, parseAgendaTime, formatEventClock } from '../../../../../lib/event-time';
 import { MaterialIcons } from '../../../../../lib/vector-icons';
 import { EVENTS } from '../../../../../config/events';
 
@@ -133,7 +133,7 @@ export default function PublicLiveSchedule() {
             {dayItems.map((item) => (
               <View key={item.id} style={[styles.sessionCard, { backgroundColor: colors.background.paper, borderColor: colors.divider }]}>
                 <Text style={[styles.sessionTime, { color: colors.primary }]}>
-                  {formatEventClock(parseEventISO(item.time, eventTzOffset), eventTzOffset)}
+                  {formatEventClock(parseAgendaTime(item.time, event?.eventStartDate, item.day, eventTzOffset), eventTzOffset)}
                 </Text>
                 <Text style={[styles.sessionTitle, { color: colors.text.primary }]}>{item.title}</Text>
                 {item.location && (

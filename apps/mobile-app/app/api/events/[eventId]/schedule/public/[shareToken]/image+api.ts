@@ -1,5 +1,6 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { eventIdFromRequest } from '@/lib/server/event-api';
+import { parseAgendaTime } from '@/lib/event-time';
 import { EVENTS } from '@/config/events';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -95,11 +96,23 @@ export async function GET(request: Request) {
       return new Response('This share link is invalid or has expired', { status: 404 });
     }
 
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('user_profiles')
       .select('full_name')
       .eq('user_id', share.user_id)
       .maybeSingle();
+    if (!profile) {
+      const { data: registry } = await (supabase as any)
+        .from('user')
+        .select('provider_ids')
+        .eq('id', share.user_id)
+        .maybeSingle();
+      const supabaseUserId = registry?.provider_ids?.supabase;
+      if (supabaseUserId) {
+        const result = await supabase.from('user_profiles').select('full_name').eq('user_id', supabaseUserId).maybeSingle();
+        profile = result.data;
+      }
+    }
     const ownerName = typeof profile?.full_name === 'string' ? profile.full_name.trim() : '';
     const ownerHandle = ownerName
       ? `@${ownerName.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '').slice(0, 32)}`
@@ -128,15 +141,15 @@ export async function GET(request: Request) {
       items = data || [];
     }
 
+    const event = (EVENTS as any)[eventId];
     const day = requestedDay || items[0]?.day || '1';
     const excludePast = url.searchParams.get('excludePast') === '1';
     const dayItems = items.filter((item) =>
       (item.day || '1') === day &&
-      (!excludePast || Number.isNaN(new Date(item.time).getTime()) || new Date(item.time).getTime() >= Date.now())
+      (!excludePast || parseAgendaTime(item.time, event?.eventStartDate, item.day, event?.eventStartDate?.match(/([+-]\d{2}:?\d{2})$/)?.[1] || '-05:00').getTime() >= Date.now())
     );
     const dayName = dayItems[0]?.day_name || '';
 
-    const event = (EVENTS as any)[eventId];
     const eventName = event?.name || eventId;
     const eventBrandColor = BRAND_COLORS[eventId] || '#8b3ee8';
     const dayNumber = Math.max(1, Number.parseInt(day, 10) || 1);
@@ -167,9 +180,9 @@ export async function GET(request: Request) {
     const eventLogoUrl = publicAssetUrl(
       event?.brandingLogo || event?.image || '/assets/logos/bsl/bsl-ontour-pro.svg'
     );
-    const inlineSvgAsset = async (assetUrl: string) => {
+    const inlineSvgAsset = async (assetUrl: string, kind: 'hashpass' | 'event') => {
       try {
-        const assetRelativePath = assetUrl.includes('hashpass')
+        const assetRelativePath = kind === 'hashpass'
           ? 'apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-white.svg'
           : eventId === 'chile2026'
             ? 'apps/mobile-app/assets/logos/bsl/bsl-chile-pro.svg'
@@ -192,8 +205,8 @@ export async function GET(request: Request) {
       }
     };
     const [hashpassLogoHref, eventLogoHref] = await Promise.all([
-      inlineSvgAsset(hashpassLogoUrl),
-      inlineSvgAsset(eventLogoUrl),
+      inlineSvgAsset(hashpassLogoUrl, 'hashpass'),
+      inlineSvgAsset(eventLogoUrl, 'event'),
     ]);
     const ownerLine = url.searchParams.get('locale')?.toLowerCase().startsWith('es')
       ? `${ownerHandle} generó esta agenda de seguimiento automáticamente con HASHPASS`
@@ -205,10 +218,12 @@ export async function GET(request: Request) {
       ? (Number(tzOffsetMatch[1].slice(1, 3)) * 60 + Number(tzOffsetMatch[1].slice(-2))) * (tzOffsetMatch[1][0] === '-' ? -1 : 1)
       : -240;
 
-    const formatClock = (iso: string) => {
-      const date = new Date(new Date(iso).getTime() + tzOffsetMinutes * 60_000);
-      let hours = date.getUTCHours();
-      const minutes = date.getUTCMinutes();
+    const formatClock = (time: string, itemDay?: string | null) => {
+      const date = parseAgendaTime(time, event?.eventStartDate, itemDay, tzOffsetMatch?.[1] || '-05:00');
+      if (Number.isNaN(date.getTime())) return '—';
+      const shifted = new Date(date.getTime() + tzOffsetMinutes * 60_000);
+      let hours = shifted.getUTCHours();
+      const minutes = shifted.getUTCMinutes();
       const ampm = hours >= 12 ? 'PM' : 'AM';
       hours = hours % 12 || 12;
       return `${hours}:${String(minutes).padStart(2, '0')} ${ampm}`;
@@ -232,7 +247,7 @@ export async function GET(request: Request) {
         .join('');
       return `
         <line x1="60" y1="${y - 20}" x2="${cardWidth - 60}" y2="${y - 20}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
-        <text x="60" y="${y + 10}" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="${brandColor}">${escapeXml(formatClock(item.time))}</text>
+        <text x="60" y="${y + 10}" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="${brandColor}">${escapeXml(formatClock(item.time, item.day))}</text>
         <text y="${y + 8}" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="600" fill="#FFFFFF">${titleTspans}</text>
         ${item.location ? `<text x="190" y="${y + (titleLines.length > 1 ? 78 : 52)}" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="rgba(255,255,255,0.6)">${escapeXml(item.location)}</text>` : ''}
       `;
