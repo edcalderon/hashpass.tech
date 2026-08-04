@@ -762,7 +762,9 @@
         "failedToBlock": "시간대 차단 실패",
         "failedToUnblock": "시간대 차단 해제 실패",
         "failedToAddToFavorites": "즐겨찾기에 추가 실패",
-        "failedToRemoveFromFavorites": "즐겨찾기에서 제거 실패"
+        "failedToRemoveFromFavorites": "즐겨찾기에서 제거 실패",
+        "failedToRestore": "이 세션을 복원하지 못했습니다.",
+        "failedToRemove": "이 세션을 삭제하지 못했습니다."
       },
       "messages": {
         "addedToFavorites": "즐겨찾기에 추가됨",

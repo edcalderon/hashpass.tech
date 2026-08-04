@@ -832,8 +832,9 @@
         "failedToBlock": "Failed to block slot",
         "failedToUnblock": "Failed to unblock slot",
         "failedToAddToFavorites": "Failed to add to favorites",
-        "failedToRemoveFromFavorites": "Failed to remove from favorites"
-        ,"failedToRestore": "Could not restore this session."
+        "failedToRemoveFromFavorites": "Failed to remove from favorites",
+        "failedToRestore": "Could not restore this session.",
+        "failedToRemove": "Could not remove this session."
       },
       "messages": {
         "addedToFavorites": "Added to favorites",

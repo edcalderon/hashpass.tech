@@ -831,7 +831,9 @@
         "failedToBlock": "Error al bloquear espacio",
         "failedToUnblock": "Error al desbloquear espacio",
         "failedToAddToFavorites": "Error al agregar a favoritos",
-        "failedToRemoveFromFavorites": "Error al quitar de favoritos"
+        "failedToRemoveFromFavorites": "Error al quitar de favoritos",
+        "failedToRestore": "No se pudo restaurar esta sesión.",
+        "failedToRemove": "No se pudo eliminar esta sesión."
       },
       "messages": {
         "addedToFavorites": "Agregado a favoritos",
