@@ -1114,9 +1114,9 @@ const MySchedule = () => {
               <Text style={[styles.meetingTime, { color: colors.text.secondary }]}>
                 {formatEventTime(slot.startTime, eventTimezoneOffset)}
               </Text>
-              <View style={[styles.statusIndicator, { backgroundColor: statusBgColor }]}> 
-                <Text style={[styles.statusText, { color: statusColor }]}> 
-                  {userStatus.toUpperCase()}
+              <View style={[styles.statusIndicator, { backgroundColor: statusBgColor }]}>
+                <Text style={[styles.statusText, { color: statusColor }]}>
+                  {(isConfirmed ? t('mySchedule.status.confirmed') : t('mySchedule.status.tentative')).toUpperCase()}
                 </Text>
               </View>
             </View>
