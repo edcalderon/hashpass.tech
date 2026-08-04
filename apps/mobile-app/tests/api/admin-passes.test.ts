@@ -239,4 +239,45 @@ describe("POST /api/admin/passes", () => {
     });
     expect(response.status).toBe(500);
   });
+
+  it("routes complete usage edits to the dedicated usage RPC", async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: { id: "pass-1" }, error: null });
+    const response = await post({
+      action: "update",
+      eventId: "chile2026",
+      passId: "pass-1",
+      maxMeetingRequests: 20,
+      usedMeetingRequests: 4,
+      maxBoostAmount: 300,
+      usedBoostAmount: 12,
+    });
+    expect(response.status).toBe(200);
+    expect(mockRpc).toHaveBeenLastCalledWith("admin_update_event_pass_usage", {
+      p_actor_user_id: actorId,
+      p_event_id: "chile2026",
+      p_pass_id: "pass-1",
+      p_max_meeting_requests: 20,
+      p_used_meeting_requests: 4,
+      p_max_boost_amount: 300,
+      p_used_boost_amount: 12,
+    });
+  });
+
+  it("rejects partial, mixed, and non-finite usage updates", async () => {
+    expect((await post({
+      action: "update", eventId: "chile2026", passId: "pass-1",
+      maxMeetingRequests: 20,
+    })).status).toBe(400);
+    expect((await post({
+      action: "update", eventId: "chile2026", passId: "pass-1", passType: "vip",
+      maxMeetingRequests: 20, usedMeetingRequests: 4, maxBoostAmount: 300, usedBoostAmount: 12,
+    })).status).toBe(400);
+    expect((await post({
+      action: "update", eventId: "chile2026", passId: "pass-1",
+      maxMeetingRequests: "not-a-number", usedMeetingRequests: 4, maxBoostAmount: 300, usedBoostAmount: 12,
+    })).status).toBe(400);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
 });
