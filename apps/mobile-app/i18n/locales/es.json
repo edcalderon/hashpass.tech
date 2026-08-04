@@ -863,7 +863,8 @@
       "checkYourAgenda": "Revisa tu agenda",
       "reload": "Recargar",
       "reloadAgenda": "Recargar agenda",
-      "checkAgendaFirst": "Revisa tu agenda primero"
+      "checkAgendaFirst": "Revisa tu agenda primero",
+      "collapseAll": "Colapsar todo"
     },
     "tips": {
       "title": "Consejos de Networking",

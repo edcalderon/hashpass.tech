@@ -864,7 +864,8 @@
       "checkYourAgenda": "Check your agenda",
       "reload": "Reload",
       "reloadAgenda": "Reload agenda",
-      "checkAgendaFirst": "Check your agenda first"
+      "checkAgendaFirst": "Check your agenda first",
+      "collapseAll": "Collapse all"
     },
     "tips": {
       "title": "Networking Tips",

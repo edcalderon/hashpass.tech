@@ -794,7 +794,8 @@
       "checkYourAgenda": "내 일정 확인하기",
       "reload": "새로고침",
       "reloadAgenda": "일정 새로고침",
-      "checkAgendaFirst": "먼저 내 일정을 확인하세요"
+      "checkAgendaFirst": "먼저 내 일정을 확인하세요",
+      "collapseAll": "모두 접기"
     },
     "tips": {
       "title": "네트워킹 팁",

@@ -1445,17 +1445,31 @@ const MySchedule = () => {
               <Text style={[styles.calendarTitle, { color: colors.text.primary }]}>
                 {t('mySchedule.scheduleOverview')}
               </Text>
-              <TouchableOpacity
-                onPress={() => loadUserScheduleStatus()}
-                disabled={isReloadingStatus}
-                accessibilityLabel={t('mySchedule.reloadAgenda', 'Reload agenda')}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
-              >
-                <MaterialIcons name="refresh" size={18} color={colors.primary} style={isReloadingStatus ? { opacity: 0.5 } : undefined} />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
-                  {t('mySchedule.reload', 'Reload')}
-                </Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {Object.values(expandedHours).some(Boolean) && (
+                  <TouchableOpacity
+                    onPress={() => setExpandedHours({})}
+                    accessibilityLabel={t('mySchedule.collapseAll', 'Collapse all')}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+                  >
+                    <MaterialIcons name="unfold-less" size={18} color={colors.primary} />
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+                      {t('mySchedule.collapseAll', 'Collapse all')}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => loadUserScheduleStatus()}
+                  disabled={isReloadingStatus}
+                  accessibilityLabel={t('mySchedule.reloadAgenda', 'Reload agenda')}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+                >
+                  <MaterialIcons name="refresh" size={18} color={colors.primary} style={isReloadingStatus ? { opacity: 0.5 } : undefined} />
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+                    {t('mySchedule.reload', 'Reload')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
             <View style={styles.calendarWeek}>
             {dayStats.map((dayStat) => {
