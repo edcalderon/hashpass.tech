@@ -371,6 +371,77 @@ describe('event schedule screens', () => {
     });
   });
 
+  it('mints a share token and opens the live-link share sheet', async () => {
+    mockApiRequest
+      .mockResolvedValueOnce({ success: true, data: { data: [] } })
+      .mockResolvedValueOnce({ success: true, data: { shareToken: 'share-token-1' } });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<MyScheduleScreen />);
+      await flushPromises();
+    });
+
+    const shareButton = renderer!.root.findByProps({ accessibilityLabel: 'mySchedule.shareMyAgenda' });
+    await act(async () => {
+      await shareButton.props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenLastCalledWith('events/custom/schedule/share-token', {
+      method: 'POST',
+      skipEventSegment: true,
+    });
+    expect(JSON.stringify(renderer!.toJSON())).toContain('mySchedule.copyLiveLink');
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('generates a day snapshot from the summary modal', async () => {
+    mockActiveEvent = {
+      ...mockEvent,
+      id: 'chile2026',
+      eventStartDate: '2026-08-05T09:00:00-04:00',
+      eventEndDate: '2026-08-07T23:59:59-04:00',
+    };
+    mockUserAgendaStatusRows = [{ agenda_id: 'agenda-1', meeting_id: null, slot_time: null, status: 'confirmed', slot_status: null, is_favorite: false }];
+    mockApiRequest.mockImplementation((path: string) =>
+      Promise.resolve(path.includes('share-token')
+        ? { success: true, data: { shareToken: 'day-token' } }
+        : { success: true, data: { data: [{ id: 'agenda-1', day: '1', time: '09:00-09:45', title: 'Opening remarks', type: 'keynote', location: 'Main stage' }] } }),
+    );
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<MyScheduleScreen />);
+      for (let index = 0; index < 5; index += 1) await flushPromises();
+    });
+
+    const dayNumber = renderer!.root.findAllByType(Text).find((node) => node.children.join('') === '5');
+    expect(dayNumber).toBeTruthy();
+    let dayButton: any = dayNumber!.parent;
+    while (dayButton && dayButton.type !== TouchableOpacity) dayButton = dayButton.parent;
+    await act(async () => {
+      dayButton.props.onPress();
+      await flushPromises();
+    });
+
+    const snapshotLabel = renderer!.root.findByProps({ children: 'mySchedule.generateSnapshot' });
+    let snapshotButton: any = snapshotLabel.parent;
+    while (snapshotButton && snapshotButton.type !== TouchableOpacity) snapshotButton = snapshotButton.parent;
+    await act(async () => {
+      await snapshotButton.props.onPress();
+      for (let index = 0; index < 3; index += 1) await flushPromises();
+    });
+
+    expect(mockApiRequest).toHaveBeenLastCalledWith('events/chile2026/schedule/share-token', {
+      method: 'POST',
+      skipEventSegment: true,
+    });
+    expect(JSON.stringify(renderer!.toJSON())).toContain('mySchedule.copyLiveLink');
+    await act(async () => renderer!.unmount());
+  });
+
   it('shows a saved Chile agenda session in its occupied 7 AM slot', async () => {
     mockActiveEvent = {
       ...mockEvent,

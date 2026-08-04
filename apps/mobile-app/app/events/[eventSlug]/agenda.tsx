@@ -11,10 +11,11 @@ import EventBanner from '../../../components/EventBanner';
 import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { apiClient, eventApiPath } from '@/lib/api-client';
-import { 
+import {
   getAgendaTypeColor,
   parseEventISO,
   formatTimeRange,
+  EVENT_TZ_OFFSET,
 } from '../../../types/agenda';
 import type {
   AgendaType,
@@ -24,6 +25,7 @@ import { EVENTS } from '../../../config/events';
 import { useAuth } from '../../../hooks/useAuth';
 import { useToastHelpers } from '@contexts/ToastContext';
 import ScheduleConfirmationModal from '../../../components/ScheduleConfirmationModal';
+import AgendaActionResultModal from '../../../components/AgendaActionResultModal';
 import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
@@ -94,6 +96,11 @@ export default function BSL2025AgendaScreen() {
   const params = useLocalSearchParams<{ session?: string; scrollTo?: string; day?: string }>();
   const styles = getStyles(isDark, colors);
   const { user } = useAuth();
+  // The event's own fixed timezone (e.g. Chile is -04:00), not the hardcoded
+  // -05:00 Medellín-hub default that EVENT_TZ_OFFSET falls back to. Times
+  // must render in this offset regardless of the viewer's device/browser
+  // timezone.
+  const eventTzOffset = event?.eventStartDate?.match(/([+-]\d{2}:?\d{2})$/)?.[1] || EVENT_TZ_OFFSET;
   const { showSuccess, showError, showWarning } = useToastHelpers();
   const { t } = useTranslation('agenda');
   const scrollViewRef = useRef<ScrollView>(null);
@@ -124,6 +131,11 @@ export default function BSL2025AgendaScreen() {
     startTime: Date | null;
   }>({ visible: false, agendaItem: null, startTime: null });
   const [isConfirming, setIsConfirming] = useState(false);
+  const [agendaActionResult, setAgendaActionResult] = useState<{ visible: boolean; added: boolean; slotStartTime: Date | null }>({
+    visible: false,
+    added: true,
+    slotStartTime: null,
+  });
   const [speakerMapRef, setSpeakerMapRef] = useState<Map<string, { id: string; name: string; image?: string }>>(new Map());
   const eventId = event?.id || 'bsl';
   const agendaApiPath = eventApiPath(eventId, 'agenda');
@@ -597,7 +609,6 @@ export default function BSL2025AgendaScreen() {
           return itemIdStr === sessionIdStr || 
                  itemIdStr === String(Number(sessionIdStr)) ||
                  String(Number(itemIdStr)) === sessionIdStr ||
-                 item.id === Number(sessionIdStr) ||
                  Number(itemIdStr) === Number(sessionIdStr);
         }) || null;
         
@@ -623,7 +634,6 @@ export default function BSL2025AgendaScreen() {
           const matches = itemIdStr === sessionIdStr || 
                           itemIdStr === String(Number(sessionIdStr)) ||
                           String(Number(itemIdStr)) === sessionIdStr ||
-                          item.id === Number(sessionIdStr) ||
                           Number(itemIdStr) === Number(sessionIdStr);
           return matches;
         }) || null;
@@ -646,7 +656,6 @@ export default function BSL2025AgendaScreen() {
             return itemIdStr === sessionIdStr || 
                    itemIdStr === String(Number(sessionIdStr)) ||
                    String(Number(itemIdStr)) === sessionIdStr ||
-                   item.id === Number(sessionIdStr) ||
                    Number(itemIdStr) === Number(sessionIdStr);
           }) || null;
           
@@ -896,11 +905,7 @@ export default function BSL2025AgendaScreen() {
       }));
 
       setConfirmationModal({ visible: false, agendaItem: null, startTime: null });
-      if (newStatus === 'confirmed') {
-        showSuccess(t('messages.addedToAgenda', 'Added to agenda'), t('messages.addedToAgendaMessage', 'This session is now in your agenda'));
-      } else {
-        showWarning(t('messages.removedFromAgenda', 'Removed from agenda'), t('messages.removedFromAgendaMessage', 'This session was removed from your agenda'));
-      }
+      setAgendaActionResult({ visible: true, added: newStatus === 'confirmed', slotStartTime: startTime });
     } catch (error) {
       console.error('Error toggling confirmation:', error);
       showError(t('messages.error'), newStatus === 'confirmed' ? t('messages.confirmError') : t('messages.unconfirmError'));
@@ -1121,7 +1126,7 @@ export default function BSL2025AgendaScreen() {
           isPast && styles.agendaItemHeaderPast
         ]}>
           <View style={styles.timeContainer}>
-            <Text style={[styles.agendaTime, { color: '#FFFFFF' }]}>{formatTimeRange(item)}</Text>
+            <Text style={[styles.agendaTime, { color: '#FFFFFF' }]}>{formatTimeRange(item, eventTzOffset)}</Text>
             <View style={styles.badgeContainer}>
               {isPast && (
                 <View style={styles.pastBadge}>
@@ -1129,7 +1134,7 @@ export default function BSL2025AgendaScreen() {
                 </View>
               )}
               <View style={[styles.agendaTypeBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                <Text style={[styles.agendaTypeText, { color: '#FFFFFF' }]}>{item.type.toUpperCase()}</Text>
+                <Text style={[styles.agendaTypeText, { color: '#FFFFFF' }]}>{t(`types.${item.type}`, item.type).toUpperCase()}</Text>
               </View>
             </View>
           </View>
@@ -1343,6 +1348,17 @@ export default function BSL2025AgendaScreen() {
           </View>
         )}
 
+        {/* Session type color legend -- same colors as each card's type badge (getAgendaTypeColor), so people know what blue/red/green/etc. mean at a glance. */}
+        {agenda.length > 0 && (
+          <View style={styles.typeLegend}>
+            {(['keynote', 'panel', 'registration', 'meal', 'break'] as const).map((type) => (
+              <View key={type} style={styles.typeLegendItem}>
+                <View style={[styles.typeLegendDot, { backgroundColor: getAgendaTypeColor(type) }]} />
+                <Text style={styles.typeLegendText}>{t(`types.${type}`, type)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
       {/* Unified Search and Filter Section */}
       {agenda.length > 0 && (
@@ -1356,6 +1372,22 @@ export default function BSL2025AgendaScreen() {
           customFilterLogic={customAgendaFilterLogic}
           showResultsCount={true}
         />
+      )}
+
+      {agenda.length > 0 && (
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 8 }}>
+          <TouchableOpacity
+            onPress={() => { void loadAgenda(); }}
+            disabled={loading}
+            accessibilityLabel={t('refreshAgenda', 'Refresh agenda')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+          >
+            <MaterialIcons name="refresh" size={18} color={colors.primary} style={loading ? { opacity: 0.5 } : undefined} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+              {t('refresh', 'Refresh')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Full day title -- the tab card itself truncates the theme text to
@@ -1441,6 +1473,7 @@ export default function BSL2025AgendaScreen() {
             (confirmationModal.agendaItem.type === 'keynote' ? t('locations.mainStage') : 
              confirmationModal.agendaItem.type === 'registration' ? t('locations.registrationArea') : undefined)}
           startTime={confirmationModal.startTime}
+          eventTzOffset={eventTzOffset}
           isConfirmed={(userAgendaStatus[confirmationModal.agendaItem.id] || 'tentative') === 'confirmed'}
           onConfirm={() => handleToggleConfirmation(confirmationModal.agendaItem!, confirmationModal.startTime!)}
           onCancel={() => setConfirmationModal({ visible: false, agendaItem: null, startTime: null })}
@@ -1450,8 +1483,31 @@ export default function BSL2025AgendaScreen() {
           isAgendaEvent={true}
           isFavorite={favoriteStatus[confirmationModal.agendaItem.id] || false}
           onToggleFavorite={() => confirmationModal.agendaItem && handleToggleFavorite(confirmationModal.agendaItem)}
+          onViewAgenda={() => {
+            const slotStartTime = confirmationModal.startTime;
+            setConfirmationModal({ visible: false, agendaItem: null, startTime: null });
+            router.push(
+              (slotStartTime
+                ? `/events/${eventId}/networking/my-schedule?scrollTo=${encodeURIComponent(slotStartTime.toISOString())}`
+                : `/events/${eventId}/networking/my-schedule`) as any
+            );
+          }}
         />
       )}
+      <AgendaActionResultModal
+        visible={agendaActionResult.visible}
+        added={agendaActionResult.added}
+        onClose={() => setAgendaActionResult((prev) => ({ ...prev, visible: false }))}
+        onViewAgenda={() => {
+          const slotStartTime = agendaActionResult.slotStartTime;
+          setAgendaActionResult((prev) => ({ ...prev, visible: false }));
+          router.push(
+            (slotStartTime
+              ? `/events/${eventId}/networking/my-schedule?scrollTo=${encodeURIComponent(slotStartTime.toISOString())}`
+              : `/events/${eventId}/networking/my-schedule`) as any
+          );
+        }}
+      />
     </ScrollView>
   </View>
   );
@@ -1479,6 +1535,28 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 8,
     width: '100%',
+  },
+  typeLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  typeLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  typeLegendDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+  },
+  typeLegendText: {
+    fontSize: 12,
+    color: colors.text.secondary,
   },
   tabScrollContent: {
     flexDirection: 'row',

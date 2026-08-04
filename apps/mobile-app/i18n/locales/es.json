@@ -116,7 +116,10 @@
       "pleaseWait": "Por favor espera...",
       "startingHashpass": "Iniciando HASHPASS",
       "openingHashpass": "Abriendo HASHPASS"
-    }
+    },
+    "undo": "Deshacer",
+    "cancel": "Cancelar",
+    "remove": "Eliminar"
   },
   "auth": {
     "title": "Bienvenido a",
@@ -828,7 +831,9 @@
         "failedToBlock": "Error al bloquear espacio",
         "failedToUnblock": "Error al desbloquear espacio",
         "failedToAddToFavorites": "Error al agregar a favoritos",
-        "failedToRemoveFromFavorites": "Error al quitar de favoritos"
+        "failedToRemoveFromFavorites": "Error al quitar de favoritos",
+        "failedToRestore": "No se pudo restaurar esta sesión.",
+        "failedToRemove": "No se pudo eliminar esta sesión."
       },
       "messages": {
         "addedToFavorites": "Agregado a favoritos",
@@ -858,7 +863,49 @@
       "confirm": "Confirmar",
       "unconfirm": "Desconfirmar",
       "confirmMessage": "Confirmar tu asistencia agregará este evento a tu agenda.",
-      "unconfirmMessage": "¿Estás seguro de que quieres desconfirmar tu asistencia? Esto eliminará este evento de tu agenda confirmada."
+      "unconfirmMessage": "¿Estás seguro de que quieres desconfirmar tu asistencia? Esto eliminará este evento de tu agenda confirmada.",
+      "close": "Cerrar",
+      "checkYourAgenda": "Revisa tu agenda",
+      "reload": "Recargar",
+      "reloadAgenda": "Recargar agenda",
+      "checkAgendaFirst": "Revisa tu agenda primero",
+      "collapseAll": "Colapsar todo",
+      "viewInAgenda": "Ver en la agenda",
+      "searchPlaceholder": "Buscar sesiones, oradores o palabras clave...",
+      "filter": {
+        "status": "Estado"
+      },
+      "viewMeetingRequest": "Ver solicitud de reunión",
+      "favorites": "Favoritos",
+      "shareMessage": "¡Únete a mí — esta es mi agenda en {eventName}, nos vemos en el evento! {url}",
+      "shareLinkCopied": "Enlace copiado al portapapeles",
+      "shareLinkFailed": "No se pudo crear el enlace para compartir. Inténtalo de nuevo.",
+      "shareLinkInvalid": "Este enlace no es válido o ha expirado.",
+      "myDayAt": "Agenda en vivo en {eventName}",
+      "liveUpdating": "En vivo — se actualiza automáticamente",
+      "noConfirmedSessions": "Aún no hay sesiones confirmadas.",
+      "lastUpdated": "Actualizado {time}",
+      "poweredBy": "Desarrollado por HASHPASS",
+      "shareMyAgenda": "Compartir mi agenda",
+      "expandAll": "Expandir todo",
+      "downloadImage": "Descargar imagen de mi agenda",
+      "copyImageLink": "Copiar enlace de la imagen (para Instagram, etc.)",
+      "copyLiveLink": "Copiar enlace de seguimiento en vivo",
+      "imageLinkCopied": "Enlace de la imagen copiado — pégalo en Instagram o donde quieras",
+      "shareThisDay": "Compartir este día",
+      "shareMyDay": "Compartir este día",
+      "generateSnapshot": "Generar instantánea de agenda para compartir",
+      "snapshotPreview": "Vista previa de tu agenda compartible",
+      "snapshotPrompt": "Revisa tu día antes de compartir. Puedes seguir editando tu agenda.",
+      "snapshotConfirm": "¿Seguro que quieres compartir esta agenda?",
+      "confirmShare": "Confirmar y compartir",
+      "keepEditing": "Seguir editando",
+      "removeSession": "Eliminar sesión del plan",
+      "removeSessionTitle": "¿Eliminar esta sesión?",
+      "removeSessionMessage": "La sesión se eliminará de tu plan del día. Podrás deshacerlo durante unos segundos.",
+      "sessionRemoved": "Sesión eliminada de tu plan",
+      "sessionRestored": "Sesión restaurada en tu plan",
+      "excludePastSessions": "Excluir sesiones que ya han pasado"
     },
     "tips": {
       "title": "Consejos de Networking",
@@ -1118,6 +1165,12 @@
         "messageButton": "Mensaje",
         "chatWith": "Chatear con"
       }
+    },
+    "messages": {
+      "addedToAgenda": "Añadido a la agenda",
+      "addedToAgendaMessage": "Esta sesión ya está en tu agenda",
+      "removedFromAgenda": "Eliminado de la agenda",
+      "removedFromAgendaMessage": "Esta sesión fue eliminada de tu agenda"
     }
   },
   "agenda": {
@@ -1198,6 +1251,15 @@
     "labels": {
       "speakers": "Oradores",
       "location": "Ubicación"
+    },
+    "refresh": "Actualizar",
+    "refreshAgenda": "Actualizar agenda",
+    "types": {
+      "keynote": "Keynote",
+      "panel": "Panel",
+      "break": "Descanso",
+      "meal": "Comida",
+      "registration": "Registro"
     }
   },
   "notifications": {

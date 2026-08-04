@@ -116,7 +116,10 @@
       "pleaseWait": "Please wait...",
       "startingHashpass": "Starting HASHPASS",
       "openingHashpass": "Opening HASHPASS"
-    }
+    },
+    "undo": "Undo",
+    "cancel": "Cancel",
+    "remove": "Remove"
   },
   "auth": {
     "title": "Welcome to",
@@ -829,7 +832,9 @@
         "failedToBlock": "Failed to block slot",
         "failedToUnblock": "Failed to unblock slot",
         "failedToAddToFavorites": "Failed to add to favorites",
-        "failedToRemoveFromFavorites": "Failed to remove from favorites"
+        "failedToRemoveFromFavorites": "Failed to remove from favorites",
+        "failedToRestore": "Could not restore this session.",
+        "failedToRemove": "Could not remove this session."
       },
       "messages": {
         "addedToFavorites": "Added to favorites",
@@ -859,7 +864,49 @@
       "confirm": "Confirm",
       "unconfirm": "Unconfirm",
       "confirmMessage": "Confirming your attendance will add this event to your schedule.",
-      "unconfirmMessage": "Are you sure you want to unconfirm your attendance? This will remove this event from your confirmed schedule."
+      "unconfirmMessage": "Are you sure you want to unconfirm your attendance? This will remove this event from your confirmed schedule.",
+      "close": "Close",
+      "checkYourAgenda": "Check your agenda",
+      "reload": "Reload",
+      "reloadAgenda": "Reload agenda",
+      "checkAgendaFirst": "Check your agenda first",
+      "collapseAll": "Collapse all",
+      "viewInAgenda": "View in agenda",
+      "searchPlaceholder": "Search sessions, speakers or keywords...",
+      "filter": {
+        "status": "Status"
+      },
+      "viewMeetingRequest": "View meeting request",
+      "favorites": "Favorites",
+      "shareMessage": "Join me — this is my agenda at {eventName}, see you at the event! {url}",
+      "shareLinkCopied": "Share link copied to clipboard",
+      "shareLinkFailed": "Could not create the share link. Please try again.",
+      "shareLinkInvalid": "This share link is invalid or has expired.",
+      "myDayAt": "Live agenda at {eventName}",
+      "liveUpdating": "Live — updates automatically",
+      "noConfirmedSessions": "No confirmed sessions yet.",
+      "lastUpdated": "Last updated {time}",
+      "poweredBy": "Powered by HASHPASS",
+      "shareMyAgenda": "Share my agenda",
+      "expandAll": "Expand all",
+      "downloadImage": "Download branded agenda image",
+      "copyImageLink": "Copy image link (for Instagram, etc.)",
+      "copyLiveLink": "Copy live tracking link",
+      "imageLinkCopied": "Image link copied — paste it into Instagram or anywhere else",
+      "shareThisDay": "Share this day",
+      "shareMyDay": "Share this day",
+      "generateSnapshot": "Generate shareable agenda snapshot",
+      "snapshotPreview": "Your shareable agenda snapshot",
+      "snapshotPrompt": "Review your day before sharing. You can keep editing your agenda.",
+      "snapshotConfirm": "Are you sure you want to share this agenda?",
+      "confirmShare": "Confirm and share",
+      "keepEditing": "Keep editing",
+      "removeSession": "Remove session from plan",
+      "removeSessionTitle": "Remove this session?",
+      "removeSessionMessage": "This will remove the session from your day plan. You can undo it briefly after removal.",
+      "sessionRemoved": "Session removed from your plan",
+      "sessionRestored": "Session restored to your plan",
+      "excludePastSessions": "Exclude sessions that have already passed"
     },
     "tips": {
       "title": "Networking Tips",
@@ -1119,6 +1166,12 @@
         "messageButton": "Message",
         "chatWith": "Chat with"
       }
+    },
+    "messages": {
+      "addedToAgenda": "Added to agenda",
+      "addedToAgendaMessage": "This session is now in your agenda",
+      "removedFromAgenda": "Removed from agenda",
+      "removedFromAgendaMessage": "This session was removed from your agenda"
     }
   },
   "agenda": {
@@ -1199,6 +1252,15 @@
     "labels": {
       "speakers": "Speakers",
       "location": "Location"
+    },
+    "refresh": "Refresh",
+    "refreshAgenda": "Refresh agenda",
+    "types": {
+      "keynote": "Keynote",
+      "panel": "Panel",
+      "break": "Break",
+      "meal": "Meal",
+      "registration": "Registration"
     }
   },
   "notifications": {

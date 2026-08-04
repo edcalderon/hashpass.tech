@@ -40,6 +40,7 @@ jest.mock('react-native', () => ({
     select: (options) => options.web ?? options.default,
   },
   Pressable: 'Pressable',
+  RefreshControl: 'RefreshControl',
   SafeAreaView: 'SafeAreaView',
   ScrollView: 'ScrollView',
   StatusBar: 'StatusBar',

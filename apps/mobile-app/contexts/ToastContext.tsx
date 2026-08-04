@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Animated, Pressable, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 import { MaterialIcons } from '../lib/vector-icons';
@@ -127,22 +127,24 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       
       {/* Toast Container - Using absolute positioning to avoid blocking interactions */}
       {toasts.length > 0 && (
-        <View style={styles.toastContainer} pointerEvents="box-none">
-          <SafeAreaView edges={['top', 'left', 'right']} style={styles.toastSafeArea} pointerEvents="box-none">
-            {toasts.map((toast, index) => (
-              <ToastItem
-                key={toast.id}
-                toast={toast}
-                index={index}
-                onHide={() => hideToast(toast.id)}
-                getToastStyles={getToastStyles}
-                getToastIcon={getToastIcon}
-                colors={colors}
-                isDark={isDark}
-              />
-            ))}
-          </SafeAreaView>
-        </View>
+        <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={() => {}}>
+          <View style={styles.toastContainer} pointerEvents="box-none">
+            <SafeAreaView edges={['top', 'left', 'right']} style={styles.toastSafeArea} pointerEvents="box-none">
+              {toasts.map((toast, index) => (
+                <ToastItem
+                  key={toast.id}
+                  toast={toast}
+                  index={index}
+                  onHide={() => hideToast(toast.id)}
+                  getToastStyles={getToastStyles}
+                  getToastIcon={getToastIcon}
+                  colors={colors}
+                  isDark={isDark}
+                />
+              ))}
+            </SafeAreaView>
+          </View>
+        </Modal>
       )}
     </>
   );
@@ -175,6 +177,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
   const remainingDurationRef = useRef(autoDismissDuration);
   const startTimestampRef = useRef<number | null>(null);
   const isPausedRef = useRef(false);
+  const pauseReasonsRef = useRef<Set<string>>(new Set());
   const isDismissingRef = useRef(false);
 
   // Determine if toast is non-critical (errors are critical, others are not)
@@ -217,6 +220,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
     remainingDurationRef.current = durationMs;
     startTimestampRef.current = Date.now();
     isPausedRef.current = false;
+    pauseReasonsRef.current.clear();
 
     autoHideTimeoutRef.current = setTimeout(() => {
       autoHideTimeoutRef.current = null;
@@ -236,8 +240,11 @@ const ToastItem: React.FC<ToastItemProps> = ({
     });
   }, [clearAutoHideTimer, handleHide, isAutoDismissToast, progressAnim]);
 
-  const pauseAutoHideCountdown = useCallback(() => {
-    if (!isAutoDismissToast || isPausedRef.current || isDismissingRef.current) return;
+  const pauseAutoHideCountdown = useCallback((reason = 'press') => {
+    if (!isAutoDismissToast || isDismissingRef.current) return;
+
+    pauseReasonsRef.current.add(reason);
+    if (isPausedRef.current) return;
 
     isPausedRef.current = true;
     clearAutoHideTimer();
@@ -251,8 +258,11 @@ const ToastItem: React.FC<ToastItemProps> = ({
     });
   }, [clearAutoHideTimer, isAutoDismissToast, progressAnim]);
 
-  const resumeAutoHideCountdown = useCallback(() => {
-    if (!isAutoDismissToast || !isPausedRef.current || isDismissingRef.current) return;
+  const resumeAutoHideCountdown = useCallback((reason = 'press') => {
+    if (!isAutoDismissToast || isDismissingRef.current) return;
+
+    pauseReasonsRef.current.delete(reason);
+    if (pauseReasonsRef.current.size > 0 || !isPausedRef.current) return;
 
     const remaining = remainingDurationRef.current;
     if (remaining <= 0) {
@@ -303,7 +313,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
           marginTop: index * 12,
         },
       ]}
-      pointerEvents="box-none"
+      pointerEvents="auto"
     >
       <Pressable
         style={[
@@ -317,8 +327,12 @@ const ToastItem: React.FC<ToastItemProps> = ({
             elevation: 20,
           }
         ]}
-        onPressIn={isAutoDismissToast ? pauseAutoHideCountdown : undefined}
-        onPressOut={isAutoDismissToast ? resumeAutoHideCountdown : undefined}
+        onPressIn={isAutoDismissToast ? () => pauseAutoHideCountdown('press') : undefined}
+        onPressOut={isAutoDismissToast ? () => resumeAutoHideCountdown('press') : undefined}
+        onHoverIn={isAutoDismissToast ? () => pauseAutoHideCountdown('hover') : undefined}
+        onHoverOut={isAutoDismissToast ? () => resumeAutoHideCountdown('hover') : undefined}
+        onFocus={isAutoDismissToast ? () => pauseAutoHideCountdown('focus') : undefined}
+        onBlur={isAutoDismissToast ? () => resumeAutoHideCountdown('focus') : undefined}
       >
         <View style={styles.toastContent}>
           <View style={styles.toastHeader}>
@@ -378,6 +392,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
                 toast.action?.onPress();
                 handleHide();
               }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text style={[styles.actionButtonText, { color: icon.color }]}>
                 {toast.action.label}
@@ -484,12 +499,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionButton: {
+    alignSelf: 'center',
+    minWidth: 92,
+    zIndex: 5,
+    elevation: 5,
     marginTop: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1.5,
-    alignSelf: 'center',
   },
   actionButtonText: {
     fontSize: 14,

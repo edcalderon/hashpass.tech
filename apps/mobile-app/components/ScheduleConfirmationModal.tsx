@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
-import { format } from 'date-fns';
+import { DEFAULT_EVENT_TZ_OFFSET, formatEventClock } from '../lib/event-time';
 import { useTranslation } from '../i18n/i18n';
 
 interface ScheduleConfirmationModalProps {
@@ -27,6 +27,16 @@ interface ScheduleConfirmationModalProps {
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   onToggleBlocked?: () => void;
+  /** Shown as a "check your agenda first" link before the unconfirm action, so people can verify what's actually on their schedule before removing something from it. */
+  onViewAgenda?: () => void;
+  /**
+   * The event's own fixed UTC offset (e.g. "-04:00" for Chile), from
+   * lib/event-time.ts's getEventTzOffset(event.eventStartDate). startTime is
+   * always displayed in this offset, never the viewer's device timezone —
+   * defaults to DEFAULT_EVENT_TZ_OFFSET only as a last resort for callers
+   * that haven't been updated to pass it.
+   */
+  eventTzOffset?: string;
 }
 
 export default function ScheduleConfirmationModal({
@@ -41,9 +51,11 @@ export default function ScheduleConfirmationModal({
   isFreeSlot = false,
   freeSlotStatus = 'available',
   isAgendaEvent = false,
+  eventTzOffset = DEFAULT_EVENT_TZ_OFFSET,
   isFavorite = false,
   onToggleFavorite,
   onToggleBlocked,
+  onViewAgenda,
 }: ScheduleConfirmationModalProps) {
   const { colors } = useTheme();
   const { t } = useTranslation('networking');
@@ -100,7 +112,7 @@ export default function ScheduleConfirmationModal({
                   color={colors.text.secondary}
                 />
                 <Text style={[styles.eventInfoText, { color: colors.text.secondary }]}>
-                  {format(startTime, 'h:mm a')}
+                  {formatEventClock(startTime, eventTzOffset)}
                 </Text>
               </View>
             </View>
@@ -275,7 +287,7 @@ export default function ScheduleConfirmationModal({
                 color={colors.text.secondary}
               />
               <Text style={[styles.eventInfoText, { color: colors.text.secondary }]}>
-                {format(startTime, 'h:mm a')}
+                {formatEventClock(startTime, eventTzOffset)}
               </Text>
             </View>
 
@@ -327,6 +339,21 @@ export default function ScheduleConfirmationModal({
                 : t('mySchedule.confirmMessage')}
             </Text>
           </View>
+
+          {/* "Check your agenda first" — only relevant before removing something,
+              not before adding it. */}
+          {isConfirmed && onViewAgenda && (
+            <TouchableOpacity
+              style={styles.viewAgendaLink}
+              onPress={onViewAgenda}
+              disabled={isLoading}
+            >
+              <MaterialIcons name="event" size={16} color={colors.primary} />
+              <Text style={[styles.viewAgendaLinkText, { color: colors.primary }]}>
+                {t('mySchedule.checkAgendaFirst', 'Check your agenda first')}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
@@ -390,6 +417,18 @@ export default function ScheduleConfirmationModal({
 }
 
 const styles = StyleSheet.create({
+  viewAgendaLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 14,
+    paddingVertical: 6,
+  },
+  viewAgendaLinkText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

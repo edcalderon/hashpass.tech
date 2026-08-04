@@ -41,13 +41,13 @@ describe("getHashpassFullLogo", () => {
   it("uses the white-cyan logo on dark web surfaces", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassFullLogo(true)).toBe("white-cyan-svg");
+    expect(getHashpassFullLogo(true)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg" });
   });
 
   it("uses the black logo on light web surfaces", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassFullLogo(false)).toBe("black-svg");
+    expect(getHashpassFullLogo(false)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-black.svg" });
   });
 
   it("uses the black native logo on light native surfaces", () => {
@@ -61,13 +61,13 @@ describe("getHashpassFooterLogo", () => {
   it("uses the white-cyan logo on dark web footer", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassFooterLogo(true)).toBe("white-cyan-svg");
+    expect(getHashpassFooterLogo(true)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg" });
   });
 
   it("uses the white logo on light web footer (dark-tinted background)", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassFooterLogo(false)).toBe("white-svg");
+    expect(getHashpassFooterLogo(false)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-white.svg" });
   });
 
   it("uses the black native logo on light native footer", () => {
@@ -85,13 +85,13 @@ describe("getHashpassStaticHeroLogo", () => {
     // function's own native branch below.
     mockPlatform.OS = "web";
 
-    expect(getHashpassStaticHeroLogo(false)).toBe("black-svg");
+    expect(getHashpassStaticHeroLogo(false)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-black.svg" });
   });
 
   it("keeps the white-cyan logo on dark web no-animation hero surfaces", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassStaticHeroLogo(true)).toBe("white-cyan-svg");
+    expect(getHashpassStaticHeroLogo(true)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg" });
   });
 
   it("uses the black native logo on light native hero surfaces", () => {
