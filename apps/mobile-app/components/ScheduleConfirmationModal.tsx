@@ -27,6 +27,8 @@ interface ScheduleConfirmationModalProps {
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   onToggleBlocked?: () => void;
+  /** Shown as a "check your agenda first" link before the unconfirm action, so people can verify what's actually on their schedule before removing something from it. */
+  onViewAgenda?: () => void;
 }
 
 export default function ScheduleConfirmationModal({
@@ -44,6 +46,7 @@ export default function ScheduleConfirmationModal({
   isFavorite = false,
   onToggleFavorite,
   onToggleBlocked,
+  onViewAgenda,
 }: ScheduleConfirmationModalProps) {
   const { colors } = useTheme();
   const { t } = useTranslation('networking');
@@ -328,6 +331,21 @@ export default function ScheduleConfirmationModal({
             </Text>
           </View>
 
+          {/* "Check your agenda first" — only relevant before removing something,
+              not before adding it. */}
+          {isConfirmed && onViewAgenda && (
+            <TouchableOpacity
+              style={styles.viewAgendaLink}
+              onPress={onViewAgenda}
+              disabled={isLoading}
+            >
+              <MaterialIcons name="event" size={16} color={colors.primary} />
+              <Text style={[styles.viewAgendaLinkText, { color: colors.primary }]}>
+                {t('mySchedule.checkAgendaFirst', 'Check your agenda first')}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
             {/* Favorite button for agenda events (confirmed or tentative) */}
@@ -390,6 +408,18 @@ export default function ScheduleConfirmationModal({
 }
 
 const styles = StyleSheet.create({
+  viewAgendaLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 14,
+    paddingVertical: 6,
+  },
+  viewAgendaLinkText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

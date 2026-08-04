@@ -28,6 +28,7 @@ import { useToastHelpers } from '@contexts/ToastContext';
 import { useTranslation } from '../../../../i18n/i18n';
 import type { Meeting, TimeSlot, DaySchedule } from '@/types/networking';
 import ScheduleConfirmationModal from '../../../../components/ScheduleConfirmationModal';
+import AgendaActionResultModal from '../../../../components/AgendaActionResultModal';
 import * as Haptics from 'expo-haptics';
 import { AgendaItem } from '../../../../types/events';
 import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
@@ -132,7 +133,7 @@ const addMinutes = (date: Date, minutes: number): Date => {
 
 const MySchedule = () => {
   const { colors, isDark } = useTheme();
-  const { dbUserId } = useAuth();
+  const { dbUserId, user } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
   const agendaApiPath = eventApiPath(eventId, 'agenda');
@@ -162,10 +163,23 @@ const MySchedule = () => {
   // guaranteed to be equal. Resolved separately so this screen's queries and
   // writes against that table match its FK, mirroring how the server
   // resolves identity in resolve-notification-identity.ts.
+  //
+  // Looked up by email, not by `provider_ids->>supabase == dbUserId` (this
+  // screen's original strategy) — that requires the Better Auth <-> Supabase
+  // identity bridge to have already synced `provider_ids.supabase` for this
+  // account, which self-heals on write but can still be stale/missing at
+  // read time. When it's missing, this filter silently matches zero rows,
+  // registryUserId stays null, and every confirm/favorite state loads as
+  // empty even though the write API (POST /agenda/status, which resolves
+  // identity by email exactly like this now does) already saved it
+  // correctly — the write and read sides were resolving to two different
+  // values for the same account. Regression: a confirmed agenda slot showed
+  // as free again on this screen after being confirmed successfully.
   const [registryUserId, setRegistryUserId] = useState<string | null>(null);
+  const userEmail = user?.email?.trim().toLowerCase() || '';
 
   useEffect(() => {
-    if (!dbUserId) {
+    if (!dbUserId || !userEmail) {
       setRegistryUserId(null);
       return;
     }
@@ -175,7 +189,7 @@ const MySchedule = () => {
         const { data, error } = await supabase
           .from('user')
           .select('id')
-          .filter('provider_ids->>supabase', 'eq', dbUserId)
+          .eq('email', userEmail)
           .maybeSingle();
         if (!cancelled) {
           if (error) {
@@ -195,7 +209,7 @@ const MySchedule = () => {
     return () => {
       cancelled = true;
     };
-  }, [dbUserId]);
+  }, [dbUserId, userEmail]);
   const [confirmationModal, setConfirmationModal] = useState<{
     visible: boolean;
     meeting: Meeting | null;
@@ -210,6 +224,10 @@ const MySchedule = () => {
     dayStat: typeof dayStats[0] | null;
   }>({ visible: false, dayStat: null });
   const [isConfirming, setIsConfirming] = useState(false);
+  const [agendaActionResult, setAgendaActionResult] = useState<{ visible: boolean; added: boolean }>({
+    visible: false,
+    added: true,
+  });
   // Meetings state
   const [meetings, setMeetings] = useState<any[]>([]);
   const [loadingMeetings, setLoadingMeetings] = useState<boolean>(false);
@@ -250,6 +268,7 @@ const MySchedule = () => {
   }, [meetings, meetingFilter]);
 
   // Load user confirmation statuses for agenda events, meetings, and free slots
+  const [isReloadingStatus, setIsReloadingStatus] = useState(false);
   const loadUserScheduleStatus = useCallback(async () => {
     if (!registryUserId) {
       setUserAgendaStatus({});
@@ -257,6 +276,7 @@ const MySchedule = () => {
       setUserFreeSlotStatus({});
       return;
     }
+    setIsReloadingStatus(true);
     try {
       const { data, error } = await supabase
         .from('user_agenda_status')
@@ -300,6 +320,8 @@ const MySchedule = () => {
       setFavoriteStatus(favoriteMap);
     } catch (e) {
       console.error('Error loading user schedule status:', e);
+    } finally {
+      setIsReloadingStatus(false);
     }
   }, [registryUserId, eventId]);
 
@@ -871,6 +893,7 @@ const MySchedule = () => {
 
       // Close modal
       setConfirmationModal({ visible: false, meeting: null, slotStartTime: null });
+      setAgendaActionResult({ visible: true, added: newStatus === 'confirmed' });
     } catch (error) {
       console.error('Error toggling confirmation:', error);
       showError(t('mySchedule.errors.title'), newStatus === 'confirmed' ? t('mySchedule.errors.failedToConfirm') : t('mySchedule.errors.failedToUnconfirm'));
@@ -1402,10 +1425,21 @@ const MySchedule = () => {
               borderBottomColor: colors.divider,
             }
           ]}>
-            <View style={styles.calendarHeader}>
+            <View style={[styles.calendarHeader, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
               <Text style={[styles.calendarTitle, { color: colors.text.primary }]}>
                 {t('mySchedule.scheduleOverview')}
               </Text>
+              <TouchableOpacity
+                onPress={() => loadUserScheduleStatus()}
+                disabled={isReloadingStatus}
+                accessibilityLabel={t('mySchedule.reloadAgenda', 'Reload agenda')}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+              >
+                <MaterialIcons name="refresh" size={18} color={colors.primary} style={isReloadingStatus ? { opacity: 0.5 } : undefined} />
+                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+                  {t('mySchedule.reload', 'Reload')}
+                </Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.calendarWeek}>
             {dayStats.map((dayStat) => {
@@ -1573,8 +1607,25 @@ const MySchedule = () => {
           isFavorite={favoriteStatus[confirmationModal.meeting.id] || false}
           onToggleFavorite={() => confirmationModal.meeting && handleToggleFavorite(confirmationModal.meeting)}
           onToggleBlocked={() => handleToggleFreeSlotBlocked(confirmationModal.slotStartTime!)}
+          onViewAgenda={() => {
+            setConfirmationModal({ visible: false, meeting: null, slotStartTime: null });
+            loadUserScheduleStatus();
+          }}
         />
       )}
+
+      <AgendaActionResultModal
+        visible={agendaActionResult.visible}
+        added={agendaActionResult.added}
+        onClose={() => setAgendaActionResult((prev) => ({ ...prev, visible: false }))}
+        onViewAgenda={() => {
+          setAgendaActionResult((prev) => ({ ...prev, visible: false }));
+          // Already on My Agenda — "check your agenda" re-fetches confirmed
+          // status here instead of navigating, doubling as the same manual
+          // reload the header's own reload button triggers.
+          loadUserScheduleStatus();
+        }}
+      />
 
       {/* Day Summary Modal */}
       {daySummaryModal.dayStat && (

@@ -859,7 +859,12 @@
       "confirm": "Confirm",
       "unconfirm": "Unconfirm",
       "confirmMessage": "Confirming your attendance will add this event to your schedule.",
-      "unconfirmMessage": "Are you sure you want to unconfirm your attendance? This will remove this event from your confirmed schedule."
+      "unconfirmMessage": "Are you sure you want to unconfirm your attendance? This will remove this event from your confirmed schedule.",
+      "close": "Close",
+      "checkYourAgenda": "Check your agenda",
+      "reload": "Reload",
+      "reloadAgenda": "Reload agenda",
+      "checkAgendaFirst": "Check your agenda first"
     },
     "tips": {
       "title": "Networking Tips",
@@ -1119,6 +1124,12 @@
         "messageButton": "Message",
         "chatWith": "Chat with"
       }
+    },
+    "messages": {
+      "addedToAgenda": "Added to agenda",
+      "addedToAgendaMessage": "This session is now in your agenda",
+      "removedFromAgenda": "Removed from agenda",
+      "removedFromAgendaMessage": "This session was removed from your agenda"
     }
   },
   "agenda": {

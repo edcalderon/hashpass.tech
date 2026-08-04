@@ -24,6 +24,7 @@ import { EVENTS } from '../../../config/events';
 import { useAuth } from '../../../hooks/useAuth';
 import { useToastHelpers } from '@contexts/ToastContext';
 import ScheduleConfirmationModal from '../../../components/ScheduleConfirmationModal';
+import AgendaActionResultModal from '../../../components/AgendaActionResultModal';
 import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
@@ -124,6 +125,10 @@ export default function BSL2025AgendaScreen() {
     startTime: Date | null;
   }>({ visible: false, agendaItem: null, startTime: null });
   const [isConfirming, setIsConfirming] = useState(false);
+  const [agendaActionResult, setAgendaActionResult] = useState<{ visible: boolean; added: boolean }>({
+    visible: false,
+    added: true,
+  });
   const [speakerMapRef, setSpeakerMapRef] = useState<Map<string, { id: string; name: string; image?: string }>>(new Map());
   const eventId = event?.id || 'bsl';
   const agendaApiPath = eventApiPath(eventId, 'agenda');
@@ -896,11 +901,7 @@ export default function BSL2025AgendaScreen() {
       }));
 
       setConfirmationModal({ visible: false, agendaItem: null, startTime: null });
-      if (newStatus === 'confirmed') {
-        showSuccess(t('messages.addedToAgenda', 'Added to agenda'), t('messages.addedToAgendaMessage', 'This session is now in your agenda'));
-      } else {
-        showWarning(t('messages.removedFromAgenda', 'Removed from agenda'), t('messages.removedFromAgendaMessage', 'This session was removed from your agenda'));
-      }
+      setAgendaActionResult({ visible: true, added: newStatus === 'confirmed' });
     } catch (error) {
       console.error('Error toggling confirmation:', error);
       showError(t('messages.error'), newStatus === 'confirmed' ? t('messages.confirmError') : t('messages.unconfirmError'));
@@ -1450,8 +1451,21 @@ export default function BSL2025AgendaScreen() {
           isAgendaEvent={true}
           isFavorite={favoriteStatus[confirmationModal.agendaItem.id] || false}
           onToggleFavorite={() => confirmationModal.agendaItem && handleToggleFavorite(confirmationModal.agendaItem)}
+          onViewAgenda={() => {
+            setConfirmationModal({ visible: false, agendaItem: null, startTime: null });
+            router.push(`/events/${eventId}/networking/my-schedule` as any);
+          }}
         />
       )}
+      <AgendaActionResultModal
+        visible={agendaActionResult.visible}
+        added={agendaActionResult.added}
+        onClose={() => setAgendaActionResult((prev) => ({ ...prev, visible: false }))}
+        onViewAgenda={() => {
+          setAgendaActionResult((prev) => ({ ...prev, visible: false }));
+          router.push(`/events/${eventId}/networking/my-schedule` as any);
+        }}
+      />
     </ScrollView>
   </View>
   );

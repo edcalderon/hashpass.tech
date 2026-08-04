@@ -858,7 +858,12 @@
       "confirm": "Confirmar",
       "unconfirm": "Desconfirmar",
       "confirmMessage": "Confirmar tu asistencia agregará este evento a tu agenda.",
-      "unconfirmMessage": "¿Estás seguro de que quieres desconfirmar tu asistencia? Esto eliminará este evento de tu agenda confirmada."
+      "unconfirmMessage": "¿Estás seguro de que quieres desconfirmar tu asistencia? Esto eliminará este evento de tu agenda confirmada.",
+      "close": "Cerrar",
+      "checkYourAgenda": "Revisa tu agenda",
+      "reload": "Recargar",
+      "reloadAgenda": "Recargar agenda",
+      "checkAgendaFirst": "Revisa tu agenda primero"
     },
     "tips": {
       "title": "Consejos de Networking",
@@ -1118,6 +1123,12 @@
         "messageButton": "Mensaje",
         "chatWith": "Chatear con"
       }
+    },
+    "messages": {
+      "addedToAgenda": "Añadido a la agenda",
+      "addedToAgendaMessage": "Esta sesión ya está en tu agenda",
+      "removedFromAgenda": "Eliminado de la agenda",
+      "removedFromAgendaMessage": "Esta sesión fue eliminada de tu agenda"
     }
   },
   "agenda": {

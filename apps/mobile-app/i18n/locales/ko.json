@@ -789,7 +789,12 @@
       "confirm": "확인",
       "unconfirm": "확인 취소",
       "confirmMessage": "출석을 확인하면 이 이벤트가 일정에 추가됩니다.",
-      "unconfirmMessage": "출석 확인을 취소하시겠습니까? 이렇게 하면 확인된 일정에서 이 이벤트가 제거됩니다."
+      "unconfirmMessage": "출석 확인을 취소하시겠습니까? 이렇게 하면 확인된 일정에서 이 이벤트가 제거됩니다.",
+      "close": "닫기",
+      "checkYourAgenda": "내 일정 확인하기",
+      "reload": "새로고침",
+      "reloadAgenda": "일정 새로고침",
+      "checkAgendaFirst": "먼저 내 일정을 확인하세요"
     },
     "tips": {
       "title": "네트워킹 팁",
@@ -1049,6 +1054,12 @@
         "messageButton": "메시지",
         "chatWith": "채팅"
       }
+    },
+    "messages": {
+      "addedToAgenda": "일정에 추가됨",
+      "addedToAgendaMessage": "이 세션이 내 일정에 추가되었습니다",
+      "removedFromAgenda": "일정에서 제거됨",
+      "removedFromAgendaMessage": "이 세션이 내 일정에서 제거되었습니다"
     }
   },
   "agenda": {
