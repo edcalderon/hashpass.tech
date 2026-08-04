@@ -733,6 +733,7 @@ const MySchedule = () => {
         
         if (slot.meeting) {
           const isAgendaEvent = (slot.meeting as any).isAgendaEvent;
+          if (isAgendaEvent && removedAgendaIds.has(slot.meeting.id)) return;
           const userStatus = isAgendaEvent 
             ? (userAgendaStatus[slot.meeting.id] || 'tentative')
             : (userMeetingStatus[slot.meeting.id] || 'tentative');
@@ -767,7 +768,19 @@ const MySchedule = () => {
         total: confirmedCount + interestedCount + blockedCount,
       };
     });
-  }, [schedule, userAgendaStatus, userMeetingStatus, userFreeSlotStatus, favoriteStatus]);
+  }, [schedule, userAgendaStatus, userMeetingStatus, userFreeSlotStatus, favoriteStatus, removedAgendaIds]);
+
+  // Keep an already-open summary synchronized with removals/restores. The
+  // modal stores a snapshot when opened, so without this refresh its counts
+  // would only change after closing and reopening it.
+  useEffect(() => {
+    if (!daySummaryModal.visible || !daySummaryModal.dayStat) return;
+    const currentDayStat = dayStats.find((day) => isSameDay(day.date, daySummaryModal.dayStat!.date));
+    if (!currentDayStat || currentDayStat === daySummaryModal.dayStat) return;
+    setDaySummaryModal((previous) => previous.dayStat
+      ? { ...previous, dayStat: currentDayStat }
+      : previous);
+  }, [dayStats, daySummaryModal.visible, daySummaryModal.dayStat?.date]);
 
   // Toggle expanded state for hour group
   const toggleHourGroup = (hour: string) => {
@@ -2453,6 +2466,7 @@ const MySchedule = () => {
                 const timelineSlots = selectedDay.slots
                   .filter((slot: TimeSlot) => {
                     if (excludePastSessions && slot.startTime.getTime() < Date.now()) return false;
+                    if (slot.meeting && (slot.meeting as any).isAgendaEvent && removedAgendaIds.has(slot.meeting.id)) return false;
                     if (slot.meeting) return true;
                     const slotKey = slot.startTime.toISOString();
                     const freeSlotStatus = userFreeSlotStatus[slotKey] || 'available';

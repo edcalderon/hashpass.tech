@@ -71,3 +71,4 @@ export const formatEventClock = (date: Date, eventTzOffset: string = DEFAULT_EVE
     ? `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`
     : `${displayHour} ${ampm}`;
 };
+// Keep shared agenda time exports available to incremental checks.

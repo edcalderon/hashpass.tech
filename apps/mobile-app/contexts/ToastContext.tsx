@@ -177,6 +177,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
   const remainingDurationRef = useRef(autoDismissDuration);
   const startTimestampRef = useRef<number | null>(null);
   const isPausedRef = useRef(false);
+  const pauseReasonsRef = useRef<Set<string>>(new Set());
   const isDismissingRef = useRef(false);
 
   // Determine if toast is non-critical (errors are critical, others are not)
@@ -219,6 +220,7 @@ const ToastItem: React.FC<ToastItemProps> = ({
     remainingDurationRef.current = durationMs;
     startTimestampRef.current = Date.now();
     isPausedRef.current = false;
+    pauseReasonsRef.current.clear();
 
     autoHideTimeoutRef.current = setTimeout(() => {
       autoHideTimeoutRef.current = null;
@@ -238,8 +240,11 @@ const ToastItem: React.FC<ToastItemProps> = ({
     });
   }, [clearAutoHideTimer, handleHide, isAutoDismissToast, progressAnim]);
 
-  const pauseAutoHideCountdown = useCallback(() => {
-    if (!isAutoDismissToast || isPausedRef.current || isDismissingRef.current) return;
+  const pauseAutoHideCountdown = useCallback((reason = 'press') => {
+    if (!isAutoDismissToast || isDismissingRef.current) return;
+
+    pauseReasonsRef.current.add(reason);
+    if (isPausedRef.current) return;
 
     isPausedRef.current = true;
     clearAutoHideTimer();
@@ -253,8 +258,11 @@ const ToastItem: React.FC<ToastItemProps> = ({
     });
   }, [clearAutoHideTimer, isAutoDismissToast, progressAnim]);
 
-  const resumeAutoHideCountdown = useCallback(() => {
-    if (!isAutoDismissToast || !isPausedRef.current || isDismissingRef.current) return;
+  const resumeAutoHideCountdown = useCallback((reason = 'press') => {
+    if (!isAutoDismissToast || isDismissingRef.current) return;
+
+    pauseReasonsRef.current.delete(reason);
+    if (pauseReasonsRef.current.size > 0 || !isPausedRef.current) return;
 
     const remaining = remainingDurationRef.current;
     if (remaining <= 0) {
@@ -319,8 +327,12 @@ const ToastItem: React.FC<ToastItemProps> = ({
             elevation: 20,
           }
         ]}
-        onPressIn={isAutoDismissToast ? pauseAutoHideCountdown : undefined}
-        onPressOut={isAutoDismissToast ? resumeAutoHideCountdown : undefined}
+        onPressIn={isAutoDismissToast ? () => pauseAutoHideCountdown('press') : undefined}
+        onPressOut={isAutoDismissToast ? () => resumeAutoHideCountdown('press') : undefined}
+        onHoverIn={isAutoDismissToast ? () => pauseAutoHideCountdown('hover') : undefined}
+        onHoverOut={isAutoDismissToast ? () => resumeAutoHideCountdown('hover') : undefined}
+        onFocus={isAutoDismissToast ? () => pauseAutoHideCountdown('focus') : undefined}
+        onBlur={isAutoDismissToast ? () => resumeAutoHideCountdown('focus') : undefined}
       >
         <View style={styles.toastContent}>
           <View style={styles.toastHeader}>
