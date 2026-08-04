@@ -7,9 +7,10 @@ const HASHPASS_DARK_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-
 const HASHPASS_LIGHT_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-black.webp");
 // The animated/static home hero uses a dark red/black treatment even when the
 // app theme is light, so its light-theme variant still needs a white wordmark.
-// Despite the historical filename, `white-cyan.webp` is the variant with
-// white letterforms (the `white.webp`/`black.webp` files contain dark text).
-const HASHPASS_LIGHT_HERO_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp");
+// The authoritative red-accent/white-letter artwork is black.svg (the source
+// filenames are historical). Use its bundled raster for Expo web/native so we
+// avoid Metro's SVG directory resolution while preserving the exact artwork.
+const HASHPASS_LIGHT_HERO_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-black-red.webp");
 
 // Footer-specific: on light web the footer has a dark-tinted gradient background,
 // so use the white logo there instead of the black hero logo.

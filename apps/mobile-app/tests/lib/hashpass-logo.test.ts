@@ -30,6 +30,10 @@ jest.mock(
   "../../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp",
   () => "white-cyan-native-png",
 );
+jest.mock(
+  "../../assets/logos/hashpass/logo-full-hashpass-black-red.webp",
+  () => "black-red-native-png",
+);
 
 const {
   getHashpassFullLogo,
@@ -81,7 +85,7 @@ describe("getHashpassStaticHeroLogo", () => {
   it("uses the white logo on light web hero surfaces", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassStaticHeroLogo(false)).toBe("white-cyan-native-png");
+    expect(getHashpassStaticHeroLogo(false)).toBe("black-red-native-png");
   });
 
   it("keeps the white-cyan logo on dark web no-animation hero surfaces", () => {
@@ -93,6 +97,6 @@ describe("getHashpassStaticHeroLogo", () => {
   it("uses the white native logo on light hero surfaces", () => {
     mockPlatform.OS = "android";
 
-    expect(getHashpassStaticHeroLogo(false)).toBe("white-cyan-native-png");
+    expect(getHashpassStaticHeroLogo(false)).toBe("black-red-native-png");
   });
 });
