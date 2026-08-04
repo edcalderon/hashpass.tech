@@ -1134,7 +1134,7 @@ export default function BSL2025AgendaScreen() {
                 </View>
               )}
               <View style={[styles.agendaTypeBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                <Text style={[styles.agendaTypeText, { color: '#FFFFFF' }]}>{item.type.toUpperCase()}</Text>
+                <Text style={[styles.agendaTypeText, { color: '#FFFFFF' }]}>{t(`types.${item.type}`, item.type).toUpperCase()}</Text>
               </View>
             </View>
           </View>

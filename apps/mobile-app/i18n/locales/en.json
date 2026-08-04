@@ -866,7 +866,8 @@
       "reloadAgenda": "Reload agenda",
       "checkAgendaFirst": "Check your agenda first",
       "collapseAll": "Collapse all",
-      "viewInAgenda": "View in agenda"
+      "viewInAgenda": "View in agenda",
+      "searchPlaceholder": "Search sessions, speakers or keywords..."
     },
     "tips": {
       "title": "Networking Tips",
@@ -1214,7 +1215,14 @@
       "location": "Location"
     },
     "refresh": "Refresh",
-    "refreshAgenda": "Refresh agenda"
+    "refreshAgenda": "Refresh agenda",
+    "types": {
+      "keynote": "Keynote",
+      "panel": "Panel",
+      "break": "Break",
+      "meal": "Meal",
+      "registration": "Registration"
+    }
   },
   "notifications": {
     "center": {

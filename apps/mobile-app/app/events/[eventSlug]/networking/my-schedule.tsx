@@ -20,6 +20,8 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { format, addDays, isSameDay, isToday, isPast, isFuture } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MaterialIcons } from '../../../../lib/vector-icons';
+import SpeakerAvatar from '../../../../components/SpeakerAvatar';
+import UnifiedSearchAndFilter from '../../../../components/UnifiedSearchAndFilter';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../../hooks/useAuth';
 import { useEvent } from '@contexts/EventContext';
@@ -133,6 +135,10 @@ const MySchedule = () => {
   const eventTimezoneOffset = event?.eventStartDate?.match(/([+-]\d{2}:?\d{2})$/)?.[1] || EVENT_TZ_OFFSET;
   const [selectedDate, setSelectedDate] = useState<Date>(eventDates.start);
   const [expandedHours, setExpandedHours] = useState<{[key: string]: boolean}>({});
+  // Fed by UnifiedSearchAndFilter's onFilteredData -- null means "no search
+  // applied yet" so hour groups render unfiltered until the component's own
+  // effect populates this with the full unfiltered list.
+  const [scheduleSearchResults, setScheduleSearchResults] = useState<Meeting[] | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const hourGroupRefs = useRef<{ [hour: string]: View | null }>({});
   const handledScrollToRef = useRef<string | null>(null);
@@ -624,6 +630,11 @@ const MySchedule = () => {
     return days;
   }, [allMeetings, eventDates.start, eventDates.end, generateTimeSlots]);
 
+  const visibleMeetingIds = useMemo(
+    () => (scheduleSearchResults ? new Set(scheduleSearchResults.map((m) => m.id)) : null),
+    [scheduleSearchResults]
+  );
+
   // Group time slots by hour for better organization
   const groupedSlots = useMemo(() => {
     const selectedDay = schedule.find((day: DaySchedule) => isSameDay(day.date, selectedDate));
@@ -631,7 +642,9 @@ const MySchedule = () => {
 
     const grouped: {[hour: string]: TimeSlot[]} = {};
 
-    selectedDay.timeSlots.forEach((slot: TimeSlot) => {
+    selectedDay.timeSlots
+      .filter((slot: TimeSlot) => !slot.meeting || !visibleMeetingIds || visibleMeetingIds.has(slot.meeting.id))
+      .forEach((slot: TimeSlot) => {
       const hour = formatEventTime(slot.startTime, eventTimezoneOffset, false);
       if (!grouped[hour]) {
         grouped[hour] = [];
@@ -640,7 +653,7 @@ const MySchedule = () => {
     });
 
     return grouped;
-  }, [schedule, selectedDate, eventTimezoneOffset]);
+  }, [schedule, selectedDate, eventTimezoneOffset, visibleMeetingIds]);
 
   // Deep-link from the Agenda tab's "check your agenda" link: select the
   // right day, expand the matching hour group, and scroll to it so the just
@@ -995,6 +1008,24 @@ const MySchedule = () => {
     }
   };
 
+  // Resolves an agenda item's speaker slug/name to a display name, avatar
+  // image, and navigable speaker id -- same config-lookup strategy as
+  // agenda.tsx's resolveAgendaSpeaker (minus its DB-directory fallback,
+  // which this screen doesn't have the infra for), so speaker chips look
+  // and behave consistently between the Agenda tab and My Schedule.
+  const resolveMeetingSpeaker = (value: string): { id: string | null; displayName: string; image?: string } => {
+    const speakers = (event as any)?.speakers as Array<{ id: string; name: string; image?: string }> | undefined;
+    if (speakers) {
+      const byId = speakers.find((s) => s.id === value);
+      if (byId) return { id: byId.id, displayName: byId.name, image: byId.image };
+      const byName = speakers.find((s) =>
+        s.name.toLowerCase().includes(value.toLowerCase()) || value.toLowerCase().includes(s.name.toLowerCase())
+      );
+      if (byName) return { id: byName.id, displayName: byName.name, image: byName.image };
+    }
+    return { id: null, displayName: value };
+  };
+
   // Handle favorite toggle for confirmed agenda events
   const handleToggleFavorite = async (meeting: Meeting) => {
     if (!registryUserId) return;
@@ -1179,9 +1210,38 @@ const MySchedule = () => {
                   color={colors.text.secondary}
                   style={styles.icon}
                 />
-                <Text style={[styles.participantsText, { color: colors.text.secondary }]}> 
-                  {meeting?.participants?.join(', ')}
-                </Text>
+                <View style={styles.speakerChipsRow}>
+                  {meeting?.participants?.map((participant: string, index: number) => {
+                    const { id: speakerId, displayName, image } = isAgendaEvent
+                      ? resolveMeetingSpeaker(participant)
+                      : { id: null, displayName: participant, image: undefined };
+                    const chipContent = (
+                      <>
+                        <SpeakerAvatar name={displayName} imageUrl={image} size={20} />
+                        <Text
+                          style={[
+                            styles.participantsText,
+                            { color: speakerId ? colors.primary : colors.text.secondary },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {displayName}
+                        </Text>
+                      </>
+                    );
+                    return speakerId ? (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.speakerChip}
+                        onPress={() => router.push(`/events/${eventId}/speakers/${speakerId}` as any)}
+                      >
+                        {chipContent}
+                      </TouchableOpacity>
+                    ) : (
+                      <View key={index} style={styles.speakerChip}>{chipContent}</View>
+                    );
+                  })}
+                </View>
               </View>
             )}
           </TouchableOpacity>
@@ -1468,31 +1528,6 @@ const MySchedule = () => {
               <Text style={[styles.calendarTitle, { color: colors.text.primary }]}>
                 {t('mySchedule.scheduleOverview')}
               </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                {Object.values(expandedHours).some(Boolean) && (
-                  <TouchableOpacity
-                    onPress={() => setExpandedHours({})}
-                    accessibilityLabel={t('mySchedule.collapseAll', 'Collapse all')}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
-                  >
-                    <MaterialIcons name="unfold-less" size={18} color={colors.primary} />
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
-                      {t('mySchedule.collapseAll', 'Collapse all')}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => loadUserScheduleStatus()}
-                  disabled={isReloadingStatus}
-                  accessibilityLabel={t('mySchedule.reloadAgenda', 'Reload agenda')}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
-                >
-                  <MaterialIcons name="refresh" size={18} color={colors.primary} style={isReloadingStatus ? { opacity: 0.5 } : undefined} />
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
-                    {t('mySchedule.reload', 'Reload')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
             <View style={styles.calendarWeek}>
             {dayStats.map((dayStat) => {
@@ -1628,6 +1663,44 @@ const MySchedule = () => {
           </View>
           </CopilotView>
         </CopilotStep>
+
+        {/* Search + Filter */}
+        {allMeetings.length > 0 && (
+          <UnifiedSearchAndFilter
+            data={allMeetings}
+            onFilteredData={setScheduleSearchResults}
+            onSearchChange={() => {}}
+            searchPlaceholder={t('mySchedule.searchPlaceholder', 'Search sessions, speakers or keywords...')}
+            searchFields={['title', 'participants', 'speaker_name', 'requester_name']}
+            showResultsCount={false}
+          />
+        )}
+
+        <View style={[styles.calendarHeader, { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 8 }]}>
+          {Object.values(expandedHours).some(Boolean) && (
+            <TouchableOpacity
+              onPress={() => setExpandedHours({})}
+              accessibilityLabel={t('mySchedule.collapseAll', 'Collapse all')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+            >
+              <MaterialIcons name="expand-less" size={18} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+                {t('mySchedule.collapseAll', 'Collapse all')}
+              </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() => loadUserScheduleStatus()}
+            disabled={isReloadingStatus}
+            accessibilityLabel={t('mySchedule.reloadAgenda', 'Reload agenda')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+          >
+            <MaterialIcons name="refresh" size={18} color={colors.primary} style={isReloadingStatus ? { opacity: 0.5 } : undefined} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+              {t('mySchedule.reload', 'Reload')}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Time Slots */}
         <View style={styles.content}>
@@ -2095,7 +2168,19 @@ const styles = StyleSheet.create({
   },
   participantsText: {
     fontSize: 13,
+    fontWeight: '500',
+  },
+  speakerChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flex: 1,
     marginLeft: 6,
+    gap: 10,
+  },
+  speakerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   icon: {
     marginRight: 6,

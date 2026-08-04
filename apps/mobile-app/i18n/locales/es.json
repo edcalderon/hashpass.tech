@@ -865,7 +865,8 @@
       "reloadAgenda": "Recargar agenda",
       "checkAgendaFirst": "Revisa tu agenda primero",
       "collapseAll": "Colapsar todo",
-      "viewInAgenda": "Ver en la agenda"
+      "viewInAgenda": "Ver en la agenda",
+      "searchPlaceholder": "Buscar sesiones, oradores o palabras clave..."
     },
     "tips": {
       "title": "Consejos de Networking",
@@ -1213,7 +1214,14 @@
       "location": "Ubicación"
     },
     "refresh": "Actualizar",
-    "refreshAgenda": "Actualizar agenda"
+    "refreshAgenda": "Actualizar agenda",
+    "types": {
+      "keynote": "Keynote",
+      "panel": "Panel",
+      "break": "Descanso",
+      "meal": "Comida",
+      "registration": "Registro"
+    }
   },
   "notifications": {
     "center": {
