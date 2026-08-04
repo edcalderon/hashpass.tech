@@ -5,12 +5,6 @@ import { type ImageSourcePropType } from "react-native";
 // collapse to a directory request such as `/logos/hashpass`.
 const HASHPASS_DARK_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp");
 const HASHPASS_LIGHT_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-black.webp");
-// The animated/static home hero uses a dark red/black treatment even when the
-// app theme is light, so its light-theme variant still needs a white wordmark.
-// The authoritative red-accent/white-letter artwork is black.svg (the source
-// filenames are historical). Use its bundled raster for Expo web/native so we
-// avoid Metro's SVG directory resolution while preserving the exact artwork.
-const HASHPASS_LIGHT_HERO_LOGO = require("../assets/logos/hashpass/logo-full-hashpass-black-red.webp");
 
 // Footer-specific: on light web the footer has a dark-tinted gradient background,
 // so use the white logo there instead of the black hero logo.
@@ -28,7 +22,8 @@ export const getHashpassFooterLogo = (isDark: boolean): ImageSourcePropType => {
 export const getHashpassStaticHeroLogo = (
   isDark: boolean,
 ): ImageSourcePropType => {
-  // The home hero keeps a dark red/black background in both theme modes, so
-  // the light-theme hero must use the white wordmark for contrast.
-  return isDark ? HASHPASS_DARK_LOGO : HASHPASS_LIGHT_HERO_LOGO;
+  // Native and reduced-motion light themes use the static, light hero surface
+  // (#F8FAFC). Keep the dark wordmark there; the animated dark hero uses the
+  // white/cyan artwork instead.
+  return isDark ? HASHPASS_DARK_LOGO : HASHPASS_LIGHT_LOGO;
 };
