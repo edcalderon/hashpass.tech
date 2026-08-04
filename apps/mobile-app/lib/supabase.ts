@@ -376,7 +376,23 @@ export const createSessionFromUrl = async (url: string): Promise<{
       'falls back to the Site URL without the auth payload, landing here with nothing to exchange.'
     );
 
-    return { session: null, user: null, error: null };
+    // Surface this as a distinct, named error instead of `error: null` —
+    // callback.tsx's caller falls back to a single generic "no session was
+    // established" message whenever `error` is falsy, which made this case
+    // (genuinely no auth payload in the URL — almost always a Supabase
+    // "Redirect URLs" allowlist mismatch for this domain, see the warning
+    // above) indistinguishable from "a real code/token was present but its
+    // exchange failed" (e.g. a one-time code already consumed by an email
+    // client's link-prescanner). Both need a completely different fix, so
+    // this needs to be visible in error tracking, not just a console.warn
+    // that's easy to miss among everything else callback.tsx logs.
+    return {
+      session: null,
+      user: null,
+      error: Object.assign(new Error('No auth payload in the callback URL (redirect_to likely rejected)'), {
+        code: 'no_auth_payload_in_callback_url',
+      }),
+    };
 
   } catch (error: any) {
     console.error('❌ Error in createSessionFromUrl:', error);
