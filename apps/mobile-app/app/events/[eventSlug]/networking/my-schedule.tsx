@@ -28,7 +28,6 @@ import { useToastHelpers } from '@contexts/ToastContext';
 import { useTranslation } from '../../../../i18n/i18n';
 import type { Meeting, TimeSlot, DaySchedule } from '@/types/networking';
 import ScheduleConfirmationModal from '../../../../components/ScheduleConfirmationModal';
-import AgendaActionResultModal from '../../../../components/AgendaActionResultModal';
 import * as Haptics from 'expo-haptics';
 import { AgendaItem } from '../../../../types/events';
 import { CopilotStep, walkthroughable } from '@lib/copilot-shim';
@@ -131,6 +130,18 @@ const addMinutes = (date: Date, minutes: number): Date => {
   return result;
 };
 
+// Serializes a Date as an explicitly-offset ISO string ("+00:00") instead of
+// Date.toISOString()'s bare "Z" suffix. Computed startTime/endTime values get
+// re-parsed later through parseEventISO (e.g. in generateTimeSlots's slot
+// matching) — parseEventISO treats a bare "Z" suffix as an untagged legacy
+// timestamp and reinterprets it as Medellín (-05:00) wall-clock time, which
+// silently shifts an already-correct absolute instant by up to 5 hours. That
+// mis-shifted endTime is what caused a single real agenda item (e.g. a
+// 30-minute "Welcome cocktail") to appear to span 5+ hours and swallow every
+// later session's slot on My Schedule. "+00:00" matches parseEventISO's
+// hasOtherOffset check, so it's preserved as-is on re-parse instead.
+const toAbsoluteISO = (date: Date): string => date.toISOString().replace('Z', '+00:00');
+
 const MySchedule = () => {
   const { colors, isDark } = useTheme();
   const { dbUserId, user } = useAuth();
@@ -224,10 +235,6 @@ const MySchedule = () => {
     dayStat: typeof dayStats[0] | null;
   }>({ visible: false, dayStat: null });
   const [isConfirming, setIsConfirming] = useState(false);
-  const [agendaActionResult, setAgendaActionResult] = useState<{ visible: boolean; added: boolean }>({
-    visible: false,
-    added: true,
-  });
   // Meetings state
   const [meetings, setMeetings] = useState<any[]>([]);
   const [loadingMeetings, setLoadingMeetings] = useState<boolean>(false);
@@ -370,7 +377,7 @@ const MySchedule = () => {
             duration,
           );
           const start = range?.startTime || (it.time as string);
-          const endTime = range?.endTime || addMinutes(parseEventISO(start), duration).toISOString();
+          const endTime = range?.endTime || toAbsoluteISO(addMinutes(parseEventISO(start), duration));
           const agendaId = String(it.id);
           // Check user's confirmation status, default to 'tentative' for agenda events
           const userStatus = userAgendaStatus[agendaId] || 'tentative';
@@ -598,7 +605,7 @@ const MySchedule = () => {
         title: m.title || t('mySchedule.messages.meetingWith', { name: m.speaker_name || m.requester_name || t('mySchedule.messages.user') }),
         description: m.notes || m.message,
         startTime: meetingStartTime,
-        endTime: m.end_time || (meetingStartTime ? addMinutes(parseEventISO(meetingStartTime), m.duration_minutes ?? 15).toISOString() : ''),
+        endTime: m.end_time || (meetingStartTime ? toAbsoluteISO(addMinutes(parseEventISO(meetingStartTime), m.duration_minutes ?? 15)) : ''),
         participants: m.speaker_name ? [m.speaker_name] : [],
         status: userStatus as 'confirmed' | 'unconfirmed',
         location: m.location || m.meeting_location || t('mySchedule.messages.tbd'),
@@ -893,7 +900,16 @@ const MySchedule = () => {
 
       // Close modal
       setConfirmationModal({ visible: false, meeting: null, slotStartTime: null });
-      setAgendaActionResult({ visible: true, added: newStatus === 'confirmed' });
+      // A toast, not the AgendaActionResultModal, is enough here — the user
+      // is already on My Schedule, so a modal offering to "check your
+      // agenda" would be pointless self-navigation. That modal is reserved
+      // for the main Agenda tab (agenda.tsx), where it actually links
+      // somewhere new.
+      if (newStatus === 'confirmed') {
+        showSuccess(t('messages.addedToAgenda', 'Added to agenda'));
+      } else {
+        showWarning(t('messages.removedFromAgenda', 'Removed from agenda'));
+      }
     } catch (error) {
       console.error('Error toggling confirmation:', error);
       showError(t('mySchedule.errors.title'), newStatus === 'confirmed' ? t('mySchedule.errors.failedToConfirm') : t('mySchedule.errors.failedToUnconfirm'));
@@ -1607,25 +1623,13 @@ const MySchedule = () => {
           isFavorite={favoriteStatus[confirmationModal.meeting.id] || false}
           onToggleFavorite={() => confirmationModal.meeting && handleToggleFavorite(confirmationModal.meeting)}
           onToggleBlocked={() => handleToggleFreeSlotBlocked(confirmationModal.slotStartTime!)}
-          onViewAgenda={() => {
-            setConfirmationModal({ visible: false, meeting: null, slotStartTime: null });
-            loadUserScheduleStatus();
-          }}
+          // No onViewAgenda here: we're already on My Schedule, so a "check
+          // your agenda" link would just point back at this same screen.
+          // That link (and the post-action result modal) is reserved for
+          // the main Agenda tab, where it navigates somewhere new — see
+          // agenda.tsx.
         />
       )}
-
-      <AgendaActionResultModal
-        visible={agendaActionResult.visible}
-        added={agendaActionResult.added}
-        onClose={() => setAgendaActionResult((prev) => ({ ...prev, visible: false }))}
-        onViewAgenda={() => {
-          setAgendaActionResult((prev) => ({ ...prev, visible: false }));
-          // Already on My Agenda — "check your agenda" re-fetches confirmed
-          // status here instead of navigating, doubling as the same manual
-          // reload the header's own reload button triggers.
-          loadUserScheduleStatus();
-        }}
-      />
 
       {/* Day Summary Modal */}
       {daySummaryModal.dayStat && (
