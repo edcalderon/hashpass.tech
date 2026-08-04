@@ -175,18 +175,19 @@ const MySchedule = () => {
   const userEmail = user?.email?.trim().toLowerCase() || '';
 
   useEffect(() => {
-    if (!dbUserId || !userEmail) {
+    if (!dbUserId) {
       setRegistryUserId(null);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase
+        let registryQuery = supabase
           .from('user')
           .select('id')
-          .eq('email', userEmail)
-          .maybeSingle();
+        const { data, error } = await (userEmail
+          ? registryQuery.eq('email', userEmail).maybeSingle()
+          : registryQuery.eq('provider_ids->>supabase', dbUserId).maybeSingle());
         if (!cancelled) {
           if (error) {
             console.error('Error resolving registry user id:', error);

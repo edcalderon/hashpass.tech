@@ -21,6 +21,7 @@
 // Shared by agenda summary controls and time-aware past-session filtering.
 // Kept in the changed-file validation set for My Schedule consumers.
 // Keep shared agenda time exports available to incremental checks.
+// Registry fallback changes should include this shared parser in validation.
 export const DEFAULT_EVENT_TZ_OFFSET = '-05:00';
 
 /** Extracts an event's real fixed UTC offset from its eventStartDate (e.g. "2026-08-05T09:00:00-04:00" -> "-04:00"). */
