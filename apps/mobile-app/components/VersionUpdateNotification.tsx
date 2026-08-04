@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n/i18n';
 import { performHardReload } from '../lib/version-checker';
@@ -8,32 +9,57 @@ interface VersionUpdateNotificationProps {
   currentVersion: string;
   latestVersion: string;
   onUpdateComplete?: () => void;
+  /** Native-only: Play/App Store links for the "Update" action there instead of the web reload flow. */
+  storeUrl?: string | null;
+  storeWebUrl?: string | null;
 }
 
-type UpdateStep = 'idle' | 'clearing' | 'reloading';
+type UpdateStep = 'idle' | 'clearing' | 'reloading' | 'opening-store';
 
 export default function VersionUpdateNotification({
   currentVersion,
   latestVersion,
   onUpdateComplete,
+  storeUrl,
+  storeWebUrl,
 }: VersionUpdateNotificationProps) {
   const { colors, isDark } = useTheme();
   const { t } = useTranslation('version');
   const [step, setStep] = useState<UpdateStep>('idle');
 
-  if (Platform.OS !== 'web') {
-    return null;
-  }
-
   const isUpdating = step !== 'idle';
 
   const handleUpdate = async () => {
-    setStep('clearing');
+    if (Platform.OS === 'web') {
+      setStep('clearing');
+      try {
+        await clearAllCaches();
+        setStep('reloading');
+        performHardReload();
+      } catch {
+        setStep('idle');
+      }
+      return;
+    }
+
+    // Native: nothing to reload in-place — hand off to the store, same
+    // market://-first-then-https fallback VersionQuickSheet uses, then
+    // dismiss (the user completes the actual update from the store app).
+    setStep('opening-store');
     try {
-      await clearAllCaches();
-      setStep('reloading');
-      performHardReload();
-    } catch {
+      if (storeUrl) {
+        const canOpen = await Linking.canOpenURL(storeUrl).catch(() => false);
+        if (canOpen) {
+          await Linking.openURL(storeUrl).catch(() => null);
+          onUpdateComplete?.();
+          return;
+        }
+      }
+      if (storeWebUrl) {
+        await Linking.openURL(storeWebUrl).catch(() => null);
+      }
+      onUpdateComplete?.();
+    } finally {
       setStep('idle');
     }
   };
@@ -45,6 +71,7 @@ export default function VersionUpdateNotification({
   const buttonLabel =
     step === 'clearing' ? t('updateClearing', 'Clearing cache…')
     : step === 'reloading' ? t('updateReloading', 'Reloading…')
+    : step === 'opening-store' ? t('updateOpeningStore', 'Opening store…')
     : t('updateNow', 'Update Now');
 
   const styles = getStyles(isDark, colors);
@@ -65,11 +92,7 @@ export default function VersionUpdateNotification({
             <View style={styles.iconRingOuter}>
               <View style={styles.iconRingInner}>
                 <View style={styles.iconBg}>
-                  {/* inline SVG — download arrow pointing DOWN into tray */}
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 3V15M8 11L12 15L16 11" stroke={colors.primary} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M4 18H20" stroke={colors.primary} strokeWidth="2.2" strokeLinecap="round"/>
-                  </svg>
+                  <MaterialIcons name="system-update" size={30} color={colors.primary} />
                 </View>
               </View>
             </View>
@@ -88,9 +111,7 @@ export default function VersionUpdateNotification({
             </View>
 
             <View style={styles.arrowWrap}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5 12H19M15 8L19 12L15 16" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <MaterialIcons name="arrow-forward" size={20} color={colors.primary} />
             </View>
 
             <View style={[
@@ -179,7 +200,14 @@ const getStyles = (isDark: boolean, colors: any) =>
       width: '100%',
       maxWidth: 368,
       alignItems: 'center',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.28), 0 2px 8px rgba(200,16,0,0.12)',
+      ...(Platform.OS === 'web'
+        ? { boxShadow: '0 8px 32px rgba(0,0,0,0.28), 0 2px 8px rgba(200,16,0,0.12)' }
+        : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.28,
+            shadowRadius: 32,
+          }),
       elevation: 20,
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
@@ -302,7 +330,15 @@ const getStyles = (isDark: boolean, colors: any) =>
       backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
-      boxShadow: '0 4px 14px rgba(200,16,0,0.35)',
+      ...(Platform.OS === 'web'
+        ? { boxShadow: '0 4px 14px rgba(200,16,0,0.35)' }
+        : {
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.35,
+            shadowRadius: 14,
+            elevation: 6,
+          }),
     },
     buttonUpdating: {
       opacity: 0.85,

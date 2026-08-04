@@ -68,7 +68,7 @@ export function performHardReload(): void {
   window.location.replace(url.toString());
 }
 
-async function clearAllCaches(): Promise<void> {
+export async function clearAllCaches(): Promise<void> {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
   try {

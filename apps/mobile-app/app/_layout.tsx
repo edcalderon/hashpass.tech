@@ -22,7 +22,7 @@ import PWAPrompt from '../components/PWAPrompt';
 import CookieConsentBanner from '../components/CookieConsentBanner';
 import VersionUpdateNotification from '../components/VersionUpdateNotification';
 import ForceUpdateScreen from '../components/ForceUpdateScreen';
-import SoftUpdateBanner from '../components/SoftUpdateBanner';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import OtaUpdateBanner from '../components/OtaUpdateBanner';
 import { useNativeUpdateCheck } from '../hooks/useNativeUpdateCheck';
 import { useOtaUpdate } from '../hooks/useOtaUpdate';
@@ -147,7 +147,38 @@ function ThemedContent() {
   const [isReady, setIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [versionUpdate, setVersionUpdate] = useState<{ currentVersion: string; latestVersion: string } | null>(null);
+  const [showNativeSoftUpdate, setShowNativeSoftUpdate] = useState(false);
   const [lastRedirectTime, setLastRedirectTime] = useState(0);
+
+  // Native soft update: same key/semantics the previous SoftUpdateBanner
+  // used ("don't show this version's prompt again once dismissed"), now
+  // driving the shared VersionUpdateNotification modal instead of a small
+  // toast — this is the "modal dialog like the Play Store's own update
+  // prompt" surface for native, mirroring what the web build already shows.
+  useEffect(() => {
+    if (Platform.OS === 'web' || !nativeUpdate.needsSoftUpdate || !nativeUpdate.latestVersion) {
+      setShowNativeSoftUpdate(false);
+      return;
+    }
+
+    let cancelled = false;
+    AsyncStorage.getItem('soft_update_dismissed_version').then((dismissed) => {
+      if (!cancelled && dismissed !== nativeUpdate.latestVersion) {
+        setShowNativeSoftUpdate(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [nativeUpdate.needsSoftUpdate, nativeUpdate.latestVersion]);
+
+  const dismissNativeSoftUpdate = () => {
+    setShowNativeSoftUpdate(false);
+    if (nativeUpdate.latestVersion) {
+      AsyncStorage.setItem('soft_update_dismissed_version', nativeUpdate.latestVersion).catch(() => {});
+    }
+  };
   const authRedirectStateRef = React.useRef({ isLoggedIn, isLoading });
 
   useEffect(() => {
@@ -499,11 +530,13 @@ function ThemedContent() {
           onUpdateComplete={() => setVersionUpdate(null)}
         />
       )}
-      {Platform.OS !== 'web' && nativeUpdate.needsSoftUpdate && nativeUpdate.latestVersion && (
-        <SoftUpdateBanner
+      {Platform.OS !== 'web' && showNativeSoftUpdate && nativeUpdate.latestVersion && (
+        <VersionUpdateNotification
+          currentVersion={packageJson.version}
           latestVersion={nativeUpdate.latestVersion}
           storeUrl={nativeUpdate.storeUrl}
           storeWebUrl={nativeUpdate.storeWebUrl}
+          onUpdateComplete={dismissNativeSoftUpdate}
         />
       )}
       {Platform.OS !== 'web' && otaUpdate.state === 'ready' && (

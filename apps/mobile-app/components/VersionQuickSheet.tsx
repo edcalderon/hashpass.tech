@@ -5,6 +5,7 @@ import { useTheme } from '../hooks/useTheme';
 import { versionService } from '../lib/services/version-service';
 import { apiClient } from '../lib/api-client';
 import { compareAppVersions } from '../config/runtime-version';
+import { clearAllCaches, performHardReload } from '../lib/version-checker';
 import packageJson from '../package.json';
 import { useOtaUpdate } from '../hooks/useOtaUpdate';
 import { useTranslation } from '../i18n/i18n';
@@ -112,7 +113,13 @@ export default function VersionQuickSheet({
 
   const handleOpenStore = async () => {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined') window.location.reload();
+      // Plain reload() can still be served from the HTTP cache or a
+      // just-unregistered service worker's fallback path — go through the
+      // same cache-clear + cache-busted hard reload the forced-update flow
+      // uses (lib/version-checker.ts) so "Update" here reliably fetches the
+      // new bundle instead of sometimes silently re-showing the old one.
+      await clearAllCaches();
+      performHardReload();
       return;
     }
 
@@ -131,6 +138,19 @@ export default function VersionQuickSheet({
       await Linking.openURL(storeWebUrl).catch(() => null);
     }
   };
+
+  // Web has no store to check against — this just re-checks the deployed
+  // web bundle version (see handleOpenStore's web branch below), so the
+  // label shouldn't claim to be checking a store that doesn't apply here.
+  const checkLabel = Platform.OS === 'web'
+    ? t('webCheck', 'Check for updates')
+    : t('playCheck', 'Check for Play Store updates');
+  const checkingLabel = Platform.OS === 'web'
+    ? t('webChecking', 'Checking for updates…')
+    : t('playChecking', 'Checking for Play Store updates…');
+  const upToDateLabel = Platform.OS === 'web'
+    ? t('webUpToDate', "You're on the latest version")
+    : t('playUpToDate', "You're on the latest native version");
 
   return (
     <Modal
@@ -195,21 +215,21 @@ export default function VersionQuickSheet({
 
             <View style={styles.updateCheckSection}>
               {updateCheckState === 'idle' && (
-                <TouchableOpacity style={styles.checkButton} onPress={handleCheckForUpdates} accessibilityLabel="Check for Play Store updates">
+                <TouchableOpacity style={styles.checkButton} onPress={handleCheckForUpdates} accessibilityLabel={checkLabel}>
                   <MaterialIcons name="system-update" size={16} color={colors.primary} />
-                  <Text style={styles.checkButtonText}>{t('playCheck', 'Check for Play Store updates')}</Text>
+                  <Text style={styles.checkButtonText}>{checkLabel}</Text>
                 </TouchableOpacity>
               )}
               {updateCheckState === 'checking' && (
                 <View style={styles.checkResult}>
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.checkResultText}>{t('playChecking', 'Checking for Play Store updates…')}</Text>
+                  <Text style={styles.checkResultText}>{checkingLabel}</Text>
                 </View>
               )}
               {updateCheckState === 'up-to-date' && (
                 <View style={styles.checkResult}>
                   <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
-                  <Text style={[styles.checkResultText, { color: '#4CAF50' }]}>{t('playUpToDate', "You're on the latest native version")}</Text>
+                  <Text style={[styles.checkResultText, { color: '#4CAF50' }]}>{upToDateLabel}</Text>
                 </View>
               )}
               {updateCheckState === 'update-available' && (
