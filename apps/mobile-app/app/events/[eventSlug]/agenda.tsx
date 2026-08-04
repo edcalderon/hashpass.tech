@@ -882,7 +882,11 @@ export default function BSL2025AgendaScreen() {
 
   // Handle toggle confirmation
   /* istanbul ignore next -- exercised through the native/web agenda interaction flow */
-  const handleToggleConfirmation = async (agendaItem: AgendaItem, startTime: Date) => {
+  const handleToggleConfirmation = async (
+    agendaItem: AgendaItem,
+    startTime: Date,
+    requestedStatus?: 'tentative' | 'confirmed',
+  ) => {
     if (!user) {
       showError(t('messages.error', 'Error'), t('messages.signInToManageAgenda', 'Sign in to manage your agenda'));
       return;
@@ -890,7 +894,7 @@ export default function BSL2025AgendaScreen() {
     
     setIsConfirming(true);
     const currentStatus = userAgendaStatus[agendaItem.id] || 'tentative';
-    const newStatus = currentStatus === 'confirmed' ? 'tentative' : 'confirmed';
+    const newStatus = requestedStatus ?? (currentStatus === 'confirmed' ? 'tentative' : 'confirmed');
     
     try {
       const response = await apiClient.request(agendaStatusApiPath, {
@@ -952,14 +956,20 @@ export default function BSL2025AgendaScreen() {
     }
   };
 
-  // Some published agenda feeds use a display range ("09:00 - 09:30") rather
-  // than an ISO timestamp. The confirmation modal cannot render that range as
-  // a Date, but the status API does not require one. Fall back to an immediate
-  // API toggle so Add to agenda still works and gives the user feedback.
+  // Adding a session is an explicit opt-in and should create a confirmed
+  // attendance record. The confirmation modal is still used when removing a
+  // session (or when confirming from other flows), but an Add to agenda tap
+  // must not leave a tentative row behind in My Schedule.
   /* istanbul ignore next -- exercised through the native/web agenda interaction flow */
   const handleAgendaAction = (agendaItem: AgendaItem, startTime: Date) => {
     if (!user) {
       showError(t('messages.error', 'Error'), t('messages.signInToManageAgenda', 'Sign in to manage your agenda'));
+      return;
+    }
+
+    const currentStatus = userAgendaStatus[agendaItem.id] || 'tentative';
+    if (currentStatus !== 'confirmed') {
+      void handleToggleConfirmation(agendaItem, startTime, 'confirmed');
       return;
     }
 
@@ -968,7 +978,7 @@ export default function BSL2025AgendaScreen() {
       return;
     }
 
-    void handleToggleConfirmation(agendaItem, new Date());
+    void handleToggleConfirmation(agendaItem, new Date(), 'tentative');
   };
 
   // Helper function to get the event's date based on day field or ISO time
