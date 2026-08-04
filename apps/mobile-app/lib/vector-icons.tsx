@@ -102,6 +102,8 @@ import {
   Wallet,
   X,
   Zap,
+  ThumbsUp,
+  Image as ImageIcon,
   type LucideProps,
 } from 'lucide-react-native';
 import type { TextStyle } from 'react-native';
@@ -213,6 +215,8 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   label: Tag,
   language: Globe,
   link: Link2,
+  'thumb-up': ThumbsUp,
+  image: ImageIcon,
   'link-outline': Link2,
   'location-on': MapPin,
   'lock-open': LockOpen,

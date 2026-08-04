@@ -15,6 +15,7 @@ import {
   RefreshControl,
   Modal,
   Share,
+  Pressable,
 } from 'react-native';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { useTheme } from '../../../../hooks/useTheme';
@@ -29,7 +30,7 @@ import { useEvent } from '@contexts/EventContext';
 import { supabase } from '../../../../lib/supabase';
 import { apiClient, eventApiPath } from '../../../../lib/api-client';
 import { useToastHelpers } from '@contexts/ToastContext';
-import { useTranslation } from '../../../../i18n/i18n';
+import { useTranslation, getCurrentLocale } from '../../../../i18n/i18n';
 import type { Meeting, TimeSlot, DaySchedule } from '@/types/networking';
 import ScheduleConfirmationModal from '../../../../components/ScheduleConfirmationModal';
 import * as Haptics from 'expo-haptics';
@@ -1071,11 +1072,18 @@ const MySchedule = () => {
   );
 
   const [isSharingDay, setIsSharingDay] = useState(false);
+  const [shareSheet, setShareSheet] = useState<{ visible: boolean; shareUrl: string; imageUrl: string }>({
+    visible: false,
+    shareUrl: '',
+    imageUrl: '',
+  });
 
-  // "Share my day": mints (or reuses) a public share token for this event
-  // via POST /schedule/share-token, then shares the resulting read-only
-  // live link -- see app/events/[eventSlug]/schedule/live/[shareToken].tsx
-  // for what the recipient sees.
+  // Mints (or reuses) a public share token for this event via POST
+  // /schedule/share-token, then opens a share sheet with: the live-updating
+  // link (app/events/[eventSlug]/schedule/live/[shareToken].tsx) and a
+  // branded per-day image (app/api/.../schedule/public/:token/image),
+  // day-scoped to whatever day is currently selected and localized to the
+  // viewer's current app language.
   const handleShareMyDay = async () => {
     setIsSharingDay(true);
     try {
@@ -1086,24 +1094,59 @@ const MySchedule = () => {
       if (!response.success || !response.data?.shareToken) {
         throw new Error(response.error || 'Failed to create share link');
       }
+      const dayNumber = Math.max(1, Math.round((selectedDate.getTime() - eventDates.start.getTime()) / 86_400_000) + 1);
+      const locale = getCurrentLocale();
       const shareUrl = `https://hashpass.tech/events/${eventId}/schedule/live/${response.data.shareToken}`;
-      const message = t('mySchedule.shareMessage', 'Check out my schedule at {eventName}: {url}')
-        .replace('{eventName}', event?.name || eventId)
-        .replace('{url}', shareUrl);
-
-      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && (navigator as any).share) {
-        await (navigator as any).share({ title: t('mySchedule.shareMyAgenda', 'Share my agenda'), text: message, url: shareUrl });
-      } else if (Platform.OS !== 'web') {
-        await Share.share({ message, title: t('mySchedule.shareMyAgenda', 'Share my agenda') });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        showSuccess(t('mySchedule.shareLinkCopied', 'Share link copied to clipboard'));
-      }
-    } catch (error: any) {
-      if (error?.message?.includes('cancel') || error?.name === 'AbortError') return;
+      const imageUrl = `https://hashpass.tech/api/events/${eventId}/schedule/public/${response.data.shareToken}/image?day=${dayNumber}&locale=${locale}`;
+      setShareSheet({ visible: true, shareUrl, imageUrl });
+    } catch {
       showError(t('mySchedule.errors.title'), t('mySchedule.shareLinkFailed', 'Could not create the share link. Please try again.'));
     } finally {
       setIsSharingDay(false);
+    }
+  };
+
+  const shareCtaMessage = (shareUrl: string) =>
+    t('mySchedule.shareMessage', 'Join me — this is my agenda at {eventName}, see you at the event! {url}')
+      .replace('{eventName}', event?.name || eventId)
+      .replace('{url}', shareUrl);
+
+  const openShareIntent = async (platform: 'whatsapp' | 'x' | 'facebook') => {
+    const text = encodeURIComponent(shareCtaMessage(shareSheet.shareUrl));
+    const url = encodeURIComponent(shareSheet.shareUrl);
+    const intentUrl = {
+      whatsapp: `https://wa.me/?text=${text}`,
+      x: `https://twitter.com/intent/tweet?text=${text}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+    }[platform];
+    if (Platform.OS === 'web') {
+      window.open(intentUrl, '_blank');
+    } else {
+      const { Linking } = await import('react-native');
+      await Linking.openURL(intentUrl);
+    }
+  };
+
+  const copyToClipboard = async (value: string, successMessage: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(value);
+    } else {
+      const Clipboard = await import('expo-clipboard');
+      await Clipboard.setStringAsync(value);
+    }
+    showSuccess(successMessage);
+  };
+
+  const handleDownloadImage = async () => {
+    if (Platform.OS === 'web') {
+      const link = document.createElement('a');
+      link.href = shareSheet.imageUrl;
+      link.download = `${eventId}-my-agenda.svg`;
+      link.target = '_blank';
+      link.click();
+    } else {
+      const { Linking } = await import('react-native');
+      await Linking.openURL(shareSheet.imageUrl);
     }
   };
 
@@ -1922,6 +1965,75 @@ const MySchedule = () => {
         />
       )}
 
+      {/* Share My Agenda sheet */}
+      <Modal visible={shareSheet.visible} transparent animationType="fade" onRequestClose={() => setShareSheet((prev) => ({ ...prev, visible: false }))}>
+        <View style={styles.shareSheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShareSheet((prev) => ({ ...prev, visible: false }))} />
+          <View style={[styles.shareSheetCard, { backgroundColor: colors.background.paper }]}>
+            <Text style={[styles.shareSheetTitle, { color: colors.text.primary }]}>
+              {t('mySchedule.shareMyAgenda', 'Share my agenda')}
+            </Text>
+            <View style={styles.shareSheetRow}>
+              <TouchableOpacity style={styles.shareSheetAction} onPress={() => openShareIntent('whatsapp')}>
+                <View style={[styles.shareSheetIconWrap, { backgroundColor: '#25D36622' }]}>
+                  <MaterialIcons name="chat" size={22} color="#25D366" />
+                </View>
+                <Text style={[styles.shareSheetActionText, { color: colors.text.secondary }]}>WhatsApp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.shareSheetAction} onPress={() => openShareIntent('x')}>
+                <View style={[styles.shareSheetIconWrap, { backgroundColor: colors.text.primary + '15' }]}>
+                  <MaterialIcons name="close" size={22} color={colors.text.primary} />
+                </View>
+                <Text style={[styles.shareSheetActionText, { color: colors.text.secondary }]}>X</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.shareSheetAction} onPress={() => openShareIntent('facebook')}>
+                <View style={[styles.shareSheetIconWrap, { backgroundColor: '#1877F222' }]}>
+                  <MaterialIcons name="thumb-up" size={22} color="#1877F2" />
+                </View>
+                <Text style={[styles.shareSheetActionText, { color: colors.text.secondary }]}>Facebook</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.shareSheetFullRow, { borderColor: colors.divider }]}
+              onPress={handleDownloadImage}
+            >
+              <MaterialIcons name="image" size={20} color={colors.primary} />
+              <Text style={[styles.shareSheetFullRowText, { color: colors.text.primary }]}>
+                {t('mySchedule.downloadImage', 'Download branded agenda image')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.shareSheetFullRow, { borderColor: colors.divider }]}
+              onPress={() => copyToClipboard(shareSheet.imageUrl, t('mySchedule.imageLinkCopied', 'Image link copied — paste it into Instagram or anywhere else'))}
+            >
+              <MaterialIcons name="link" size={20} color={colors.primary} />
+              <Text style={[styles.shareSheetFullRowText, { color: colors.text.primary }]}>
+                {t('mySchedule.copyImageLink', 'Copy image link (for Instagram, etc.)')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.shareSheetFullRow, { borderColor: colors.divider }]}
+              onPress={() => copyToClipboard(shareSheet.shareUrl, t('mySchedule.shareLinkCopied', 'Share link copied to clipboard'))}
+            >
+              <MaterialIcons name="content-copy" size={20} color={colors.primary} />
+              <Text style={[styles.shareSheetFullRowText, { color: colors.text.primary }]}>
+                {t('mySchedule.copyLiveLink', 'Copy live tracking link')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.shareSheetClose}
+              onPress={() => setShareSheet((prev) => ({ ...prev, visible: false }))}
+            >
+              <Text style={{ color: colors.text.secondary, fontWeight: '600' }}>{t('mySchedule.close', 'Close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Day Summary Modal */}
       {daySummaryModal.dayStat && (
         <Modal
@@ -2271,6 +2383,59 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  shareSheetOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  shareSheetCard: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 32,
+  },
+  shareSheetTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  shareSheetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 16,
+  },
+  shareSheetAction: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  shareSheetIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareSheetActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  shareSheetFullRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderTopWidth: 1,
+  },
+  shareSheetFullRowText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  shareSheetClose: {
+    alignItems: 'center',
+    paddingTop: 16,
   },
   scrollContent: {
     flex: 1,

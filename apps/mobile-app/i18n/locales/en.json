@@ -873,7 +873,7 @@
       },
       "viewMeetingRequest": "View meeting request",
       "favorites": "Favorites",
-      "shareMessage": "Follow my live agenda at {eventName}: {url}",
+      "shareMessage": "Join me — this is my agenda at {eventName}, see you at the event! {url}",
       "shareLinkCopied": "Share link copied to clipboard",
       "shareLinkFailed": "Could not create the share link. Please try again.",
       "shareLinkInvalid": "This share link is invalid or has expired.",
@@ -883,7 +883,11 @@
       "lastUpdated": "Last updated {time}",
       "poweredBy": "Powered by HASHPASS",
       "shareMyAgenda": "Share my agenda",
-      "expandAll": "Expand all"
+      "expandAll": "Expand all",
+      "downloadImage": "Download branded agenda image",
+      "copyImageLink": "Copy image link (for Instagram, etc.)",
+      "copyLiveLink": "Copy live tracking link",
+      "imageLinkCopied": "Image link copied — paste it into Instagram or anywhere else"
     },
     "tips": {
       "title": "Networking Tips",

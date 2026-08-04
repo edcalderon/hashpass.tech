@@ -872,7 +872,7 @@
       },
       "viewMeetingRequest": "Ver solicitud de reunión",
       "favorites": "Favoritos",
-      "shareMessage": "Sigue mi agenda en vivo en {eventName}: {url}",
+      "shareMessage": "¡Únete a mí — esta es mi agenda en {eventName}, nos vemos en el evento! {url}",
       "shareLinkCopied": "Enlace copiado al portapapeles",
       "shareLinkFailed": "No se pudo crear el enlace para compartir. Inténtalo de nuevo.",
       "shareLinkInvalid": "Este enlace no es válido o ha expirado.",
@@ -882,7 +882,11 @@
       "lastUpdated": "Actualizado {time}",
       "poweredBy": "Desarrollado por HASHPASS",
       "shareMyAgenda": "Compartir mi agenda",
-      "expandAll": "Expandir todo"
+      "expandAll": "Expandir todo",
+      "downloadImage": "Descargar imagen de mi agenda",
+      "copyImageLink": "Copiar enlace de la imagen (para Instagram, etc.)",
+      "copyLiveLink": "Copiar enlace de seguimiento en vivo",
+      "imageLinkCopied": "Enlace de la imagen copiado — pégalo en Instagram o donde quieras"
     },
     "tips": {
       "title": "Consejos de Networking",
