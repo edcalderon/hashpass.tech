@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Image, Platform, type ImageSourcePropType } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import EventBanner from './EventBanner';
@@ -13,9 +13,9 @@ interface CarouselSlide {
   type: 'download' | 'event' | 'logo';
   event?: EventInfo;
   logoId?: string;
-  logoSrc?: string;
-  logoSrcDark?: any;
-  logoSrcLight?: any;
+  logoSrc?: ImageSourcePropType;
+  logoSrcDark?: ImageSourcePropType;
+  logoSrcLight?: ImageSourcePropType;
   backgroundColor?: string;
   accentColor?: string;
 }
@@ -38,13 +38,27 @@ export interface LampBrandingConfig {
 // webp, not svg: React Native's Image view has no SVG decoder on native
 // (Android/iOS), so these must be rasterized to render at all there. Web
 // renders webp fine too, so no platform branching is needed here.
-const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp');
-const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.webp');
-const BSL_WHITE_BRAND_LOGO = require('../assets/logos/bsl/bsl-white.webp');
-const BSL_ONTOUR_LOGO = require('../assets/logos/bsl/bsl-ontour-pro.webp');
-const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.webp');
-const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.webp');
-const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.webp');
+const HASHPASS_DARK_LOGO = Platform.OS === 'web'
+  ? { uri: '/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg' }
+  : require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp');
+const HASHPASS_LIGHT_LOGO = Platform.OS === 'web'
+  ? { uri: '/assets/logos/hashpass/logo-full-hashpass-black.svg' }
+  : require('../assets/logos/hashpass/logo-full-hashpass-black.webp');
+const BSL_WHITE_BRAND_LOGO = Platform.OS === 'web'
+  ? { uri: '/assets/logos/bsl/bsl-white.png' }
+  : require('../assets/logos/bsl/bsl-white.webp');
+const BSL_ONTOUR_LOGO = Platform.OS === 'web'
+  ? { uri: '/assets/logos/bsl/bsl-ontour-pro.svg' }
+  : require('../assets/logos/bsl/bsl-ontour-pro.webp');
+const BSL_PERU_LOGO = Platform.OS === 'web'
+  ? { uri: '/assets/logos/bsl/bsl-peru-pro.svg' }
+  : require('../assets/logos/bsl/bsl-peru-pro.webp');
+const BSL_CHILE_LOGO = Platform.OS === 'web'
+  ? { uri: '/assets/logos/bsl/bsl-chile-pro.svg' }
+  : require('../assets/logos/bsl/bsl-chile-pro.webp');
+const BSL_COLOMBIA_LOGO = Platform.OS === 'web'
+  ? { uri: '/assets/logos/bsl/bsl-colombia-pro.svg' }
+  : require('../assets/logos/bsl/bsl-colombia-pro.webp');
 
 // Main HASHPASS Logo
 const LOGO_SLIDE_BACKGROUND = '#07111F';
@@ -571,9 +585,15 @@ const getStyles = (isDark: boolean, colors: any, isMobile: boolean) => StyleShee
     // bsl-ontour-pro is 1660x791 (~2.1:1). A fixed height here (previously
     // 280) mismatched that ratio and let the logo render oversized/clipped
     // on narrow screens instead of scaling down with the container.
-    width: '100%',
-    maxWidth: isMobile ? 320 : 480,
-    aspectRatio: 1660 / 791,
+    // Use concrete dimensions instead of width: 100% + maxWidth. React
+    // Native Web can resolve that combination against the scroll content
+    // width (rather than the slide), which pushes the logo off-screen and
+    // leaves the event slide looking empty.
+    width: isMobile ? 320 : 480,
+    height: isMobile ? 152 : 229,
+    maxWidth: '100%',
+    alignSelf: 'center',
+    resizeMode: 'contain',
   },
   lightBeamOverlay: {
     position: 'absolute',

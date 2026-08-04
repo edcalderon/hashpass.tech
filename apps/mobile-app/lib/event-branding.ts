@@ -111,7 +111,15 @@ export const resolveEventImageSource = (image?: string): ImageSourcePropType | {
 
 export const getTourBrandAsset = (eventId?: string | null): TourBrandAsset | null => {
   if (!eventId) return null;
-  return TOUR_BRAND_ASSETS[eventId] || null;
+  const brand = TOUR_BRAND_ASSETS[eventId];
+  if (!brand) return null;
+  // EventBanner renders this asset directly on the landing page. On web,
+  // passing the imported native asset makes Metro request the directory URL
+  // `/logos/bsl`; use the concrete public filename instead.
+  if (Platform.OS === 'web' && TOUR_BRAND_PUBLIC_LOGOS[eventId]) {
+    return { ...brand, logo: { uri: TOUR_BRAND_PUBLIC_LOGOS[eventId] } };
+  }
+  return brand;
 };
 
 export const getLampBrandConfig = (eventId?: string | null): LampBrandConfig | null => {
