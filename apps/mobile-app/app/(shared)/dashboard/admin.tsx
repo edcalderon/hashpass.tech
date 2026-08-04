@@ -2189,11 +2189,14 @@ function PassManagementTab({
   const [sort, setSort] = useState<{ key: "pass" | "owner" | "tier" | "usage" | "status"; direction: "asc" | "desc" }>({ key: "pass", direction: "asc" });
   const { width: viewportWidth } = useWindowDimensions();
   const tableWidth = Math.max(760, viewportWidth - 40);
+  // Keep row padding and the trailing details affordance inside the measured
+  // scroll width instead of scaling data columns over the whole viewport.
+  const columnLayoutWidth = Math.max(716, tableWidth - 44);
   const displayColumnWidths = useMemo(() => {
     const baseTotal = Object.values(columnWidths).reduce((total, width) => total + width, 0);
-    const scale = baseTotal > 0 ? Math.max(1, tableWidth / baseTotal) : 1;
+    const scale = baseTotal > 0 ? Math.max(1, columnLayoutWidth / baseTotal) : 1;
     return Object.fromEntries(Object.entries(columnWidths).map(([key, width]) => [key, Math.round(width * scale)])) as typeof columnWidths;
-  }, [columnWidths, tableWidth]);
+  }, [columnWidths, columnLayoutWidth]);
   const pageSize = 20;
   useEffect(() => setPage(1), [searchQuery, passTypeFilter, passStatusFilter, passes.length]);
   const resizeResponders = useMemo(() => {
