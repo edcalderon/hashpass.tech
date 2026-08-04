@@ -11,10 +11,11 @@ import EventBanner from '../../../components/EventBanner';
 import SpeakerAvatar from '../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../components/UnifiedSearchAndFilter';
 import { apiClient, eventApiPath } from '@/lib/api-client';
-import { 
+import {
   getAgendaTypeColor,
   parseEventISO,
   formatTimeRange,
+  EVENT_TZ_OFFSET,
 } from '../../../types/agenda';
 import type {
   AgendaType,
@@ -95,6 +96,11 @@ export default function BSL2025AgendaScreen() {
   const params = useLocalSearchParams<{ session?: string; scrollTo?: string; day?: string }>();
   const styles = getStyles(isDark, colors);
   const { user } = useAuth();
+  // The event's own fixed timezone (e.g. Chile is -04:00), not the hardcoded
+  // -05:00 Medellín-hub default that EVENT_TZ_OFFSET falls back to. Times
+  // must render in this offset regardless of the viewer's device/browser
+  // timezone.
+  const eventTzOffset = event?.eventStartDate?.match(/([+-]\d{2}:?\d{2})$/)?.[1] || EVENT_TZ_OFFSET;
   const { showSuccess, showError, showWarning } = useToastHelpers();
   const { t } = useTranslation('agenda');
   const scrollViewRef = useRef<ScrollView>(null);
@@ -602,7 +608,6 @@ export default function BSL2025AgendaScreen() {
           return itemIdStr === sessionIdStr || 
                  itemIdStr === String(Number(sessionIdStr)) ||
                  String(Number(itemIdStr)) === sessionIdStr ||
-                 item.id === Number(sessionIdStr) ||
                  Number(itemIdStr) === Number(sessionIdStr);
         }) || null;
         
@@ -628,7 +633,6 @@ export default function BSL2025AgendaScreen() {
           const matches = itemIdStr === sessionIdStr || 
                           itemIdStr === String(Number(sessionIdStr)) ||
                           String(Number(itemIdStr)) === sessionIdStr ||
-                          item.id === Number(sessionIdStr) ||
                           Number(itemIdStr) === Number(sessionIdStr);
           return matches;
         }) || null;
@@ -651,7 +655,6 @@ export default function BSL2025AgendaScreen() {
             return itemIdStr === sessionIdStr || 
                    itemIdStr === String(Number(sessionIdStr)) ||
                    String(Number(itemIdStr)) === sessionIdStr ||
-                   item.id === Number(sessionIdStr) ||
                    Number(itemIdStr) === Number(sessionIdStr);
           }) || null;
           
@@ -1122,7 +1125,7 @@ export default function BSL2025AgendaScreen() {
           isPast && styles.agendaItemHeaderPast
         ]}>
           <View style={styles.timeContainer}>
-            <Text style={[styles.agendaTime, { color: '#FFFFFF' }]}>{formatTimeRange(item)}</Text>
+            <Text style={[styles.agendaTime, { color: '#FFFFFF' }]}>{formatTimeRange(item, eventTzOffset)}</Text>
             <View style={styles.badgeContainer}>
               {isPast && (
                 <View style={styles.pastBadge}>

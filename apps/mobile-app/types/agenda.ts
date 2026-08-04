@@ -56,19 +56,41 @@ export const formatClock = (d: Date): string => {
 };
 
 // Timezone handling
+// Default fallback offset (BSL's original Medellín/Bogotá hub, UTC-5) for
+// events that don't specify their own. Real per-event offset should be
+// passed in explicitly (derived from event.eventStartDate's trailing
+// +/-HH:MM) — Chile, for example, is UTC-4, not UTC-5.
 export const EVENT_TZ_OFFSET = '-05:00';
 
 export const endsWithZ = (s: string): boolean => s.endsWith('Z');
 export const hasOtherOffset = (s: string): boolean => /[+-]\d{2}:?\d{0,2}$/.test(s);
 
-export const parseEventISO = (s: string): Date => {
+export const parseEventISO = (s: string, eventTzOffset: string = EVENT_TZ_OFFSET): Date => {
   if (!s) return new Date(NaN);
   if (endsWithZ(s) || hasOtherOffset(s)) return new Date(s);
   // If no timezone is specified, assume it's in the event's timezone
-  return new Date(`${s}${EVENT_TZ_OFFSET}`);
+  return new Date(`${s}${eventTzOffset}`);
 };
 
-export const formatTimeRange = (item: { time?: string | null; duration_minutes?: number; type?: string }): string => {
+// Extracts the wall-clock hour/minute a Date represents in a *fixed* offset,
+// independent of the viewer's device/browser timezone. Date.getHours() /
+// .getMinutes() report the runtime's local timezone, not the event's real
+// location — that mismatch is what made agenda times render up to an hour
+// off (e.g. showing Colombia's -05:00 wall clock for a Chile, -04:00 event)
+// depending on where the viewer's device/server happened to be.
+const clockPartsAtOffset = (date: Date, offset: string) => {
+  const match = offset.match(/^([+-])(\d{2}):?(\d{2})$/);
+  const offsetMinutes = match
+    ? (Number(match[2]) * 60 + Number(match[3])) * (match[1] === '-' ? -1 : 1)
+    : -300;
+  const shifted = new Date(date.getTime() + offsetMinutes * 60_000);
+  return { hour: shifted.getUTCHours(), minute: shifted.getUTCMinutes() };
+};
+
+export const formatTimeRange = (
+  item: { time?: string | null; duration_minutes?: number; type?: string },
+  eventTzOffset: string = EVENT_TZ_OFFSET,
+): string => {
   try {
     // Handle null, undefined, or empty time
     if (!item.time || typeof item.time !== 'string' || !item.time.trim()) {
@@ -102,48 +124,41 @@ export const formatTimeRange = (item: { time?: string | null; duration_minutes?:
     // Try to parse as ISO date string (e.g., "2025-11-12T08:00:00Z")
     // First try using parseEventISO which handles timezone offsets
     try {
-      const startTime = parseEventISO(timeStr);
+      const startTime = parseEventISO(timeStr, eventTzOffset);
       if (!isNaN(startTime.getTime())) {
         // Calculate end time
         const duration = item.duration_minutes || getDefaultDurationMinutes(item.type);
         const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
-        
-        // Format time in 12-hour format with AM/PM
+
+        // Format time in 12-hour format with AM/PM, in the event's own
+        // fixed timezone (not the viewer's device/browser timezone).
         const formatTime = (d: Date) => {
-          let hours = d.getHours();
-          const minutes = d.getMinutes();
-          const ampm = hours >= 12 ? 'PM' : 'AM';
-          hours = hours % 12;
-          hours = hours || 12; // Convert 0 to 12 for 12 AM
-          return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+          const { hour, minute } = clockPartsAtOffset(d, eventTzOffset);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour % 12 || 12;
+          return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
         };
-        
+
         return `${formatTime(startTime)} - ${formatTime(endTime)}`;
       }
     } catch (parseError) {
       // If parseEventISO fails, try standard Date parsing
       const date = new Date(timeStr);
       if (!isNaN(date.getTime())) {
-        // Event is in UTC-5, so we need to convert from UTC to local time
-        // by adding 5 hours (since the time is stored in UTC but represents local time)
-        const localOffset = 5 * 60 * 60 * 1000; // +5 hours in milliseconds
-        const localDate = new Date(date.getTime() + localOffset);
-        
         // Calculate end time
         const duration = item.duration_minutes || getDefaultDurationMinutes(item.type);
-        const endDate = new Date(localDate.getTime() + duration * 60 * 1000);
-        
-        // Format time in 12-hour format with AM/PM
+        const endDate = new Date(date.getTime() + duration * 60 * 1000);
+
+        // Format time in 12-hour format with AM/PM, in the event's own
+        // fixed timezone (not the viewer's device/browser timezone).
         const formatTime = (d: Date) => {
-          let hours = d.getHours();
-          const minutes = d.getMinutes();
-          const ampm = hours >= 12 ? 'PM' : 'AM';
-          hours = hours % 12;
-          hours = hours || 12; // Convert 0 to 12 for 12 AM
-          return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+          const { hour, minute } = clockPartsAtOffset(d, eventTzOffset);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour % 12 || 12;
+          return `${displayHour}:${minute.toString().padStart(2, '0')} ${ampm}`;
         };
-        
-        return `${formatTime(localDate)} - ${formatTime(endDate)}`;
+
+        return `${formatTime(date)} - ${formatTime(endDate)}`;
       }
     }
 

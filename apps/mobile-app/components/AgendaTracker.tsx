@@ -6,8 +6,9 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from '../i18n/i18n';
 import { isMainBranch } from '../lib/event-detector';
 import { apiClient } from '../lib/api-client';
-import { type AgendaItem, parseEventISO, formatTimeRange } from '../types/agenda';
+import { type AgendaItem, parseEventISO, formatTimeRange, EVENT_TZ_OFFSET } from '../types/agenda';
 import { buildEventPath } from '../lib/event-path';
+import { EVENTS } from '../config/events';
 
 interface AgendaTrackerProps {
   eventId?: string;
@@ -28,7 +29,10 @@ export default function AgendaTracker({
   const router = useRouter();
   const { t } = useTranslation('explore');
   const styles = getStyles(isDark, colors, backgroundColor);
-  
+  // The event's own fixed timezone (e.g. Chile is -04:00), not the
+  // -05:00 Medellín-hub default — see types/agenda.ts's EVENT_TZ_OFFSET doc.
+  const eventTzOffset = (EVENTS as any)[eventId]?.eventStartDate?.match(/([+-]\d{2}:?\d{2})$/)?.[1] || EVENT_TZ_OFFSET;
+
   const [currentEvent, setCurrentEvent] = useState<any | null>(null);
   const [nextEvent, setNextEvent] = useState<any | null>(null);
   const [timeToNext, setTimeToNext] = useState<TimeLeft>({ hours: 0, minutes: 0, seconds: 0 });
@@ -438,7 +442,7 @@ export default function AgendaTracker({
               {/* Time on separate line */}
               {currentEvent.time && (
                 <Text style={styles.eventTimeCompact}>
-                  {formatTimeRange(currentEvent)}
+                  {formatTimeRange(currentEvent, eventTzOffset)}
                 </Text>
               )}
               {/* Progress Bar with percentage overlay */}
