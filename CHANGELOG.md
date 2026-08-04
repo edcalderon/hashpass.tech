@@ -1,3 +1,12 @@
+## [1.8.317](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.316...v1.8.317) (2026-08-04)
+
+
+### Bug Fixes
+
+* **mobile:** stop mislabeling web update-checks as Play Store, add a real native update modal ([bc5f900](https://github.com/hashpass-tech/hashpass.tech/commit/bc5f900429b6ec3c8a8b6ebe51f902b8ad4484c5))
+### Release Highlights
+- stop mislabeling web update-checks as Play Store, add a real native update modal
+
 ## [1.8.316](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.315...v1.8.316) (2026-08-04)
 
 

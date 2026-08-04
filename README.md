@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.316)
+## 📋 Latest Changes (v1.8.317)
 
 ### Bug Fixes
 
-* **mobile:** make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech ([6d74472](https://github.com/hashpass-tech/hashpass.tech/commit/6d74472d73c6925ca7114cca3495e86a37e6e9a8))
+* **mobile:** stop mislabeling web update-checks as Play Store, add a real native update modal ([bc5f900](https://github.com/hashpass-tech/hashpass.tech/commit/bc5f900429b6ec3c8a8b6ebe51f902b8ad4484c5))
 ### Release Highlights
-- make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech
+- stop mislabeling web update-checks as Play Store, add a real native update modal
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
