@@ -1,0 +1,4 @@
+1
+00:00:00,100 --> 00:00:10,450
+Cambia entre cada evento de la gira con un toque: Chile, Colombia, Perú y más, cada uno con su propia agenda, ponentes y acceso rápido a todo lo que necesitas.
+

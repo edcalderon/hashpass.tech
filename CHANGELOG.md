@@ -1,3 +1,7 @@
+## [1.8.315](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.314...v1.8.315) (2026-08-03)
+### Released
+- redirect immediately after logout
+
 ## [1.8.314](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.313...v1.8.314) (2026-08-03)
 
 

@@ -1,0 +1,4 @@
+1
+00:00:00,100 --> 00:00:08,125
+Explora la agenda completa en segundos: cada charla, cada escenario, cada ponente de la gira, todo en un solo lugar.
+

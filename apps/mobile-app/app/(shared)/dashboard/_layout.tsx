@@ -544,15 +544,23 @@ function CustomDrawerContent({
     setIsSigningOut(true);
     closeDrawer();
 
+    // signOut() synchronously publishes SIGNED_OUT before its first await, so
+    // every auth guard sees the logged-out state right away — that part is
+    // never worth waiting on. But the SecureStore/AsyncStorage clear that
+    // follows it must finish (or hit its own bounded timeout — see
+    // SIGN_OUT_STEP_TIMEOUT_MS in useAuth.ts) before this screen navigates
+    // away: a real security race otherwise exists where a process kill
+    // right after navigation leaves the old session persisted on disk to be
+    // rehydrated on next launch. `waitForRemoteCleanup: false` still keeps
+    // this from blocking on the slow/flaky *remote* provider sign-out calls
+    // — only the local clear (now itself timeout-bounded) is awaited here,
+    // so this can't reintroduce the old unbounded-hang bug that made the
+    // dashboard stay visible until a refresh.
     try {
-      // Wait only for durable local cache removal. Remote token revocation and
-      // native Google cleanup continue in the background, but the next app
-      // launch cannot resurrect this user from SecureStore or AsyncStorage.
       await signOut({ waitForRemoteCleanup: false });
     } catch (error) {
       console.error('Error signing out:', error);
     }
-
     router.replace('/(shared)/auth' as any);
   };
 

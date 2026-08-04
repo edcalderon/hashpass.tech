@@ -1404,5 +1404,27 @@
     "next": "Siguiente",
     "of": "de",
     "page": "Página"
+  },
+  "demo": {
+    "eyebrow": "Míralo en acción",
+    "title": "Mira HASHPASS en acción",
+    "subtitle": "Un recorrido completo por la app, pantalla a pantalla — desde la página de inicio hasta instalar HASHPASS en tu pantalla de inicio.",
+    "appTutorialTab": "Recorrido por la app",
+    "bslShowcaseTab": "Muestra de BSL On Tour",
+    "withNarration": "Con narración",
+    "silent": "Sin narración",
+    "chapters": "Capítulos",
+    "appTutorialSubtitle": "Inicio, registro, panel, perfil, eventos e instalación de la app",
+    "bslShowcaseSubtitle": "La plataforma de eventos en acción en Blockchain Summit Latam",
+    "chapterLanding": "Página de inicio",
+    "chapterSignUp": "Registro — OTP o enlace mágico",
+    "chapterDashboard": "Entrar al panel",
+    "chapterProfile": "Actualizar perfil de asistente",
+    "chapterEvents": "Explorar eventos y oradores",
+    "chapterPwa": "Instalar como app",
+    "webOnlyNotice": "Esta demo está disponible en la web en hashpass.tech/demo.",
+    "bslChapterEventLanding": "Página del evento y reclamo de pase",
+    "bslChapterAgendaBrowse": "Agenda y ponentes",
+    "bslChapterMeetingRequest": "Solicitud de reunión y agenda"
   }
 }

@@ -1,0 +1,8 @@
+1
+00:00:00,100 --> 00:00:02,412
+Empezar es muy fácil.
+
+2
+00:00:02,362 --> 00:00:07,900
+Inicia sesión al instante con un código por correo, o continúa con Google con un toque.
+

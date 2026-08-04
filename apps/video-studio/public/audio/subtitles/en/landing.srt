@@ -1,0 +1,8 @@
+1
+00:00:00,100 --> 00:00:04,062
+Welcome to Hash Pass — your digital event platform.
+
+2
+00:00:04,012 --> 00:00:09,950
+Discover events, connect with your community, and manage your passes, all in one place.
+

@@ -1,0 +1,8 @@
+1
+00:00:00,100 --> 00:00:02,475
+Found someone you want to meet?
+
+2
+00:00:02,425 --> 00:00:09,912
+Send a meeting request in a tap, add a quick note on why, and lock in your one-on-one before the event even starts.
+

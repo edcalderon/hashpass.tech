@@ -3,6 +3,7 @@ import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Linking, Platform
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '../../lib/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { t } from '@lingui/macro';
 import { useLingui } from '@lingui/react';
@@ -146,6 +147,19 @@ export default function DocsScreen() {
                 )}
               </View>
             ))}
+
+            {guide.id === 'getting-started' && (
+              <TouchableOpacity
+                onPress={() => router.push('/demo')}
+                style={styles.demoLinkButton}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="play-circle-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.demoLinkButtonText} selectable={false}>
+                  {t({ id: 'index.docs.gettingStarted.seeDemo', message: 'See the demo videos' })}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         ))}
 
@@ -331,6 +345,22 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   documentationButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  demoLinkButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  demoLinkButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
   },
   footer: {

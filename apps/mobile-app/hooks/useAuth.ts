@@ -1010,10 +1010,25 @@ export const useAuth = () => {
       }
     });
 
+    // Bounded the same way as every other native/network call in this
+    // function: neither of these has ever rejected on its own (both catch
+    // internally and just warn), so the only way this can reject is a
+    // genuine hang — exactly what must not be able to stall the caller
+    // that awaits this before navigating away (see handleLogout in
+    // dashboard/_layout.tsx). Without a timeout here, a hung SecureStore/
+    // AsyncStorage call would silently block that navigation forever again,
+    // the same class of bug SIGN_OUT_STEP_TIMEOUT_MS already exists to
+    // prevent for the remote provider calls below.
     await Promise.all([
-      clearPersistedNativeProviderSessions(),
-      clearPersistedSupabaseSession(),
-    ]);
+      withTimeout(clearPersistedNativeProviderSessions(), SIGN_OUT_STEP_TIMEOUT_MS, 'clearPersistedNativeProviderSessions'),
+      withTimeout(clearPersistedSupabaseSession(), SIGN_OUT_STEP_TIMEOUT_MS, 'clearPersistedSupabaseSession'),
+    ]).catch((error) => {
+      // Local-store clearing already runs detached from this timeout (it
+      // isn't cancelled, only stopped being waited on) — a timeout here
+      // just means the caller shouldn't keep blocking on it, not that
+      // sign-out failed. SIGNED_OUT was already published above.
+      console.warn('[useAuth] Local session cleanup did not finish before its timeout:', error);
+    });
 
     const finishRemoteCleanup = async () => {
       const dedicatedGoogleBetterAuthProvider =

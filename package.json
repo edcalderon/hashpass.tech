@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.314",
+  "version": "1.8.315",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -59,7 +59,10 @@
     "dev:club": "pnpm --filter hashpass-club-web dev",
     "dev:web-app": "pnpm --filter hashpass-club-web dev",
     "dev:directus": "pnpm --filter hashpass-directus dev",
+    "dev:video-studio": "pnpm --filter hashpass-video-studio dev",
     "dev:all": "npm run env:propagate local && bash ./packages/tools/scripts/dev-all.sh",
+    "video-studio:render": "pnpm --filter hashpass-video-studio render",
+    "video-studio:record": "pnpm --filter hashpass-video-studio record:web --",
     "infra:dev": "pnpm --filter @hashpass/infra run dev",
     "infra:deploy:dev": "pnpm --filter @hashpass/infra run deploy:dev",
     "infra:deploy:prod": "pnpm --filter @hashpass/infra run deploy:prod",
@@ -281,6 +284,7 @@
     "husky": "^9.1.7",
     "jest": "^29.2.1",
     "jest-expo": "~53.0.4",
+    "playwright": "^1.61.1",
     "postcss-loader": "^8.2.0",
     "react-test-renderer": "19.0.0",
     "selenium-webdriver": "^4.38.0",

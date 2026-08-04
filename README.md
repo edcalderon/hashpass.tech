@@ -20,13 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.314)
+## 📋 Latest Changes (v1.8.315)
 
-### Features
-
-* add admin matchmaking and email campaigns ([e38a6f7](https://github.com/hashpass-tech/hashpass.tech/commit/e38a6f7cc354609e9e5c85dd62186bf69deef067))
-### Release Highlights
-- add admin matchmaking and email campaigns
+### Released
+- redirect immediately after logout
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
