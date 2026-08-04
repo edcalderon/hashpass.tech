@@ -62,17 +62,6 @@ const TOUR_BRAND_ASSETS: Record<string, TourBrandAsset> = {
   },
 };
 
-// Web must receive a concrete URL including the asset filename. Resolving an
-// imported SVG through Image.resolveAssetSource can produce a directory-style
-// Metro URL (`/logos/hashpass`), which triggers ENOENT in Metro's asset server.
-const TOUR_BRAND_PUBLIC_LOGOS: Record<string, string> = {
-  bsl: '/assets/logos/bsl/bsl-ontour-pro.svg',
-  peru2026: '/assets/logos/bsl/bsl-peru-pro.svg',
-  chile2026: '/assets/logos/bsl/bsl-chile-pro.svg',
-  colombia2026: '/assets/logos/bsl/bsl-colombia-pro.svg',
-  bsl2025: '/assets/logos/bsl/BSL-Logo-fondo-oscuro-2024.svg',
-};
-
 const EVENT_IMAGE_ASSETS: Record<string, ImageSourcePropType> = {
   '/assets/logos/bsl/bsl-ontour-pro.svg': BSL_ONTOUR_LOGO,
   '/assets/logos/bsl/bsl-peru-pro.svg': BSL_PERU_LOGO,
@@ -113,12 +102,6 @@ export const getTourBrandAsset = (eventId?: string | null): TourBrandAsset | nul
   if (!eventId) return null;
   const brand = TOUR_BRAND_ASSETS[eventId];
   if (!brand) return null;
-  // EventBanner renders this asset directly on the landing page. On web,
-  // passing the imported native asset makes Metro request the directory URL
-  // `/logos/bsl`; use the concrete public filename instead.
-  if (Platform.OS === 'web' && TOUR_BRAND_PUBLIC_LOGOS[eventId]) {
-    return { ...brand, logo: { uri: TOUR_BRAND_PUBLIC_LOGOS[eventId] } };
-  }
   return brand;
 };
 
@@ -126,9 +109,7 @@ export const getLampBrandConfig = (eventId?: string | null): LampBrandConfig | n
   const brand = getTourBrandAsset(eventId);
   if (!brand) return null;
 
-  const uri = Platform.OS === 'web'
-    ? TOUR_BRAND_PUBLIC_LOGOS[eventId!]
-    : resolveUri(brand.logo);
+  const uri = resolveUri(brand.logo);
   return {
     logoSrcDark: uri,
     logoSrcLight: uri,

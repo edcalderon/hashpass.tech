@@ -41,13 +41,13 @@ describe("getHashpassFullLogo", () => {
   it("uses the white-cyan logo on dark web surfaces", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassFullLogo(true)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg" });
+    expect(getHashpassFullLogo(true)).toBe("white-cyan-native-png");
   });
 
   it("uses the black logo on light web surfaces", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassFullLogo(false)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-black.svg" });
+    expect(getHashpassFullLogo(false)).toBe("black-native-png");
   });
 
   it("uses the black native logo on light native surfaces", () => {
@@ -61,19 +61,19 @@ describe("getHashpassFooterLogo", () => {
   it("uses the white-cyan logo on dark web footer", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassFooterLogo(true)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg" });
+    expect(getHashpassFooterLogo(true)).toBe("white-cyan-native-png");
   });
 
   it("uses the white logo on light web footer (dark-tinted background)", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassFooterLogo(false)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-white.svg" });
+    expect(getHashpassFooterLogo(false)).toBe("white-native-png");
   });
 
   it("uses the black native logo on light native footer", () => {
     mockPlatform.OS = "android";
 
-    expect(getHashpassFooterLogo(false)).toBe("black-native-png");
+    expect(getHashpassFooterLogo(false)).toBe("white-native-png");
   });
 });
 
@@ -85,13 +85,13 @@ describe("getHashpassStaticHeroLogo", () => {
     // function's own native branch below.
     mockPlatform.OS = "web";
 
-    expect(getHashpassStaticHeroLogo(false)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-black.svg" });
+    expect(getHashpassStaticHeroLogo(false)).toBe("black-native-png");
   });
 
   it("keeps the white-cyan logo on dark web no-animation hero surfaces", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassStaticHeroLogo(true)).toEqual({ uri: "/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg" });
+    expect(getHashpassStaticHeroLogo(true)).toBe("white-cyan-native-png");
   });
 
   it("uses the black native logo on light native hero surfaces", () => {

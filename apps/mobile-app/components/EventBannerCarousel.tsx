@@ -38,27 +38,16 @@ export interface LampBrandingConfig {
 // webp, not svg: React Native's Image view has no SVG decoder on native
 // (Android/iOS), so these must be rasterized to render at all there. Web
 // renders webp fine too, so no platform branching is needed here.
-const HASHPASS_DARK_LOGO = Platform.OS === 'web'
-  ? { uri: '/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg' }
-  : require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp');
-const HASHPASS_LIGHT_LOGO = Platform.OS === 'web'
-  ? { uri: '/assets/logos/hashpass/logo-full-hashpass-black.svg' }
-  : require('../assets/logos/hashpass/logo-full-hashpass-black.webp');
-const BSL_WHITE_BRAND_LOGO = Platform.OS === 'web'
-  ? { uri: '/assets/logos/bsl/bsl-white.png' }
-  : require('../assets/logos/bsl/bsl-white.webp');
-const BSL_ONTOUR_LOGO = Platform.OS === 'web'
-  ? { uri: '/assets/logos/bsl/bsl-ontour-pro.svg' }
-  : require('../assets/logos/bsl/bsl-ontour-pro.webp');
-const BSL_PERU_LOGO = Platform.OS === 'web'
-  ? { uri: '/assets/logos/bsl/bsl-peru-pro.svg' }
-  : require('../assets/logos/bsl/bsl-peru-pro.webp');
-const BSL_CHILE_LOGO = Platform.OS === 'web'
-  ? { uri: '/assets/logos/bsl/bsl-chile-pro.svg' }
-  : require('../assets/logos/bsl/bsl-chile-pro.webp');
-const BSL_COLOMBIA_LOGO = Platform.OS === 'web'
-  ? { uri: '/assets/logos/bsl/bsl-colombia-pro.svg' }
-  : require('../assets/logos/bsl/bsl-colombia-pro.webp');
+// Use bundled WebP files on every platform. The web dev server does not serve
+// arbitrary `/assets/...` paths, and SVG imports can be interpreted by Metro as
+// directory requests (`/logos/bsl`), producing ENOENT and blank carousel cards.
+const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp');
+const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.webp');
+const BSL_WHITE_BRAND_LOGO = require('../assets/logos/bsl/bsl-white.webp');
+const BSL_ONTOUR_LOGO = require('../assets/logos/bsl/bsl-ontour-pro.webp');
+const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.webp');
+const BSL_CHILE_LOGO = require('../assets/logos/bsl/bsl-chile-pro.webp');
+const BSL_COLOMBIA_LOGO = require('../assets/logos/bsl/bsl-colombia-pro.webp');
 
 // Main HASHPASS Logo
 const LOGO_SLIDE_BACKGROUND = '#07111F';
