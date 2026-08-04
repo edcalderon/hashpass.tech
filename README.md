@@ -20,10 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.315)
+## 📋 Latest Changes (v1.8.316)
 
-### Released
-- redirect immediately after logout
+### Bug Fixes
+
+* **mobile:** make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech ([6d74472](https://github.com/hashpass-tech/hashpass.tech/commit/6d74472d73c6925ca7114cca3495e86a37e6e9a8))
+### Release Highlights
+- make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

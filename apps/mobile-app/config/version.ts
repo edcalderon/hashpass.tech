@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608031846, // Updated to current timestamp
-  releaseDate: '2026-08-03',
+  buildNumber: 202608040129, // Updated to current timestamp
+  releaseDate: '2026-08-04',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
     // No new features
   ],
   bugfixes: [
-    'redirect immediately after logout'
+    'make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech'
   ],
   breakingChanges: [],
-  notes: 'redirect immediately after logout'
+  notes: 'make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.316': {
+    version: '1.8.316',
+    buildNumber: 202608040129,
+    releaseDate: '2026-08-04',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech'
+    ],
+    breakingChanges: [],
+    notes: 'make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech'
+  },
   '1.8.315': {
     version: '1.8.315',
     buildNumber: 202608031846,
