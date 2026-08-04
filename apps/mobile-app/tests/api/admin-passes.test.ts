@@ -4,14 +4,18 @@ const mockAuthenticateRequest = jest.fn();
 const mockRpc = jest.fn();
 const mockResolveNotificationIdentity = jest.fn();
 const mockRateLimitOk = jest.fn((_key: string) => true);
+const mockGetSupabaseServerForRequest = jest.fn(
+  (_request?: unknown, _profileId?: unknown) => ({
+    rpc: (...args: unknown[]) => mockRpc(...args),
+  }),
+);
 
 jest.mock("@hashpass/auth", () => ({
   authenticateRequest: (...args: unknown[]) => mockAuthenticateRequest(...args),
 }));
 jest.mock("@/lib/supabase-server", () => ({
-  getSupabaseServerForRequest: jest.fn(() => ({
-    rpc: (...args: unknown[]) => mockRpc(...args),
-  })),
+  getSupabaseServerForRequest: (request: unknown, profileId?: unknown) =>
+    mockGetSupabaseServerForRequest(request, profileId),
 }));
 jest.mock("@/lib/bsl/rateLimit", () => ({
   rateLimitOk: (key: string) => mockRateLimitOk(key),
@@ -32,6 +36,7 @@ describe("POST /api/admin/passes", () => {
     mockAuthenticateRequest.mockReset();
     mockRpc.mockReset();
     mockResolveNotificationIdentity.mockReset();
+    mockGetSupabaseServerForRequest.mockClear();
     mockRateLimitOk.mockReturnValue(true);
     mockAuthenticateRequest.mockResolvedValue({
       user: { id: actorId },
@@ -65,11 +70,14 @@ describe("POST /api/admin/passes", () => {
     );
   };
 
-  const get = async (query = "eventId=chile2026&limit=50") => {
+  const get = async (
+    query = "eventId=chile2026&limit=50",
+    host = "api.hashpass.tech",
+  ) => {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { GET } = require("../../app/api/admin/passes+api");
     return GET(
-      new Request(`https://api.hashpass.tech/api/admin/passes?${query}`),
+      new Request(`https://${host}/api/admin/passes?${query}`),
     );
   };
 
@@ -96,6 +104,15 @@ describe("POST /api/admin/passes", () => {
       p_limit: 50,
       p_cursor: null,
     });
+  });
+
+  it("routes direct api-dev BSL requests to the development Supabase profile", async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: [], error: null });
+
+    expect((await get("eventId=chile2026", "api-dev.hashpass.tech")).status).toBe(200);
+    expect(mockGetSupabaseServerForRequest.mock.calls[0]?.[1]).toBe("bsl-development");
   });
 
   it("returns a bounded page and cursor when more passes are available", async () => {

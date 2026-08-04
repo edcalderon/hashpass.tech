@@ -9,7 +9,10 @@ export async function authorizeEventAdmin(request: Request, eventId: string) {
   const bslEvent = /^(?:bsl|bsl2025|peru2026|chile2026|colombia2026)$/i.test(eventId);
   const host = hostnameFromRequest(request);
   const bslProfile = bslEvent
-    ? host === 'bsl-dev.hashpass.tech' || host === 'localhost' || host === '127.0.0.1'
+    ? host === 'bsl-dev.hashpass.tech' ||
+        host === 'api-dev.hashpass.tech' ||
+        host === 'localhost' ||
+        host === '127.0.0.1'
       ? 'bsl-development'
       : 'bsl-production'
     : undefined;
