@@ -9,7 +9,7 @@ jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({ eventSlug: 'chi
 jest.mock('@react-navigation/native', () => ({ useNavigation: () => ({ setOptions: jest.fn() }) }));
 jest.mock('react-native-edge-to-edge', () => ({ SystemBars: 'SystemBars' }));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: false, colors: { primary: '#c00', background: { primary: '#fff', paper: '#fff' }, divider: '#ddd', text: { primary: '#111', secondary: '#666' } } }) }));
-jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string, values?: Record<string, string>) => fallback.replace('{user}', values?.user || '').replace('{eventName}', values?.eventName || '').replace('{time}', values?.time || '') }) }));
+jest.mock('../../i18n/i18n', () => ({ getCurrentLocale: () => 'en', useTranslation: () => ({ t: (_key: string, fallback: string, values?: Record<string, string>) => fallback.replace('{user}', values?.user || '').replace('{eventName}', values?.eventName || '').replace('{time}', values?.time || '') }) }));
 jest.mock('../../lib/api-client', () => ({ apiClient: { request: (...args: unknown[]) => mockRequest(...args) }, eventApiPath: () => '/api/events/chile2026/schedule' }));
 jest.mock('../../lib/event-branding', () => ({ getTourBrandAsset: () => ({ label: 'BSL Chile 2026', accentColor: '#f55', logo: null }) }));
 jest.mock('../../config/events', () => ({ EVENTS: { chile2026: { eventStartDate: '2026-08-05T00:00:00Z' } } }));
@@ -45,4 +45,5 @@ describe('public live schedule route', () => {
     const text = renderer!.root.findAllByType('Text' as any).map((node) => node.props.children).flat().join(' ');
     expect(text).toContain('expired');
   });
+
 });

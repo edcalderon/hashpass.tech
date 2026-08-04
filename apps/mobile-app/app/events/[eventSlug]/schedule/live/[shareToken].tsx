@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { useTheme } from '../../../../../hooks/useTheme';
-import { useTranslation } from '../../../../../i18n/i18n';
+import { getCurrentLocale, useTranslation } from '../../../../../i18n/i18n';
 import { apiClient, eventApiPath } from '../../../../../lib/api-client';
 import { getTourBrandAsset } from '../../../../../lib/event-branding';
 import { getEventTzOffset, parseAgendaTime, formatEventClock } from '../../../../../lib/event-time';
@@ -28,6 +28,18 @@ type PublicScheduleItem = {
 // schedule/public/[shareToken]+api.ts for the read side and share-token+api.ts
 // for how the link gets minted from My Schedule.
 const POLL_INTERVAL_MS = 20_000;
+
+function formatLastUpdated(date: Date): string {
+  try {
+    return new Intl.DateTimeFormat(getCurrentLocale(), {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  } catch {
+    // Keep the footer useful in runtimes without Intl date-style support.
+    return date.toLocaleString();
+  }
+}
 
 export default function PublicLiveSchedule() {
   const { eventSlug, shareToken } = useLocalSearchParams<{ eventSlug: string; shareToken: string }>();
@@ -167,7 +179,10 @@ export default function PublicLiveSchedule() {
 
         {lastUpdated && (
           <Text style={[styles.lastUpdated, { color: colors.text.secondary }]}>
-            {t('mySchedule.lastUpdated', 'Last updated {time}').replace('{time}', lastUpdated.toLocaleTimeString())}
+            {t('mySchedule.lastUpdated', 'Last updated {time}')
+              .replace('{time}', '')
+              .replace(/\s*[:：]\s*$/, '')
+              .trim()} · {formatLastUpdated(lastUpdated)}
           </Text>
         )}
 
