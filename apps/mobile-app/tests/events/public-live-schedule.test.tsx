@@ -6,6 +6,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 const mockRequest = jest.fn();
 
 jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({ eventSlug: 'chile2026', shareToken: 'token' }) }));
+jest.mock('@react-navigation/native', () => ({ useNavigation: () => ({ setOptions: jest.fn() }) }));
 jest.mock('react-native-edge-to-edge', () => ({ SystemBars: 'SystemBars' }));
 jest.mock('../../hooks/useTheme', () => ({ useTheme: () => ({ isDark: false, colors: { primary: '#c00', background: { primary: '#fff', paper: '#fff' }, divider: '#ddd', text: { primary: '#111', secondary: '#666' } } }) }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string, values?: Record<string, string>) => fallback.replace('{user}', values?.user || '').replace('{eventName}', values?.eventName || '').replace('{time}', values?.time || '') }) }));

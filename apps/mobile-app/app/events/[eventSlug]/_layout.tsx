@@ -85,6 +85,13 @@ export default function BSL2025Layout() {
           headerBackTitle: eventTitle,
         }}
       />
+      <Stack.Screen
+        name="schedule/live/[shareToken]"
+        options={{
+          title: 'Live Agenda',
+          headerBackTitle: eventTitle,
+        }}
+      />
       <Stack.Screen 
         name="event-info" 
         options={{

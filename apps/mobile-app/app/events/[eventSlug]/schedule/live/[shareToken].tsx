@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { SystemBars } from 'react-native-edge-to-edge';
 import { useTheme } from '../../../../../hooks/useTheme';
 import { useTranslation } from '../../../../../i18n/i18n';
@@ -32,6 +33,7 @@ export default function PublicLiveSchedule() {
   const { eventSlug, shareToken } = useLocalSearchParams<{ eventSlug: string; shareToken: string }>();
   const { colors, isDark } = useTheme();
   const { t } = useTranslation('networking');
+  const navigation = useNavigation();
   const [items, setItems] = useState<PublicScheduleItem[] | null>(null);
   const [ownerHandle, setOwnerHandle] = useState('@hashpass.attendee');
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,16 @@ export default function PublicLiveSchedule() {
   const event = (EVENTS as any)[eventId];
   const brand = getTourBrandAsset(eventId);
   const eventTzOffset = getEventTzOffset(event?.eventStartDate);
+
+  // Expo Router otherwise derives the header from the dynamic filename and
+  // exposes `schedule/live/[shareToken]` to users. Keep the token private in
+  // the URL, but present a useful, human-readable title in the navigation bar.
+  useEffect(() => {
+    const title = ownerHandle !== '@hashpass.attendee'
+      ? `${ownerHandle} · ${t('mySchedule.liveAgendaTitle', 'Live agenda')}`
+      : t('mySchedule.liveAgendaTitle', 'Live agenda');
+    navigation.setOptions({ title });
+  }, [navigation, ownerHandle, t]);
 
   const load = useCallback(async (isManualRefresh = false) => {
     if (!eventId || !shareToken) return;
