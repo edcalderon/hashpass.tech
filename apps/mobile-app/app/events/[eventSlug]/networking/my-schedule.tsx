@@ -1231,12 +1231,19 @@ const MySchedule = () => {
   };
 
   const shareCtaMessage = (shareUrl: string) => {
+    const eventHashtags: Record<string, string> = {
+      bsl: '#bsl #bsl2026',
+      chile2026: '#bsl #bsl2026 #bslchile2026',
+      colombia2026: '#bsl #bsl2026 #bslcolombia2026',
+      peru2026: '#bsl #bsl2026 #bslperu2026',
+    };
+    const hashtags = eventHashtags[eventId] || '#bsl #bsl2026';
     const message = t(
       'mySchedule.shareMessage',
       'Join me — this is my agenda at {eventName}, see you at the event! {url}',
       { eventName: event?.name || eventId, url: shareUrl },
     );
-    return message;
+    return `${message} ${hashtags}`;
   };
 
   const openShareIntent = async (platform: 'whatsapp' | 'x' | 'facebook') => {
