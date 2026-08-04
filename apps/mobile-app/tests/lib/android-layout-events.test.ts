@@ -239,7 +239,16 @@ describe('Android layout event crash guards', () => {
     expect(dashboardSource).not.toContain('onPress={() => toggleDashboardDrawer(navigation)}');
   });
 
-  it('leaves the dashboard immediately while durable native session cleanup continues', () => {
+  it('waits for the bounded local session cleanup, but not remote cleanup, before leaving the dashboard', () => {
+    // Regression for a real race: an earlier version of this handler made
+    // the entire signOut() call fire-and-forget (`void signOut(...)`) and
+    // navigated immediately, so the SecureStore/AsyncStorage clear inside
+    // signOut() could still be in flight when the route changed — a process
+    // kill right after navigation could leave the old session persisted on
+    // disk to be rehydrated on next launch. Fixed by awaiting
+    // signOut({waitForRemoteCleanup: false}) itself, which only blocks on
+    // the now-timeout-bounded local clear, not the slow/flaky remote
+    // provider sign-out calls (see SIGN_OUT_STEP_TIMEOUT_MS in useAuth.ts).
     const dashboardSource = readSource('../../app/(shared)/dashboard/_layout.tsx');
     const authHookSource = readSource('../../hooks/useAuth.ts');
     const handleLogoutSource = dashboardSource.slice(
@@ -247,12 +256,15 @@ describe('Android layout event crash guards', () => {
       dashboardSource.indexOf('const handleLanguageToggle')
     );
 
-    expect(handleLogoutSource).toContain('void signOut({ waitForRemoteCleanup: false }).catch((error: unknown) => {');
-    expect(handleLogoutSource.indexOf('void signOut({ waitForRemoteCleanup: false }).catch((error: unknown) => {')).toBeLessThan(
+    expect(handleLogoutSource).toContain('await signOut({ waitForRemoteCleanup: false });');
+    expect(handleLogoutSource.indexOf('await signOut({ waitForRemoteCleanup: false });')).toBeLessThan(
       handleLogoutSource.indexOf("router.replace('/(shared)/auth' as any);")
     );
     expect(authHookSource).toContain("from '../lib/auth/native-session-clear'");
     expect(authHookSource).toContain('clearPersistedNativeProviderSessions()');
+    expect(authHookSource).toContain(
+      "withTimeout(clearPersistedNativeProviderSessions(), SIGN_OUT_STEP_TIMEOUT_MS, 'clearPersistedNativeProviderSessions')",
+    );
   });
 
   it('finishes native Google account cleanup before allowing a new login attempt', () => {
