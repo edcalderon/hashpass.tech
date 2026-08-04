@@ -33,16 +33,27 @@ export const demoChaptersEs: DemoChapter[] = [
 
 export type DemoVideoLocale = 'en' | 'es';
 
+// Served from the target-account S3 bucket that already hosts event media
+// (chile2026 speaker photos, etc.) for real CDN-grade loading rather than
+// bundled through the app's own web server — see
+// events/hashpass/demo-videos/ and events/chile2026/demo-videos/ under
+// hashpass-production-event-media-952191196420-us-east-2. The bucket's
+// public-read policy only covers the `events/*` prefix, so the general
+// (non-event-specific) app-tutorial assets live under a `hashpass`
+// pseudo-event folder rather than their own top-level prefix, so as not to
+// need a bucket-policy change for this.
+const EVENT_MEDIA_BASE = 'https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events';
+
 export const demoVideoSources = {
   en: {
-    narrated: '/demo/videos/app-tutorial-narrated-en.mp4',
-    silent: '/demo/videos/app-tutorial-en.mp4',
-    poster: '/demo/posters/app-tutorial-en.jpg',
+    narrated: `${EVENT_MEDIA_BASE}/hashpass/demo-videos/app-tutorial-narrated-en.mp4`,
+    silent: `${EVENT_MEDIA_BASE}/hashpass/demo-videos/app-tutorial-en.mp4`,
+    poster: `${EVENT_MEDIA_BASE}/hashpass/demo-posters/app-tutorial-en.jpg`,
   },
   es: {
-    narrated: '/demo/videos/app-tutorial-narrated-es.mp4',
-    silent: '/demo/videos/app-tutorial-es.mp4',
-    poster: '/demo/posters/app-tutorial-es.jpg',
+    narrated: `${EVENT_MEDIA_BASE}/hashpass/demo-videos/app-tutorial-narrated-es.mp4`,
+    silent: `${EVENT_MEDIA_BASE}/hashpass/demo-videos/app-tutorial-es.mp4`,
+    poster: `${EVENT_MEDIA_BASE}/hashpass/demo-posters/app-tutorial-es.jpg`,
   },
 } as const;
 
@@ -58,13 +69,13 @@ export const bslChapters: DemoChapter[] = [
 
 export const demoBslShowcase = {
   en: {
-    narrated: '/demo/videos/bsl-showcase-narrated-en.mp4',
-    silent: '/demo/videos/bsl-showcase.mp4',
-    poster: '/demo/posters/bsl-showcase.jpg',
+    narrated: `${EVENT_MEDIA_BASE}/chile2026/demo-videos/bsl-showcase-narrated-en.mp4`,
+    silent: `${EVENT_MEDIA_BASE}/chile2026/demo-videos/bsl-showcase.mp4`,
+    poster: `${EVENT_MEDIA_BASE}/chile2026/demo-posters/bsl-showcase.jpg`,
   },
   es: {
-    narrated: '/demo/videos/bsl-showcase-narrated-es.mp4',
-    silent: '/demo/videos/bsl-showcase.mp4',
-    poster: '/demo/posters/bsl-showcase.jpg',
+    narrated: `${EVENT_MEDIA_BASE}/chile2026/demo-videos/bsl-showcase-narrated-es.mp4`,
+    silent: `${EVENT_MEDIA_BASE}/chile2026/demo-videos/bsl-showcase.mp4`,
+    poster: `${EVENT_MEDIA_BASE}/chile2026/demo-posters/bsl-showcase.jpg`,
   },
 } as const;
