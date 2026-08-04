@@ -1,3 +1,12 @@
+## [1.8.316](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.315...v1.8.316) (2026-08-04)
+
+
+### Bug Fixes
+
+* **mobile:** make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech ([6d74472](https://github.com/hashpass-tech/hashpass.tech/commit/6d74472d73c6925ca7114cca3495e86a37e6e9a8))
+### Release Highlights
+- make /demo publicly reachable on both hashpass.tech and bsl.hashpass.tech
+
 ## [1.8.315](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.314...v1.8.315) (2026-08-03)
 ### Released
 - redirect immediately after logout
