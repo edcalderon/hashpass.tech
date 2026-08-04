@@ -1008,6 +1008,48 @@ const MySchedule = () => {
     }
   };
 
+  // Filter groups for the search bar, same shape/pattern as agenda.tsx's
+  // filterGroups. Status here is computed live from userAgendaStatus /
+  // userMeetingStatus (not each Meeting's own `status` field, which is only
+  // a snapshot taken when the item was mapped) so the filter always matches
+  // what the card itself currently shows.
+  const scheduleFilterGroups = useMemo(() => [
+    {
+      key: 'status',
+      label: t('mySchedule.filter.status', 'Status'),
+      type: 'single' as const,
+      options: [
+        { key: 'confirmed', label: t('mySchedule.status.confirmed'), icon: 'check-circle' },
+        { key: 'tentative', label: t('mySchedule.status.tentative'), icon: 'radio-button-unchecked' },
+      ],
+    },
+  ], [t]);
+
+  const scheduleCustomFilterLogic = useCallback(
+    (items: Meeting[], filters: { search?: string; status?: string }, searchQuery: string) => {
+      let filtered = items;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter((m: any) =>
+          m.title?.toLowerCase().includes(q) ||
+          m.participants?.some((p: string) => p.toLowerCase().includes(q)) ||
+          m.speaker_name?.toLowerCase().includes(q) ||
+          m.requester_name?.toLowerCase().includes(q)
+        );
+      }
+      if (filters.status) {
+        filtered = filtered.filter((m: any) => {
+          const liveStatus = m.isAgendaEvent
+            ? (userAgendaStatus[m.id] || 'tentative')
+            : ((userMeetingStatus[m.id] || 'tentative') === 'confirmed' ? 'confirmed' : 'tentative');
+          return liveStatus === filters.status;
+        });
+      }
+      return filtered;
+    },
+    [userAgendaStatus, userMeetingStatus]
+  );
+
   // Resolves an agenda item's speaker slug/name to a display name, avatar
   // image, and navigable speaker id -- same config-lookup strategy as
   // agenda.tsx's resolveAgendaSpeaker (minus its DB-directory fallback,
@@ -1197,6 +1239,30 @@ const MySchedule = () => {
                     />
                   </TouchableOpacity>
                 </View>
+              )}
+              {!isAgendaEvent && (meeting as any).meeting_request_id && (
+                <TouchableOpacity
+                  onPress={() => router.push({
+                    pathname: `/events/${eventId}/networking/meeting-detail` as any,
+                    params: {
+                      meetingId: (meeting as any).meeting_request_id,
+                      speakerName: (meeting as any).speaker_name,
+                      status: meeting.status,
+                      message: meeting.description || '',
+                      scheduledAt: (meeting as any).scheduled_at || '',
+                      location: meeting.location || 'TBD',
+                      duration: (meeting as any).duration_minutes || 30,
+                      isSpeaker: dbUserId && dbUserId !== (meeting as any).requester_id ? 'true' : 'false',
+                    },
+                  })}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 2, padding: 4 }}
+                  accessibilityLabel={t('mySchedule.viewMeetingRequest', 'View meeting request')}
+                >
+                  <MaterialIcons name="open-in-new" size={16} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: colors.primary }}>
+                    {t('mySchedule.viewMeetingRequest', 'View meeting request')}
+                  </Text>
+                </TouchableOpacity>
               )}
             </View>
             {(meeting?.participants?.length ?? 0) > 0 && (
@@ -1660,11 +1726,27 @@ const MySchedule = () => {
               </View>
               <Text style={[styles.legendText, { color: colors.text.secondary }]}>{t('mySchedule.scheduledSlots')}</Text>
             </View>
+            <View style={styles.legendItem}>
+              <View style={[
+                styles.legendCircleWithNumber,
+                {
+                  backgroundColor: '#FFD70020',
+                  borderColor: '#FFD700',
+                }
+              ]}>
+                <MaterialIcons name="star" size={11} color="#FFD700" />
+              </View>
+              <Text style={[styles.legendText, { color: colors.text.secondary }]}>
+                {dayStats.reduce((sum, day) => sum + day.favorites, 0)} {t('mySchedule.favorites', 'Favorites')}
+              </Text>
+            </View>
           </View>
           </CopilotView>
         </CopilotStep>
 
-        {/* Search + Filter */}
+        {/* Search + Filter -- same reusable component, filter groups and
+            results-count styling as the Agenda tab's UnifiedSearchAndFilter,
+            for a consistent look between the two screens. */}
         {allMeetings.length > 0 && (
           <UnifiedSearchAndFilter
             data={allMeetings}
@@ -1672,7 +1754,9 @@ const MySchedule = () => {
             onSearchChange={() => {}}
             searchPlaceholder={t('mySchedule.searchPlaceholder', 'Search sessions, speakers or keywords...')}
             searchFields={['title', 'participants', 'speaker_name', 'requester_name']}
-            showResultsCount={false}
+            filterGroups={scheduleFilterGroups}
+            customFilterLogic={scheduleCustomFilterLogic}
+            showResultsCount={true}
           />
         )}
 

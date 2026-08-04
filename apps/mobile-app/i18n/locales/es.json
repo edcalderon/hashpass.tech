@@ -866,7 +866,12 @@
       "checkAgendaFirst": "Revisa tu agenda primero",
       "collapseAll": "Colapsar todo",
       "viewInAgenda": "Ver en la agenda",
-      "searchPlaceholder": "Buscar sesiones, oradores o palabras clave..."
+      "searchPlaceholder": "Buscar sesiones, oradores o palabras clave...",
+      "filter": {
+        "status": "Estado"
+      },
+      "viewMeetingRequest": "Ver solicitud de reunión",
+      "favorites": "Favoritos"
     },
     "tips": {
       "title": "Consejos de Networking",

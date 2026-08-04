@@ -1348,6 +1348,17 @@ export default function BSL2025AgendaScreen() {
           </View>
         )}
 
+        {/* Session type color legend -- same colors as each card's type badge (getAgendaTypeColor), so people know what blue/red/green/etc. mean at a glance. */}
+        {agenda.length > 0 && (
+          <View style={styles.typeLegend}>
+            {(['keynote', 'panel', 'registration', 'meal', 'break'] as const).map((type) => (
+              <View key={type} style={styles.typeLegendItem}>
+                <View style={[styles.typeLegendDot, { backgroundColor: getAgendaTypeColor(type) }]} />
+                <Text style={styles.typeLegendText}>{t(`types.${type}`, type)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
       {/* Unified Search and Filter Section */}
       {agenda.length > 0 && (
@@ -1524,6 +1535,28 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 8,
     width: '100%',
+  },
+  typeLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  typeLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  typeLegendDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+  },
+  typeLegendText: {
+    fontSize: 12,
+    color: colors.text.secondary,
   },
   tabScrollContent: {
     flexDirection: 'row',

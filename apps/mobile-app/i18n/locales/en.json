@@ -867,7 +867,12 @@
       "checkAgendaFirst": "Check your agenda first",
       "collapseAll": "Collapse all",
       "viewInAgenda": "View in agenda",
-      "searchPlaceholder": "Search sessions, speakers or keywords..."
+      "searchPlaceholder": "Search sessions, speakers or keywords...",
+      "filter": {
+        "status": "Status"
+      },
+      "viewMeetingRequest": "View meeting request",
+      "favorites": "Favorites"
     },
     "tips": {
       "title": "Networking Tips",
