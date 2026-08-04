@@ -88,6 +88,9 @@
     "admin-pass-management": [
       "db/migrations/V041__admin_pass_and_user_listing.sql",
       "db/migrations/V059__admin_pass_registry_identity_fallback.sql"
+    ],
+    "admin-pass-identity": [
+      "db/migrations/V059__admin_pass_registry_identity_fallback.sql"
     ]
   }
 }
