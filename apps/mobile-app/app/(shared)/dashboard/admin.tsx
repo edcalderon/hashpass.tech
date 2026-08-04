@@ -623,12 +623,17 @@ export default function AdminPanel() {
     setPassesLoading(true);
     try {
       const eventId = resolvePassStorageEventId(selectedEventId);
-      const result = await apiClient.get(
-        `/admin/passes?eventId=${encodeURIComponent(eventId)}&limit=100`,
-        { skipEventSegment: true },
-      );
-      if (!result.success) throw new Error(result.error);
-      setPasses((result.data as { data?: Pass[] })?.data || []);
+      const allPasses: Pass[] = [];
+      let cursor: string | null = null;
+      do {
+        const query = `/admin/passes?eventId=${encodeURIComponent(eventId)}&limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+        const result = await apiClient.get(query, { skipEventSegment: true });
+        if (!result.success) throw new Error(result.error);
+        const payload = result.data as { data?: Pass[]; nextCursor?: string | null };
+        allPasses.push(...(payload.data || []));
+        cursor = payload.nextCursor || null;
+      } while (cursor && allPasses.length < 5000);
+      setPasses(allPasses);
     } catch (error: any) {
       console.error("Error loading passes:", error);
       Alert.alert("Error", "Failed to load passes: " + error.message);
