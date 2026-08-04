@@ -1152,42 +1152,8 @@ export default function BSL2025AgendaScreen() {
         </View>
 
         <View style={styles.agendaItemContent}>
-          <View style={[styles.agendaTitleRow, isCompactLayout && styles.agendaTitleRowCompact]}>
+          <View style={styles.agendaTitleRow}>
             <Text style={styles.agendaTitle}>{cleanSessionTitle(item.title)}</Text>
-            <View style={[styles.actionButtons, isCompactLayout && styles.actionButtonsCompact]}>
-              <TouchableOpacity
-                onPress={() => handleToggleFavorite(item)}
-                style={[styles.actionButton, isCompactLayout && styles.actionButtonCompact]}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityRole="button"
-                accessibilityLabel={isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites')}
-              >
-                <MaterialIcons
-                  name={isFavorite ? 'star' : 'star-border'}
-                  size={18}
-                  color={isFavorite ? '#FFD700' : colors.text.secondary}
-                />
-                <Text style={[styles.actionButtonLabel, { color: isFavorite ? '#B8860B' : colors.text.secondary }]}>
-                  {isFavorite ? t('actions.favorited', 'Favorited') : t('actions.favorite', 'Favorite')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleAgendaAction(item, startTime)}
-                style={[styles.actionButton, isCompactLayout && styles.actionButtonCompact]}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityRole="button"
-                accessibilityLabel={isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda')}
-              >
-                <MaterialIcons
-                  name={isConfirmed ? 'check-circle' : 'radio-button-unchecked'}
-                  size={18}
-                  color={isConfirmed ? colors.success.main : colors.text.secondary}
-                />
-                <Text style={[styles.actionButtonLabel, { color: isConfirmed ? colors.success.main : colors.text.secondary }]}>
-                  {isConfirmed ? t('actions.onAgenda', 'On agenda') : t('actions.addToAgenda', 'Add to agenda')}
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
           
           {item.description && (
@@ -1259,6 +1225,41 @@ export default function BSL2025AgendaScreen() {
             }
             return null;
           })()}
+
+          <View style={[styles.actionButtons, isCompactLayout && styles.actionButtonsCompact]}>
+            <TouchableOpacity
+              onPress={() => handleToggleFavorite(item)}
+              style={[styles.actionButton, isCompactLayout && styles.actionButtonCompact]}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites')}
+            >
+              <MaterialIcons
+                name={isFavorite ? 'star' : 'star-border'}
+                size={18}
+                color={isFavorite ? '#FFD700' : colors.text.secondary}
+              />
+              <Text style={[styles.actionButtonLabel, { color: isFavorite ? '#B8860B' : colors.text.secondary }]}>
+                {isFavorite ? t('actions.favorited', 'Favorited') : t('actions.favorite', 'Favorite')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleAgendaAction(item, startTime)}
+              style={[styles.actionButton, isCompactLayout && styles.actionButtonCompact]}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda')}
+            >
+              <MaterialIcons
+                name={isConfirmed ? 'check-circle' : 'radio-button-unchecked'}
+                size={18}
+                color={isConfirmed ? colors.success.main : colors.text.secondary}
+              />
+              <Text style={[styles.actionButtonLabel, { color: isConfirmed ? colors.success.main : colors.text.secondary }]}>
+                {isConfirmed ? t('actions.onAgenda', 'On agenda') : t('actions.addToAgenda', 'Add to agenda')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -1738,14 +1739,8 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   agendaTitleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
-    gap: 8,
-  },
-  agendaTitleRowCompact: {
-    flexDirection: 'column',
-    gap: 12,
+    marginBottom: 12,
   },
   agendaTitle: {
     fontSize: 16,
@@ -1756,33 +1751,38 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 8,
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
   actionButtonsCompact: {
     width: '100%',
-    flexDirection: 'row',
+    flexDirection: 'column',
+    gap: 8,
   },
   actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.divider,
-    backgroundColor: colors.background.paper,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : colors.background.paper,
   },
   actionButtonCompact: {
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 42,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    flex: 0,
+    width: '100%',
   },
   actionButtonLabel: {
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.1,
   },
