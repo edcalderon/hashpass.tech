@@ -376,11 +376,6 @@ export const EVENTS: Record<string, EventConfig> = {
       { id: 'chile-day3-panel-convergence-between-banking', day: '3', time: '11:25-12:15', title: 'Panel: Convergence between banking, capital markets and digital assets: emerging models and opportunities for the financial system', type: 'panel', speakers: ['mauricio-jara', 'juan-pablo-cordoba', 'luisa-cardenas', 'regina-pedroso', 'vicente-lazen'] },
       { id: 'chile-day3-panel-financial-system-2030', day: '3', time: '12:20-13:10', title: 'Panel: Financial System 2030: how will money, capital and financial infrastructure be redefined?', type: 'panel', speakers: ['alvaro-clarke', 'jose-gabriel-carrasco', 'alexis-franco', 'guillermo-acuna', 'claudio-calderon'] },
       { id: 'chile-day3-conclusions-and-closing', day: '3', time: '13:15-13:30', title: 'Conclusions and closing', type: 'keynote', speakers: ['mauricio-jara', 'rodrigo-sainz'] },
-      { id: 'chile-day1-workshop-1', day: '1', time: '08:00-09:15', title: 'Workshop: Introduction Business', type: 'keynote', speakers: ['alberto-naudon'] },
-      { id: 'chile-day1-workshop-2', day: '1', time: '09:15-10:20', title: 'Workshop: Introduction Business II', type: 'keynote', speakers: ['alberto-naudon'] },
-      { id: 'chile-day2-workshop-1', day: '2', time: '08:00-09:15', title: 'Workshop: Introduction Business III', type: 'keynote', speakers: ['alberto-naudon'] },
-      { id: 'chile-day2-workshop-2', day: '2', time: '09:15-10:20', title: 'Workshop: Introduction Business IV', type: 'keynote', speakers: ['alberto-naudon'] },
-      { id: 'chile-day3-workshop-1', day: '3', time: '08:00-09:15', title: 'Workshop: Introduction Business', type: 'keynote', speakers: ['alberto-naudon'] },
     ],
   }),
   'colombia2026': makeTourStopConfig('colombia2026', {
