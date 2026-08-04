@@ -15,6 +15,7 @@ import {
   demoChaptersEn,
   demoChaptersEs,
   demoVideoSources,
+  type DemoChapter,
   type DemoVideoLocale,
 } from '../lib/demo-chapters';
 import { demoCaptionsEn, demoCaptionsEs, type DemoCaptionCue } from '../lib/demo-captions';
@@ -114,7 +115,7 @@ export default function DemoPage() {
     }
     setActiveChapter(current);
 
-    const cue = captionCues.find((c) => el.currentTime >= c.start && el.currentTime <= c.end);
+    const cue = captionCues.find((c: DemoCaptionCue) => el.currentTime >= c.start && el.currentTime <= c.end);
     setCurrentCaption(cue ? cue.text : null);
   };
 
@@ -218,7 +219,7 @@ export default function DemoPage() {
 
           <Text style={styles.sectionHeading}>{t('chapters') || 'Chapters'}</Text>
           <View style={styles.chapterGrid}>
-            {chapters.map((chapter, index) => {
+            {chapters.map((chapter: DemoChapter, index: number) => {
               const active = index === activeChapter;
               return (
                 <Animated.View key={chapter.slug} entering={FadeIn.duration(300).delay(80 * index)}>
@@ -285,7 +286,7 @@ export default function DemoPage() {
 
           <Text style={styles.sectionHeading}>{t('chapters') || 'Chapters'}</Text>
           <View style={styles.chapterGrid}>
-            {bslChapters.map((chapter, index) => {
+            {bslChapters.map((chapter: DemoChapter, index: number) => {
               const active = index === activeChapter;
               return (
                 <Animated.View key={chapter.slug} entering={FadeIn.duration(300).delay(80 * index)}>

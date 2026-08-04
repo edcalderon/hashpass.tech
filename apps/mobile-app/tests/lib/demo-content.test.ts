@@ -46,7 +46,9 @@ describe('demo-chapters', () => {
   });
 
   it('EN and ES app-tutorial chapter lists have the same slugs in the same order', () => {
-    expect(demoChaptersEn.map((c) => c.slug)).toEqual(demoChaptersEs.map((c) => c.slug));
+    expect(demoChaptersEn.map((c: { slug: string }) => c.slug)).toEqual(
+      demoChaptersEs.map((c: { slug: string }) => c.slug),
+    );
   });
 });
 
@@ -71,7 +73,7 @@ describe('demo caption cue data', () => {
       const translated = demoCaptionTextByLocale[locale];
       expect(translated).toBeDefined();
       expect(translated.length).toBe(demoCaptionsEn.length);
-      translated.forEach((text) => expect(text.length).toBeGreaterThan(0));
+      translated.forEach((text: string) => expect(text.length).toBeGreaterThan(0));
     }
   });
 });
