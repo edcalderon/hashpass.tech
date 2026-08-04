@@ -222,6 +222,7 @@ const MySchedule = () => {
   const [removedAgendaIds, setRemovedAgendaIds] = useState<Set<string>>(new Set());
   const [removeSessionModal, setRemoveSessionModal] = useState<{ meeting: Meeting | null; slotStartTime: Date | null }>({ meeting: null, slotStartTime: null });
   const [isRemovingSession, setIsRemovingSession] = useState(false);
+  const [excludePastSessions, setExcludePastSessions] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   // Meetings state
   const [meetings, setMeetings] = useState<any[]>([]);
@@ -1160,7 +1161,7 @@ const MySchedule = () => {
     return 'https://hashpass.tech';
   };
 
-  const handleShareMyDay = async (forDate: Date = selectedDate, includeImage = true, previewOnly = false) => {
+  const handleShareMyDay = async (forDate: Date = selectedDate, includeImage = true, previewOnly = false, omitPast = excludePastSessions) => {
     setIsSharingDay(true);
     try {
       const response = await apiClient.request(`${eventApiPath(eventId, 'schedule')}/share-token`, {
@@ -1174,7 +1175,7 @@ const MySchedule = () => {
       const locale = getCurrentLocale();
       const origin = resolveShareOrigin();
       const shareUrl = `${origin}/events/${eventId}/schedule/live/${response.data.shareToken}`;
-      const imageUrl = `${origin}/api/events/${eventId}/schedule/public/${response.data.shareToken}/image?day=${dayNumber}&locale=${locale}`;
+      const imageUrl = `${origin}/api/events/${eventId}/schedule/public/${response.data.shareToken}/image?day=${dayNumber}&locale=${locale}${omitPast ? '&excludePast=1' : ''}`;
       setPreviewScale(1);
       setShareSheet({
         visible: true,
@@ -2264,7 +2265,7 @@ const MySchedule = () => {
       {/* Day Summary Modal */}
       {daySummaryModal.dayStat && (
         <Modal
-          visible={daySummaryModal.visible}
+          visible={daySummaryModal.visible && !removeSessionModal.meeting}
           transparent={true}
           animationType="fade"
           onRequestClose={() => setDaySummaryModal({ visible: false, dayStat: null })}
@@ -2427,6 +2428,7 @@ const MySchedule = () => {
                 // Get all slots with meetings or tracked free slots, sorted by time
                 const timelineSlots = selectedDay.slots
                   .filter((slot: TimeSlot) => {
+                    if (excludePastSessions && slot.startTime.getTime() < Date.now()) return false;
                     if (slot.meeting) return true;
                     const slotKey = slot.startTime.toISOString();
                     const freeSlotStatus = userFreeSlotStatus[slotKey] || 'available';
@@ -2487,7 +2489,7 @@ const MySchedule = () => {
                                         onPress={() => requestRemoveAgendaSession(meeting, slot.startTime)}
                                         accessibilityLabel={t('mySchedule.removeSession', 'Remove session from plan')}
                                       >
-                                        <MaterialIcons name="close" size={16} color={colors.text.secondary} />
+                                        <MaterialIcons name="delete-outline" size={18} color={colors.text.secondary} />
                                       </TouchableOpacity>
                                     )}
                                   </View>
@@ -2593,6 +2595,21 @@ const MySchedule = () => {
                   image + social intents) as the sticky global button, but
                   scoped to this modal's own date instead of whatever day
                   happens to be selected on the main screen. */}
+              <TouchableOpacity
+                style={styles.excludePastRow}
+                onPress={() => setExcludePastSessions((value) => !value)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: excludePastSessions }}
+              >
+                <MaterialIcons
+                  name={excludePastSessions ? 'check-box' : 'check-box-outline-blank'}
+                  size={22}
+                  color={excludePastSessions ? colors.primary : colors.text.secondary}
+                />
+                <Text style={[styles.excludePastText, { color: colors.text.primary }]}>
+                  {t('mySchedule.excludePastSessions', 'Exclude sessions that have already passed')}
+                </Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.shareDayButton, { backgroundColor: colors.primary }]}
                 onPress={() => {
@@ -2783,6 +2800,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
+  excludePastRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    marginTop: 14,
+  },
+  excludePastText: { fontSize: 13, fontWeight: '600', flex: 1 },
   scrollContent: {
     flex: 1,
   },

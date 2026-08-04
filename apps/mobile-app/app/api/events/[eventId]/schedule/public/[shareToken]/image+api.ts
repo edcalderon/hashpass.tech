@@ -129,7 +129,11 @@ export async function GET(request: Request) {
     }
 
     const day = requestedDay || items[0]?.day || '1';
-    const dayItems = items.filter((item) => (item.day || '1') === day);
+    const excludePast = url.searchParams.get('excludePast') === '1';
+    const dayItems = items.filter((item) =>
+      (item.day || '1') === day &&
+      (!excludePast || Number.isNaN(new Date(item.time).getTime()) || new Date(item.time).getTime() >= Date.now())
+    );
     const dayName = dayItems[0]?.day_name || '';
 
     const event = (EVENTS as any)[eventId];
