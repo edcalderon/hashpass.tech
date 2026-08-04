@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
+  Image as RNImage,
   Share,
   Pressable,
 } from 'react-native';
@@ -22,6 +23,7 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { format, addDays, isSameDay, isToday, isPast, isFuture } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MaterialIcons } from '../../../../lib/vector-icons';
+import { getTourBrandAsset, HASHPASS_BRAND_LOGOS } from '../../../../lib/event-branding';
 import SpeakerAvatar from '../../../../components/SpeakerAvatar';
 import UnifiedSearchAndFilter from '../../../../components/UnifiedSearchAndFilter';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -120,6 +122,7 @@ const MySchedule = () => {
   const { dbUserId, user } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
+  const previewEventBrand = getTourBrandAsset(eventId) || getTourBrandAsset('bsl');
   const agendaApiPath = eventApiPath(eventId, 'agenda');
   const { showError, showSuccess, showWarning } = useToastHelpers();
   const { t } = useTranslation('networking');
@@ -216,6 +219,9 @@ const MySchedule = () => {
     visible: boolean;
     dayStat: typeof dayStats[0] | null;
   }>({ visible: false, dayStat: null });
+  const [removedAgendaIds, setRemovedAgendaIds] = useState<Set<string>>(new Set());
+  const [removeSessionModal, setRemoveSessionModal] = useState<{ meeting: Meeting | null; slotStartTime: Date | null }>({ meeting: null, slotStartTime: null });
+  const [isRemovingSession, setIsRemovingSession] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   // Meetings state
   const [meetings, setMeetings] = useState<any[]>([]);
@@ -608,8 +614,11 @@ const MySchedule = () => {
     });
 
     // Combine agenda events and personal meetings
-    return [...dbMeetings, ...personalMeetings];
-  }, [dbMeetings, meetings, userMeetingStatus]);
+    return [
+      ...dbMeetings.filter((meeting) => !(meeting as any).isAgendaEvent || !removedAgendaIds.has(meeting.id)),
+      ...personalMeetings,
+    ];
+  }, [dbMeetings, meetings, userMeetingStatus, removedAgendaIds]);
 
   const schedule = useMemo(() => {
     const days: DaySchedule[] = [];
@@ -958,6 +967,56 @@ const MySchedule = () => {
     }
   };
 
+  const requestRemoveAgendaSession = (meeting: Meeting, slotStartTime: Date) => {
+    setRemoveSessionModal({ meeting, slotStartTime });
+  };
+
+  const restoreRemovedAgendaSession = async (meeting: Meeting, previousStatus: 'confirmed' | 'tentative') => {
+    if (!registryUserId) return;
+    const { error } = await (supabase.from('user_agenda_status') as any).upsert({
+      user_id: registryUserId,
+      event_id: eventId,
+      agenda_id: meeting.id,
+      status: previousStatus,
+      confirmed_at: previousStatus === 'confirmed' ? new Date().toISOString() : null,
+    }, { onConflict: 'user_id,event_id,agenda_id' });
+    if (error) throw error;
+    setRemovedAgendaIds((prev) => {
+      const next = new Set(prev);
+      next.delete(meeting.id);
+      return next;
+    });
+    setUserAgendaStatus((prev) => ({ ...prev, [meeting.id]: previousStatus }));
+  };
+
+  const confirmRemoveAgendaSession = async () => {
+    const meeting = removeSessionModal.meeting;
+    if (!meeting || !registryUserId) return;
+    const previousStatus = userAgendaStatus[meeting.id] || 'tentative';
+    setIsRemovingSession(true);
+    try {
+      const { error } = await (supabase.from('user_agenda_status') as any)
+        .delete()
+        .eq('user_id', registryUserId)
+        .eq('event_id', eventId)
+        .eq('agenda_id', meeting.id);
+      if (error) throw error;
+      setRemovedAgendaIds((prev) => new Set(prev).add(meeting.id));
+      setRemoveSessionModal({ meeting: null, slotStartTime: null });
+      showSuccess(
+        t('mySchedule.sessionRemoved', 'Session removed from your plan'),
+        meeting.title,
+        8000,
+        { label: t('common.undo', 'Undo'), onPress: () => { void restoreRemovedAgendaSession(meeting, previousStatus); } },
+      );
+    } catch (error) {
+      console.error('Error removing agenda session:', error);
+      showError(t('mySchedule.errors.title'), t('mySchedule.errors.failedToRemove', 'Could not remove this session.'));
+    } finally {
+      setIsRemovingSession(false);
+    }
+  };
+
   // Handle free slot blocked status
   const handleToggleFreeSlotBlocked = async (slotStartTime: Date) => {
     if (!registryUserId) return;
@@ -1072,19 +1131,36 @@ const MySchedule = () => {
   );
 
   const [isSharingDay, setIsSharingDay] = useState(false);
-  const [shareSheet, setShareSheet] = useState<{ visible: boolean; shareUrl: string; imageUrl: string }>({
+  const [shareSheet, setShareSheet] = useState<{ visible: boolean; shareUrl: string; imageUrl?: string; imageFileName?: string; mode?: 'preview' | 'share' }>({
     visible: false,
     shareUrl: '',
     imageUrl: '',
   });
+  const [previewScale, setPreviewScale] = useState(1);
 
   // Mints (or reuses) a public share token for this event via POST
   // /schedule/share-token, then opens a share sheet with: the live-updating
   // link (app/events/[eventSlug]/schedule/live/[shareToken].tsx) and a
   // branded per-day image (app/api/.../schedule/public/:token/image),
-  // day-scoped to whatever day is currently selected and localized to the
-  // viewer's current app language.
-  const handleShareMyDay = async () => {
+  // day-scoped to the given date (defaults to whatever day is currently
+  // selected on screen) and localized to the viewer's current app language.
+  //
+  // The URLs are built against the *current* site origin, not a hardcoded
+  // domain: this app runs under multiple real domains (hashpass.tech,
+  // bsl.hashpass.tech for the BSL tenant) plus local/dev servers during
+  // testing, and a hardcoded "hashpass.tech" would generate a share link
+  // that resolves to the wrong tenant's site (or nothing, locally) whenever
+  // this runs anywhere else. On web, window.location.origin is ground
+  // truth for what site is actually running right now; native has no
+  // window, so it falls back to the public production domain.
+  const resolveShareOrigin = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.origin) {
+      return window.location.origin;
+    }
+    return 'https://hashpass.tech';
+  };
+
+  const handleShareMyDay = async (forDate: Date = selectedDate, includeImage = true, previewOnly = false) => {
     setIsSharingDay(true);
     try {
       const response = await apiClient.request(`${eventApiPath(eventId, 'schedule')}/share-token`, {
@@ -1094,11 +1170,20 @@ const MySchedule = () => {
       if (!response.success || !response.data?.shareToken) {
         throw new Error(response.error || 'Failed to create share link');
       }
-      const dayNumber = Math.max(1, Math.round((selectedDate.getTime() - eventDates.start.getTime()) / 86_400_000) + 1);
+      const dayNumber = Math.max(1, Math.round((forDate.getTime() - eventDates.start.getTime()) / 86_400_000) + 1);
       const locale = getCurrentLocale();
-      const shareUrl = `https://hashpass.tech/events/${eventId}/schedule/live/${response.data.shareToken}`;
-      const imageUrl = `https://hashpass.tech/api/events/${eventId}/schedule/public/${response.data.shareToken}/image?day=${dayNumber}&locale=${locale}`;
-      setShareSheet({ visible: true, shareUrl, imageUrl });
+      const origin = resolveShareOrigin();
+      const shareUrl = `${origin}/events/${eventId}/schedule/live/${response.data.shareToken}`;
+      const imageUrl = `${origin}/api/events/${eventId}/schedule/public/${response.data.shareToken}/image?day=${dayNumber}&locale=${locale}`;
+      setPreviewScale(1);
+      setShareSheet({
+        visible: true,
+        shareUrl,
+        mode: previewOnly ? 'preview' : 'share',
+        ...(includeImage
+          ? { imageUrl, imageFileName: `${eventId}-my-agenda-day${dayNumber}.png` }
+          : {}),
+      });
     } catch {
       showError(t('mySchedule.errors.title'), t('mySchedule.shareLinkFailed', 'Could not create the share link. Please try again.'));
     } finally {
@@ -1106,10 +1191,14 @@ const MySchedule = () => {
     }
   };
 
-  const shareCtaMessage = (shareUrl: string) =>
-    t('mySchedule.shareMessage', 'Join me — this is my agenda at {eventName}, see you at the event! {url}')
-      .replace('{eventName}', event?.name || eventId)
-      .replace('{url}', shareUrl);
+  const shareCtaMessage = (shareUrl: string) => {
+    const message = t(
+      'mySchedule.shareMessage',
+      'Join me — this is my agenda at {eventName}, see you at the event! {url}',
+      { eventName: event?.name || eventId, url: shareUrl },
+    );
+    return message;
+  };
 
   const openShareIntent = async (platform: 'whatsapp' | 'x' | 'facebook') => {
     const text = encodeURIComponent(shareCtaMessage(shareSheet.shareUrl));
@@ -1138,12 +1227,61 @@ const MySchedule = () => {
   };
 
   const handleDownloadImage = async () => {
+    if (!shareSheet.imageUrl) return;
     if (Platform.OS === 'web') {
-      const link = document.createElement('a');
-      link.href = shareSheet.imageUrl;
-      link.download = `${eventId}-my-agenda.svg`;
-      link.target = '_blank';
-      link.click();
+      // The API keeps SVG as its canonical format so it remains lightweight
+      // and renders crisply everywhere. Convert it to PNG in the browser for
+      // downloads, which is accepted by social apps that do not preview SVG.
+      try {
+        const response = await fetch(shareSheet.imageUrl);
+        if (!response.ok) throw new Error(`Image request failed (${response.status})`);
+        let svgText = await response.text();
+        const imageRefs = [...svgText.matchAll(/href="(https?:[^\"]+)"/g)].map((match) => match[1]);
+        await Promise.all(imageRefs.map(async (imageUrl) => {
+          try {
+            const assetResponse = await fetch(imageUrl);
+            if (!assetResponse.ok) return;
+            const assetBlob = await assetResponse.blob();
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result));
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(assetBlob);
+            });
+            svgText = svgText.split(`href="${imageUrl}"`).join(`href="${dataUrl}"`);
+          } catch {
+            // The SVG fallback can still render the original URL.
+          }
+        }));
+        const svgBlob = new Blob([svgText], { type: 'image/svg+xml' });
+        const objectUrl = URL.createObjectURL(svgBlob);
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        await new Promise<void>((resolve, reject) => {
+          image.onload = () => resolve();
+          image.onerror = () => reject(new Error('Unable to rasterize agenda image'));
+          image.src = objectUrl;
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth || 1080;
+        canvas.height = image.naturalHeight || 1350;
+        canvas.getContext('2d')?.drawImage(image, 0, 0);
+        URL.revokeObjectURL(objectUrl);
+        const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+        if (!pngBlob) throw new Error('Unable to create PNG');
+        const pngUrl = URL.createObjectURL(pngBlob);
+        const link = document.createElement('a');
+        link.href = pngUrl;
+        link.download = shareSheet.imageFileName || `${eventId}-my-agenda-day1.png`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+      } catch (error) {
+        console.warn('[schedule-share] PNG conversion failed; downloading SVG', error);
+        const link = document.createElement('a');
+        link.href = shareSheet.imageUrl;
+        link.download = (shareSheet.imageFileName || `${eventId}-my-agenda-day1.png`).replace(/\.png$/, '.svg');
+        link.click();
+      }
     } else {
       const { Linking } = await import('react-native');
       await Linking.openURL(shareSheet.imageUrl);
@@ -1678,7 +1816,7 @@ const MySchedule = () => {
           the ScrollView so it stays fixed on screen instead of scrolling
           away with the content beneath it. */}
       <TouchableOpacity
-        onPress={handleShareMyDay}
+        onPress={() => handleShareMyDay(selectedDate, false)}
         disabled={isSharingDay}
         accessibilityLabel={t('mySchedule.shareMyAgenda', 'Share my agenda')}
         style={[
@@ -1969,9 +2107,65 @@ const MySchedule = () => {
       <Modal visible={shareSheet.visible} transparent animationType="fade" onRequestClose={() => setShareSheet((prev) => ({ ...prev, visible: false }))}>
         <View style={styles.shareSheetOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShareSheet((prev) => ({ ...prev, visible: false }))} />
-          <View style={[styles.shareSheetCard, { backgroundColor: colors.background.paper }]}>
-            <Text style={[styles.shareSheetTitle, { color: colors.text.primary }]}>
-              {t('mySchedule.shareMyAgenda', 'Share my agenda')}
+          <View
+            style={[styles.shareSheetCard, { backgroundColor: colors.background.paper }]}
+          >
+            {shareSheet.mode === 'preview' && shareSheet.imageUrl ? (
+              <>
+                <Text style={[styles.shareSheetTitle, { color: colors.text.primary }]}>
+                  {t('mySchedule.snapshotPreview', 'Your shareable agenda snapshot')}
+                </Text>
+                <Text style={[styles.snapshotPrompt, { color: colors.text.secondary }]}>
+                  {t('mySchedule.snapshotPrompt', 'Review your day before sharing. You can keep editing your agenda.')}
+                </Text>
+                <View style={styles.snapshotFrame}>
+                  <RNImage
+                    source={HASHPASS_BRAND_LOGOS.dark}
+                    resizeMode="contain"
+                    style={styles.snapshotHashpassLogo}
+                  />
+                  <RNImage
+                    source={previewEventBrand?.logo}
+                    resizeMode="contain"
+                    style={styles.snapshotEventLogo}
+                  />
+                  <RNImage
+                    source={{ uri: shareSheet.imageUrl }}
+                    resizeMode="contain"
+                    style={[styles.snapshotImage, { transform: [{ scale: previewScale }] }]}
+                  />
+                </View>
+                <View style={styles.snapshotZoomRow}>
+                  <TouchableOpacity style={styles.snapshotZoomButton} onPress={() => setPreviewScale((scale) => Math.max(0.8, scale - 0.1))}>
+                    <Text style={[styles.snapshotZoomSymbol, { color: colors.text.primary }]}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.snapshotZoomLabel, { color: colors.text.secondary }]}>{Math.round(previewScale * 100)}%</Text>
+                  <TouchableOpacity style={styles.snapshotZoomButton} onPress={() => setPreviewScale((scale) => Math.min(3, scale + 0.1))}>
+                    <MaterialIcons name="add" size={20} color={colors.text.primary} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={[styles.snapshotConfirm, { color: colors.text.primary }]}>
+                  {t('mySchedule.snapshotConfirm', 'Are you sure you want to share this agenda?')}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.snapshotPrimaryButton, { backgroundColor: colors.primary }]}
+                  onPress={() => setShareSheet((prev) => ({ ...prev, mode: 'share' }))}
+                >
+                  <MaterialIcons name="share" size={19} color="#FFFFFF" />
+                  <Text style={styles.snapshotPrimaryButtonText}>{t('mySchedule.confirmShare', 'Confirm and share')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.snapshotSecondaryButton} onPress={() => setShareSheet((prev) => ({ ...prev, visible: false }))}>
+                  <Text style={[styles.snapshotSecondaryButtonText, { color: colors.text.secondary }]}>{t('mySchedule.keepEditing', 'Keep editing')}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+            <Text
+              style={[styles.shareSheetTitle, { color: colors.text.primary }]}
+            >
+              {shareSheet.imageUrl
+                ? t('mySchedule.shareMyDay', 'Share this day')
+                : t('mySchedule.shareMyAgenda', 'Share my agenda')}
             </Text>
             <View style={styles.shareSheetRow}>
               <TouchableOpacity style={styles.shareSheetAction} onPress={() => openShareIntent('whatsapp')}>
@@ -1994,25 +2188,29 @@ const MySchedule = () => {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={[styles.shareSheetFullRow, { borderColor: colors.divider }]}
-              onPress={handleDownloadImage}
-            >
-              <MaterialIcons name="image" size={20} color={colors.primary} />
-              <Text style={[styles.shareSheetFullRowText, { color: colors.text.primary }]}>
-                {t('mySchedule.downloadImage', 'Download branded agenda image')}
-              </Text>
-            </TouchableOpacity>
+            {shareSheet.imageUrl && (
+              <>
+                <TouchableOpacity
+                  style={[styles.shareSheetFullRow, { borderColor: colors.divider }]}
+                  onPress={handleDownloadImage}
+                >
+                  <MaterialIcons name="image" size={20} color={colors.primary} />
+                  <Text style={[styles.shareSheetFullRowText, { color: colors.text.primary }]}>
+                    {t('mySchedule.downloadImage', 'Download day image (PNG)')}
+                  </Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.shareSheetFullRow, { borderColor: colors.divider }]}
-              onPress={() => copyToClipboard(shareSheet.imageUrl, t('mySchedule.imageLinkCopied', 'Image link copied — paste it into Instagram or anywhere else'))}
-            >
-              <MaterialIcons name="link" size={20} color={colors.primary} />
-              <Text style={[styles.shareSheetFullRowText, { color: colors.text.primary }]}>
-                {t('mySchedule.copyImageLink', 'Copy image link (for Instagram, etc.)')}
-              </Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.shareSheetFullRow, { borderColor: colors.divider }]}
+                  onPress={() => copyToClipboard(shareSheet.imageUrl!, t('mySchedule.imageLinkCopied', 'Image link copied — paste it into Instagram or anywhere else'))}
+                >
+                  <MaterialIcons name="link" size={20} color={colors.primary} />
+                  <Text style={[styles.shareSheetFullRowText, { color: colors.text.primary }]}>
+                    {t('mySchedule.copyImageLink', 'Copy day image link (for Instagram, etc.)')}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
 
             <TouchableOpacity
               style={[styles.shareSheetFullRow, { borderColor: colors.divider }]}
@@ -2030,6 +2228,35 @@ const MySchedule = () => {
             >
               <Text style={{ color: colors.text.secondary, fontWeight: '600' }}>{t('mySchedule.close', 'Close')}</Text>
             </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={Boolean(removeSessionModal.meeting)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRemoveSessionModal({ meeting: null, slotStartTime: null })}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.removeSessionCard, { backgroundColor: colors.background.paper }]}>
+            <MaterialIcons name="event-busy" size={34} color={colors.primary} />
+            <Text style={[styles.removeSessionTitle, { color: colors.text.primary }]}>
+              {t('mySchedule.removeSessionTitle', 'Remove this session?')}
+            </Text>
+            <Text style={[styles.removeSessionMessage, { color: colors.text.secondary }]}>
+              {t('mySchedule.removeSessionMessage', 'This will remove the session from your day plan. You can undo it briefly after removal.')}
+            </Text>
+            <View style={styles.removeSessionActions}>
+              <TouchableOpacity style={styles.removeSessionCancel} onPress={() => setRemoveSessionModal({ meeting: null, slotStartTime: null })}>
+                <Text style={[styles.removeSessionCancelText, { color: colors.text.secondary }]}>{t('common.cancel', 'Cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.removeSessionConfirm, { backgroundColor: colors.primary }]} onPress={confirmRemoveAgendaSession} disabled={isRemovingSession}>
+                {isRemovingSession ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.removeSessionConfirmText}>{t('common.remove', 'Remove')}</Text>}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -2250,9 +2477,20 @@ const MySchedule = () => {
                                 }
                               ]}>
                                 <View style={styles.timelineHeader}>
-                                  <Text style={[styles.timelineEventTitle, { color: colors.text.primary }]} numberOfLines={2}>
-                                    {meeting.title || t('agenda.messages.untitledEvent')}
-                                  </Text>
+                                  <View style={styles.timelineTitleRow}>
+                                    <Text style={[styles.timelineEventTitle, { color: colors.text.primary }]} numberOfLines={2}>
+                                      {meeting.title || t('agenda.messages.untitledEvent')}
+                                    </Text>
+                                    {isAgendaEvent && (
+                                      <TouchableOpacity
+                                        style={styles.timelineRemoveButton}
+                                        onPress={() => requestRemoveAgendaSession(meeting, slot.startTime)}
+                                        accessibilityLabel={t('mySchedule.removeSession', 'Remove session from plan')}
+                                      >
+                                        <MaterialIcons name="close" size={16} color={colors.text.secondary} />
+                                      </TouchableOpacity>
+                                    )}
+                                  </View>
                                   <View style={[
                                     styles.timelineStatusBadge,
                                     { backgroundColor: statusColor + '20' }
@@ -2350,6 +2588,29 @@ const MySchedule = () => {
                   </Text>
                 </View>
               </View>
+
+              {/* Share this specific day -- same share sheet (link + branded
+                  image + social intents) as the sticky global button, but
+                  scoped to this modal's own date instead of whatever day
+                  happens to be selected on the main screen. */}
+              <TouchableOpacity
+                style={[styles.shareDayButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  const day = daySummaryModal.dayStat!.date;
+                  setDaySummaryModal({ visible: false, dayStat: null });
+                  handleShareMyDay(day, true, true);
+                }}
+                disabled={isSharingDay}
+              >
+                {isSharingDay ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <MaterialIcons name="photo-camera" size={18} color="#FFFFFF" />
+                )}
+                <Text style={styles.shareDayButtonText}>
+                  {t('mySchedule.generateSnapshot', 'Generate shareable agenda snapshot')}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -2401,6 +2662,77 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
+  snapshotPrompt: {
+    textAlign: 'center',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  snapshotFrame: {
+    height: 360,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#08091D',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  snapshotImage: { width: '100%', height: '100%' },
+  snapshotHashpassLogo: {
+    position: 'absolute',
+    zIndex: 2,
+    top: 12,
+    left: 14,
+    width: 92,
+    height: 24,
+  },
+  snapshotEventLogo: {
+    position: 'absolute',
+    zIndex: 2,
+    top: 10,
+    right: 14,
+    width: 92,
+    height: 30,
+  },
+  snapshotZoomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+    marginVertical: 10,
+  },
+  snapshotZoomButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(127,127,127,0.15)',
+  },
+  snapshotZoomLabel: { minWidth: 48, textAlign: 'center', fontSize: 13, fontWeight: '700' },
+  snapshotZoomSymbol: { fontSize: 26, lineHeight: 28, fontWeight: '500' },
+  snapshotConfirm: { textAlign: 'center', fontSize: 14, fontWeight: '700', marginBottom: 10 },
+  snapshotPrimaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  snapshotPrimaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  snapshotSecondaryButton: { alignItems: 'center', paddingTop: 14 },
+  snapshotSecondaryButtonText: { fontSize: 14, fontWeight: '600' },
+  timelineTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, flex: 1 },
+  timelineRemoveButton: { padding: 3, marginTop: -2 },
+  removeSessionCard: { margin: 24, borderRadius: 18, padding: 24, alignItems: 'center' },
+  removeSessionTitle: { fontSize: 20, fontWeight: '800', marginTop: 10, textAlign: 'center' },
+  removeSessionMessage: { fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 8 },
+  removeSessionActions: { flexDirection: 'row', gap: 10, width: '100%', marginTop: 20 },
+  removeSessionCancel: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 13 },
+  removeSessionCancelText: { fontSize: 14, fontWeight: '700' },
+  removeSessionConfirm: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10, paddingVertical: 13 },
+  removeSessionConfirmText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   shareSheetRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -2436,6 +2768,20 @@ const styles = StyleSheet.create({
   shareSheetClose: {
     alignItems: 'center',
     paddingTop: 16,
+  },
+  shareDayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  shareDayButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   scrollContent: {
     flex: 1,

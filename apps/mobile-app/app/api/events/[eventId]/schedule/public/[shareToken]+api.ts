@@ -34,6 +34,16 @@ export async function GET(request: Request) {
       return Response.json({ error: 'This share link is invalid or has expired' }, { status: 404 });
     }
 
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('full_name')
+      .eq('user_id', share.user_id)
+      .maybeSingle();
+    const fullName = typeof profile?.full_name === 'string' ? profile.full_name.trim() : '';
+    const ownerHandle = fullName
+      ? `@${fullName.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '').slice(0, 32)}`
+      : '@hashpass.attendee';
+
     const { data: statuses, error: statusError } = await supabase
       .from('user_agenda_status')
       .select('agenda_id, status')
@@ -45,7 +55,7 @@ export async function GET(request: Request) {
 
     const confirmedIds = (statuses || []).map((s: { agenda_id: string | null }) => s.agenda_id).filter(Boolean);
     if (confirmedIds.length === 0) {
-      return Response.json({ data: [] });
+      return Response.json({ data: [], owner: ownerHandle });
     }
 
     const { data: items, error: agendaError } = await supabase
@@ -56,7 +66,7 @@ export async function GET(request: Request) {
       .order('time', { ascending: true });
     if (agendaError) throw agendaError;
 
-    return Response.json({ data: items || [] });
+    return Response.json({ data: items || [], owner: ownerHandle });
   } catch (error) {
     console.error('[schedule-public] error:', error);
     return Response.json({ error: 'Failed to load shared schedule' }, { status: 500 });

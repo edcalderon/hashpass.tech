@@ -33,6 +33,7 @@ export default function PublicLiveSchedule() {
   const { colors, isDark } = useTheme();
   const { t } = useTranslation('networking');
   const [items, setItems] = useState<PublicScheduleItem[] | null>(null);
+  const [ownerHandle, setOwnerHandle] = useState('@hashpass.attendee');
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,6 +53,7 @@ export default function PublicLiveSchedule() {
       );
       if (response.success) {
         setItems(response.data?.data || []);
+        if (response.data?.owner) setOwnerHandle(response.data.owner);
         setError(null);
         setLastUpdated(new Date());
       } else {
@@ -91,7 +93,12 @@ export default function PublicLiveSchedule() {
       >
         <View style={[styles.hero, { backgroundColor: brand?.accentColor || colors.primary }]}>
           {brand?.logo && <Image source={brand.logo} style={styles.brandLogo} resizeMode="contain" />}
-          <Text style={styles.heroTitle}>{t('mySchedule.myDayAt', 'My schedule at {eventName}', { eventName: brand?.label || eventId }).replace('{eventName}', brand?.label || eventId)}</Text>
+          <Text style={styles.heroTitle}>
+            {t('mySchedule.liveAgendaOf', 'Live agenda of {user} at {eventName}', {
+              user: ownerHandle,
+              eventName: brand?.label || eventId,
+            })}
+          </Text>
           <View style={styles.liveBadge}>
             <View style={styles.liveDot} />
             <Text style={styles.liveBadgeText}>{t('mySchedule.liveUpdating', 'Live — updates automatically')}</Text>

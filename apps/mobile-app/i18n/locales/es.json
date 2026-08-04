@@ -886,7 +886,8 @@
       "downloadImage": "Descargar imagen de mi agenda",
       "copyImageLink": "Copiar enlace de la imagen (para Instagram, etc.)",
       "copyLiveLink": "Copiar enlace de seguimiento en vivo",
-      "imageLinkCopied": "Enlace de la imagen copiado — pégalo en Instagram o donde quieras"
+      "imageLinkCopied": "Enlace de la imagen copiado — pégalo en Instagram o donde quieras",
+      "shareThisDay": "Compartir este día"
     },
     "tips": {
       "title": "Consejos de Networking",

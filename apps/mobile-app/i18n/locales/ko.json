@@ -817,7 +817,8 @@
       "downloadImage": "브랜드 일정 이미지 다운로드",
       "copyImageLink": "이미지 링크 복사 (Instagram 등에 사용)",
       "copyLiveLink": "실시간 추적 링크 복사",
-      "imageLinkCopied": "이미지 링크가 복사되었습니다 — Instagram 등에 붙여넣으세요"
+      "imageLinkCopied": "이미지 링크가 복사되었습니다 — Instagram 등에 붙여넣으세요",
+      "shareThisDay": "이 날 공유하기"
     },
     "tips": {
       "title": "네트워킹 팁",

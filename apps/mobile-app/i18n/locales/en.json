@@ -887,7 +887,8 @@
       "downloadImage": "Download branded agenda image",
       "copyImageLink": "Copy image link (for Instagram, etc.)",
       "copyLiveLink": "Copy live tracking link",
-      "imageLinkCopied": "Image link copied — paste it into Instagram or anywhere else"
+      "imageLinkCopied": "Image link copied — paste it into Instagram or anywhere else",
+      "shareThisDay": "Share this day"
     },
     "tips": {
       "title": "Networking Tips",

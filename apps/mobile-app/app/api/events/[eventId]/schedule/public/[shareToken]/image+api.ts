@@ -1,6 +1,8 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
 import { eventIdFromRequest } from '@/lib/server/event-api';
 import { EVENTS } from '@/config/events';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 // GET /api/events/:eventId/schedule/public/:shareToken/image?day=1 — a
 // branded, shareable image of one day of the user's confirmed schedule,
@@ -17,6 +19,13 @@ const BRAND_COLORS: Record<string, string> = {
   peru2026: '#E85D2A',
   colombia2026: '#F5C542',
   bsl: '#34D399',
+};
+
+const DAY_ACCENTS: Record<string, string[]> = {
+  chile2026: ['#D11A2A', '#F59E0B', '#2563EB'],
+  peru2026: ['#E85D2A', '#14B8A6', '#7C3AED'],
+  colombia2026: ['#F5C542', '#0EA5E9', '#EF4444'],
+  bsl: ['#34D399', '#60A5FA', '#A78BFA'],
 };
 
 const COPY: Record<string, { label: string; fallbackDay: string; cta: string }> = {
@@ -65,7 +74,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const pathParts = url.pathname.split('/').filter(Boolean);
   const shareToken = pathParts[pathParts.length - 2]; // .../public/:shareToken/image
-  const requestedDay = url.searchParams.get('day');
+    const requestedDay = url.searchParams.get('day');
+    const imageDayNumber = Math.max(1, Number.parseInt(requestedDay || '1', 10) || 1);
   const copy = resolveCopy(url.searchParams.get('locale'));
 
   if (!shareToken) {
@@ -84,6 +94,16 @@ export async function GET(request: Request) {
     if (!share) {
       return new Response('This share link is invalid or has expired', { status: 404 });
     }
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('full_name')
+      .eq('user_id', share.user_id)
+      .maybeSingle();
+    const ownerName = typeof profile?.full_name === 'string' ? profile.full_name.trim() : '';
+    const ownerHandle = ownerName
+      ? `@${ownerName.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '').slice(0, 32)}`
+      : '@hashpass.attendee';
 
     const { data: statuses, error: statusError } = await supabase
       .from('user_agenda_status')
@@ -114,7 +134,68 @@ export async function GET(request: Request) {
 
     const event = (EVENTS as any)[eventId];
     const eventName = event?.name || eventId;
-    const brandColor = BRAND_COLORS[eventId] || '#8b3ee8';
+    const eventBrandColor = BRAND_COLORS[eventId] || '#8b3ee8';
+    const dayNumber = Math.max(1, Number.parseInt(day, 10) || 1);
+    const brandColor = DAY_ACCENTS[eventId]?.[(dayNumber - 1) % DAY_ACCENTS[eventId].length] || eventBrandColor;
+    const startDateMatch = event?.eventStartDate?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const startDate = startDateMatch
+      ? new Date(Date.UTC(Number(startDateMatch[1]), Number(startDateMatch[2]) - 1, Number(startDateMatch[3]) + dayNumber - 1))
+      : null;
+    const formattedDate = startDate
+      ? new Intl.DateTimeFormat(url.searchParams.get('locale') || 'en', {
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+        }).format(startDate)
+      : '';
+    const eventHashtag = ({
+      chile2026: '#bsl2026chile',
+      peru2026: '#bsl2026peru',
+      colombia2026: '#bsl2026colombia',
+      bsl: '#bsl2026',
+    } as Record<string, string>)[eventId] || '#hashpass';
+    const publicAssetUrl = (assetPath: string) => {
+      try {
+        return new URL(assetPath, url.origin).toString();
+      } catch {
+        return assetPath;
+      }
+    };
+    const hashpassLogoUrl = publicAssetUrl('/assets/logos/hashpass/logo-full-hashpass-white.svg');
+    const eventLogoUrl = publicAssetUrl(
+      event?.brandingLogo || event?.image || '/assets/logos/bsl/bsl-ontour-pro.svg'
+    );
+    const inlineSvgAsset = async (assetUrl: string) => {
+      try {
+        const assetRelativePath = assetUrl.includes('hashpass')
+          ? 'apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-white.svg'
+          : eventId === 'chile2026'
+            ? 'apps/mobile-app/assets/logos/bsl/bsl-chile-pro.svg'
+            : eventId === 'peru2026'
+              ? 'apps/mobile-app/assets/logos/bsl/bsl-peru-pro.svg'
+              : eventId === 'colombia2026'
+                ? 'apps/mobile-app/assets/logos/bsl/bsl-colombia-pro.svg'
+                : 'apps/mobile-app/assets/logos/bsl/bsl-ontour-pro.svg';
+        let assetSvg: string;
+        try {
+          assetSvg = await readFile(path.resolve(process.cwd(), assetRelativePath), 'utf8');
+        } catch {
+          const assetResponse = await fetch(assetUrl);
+          if (!assetResponse.ok) return assetUrl;
+          assetSvg = await assetResponse.text();
+        }
+        return `data:image/svg+xml;base64,${Buffer.from(assetSvg, 'utf8').toString('base64')}`;
+      } catch {
+        return assetUrl;
+      }
+    };
+    const [hashpassLogoHref, eventLogoHref] = await Promise.all([
+      inlineSvgAsset(hashpassLogoUrl),
+      inlineSvgAsset(eventLogoUrl),
+    ]);
+    const ownerLine = url.searchParams.get('locale')?.toLowerCase().startsWith('es')
+      ? `${ownerHandle} generó esta agenda de seguimiento automáticamente con HASHPASS`
+      : url.searchParams.get('locale')?.toLowerCase().startsWith('ko')
+        ? `${ownerHandle}님이 HASHPASS로 이 추적 일정을 자동 생성했습니다`
+        : `${ownerHandle} generated this tracking agenda automatically using HASHPASS`;
     const tzOffsetMatch = event?.eventStartDate?.match(/([+-]\d{2}:?\d{2})$/);
     const tzOffsetMinutes = tzOffsetMatch
       ? (Number(tzOffsetMatch[1].slice(1, 3)) * 60 + Number(tzOffsetMatch[1].slice(-2))) * (tzOffsetMatch[1][0] === '-' ? -1 : 1)
@@ -131,21 +212,25 @@ export async function GET(request: Request) {
 
     const cardWidth = 1080;
     const cardHeight = 1350;
-    const rowHeight = 96;
-    const listTop = 340;
+    const rowHeight = 110;
+    const titleLines = wrapText(eventName, 28);
+    const titleY = 160;
+    const dayY = titleY + titleLines.length * 52 + 16;
+    const labelY = dayY + (formattedDate ? 80 : 48);
+    const listTop = labelY + 70;
     const maxRows = Math.min(dayItems.length, 7);
 
     const rows = dayItems.slice(0, maxRows).map((item, index) => {
       const y = listTop + index * rowHeight;
-      const titleLines = wrapText(item.title, 42);
+      const titleLines = wrapText(item.title, 38);
       const titleTspans = titleLines
-        .map((line, i) => `<tspan x="120" dy="${i === 0 ? 0 : 26}">${escapeXml(line)}</tspan>`)
+        .map((line, i) => `<tspan x="190" dy="${i === 0 ? 0 : 28}">${escapeXml(line)}</tspan>`)
         .join('');
       return `
         <line x1="60" y1="${y - 20}" x2="${cardWidth - 60}" y2="${y - 20}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
-        <text x="60" y="${y + 10}" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="${brandColor}">${escapeXml(formatClock(item.time))}</text>
-        <text y="${y + 10}" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="#FFFFFF">${titleTspans}</text>
-        ${item.location ? `<text x="120" y="${y + 44}" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="rgba(255,255,255,0.6)">${escapeXml(item.location)}</text>` : ''}
+        <text x="60" y="${y + 10}" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="${brandColor}">${escapeXml(formatClock(item.time))}</text>
+        <text y="${y + 8}" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="600" fill="#FFFFFF">${titleTspans}</text>
+        ${item.location ? `<text x="190" y="${y + (titleLines.length > 1 ? 78 : 52)}" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="rgba(255,255,255,0.6)">${escapeXml(item.location)}</text>` : ''}
       `;
     }).join('');
 
@@ -154,7 +239,7 @@ export async function GET(request: Request) {
       : '';
 
     const svg = `
-<svg width="${cardWidth}" height="${cardHeight}" viewBox="0 0 ${cardWidth} ${cardHeight}" xmlns="http://www.w3.org/2000/svg">
+<svg width="${cardWidth}" height="${cardHeight}" viewBox="0 0 ${cardWidth} ${cardHeight}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#06111F" />
@@ -168,29 +253,41 @@ export async function GET(request: Request) {
   <rect width="${cardWidth}" height="${cardHeight}" fill="url(#bg)" />
   <rect width="${cardWidth}" height="420" fill="url(#heroFade)" />
 
-  <text x="60" y="90" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="800" letter-spacing="4" fill="${brandColor}">HASHPASS</text>
-  <text x="60" y="170" font-family="Helvetica, Arial, sans-serif" font-size="46" font-weight="800" fill="#FFFFFF">${escapeXml(eventName)}</text>
-  <text x="60" y="210" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="600" fill="rgba(255,255,255,0.75)">${escapeXml(dayName || copy.fallbackDay)}</text>
+  <text x="60" y="68" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="3" fill="#FFFFFF">HASHPASS</text>
+  <text x="${cardWidth - 60}" y="68" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="900" letter-spacing="2" fill="#FFFFFF">BSL</text>
+  <image href="${escapeXml(hashpassLogoHref)}" xlink:href="${escapeXml(hashpassLogoHref)}" x="60" y="38" width="190" height="42" preserveAspectRatio="xMinYMid meet" />
+  <image href="${escapeXml(eventLogoHref)}" xlink:href="${escapeXml(eventLogoHref)}" x="760" y="30" width="260" height="82" preserveAspectRatio="xMaxYMid meet" />
+  <text x="60" y="${titleY}" font-family="Helvetica, Arial, sans-serif" font-size="46" font-weight="800" fill="#FFFFFF">
+    ${titleLines.map((line, i) => `<tspan x="60" dy="${i === 0 ? 0 : 52}">${escapeXml(line)}</tspan>`).join('')}
+  </text>
+  <text x="60" y="${dayY}" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="rgba(255,255,255,0.9)">${escapeXml(`DAY ${dayNumber} · ${dayName || copy.fallbackDay}`)}</text>
+  ${formattedDate ? `<text x="60" y="${dayY + 34}" font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="500" fill="rgba(255,255,255,0.62)">${escapeXml(formattedDate)}</text>` : ''}
 
   <g>
-    <rect x="60" y="250" width="14" height="14" rx="7" fill="${brandColor}" />
-    <text x="86" y="262" font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="rgba(255,255,255,0.85)">${escapeXml(copy.label)}</text>
+    <rect x="60" y="${labelY - 12}" width="14" height="14" rx="7" fill="${brandColor}" />
+    <text x="86" y="${labelY}" font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="rgba(255,255,255,0.85)">${escapeXml(copy.label)}</text>
   </g>
 
   ${rows}
   ${overflowNote}
 
-  <rect x="0" y="${cardHeight - 150}" width="${cardWidth}" height="150" fill="${brandColor}" fill-opacity="0.14" />
-  <text x="${cardWidth / 2}" y="${cardHeight - 96}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="800" fill="#FFFFFF">
+  <text x="${cardWidth - 64}" y="${Math.min(cardHeight - 230, listTop + 420)}" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="152" font-weight="900" letter-spacing="8" fill="#FFFFFF" fill-opacity="0.045">BSL</text>
+
+  <rect x="0" y="${cardHeight - 180}" width="${cardWidth}" height="180" fill="${brandColor}" fill-opacity="0.14" />
+  <text x="${cardWidth / 2}" y="${cardHeight - 151}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="rgba(255,255,255,0.72)">${escapeXml(ownerLine)}</text>
+  <text x="${cardWidth / 2}" y="${cardHeight - 112}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="24" font-weight="800" fill="#FFFFFF">
     ${wrapText(copy.cta, 44).map((line, i) => `<tspan x="${cardWidth / 2}" dy="${i === 0 ? 0 : 30}">${escapeXml(line)}</tspan>`).join('')}
   </text>
-  <text x="${cardWidth / 2}" y="${cardHeight - 30}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.6)">HASHPASS.TECH</text>
+  <text x="${cardWidth / 2}" y="${cardHeight - 60}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="${brandColor}">${eventHashtag}</text>
+  <text x="${cardWidth / 2}" y="${cardHeight - 32}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="rgba(255,255,255,0.68)">@hashpass.tech  •  x.com/BlockSummitLA</text>
 </svg>`.trim();
 
     return new Response(svg, {
       status: 200,
       headers: {
         'Content-Type': 'image/svg+xml',
+        'Content-Disposition': `inline; filename="${eventId}-my-agenda-day${imageDayNumber}.svg"`,
+        'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'no-store',
       },
     });
