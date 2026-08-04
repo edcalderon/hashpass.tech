@@ -1211,7 +1211,9 @@
     "labels": {
       "speakers": "Speakers",
       "location": "Location"
-    }
+    },
+    "refresh": "Refresh",
+    "refreshAgenda": "Refresh agenda"
   },
   "notifications": {
     "center": {

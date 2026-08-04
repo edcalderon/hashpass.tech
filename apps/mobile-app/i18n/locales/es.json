@@ -1210,7 +1210,9 @@
     "labels": {
       "speakers": "Oradores",
       "location": "Ubicación"
-    }
+    },
+    "refresh": "Actualizar",
+    "refreshAgenda": "Actualizar agenda"
   },
   "notifications": {
     "center": {

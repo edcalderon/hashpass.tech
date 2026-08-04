@@ -1141,7 +1141,9 @@
     "labels": {
       "speakers": "연사",
       "location": "장소"
-    }
+    },
+    "refresh": "새로고침",
+    "refreshAgenda": "일정 새로고침"
   },
   "notifications": {
     "center": {

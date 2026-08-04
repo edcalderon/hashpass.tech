@@ -1290,6 +1290,22 @@ export default function BSL2025AgendaScreen() {
           eventImage={event?.image}
         />
 
+        {agenda.length > 0 && (
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingTop: 8 }}>
+            <TouchableOpacity
+              onPress={() => { void loadAgenda(); }}
+              disabled={loading}
+              accessibilityLabel={t('refreshAgenda', 'Refresh agenda')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+            >
+              <MaterialIcons name="refresh" size={18} color={colors.primary} style={loading ? { opacity: 0.5 } : undefined} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
+                {t('refresh', 'Refresh')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Tab Navigation - Centered with consistent sizing */}
         {Object.keys(agendaByDay).length > 0 && (
           <View style={styles.tabContainer}>
