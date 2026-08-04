@@ -1141,19 +1141,32 @@ const MySchedule = () => {
                   {isConfirmed ? t('mySchedule.messages.confirmedAttendance') : t('mySchedule.messages.tapToConfirmAttendance')}
                 </Text>
               </View>
-                  {/* Favorite button for agenda events (confirmed or tentative) */}
                   {isAgendaEvent && (
-                    <TouchableOpacity
-                      onPress={() => handleToggleFavorite(meeting)}
-                      style={{ padding: 4 }}
-                    >
-                      <MaterialIcons
-                        name={isFav ? 'star' : 'star-border'}
-                        size={20}
-                        color={isFav ? '#FFD700' : colors.text.secondary}
-                      />
-                    </TouchableOpacity>
-                  )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  {/* Opens the official session card in the main Agenda tab, for full details (speakers, description) this compact card doesn't show. */}
+                  <TouchableOpacity
+                    onPress={() => router.push(`/events/${eventId}/agenda?session=${encodeURIComponent(meeting.id)}` as any)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 2, padding: 4 }}
+                    accessibilityLabel={t('mySchedule.viewInAgenda', 'View in agenda')}
+                  >
+                    <MaterialIcons name="open-in-new" size={16} color={colors.primary} />
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: colors.primary }}>
+                      {t('mySchedule.viewInAgenda', 'View in agenda')}
+                    </Text>
+                  </TouchableOpacity>
+                  {/* Favorite button for agenda events (confirmed or tentative) */}
+                  <TouchableOpacity
+                    onPress={() => handleToggleFavorite(meeting)}
+                    style={{ padding: 4 }}
+                  >
+                    <MaterialIcons
+                      name={isFav ? 'star' : 'star-border'}
+                      size={20}
+                      color={isFav ? '#FFD700' : colors.text.secondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
             {(meeting?.participants?.length ?? 0) > 0 && (
               <View style={[

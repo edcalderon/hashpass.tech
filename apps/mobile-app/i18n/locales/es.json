@@ -864,7 +864,8 @@
       "reload": "Recargar",
       "reloadAgenda": "Recargar agenda",
       "checkAgendaFirst": "Revisa tu agenda primero",
-      "collapseAll": "Colapsar todo"
+      "collapseAll": "Colapsar todo",
+      "viewInAgenda": "Ver en la agenda"
     },
     "tips": {
       "title": "Consejos de Networking",
