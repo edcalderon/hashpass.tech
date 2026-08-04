@@ -348,7 +348,7 @@ export async function GET(request: Request) {
   ${rows}
   ${overflowNote}
 
-  <text x="${cardWidth - 64}" y="${Math.min(cardHeight - 230, listTop + 420)}" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="152" font-weight="900" letter-spacing="8" fill="#FFFFFF" fill-opacity="0.045">BSL</text>
+  <text x="${cardWidth - 64}" y="${Math.min(cardHeight - 230, listTop + 420)}" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="116" font-weight="900" letter-spacing="5" fill="#FFFFFF" fill-opacity="0.045">#BSL2026</text>
 
   <rect x="0" y="${cardHeight - 180}" width="${cardWidth}" height="180" fill="${brandColor}" fill-opacity="0.14" />
   <text x="${cardWidth / 2}" y="${cardHeight - 151}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="rgba(255,255,255,0.72)">${escapeXml(ownerLine)}</text>
