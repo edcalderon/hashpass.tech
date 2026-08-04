@@ -1,3 +1,12 @@
+## [1.8.318](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.317...v1.8.318) (2026-08-04)
+
+
+### Bug Fixes
+
+* **mobile:** distinguish "no auth payload" from "exchange failed" in magic-link errors ([7315726](https://github.com/hashpass-tech/hashpass.tech/commit/7315726a12c4c56741c654e66bcfb2805e23d884))
+### Release Highlights
+- distinguish "no auth payload" from "exchange failed" in magic-link errors
+
 ## [1.8.317](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.316...v1.8.317) (2026-08-04)
 
 

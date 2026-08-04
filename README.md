@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.317)
+## 📋 Latest Changes (v1.8.318)
 
 ### Bug Fixes
 
-* **mobile:** stop mislabeling web update-checks as Play Store, add a real native update modal ([bc5f900](https://github.com/hashpass-tech/hashpass.tech/commit/bc5f900429b6ec3c8a8b6ebe51f902b8ad4484c5))
+* **mobile:** distinguish "no auth payload" from "exchange failed" in magic-link errors ([7315726](https://github.com/hashpass-tech/hashpass.tech/commit/7315726a12c4c56741c654e66bcfb2805e23d884))
 ### Release Highlights
-- stop mislabeling web update-checks as Play Store, add a real native update modal
+- distinguish "no auth payload" from "exchange failed" in magic-link errors
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
