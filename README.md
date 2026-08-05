@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.324)
+## 📋 Latest Changes (v1.8.325)
 
 ### Bug Fixes
 
-* **native:** restore pass and schedule flows ([6b281f6](https://github.com/hashpass-tech/hashpass.tech/commit/6b281f6b576e9c35b1e509945d142e97b95de57f))
+* **landing:** keep brand logo readable in light mode ([dcffb8f](https://github.com/hashpass-tech/hashpass.tech/commit/dcffb8f755091374064357a6826f34a880f5dd1d))
 ### Release Highlights
-- restore pass and schedule flows
+- keep brand logo readable in light mode
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

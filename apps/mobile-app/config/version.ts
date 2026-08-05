@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608050327, // Updated to current timestamp
+  buildNumber: 202608050353, // Updated to current timestamp
   releaseDate: '2026-08-05',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,14 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'restore pass and schedule flows'
+    'keep brand logo readable in light mode'
   ],
   breakingChanges: [],
-  notes: 'restore pass and schedule flows'
+  notes: 'keep brand logo readable in light mode'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.325': {
+    version: '1.8.325',
+    buildNumber: 202608050353,
+    releaseDate: '2026-08-05',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'keep brand logo readable in light mode'
+    ],
+    breakingChanges: [],
+    notes: 'keep brand logo readable in light mode'
+  },
   '1.8.324': {
     version: '1.8.324',
     buildNumber: 202608050327,
