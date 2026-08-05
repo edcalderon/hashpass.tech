@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 
 import React from 'react';
+import { Linking } from 'react-native';
 
 const mockGetUserPassInfo = jest.fn();
 const mockGetEventPassTiers = jest.fn();
@@ -150,6 +151,33 @@ describe('PassesDisplay', () => {
       pathname: '/(shared)/dashboard/pass-details',
       params: { passId: 'pass-1', eventId: 'chile2026' },
     });
+  });
+
+  it('sends native pass purchases to the Blockchain Summit site instead of a placeholder alert', async () => {
+    mockGetUserPassInfo.mockResolvedValue(null);
+    const canOpenUrl = jest.fn().mockResolvedValue(true);
+    const openUrl = jest.fn().mockResolvedValue(true);
+    Object.assign(Linking as any, { canOpenURL: canOpenUrl, openURL: openUrl });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<PassesDisplay mode="speaker" eventId="chile2026" />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+
+    const price = renderer.root.findAllByType('Text').find((node: any) => textContent(node) === '$99');
+    expect(price).toBeDefined();
+    let purchaseButton = price.parent;
+    while (purchaseButton && typeof purchaseButton.props?.onPress !== 'function') {
+      purchaseButton = purchaseButton.parent;
+    }
+    await act(async () => purchaseButton.props.onPress());
+
+    expect(canOpenUrl).toHaveBeenCalledWith('https://blockchainsummit.la');
+    expect(openUrl).toHaveBeenCalledWith('https://blockchainsummit.la');
   });
 
   it('formats configured fractional tier prices without mutating the renderer environment', () => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '../lib/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
@@ -86,7 +86,7 @@ function PassesDisplayInner({
 }: PassesDisplayProps) {
   const { t: translate } = useTranslation('passes');
   const { colors } = useTheme();
-  const { dbUserId } = useAuth();
+  const { dbUserId, retryDatabaseSession } = useAuth();
   const router = useRouter();
   const [passInfo, setPassInfo] = useState<PassInfo | null>(null);
   const [requestLimits, setRequestLimits] = useState<PassRequestLimits | null>(null);
@@ -204,9 +204,15 @@ function PassesDisplayInner({
 
   const loadPassInfo = async () => {
     if (!dbUserId) {
-      setLoading(false);
-      setPassInfo(null);
-      setInitialLoad(false);
+      // Native Better Auth sign-in completes just before its Supabase session
+      // bridge is persisted. Do not render a false empty wallet in between.
+      setLoading(true);
+      try {
+        await retryDatabaseSession?.();
+      } finally {
+        setLoading(false);
+        setInitialLoad(false);
+      }
       return;
     }
 
@@ -224,6 +230,19 @@ function PassesDisplayInner({
       setTimeout(() => {
         setInitialLoad(false);
       }, 300);
+    }
+  };
+
+  const openEventPurchaseSite = async () => {
+    const purchaseUrl = 'https://blockchainsummit.la';
+    try {
+      if (!(await Linking.canOpenURL(purchaseUrl))) throw new Error('Unsupported purchase URL');
+      await Linking.openURL(purchaseUrl);
+    } catch {
+      Alert.alert(
+        t({ id: 'passes.alert.purchaseTitle', message: 'Visit Blockchain Summit' }),
+        t({ id: 'passes.alert.purchaseMessage', message: 'Visit blockchainsummit.la for more information and to purchase your pass.' }),
+      );
     }
   };
 
@@ -605,10 +624,7 @@ function PassesDisplayInner({
                     borderWidth: 1,
                     borderColor: colors.divider
                   }}
-                  onPress={() => {
-                    // TODO: Implement real payment flow
-                    Alert.alert(t({ id: 'passes.alert.paymentTitle', message: 'Payment Integration' }), t({ id: 'passes.alert.paymentMessage', message: 'Payment system will be implemented here' }));
-                  }}
+                  onPress={openEventPurchaseSite}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View style={{
@@ -642,10 +658,7 @@ function PassesDisplayInner({
                     borderWidth: 1,
                     borderColor: colors.divider
                   }}
-                  onPress={() => {
-                    // TODO: Implement real payment flow
-                    Alert.alert(t({ id: 'passes.alert.paymentTitle', message: 'Payment Integration' }), t({ id: 'passes.alert.paymentMessage', message: 'Payment system will be implemented here' }));
-                  }}
+                  onPress={openEventPurchaseSite}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View style={{
@@ -679,10 +692,7 @@ function PassesDisplayInner({
                     borderWidth: 1,
                     borderColor: colors.divider
                   }}
-                  onPress={() => {
-                    // TODO: Implement real payment flow
-                    Alert.alert(t({ id: 'passes.alert.paymentTitle', message: 'Payment Integration' }), t({ id: 'passes.alert.paymentMessage', message: 'Payment system will be implemented here' }));
-                  }}
+                  onPress={openEventPurchaseSite}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View style={{

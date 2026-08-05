@@ -27,6 +27,9 @@
 // Keep this dependency in the changed-file typecheck set for schedule actions.
 // Social sharing changes also consume the shared event-time parser.
 export const DEFAULT_EVENT_TZ_OFFSET = '-05:00';
+// Re-exported by this shared module for agenda and schedule consumers; keep
+// it colocated with parseEventISO so incremental native typechecks include
+// the complete event-time contract.
 
 /** Extracts an event's real fixed UTC offset from its eventStartDate (e.g. "2026-08-05T09:00:00-04:00" -> "-04:00"). */
 export const getEventTzOffset = (eventStartDate?: string | null): string =>

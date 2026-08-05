@@ -429,6 +429,10 @@ let supabaseBootstrapPromise: ReturnType<typeof supabase.auth.getSession> | null
 // to an empty bridge result and should be retried by a later useAuth mount.
 let betterAuthSupabaseBootstrapPromise:
   Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>> | null = null;
+// The pass wallet can explicitly retry the companion Supabase session after
+// native sign-in. Its callback is installed by the active auth bootstrap so
+// a wallet retry recovers identity as well as reloading pass rows.
+let retryDatabaseSessionBridge: (() => Promise<void>) | null = null;
 // dbUserId is a module-level store rather than per-instance state, read
 // through useSyncExternalStore below. That's React's purpose-built API for
 // subscribing to an external mutable store, and it's what keeps a broadcast
@@ -523,6 +527,10 @@ export const useAuth = () => {
     subscribeToDbUserId,
     getDbUserIdSnapshot,
     getDbUserIdSnapshot,
+  );
+  const retryDatabaseSession = useCallback(
+    () => retryDatabaseSessionBridge?.() ?? Promise.resolve(),
+    [],
   );
   const isInitializedRef = useRef(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
@@ -713,6 +721,25 @@ export const useAuth = () => {
         : shouldBootstrapNativeBetterAuth
           ? getGoogleBetterAuthProvider()
           : null;
+
+    const retryBridge = async () => {
+      if (!betterAuthProvider || !isActive) return;
+
+      let result = await supabase.auth.getSession();
+      if (!result.data?.session) {
+        await withTimeout(
+          ensureSupabaseBridgeSession(betterAuthProvider),
+          SUPABASE_BRIDGE_BOOTSTRAP_TIMEOUT_MS,
+          'supabaseBridgeWalletRetry',
+        );
+        result = await supabase.auth.getSession();
+      }
+
+      const session = result.data?.session ?? null;
+      broadcastDbUserId(session?.user?.id ?? null);
+      sendProviderResolved('supabase', readSupabaseStateFromSession(session));
+    };
+    retryDatabaseSessionBridge = retryBridge;
 
     // Subscribe to Directus/provider state changes
     unsubscribeRef.current = authService.onAuthStateChange((session: AuthSession | null) => {
@@ -909,6 +936,9 @@ export const useAuth = () => {
 
     return () => {
       isActive = false;
+      if (retryDatabaseSessionBridge === retryBridge) {
+        retryDatabaseSessionBridge = null;
+      }
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
@@ -1518,5 +1548,6 @@ export const useAuth = () => {
     // against a Supabase-native table (passes, meeting_requests,
     // user_tutorial_progress, notifications, etc.).
     dbUserId,
+    retryDatabaseSession,
   };
 };

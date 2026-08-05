@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, InteractionManager } from 'react-native';
 import { useEvent } from '@contexts/EventContext';
 import { useTheme } from '../../../hooks/useTheme';
 // lib/vector-icons routes web to SVG-based Lucide icons instead of the raw
@@ -30,8 +30,6 @@ import * as Haptics from 'expo-haptics';
 import { parseISO } from 'date-fns';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useTranslation, getCurrentLocale } from '../../../i18n/i18n';
-
-const { width } = Dimensions.get('window');
 
 // Custom filter logic for agenda items
 const customAgendaFilterLogic = (
@@ -90,13 +88,12 @@ const customAgendaFilterLogic = (
 };
 
 export default function BSL2025AgendaScreen() {
-  const isCompactLayout = width < 600;
   const { event } = useEvent();
   const { isDark, colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ session?: string; scrollTo?: string; day?: string }>();
   const styles = getStyles(isDark, colors);
-  const { user } = useAuth();
+  const { user, retryDatabaseSession } = useAuth();
   // The event's own fixed timezone (e.g. Chile is -04:00), not the hardcoded
   // -05:00 Medellín-hub default that EVENT_TZ_OFFSET falls back to. Times
   // must render in this offset regardless of the viewer's device/browser
@@ -199,12 +196,6 @@ export default function BSL2025AgendaScreen() {
         { key: 'registration', label: t('filter.registration'), icon: 'person-add' },
       ],
     },
-    {
-      key: 'speakers',
-      label: t('filter.speakers'),
-      type: 'chips' as const,
-      options: [],
-    },
   ];
 
   const filterAgendaItems = (items: AgendaItem[], filters: { search?: string; type?: AgendaType | 'all'; speakers?: string }) => {
@@ -219,9 +210,6 @@ export default function BSL2025AgendaScreen() {
     }
     if (filters?.type) {
       items = items.filter((it) => it.type === filters.type);
-    }
-    if (filters?.speakers) {
-      items = items.filter((it) => (it.speakers || []).includes(filters?.speakers || ''));
     }
     return items;
   };
@@ -849,6 +837,9 @@ export default function BSL2025AgendaScreen() {
         return;
       }
       try {
+        // Native Better Auth may be authenticated before its Supabase bearer
+        // is available. Refresh it before personal agenda reads/writes.
+        await retryDatabaseSession?.();
         const response = await apiClient.request(agendaStatusApiPath, {
           skipEventSegment: true,
         });
@@ -878,7 +869,7 @@ export default function BSL2025AgendaScreen() {
     };
 
     loadUserAgendaStatus();
-  }, [user, eventId, agendaStatusApiPath]);
+  }, [user, eventId, agendaStatusApiPath, retryDatabaseSession]);
 
   // Handle toggle confirmation
   /* istanbul ignore next -- exercised through the native/web agenda interaction flow */
@@ -897,6 +888,7 @@ export default function BSL2025AgendaScreen() {
     const newStatus = requestedStatus ?? (currentStatus === 'confirmed' ? 'tentative' : 'confirmed');
     
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(agendaStatusApiPath, {
         skipEventSegment: true,
         method: 'POST',
@@ -933,6 +925,7 @@ export default function BSL2025AgendaScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(agendaStatusApiPath, {
         skipEventSegment: true,
         method: 'POST',
@@ -1226,10 +1219,10 @@ export default function BSL2025AgendaScreen() {
             return null;
           })()}
 
-          <View style={[styles.actionButtons, isCompactLayout && styles.actionButtonsCompact]}>
+          <View style={styles.actionButtons}>
             <TouchableOpacity
               onPress={() => handleToggleFavorite(item)}
-              style={[styles.actionButton, isCompactLayout && styles.actionButtonCompact]}
+              style={styles.actionButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityRole="button"
               accessibilityLabel={isFavorite ? t('actions.removeFromFavorites', 'Remove from favorites') : t('actions.addToFavorites', 'Add to favorites')}
@@ -1245,7 +1238,7 @@ export default function BSL2025AgendaScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleAgendaAction(item, startTime)}
-              style={[styles.actionButton, isCompactLayout && styles.actionButtonCompact]}
+              style={styles.actionButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityRole="button"
               accessibilityLabel={isConfirmed ? t('actions.removeFromAgenda', 'Remove from agenda') : t('actions.addToAgenda', 'Add to agenda')}
@@ -1751,17 +1744,13 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
     marginTop: 16,
     paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: colors.divider,
-  },
-  actionButtonsCompact: {
-    width: '100%',
-    flexDirection: 'column',
-    gap: 8,
   },
   actionButton: {
     flex: 1,
@@ -1769,20 +1758,16 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    minHeight: 44,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    minHeight: 38,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.divider,
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : colors.background.paper,
   },
-  actionButtonCompact: {
-    flex: 0,
-    width: '100%',
-  },
   actionButtonLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.1,
   },

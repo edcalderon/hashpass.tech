@@ -15,6 +15,7 @@ const mockShowInfo = jest.fn();
 const mockRouterPush = jest.fn();
 const mockRouterReplace = jest.fn();
 const mockGetUserPassInfo = jest.fn();
+const mockRetryDatabaseSession = jest.fn();
 
 let mockParams: { id?: string } = { id: 'speaker-1' };
 let mockEventSpeakers: Array<Record<string, unknown>> = [];
@@ -194,6 +195,9 @@ describe('speaker detail screen', () => {
     mockRouterPush.mockReset();
     mockRouterReplace.mockReset();
     mockGetUserPassInfo.mockReset();
+    mockRetryDatabaseSession.mockReset();
+    mockRetryDatabaseSession.mockResolvedValue(undefined);
+    mockAuthState = { ...mockAuthState, retryDatabaseSession: mockRetryDatabaseSession } as any;
     mockGetUserPassInfo.mockResolvedValue({ pass_type: 'business' });
     jest.spyOn(console, 'error').mockImplementation(() => undefined);
     jest.spyOn(console, 'log').mockImplementation(() => undefined);
@@ -378,6 +382,7 @@ describe('speaker detail screen', () => {
     expect(limitsCall).toBeGreaterThanOrEqual(0);
     expect(requestCall).toBeGreaterThanOrEqual(0);
     expect(limitsCall).toBeLessThan(requestCall);
+    expect(mockRetryDatabaseSession).toHaveBeenCalled();
     expect(mockApiRequest).toHaveBeenCalledWith(
       'events/bsl/meetings/requests',
       expect.objectContaining({

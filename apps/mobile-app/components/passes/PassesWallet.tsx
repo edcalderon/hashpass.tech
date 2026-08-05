@@ -131,7 +131,7 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   layout = 'stacked',
 }) => {
   const { colors, isDark } = useTheme();
-  const { dbUserId } = useAuth();
+  const { dbUserId, retryDatabaseSession } = useAuth();
   const { t } = useTranslation('passes');
   const { width: windowWidth } = useWindowDimensions();
 
@@ -257,12 +257,16 @@ const PassesWallet: React.FC<PassesWalletProps> = ({
   const handleSearchChange = useCallback(() => {}, []);
 
   const handleRetry = useCallback(() => {
+    // A native Better Auth session can survive an interrupted companion
+    // Supabase bridge. Retrying the wallet must retry that bridge too;
+    // otherwise the button only repeats a request that cannot authenticate.
+    void retryDatabaseSession?.();
     setHasFilterResult(false);
     setLoadError(false);
     setLoadTimedOut(false);
     if (passes.length > 0) setIsRefreshing(true);
     setRetryNonce((current) => current + 1);
-  }, [passes.length]);
+  }, [passes.length, retryDatabaseSession]);
 
   const handleRestoreIncludedPasses = useCallback(async (): Promise<boolean> => {
     if (!dbUserId || restoringIncludedPasses) return false;

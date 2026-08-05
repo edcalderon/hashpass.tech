@@ -83,7 +83,7 @@ export default function SpeakerDetail() {
   const meetingRequestsPath = eventApiPath(eventId, 'meetings/requests');
   const meetingRequestSlotsPath = eventApiPath(eventId, 'meetings/requests/slots');
   const meetingRequestLimitsPath = eventApiPath(eventId, 'meetings/limits');
-  const { user, isLoggedIn, dbUserId } = useAuth();
+  const { user, isLoggedIn, dbUserId, retryDatabaseSession } = useAuth();
   const { t } = useTranslation('networking');
   const router = useRouter();
   const { showSuccess, showError, showInfo } = useToastHelpers();
@@ -334,6 +334,7 @@ export default function SpeakerDetail() {
 
     setLoadingRequestStatus(true);
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(meetingRequestsPath, {
         skipEventSegment: true,
         ...(isCurrentUserSpeaker ? {} : { params: { speakerId: speaker.id } }),
@@ -431,6 +432,7 @@ export default function SpeakerDetail() {
     setShowSlotPicker(true);
     setLoadingSlots(true);
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(meetingRequestSlotsPath, {
         skipEventSegment: true,
         params: {
@@ -459,6 +461,7 @@ export default function SpeakerDetail() {
 
     setIsAcceptingRequest(true);
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(meetingRequestsPath, {
         skipEventSegment: true,
         method: 'PATCH',
@@ -496,6 +499,7 @@ export default function SpeakerDetail() {
     if (!dbUserId || !isCurrentUserSpeaker) return;
     
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(meetingRequestsPath, {
         skipEventSegment: true,
         method: 'PATCH',
@@ -520,6 +524,7 @@ export default function SpeakerDetail() {
     if (!dbUserId || !isCurrentUserSpeaker) return;
     
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(meetingRequestsPath, {
         skipEventSegment: true,
         method: 'PATCH',
@@ -551,6 +556,7 @@ export default function SpeakerDetail() {
     setIsCancellingRequest(true);
 
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(meetingRequestsPath, {
         skipEventSegment: true,
         method: 'PATCH',
@@ -620,6 +626,7 @@ export default function SpeakerDetail() {
     if (!dbUserId || !speaker) return;
     setLoadingRequestLimits(true);
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(meetingRequestLimitsPath, {
         skipEventSegment: true,
       });
@@ -882,6 +889,7 @@ export default function SpeakerDetail() {
     // This keeps the browser independent of the database provider and prevents
     // stale limits from allowing a request after the initial screen load.
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(meetingRequestLimitsPath, {
         skipEventSegment: true,
       });

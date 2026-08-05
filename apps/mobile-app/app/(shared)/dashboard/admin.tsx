@@ -81,6 +81,14 @@ interface PassClaimCode {
   created_at: string;
 }
 
+// These are intentionally public, reusable QA campaigns. Their raw values
+// are not read from the database (only SHA-256 hashes are stored there), so
+// operations can see exactly which native redemption codes are safe to test.
+const EVENT_TEST_REDEMPTION_CODES: Record<string, { code: string; label: string }[]> = {
+  chile2026: [{ code: "GENERALCHILE2026", label: "Reusable General test code" }],
+  colombia2026: [{ code: "GENERALCOLOMBIA2026", label: "Reusable General test code" }],
+};
+
 interface User {
   id: string;
   email?: string;
@@ -1505,6 +1513,7 @@ export default function AdminPanel() {
           <PassCodeManagementTab
             styles={styles}
             colors={colors}
+            eventId={selectedEventId}
             codes={passClaimCodes}
             loading={passCodesLoading}
             onCreate={() => setShowCreatePassCodeModal(true)}
@@ -2575,12 +2584,14 @@ function PassTierSettings({
 function PassCodeManagementTab({
   styles,
   colors,
+  eventId,
   codes,
   loading,
   onCreate,
   onUpdateStatus,
   onRefresh,
 }: any) {
+  const testCodes = EVENT_TEST_REDEMPTION_CODES[eventId] ?? [];
   return (
     <View style={styles.tabContent}>
       <Text style={[styles.passInfo, { marginBottom: 12 }]}>
@@ -2591,6 +2602,20 @@ function PassCodeManagementTab({
         <MaterialIcons name="add" size={24} color="#fff" />
         <Text style={styles.createButtonText}>Create Pass Code</Text>
       </TouchableOpacity>
+      {testCodes.length > 0 && (
+        <View style={[styles.passCard, { marginBottom: 12 }]}>
+          <Text style={styles.passNumber}>Native redemption test codes</Text>
+          <Text style={styles.passInfo}>
+            Use these reusable General codes on a signed-in mobile account.
+          </Text>
+          {testCodes.map((testCode) => (
+            <View key={testCode.code} style={{ marginTop: 10 }}>
+              <Text style={[styles.passNumber, { fontSize: 16 }]}>{testCode.code}</Text>
+              <Text style={styles.passInfo}>{testCode.label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
       <TouchableOpacity
         style={[
           styles.actionButton,
