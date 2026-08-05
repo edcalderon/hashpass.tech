@@ -42,7 +42,6 @@ export interface LampBrandingConfig {
 // arbitrary `/assets/...` paths, and SVG imports can be interpreted by Metro as
 // directory requests (`/logos/bsl`), producing ENOENT and blank carousel cards.
 const HASHPASS_DARK_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-white-cyan.webp');
-const HASHPASS_LIGHT_LOGO = require('../assets/logos/hashpass/logo-full-hashpass-black.webp');
 const BSL_WHITE_BRAND_LOGO = require('../assets/logos/bsl/bsl-white.webp');
 const BSL_ONTOUR_LOGO = require('../assets/logos/bsl/bsl-ontour-pro.webp');
 const BSL_PERU_LOGO = require('../assets/logos/bsl/bsl-peru-pro.webp');
@@ -56,7 +55,10 @@ const MAIN_HASHPASS_LOGO = {
   id: 'hashpass-main',
   name: 'HASHPASS',
   darkSrc: HASHPASS_DARK_LOGO,
-  lightSrc: HASHPASS_LIGHT_LOGO,
+  // The landing hero is intentionally a dark brand surface in both app
+  // themes. Its light-theme logo must therefore remain the white/cyan mark;
+  // using the black wordmark here made the logo disappear against the hero.
+  lightSrc: HASHPASS_DARK_LOGO,
   backgroundColor: LOGO_SLIDE_BACKGROUND,
   accentColor: '#6FDDFD',
 };
@@ -171,12 +173,10 @@ export default function EventBannerCarousel({
       logoId: MAIN_HASHPASS_LOGO.id,
       logoSrcDark: MAIN_HASHPASS_LOGO.darkSrc,
       logoSrcLight: MAIN_HASHPASS_LOGO.lightSrc,
-      // Unlike the other logo slides (always-white logo on an always-dark
-      // backdrop), this one switches the logo itself between black (light
-      // theme) and white/cyan (dark theme) -- so the backdrop must switch
-      // too, or light mode pairs a black logo with a permanently dark
-      // background and it goes unreadable.
-      backgroundColor: isDark ? MAIN_HASHPASS_LOGO.backgroundColor : '#FFFFFF',
+      // This is a branded dark hero rather than a theme-colored content
+      // surface. Keep its background and logo contrast paired in light and
+      // dark mode, just like the BSL logo slides below.
+      backgroundColor: MAIN_HASHPASS_LOGO.backgroundColor,
       accentColor: MAIN_HASHPASS_LOGO.accentColor,
     },
     // Add BSL plain logo second

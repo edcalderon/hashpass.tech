@@ -1,3 +1,12 @@
+## [1.8.325](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.324...v1.8.325) (2026-08-05)
+
+
+### Bug Fixes
+
+* **landing:** keep brand logo readable in light mode ([dcffb8f](https://github.com/hashpass-tech/hashpass.tech/commit/dcffb8f755091374064357a6826f34a880f5dd1d))
+### Release Highlights
+- keep brand logo readable in light mode
+
 ## [1.8.324](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.323...v1.8.324) (2026-08-05)
 
 

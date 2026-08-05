@@ -35,6 +35,26 @@ treatment because no raster counterpart existed for them yet — the
 only option available, and shipped anyway since nobody caught it on web
 during review.
 
+## HASHPASS landing hero: use the visible foreground, not the filename
+
+The HASHPASS wordmark has a legacy naming divergence that is easy to get
+wrong:
+
+- `logo-full-hashpass-black.svg` renders **white letters with a red mark**.
+  It is the canonical web asset for the dark landing hero.
+- `logo-full-hashpass-black.webp` renders **dark letters with a red mark**.
+  It is suitable for a light surface, not the landing hero.
+- `logo-full-hashpass-white-cyan.webp` renders **white letters with a cyan
+  mark**. It is the compatible native fallback because React Native's plain
+  `Image` cannot decode SVG.
+
+Do not select these files from their historical `black`/`white` names. Use
+the semantically named exports in `apps/mobile-app/lib/hashpass-logo.ts`.
+`getHashpassStaticHeroLogo()` deliberately returns the verified
+`logo-full-hashpass-black.svg` on web and the white-letter raster fallback on
+Android/iOS, regardless of the surrounding application theme: the landing
+hero itself is always dark.
+
 ## The fix (2026-07-29)
 
 Rasterized all six affected SVGs with `sharp` (already a repo
