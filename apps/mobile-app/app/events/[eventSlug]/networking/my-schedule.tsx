@@ -119,7 +119,7 @@ const addMinutes = (date: Date, minutes: number): Date => {
 
 const MySchedule = () => {
   const { colors, isDark } = useTheme();
-  const { dbUserId, user } = useAuth();
+  const { dbUserId, user, retryDatabaseSession } = useAuth();
   const { event } = useEvent();
   const eventId = event?.id || 'bsl';
   const agendaApiPath = eventApiPath(eventId, 'agenda');
@@ -266,14 +266,34 @@ const MySchedule = () => {
   // Load user confirmation statuses for agenda events, meetings, and free slots
   const [isReloadingStatus, setIsReloadingStatus] = useState(false);
   const loadUserScheduleStatus = useCallback(async () => {
-    if (!registryUserId) {
+    if (!user && !registryUserId) {
       setUserAgendaStatus({});
       setUserMeetingStatus({});
       setUserFreeSlotStatus({});
+      setFavoriteStatus({});
       return;
     }
     setIsReloadingStatus(true);
     try {
+      // Agenda status is owned by the authenticated event API. Native must
+      // not depend on a direct Supabase query racing the Better Auth bridge.
+      await retryDatabaseSession?.();
+      const agendaResponse = await apiClient.request(eventApiPath(eventId, 'agenda/status'), {
+        skipEventSegment: true,
+      });
+      const apiAgendaStatus: Record<string, 'tentative' | 'confirmed'> = {};
+      const apiFavorites: Record<string, boolean> = {};
+      if (agendaResponse?.success) {
+        ((agendaResponse.data as any)?.data || []).forEach((item: any) => {
+          if (!item.agenda_id) return;
+          apiAgendaStatus[item.agenda_id] = item.status === 'unconfirmed' ? 'tentative' : item.status;
+          if (item.is_favorite) apiFavorites[item.agenda_id] = true;
+        });
+        setUserAgendaStatus(apiAgendaStatus);
+        setFavoriteStatus(apiFavorites);
+      }
+
+      if (!registryUserId) return;
       const { data, error } = await supabase
         .from('user_agenda_status')
         .select('agenda_id, meeting_id, slot_time, status, slot_status, is_favorite')
@@ -310,16 +330,16 @@ const MySchedule = () => {
         }
       });
 
-      setUserAgendaStatus(agendaStatusMap);
+      setUserAgendaStatus({ ...apiAgendaStatus, ...agendaStatusMap });
       setUserMeetingStatus(meetingStatusMap);
       setUserFreeSlotStatus(freeSlotStatusMap);
-      setFavoriteStatus(favoriteMap);
+      setFavoriteStatus({ ...apiFavorites, ...favoriteMap });
     } catch (e) {
       console.error('Error loading user schedule status:', e);
     } finally {
       setIsReloadingStatus(false);
     }
-  }, [registryUserId, eventId]);
+  }, [registryUserId, eventId, user, retryDatabaseSession]);
 
   useEffect(() => {
     loadUserScheduleStatus();
@@ -792,11 +812,23 @@ const MySchedule = () => {
 
   // Handle schedule slot confirmation/unconfirmation
   const handleToggleConfirmation = async (meeting: Meeting, slotStartTime: Date) => {
-    if (!registryUserId) return;
+    if (!user) return;
 
-    setIsConfirming(true);
     const isAgendaEvent = (meeting as any).isAgendaEvent;
     const isFreeSlot = (meeting as any).isFreeSlot;
+
+    // Agenda events are written through the authenticated event API, which
+    // resolves the user server-side. Free slots and personal meetings still
+    // use the legacy registry tables and must wait for their registry ID.
+    if (!isAgendaEvent && !registryUserId) {
+      showWarning(
+        t('mySchedule.connectingTitle', 'Schedule still connecting'),
+        t('mySchedule.connectingMessage', 'Please try again in a moment.')
+      );
+      return;
+    }
+
+    setIsConfirming(true);
 
     // Handle free slots differently
     if (isFreeSlot) {
@@ -876,39 +908,13 @@ const MySchedule = () => {
     
     try {
       if (isAgendaEvent) {
-        // Handle agenda event
-        const { data: existing } = await supabase
-          .from('user_agenda_status')
-          .select('id')
-          .eq('user_id', registryUserId)
-          .eq('event_id', eventId)
-          .eq('agenda_id', meeting.id)
-          .maybeSingle();
-
-        if (existing) {
-          const { error } = await (supabase
-            .from('user_agenda_status') as any)
-            .update({
-              status: newStatus,
-              confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', (existing as any).id);
-
-          if (error) throw error;
-        } else {
-          const { error } = await (supabase
-            .from('user_agenda_status') as any)
-            .insert({
-              user_id: registryUserId,
-              agenda_id: meeting.id,
-              event_id: eventId,
-              status: newStatus,
-              confirmed_at: newStatus === 'confirmed' ? new Date().toISOString() : null,
-            });
-
-          if (error) throw error;
-        }
+        await retryDatabaseSession?.();
+        const response = await apiClient.request(eventApiPath(eventId, 'agenda/status'), {
+          skipEventSegment: true,
+          method: 'POST',
+          body: { agendaId: meeting.id, status: newStatus },
+        });
+        if (!response.success) throw new Error(response.error);
 
         setUserAgendaStatus(prev => ({
           ...prev,
@@ -1201,6 +1207,7 @@ const MySchedule = () => {
   const handleShareMyDay = async (forDate: Date = selectedDate, includeImage = true, previewOnly = false, omitPast = excludePastSessions) => {
     setIsSharingDay(true);
     try {
+      await retryDatabaseSession?.();
       const response = await apiClient.request(`${eventApiPath(eventId, 'schedule')}/share-token`, {
         method: 'POST',
         skipEventSegment: true,
@@ -1358,7 +1365,7 @@ const MySchedule = () => {
 
   // Handle favorite toggle for confirmed agenda events
   const handleToggleFavorite = async (meeting: Meeting) => {
-    if (!registryUserId) return;
+    if (!user) return;
 
     const isAgendaEvent = (meeting as any).isAgendaEvent;
     if (!isAgendaEvent) return; // Only for agenda events
@@ -1370,49 +1377,20 @@ const MySchedule = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-        const { data: existing } = await supabase
-          .from('user_agenda_status')
-          .select('id')
-          .eq('user_id', registryUserId)
-          .eq('event_id', eventId)
-          .eq('agenda_id', meeting.id)
-          .maybeSingle();
-
-      if (existing) {
-        const { error } = await (supabase
-          .from('user_agenda_status') as any)
-          .update({
-            is_favorite: newFavorite,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', (existing as any).id);
-        if (error) throw error;
-      } else {
-        // Create entry for tentative event with favorite status
-        const currentStatus = userAgendaStatus[meeting.id] || 'tentative';
-        const { error } = await (supabase
-          .from('user_agenda_status') as any)
-          .insert({
-            user_id: registryUserId,
-            agenda_id: meeting.id,
-            event_id: eventId,
-            status: currentStatus,
-            is_favorite: newFavorite,
-          });
-        if (error) throw error;
-      }
-
-      setFavoriteStatus(prev => ({
-        ...prev,
-        [meeting.id]: newFavorite,
-      }));
-      
-      // Show appropriate message based on action
-      if (newFavorite) {
-        showSuccess(t('mySchedule.messages.addedToFavorites'));
-      } else {
-        showWarning(t('mySchedule.messages.removedFromFavorites'));
-      }
+      await retryDatabaseSession?.();
+      const response = await apiClient.request(eventApiPath(eventId, 'agenda/status'), {
+        skipEventSegment: true,
+        method: 'POST',
+        body: { agendaId: meeting.id, isFavorite: newFavorite },
+      });
+      if (!response.success) throw new Error(response.error);
+      /*
+       * The API resolves public.user identity server-side. Native accounts
+       * cannot safely read/write this table directly while the bridge spins.
+       */
+      setFavoriteStatus(prev => ({ ...prev, [meeting.id]: newFavorite }));
+      if (newFavorite) showSuccess(t('mySchedule.messages.addedToFavorites'));
+      else showWarning(t('mySchedule.messages.removedFromFavorites'));
     } catch (error) {
       console.error('Error toggling favorite:', error);
       showError(t('mySchedule.errors.title'), newFavorite ? t('mySchedule.errors.failedToAddToFavorites') : t('mySchedule.errors.failedToRemoveFromFavorites'));

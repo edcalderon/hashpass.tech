@@ -1,3 +1,12 @@
+## [1.8.324](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.323...v1.8.324) (2026-08-05)
+
+
+### Bug Fixes
+
+* **native:** restore pass and schedule flows ([6b281f6](https://github.com/hashpass-tech/hashpass.tech/commit/6b281f6b576e9c35b1e509945d142e97b95de57f))
+### Release Highlights
+- restore pass and schedule flows
+
 ## [1.8.323](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.322...v1.8.323) (2026-08-04)
 
 

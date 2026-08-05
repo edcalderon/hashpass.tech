@@ -120,7 +120,7 @@ export async function GET(request: Request) {
 
     const { data: statuses, error: statusError } = await supabase
       .from('user_agenda_status')
-      .select('agenda_id')
+      .select('agenda_id, is_favorite')
       .eq('user_id', share.user_id)
       .eq('event_id', eventId)
       .eq('status', 'confirmed')
@@ -128,6 +128,11 @@ export async function GET(request: Request) {
     if (statusError) throw statusError;
 
     const confirmedIds = (statuses || []).map((s: { agenda_id: string | null }) => s.agenda_id).filter(Boolean);
+    const favoriteAgendaIds = new Set(
+      (statuses || [])
+        .filter((s: { agenda_id: string | null; is_favorite?: boolean }) => s.is_favorite && s.agenda_id)
+        .map((s: { agenda_id: string | null }) => s.agenda_id as string),
+    );
 
     let items: Array<{ id: string; time: string; title: string; location: string | null; day: string | null; day_name: string | null }> = [];
     if (confirmedIds.length > 0) {
@@ -309,6 +314,7 @@ export async function GET(request: Request) {
         <line x1="60" y1="${y - 20}" x2="${cardWidth - 60}" y2="${y - 20}" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
         <text x="60" y="${y + 10}" font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="${brandColor}">${escapeXml(formatClock(item.time, item.day))}</text>
         <text y="${y + 8}" font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="600" fill="#FFFFFF">${titleTspans}</text>
+        ${favoriteAgendaIds.has(item.id) ? `<text x="${cardWidth - 80}" y="${y + 8}" font-family="Helvetica, Arial, sans-serif" font-size="30" fill="#FACC15">★</text>` : ''}
         ${item.location ? `<text x="190" y="${y + (titleLines.length > 1 ? 78 : 52)}" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="rgba(255,255,255,0.6)">${escapeXml(item.location)}</text>` : ''}
       `;
     }).join('');

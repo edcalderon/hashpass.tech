@@ -373,13 +373,12 @@ const getStyles = (isDark: boolean, colors: any, backgroundColor: string, isArch
     width: '100%',
   },
   eventLogo: {
-    width: '100%',
-    maxWidth: 420,
-    height: 110,
-    marginBottom: 8,
+    width: 168,
+    height: 54,
+    marginBottom: 6,
   },
   logoSubLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: 1.5,

@@ -1,11 +1,15 @@
 /// <reference types="jest" />
 
 import React from 'react';
+import { Linking } from 'react-native';
 
 const mockGetUserPassInfo = jest.fn();
 const mockGetEventPassTiers = jest.fn();
 const mockCanMakeMeetingRequest = jest.fn();
 const mockRouterPush = jest.fn();
+let mockAuthState: { dbUserId: string | null; retryDatabaseSession?: jest.Mock } = {
+  dbUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4',
+};
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockRouterPush }) }));
 jest.mock('../../hooks/useTheme', () => ({
@@ -16,7 +20,7 @@ jest.mock('../../hooks/useTheme', () => ({
     },
   }),
 }));
-jest.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ dbUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4' }) }));
+jest.mock('../../hooks/useAuth', () => ({ useAuth: () => mockAuthState }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('../../lib/vector-icons', () => ({ MaterialIcons: 'MaterialIcons' }));
 jest.mock('@sentry/react-native', () => ({ captureException: jest.fn() }));
@@ -46,6 +50,7 @@ const textContent = (node: any): string => {
 describe('PassesDisplay', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuthState = { dbUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4' };
     mockGetUserPassInfo.mockResolvedValue({
       pass_id: 'pass-1', event_id: 'chile2026', pass_type: 'general', status: 'active', pass_number: 'BSL-GE-79b2',
       max_requests: 10, used_requests: 0, remaining_requests: 10,
@@ -132,6 +137,32 @@ describe('PassesDisplay', () => {
     );
   });
 
+  it('clears a previously loaded pass when the database identity disappears', async () => {
+    const retryDatabaseSession = jest.fn().mockResolvedValue(undefined);
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<PassesDisplay mode="speaker" eventId="chile2026" />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+    expect(renderer.root.findAllByType('Text').map((node: any) => textContent(node))).toEqual(
+      expect.arrayContaining([expect.stringContaining('BSL-GE-79b2')]),
+    );
+
+    mockAuthState = { dbUserId: null, retryDatabaseSession };
+    await act(async () => {
+      renderer.update(<PassesDisplay mode="speaker" eventId="chile2026" />);
+      await Promise.resolve();
+    });
+
+    expect(retryDatabaseSession).toHaveBeenCalledTimes(1);
+    expect(renderer.root.findAllByType('Text').map((node: any) => textContent(node))).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('BSL-GE-79b2')]),
+    );
+  });
+
   it('opens the selected pass details from a speaker card', async () => {
     let renderer: any;
     await act(async () => {
@@ -150,6 +181,33 @@ describe('PassesDisplay', () => {
       pathname: '/(shared)/dashboard/pass-details',
       params: { passId: 'pass-1', eventId: 'chile2026' },
     });
+  });
+
+  it('sends native pass purchases to the Blockchain Summit site instead of a placeholder alert', async () => {
+    mockGetUserPassInfo.mockResolvedValue(null);
+    const canOpenUrl = jest.fn().mockResolvedValue(true);
+    const openUrl = jest.fn().mockResolvedValue(true);
+    Object.assign(Linking as any, { canOpenURL: canOpenUrl, openURL: openUrl });
+
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<PassesDisplay mode="speaker" eventId="chile2026" />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+
+    const price = renderer.root.findAllByType('Text').find((node: any) => textContent(node) === '$99');
+    expect(price).toBeDefined();
+    let purchaseButton = price.parent;
+    while (purchaseButton && typeof purchaseButton.props?.onPress !== 'function') {
+      purchaseButton = purchaseButton.parent;
+    }
+    await act(async () => purchaseButton.props.onPress());
+
+    expect(canOpenUrl).toHaveBeenCalledWith('https://blockchainsummit.la');
+    expect(openUrl).toHaveBeenCalledWith('https://blockchainsummit.la');
   });
 
   it('formats configured fractional tier prices without mutating the renderer environment', () => {

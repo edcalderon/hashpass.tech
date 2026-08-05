@@ -58,7 +58,11 @@ const flush = async () => {
 
 describe('AdminPanel pass codes', () => {
   afterEach(() => {
-    mountedRenderer?.unmount();
+    if (mountedRenderer) {
+      act(() => {
+        mountedRenderer?.unmount();
+      });
+    }
     mountedRenderer = null;
   });
 
@@ -146,6 +150,14 @@ describe('AdminPanel pass codes', () => {
 
     expect(mockGet).toHaveBeenCalledWith('/admin/pass-codes?eventId=chile2026', { skipEventSegment: true });
     expect(renderer.root.findByProps({ children: 'Chile public promotion' })).toBeTruthy();
+  });
+
+  it('shows the active Chile test redemption code to authorized administrators', async () => {
+    const renderer = await renderPanel();
+    await openPassCodes(renderer);
+
+    expect(renderer.root.findByProps({ children: 'GENERALCHILE2026' })).toBeTruthy();
+    expect(renderer.root.findByProps({ children: 'Reusable General test code' })).toBeTruthy();
   });
 
   it('creates an unlimited campaign and displays the generated raw code once', async () => {

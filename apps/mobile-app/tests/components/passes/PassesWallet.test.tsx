@@ -8,6 +8,7 @@ import type { PassInfo } from '../../../lib/pass-system';
 
 let mockDbUserId: string | null = 'supabase-user-id';
 let mockFilterOverride: unknown[] | null = null;
+const mockRetryDatabaseSession = jest.fn();
 
 jest.mock('react-native-reanimated', () => ({
   __esModule: true,
@@ -19,7 +20,10 @@ jest.mock('react-native-reanimated', () => ({
 }));
 
 jest.mock('../../../hooks/useAuth', () => ({
-  useAuth: () => ({ dbUserId: mockDbUserId }),
+  useAuth: () => ({
+    dbUserId: mockDbUserId,
+    retryDatabaseSession: mockRetryDatabaseSession,
+  }),
 }));
 
 jest.mock('../../../hooks/useTheme', () => ({
@@ -453,6 +457,32 @@ describe('PassesWallet', () => {
         renderer.root.findByProps({ children: 'Your account is still connecting. Please try again in a moment.' }),
       ).toBeTruthy();
       expect(renderer.root.findByProps({ accessibilityLabel: 'Redeem pass code' }).props.disabled).toBe(true);
+      await act(async () => {
+        renderer.unmount();
+        await Promise.resolve();
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('retries the native database-session bridge when an attendee retries a pending wallet', async () => {
+    jest.useFakeTimers();
+    mockDbUserId = null;
+
+    try {
+      const renderer = await renderWallet({ layout: 'plain' });
+
+      await act(async () => {
+        jest.advanceTimersByTime(10_000);
+        await Promise.resolve();
+      });
+      await act(async () => {
+        triggerPress(renderer.root.findByProps({ accessibilityLabel: 'Try again' }));
+        await Promise.resolve();
+      });
+
+      expect(mockRetryDatabaseSession).toHaveBeenCalledTimes(1);
       await act(async () => {
         renderer.unmount();
         await Promise.resolve();

@@ -10,6 +10,10 @@ const myScheduleSource = readFileSync(
   resolve(__dirname, '../../app/events/[eventSlug]/networking/my-schedule.tsx'),
   'utf8',
 );
+const agendaSource = readFileSync(
+  resolve(__dirname, '../../app/events/[eventSlug]/agenda.tsx'),
+  'utf8',
+);
 
 let mockWindowWidth = 1024;
 let mockPlatform: 'android' | 'ios' | 'web' = 'web';
@@ -23,6 +27,7 @@ const mockImpactAsync = jest.fn();
 const mockShowSuccess = jest.fn();
 const mockShowError = jest.fn();
 const mockShowWarning = jest.fn();
+const mockRetryDatabaseSession = jest.fn();
 const mockT = (key: string) => key;
 
 const mockEvent: any = {
@@ -42,6 +47,7 @@ const mockEvent: any = {
   },
 };
 let mockActiveEvent = mockEvent;
+let mockAuthState: any = { user: null, dbUserId: 'auth-user-uuid', retryDatabaseSession: mockRetryDatabaseSession };
 
 const mockThemeColors = {
   primary: '#d93025',
@@ -165,10 +171,7 @@ jest.mock('../../hooks/useTheme', () => ({
 }));
 
 jest.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: null,
-    dbUserId: 'auth-user-uuid',
-  }),
+  useAuth: () => mockAuthState,
 }));
 
 jest.mock('@contexts/ToastContext', () => ({
@@ -233,6 +236,9 @@ describe('event schedule screens', () => {
     mockShowSuccess.mockReset();
     mockShowError.mockReset();
     mockShowWarning.mockReset();
+    mockRetryDatabaseSession.mockReset();
+    mockRetryDatabaseSession.mockResolvedValue(undefined);
+    mockAuthState = { user: null, dbUserId: 'auth-user-uuid', retryDatabaseSession: mockRetryDatabaseSession };
     mockSupabase.from.mockClear();
     mockUserTableMaybeSingle.mockReset();
     mockAgendaStatusMaybeSingle.mockReset();
@@ -271,6 +277,69 @@ describe('event schedule screens', () => {
     await act(async () => {
       renderer!.unmount();
     });
+  });
+
+  it('keeps the agenda filter drawer focused on session type because speakers are searchable', async () => {
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: { data: [{ id: 'session-1', day: '1', time: '09:00', title: 'Opening', type: 'keynote' }] },
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+    });
+
+    const agendaFilter = renderer!.root.findByType('UnifiedSearchAndFilter' as any);
+    expect(agendaFilter.props.filterGroups).toHaveLength(1);
+    expect(agendaFilter.props.filterGroups[0].key).toBe('type');
+    expect(agendaSource).not.toContain('isCompactLayout && styles.actionButtonsCompact');
+
+    await act(async () => {
+      renderer!.unmount();
+    });
+  });
+
+  it('bridges the native database session before favoriting or adding an agenda session', async () => {
+    mockAuthState = {
+      user: { id: 'better-auth-user', email: 'attendee@example.test' },
+      dbUserId: 'auth-user-uuid',
+      retryDatabaseSession: mockRetryDatabaseSession,
+    };
+    mockApiRequest.mockImplementation((path: string, options?: { method?: string }) => {
+      if (path === 'events/custom/agenda/status') {
+        return Promise.resolve({ success: true, data: { data: [] } });
+      }
+      return Promise.resolve({
+        success: true,
+        data: { data: [{ id: 'session-1', day: '1', time: '09:00', title: 'Opening', type: 'keynote' }] },
+      });
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<AgendaScreen />);
+      await flushPromises();
+      await flushPromises();
+    });
+
+    const favoriteText = renderer!.root.findAllByType(Text).find((node) => node.children.join('') === 'actions.favorite');
+    expect(favoriteText).toBeTruthy();
+    let favoriteButton: any = favoriteText!.parent;
+    while (favoriteButton && typeof favoriteButton.props?.onPress !== 'function') favoriteButton = favoriteButton.parent;
+    await act(async () => {
+      await favoriteButton.props.onPress();
+      await flushPromises();
+    });
+
+    expect(mockRetryDatabaseSession).toHaveBeenCalled();
+    expect(mockApiRequest).toHaveBeenCalledWith('events/custom/agenda/status', {
+      skipEventSegment: true,
+      method: 'POST',
+      body: { agendaId: 'session-1', isFavorite: true },
+    });
+    await act(async () => renderer!.unmount());
   });
 
   it('retries the agenda request from the empty-agenda state', async () => {

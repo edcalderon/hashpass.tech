@@ -23,6 +23,9 @@
   },
   "defaultGroups": ["rls-hardening", "upcoming-bsl-passes", "meeting-lifecycle", "event-catalog", "speaker-identity-claims", "event-pass-tiers", "admin-pass-management", "meeting-chat-e2e", "admin-matchmaking-communications"],
   "groups": {
+    "native-pass-test-codes": [
+      "db/migrations/V062__seed_native_pass_redemption_test_codes.sql"
+    ],
     "meeting-chat-e2e": [
       "db/migrations/V053__e2e_encrypted_persistent_meeting_chat.sql",
       "db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql"
@@ -46,7 +49,8 @@
       "db/migrations/V011__secure_upcoming_bsl_pass_provisioning.sql",
       "db/migrations/V021__repair_bsl_pass_access_and_backfill.sql",
       "db/migrations/V030__add_secure_pass_claim_codes.sql",
-      "db/migrations/V031__manage_event_pass_claim_codes.sql"
+      "db/migrations/V031__manage_event_pass_claim_codes.sql",
+      "db/migrations/V062__seed_native_pass_redemption_test_codes.sql"
     ],
     "meeting-lifecycle": [
       "db/migrations/V017__harden_meeting_request_lifecycle.sql",
