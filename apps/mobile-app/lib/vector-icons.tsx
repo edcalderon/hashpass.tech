@@ -270,6 +270,10 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   refresh: RefreshCw,
   restaurant: Utensils,
   schedule: Clock,
+  // AgendaTracker uses Material's `timer` icon for the remaining-live-session
+  // label. Without this mapping web falls back to CircleHelp, rendering a
+  // misleading question-mark badge instead of a clock.
+  timer: Clock,
   search: Search,
   'search-off': SearchX,
   'search-outline': Search,
