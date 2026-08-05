@@ -78,21 +78,21 @@ describe("getHashpassFooterLogo", () => {
 });
 
 describe("getHashpassStaticHeroLogo", () => {
-  it("uses the dark logo on light web hero surfaces", () => {
+  it("uses the verified white-letter SVG on the web landing hero", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassStaticHeroLogo(false)).toBe("black-native-png");
+    expect(getHashpassStaticHeroLogo(false)).toBe("black-svg");
   });
 
-  it("keeps the white-cyan logo on dark web no-animation hero surfaces", () => {
+  it("keeps the verified white-letter SVG in dark web mode", () => {
     mockPlatform.OS = "web";
 
-    expect(getHashpassStaticHeroLogo(true)).toBe("white-cyan-native-png");
+    expect(getHashpassStaticHeroLogo(true)).toBe("black-svg");
   });
 
-  it("uses the dark native logo on light hero surfaces", () => {
+  it("uses the white-letter native fallback on the landing hero", () => {
     mockPlatform.OS = "android";
 
-    expect(getHashpassStaticHeroLogo(false)).toBe("black-native-png");
+    expect(getHashpassStaticHeroLogo(false)).toBe("white-cyan-native-png");
   });
 });
