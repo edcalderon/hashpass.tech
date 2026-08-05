@@ -814,9 +814,21 @@ const MySchedule = () => {
   const handleToggleConfirmation = async (meeting: Meeting, slotStartTime: Date) => {
     if (!user) return;
 
-    setIsConfirming(true);
     const isAgendaEvent = (meeting as any).isAgendaEvent;
     const isFreeSlot = (meeting as any).isFreeSlot;
+
+    // Agenda events are written through the authenticated event API, which
+    // resolves the user server-side. Free slots and personal meetings still
+    // use the legacy registry tables and must wait for their registry ID.
+    if (!isAgendaEvent && !registryUserId) {
+      showWarning(
+        t('mySchedule.connectingTitle', 'Schedule still connecting'),
+        t('mySchedule.connectingMessage', 'Please try again in a moment.')
+      );
+      return;
+    }
+
+    setIsConfirming(true);
 
     // Handle free slots differently
     if (isFreeSlot) {

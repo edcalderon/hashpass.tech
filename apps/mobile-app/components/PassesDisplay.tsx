@@ -205,7 +205,9 @@ function PassesDisplayInner({
   const loadPassInfo = async () => {
     if (!dbUserId) {
       // Native Better Auth sign-in completes just before its Supabase session
-      // bridge is persisted. Do not render a false empty wallet in between.
+      // bridge is persisted. Clear any prior identity's pass while the bridge
+      // reconnects so an expired/sign-out session can never retain its wallet.
+      setPassInfo(null);
       setLoading(true);
       try {
         await retryDatabaseSession?.();

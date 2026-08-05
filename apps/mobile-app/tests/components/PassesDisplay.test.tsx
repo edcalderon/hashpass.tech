@@ -7,6 +7,9 @@ const mockGetUserPassInfo = jest.fn();
 const mockGetEventPassTiers = jest.fn();
 const mockCanMakeMeetingRequest = jest.fn();
 const mockRouterPush = jest.fn();
+let mockAuthState: { dbUserId: string | null; retryDatabaseSession?: jest.Mock } = {
+  dbUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4',
+};
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockRouterPush }) }));
 jest.mock('../../hooks/useTheme', () => ({
@@ -17,7 +20,7 @@ jest.mock('../../hooks/useTheme', () => ({
     },
   }),
 }));
-jest.mock('../../hooks/useAuth', () => ({ useAuth: () => ({ dbUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4' }) }));
+jest.mock('../../hooks/useAuth', () => ({ useAuth: () => mockAuthState }));
 jest.mock('../../i18n/i18n', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('../../lib/vector-icons', () => ({ MaterialIcons: 'MaterialIcons' }));
 jest.mock('@sentry/react-native', () => ({ captureException: jest.fn() }));
@@ -47,6 +50,7 @@ const textContent = (node: any): string => {
 describe('PassesDisplay', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuthState = { dbUserId: '7f60f5d2-5948-4df1-9670-2f9177cf2fe4' };
     mockGetUserPassInfo.mockResolvedValue({
       pass_id: 'pass-1', event_id: 'chile2026', pass_type: 'general', status: 'active', pass_number: 'BSL-GE-79b2',
       max_requests: 10, used_requests: 0, remaining_requests: 10,
@@ -130,6 +134,32 @@ describe('PassesDisplay', () => {
 
     expect(renderer.root.findAllByType('Text').map((node: any) => textContent(node))).toEqual(
       expect.arrayContaining([expect.stringMatching(/Pass #legacy.*5678/)]),
+    );
+  });
+
+  it('clears a previously loaded pass when the database identity disappears', async () => {
+    const retryDatabaseSession = jest.fn().mockResolvedValue(undefined);
+    let renderer: any;
+    await act(async () => {
+      renderer = create(<PassesDisplay mode="speaker" eventId="chile2026" />);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 320));
+    });
+    expect(renderer.root.findAllByType('Text').map((node: any) => textContent(node))).toEqual(
+      expect.arrayContaining([expect.stringContaining('BSL-GE-79b2')]),
+    );
+
+    mockAuthState = { dbUserId: null, retryDatabaseSession };
+    await act(async () => {
+      renderer.update(<PassesDisplay mode="speaker" eventId="chile2026" />);
+      await Promise.resolve();
+    });
+
+    expect(retryDatabaseSession).toHaveBeenCalledTimes(1);
+    expect(renderer.root.findAllByType('Text').map((node: any) => textContent(node))).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('BSL-GE-79b2')]),
     );
   });
 
