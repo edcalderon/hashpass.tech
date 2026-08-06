@@ -11,7 +11,7 @@ const baseUrl = normalizeBaseUrl(process.env.HASHPASS_DOCS_BASE_URL ?? '/');
 
 const config = {
   title: 'HASHPASS Docs',
-  tagline: 'Current documentation for HASHPASS',
+  tagline: 'The documentation behind the HASHPASS platform',
   favicon: 'img/logo.svg',
   url: siteUrl,
   baseUrl,
@@ -40,10 +40,13 @@ const config = {
   ],
   themeConfig: {
     navbar: {
-      title: 'HASHPASS Docs',
+      title: '',
       logo: {
-        alt: 'HASHPASS Docs',
-        src: 'img/logo.svg',
+        alt: 'HASHPASS',
+        src: 'img/logo-hashpass-light.svg',
+        srcDark: 'img/logo-hashpass-dark.svg',
+        href: '/',
+        width: 132,
       },
       items: [
         {
@@ -51,6 +54,11 @@ const config = {
           sidebarId: 'docsSidebar',
           position: 'left',
           label: 'Docs',
+        },
+        {
+          href: 'https://hashpass.tech',
+          label: 'HASHPASS',
+          position: 'right',
         },
         {
           href: 'https://github.com/hashpass-tech/hashpass.tech',
@@ -65,7 +73,7 @@ const config = {
         {
           title: 'Docs',
           items: [
-            { label: 'Overview', to: '/' },
+            { label: 'Overview', to: '/overview' },
             { label: 'Auth', to: '/auth/' },
             { label: 'Infra', to: '/infra/' },
             { label: 'Storybook', to: '/storybook/' },
@@ -80,8 +88,16 @@ const config = {
             },
           ],
         },
+        {
+          title: 'HASHPASS',
+          items: [
+            { label: 'hashpass.tech', href: 'https://hashpass.tech' },
+            { label: 'Terms of Service', href: 'https://hashpass.tech/terms' },
+            { label: 'Privacy Policy', href: 'https://hashpass.tech/privacy' },
+          ],
+        },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} HASHPASS`,
+      copyright: `© ${new Date().getFullYear()} HASHPASS. All rights reserved. · <a href="https://hashpass.tech/terms" style="color:inherit;">Terms</a> · <a href="https://hashpass.tech/privacy" style="color:inherit;">Privacy</a>`,
     },
   },
 };

@@ -3,6 +3,7 @@ import { ENV_CONFIG, SSO_CONFIG } from '@hashpass/config';
 import { syncPublicUserRegistry } from '../auth/public-user-registry';
 import { ensureSupabaseAccountForEmail } from '../auth/supabase-admin-bridge';
 import { getSupabaseServerForRequest } from '../supabase-server';
+import { sendWelcomeEmailToNewUser } from '../email';
 import { getDatabasePool, hasDatabaseConnectionString } from './database-pool';
 
 const normalizeAuthPath = (value?: string | null): string => {
@@ -103,7 +104,11 @@ const resolveRequestTenant = (request?: Request) => {
   return ENV_CONFIG.getTenant(hostname);
 };
 
-export const syncBetterAuthUser = async (user: Record<string, any>, context: any) => {
+export const syncBetterAuthUser = async (
+  user: Record<string, any>,
+  context: any,
+  options: { isNewUser?: boolean } = {}
+) => {
   const request = context?.request || context?.context?.request;
   if (!(request instanceof Request)) return;
   const tenant = resolveRequestTenant(request);
@@ -129,8 +134,8 @@ export const syncBetterAuthUser = async (user: Record<string, any>, context: any
   // update, same as registryUserId's self-heal pattern. Never throws — a
   // Supabase-side failure here must not break the Better Auth sign-up.
   let supabaseUserId: string | null = null;
+  const supabase = getSupabaseServerForRequest(request);
   try {
-    const supabase = getSupabaseServerForRequest(request);
     const bridged = await ensureSupabaseAccountForEmail(supabase, {
       email: user.email,
       userMetadata: {
@@ -173,6 +178,31 @@ export const syncBetterAuthUser = async (user: Record<string, any>, context: any
       ...(supabaseUserId ? { supabase: supabaseUserId } : {}),
     },
   });
+
+  // Fire on genuine account creation only (update.after also calls this
+  // function on every profile sync, which would otherwise re-fire the
+  // welcome email on each login) -- runs for every tenant, since Better
+  // Auth Google sign-in is shared across hashpass.tech and bsl.hashpass.tech.
+  // sendWelcomeEmailToNewUser is itself idempotent (has_email_been_sent
+  // tracking), so this is a safe no-op if somehow called twice. Awaited
+  // (not fire-and-forget) because Lambda may freeze the execution context
+  // right after this hook's caller returns its response -- an unawaited
+  // promise here could get silently killed mid-send/mid-mark on a cold
+  // container. Still never throws past this function: a delivery failure
+  // must not fail the Better Auth sign-up that already succeeded. Passes
+  // the same request-scoped `supabase` client used above, not the global
+  // core-production default, so BSL users are tracked/marked against the
+  // Supabase project their auth.users row actually lives in.
+  if (options.isNewUser && supabaseUserId && user.email) {
+    try {
+      await sendWelcomeEmailToNewUser(supabaseUserId, user.email, undefined, supabase);
+    } catch (error) {
+      console.error(
+        '[Better Auth] Welcome email failed:',
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  }
 };
 
 const googleClientId = readEnv('BETTER_AUTH_GOOGLE_CLIENT_ID') || readEnv('GOOGLE_CLIENT_ID');
@@ -221,7 +251,7 @@ const createAuthInstance = () =>
       user: {
         create: {
           after: async (user, context) => {
-            await syncBetterAuthUser(user, context);
+            await syncBetterAuthUser(user, context, { isNewUser: true });
           },
         },
         update: {

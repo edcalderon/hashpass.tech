@@ -392,6 +392,57 @@ function printUsage() {
   );
 }
 
+// Standalone workspace packages under packages/<name> (e.g. @hashpass/sdk,
+// support-widget, support-kapso) are typechecked by delegating straight to
+// each package's own real tsconfig.json instead of the apps/mobile-app
+// stub-sandbox below. That sandbox only knows how to synthesize stubs for
+// apps/mobile-app's own "@/*" path aliases; a package/-rooted file's
+// relative imports (e.g. packages/sdk/src/auth/client.ts importing
+// ../transport.js) would get stubbed to `any` because the real sibling file
+// wasn't independently "changed", silently degrading generics to untyped
+// calls -- and a bare specifier like "@hashpass/sdk" resolves via that
+// package's OWN node_modules symlink, which the sandbox never sets up. Each
+// affected package's real tsconfig already resolves both correctly, so
+// there's no sandbox to build for this half of the changed files at all.
+function typecheckPackageFiles(packageFiles) {
+  const filesByRoot = new Map();
+  for (const filePath of packageFiles) {
+    const segments = filePath.split('/');
+    const root = segments.slice(0, 2).join('/'); // e.g. "packages/sdk"
+    if (!filesByRoot.has(root)) filesByRoot.set(root, []);
+    filesByRoot.get(root).push(filePath);
+  }
+
+  let exitCode = 0;
+  // Files under a package root with no tsconfig.json of its own (e.g.
+  // packages/tools) can't be delegated the way the rest of this function
+  // does -- falls back to the original apps/mobile-app sandbox path instead
+  // of silently skipping them, so they still get *some* typecheck coverage
+  // rather than none.
+  const unhandledFiles = [];
+  for (const root of Array.from(filesByRoot.keys()).sort()) {
+    const tsconfigPath = path.join(ROOT_DIR, root, 'tsconfig.json');
+    if (!fs.existsSync(tsconfigPath)) {
+      console.log(`No tsconfig.json for ${root}; falling back to the sandbox typecheck for its changed files.`);
+      unhandledFiles.push(...filesByRoot.get(root));
+      continue;
+    }
+
+    console.log(`Typechecking ${root} against its own tsconfig.json...`);
+    const result = spawnSync(PNPM_BIN, ['exec', 'tsc', '--noEmit', '-p', tsconfigPath], {
+      cwd: path.join(ROOT_DIR, root),
+      stdio: 'inherit',
+      env: process.env,
+    });
+
+    if (result.error) throw result.error;
+    if (result.signal) process.kill(process.pid, result.signal);
+    if ((result.status ?? 0) !== 0) exitCode = result.status;
+  }
+
+  return { exitCode, unhandledFiles };
+}
+
 function main() {
   const options = parseArgs(process.argv.slice(2));
 
@@ -405,15 +456,27 @@ function main() {
   // when web-app files are untracked or changed alongside mobile/packages work.
   // Archive trees are historical reference material and are intentionally excluded
   // so they do not block active app release preflight.
-  const changedFiles = getChangedFiles(baseCommit)
+  const allChangedFiles = getChangedFiles(baseCommit)
     .filter(isTypeScriptFile)
     .filter(f => !f.startsWith('apps/web-app/') && !f.startsWith('apps/docs/') && !f.startsWith('archive/'));
+
+  // packages/* files are checked separately below (see typecheckPackageFiles);
+  // everything else keeps the original single-sandbox behavior unchanged.
+  const packageFiles = allChangedFiles.filter((f) => f.startsWith('packages/'));
+  const nonPackageFiles = allChangedFiles.filter((f) => !f.startsWith('packages/'));
+
+  const { exitCode: packageExitCode, unhandledFiles } =
+    packageFiles.length > 0 ? typecheckPackageFiles(packageFiles) : { exitCode: 0, unhandledFiles: [] };
+  // Package files with no tsconfig.json of their own fall back into the
+  // same sandbox path as everything else instead of going unchecked.
+  const changedFiles = [...nonPackageFiles, ...unhandledFiles];
+
   const localSpecifierMatchers = loadLocalSpecifierMatchers(MOBILE_APP_TSCONFIG);
   const pathAliasEntries = loadPathAliasEntries(MOBILE_APP_TSCONFIG);
 
   if (changedFiles.length === 0) {
-    console.log('No changed or uncommitted TypeScript files to typecheck.');
-    return;
+    console.log('No changed or uncommitted apps/mobile-app TypeScript files to typecheck.');
+    process.exit(packageExitCode);
   }
 
   const scratchRoot = path.join(ROOT_DIR, '.tmp');
@@ -538,7 +601,7 @@ function main() {
     process.kill(process.pid, result.signal);
   }
 
-  process.exit(result.status ?? 0);
+  process.exit((result.status ?? 0) !== 0 ? result.status : packageExitCode);
 }
 
 try {

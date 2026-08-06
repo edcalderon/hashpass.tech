@@ -6,5 +6,7 @@ export interface TemplateVars {
   appUrl?: string;
   supportEmail?: string;
   userName?: string;
+  userInitial?: string;
+  logoUrl?: string;
   unsubscribeUrl?: string;
 }

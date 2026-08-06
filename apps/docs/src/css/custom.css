@@ -1,20 +1,32 @@
 :root {
-  --ifm-color-primary: #00bcd4;
-  --ifm-color-primary-dark: #00a4bb;
-  --ifm-color-primary-darker: #008ea1;
-  --ifm-color-primary-darkest: #006c7b;
+  --ifm-color-primary: #0ea5c7;
+  --ifm-color-primary-dark: #0c93b2;
+  --ifm-color-primary-darker: #0b87a4;
+  --ifm-color-primary-darkest: #096f87;
   --ifm-color-primary-light: #22d3ee;
   --ifm-color-primary-lighter: #67e8f9;
   --ifm-color-primary-lightest: #cffafe;
   --ifm-code-font-size: 95%;
   --ifm-font-family-base: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --ifm-heading-font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* HASHPASS brand tokens shared by the landing page (src/pages/index.tsx) */
+  --hp-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  --hp-card-bg: #ffffff;
+  --hp-card-border: #e4e9ee;
+  --hp-card-icon-bg: #e7fafd;
+  --hp-callout-bg: #f6fafb;
 }
 
 [data-theme='dark'] {
   --ifm-background-color: #08111f;
   --ifm-background-surface-color: #0f172a;
   --ifm-navbar-background-color: rgba(8, 17, 31, 0.88);
+
+  --hp-card-bg: #0f1720;
+  --hp-card-border: #1c2733;
+  --hp-card-icon-bg: rgba(34, 211, 238, 0.12);
+  --hp-callout-bg: #0d1620;
 }
 
 body {
@@ -26,6 +38,25 @@ body {
 
 .navbar {
   backdrop-filter: blur(14px);
+}
+
+.navbar__logo img {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
+}
+
+.navbar__logo:hover img {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.4));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar__logo img {
+    transition: none;
+  }
+
+  .navbar__logo:hover img {
+    transform: none;
+  }
 }
 
 .navbar__title {

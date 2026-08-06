@@ -2,6 +2,7 @@
 import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 import { hostnameFromRequest, resolvePublicSupabaseConfig } from '../../../../config/supabase-profiles';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
+import { sendWelcomeEmailToNewUser } from '../../../../lib/email';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -350,6 +351,28 @@ export async function POST(request: Request) {
         profileMetadata: user.user_metadata || {},
         providerIds: { supabase: user.id },
       });
+
+      // Awaited (not fire-and-forget) because Lambda may freeze the
+      // execution context right after this route returns its response --
+      // an unawaited promise could get silently killed mid-send/mid-mark
+      // on a cold container. sendWelcomeEmailToNewUser is idempotent
+      // (has_email_been_sent tracking), so calling it on every OTP
+      // verification -- sign-up AND every later sign-in -- is safe; it's a
+      // genuine no-op for returning users rather than a real re-send. Passed
+      // the same request-scoped `supabase` client resolved above (covers
+      // both hashpass.tech and bsl.hashpass.tech via SUPABASE_PROFILE_IDS),
+      // not the global core-production default -- otherwise a BSL user's
+      // tracking lookup/mark would run against the wrong Supabase project.
+      if (!user.email.includes('@wallet.')) {
+        try {
+          await sendWelcomeEmailToNewUser(user.id, user.email, undefined, supabase);
+        } catch (error) {
+          console.error(
+            '[OTP verify] Welcome email failed:',
+            error instanceof Error ? error.message : String(error)
+          );
+        }
+      }
     }
 
     console.log('OTP code verified on server, returning session payload to client');
