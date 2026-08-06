@@ -20,14 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.332)
+## 📋 Latest Changes (v1.8.333)
 
-### Bug Fixes
-
-* **bsl:** deploy dev site through hybrid build ([6fcfe79](https://github.com/hashpass-tech/hashpass.tech/commit/6fcfe7905b73feb95316d096c2fc4023942ae125))
-* **email:** fall back to primary sender when Infisical resolution throws ([432c5ea](https://github.com/hashpass-tech/hashpass.tech/commit/432c5ea6267f165a3a477a88750ecf2a68bb0f31))
-### Release Highlights
-- fall back to primary sender when Infisical resolution throws; deploy dev site through hybrid build
+### Released
+- Version 1.8.333 release
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

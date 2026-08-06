@@ -1,3 +1,7 @@
+## [1.8.333](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.332...v1.8.333) (2026-08-06)
+### Released
+- Version 1.8.333 release
+
 ## [1.8.332](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.331...v1.8.332) (2026-08-06)
 
 

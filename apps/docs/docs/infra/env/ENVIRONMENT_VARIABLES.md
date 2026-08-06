@@ -18,6 +18,7 @@ This is the current source of truth for the environment variables used by the HA
 - `EXPO_PUBLIC_SUPABASE_KEY` is the canonical public anon key.
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY` is a compatibility alias and is written by the env sync scripts.
 - The same pattern applies to `_DEV` and `_PROD` overrides.
+- **Which physical Supabase project each of these actually resolves to (core vs BSL, dev vs prod) is not obvious from the variable name alone** -- see [supabase-project-map.md](../supabase-project-map.md) for the authoritative project-ref table and the exact env-var priority chain each of the four auth profiles (`core-development`/`core-production`/`bsl-development`/`bsl-production`) checks. Read that before changing any Supabase-related `.env` value.
 - BSL tenant-specific runtime helpers also accept `EXPO_PUBLIC_BSL_SUPABASE_*` aliases when those are present.
 
 ## Main Production
@@ -103,7 +104,7 @@ Required BSL Supabase values:
 - `EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD`
 - `BSL_SUPABASE_SERVICE_ROLE_KEY_PROD`
 - `BSL_SUPABASE_DB_URL_PROD`
-- The BSL CodeBuild buildspec is `packages/tools/buildspecs/infra-deploy.yml`, and the live pipeline projects are `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`.
+- The live pipeline projects are `bsl-hashpass-dev-build` and `bsl-hashpass-prod-build`. Dev uses the hybrid static-site buildspec (`packages/tools/buildspecs/bsl-static-site-codebuild.yml`); prod uses `packages/tools/buildspecs/infra-deploy.yml` (SST deploy) -- see `provision-infra-pipelines.sh` for how each project's buildspec is selected.
 
 The sync scripts also keep the public Supabase key aliases aligned for BSL browser helpers.
 

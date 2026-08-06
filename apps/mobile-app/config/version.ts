@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608061312, // Updated to current timestamp
+  buildNumber: 202608061413, // Updated to current timestamp
   releaseDate: '2026-08-06',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,15 +30,29 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'fall back to primary sender when Infisical resolution throws',
-    'deploy dev site through hybrid build'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'fall back to primary sender when Infisical resolution throws; deploy dev site through hybrid build'
+  notes: 'Version 1.8.333 release'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.333': {
+    version: '1.8.333',
+    buildNumber: 202608061413,
+    releaseDate: '2026-08-06',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'Version 1.8.333 release'
+  },
   '1.8.332': {
     version: '1.8.332',
     buildNumber: 202608061312,
