@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.10",
-    "buildNumber": 20260730070759,
-    "releaseDate": "2026-07-30",
+    "version": "1.0.11",
+    "buildNumber": 20260806080708,
+    "releaseDate": "2026-08-06",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Version 1.0.10 release"
+    "notes": "Refine the Club hero, install experience, branding, and local development isolation."
   },
   "versions": [
+    {
+      "version": "1.0.11",
+      "buildNumber": 20260806080708,
+      "releaseDate": "2026-08-06",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Refine the Club hero, install experience, branding, and local development isolation."
+    },
     {
       "version": "1.0.10",
       "buildNumber": 20260730070759,
