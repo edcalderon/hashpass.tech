@@ -2,6 +2,7 @@
 import { getSupabaseServerEnv, getSupabaseServerForRequest } from '../../../../lib/supabase-server';
 import { hostnameFromRequest, resolvePublicSupabaseConfig } from '../../../../config/supabase-profiles';
 import { syncPublicUserRegistry } from '../../../../lib/auth/public-user-registry';
+import { sendWelcomeEmailToNewUser } from '../../../../lib/email';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -350,6 +351,21 @@ export async function POST(request: Request) {
         profileMetadata: user.user_metadata || {},
         providerIds: { supabase: user.id },
       });
+
+      // Fire-and-forget: covers both hashpass.tech and bsl.hashpass.tech,
+      // since this route already resolves its Supabase project per request
+      // hostname (see SUPABASE_PROFILE_IDS above). sendWelcomeEmailToNewUser
+      // is idempotent (has_email_been_sent tracking), so calling it on every
+      // OTP verification -- sign-up AND every later sign-in -- is safe; it
+      // is a genuine no-op for returning users rather than a real re-send.
+      if (!user.email.includes('@wallet.')) {
+        sendWelcomeEmailToNewUser(user.id, user.email).catch((error) => {
+          console.error(
+            '[OTP verify] Welcome email failed:',
+            error instanceof Error ? error.message : String(error)
+          );
+        });
+      }
     }
 
     console.log('OTP code verified on server, returning session payload to client');

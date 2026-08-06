@@ -147,19 +147,6 @@ function mergeBySuffix(rootConfig, environment) {
   return targetConfig;
 }
 
-function applyTransactionalInfoOverrides(targetConfig) {
-  const infoKeys = ['HOST', 'PORT', 'USER', 'PASS', 'FROM'];
-  const hasDedicatedProvider = infoKeys.every((key) =>
-    String(targetConfig[`NODEMAILER_${key}_INFO`] || '').trim()
-  );
-  if (!hasDedicatedProvider) return;
-
-  // Keep the legacy names in sync too: deployed versions before the new
-  // provider-aware mailer still read NODEMAILER_* directly.
-  infoKeys.forEach((key) => {
-    targetConfig[`NODEMAILER_${key}`] = targetConfig[`NODEMAILER_${key}_INFO`];
-  });
-}
 
 function stripEnvironmentSuffix(value) {
   return String(value || '').replace(/_(DEV|PROD)$/, '');
@@ -470,7 +457,6 @@ if (String(options.envArg).toLowerCase() === 'local') {
 const runtime = resolveTenant(options.tenant, options.environment, options.configPath);
 const rootConfig = loadRootEnv();
 const targetConfig = mergeBySuffix(rootConfig, options.environment);
-applyTransactionalInfoOverrides(targetConfig);
 applyCanonicalTenantOverrides(targetConfig, runtime);
 validateSupabaseAnonKey(targetConfig, runtime);
 validateSupabaseServiceRoleKey(targetConfig, runtime);
@@ -555,7 +541,10 @@ try {
     'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
     'DIRECTUS_OAUTH_SUPABASE_SYNC_ENABLED',
     'DIRECTUS_OAUTH_SUPABASE_BRIDGE_ENABLED',
-    // OTP / transactional email + SMS delivery configuration
+    // OTP / transactional email + SMS delivery configuration -- primary
+    // sender (no-reply@hashpass.tech). This is the "vital" tier of the
+    // hybrid secrets policy: stays a raw Lambda env var like everything
+    // else in this list.
     'NODEMAILER_HOST',
     'NODEMAILER_PORT',
     'NODEMAILER_USER',
@@ -564,6 +553,18 @@ try {
     'NODEMAILER_FROM_SUPPORT',
     'BREVO_API_KEY',
     'BREVO_SMS_SENDER',
+    // Deliberately NOT syncing NODEMAILER_*_INFO here -- that's the
+    // "non-critical" tier of the hybrid secrets policy. Those live in
+    // Infisical and are fetched at runtime (lib/server/infisical-secrets.ts)
+    // instead of as raw env vars, specifically because adding them here
+    // pushed both Lambdas over AWS's 4KB environment variable limit
+    // (RequestEntityTooLargeException, confirmed on both prod and dev).
+    // Only the small Infisical machine-identity credentials below need to
+    // be actual Lambda env vars.
+    'INFISICAL_DOMAIN',
+    'INFISICAL_PROJECT_ID',
+    'INFISICAL_CLIENT_ID',
+    'INFISICAL_CLIENT_SECRET',
   ];
 
   const tenantSupabaseKeys = Object.values(resolveTenantSupabaseBindings(runtime)).filter(Boolean);

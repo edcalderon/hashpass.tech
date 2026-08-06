@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { config as loadDotenv } from 'dotenv';
 import * as fsDotenv from 'fs';
 import * as pathDotenv from 'path';
-import { renderTemplate, getSubject } from '@hashpass/emails';
+import { renderTemplate, getSubject, getEmailAssetDataUri } from '@hashpass/emails';
 import emails from '../i18n/locales/emails.json';
 import { getEmailAssetUrl } from './s3-service';
 import { supabaseServer } from './supabase-server';
@@ -17,6 +17,20 @@ if (typeof process !== 'undefined' && typeof window === 'undefined') {
     const p = pathDotenv.resolve(cwd, candidate);
     if (fsDotenv.existsSync(p)) loadDotenv({ path: p, override: false });
   }
+}
+
+// Inlined as a data URI (not an S3/CDN URL via getEmailAssetUrl) because this
+// asset is small and versioned alongside the templates that use it in
+// packages/emails/assets -- no dependency on AWS_S3_BUCKET_NAME/AWS_S3_CDN_URL
+// being configured in every environment that sends this email (confirmed
+// unset in prod today, which is why every other template's S3-hosted logo
+// currently resolves to a broken URL there -- separate pre-existing issue).
+let cachedWelcomeLogoDataUri: string | undefined;
+function getWelcomeLogoDataUri(): string {
+  if (cachedWelcomeLogoDataUri === undefined) {
+    cachedWelcomeLogoDataUri = getEmailAssetDataUri('logo-hashpass-white-cyan.png', 'image/png');
+  }
+  return cachedWelcomeLogoDataUri;
 }
 
 // Default to English if locale is not provided or not supported
@@ -84,16 +98,53 @@ interface EmailTranslations {
   };
 }
 
-// Validate required environment variables
-// Prefer the dedicated transactional provider when configured. The legacy
-// NODEMAILER_* names remain a safe fallback for existing environments.
-const smtpConfig = {
-  host: process.env.NODEMAILER_HOST_INFO || process.env.NODEMAILER_HOST || '',
-  port: process.env.NODEMAILER_PORT_INFO || process.env.NODEMAILER_PORT || '587',
-  user: process.env.NODEMAILER_USER_INFO || process.env.NODEMAILER_USER || '',
-  pass: process.env.NODEMAILER_PASS_INFO || process.env.NODEMAILER_PASS || '',
-  from: process.env.NODEMAILER_FROM_INFO || process.env.NODEMAILER_FROM || '',
-};
+// Two independent senders are kept live at once, on purpose: the primary
+// Brevo-relayed no-reply@hashpass.tech (the established, already-deliverable
+// address every existing email function below uses) and a secondary
+// no-reply@hashpass.info sender used only where explicitly requested (the
+// welcome email). An earlier version of this file collapsed both into one
+// "prefer INFO when configured" transporter, which would have silently
+// switched every transactional email (including OTP-adjacent ones) onto the
+// new address the moment its vars were deployed -- not what's wanted here,
+// since the two addresses need to keep working side by side.
+function buildSmtpConfig(suffix: '' | '_INFO') {
+  return {
+    host: process.env[`NODEMAILER_HOST${suffix}`] || '',
+    port: process.env[`NODEMAILER_PORT${suffix}`] || '587',
+    user: process.env[`NODEMAILER_USER${suffix}`] || '',
+    pass: process.env[`NODEMAILER_PASS${suffix}`] || '',
+    from: process.env[`NODEMAILER_FROM${suffix}`] || '',
+  };
+}
+
+function buildTransporter(config: ReturnType<typeof buildSmtpConfig>) {
+  const isBrevo = config.host.includes('brevo.com') || config.host.includes('sendinblue.com');
+  return nodemailer.createTransport({
+    host: config.host,
+    port: parseInt(config.port, 10),
+    secure: false,
+    auth: {
+      user: config.user,
+      pass: config.pass,
+    },
+    // Add connection timeout
+    connectionTimeout: 10000, // 10 seconds
+    // Add TLS options
+    tls: isBrevo
+      ? {
+          rejectUnauthorized: process.env.NODE_ENV === 'production',
+          // Brevo's relay may present a hostname that differs from the relay alias.
+          servername: 'smtp-relay.sendinblue.com',
+          checkServerIdentity: () => undefined,
+        }
+      : { rejectUnauthorized: process.env.NODE_ENV === 'production' },
+    requireTLS: true,
+  });
+}
+
+// Primary sender (no-reply@hashpass.tech) -- unchanged behavior for every
+// existing email function in this file.
+const smtpConfig = buildSmtpConfig('');
 const requiredEnvVars = Object.entries(smtpConfig)
   .filter(([, value]) => !value)
   .map(([key]) => `transactional SMTP ${key}`);
@@ -108,31 +159,44 @@ if (missingVars.length > 0) {
 const emailEnabled = missingVars.length === 0;
 console.log('[email] enabled:', emailEnabled, missingVars.length ? `(missing: ${missingVars.join(', ')})` : '');
 
-const smtpHost = smtpConfig.host;
 const smtpFrom = smtpConfig.from;
-const isBrevo = smtpHost.includes('brevo.com') || smtpHost.includes('sendinblue.com');
+const transporter = emailEnabled ? buildTransporter(smtpConfig) : null;
 
-const transporter = emailEnabled ? nodemailer.createTransport({
-  host: smtpHost,
-  port: parseInt(smtpConfig.port, 10),
-  secure: false,
-  auth: {
-    user: smtpConfig.user,
-    pass: smtpConfig.pass,
-  },
-  // Add connection timeout
-  connectionTimeout: 10000, // 10 seconds
-  // Add TLS options
-  tls: isBrevo
-    ? {
-        rejectUnauthorized: process.env.NODE_ENV === 'production',
-        // Brevo's relay may present a hostname that differs from the relay alias.
-        servername: 'smtp-relay.sendinblue.com',
-        checkServerIdentity: () => undefined,
-      }
-    : { rejectUnauthorized: process.env.NODE_ENV === 'production' },
-  requireTLS: true,
-}) : null;
+// Secondary sender (no-reply@hashpass.info). Only used where a call site
+// opts in explicitly (sendWelcomeEmail); every other function keeps using
+// the primary transporter above regardless of whether this one is configured.
+//
+// Resolved lazily and cached for the process lifetime rather than built at
+// module load like the primary sender above: local dev has NODEMAILER_*_INFO
+// directly in .env, but on Lambda these are deliberately NOT raw env vars
+// (adding them pushed both Lambdas over AWS's 4KB environment variable
+// limit) -- they live in Infisical instead and get fetched here at runtime.
+// See lib/server/infisical-secrets.ts for the hybrid policy this implements:
+// vital secrets stay as Lambda env vars, new/non-critical ones go to Infisical.
+let cachedInfoSender: { transporter: ReturnType<typeof buildTransporter> | null; from: string } | undefined;
+
+async function resolveInfoSender(): Promise<{ transporter: ReturnType<typeof buildTransporter> | null; from: string }> {
+  if (cachedInfoSender) return cachedInfoSender;
+
+  let config = buildSmtpConfig('_INFO');
+  if (!Object.values(config).every(Boolean)) {
+    const { getInfisicalSecret } = await import('./server/infisical-secrets');
+    const rawPort = process.env.NODEMAILER_PORT_INFO;
+    const [host, port, user, pass, from] = await Promise.all([
+      config.host || getInfisicalSecret('NODEMAILER_HOST_INFO'),
+      rawPort || getInfisicalSecret('NODEMAILER_PORT_INFO'),
+      config.user || getInfisicalSecret('NODEMAILER_USER_INFO'),
+      config.pass || getInfisicalSecret('NODEMAILER_PASS_INFO'),
+      config.from || getInfisicalSecret('NODEMAILER_FROM_INFO'),
+    ]);
+    config = { host: host || '', port: port || '587', user: user || '', pass: pass || '', from: from || '' };
+  }
+
+  const enabled = Object.values(config).every(Boolean);
+  console.log('[email] info sender (hashpass.info) enabled:', enabled);
+  cachedInfoSender = { transporter: enabled ? buildTransporter(config) : null, from: config.from };
+  return cachedInfoSender;
+}
 
 function getEmailContent(type: 'subscriptionConfirmation' | 'welcome' | 'userOnboarding' | 'speakerOnboarding' | 'troubleshooting', locale: string = DEFAULT_LOCALE) {
   // Fallback to English if the requested locale is not available
@@ -953,14 +1017,21 @@ export async function sendWelcomeEmail(
   locale: string = DEFAULT_LOCALE,
   userId?: string
 ): Promise<{ success: boolean; error?: string; messageId?: string; alreadySent?: boolean }> {
-  if (!emailEnabled || !transporter) {
+  // Prefer the dedicated no-reply@hashpass.info sender for this email
+  // specifically; fall back to the primary hashpass.tech sender in any
+  // environment where the info sender isn't configured yet (env var or
+  // Infisical -- see resolveInfoSender).
+  const infoSender = await resolveInfoSender();
+  const welcomeTransporter = infoSender.transporter || transporter;
+  const welcomeFrom = infoSender.transporter ? infoSender.from : smtpFrom;
+  if (!welcomeTransporter) {
     return { success: false, error: 'Email service is not configured' };
   }
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { 
-      success: false, 
-      error: 'Invalid email address' 
+    return {
+      success: false,
+      error: 'Invalid email address'
     };
   }
 
@@ -971,7 +1042,7 @@ export async function sendWelcomeEmail(
       const foundUserId = await getUserIdFromEmail(email);
       user_id = foundUserId || undefined;
     }
-    
+
     // Check if welcome email has already been sent (with message_id)
     // This check verifies that the email was actually sent (has message_id)
     if (user_id) {
@@ -1003,22 +1074,36 @@ export async function sendWelcomeEmail(
     }
 
     console.log(`[sendWelcomeEmail] Preparing welcome email for ${email} with locale: ${normalizedLocale}`);
-    
+
+    let displayName = email.split('@')[0] ?? '';
+    if (user_id) {
+      try {
+        const { data } = await supabaseServer.auth.admin.getUserById(user_id);
+        displayName = data.user?.user_metadata?.name || data.user?.user_metadata?.full_name || displayName;
+      } catch (lookupError) {
+        console.warn('[sendWelcomeEmail] Could not resolve display name, falling back to email prefix:', lookupError);
+      }
+    }
+    const userInitial = displayName.trim().charAt(0).toUpperCase() || 'H';
+
     const subject = getSubject('app-welcome', normalizedLocale);
     const htmlContent = renderTemplate('app-welcome', normalizedLocale, {
       appUrl: 'https://hashpass.tech',
       supportEmail: process.env.NODEMAILER_FROM_SUPPORT || 'support@hashpass.tech',
+      userName: displayName,
+      userInitial,
+      logoUrl: getWelcomeLogoDataUri(),
     });
 
     const mailOptions = {
-      from: `HASHPASS <${smtpFrom}>`,
+      from: `HASHPASS <${welcomeFrom}>`,
       to: email,
       subject,
       html: htmlContent,
       text: `Welcome to HASHPASS!\n\nhashpass.tech`,
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await welcomeTransporter.sendMail(mailOptions);
     console.log(`✅ Welcome email sent successfully to ${email}, messageId: ${info.messageId}`);
     
     // Mark email as sent if we have a user ID (this creates the flag in DB with message_id)

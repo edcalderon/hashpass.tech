@@ -1,6 +1,6 @@
 ---
 title: Documentation Index
-slug: /
+slug: /overview
 ---
 
 # Documentation Index
