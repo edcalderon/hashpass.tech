@@ -23,3 +23,8 @@ phases:
     commands:
       - bash "${BUILD_SCRIPT_PATH}"
       - if [[ "${DEPLOY_MODE}" == "direct" ]]; then bash "${DEPLOY_SCRIPT_PATH}"; fi
+
+artifacts:
+  base-directory: ${SITE_BUILD_DIR}
+  files:
+    - '**/*'
