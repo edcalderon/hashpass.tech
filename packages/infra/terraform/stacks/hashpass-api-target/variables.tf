@@ -58,6 +58,30 @@ variable "lambda_timeout" {
   default     = 30
 }
 
+variable "api_throttle_settings" {
+  description = "Per-environment API Gateway HTTP stage limits that cap abusive traffic before it reaches Lambda."
+  type = object({
+    dev = object({
+      rate_limit  = number
+      burst_limit = number
+    })
+    prod = object({
+      rate_limit  = number
+      burst_limit = number
+    })
+  })
+  default = {
+    dev = {
+      rate_limit  = 20
+      burst_limit = 40
+    }
+    prod = {
+      rate_limit  = 50
+      burst_limit = 100
+    }
+  }
+}
+
 variable "directus_urls" {
   description = "Directus URL per environment"
   type        = map(string)

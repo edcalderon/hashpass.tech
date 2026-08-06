@@ -61,6 +61,28 @@ variable "lambda_timeout" {
   default     = 30
 }
 
+variable "api_throttle_rate_limit" {
+  description = "Maximum steady requests per second accepted by the HTTP API stage. Limits abusive traffic before it can consume Lambda concurrency or generate request charges."
+  type        = number
+  default     = 50
+
+  validation {
+    condition     = var.api_throttle_rate_limit > 0
+    error_message = "api_throttle_rate_limit must be greater than zero."
+  }
+}
+
+variable "api_throttle_burst_limit" {
+  description = "Maximum short request burst accepted by the HTTP API stage."
+  type        = number
+  default     = 100
+
+  validation {
+    condition     = var.api_throttle_burst_limit > 0
+    error_message = "api_throttle_burst_limit must be greater than zero."
+  }
+}
+
 variable "enable_custom_domain" {
   description = "Whether to create ACM, custom domain, and Route53 records"
   type        = bool
