@@ -122,8 +122,10 @@ jobs:
 
       - name: Stop BSL workers if idle
         # BSL has its own dev/prod pipelines. It was excluded from the original
-        # web-only sweep, leaving idle BSL workers running indefinitely.
-        if: always() && steps.configure-aws.outcome == 'success'
+        # web-only sweep, leaving idle BSL workers running indefinitely. Do not
+        # run this from a push: CodePipeline may not have registered the new
+        # execution yet, and stopping during that window can strand a build.
+        if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'stop')) && steps.configure-aws.outcome == 'success'
         run: |
           set -euo pipefail
           packages/tools/scripts/manage-web-pipeline-worker.sh \

@@ -49,7 +49,10 @@ stop-only: it will not start a stopped worker unless the repository variable
 The same scheduled workflow performs independent idle-stop sweeps for the
 HashPass web workers and the BSL dev/prod workers every ten minutes. Each group
 is stopped only when its own CodePipeline executions are idle; activity in one
-group must not keep the other group's instances running.
+group must not keep the other group's instances running. The BSL sweep does not
+run on a source push, because CodePipeline can take a short time to register a
+new execution after that push; use the scheduled sweep or an explicit `stop`
+workflow dispatch instead.
 
 ## Deployment Contract
 
