@@ -109,6 +109,7 @@
   "version.otaRestart": "Restart",
   "version.otaSource": "Running:",
   "index.docs.viewStorybook": "See Full Documentation",
+  "index.docs.gettingStarted.seeDemo": "See the demo videos",
   "explore.banner.exploreAllEventsDescription": "Select an event to view its speakers, agenda, and quick access",
   "explore.selectEvent": "Select Event",
   "index.docs.gettingStarted.requestMeeting.title": "Send a Meeting Request",
