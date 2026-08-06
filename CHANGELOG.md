@@ -1,3 +1,13 @@
+## [1.8.329](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.328...v1.8.329) (2026-08-06)
+
+
+### Bug Fixes
+
+* **auth:** fast-path the Supabase bridge for returning users ([80d098e](https://github.com/hashpass-tech/hashpass.tech/commit/80d098e671ea008d62e4375010640b1d608b35da))
+* **mobile:** add missing index.docs.gettingStarted.seeDemo translation ([06cd0a2](https://github.com/hashpass-tech/hashpass.tech/commit/06cd0a2fa22754823a519fd24ea9ca54fc569e42))
+### Release Highlights
+- fast-path the Supabase bridge for returning users; add missing index.docs.gettingStarted.seeDemo translation
+
 ## [1.8.328](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.327...v1.8.328) (2026-08-06)
 
 
