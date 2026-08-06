@@ -22,7 +22,7 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608061023, // Updated to current timestamp
+  buildNumber: 202608061110, // Updated to current timestamp
   releaseDate: '2026-08-06',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -30,15 +30,33 @@ export const CURRENT_VERSION: VersionInfo = {
     // No new features
   ],
   bugfixes: [
-    'fast-path the Supabase bridge for returning users',
-    'add missing index.docs.gettingStarted.seeDemo translation'
+    'stop idle BSL build workers',
+    'require approval for persistent workers',
+    'throttle public API traffic'
   ],
   breakingChanges: [],
-  notes: 'fast-path the Supabase bridge for returning users; add missing index.docs.gettingStarted.seeDemo translation'
+  notes: 'stop idle BSL build workers; require approval for persistent workers; throttle public API traffic'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.330': {
+    version: '1.8.330',
+    buildNumber: 202608061110,
+    releaseDate: '2026-08-06',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'stop idle BSL build workers',
+      'require approval for persistent workers',
+      'throttle public API traffic'
+    ],
+    breakingChanges: [],
+    notes: 'stop idle BSL build workers; require approval for persistent workers; throttle public API traffic'
+  },
   '1.8.329': {
     version: '1.8.329',
     buildNumber: 202608061023,
