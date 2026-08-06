@@ -1,3 +1,18 @@
+## [1.8.328](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.327...v1.8.328) (2026-08-06)
+
+
+### Bug Fixes
+
+* **email:** avoid closure-narrowing false positive on welcome logo cache ([1a1a783](https://github.com/hashpass-tech/hashpass.tech/commit/1a1a783d7f3e2882ccdadc6eacfca2829d81993b))
+* **tools:** typecheck-changed.mjs against each package's own tsconfig ([a6fb1d3](https://github.com/hashpass-tech/hashpass.tech/commit/a6fb1d3394589864703f7b927670b1b0a38d0fe3))
+
+
+### Features
+
+* **email:** dual-sender welcome email + Infisical-backed secondary secrets ([90363f8](https://github.com/hashpass-tech/hashpass.tech/commit/90363f8dc805b76ba53020294e720b99b0e3d4d7))
+### Release Highlights
+- dual-sender welcome email + Infisical-backed secondary secrets; avoid closure-narrowing false positive on welcome logo cache; typecheck-changed.mjs against each package's own tsconfig
+
 ## [1.8.327](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.326...v1.8.327) (2026-08-06)
 ### Released
 - refine Club hero and install flow

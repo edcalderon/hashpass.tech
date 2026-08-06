@@ -22,22 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608060731, // Updated to current timestamp
+  buildNumber: 202608060911, // Updated to current timestamp
   releaseDate: '2026-08-06',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'refine Club hero and install flow'
+    'dual-sender welcome email + Infisical-backed secondary secrets'
   ],
   bugfixes: [
-    // No bugfixes
+    'avoid closure-narrowing false positive on welcome logo cache',
+    'typecheck-changed.mjs against each package\'s own tsconfig'
   ],
   breakingChanges: [],
-  notes: 'refine Club hero and install flow'
+  notes: 'dual-sender welcome email + Infisical-backed secondary secrets; avoid closure-narrowing false positive on welcome logo cache; typecheck-changed.mjs against each package\'s own tsconfig'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.328': {
+    version: '1.8.328',
+    buildNumber: 202608060911,
+    releaseDate: '2026-08-06',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'dual-sender welcome email + Infisical-backed secondary secrets'
+    ],
+    bugfixes: [
+      'avoid closure-narrowing false positive on welcome logo cache',
+      'typecheck-changed.mjs against each package\'s own tsconfig'
+    ],
+    breakingChanges: [],
+    notes: 'dual-sender welcome email + Infisical-backed secondary secrets; avoid closure-narrowing false positive on welcome logo cache; typecheck-changed.mjs against each package\'s own tsconfig'
+  },
   '1.8.327': {
     version: '1.8.327',
     buildNumber: 202608060731,
