@@ -553,18 +553,17 @@ try {
     'NODEMAILER_FROM_SUPPORT',
     'BREVO_API_KEY',
     'BREVO_SMS_SENDER',
-    // Deliberately NOT syncing NODEMAILER_*_INFO here -- that's the
-    // "non-critical" tier of the hybrid secrets policy. Those live in
-    // Infisical and are fetched at runtime (lib/server/infisical-secrets.ts)
-    // instead of as raw env vars, specifically because adding them here
-    // pushed both Lambdas over AWS's 4KB environment variable limit
-    // (RequestEntityTooLargeException, confirmed on both prod and dev).
-    // Only the small Infisical machine-identity credentials below need to
-    // be actual Lambda env vars.
-    'INFISICAL_DOMAIN',
-    'INFISICAL_PROJECT_ID',
-    'INFISICAL_CLIENT_ID',
-    'INFISICAL_CLIENT_SECRET',
+    // Deliberately NOT syncing NODEMAILER_*_INFO or INFISICAL_* here --
+    // that's the "non-critical" tier of the hybrid secrets policy. Those
+    // live in Infisical and are fetched at runtime
+    // (lib/server/infisical-secrets.ts) instead of as raw env vars,
+    // specifically because adding even the 4 small INFISICAL_* bootstrap
+    // keys pushed both Lambdas over AWS's 4KB environment variable limit
+    // (RequestEntityTooLargeException, confirmed on both prod and dev --
+    // both were already at/over the real limit before adding anything).
+    // The Infisical bootstrap credentials themselves live in AWS Secrets
+    // Manager instead (hashpass/expo-router-api-<env>/infisical-bootstrap),
+    // fetched via the Lambda's own IAM role -- see infisical-secrets.ts.
   ];
 
   const tenantSupabaseKeys = Object.values(resolveTenantSupabaseBindings(runtime)).filter(Boolean);
