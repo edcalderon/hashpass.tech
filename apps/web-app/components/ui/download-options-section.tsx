@@ -1,10 +1,10 @@
 'use client';
 
 import { useTranslation } from '@hashpass/i18n';
-import Image from 'next/image';
 import { Download, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { HashpassLogo } from '@/components/ui/hashpass-logo';
 
 export const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.hashpass.tech&hl=en-US&ah=RlHQxhHQladajDZn9ZGTm7_ucMs';
@@ -20,22 +20,22 @@ function GooglePlayIcon() {
   );
 }
 
-/** Download call-to-action designed to float over the landing-page gallery. */
+/** Download call-to-action displayed after the landing-page gallery completes. */
 export function DownloadShowcase() {
   const { t } = useTranslation('download');
 
   return (
     <section
       aria-labelledby="download-hashpass-title"
-      className="download-showcase pointer-events-none absolute inset-x-0 top-10 z-20 mx-auto flex justify-center px-5 sm:top-14"
+      className="download-showcase relative z-20 mx-auto flex w-full justify-center px-5 pb-24 pt-10 sm:pb-36 sm:pt-16"
     >
-      <div className="download-showcase__card pointer-events-auto relative w-full max-w-3xl overflow-hidden rounded-[28px] border border-white/60 bg-white/75 px-5 py-6 text-center shadow-[0_24px_80px_rgba(73,55,140,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70 sm:px-9 sm:py-8">
+      <div className="download-showcase__card relative w-full max-w-3xl overflow-hidden rounded-[28px] border border-white/60 bg-white/75 px-5 py-6 text-center shadow-[0_24px_80px_rgba(73,55,140,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70 sm:px-9 sm:py-8">
         <div aria-hidden="true" className="absolute -left-16 -top-20 h-48 w-48 rounded-full bg-cyan-300/25 blur-3xl" />
         <div aria-hidden="true" className="absolute -bottom-24 -right-12 h-56 w-56 rounded-full bg-violet-400/30 blur-3xl" />
 
         <div className="relative">
           <div className="download-showcase__app-icon mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-[0_12px_35px_rgba(21,101,192,0.25)] ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10">
-            <Image src="/hashpass-club-favicon/icon-192-v2.png" alt="" width={48} height={48} priority />
+            <HashpassLogo alt="" width={48} height={48} priority />
             <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-lg">
               <Download className="h-3.5 w-3.5" strokeWidth={2.5} />
             </span>
@@ -63,7 +63,7 @@ export function DownloadShowcase() {
             </Button>
             <Button asChild size="lg" variant="outline" className="h-14 rounded-2xl border-blue-500/25 bg-white/55 px-6 !text-slate-900 shadow-lg shadow-blue-950/5 backdrop-blur-md hover:bg-white/90 dark:border-white/15 dark:bg-slate-900/80 dark:!text-white dark:hover:bg-slate-900">
               <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" aria-label={t('downloadAriaLabel')}>
-                <Image src="/hashpass-club-favicon/icon-192-v2.png" alt="" width={28} height={28} />
+                <HashpassLogo alt="" width={28} height={28} />
                 <span className="ml-3 font-semibold">{t('downloadHashpass')}</span>
                 <Download className="ml-2 h-4 w-4 download-showcase__arrow" />
               </a>

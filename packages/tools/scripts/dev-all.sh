@@ -19,17 +19,26 @@ DIRECTUS_READY_TIMEOUT_SECONDS="${DIRECTUS_READY_TIMEOUT_SECONDS:-90}"
 port_is_busy() {
   local port="$1"
 
+  # `lsof`/`ss` can exist but be denied access to the socket table (notably
+  # in sandboxed shells). A failed inspection must not be treated as proof
+  # that the port is free; fall through to the TCP connection probe instead.
   if command -v lsof >/dev/null 2>&1; then
-    lsof -nP -iTCP:"${port}" -sTCP:LISTEN >/dev/null 2>&1
-    return $?
+    if lsof -nP -iTCP:"${port}" -sTCP:LISTEN >/dev/null 2>&1; then
+      return 0
+    fi
   fi
 
   if command -v ss >/dev/null 2>&1; then
-    ss -ltn "( sport = :${port} )" >/dev/null 2>&1
-    return $?
+    if ss -ltn "( sport = :${port} )" 2>/dev/null | awk 'NR > 1 { found = 1 } END { exit !found }'; then
+      return 0
+    fi
   fi
 
-  (exec 3<>"/dev/tcp/127.0.0.1/${port}") >/dev/null 2>&1
+  if (exec 3<>"/dev/tcp/127.0.0.1/${port}") >/dev/null 2>&1; then
+    return 0
+  fi
+
+  return 1
 }
 
 port_is_reserved() {
@@ -144,8 +153,9 @@ echo "Starting Directus (detached)..."
 pnpm --filter hashpass-directus run up
 
 echo "Starting club web app on port ${CLUB_PORT}..."
+CLUB_RUNTIME_DIR="$(node packages/tools/scripts/prepare-club-dev-runtime.mjs "${CLUB_PORT}")"
 (
-  cd apps/web-app
+  cd "${CLUB_RUNTIME_DIR}"
   pnpm exec next dev --webpack --port "${CLUB_PORT}"
 ) &
 CLUB_PID=$!

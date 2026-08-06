@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "build": "pnpm brand:check && next build --webpack",
+    "brand:check": "node scripts/check-brand-assets.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "version:update": "node ../../packages/tools/scripts/update-club-web-version.mjs",

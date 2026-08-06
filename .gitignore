@@ -11,6 +11,8 @@ apps/docs/build/
 aws/dist/
 apps/mobile-app/public/_expo/
 apps/web-app/.next/
+apps/web-app/.next-dev-all-*/
+apps/web-app/.next-dev-all-runtime-*/
 apps/web-app/.vercel/
 apps/web-app/out/
 lambda-deployment.zip

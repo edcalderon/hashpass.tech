@@ -27,6 +27,24 @@ The workflow lives in `.github/workflows/deploy-club-docs.yml`.
 
 The docs build still uses `HASHPASS_DOCS_URL=https://hashpass.club` and `HASHPASS_DOCS_BASE_URL=/documentation/` so all generated links are canonical on the production domain.
 
+## Releasing Club Page Changes
+
+Public Club changes, including the landing-page hero, app-install call-to-action,
+and Club documentation, are published by the `club-v*` tag workflow. The tag is
+the deployment trigger; pushing a branch alone does not update GitHub Pages.
+
+After the corresponding `develop` → `main` promotion PR has been approved and
+merged, create the Club release from the resulting `main` commit:
+
+```bash
+pnpm run release:club:web:patch -- --notes "describe the Club-facing change"
+```
+
+This bumps the app-local Club version, creates and pushes a `club-vX.Y.Z` tag,
+and starts `deploy-club-docs.yml`. Wait for both its build and Pages deployment
+jobs to pass before considering `https://hashpass.club` updated. Do not create a
+Club tag from an unmerged promotion branch: that would deploy unreviewed code.
+
 ## Current References
 
 - `archive/amplify/docs/AMPLIFY-API-ROUTES.md` - legacy Amplify API route reference kept in the repository archive only

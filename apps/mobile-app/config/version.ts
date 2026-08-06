@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608051651, // Updated to current timestamp
-  releaseDate: '2026-08-05',
+  buildNumber: 202608060731, // Updated to current timestamp
+  releaseDate: '2026-08-06',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    // No new features
+    'refine Club hero and install flow'
   ],
   bugfixes: [
-    'map live timer icon on web'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'map live timer icon on web'
+  notes: 'refine Club hero and install flow'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.327': {
+    version: '1.8.327',
+    buildNumber: 202608060731,
+    releaseDate: '2026-08-06',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'refine Club hero and install flow'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'refine Club hero and install flow'
+  },
   '1.8.326': {
     version: '1.8.326',
     buildNumber: 202608051651,

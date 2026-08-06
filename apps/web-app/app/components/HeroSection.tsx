@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { useTranslation } from '@hashpass/i18n';
 import { ShaderBackground } from './ShaderBackground';
 import { useTheme } from './ThemeProvider';
@@ -36,6 +36,9 @@ export function HeroSection() {
   const { t } = useTranslation('hero');
   const { resolvedTheme } = useTheme();
   const galleryRef = useRef<HTMLDivElement>(null);
+  const titleEffectRef = useRef<HTMLDivElement>(null);
+  const [titlePulse, setTitlePulse] = useState(0);
+  const [activeTitleLetter, setActiveTitleLetter] = useState<number | null>(null);
   const isDark = resolvedTheme === 'dark';
 
   // ── Hero text colors ────────────────────────────────────────────────────────
@@ -64,6 +67,43 @@ export function HeroSection() {
   const scrollToGallery = () => {
     galleryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  const moveTitleLight = (event: PointerEvent<HTMLElement>) => {
+    const element = titleEffectRef.current;
+    if (!element) return;
+
+    const bounds = element.getBoundingClientRect();
+    const pointerX = (event.clientX - bounds.left) / bounds.width;
+    const pointerY = (event.clientY - bounds.top) / bounds.height;
+    element.style.setProperty('--club-pointer-x', `${pointerX * 100}%`);
+    element.style.setProperty('--club-pointer-y', `${pointerY * 100}%`);
+    element.style.setProperty('--club-drift-x', `${(pointerX - 0.5) * 34}px`);
+  };
+
+  const activateTitleEffect = () => setTitlePulse((value) => value + 1);
+
+  const moveTitleLetter = (event: PointerEvent<HTMLSpanElement>, index: number) => {
+    moveTitleLight(event);
+    setActiveTitleLetter(index);
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.style.setProperty('--club-letter-x', `${((event.clientX - bounds.left) / bounds.width) * 100}%`);
+    event.currentTarget.style.setProperty('--club-letter-y', `${((event.clientY - bounds.top) / bounds.height) * 100}%`);
+  };
+
+  const clearTitleLetter = (event: PointerEvent<HTMLSpanElement>, index: number) => {
+    event.currentTarget.style.removeProperty('--club-letter-x');
+    event.currentTarget.style.removeProperty('--club-letter-y');
+    setActiveTitleLetter((activeIndex) => activeIndex === index ? null : activeIndex);
+  };
+
+  const titleEffectStyle = {
+    '--club-title-base': headlineColor,
+    '--club-liquid-deep': isDark ? '#b9ccff' : '#102a56',
+    '--club-liquid-bright': isDark ? '#e4b8ff' : '#2979d8',
+    '--club-liquid-warm': isDark ? '#ffb4d0' : '#a02e86',
+  } as CSSProperties;
+  const titleCharacters = t('title').split('');
 
   return (
     <>
@@ -106,24 +146,43 @@ export function HeroSection() {
             </span>
           </div>
 
-          {/* Headline */}
-          <h1
-            style={{
-              fontSize: 'clamp(44px, 7.5vw, 88px)',
-              fontWeight: 700,
-              lineHeight: 1.05,
-              letterSpacing: -1.7,
-              color: headlineColor,
-              maxWidth: 860,
-              margin: '0 0 24px',
-              fontFamily: 'var(--font-display)',
-              whiteSpace: 'pre-line',
-              animation: 'hero-fade-up 0.5s 0.1s ease both',
-              transition: 'color 0.35s',
-            }}
+          {/* Headline — the colour field and particles are decorative; the h1
+              remains ordinary selectable text for screen readers and search. */}
+          <div
+            ref={titleEffectRef}
+            className="club-hero-title-orbit"
+            data-pulse={titlePulse}
+            style={titleEffectStyle}
+            onPointerMove={moveTitleLight}
+            onPointerEnter={moveTitleLight}
+            onClick={activateTitleEffect}
           >
-            {t('title')}
-          </h1>
+            <span className="club-hero-title-glass" aria-hidden />
+            <span className="club-hero-title-dust" aria-hidden>
+              {Array.from({ length: 13 }, (_, index) => (
+                <i key={`${titlePulse}-${index}`} />
+              ))}
+            </span>
+            <h1 className="club-hero-title" aria-label={t('title')}>
+              {titleCharacters.map((character, index) => {
+                if (character === '\n') return <br key={`break-${index}`} />;
+                if (character === ' ') return <span className="club-hero-title-space" key={`space-${index}`}>&nbsp;</span>;
+
+                return (
+                  <span
+                    className="club-hero-title-letter"
+                    key={`${character}-${index}`}
+                    data-active={activeTitleLetter === index || undefined}
+                    onPointerEnter={(event) => moveTitleLetter(event, index)}
+                    onPointerMove={(event) => moveTitleLetter(event, index)}
+                    onPointerLeave={(event) => clearTitleLetter(event, index)}
+                  >
+                    {character}
+                  </span>
+                );
+              })}
+            </h1>
+          </div>
 
           {/* Subtitle */}
           <p
@@ -190,6 +249,124 @@ export function HeroSection() {
             0%,100% { top: 6px; opacity: 1; }
             50%      { top: 18px; opacity: 0.28; }
           }
+          .club-hero-title-orbit {
+            --club-pointer-x: 50%;
+            --club-pointer-y: 50%;
+            --club-drift-x: 0px;
+            position: relative;
+            display: inline-grid;
+            max-width: min(860px, 100%);
+            margin: 0 0 24px;
+            isolation: isolate;
+            cursor: crosshair;
+            animation: hero-fade-up 0.5s 0.1s ease both;
+          }
+          .club-hero-title {
+            position: relative;
+            z-index: 2;
+            margin: 0;
+            font-family: var(--font-display);
+            font-size: clamp(44px, 7.5vw, 88px);
+            font-weight: 700;
+            line-height: 1.05;
+            letter-spacing: -1.7px;
+            color: var(--club-title-base);
+            text-shadow: 0 0 0.01px var(--club-title-base);
+            transition: filter 280ms ease, letter-spacing 360ms ease;
+          }
+          .club-hero-title-orbit:hover .club-hero-title {
+            filter: drop-shadow(0 10px 22px color-mix(in srgb, var(--club-liquid-bright) 24%, transparent));
+            letter-spacing: -1.15px;
+          }
+          .club-hero-title-letter {
+            --club-letter-x: 50%;
+            --club-letter-y: 50%;
+            position: relative;
+            display: inline-block;
+            color: var(--club-title-base);
+            transform: translateZ(0);
+            transition: color 180ms ease, filter 240ms ease, transform 360ms cubic-bezier(.16,.9,.3,1);
+            will-change: background-position, filter, transform;
+          }
+          .club-hero-title-space { display: inline-block; }
+          .club-hero-title-letter[data-active=\"true\"] {
+            color: transparent;
+            background-image:
+              radial-gradient(circle 110% at var(--club-letter-x) var(--club-letter-y), rgba(255,255,255,1) 0%, rgba(255,255,255,.9) 32%, rgba(239,247,255,.54) 64%, rgba(224,240,255,.16) 100%),
+              linear-gradient(138deg, rgba(255,255,255,.84), rgba(236,247,255,.34) 48%, rgba(255,255,255,.10));
+            background-size: 230% 230%, 180% 180%;
+            background-position: var(--club-letter-x) var(--club-letter-y), 50% 50%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            -webkit-text-stroke: .45px rgba(255,255,255,.48);
+            mix-blend-mode: screen;
+            filter: brightness(1.2) drop-shadow(0 0 11px rgba(255,255,255,.68));
+            transform: translateY(-0.045em) scale(1.045);
+            animation: club-letter-liquid 1.15s cubic-bezier(.22,1,.36,1) both;
+          }
+          .club-hero-title-glass {
+            position: absolute;
+            z-index: 1;
+            inset: -18% -7%;
+            pointer-events: none;
+            opacity: 0;
+            background:
+              radial-gradient(circle 24% at var(--club-pointer-x) var(--club-pointer-y), color-mix(in srgb, var(--club-liquid-bright) 34%, transparent), transparent 72%),
+              radial-gradient(circle 17% at calc(var(--club-pointer-x) + 11%) calc(var(--club-pointer-y) - 15%), color-mix(in srgb, var(--club-liquid-warm) 24%, transparent), transparent 74%);
+            filter: blur(14px);
+            mix-blend-mode: screen;
+            transition: opacity 260ms ease;
+          }
+          .club-hero-title-orbit:hover .club-hero-title-glass { opacity: 1; }
+          .club-hero-title-dust { position: absolute; inset: -12%; z-index: 3; pointer-events: none; }
+          .club-hero-title-dust i {
+            position: absolute;
+            width: 5px;
+            aspect-ratio: 1;
+            border-radius: 999px;
+            opacity: 0;
+            background: color-mix(in srgb, var(--club-liquid-bright) 78%, white);
+            box-shadow: 0 0 12px color-mix(in srgb, var(--club-liquid-warm) 56%, transparent);
+          }
+          .club-hero-title-dust i:nth-child(1) { left: 8%; top: 62%; }
+          .club-hero-title-dust i:nth-child(2) { left: 17%; top: 26%; width: 3px; }
+          .club-hero-title-dust i:nth-child(3) { left: 29%; top: 77%; width: 7px; }
+          .club-hero-title-dust i:nth-child(4) { left: 37%; top: 19%; width: 4px; }
+          .club-hero-title-dust i:nth-child(5) { left: 46%; top: 57%; width: 3px; }
+          .club-hero-title-dust i:nth-child(6) { left: 54%; top: 18%; width: 6px; }
+          .club-hero-title-dust i:nth-child(7) { left: 61%; top: 78%; width: 4px; }
+          .club-hero-title-dust i:nth-child(8) { left: 69%; top: 36%; width: 7px; }
+          .club-hero-title-dust i:nth-child(9) { left: 77%; top: 67%; width: 3px; }
+          .club-hero-title-dust i:nth-child(10) { left: 85%; top: 22%; width: 5px; }
+          .club-hero-title-dust i:nth-child(11) { left: 92%; top: 58%; width: 3px; }
+          .club-hero-title-dust i:nth-child(12) { left: 72%; top: 9%; width: 4px; }
+          .club-hero-title-dust i:nth-child(13) { left: 23%; top: 95%; width: 3px; }
+          .club-hero-title-orbit:hover .club-hero-title-dust i,
+          .club-hero-title-orbit[data-pulse]:active .club-hero-title-dust i {
+            animation: club-title-dust 1.8s cubic-bezier(.16,.8,.28,1) both;
+          }
+          .club-hero-title-orbit[data-pulse]:not([data-pulse="0"]) .club-hero-title-dust i {
+            animation: club-title-dust 1.25s cubic-bezier(.1,.9,.26,1) both;
+          }
+          @keyframes club-letter-liquid {
+            0% { background-size: 105% 105%, 100% 100%; filter: brightness(1.3) drop-shadow(0 0 3px rgba(255,255,255,.28)); }
+            54% { background-size: 268% 268%, 186% 186%; filter: brightness(1.06) drop-shadow(0 0 14px rgba(255,255,255,.54)); }
+            100% { background-size: 230% 230%, 180% 180%; }
+          }
+          @keyframes club-title-dust {
+            0% { transform: translate3d(0, 0, 0) scale(.3); opacity: 0; }
+            18% { opacity: .9; }
+            100% { transform: translate3d(var(--club-drift-x), -34px, 0) scale(1.8); opacity: 0; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .club-hero-title-orbit { cursor: default; }
+            .club-hero-title-orbit:hover .club-hero-title,
+            .club-hero-title-letter[data-active=\"true\"],
+            .club-hero-title-orbit:hover .club-hero-title-dust i,
+            .club-hero-title-orbit[data-pulse]:not([data-pulse="0"]) .club-hero-title-dust i { animation: none; }
+            .club-hero-title-glass, .club-hero-title-orbit:hover .club-hero-title-glass { opacity: 0; }
+          }
         `}</style>
       </ShaderBackground>
 
@@ -207,7 +384,6 @@ export function HeroSection() {
           transition: 'background-color 0.4s',
         }}
       >
-        <DownloadShowcase />
         {/* Radial glow 1 — top-right, blue/lavender, synced to hero accent */}
         <div
           aria-hidden
@@ -298,6 +474,9 @@ export function HeroSection() {
             </ContainerSticky>
           </ContainerScroll>
         </div>
+
+        {/* The gallery has finished its scroll animation before the app install CTA appears. */}
+        <DownloadShowcase />
       </div>
     </>
   );

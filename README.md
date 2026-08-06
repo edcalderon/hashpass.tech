@@ -20,13 +20,10 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.326)
+## 📋 Latest Changes (v1.8.327)
 
-### Bug Fixes
-
-* **agenda:** map live timer icon on web ([e804c59](https://github.com/hashpass-tech/hashpass.tech/commit/e804c59d31a0e3a253ce4b0400ac3ce0212084f7))
-### Release Highlights
-- map live timer icon on web
+### Released
+- refine Club hero and install flow
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
