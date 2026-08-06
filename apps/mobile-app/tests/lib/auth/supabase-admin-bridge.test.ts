@@ -240,8 +240,77 @@ describe('supabase-admin-bridge', () => {
   });
 
   describe('ensureSupabaseAccountForEmail', () => {
+    // No known Supabase id on file in the public.user registry -- the fast
+    // path (getUserById + updateUserById) is skipped and every test below
+    // falls through to the create-then-scan path it was already exercising.
+    const noRegistryRow = () => ({
+      select: () => ({
+        eq: () => ({ maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }) }),
+      }),
+    });
+
+    it('skips createUser/listUsers entirely when the registry already has a known Supabase id', async () => {
+      const maybeSingle = jest.fn().mockResolvedValue({
+        data: { provider_ids: { supabase: 'known-uuid' } },
+        error: null,
+      });
+      const createUser = jest.fn();
+      const listUsers = jest.fn();
+      const getUserById = jest.fn().mockResolvedValue({
+        data: { user: { id: 'known-uuid', user_metadata: { existing: true } } },
+        error: null,
+      });
+      const updateUserById = jest.fn().mockResolvedValue({ error: null });
+      const client = {
+        from: jest.fn().mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
+        auth: { admin: { createUser, listUsers, getUserById, updateUserById } },
+      } as any;
+
+      const result = await ensureSupabaseAccountForEmail(client, {
+        email: 'known@example.com',
+        userMetadata: { auth_provider: 'better-auth' },
+      });
+
+      expect(result).toEqual({ id: 'known-uuid' });
+      expect(client.from).toHaveBeenCalledWith('user');
+      expect(getUserById).toHaveBeenCalledWith('known-uuid');
+      expect(updateUserById).toHaveBeenCalledWith(
+        'known-uuid',
+        expect.objectContaining({
+          user_metadata: expect.objectContaining({ existing: true, auth_provider: 'better-auth' }),
+        })
+      );
+      expect(createUser).not.toHaveBeenCalled();
+      expect(listUsers).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the create/scan path when the known id no longer resolves via getUserById', async () => {
+      const maybeSingle = jest.fn().mockResolvedValue({
+        data: { provider_ids: { supabase: 'stale-uuid' } },
+        error: null,
+      });
+      const client = {
+        from: jest.fn().mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
+        auth: {
+          admin: {
+            getUserById: jest.fn().mockResolvedValue({ data: null, error: { message: 'not found' } }),
+            createUser: jest.fn().mockResolvedValue({ data: { user: { id: 'new-uuid' } }, error: null }),
+          },
+        },
+      } as any;
+
+      const result = await ensureSupabaseAccountForEmail(client, {
+        email: 'stale@example.com',
+        userMetadata: {},
+      });
+
+      expect(result).toEqual({ id: 'new-uuid' });
+      expect(client.auth.admin.createUser).toHaveBeenCalled();
+    });
+
     it('creates a new account when none exists', async () => {
       const client = {
+        from: jest.fn().mockReturnValue(noRegistryRow()),
         auth: {
           admin: {
             createUser: jest.fn().mockResolvedValue({ data: { user: { id: 'new-uuid' } }, error: null }),
@@ -259,6 +328,7 @@ describe('supabase-admin-bridge', () => {
 
     it('updates the existing account metadata on a duplicate-email error', async () => {
       const client = {
+        from: jest.fn().mockReturnValue(noRegistryRow()),
         auth: {
           admin: {
             createUser: jest.fn().mockResolvedValue({ data: null, error: { message: 'User already registered' } }),
@@ -287,6 +357,7 @@ describe('supabase-admin-bridge', () => {
 
     it('returns null when a duplicate account exists but cannot be located by email', async () => {
       const client = {
+        from: jest.fn().mockReturnValue(noRegistryRow()),
         auth: {
           admin: {
             createUser: jest.fn().mockResolvedValue({ data: null, error: { message: 'User already registered' } }),
@@ -310,6 +381,7 @@ describe('supabase-admin-bridge', () => {
 
     it('still returns the existing id when the metadata update itself fails', async () => {
       const client = {
+        from: jest.fn().mockReturnValue(noRegistryRow()),
         auth: {
           admin: {
             createUser: jest.fn().mockResolvedValue({ data: null, error: { message: 'User already registered' } }),
@@ -335,6 +407,7 @@ describe('supabase-admin-bridge', () => {
 
     it('returns null for a non-duplicate createUser error', async () => {
       const client = {
+        from: jest.fn().mockReturnValue(noRegistryRow()),
         auth: {
           admin: {
             createUser: jest.fn().mockResolvedValue({ data: null, error: { message: 'Invalid email' } }),
@@ -359,6 +432,7 @@ describe('supabase-admin-bridge', () => {
 
     it('returns null when an unexpected error is thrown', async () => {
       const client = {
+        from: jest.fn().mockReturnValue(noRegistryRow()),
         auth: {
           admin: {
             createUser: jest.fn().mockRejectedValue(new Error('network down')),

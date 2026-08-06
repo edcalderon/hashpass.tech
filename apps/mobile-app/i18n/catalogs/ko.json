@@ -109,6 +109,7 @@
   "version.otaRestart": "다시 시작",
   "version.otaSource": "실행 중:",
   "index.docs.viewStorybook": "See Full Documentation",
+  "index.docs.gettingStarted.seeDemo": "See the demo videos",
   "explore.banner.exploreAllEventsDescription": "이벤트를 선택하면 연사, 일정 및 빠른 이용 메뉴를 확인할 수 있습니다",
   "explore.selectEvent": "이벤트 선택",
   "index.docs.gettingStarted.requestMeeting.title": "Send a Meeting Request",

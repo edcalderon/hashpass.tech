@@ -20,19 +20,14 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.328)
+## 📋 Latest Changes (v1.8.329)
 
 ### Bug Fixes
 
-* **email:** avoid closure-narrowing false positive on welcome logo cache ([1a1a783](https://github.com/hashpass-tech/hashpass.tech/commit/1a1a783d7f3e2882ccdadc6eacfca2829d81993b))
-* **tools:** typecheck-changed.mjs against each package's own tsconfig ([a6fb1d3](https://github.com/hashpass-tech/hashpass.tech/commit/a6fb1d3394589864703f7b927670b1b0a38d0fe3))
-
-
-### Features
-
-* **email:** dual-sender welcome email + Infisical-backed secondary secrets ([90363f8](https://github.com/hashpass-tech/hashpass.tech/commit/90363f8dc805b76ba53020294e720b99b0e3d4d7))
+* **auth:** fast-path the Supabase bridge for returning users ([80d098e](https://github.com/hashpass-tech/hashpass.tech/commit/80d098e671ea008d62e4375010640b1d608b35da))
+* **mobile:** add missing index.docs.gettingStarted.seeDemo translation ([06cd0a2](https://github.com/hashpass-tech/hashpass.tech/commit/06cd0a2fa22754823a519fd24ea9ca54fc569e42))
 ### Release Highlights
-- dual-sender welcome email + Infisical-backed secondary secrets; avoid closure-narrowing false positive on welcome logo cache; typecheck-changed.mjs against each package's own tsconfig
+- fast-path the Supabase bridge for returning users; add missing index.docs.gettingStarted.seeDemo translation
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

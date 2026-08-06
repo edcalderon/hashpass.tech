@@ -182,6 +182,39 @@ export const ensureSupabaseAccountForEmail = async (
   }
 
   try {
+    // Fast path: this email may already have a known Supabase uid on file in
+    // the public.user registry (from a prior bridge, or the better-auth.ts
+    // create hook). Two targeted admin calls (getUserById + updateUserById)
+    // instead of the create-then-scan fallback below, which pages through
+    // admin.listUsers() -- up to 2000 users -- for every returning caller
+    // whose account already exists (i.e. nearly every call to this
+    // function). That scan only gets slower as the user base grows and was
+    // blowing through the mobile app's pass-load timeout budget for
+    // returning users; this fast path makes the common case O(1) instead.
+    const { data: registryRow } = await client
+      .from('user')
+      .select('provider_ids')
+      .eq('email', email)
+      .maybeSingle();
+    const knownId = (registryRow?.provider_ids as Record<string, string> | null | undefined)?.supabase;
+    if (knownId) {
+      const { data: existingData, error: getError } = await client.auth.admin.getUserById(knownId);
+      if (!getError && existingData?.user) {
+        const mergedMetadata: Record<string, unknown> = {
+          ...(existingData.user.user_metadata || {}),
+          ...params.userMetadata,
+        };
+        const updateResult = await client.auth.admin.updateUserById(knownId, {
+          email_confirm: true,
+          user_metadata: mergedMetadata,
+        });
+        if (!updateResult.error) {
+          return { id: knownId };
+        }
+        console.warn('[Supabase Bridge] Fast-path updateUserById failed, falling back:', updateResult.error.message);
+      }
+    }
+
     const createResult = await client.auth.admin.createUser({
       email,
       email_confirm: true,
