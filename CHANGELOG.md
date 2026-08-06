@@ -1,3 +1,7 @@
+## [1.8.327](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.326...v1.8.327) (2026-08-06)
+### Released
+- refine Club hero and install flow
+
 ## [1.8.326](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.325...v1.8.326) (2026-08-05)
 
 
