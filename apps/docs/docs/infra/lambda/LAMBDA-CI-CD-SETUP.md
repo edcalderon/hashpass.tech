@@ -61,6 +61,12 @@ worker for that branch (`develop` → dev, `main` → production), waits for tha
 single pipeline, and stops it when it becomes idle. It never starts the other
 environment merely because a build was triggered.
 
+BSL development now defaults to the existing Ohio CodeBuild project
+`bsl-hashpass-dev-build`; set `development_build_execution_mode = "ec2"` only
+for a reviewed rollback. Validate a dev CodeBuild execution before switching
+the production action. The production migration remains intentionally separate
+until that validation succeeds.
+
 ## Deployment Contract
 
 The target web deploy helper must:
