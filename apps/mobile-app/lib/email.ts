@@ -189,16 +189,27 @@ async function resolveInfoSender(): Promise<{ transporter: ReturnType<typeof bui
 
   let config = buildSmtpConfig('_INFO');
   if (!Object.values(config).every(Boolean)) {
-    const { getInfisicalSecret } = await import('./server/infisical-secrets');
-    const rawPort = process.env.NODEMAILER_PORT_INFO;
-    const [host, port, user, pass, from] = await Promise.all([
-      config.host || getInfisicalSecret('NODEMAILER_HOST_INFO'),
-      rawPort || getInfisicalSecret('NODEMAILER_PORT_INFO'),
-      config.user || getInfisicalSecret('NODEMAILER_USER_INFO'),
-      config.pass || getInfisicalSecret('NODEMAILER_PASS_INFO'),
-      config.from || getInfisicalSecret('NODEMAILER_FROM_INFO'),
-    ]);
-    config = { host: host || '', port: port || '587', user: user || '', pass: pass || '', from: from || '' };
+    // A hard failure anywhere in here (module import, SDK client
+    // construction, network) must not take down the whole welcome-email
+    // send -- confirmed in production: an uncaught throw from this dynamic
+    // import propagated all the way out of sendWelcomeEmail, skipping the
+    // intended "fall back to the primary hashpass.tech sender" behavior
+    // entirely and silently dropping the email.
+    try {
+      const { getInfisicalSecret } = await import('./server/infisical-secrets');
+      const rawPort = process.env.NODEMAILER_PORT_INFO;
+      const [host, port, user, pass, from] = await Promise.all([
+        config.host || getInfisicalSecret('NODEMAILER_HOST_INFO'),
+        rawPort || getInfisicalSecret('NODEMAILER_PORT_INFO'),
+        config.user || getInfisicalSecret('NODEMAILER_USER_INFO'),
+        config.pass || getInfisicalSecret('NODEMAILER_PASS_INFO'),
+        config.from || getInfisicalSecret('NODEMAILER_FROM_INFO'),
+      ]);
+      config = { host: host || '', port: port || '587', user: user || '', pass: pass || '', from: from || '' };
+    } catch (error) {
+      console.error('[email] Infisical info-sender resolution failed, falling back to primary sender:', error instanceof Error ? error.message : String(error));
+      config = { host: '', port: '587', user: '', pass: '', from: '' };
+    }
   }
 
   const enabled = Object.values(config).every(Boolean);
