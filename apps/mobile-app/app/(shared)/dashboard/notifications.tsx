@@ -575,19 +575,6 @@ export default function NotificationsScreen() {
           )}
         </View>
         <View style={styles.notificationHeaderActions}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={t('center.refresh', 'Refresh notifications')}
-            accessibilityHint={t('center.refreshHint', 'Fetch the latest notifications')}
-            disabled={refreshing || isLoading}
-            style={[styles.refreshButton, (refreshing || isLoading) && styles.refreshButtonDisabled]}
-            onPress={() => void onRefresh()}
-          >
-            <MaterialIcons name="refresh" size={18} color={colors.primary} />
-            <Text style={styles.refreshButtonText}>
-              {refreshing ? t('center.refreshing', 'Refreshing…') : t('center.refresh', 'Refresh')}
-            </Text>
-          </TouchableOpacity>
           {unreadCount > 0 && activeTab !== 'archive' && (
             <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
               <Text style={styles.markAllText}>{t('center.markAllRead')}</Text>
@@ -636,6 +623,25 @@ export default function NotificationsScreen() {
         showResultsCount={true}
         customFilterLogic={customFilterLogic}
       />
+
+      {/* Refresh sits below search/filter, matching the speaker directory
+          screen's layout (events/[eventSlug]/speakers/calendar.tsx) instead
+          of crowding the title row alongside Mark All Read. */}
+      <View style={styles.refreshRow}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t('center.refresh', 'Refresh notifications')}
+          accessibilityHint={t('center.refreshHint', 'Fetch the latest notifications')}
+          disabled={refreshing || isLoading}
+          style={[styles.refreshButton, (refreshing || isLoading) && styles.refreshButtonDisabled]}
+          onPress={() => void onRefresh()}
+        >
+          <MaterialIcons name="refresh" size={18} color={colors.primary} />
+          <Text style={styles.refreshButtonText}>
+            {refreshing ? t('center.refreshing', 'Refreshing…') : t('center.refresh', 'Refresh')}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Notifications List */}
       {displayNotifications.length === 0 ? (
@@ -730,6 +736,13 @@ const getStyles = (isDark: boolean, colors: any, navBarHeight: number = 0, scrol
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  refreshRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   refreshButton: {
     flexDirection: 'row',
