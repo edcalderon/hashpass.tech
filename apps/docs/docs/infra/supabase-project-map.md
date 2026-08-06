@@ -143,25 +143,69 @@ called out below, now confirmed from two independent paths (DB and REST),
 not just one. A fresh credential from the Supabase dashboard is required
 before core prod's migration state can be checked at all.
 
-## Known unresolved issue (as of 2026-08-06)
+## `tenants.json` was enforcing the wrong refs (fixed 2026-08-06)
 
-Local `.env`'s bare `SUPABASE_DB_URL_PROD` -- which `core-production`'s
-profile reads as its *own* primary DB URL -- is currently set to BSL's
-connection string (`mnnqryrdlhddorqsrtbn`), not core's own
-(`fxgftanraszjjyeidvia`). This was inherited from an earlier session that
-noted "SUPABASE_DB_URL_PROD and BSL_SUPABASE_DB_URL_PROD resolve to the
-identical physical project" as if that were expected -- it isn't; per this
-table they should point at two different projects. Not fixed here because
-the only core-prod credential available locally (`DB_HOST`/`DB_USER`/
-`DB_PASSWORD`, the pre-existing non-`_PROD`-suffixed set) fails password
-auth (confirmed via a direct connection attempt, not assumed). Whoever
-fixes this needs a working service-role/DB credential for
-`fxgftanraszjjyeidvia` from the Supabase dashboard first. Until fixed,
-avoid relying on `SUPABASE_DB_URL_PROD` for anything core-scoped --
-`EXPO_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (the REST/PostgREST
-path, not a raw DB URL) reliably resolve to the correct core project and
-should be preferred for any core-production server-side Supabase client
-construction.
+Flagged by an automated PR review after this doc was first written: this map
+is descriptive, but `packages/tools/scripts/config/tenants.json` is what
+`propagate-env.js`/`sync-env.js` actually **enforce** at runtime via
+`resolveTenant()` -- both scripts decode the JWT in
+`SUPABASE_SERVICE_ROLE_KEY`/`EXPO_PUBLIC_SUPABASE_KEY` and hard-fail if its
+`ref` claim doesn't match `tenants.json`'s `supabaseRefs[environment]` for
+that tenant. The file had fallen out of sync with reality on every axis:
+
+- `core.supabaseRefs.production` was `mnnqryrdlhddorqsrtbn` (BSL's ref) --
+  should be `fxgftanraszjjyeidvia`. This is almost certainly the root cause
+  of the previously-unresolved "prod Supabase key invalid, breaks
+  OTP/magic-link" issue: `validateSupabaseServiceRoleKey()` in
+  `propagate-env.js` would have *rejected* the correct core key and only
+  accepted a BSL-ref key as valid for core production, for anyone who ran
+  `env:propagate production` while this was wrong. Confirmed independently
+  the same day: the actually-deployed `hashpass-prod-expo-router-api`
+  Lambda's live `SUPABASE_SERVICE_ROLE_KEY` env var decodes to BSL's ref,
+  not core's own.
+- `core.supabaseRefs.development`, `bsl.supabaseRefs.development`, and
+  `blockchainsummit.supabaseRefs.development` were all still
+  `fxgftanraszjjyeidvia` (the old core-only dev project) instead of the new
+  shared dev project `gsugeqozyeokncpbndna` -- so setting the new shared-dev
+  credentials in `.env` (as this doc's own "Shared dev database" section
+  now instructs) would have made the propagation tooling reject them.
+- `defaults.supabaseRefs.development` had the same stale value.
+
+All four corrected; `node -e "require('./packages/tools/scripts/lib/tenant-config.js').resolveTenant(...)"`
+now returns `gsugeqozyeokncpbndna` for every `*-development` pair and the
+correct per-tenant prod ref for every `*-production` pair, verified
+directly. `packages/tools/scripts/config/database-profiles.json` was
+checked too and does **not** have this class of bug -- it only stores env
+var *names* to check in priority order, never a hardcoded ref to compare
+against, so there was nothing to drift.
+
+Note on exposing project refs in docs: an automated reviewer also suggested
+obfuscating these ids since they're sensitive-adjacent. They're intentionally
+left in full here -- this doc's entire value is being the unambiguous,
+greppable source of truth for exactly this class of mismatch, and the refs
+already appear in full throughout this repo's own `.env`, CLAUDE.md, and git
+history, so partial redaction here would create a false sense of protection
+without actually limiting exposure.
+
+## Resolved: core prod credential (fixed 2026-08-06)
+
+The issue previously documented here is fixed. A working core-prod DB
+credential was obtained; local `.env`'s `SUPABASE_DB_URL_PROD` now correctly
+points at `fxgftanraszjjyeidvia` (verified via a live connection, not
+assumed), and a stale duplicate `SUPABASE_DB_URL_PROD`/`DATABASE_URL_PROD`
+pair further down the file (holding BSL's connection string, which was
+silently winning via bash's last-definition-wins `source` behavior) was
+removed. `SUPABASE_SERVICE_ROLE_KEY_PROD` had the same class of bug --
+holding BSL's key instead of core's own -- and is fixed the same way; see
+the `tenants.json` section above for how this actually happened and its
+likely link to the "prod Supabase key invalid" issue. `DB_PASSWORD` was also
+just stale (not a syntax issue) and is now correct.
+
+Deploying this fix to the **live** Lambda (`hashpass-prod-expo-router-api`)
+is a separate, not-yet-done step -- `.env` only fixes local tooling. That
+needs `packages/tools/scripts/deploy-api-lambda.sh` (or the next normal
+`infra-deploy.yml` run on a `main` push) and is a real production mutation,
+left for a human to trigger deliberately.
 
 ## Practical checklist before touching `.env`
 

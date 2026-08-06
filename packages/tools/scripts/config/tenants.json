@@ -10,7 +10,7 @@
       "production": "https://sso.hashpass.co"
     },
     "supabaseRefs": {
-      "development": "fxgftanraszjjyeidvia",
+      "development": "gsugeqozyeokncpbndna",
       "production": "fxgftanraszjjyeidvia"
     },
     "apiDomains": {
@@ -43,8 +43,8 @@
         "production": "https://hashpass.tech"
       },
       "supabaseRefs": {
-        "development": "fxgftanraszjjyeidvia",
-        "production": "mnnqryrdlhddorqsrtbn"
+        "development": "gsugeqozyeokncpbndna",
+        "production": "fxgftanraszjjyeidvia"
       }
     },
     "club": {
@@ -101,7 +101,7 @@
         }
       },
       "supabaseRefs": {
-        "development": "fxgftanraszjjyeidvia",
+        "development": "gsugeqozyeokncpbndna",
         "production": "mnnqryrdlhddorqsrtbn"
       }
     },
@@ -131,7 +131,7 @@
         }
       },
       "supabaseRefs": {
-        "development": "fxgftanraszjjyeidvia",
+        "development": "gsugeqozyeokncpbndna",
         "production": "mnnqryrdlhddorqsrtbn"
       }
     }
