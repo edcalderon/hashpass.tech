@@ -13,6 +13,7 @@ jest.mock('@/lib/supabase-server', () => ({
 
 jest.mock('@/lib/email', () => ({
   sendSubscriptionConfirmation: (...args: unknown[]) => mockSendSubscriptionConfirmation(...args),
+  SUPPORTED_LOCALES: ['en', 'es', 'ko', 'fr', 'pt', 'de'],
 }));
 
 jest.mock('@/lib/cap-instance', () => ({
