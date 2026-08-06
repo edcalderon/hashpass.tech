@@ -54,6 +54,13 @@ run on a source push, because CodePipeline can take a short time to register a
 new execution after that push; use the scheduled sweep or an explicit `stop`
 workflow dispatch instead.
 
+For an EC2-backed pipeline, enable `WEB_PIPELINE_WORKER_AUTOSTART_ENABLED` or
+`BSL_PIPELINE_WORKER_AUTOSTART_ENABLED` only after the corresponding worker has
+an approved provisioning reference. On a push, the monitor starts only the
+worker for that branch (`develop` → dev, `main` → production), waits for that
+single pipeline, and stops it when it becomes idle. It never starts the other
+environment merely because a build was triggered.
+
 ## Deployment Contract
 
 The target web deploy helper must:

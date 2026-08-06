@@ -60,12 +60,17 @@ jobs:
       WEB_PIPELINE_PROVIDER_TAGS: ${{ vars.WEB_PIPELINE_PROVIDER_TAGS || 'hashpass-prod-ec2-build,hashpass-dev-ec2-build' }}
       BSL_PIPELINE_NAMES: ${{ vars.BSL_PIPELINE_NAMES || 'bsl-hashpass-dev,bsl-hashpass-prod' }}
       BSL_PIPELINE_PROVIDER_TAGS: ${{ vars.BSL_PIPELINE_PROVIDER_TAGS || 'hashpass-bsl-prod-ec2-build,hashpass-bsl-dev-ec2-build' }}
+      ACTIVE_WEB_PIPELINE_NAME: ${{ github.ref == 'refs/heads/main' && 'hashpass-production-site' || 'hashpass-dev-site' }}
+      ACTIVE_WEB_PROVIDER_TAG: ${{ github.ref == 'refs/heads/main' && 'hashpass-prod-ec2-build' || 'hashpass-dev-ec2-build' }}
+      ACTIVE_BSL_PIPELINE_NAME: ${{ github.ref == 'refs/heads/main' && 'bsl-hashpass-prod' || 'bsl-hashpass-dev' }}
+      ACTIVE_BSL_PROVIDER_TAG: ${{ github.ref == 'refs/heads/main' && 'hashpass-bsl-prod-ec2-build' || 'hashpass-bsl-dev-ec2-build' }}
       WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '30' }}
       WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '180' }}
       WEB_PIPELINE_POLL_SECONDS: ${{ vars.WEB_PIPELINE_POLL_SECONDS || '20' }}
       # Persistent EC2 workers are cost-sensitive. Starts require a deliberate
       # repository-variable opt-in; the idle stop sweep remains active always.
       WEB_PIPELINE_WORKER_AUTOSTART_ENABLED: ${{ vars.WEB_PIPELINE_WORKER_AUTOSTART_ENABLED || 'false' }}
+      BSL_PIPELINE_WORKER_AUTOSTART_ENABLED: ${{ vars.BSL_PIPELINE_WORKER_AUTOSTART_ENABLED || 'false' }}
       WEB_PIPELINE_MODE: ${{ github.event_name == 'schedule' && 'stop' || github.event_name == 'workflow_dispatch' && inputs.mode || 'monitor' }}
     steps:
       - name: Checkout
@@ -97,10 +102,25 @@ jobs:
           set -euo pipefail
           packages/tools/scripts/manage-web-pipeline-worker.sh \
             --mode monitor \
-            --pipelines "${WEB_PIPELINE_NAMES}" \
+            --pipelines "${ACTIVE_WEB_PIPELINE_NAME}" \
             --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
             --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
-            --provider-tag "${WEB_PIPELINE_PROVIDER_TAGS}" \
+            --provider-tag "${ACTIVE_WEB_PROVIDER_TAG}" \
+            --region "${AWS_REGION}" \
+            --grace-seconds "${WEB_PIPELINE_GRACE_SECONDS}" \
+            --start-wait-seconds "${WEB_PIPELINE_START_WAIT_SECONDS}" \
+            --poll-seconds "${WEB_PIPELINE_POLL_SECONDS}"
+
+      - name: Monitor active BSL pipeline and worker
+        if: env.WEB_PIPELINE_MODE == 'monitor' && env.BSL_PIPELINE_WORKER_AUTOSTART_ENABLED == 'true' && steps.configure-aws.outcome == 'success'
+        run: |
+          set -euo pipefail
+          packages/tools/scripts/manage-web-pipeline-worker.sh \
+            --mode monitor \
+            --pipelines "${ACTIVE_BSL_PIPELINE_NAME}" \
+            --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
+            --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
+            --provider-tag "${ACTIVE_BSL_PROVIDER_TAG}" \
             --region "${AWS_REGION}" \
             --grace-seconds "${WEB_PIPELINE_GRACE_SECONDS}" \
             --start-wait-seconds "${WEB_PIPELINE_START_WAIT_SECONDS}" \
