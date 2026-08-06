@@ -380,6 +380,18 @@ resource "aws_codepipeline" "bsl_prod" {
       version          = var.build_action_version
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact"]
+      # Enforced by CodePipeline itself (V2 pipeline type), independent of
+      # the EC2 worker ever calling back. This is the real backstop the
+      # worker's own build_timeout_seconds self-kill guard (default 2700s,
+      # aws_pipeline_ec2_worker module) can't provide: that guard only fires
+      # if the worker process is alive to run it. Confirmed 2026-08-06: this
+      # exact pipeline had an execution stuck InProgress for 3+ hours with
+      # ZERO worker instances running -- the instance died/stopped without
+      # ever reporting success or failure back to CodePipeline, and nothing
+      # else in this stack detects or bounds that. Set comfortably above the
+      # worker's own internal timeout so that guard still gets first chance
+      # to report a clean failure when the worker itself is healthy.
+      timeout_in_minutes = 60
 
       configuration = {
         BuildScript          = var.build_script_path_hybrid
@@ -454,6 +466,11 @@ resource "aws_codepipeline" "bsl_dev" {
       version          = local.development_build_is_codebuild ? "1" : var.build_action_version
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact"]
+
+      # Same CodePipeline-enforced backstop as bsl_prod's DeployInfra action
+      # above -- see that comment for why this is needed regardless of the
+      # worker's own internal timeout guard.
+      timeout_in_minutes = 60
 
       configuration = local.development_build_is_codebuild ? {
         ProjectName = var.development_codebuild_project_name
