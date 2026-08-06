@@ -449,6 +449,7 @@ module "site_dev" {
   build_action_timeout              = var.build_action_timeout
   build_execution_mode              = var.development_build_execution_mode
   codebuild_project_name            = var.development_codebuild_project_name
+  codebuild_compute_type            = "BUILD_GENERAL1_LARGE"
   codebuild_lambda_function_arns    = local.development_codebuild_lambda_function_arns
   build_script_path                 = var.build_script_path
   build_output_directory            = var.build_output_directory
