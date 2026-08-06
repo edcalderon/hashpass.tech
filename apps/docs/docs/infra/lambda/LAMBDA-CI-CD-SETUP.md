@@ -30,6 +30,22 @@ The `aws_pipeline_ec2_worker` module grants the build worker permission to:
 
 Do not give the worker broad Lambda permissions. Add function names to the Terraform variables instead.
 
+## Persistent Worker Cost Guard
+
+Persistent EC2 build workers are disabled by default in both the `hashpass-web`
+and `bsl-target` stacks. They can only be provisioned when all of the following
+are explicitly set in the environment's untracked `terraform.tfvars`:
+
+- a non-zero worker count;
+- `enable_pipeline_build_workers = true`;
+- `pipeline_build_worker_approval_reference` with a review, incident, or
+  change reference.
+
+The approval reference is recorded as an EC2 tag. Revert the enablement after
+the approved work finishes. The GitHub pipeline monitor also defaults to
+stop-only: it will not start a stopped worker unless the repository variable
+`WEB_PIPELINE_WORKER_AUTOSTART_ENABLED` is deliberately set to `true`.
+
 ## Deployment Contract
 
 The target web deploy helper must:

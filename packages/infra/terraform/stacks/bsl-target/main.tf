@@ -124,15 +124,17 @@ locals {
 module "production_build_worker" {
   source = "../../modules/aws_pipeline_ec2_worker"
 
-  name_prefix                 = "${var.name_prefix}-prod"
-  aws_region                  = var.aws_region
-  provider_name               = var.production_build_action_provider_name
-  provider_version            = var.build_action_version
-  instance_count              = var.instance_count
-  instance_type               = var.instance_type
-  subnet_ids                  = var.subnet_ids
-  associate_public_ip_address = var.associate_public_ip_address
-  allowed_ssh_cidrs           = var.allowed_ssh_cidrs
+  name_prefix                     = "${var.name_prefix}-prod"
+  aws_region                      = var.aws_region
+  provider_name                   = var.production_build_action_provider_name
+  provider_version                = var.build_action_version
+  instance_count                  = var.enable_pipeline_build_workers ? var.instance_count : 0
+  provisioning_enabled            = var.enable_pipeline_build_workers
+  provisioning_approval_reference = var.pipeline_build_worker_approval_reference
+  instance_type                   = var.instance_type
+  subnet_ids                      = var.subnet_ids
+  associate_public_ip_address     = var.associate_public_ip_address
+  allowed_ssh_cidrs               = var.allowed_ssh_cidrs
   # SST's own deploy creates/updates its own S3/CloudFront/Route53/IAM
   # resources directly -- it isn't a "sync build output to a pre-existing
   # bucket" deploy like hashpass-web's, so the module's narrow
@@ -155,22 +157,24 @@ module "production_build_worker" {
 module "development_build_worker" {
   source = "../../modules/aws_pipeline_ec2_worker"
 
-  name_prefix                 = "${var.name_prefix}-dev"
-  aws_region                  = var.aws_region
-  provider_name               = var.development_build_action_provider_name
-  provider_version            = var.build_action_version
-  instance_count              = var.instance_count
-  instance_type               = var.instance_type
-  subnet_ids                  = var.subnet_ids
-  associate_public_ip_address = var.associate_public_ip_address
-  allowed_ssh_cidrs           = var.allowed_ssh_cidrs
-  deploy_bucket_names         = []
-  artifact_bucket_names       = [var.artifact_bucket_name]
-  lambda_function_names       = []
-  lambda_region               = var.aws_region
-  root_volume_size_gb         = var.root_volume_size_gb
-  detailed_monitoring         = var.detailed_monitoring
-  tags                        = var.tags
+  name_prefix                     = "${var.name_prefix}-dev"
+  aws_region                      = var.aws_region
+  provider_name                   = var.development_build_action_provider_name
+  provider_version                = var.build_action_version
+  instance_count                  = var.enable_pipeline_build_workers ? var.instance_count : 0
+  provisioning_enabled            = var.enable_pipeline_build_workers
+  provisioning_approval_reference = var.pipeline_build_worker_approval_reference
+  instance_type                   = var.instance_type
+  subnet_ids                      = var.subnet_ids
+  associate_public_ip_address     = var.associate_public_ip_address
+  allowed_ssh_cidrs               = var.allowed_ssh_cidrs
+  deploy_bucket_names             = []
+  artifact_bucket_names           = [var.artifact_bucket_name]
+  lambda_function_names           = []
+  lambda_region                   = var.aws_region
+  root_volume_size_gb             = var.root_volume_size_gb
+  detailed_monitoring             = var.detailed_monitoring
+  tags                            = var.tags
 }
 
 moved {

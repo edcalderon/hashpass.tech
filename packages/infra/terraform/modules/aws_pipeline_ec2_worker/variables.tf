@@ -23,9 +23,21 @@ variable "provider_version" {
 }
 
 variable "instance_count" {
-  description = "Number of worker instances to provision"
+  description = "Number of worker instances to provision. Keep zero unless an approved, time-bound build-worker exception is required."
   type        = number
-  default     = 1
+  default     = 0
+}
+
+variable "provisioning_enabled" {
+  description = "Explicit break-glass acknowledgement required before this module can create persistent EC2 build workers."
+  type        = bool
+  default     = false
+}
+
+variable "provisioning_approval_reference" {
+  description = "Auditable change, incident, or approval reference required whenever a persistent worker is provisioned."
+  type        = string
+  default     = ""
 }
 
 variable "instance_type" {

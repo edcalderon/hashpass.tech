@@ -60,6 +60,9 @@ jobs:
       WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '30' }}
       WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '180' }}
       WEB_PIPELINE_POLL_SECONDS: ${{ vars.WEB_PIPELINE_POLL_SECONDS || '20' }}
+      # Persistent EC2 workers are cost-sensitive. Starts require a deliberate
+      # repository-variable opt-in; the idle stop sweep remains active always.
+      WEB_PIPELINE_WORKER_AUTOSTART_ENABLED: ${{ vars.WEB_PIPELINE_WORKER_AUTOSTART_ENABLED || 'false' }}
       WEB_PIPELINE_MODE: ${{ github.event_name == 'schedule' && 'stop' || github.event_name == 'workflow_dispatch' && inputs.mode || 'monitor' }}
     steps:
       - name: Checkout
@@ -86,7 +89,7 @@ jobs:
           role-session-name: hashpass-web-pipeline-monitor
 
       - name: Monitor web pipelines and worker
-        if: env.WEB_PIPELINE_MODE == 'monitor' && steps.configure-aws.outcome == 'success'
+        if: env.WEB_PIPELINE_MODE == 'monitor' && env.WEB_PIPELINE_WORKER_AUTOSTART_ENABLED == 'true' && steps.configure-aws.outcome == 'success'
         run: |
           set -euo pipefail
           packages/tools/scripts/manage-web-pipeline-worker.sh \

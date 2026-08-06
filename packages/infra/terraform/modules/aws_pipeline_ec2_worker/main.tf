@@ -346,6 +346,18 @@ resource "aws_iam_instance_profile" "worker" {
 resource "aws_instance" "worker" {
   count = var.instance_count
 
+  lifecycle {
+    precondition {
+      condition     = var.provisioning_enabled
+      error_message = "Persistent EC2 build workers are disabled by default. Set provisioning_enabled=true only for an approved, time-bound exception."
+    }
+
+    precondition {
+      condition     = length(trimspace(var.provisioning_approval_reference)) >= 8
+      error_message = "Set provisioning_approval_reference to an auditable approval or incident reference before provisioning a persistent EC2 build worker."
+    }
+  }
+
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   subnet_id                   = local.worker_subnet_ids[count.index % length(local.worker_subnet_ids)]
@@ -374,11 +386,12 @@ resource "aws_instance" "worker" {
   }
 
   tags = merge(local.common_tags, {
-    Name     = "${var.name_prefix}-build-${count.index + 1}"
-    Service  = "pipeline-build-worker"
-    Worker   = var.name_prefix
-    Provider = var.provider_name
-    Role     = "pipeline-build-worker"
+    Name                 = "${var.name_prefix}-build-${count.index + 1}"
+    Service              = "pipeline-build-worker"
+    Worker               = var.name_prefix
+    Provider             = var.provider_name
+    Role                 = "pipeline-build-worker"
+    ProvisioningApproval = var.provisioning_approval_reference
   })
 }
 
