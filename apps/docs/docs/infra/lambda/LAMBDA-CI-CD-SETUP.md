@@ -46,6 +46,11 @@ the approved work finishes. The GitHub pipeline monitor also defaults to
 stop-only: it will not start a stopped worker unless the repository variable
 `WEB_PIPELINE_WORKER_AUTOSTART_ENABLED` is deliberately set to `true`.
 
+The same scheduled workflow performs independent idle-stop sweeps for the
+HashPass web workers and the BSL dev/prod workers every ten minutes. Each group
+is stopped only when its own CodePipeline executions are idle; activity in one
+group must not keep the other group's instances running.
+
 ## Deployment Contract
 
 The target web deploy helper must:
