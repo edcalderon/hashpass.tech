@@ -333,7 +333,7 @@ data "aws_iam_policy_document" "codepipeline_permissions" {
     content {
       sid       = "CodeBuild"
       actions   = ["codebuild:BatchGetBuilds", "codebuild:StartBuild", "codebuild:StopBuild"]
-      resources = [aws_codebuild_project.site[0].arn]
+      resources = [try(aws_codebuild_project.site[0].arn, "")]
     }
   }
 }

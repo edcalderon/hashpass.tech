@@ -45,7 +45,7 @@ output "build_execution_mode" {
 
 output "codebuild_project_name" {
   description = "CodeBuild project name when the CodeBuild executor is enabled"
-  value       = local.build_execution_mode == "codebuild" ? aws_codebuild_project.site[0].name : null
+  value       = try(aws_codebuild_project.site[0].name, null)
 }
 
 output "codepipeline_name" {
