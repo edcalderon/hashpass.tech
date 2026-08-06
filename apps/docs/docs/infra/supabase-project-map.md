@@ -63,6 +63,86 @@ doing the right thing.
 - DB URL: `BSL_SUPABASE_DB_URL_PROD` (checked first) → fallbacks
 - **Project: `mnnqryrdlhddorqsrtbn`**
 
+## Migration bootstrap findings (2026-08-06)
+
+Bootstrapping the brand-new `gsugeqozyeokncpbndna` dev project from a
+completely blank database (zero tables) surfaced that **`db/migrations/` was
+never actually a complete, from-scratch-runnable history** -- both live
+databases (BSL prod, and presumably core prod) accumulated real schema
+through a mix of tracked migrations *and* untracked, ad hoc DDL applied
+directly, going all the way back to the Better Auth tables themselves. This
+had never been noticed before because no one had bootstrapped a truly empty
+project until now.
+
+Concretely, running V001 through V062 in order against the blank dev project
+failed repeatedly and required:
+
+1. **`db/migrations/V000__better_auth_bootstrap_tables.sql` (new file)** --
+   Better Auth's own `user`/`account`/`session`/`verification` tables (which
+   V005 renames `user` → `ba_users`) were never captured as a SQL migration
+   at all; they're normally created by Better Auth's own schema-push
+   tooling, run once, out of band. Also includes `touch_updated_at()` and
+   `update_updated_at()`, two trigger helper functions referenced by several
+   migrations (V002, V007, ...) but never themselves defined in
+   `db/migrations`. All four table shapes and both functions were copied
+   verbatim from live BSL prod via `pg_get_functiondef`/`\d` (the only place
+   this schema is known-correct), so a fresh bootstrap now matches
+   production exactly instead of guessing.
+2. **`db/migrations/V002__meeting_requests_system.sql` fixed** -- had an
+   invalid `CONSTRAINT ... UNIQUE (...) WHERE ...` inside a `CREATE TABLE`
+   (not valid Postgres syntax for a table-level constraint; partial
+   uniqueness requires a separate `CREATE UNIQUE INDEX ... WHERE ...`),
+   plus several non-idempotent `CREATE INDEX`/`CREATE TYPE` statements. Live
+   databases were never actually affected by the constraint bug specifically
+   (a later migration replaces that unique index with a better one), but the
+   file itself could never have run start-to-finish on a blank database
+   before this fix.
+3. **Remaining schema gap closed via a real schema dump, not more guessing**
+   -- after V000-V009, the gap between `db/migrations` and BSL prod's actual
+   live schema (dozens of tables: `events`, `event_pass_tiers`,
+   `meeting_slots`, `speakers`, `support_*`, `notifications`,
+   `pass_claim_codes`, etc. -- all real, all missing from the migration
+   history) was clearly too large to keep tracking down file-by-file.
+   Instead: `pg_dump --schema-only` of BSL prod (via a `postgres:17-alpine`
+   Docker container, since this machine's native `pg_dump` is v16 and
+   Supabase runs Postgres 17), filtered to drop the legacy `directus_*`
+   tables (archived, no longer needed -- auth now runs on Supabase OTP/email
+   plus Better Auth for Google; Directus is unreachable and out of scope),
+   applied directly to the dev project. Zero errors. Then all of V001-V062
+   were re-run in sequence on top of that (tolerating "already exists" on
+   DDL that the schema dump already created) specifically to pick up seed
+   data / RPC-only statements the schema-only dump doesn't carry --
+   confirmed by `events`/`event_pass_tiers` row counts matching BSL prod
+   exactly (5 and 15 rows) afterward.
+
+**Net result:** `gsugeqozyeokncpbndna` now has the full BSL-prod-equivalent
+schema (89 tables → 59 non-Directus, all present) plus core's own V004+
+canonical-registry additions, all 62 migrations + the new V000 tracked in
+its own `hashpass_schema_migrations`, and matching seed data. This is now a
+genuinely valid target for local/CI development against either tenant.
+
+**BSL prod (`mnnqryrdlhddorqsrtbn`) migration tracking was found stale, not
+its schema** -- `hashpass_schema_migrations` was missing bookkeeping rows
+for V004-V007 and V012-V016, V022, V023 even though every object those
+files create was independently confirmed live (`upsert_public_user_registry`,
+`event_roles`, `user_roles`, `ba_users`, `user_tutorial_progress`,
+`reward_transactions`). Also has two rows for a `V004`/`V005` naming
+convention (`V004__wallet_auth`, `V005__otp_codes`) that predates the current
+file names, and a duplicate-content row (`V052__e2e_encrypted_persistent_meeting_chat`
+alongside the current `V053__...`). Bookkeeping-only `INSERT`s to correct
+this were prepared but require a human to run them (see git/session history
+if picking this back up -- they do not alter schema or data, only tracking
+rows) since direct writes to a production database are intentionally outside
+this agent's own write path.
+
+**Core prod (`fxgftanraszjjyeidvia`) could not be verified at all this
+pass** -- both the direct DB credential (`DB_HOST`/`DB_USER`/`DB_PASSWORD`)
+and the service-role REST key (`SUPABASE_SERVICE_ROLE_KEY_PROD`) fail auth
+against the real core project. This is the same credential gap already
+called out below, now confirmed from two independent paths (DB and REST),
+not just one. A fresh credential from the Supabase dashboard is required
+before core prod's migration state can be checked at all.
+
 ## Known unresolved issue (as of 2026-08-06)
 
 Local `.env`'s bare `SUPABASE_DB_URL_PROD` -- which `core-production`'s
