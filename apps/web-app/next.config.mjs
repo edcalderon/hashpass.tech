@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // `dev:all` may run alongside a manually-started Club server. Giving the
-  // orchestrated process its own build directory prevents Next's dev lock
-  // from making the alternate local port unusable.
-  distDir: process.env.HASHPASS_CLUB_NEXT_DIST_DIR || '.next',
   output: 'export',
   trailingSlash: true,
   images: {

@@ -153,9 +153,10 @@ echo "Starting Directus (detached)..."
 pnpm --filter hashpass-directus run up
 
 echo "Starting club web app on port ${CLUB_PORT}..."
+CLUB_RUNTIME_DIR="$(node packages/tools/scripts/prepare-club-dev-runtime.mjs "${CLUB_PORT}")"
 (
-  cd apps/web-app
-  HASHPASS_CLUB_NEXT_DIST_DIR=".next-dev-all-${CLUB_PORT}" pnpm exec next dev --webpack --port "${CLUB_PORT}"
+  cd "${CLUB_RUNTIME_DIR}"
+  pnpm exec next dev --webpack --port "${CLUB_PORT}"
 ) &
 CLUB_PID=$!
 
