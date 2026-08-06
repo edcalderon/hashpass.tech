@@ -40,18 +40,25 @@ const SUPPORTED_LOCALES = ['en', 'es', 'ko', 'fr', 'pt', 'de'];
 export type EmailType = 'welcome' | 'userOnboarding' | 'speakerOnboarding' | 'troubleshooting';
 
 // Helper function to detect user locale from user metadata or default to 'en'
-export async function detectUserLocale(userId?: string, userMetadata?: any): Promise<string> {
+export async function detectUserLocale(
+  userId?: string,
+  userMetadata?: any,
+  client: typeof supabaseServer = supabaseServer
+): Promise<string> {
   // Try to get locale from user metadata first (if passed directly)
   if (userMetadata?.locale && SUPPORTED_LOCALES.includes(userMetadata.locale)) {
     console.log(`[detectUserLocale] Using locale from userMetadata: ${userMetadata.locale}`);
     return userMetadata.locale;
   }
-  
+
   // Try to get locale from database if userId is provided
   if (userId) {
     try {
-      // Use supabaseServer which has service_role permissions
-      const { data: userData, error } = await supabaseServer.auth.admin.getUserById(userId);
+      // Defaults to supabaseServer (core-production), but callers resolving a
+      // tenant other than core (e.g. BSL) must pass their own request-scoped
+      // client -- userId is only valid within the Supabase project it was
+      // issued from.
+      const { data: userData, error } = await client.auth.admin.getUserById(userId);
       
       if (!error && userData?.user) {
         const user = userData.user;
@@ -114,8 +121,13 @@ function buildSmtpConfig(suffix: '' | '_INFO') {
   };
 }
 
+function isAllowedHost(host: string, domain: string): boolean {
+  return host === domain || host.endsWith(`.${domain}`);
+}
+
 function buildTransporter(config: ReturnType<typeof buildSmtpConfig>) {
-  const isBrevo = config.host.includes('brevo.com') || config.host.includes('sendinblue.com');
+  const normalizedHost = config.host.split(':')[0].toLowerCase();
+  const isBrevo = isAllowedHost(normalizedHost, 'brevo.com') || isAllowedHost(normalizedHost, 'sendinblue.com');
   return nodemailer.createTransport({
     host: config.host,
     port: parseInt(config.port, 10),
@@ -318,10 +330,11 @@ function replaceTemplatePlaceholders(template: string, translations: any, assets
  */
 export async function hasEmailBeenSent(
   userId: string,
-  emailType: EmailType
+  emailType: EmailType,
+  client: typeof supabaseServer = supabaseServer
 ): Promise<boolean> {
   try {
-    const { data, error } = await supabaseServer.rpc('has_email_been_sent', {
+    const { data, error } = await client.rpc('has_email_been_sent', {
       p_user_id: userId,
       p_email_type: emailType
     } as any);
@@ -345,7 +358,8 @@ export async function markEmailAsSent(
   userId: string,
   emailType: EmailType,
   locale: string = DEFAULT_LOCALE,
-  messageId?: string
+  messageId?: string,
+  client: typeof supabaseServer = supabaseServer
 ): Promise<{ success: boolean; error?: string; trackingId?: string }> {
   try {
     // Build parameters object - only include message_id if it's provided
@@ -354,13 +368,13 @@ export async function markEmailAsSent(
       p_email_type: emailType,
       p_locale: locale
     };
-    
+
     // Only add message_id if it's provided (not null/undefined)
     if (messageId) {
       params.p_message_id = messageId;
     }
-    
-    const { data, error } = await supabaseServer.rpc('mark_email_as_sent', params);
+
+    const { data, error } = await client.rpc('mark_email_as_sent', params);
     
     if (error) {
       console.error('Error marking email as sent:', error);
@@ -404,9 +418,9 @@ export async function getUserEmailTracking(
 /**
  * Get user ID from email address
  */
-async function getUserIdFromEmail(email: string): Promise<string | null> {
+async function getUserIdFromEmail(email: string, client: typeof supabaseServer = supabaseServer): Promise<string | null> {
   try {
-    const { data, error } = await supabaseServer.auth.admin.listUsers();
+    const { data, error } = await client.auth.admin.listUsers();
     
     if (error) {
       console.error('Error getting user from email:', error);
@@ -428,28 +442,29 @@ async function getUserIdFromEmail(email: string): Promise<string | null> {
 export async function sendWelcomeEmailToNewUser(
   userId: string,
   email: string,
-  locale?: string
+  locale?: string,
+  client: typeof supabaseServer = supabaseServer
 ): Promise<{ success: boolean; error?: string; messageId?: string; alreadySent?: boolean }> {
   try {
     // Detect locale if not provided
     let userLocale = locale;
     if (!userLocale) {
       console.log(`[sendWelcomeEmailToNewUser] No locale provided, detecting for user ${userId}`);
-      userLocale = await detectUserLocale(userId);
+      userLocale = await detectUserLocale(userId, undefined, client);
     } else {
       console.log(`[sendWelcomeEmailToNewUser] Using provided locale: ${userLocale} for user ${userId}`);
     }
-    
+
     // Validate locale is supported
     if (!SUPPORTED_LOCALES.includes(userLocale)) {
       console.warn(`[sendWelcomeEmailToNewUser] Invalid locale ${userLocale}, defaulting to ${DEFAULT_LOCALE}`);
       userLocale = DEFAULT_LOCALE;
     }
-    
+
     console.log(`[sendWelcomeEmailToNewUser] Sending welcome email to ${email} with locale: ${userLocale}`);
-    
+
     // Send welcome email (it will check if already sent internally)
-    const result = await sendWelcomeEmail(email, userLocale, userId);
+    const result = await sendWelcomeEmail(email, userLocale, userId, client);
     
     if (result.success && !result.alreadySent) {
       console.log(`✅ Welcome email sent to new user ${userId} (${email})`);
@@ -1012,7 +1027,8 @@ export async function sendUserOnboardingEmail(
 export async function sendWelcomeEmail(
   email: string,
   locale: string = DEFAULT_LOCALE,
-  userId?: string
+  userId?: string,
+  client: typeof supabaseServer = supabaseServer
 ): Promise<{ success: boolean; error?: string; messageId?: string; alreadySent?: boolean }> {
   // Prefer the dedicated no-reply@hashpass.info sender for this email
   // specifically; fall back to the primary hashpass.tech sender in any
@@ -1036,28 +1052,28 @@ export async function sendWelcomeEmail(
     // Get user ID if not provided
     let user_id: string | undefined = userId;
     if (!user_id) {
-      const foundUserId = await getUserIdFromEmail(email);
+      const foundUserId = await getUserIdFromEmail(email, client);
       user_id = foundUserId || undefined;
     }
 
     // Check if welcome email has already been sent (with message_id)
     // This check verifies that the email was actually sent (has message_id)
     if (user_id) {
-      const alreadySent = await hasEmailBeenSent(user_id, 'welcome');
+      const alreadySent = await hasEmailBeenSent(user_id, 'welcome', client);
       if (alreadySent) {
         console.log(`Welcome email already sent to user ${user_id} (${email})`);
         return { success: true, alreadySent: true };
       }
     }
-    
+
     // Additional safety check: verify one more time right before sending
     // This helps prevent race conditions where multiple requests come in simultaneously
     if (user_id) {
       // Small delay to allow any concurrent operations to complete
       await new Promise(resolve => setTimeout(resolve, 50));
-      
+
       // Final check before sending
-      const finalCheck = await hasEmailBeenSent(user_id, 'welcome');
+      const finalCheck = await hasEmailBeenSent(user_id, 'welcome', client);
       if (finalCheck) {
         console.log(`Welcome email already sent to user ${user_id} (${email}) - detected in final check`);
         return { success: true, alreadySent: true };
@@ -1075,7 +1091,7 @@ export async function sendWelcomeEmail(
     let displayName = email.split('@')[0] ?? '';
     if (user_id) {
       try {
-        const { data } = await supabaseServer.auth.admin.getUserById(user_id);
+        const { data } = await client.auth.admin.getUserById(user_id);
         displayName = data.user?.user_metadata?.name || data.user?.user_metadata?.full_name || displayName;
       } catch (lookupError) {
         console.warn('[sendWelcomeEmail] Could not resolve display name, falling back to email prefix:', lookupError);
@@ -1105,7 +1121,7 @@ export async function sendWelcomeEmail(
     
     // Mark email as sent if we have a user ID (this creates the flag in DB with message_id)
     if (user_id) {
-      const markResult = await markEmailAsSent(user_id, 'welcome', normalizedLocale, info.messageId);
+      const markResult = await markEmailAsSent(user_id, 'welcome', normalizedLocale, info.messageId, client);
       if (markResult.success) {
         console.log(`✅ Welcome email marked as sent in DB for user ${user_id} (${email}) with messageId: ${info.messageId}`);
       } else {

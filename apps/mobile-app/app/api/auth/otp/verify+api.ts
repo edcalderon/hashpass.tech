@@ -352,19 +352,26 @@ export async function POST(request: Request) {
         providerIds: { supabase: user.id },
       });
 
-      // Fire-and-forget: covers both hashpass.tech and bsl.hashpass.tech,
-      // since this route already resolves its Supabase project per request
-      // hostname (see SUPABASE_PROFILE_IDS above). sendWelcomeEmailToNewUser
-      // is idempotent (has_email_been_sent tracking), so calling it on every
-      // OTP verification -- sign-up AND every later sign-in -- is safe; it
-      // is a genuine no-op for returning users rather than a real re-send.
+      // Awaited (not fire-and-forget) because Lambda may freeze the
+      // execution context right after this route returns its response --
+      // an unawaited promise could get silently killed mid-send/mid-mark
+      // on a cold container. sendWelcomeEmailToNewUser is idempotent
+      // (has_email_been_sent tracking), so calling it on every OTP
+      // verification -- sign-up AND every later sign-in -- is safe; it's a
+      // genuine no-op for returning users rather than a real re-send. Passed
+      // the same request-scoped `supabase` client resolved above (covers
+      // both hashpass.tech and bsl.hashpass.tech via SUPABASE_PROFILE_IDS),
+      // not the global core-production default -- otherwise a BSL user's
+      // tracking lookup/mark would run against the wrong Supabase project.
       if (!user.email.includes('@wallet.')) {
-        sendWelcomeEmailToNewUser(user.id, user.email).catch((error) => {
+        try {
+          await sendWelcomeEmailToNewUser(user.id, user.email, undefined, supabase);
+        } catch (error) {
           console.error(
             '[OTP verify] Welcome email failed:',
             error instanceof Error ? error.message : String(error)
           );
-        });
+        }
       }
     }
 

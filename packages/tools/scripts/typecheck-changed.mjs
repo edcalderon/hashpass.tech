@@ -405,17 +405,26 @@ function printUsage() {
 // affected package's real tsconfig already resolves both correctly, so
 // there's no sandbox to build for this half of the changed files at all.
 function typecheckPackageFiles(packageFiles) {
-  const roots = new Set();
+  const filesByRoot = new Map();
   for (const filePath of packageFiles) {
     const segments = filePath.split('/');
-    roots.add(segments.slice(0, 2).join('/')); // e.g. "packages/sdk"
+    const root = segments.slice(0, 2).join('/'); // e.g. "packages/sdk"
+    if (!filesByRoot.has(root)) filesByRoot.set(root, []);
+    filesByRoot.get(root).push(filePath);
   }
 
   let exitCode = 0;
-  for (const root of Array.from(roots).sort()) {
+  // Files under a package root with no tsconfig.json of its own (e.g.
+  // packages/tools) can't be delegated the way the rest of this function
+  // does -- falls back to the original apps/mobile-app sandbox path instead
+  // of silently skipping them, so they still get *some* typecheck coverage
+  // rather than none.
+  const unhandledFiles = [];
+  for (const root of Array.from(filesByRoot.keys()).sort()) {
     const tsconfigPath = path.join(ROOT_DIR, root, 'tsconfig.json');
     if (!fs.existsSync(tsconfigPath)) {
-      console.log(`Skipping ${root}: no tsconfig.json found.`);
+      console.log(`No tsconfig.json for ${root}; falling back to the sandbox typecheck for its changed files.`);
+      unhandledFiles.push(...filesByRoot.get(root));
       continue;
     }
 
@@ -431,7 +440,7 @@ function typecheckPackageFiles(packageFiles) {
     if ((result.status ?? 0) !== 0) exitCode = result.status;
   }
 
-  return exitCode;
+  return { exitCode, unhandledFiles };
 }
 
 function main() {
@@ -454,9 +463,13 @@ function main() {
   // packages/* files are checked separately below (see typecheckPackageFiles);
   // everything else keeps the original single-sandbox behavior unchanged.
   const packageFiles = allChangedFiles.filter((f) => f.startsWith('packages/'));
-  const changedFiles = allChangedFiles.filter((f) => !f.startsWith('packages/'));
+  const nonPackageFiles = allChangedFiles.filter((f) => !f.startsWith('packages/'));
 
-  const packageExitCode = packageFiles.length > 0 ? typecheckPackageFiles(packageFiles) : 0;
+  const { exitCode: packageExitCode, unhandledFiles } =
+    packageFiles.length > 0 ? typecheckPackageFiles(packageFiles) : { exitCode: 0, unhandledFiles: [] };
+  // Package files with no tsconfig.json of their own fall back into the
+  // same sandbox path as everything else instead of going unchecked.
+  const changedFiles = [...nonPackageFiles, ...unhandledFiles];
 
   const localSpecifierMatchers = loadLocalSpecifierMatchers(MOBILE_APP_TSCONFIG);
   const pathAliasEntries = loadPathAliasEntries(MOBILE_APP_TSCONFIG);

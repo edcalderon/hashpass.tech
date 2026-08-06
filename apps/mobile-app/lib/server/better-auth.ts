@@ -134,8 +134,8 @@ export const syncBetterAuthUser = async (
   // update, same as registryUserId's self-heal pattern. Never throws — a
   // Supabase-side failure here must not break the Better Auth sign-up.
   let supabaseUserId: string | null = null;
+  const supabase = getSupabaseServerForRequest(request);
   try {
-    const supabase = getSupabaseServerForRequest(request);
     const bridged = await ensureSupabaseAccountForEmail(supabase, {
       email: user.email,
       userMetadata: {
@@ -184,15 +184,24 @@ export const syncBetterAuthUser = async (
   // welcome email on each login) -- runs for every tenant, since Better
   // Auth Google sign-in is shared across hashpass.tech and bsl.hashpass.tech.
   // sendWelcomeEmailToNewUser is itself idempotent (has_email_been_sent
-  // tracking), so this is a safe no-op if somehow called twice. Never
-  // blocks or fails the sign-up on an email delivery problem.
+  // tracking), so this is a safe no-op if somehow called twice. Awaited
+  // (not fire-and-forget) because Lambda may freeze the execution context
+  // right after this hook's caller returns its response -- an unawaited
+  // promise here could get silently killed mid-send/mid-mark on a cold
+  // container. Still never throws past this function: a delivery failure
+  // must not fail the Better Auth sign-up that already succeeded. Passes
+  // the same request-scoped `supabase` client used above, not the global
+  // core-production default, so BSL users are tracked/marked against the
+  // Supabase project their auth.users row actually lives in.
   if (options.isNewUser && supabaseUserId && user.email) {
-    sendWelcomeEmailToNewUser(supabaseUserId, user.email).catch((error) => {
+    try {
+      await sendWelcomeEmailToNewUser(supabaseUserId, user.email, undefined, supabase);
+    } catch (error) {
       console.error(
         '[Better Auth] Welcome email failed:',
         error instanceof Error ? error.message : String(error)
       );
-    });
+    }
   }
 };
 

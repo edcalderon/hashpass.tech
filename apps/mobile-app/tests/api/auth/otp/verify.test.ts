@@ -10,6 +10,7 @@ const mockGetSupabaseServerForRequest = jest.fn();
 const mockHostnameFromRequest = jest.fn();
 const mockResolvePublicSupabaseConfig = jest.fn();
 const mockSyncPublicUserRegistry = jest.fn(async () => null);
+const mockSendWelcomeEmailToNewUser = jest.fn(async () => ({ success: true }));
 
 jest.mock('../../../../lib/supabase-server', () => ({
   getSupabaseServerEnv: mockGetSupabaseServerEnv,
@@ -23,6 +24,15 @@ jest.mock('../../../../config/supabase-profiles', () => ({
 
 jest.mock('../../../../lib/auth/public-user-registry', () => ({
   syncPublicUserRegistry: mockSyncPublicUserRegistry,
+}));
+
+// Real lib/email.ts transitively imports @hashpass/emails, which this repo's
+// jest moduleNameMapper does not resolve correctly outside apps/mobile-app's
+// own tree -- mocked out entirely rather than depending on that being fixed,
+// matching the existing pattern other route tests already use (see
+// tests/api/subscribe.test.ts).
+jest.mock('../../../../lib/email', () => ({
+  sendWelcomeEmailToNewUser: mockSendWelcomeEmailToNewUser,
 }));
 
 const serviceRoleJwtForRef = (ref: string) => {
