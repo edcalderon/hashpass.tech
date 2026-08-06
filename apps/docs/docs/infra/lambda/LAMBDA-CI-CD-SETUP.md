@@ -61,6 +61,22 @@ worker for that branch (`develop` → dev, `main` → production), waits for tha
 single pipeline, and stops it when it becomes idle. It never starts the other
 environment merely because a build was triggered.
 
+BSL development now defaults to the existing Ohio CodeBuild project
+`bsl-hashpass-dev-build`; set `development_build_execution_mode = "ec2"` only
+for a reviewed rollback. Validate a dev CodeBuild execution before switching
+the production action. The production migration remains intentionally separate
+until that validation succeeds.
+
+HashPass web migration is staged the same way. `hashpass-web` uses on-demand
+CodeBuild projects named `hashpass-dev-site-build` and
+`hashpass-prod-site-build` after the development release passed build, deploy,
+API-version, and smoke-test checks. The CodeBuild project runs
+`packages/tools/buildspecs/hashpass-static-site.yml`, which calls the existing
+build and deploy helpers and uses a least-privilege role for the configured S3,
+CloudFront invalidation, and Lambda targets. Set
+Set either `development_build_execution_mode` or
+`production_build_execution_mode` to `"custom"` for an explicit EC2 rollback.
+
 ## Deployment Contract
 
 The target web deploy helper must:

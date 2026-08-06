@@ -5,6 +5,8 @@ locals {
   pipeline_name                     = "${var.name_prefix}-${var.environment}-site"
   build_action_provider_name        = trimspace(var.build_action_provider_name)
   build_action_version              = trimspace(var.build_action_version)
+  build_execution_mode              = lower(trimspace(var.build_execution_mode))
+  codebuild_project_name            = trimspace(var.codebuild_project_name) != "" ? trimspace(var.codebuild_project_name) : "${local.pipeline_name}-build"
   deploy_mode                       = lower(trimspace(var.deploy_mode))
   custom_domain_name                = trimspace(var.custom_domain_name)
   acm_certificate_arn               = trimspace(var.acm_certificate_arn)
@@ -324,12 +326,164 @@ data "aws_iam_policy_document" "codepipeline_permissions" {
     ]
     resources = [var.connection_arn]
   }
+
+  dynamic "statement" {
+    for_each = local.build_execution_mode == "codebuild" ? [1] : []
+
+    content {
+      sid       = "CodeBuild"
+      actions   = ["codebuild:BatchGetBuilds", "codebuild:StartBuild", "codebuild:StopBuild"]
+      resources = [try(aws_codebuild_project.site[0].arn, "")]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "codepipeline" {
   name   = "${local.pipeline_name}-policy"
   role   = aws_iam_role.codepipeline.id
   policy = data.aws_iam_policy_document.codepipeline_permissions.json
+}
+
+data "aws_iam_policy_document" "codebuild_assume_role" {
+  count = local.build_execution_mode == "codebuild" ? 1 : 0
+
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["codebuild.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "codebuild" {
+  count              = local.build_execution_mode == "codebuild" ? 1 : 0
+  name               = "${local.pipeline_name}-codebuild-role"
+  assume_role_policy = data.aws_iam_policy_document.codebuild_assume_role[0].json
+  tags               = local.tags
+}
+
+data "aws_iam_policy_document" "codebuild_permissions" {
+  count = local.build_execution_mode == "codebuild" ? 1 : 0
+
+  statement {
+    sid = "Logs"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = [
+      "arn:aws:logs:${var.aws_region}:${var.account_id}:log-group:/aws/codebuild/${local.codebuild_project_name}",
+      "arn:aws:logs:${var.aws_region}:${var.account_id}:log-group:/aws/codebuild/${local.codebuild_project_name}:*",
+    ]
+  }
+
+  statement {
+    sid = "PipelineArtifacts"
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+    ]
+    resources = [aws_s3_bucket.artifacts.arn, "${aws_s3_bucket.artifacts.arn}/*"]
+  }
+
+  statement {
+    sid = "SiteDeployment"
+    actions = [
+      "s3:DeleteObject",
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+    ]
+    resources = [aws_s3_bucket.site.arn, "${aws_s3_bucket.site.arn}/*"]
+  }
+
+  statement {
+    sid       = "CloudFrontInvalidation"
+    actions   = ["cloudfront:CreateInvalidation", "cloudfront:GetDistribution", "cloudfront:ListDistributions"]
+    resources = ["*"]
+  }
+
+  dynamic "statement" {
+    for_each = length(var.codebuild_lambda_function_arns) > 0 ? [1] : []
+
+    content {
+      sid       = "LambdaDeployment"
+      actions   = ["lambda:GetFunction", "lambda:GetFunctionConfiguration", "lambda:UpdateFunctionCode"]
+      resources = var.codebuild_lambda_function_arns
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "codebuild" {
+  count  = local.build_execution_mode == "codebuild" ? 1 : 0
+  name   = "${local.pipeline_name}-codebuild-policy"
+  role   = aws_iam_role.codebuild[0].id
+  policy = data.aws_iam_policy_document.codebuild_permissions[0].json
+}
+
+resource "aws_codebuild_project" "site" {
+  count = local.build_execution_mode == "codebuild" ? 1 : 0
+
+  name          = local.codebuild_project_name
+  description   = "On-demand ${var.environment} HashPass static site build"
+  service_role  = aws_iam_role.codebuild[0].arn
+  build_timeout = var.build_action_timeout
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  environment {
+    compute_type                = var.codebuild_compute_type
+    image                       = var.codebuild_image
+    type                        = "LINUX_CONTAINER"
+    image_pull_credentials_type = "CODEBUILD"
+
+    dynamic "environment_variable" {
+      for_each = merge(var.build_environment, {
+        AWS_DEFAULT_REGION              = var.aws_region
+        AWS_REGION                      = var.aws_region
+        BUILD_ENV                       = var.environment
+        BUILD_SCRIPT_PATH               = var.build_script_path
+        DEPLOY_MODE                     = local.deploy_mode
+        DEPLOY_SCRIPT_PATH              = var.deploy_script_path
+        SITE_BUILD_DIR                  = var.build_output_directory
+        SITE_BUCKET_NAME                = local.site_bucket_name
+        SITE_CLOUDFRONT_DOMAIN_NAME     = var.deploy_cloudfront_domain_name
+        SITE_CLOUDFRONT_DISTRIBUTION_ID = var.deploy_cloudfront_distribution_id
+        CI                              = "1"
+      })
+
+      content {
+        name  = environment_variable.key
+        value = environment_variable.value
+        type  = "PLAINTEXT"
+      }
+    }
+  }
+
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = "packages/tools/buildspecs/hashpass-static-site.yml"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      group_name  = "/aws/codebuild/${local.codebuild_project_name}"
+      stream_name = "build"
+    }
+  }
+
+  tags = local.tags
 }
 
 resource "aws_codepipeline" "site" {
@@ -391,13 +545,15 @@ resource "aws_codepipeline" "site" {
     action {
       name             = "BuildSite"
       category         = "Build"
-      owner            = "Custom"
-      provider         = local.build_action_provider_name
-      version          = local.build_action_version
+      owner            = local.build_execution_mode == "codebuild" ? "AWS" : "Custom"
+      provider         = local.build_execution_mode == "codebuild" ? "CodeBuild" : local.build_action_provider_name
+      version          = local.build_execution_mode == "codebuild" ? "1" : local.build_action_version
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact"]
 
-      configuration = merge(
+      configuration = local.build_execution_mode == "codebuild" ? {
+        ProjectName = aws_codebuild_project.site[0].name
+        } : merge(
         {
           BuildScript     = var.build_script_path
           OutputDirectory = var.build_output_directory

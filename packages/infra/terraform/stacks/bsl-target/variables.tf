@@ -56,6 +56,23 @@ variable "development_build_action_provider_name" {
   default     = "hashpass-bsl-dev-ec2-build"
 }
 
+variable "development_build_execution_mode" {
+  description = "Development build execution mode. CodeBuild is the primary on-demand path; ec2 is the explicit rollback path."
+  type        = string
+  default     = "codebuild"
+
+  validation {
+    condition     = contains(["codebuild", "ec2"], lower(trimspace(var.development_build_execution_mode)))
+    error_message = "development_build_execution_mode must be codebuild or ec2."
+  }
+}
+
+variable "development_codebuild_project_name" {
+  description = "Existing Ohio CodeBuild project used by the development pipeline when execution mode is codebuild."
+  type        = string
+  default     = "bsl-hashpass-dev-build"
+}
+
 variable "build_action_version" {
   description = "CodePipeline custom action provider version"
   type        = string

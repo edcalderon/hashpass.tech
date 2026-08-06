@@ -1,3 +1,19 @@
+## [1.8.331](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.330...v1.8.331) (2026-08-06)
+
+
+### Bug Fixes
+
+* **infra:** guard fallback worker bootstrap payloads ([6890bad](https://github.com/hashpass-tech/hashpass.tech/commit/6890bad5a3a61ba195647a190922b0a69dfb97a5))
+
+
+### Features
+
+* **infra:** make dev BSL CodeBuild primary ([4b264a4](https://github.com/hashpass-tech/hashpass.tech/commit/4b264a4b8765ebde81037b9a63f4788aedc5c6b6))
+* **infra:** promote HashPass builds to CodeBuild ([4c88cc5](https://github.com/hashpass-tech/hashpass.tech/commit/4c88cc5d02b3bdd91be13a42d226e9522cbca501))
+* **infra:** stage HashPass dev builds on CodeBuild ([c84616e](https://github.com/hashpass-tech/hashpass.tech/commit/c84616e1e853c6b5c45290e1d8e51421b4ea0c02))
+### Release Highlights
+- promote HashPass builds to CodeBuild; stage HashPass dev builds on CodeBuild; make dev BSL CodeBuild primary; guard fallback worker bootstrap payloads
+
 ## [1.8.330](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.329...v1.8.330) (2026-08-06)
 
 

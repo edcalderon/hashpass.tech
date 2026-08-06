@@ -20,15 +20,20 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.330)
+## 📋 Latest Changes (v1.8.331)
 
 ### Bug Fixes
 
-* **infra:** require approval for persistent workers ([518843c](https://github.com/hashpass-tech/hashpass.tech/commit/518843ce7581ab9e9586125422a31f322ae72449))
-* **infra:** stop idle BSL build workers ([145dd98](https://github.com/hashpass-tech/hashpass.tech/commit/145dd98f9a527c6a3fa536ebb3a9c2bc818492e0))
-* **infra:** throttle public API traffic ([3f6d384](https://github.com/hashpass-tech/hashpass.tech/commit/3f6d384174e208bf1bfd0ded4f2bf512095d4fd8))
+* **infra:** guard fallback worker bootstrap payloads ([6890bad](https://github.com/hashpass-tech/hashpass.tech/commit/6890bad5a3a61ba195647a190922b0a69dfb97a5))
+
+
+### Features
+
+* **infra:** make dev BSL CodeBuild primary ([4b264a4](https://github.com/hashpass-tech/hashpass.tech/commit/4b264a4b8765ebde81037b9a63f4788aedc5c6b6))
+* **infra:** promote HashPass builds to CodeBuild ([4c88cc5](https://github.com/hashpass-tech/hashpass.tech/commit/4c88cc5d02b3bdd91be13a42d226e9522cbca501))
+* **infra:** stage HashPass dev builds on CodeBuild ([c84616e](https://github.com/hashpass-tech/hashpass.tech/commit/c84616e1e853c6b5c45290e1d8e51421b4ea0c02))
 ### Release Highlights
-- stop idle BSL build workers; require approval for persistent workers; throttle public API traffic
+- promote HashPass builds to CodeBuild; stage HashPass dev builds on CodeBuild; make dev BSL CodeBuild primary; guard fallback worker bootstrap payloads
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

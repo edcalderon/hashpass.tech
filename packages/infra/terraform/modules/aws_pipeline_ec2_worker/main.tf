@@ -43,6 +43,10 @@ locals {
   worker_user_data_step_5 = replace(local.worker_user_data_step_4, "__ROOT_VOLUME_SIZE_GB__", tostring(var.root_volume_size_gb))
   worker_user_data_step_6 = replace(local.worker_user_data_step_5, "__BUILD_TIMEOUT_SECONDS__", tostring(var.build_timeout_seconds))
   worker_user_data        = local.worker_user_data_step_6
+  # EC2 rejects user-data payloads larger than 16 KiB. The worker bootstrap
+  # intentionally contains the full polling/build fallback, so send it as a
+  # gzip-compressed payload instead of truncating it or failing at plan time.
+  worker_user_data_base64 = base64gzip(local.worker_user_data)
 }
 
 data "aws_ami" "ubuntu" {
@@ -347,6 +351,12 @@ resource "aws_instance" "worker" {
   count = var.instance_count
 
   lifecycle {
+    # Existing workers were bootstrapped with the uncompressed form. Do not
+    # replace a live fallback worker solely because the transport changed to
+    # gzip/base64; newly provisioned instances still receive the compressed
+    # payload, and an explicit worker-image change can replace them later.
+    ignore_changes = [user_data, user_data_base64]
+
     precondition {
       condition     = var.provisioning_enabled
       error_message = "Persistent EC2 build workers are disabled by default. Set provisioning_enabled=true only for an approved, time-bound exception."
@@ -366,7 +376,7 @@ resource "aws_instance" "worker" {
   iam_instance_profile        = aws_iam_instance_profile.worker.name
   monitoring                  = var.detailed_monitoring
   user_data_replace_on_change = true
-  user_data                   = local.worker_user_data
+  user_data_base64            = local.worker_user_data_base64
 
   metadata_options {
     http_endpoint               = "enabled"

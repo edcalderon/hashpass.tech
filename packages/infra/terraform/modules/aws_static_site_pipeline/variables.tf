@@ -55,6 +55,41 @@ variable "build_action_timeout" {
   default     = 60
 }
 
+variable "build_execution_mode" {
+  description = "Build executor for this pipeline. CodeBuild is on-demand; custom is the legacy EC2 action."
+  type        = string
+  default     = "custom"
+
+  validation {
+    condition     = contains(["custom", "codebuild"], lower(trimspace(var.build_execution_mode)))
+    error_message = "build_execution_mode must be custom or codebuild."
+  }
+}
+
+variable "codebuild_project_name" {
+  description = "Optional CodeBuild project name. When omitted, a project is created from the pipeline name."
+  type        = string
+  default     = ""
+}
+
+variable "codebuild_compute_type" {
+  description = "CodeBuild compute class used by the on-demand executor."
+  type        = string
+  default     = "BUILD_GENERAL1_MEDIUM"
+}
+
+variable "codebuild_image" {
+  description = "CodeBuild Linux standard image."
+  type        = string
+  default     = "aws/codebuild/standard:7.0"
+}
+
+variable "codebuild_lambda_function_arns" {
+  description = "Lambda function ARNs the CodeBuild deploy step may update."
+  type        = list(string)
+  default     = []
+}
+
 variable "build_script_path" {
   description = "Build script path relative to the repository root"
   type        = string

@@ -119,6 +119,7 @@ locals {
     production  = var.production_build_action_provider_name
     development = var.development_build_action_provider_name
   }
+  development_build_is_codebuild = lower(trimspace(var.development_build_execution_mode)) == "codebuild"
 }
 
 module "production_build_worker" {
@@ -448,13 +449,15 @@ resource "aws_codepipeline" "bsl_dev" {
     action {
       name             = "DeployInfra"
       category         = "Build"
-      owner            = "Custom"
-      provider         = var.development_build_action_provider_name
-      version          = var.build_action_version
+      owner            = local.development_build_is_codebuild ? "AWS" : "Custom"
+      provider         = local.development_build_is_codebuild ? "CodeBuild" : var.development_build_action_provider_name
+      version          = local.development_build_is_codebuild ? "1" : var.build_action_version
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact"]
 
-      configuration = {
+      configuration = local.development_build_is_codebuild ? {
+        ProjectName = var.development_codebuild_project_name
+        } : {
         BuildScript          = var.build_script_path_hybrid
         OutputDirectory      = var.build_output_directory
         BuildEnvironmentJson = jsonencode(local.dev_build_environment)
