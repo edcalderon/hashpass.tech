@@ -22,24 +22,39 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608061222, // Updated to current timestamp
+  buildNumber: 202608061312, // Updated to current timestamp
   releaseDate: '2026-08-06',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'promote HashPass builds to CodeBuild',
-    'stage HashPass dev builds on CodeBuild',
-    'make dev BSL CodeBuild primary'
+    // No new features
   ],
   bugfixes: [
-    'guard fallback worker bootstrap payloads'
+    'fall back to primary sender when Infisical resolution throws',
+    'deploy dev site through hybrid build'
   ],
   breakingChanges: [],
-  notes: 'promote HashPass builds to CodeBuild; stage HashPass dev builds on CodeBuild; make dev BSL CodeBuild primary; guard fallback worker bootstrap payloads'
+  notes: 'fall back to primary sender when Infisical resolution throws; deploy dev site through hybrid build'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.332': {
+    version: '1.8.332',
+    buildNumber: 202608061312,
+    releaseDate: '2026-08-06',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'fall back to primary sender when Infisical resolution throws',
+      'deploy dev site through hybrid build'
+    ],
+    breakingChanges: [],
+    notes: 'fall back to primary sender when Infisical resolution throws; deploy dev site through hybrid build'
+  },
   '1.8.331': {
     version: '1.8.331',
     buildNumber: 202608061222,

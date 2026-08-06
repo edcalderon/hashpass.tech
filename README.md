@@ -20,20 +20,14 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.331)
+## 📋 Latest Changes (v1.8.332)
 
 ### Bug Fixes
 
-* **infra:** guard fallback worker bootstrap payloads ([6890bad](https://github.com/hashpass-tech/hashpass.tech/commit/6890bad5a3a61ba195647a190922b0a69dfb97a5))
-
-
-### Features
-
-* **infra:** make dev BSL CodeBuild primary ([4b264a4](https://github.com/hashpass-tech/hashpass.tech/commit/4b264a4b8765ebde81037b9a63f4788aedc5c6b6))
-* **infra:** promote HashPass builds to CodeBuild ([4c88cc5](https://github.com/hashpass-tech/hashpass.tech/commit/4c88cc5d02b3bdd91be13a42d226e9522cbca501))
-* **infra:** stage HashPass dev builds on CodeBuild ([c84616e](https://github.com/hashpass-tech/hashpass.tech/commit/c84616e1e853c6b5c45290e1d8e51421b4ea0c02))
+* **bsl:** deploy dev site through hybrid build ([6fcfe79](https://github.com/hashpass-tech/hashpass.tech/commit/6fcfe7905b73feb95316d096c2fc4023942ae125))
+* **email:** fall back to primary sender when Infisical resolution throws ([432c5ea](https://github.com/hashpass-tech/hashpass.tech/commit/432c5ea6267f165a3a477a88750ecf2a68bb0f31))
 ### Release Highlights
-- promote HashPass builds to CodeBuild; stage HashPass dev builds on CodeBuild; make dev BSL CodeBuild primary; guard fallback worker bootstrap payloads
+- fall back to primary sender when Infisical resolution throws; deploy dev site through hybrid build
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 

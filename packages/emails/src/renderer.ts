@@ -1,46 +1,26 @@
-import fs from 'fs';
-import path from 'path';
 import type { EmailLocale, EmailTemplate, TemplateVars } from './types';
+import { TEMPLATES, ASSET_DATA_URIS } from './generated-templates';
 
 const SUPPORTED_LOCALES: EmailLocale[] = ['en', 'es', 'ko', 'fr', 'pt', 'de'];
 const DEFAULT_LOCALE: EmailLocale = 'en';
 
-// Metro server bundles replace __dirname with the API route entry dir, not this file's dir.
-// Walk a set of candidates and use the first that contains a known probe file,
-// relative to this package's own root (parameterized so both templates/ and
-// assets/ -- siblings under packages/emails -- can reuse the same search).
-function resolvePackageSubdir(subdir: string, probe: string[]): string {
-  const candidates = [
-    path.resolve(__dirname, '..', subdir),                                  // native Node.js (correct)
-    path.resolve(__dirname, '..', '..', 'packages', 'emails', subdir),      // __dirname = apps/mobile-app/
-    path.resolve(__dirname, '..', '..', '..', 'packages', 'emails', subdir), // __dirname = apps/mobile-app/app/
-    path.resolve(__dirname, '..', '..', '..', '..', 'packages', 'emails', subdir), // __dirname = apps/mobile-app/app/api/
-  ];
-  for (const dir of candidates) {
-    try {
-      if (fs.existsSync(path.join(dir, ...probe))) return dir;
-    } catch { /* noop */ }
-  }
-  return candidates[0];
-}
-
-const TEMPLATES_DIR = resolvePackageSubdir('templates', ['newsletter-welcome', 'en.html']);
-const ASSETS_DIR = resolvePackageSubdir('assets', ['logo-hashpass-white-cyan.png']);
-
 /**
- * Reads a file from packages/emails/assets and returns it as a base64 data
- * URI, for inlining small brand assets (logos) directly into email HTML
- * instead of depending on S3/CDN hosting env vars being configured in every
- * environment that sends mail.
+ * Returns a small brand asset (logo, etc.) as a base64 data URI, for inlining
+ * directly into email HTML instead of depending on S3/CDN hosting env vars
+ * being configured in every environment that sends mail. Sourced from
+ * generated-templates.ts (see generate-templates.mjs) rather than reading
+ * packages/emails/assets/* from disk at runtime -- that depended on the
+ * assets directory existing on disk relative to a guessed __dirname inside
+ * the deployed Lambda bundle, which it doesn't (the bundler only includes
+ * JS/TS module content, not sibling static-file directories).
  */
-export function getEmailAssetDataUri(assetName: string, mimeType: string): string {
-  try {
-    const buffer = fs.readFileSync(path.join(ASSETS_DIR, assetName));
-    return `data:${mimeType};base64,${buffer.toString('base64')}`;
-  } catch (error) {
-    console.warn(`[emails] Could not load asset ${assetName}:`, error);
+export function getEmailAssetDataUri(assetName: string, _mimeType: string): string {
+  const dataUri = ASSET_DATA_URIS[assetName];
+  if (!dataUri) {
+    console.warn(`[emails] Could not find asset ${assetName} in generated-templates.ts (run generate-templates.mjs after adding it)`);
     return '';
   }
+  return dataUri;
 }
 
 export function renderTemplate(
@@ -52,8 +32,10 @@ export function renderTemplate(
     ? (locale as EmailLocale)
     : DEFAULT_LOCALE;
 
-  const templatePath = path.join(TEMPLATES_DIR, template, `${safeLocale}.html`);
-  let html = fs.readFileSync(templatePath, 'utf-8');
+  const html = TEMPLATES[template]?.[safeLocale];
+  if (!html) {
+    throw new Error(`[emails] Unknown template "${template}" for locale "${safeLocale}" (checked generated-templates.ts)`);
+  }
 
   // Defaults come first so an explicitly-passed var always wins -- a later
   // spread key overrides an earlier one with the same name in JS object
@@ -70,11 +52,12 @@ export function renderTemplate(
     ...vars,
   } satisfies Required<TemplateVars>;
 
+  let rendered = html;
   for (const [key, value] of Object.entries(resolved)) {
     // Convert camelCase keys to UPPER_SNAKE_CASE to match {{APP_URL}}-style placeholders
     const placeholder = key.replace(/([A-Z])/g, '_$1').toUpperCase();
-    html = html.split(`{{${placeholder}}}`).join(String(value ?? ''));
+    rendered = rendered.split(`{{${placeholder}}}`).join(String(value ?? ''));
   }
 
-  return html;
+  return rendered;
 }

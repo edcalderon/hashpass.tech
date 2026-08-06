@@ -49,7 +49,7 @@ The public surface is now split across independent deployment paths:
 1. The source-account CloudFront front door serves `hashpass.tech` and `dev.hashpass.tech` and aliases both hostnames to the target-account static origins.
 2. The target-account web pipeline publishes the `hashpass.tech` S3 origin and the `dev.hashpass.tech` development origin.
 3. The same target web deploy helper packages the Expo Router API, updates the matching Lambda, and fails if the public API version endpoint is stale.
-4. Both `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` are served by the same **hybrid** path (target-account CodePipeline + EC2 worker running a plain static build/S3-sync, fronted by the *unchanged* source-account CloudFront distribution) — see below. The source-account SST pipelines that used to serve both are deleted.
+4. Both `bsl.hashpass.tech` and `bsl-dev.hashpass.tech` are served by the same **hybrid** path (target-account CodePipeline + EC2 worker running a plain static build/S3-sync, fronted by the *unchanged* source-account CloudFront distribution) — see below. The source-account SST pipelines that used to serve both are deleted. If a live domain seems stuck on an old version despite a working client-side reload, check whether this pipeline is actually shipping — see [bsl-pipeline-orphaned-worker-incident.md](./bsl-pipeline-orphaned-worker-incident.md) for the diagnostic commands and a real incident where the worker instance died silently and the pipeline sat stuck for hours with nothing to notice.
 
 These are completely independent. A failure in one does not affect the other. Check the correct dashboard when debugging.
 
