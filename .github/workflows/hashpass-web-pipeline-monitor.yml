@@ -13,6 +13,7 @@ on:
       - "packages/infra/terraform/modules/aws_pipeline_ec2_worker/**"
       - "packages/infra/terraform/modules/aws_static_site_pipeline/**"
       - "packages/infra/terraform/stacks/hashpass-web/**"
+      - "packages/infra/terraform/stacks/bsl-target/**"
       - "packages/tools/scripts/build-static-site.sh"
       - "packages/tools/scripts/deploy-api-lambda.sh"
       - "packages/tools/scripts/deploy-static-site.sh"
@@ -57,9 +58,19 @@ jobs:
       WEB_PIPELINE_PROJECT_TAG: ${{ vars.WEB_PIPELINE_PROJECT_TAG || 'hashpass' }}
       WEB_PIPELINE_SERVICE_TAG: ${{ vars.WEB_PIPELINE_SERVICE_TAG || 'pipeline-build-worker' }}
       WEB_PIPELINE_PROVIDER_TAGS: ${{ vars.WEB_PIPELINE_PROVIDER_TAGS || 'hashpass-prod-ec2-build,hashpass-dev-ec2-build' }}
+      BSL_PIPELINE_NAMES: ${{ vars.BSL_PIPELINE_NAMES || 'bsl-hashpass-dev,bsl-hashpass-prod' }}
+      BSL_PIPELINE_PROVIDER_TAGS: ${{ vars.BSL_PIPELINE_PROVIDER_TAGS || 'hashpass-bsl-prod-ec2-build,hashpass-bsl-dev-ec2-build' }}
+      ACTIVE_WEB_PIPELINE_NAME: ${{ github.ref == 'refs/heads/main' && 'hashpass-production-site' || 'hashpass-dev-site' }}
+      ACTIVE_WEB_PROVIDER_TAG: ${{ github.ref == 'refs/heads/main' && 'hashpass-prod-ec2-build' || 'hashpass-dev-ec2-build' }}
+      ACTIVE_BSL_PIPELINE_NAME: ${{ github.ref == 'refs/heads/main' && 'bsl-hashpass-prod' || 'bsl-hashpass-dev' }}
+      ACTIVE_BSL_PROVIDER_TAG: ${{ github.ref == 'refs/heads/main' && 'hashpass-bsl-prod-ec2-build' || 'hashpass-bsl-dev-ec2-build' }}
       WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '30' }}
       WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '180' }}
       WEB_PIPELINE_POLL_SECONDS: ${{ vars.WEB_PIPELINE_POLL_SECONDS || '20' }}
+      # Persistent EC2 workers are cost-sensitive. Starts require a deliberate
+      # repository-variable opt-in; the idle stop sweep remains active always.
+      WEB_PIPELINE_WORKER_AUTOSTART_ENABLED: ${{ vars.WEB_PIPELINE_WORKER_AUTOSTART_ENABLED || 'false' }}
+      BSL_PIPELINE_WORKER_AUTOSTART_ENABLED: ${{ vars.BSL_PIPELINE_WORKER_AUTOSTART_ENABLED || 'false' }}
       WEB_PIPELINE_MODE: ${{ github.event_name == 'schedule' && 'stop' || github.event_name == 'workflow_dispatch' && inputs.mode || 'monitor' }}
     steps:
       - name: Checkout
@@ -86,15 +97,30 @@ jobs:
           role-session-name: hashpass-web-pipeline-monitor
 
       - name: Monitor web pipelines and worker
-        if: env.WEB_PIPELINE_MODE == 'monitor' && steps.configure-aws.outcome == 'success'
+        if: env.WEB_PIPELINE_MODE == 'monitor' && env.WEB_PIPELINE_WORKER_AUTOSTART_ENABLED == 'true' && steps.configure-aws.outcome == 'success'
         run: |
           set -euo pipefail
           packages/tools/scripts/manage-web-pipeline-worker.sh \
             --mode monitor \
-            --pipelines "${WEB_PIPELINE_NAMES}" \
+            --pipelines "${ACTIVE_WEB_PIPELINE_NAME}" \
             --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
             --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
-            --provider-tag "${WEB_PIPELINE_PROVIDER_TAGS}" \
+            --provider-tag "${ACTIVE_WEB_PROVIDER_TAG}" \
+            --region "${AWS_REGION}" \
+            --grace-seconds "${WEB_PIPELINE_GRACE_SECONDS}" \
+            --start-wait-seconds "${WEB_PIPELINE_START_WAIT_SECONDS}" \
+            --poll-seconds "${WEB_PIPELINE_POLL_SECONDS}"
+
+      - name: Monitor active BSL pipeline and worker
+        if: env.WEB_PIPELINE_MODE == 'monitor' && env.BSL_PIPELINE_WORKER_AUTOSTART_ENABLED == 'true' && steps.configure-aws.outcome == 'success'
+        run: |
+          set -euo pipefail
+          packages/tools/scripts/manage-web-pipeline-worker.sh \
+            --mode monitor \
+            --pipelines "${ACTIVE_BSL_PIPELINE_NAME}" \
+            --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
+            --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
+            --provider-tag "${ACTIVE_BSL_PROVIDER_TAG}" \
             --region "${AWS_REGION}" \
             --grace-seconds "${WEB_PIPELINE_GRACE_SECONDS}" \
             --start-wait-seconds "${WEB_PIPELINE_START_WAIT_SECONDS}" \
@@ -110,6 +136,24 @@ jobs:
             --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
             --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
             --provider-tag "${WEB_PIPELINE_PROVIDER_TAGS}" \
+            --region "${AWS_REGION}" \
+            --grace-seconds 0 \
+            --poll-seconds "${WEB_PIPELINE_POLL_SECONDS}"
+
+      - name: Stop BSL workers if idle
+        # BSL has its own dev/prod pipelines. It was excluded from the original
+        # web-only sweep, leaving idle BSL workers running indefinitely. Do not
+        # run this from a push: CodePipeline may not have registered the new
+        # execution yet, and stopping during that window can strand a build.
+        if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'stop')) && steps.configure-aws.outcome == 'success'
+        run: |
+          set -euo pipefail
+          packages/tools/scripts/manage-web-pipeline-worker.sh \
+            --mode stop \
+            --pipelines "${BSL_PIPELINE_NAMES}" \
+            --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
+            --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
+            --provider-tag "${BSL_PIPELINE_PROVIDER_TAGS}" \
             --region "${AWS_REGION}" \
             --grace-seconds 0 \
             --poll-seconds "${WEB_PIPELINE_POLL_SECONDS}"

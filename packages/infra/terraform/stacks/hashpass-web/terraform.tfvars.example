@@ -41,9 +41,15 @@ build_worker_associate_public_ip_address = true
 build_worker_allowed_ssh_cidrs       = []
 build_worker_detailed_monitoring     = true
 
+# Persistent workers are disabled by default. A reviewed approval reference is
+# required before they can be created, and the GitHub monitor does not start
+# them unless WEB_PIPELINE_WORKER_AUTOSTART_ENABLED=true is set deliberately.
+enable_pipeline_build_workers        = false
+pipeline_build_worker_approval_reference = ""
+
 # Enable this once the target account has a GitHub Actions OIDC provider and
 # you want the monitor workflow to start/stop the EC2 worker automatically.
-enable_github_actions_worker_control = true
+enable_github_actions_worker_control = false
 create_github_oidc_provider          = false
 
 # Production CloudFront for hashpass.tech. Request/validate the ACM certificate

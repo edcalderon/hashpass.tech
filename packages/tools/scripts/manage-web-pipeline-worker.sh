@@ -207,8 +207,8 @@ ensure_worker_running() {
 
   mapfile -t worker_ids < <(worker_instance_ids)
   if [[ "${#worker_ids[@]}" -eq 0 ]]; then
-    log "No EC2 worker instances matched Project=${PROJECT_TAG}, Service=${SERVICE_TAG}, Provider=${PROVIDER_TAG}."
-    return 1
+    log "No EC2 worker instances matched Project=${PROJECT_TAG}, Service=${SERVICE_TAG}, Provider=${PROVIDER_TAG}; nothing to stop."
+    return 0
   fi
 
   for instance_id in "${worker_ids[@]}"; do

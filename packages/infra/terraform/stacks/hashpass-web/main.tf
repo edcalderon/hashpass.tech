@@ -226,43 +226,47 @@ resource "aws_codepipeline_custom_action_type" "ec2_build" {
 module "production_build_worker" {
   source = "../../modules/aws_pipeline_ec2_worker"
 
-  name_prefix                 = "${var.name_prefix}-prod"
-  aws_region                  = var.aws_region
-  provider_name               = var.production_build_action_provider_name
-  provider_version            = var.build_action_version
-  instance_count              = var.build_worker_instance_count
-  instance_type               = var.build_worker_instance_type
-  subnet_ids                  = var.build_worker_subnet_ids
-  associate_public_ip_address = var.build_worker_associate_public_ip_address
-  allowed_ssh_cidrs           = var.build_worker_allowed_ssh_cidrs
-  deploy_bucket_names         = local.production_build_worker_deploy_bucket_names
-  artifact_bucket_names       = local.production_build_worker_artifact_bucket_names
-  lambda_function_names       = local.production_build_worker_lambda_function_names
-  lambda_region               = var.lambda_region
-  root_volume_size_gb         = var.build_worker_root_volume_size_gb
-  detailed_monitoring         = var.build_worker_detailed_monitoring
-  tags                        = var.tags
+  name_prefix                     = "${var.name_prefix}-prod"
+  aws_region                      = var.aws_region
+  provider_name                   = var.production_build_action_provider_name
+  provider_version                = var.build_action_version
+  instance_count                  = var.enable_pipeline_build_workers ? var.build_worker_instance_count : 0
+  provisioning_enabled            = var.enable_pipeline_build_workers
+  provisioning_approval_reference = var.pipeline_build_worker_approval_reference
+  instance_type                   = var.build_worker_instance_type
+  subnet_ids                      = var.build_worker_subnet_ids
+  associate_public_ip_address     = var.build_worker_associate_public_ip_address
+  allowed_ssh_cidrs               = var.build_worker_allowed_ssh_cidrs
+  deploy_bucket_names             = local.production_build_worker_deploy_bucket_names
+  artifact_bucket_names           = local.production_build_worker_artifact_bucket_names
+  lambda_function_names           = local.production_build_worker_lambda_function_names
+  lambda_region                   = var.lambda_region
+  root_volume_size_gb             = var.build_worker_root_volume_size_gb
+  detailed_monitoring             = var.build_worker_detailed_monitoring
+  tags                            = var.tags
 }
 
 module "development_build_worker" {
   source = "../../modules/aws_pipeline_ec2_worker"
 
-  name_prefix                 = "${var.name_prefix}-dev"
-  aws_region                  = var.aws_region
-  provider_name               = var.development_build_action_provider_name
-  provider_version            = var.build_action_version
-  instance_count              = var.build_worker_instance_count
-  instance_type               = var.build_worker_instance_type
-  subnet_ids                  = var.build_worker_subnet_ids
-  associate_public_ip_address = var.build_worker_associate_public_ip_address
-  allowed_ssh_cidrs           = var.build_worker_allowed_ssh_cidrs
-  deploy_bucket_names         = local.development_build_worker_deploy_bucket_names
-  artifact_bucket_names       = local.development_build_worker_artifact_bucket_names
-  lambda_function_names       = local.development_build_worker_lambda_function_names
-  lambda_region               = var.lambda_region
-  root_volume_size_gb         = var.build_worker_root_volume_size_gb
-  detailed_monitoring         = var.build_worker_detailed_monitoring
-  tags                        = var.tags
+  name_prefix                     = "${var.name_prefix}-dev"
+  aws_region                      = var.aws_region
+  provider_name                   = var.development_build_action_provider_name
+  provider_version                = var.build_action_version
+  instance_count                  = var.enable_pipeline_build_workers ? var.build_worker_instance_count : 0
+  provisioning_enabled            = var.enable_pipeline_build_workers
+  provisioning_approval_reference = var.pipeline_build_worker_approval_reference
+  instance_type                   = var.build_worker_instance_type
+  subnet_ids                      = var.build_worker_subnet_ids
+  associate_public_ip_address     = var.build_worker_associate_public_ip_address
+  allowed_ssh_cidrs               = var.build_worker_allowed_ssh_cidrs
+  deploy_bucket_names             = local.development_build_worker_deploy_bucket_names
+  artifact_bucket_names           = local.development_build_worker_artifact_bucket_names
+  lambda_function_names           = local.development_build_worker_lambda_function_names
+  lambda_region                   = var.lambda_region
+  root_volume_size_gb             = var.build_worker_root_volume_size_gb
+  detailed_monitoring             = var.build_worker_detailed_monitoring
+  tags                            = var.tags
 }
 
 module "site" {

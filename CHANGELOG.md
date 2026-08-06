@@ -1,3 +1,14 @@
+## [1.8.330](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.329...v1.8.330) (2026-08-06)
+
+
+### Bug Fixes
+
+* **infra:** require approval for persistent workers ([518843c](https://github.com/hashpass-tech/hashpass.tech/commit/518843ce7581ab9e9586125422a31f322ae72449))
+* **infra:** stop idle BSL build workers ([145dd98](https://github.com/hashpass-tech/hashpass.tech/commit/145dd98f9a527c6a3fa536ebb3a9c2bc818492e0))
+* **infra:** throttle public API traffic ([3f6d384](https://github.com/hashpass-tech/hashpass.tech/commit/3f6d384174e208bf1bfd0ded4f2bf512095d4fd8))
+### Release Highlights
+- stop idle BSL build workers; require approval for persistent workers; throttle public API traffic
+
 ## [1.8.329](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.328...v1.8.329) (2026-08-06)
 
 

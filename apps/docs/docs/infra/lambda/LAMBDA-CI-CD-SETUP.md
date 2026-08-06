@@ -30,6 +30,37 @@ The `aws_pipeline_ec2_worker` module grants the build worker permission to:
 
 Do not give the worker broad Lambda permissions. Add function names to the Terraform variables instead.
 
+## Persistent Worker Cost Guard
+
+Persistent EC2 build workers are disabled by default in both the `hashpass-web`
+and `bsl-target` stacks. They can only be provisioned when all of the following
+are explicitly set in the environment's untracked `terraform.tfvars`:
+
+- a non-zero worker count;
+- `enable_pipeline_build_workers = true`;
+- `pipeline_build_worker_approval_reference` with a review, incident, or
+  change reference.
+
+The approval reference is recorded as an EC2 tag. Revert the enablement after
+the approved work finishes. The GitHub pipeline monitor also defaults to
+stop-only: it will not start a stopped worker unless the repository variable
+`WEB_PIPELINE_WORKER_AUTOSTART_ENABLED` is deliberately set to `true`.
+
+The same scheduled workflow performs independent idle-stop sweeps for the
+HashPass web workers and the BSL dev/prod workers every ten minutes. Each group
+is stopped only when its own CodePipeline executions are idle; activity in one
+group must not keep the other group's instances running. The BSL sweep does not
+run on a source push, because CodePipeline can take a short time to register a
+new execution after that push; use the scheduled sweep or an explicit `stop`
+workflow dispatch instead.
+
+For an EC2-backed pipeline, enable `WEB_PIPELINE_WORKER_AUTOSTART_ENABLED` or
+`BSL_PIPELINE_WORKER_AUTOSTART_ENABLED` only after the corresponding worker has
+an approved provisioning reference. On a push, the monitor starts only the
+worker for that branch (`develop` → dev, `main` → production), waits for that
+single pipeline, and stops it when it becomes idle. It never starts the other
+environment merely because a build was triggered.
+
 ## Deployment Contract
 
 The target web deploy helper must:

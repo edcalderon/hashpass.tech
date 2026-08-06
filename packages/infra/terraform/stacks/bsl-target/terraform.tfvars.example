@@ -15,6 +15,10 @@ repository = "hashpass-tech/hashpass.tech"
 
 # EC2 worker sizing -- non-burstable, matches hashpass-web's pattern.
 instance_type = "m6i.xlarge"
+# Persistent build workers are disabled by default. Enabling them requires a
+# reviewed, auditable approval reference and should be reverted after use.
+enable_pipeline_build_workers = false
+pipeline_build_worker_approval_reference = ""
 
 # BSL Supabase config -- fill with real values in a local terraform.tfvars,
 # never commit real secrets here.

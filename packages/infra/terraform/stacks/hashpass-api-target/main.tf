@@ -20,18 +20,20 @@ data "aws_route53_zone" "tech" {
 module "api_dev" {
   source = "../../modules/aws_expo_router_api"
 
-  name_prefix             = var.name_prefix
-  environment             = "dev"
-  domain_name             = local.api_domains.dev
-  route53_zone_id         = data.aws_route53_zone.tech.zone_id
-  mapping_key             = var.api_mapping_key
-  lambda_zip_path         = var.lambda_zip_path
-  lambda_source_code_hash = var.lambda_source_code_hash
-  lambda_handler          = var.lambda_handler
-  lambda_runtime          = var.lambda_runtime
-  lambda_memory_size      = var.lambda_memory_size
-  lambda_timeout          = var.lambda_timeout
-  enable_custom_domain    = var.enable_custom_domain
+  name_prefix              = var.name_prefix
+  environment              = "dev"
+  domain_name              = local.api_domains.dev
+  route53_zone_id          = data.aws_route53_zone.tech.zone_id
+  mapping_key              = var.api_mapping_key
+  lambda_zip_path          = var.lambda_zip_path
+  lambda_source_code_hash  = var.lambda_source_code_hash
+  lambda_handler           = var.lambda_handler
+  lambda_runtime           = var.lambda_runtime
+  lambda_memory_size       = var.lambda_memory_size
+  lambda_timeout           = var.lambda_timeout
+  api_throttle_rate_limit  = var.api_throttle_settings.dev.rate_limit
+  api_throttle_burst_limit = var.api_throttle_settings.dev.burst_limit
+  enable_custom_domain     = var.enable_custom_domain
 
   lambda_environment = merge(
     {
@@ -52,18 +54,20 @@ module "api_dev" {
 module "api_prod" {
   source = "../../modules/aws_expo_router_api"
 
-  name_prefix             = var.name_prefix
-  environment             = "prod"
-  domain_name             = local.api_domains.prod
-  route53_zone_id         = data.aws_route53_zone.tech.zone_id
-  mapping_key             = var.api_mapping_key
-  lambda_zip_path         = var.lambda_zip_path
-  lambda_source_code_hash = var.lambda_source_code_hash
-  lambda_handler          = var.lambda_handler
-  lambda_runtime          = var.lambda_runtime
-  lambda_memory_size      = var.lambda_memory_size
-  lambda_timeout          = var.lambda_timeout
-  enable_custom_domain    = var.enable_custom_domain
+  name_prefix              = var.name_prefix
+  environment              = "prod"
+  domain_name              = local.api_domains.prod
+  route53_zone_id          = data.aws_route53_zone.tech.zone_id
+  mapping_key              = var.api_mapping_key
+  lambda_zip_path          = var.lambda_zip_path
+  lambda_source_code_hash  = var.lambda_source_code_hash
+  lambda_handler           = var.lambda_handler
+  lambda_runtime           = var.lambda_runtime
+  lambda_memory_size       = var.lambda_memory_size
+  lambda_timeout           = var.lambda_timeout
+  api_throttle_rate_limit  = var.api_throttle_settings.prod.rate_limit
+  api_throttle_burst_limit = var.api_throttle_settings.prod.burst_limit
+  enable_custom_domain     = var.enable_custom_domain
 
   lambda_environment = merge(
     {

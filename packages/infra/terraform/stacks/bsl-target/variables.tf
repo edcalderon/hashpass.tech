@@ -97,9 +97,21 @@ variable "instance_type" {
 }
 
 variable "instance_count" {
-  description = "Number of BSL worker instances"
+  description = "Number of BSL worker instances when explicitly enabled"
   type        = number
-  default     = 1
+  default     = 0
+}
+
+variable "enable_pipeline_build_workers" {
+  description = "Break-glass switch for persistent BSL EC2 build workers. Keep false unless a reviewed approval explicitly requires them."
+  type        = bool
+  default     = false
+}
+
+variable "pipeline_build_worker_approval_reference" {
+  description = "Auditable approval or incident reference required when enable_pipeline_build_workers is true."
+  type        = string
+  default     = ""
 }
 
 variable "subnet_ids" {

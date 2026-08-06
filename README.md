@@ -20,14 +20,15 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.329)
+## 📋 Latest Changes (v1.8.330)
 
 ### Bug Fixes
 
-* **auth:** fast-path the Supabase bridge for returning users ([80d098e](https://github.com/hashpass-tech/hashpass.tech/commit/80d098e671ea008d62e4375010640b1d608b35da))
-* **mobile:** add missing index.docs.gettingStarted.seeDemo translation ([06cd0a2](https://github.com/hashpass-tech/hashpass.tech/commit/06cd0a2fa22754823a519fd24ea9ca54fc569e42))
+* **infra:** require approval for persistent workers ([518843c](https://github.com/hashpass-tech/hashpass.tech/commit/518843ce7581ab9e9586125422a31f322ae72449))
+* **infra:** stop idle BSL build workers ([145dd98](https://github.com/hashpass-tech/hashpass.tech/commit/145dd98f9a527c6a3fa536ebb3a9c2bc818492e0))
+* **infra:** throttle public API traffic ([3f6d384](https://github.com/hashpass-tech/hashpass.tech/commit/3f6d384174e208bf1bfd0ded4f2bf512095d4fd8))
 ### Release Highlights
-- fast-path the Supabase bridge for returning users; add missing index.docs.gettingStarted.seeDemo translation
+- stop idle BSL build workers; require approval for persistent workers; throttle public API traffic
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
