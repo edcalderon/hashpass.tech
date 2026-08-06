@@ -2,6 +2,67 @@
 -- speaker response authorization, mutually available slots, calendars,
 -- notifications, and a meeting id that powers the existing chat screen.
 
+-- Baseline schema this file assumes but which no earlier migration ever
+-- created -- flagged by code review 2026-08-06, same class of gap as
+-- V009's meeting_slots fix: the notifications table and the "original
+-- helper" create_notification(uuid,text,text,text,uuid,text,boolean,uuid)
+-- this file's own comment below refers to were both applied out of band
+-- at some point. Sourced from a live BSL prod schema dump (pg_dump
+-- --schema-only, 2026-08-06), trimmed to the pre-V052 shape (no `level`
+-- column/param -- V052__notification_levels_and_critical_delivery adds
+-- those later in the sequence, exactly where that migration's own name
+-- says it should).
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  type text NOT NULL,
+  title text NOT NULL,
+  message text NOT NULL,
+  is_read boolean NOT NULL DEFAULT false,
+  is_urgent boolean NOT NULL DEFAULT false,
+  is_archived boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  read_at timestamptz,
+  archived_at timestamptz,
+  meeting_request_id uuid,
+  speaker_id text,
+  meeting_id uuid,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT notifications_type_check CHECK (type = ANY (ARRAY[
+    'meeting_request', 'meeting_accepted', 'meeting_declined', 'meeting_reminder',
+    'meeting_expired', 'meeting_cancelled', 'boost_received', 'system_alert', 'chat_message'
+  ]))
+);
+
+CREATE OR REPLACE FUNCTION public.create_notification(
+  p_user_id uuid,
+  p_type text,
+  p_title text,
+  p_message text,
+  p_meeting_request_id uuid DEFAULT NULL,
+  p_speaker_id text DEFAULT NULL,
+  p_is_urgent boolean DEFAULT false,
+  p_meeting_id uuid DEFAULT NULL
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  INSERT INTO public.notifications (
+    user_id, type, title, message, meeting_request_id, speaker_id, is_urgent, meeting_id
+  ) VALUES (
+    p_user_id, p_type, p_title, p_message, p_meeting_request_id, p_speaker_id, p_is_urgent, p_meeting_id
+  )
+  RETURNING id INTO v_id;
+
+  RETURN v_id;
+END;
+$$;
+
 -- Existing callers pass the UUID speaker record while the original helper takes
 -- text. Keep both contracts working so request creation can notify both sides.
 CREATE OR REPLACE FUNCTION public.create_notification(

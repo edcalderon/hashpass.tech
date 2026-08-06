@@ -115,6 +115,63 @@ failed repeatedly and required:
    confirmed by `events`/`event_pass_tiers` row counts matching BSL prod
    exactly (5 and 15 rows) afterward.
 
+## `db/migrations/` now bootstraps a truly blank database on its own (fixed 2026-08-06)
+
+The point above closed the gap for the one real dev project by applying a
+schema dump directly -- but that's an out-of-band workaround, not a fix to
+the migration files themselves. An automated code review correctly flagged
+that running `db/migrations/V000` through `V062` **in file order against a
+genuinely blank database** (no dump applied first) still fails partway
+through -- V009 hits `relation "public.meeting_slots" does not exist"
+immediately, and that was only the first of eight such gaps.
+
+Verified by actually testing it: spun up a disposable `postgres:17-alpine`
+Docker container (not Supabase, not the real dev project -- fully
+disposable, discarded after), approximated the Supabase-specific baseline
+(`extensions` schema, `auth.users` + `auth.uid()`/`auth.role()`/`auth.jwt()`
+stubs, the `anon`/`authenticated`/`service_role` roles), then ran all 62
+files in sequence with `ON_ERROR_STOP=1`, fixing each failure at its exact
+point of first use (same pattern as the V000/V009 fixes above: add the
+missing baseline object as a guarded, idempotent statement directly in the
+first migration file that needs it, sourced from the verified BSL prod
+schema dump used for the dev bootstrap, never guessed). Every fix was
+re-verified by re-running the full sequence from that point forward, and
+the **entire V000-V062 sequence was re-verified end-to-end from a second,
+completely fresh container** after all fixes landed, to rule out any
+ordering artifact from incremental debugging.
+
+Gaps found and fixed, in the order they were hit:
+
+| File | What was missing |
+|---|---|
+| `V007` | `passes.pass_type` column (the `pass_type` enum type existed, but no migration ever added the column that uses it) |
+| `V009` | `meeting_slots` table entirely, plus `meetings.slot_id`/`host_id`/`attendee_id`/`start_time`/`end_time`/`attendee_email`/`event_id` columns and FKs |
+| `V017` | `notifications` table entirely, plus the base `create_notification(uuid,text,text,text,uuid,text,boolean,uuid)` function this file's own wrapper calls |
+| `V022` | `user_agenda_status` table entirely (indexes, RLS, all 4 owner-only policies) |
+| `V024` | `event_agenda` table entirely (this file only ever replaces its `type` CHECK constraint, never created the table) |
+| `V038` | `passes.status`/`purchase_date`/`price_usd`/`max_meeting_requests`/`used_meeting_requests`/`max_boost_amount`/`used_boost_amount`/`access_features`/`special_perks`; a long list of `meeting_requests` columns (`event_id`, `speaker_name`, `requester_name`, `requester_company`, `requester_title`, `requester_ticket_type`, `preferred_date`, `preferred_time`, `boost_transaction_hash`, `priority_score`, `availability_window_start/end`, `meeting_scheduled_at`, `meeting_location`, `meeting_id`); `meeting_requests.status` converting from the `meeting_request_status` enum to plain text with a wider CHECK (had to drop/recreate a dependent RLS policy and two partial indexes around the type change) |
+| `V039` | `passes.pass_number` converting from `serial` (V001's original type) to `text` |
+| `V053` | `meeting_chat_messages.meeting_id` column + FK (this file already handled dropping the legacy `meeting_request_id`/`message` columns, but never added the column its own new policies reference) |
+
+**Why these were never caught before:** several are inside `plpgsql`
+function bodies (`accept_meeting_request`, `get_speaker_available_slots`,
+etc.) that Postgres doesn't fully validate at `CREATE FUNCTION` time --
+only when the function actually *runs*. Migration files that only define
+functions referencing a missing column pass silently; the eight gaps above
+are all cases where a column/table is referenced in plain top-level
+SQL (`CREATE POLICY`, `UPDATE ... SET`, an index predicate) that Postgres
+validates immediately.
+
+One thing intentionally **not** attempted: `archive/legacy-root/supabase/migrations/`
+holds the real, dated original migration history for several of these
+objects (e.g. `20251031050000_create_user_agenda_status.sql`,
+`20251219000001_create_notifications_table.sql`) from before this repo
+adopted the `V0xx` convention. The fixes above are sourced from the
+*current* live BSL prod schema dump instead of those originals, since a
+lot of further out-of-band drift happened on top of those original shapes
+too, and a fresh bootstrap needs to match what's live today, not replay
+1:1 history that itself doesn't reflect the current state.
+
 **Net result:** `gsugeqozyeokncpbndna` now has the full BSL-prod-equivalent
 schema (89 tables → 59 non-Directus, all present) plus core's own V004+
 canonical-registry additions, all 62 migrations + the new V000 tracked in

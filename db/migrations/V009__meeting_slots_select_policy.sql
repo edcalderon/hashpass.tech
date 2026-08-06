@@ -35,6 +35,68 @@
 -- is a same-PR code change, not a database migration, and does not change
 -- its access model — see that commit for the fix.
 
+-- Baseline schema this file (and V017 onward) assumes but which no earlier
+-- migration ever created -- flagged by code review 2026-08-06: running
+-- V000-V008 against a truly blank database never creates meeting_slots at
+-- all, so this file's own policy below fails with "relation does not
+-- exist" before this fix. meeting_slots and the meetings.slot_id/host_id/
+-- attendee_id columns it's joined against here were both applied directly
+-- to the live database at some point, out of band, same class of gap as
+-- V000's Better Auth tables. Sourced from a live BSL prod schema dump
+-- (pg_dump --schema-only, 2026-08-06) so a fresh bootstrap matches
+-- production exactly rather than guessing. meeting_requests' own missing
+-- columns/FKs are NOT added here -- V009 doesn't reference them, and
+-- V032/V017+ already add what they individually need further down the
+-- sequence.
+CREATE TABLE IF NOT EXISTS public.meeting_slots (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  start_time timestamptz NOT NULL,
+  end_time timestamptz NOT NULL,
+  status text NOT NULL DEFAULT 'available',
+  meeting_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT meeting_slots_status_check CHECK (status = ANY (ARRAY['available', 'booked', 'unavailable']))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_meeting_slots_user_start ON public.meeting_slots (user_id, start_time);
+
+DO $$ BEGIN
+  ALTER TABLE public.meeting_slots
+    ADD CONSTRAINT meeting_slots_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE NOT VALID;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE public.meetings ADD COLUMN IF NOT EXISTS slot_id uuid;
+ALTER TABLE public.meetings ADD COLUMN IF NOT EXISTS host_id uuid;
+ALTER TABLE public.meetings ADD COLUMN IF NOT EXISTS attendee_id uuid;
+ALTER TABLE public.meetings ADD COLUMN IF NOT EXISTS start_time timestamptz;
+ALTER TABLE public.meetings ADD COLUMN IF NOT EXISTS end_time timestamptz;
+ALTER TABLE public.meetings ADD COLUMN IF NOT EXISTS attendee_email text;
+
+DO $$ BEGIN
+  ALTER TABLE public.meetings
+    ADD CONSTRAINT meetings_slot_id_fkey FOREIGN KEY (slot_id) REFERENCES public.meeting_slots(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE public.meetings
+    ADD CONSTRAINT meetings_host_id_fkey FOREIGN KEY (host_id) REFERENCES auth.users(id) ON DELETE CASCADE NOT VALID;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE public.meetings
+    ADD CONSTRAINT meetings_attendee_id_fkey FOREIGN KEY (attendee_id) REFERENCES auth.users(id) ON DELETE CASCADE NOT VALID;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE public.meeting_slots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY meeting_slots_select_public ON public.meeting_slots FOR SELECT USING (true);
+
 CREATE POLICY "meeting_slots_select_owner_or_participant" ON public.meeting_slots
   FOR SELECT
   USING (

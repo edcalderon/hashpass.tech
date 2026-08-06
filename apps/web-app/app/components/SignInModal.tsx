@@ -29,7 +29,14 @@ type Platform = 'ios' | 'android' | 'desktop';
 function detectPlatform(): Platform {
   if (typeof navigator === 'undefined') return 'desktop';
   const ua = navigator.userAgent || '';
-  if (/iPad|iPhone|iPod/.test(ua) && !(window as unknown as { MSStream?: unknown }).MSStream) return 'ios';
+  const isMSStream = Boolean((window as unknown as { MSStream?: unknown }).MSStream);
+  if (/iPad|iPhone|iPod/.test(ua) && !isMSStream) return 'ios';
+  // iPadOS 13+ Safari sends a desktop-class "Macintosh" UA with no "iPad"
+  // token at all, even though this app declares tablet support -- a real
+  // Mac reports maxTouchPoints 0, so touch-capable "MacIntel" is the
+  // standard way to tell an iPad apart from an actual desktop Mac here.
+  const isTouchMac = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  if (isTouchMac && !isMSStream) return 'ios';
   if (/Android/.test(ua)) return 'android';
   return 'desktop';
 }

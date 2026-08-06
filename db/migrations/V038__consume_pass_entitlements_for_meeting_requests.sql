@@ -1,3 +1,82 @@
+-- Baseline: passes.status and a long list of meeting_requests columns were
+-- never added by any earlier file in this directory even though this
+-- migration (and several before it, deferred inside function bodies that
+-- Postgres doesn't fully validate until they actually execute, so they
+-- didn't block migration apply the way this file's top-level SQL does)
+-- assume they exist -- flagged by code review 2026-08-06, same class of
+-- gap as V009/V017/V022/V024. Sourced from a live BSL prod schema dump
+-- (pg_dump --schema-only, 2026-08-06).
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS purchase_date timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS price_usd numeric(10,2);
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS max_meeting_requests integer NOT NULL DEFAULT 0;
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS used_meeting_requests integer NOT NULL DEFAULT 0;
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS max_boost_amount numeric(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS used_boost_amount numeric(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS access_features text[] NOT NULL DEFAULT '{}';
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS special_perks text[] NOT NULL DEFAULT '{}';
+ALTER TABLE public.meetings ADD COLUMN IF NOT EXISTS event_id text NOT NULL DEFAULT 'bsl2025';
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS event_id text NOT NULL DEFAULT 'bsl2025';
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS speaker_name text NOT NULL DEFAULT '';
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS requester_name text;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS requester_company text;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS requester_title text;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS requester_ticket_type text;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS preferred_date text;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS preferred_time text;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS boost_transaction_hash text;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS priority_score integer NOT NULL DEFAULT 50;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS availability_window_start timestamptz;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS availability_window_end timestamptz;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS meeting_scheduled_at timestamptz;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS meeting_location text;
+ALTER TABLE public.meeting_requests ADD COLUMN IF NOT EXISTS meeting_id uuid;
+DO $$ BEGIN
+  ALTER TABLE public.meeting_requests ADD CONSTRAINT meeting_requests_requester_ticket_type_check
+    CHECK (requester_ticket_type = ANY (ARRAY['general', 'business', 'vip']));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+-- V002's status column is the meeting_request_status enum; live prod has
+-- since widened it to plain text with a broader CHECK covering more
+-- values than the enum ever had ('requested', 'approved', 'rejected',
+-- 'confirmed'). Converting in place rather than leaving the narrower enum,
+-- since later migrations (this file included, via 'requested'/'accepted'
+-- literals below) assume the wider set.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'meeting_requests'
+      AND column_name = 'status' AND udt_name = 'meeting_request_status'
+  ) THEN
+    DROP POLICY IF EXISTS "requests_update_requester" ON public.meeting_requests;
+    DROP INDEX IF EXISTS public.unique_pending_request;
+    DROP INDEX IF EXISTS public.idx_meeting_requests_expires;
+    ALTER TABLE public.meeting_requests ALTER COLUMN status DROP DEFAULT;
+    ALTER TABLE public.meeting_requests ALTER COLUMN status TYPE text USING status::text;
+    ALTER TABLE public.meeting_requests ALTER COLUMN status SET DEFAULT 'pending';
+    CREATE POLICY "requests_update_requester" ON public.meeting_requests
+      FOR UPDATE
+      USING (requester_id = get_current_user_id() AND status = 'pending');
+    CREATE UNIQUE INDEX unique_pending_request ON public.meeting_requests (requester_id, speaker_id, status)
+      WHERE status = 'pending';
+    CREATE INDEX idx_meeting_requests_expires ON public.meeting_requests (expires_at) WHERE status = 'pending';
+  END IF;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE public.meeting_requests ADD CONSTRAINT meeting_requests_status_check
+    CHECK (status = ANY (ARRAY[
+      'pending', 'requested', 'approved', 'accepted', 'declined', 'rejected',
+      'expired', 'cancelled', 'completed', 'confirmed'
+    ]));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE public.passes ADD CONSTRAINT passes_status_check
+    CHECK (status = ANY (ARRAY['active', 'used', 'expired', 'cancelled', 'suspended']));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 -- A meeting-request entitlement is consumed when the request is sent.  It is
 -- never restored when the request is declined, cancelled, or expires.  Keep
 -- the active pass row as the single source of truth for both eligibility and

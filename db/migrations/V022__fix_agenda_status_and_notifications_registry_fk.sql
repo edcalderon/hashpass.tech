@@ -1,3 +1,46 @@
+-- Baseline: user_agenda_status was never created by any file in this
+-- directory -- its real origin is archive/legacy-root/supabase/migrations/
+-- 20251031050000_create_user_agenda_status.sql, which predates this
+-- V0xx series and was never ported in. Flagged by code review 2026-08-06,
+-- same class of gap as V009/V017. Shape (and its RLS policies, since it's
+-- about to get RLS-repointed below) sourced from a live BSL prod schema
+-- dump (pg_dump --schema-only, 2026-08-06) rather than the archived
+-- original, since the archived version predates a lot of since-applied,
+-- also-out-of-band drift that a fresh bootstrap needs to match.
+CREATE TABLE IF NOT EXISTS public.user_agenda_status (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  event_id text NOT NULL DEFAULT 'bsl2025',
+  agenda_id text,
+  meeting_id uuid,
+  slot_time timestamptz,
+  status text NOT NULL DEFAULT 'tentative',
+  slot_status text,
+  is_favorite boolean NOT NULL DEFAULT false,
+  confirmed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_agenda_status_user_agenda
+  ON public.user_agenda_status (user_id, event_id, agenda_id) WHERE agenda_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_user_agenda_status_user_event
+  ON public.user_agenda_status (user_id, event_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_agenda_status_user_meeting
+  ON public.user_agenda_status (user_id, event_id, meeting_id) WHERE meeting_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_agenda_status_user_slot
+  ON public.user_agenda_status (user_id, event_id, slot_time) WHERE slot_time IS NOT NULL;
+
+ALTER TABLE public.user_agenda_status ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY user_agenda_status_select_own ON public.user_agenda_status FOR SELECT USING (user_id = auth.uid());
+  CREATE POLICY user_agenda_status_insert_own ON public.user_agenda_status FOR INSERT WITH CHECK (user_id = auth.uid());
+  CREATE POLICY user_agenda_status_update_own ON public.user_agenda_status FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+  CREATE POLICY user_agenda_status_delete_own ON public.user_agenda_status FOR DELETE USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 -- ============================================================================
 -- V022: Repoint user_agenda_status.user_id and notifications.user_id at
 --       public.user(id) instead of the legacy auth.users(id)
