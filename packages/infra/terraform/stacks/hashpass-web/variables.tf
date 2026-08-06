@@ -212,9 +212,9 @@ variable "development_build_action_provider_name" {
 }
 
 variable "production_build_execution_mode" {
-  description = "Production build executor. Keep custom until the development CodeBuild path has passed its release validation."
+  description = "Production build executor. CodeBuild is the primary path after the validated development cutover; custom is the explicit rollback."
   type        = string
-  default     = "custom"
+  default     = "codebuild"
 
   validation {
     condition     = contains(["custom", "codebuild"], lower(trimspace(var.production_build_execution_mode)))
@@ -236,7 +236,7 @@ variable "development_build_execution_mode" {
 variable "production_codebuild_project_name" {
   description = "Optional production CodeBuild project name."
   type        = string
-  default     = ""
+  default     = "hashpass-prod-site-build"
 }
 
 variable "development_codebuild_project_name" {
