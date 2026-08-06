@@ -1,0 +1,30 @@
+version: 0.2
+
+env:
+  shell: bash
+  variables:
+    PNPM_STORE_DIR: .pnpm-store
+
+cache:
+  key: pnpm-$(codebuild-hash-files pnpm-lock.yaml pnpm-workspace.yaml)
+  paths:
+    - .pnpm-store/**/*
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - corepack enable
+      - export PNPM_VERSION="$(node packages/tools/scripts/resolve-pnpm-version.js)"
+      - corepack prepare pnpm@${PNPM_VERSION} --activate
+      - pnpm config set store-dir ${PNPM_STORE_DIR}
+  build:
+    commands:
+      - export SITE_BUCKET_NAME="${SITE_BUCKET_NAME:-bsl-hashpass-bsl-dev-site-$(aws sts get-caller-identity --query Account --output text)-${AWS_REGION:-${AWS_DEFAULT_REGION}}}"
+      - bash packages/tools/scripts/build-bsl-static-site.sh
+
+artifacts:
+  base-directory: dist-bsl-deploy-marker
+  files:
+    - '**/*'
