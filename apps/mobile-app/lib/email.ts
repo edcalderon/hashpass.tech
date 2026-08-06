@@ -34,7 +34,7 @@ function getWelcomeLogoDataUri(): string {
 const DEFAULT_LOCALE = 'en';
 
 // Supported locales
-const SUPPORTED_LOCALES = ['en', 'es', 'ko', 'fr', 'pt', 'de'];
+export const SUPPORTED_LOCALES = ['en', 'es', 'ko', 'fr', 'pt', 'de'];
 
 // Email types
 export type EmailType = 'welcome' | 'userOnboarding' | 'speakerOnboarding' | 'troubleshooting';

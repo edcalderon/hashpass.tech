@@ -1,7 +1,24 @@
 import { getSupabaseServerForRequest } from '@/lib/supabase-server';
-import { sendSubscriptionConfirmation } from '@/lib/email';
+import { sendSubscriptionConfirmation, SUPPORTED_LOCALES } from '@/lib/email';
 import cap from '@/lib/cap-instance';
 import { generateUnsubscribeToken } from '@/lib/unsubscribe-token';
+
+// The client (Newsletter.tsx / Newsletter.web.tsx) already auto-detects the
+// device/browser locale and sends it explicitly, so this is only a fallback
+// for a caller that omits it -- parses the standard Accept-Language header
+// (e.g. "es-CO,es;q=0.9,en;q=0.8") and picks the first tag whose base
+// language this app actually has a confirmation email translated for.
+function resolveLocaleFromRequest(bodyLocale: unknown, request: Request): string {
+  if (typeof bodyLocale === 'string' && SUPPORTED_LOCALES.includes(bodyLocale)) {
+    return bodyLocale;
+  }
+  const acceptLanguage = request.headers.get('accept-language') || '';
+  for (const part of acceptLanguage.split(',')) {
+    const lang = part.trim().split(';')[0].split('-')[0].toLowerCase();
+    if (SUPPORTED_LOCALES.includes(lang)) return lang;
+  }
+  return 'en';
+}
 
 export async function POST(request: Request) {
   const supabase = getSupabaseServerForRequest(request);
@@ -12,7 +29,7 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const email: string = (body?.email ?? '').trim();
-    const locale: string = body?.locale || 'en';
+    const locale: string = resolveLocaleFromRequest(body?.locale, request);
     const captchaToken: string | undefined = body?.captchaToken;
     // Native clients send source:'native' or omit captchaToken entirely
     const isNative: boolean = body?.source === 'native' || !captchaToken;
