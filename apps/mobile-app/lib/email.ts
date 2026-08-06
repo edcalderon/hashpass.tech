@@ -27,10 +27,7 @@ if (typeof process !== 'undefined' && typeof window === 'undefined') {
 // currently resolves to a broken URL there -- separate pre-existing issue).
 let cachedWelcomeLogoDataUri: string | undefined;
 function getWelcomeLogoDataUri(): string {
-  if (cachedWelcomeLogoDataUri === undefined) {
-    cachedWelcomeLogoDataUri = getEmailAssetDataUri('logo-hashpass-white-cyan.png', 'image/png');
-  }
-  return cachedWelcomeLogoDataUri;
+  return (cachedWelcomeLogoDataUri ??= getEmailAssetDataUri('logo-hashpass-white-cyan.png', 'image/png'));
 }
 
 // Default to English if locale is not provided or not supported
