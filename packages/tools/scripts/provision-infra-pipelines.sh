@@ -177,6 +177,16 @@ create_or_update_codebuild() {
   local compute_type=""
   local expo_export_max_workers=""
   local supabase_profile=""
+  # dev builds the hybrid static site (plain Expo web export + S3 sync, no
+  # SST -- see DEPLOYMENT_MAP.md's bsl-dev.hashpass.tech row); prod keeps the
+  # default BUILDSPEC_FILE (infra-deploy.yml, the SST deploy). Without this,
+  # bsl-hashpass-dev-build always got BUILDSPEC_FILE regardless of stage, so
+  # a project created/reprovisioned through this script (as opposed to the
+  # bsl-target Terraform stack, which was already correct) silently ran the
+  # old SST path against develop instead of the intended hybrid S3 path --
+  # and a rerun of this script could revert a manually-corrected project
+  # back to the wrong buildspec.
+  local buildspec_file="${BUILDSPEC_FILE}"
 
   if [[ "${DRY_RUN}" == true ]]; then
     echo "Would create/update CodeBuild project ${project_name} (${stage_name})"
@@ -189,6 +199,7 @@ create_or_update_codebuild() {
       compute_type="${CODEBUILD_COMPUTE_TYPE_DEV}"
       expo_export_max_workers="${EXPO_EXPORT_MAX_WORKERS_DEV}"
       supabase_profile="bsl-development"
+      buildspec_file="${DEV_BUILDSPEC_FILE:-packages/tools/buildspecs/bsl-static-site-codebuild.yml}"
       ;;
     prod|production)
       stage_suffix="_PROD"
@@ -324,7 +335,7 @@ create_or_update_codebuild() {
   project_json="$(jq -nc \
     --arg name "${project_name}" \
     --arg role "${build_role_arn}" \
-    --arg buildspec "${BUILDSPEC_FILE}" \
+    --arg buildspec "${buildspec_file}" \
     --arg cacheLocation "${CODEBUILD_CACHE_LOCATION}" \
     --arg cacheNamespace "${CODEBUILD_CACHE_NAMESPACE}" \
     --arg computeType "${compute_type}" \
