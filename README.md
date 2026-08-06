@@ -20,10 +20,19 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.333)
+## 📋 Latest Changes (v1.8.334)
 
-### Released
-- Version 1.8.333 release
+### Bug Fixes
+
+* **config:** correct tenant Supabase refs enforced by propagate-env/sync-env ([60f188d](https://github.com/hashpass-tech/hashpass.tech/commit/60f188daa2ffec6476650a60313508daeaaf1c48))
+* **db:** make migration history bootstrappable from a blank database ([524bb3b](https://github.com/hashpass-tech/hashpass.tech/commit/524bb3b5887c5783f622b55748fb99781efde948))
+
+
+### Features
+
+* **web-app:** smart app-open fallback in SignInModal; fix dev-site OOM ([c6a305f](https://github.com/hashpass-tech/hashpass.tech/commit/c6a305fc24e13539122bef49dc603794891166d5))
+### Release Highlights
+- smart app-open fallback in SignInModal; fix dev-site OOM; correct tenant Supabase refs enforced by propagate-env/sync-env; make migration history bootstrappable from a blank database
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
