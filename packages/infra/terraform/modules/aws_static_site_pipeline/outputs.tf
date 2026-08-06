@@ -34,8 +34,18 @@ output "custom_domain_name" {
 }
 
 output "build_action_provider_name" {
-  description = "CodePipeline custom action provider name"
-  value       = var.build_action_provider_name
+  description = "CodePipeline build provider name"
+  value       = local.build_execution_mode == "codebuild" ? "CodeBuild" : var.build_action_provider_name
+}
+
+output "build_execution_mode" {
+  description = "Build executor selected for this pipeline"
+  value       = local.build_execution_mode
+}
+
+output "codebuild_project_name" {
+  description = "CodeBuild project name when the CodeBuild executor is enabled"
+  value       = local.build_execution_mode == "codebuild" ? aws_codebuild_project.site[0].name : null
 }
 
 output "codepipeline_name" {

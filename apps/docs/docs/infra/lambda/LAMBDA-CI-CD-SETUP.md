@@ -67,6 +67,18 @@ for a reviewed rollback. Validate a dev CodeBuild execution before switching
 the production action. The production migration remains intentionally separate
 until that validation succeeds.
 
+HashPass web migration is staged the same way. `hashpass-web` defaults its
+development pipeline to an on-demand CodeBuild project named
+`hashpass-dev-site-build`, while production remains on the custom action until
+the development release has passed build, deploy, API-version, and smoke-test
+checks. The CodeBuild project runs
+`packages/tools/buildspecs/hashpass-static-site.yml`, which calls the existing
+build and deploy helpers and uses a least-privilege role for the configured S3,
+CloudFront invalidation, and Lambda targets. Set
+`development_build_execution_mode = "custom"` for an explicit rollback; set
+`production_build_execution_mode = "codebuild"` only as the separately reviewed
+production cutover.
+
 ## Deployment Contract
 
 The target web deploy helper must:

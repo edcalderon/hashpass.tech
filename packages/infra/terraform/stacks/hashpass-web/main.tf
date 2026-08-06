@@ -30,6 +30,8 @@ locals {
     production  = var.production_build_action_provider_name
     development = var.development_build_action_provider_name
   }
+  production_build_is_codebuild                  = lower(trimspace(var.production_build_execution_mode)) == "codebuild"
+  development_build_is_codebuild                 = lower(trimspace(var.development_build_execution_mode)) == "codebuild"
   production_build_worker_deploy_bucket_names    = [local.build_site_bucket_name]
   development_build_worker_deploy_bucket_names   = [local.build_dev_site_bucket_name]
   production_build_worker_artifact_bucket_names  = ["${var.name_prefix}-${var.environment}-pipelines-${data.aws_caller_identity.current.account_id}-${var.aws_region}"]
@@ -64,6 +66,16 @@ locals {
   ])
   production_build_worker_lambda_function_names  = [trimspace(var.lambda_function_name)]
   development_build_worker_lambda_function_names = [trimspace(var.dev_lambda_function_name)]
+  production_codebuild_lambda_function_arns = [
+    for function_name in local.production_build_worker_lambda_function_names :
+    "arn:aws:lambda:${var.lambda_region}:${data.aws_caller_identity.current.account_id}:function:${function_name}"
+    if function_name != ""
+  ]
+  development_codebuild_lambda_function_arns = [
+    for function_name in local.development_build_worker_lambda_function_names :
+    "arn:aws:lambda:${var.lambda_region}:${data.aws_caller_identity.current.account_id}:function:${function_name}"
+    if function_name != ""
+  ]
 
   build_environment = merge(
     {
@@ -287,6 +299,9 @@ module "site" {
   build_action_provider_name        = var.production_build_action_provider_name
   build_action_version              = var.build_action_version
   build_action_timeout              = var.build_action_timeout
+  build_execution_mode              = var.production_build_execution_mode
+  codebuild_project_name            = var.production_codebuild_project_name
+  codebuild_lambda_function_arns    = local.production_codebuild_lambda_function_arns
   build_script_path                 = var.build_script_path
   build_output_directory            = var.build_output_directory
   deploy_script_path                = var.deploy_script_path
@@ -432,6 +447,9 @@ module "site_dev" {
   build_action_provider_name        = var.development_build_action_provider_name
   build_action_version              = var.build_action_version
   build_action_timeout              = var.build_action_timeout
+  build_execution_mode              = var.development_build_execution_mode
+  codebuild_project_name            = var.development_codebuild_project_name
+  codebuild_lambda_function_arns    = local.development_codebuild_lambda_function_arns
   build_script_path                 = var.build_script_path
   build_output_directory            = var.build_output_directory
   deploy_script_path                = var.deploy_script_path

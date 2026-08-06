@@ -211,6 +211,40 @@ variable "development_build_action_provider_name" {
   default     = "hashpass-dev-ec2-build"
 }
 
+variable "production_build_execution_mode" {
+  description = "Production build executor. Keep custom until the development CodeBuild path has passed its release validation."
+  type        = string
+  default     = "custom"
+
+  validation {
+    condition     = contains(["custom", "codebuild"], lower(trimspace(var.production_build_execution_mode)))
+    error_message = "production_build_execution_mode must be custom or codebuild."
+  }
+}
+
+variable "development_build_execution_mode" {
+  description = "Development build executor. CodeBuild is the primary path; custom is the explicit rollback."
+  type        = string
+  default     = "codebuild"
+
+  validation {
+    condition     = contains(["custom", "codebuild"], lower(trimspace(var.development_build_execution_mode)))
+    error_message = "development_build_execution_mode must be custom or codebuild."
+  }
+}
+
+variable "production_codebuild_project_name" {
+  description = "Optional production CodeBuild project name."
+  type        = string
+  default     = ""
+}
+
+variable "development_codebuild_project_name" {
+  description = "Optional development CodeBuild project name."
+  type        = string
+  default     = "hashpass-dev-site-build"
+}
+
 variable "build_action_version" {
   description = "CodePipeline custom action provider version used by the shared EC2 worker"
   type        = string
