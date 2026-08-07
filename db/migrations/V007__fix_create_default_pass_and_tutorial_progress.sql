@@ -41,6 +41,11 @@ BEGIN
 END;
 $$;
 
+-- The type above was always created, but the passes.pass_type column that
+-- actually uses it was never added by any migration -- flagged by code
+-- review 2026-08-06, same class of gap as V009/V017/V022/V024/V038/V039.
+ALTER TABLE public.passes ADD COLUMN IF NOT EXISTS pass_type public.pass_type NOT NULL DEFAULT 'general';
+
 -- Drop only the two ambiguous overloads. IF EXISTS makes this safe to
 -- re-run and safe on environments where they were never created.
 DROP FUNCTION IF EXISTS public.create_default_pass(p_user_id text, p_pass_type text);

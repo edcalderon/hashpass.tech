@@ -59,6 +59,19 @@ GRANT ALL ON public.user_chat_keys TO service_role;
 -- ============================================================================
 -- meeting_chat_messages: drop legacy artifacts, move to ciphertext/nonce
 -- ============================================================================
+-- Baseline: meeting_id was never added by any earlier migration even
+-- though this file's own comment above already describes it as the
+-- established, newer column sitting alongside the legacy
+-- meeting_request_id this file removes -- flagged by code review
+-- 2026-08-06, same class of gap as V009/V017/V022/V024/V038/V039/V007.
+ALTER TABLE public.meeting_chat_messages ADD COLUMN IF NOT EXISTS meeting_id uuid;
+DO $$ BEGIN
+  ALTER TABLE public.meeting_chat_messages
+    ADD CONSTRAINT meeting_chat_messages_meeting_id_fkey FOREIGN KEY (meeting_id) REFERENCES public.meetings(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+ALTER TABLE public.meeting_chat_messages ALTER COLUMN meeting_id SET NOT NULL;
+
 DROP POLICY IF EXISTS chat_select_participant ON public.meeting_chat_messages;
 DROP POLICY IF EXISTS chat_insert_participant ON public.meeting_chat_messages;
 DROP POLICY IF EXISTS meeting_chat_messages_select_participant ON public.meeting_chat_messages;

@@ -39,18 +39,21 @@ CREATE TABLE IF NOT EXISTS bsl_speakers (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_bsl_speakers_user_id ON bsl_speakers(user_id);
-CREATE INDEX idx_bsl_speakers_slug ON bsl_speakers(slug);
-CREATE INDEX idx_bsl_speakers_day ON bsl_speakers(day);
-CREATE INDEX idx_bsl_speakers_active ON bsl_speakers(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_bsl_speakers_user_id ON bsl_speakers(user_id);
+CREATE INDEX IF NOT EXISTS idx_bsl_speakers_slug ON bsl_speakers(slug);
+CREATE INDEX IF NOT EXISTS idx_bsl_speakers_day ON bsl_speakers(day);
+CREATE INDEX IF NOT EXISTS idx_bsl_speakers_active ON bsl_speakers(is_active) WHERE is_active = true;
 
 -- ============================================================================
 -- Meeting Requests Table
 -- ============================================================================
 
-CREATE TYPE meeting_request_status AS ENUM (
-  'pending', 'accepted', 'declined', 'expired', 'cancelled', 'completed'
-);
+DO $$ BEGIN
+  CREATE TYPE meeting_request_status AS ENUM (
+    'pending', 'accepted', 'declined', 'expired', 'cancelled', 'completed'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS meeting_requests (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -83,12 +86,19 @@ CREATE TABLE IF NOT EXISTS meeting_requests (
   
   -- Timestamps
   created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  
-  -- Prevent duplicate requests
-  CONSTRAINT unique_pending_request UNIQUE (requester_id, speaker_id, status)
-    WHERE status = 'pending'
+  updated_at timestamptz DEFAULT now()
 );
+
+-- Prevent duplicate requests. Table-level CONSTRAINT ... UNIQUE (...) WHERE
+-- ... is not valid PostgreSQL syntax (partial uniqueness requires a
+-- separate partial unique index) -- this file could never actually run
+-- from scratch on a blank database because of it, confirmed 2026-08-06
+-- while bootstrapping a fresh dev project. Live databases were never
+-- affected: a later migration (event-scoped meeting lifecycle hardening)
+-- already replaces this with idx_meeting_requests_unique_active, so this
+-- fix only matters for bootstrapping a new database from V001 onward.
+CREATE UNIQUE INDEX unique_pending_request ON meeting_requests (requester_id, speaker_id, status)
+  WHERE status = 'pending';
 
 CREATE INDEX idx_meeting_requests_requester ON meeting_requests(requester_id);
 CREATE INDEX idx_meeting_requests_speaker ON meeting_requests(speaker_id);

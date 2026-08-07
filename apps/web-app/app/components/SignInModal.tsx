@@ -13,11 +13,69 @@ interface SignInModalProps {
 
 // Encodes a deep-link the HASHPASS mobile app can handle.
 // hashpass://auth/connect?source=web will open the app's auth flow.
+// There's no Universal Links / App Links setup for hashpass.tech yet (no
+// apple-app-site-association or assetlinks.json), so this relies on the
+// custom URI scheme + a visibility-based fallback timer rather than a real
+// https universal link.
 const QR_VALUE = 'hashpass://auth/connect?source=web&ref=landing';
 const APP_STORE_URL = 'https://apps.apple.com/app/hashpass';
 const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.hashpass.tech&hl=en-US&ah=RlHQxhHQladajDZn9ZGTm7_ucMs';
 const WEB_APP_URL = 'https://hashpass.club';
+const APP_OPEN_FALLBACK_MS = 1400;
+
+type Platform = 'ios' | 'android' | 'desktop';
+
+function detectPlatform(): Platform {
+  if (typeof navigator === 'undefined') return 'desktop';
+  const ua = navigator.userAgent || '';
+  const isMSStream = Boolean((window as unknown as { MSStream?: unknown }).MSStream);
+  if (/iPad|iPhone|iPod/.test(ua) && !isMSStream) return 'ios';
+  // iPadOS 13+ Safari sends a desktop-class "Macintosh" UA with no "iPad"
+  // token at all, even though this app declares tablet support -- a real
+  // Mac reports maxTouchPoints 0, so touch-capable "MacIntel" is the
+  // standard way to tell an iPad apart from an actual desktop Mac here.
+  const isTouchMac = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  if (isTouchMac && !isMSStream) return 'ios';
+  if (/Android/.test(ua)) return 'android';
+  return 'desktop';
+}
+
+// Tries the native app first (mobile only), falls back to the store if the
+// app isn't installed (page stays visible past the fallback window), and
+// falls back straight to the production web app on desktop -- opening
+// hashpass.club there lets the browser route to an already-installed PWA
+// window on its own (Chrome/Edge/Safari all do this for installed,
+// in-scope PWAs) instead of always forcing a plain browser tab.
+function openHashpassApp() {
+  const platform = detectPlatform();
+
+  if (platform === 'desktop') {
+    window.open(WEB_APP_URL, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  const storeUrl = platform === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
+  let fellBack = false;
+
+  const cancelFallback = () => {
+    fellBack = true;
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+  };
+  const onVisibilityChange = () => {
+    if (document.hidden) cancelFallback();
+  };
+
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  window.location.href = QR_VALUE;
+
+  window.setTimeout(() => {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    if (!fellBack && !document.hidden) {
+      window.location.href = storeUrl;
+    }
+  }, APP_OPEN_FALLBACK_MS);
+}
 
 export function SignInModal({ open, onClose }: SignInModalProps) {
   const { t } = useTranslation('nav');
@@ -253,6 +311,10 @@ export function SignInModal({ open, onClose }: SignInModalProps) {
         {/* Open app button */}
         <a
           href={QR_VALUE}
+          onClick={(e) => {
+            e.preventDefault();
+            openHashpassApp();
+          }}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             width: '100%', padding: '12px 20px',
