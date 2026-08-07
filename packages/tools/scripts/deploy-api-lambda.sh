@@ -162,6 +162,12 @@ const syncKeys = [
   'EXPO_PUBLIC_BSL_SUPABASE_URL_DEV',
   'EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD',
   'EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV',
+  // Core's own service-role key -- was missing from this list entirely
+  // until 2026-08-07, meaning no deploy ever touched it since the Lambda
+  // was first configured. Confirmed live: it held BSL's key (wrong
+  // project) the whole time, undetected because nothing ever re-synced
+  // it to catch the drift. See supabase-project-map.md for the incident.
+  'SUPABASE_SERVICE_ROLE_KEY',
   'BSL_SUPABASE_SERVICE_ROLE_KEY',
   'BSL_SUPABASE_SERVICE_ROLE_KEY_PROD',
   'BSL_SUPABASE_SERVICE_ROLE_KEY_DEV',

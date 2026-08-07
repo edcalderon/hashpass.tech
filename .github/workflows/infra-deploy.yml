@@ -107,6 +107,7 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
           EXPO_PUBLIC_BSL_SUPABASE_URL_PROD: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_URL_PROD }}
           EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_KEY_PROD }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_PROD }}
           EXPO_PUBLIC_SITE_URL: https://hashpass.tech
           SITE_URL: https://hashpass.tech
           FRONTEND_URL: https://hashpass.tech
@@ -132,6 +133,7 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD }}
           EXPO_PUBLIC_BSL_SUPABASE_URL_DEV: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_URL_DEV }}
           EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV: ${{ vars.EXPO_PUBLIC_BSL_SUPABASE_KEY_DEV }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_DEV }}
           EXPO_PUBLIC_SITE_URL: https://dev.hashpass.tech
           SITE_URL: https://dev.hashpass.tech
           FRONTEND_URL: https://dev.hashpass.tech
