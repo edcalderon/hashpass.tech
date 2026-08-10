@@ -151,9 +151,15 @@ function splitTopLevelCommaList(value) {
 function parseImportClause(clause, isTypeOnly) {
   const result = {
     defaultImport: '',
+    // Keyed by the module's real exported name (not the local alias) since
+    // that's what the generated stub module must declare for TypeScript to
+    // resolve `import {Foo as Bar}` against it. localNames maps exported
+    // name -> local alias, needed separately for the `new X()` class-usage
+    // sniff below, which greps the source for the LOCAL identifier.
     namedValueImports: new Set(),
     namedTypeImports: new Set(),
     namespaceImport: '',
+    localNames: new Map(),
   };
 
   let remaining = clause.trim();
@@ -201,14 +207,16 @@ function parseImportClause(clause, isTypeOnly) {
     }
 
     const aliasParts = spec.split(/\s+as\s+/);
+    const exportedName = aliasParts[0].trim();
     const localName = (aliasParts[1] || aliasParts[0]).trim();
 
-    if (!localName) continue;
+    if (!exportedName || !localName) continue;
 
     if (isNamedType) {
-      result.namedTypeImports.add(localName);
+      result.namedTypeImports.add(exportedName);
     } else {
-      result.namedValueImports.add(localName);
+      result.namedValueImports.add(exportedName);
+      result.localNames.set(exportedName, localName);
     }
   }
 
@@ -529,8 +537,10 @@ function main() {
       for (const name of parsed.namedValueImports) {
         // If this file uses `new Name(` it's a class; generate a class stub so the name
         // can be used as both a constructor and a type annotation. Otherwise generate a
-        // function stub so it can be called directly without `new`.
-        const isClassUsage = new RegExp(`\\bnew\\s+${name}\\s*[<(]`).test(content);
+        // function stub so it can be called directly without `new`. The source only ever
+        // spells the LOCAL alias in a `new` expression, never the module's exported name.
+        const localName = parsed.localNames.get(name) || name;
+        const isClassUsage = new RegExp(`\\bnew\\s+${localName}\\s*[<(]`).test(content);
         if (isClassUsage) {
           stubInfo.namedClassImports.add(name);
         } else {
