@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { access, lstat, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, lstat, mkdir, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,7 +40,39 @@ async function replaceWithSymlink(name, target) {
   await symlink(target, destination, 'junction');
 }
 
-for (const name of ['app', 'components', 'config', 'lib', 'public', 'node_modules']) {
+// Next.js 16's App Router dev-mode route scanner does not discover routes
+// through a symlinked `app` directory — a plain root-level symlink (as used
+// for the other directories below) makes the dev server register zero
+// routes and fall through to _not-found for every path, instantly, with no
+// compile error logged. Confirmed by reproducing with an isolated runtime
+// dir: identical setup works when `app` is a real directory and breaks the
+// moment `app` itself becomes a symlink. Mirroring the tree with real
+// directories and leaf-level file symlinks (only the individual files are
+// symlinks, never a directory) works around it, since the scanner's readdir
+// calls always see real directories — while still auto-reflecting edits to
+// existing files instantly, same as the pre-existing symlink files elsewhere
+// in this script. New/removed files need this script to re-run (already
+// true today — it re-runs at every `dev:all` start).
+async function mirrorDirectory(sourceDir, destDir) {
+  await rm(destDir, { recursive: true, force: true });
+  await mkdir(destDir, { recursive: true });
+
+  for (const entry of await readdir(sourceDir, { withFileTypes: true })) {
+    const sourcePath = path.join(sourceDir, entry.name);
+    const destPath = path.join(destDir, entry.name);
+
+    if (entry.isDirectory()) {
+      await mirrorDirectory(sourcePath, destPath);
+    } else {
+      await symlink(sourcePath, destPath);
+    }
+  }
+}
+
+await access(path.join(clubRoot, 'app'));
+await mirrorDirectory(path.join(clubRoot, 'app'), path.join(runtimeDirectory, 'app'));
+
+for (const name of ['components', 'config', 'lib', 'public', 'node_modules']) {
   await access(path.join(clubRoot, name));
   await replaceWithSymlink(name, path.join('..', name));
 }
