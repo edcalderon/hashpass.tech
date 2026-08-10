@@ -8,7 +8,9 @@ Run `pnpm --filter hashpass-club-web dev`, then open `/openproof`. `/openprof` i
 
 ## Video
 
-The existing Remotion studio is the source project: run `pnpm --filter hashpass-video-studio studio` and choose `OpenProof`. Export all binary submission assets with `pnpm --filter hashpass-video-studio openproof:export`. Use `-- --images-only` to regenerate only the PNG diagram and thumbnail. The exporter renders the `OpenProof` composition and copies web-ready outputs into `apps/web-app/public/openproof`. The composition is 1920×1080, 30 fps and 75 seconds.
+The existing Remotion studio is the source project: run `pnpm --filter hashpass-video-studio studio` and choose `OpenProof`. Export all binary submission assets with `pnpm --filter hashpass-video-studio openproof:export`. Use `-- --images-only` to regenerate only the PNG diagram and thumbnail. The exporter renders the `OpenProof` composition and copies web-ready outputs into `apps/web-app/public/openproof`. The composition is 1920×1080, 30 fps and 84 seconds.
+
+Narration audio is real synthesized speech (edge-tts), not silent — regenerate it with `pnpm --filter hashpass-video-studio openproof:narration` after changing `openproof-captions.srt`'s text (that file is the source of truth the narration script reads from). Scene durations in the composition are derived from the actual synthesized clip lengths, not a guessed reading pace, so re-run the narration script and re-check timing before changing `captions.srt`/`openproof-voiceover.md`'s cue boundaries by hand.
 
 ## Shared terminology
 
