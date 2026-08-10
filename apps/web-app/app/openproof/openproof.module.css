@@ -16,10 +16,15 @@
 .pillCode{font:700 11px var(--font-mono);letter-spacing:.08em}
 .langWrap{position:relative}
 .langScrim{position:fixed;inset:0;z-index:99}
-.langMenu{position:absolute;top:calc(100% + 8px);right:0;z-index:100;background:var(--op-menu-bg);border:1px solid var(--op-pill-border);border-radius:16px;padding:6px;min-width:180px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 12px 40px rgba(0,0,0,.35)}
-.langItem{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:9px 12px;border-radius:10px;border:none;background:transparent;color:var(--op-text);font-size:14px;cursor:pointer;text-align:left;transition:background .15s}
-.langItem:hover{background:rgba(127,127,127,.12)}
-.langItemActive{background:rgba(77,216,255,.14);color:var(--cyan);font-weight:600}
-.langCode{font:700 10px var(--font-mono);letter-spacing:.08em;color:var(--op-text-faint);padding:2px 6px;border-radius:4px;background:rgba(127,127,127,.14)}
-.langItemActive .langCode{color:var(--cyan)}
+/* Pixel-matched to Navbar.tsx's dropdown (landing page) rather than the
+   page's own --op-* tokens, on request — this popover should look identical
+   on both pages, not just thematically similar. */
+.langMenu{position:absolute;top:calc(100% + 8px);right:0;z-index:100;background:rgba(13,23,40,0.96);border:1px solid rgba(163,183,214,0.22);border-radius:16px;padding:6px;min-width:180px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:var(--shadow-md)}
+:global([data-theme='light']) .langMenu{background:rgba(255,255,255,0.97);border-color:rgba(100,120,180,0.18)}
+.langItem{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:9px 12px;border-radius:10px;border:none;background:transparent;color:var(--text-primary);font-size:14px;font-weight:400;cursor:pointer;text-align:left;transition:background .15s}
+.langItem:hover{background:var(--bg-overlay)}
+.langItemActive{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.langItemActive:hover{background:var(--accent-soft)}
+.langCode{font:700 10px var(--font-mono);letter-spacing:.08em;color:var(--text-faint);padding:2px 6px;border-radius:4px;background:var(--bg-overlay)}
+.langItemActive .langCode{color:var(--accent);background:var(--accent-soft)}
 @media(max-width:560px){.controls{margin-left:auto}}
