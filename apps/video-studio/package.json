@@ -11,19 +11,21 @@
     "narration:generate": "node scripts/generate-narration.mjs",
     "audio:generate": "node scripts/generate-audio-bed.mjs",
     "typecheck": "tsc --noEmit",
-    "upgrade": "remotion upgrade"
+    "upgrade": "remotion upgrade",
+    "openproof:export": "node scripts/export-openproof-assets.mjs"
   },
   "dependencies": {
+    "@remotion/cli": "4.0.505",
+    "@remotion/media-utils": "4.0.505",
+    "@remotion/player": "4.0.505",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "remotion": "4.0.505",
-    "@remotion/cli": "4.0.505",
-    "@remotion/player": "4.0.505",
-    "@remotion/media-utils": "4.0.505"
+    "remotion": "4.0.505"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "sharp": "^0.34.5",
     "typescript": "^5.6.0"
   }
 }

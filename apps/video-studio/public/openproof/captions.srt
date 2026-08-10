@@ -1,0 +1,31 @@
+1
+00:00:00,000 --> 00:00:07,000
+An event credential is only useful if it survives the platform that issued it.
+
+2
+00:00:07,000 --> 00:00:16,000
+Today, attendance history is trapped inside private databases and closed platforms. Attendees lose access, organizers cannot verify external credentials, and partners cannot query trusted participation.
+
+3
+00:00:16,000 --> 00:00:27,000
+HashPass OpenProof creates a shared attendance schema for events, organizers, wallets and verification applications.
+
+4
+00:00:27,000 --> 00:00:40,000
+HashPass verifies a QR check-in, issues a signed attendance claim and transfers control of that credential to the attendee’s wallet.
+
+5
+00:00:40,000 --> 00:00:52,000
+Arkiv makes the claim queryable, time-scoped and independently attributable. $creator proves the issuer, while $owner proves who controls the credential.
+
+6
+00:00:52,000 --> 00:01:03,000
+Another event application can query and verify the credential without depending on HashPass’s private API.
+
+7
+00:01:03,000 --> 00:01:10,000
+Personal data stays private. Arkiv stores only the public, verifiable credential layer.
+
+8
+00:01:10,000 --> 00:01:15,000
+HashPass OpenProof: portable attendance for every event.
