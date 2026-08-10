@@ -26,3 +26,32 @@ Binary exports are intentionally ignored by Git because the review system does n
 - `openproof-walkthrough.mp4`: generated final walkthrough
 - `openproof-voiceover.md`: voice-over script
 - `openproof-captions.srt`: final captions
+
+## Serving the video on the live page
+
+Because the `.mp4`/`.png` outputs above are gitignored, they never exist in a
+CI checkout — a `/public`-relative path would 404 on every real deploy (this
+happened in production once; see git history). `OpenProofExperience.tsx`
+instead points the `<video>` element at the production event-media S3 bucket,
+the same bucket/prefix pattern already used for Chile 2026 speaker photos
+(`apps/mobile-app/lib/demo-chapters.ts`'s `EVENT_MEDIA_BASE`):
+
+```
+s3://hashpass-production-event-media-952191196420-us-east-2/events/openproof/
+```
+
+Re-upload after re-exporting the video (`AWS_PROFILE=hashpass`, see CLAUDE.md's
+target-account access section for credentials setup):
+
+```bash
+aws s3 cp artifacts/openproof/openproof-walkthrough.mp4 \
+  s3://hashpass-production-event-media-952191196420-us-east-2/events/openproof/openproof-walkthrough.mp4 \
+  --profile hashpass --content-type video/mp4 --cache-control "public, max-age=31536000, immutable"
+aws s3 cp artifacts/openproof/openproof-thumbnail.png \
+  s3://hashpass-production-event-media-952191196420-us-east-2/events/openproof/openproof-thumbnail.png \
+  --profile hashpass --content-type image/png --cache-control "public, max-age=31536000, immutable"
+```
+
+The bucket's public-read policy only covers the `events/*` prefix, which this
+already sits under — no policy change needed. S3 serves HTTP Range requests
+natively, so video seeking works without a CDN in front of it.

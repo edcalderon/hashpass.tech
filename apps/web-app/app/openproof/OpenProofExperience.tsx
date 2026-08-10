@@ -6,7 +6,16 @@ import type {SupportedLocale} from '@hashpass/i18n';
 import {useTheme} from '../components/ThemeProvider';
 import styles from './openproof.module.css';
 
-export function OpenProofExperience({hasWalkthrough=false}:{hasWalkthrough?:boolean}){
+// Hosted on the production event-media S3 bucket (same bucket/prefix pattern
+// as the Chile 2026 speaker photos — see apps/mobile-app/lib/demo-chapters.ts)
+// rather than shipped from apps/web-app/public: the rendered .mp4 is
+// gitignored (binary exports don't go through this repo's review system —
+// see artifacts/openproof/README.md), so a path under /public would 404 on
+// every real deploy, which is exactly what shipped before this was caught in
+// production. S3 supports HTTP Range requests natively, so seeking works.
+const MEDIA_BASE='https://hashpass-production-event-media-952191196420-us-east-2.s3.us-east-2.amazonaws.com/events/openproof';
+
+export function OpenProofExperience(){
   const {t}=useTranslation('openproof');
   const {resolvedTheme}=useTheme();
   const [query,setQuery]=useState(0);
@@ -26,7 +35,7 @@ export function OpenProofExperience({hasWalkthrough=false}:{hasWalkthrough?:bool
   <Section eyebrow={t('lifecycleEyebrow')} title={t('lifecycleTitle')}><div className={styles.timeline}>{[t('lifecycle1'),t('lifecycle2'),t('lifecycle3'),t('lifecycle4'),t('lifecycle5')].map((x,i)=><div key={x}><span>{i+1}</span><b>{x}</b></div>)}</div><div className={styles.ownership}><p><code>$creator</code> {t('ownershipCreator')}</p><p><code>$owner</code> {t('ownershipOwner')}</p><p>{t('ownershipDuration',{years:String(c.lifetimes.claimYears)})}</p></div></Section>
   <Section eyebrow={t('privacyEyebrow')} title={t('privacyTitle')}><div className={styles.privacy}><List title={t('privacyPublicTitle')} items={publicData}/><List title={t('privacyPrivateTitle')} items={privateData}/></div></Section>
   <Section eyebrow={t('counterfactualEyebrow')} title={t('counterfactualTitle')}><div className={styles.four}>{[[t('cf1Title'),t('cf1Body')],[t('cf2Title'),t('cf2Body')],[t('cf3Title'),t('cf3Body')],[t('cf4Title'),t('cf4Body')]].map(x=><article className={styles.card} key={x[0]}><h3>{x[0]}</h3><p>{x[1]}</p></article>)}</div><blockquote>{t('counterfactualQuote')}</blockquote></Section>
-  <section id="walkthrough" className={`${styles.final} ${styles.wrap}`}><p className={styles.eyebrow}>{t('finalEyebrow')}</p><h2>{t('finalTitle')}</h2><p>{t('finalLead')}</p>{hasWalkthrough&&<video className={styles.walkthroughVideo} controls preload="metadata" poster="/openproof/openproof-thumbnail.png"><source src="/openproof/openproof-walkthrough.mp4" type="video/mp4"/></video>}<div className={styles.actions}><a href="#model">{t('finalCtaModel')}</a><a href="/">{t('finalCtaExplore')}</a></div><small>{t('finalDisclaimer')}</small></section>
+  <section id="walkthrough" className={`${styles.final} ${styles.wrap}`}><p className={styles.eyebrow}>{t('finalEyebrow')}</p><h2>{t('finalTitle')}</h2><p>{t('finalLead')}</p><video className={styles.walkthroughVideo} controls preload="metadata" poster={`${MEDIA_BASE}/openproof-thumbnail.png`}><source src={`${MEDIA_BASE}/openproof-walkthrough.mp4`} type="video/mp4"/></video><div className={styles.actions}><a href="#model">{t('finalCtaModel')}</a><a href="/">{t('finalCtaExplore')}</a></div><small>{t('finalDisclaimer')}</small></section>
  </main>}
 type T=(key:string,params?:Record<string,string>)=>string;
 function Section({eyebrow,title,children,id}:{eyebrow:string,title:string,children:React.ReactNode,id?:string}){return <section id={id} className={`${styles.section} ${styles.wrap}`}><p className={styles.eyebrow}>{eyebrow}</p><h2>{title}</h2>{children}</section>}
