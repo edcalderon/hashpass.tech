@@ -20,19 +20,16 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.334)
+## 📋 Latest Changes (v1.8.335)
 
 ### Bug Fixes
 
-* **config:** correct tenant Supabase refs enforced by propagate-env/sync-env ([60f188d](https://github.com/hashpass-tech/hashpass.tech/commit/60f188daa2ffec6476650a60313508daeaaf1c48))
-* **db:** make migration history bootstrappable from a blank database ([524bb3b](https://github.com/hashpass-tech/hashpass.tech/commit/524bb3b5887c5783f622b55748fb99781efde948))
-
-
-### Features
-
-* **web-app:** smart app-open fallback in SignInModal; fix dev-site OOM ([c6a305f](https://github.com/hashpass-tech/hashpass.tech/commit/c6a305fc24e13539122bef49dc603794891166d5))
+* **bsl-target:** revert timeout_in_minutes, invalid for Build-category actions ([9f52433](https://github.com/hashpass-tech/hashpass.tech/commit/9f524338387fcc2d0a7554e5e7a61ebe6b52f79b))
+* **docs:** use the same favicon as the HASHPASS mobile app ([16a359c](https://github.com/hashpass-tech/hashpass.tech/commit/16a359c981753e431ea009f8b4988f7adef52996))
+* generate OpenProof binary assets outside git ([#178](https://github.com/hashpass-tech/hashpass.tech/issues/178)) ([b49ed71](https://github.com/hashpass-tech/hashpass.tech/commit/b49ed715f361a387ea70c05ed7edb9889164b181))
+* **infra:** sync core's own SUPABASE_SERVICE_ROLE_KEY on every deploy ([90cef7d](https://github.com/hashpass-tech/hashpass.tech/commit/90cef7db56cd61a5951654fc0eb5ebe149b813c2))
 ### Release Highlights
-- smart app-open fallback in SignInModal; fix dev-site OOM; correct tenant Supabase refs enforced by propagate-env/sync-env; make migration history bootstrappable from a blank database
+- generate OpenProof binary assets outside git (#178); use the same favicon as the HASHPASS mobile app; sync core's own SUPABASE_SERVICE_ROLE_KEY on every deploy; revert timeout_in_minutes, invalid for Build-category actions
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
