@@ -26,7 +26,7 @@ export function OpenProofExperience(){
   const publicData=[t('publicData1'),t('publicData2'),t('publicData3'),t('publicData4'),t('publicData5'),t('publicData6')];
   const privateData=[t('privateData1'),t('privateData2'),t('privateData3'),t('privateData4'),t('privateData5'),t('privateData6'),t('privateData7'),t('privateData8'),t('privateData9')];
   return <main className={styles.page}>
-  <nav className={styles.nav}><img src={resolvedTheme==='light'?'/logo-full-hashpass-black-cyan.svg':'/logo-full-hashpass-white-cyan.svg'} alt="HashPass"/><span>OpenProof <ArkivBadge/></span><a href="#model">{t('dataModelLink')}</a><Controls/></nav>
+  <nav className={styles.nav}><img src={resolvedTheme==='light'?'/logo-full-hashpass-black-cyan.svg':'/logo-full-hashpass-white-cyan.svg'} alt="HashPass"/><span className={styles.navLabel}>OpenProof <ArkivBadge/></span><a href="#model">{t('dataModelLink')}</a><Controls/></nav>
   <section className={`${styles.hero} ${styles.wrap}`}><div><p className={styles.eyebrow}>{t('heroEyebrow')}</p><h1>{t('heroTitleBefore')}<em>{t('heroTitleEm')}</em>{t('heroTitleAfter')}</h1><p className={styles.lead}>{t('heroLead')}</p><div className={styles.actions}><a href="#model">{t('heroCtaModel')}</a><a href="#walkthrough">{t('heroCtaVideo')}</a></div><small>{t('heroDisclaimer')}</small></div><Passport t={t}/></section>
   <Section eyebrow={t('problemEyebrow')} title={t('problemTitle')}><div className={styles.three}>{[t('problem1'),t('problem2'),t('problem3')].map((x,i)=><article className={styles.card} key={x}><span>0{i+1}</span><h3>{x}</h3><p>{t('problemCaption')} <b>×</b> {t('problemCaptionAfter')}</p></article>)}</div></Section>
   <Section eyebrow={t('solutionEyebrow')} title={t('solutionTitle')}><Diagram flow={flow} t={t}/></Section>
