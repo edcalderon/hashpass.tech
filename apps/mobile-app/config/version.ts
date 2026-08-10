@@ -22,23 +22,43 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608062055, // Updated to current timestamp
-  releaseDate: '2026-08-06',
+  buildNumber: 202608100946, // Updated to current timestamp
+  releaseDate: '2026-08-10',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'smart app-open fallback in SignInModal; fix dev-site OOM'
+    // No new features
   ],
   bugfixes: [
-    'correct tenant Supabase refs enforced by propagate-env/sync-env',
-    'make migration history bootstrappable from a blank database'
+    'generate OpenProof binary assets outside git (#178)',
+    'use the same favicon as the HASHPASS mobile app',
+    'sync core\'s own SUPABASE_SERVICE_ROLE_KEY on every deploy',
+    'revert timeout_in_minutes, invalid for Build-category actions'
   ],
   breakingChanges: [],
-  notes: 'smart app-open fallback in SignInModal; fix dev-site OOM; correct tenant Supabase refs enforced by propagate-env/sync-env; make migration history bootstrappable from a blank database'
+  notes: 'generate OpenProof binary assets outside git (#178); use the same favicon as the HASHPASS mobile app; sync core\'s own SUPABASE_SERVICE_ROLE_KEY on every deploy; revert timeout_in_minutes, invalid for Build-category actions'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.335': {
+    version: '1.8.335',
+    buildNumber: 202608100946,
+    releaseDate: '2026-08-10',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'generate OpenProof binary assets outside git (#178)',
+      'use the same favicon as the HASHPASS mobile app',
+      'sync core\'s own SUPABASE_SERVICE_ROLE_KEY on every deploy',
+      'revert timeout_in_minutes, invalid for Build-category actions'
+    ],
+    breakingChanges: [],
+    notes: 'generate OpenProof binary assets outside git (#178); use the same favicon as the HASHPASS mobile app; sync core\'s own SUPABASE_SERVICE_ROLE_KEY on every deploy; revert timeout_in_minutes, invalid for Build-category actions'
+  },
   '1.8.334': {
     version: '1.8.334',
     buildNumber: 202608062055,

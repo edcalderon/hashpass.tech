@@ -1,3 +1,15 @@
+## [1.8.335](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.334...v1.8.335) (2026-08-10)
+
+
+### Bug Fixes
+
+* **bsl-target:** revert timeout_in_minutes, invalid for Build-category actions ([9f52433](https://github.com/hashpass-tech/hashpass.tech/commit/9f524338387fcc2d0a7554e5e7a61ebe6b52f79b))
+* **docs:** use the same favicon as the HASHPASS mobile app ([16a359c](https://github.com/hashpass-tech/hashpass.tech/commit/16a359c981753e431ea009f8b4988f7adef52996))
+* generate OpenProof binary assets outside git ([#178](https://github.com/hashpass-tech/hashpass.tech/issues/178)) ([b49ed71](https://github.com/hashpass-tech/hashpass.tech/commit/b49ed715f361a387ea70c05ed7edb9889164b181))
+* **infra:** sync core's own SUPABASE_SERVICE_ROLE_KEY on every deploy ([90cef7d](https://github.com/hashpass-tech/hashpass.tech/commit/90cef7db56cd61a5951654fc0eb5ebe149b813c2))
+### Release Highlights
+- generate OpenProof binary assets outside git (#178); use the same favicon as the HASHPASS mobile app; sync core's own SUPABASE_SERVICE_ROLE_KEY on every deploy; revert timeout_in_minutes, invalid for Build-category actions
+
 ## [1.8.334](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.333...v1.8.334) (2026-08-06)
 
 

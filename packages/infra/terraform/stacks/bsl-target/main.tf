@@ -380,18 +380,26 @@ resource "aws_codepipeline" "bsl_prod" {
       version          = var.build_action_version
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact"]
-      # Enforced by CodePipeline itself (V2 pipeline type), independent of
-      # the EC2 worker ever calling back. This is the real backstop the
-      # worker's own build_timeout_seconds self-kill guard (default 2700s,
-      # aws_pipeline_ec2_worker module) can't provide: that guard only fires
-      # if the worker process is alive to run it. Confirmed 2026-08-06: this
-      # exact pipeline had an execution stuck InProgress for 3+ hours with
-      # ZERO worker instances running -- the instance died/stopped without
-      # ever reporting success or failure back to CodePipeline, and nothing
-      # else in this stack detects or bounds that. Set comfortably above the
-      # worker's own internal timeout so that guard still gets first chance
-      # to report a clean failure when the worker itself is healthy.
-      timeout_in_minutes = 60
+      # REVERTED 2026-08-06 (same day as added): CodePipeline rejects this
+      # outright for a Custom/Build-category action --
+      # `InvalidActionDeclarationException: Action DeployInfra cannot have
+      # timeout specified. Overridden timeout is only supported for Manual
+      # Approval action type`, confirmed via a real `update-pipeline` call.
+      # V2 pipeline type does not change this -- action-level timeout
+      # override is Manual-Approval-only regardless. This block would have
+      # made every future `terraform apply` against this stack fail
+      # outright; good that it was committed but never actually applied.
+      #
+      # The real problem this was meant to fix (worker dies/stops without
+      # ever calling put-job-failure-result, leaving the execution stuck
+      # InProgress indefinitely -- confirmed 2026-08-06/07, twice, on both
+      # this pipeline and hashpass-production-site) still needs a real fix:
+      # an external watcher (e.g. extending
+      # .github/workflows/hashpass-web-pipeline-monitor.yml's existing
+      # cron, or a CloudWatch Events rule + Lambda) that detects an
+      # InProgress execution whose worker instance is stopped/terminated
+      # and calls stop-pipeline-execution --abandon. Not yet built --
+      # see apps/docs/docs/infra/bsl-pipeline-orphaned-worker-incident.md.
 
       configuration = {
         BuildScript          = var.build_script_path_hybrid
@@ -467,10 +475,14 @@ resource "aws_codepipeline" "bsl_dev" {
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact"]
 
-      # Same CodePipeline-enforced backstop as bsl_prod's DeployInfra action
-      # above -- see that comment for why this is needed regardless of the
-      # worker's own internal timeout guard.
-      timeout_in_minutes = 60
+      # REVERTED 2026-08-06 (see bsl_prod's DeployInfra action above for the
+      # full explanation): CodePipeline rejects timeout_in_minutes outright
+      # for a Build-category action regardless of owner/provider --
+      # confirmed via a real update-pipeline call against the sibling prod
+      # action. Left out here for consistency; this stage's owner/provider
+      # already branch on development_build_is_codebuild, so it would have
+      # hit the same InvalidActionDeclarationException on the next apply
+      # whichever path is active.
 
       configuration = local.development_build_is_codebuild ? {
         ProjectName = var.development_codebuild_project_name

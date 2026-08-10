@@ -12,7 +12,7 @@ const baseUrl = normalizeBaseUrl(process.env.HASHPASS_DOCS_BASE_URL ?? '/');
 const config = {
   title: 'HASHPASS Docs',
   tagline: 'The documentation behind the HASHPASS platform',
-  favicon: 'img/logo.svg',
+  favicon: 'img/favicon.ico',
   url: siteUrl,
   baseUrl,
   organizationName: 'hashpass-tech',

@@ -1,6 +1,6 @@
 {
   "name": "hashpass-club-web",
-  "version": "1.0.11",
+  "version": "1.0.15",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
@@ -17,6 +17,7 @@
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "@fontsource/manrope": "^5.2.8",
     "@hashpass/i18n": "workspace:*",
+    "@hashpass/config": "workspace:*",
     "@hashpass/types": "workspace:*",
     "@hashpass/ui": "workspace:*",
     "@hashpass/utils": "workspace:*",
