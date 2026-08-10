@@ -3,17 +3,28 @@
   "_source": "This file is generated from apps/web-app/package.json",
   "_instructions": "Run npm run version:update or npm run release:patch from apps/web-app to update it.",
   "currentVersion": {
-    "version": "1.0.14",
-    "buildNumber": 20260810143821,
+    "version": "1.0.15",
+    "buildNumber": 20260810145259,
     "releaseDate": "2026-08-10",
     "releaseType": "stable",
     "environment": "production",
     "features": [],
     "bugfixes": [],
     "breakingChanges": [],
-    "notes": "Version 1.0.14 release"
+    "notes": "Version 1.0.15 release"
   },
   "versions": [
+    {
+      "version": "1.0.15",
+      "buildNumber": 20260810145259,
+      "releaseDate": "2026-08-10",
+      "releaseType": "stable",
+      "environment": "production",
+      "features": [],
+      "bugfixes": [],
+      "breakingChanges": [],
+      "notes": "Version 1.0.15 release"
+    },
     {
       "version": "1.0.14",
       "buildNumber": 20260810143821,
