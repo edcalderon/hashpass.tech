@@ -1,3 +1,29 @@
+## [1.8.336](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.335...v1.8.336) (2026-08-10)
+
+
+### Bug Fixes
+
+* **bsl-target:** revert timeout_in_minutes, invalid for Build-category actions ([9f52433](https://github.com/hashpass-tech/hashpass.tech/commit/9f524338387fcc2d0a7554e5e7a61ebe6b52f79b))
+* **dev-tooling:** fix club-web dev:all 404 caused by symlinked app dir ([e777ec6](https://github.com/hashpass-tech/hashpass.tech/commit/e777ec6f313eb6c6a585b90dcb90044669cf77c2))
+* **docs:** use the same favicon as the HASHPASS mobile app ([16a359c](https://github.com/hashpass-tech/hashpass.tech/commit/16a359c981753e431ea009f8b4988f7adef52996))
+* generate OpenProof binary assets outside git ([#178](https://github.com/hashpass-tech/hashpass.tech/issues/178)) ([b49ed71](https://github.com/hashpass-tech/hashpass.tech/commit/b49ed715f361a387ea70c05ed7edb9889164b181))
+* **infra:** sync core's own SUPABASE_SERVICE_ROLE_KEY on every deploy ([90cef7d](https://github.com/hashpass-tech/hashpass.tech/commit/90cef7db56cd61a5951654fc0eb5ebe149b813c2))
+* **openproof:** address codex review + add real logo/brand assets to video ([e03b7e9](https://github.com/hashpass-tech/hashpass.tech/commit/e03b7e96d1a6dd5bfdd5495825f5f6039f0a35c8))
+* **openproof:** fix stray divider bar bleeding into badge and dropdown rows ([06c30c0](https://github.com/hashpass-tech/hashpass.tech/commit/06c30c09088635bc50dd536ca6f7d58fc246c86c))
+* **openproof:** match the language dropdown to landing's Navbar exactly ([1a476bc](https://github.com/hashpass-tech/hashpass.tech/commit/1a476bcaf3e2b41060170a27156c99dce7186fa4))
+* **openproof:** serve the walkthrough video from S3 instead of a gitignored local path ([ba96233](https://github.com/hashpass-tech/hashpass.tech/commit/ba962331ea2536405f6913a35f5902ac281646cf))
+* **openproof:** visible logo, proper ARKIV badge, real video embed, generic event names ([0196c30](https://github.com/hashpass-tech/hashpass.tech/commit/0196c3043dc340ae0fa3758915951b2ccd5e85a0))
+
+
+### Features
+
+* **openproof-video:** add icon badges to all label cards; fix aliased-import stub bug ([b0cc90b](https://github.com/hashpass-tech/hashpass.tech/commit/b0cc90be5e099d5cbef7aabfb454793efce49836))
+* **openproof-video:** add real narration audio and audio-validated subtitle timing ([f22dcec](https://github.com/hashpass-tech/hashpass.tech/commit/f22dcec7adbf8560d58f548ecfd8b0e8a3d03c47))
+* **openproof-video:** upgrade internal diagram animations ([a6aee73](https://github.com/hashpass-tech/hashpass.tech/commit/a6aee739f352760b3b4a5d26b8e770510ed003a3))
+* **openproof:** translate the page into all 6 locales, add language + theme controls ([170045c](https://github.com/hashpass-tech/hashpass.tech/commit/170045c897be2d45be67f66a88487fdfbccc7ffa))
+### Release Highlights
+- upgrade internal diagram animations; translate the page into all 6 locales, add language + theme controls; add real narration audio and audio-validated subtitle timing; add icon badges to all label cards; fix aliased-import stub bug; fix stray divider bar bleeding into badge and dropdown rows; match the language dropdown to landing's Navbar exactly; serve the walkthrough video from S3 instead of a gitignored local path; visible logo, proper ARKIV badge, real video embed, generic event names; fix club-web dev:all 404 caused by symlinked app dir; address codex review + add real logo/brand assets to video; generate OpenProof binary assets outside git (#178); use the same favicon as the HASHPASS mobile app; sync core's own SUPABASE_SERVICE_ROLE_KEY on every deploy; revert timeout_in_minutes, invalid for Build-category actions
+
 ## [1.8.335](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.334...v1.8.335) (2026-08-10)
 
 
