@@ -10,7 +10,7 @@ export const openProofContent = {
   queries: [
     {label:'Who attended BSL Chile 2026?', filter:'entityType = "attendance_claim" · eventId = "bsl-chile-2026" · status = "verified"', rows:[['Verified attendees','128'],['Event identifier','bsl-chile-2026'],['Issuer','HashPass / BSL'],['Credential status','Verified']]},
     {label:'Which active credentials does this attendee own?', filter:'entityType = "attendance_claim" · $owner = "wallet:demo-ana" · status = "verified"', rows:[['BSL Chile 2026','HashPass / BSL · 12 Mar 2026 → 12 Mar 2031'],['BSL Colombia 2026','HashPass / BSL · 21 May 2026 → 21 May 2031'],['Ownership','Owned by attendee']]},
-    {label:'Which credentials expire in 30 days?', filter:'entityType = "attendance_claim" · expiresAt >= 1796947200 · expiresAt <= 1799539200', rows:[['Open Web3 Builders Meetup','18 Jan 2027'],['Renewal status','Extension available']]},
+    {label:'Which credentials expire in 30 days?', filter:'entityType = "attendance_claim" · expiresAt >= 1797638400 · expiresAt <= 1800316799', rows:[['Open Web3 Builders Meetup','18 Jan 2027'],['Renewal status','Extension available']]},
     {label:'Which apps verified this claim?', filter:'entityType = "cross_app_attestation" · claimId = "claim-chile-ana-001"', rows:[['Open Campus','Eligibility check · 16 Mar 2026 → 14 Jun 2026'],['Builders Guild','Community access · 22 Mar 2026 → 20 Jun 2026']]},
   ],
   voiceover: [
