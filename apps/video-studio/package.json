@@ -12,7 +12,8 @@
     "audio:generate": "node scripts/generate-audio-bed.mjs",
     "typecheck": "tsc --noEmit",
     "upgrade": "remotion upgrade",
-    "openproof:export": "node scripts/export-openproof-assets.mjs"
+    "openproof:export": "node scripts/export-openproof-assets.mjs",
+    "openproof:narration": "node scripts/generate-openproof-narration.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.505",

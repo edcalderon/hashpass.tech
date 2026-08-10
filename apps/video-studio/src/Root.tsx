@@ -19,7 +19,7 @@ import {OpenProof} from './compositions/OpenProof';
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <Composition id="OpenProof" component={OpenProof} durationInFrames={2250} fps={30} width={1920} height={1080}/>
+      <Composition id="OpenProof" component={OpenProof} durationInFrames={2520} fps={30} width={1920} height={1080}/>
       <Composition
         id="BslShowcase"
         component={BslShowcase}
