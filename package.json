@@ -1,7 +1,7 @@
 {
   "name": "hashpass.tech",
   "main": "index.js",
-  "version": "1.8.336",
+  "version": "1.8.337",
   "packageManager": "pnpm@9.15.5",
   "pnpm": {
     "overrides": {
@@ -93,6 +93,8 @@
     "db:migrate": "node packages/tools/scripts/migrate-tenant-db.mjs",
     "db:migrate:bsl:prod": "node packages/tools/scripts/migrate-tenant-db.mjs --profile bsl-production",
     "db:migrate:bsl:prod:dry": "node packages/tools/scripts/migrate-tenant-db.mjs --profile bsl-production --dry-run",
+    "db:schema:dump": "node packages/tools/scripts/dump-db-schemas.mjs",
+    "db:schema:diff": "git diff --stat db/schema-snapshots/ && git diff db/schema-snapshots/",
     "deploy:staging": "npm run env:propagate staging && npm run env:sync staging && pnpm --filter hashpass-mobile-app build && npm run deploy:directus && netlify deploy --prod",
     "deploy:prod": "npm run env:propagate production && npm run env:sync production && npm run build:web && npm run deploy:directus && netlify deploy --prod",
     "deploy": "npm run deploy:prod",

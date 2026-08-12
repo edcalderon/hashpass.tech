@@ -71,6 +71,18 @@ const meetingChatRealtimeMigrationPath = path.join(
   root,
   'db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql',
 );
+const legacyDirectusRlsMigrationPath = path.join(
+  root,
+  'db/migrations/V063__enable_rls_on_legacy_directus_tables.sql',
+);
+const deadTableCleanupMigrationPath = path.join(
+  root,
+  'db/migrations/V064__drop_dead_matchmaking_and_orphaned_tables.sql',
+);
+const meetingChatPolicyRepairMigrationPath = path.join(
+  root,
+  'db/migrations/V066__restore_meeting_chat_messages_policies.sql',
+);
 const adminMatchmakingAndEmailAuditMigrationPath = path.join(
   root,
   'db/migrations/V055__admin_matchmaking_and_email_audit.sql',
@@ -285,10 +297,53 @@ describe('encrypted meeting chat realtime contract', () => {
     expect(config.groups['meeting-chat-e2e']).toContain(
       'db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql',
     );
+    expect(config.groups['meeting-chat-e2e']).toContain(
+      'db/migrations/V066__restore_meeting_chat_messages_policies.sql',
+    );
     expect(migration).toMatch(/ALTER PUBLICATION supabase_realtime ADD TABLE public\.meeting_chat_messages/i);
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.get_meeting_chat_participant/i);
     expect(migration).toMatch(/profile\.avatar_url/i);
     expect(migration).toMatch(/speaker\.imageurl/i);
+  });
+
+  it('ships chat policy repair through the default tenant migration command', () => {
+    const migration = fs.readFileSync(meetingChatPolicyRepairMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('meeting-chat-e2e');
+    expect(config.groups['meeting-chat-e2e']).toContain(
+      'db/migrations/V066__restore_meeting_chat_messages_policies.sql',
+    );
+    expect(migration).toMatch(/ALTER TABLE public\.meeting_chat_messages ADD COLUMN IF NOT EXISTS/i);
+    expect(migration).toMatch(/CREATE POLICY meeting_chat_messages_select_participant/i);
+    expect(migration).toMatch(/CREATE POLICY meeting_chat_messages_insert_participant/i);
+  });
+});
+
+describe('legacy table hardening and tenant cleanup migration contract', () => {
+  it('guards missing directus legacy tables and ships via default tenant migrations', () => {
+    const migration = fs.readFileSync(legacyDirectusRlsMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('rls-hardening');
+    expect(config.groups['rls-hardening']).toContain(
+      'db/migrations/V063__enable_rls_on_legacy_directus_tables.sql',
+    );
+    expect(migration).toMatch(/FOREACH tbl IN ARRAY legacy_tables/i);
+    expect(migration).toMatch(/EXECUTE format\('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY'/i);
+    expect(migration).toMatch(/information_schema\.tables/i);
+  });
+
+  it('ships dead table cleanup through the default tenant migration command', () => {
+    const migration = fs.readFileSync(deadTableCleanupMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('tenant-schema-cleanup');
+    expect(config.groups['tenant-schema-cleanup']).toContain(
+      'db/migrations/V064__drop_dead_matchmaking_and_orphaned_tables.sql',
+    );
+    expect(migration).toMatch(/DROP TABLE IF EXISTS public\.chat_messages CASCADE/i);
+    expect(migration).toMatch(/DROP TABLE IF EXISTS public\.user_transactions CASCADE/i);
   });
 });
 

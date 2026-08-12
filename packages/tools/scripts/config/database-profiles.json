@@ -21,14 +21,15 @@
       "databaseUrlEnv": ["BSL_SUPABASE_DB_URL_PROD", "SUPABASE_DB_URL_BSL_PROD", "DATABASE_URL_BSL_PROD", "PROD_BSL_DB_URL"]
     }
   },
-  "defaultGroups": ["rls-hardening", "upcoming-bsl-passes", "meeting-lifecycle", "event-catalog", "speaker-identity-claims", "event-pass-tiers", "admin-pass-management", "meeting-chat-e2e", "admin-matchmaking-communications"],
+  "defaultGroups": ["rls-hardening", "tenant-schema-cleanup", "meeting-chat-e2e", "upcoming-bsl-passes", "meeting-lifecycle", "event-catalog", "speaker-identity-claims", "event-pass-tiers", "admin-pass-management", "admin-matchmaking-communications"],
   "groups": {
     "native-pass-test-codes": [
       "db/migrations/V062__seed_native_pass_redemption_test_codes.sql"
     ],
     "meeting-chat-e2e": [
       "db/migrations/V053__e2e_encrypted_persistent_meeting_chat.sql",
-      "db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql"
+      "db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql",
+      "db/migrations/V066__restore_meeting_chat_messages_policies.sql"
     ],
     "admin-matchmaking-communications": [
       "db/migrations/V055__admin_matchmaking_and_email_audit.sql",
@@ -42,7 +43,11 @@
     "auth": ["apps/mobile-app/db/migrations/V005__otp_codes.sql"],
     "rls-hardening": [
       "db/migrations/V008__enable_missing_rls.sql",
-      "db/migrations/V009__meeting_slots_select_policy.sql"
+      "db/migrations/V009__meeting_slots_select_policy.sql",
+      "db/migrations/V063__enable_rls_on_legacy_directus_tables.sql"
+    ],
+    "tenant-schema-cleanup": [
+      "db/migrations/V064__drop_dead_matchmaking_and_orphaned_tables.sql"
     ],
     "upcoming-bsl-passes": [
       "db/migrations/V010__provision_upcoming_bsl_general_passes.sql",

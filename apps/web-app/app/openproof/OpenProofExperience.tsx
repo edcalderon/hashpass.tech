@@ -1,5 +1,5 @@
 'use client';
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {openProofContent as c} from '@hashpass/config/openproof';
 import {useTranslation, useLocale, useSetLocale, useAvailableLocales} from '@hashpass/i18n';
 import type {SupportedLocale} from '@hashpass/i18n';
@@ -19,6 +19,17 @@ export function OpenProofExperience(){
   const {t}=useTranslation('openproof');
   const {resolvedTheme}=useTheme();
   const [query,setQuery]=useState(0);
+  const queryPaused=useRef(false);
+  // Auto-advances through the query tabs on a loop, forever (a single
+  // interval, not a self-rescheduling timeout keyed on `query` — that would
+  // go permanently silent the first time a tick was skipped while paused).
+  // Pauses while the pointer is over the explorer so reading a result isn't
+  // interrupted; a manual click just changes `query` directly and the loop
+  // continues from there on its next tick.
+  useEffect(()=>{
+    const id=setInterval(()=>{if(!queryPaused.current)setQuery(q=>(q+1)%c.queries.length)},4500);
+    return ()=>clearInterval(id);
+  },[]);
   // Entity/attribute/query strings stay untranslated on purpose: they are Arkiv
   // schema identifiers shared with the Remotion video through @hashpass/config,
   // not display copy.
@@ -30,8 +41,8 @@ export function OpenProofExperience(){
   <section className={`${styles.hero} ${styles.wrap}`}><div><p className={styles.eyebrow}>{t('heroEyebrow')}</p><h1>{t('heroTitleBefore')}<em>{t('heroTitleEm')}</em>{t('heroTitleAfter')}</h1><p className={styles.lead}>{t('heroLead')}</p><div className={styles.actions}><a href="#model">{t('heroCtaModel')}</a><a href="#walkthrough">{t('heroCtaVideo')}</a></div><small>{t('heroDisclaimer')}</small></div><Passport t={t}/></section>
   <Section eyebrow={t('problemEyebrow')} title={t('problemTitle')}><div className={styles.three}>{[t('problem1'),t('problem2'),t('problem3')].map((x,i)=><article className={styles.card} key={x}><span>0{i+1}</span><h3>{x}</h3><p>{t('problemCaption')} <b>×</b> {t('problemCaptionAfter')}</p></article>)}</div></Section>
   <Section eyebrow={t('solutionEyebrow')} title={t('solutionTitle')}><Diagram flow={flow} t={t}/></Section>
-  <Section id="model" eyebrow={t('modelEyebrow')} title={t('modelTitle')}><p className={styles.intro}>{t('modelIntro')}</p><div className={styles.entities}>{c.entities.map(e=><details className={`${styles.entity} ${styles[e.tone]}`} key={e.name}><summary><span>{e.name}</span><i>+</i></summary><p>{e.detail}</p><div>{e.attributes.map(a=><code key={a}>{a}</code>)}</div></details>)}</div></Section>
-  <Section eyebrow={t('queryEyebrow')} title={t('queryTitle')}><div className={styles.explorer}><div className={styles.queryTabs}>{c.queries.map((q,i)=><button aria-pressed={i===query} onClick={()=>setQuery(i)} key={q.label}><span>0{i+1}</span>{q.label}</button>)}</div><div className={styles.results}><p>{t('queryFilterLabel')}</p><code>{c.queries[query].filter}</code><div className={styles.resultList}>{c.queries[query].rows.map(r=><div key={r[0]}><span>{r[0]}</span><b>{r[1]}</b></div>)}</div><small>{t('queryNote')}</small></div></div></Section>
+  <Section id="model" eyebrow={t('modelEyebrow')} title={t('modelTitle')}><p className={styles.intro}>{t('modelIntro')}</p><div className={styles.entities}>{c.entities.map(e=><details className={`${styles.entity} ${styles[e.tone]}`} key={e.name}><summary><span>{e.name}</span><i>+</i></summary><div className={styles.entityBody}><div><p>{e.detail}</p><div className={styles.entityAttrs}>{e.attributes.map(a=><code key={a}>{a}</code>)}</div></div></div></details>)}</div></Section>
+  <Section eyebrow={t('queryEyebrow')} title={t('queryTitle')}><div className={styles.explorer} onPointerEnter={()=>{queryPaused.current=true}} onPointerLeave={()=>{queryPaused.current=false}}><div className={styles.queryTabs}>{c.queries.map((q,i)=><button aria-pressed={i===query} onClick={()=>setQuery(i)} key={q.label}><span>0{i+1}</span>{q.label}</button>)}</div><div className={styles.results}><p>{t('queryFilterLabel')}</p><code>{c.queries[query].filter}</code><div className={styles.resultList}>{c.queries[query].rows.map(r=><div key={r[0]}><span>{r[0]}</span><b>{r[1]}</b></div>)}</div><small>{t('queryNote')}</small></div></div></Section>
   <Section eyebrow={t('lifecycleEyebrow')} title={t('lifecycleTitle')}><div className={styles.timeline}>{[t('lifecycle1'),t('lifecycle2'),t('lifecycle3'),t('lifecycle4'),t('lifecycle5')].map((x,i)=><div key={x}><span>{i+1}</span><b>{x}</b></div>)}</div><div className={styles.ownership}><p><code>$creator</code> {t('ownershipCreator')}</p><p><code>$owner</code> {t('ownershipOwner')}</p><p>{t('ownershipDuration',{years:String(c.lifetimes.claimYears)})}</p></div></Section>
   <Section eyebrow={t('privacyEyebrow')} title={t('privacyTitle')}><div className={styles.privacy}><List title={t('privacyPublicTitle')} items={publicData}/><List title={t('privacyPrivateTitle')} items={privateData}/></div></Section>
   <Section eyebrow={t('counterfactualEyebrow')} title={t('counterfactualTitle')}><div className={styles.four}>{[[t('cf1Title'),t('cf1Body')],[t('cf2Title'),t('cf2Body')],[t('cf3Title'),t('cf3Body')],[t('cf4Title'),t('cf4Body')]].map(x=><article className={styles.card} key={x[0]}><h3>{x[0]}</h3><p>{x[1]}</p></article>)}</div><blockquote>{t('counterfactualQuote')}</blockquote></Section>

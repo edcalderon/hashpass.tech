@@ -14,6 +14,7 @@ export default function SupportScreen() {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const supportEmail = 'support@hashpass.tech';
 
   const handleSubmit = async () => {
     if (!subject.trim() || !message.trim()) {
@@ -22,7 +23,6 @@ export default function SupportScreen() {
 
     setIsSubmitting(true);
     
-    const supportEmail = 'support@hashpass.tech';
     const emailSubject = encodeURIComponent(`[BSL 2025 Support] ${subject}`);
     const emailBody = encodeURIComponent(`\n\n---\nMessage:\n${message}\n\n---\nPlatform: ${Platform.OS}\nApp Version: ${require('../../config/version').default.version}`);
     
@@ -134,12 +134,12 @@ export default function SupportScreen() {
 
         <TouchableOpacity 
           style={styles.contactItem}
-          onPress={() => Linking.openURL('mailto:edward@hashpass.tech')}
+          onPress={() => Linking.openURL(`mailto:${supportEmail}`)}
         >
           <MaterialIcons name="email" size={24} color={colors.primary} />
           <View style={styles.contactItemContent}>
-            <Text style={styles.contactItemTitle}>Join the Team</Text>
-            <Text style={styles.contactItemSubtitle}>edward@hashpass.tech</Text>
+            <Text style={styles.contactItemTitle}>Support Email</Text>
+            <Text style={styles.contactItemSubtitle}>{supportEmail}</Text>
           </View>
           <MaterialIcons name="chevron-right" size={24} color={colors.text.secondary} />
         </TouchableOpacity>
@@ -289,4 +289,3 @@ const getStyles = (isDark: boolean, colors: any) => StyleSheet.create({
     textAlign: 'center',
   },
 });
-

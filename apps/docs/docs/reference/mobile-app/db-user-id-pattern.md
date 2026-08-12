@@ -4,7 +4,7 @@ Shipped in v1.8.273 alongside the [Better Auth ↔ Supabase identity bridge](../
 
 ## The bug this fixes
 
-`ecalderon@unal.edu.co` (and every Better-Auth Google sign-in) hit:
+`a prior Better-Auth Google sign-in` (redacted for privacy) hit:
 
 ```
 Error loading tutorial progress: Object { code: "22P02", details: null, hint: null,

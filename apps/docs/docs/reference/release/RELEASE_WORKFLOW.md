@@ -46,6 +46,16 @@ The repository now treats `develop` as the only release source branch. Promotion
 - Patch coverage (Codecov's coverage of the PR's own new/changed lines) must be at or above 69%. Project-wide coverage stays on Codecov's `auto` target (don't regress much from the base commit) -- the codebase overall is nowhere near 69% today, so that's a much larger, separate effort, not a per-PR gate.
 - CodeQL or the repository security scan must pass
 - The release PR must come from `develop`, not a feature branch or stale branch
+- PRs to `main`/`develop` are also blocked when the docs threshold workflow detects
+  a privacy exposure in public-facing files. This is enforced by
+  `.github/workflows/docs-pr-guard.yml` and scans changed `apps/docs/`, `archive/docs/`,
+  and `apps/mobile-app/public/` paths for newly added email-like values that are not on
+  the allowlist (support addresses and standard placeholders). It intentionally fails
+  PRs on any new user-identifying email literals in public docs content.
+- `npm run release:promote` now runs the same privacy exposure check during the script
+  preflight before release versioning and before PR creation, using the same public/docs
+  diff scope (`main` vs promotion diff). This blocks release prep at build/release time if
+  a non-allowlisted email is introduced in public content.
 
 ## Web Release (hashpass.tech + dev.hashpass.tech)
 

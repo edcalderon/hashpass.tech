@@ -46,6 +46,14 @@ jobs:
           cat /tmp/pr_files.txt
           echo "count=$(wc -l < /tmp/pr_files.txt)" >> "$GITHUB_OUTPUT"
 
+      - name: Privacy exposure check on public/docs changes
+        id: privacy
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 .github/scripts/privacy_exposure_check.py
+
       # ── Run the classifier ──────────────────────────────────────────────────
       - name: Classify changes
         id: classify
@@ -135,6 +143,7 @@ jobs:
             **Changed areas:** `${{ steps.classify.outputs.changed_areas }}`
             **Manual docs in this PR:** `${{ steps.docs.outputs.manual_docs }}`
             **Companion docs PRs:** `${{ steps.docs.outputs.companion_count }}`
+            **New public email exposures:** `${{ steps.privacy.outputs.count }}`
             ${{ steps.classify.outputs.needs_claude_md_review == 'true' && '**⚠️ CLAUDE.md may need a review pass** — critical infra or auth paths changed.' || '' }}
 
             ---
@@ -167,6 +176,26 @@ jobs:
           echo "║  Add label 'docs-exempt' to bypass (maintainers only).  ║"
           echo "╚══════════════════════════════════════════════════════════╝"
           echo ""
+          exit 1
+
+      - name: Fail on privacy exposure check
+        if: steps.privacy.outputs.blocked == 'true'
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════════╗"
+          echo "║  PRIVACY GUARD: blocked by docs/public email check        ║"
+          echo "║                                                          ║"
+          echo "║  New non-allowlisted email values were found in public   ║"
+          echo "║  documentation or public files. Remove user-specific      ║"
+          echo "║  contact details before merging.                           "
+          echo "╚══════════════════════════════════════════════════════════╝"
+          echo ""
+          if [ -n "${{ steps.privacy.outputs.report_path }}" ]; then
+            echo "Findings:"
+            cat "${{ steps.privacy.outputs.report_path }}"
+          else
+            echo "${{ steps.privacy.outputs.findings }}"
+          fi
           exit 1
 
       - name: Pass — tier is ${{ steps.classify.outputs.tier }}

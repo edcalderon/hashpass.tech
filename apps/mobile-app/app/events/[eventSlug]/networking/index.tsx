@@ -471,9 +471,15 @@ export default function NetworkingView() {
   };
 
   const handleQuickAccess = (item: QuickAccessItem) => {
-    // Check if user is trying to access speaker dashboard
-    if (item.id === 'speaker-dashboard' && user?.email !== 'ecalderon@unal.edu.co') {
-      showError('Access Denied', 'Only speakers can access the speaker dashboard');
+    // Keep non-public networking items behind auth so stale route additions stay safe.
+    const route = item.route?.toLowerCase() ?? '';
+    const isProtectedQuickRoute =
+      route.includes('/admin') ||
+      route.includes('speaker-dashboard') ||
+      route.includes('admin-dashboard');
+
+    if (isProtectedQuickRoute && !dbUserId) {
+      showError('Access Denied', 'Sign in to access this feature.');
       return;
     }
 

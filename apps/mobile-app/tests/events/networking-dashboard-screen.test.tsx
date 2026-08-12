@@ -5,7 +5,24 @@ import TestRenderer, { act } from 'react-test-renderer';
 
 const mockApiRequest = jest.fn();
 const mockShowError = jest.fn();
+const mockRouterPush = jest.fn();
+type MockAuthState = {
+  user: { id: string; email: string };
+  dbUserId: string | null;
+  isLoggedIn: boolean;
+  isLoading: boolean;
+};
 let mockEvent: { id: string; name?: string } | null = { id: 'chile2026', name: 'BSL Chile 2026' };
+let mockAuthState: MockAuthState = {
+  user: { id: 'auth-user-1', email: 'attendee@example.com' },
+  dbUserId: 'db-user-1',
+  isLoggedIn: true,
+  isLoading: false,
+};
+let mockCapturedQuickAccess: {
+  items: Array<{ id: string; route?: string }>;
+  onItemPress: (item: { id: string; route?: string }) => void;
+} | null = null;
 const mockChannel = {
   on: jest.fn().mockReturnThis(),
   subscribe: jest.fn().mockReturnThis(),
@@ -13,7 +30,7 @@ const mockChannel = {
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: 'StackScreen' },
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockRouterPush }),
   useFocusEffect: jest.fn(),
   useLocalSearchParams: () => ({ eventSlug: 'chile2026' }),
 }));
@@ -32,12 +49,7 @@ jest.mock('../../hooks/useTheme', () => ({
 }));
 
 jest.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: { id: 'auth-user-1', email: 'attendee@example.com' },
-    dbUserId: 'db-user-1',
-    isLoggedIn: true,
-    isLoading: false,
-  }),
+  useAuth: () => mockAuthState,
 }));
 
 jest.mock('@contexts/EventContext', () => ({
@@ -75,7 +87,13 @@ jest.mock('../../hooks/useTutorialPreferences', () => ({
   }),
 }));
 
-jest.mock('../../components/explorer/QuickAccessGrid', () => 'QuickAccessGrid');
+jest.mock('../../components/explorer/QuickAccessGrid', () => ({
+  __esModule: true,
+  default: ({ items, onItemPress }: { items: any[]; onItemPress: (item: any) => void }) => {
+    mockCapturedQuickAccess = { items, onItemPress };
+    return null;
+  },
+}));
 jest.mock('../../components/LoadingScreen', () => 'LoadingScreen');
 jest.mock('../../lib/vector-icons', () => ({ MaterialIcons: 'MaterialIcons' }));
 
@@ -112,10 +130,115 @@ const flushPromises = () => new Promise<void>((resolve) => setTimeout(resolve, 0
 describe('networking dashboard', () => {
   beforeEach(() => {
     mockEvent = { id: 'chile2026', name: 'BSL Chile 2026' };
+    mockAuthState = {
+      user: { id: 'auth-user-1', email: 'attendee@example.com' },
+      dbUserId: 'db-user-1',
+      isLoggedIn: true,
+      isLoading: false,
+    };
+    mockRouterPush.mockReset();
     mockApiRequest.mockReset();
     mockShowError.mockReset();
+    mockCapturedQuickAccess = null;
     mockChannel.on.mockClear();
     mockChannel.subscribe.mockClear();
+  });
+
+  it('blocks protected quick access navigation when the user is not fully signed in', async () => {
+    mockAuthState = {
+      user: { id: 'attendee-1', email: 'attendee@example.com' },
+      dbUserId: null,
+      isLoggedIn: true,
+      isLoading: false,
+    };
+    mockEvent = { id: 'admin', name: 'Admin Event' };
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<NetworkingView />);
+      await flushPromises();
+    });
+
+    expect(mockCapturedQuickAccess).not.toBeNull();
+    act(() => {
+      mockCapturedQuickAccess!.onItemPress({
+        id: 'admin-dashboard-shortcut',
+        route: '/admin-dashboard',
+      });
+    });
+    expect(mockShowError).toHaveBeenCalledWith('Access Denied', 'Sign in to access this feature.');
+    expect(mockRouterPush).not.toHaveBeenCalled();
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('blocks speaker dashboard quick access when dbUserId is absent', async () => {
+    mockAuthState = {
+      user: { id: 'attendee-2', email: 'attendee2@example.com' },
+      dbUserId: null,
+      isLoggedIn: true,
+      isLoading: false,
+    };
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<NetworkingView />);
+      await flushPromises();
+    });
+
+    expect(mockCapturedQuickAccess).not.toBeNull();
+    act(() => {
+      mockCapturedQuickAccess!.onItemPress({
+        id: 'speaker-dashboard-shortcut',
+        route: '/events/chile2026/speaker-dashboard',
+      });
+    });
+    expect(mockShowError).toHaveBeenCalledWith('Access Denied', 'Sign in to access this feature.');
+    expect(mockRouterPush).not.toHaveBeenCalled();
+
+    await act(async () => renderer!.unmount());
+  });
+
+  it('allows navigation for non-protected quick access routes', async () => {
+    mockAuthState = {
+      user: { id: 'attendee-3', email: 'attendee3@example.com' },
+      dbUserId: 'db-user-3',
+      isLoggedIn: true,
+      isLoading: false,
+    };
+    mockApiRequest.mockResolvedValue({
+      success: true,
+      data: {
+        data: {
+          counts: {
+            total_requests: 8,
+            pending_requests: 1,
+            accepted_requests: 1,
+            declined_requests: 0,
+            cancelled_requests: 0,
+          },
+          speaker: { blockedUsers: 2 },
+        },
+      },
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<NetworkingView />);
+      await flushPromises();
+    });
+
+    expect(mockCapturedQuickAccess).not.toBeNull();
+    act(() => {
+      mockCapturedQuickAccess!.onItemPress({
+        id: 'find-speakers-shortcut',
+        route: '/events/chile2026/speakers',
+      });
+    });
+    expect(mockShowError).not.toHaveBeenCalled();
+    expect(mockRouterPush).toHaveBeenCalledWith('/events/chile2026/speakers');
+
+    await act(async () => renderer!.unmount());
   });
 
   it('loads and renders authenticated stats from the event-scoped backend API', async () => {

@@ -59,7 +59,7 @@ export async function GET(request: Request) {
 ```bash
 AUTH_PROVIDER=directus
 DIRECTUS_URL=<DIRECTUS_URL>
-DIRECTUS_ADMIN_EMAIL=admin@hashpass.tech
+DIRECTUS_ADMIN_EMAIL=<DIRECTUS_ADMIN_EMAIL>
 ```
 
 ### Switch to Supabase (Just change env vars!)

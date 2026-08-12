@@ -17,6 +17,7 @@ const path = require('path');
 
 const ROOT_DIR = path.resolve(__dirname, '../../..');
 const VERSIONING_BIN = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+const PYTHON_BIN = process.platform === 'win32' ? 'python' : 'python3';
 const DEFAULT_CONFIG = 'versioning.config.json';
 const VALID_BUMPS = new Set(['patch', 'minor', 'major']);
 
@@ -33,7 +34,7 @@ function runInherit(binary, args, options = {}) {
 
   const result = spawnSync(binary, args, {
     cwd: ROOT_DIR,
-    env: process.env,
+    env: { ...process.env, ...(options.env || {}) },
     stdio: 'inherit',
   });
 
@@ -49,7 +50,7 @@ function runAndRead(binary, args, options = {}) {
 
   const result = spawnSync(binary, args, {
     cwd: ROOT_DIR,
-    env: process.env,
+    env: { ...process.env, ...(options.env || {}) },
     encoding: 'utf8',
     stdio: 'pipe',
   });
@@ -445,11 +446,84 @@ function ensureCleanGitState(options) {
   }
 }
 
-function runPreflight(options) {
+function runPreflight(options, releaseBranch = '') {
+  const currentBranchName = options.branch || releaseBranch || '';
+
+  if (options.promote && currentBranchName === 'develop') {
+    runPrivacyExposurePrecheck(options);
+  }
+
   runInherit(VERSIONING_BIN, ['exec', 'versioning', 'check-secrets'], options);
   runInherit(VERSIONING_BIN, ['exec', 'versioning', 'cleanup', 'scan'], options);
   runInherit(VERSIONING_BIN, ['run', 'typecheck'], options);
   runInherit(VERSIONING_BIN, ['exec', 'versioning', 'validate', '--config', options.config], options);
+}
+
+function runPrivacyExposurePrecheck(options) {
+  const scriptPath = path.join(ROOT_DIR, '.github/scripts/privacy_exposure_check.py');
+  if (options.dryRun) {
+    console.log('Skipping privacy exposure guard in dry-run mode.');
+    return;
+  }
+
+  if (!fs.existsSync(scriptPath)) {
+    throw new Error(`Privacy guard script not found: ${scriptPath}`);
+  }
+
+  const headSha = runAndRead('git', ['rev-parse', 'HEAD'], { log: false, dryRun: options.dryRun });
+  const baseSha = runAndRead('git', ['merge-base', 'HEAD', 'main'], { log: false, dryRun: options.dryRun });
+
+  if (!baseSha) {
+    throw new Error(
+      'Unable to compute promotion privacy check range: could not determine merge-base with main. ' +
+        'Run with a checked-out main branch that shares history with HEAD.'
+    );
+  }
+
+  const commandText = formatCommand(PYTHON_BIN, [scriptPath, '--enforce']);
+  console.log(`$ ${commandText}`);
+
+  const result = spawnSync(PYTHON_BIN, [scriptPath, '--enforce'], {
+    cwd: ROOT_DIR,
+    env: {
+      ...process.env,
+      BASE_SHA: baseSha,
+      HEAD_SHA: headSha,
+      PRIVACY_CHECK_ENFORCE: '1',
+    },
+    encoding: 'utf8',
+    stdio: 'pipe',
+  });
+
+  const output = (result.stdout || '').trim();
+  const stderr = (result.stderr || '').trim();
+
+  if (result.status !== 0) {
+    const findingLines = output
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .filter((line) => /:/.test(line));
+
+    console.error('Privacy exposure guard blocked the release preflight.');
+    if (findingLines.length > 0) {
+      console.error(`Found ${findingLines.length} issue(s):`);
+      findingLines.forEach((line) => console.error(`  - ${line}`));
+    }
+    if (stderr) {
+      console.error(stderr);
+    }
+    throw new Error(
+      'Release blocked: new non-allowlisted emails in public docs/assets were detected. ' +
+        'Remove or replace user-identifying email literals before running release:promote.',
+    );
+  }
+
+  if (output) {
+    console.log(output);
+  } else {
+    console.log('Privacy exposure guard passed: no new public email exposure.');
+  }
 }
 
 function buildVersioningArgs(options, branch) {
@@ -1171,7 +1245,7 @@ function main() {
     console.log(`  Dry run:   ${options.dryRun ? 'yes' : 'no'}`);
     console.log('');
 
-    runPreflight(options);
+    runPreflight(options, releaseBranch);
     let releaseVersion = '';
     if (options.promote && releaseBranch === 'develop') {
       const currentVersion = readJsonVersion('package.json');

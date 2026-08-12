@@ -74,7 +74,7 @@ const adminUser = await requireAdminAuth(request);
 ```bash
 # Directus SSO Configuration
 DIRECTUS_URL=https://sso.hashpass.co
-DIRECTUS_ADMIN_EMAIL=admin@hashpass.tech
+DIRECTUS_ADMIN_EMAIL=<DIRECTUS_ADMIN_EMAIL>
 
 # Database (Target Supabase)
 DB_HOST=<YOUR_DB_HOST>
@@ -92,7 +92,7 @@ DB_SSL=true
 # Test login to Directus admin panel
 curl -X POST https://sso.hashpass.co/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@hashpass.tech", "password": "<YOUR_ADMIN_PASSWORD>"}'
+  -d '{"email": "<DIRECTUS_ADMIN_EMAIL>", "password": "<YOUR_ADMIN_PASSWORD>"}'
 ```
 
 ### 2. Test API Authentication

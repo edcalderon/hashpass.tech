@@ -20,11 +20,14 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.336)
+## 📋 Latest Changes (v1.8.337)
 
 ### Bug Fixes
 
 * **bsl-target:** revert timeout_in_minutes, invalid for Build-category actions ([9f52433](https://github.com/hashpass-tech/hashpass.tech/commit/9f524338387fcc2d0a7554e5e7a61ebe6b52f79b))
+* **db:** drop 8 confirmed-dead tables from core prod, BSL prod, and dev ([95c0270](https://github.com/hashpass-tech/hashpass.tech/commit/95c027054b02516b76c0ee521925dba03a105e6d))
+* **db:** enable RLS on legacy directus_* tables in dev ([fb21f47](https://github.com/hashpass-tech/hashpass.tech/commit/fb21f47c9e269e80002a30569c4d1ca2fe0a061c))
+* **db:** restore dev's meeting_chat_messages RLS + fix root-cause meetings gap ([cb7d5d6](https://github.com/hashpass-tech/hashpass.tech/commit/cb7d5d6f41f16a2b5c784e1baa32dfbc27b4124d)), closes [#168](https://github.com/hashpass-tech/hashpass.tech/issues/168)
 * **dev-tooling:** fix club-web dev:all 404 caused by symlinked app dir ([e777ec6](https://github.com/hashpass-tech/hashpass.tech/commit/e777ec6f313eb6c6a585b90dcb90044669cf77c2))
 * **docs:** use the same favicon as the HASHPASS mobile app ([16a359c](https://github.com/hashpass-tech/hashpass.tech/commit/16a359c981753e431ea009f8b4988f7adef52996))
 * generate OpenProof binary assets outside git ([#178](https://github.com/hashpass-tech/hashpass.tech/issues/178)) ([b49ed71](https://github.com/hashpass-tech/hashpass.tech/commit/b49ed715f361a387ea70c05ed7edb9889164b181))
@@ -43,7 +46,7 @@
 * **openproof-video:** upgrade internal diagram animations ([a6aee73](https://github.com/hashpass-tech/hashpass.tech/commit/a6aee739f352760b3b4a5d26b8e770510ed003a3))
 * **openproof:** translate the page into all 6 locales, add language + theme controls ([170045c](https://github.com/hashpass-tech/hashpass.tech/commit/170045c897be2d45be67f66a88487fdfbccc7ffa))
 ### Release Highlights
-- upgrade internal diagram animations; translate the page into all 6 locales, add language + theme controls; add real narration audio and audio-validated subtitle timing; add icon badges to all label cards; fix aliased-import stub bug; fix stray divider bar bleeding into badge and dropdown rows; match the language dropdown to landing's Navbar exactly; serve the walkthrough video from S3 instead of a gitignored local path; visible logo, proper ARKIV badge, real video embed, generic event names; fix club-web dev:all 404 caused by symlinked app dir; address codex review + add real logo/brand assets to video; generate OpenProof binary assets outside git (#178); use the same favicon as the HASHPASS mobile app; sync core's own SUPABASE_SERVICE_ROLE_KEY on every deploy; revert timeout_in_minutes, invalid for Build-category actions
+- upgrade internal diagram animations; translate the page into all 6 locales, add language + theme controls; add real narration audio and audio-validated subtitle timing; add icon badges to all label cards; fix aliased-import stub bug; restore dev's meeting_chat_messages RLS + fix root-cause meetings gap; drop 8 confirmed-dead tables from core prod, BSL prod, and dev; enable RLS on legacy directus_* tables in dev; fix stray divider bar bleeding into badge and dropdown rows; match the language dropdown to landing's Navbar exactly; serve the walkthrough video from S3 instead of a gitignored local path; visible logo, proper ARKIV badge, real video embed, generic event names; fix club-web dev:all 404 caused by symlinked app dir; address codex review + add real logo/brand assets to video; generate OpenProof binary assets outside git (#178); use the same favicon as the HASHPASS mobile app; sync core's own SUPABASE_SERVICE_ROLE_KEY on every deploy; revert timeout_in_minutes, invalid for Build-category actions
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
