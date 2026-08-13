@@ -1,3 +1,12 @@
+## [1.8.338](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.337...v1.8.338) (2026-08-13)
+
+
+### Features
+
+* rework explorer and harden pass backend ([79ecc3f](https://github.com/hashpass-tech/hashpass.tech/commit/79ecc3f8c8e7e8fabbcd05058644b34cdf285da3))
+### Release Highlights
+- rework explorer and harden pass backend
+
 ## [1.8.337](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.336...v1.8.337) (2026-08-12)
 
 

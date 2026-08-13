@@ -22,37 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608120325, // Updated to current timestamp
-  releaseDate: '2026-08-12',
+  buildNumber: 202608130010, // Updated to current timestamp
+  releaseDate: '2026-08-13',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'upgrade internal diagram animations',
-    'translate the page into all 6 locales, add language + theme controls',
-    'add real narration audio and audio-validated subtitle timing',
-    'add icon badges to all label cards; fix aliased-import stub bug'
+    'rework explorer and harden pass backend'
   ],
   bugfixes: [
-    'restore dev\'s meeting_chat_messages RLS + fix root-cause meetings gap',
-    'drop 8 confirmed-dead tables from core prod, BSL prod, and dev',
-    'enable RLS on legacy directus_* tables in dev',
-    'fix stray divider bar bleeding into badge and dropdown rows',
-    'match the language dropdown to landing\'s Navbar exactly',
-    'serve the walkthrough video from S3 instead of a gitignored local path',
-    'visible logo, proper ARKIV badge, real video embed, generic event names',
-    'fix club-web dev:all 404 caused by symlinked app dir',
-    'address codex review + add real logo/brand assets to video',
-    'generate OpenProof binary assets outside git (#178)',
-    'use the same favicon as the HASHPASS mobile app',
-    'sync core\'s own SUPABASE_SERVICE_ROLE_KEY on every deploy',
-    'revert timeout_in_minutes, invalid for Build-category actions'
+    // No bugfixes
   ],
   breakingChanges: [],
-  notes: 'upgrade internal diagram animations; translate the page into all 6 locales, add language + theme controls; add real narration audio and audio-validated subtitle timing; add icon badges to all label cards; fix aliased-import stub bug; restore dev\'s meeting_chat_messages RLS + fix root-cause meetings gap; drop 8 confirmed-dead tables from core prod, BSL prod, and dev; enable RLS on legacy directus_* tables in dev; fix stray divider bar bleeding into badge and dropdown rows; match the language dropdown to landing\'s Navbar exactly; serve the walkthrough video from S3 instead of a gitignored local path; visible logo, proper ARKIV badge, real video embed, generic event names; fix club-web dev:all 404 caused by symlinked app dir; address codex review + add real logo/brand assets to video; generate OpenProof binary assets outside git (#178); use the same favicon as the HASHPASS mobile app; sync core\'s own SUPABASE_SERVICE_ROLE_KEY on every deploy; revert timeout_in_minutes, invalid for Build-category actions'
+  notes: 'rework explorer and harden pass backend'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.338': {
+    version: '1.8.338',
+    buildNumber: 202608130010,
+    releaseDate: '2026-08-13',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      'rework explorer and harden pass backend'
+    ],
+    bugfixes: [
+      // No bugfixes
+    ],
+    breakingChanges: [],
+    notes: 'rework explorer and harden pass backend'
+  },
   '1.8.337': {
     version: '1.8.337',
     buildNumber: 202608120325,
