@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" /><style>
+.msym{font-family:'Material Symbols Outlined';font-weight:400;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased}
+@keyframes hpShimmer{0%{background-position:-260px 0}100%{background-position:260px 0}}
+@keyframes hpPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.82)}}
+@keyframes hpFadeUp{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes hpTrack{0%{letter-spacing:.30em;opacity:.25}100%{letter-spacing:.16em;opacity:1}}
+@keyframes hpDrift{0%{transform:scale(1.06) translate3d(0,0,0)}100%{transform:scale(1.14) translate3d(-14px,-8px,0)}}
+@keyframes hpSheet{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+::-webkit-scrollbar{width:0;height:0}
+</style></helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;border-radius:36px;font-family:Roboto,'Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:{{ c.bg }};color:{{ c.text }}">
+
+  <div ref="{{ scrollRef }}" style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden" onScroll="{{ onScroll }}">
+
+    <div style="position:relative;height:392px;overflow:hidden;background:{{ c.heroBase }}">
+      <div style="position:absolute;inset:0;transition:opacity .55s ease;opacity:{{ s0 }}">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(115deg,#2b3448 0 12px,#222a3b 12px 24px);animation:hpDrift 14s ease-in-out infinite alternate"></div>
+        <div style="position:absolute;top:100px;left:0;right:0;display:flex;justify-content:center">
+          <span style="font:500 10px/1 ui-monospace,'Roboto Mono',monospace;letter-spacing:.16em;color:rgba(255,255,255,.42);text-transform:uppercase">expo-video · loop · muted · 1080×1350</span>
+        </div>
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,12,20,.72) 0%,rgba(9,12,20,.15) 38%,rgba(9,12,20,.88) 100%)"></div>
+        <div style="position:absolute;left:20px;right:20px;bottom:52px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+          <div style="display:flex;align-items:center;gap:7px;padding:5px 11px 5px 9px;border-radius:999px;background:rgba(239,68,68,.92)">
+            <span style="width:7px;height:7px;border-radius:50%;background:#fff;animation:hpPulse 1.4s ease-in-out infinite"></span>
+            <span style="font:700 10px/1 Roboto,sans-serif;letter-spacing:.14em;color:#fff">LIVE NOW</span>
+          </div>
+          <div style="font:700 27px/1.12 Roboto,sans-serif;color:#fff;text-wrap:pretty;max-width:300px">BSL On Tour · Opening keynote</div>
+          <div style="font:400 13px/1.4 Roboto,sans-serif;color:rgba(255,255,255,.76)">Streaming from Lima, Perú · 2.1k watching</div>
+          <div style="display:flex;gap:10px;margin-top:2px">
+            <button style="border:0;border-radius:12px;padding:11px 18px;min-height:44px;background:{{ c.accent }};color:#fff;font:700 13px/1 Roboto,sans-serif;cursor:pointer">Watch live</button>
+            <button style="border:1px solid rgba(255,255,255,.36);border-radius:12px;padding:11px 16px;min-height:44px;background:rgba(255,255,255,.08);color:#fff;font:600 13px/1 Roboto,sans-serif;cursor:pointer">Add to calendar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:absolute;inset:0;transition:opacity .55s ease;opacity:{{ s1 }}">
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(105deg,#3b3355 0 11px,#332d4c 11px 22px)"></div>
+        <div style="position:absolute;top:100px;left:0;right:0;display:flex;justify-content:center">
+          <span style="font:500 10px/1 ui-monospace,'Roboto Mono',monospace;letter-spacing:.16em;color:rgba(255,255,255,.4);text-transform:uppercase">event cover · bogotá</span>
+        </div>
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,10,24,.62) 0%,rgba(12,10,24,.2) 40%,rgba(12,10,24,.9) 100%)"></div>
+        <div style="position:absolute;left:20px;right:20px;bottom:52px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+          <div style="padding:5px 11px;border-radius:999px;background:rgba(245,197,68,.92);font:700 10px/1 Roboto,sans-serif;letter-spacing:.14em;color:#1a1a1a">NEXT UP</div>
+          <div style="font:700 27px/1.12 Roboto,sans-serif;color:#fff;max-width:300px;text-wrap:pretty">Blockchain Summit Latam Colombia 2026</div>
+          <div style="display:flex;gap:8px">
+            <div style="min-width:56px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);text-align:center">
+              <div style="font:700 19px/1 Roboto,sans-serif;color:#fff;font-variant-numeric:tabular-nums">{{ cd.d }}</div>
+              <div style="font:500 9px/1 Roboto,sans-serif;letter-spacing:.12em;color:rgba(255,255,255,.6);margin-top:5px">DAYS</div>
+            </div>
+            <div style="min-width:56px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);text-align:center">
+              <div style="font:700 19px/1 Roboto,sans-serif;color:#fff;font-variant-numeric:tabular-nums">{{ cd.h }}</div>
+              <div style="font:500 9px/1 Roboto,sans-serif;letter-spacing:.12em;color:rgba(255,255,255,.6);margin-top:5px">HRS</div>
+            </div>
+            <div style="min-width:56px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);text-align:center">
+              <div style="font:700 19px/1 Roboto,sans-serif;color:#fff;font-variant-numeric:tabular-nums">{{ cd.m }}</div>
+              <div style="font:500 9px/1 Roboto,sans-serif;letter-spacing:.12em;color:rgba(255,255,255,.6);margin-top:5px">MIN</div>
+            </div>
+            <div style="min-width:56px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);text-align:center">
+              <div style="font:700 19px/1 Roboto,sans-serif;color:#fff;font-variant-numeric:tabular-nums">{{ cd.s }}</div>
+              <div style="font:500 9px/1 Roboto,sans-serif;letter-spacing:.12em;color:rgba(255,255,255,.6);margin-top:5px">SEC</div>
+            </div>
+          </div>
+          <button style="border:0;border-radius:12px;padding:11px 18px;min-height:44px;background:#fff;color:#101010;font:700 13px/1 Roboto,sans-serif;cursor:pointer;margin-top:2px">Get your pass</button>
+        </div>
+      </div>
+
+      <div style="position:absolute;inset:0;transition:opacity .55s ease;opacity:{{ s2 }};background:linear-gradient(160deg,#6366f1 0%,#4f46e5 58%,#3f3bd1 100%)">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 32px 24px">
+          <div style="font:700 26px/1 Roboto,sans-serif;color:#fff;animation:hpTrack 1.2s ease-out both">HASHPASS Events</div>
+          <div style="font:400 15px/1.45 Roboto,sans-serif;color:rgba(255,255,255,.88);text-align:center;animation:hpFadeUp .7s .15s ease-out both">Discover and explore all available events</div>
+          <div style="font:500 11px/1 Roboto,sans-serif;letter-spacing:.16em;color:rgba(255,255,255,.6);text-transform:uppercase;animation:hpFadeUp .7s .3s ease-out both">Global Event Explorer</div>
+        </div>
+      </div>
+
+      <div style="position:absolute;inset:0;transition:opacity .55s ease;opacity:{{ s3 }};background:{{ c.heroBase }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;padding:0 20px 52px">
+          <div style="font:500 10px/1 Roboto,sans-serif;letter-spacing:.18em;color:rgba(255,255,255,.55);text-transform:uppercase">Official partners</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="height:56px;border-radius:12px;border:1px dashed rgba(255,255,255,.24);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font:500 9px/1 ui-monospace,monospace;letter-spacing:.12em;color:rgba(255,255,255,.42)">PARTNER LOGO</div>
+            <div style="height:56px;border-radius:12px;border:1px dashed rgba(255,255,255,.24);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font:500 9px/1 ui-monospace,monospace;letter-spacing:.12em;color:rgba(255,255,255,.42)">PARTNER LOGO</div>
+            <div style="height:56px;border-radius:12px;border:1px dashed rgba(255,255,255,.24);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font:500 9px/1 ui-monospace,monospace;letter-spacing:.12em;color:rgba(255,255,255,.42)">PARTNER LOGO</div>
+            <div style="height:56px;border-radius:12px;border:1px dashed rgba(255,255,255,.24);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font:500 9px/1 ui-monospace,monospace;letter-spacing:.12em;color:rgba(255,255,255,.42)">PARTNER LOGO</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:20px;right:20px;bottom:22px;display:flex;gap:6px">
+        <div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.24);overflow:hidden;cursor:pointer" onClick="{{ go0 }}"><div style="height:100%;background:#fff;transition:width .12s linear;width:{{ p0 }}%"></div></div>
+        <div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.24);overflow:hidden;cursor:pointer" onClick="{{ go1 }}"><div style="height:100%;background:#fff;transition:width .12s linear;width:{{ p1 }}%"></div></div>
+        <div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.24);overflow:hidden;cursor:pointer" onClick="{{ go2 }}"><div style="height:100%;background:#fff;transition:width .12s linear;width:{{ p2 }}%"></div></div>
+        <div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.24);overflow:hidden;cursor:pointer" onClick="{{ go3 }}"><div style="height:100%;background:#fff;transition:width .12s linear;width:{{ p3 }}%"></div></div>
+      </div>
+    </div>
+
+    <div style="position:sticky;top:0;z-index:6;padding:10px 16px 12px;background:{{ c.stickyBg }};backdrop-filter:blur(18px);border-bottom:1px solid {{ c.stickyLine }}">
+      <div style="display:flex;gap:10px;align-items:center">
+        <div style="flex:1;display:flex;align-items:center;gap:9px;height:46px;padding:0 13px;border-radius:14px;background:{{ c.field }};border:1px solid {{ c.fieldLine }}">
+          <span class="msym" style="font-size:20px;color:{{ c.dim }};flex:none">search</span>
+          <input value="{{ q }}" onInput="{{ onSearch }}" onFocus="{{ onFocus }}" placeholder="Search events, cities, series" style="flex:1;min-width:0;border:0;outline:0;background:transparent;font:400 14px/1 Roboto,sans-serif;color:{{ c.text }}" />
+          <div style="display:{{ clearDisplay }};cursor:pointer;font:600 15px/1 Roboto,sans-serif;color:{{ c.dim }};padding:6px" onClick="{{ clearQuery }}">×</div>
+        </div>
+        <div style="position:relative;flex:none;width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:{{ c.filterBg }};border:1px solid {{ c.filterLine }}" onClick="{{ openSheet }}">
+          <span class="msym" style="font-size:22px;color:{{ c.filterInk }}">tune</span>
+          <div style="display:{{ badgeDisplay }};position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;background:{{ c.accent }};color:#fff;font:700 10px/18px Roboto,sans-serif;text-align:center">{{ activeCount }}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:11px;overflow-x:auto;padding-bottom:2px">
+        <sc-for list="{{ chips }}" as="chip" hint-placeholder-count="4">
+          <button onClick="{{ chip.onPress }}" style="flex:none;height:34px;padding:0 14px;border-radius:999px;cursor:pointer;font:600 12px/1 Roboto,sans-serif;background:{{ chip.bg }};color:{{ chip.fg }};border:1px solid {{ chip.line }}">{{ chip.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="padding:18px 16px 40px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px">
+        <div style="font:700 18px/1.2 Roboto,sans-serif;color:{{ c.text }}">Explore All Events</div>
+        <div style="display:flex;gap:2px;padding:3px;border-radius:11px;background:{{ c.field }};border:1px solid {{ c.divider }}">
+          <sc-for list="{{ modes }}" as="md" hint-placeholder-count="4">
+            <div onClick="{{ md.onPress }}" title="{{ md.label }}" style="width:34px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:{{ md.bg }}">
+              <span class="msym" style="font-size:18px;color:{{ md.fg }}">{{ md.glyph }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+        <div style="font:400 12.5px/1.5 Roboto,sans-serif;color:{{ c.dim }}">{{ resultLine }}</div>
+        <div style="display:flex;align-items:center;gap:4px;cursor:pointer;flex:none" onClick="{{ openSheet }}">
+          <span class="msym" style="font-size:16px;color:{{ c.dim }}">swap_vert</span>
+          <span style="font:500 12px/1 Roboto,sans-serif;color:{{ c.dim }}">{{ sortLabel }}</span>
+        </div>
+      </div>
+      <div style="display:{{ railHint }};align-items:center;gap:6px;margin:-4px 0 10px">
+        <span class="msym" style="font-size:15px;color:{{ c.dim }}">swipe</span>
+        <span style="font:400 11.5px/1 Roboto,sans-serif;color:{{ c.dim }}">Swipe sideways — more events load as you reach the end</span>
+      </div>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:{{ m.cols }};gap:{{ m.gap }}px">
+          <sc-for list="{{ skeletons }}" as="sk" hint-placeholder-count="4">
+            <div style="border-radius:18px;overflow:hidden;background:{{ c.paper }};border:1px solid {{ c.divider }}">
+              <div style="height:104px;background:linear-gradient(90deg,{{ c.skA }} 0%,{{ c.skB }} 50%,{{ c.skA }} 100%);background-size:260px 100%;animation:hpShimmer 1.1s linear infinite"></div>
+              <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+                <div style="height:11px;width:84%;border-radius:6px;background:linear-gradient(90deg,{{ c.skA }} 0%,{{ c.skB }} 50%,{{ c.skA }} 100%);background-size:260px 100%;animation:hpShimmer 1.1s linear infinite"></div>
+                <div style="height:11px;width:56%;border-radius:6px;background:linear-gradient(90deg,{{ c.skA }} 0%,{{ c.skB }} 50%,{{ c.skA }} 100%);background-size:260px 100%;animation:hpShimmer 1.1s linear infinite"></div>
+                <div style="height:9px;width:40%;border-radius:6px;background:linear-gradient(90deg,{{ c.skA }} 0%,{{ c.skB }} 50%,{{ c.skA }} 100%);background-size:260px 100%;animation:hpShimmer 1.1s linear infinite"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:44px 24px 40px;border-radius:20px;border:1px dashed {{ c.divider }};background:{{ c.paper }}">
+          <div style="width:64px;height:64px;border-radius:20px;background-image:repeating-linear-gradient(45deg,{{ c.stripe }} 0 7px,transparent 7px 14px);border:1px solid {{ c.divider }}"></div>
+          <div style="font:700 16px/1.3 Roboto,sans-serif;color:{{ c.text }};text-align:center">No events match “{{ q }}”</div>
+          <div style="font:400 13px/1.5 Roboto,sans-serif;color:{{ c.dim }};text-align:center;max-width:250px">Try a different city, clear a filter, or browse the full 2026 tour.</div>
+          <button onClick="{{ resetAll }}" style="margin-top:4px;min-height:44px;padding:0 20px;border-radius:12px;border:0;background:{{ c.accent }};color:#fff;font:700 13px/1 Roboto,sans-serif;cursor:pointer">Clear all filters</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ true }}">
+        <div onScroll="{{ onRailScroll }}" style="display:{{ m.display }};grid-template-columns:{{ m.cols }};gap:{{ m.gap }}px;overflow-x:{{ m.ox }};scroll-snap-type:{{ m.snap }};padding-bottom:{{ m.pb }}px;margin:0 -16px;padding-left:16px;padding-right:16px">
+          <sc-for list="{{ list }}" as="ev" hint-placeholder-count="4">
+            <div onClick="{{ ev.onPress }}" style="position:relative;display:flex;flex-direction:{{ m.dir }};flex:{{ m.flex }};width:{{ m.w }};scroll-snap-align:start;border-radius:{{ m.radius }}px;overflow:hidden;cursor:pointer;background:{{ c.paper }};border:1px solid {{ ev.borderColor }};box-shadow:{{ c.cardShadow }}">
+              <div style="position:relative;flex:none;width:{{ m.coverW }};height:{{ m.coverH }}px;background-color:{{ ev.coverBg }};background-image:repeating-linear-gradient(120deg,rgba(255,255,255,.07) 0 9px,transparent 9px 18px)">
+                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 8px/1 ui-monospace,monospace;letter-spacing:.14em;color:rgba(255,255,255,.4);text-transform:uppercase">{{ ev.coverLabel }}</div>
+                <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.34) 0%,rgba(0,0,0,0) 46%,rgba(0,0,0,.5) 100%)"></div>
+                <div style="position:absolute;top:9px;left:9px;padding:4px 8px;border-radius:7px;background:{{ ev.badgeBg }};font:700 8.5px/1 Roboto,sans-serif;letter-spacing:.08em;color:{{ ev.badgeFg }}">{{ ev.badge }}</div>
+                <div onClick="{{ ev.onSave }}" style="position:absolute;top:6px;right:6px;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(8,10,16,.5);backdrop-filter:blur(6px)">
+                  <span class="msym" style="font-size:19px;color:#fff;font-variation-settings:'FILL' {{ ev.saveFilled }}">bookmark</span>
+                </div>
+                <div style="display:{{ ev.passDisplay }};position:absolute;left:9px;bottom:8px;align-items:center;gap:5px;padding:4px 8px;border-radius:7px;background:rgba(255,255,255,.94)">
+                  <span style="width:6px;height:6px;border-radius:50%;background:#34A853"></span>
+                  <span style="font:700 9px/1 Roboto,sans-serif;color:#101010">YOUR PASS</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:0;padding:{{ m.pad }};display:flex;flex-direction:column;gap:5px;justify-content:center">
+                <div style="font-weight:700;line-height:1.25;font-family:Roboto,sans-serif;color:{{ c.text }};overflow:hidden;text-wrap:pretty;font-size:{{ m.titleFs }}px">{{ ev.title }}</div>
+                <div style="font-weight:500;line-height:1.3;font-family:Roboto,sans-serif;color:{{ ev.dateColor }};font-size:{{ m.metaFs }}px">{{ ev.dateLine }}</div>
+                <div style="font-weight:400;line-height:1.3;font-family:Roboto,sans-serif;color:{{ c.dim }};font-size:{{ m.metaFs }}px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ev.city }}</div>
+                <div style="display:{{ m.footer }};align-items:center;gap:6px;margin-top:3px;padding-top:9px;border-top:1px solid {{ c.divider }}">
+                  <div style="display:flex">
+                    <span style="width:16px;height:16px;border-radius:50%;background:{{ c.stripe }};border:1.5px solid {{ c.paper }}"></span>
+                    <span style="width:16px;height:16px;border-radius:50%;background:{{ c.stripe }};border:1.5px solid {{ c.paper }};margin-left:-6px"></span>
+                    <span style="width:16px;height:16px;border-radius:50%;background:{{ c.stripe }};border:1.5px solid {{ c.paper }};margin-left:-6px"></span>
+                  </div>
+                  <span style="font:500 11px/1 Roboto,sans-serif;color:{{ c.dim }}">{{ ev.attendees }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ loadingMore }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;justify-content:center;gap:9px;padding:22px 0 4px">
+            <span style="width:9px;height:9px;border-radius:50%;background:{{ c.accent }};animation:hpPulse 1s ease-in-out infinite"></span>
+            <span style="width:9px;height:9px;border-radius:50%;background:{{ c.accent }};animation:hpPulse 1s ease-in-out .15s infinite"></span>
+            <span style="width:9px;height:9px;border-radius:50%;background:{{ c.accent }};animation:hpPulse 1s ease-in-out .3s infinite"></span>
+            <span style="font:500 12px/1 Roboto,sans-serif;color:{{ c.dim }};margin-left:4px">Loading more events</span>
+          </div>
+        </sc-if>
+        <div style="display:{{ endDisplay }};text-align:center;padding:24px 0 4px;font:500 12px/1.4 Roboto,sans-serif;color:{{ c.dim }}">{{ endLine }}</div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div onClick="{{ toTop }}" style="display:{{ toTopDisplay }};position:absolute;right:16px;bottom:22px;z-index:7;width:48px;height:48px;border-radius:16px;align-items:center;justify-content:center;cursor:pointer;background:{{ c.accent }};box-shadow:0 8px 20px rgba(0,0,0,.32)">
+    <span class="msym" style="font-size:24px;color:#fff">arrow_upward</span>
+  </div>
+
+  <div style="position:absolute;top:0;left:0;right:0;z-index:8;pointer-events:none">
+    <div style="height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,0))">
+      <span style="font:500 12px/1 Roboto,sans-serif;color:#fff">00:15</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:12px;height:9px;border-radius:1px;background:rgba(255,255,255,.85)"></span>
+        <span style="width:10px;height:9px;border-radius:1px;background:rgba(255,255,255,.7)"></span>
+        <span style="font:500 11px/1 Roboto,sans-serif;color:#fff">38%</span>
+        <span style="width:16px;height:9px;border-radius:2px;border:1px solid rgba(255,255,255,.8)"></span>
+      </div>
+    </div>
+    <div style="height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:{{ c.barBg }};backdrop-filter:blur(14px);border-bottom:1px solid {{ c.barLine }};pointer-events:auto">
+      <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-left:-10px;cursor:pointer">
+        <span class="msym" style="font-size:26px;color:{{ c.barInk }}">menu</span>
+      </div>
+      <img src="{{ logoSrc }}" alt="HASHPASS" style="height:26px;width:auto;object-fit:contain" />
+      <div style="display:flex;align-items:center;gap:2px;margin-right:-10px">
+        <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <span class="msym" style="font-size:26px;color:{{ c.barInk }}">notifications</span>
+          <div style="position:absolute;top:6px;right:6px;min-width:16px;height:16px;border-radius:8px;background:{{ c.accent }};color:#fff;font:700 9px/16px Roboto,sans-serif;text-align:center">2</div>
+        </div>
+        <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <span class="msym" style="font-size:26px;color:{{ c.barInk }}">qr_code_2</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ searchOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:9;background:{{ c.bg }};display:flex;flex-direction:column">
+      <div style="height:30px"></div>
+      <div style="display:flex;gap:10px;align-items:center;padding:10px 16px 12px;border-bottom:1px solid {{ c.divider }}">
+        <div style="width:22px;height:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;font:400 20px/1 Roboto,sans-serif;color:{{ c.text }}" onClick="{{ closeSearch }}">←</div>
+        <div style="flex:1;display:flex;align-items:center;gap:9px;height:46px;padding:0 13px;border-radius:14px;background:{{ c.field }};border:1px solid {{ c.accent }}">
+          <input value="{{ q }}" onInput="{{ onSearch }}" placeholder="Search events, cities, series" style="flex:1;min-width:0;border:0;outline:0;background:transparent;font:400 14px/1 Roboto,sans-serif;color:{{ c.text }}" />
+        </div>
+      </div>
+      <div style="padding:18px 16px;display:flex;flex-direction:column;gap:18px;overflow-y:auto">
+        <div>
+          <div style="font:600 11px/1 Roboto,sans-serif;letter-spacing:.14em;color:{{ c.dim }};text-transform:uppercase;margin-bottom:11px">Recent</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ recents }}" as="r" hint-placeholder-count="3">
+              <button onClick="{{ r.onPress }}" style="height:36px;padding:0 14px;border-radius:999px;border:1px solid {{ c.divider }};background:{{ c.paper }};color:{{ c.text }};font:500 12.5px/1 Roboto,sans-serif;cursor:pointer">{{ r.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <div style="font:600 11px/1 Roboto,sans-serif;letter-spacing:.14em;color:{{ c.dim }};text-transform:uppercase;margin-bottom:11px">Suggestions</div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ suggestions }}" as="sg" hint-placeholder-count="4">
+              <div onClick="{{ sg.onPress }}" style="display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid {{ c.divider }};cursor:pointer">
+                <div style="width:40px;height:40px;border-radius:11px;background-color:{{ sg.color }};background-image:repeating-linear-gradient(120deg,rgba(255,255,255,.12) 0 6px,transparent 6px 12px);flex:none"></div>
+                <div style="flex:1;min-width:0">
+                  <div style="font:600 13.5px/1.25 Roboto,sans-serif;color:{{ c.text }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sg.title }}</div>
+                  <div style="font:400 11.5px/1.3 Roboto,sans-serif;color:{{ c.dim }};margin-top:3px">{{ sg.meta }}</div>
+                </div>
+                <div style="font:400 17px/1 Roboto,sans-serif;color:{{ c.dim }}">›</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:10">
+      <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(4,6,12,.55);backdrop-filter:blur(2px)"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;max-height:88%;display:flex;flex-direction:column;border-radius:26px 26px 0 0;background:{{ c.sheet }};border-top:1px solid {{ c.divider }};animation:hpSheet .28s cubic-bezier(.2,.8,.25,1) both">
+        <div style="display:flex;justify-content:center;padding:10px 0 2px"><span style="width:38px;height:4px;border-radius:2px;background:{{ c.divider }}"></span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 20px 12px">
+          <div style="font:700 17px/1.2 Roboto,sans-serif;color:{{ c.text }}">Filters</div>
+          <div onClick="{{ resetAll }}" style="font:600 12.5px/1 Roboto,sans-serif;color:{{ c.accent }};cursor:pointer;padding:8px">Reset</div>
+        </div>
+        <div style="overflow-y:auto;padding:0 20px 12px;display:flex;flex-direction:column;gap:20px">
+          <div>
+            <div style="font:600 11px/1 Roboto,sans-serif;letter-spacing:.14em;color:{{ c.dim }};text-transform:uppercase;margin-bottom:10px">When</div>
+            <div style="display:flex;gap:4px;padding:4px;border-radius:13px;background:{{ c.field }}">
+              <sc-for list="{{ statusOpts }}" as="o" hint-placeholder-count="3">
+                <button onClick="{{ o.onPress }}" style="flex:1;height:38px;border:0;border-radius:10px;cursor:pointer;font:600 12.5px/1 Roboto,sans-serif;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <div style="flex:1;height:44px;border-radius:12px;border:1px solid {{ c.divider }};background:{{ c.field }};display:flex;align-items:center;padding:0 12px;font:500 12.5px/1 Roboto,sans-serif;color:{{ c.dim }}">From · any date</div>
+              <div style="flex:1;height:44px;border-radius:12px;border:1px solid {{ c.divider }};background:{{ c.field }};display:flex;align-items:center;padding:0 12px;font:500 12.5px/1 Roboto,sans-serif;color:{{ c.dim }}">To · any date</div>
+            </div>
+          </div>
+          <div>
+            <div style="font:600 11px/1 Roboto,sans-serif;letter-spacing:.14em;color:{{ c.dim }};text-transform:uppercase;margin-bottom:10px">Series</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ seriesOpts }}" as="o" hint-placeholder-count="3">
+                <button onClick="{{ o.onPress }}" style="height:38px;padding:0 14px;border-radius:999px;cursor:pointer;font:600 12.5px/1 Roboto,sans-serif;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.line }}">{{ o.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:600 11px/1 Roboto,sans-serif;letter-spacing:.14em;color:{{ c.dim }};text-transform:uppercase;margin-bottom:10px">City</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ cityOpts }}" as="o" hint-placeholder-count="4">
+                <button onClick="{{ o.onPress }}" style="height:38px;padding:0 14px;border-radius:999px;cursor:pointer;font:600 12.5px/1 Roboto,sans-serif;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.line }}">{{ o.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:600 11px/1 Roboto,sans-serif;letter-spacing:.14em;color:{{ c.dim }};text-transform:uppercase;margin-bottom:10px">Access</div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div onClick="{{ togglePasses }}" style="display:flex;align-items:center;justify-content:space-between;min-height:48px;cursor:pointer">
+                <span style="font:500 14px/1.3 Roboto,sans-serif;color:{{ c.text }}">Only events I hold a pass for</span>
+                <div style="width:46px;height:27px;border-radius:14px;padding:3px;transition:background .2s;background:{{ passesTrack }}">
+                  <div style="width:21px;height:21px;border-radius:50%;background:#fff;transition:transform .2s;transform:translateX({{ passesKnob }}px)"></div>
+                </div>
+              </div>
+              <div onClick="{{ toggleFree }}" style="display:flex;align-items:center;justify-content:space-between;min-height:48px;cursor:pointer;border-top:1px solid {{ c.divider }}">
+                <span style="font:500 14px/1.3 Roboto,sans-serif;color:{{ c.text }}">Free entry only</span>
+                <div style="width:46px;height:27px;border-radius:14px;padding:3px;transition:background .2s;background:{{ freeTrack }}">
+                  <div style="width:21px;height:21px;border-radius:50%;background:#fff;transition:transform .2s;transform:translateX({{ freeKnob }}px)"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="font:600 11px/1 Roboto,sans-serif;letter-spacing:.14em;color:{{ c.dim }};text-transform:uppercase;margin-bottom:10px">Sort by</div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ sortOpts }}" as="o" hint-placeholder-count="3">
+                <div onClick="{{ o.onPress }}" style="display:flex;align-items:center;justify-content:space-between;min-height:46px;cursor:pointer;border-bottom:1px solid {{ c.divider }}">
+                  <span style="font:500 14px/1.3 Roboto,sans-serif;color:{{ c.text }}">{{ o.label }}</span>
+                  <span style="width:20px;height:20px;border-radius:50%;border:2px solid {{ o.ring }};display:flex;align-items:center;justify-content:center"><span style="width:10px;height:10px;border-radius:50%;background:{{ o.dot }}"></span></span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px 20px 22px;border-top:1px solid {{ c.divider }};background:{{ c.sheet }}">
+          <button onClick="{{ applySheet }}" style="width:100%;min-height:50px;border:0;border-radius:14px;background:{{ c.accent }};color:#fff;font:700 14px/1 Roboto,sans-serif;cursor:pointer">{{ applyLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;},&quot;demo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;default&quot;,&quot;search&quot;,&quot;filters&quot;,&quot;empty&quot;,&quot;loading&quot;],&quot;default&quot;:&quot;default&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;grid1&quot;,&quot;grid2&quot;,&quot;grid3&quot;,&quot;rail&quot;],&quot;default&quot;:&quot;grid2&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;heroSeconds&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:2,&quot;max&quot;:10,&quot;step&quot;:1,&quot;default&quot;:5,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;showSponsors&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#af0d01&quot;,&quot;#6366f1&quot;,&quot;#1EA7E1&quot;,&quot;#111111&quot;],&quot;default&quot;:&quot;#af0d01&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const EVENTS = [
+  { id:'bsl-tour', title:'BSL On Tour', badge:'BSL ON TOUR', color:'#1EA7E1', dateLine:'2026 · 3 stops', city:'Latam roadshow', series:'BSL On Tour', cityKey:'all', when:'upcoming', free:true, pass:false, attendees:'12.4k going', cover:'tour reel', ts:20260501 },
+  { id:'peru2026', title:'Blockchain Summit Latam Perú', badge:'BSL ON TOUR', color:'#D32029', dateLine:'May 13–15, 2026', city:'Lima, Perú', series:'Summit', cityKey:'lima', when:'past', free:false, pass:false, attendees:'3.2k went', cover:'lima cover', ts:20260513 },
+  { id:'chile2026', title:'Blockchain Summit Latam Chile', badge:'BSL ON TOUR', color:'#F2545B', dateLine:'August 5–7, 2026', city:'Santiago, Chile', series:'Summit', cityKey:'santiago', when:'past', free:false, pass:false, attendees:'2.8k went', cover:'santiago cover', ts:20260805 },
+  { id:'colombia2026', title:'Blockchain Summit Latam Colombia', badge:'NEXT UP', color:'#F5C544', dateLine:'November 5–6, 2026', city:'Bogotá, Colombia', series:'Summit', cityKey:'bogota', when:'upcoming', free:false, pass:true, attendees:'4.1k going', cover:'bogotá cover', ts:20261105 },
+  { id:'bsl2025', title:'Blockchain Summit Latam 2025', badge:'PAST EVENT', color:'#2F9BE0', dateLine:'November 12–14, 2025', city:'Medellín, Colombia', series:'Summit', cityKey:'medellin', when:'past', free:false, pass:true, attendees:'5.6k went', cover:'archive', ts:20251112 },
+];
+
+const CITIES = [
+  ['Lima, Perú', 'lima', '#D32029'],
+  ['Santiago, Chile', 'santiago', '#F2545B'],
+  ['Bogotá, Colombia', 'bogota', '#F5C544'],
+  ['Medellín, Colombia', 'medellin', '#2F9BE0'],
+  ['Ciudad de México, México', 'cdmx', '#7C4DFF'],
+  ['Buenos Aires, Argentina', 'baires', '#00A79D'],
+  ['São Paulo, Brasil', 'saopaulo', '#4CAF50'],
+];
+const KINDS = [
+  ['HASHPASS Builders Meetup', 'Meetup', 'MEETUP', true],
+  ['Latam Web3 Hackathon', 'Hackathon', 'HACKATHON', false],
+  ['Pass Holders Workshop', 'Workshop', 'WORKSHOP', true],
+];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+const EXTRA = [];
+for (let i = 0; i < 21; i++) {
+  const city = CITIES[i % CITIES.length];
+  const kind = KINDS[i % KINDS.length];
+  const month = (i * 5 + 2) % 12;
+  const day = 3 + ((i * 7) % 22);
+  const past = month < 7;
+  EXTRA.push({
+    id: 'gen-' + i,
+    title: kind[0] + ' · ' + city[0].split(',')[0],
+    badge: kind[2],
+    color: city[2],
+    dateLine: MONTHS[month] + ' ' + day + ', 2026',
+    city: city[0],
+    series: kind[1],
+    cityKey: city[1],
+    when: past ? 'past' : 'upcoming',
+    free: kind[3],
+    pass: i % 6 === 0,
+    attendees: (120 + i * 37) + (past ? ' went' : ' going'),
+    cover: city[0].split(',')[0].toLowerCase() + ' cover',
+    ts: 20260000 + (month + 1) * 100 + day,
+  });
+}
+
+const SLIDES = 4;
+const PAGE = 8;
+
+class Component extends DCLogic {
+  state = {
+    q: '', slide: 0, elapsed: 0, now: Date.now(), scrollY: 0,
+    sheetOpen: false, searchOpen: false, loading: false,
+    status: 'All', series: [], city: 'all', onlyPasses: false, onlyFree: false, sort: 'date',
+    saved: { colombia2026: true },
+    mode: 'grid2', page: 1, loadingMore: false, atTop: true,
+  };
+  scrollRef = React.createRef();
+
+  componentDidMount() {
+    const demo = this.props.demo;
+    if (demo === 'filters') this.setState({ sheetOpen: true });
+    if (demo === 'empty') this.setState({ q: 'quito' });
+    if (demo === 'loading') this.setState({ loading: true });
+    if (demo === 'search') this.setState({ searchOpen: true });
+    if (this.props.mode) this.setState({ mode: this.props.mode });
+    this.timer = setInterval(() => {
+      const step = this.props.heroSeconds || 5;
+      this.setState(s => {
+        if (this.props.demo && this.props.demo !== 'default') return { now: Date.now() };
+        const e = s.elapsed + 0.1;
+        if (e >= step) return { elapsed: 0, slide: (s.slide + 1) % SLIDES, now: Date.now() };
+        return { elapsed: e, now: Date.now() };
+      });
+    }, 100);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+
+  colors() {
+    const dark = this.props.theme !== 'light';
+    const accent = this.props.accent || '#af0d01';
+    return dark ? {
+      bg:'#121212', paper:'#1B1B1D', sheet:'#1B1B1D', text:'#FFFFFF', dim:'rgba(255,255,255,.58)',
+      divider:'rgba(255,255,255,.10)', field:'#232326', fieldLine:'rgba(255,255,255,.10)',
+      filterBg:'#232326', filterLine:'rgba(255,255,255,.12)', filterInk:'rgba(255,255,255,.82)',
+      stickyBg:'rgba(18,18,18,.92)', stickyLine:'rgba(255,255,255,.08)',
+      barBg:'rgba(12,12,12,.72)', barLine:'rgba(255,255,255,.08)', barInk:'#FFFFFF',
+      heroBase:'#15171F', stripe:'rgba(255,255,255,.10)', skA:'#1F1F22', skB:'#2A2A2E',
+      cardShadow:'0 6px 18px rgba(0,0,0,.35)', accent,
+    } : {
+      bg:'#FFFFFF', paper:'#FFFFFF', sheet:'#FFFFFF', text:'#1A1A1A', dim:'#6B6B70',
+      divider:'rgba(0,0,0,.09)', field:'#F5F5F7', fieldLine:'rgba(0,0,0,.08)',
+      filterBg:'#F5F5F7', filterLine:'rgba(0,0,0,.08)', filterInk:'#1A1A1A',
+      stickyBg:'rgba(255,255,255,.94)', stickyLine:'rgba(0,0,0,.07)',
+      barBg:'rgba(255,255,255,.86)', barLine:'rgba(0,0,0,.07)', barInk:'#1A1A1A',
+      heroBase:'#141824', stripe:'rgba(0,0,0,.07)', skA:'#EFEFF2', skB:'#F8F8FA',
+      cardShadow:'0 4px 14px rgba(15,23,42,.08)', accent,
+    };
+  }
+
+  activeFilters() {
+    const s = this.state;
+    let n = 0;
+    if (s.status !== 'All') n++;
+    if (s.series.length) n++;
+    if (s.city !== 'all') n++;
+    if (s.onlyPasses) n++;
+    if (s.onlyFree) n++;
+    if (s.sort !== 'date') n++;
+    return n;
+  }
+
+  filtered() {
+    const s = this.state;
+    const q = s.q.trim().toLowerCase();
+    let list = [...EVENTS, ...EXTRA].filter(e => {
+      if (q && !(e.title + ' ' + e.city + ' ' + e.series).toLowerCase().includes(q)) return false;
+      if (s.status === 'Upcoming' && e.when !== 'upcoming') return false;
+      if (s.status === 'Past' && e.when !== 'past') return false;
+      if (s.series.length && !s.series.includes(e.series)) return false;
+      if (s.city !== 'all' && e.cityKey !== s.city) return false;
+      if (s.onlyPasses && !e.pass) return false;
+      if (s.onlyFree && !e.free) return false;
+      return true;
+    });
+    if (s.sort === 'name') list = [...list].sort((a, b) => a.title.localeCompare(b.title));
+    if (s.sort === 'nearest') list = [...list].sort((a, b) => a.city.localeCompare(b.city));
+    if (s.sort === 'date') list = [...list].sort((a, b) => a.ts - b.ts);
+    return list;
+  }
+
+  countdown() {
+    const target = Date.parse('2026-11-05T09:00:00Z');
+    let d = Math.max(0, target - this.state.now) / 1000;
+    const days = Math.floor(d / 86400); d -= days * 86400;
+    const hrs = Math.floor(d / 3600); d -= hrs * 3600;
+    const min = Math.floor(d / 60);
+    const sec = Math.floor(d - min * 60);
+    const pad = n => String(n).padStart(2, '0');
+    return { d: pad(days), h: pad(hrs), m: pad(min), s: pad(sec) };
+  }
+
+  set = patch => {
+    const filterKeys = ['q', 'status', 'series', 'city', 'onlyPasses', 'onlyFree', 'sort'];
+    const touchesFilters = Object.keys(patch).some(k => filterKeys.includes(k));
+    this.setState(touchesFilters ? { ...patch, page: 1 } : patch);
+  };
+
+  metrics() {
+    const m = this.state.mode;
+    if (m === 'rail') return { display:'flex', cols:'none', ox:'auto', snap:'x mandatory', dir:'column', flex:'0 0 auto', w:'250px', coverW:'100%', coverH:132, pad:'12px 13px 14px', titleFs:14, metaFs:12, footer:'flex', radius:20, gap:14, pb:8, hint:'flex' };
+    if (m === 'grid1') return { display:'grid', cols:'1fr', ox:'visible', snap:'none', dir:'row', flex:'initial', w:'auto', coverW:'112px', coverH:112, pad:'12px 14px', titleFs:14.5, metaFs:12.5, footer:'flex', radius:18, gap:12, pb:0, hint:'none' };
+    if (m === 'grid3') return { display:'grid', cols:'1fr 1fr 1fr', ox:'visible', snap:'none', dir:'column', flex:'initial', w:'auto', coverW:'100%', coverH:66, pad:'8px 9px 10px', titleFs:11.5, metaFs:10, footer:'none', radius:14, gap:9, pb:0, hint:'none' };
+    return { display:'grid', cols:'1fr 1fr', ox:'visible', snap:'none', dir:'column', flex:'initial', w:'auto', coverW:'100%', coverH:104, pad:'11px 12px 12px', titleFs:13.5, metaFs:11.5, footer:'flex', radius:18, gap:12, pb:0, hint:'none' };
+  }
+
+  loadMore(total) {
+    if (this.state.loadingMore) return;
+    if (this.state.page * PAGE >= total) return;
+    this.setState({ loadingMore: true });
+    clearTimeout(this.moreTimer);
+    this.moreTimer = setTimeout(() => this.setState(s => ({ page: s.page + 1, loadingMore: false })), 650);
+  }
+
+  toTop() {
+    const el = this.scrollRef.current;
+    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  chipDefs() {
+    const c = this.colors(), s = this.state;
+    const mk = (label, active, onPress) => ({
+      label, onPress,
+      bg: active ? c.accent : c.field,
+      fg: active ? '#fff' : c.text,
+      line: active ? c.accent : c.divider,
+    });
+    return [
+      mk('All', s.status === 'All' && !s.onlyPasses && s.city === 'all' && !s.series.length,
+        () => this.set({ status: 'All', onlyPasses: false, onlyFree: false, city: 'all', series: [] })),
+      mk('Upcoming', s.status === 'Upcoming', () => this.set({ status: s.status === 'Upcoming' ? 'All' : 'Upcoming' })),
+      mk('Past', s.status === 'Past', () => this.set({ status: s.status === 'Past' ? 'All' : 'Past' })),
+      mk('My passes', s.onlyPasses, () => this.set({ onlyPasses: !s.onlyPasses })),
+      mk('BSL On Tour', s.series.includes('BSL On Tour'), () => this.toggleSeries('BSL On Tour')),
+      mk('Bogotá', s.city === 'bogota', () => this.set({ city: s.city === 'bogota' ? 'all' : 'bogota' })),
+      mk('Free', s.onlyFree, () => this.set({ onlyFree: !s.onlyFree })),
+    ];
+  }
+
+  toggleSeries(name) {
+    this.setState(s => ({ page: 1, series: s.series.includes(name) ? s.series.filter(x => x !== name) : [...s.series, name] }));
+  }
+
+  renderVals() {
+    const c = this.colors(), s = this.state;
+    const step = this.props.heroSeconds || 5;
+    const prog = i => (s.slide > i ? 100 : s.slide < i ? 0 : Math.min(100, (s.elapsed / step) * 100));
+    const all = this.filtered();
+    const m = this.metrics();
+    const isRail = s.mode === 'rail';
+    const visibleCount = isRail ? Math.min(all.length, s.page * PAGE + 4) : Math.min(all.length, s.page * PAGE);
+    const list = all.slice(0, visibleCount);
+    const hasMore = visibleCount < all.length;
+    const active = this.activeFilters();
+    const modeBtn = (key, glyph, label) => ({
+      glyph, label, onPress: () => this.setState({ mode: key }),
+      bg: s.mode === key ? c.accent : 'transparent',
+      fg: s.mode === key ? '#fff' : c.dim,
+    });
+    const sortLabels = { date: 'Sorted by date', name: 'Sorted A–Z', nearest: 'Nearest to me' };
+    const showSponsors = this.props.showSponsors !== false;
+
+    const seriesOpt = name => ({
+      label: name, onPress: () => this.toggleSeries(name),
+      bg: s.series.includes(name) ? c.accent : c.field,
+      fg: s.series.includes(name) ? '#fff' : c.text,
+      line: s.series.includes(name) ? c.accent : c.divider,
+    });
+    const cityOpt = (label, key) => ({
+      label, onPress: () => this.set({ city: s.city === key ? 'all' : key }),
+      bg: s.city === key ? c.accent : c.field,
+      fg: s.city === key ? '#fff' : c.text,
+      line: s.city === key ? c.accent : c.divider,
+    });
+    const sortOpt = (label, key) => ({
+      label, onPress: () => this.set({ sort: key }),
+      ring: s.sort === key ? c.accent : c.divider,
+      dot: s.sort === key ? c.accent : 'transparent',
+    });
+    const statusOpt = label => ({
+      label, onPress: () => this.set({ status: label }),
+      bg: s.status === label ? c.accent : 'transparent',
+      fg: s.status === label ? '#fff' : c.dim,
+    });
+
+    return {
+      c,
+      logoSrc: this.props.theme === 'light'
+        ? 'apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-black-cyan.svg'
+        : 'apps/mobile-app/assets/logos/hashpass/logo-full-hashpass-white-cyan.svg',
+      q: s.q,
+      loading: s.loading,
+      sheetOpen: s.sheetOpen,
+      searchOpen: s.searchOpen,
+      showEmpty: !s.loading && list.length === 0,
+      showGrid: !s.loading && list.length > 0,
+      cd: this.countdown(),
+      s0: s.slide === 0 ? 1 : 0,
+      s1: s.slide === 1 ? 1 : 0,
+      s2: s.slide === 2 ? 1 : 0,
+      s3: s.slide === 3 && showSponsors ? 1 : 0,
+      p0: prog(0), p1: prog(1), p2: prog(2), p3: prog(3),
+      go0: () => this.set({ slide: 0, elapsed: 0 }),
+      go1: () => this.set({ slide: 1, elapsed: 0 }),
+      go2: () => this.set({ slide: 2, elapsed: 0 }),
+      go3: () => this.set({ slide: 3, elapsed: 0 }),
+      m,
+      isRail,
+      railHint: isRail ? 'flex' : 'none',
+      modes: [
+        modeBtn('grid1', 'view_agenda', 'List'),
+        modeBtn('grid2', 'grid_view', '2 up'),
+        modeBtn('grid3', 'apps', '3 up'),
+        modeBtn('rail', 'view_carousel', 'Rail'),
+      ],
+      loadingMore: s.loadingMore,
+      hasMore,
+      endDisplay: !hasMore && !s.loadingMore && list.length > 0 ? 'block' : 'none',
+      endLine: 'You’re all caught up · ' + all.length + ' events',
+      toTopDisplay: s.scrollY > 420 ? 'flex' : 'none',
+      toTop: () => this.toTop(),
+      scrollRef: this.scrollRef,
+      onScroll: e => {
+        const el = e.target;
+        this.set({ scrollY: el.scrollTop });
+        if (!isRail && el.scrollHeight - el.scrollTop - el.clientHeight < 320) this.loadMore(all.length);
+      },
+      onRailScroll: e => {
+        const el = e.target;
+        if (isRail && el.scrollWidth - el.scrollLeft - el.clientWidth < 400) this.loadMore(all.length);
+      },
+      onSearch: e => this.set({ q: e.target.value }),
+      onFocus: () => this.set({ searchOpen: true }),
+      closeSearch: () => this.set({ searchOpen: false }),
+      clearQuery: () => this.set({ q: '' }),
+      clearDisplay: s.q ? 'block' : 'none',
+      openSheet: () => this.set({ sheetOpen: true }),
+      closeSheet: () => this.set({ sheetOpen: false }),
+      applySheet: () => this.set({ sheetOpen: false }),
+      applyLabel: active ? 'Show ' + all.length + ' events · ' + active + ' filters' : 'Show ' + all.length + ' events',
+      resetAll: () => this.set({ status: 'All', series: [], city: 'all', onlyPasses: false, onlyFree: false, sort: 'date', q: '' }),
+      activeCount: active,
+      badgeDisplay: active ? 'block' : 'none',
+      sortLabel: sortLabels[s.sort],
+      resultLine: 'Showing ' + list.length + ' of ' + all.length + ' events across Latam',
+      chips: this.chipDefs(),
+      skeletons: [1, 2, 3, 4],
+      statusOpts: ['All', 'Upcoming', 'Past'].map(statusOpt),
+      seriesOpts: [seriesOpt('BSL On Tour'), seriesOpt('Summit'), seriesOpt('Meetup'), seriesOpt('Hackathon'), seriesOpt('Workshop')],
+      cityOpts: [cityOpt('Lima', 'lima'), cityOpt('Santiago', 'santiago'), cityOpt('Bogotá', 'bogota'), cityOpt('Medellín', 'medellin'), cityOpt('CDMX', 'cdmx'), cityOpt('Buenos Aires', 'baires'), cityOpt('São Paulo', 'saopaulo')],
+      sortOpts: [sortOpt('Date', 'date'), sortOpt('Nearest to me', 'nearest'), sortOpt('Name A–Z', 'name')],
+      togglePasses: () => this.set({ onlyPasses: !s.onlyPasses }),
+      toggleFree: () => this.set({ onlyFree: !s.onlyFree }),
+      passesTrack: s.onlyPasses ? c.accent : c.divider,
+      passesKnob: s.onlyPasses ? 19 : 0,
+      freeTrack: s.onlyFree ? c.accent : c.divider,
+      freeKnob: s.onlyFree ? 19 : 0,
+      recents: [
+        { label: 'Bogotá', onPress: () => this.set({ q: 'Bogotá', searchOpen: false }) },
+        { label: 'BSL On Tour', onPress: () => this.set({ q: 'BSL', searchOpen: false }) },
+        { label: 'Santiago', onPress: () => this.set({ q: 'Santiago', searchOpen: false }) },
+      ],
+      suggestions: EVENTS.slice(0, 4).map(e => ({
+        title: e.title, meta: e.dateLine + ' · ' + e.city, color: e.color,
+        onPress: () => this.set({ q: e.title, searchOpen: false }),
+      })),
+      list: list.map(e => ({
+        title: e.title,
+        badge: e.badge,
+        badgeBg: e.when === 'past' ? 'rgba(12,16,24,.72)' : e.color,
+        badgeFg: e.color === '#F5C544' ? '#1a1a1a' : '#fff',
+        dateLine: e.dateLine,
+        dateColor: e.when === 'upcoming' ? c.text : c.dim,
+        city: e.city,
+        attendees: e.attendees,
+        coverBg: e.color,
+        coverLabel: e.cover,
+        borderColor: s.saved[e.id] ? c.accent : c.divider,
+        saveFilled: s.saved[e.id] ? 1 : 0,
+        passDisplay: e.pass ? 'flex' : 'none',
+        onSave: ev => { ev.stopPropagation(); this.setState(st => ({ saved: { ...st.saved, [e.id]: !st.saved[e.id] } })); },
+        onPress: () => this.setState({ loading: true }, () => setTimeout(() => this.setState({ loading: false }), 900)),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

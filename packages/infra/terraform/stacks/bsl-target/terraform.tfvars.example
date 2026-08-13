@@ -15,8 +15,12 @@ repository = "hashpass-tech/hashpass.tech"
 
 # EC2 worker sizing -- non-burstable, matches hashpass-web's pattern.
 instance_type = "m6i.xlarge"
-# Development uses the existing on-demand CodeBuild project. Set this to ec2
-# only for an approved rollback while troubleshooting CodeBuild.
+# Production and development use on-demand CodeBuild. Set either mode to ec2
+# only for an approved rollback while troubleshooting CodeBuild, and enable
+# the persistent workers explicitly for that rollback.
+production_build_execution_mode = "codebuild"
+production_codebuild_project_name = "bsl-hashpass-prod-build"
+production_codebuild_compute_type = "BUILD_GENERAL1_LARGE"
 development_build_execution_mode = "codebuild"
 development_codebuild_project_name = "bsl-hashpass-dev-build"
 # Persistent build workers are disabled by default. Enabling them requires a

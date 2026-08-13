@@ -19,62 +19,64 @@ const runAfterInteractions = jest.fn();
 
 const noEventTheme = {
   background: {
-    default: '#ffffff',
-    paper: '#ffffff',
+    default: "#ffffff",
+    paper: "#ffffff",
   },
   text: {
-    primary: '#111827',
-    secondary: '#4b5563',
+    primary: "#111827",
+    secondary: "#4b5563",
   },
 };
 
-function loadExploreScreen(availableEvents: Array<Record<string, unknown>> = []) {
-  let React: typeof import('react');
-  let TestRenderer: typeof import('react-test-renderer');
+function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
+  let React: typeof import("react");
+  let TestRenderer: typeof import("react-test-renderer");
   let ExploreScreen: React.ComponentType;
 
   jest.isolateModules(() => {
     jest.resetModules();
 
-    jest.doMock('react-native', () => ({
+    jest.doMock("react-native", () => ({
       AccessibilityInfo: {
         addEventListener: jest.fn(),
         isReduceMotionEnabled: () => Promise.resolve(false),
       },
       Appearance: {
-        getColorScheme: () => 'light',
+        getColorScheme: () => "light",
         addChangeListener: jest.fn(),
       },
       AppState: {
-        currentState: 'active',
+        currentState: "active",
         addEventListener: jest.fn(() => ({ remove: jest.fn() })),
       },
       Animated: {
         event: jest.fn(() => jest.fn()),
-        ScrollView: 'Animated.ScrollView',
+        ScrollView: "Animated.ScrollView",
       },
-      Image: 'Image',
+      Image: "Image",
       InteractionManager: {
         runAfterInteractions,
       },
+      Modal: "Modal",
       Platform: {
-        OS: 'web',
+        OS: "web",
       },
-      ScrollView: 'ScrollView',
+      ScrollView: "ScrollView",
       StatusBar: {
         currentHeight: 0,
       },
       StyleSheet: {
         create: (styles: unknown) => styles,
       },
-      Text: 'Text',
-      TouchableOpacity: 'TouchableOpacity',
-      View: 'View',
+      Text: "Text",
+      TextInput: "TextInput",
+      TouchableOpacity: "TouchableOpacity",
+      View: "View",
       useWindowDimensions: () => ({ width: 1024, height: 768 }),
     }));
 
     jest.doMock(
-      'react-native-css-interop/src/runtime/native/appearance-observables',
+      "react-native-css-interop/src/runtime/native/appearance-observables",
       () => ({
         addChangeListener: jest.fn(),
         addEventListener: jest.fn(),
@@ -87,43 +89,43 @@ function loadExploreScreen(availableEvents: Array<Record<string, unknown>> = [])
     // The screen uses the nativewind automatic JSX runtime. This unit test
     // renders only the screen's no-event branch, so React's plain runtime is
     // sufficient and avoids initializing native style observables.
-    jest.doMock('react-native-css-interop/jsx-runtime', () =>
-      require('react/jsx-runtime'),
+    jest.doMock("react-native-css-interop/jsx-runtime", () =>
+      require("react/jsx-runtime"),
     );
 
-    jest.doMock('react-native-reanimated', () => ({
+    jest.doMock("react-native-reanimated", () => ({
       __esModule: true,
       default: {
-        View: 'Reanimated.View',
+        View: "Reanimated.View",
       },
     }));
 
-    jest.doMock('expo-router', () => ({
+    jest.doMock("expo-router", () => ({
       useLocalSearchParams: () => ({}),
       useRouter: () => ({ push: jest.fn() }),
     }));
-    jest.doMock('@lingui/macro', () => ({
+    jest.doMock("@lingui/macro", () => ({
       t: ({ message }: { message: string }) => message,
     }));
-    jest.doMock('@lingui/core', () => ({
+    jest.doMock("@lingui/core", () => ({
       _: ({ message }: { message: string }) => message,
       i18n: {
         _: ({ message }: { message: string }) => message,
       },
     }));
-    jest.doMock('@contexts/ScrollContext', () => ({
+    jest.doMock("@contexts/ScrollContext", () => ({
       useScroll: () => ({ scrollY: {}, headerHeight: 0 }),
     }));
-    jest.doMock('@contexts/EventContext', () => ({
+    jest.doMock("@contexts/EventContext", () => ({
       useEvent: () => ({ event: null }),
     }));
-    jest.doMock('../../hooks/useTheme', () => ({
+    jest.doMock("../../hooks/useTheme", () => ({
       useTheme: () => ({ isDark: false, colors: noEventTheme }),
     }));
-    jest.doMock('../../hooks/useAuth', () => ({
+    jest.doMock("../../hooks/useAuth", () => ({
       useAuth: () => ({ isLoggedIn: true, isLoading: false }),
     }));
-    jest.doMock('../../hooks/useTutorialPreferences', () => ({
+    jest.doMock("../../hooks/useTutorialPreferences", () => ({
       useTutorialPreferences: () => ({
         shouldShowTutorial,
         markTutorialCompleted: jest.fn(),
@@ -133,10 +135,10 @@ function loadExploreScreen(availableEvents: Array<Record<string, unknown>> = [])
         mainTutorialProgress: null,
       }),
     }));
-    jest.doMock('../../hooks/useHorizontalScrollArrows', () => ({
+    jest.doMock("../../hooks/useHorizontalScrollArrows", () => ({
       useHorizontalScrollArrows: () => ({}),
     }));
-    jest.doMock('../../lib/event-detector', () => ({
+    jest.doMock("../../lib/event-detector", () => ({
       getAvailableEvents: () => availableEvents,
       getCurrentEvent: (eventId?: string) =>
         availableEvents.find((event) => event.id === eventId) || null,
@@ -144,13 +146,14 @@ function loadExploreScreen(availableEvents: Array<Record<string, unknown>> = [])
       isMainBranch: false,
       shouldShowEventSelector: () => false,
     }));
-    jest.doMock('../../lib/event-branding', () => ({
+    jest.doMock("../../lib/event-branding", () => ({
       getSelectEventCardWatermark: () => 1,
+      resolveEventImageSource: () => undefined,
     }));
-    jest.doMock('../../lib/vector-icons', () => ({
-      MaterialIcons: 'MaterialIcons',
+    jest.doMock("../../lib/vector-icons", () => ({
+      MaterialIcons: "MaterialIcons",
     }));
-    jest.doMock('@lib/copilot-shim', () => ({
+    jest.doMock("@lib/copilot-shim", () => ({
       COPILOT_TUTORIALS_ENABLED: false,
       CopilotStep: ({ children }: { children: React.ReactNode }) => children,
       walkthroughable: (Component: React.ComponentType) => Component,
@@ -159,18 +162,22 @@ function loadExploreScreen(availableEvents: Array<Record<string, unknown>> = [])
         copilotEvents,
       }),
     }));
-    jest.doMock('../../components/EventBanner', () => 'EventBanner');
-    jest.doMock('../../components/PassesDisplay', () => 'PassesDisplay');
+    jest.doMock("../../components/EventBanner", () => "EventBanner");
+    jest.doMock("../../components/PassesDisplay", () => "PassesDisplay");
 
-    React = require('react');
-    TestRenderer = require('react-test-renderer');
-    ExploreScreen = require('../../app/(shared)/dashboard/explore').default;
+    React = require("react");
+    TestRenderer = require("react-test-renderer");
+    ExploreScreen = require("../../app/(shared)/dashboard/explore").default;
   });
 
-  return { React: React!, TestRenderer: TestRenderer!, ExploreScreen: ExploreScreen! };
+  return {
+    React: React!,
+    TestRenderer: TestRenderer!,
+    ExploreScreen: ExploreScreen!,
+  };
 }
 
-describe('ExploreScreen disabled tutorial gate', () => {
+describe("ExploreScreen disabled tutorial gate", () => {
   beforeEach(() => {
     shouldShowTutorial.mockClear();
     copilotEvents.on.mockClear();
@@ -178,9 +185,9 @@ describe('ExploreScreen disabled tutorial gate', () => {
     runAfterInteractions.mockClear();
   });
 
-  it('does no tutorial work for a ready, logged-in user whose tutorial should start', async () => {
+  it("does no tutorial work for a ready, logged-in user whose tutorial should start", async () => {
     const { React, TestRenderer, ExploreScreen } = loadExploreScreen();
-    let renderer: import('react-test-renderer').ReactTestRenderer;
+    let renderer: import("react-test-renderer").ReactTestRenderer;
 
     await TestRenderer.act(async () => {
       renderer = TestRenderer.create(React.createElement(ExploreScreen));
@@ -196,22 +203,25 @@ describe('ExploreScreen disabled tutorial gate', () => {
     });
   });
 
-  it('labels Quick Access with the currently selected event', async () => {
+  it("shows the world event count and date sort metadata", async () => {
     const { React, TestRenderer, ExploreScreen } = loadExploreScreen([
       {
-        id: 'chile2026',
-        title: 'BSL Chile 2026',
-        subtitle: 'Santiago, Chile',
-        color: '#FF5B5B',
+        id: "chile2026",
+        title: "BSL Chile 2026",
+        subtitle: "Santiago, Chile",
+        color: "#FF5B5B",
       },
     ]);
-    let renderer: import('react-test-renderer').ReactTestRenderer;
+    let renderer: import("react-test-renderer").ReactTestRenderer;
 
     await TestRenderer.act(async () => {
       renderer = TestRenderer.create(React.createElement(ExploreScreen));
     });
 
-    expect(JSON.stringify(renderer!.toJSON())).toContain('For BSL Chile 2026');
+    const rendered = JSON.stringify(renderer!.toJSON());
+    expect(rendered).toContain("Showing");
+    expect(rendered).toContain("the world");
+    expect(rendered).toContain("Sorted by date");
 
     await TestRenderer.act(async () => {
       renderer!.unmount();

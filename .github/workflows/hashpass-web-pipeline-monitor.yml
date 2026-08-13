@@ -67,6 +67,7 @@ jobs:
       WEB_PIPELINE_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_GRACE_SECONDS || '30' }}
       WEB_PIPELINE_START_WAIT_SECONDS: ${{ vars.WEB_PIPELINE_START_WAIT_SECONDS || '180' }}
       WEB_PIPELINE_POLL_SECONDS: ${{ vars.WEB_PIPELINE_POLL_SECONDS || '20' }}
+      WEB_PIPELINE_ORPHAN_GRACE_SECONDS: ${{ vars.WEB_PIPELINE_ORPHAN_GRACE_SECONDS || '600' }}
       # Persistent EC2 workers are cost-sensitive. Starts require a deliberate
       # repository-variable opt-in; the idle stop sweep remains active always.
       WEB_PIPELINE_WORKER_AUTOSTART_ENABLED: ${{ vars.WEB_PIPELINE_WORKER_AUTOSTART_ENABLED || 'false' }}
@@ -157,3 +158,28 @@ jobs:
             --region "${AWS_REGION}" \
             --grace-seconds 0 \
             --poll-seconds "${WEB_PIPELINE_POLL_SECONDS}"
+
+      - name: Reconcile orphaned legacy EC2 actions
+        # Native CodeBuild actions are ignored. This remains as a safety net
+        # for an explicitly selected EC2 rollback: if CodePipeline is waiting
+        # on a custom action and no matching worker is running, abandon it
+        # after the grace period instead of allowing a 24-hour queue/hang.
+        if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'stop')) && steps.configure-aws.outcome == 'success'
+        run: |
+          set -euo pipefail
+          packages/tools/scripts/manage-web-pipeline-worker.sh \
+            --mode reconcile \
+            --pipelines "${WEB_PIPELINE_NAMES}" \
+            --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
+            --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
+            --provider-tag "${WEB_PIPELINE_PROVIDER_TAGS}" \
+            --region "${AWS_REGION}" \
+            --orphan-grace-seconds "${WEB_PIPELINE_ORPHAN_GRACE_SECONDS}"
+          packages/tools/scripts/manage-web-pipeline-worker.sh \
+            --mode reconcile \
+            --pipelines "${BSL_PIPELINE_NAMES}" \
+            --project-tag "${WEB_PIPELINE_PROJECT_TAG}" \
+            --service-tag "${WEB_PIPELINE_SERVICE_TAG}" \
+            --provider-tag "${BSL_PIPELINE_PROVIDER_TAGS}" \
+            --region "${AWS_REGION}" \
+            --orphan-grace-seconds "${WEB_PIPELINE_ORPHAN_GRACE_SECONDS}"

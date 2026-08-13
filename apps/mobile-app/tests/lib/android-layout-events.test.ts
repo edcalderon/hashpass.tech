@@ -15,15 +15,20 @@ describe('Android layout event crash guards', () => {
     expect(source).toContain('featuresLayoutRef.current = { y };');
   });
 
-  it('does not attach dashboard quick-access/select-event onLayout on Android', () => {
+  it('keeps the reworked explorer scroll handling platform-safe', () => {
     const source = readSource('../../app/(shared)/dashboard/explore.tsx');
-    // Both horizontal scroll rows in this screen (Quick Access, Select Event)
-    // share the useHorizontalScrollArrows hook, which owns the actual
-    // Android viewportWidthRef fallback guard (checked below).
+    const explorerSource = readSource('../../components/explorer/ExplorerRework.tsx');
+    // The reworked explorer owns its event rails and derives horizontal
+    // scroll state from native scroll metrics. It no longer mounts the old
+    // quick-access/select-event layout handlers on this route.
+    expect(source).toContain('ExplorerRework');
+    expect(explorerSource).toContain('onScroll={(event) => handleScroll(event, "horizontal")}');
+    expect(explorerSource).toContain('setShowBackToTop(contentOffset.y > 120)');
+
+    // Legacy dashboard rows still share the hook, which owns the Android
+    // viewport fallback guard used by those rows.
     const hookSource = readSource('../../hooks/useHorizontalScrollArrows.ts');
 
-    expect(source).toContain("onLayout={Platform.OS === 'android' ? undefined : quickAccessScroll.handleLayout}");
-    expect(source).toContain("onLayout={Platform.OS === 'android' ? undefined : eventSelectorScroll.handleLayout}");
     expect(hookSource).toContain("if (Platform.OS === 'android' && viewportWidthRef.current <= 0 && androidFallbackWidth)");
   });
 
