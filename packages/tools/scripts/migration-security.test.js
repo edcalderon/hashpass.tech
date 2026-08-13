@@ -167,6 +167,21 @@ describe('upcoming BSL pass provisioning migration', () => {
   });
 });
 
+describe('event chat migration plan', () => {
+  it('ships the event chat tables and reply throttle through the default tenant migration command', () => {
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(config.defaultGroups).toContain('event-chat');
+    expect(config.groups['event-chat']).toEqual(expect.arrayContaining([
+      'db/migrations/V071__event_global_chat.sql',
+      'db/migrations/V072__event_chat_realtime_signal.sql',
+      'db/migrations/V073__event_chat_room_registry.sql',
+      'db/migrations/V074__event_chat_presence.sql',
+      'db/migrations/V075__event_chat_reply_throttle.sql',
+    ]));
+  });
+});
+
 describe('admin pass management migration contract', () => {
   it('ships the admin RPCs through the default tenant migration command with compatible numeric fields and all pass statuses', () => {
     const migration = fs.readFileSync(adminPassAndUserListingMigrationPath, 'utf8');

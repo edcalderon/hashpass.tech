@@ -104,6 +104,26 @@
     "wallet": "Portefeuille",
     "profile": "Profil"
   },
+  "eventChat": {
+    "upcomingTitle": "Vous ne pouvez pas entrer dans cette salle",
+    "upcomingBody": "Un pass actif est requis pour cet événement. Achetez un billet pour rejoindre la salle et accéder aux chats de réunion.",
+    "pastTitle": "Cette salle est réservée aux participants",
+    "pastBody": "Cet événement réservé aux détenteurs d'un pass est terminé. Seuls les participants vérifiés avec un pass actif peuvent accéder aux chats de réunion.",
+    "buyTicket": "Acheter un billet",
+    "backToExplore": "Retourner à Explorer les événements",
+    "tryAgain": "Réessayer",
+    "unableToLoad": "Impossible de charger cette salle",
+    "chooseEvent": "Choisissez un événement pour ouvrir sa salle.",
+    "joinRoom": "Rejoindre la salle",
+    "zeroPeopleInRoom": "0 personne dans la salle",
+    "peopleInRoom": "{count} personnes dans la salle",
+    "live": "En direct",
+    "reply": "Répondre",
+    "replyToMessage": "Répondre au message",
+    "replyingTo": "Réponse à {name}",
+    "cancelReply": "Annuler la réponse",
+    "replyBeforeSending": "Vous avez envoyé {count} messages à la suite. Attendez la réponse d’un autre participant avant d’en envoyer d’autres."
+  },
   "common": {
     "back": "Retour",
     "loading": {

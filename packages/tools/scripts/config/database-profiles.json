@@ -49,6 +49,7 @@
     "event-catalog",
     "speaker-identity-claims",
     "event-pass-tiers",
+    "event-chat",
     "admin-pass-management",
     "admin-matchmaking-communications"
   ],
@@ -60,6 +61,13 @@
       "db/migrations/V053__e2e_encrypted_persistent_meeting_chat.sql",
       "db/migrations/V054__meeting_chat_realtime_and_participant_profiles.sql",
       "db/migrations/V066__restore_meeting_chat_messages_policies.sql"
+    ],
+    "event-chat": [
+      "db/migrations/V071__event_global_chat.sql",
+      "db/migrations/V072__event_chat_realtime_signal.sql",
+      "db/migrations/V073__event_chat_room_registry.sql",
+      "db/migrations/V074__event_chat_presence.sql",
+      "db/migrations/V075__event_chat_reply_throttle.sql"
     ],
     "admin-matchmaking-communications": [
       "db/migrations/V055__admin_matchmaking_and_email_audit.sql",

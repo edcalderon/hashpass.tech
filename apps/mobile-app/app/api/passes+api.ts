@@ -62,7 +62,7 @@ const toPassInfo = async (supabase: any, userId: string, pass: PassRow) => {
     pass_id: pass.id,
     pass_type: pass.pass_type || "general",
     status: pass.status || "active",
-    pass_number: pass.pass_number || `PASS-${pass.id.slice(-8)}`,
+    pass_number: String(pass.pass_number || `PASS-${pass.id.slice(-8)}`),
     max_requests: maxRequests,
     used_requests: totalRequests,
     remaining_requests: remainingRequests,

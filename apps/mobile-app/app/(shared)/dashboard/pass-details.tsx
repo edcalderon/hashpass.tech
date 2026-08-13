@@ -29,6 +29,9 @@ export default function PassDetailsScreen() {
   const styles = getStyles(isDark, colors);
   const passId = params.passId;
   const eventId = params.eventId;
+  const passNumber = passInfo?.pass_number === null || passInfo?.pass_number === undefined
+    ? ''
+    : String(passInfo.pass_number);
 
   useEffect(() => {
     // Wait for auth to finish loading before checking
@@ -93,7 +96,7 @@ export default function PassDetailsScreen() {
 
     try {
       const passTypeDisplay = passSystemService.getPassTypeDisplayName(passInfo.pass_type);
-      let shareMessage = `Check out my ${passTypeDisplay} pass for BSL 2025!\n\nPass Number: ${passInfo.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
+      let shareMessage = `Check out my ${passTypeDisplay} pass for BSL 2025!\n\nPass Number: ${passNumber}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
 
 
       // Check if Share API is available (works on mobile and some browsers)
@@ -126,7 +129,7 @@ export default function PassDetailsScreen() {
       // For other errors, fallback to clipboard
       try {
         const passTypeDisplay = passSystemService.getPassTypeDisplayName(passInfo.pass_type);
-        let shareMessage = `Check out my ${passTypeDisplay} pass for BSL 2025!\n\nPass Number: ${passInfo.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
+        let shareMessage = `Check out my ${passTypeDisplay} pass for BSL 2025!\n\nPass Number: ${passNumber}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
         
         
         await Clipboard.setStringAsync(shareMessage);
@@ -141,10 +144,10 @@ export default function PassDetailsScreen() {
   };
 
   const handleCopyPassNumber = async () => {
-    if (!passInfo?.pass_number?.trim()) return;
+    if (!passNumber.trim()) return;
 
     try {
-      await Clipboard.setStringAsync(passInfo.pass_number);
+      await Clipboard.setStringAsync(passNumber);
       showSuccess(
         t('passNumberCopiedTitle', 'Pass number copied'),
         t('passNumberCopiedMessage', 'Your pass number has been copied to the clipboard.'),
@@ -184,8 +187,9 @@ export default function PassDetailsScreen() {
     );
   }
 
-  const event = (EVENTS as Record<string, any>)[passInfo.event_id];
-  const eventName = event?.name || passInfo.event_id;
+  const passEventId = passInfo.event_id || '';
+  const event = (EVENTS as Record<string, any>)[passEventId];
+  const eventName = event?.name || passEventId;
   const eventDate = event?.eventDateString || t('eventDateUnavailable', 'Event dates to be announced');
 
   return (
@@ -220,7 +224,7 @@ export default function PassDetailsScreen() {
               onPress={handleCopyPassNumber}
               style={styles.passNumberAction}
             >
-              <Text style={styles.passNumber}>{passInfo.pass_number}</Text>
+              <Text style={styles.passNumber}>{passNumber}</Text>
               <Ionicons name="copy-outline" size={16} color={colors.text.secondary} />
             </TouchableOpacity>
           </View>
@@ -316,7 +320,7 @@ export default function PassDetailsScreen() {
         <View style={styles.qrContainer}>
           <DynamicQRDisplay
             passId={passInfo.pass_id}
-            passNumber={passInfo.pass_number}
+            passNumber={passNumber}
             passType={passInfo.pass_type}
             size={250}
             showRefreshButton={true}

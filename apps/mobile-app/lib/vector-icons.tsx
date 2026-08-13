@@ -107,6 +107,7 @@ import {
   Zap,
   ThumbsUp,
   Image as ImageIcon,
+  Filter,
   type LucideProps,
 } from "lucide-react-native";
 import type { TextStyle } from "react-native";
@@ -124,6 +125,66 @@ const NativeMaterialIcons =
 type IconProps = { name: string; size?: number; color?: string; style?: any };
 
 type WebIconComponent = React.ComponentType<LucideProps>;
+
+/**
+ * SVG-backed icons for the Explorer controls.
+ *
+ * These controls are shared by native and web. Keep them off the font-based
+ * MaterialIcons path: an icon name that is missing from a native font set is
+ * rendered as a `?` glyph on some Android devices. Lucide uses
+ * react-native-svg, so these names have one deterministic implementation on
+ * every platform.
+ */
+export type NativeSafeIconName =
+  | "search"
+  | "filter"
+  | "list"
+  | "grid"
+  | "rail"
+  | "sort"
+  | "bookmark"
+  | "bookmark-filled"
+  | "search-off"
+  | "arrow-up"
+  | "arrow-left"
+  | "event"
+  | "people"
+  | "info";
+
+const NATIVE_SAFE_ICONS: Record<NativeSafeIconName, WebIconComponent> = {
+  search: Search,
+  filter: Filter,
+  list: List,
+  grid: Grid3x3,
+  rail: LayoutDashboard,
+  sort: ArrowUpDown,
+  bookmark: Bookmark,
+  "bookmark-filled": BookmarkCheck,
+  "search-off": SearchX,
+  "arrow-up": ArrowUp,
+  "arrow-left": ArrowLeft,
+  event: CalendarDays,
+  people: Users,
+  info: Info,
+};
+
+export function NativeSafeIcon({
+  name,
+  size = 22,
+  color = "currentColor",
+  strokeWidth = 2,
+  ...props
+}: Omit<LucideProps, "name"> & { name: NativeSafeIconName }) {
+  const IconComponent = NATIVE_SAFE_ICONS[name] || Info;
+  return (
+    <IconComponent
+      {...props}
+      size={size}
+      color={color}
+      strokeWidth={strokeWidth}
+    />
+  );
+}
 
 function GoogleIcon({
   size = 24,
@@ -190,6 +251,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   "card-membership": IdCard,
   celebration: PartyPopper,
   chat: MessageCircle,
+  forum: MessageCircle,
   check: Check,
   "check-circle": CircleCheck,
   "checkmark-circle": CircleCheck,
@@ -270,6 +332,7 @@ const WEB_MATERIAL_ICONS: Record<string, WebIconComponent> = {
   eye: Eye,
   "finger-print-outline": Fingerprint,
   "lock-closed-outline": Lock,
+  "lock-outline": Lock,
   "people-outline": Users,
   person: User,
   "person-add": UserPlus,

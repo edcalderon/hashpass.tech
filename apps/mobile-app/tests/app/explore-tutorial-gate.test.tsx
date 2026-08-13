@@ -100,6 +100,18 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
       },
     }));
 
+    jest.doMock("expo-constants", () => ({
+      __esModule: true,
+      default: {
+        expoConfig: {
+          extra: {},
+        },
+      },
+    }));
+    jest.doMock("expo-localization", () => ({
+      getLocales: () => [{ languageCode: "en" }],
+    }));
+
     jest.doMock("expo-router", () => ({
       useLocalSearchParams: () => ({}),
       useRouter: () => ({ push: jest.fn() }),
@@ -108,10 +120,35 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
       t: ({ message }: { message: string }) => message,
     }));
     jest.doMock("@lingui/core", () => ({
-      _: ({ message }: { message: string }) => message,
+      _: (descriptor: string | { message: string }) =>
+        typeof descriptor === "string" ? descriptor : descriptor.message,
       i18n: {
-        _: ({ message }: { message: string }) => message,
+        locale: "en",
+        setMessagesCompiler: jest.fn(),
+        load: jest.fn(),
+        activate: jest.fn(),
+        _: (descriptor: string | { message: string }) =>
+          typeof descriptor === "string" ? descriptor : descriptor.message,
       },
+    }));
+    jest.doMock("../../i18n/i18n", () => ({
+      useTranslation: () => ({
+        t: (
+          key: string,
+          fallbackOrParams?: string | Record<string, unknown>,
+          maybeParams?: Record<string, unknown>,
+        ) => {
+          const fallback =
+            typeof fallbackOrParams === "string" ? fallbackOrParams : key;
+          const params =
+            typeof fallbackOrParams === "string"
+              ? maybeParams
+              : fallbackOrParams;
+          return fallback.replace(/\{(\w+)\}/g, (_, name) =>
+            String(params?.[name] ?? `{${name}}`),
+          );
+        },
+      }),
     }));
     jest.doMock("@contexts/ScrollContext", () => ({
       useScroll: () => ({ scrollY: {}, headerHeight: 0 }),
@@ -152,6 +189,7 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
     }));
     jest.doMock("../../lib/vector-icons", () => ({
       MaterialIcons: "MaterialIcons",
+      NativeSafeIcon: "NativeSafeIcon",
     }));
     jest.doMock("@lib/copilot-shim", () => ({
       COPILOT_TUTORIALS_ENABLED: false,
@@ -164,6 +202,14 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
     }));
     jest.doMock("../../components/EventBanner", () => "EventBanner");
     jest.doMock("../../components/PassesDisplay", () => "PassesDisplay");
+    jest.doMock("../../lib/event-chat", () => ({
+      getEventChatAvatarUrl: ({ senderId }: { senderId?: string }) =>
+        `avatar:${senderId || "member"}`,
+      loadEventChatPresence: jest.fn(async () => ({
+        peopleCount: 0,
+        avatarUrls: [],
+      })),
+    }));
 
     React = require("react");
     TestRenderer = require("react-test-renderer");
@@ -221,7 +267,7 @@ describe("ExploreScreen disabled tutorial gate", () => {
     const rendered = JSON.stringify(renderer!.toJSON());
     expect(rendered).toContain("Showing");
     expect(rendered).toContain("the world");
-    expect(rendered).toContain("Sorted by date");
+    expect(rendered).toMatch(/Sorted by date/i);
 
     await TestRenderer.act(async () => {
       renderer!.unmount();

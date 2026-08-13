@@ -167,6 +167,17 @@ describe("passSystemService Supabase user id guard", () => {
     ).resolves.toBe("pass-created");
   });
 
+  it("normalizes numeric pass numbers returned by legacy schemas", async () => {
+    mockApiGet.mockResolvedValueOnce({
+      success: true,
+      data: { data: [{ ...activePass, pass_number: 12345 }] },
+    });
+
+    await expect(passSystemService.getAllUserPasses(supabaseUserId)).resolves.toEqual([
+      expect.objectContaining({ pass_number: "12345" }),
+    ]);
+  });
+
   it("surfaces database errors while loading the wallet instead of treating them as no passes", async () => {
     const databaseError = { code: "PGRST000", message: "database unavailable" };
     mockApiGet.mockResolvedValueOnce({
