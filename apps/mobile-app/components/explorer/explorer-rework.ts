@@ -2,6 +2,13 @@ import type { EventContinent } from "@hashpass/types";
 
 export type ExplorerLayoutMode = "list" | "grid" | "rail";
 
+export const EXPLORER_HERO_LAYOUT = {
+  height: 360,
+  contentTopInset: 28,
+  contentBottomInset: 58,
+  progressBottomInset: 18,
+} as const;
+
 export interface ExplorerHeroActionTarget {
   route: string;
   eventId?: string;

@@ -3,6 +3,7 @@ import {
   getExplorerEventStatus,
   getExplorerHeroActionTarget,
   getExplorerLayout,
+  EXPLORER_HERO_LAYOUT,
   getExplorerScopeLabel,
   getEventRoomTarget,
   getActiveFilterCount,
@@ -101,6 +102,15 @@ describe("explorer rework behavior", () => {
       columns: 1,
       horizontal: true,
       cardWidth: 250,
+    });
+  });
+
+  it("keeps the native hero content close to the top bar with balanced spacing", () => {
+    expect(EXPLORER_HERO_LAYOUT).toEqual({
+      height: 360,
+      contentTopInset: 28,
+      contentBottomInset: 58,
+      progressBottomInset: 18,
     });
   });
 

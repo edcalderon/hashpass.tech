@@ -30,6 +30,7 @@ import {
 import type { EventInfo } from "../../lib/event-detector";
 import type { EventPassInfo } from "../../lib/pass-system";
 import {
+  EXPLORER_HERO_LAYOUT,
   filterExplorerEvents,
   getActiveFilterCount,
   getEventRoomTarget,
@@ -1382,10 +1383,10 @@ const getStyles = (isDark: boolean, colors: any) =>
     scrollView: { flex: 1 },
     content: { paddingBottom: 48 },
     hero: {
-      height: 360,
+      height: EXPLORER_HERO_LAYOUT.height,
       position: "relative",
       overflow: "hidden",
-      justifyContent: "flex-end",
+      justifyContent: "flex-start",
     },
     heroTexture: {
       ...StyleSheet.absoluteFillObject,
@@ -1397,7 +1398,12 @@ const getStyles = (isDark: boolean, colors: any) =>
       ...StyleSheet.absoluteFillObject,
       backgroundColor: "rgba(6, 8, 16, .32)",
     },
-    heroContent: { paddingHorizontal: 20, paddingBottom: 54, gap: 12 },
+    heroContent: {
+      paddingHorizontal: 20,
+      paddingTop: EXPLORER_HERO_LAYOUT.contentTopInset,
+      paddingBottom: EXPLORER_HERO_LAYOUT.contentBottomInset,
+      gap: 10,
+    },
     heroEyebrow: {
       alignSelf: "flex-start",
       flexDirection: "row",
@@ -1441,7 +1447,7 @@ const getStyles = (isDark: boolean, colors: any) =>
       position: "absolute",
       left: 20,
       right: 20,
-      bottom: 22,
+      bottom: EXPLORER_HERO_LAYOUT.progressBottomInset,
       flexDirection: "row",
       gap: 6,
     },
