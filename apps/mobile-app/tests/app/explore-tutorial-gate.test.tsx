@@ -138,9 +138,15 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
           fallbackOrParams?: string | Record<string, unknown>,
           maybeParams?: Record<string, unknown>,
         ) => {
-          const fallback = typeof fallbackOrParams === "string" ? fallbackOrParams : key;
-          const params = typeof fallbackOrParams === "string" ? maybeParams : fallbackOrParams;
-          return fallback.replace(/\{(\w+)\}/g, (_, name) => String(params?.[name] ?? `{${name}}`));
+          const fallback =
+            typeof fallbackOrParams === "string" ? fallbackOrParams : key;
+          const params =
+            typeof fallbackOrParams === "string"
+              ? maybeParams
+              : fallbackOrParams;
+          return fallback.replace(/\{(\w+)\}/g, (_, name) =>
+            String(params?.[name] ?? `{${name}}`),
+          );
         },
       }),
     }));
@@ -183,6 +189,7 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
     }));
     jest.doMock("../../lib/vector-icons", () => ({
       MaterialIcons: "MaterialIcons",
+      NativeSafeIcon: "NativeSafeIcon",
     }));
     jest.doMock("@lib/copilot-shim", () => ({
       COPILOT_TUTORIALS_ENABLED: false,
@@ -198,7 +205,10 @@ function loadExploreScreen(availableEvents: Record<string, unknown>[] = []) {
     jest.doMock("../../lib/event-chat", () => ({
       getEventChatAvatarUrl: ({ senderId }: { senderId?: string }) =>
         `avatar:${senderId || "member"}`,
-      loadEventChatPresence: jest.fn(async () => ({ peopleCount: 0, avatarUrls: [] })),
+      loadEventChatPresence: jest.fn(async () => ({
+        peopleCount: 0,
+        avatarUrls: [],
+      })),
     }));
 
     React = require("react");

@@ -11,19 +11,24 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
-import { MaterialIcons } from "../../lib/vector-icons";
+import { NativeSafeIcon } from "../../lib/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useRouter } from "expo-router";
 import { useTranslation } from "../../i18n/i18n";
 import PassesDisplay from "../PassesDisplay";
 import { getEventQuickAccessItems } from "../../lib/event-detector";
 import { resolveEventImageSource } from "../../lib/event-branding";
-import { getEventChatAvatarUrl, loadEventChatPresence, type EventChatPresence } from "../../lib/event-chat";
+import {
+  getEventChatAvatarUrl,
+  loadEventChatPresence,
+  type EventChatPresence,
+} from "../../lib/event-chat";
 import {
   loadExplorerBookmarks,
   saveExplorerBookmarks,
 } from "../../lib/explorer-bookmarks";
 import type { EventInfo } from "../../lib/event-detector";
+import type { EventPassInfo } from "../../lib/pass-system";
 import {
   filterExplorerEvents,
   getActiveFilterCount,
@@ -121,6 +126,28 @@ const toExplorerEvent = (event: EventInfo): ExplorerEvent => ({
   image: event.image,
 });
 
+const resolveExplorerIconName = (name: string) => {
+  const aliases = {
+    search: "search",
+    tune: "filter",
+    "filter-list": "filter",
+    view_agenda: "list",
+    apps: "grid",
+    view_carousel: "rail",
+    "unfold-more": "sort",
+    bookmark: "bookmark",
+    "bookmark-border": "bookmark",
+    "bookmark-added": "bookmark-filled",
+    "search-off": "search-off",
+    "arrow-upward": "arrow-up",
+    "arrow-back": "arrow-left",
+    event: "event",
+    people: "people",
+    info: "info",
+  } as const;
+  return aliases[name as keyof typeof aliases] || "info";
+};
+
 const Icon = ({
   name,
   color,
@@ -129,7 +156,13 @@ const Icon = ({
   name: string;
   color: string;
   size?: number;
-}) => <MaterialIcons name={name as any} size={size} color={color} />;
+}) => (
+  <NativeSafeIcon
+    name={resolveExplorerIconName(name)}
+    size={size}
+    color={color}
+  />
+);
 
 export default function ExplorerRework({
   events,
@@ -162,7 +195,9 @@ export default function ExplorerRework({
   const [loadingMore, setLoadingMore] = useState(false);
   const [bookmarkedEventIds, setBookmarkedEventIds] = useState<string[]>([]);
   const [passEventIds, setPassEventIds] = useState<string[]>([]);
-  const [roomPresenceByEventId, setRoomPresenceByEventId] = useState<Record<string, EventChatPresence>>({});
+  const [roomPresenceByEventId, setRoomPresenceByEventId] = useState<
+    Record<string, EventChatPresence>
+  >({});
   const [showBackToTop, setShowBackToTop] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const loadMoreTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -187,10 +222,16 @@ export default function ExplorerRework({
     // Keep pass loading lazy: the Explorer can render for signed-out users
     // without initializing the pass/auth client bundle.
     import("../../lib/pass-system")
-      .then(({ passSystemService }) =>
-        passSystemService.getAllUserPasses(dbUserId),
+      .then((module) =>
+        (
+          module as unknown as {
+            default: {
+              getAllUserPasses: (userId: string) => Promise<EventPassInfo[]>;
+            };
+          }
+        ).default.getAllUserPasses(dbUserId),
       )
-      .then((passes: { event_id: string }[]) => {
+      .then((passes: EventPassInfo[]) => {
         if (mounted) setPassEventIds(passes.map((pass) => pass.event_id));
       })
       .catch(() => {
@@ -226,7 +267,12 @@ export default function ExplorerRework({
       ).then((entries) => {
         if (!mounted) return;
         setRoomPresenceByEventId(
-          Object.fromEntries(entries.filter((entry): entry is readonly [string, EventChatPresence] => Boolean(entry))),
+          Object.fromEntries(
+            entries.filter(
+              (entry): entry is readonly [string, EventChatPresence] =>
+                Boolean(entry),
+            ),
+          ),
         );
       });
     };
@@ -397,25 +443,49 @@ export default function ExplorerRework({
     const localizedHero = [
       {
         eyebrow: translate("explore.rework.heroNextUp", "NEXT UP"),
-        title: translate("explore.rework.heroNextTitle", "Blockchain Summit Latam Colombia 2026"),
-        subtitle: translate("explore.rework.heroNextSubtitle", "November 5–6, 2026 · Bogotá, Colombia"),
+        title: translate(
+          "explore.rework.heroNextTitle",
+          "Blockchain Summit Latam Colombia 2026",
+        ),
+        subtitle: translate(
+          "explore.rework.heroNextSubtitle",
+          "November 5–6, 2026 · Bogotá, Colombia",
+        ),
         action: translate("explore.rework.heroGetPass", "Get your pass"),
       },
       {
         eyebrow: translate("explore.rework.heroTour", "BSL ON TOUR"),
-        title: translate("explore.rework.heroTourTitle", "Three cities. One connected community."),
-        subtitle: translate("explore.rework.heroTourSubtitle", "Peru and Chile are archived. Colombia is next."),
+        title: translate(
+          "explore.rework.heroTourTitle",
+          "Three cities. One connected community.",
+        ),
+        subtitle: translate(
+          "explore.rework.heroTourSubtitle",
+          "Peru and Chile are archived. Colombia is next.",
+        ),
         action: translate("explore.rework.heroExploreTour", "Explore the tour"),
       },
       {
         eyebrow: translate("explore.rework.heroEvents", "HASHPASS EVENTS"),
-        title: translate("explore.rework.heroEventsTitle", "Discover what is next"),
-        subtitle: translate("explore.rework.heroEventsSubtitle", "One global explorer for every summit, stop, and community moment."),
+        title: translate(
+          "explore.rework.heroEventsTitle",
+          "Discover what is next",
+        ),
+        subtitle: translate(
+          "explore.rework.heroEventsSubtitle",
+          "One global explorer for every summit, stop, and community moment.",
+        ),
       },
       {
         eyebrow: translate("explore.rework.heroPartners", "OFFICIAL PARTNERS"),
-        title: translate("explore.rework.heroPartnersTitle", "Built with the people moving the ecosystem forward."),
-        subtitle: translate("explore.rework.heroPartnersSubtitle", "Sponsors and community partners make every stop possible."),
+        title: translate(
+          "explore.rework.heroPartnersTitle",
+          "Built with the people moving the ecosystem forward.",
+        ),
+        subtitle: translate(
+          "explore.rework.heroPartnersSubtitle",
+          "Sponsors and community partners make every stop possible.",
+        ),
       },
     ][heroIndex];
     const localizedSlide = { ...hero, ...localizedHero };
@@ -443,7 +513,10 @@ export default function ExplorerRework({
         </View>
         <View
           style={styles.heroProgress}
-          accessibilityLabel={translate("explore.rework.heroSlides", "Hero slides")}
+          accessibilityLabel={translate(
+            "explore.rework.heroSlides",
+            "Hero slides",
+          )}
         >
           {HERO_SLIDES.map((slide, index) => (
             <TouchableOpacity
@@ -486,12 +559,18 @@ export default function ExplorerRework({
             placeholderTextColor={colors.text.secondary}
             style={styles.searchInput}
             returnKeyType="search"
-            accessibilityLabel={translate("explore.rework.searchEvents", "Search events")}
+            accessibilityLabel={translate(
+              "explore.rework.searchEvents",
+              "Search events",
+            )}
           />
           {query.length > 0 && (
             <TouchableOpacity
               onPress={() => setQuery("")}
-              accessibilityLabel={translate("explore.rework.clearSearch", "Clear search")}
+              accessibilityLabel={translate(
+                "explore.rework.clearSearch",
+                "Clear search",
+              )}
             >
               <Text style={styles.clearSearch}>×</Text>
             </TouchableOpacity>
@@ -501,7 +580,10 @@ export default function ExplorerRework({
           style={styles.filterButton}
           onPress={() => setFilterSheetOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel={translate("explore.rework.openFilters", "Open filters")}
+          accessibilityLabel={translate(
+            "explore.rework.openFilters",
+            "Open filters",
+          )}
         >
           <Icon name="tune" color={colors.primary} size={22} />
           {activeFilterCount > 0 && (
@@ -563,10 +645,14 @@ export default function ExplorerRework({
           {translate("explore.rework.allEvents", "Explore All Events")}
         </Text>
         <Text style={styles.sectionDescription}>
-          {translate("explore.rework.showing", "Showing {visible} of {total} events", {
-            visible: visibleEvents.length,
-            total: sortedEvents.length,
-          })}{" "}
+          {translate(
+            "explore.rework.showing",
+            "Showing {visible} of {total} events",
+            {
+              visible: visibleEvents.length,
+              total: sortedEvents.length,
+            },
+          )}{" "}
           {translate("explore.rework.eventsAcross", "events across {scope}", {
             scope: getExplorerScopeLabel(sortedEvents),
           })}
@@ -575,12 +661,27 @@ export default function ExplorerRework({
       <View style={styles.headerControls}>
         <View
           style={styles.modeSwitcher}
-          accessibilityLabel={translate("explore.rework.eventLayout", "Event layout")}
+          accessibilityLabel={translate(
+            "explore.rework.eventLayout",
+            "Event layout",
+          )}
         >
           {[
-            { key: "list" as const, icon: "view_agenda", label: translate("explore.rework.list", "List") },
-            { key: "grid" as const, icon: "apps", label: translate("explore.rework.grid", "3×3 grid") },
-            { key: "rail" as const, icon: "view_carousel", label: translate("explore.rework.rail", "Rail") },
+            {
+              key: "list" as const,
+              icon: "view_agenda",
+              label: translate("explore.rework.list", "List"),
+            },
+            {
+              key: "grid" as const,
+              icon: "apps",
+              label: translate("explore.rework.grid", "3×3 grid"),
+            },
+            {
+              key: "rail" as const,
+              icon: "view_carousel",
+              label: translate("explore.rework.rail", "Rail"),
+            },
           ].map((item) => (
             <TouchableOpacity
               key={item.key}
@@ -604,14 +705,18 @@ export default function ExplorerRework({
           style={styles.sortMeta}
           onPress={() => setFilterSheetOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel={translate("explore.rework.openFiltersAndSorting", "Open event filters and sorting")}
+          accessibilityLabel={translate(
+            "explore.rework.openFiltersAndSorting",
+            "Open event filters and sorting",
+          )}
         >
           <Icon name="unfold-more" color={colors.text.secondary} size={18} />
           <Text style={styles.sortMetaText}>
             {translate("explore.rework.sortedBy", "Sorted by {sort}", {
-              sort: sortBy === "name"
-                ? translate("explore.rework.name", "Name A–Z")
-                : translate("explore.rework.date", "Date"),
+              sort:
+                sortBy === "name"
+                  ? translate("explore.rework.name", "Name A–Z")
+                  : translate("explore.rework.date", "Date"),
             })}
           </Text>
         </TouchableOpacity>
@@ -624,7 +729,9 @@ export default function ExplorerRework({
     const archive = getExplorerEventStatus(event) === "past";
     const bookmarked = bookmarkedEventIds.includes(event.id);
     const presence = roomPresenceByEventId[event.id];
-    const dateLabel = event.eventDateString || translate("explore.rework.dateToBeAnnounced", "Date to be announced");
+    const dateLabel =
+      event.eventDateString ||
+      translate("explore.rework.dateToBeAnnounced", "Date to be announced");
     const imageSource = resolveEventImageSource(event.image);
     const cardStyle =
       mode === "grid"
@@ -684,9 +791,11 @@ export default function ExplorerRework({
             ]}
             onPress={() => toggleBookmark(event.id)}
             accessibilityRole="button"
-            accessibilityLabel={`${bookmarkedEventIds.includes(event.id)
-              ? translate("explore.rework.removeBookmark", "Remove bookmark")
-              : translate("explore.rework.bookmark", "Bookmark")} ${event.title}`}
+            accessibilityLabel={`${
+              bookmarkedEventIds.includes(event.id)
+                ? translate("explore.rework.removeBookmark", "Remove bookmark")
+                : translate("explore.rework.bookmark", "Bookmark")
+            } ${event.title}`}
           >
             <Icon
               name={bookmarked ? "bookmark" : "bookmark-border"}
@@ -712,23 +821,42 @@ export default function ExplorerRework({
               accessibilityRole="button"
               accessibilityLabel={`Join the room for ${event.title}`}
             >
-              <View style={styles.attendeeDots} accessibilityLabel="Event room attendees">
-                {(presence?.avatarUrls || []).map((avatarUrl, index) => (
-                  <Image
-                    key={avatarUrl || event.id}
-                    source={{
-                      uri: avatarUrl || getEventChatAvatarUrl({ senderId: `${event.id}-attendee-${index}` }),
-                    }}
-                    style={[styles.attendeeAvatar, index > 0 && styles.attendeeDotOffset]}
-                    accessibilityIgnoresInvertColors
-                  />
-                ))}
+              <View
+                style={styles.attendeeDots}
+                accessibilityLabel="Event room attendees"
+              >
+                {(presence?.avatarUrls || []).map(
+                  (avatarUrl: string | null, index: number) => (
+                    <Image
+                      key={avatarUrl || event.id}
+                      source={{
+                        uri:
+                          avatarUrl ||
+                          getEventChatAvatarUrl({
+                            senderId: `${event.id}-attendee-${index}`,
+                          }),
+                      }}
+                      style={[
+                        styles.attendeeAvatar,
+                        index > 0 && styles.attendeeDotOffset,
+                      ]}
+                      accessibilityIgnoresInvertColors
+                    />
+                  ),
+                )}
               </View>
               <Text style={styles.attendeeText}>
                 {presence
                   ? presence.peopleCount === 0
-                    ? translate("eventChat.zeroPeopleInRoom", "0 people in room")
-                    : translate("eventChat.peopleInRoom", "{count} people in room", { count: presence.peopleCount })
+                    ? translate(
+                        "eventChat.zeroPeopleInRoom",
+                        "0 people in room",
+                      )
+                    : translate(
+                        "eventChat.peopleInRoom",
+                        "{count} people in room",
+                        { count: presence.peopleCount },
+                      )
                   : translate("eventChat.joinRoom", "Join the room")}
               </Text>
             </TouchableOpacity>
@@ -743,7 +871,10 @@ export default function ExplorerRework({
       return (
         <View
           style={styles.eventList}
-          accessibilityLabel={translate("explore.rework.loadingEvents", "Loading events")}
+          accessibilityLabel={translate(
+            "explore.rework.loadingEvents",
+            "Loading events",
+          )}
         >
           {[0, 1, 2].map((index) => (
             <View
@@ -767,7 +898,10 @@ export default function ExplorerRework({
           <Text style={styles.emptyTitle}>
             {query
               ? `${translate("explore.rework.noEventsMatch", "No events match “{query}”", { query })}`
-              : translate("explore.rework.noEvents", "No events are available yet")}
+              : translate(
+                  "explore.rework.noEvents",
+                  "No events are available yet",
+                )}
           </Text>
           <Text style={styles.emptyDescription}>
             {translate(
@@ -830,7 +964,8 @@ export default function ExplorerRework({
               {translate("explore.quickAccess", "Quick Access")}
             </Text>
             <Text style={styles.quickSubtitle}>
-              {translate("explore.quickAccess.forEvent", "For")} {activeEvent.title}
+              {translate("explore.quickAccess.forEvent", "For")}{" "}
+              {activeEvent.title}
             </Text>
           </View>
         </View>
@@ -926,7 +1061,10 @@ export default function ExplorerRework({
             scrollRef.current?.scrollTo({ y: 0, animated: true });
           }}
           accessibilityRole="button"
-          accessibilityLabel={translate("explore.rework.scrollToTop", "Scroll to top")}
+          accessibilityLabel={translate(
+            "explore.rework.scrollToTop",
+            "Scroll to top",
+          )}
         >
           <Icon name="arrow-upward" color="#fff" size={22} />
         </TouchableOpacity>
@@ -941,7 +1079,10 @@ export default function ExplorerRework({
           <View style={styles.searchLayerTop}>
             <TouchableOpacity
               onPress={() => setSearchOpen(false)}
-              accessibilityLabel={translate("explore.rework.closeSearch", "Close search")}
+              accessibilityLabel={translate(
+                "explore.rework.closeSearch",
+                "Close search",
+              )}
             >
               <Icon name="arrow-back" color={colors.text.primary} size={24} />
             </TouchableOpacity>
@@ -949,10 +1090,16 @@ export default function ExplorerRework({
               autoFocus
               value={query}
               onChangeText={setQuery}
-              placeholder={translate("explore.rework.search", "Search events, cities, series")}
+              placeholder={translate(
+                "explore.rework.search",
+                "Search events, cities, series",
+              )}
               placeholderTextColor={colors.text.secondary}
               style={styles.searchLayerInput}
-              accessibilityLabel={translate("explore.rework.searchEvents", "Search events")}
+              accessibilityLabel={translate(
+                "explore.rework.searchEvents",
+                "Search events",
+              )}
             />
           </View>
           <View style={styles.searchLayerBody}>
@@ -1012,7 +1159,10 @@ export default function ExplorerRework({
           <TouchableOpacity
             style={styles.sheetDismiss}
             onPress={() => setFilterSheetOpen(false)}
-            accessibilityLabel={translate("explore.rework.closeFilters", "Close filters")}
+            accessibilityLabel={translate(
+              "explore.rework.closeFilters",
+              "Close filters",
+            )}
           />
           <View style={styles.filterSheet}>
             <ScrollView
@@ -1067,7 +1217,10 @@ export default function ExplorerRework({
                 <TextInput
                   value={filterFromDate}
                   onChangeText={setFilterFromDate}
-                  placeholder={translate("explore.rework.fromDate", "From · any date")}
+                  placeholder={translate(
+                    "explore.rework.fromDate",
+                    "From · any date",
+                  )}
                   placeholderTextColor={colors.text.secondary}
                   style={styles.dateField}
                   accessibilityLabel="Filter from date"
@@ -1075,7 +1228,10 @@ export default function ExplorerRework({
                 <TextInput
                   value={filterToDate}
                   onChangeText={setFilterToDate}
-                  placeholder={translate("explore.rework.toDate", "To · any date")}
+                  placeholder={translate(
+                    "explore.rework.toDate",
+                    "To · any date",
+                  )}
                   placeholderTextColor={colors.text.secondary}
                   style={styles.dateField}
                   accessibilityLabel="Filter to date"
@@ -1155,7 +1311,10 @@ export default function ExplorerRework({
                   accessibilityState={{ checked: onlyPasses }}
                 >
                   <Text style={styles.accessText}>
-                    {translate("explore.rework.onlyPasses", "Only events I hold a pass for")}
+                    {translate(
+                      "explore.rework.onlyPasses",
+                      "Only events I hold a pass for",
+                    )}
                   </Text>
                   <View
                     style={[styles.toggle, onlyPasses && styles.toggleActive]}
@@ -1174,10 +1333,12 @@ export default function ExplorerRework({
                 {translate("explore.rework.sortBy", "Sort by")}
               </Text>
               <View style={styles.sortOptions}>
-                {([
-                  ["date", translate("explore.rework.date", "Date")],
-                  ["name", translate("explore.rework.name", "Name A–Z")],
-                ] as const).map(([value, label]) => (
+                {(
+                  [
+                    ["date", translate("explore.rework.date", "Date")],
+                    ["name", translate("explore.rework.name", "Name A–Z")],
+                  ] as const
+                ).map(([value, label]) => (
                   <TouchableOpacity
                     key={value}
                     style={styles.sortOption}

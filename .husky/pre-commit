@@ -28,6 +28,9 @@ if [ "$secret_scan_ran" -eq 0 ]; then
 fi
 
 echo "📘 Checking README sync..."
+echo "🌐 Checking dashboard translations (en/es/ko)..."
+pnpm --dir apps/mobile-app run check:dashboard-translations
+
 if [ "$versioning_available" -eq 1 ]; then
   pnpm -s run readme:check
 else
