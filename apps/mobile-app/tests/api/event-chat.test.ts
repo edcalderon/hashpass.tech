@@ -127,6 +127,39 @@ describe("event chat authorization api", () => {
     });
   });
 
+  it("keeps direct-message replies inside the selected conversation", async () => {
+    const roomQuery = queryResult({ event_id: "colombia2026" });
+    const passQueries = [
+      queryResult([{ pass_type: "vip" }]),
+      queryResult([{ pass_type: "business" }]),
+    ];
+    const replyQuery = queryResult({
+      id: "reply-1",
+      event_id: "colombia2026",
+      sender_id: "c1c4f770-7ad6-4f8c-96c4-5b7e6e2ee2ef",
+      recipient_id: "11111111-1111-4111-8111-111111111111",
+    });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "event_chat_rooms") return roomQuery;
+      if (table === "passes") return passQueries.shift();
+      if (table === "event_chat_direct_messages") return replyQuery;
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const response = await post({
+      action: "send",
+      channel: "direct",
+      recipientId: "c1c4f770-7ad6-4f8c-96c4-5b7e6e2ee2ef",
+      replyToMessageId: "6f9e2d7e-94ae-4f08-9f25-8b0b1db4e7a1",
+      message: "hello",
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "The reply target is not part of this direct conversation",
+    });
+  });
+
   it("lets business pass holders send room emoji messages through the serialized server function", async () => {
     const roomQuery = queryResult({ event_id: "colombia2026" });
     const passQuery = queryResult([{ pass_type: "business" }]);

@@ -134,6 +134,25 @@ async function requirePass(supabase: any, userId: string, eventId: string) {
   return { passType, permissions: getEventChatPermissions(passType) };
 }
 
+async function isValidDirectReplyTarget(
+  supabase: any,
+  eventId: string,
+  senderId: string,
+  recipientId: string,
+  replyToMessageId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("event_chat_direct_messages")
+    .select("id,sender_id,recipient_id,event_id")
+    .eq("id", replyToMessageId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return false;
+  const participants = new Set([senderId, recipientId]);
+  return participants.has(data.sender_id) && participants.has(data.recipient_id);
+}
+
 async function getRoomPresence(supabase: any, eventId: string): Promise<ChatPresence> {
   const activeSince = new Date(Date.now() - 90_000).toISOString();
   const { data: rows, error } = await supabase
@@ -412,6 +431,15 @@ export async function POST(request: Request) {
       const recipientPassType = await getPassType(supabase, recipientId, eventId);
       if (!recipientPassType) {
         return jsonError("The recipient must hold an active pass for this event", 403);
+      }
+      if (replyToMessageId && !(await isValidDirectReplyTarget(
+        supabase,
+        eventId,
+        auth.userId,
+        recipientId,
+        replyToMessageId,
+      ))) {
+        return jsonError("The reply target is not part of this direct conversation", 400);
       }
       table = "event_chat_direct_messages";
       payload.recipient_id = recipientId;
