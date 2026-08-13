@@ -6,6 +6,13 @@ type PassApiResponse<T> =
   | { success: true; data: T }
   | { success: false; data?: T | null; error: string };
 
+const unwrapApiData = <T>(payload: unknown): T | null => {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return (payload as { data?: T }).data ?? null;
+  }
+  return (payload as T | null) ?? null;
+};
+
 const SUPABASE_AUTH_USER_ID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PASS_STORAGE_EVENT_ID_ALIASES: Record<string, string> = {
@@ -183,7 +190,8 @@ class PassSystemService {
       params,
     })) as PassApiResponse<EventPassInfo[]>;
     if (!response.success) throw new Error(response.error);
-    return Array.isArray(response.data) ? response.data : [];
+    const passes = unwrapApiData<EventPassInfo[]>(response.data);
+    return Array.isArray(passes) ? passes : [];
   }
 
   // Get user's pass information with real meeting request counts
@@ -494,7 +502,7 @@ class PassSystemService {
         );
         return null;
       }
-      return response.data?.passId || null;
+      return unwrapApiData<{ passId?: string }>(response.data)?.passId || null;
     } catch (error) {
       console.error(
         "Error in createDefaultPass:",
@@ -551,8 +559,8 @@ class PassSystemService {
       })) as PassApiResponse<EventPassTier[]>;
       if (
         !response.success ||
-        !Array.isArray(response.data) ||
-        response.data.length === 0
+        !Array.isArray(unwrapApiData<EventPassTier[]>(response.data)) ||
+        unwrapApiData<EventPassTier[]>(response.data)?.length === 0
       ) {
         return DEFAULT_EVENT_PASS_TIERS.map((tier) => ({
           ...tier,
@@ -560,7 +568,8 @@ class PassSystemService {
         }));
       }
 
-      return response.data
+      const tiers = unwrapApiData<EventPassTier[]>(response.data) || [];
+      return tiers
         .filter(
           (tier): tier is EventPassTier =>
             tier &&

@@ -18,6 +18,7 @@ export default function ExploreScreen() {
   const isGlobalExplorer = isMainBranch;
   const routeEventIdParam =
     typeof params.eventId === "string" ? params.eventId : undefined;
+  const isTourView = params.tour === "bsl-on-tour";
   const currentEventFromRoute = getCurrentEvent(routeEventIdParam);
   const currentEventInfo: EventInfo | null = currentEventFromRoute
     ? currentEventFromRoute
@@ -28,11 +29,17 @@ export default function ExploreScreen() {
       : availableEvents[0] || null;
 
   const [selectedEvent, setSelectedEvent] = useState<EventInfo | null>(
-    isGlobalExplorer ? null : currentEventInfo,
+    isTourView || isGlobalExplorer ? null : currentEventInfo,
   );
   const lastSyncedRouteEventIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
+    if (isTourView) {
+      lastSyncedRouteEventIdRef.current = undefined;
+      setSelectedEvent(null);
+      return;
+    }
+
     if (
       !routeEventIdParam ||
       routeEventIdParam === lastSyncedRouteEventIdRef.current
@@ -42,7 +49,7 @@ export default function ExploreScreen() {
 
     const matchedEvent = getCurrentEvent(routeEventIdParam);
     if (matchedEvent) setSelectedEvent(matchedEvent);
-  }, [routeEventIdParam]);
+  }, [isTourView, routeEventIdParam]);
 
   return (
     <ExplorerRework

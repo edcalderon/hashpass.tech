@@ -2,6 +2,27 @@ import type { EventContinent } from "@hashpass/types";
 
 export type ExplorerLayoutMode = "list" | "grid" | "rail";
 
+export interface ExplorerHeroActionTarget {
+  route: string;
+  eventId?: string;
+}
+
+export const getExplorerHeroActionTarget = (
+  action: string,
+): ExplorerHeroActionTarget | null => {
+  switch (action) {
+    case "Get your pass":
+      return {
+        route: "/(shared)/dashboard/explore?eventId=colombia2026",
+        eventId: "colombia2026",
+      };
+    case "Explore the tour":
+      return { route: "/(shared)/dashboard/explore?tour=bsl-on-tour" };
+    default:
+      return null;
+  }
+};
+
 export interface ExplorerEvent {
   id: string;
   title: string;
@@ -15,7 +36,6 @@ export interface ExplorerEvent {
   series?: string;
   continent?: EventContinent;
   hasPass?: boolean;
-  isFree?: boolean;
   color?: string;
   tourRole?: "hub" | "stop" | "archive" | string;
   image?: string;
@@ -30,8 +50,7 @@ export interface ExplorerFilters {
   series?: string[];
   cityKey?: string;
   onlyPasses?: boolean;
-  onlyFree?: boolean;
-  sortBy?: "date" | "name" | "nearest";
+  sortBy?: "date" | "name";
 }
 
 export interface ExplorerLayout {
@@ -97,7 +116,6 @@ export const filterExplorerEvents = (
       return false;
     }
     if (filters.onlyPasses && event.hasPass !== true) return false;
-    if (filters.onlyFree && event.isFree !== true) return false;
     if (!query) return true;
 
     return [
@@ -115,7 +133,7 @@ export const filterExplorerEvents = (
 export const sortExplorerEvents = (
   events: ExplorerEvent[],
   bookmarkedEventIds: string[] = [],
-  sortBy: "date" | "name" | "nearest" = "date",
+  sortBy: "date" | "name" = "date",
 ): ExplorerEvent[] => {
   const bookmarked = new Set(bookmarkedEventIds);
 
@@ -125,12 +143,6 @@ export const sortExplorerEvents = (
     if (bookmarkOrder !== 0) return bookmarkOrder;
 
     if (sortBy === "name") return a.title.localeCompare(b.title);
-    if (sortBy === "nearest") {
-      return (a.city || a.country || "").localeCompare(
-        b.city || b.country || "",
-      );
-    }
-
     const aStart = a.eventStartDate ? Date.parse(a.eventStartDate) : NaN;
     const bStart = b.eventStartDate ? Date.parse(b.eventStartDate) : NaN;
     const aSortable = Number.isFinite(aStart)
@@ -215,7 +227,6 @@ export const getActiveFilterCount = (filters: ExplorerFilters): number => {
     (filters.series?.length ? 1 : 0) +
     (filters.cityKey && filters.cityKey !== "all" ? 1 : 0) +
     (filters.onlyPasses ? 1 : 0) +
-    (filters.onlyFree ? 1 : 0) +
     (filters.sortBy && filters.sortBy !== "date" ? 1 : 0)
   );
 };

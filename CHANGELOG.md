@@ -1,3 +1,12 @@
+## [1.8.339](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.338...v1.8.339) (2026-08-13)
+
+
+### Bug Fixes
+
+* secure pass provisioning and explorer filters ([997a04f](https://github.com/hashpass-tech/hashpass.tech/commit/997a04fb17f7040958c41fa4969e2dd82837e1c1))
+### Release Highlights
+- secure pass provisioning and explorer filters
+
 ## [1.8.338](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.337...v1.8.338) (2026-08-13)
 
 

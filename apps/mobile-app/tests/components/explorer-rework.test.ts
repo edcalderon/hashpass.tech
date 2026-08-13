@@ -1,6 +1,7 @@
 import {
   filterExplorerEvents,
   getExplorerEventStatus,
+  getExplorerHeroActionTarget,
   getExplorerLayout,
   getExplorerScopeLabel,
   getActiveFilterCount,
@@ -127,5 +128,16 @@ describe("explorer rework behavior", () => {
   it("counts only active filters for the filter badge", () => {
     expect(getActiveFilterCount({ query: "", includePast: true })).toBe(0);
     expect(getActiveFilterCount({ query: "peru", includePast: false })).toBe(2);
+  });
+
+  it("routes pass and tour hero actions to their distinct destinations", () => {
+    expect(getExplorerHeroActionTarget("Get your pass")).toEqual({
+      route: "/(shared)/dashboard/explore?eventId=colombia2026",
+      eventId: "colombia2026",
+    });
+    expect(getExplorerHeroActionTarget("Explore the tour")).toEqual({
+      route: "/(shared)/dashboard/explore?tour=bsl-on-tour",
+    });
+    expect(getExplorerHeroActionTarget("Unknown action")).toBeNull();
   });
 });

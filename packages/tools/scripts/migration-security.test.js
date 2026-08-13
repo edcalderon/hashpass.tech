@@ -7,6 +7,10 @@ const hardenedPassBackendMigrationPath = path.join(
   root,
   'db/migrations/V067__harden_pass_backend_contract.sql',
 );
+const hardenedPassProvisioningMigrationPath = path.join(
+  root,
+  'db/migrations/V070__harden_default_pass_provisioning.sql',
+);
 const meetingLifecycleMigrationPath = path.join(
   root,
   'db/migrations/V018__event_scoped_meeting_rpc_contract.sql',
@@ -492,5 +496,19 @@ describe('backend-only pass contract migration', () => {
     expect(migration).toMatch(/RETURNING id::text INTO v_return_id/i);
     expect(migration).toMatch(/v_pass_number_type/i);
     expect(migration).toMatch(/SET pass_number = \$1 WHERE id::text = \$2/i);
+  });
+
+  it('serializes provisioning and inserts text pass numbers before NOT NULL checks', () => {
+    const migration = fs.readFileSync(hardenedPassProvisioningMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/pg_advisory_xact_lock/i);
+    expect(migration).toMatch(/hashtextextended\('hashpass:pass:/i);
+    expect(migration).toMatch(/IF v_pass_number_type IN \('text', 'character varying'\)/i);
+    expect(migration).toMatch(/id, user_id, event_id, pass_type, status, pass_number/i);
+    expect(migration).toMatch(/RETURNING id::text/i);
+    expect(config.groups['upcoming-bsl-passes']).toContain(
+      'db/migrations/V070__harden_default_pass_provisioning.sql',
+    );
   });
 });
