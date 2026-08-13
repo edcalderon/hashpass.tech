@@ -190,7 +190,8 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
     setReplyTo(null);
   };
 
-  const openMessageProfile = (senderId: string, senderName: string) => {
+  const openMessageProfile = (senderId: string | null, senderName: string) => {
+    if (!senderId) return;
     if (senderId === (viewerId || dbUserId)) return;
     if (permissions.canSendDirect) {
       setRecipientId(senderId);
@@ -457,8 +458,9 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
           )}
           {messages.map((message) => (
             (() => {
-              const isOwnMessage = message.sender_id === (viewerId || dbUserId);
+              const isOwnMessage = message.is_own_message ?? message.sender_id === (viewerId || dbUserId);
               const senderName = message.sender_name || "HASHPASS member";
+              const canOpenProfile = Boolean(message.sender_id) && !message.is_anonymous && !isOwnMessage;
               const repliedMessage = message.reply_to_message_id
                 ? messages.find((candidate) => candidate.id === message.reply_to_message_id)
                 : null;
@@ -480,7 +482,7 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
                   style={styles.avatar}
                   accessibilityLabel={`${senderName} avatar`}
                 />
-              ) : (
+              ) : canOpenProfile ? (
                 <TouchableOpacity
                   onPress={() => openMessageProfile(message.sender_id, senderName)}
                   accessibilityRole="button"
@@ -499,12 +501,25 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
                     accessibilityLabel={`${senderName} avatar`}
                   />
                 </TouchableOpacity>
+              ) : (
+                <Image
+                  source={{
+                    uri: getEventChatAvatarUrl({
+                      senderId: message.sender_id,
+                      senderName: message.sender_name,
+                      senderAvatarUrl: message.sender_avatar_url,
+                      isAnonymous: message.is_anonymous || message.sender_name === "Anonymous",
+                    }),
+                  }}
+                  style={styles.avatar}
+                  accessibilityLabel={`${senderName} avatar`}
+                />
               )}
               <View style={styles.messageColumn}>
                 <View style={styles.messageMeta}>
                   {isOwnMessage ? (
                     <Text style={styles.messageAuthor}>{senderName}</Text>
-                  ) : (
+                  ) : canOpenProfile ? (
                     <TouchableOpacity
                       onPress={() => openMessageProfile(message.sender_id, senderName)}
                       accessibilityRole="button"
@@ -512,6 +527,8 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
                     >
                       <Text style={styles.messageAuthor}>{senderName}</Text>
                     </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.messageAuthor}>{senderName}</Text>
                   )}
                   <Text style={styles.messageTime}>{formatMessageTime(message.created_at)}</Text>
                 </View>

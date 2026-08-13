@@ -14,6 +14,7 @@ const queryResult = (data: unknown, error: unknown = null) => {
     in: jest.fn(() => query),
     gt: jest.fn(() => query),
     order: jest.fn(() => query),
+    or: jest.fn(() => query),
     limit: jest.fn(() => query),
     maybeSingle: jest.fn(async () => ({ data, error })),
     insert: jest.fn((payload: unknown) => {
@@ -76,11 +77,11 @@ describe("event chat authorization api", () => {
     );
   };
 
-  const get = async (eventId = "colombia2026") => {
+  const get = async (eventId = "colombia2026", params = "channel=room") => {
     /* eslint-disable-next-line @typescript-eslint/no-require-imports */
     const { GET } = require("../../app/api/events/[eventId]/chat+api");
     return GET(
-      new Request(`https://api.hashpass.tech/api/events/${eventId}/chat?channel=room`),
+      new Request(`https://api.hashpass.tech/api/events/${eventId}/chat?${params}`),
     );
   };
 
@@ -168,6 +169,7 @@ describe("event chat authorization api", () => {
       if (table === "event_chat_rooms") return roomQuery;
       if (table === "passes") return passQuery;
       if (table === "event_chat_messages") return messageQuery;
+      if (table === "user_profiles") return queryResult([]);
       throw new Error(`Unexpected table ${table}`);
     });
 
@@ -202,6 +204,7 @@ describe("event chat authorization api", () => {
       if (table === "event_chat_rooms") return roomQuery;
       if (table === "passes") return passQuery;
       if (table === "event_chat_messages") return messageQuery;
+      if (table === "user_profiles") return queryResult([]);
       throw new Error(`Unexpected table ${table}`);
     });
 
@@ -241,11 +244,21 @@ describe("event chat authorization api", () => {
   it("stores Anonymous when a sender chooses the anonymous display mode", async () => {
     const roomQuery = queryResult({ event_id: "colombia2026" });
     const passQuery = queryResult([{ pass_type: "business" }]);
-    const messageQuery = queryResult(null);
+    const messageQuery = queryResult({
+      id: "anonymous-message-1",
+      event_id: "colombia2026",
+      sender_id: userId,
+      sender_display_name: "Anonymous",
+      message: "Please keep it focused.",
+      message_type: "text",
+      reply_to_message_id: null,
+      created_at: "2026-08-13T23:19:00.000Z",
+    });
     mockFrom.mockImplementation((table: string) => {
       if (table === "event_chat_rooms") return roomQuery;
       if (table === "passes") return passQuery;
       if (table === "event_chat_messages") return messageQuery;
+      if (table === "user_profiles") return queryResult([]);
       throw new Error(`Unexpected table ${table}`);
     });
 
@@ -260,6 +273,82 @@ describe("event chat authorization api", () => {
     expect(messageQuery.rpcParams).toMatchObject({
       p_sender_display_name: "Anonymous",
     });
+    expect(await response.json()).toMatchObject({
+      data: {
+        sender_id: null,
+        sender_name: "Anonymous",
+        is_anonymous: true,
+        is_own_message: true,
+      },
+    });
+  });
+
+  it("lets a non-VIP recipient read a scoped direct conversation", async () => {
+    const recipientId = "c1c4f770-7ad6-4f8c-96c4-5b7e6e2ee2ef";
+    const roomQuery = queryResult({ event_id: "colombia2026" });
+    const viewerPassQuery = queryResult([{ pass_type: "business" }]);
+    const recipientPassQuery = queryResult([{ pass_type: "general" }]);
+    const directQuery = queryResult([]);
+    const presenceQuery = queryResult([]);
+    const passQueries = [viewerPassQuery, recipientPassQuery];
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "event_chat_rooms") return roomQuery;
+      if (table === "passes") return passQueries.shift();
+      if (table === "event_chat_direct_messages") return directQuery;
+      if (table === "event_chat_presence") return presenceQuery;
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const response = await get("colombia2026", `channel=direct&recipientId=${recipientId}`);
+
+    expect(response.status).toBe(200);
+    expect(directQuery.or).toHaveBeenCalledWith(
+      `and(sender_id.eq.${userId},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${userId})`,
+    );
+  });
+
+  it("returns the newest message page in chronological order", async () => {
+    const roomQuery = queryResult({ event_id: "colombia2026" });
+    const passQuery = queryResult([{ pass_type: "general" }]);
+    const presenceQuery = queryResult([]);
+    const messageQuery = queryResult([
+      {
+        id: "newest",
+        event_id: "colombia2026",
+        sender_id: userId,
+        sender_display_name: null,
+        message: "newest",
+        message_type: "text",
+        reply_to_message_id: null,
+        created_at: "2026-08-13T23:20:00.000Z",
+      },
+      {
+        id: "older",
+        event_id: "colombia2026",
+        sender_id: userId,
+        sender_display_name: null,
+        message: "older",
+        message_type: "text",
+        reply_to_message_id: null,
+        created_at: "2026-08-13T23:19:00.000Z",
+      },
+    ]);
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "event_chat_rooms") return roomQuery;
+      if (table === "passes") return passQuery;
+      if (table === "event_chat_presence") return presenceQuery;
+      if (table === "event_chat_messages") return messageQuery;
+      if (table === "user_profiles") return queryResult([]);
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const response = await get();
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(messageQuery.order).toHaveBeenNthCalledWith(1, "created_at", { ascending: false });
+    expect(messageQuery.order).toHaveBeenNthCalledWith(2, "id", { ascending: false });
+    expect(payload.data.messages.map((message: { id: string }) => message.id)).toEqual(["older", "newest"]);
   });
 
   it("reads room messages using the room schema without a direct-message recipient column", async () => {

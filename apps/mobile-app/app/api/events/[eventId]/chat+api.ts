@@ -51,6 +51,14 @@ type SenderIdentity = {
   avatarUrl: string | null;
 };
 
+type PublicChatMessage = Omit<ChatMessageRow, "sender_id"> & {
+  sender_id: string | null;
+  sender_name: string;
+  sender_avatar_url: string | null;
+  is_anonymous: boolean;
+  is_own_message: boolean;
+};
+
 type ChatPresence = {
   peopleCount: number;
   avatarUrls: Array<string | null>;
@@ -185,9 +193,9 @@ async function getRoomPresence(supabase: any, eventId: string): Promise<ChatPres
   };
 }
 
-async function addSenderNames(supabase: any, messages: ChatMessageRow[]) {
+async function addSenderNames(supabase: any, messages: ChatMessageRow[], viewerId: string): Promise<PublicChatMessage[]> {
   const senderIds: string[] = Array.from(new Set(messages.map((message) => message.sender_id)));
-  if (!senderIds.length) return messages;
+  if (!senderIds.length) return messages as PublicChatMessage[];
 
   const { data, error } = await supabase
     .from("user_profiles")
@@ -228,13 +236,20 @@ async function addSenderNames(supabase: any, messages: ChatMessageRow[]) {
       if (profile) names.set(profile[0], profile[1]);
     }
   }
-  return messages.map((message) => ({
-    ...message,
-    sender_name: message.sender_display_name?.trim() || names.get(message.sender_id)?.name || "HASHPASS member",
-    sender_avatar_url: message.sender_display_name?.trim() === "Anonymous"
-      ? null
-      : names.get(message.sender_id)?.avatarUrl || null,
-  }));
+  return messages.map((message) => {
+    const isAnonymous = message.sender_display_name?.trim() === "Anonymous";
+    return {
+      ...message,
+      // Never expose a stable account identifier for anonymous messages.
+      // is_own_message lets the viewer align their own message without
+      // giving them a value that can be resolved through the members API.
+      sender_id: isAnonymous ? null : message.sender_id,
+      sender_name: isAnonymous ? "Anonymous" : names.get(message.sender_id)?.name || "HASHPASS member",
+      sender_avatar_url: isAnonymous ? null : names.get(message.sender_id)?.avatarUrl || null,
+      is_anonymous: isAnonymous,
+      is_own_message: message.sender_id === viewerId,
+    };
+  });
 }
 
 export async function GET(request: Request) {
@@ -254,8 +269,16 @@ export async function GET(request: Request) {
     if (channel !== "room" && channel !== "direct" && channel !== "members" && channel !== "presence") {
       return jsonError("Unsupported chat channel", 400);
     }
-    if ((channel === "direct" || channel === "members") && !access.permissions.canSendDirect) {
+    const recipientId = channel === "direct"
+      ? new URL(request.url).searchParams.get("recipientId")
+      : null;
+    if (channel === "members" && !access.permissions.canSendDirect) {
       return jsonError("A VIP pass is required for direct messages", 403);
+    }
+    // A non-VIP attendee may read a direct conversation addressed to them,
+    // but only VIPs may browse the member directory or unscoped inbox.
+    if (channel === "direct" && !recipientId && !access.permissions.canSendDirect) {
+      return jsonError("A VIP pass is required to browse direct messages", 403);
     }
 
     if (channel === "members") {
@@ -325,10 +348,12 @@ export async function GET(request: Request) {
       .from(channel === "room" ? "event_chat_messages" : "event_chat_direct_messages")
       .select(channel === "room" ? ROOM_MESSAGE_COLUMNS : DIRECT_MESSAGE_COLUMNS)
       .eq("event_id", eventId)
-      .order("created_at", { ascending: true })
+      // Limit the newest page, then reverse it before returning so the UI
+      // renders chronological messages without dropping recent activity.
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(MAX_MESSAGES);
     if (channel === "direct") {
-      const recipientId = new URL(request.url).searchParams.get("recipientId");
       if (recipientId && !UUID_PATTERN.test(recipientId)) return jsonError("A valid recipient is required", 400);
       if (recipientId) {
         const recipientPassType = await getPassType(supabase, recipientId, eventId);
@@ -342,6 +367,7 @@ export async function GET(request: Request) {
     }
     const { data, error } = await query;
     if (error) throw error;
+    const newestMessages = [...((data || []) as ChatMessageRow[])].reverse();
     return Response.json({
       data: {
         eventId,
@@ -349,9 +375,9 @@ export async function GET(request: Request) {
         passType: access.passType,
         permissions: access.permissions,
         presence: await getRoomPresence(supabase, eventId),
-        messages: await addSenderNames(supabase, (data || []) as ChatMessageRow[]),
+        messages: await addSenderNames(supabase, newestMessages, auth.userId),
         roomRateLimit: channel === "room"
-          ? getRoomRateLimit((data || []) as ChatMessageRow[], auth.userId)
+          ? getRoomRateLimit(newestMessages, auth.userId)
           : null,
       },
     }, { headers: PRIVATE_HEADERS });
@@ -461,7 +487,10 @@ export async function POST(request: Request) {
         .single();
     const { data, error } = result;
     if (error) throw error;
-    return Response.json({ data }, { status: 201, headers: PRIVATE_HEADERS });
+    const [publicMessage] = data && typeof data === "object" && "sender_id" in data
+      ? await addSenderNames(supabase, [data as ChatMessageRow], auth.userId)
+      : [data];
+    return Response.json({ data: publicMessage }, { status: 201, headers: PRIVATE_HEADERS });
   } catch (error) {
     if (isChatRateLimitError(error)) {
       return Response.json({

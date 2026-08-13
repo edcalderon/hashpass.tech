@@ -49,6 +49,7 @@
     "event-catalog",
     "speaker-identity-claims",
     "event-pass-tiers",
+    "event-chat",
     "admin-pass-management",
     "admin-matchmaking-communications"
   ],

@@ -6,10 +6,12 @@ export type EventChatChannel = "room" | "direct" | "members";
 export type EventChatMessage = {
   id: string;
   event_id: string;
-  sender_id: string;
+  sender_id: string | null;
   recipient_id?: string | null;
   sender_name?: string;
   sender_avatar_url?: string | null;
+  is_anonymous?: boolean;
+  is_own_message?: boolean;
   message: string;
   message_type: "text" | "emoji";
   reply_to_message_id?: string | null;
