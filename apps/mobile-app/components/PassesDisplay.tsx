@@ -509,7 +509,9 @@ function PassesDisplayInner({
                   borderWidth: 1,
                   borderColor: colors.divider
                 }}
-                onPress={() => createDefaultPass('business')}
+                accessibilityLabel="Purchase Business pass"
+                accessibilityRole="button"
+                onPress={() => void openEventPurchaseSite()}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text.primary }}>
@@ -551,7 +553,9 @@ function PassesDisplayInner({
                   borderWidth: 1,
                   borderColor: colors.divider
                 }}
-                onPress={() => createDefaultPass('vip')}
+                accessibilityLabel="Purchase VIP pass"
+                accessibilityRole="button"
+                onPress={() => void openEventPurchaseSite()}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text.primary }}>

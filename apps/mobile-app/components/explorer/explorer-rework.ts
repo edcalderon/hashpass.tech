@@ -2,6 +2,27 @@ import type { EventContinent } from "@hashpass/types";
 
 export type ExplorerLayoutMode = "list" | "grid" | "rail";
 
+export interface ExplorerHeroActionTarget {
+  route: string;
+  eventId?: string;
+}
+
+export const getExplorerHeroActionTarget = (
+  action: string,
+): ExplorerHeroActionTarget | null => {
+  switch (action) {
+    case "Get your pass":
+      return {
+        route: "/(shared)/dashboard/explore?eventId=colombia2026",
+        eventId: "colombia2026",
+      };
+    case "Explore the tour":
+      return { route: "/(shared)/dashboard/explore?tour=bsl-on-tour" };
+    default:
+      return null;
+  }
+};
+
 export interface ExplorerEvent {
   id: string;
   title: string;

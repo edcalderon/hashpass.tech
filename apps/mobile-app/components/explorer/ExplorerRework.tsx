@@ -27,6 +27,7 @@ import {
   filterExplorerEvents,
   getActiveFilterCount,
   getExplorerEventStatus,
+  getExplorerHeroActionTarget,
   getExplorerLayout,
   getExplorerScopeLabel,
   sortExplorerEvents,
@@ -185,7 +186,7 @@ export default function ExplorerRework({
       .then(({ passSystemService }) =>
         passSystemService.getAllUserPasses(dbUserId),
       )
-      .then((passes) => {
+      .then((passes: { event_id: string }[]) => {
         if (mounted) setPassEventIds(passes.map((pass) => pass.event_id));
       })
       .catch(() => {
@@ -337,11 +338,10 @@ export default function ExplorerRework({
   };
 
   const handleHeroAction = (action: string) => {
-    const nextEventId = "colombia2026";
-    router.push(`/(shared)/dashboard/explore?eventId=${nextEventId}` as any);
-    if (action === "Get your pass") {
-      selectEvent(nextEventId);
-    }
+    const target = getExplorerHeroActionTarget(action);
+    if (!target) return;
+    router.push(target.route as any);
+    if (target.eventId) selectEvent(target.eventId);
   };
 
   const renderHero = () => {
