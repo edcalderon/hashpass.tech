@@ -117,7 +117,12 @@
     "joinRoom": "Join the room",
     "zeroPeopleInRoom": "0 people in room",
     "peopleInRoom": "{count} people in room",
-    "live": "Live"
+    "live": "Live",
+    "reply": "Reply",
+    "replyToMessage": "Reply to message",
+    "replyingTo": "Replying to {name}",
+    "cancelReply": "Cancel reply",
+    "replyBeforeSending": "You have sent {count} messages in a row. Wait for another attendee to reply before sending more."
   },
   "common": {
     "back": "Back",

@@ -62,7 +62,13 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [permissions, setPermissions] = useState(() => getEventChatPermissions(null));
   const [presence, setPresence] = useState<EventChatPresence>({ peopleCount: 0, avatarUrls: [] });
+  const [roomRateLimit, setRoomRateLimit] = useState<{
+    limit: number;
+    consecutiveMessages: number;
+    waitingForReply: boolean;
+  } | null>(null);
   const [draft, setDraft] = useState("");
+  const [replyTo, setReplyTo] = useState<EventChatMessage | null>(null);
   const [emojiCategory, setEmojiCategory] = useState<ChatEmojiCategoryId>("reactions");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -84,7 +90,8 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
     null;
 
   const selectedMember = members.find((member) => member.userId === recipientId) || null;
-  const canSend = channel === "room" ? permissions.canSendRoom : permissions.canSendDirect;
+  const canSend = (channel === "room" ? permissions.canSendRoom : permissions.canSendDirect) &&
+    !(channel === "room" && roomRateLimit?.waitingForReply);
   const accessCopy = getEventChatAccessCopy(isPastEvent);
   const localizedAccessCopy = {
     ...accessCopy,
@@ -106,6 +113,8 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
     setViewerId(null);
     setPermissions(getEventChatPermissions(null));
     setPresence({ peopleCount: 0, avatarUrls: [] });
+    setRoomRateLimit(null);
+    setReplyTo(null);
     setError(null);
     setAccessDenied(false);
     accessDeniedRef.current = false;
@@ -133,6 +142,7 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
       setPassType(data.passType);
       setPermissions(data.permissions);
       setPresence(data.presence || { peopleCount: 0, avatarUrls: [] });
+      setRoomRateLimit(channel === "room" ? data.roomRateLimit || null : null);
       setMessages(data.messages);
       setError(null);
       setAccessDenied(false);
@@ -177,6 +187,7 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
     setAccessDenied(false);
     setError(null);
     if (nextChannel === "room") setRecipientId(null);
+    setReplyTo(null);
   };
 
   const openMessageProfile = (senderId: string, senderName: string) => {
@@ -195,7 +206,17 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
 
   const sendMessage = async (message: string, messageType: "text" | "emoji" = "text") => {
     const value = message.trim();
-    if (!value || !canSend || sending) return;
+    if (!value || sending) return;
+    if (!canSend) {
+      if (channel === "room" && roomRateLimit?.waitingForReply) {
+        setError(translate(
+          "eventChat.replyBeforeSending",
+          "You have sent {count} messages in a row. Wait for another attendee to reply before sending more.",
+          { count: roomRateLimit.consecutiveMessages },
+        ));
+      }
+      return;
+    }
     if (channel === "direct" && !recipientId) {
       setError("Choose an attendee before sending a direct message.");
       return;
@@ -207,12 +228,17 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
         message: value,
         messageType,
         recipientId: channel === "direct" ? recipientId || undefined : undefined,
+        replyToMessageId: replyTo?.id,
         displayNameMode,
       });
       setDraft("");
+      setReplyTo(null);
       setShowEmojiPicker(false);
       await refreshChat(true);
     } catch (sendError) {
+      if ((sendError as { status?: number }).status === 429) {
+        setRoomRateLimit({ limit: 5, consecutiveMessages: 5, waitingForReply: true });
+      }
       setError(sendError instanceof Error ? sendError.message : "Unable to send this message.");
     } finally {
       setSending(false);
@@ -433,6 +459,9 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
             (() => {
               const isOwnMessage = message.sender_id === (viewerId || dbUserId);
               const senderName = message.sender_name || "HASHPASS member";
+              const repliedMessage = message.reply_to_message_id
+                ? messages.find((candidate) => candidate.id === message.reply_to_message_id)
+                : null;
               return (
             <View
               key={message.id}
@@ -486,9 +515,26 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
                   )}
                   <Text style={styles.messageTime}>{formatMessageTime(message.created_at)}</Text>
                 </View>
+                {repliedMessage && (
+                  <View style={styles.replyQuote}>
+                    <Text style={styles.replyQuoteAuthor} numberOfLines={1}>
+                      {translate("eventChat.replyingTo", "Replying to {name}", { name: repliedMessage.sender_name || "HASHPASS member" })}
+                    </Text>
+                    <Text style={styles.replyQuoteText} numberOfLines={1}>{repliedMessage.message}</Text>
+                  </View>
+                )}
                 <View style={[styles.messageBubble, isOwnMessage && styles.messageBubbleOwn]}>
                   <Text style={styles.messageText}>{message.message}</Text>
                 </View>
+                <TouchableOpacity
+                  style={styles.replyButton}
+                  onPress={() => setReplyTo(message)}
+                  accessibilityRole="button"
+                  accessibilityLabel={translate("eventChat.replyToMessage", "Reply to message")}
+                >
+                  <MaterialIcons name="reply" size={14} color={colors.text.secondary} />
+                  <Text style={styles.replyButtonText}>{translate("eventChat.reply", "Reply")}</Text>
+                </TouchableOpacity>
               </View>
             </View>
               );
@@ -498,6 +544,18 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
       )}
 
       {error && messages.length > 0 && <Text style={styles.inlineError}>{error}</Text>}
+      {!loading && channel === "room" && roomRateLimit?.waitingForReply && (
+        <View style={styles.rateLimitNotice} accessibilityRole="alert">
+          <MaterialIcons name="forum" size={18} color={colors.primary} />
+          <Text style={styles.rateLimitText}>
+            {translate(
+              "eventChat.replyBeforeSending",
+              "You have sent {count} messages in a row. Wait for another attendee to reply before sending more.",
+              { count: roomRateLimit.consecutiveMessages },
+            )}
+          </Text>
+        </View>
+      )}
       {!loading && passType === "general" && (
         <View style={styles.upgradeNotice}>
           <Text style={styles.readOnlyNote}>General pass: you can read this room. Upgrade to Business or VIP to send messages.</Text>
@@ -513,6 +571,17 @@ export default function EventRoomChat({ eventId, eventTitle, isPastEvent = false
       )}
       {canSend && (
         <View style={styles.composerArea}>
+          {replyTo && (
+            <View style={styles.replyComposerBanner}>
+              <View style={styles.replyComposerCopy}>
+                <Text style={styles.replyComposerLabel}>{translate("eventChat.replyingTo", "Replying to {name}", { name: replyTo.sender_name || "HASHPASS member" })}</Text>
+                <Text style={styles.replyComposerText} numberOfLines={1}>{replyTo.message}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setReplyTo(null)} accessibilityRole="button" accessibilityLabel={translate("eventChat.cancelReply", "Cancel reply")}>
+                <MaterialIcons name="close" size={20} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+          )}
           {showEmojiPicker && (
             <View style={styles.emojiPanel}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.emojiCategories}>
@@ -596,12 +665,19 @@ const getStyles = (colors: any) => StyleSheet.create({
   messageBubble: { backgroundColor: colors.background.secondary, borderRadius: 16, borderTopLeftRadius: 5, paddingHorizontal: 13, paddingVertical: 10 },
   messageBubbleOwn: { backgroundColor: colors.primary + "18", borderTopLeftRadius: 16, borderTopRightRadius: 5 },
   messageText: { color: colors.text.primary, fontSize: 15, lineHeight: 21 },
+  replyQuote: { borderLeftWidth: 3, borderLeftColor: colors.primary, backgroundColor: colors.background.secondary, paddingHorizontal: 9, paddingVertical: 6, marginBottom: 4, borderRadius: 6 },
+  replyQuoteAuthor: { color: colors.primary, fontSize: 10, fontWeight: "800" },
+  replyQuoteText: { color: colors.text.secondary, fontSize: 11, marginTop: 2 },
+  replyButton: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 3, marginTop: 3, paddingVertical: 2 },
+  replyButtonText: { color: colors.text.secondary, fontSize: 11, fontWeight: "700" },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28 },
   errorTitle: { color: colors.text.primary, fontWeight: "800", fontSize: 18, marginTop: 12 },
   errorText: { color: colors.text.secondary, textAlign: "center", marginTop: 8, lineHeight: 20 },
   retryButton: { marginTop: 16, backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 11, borderRadius: 18 },
   retryText: { color: "#fff", fontWeight: "800" },
   inlineError: { color: colors.primary, paddingHorizontal: 16, paddingBottom: 6, fontSize: 12 },
+  rateLimitNotice: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 16, marginBottom: 10, padding: 10, borderRadius: 10, backgroundColor: `${colors.primary}12` },
+  rateLimitText: { color: colors.text.primary, flex: 1, fontSize: 12, lineHeight: 17, fontWeight: "600" },
   readOnlyNote: { color: colors.text.secondary, fontSize: 12, paddingHorizontal: 16, paddingVertical: 10, lineHeight: 17 },
   upgradeNotice: { paddingBottom: 10 },
   upgradeActions: { flexDirection: "row", gap: 8, paddingHorizontal: 16 },
@@ -612,6 +688,10 @@ const getStyles = (colors: any) => StyleSheet.create({
   emptyTitle: { color: colors.text.primary, fontSize: 17, fontWeight: "800", marginTop: 12 },
   emptyText: { color: colors.text.secondary, marginTop: 6 },
   composerArea: { borderTopWidth: 1, borderTopColor: colors.divider },
+  replyComposerBanner: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 8, backgroundColor: `${colors.primary}10`, borderLeftWidth: 3, borderLeftColor: colors.primary },
+  replyComposerCopy: { flex: 1 },
+  replyComposerLabel: { color: colors.primary, fontSize: 11, fontWeight: "800" },
+  replyComposerText: { color: colors.text.secondary, fontSize: 12, marginTop: 2 },
   emojiPanel: { backgroundColor: colors.background.secondary, padding: 10 },
   emojiCategories: { gap: 16, paddingHorizontal: 4 },
   emojiCategory: { alignItems: "center" },

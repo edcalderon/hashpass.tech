@@ -54,6 +54,7 @@ describe("event chat client", () => {
       eventId: "colombia2026",
       recipientId: "c1c4f770-7ad6-4f8c-96c4-5b7e6e2ee2ef",
       message: "hello",
+      replyToMessageId: "6f9e2d7e-94ae-4f08-9f25-8b0b1db4e7a1",
     });
 
     expect(mockPost).toHaveBeenCalledWith(
@@ -62,6 +63,7 @@ describe("event chat client", () => {
         action: "send",
         channel: "direct",
         recipientId: "c1c4f770-7ad6-4f8c-96c4-5b7e6e2ee2ef",
+        replyToMessageId: "6f9e2d7e-94ae-4f08-9f25-8b0b1db4e7a1",
       }),
       { skipEventSegment: true },
     );

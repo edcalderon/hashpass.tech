@@ -20,11 +20,16 @@ const queryResult = (data: unknown, error: unknown = null) => {
       query.inserted = payload;
       return query;
     }),
+    rpc: jest.fn((name: string, params: unknown) => {
+      query.rpcName = name;
+      query.rpcParams = params;
+      return query;
+    }),
     upsert: jest.fn((payload: unknown) => {
       query.upserted = payload;
       return query;
     }),
-    single: jest.fn(async () => ({ data: { id: "chat-message-1" }, error })),
+    single: jest.fn(async () => ({ data: data ?? { id: "chat-message-1" }, error })),
     then: (resolve: (value: unknown) => unknown) =>
       Promise.resolve({ data, error }).then(resolve),
   };
@@ -39,6 +44,12 @@ jest.mock("@/lib/server/resolve-notification-identity", () => ({
 jest.mock("@/lib/supabase-server", () => ({
   getSupabaseServerForRequest: () => ({
     from: mockFrom,
+    rpc: (name: string, params: unknown) => {
+      const query = mockFrom("event_chat_messages");
+      query.rpcName = name;
+      query.rpcParams = params;
+      return query;
+    },
     auth: { admin: { getUserById: (...args: unknown[]) => mockGetUserById(...args) } },
   }),
 }));
@@ -116,7 +127,7 @@ describe("event chat authorization api", () => {
     });
   });
 
-  it("lets business pass holders send room emoji messages", async () => {
+  it("lets business pass holders send room emoji messages through the serialized server function", async () => {
     const roomQuery = queryResult({ event_id: "colombia2026" });
     const passQuery = queryResult([{ pass_type: "business" }]);
     const messageQuery = queryResult(null);
@@ -135,11 +146,62 @@ describe("event chat authorization api", () => {
     });
 
     expect(response.status).toBe(201);
-    expect(messageQuery.inserted).toEqual({
-      event_id: "colombia2026",
-      sender_id: userId,
-      message: "🎉",
-      message_type: "emoji",
+    expect(messageQuery.rpcName).toBe("send_event_chat_room_message");
+    expect(messageQuery.rpcParams).toEqual({
+      p_event_id: "colombia2026",
+      p_sender_id: userId,
+      p_message: "🎉",
+      p_message_type: "emoji",
+      p_sender_display_name: null,
+      p_reply_to_message_id: null,
+    });
+  });
+
+  it("blocks the sixth consecutive room message until another attendee replies", async () => {
+    const roomQuery = queryResult({ event_id: "colombia2026" });
+    const passQuery = queryResult([{ pass_type: "business" }]);
+    const messageQuery = queryResult(null, {
+      code: "P0001",
+      message: "A reply from another attendee is required before you can send another message",
+      details: "CHAT_RATE_LIMIT",
+    });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "event_chat_rooms") return roomQuery;
+      if (table === "passes") return passQuery;
+      if (table === "event_chat_messages") return messageQuery;
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const response = await post({ action: "send", channel: "room", message: "message six" });
+
+    expect(response.status).toBe(429);
+    expect(await response.json()).toEqual({
+      error: "A reply from another attendee is required before you can send another message",
+      code: "CHAT_RATE_LIMIT",
+    });
+  });
+
+  it("passes a room reply target to the serialized send function", async () => {
+    const roomQuery = queryResult({ event_id: "colombia2026" });
+    const passQuery = queryResult([{ pass_type: "vip" }]);
+    const messageQuery = queryResult({ id: "chat-message-2" });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "event_chat_rooms") return roomQuery;
+      if (table === "passes") return passQuery;
+      if (table === "event_chat_messages") return messageQuery;
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const response = await post({
+      action: "send",
+      channel: "room",
+      message: "Thanks for the update",
+      replyToMessageId: "6f9e2d7e-94ae-4f08-9f25-8b0b1db4e7a1",
+    });
+
+    expect(response.status).toBe(201);
+    expect(messageQuery.rpcParams).toMatchObject({
+      p_reply_to_message_id: "6f9e2d7e-94ae-4f08-9f25-8b0b1db4e7a1",
     });
   });
 
@@ -162,8 +224,8 @@ describe("event chat authorization api", () => {
     });
 
     expect(response.status).toBe(201);
-    expect(messageQuery.inserted).toMatchObject({
-      sender_display_name: "Anonymous",
+    expect(messageQuery.rpcParams).toMatchObject({
+      p_sender_display_name: "Anonymous",
     });
   });
 
@@ -186,7 +248,7 @@ describe("event chat authorization api", () => {
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(response.headers.get("vary")).toBe("Authorization");
     expect(messageQuery.select).toHaveBeenCalledWith(
-      "id,event_id,sender_id,sender_display_name,message,message_type,created_at",
+      "id,event_id,sender_id,sender_display_name,message,message_type,reply_to_message_id,created_at",
     );
   });
 
@@ -201,6 +263,7 @@ describe("event chat authorization api", () => {
       sender_display_name: null,
       message: "hello",
       message_type: "text",
+      reply_to_message_id: null,
       created_at: "2026-08-13T23:19:00.000Z",
     }]);
     const profileQuery = queryResult([]);

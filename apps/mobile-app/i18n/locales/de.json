@@ -117,7 +117,12 @@
     "joinRoom": "Raum betreten",
     "zeroPeopleInRoom": "0 Personen im Raum",
     "peopleInRoom": "{count} Personen im Raum",
-    "live": "Live"
+    "live": "Live",
+    "reply": "Antworten",
+    "replyToMessage": "Auf Nachricht antworten",
+    "replyingTo": "Antwort an {name}",
+    "cancelReply": "Antwort abbrechen",
+    "replyBeforeSending": "Du hast {count} Nachrichten hintereinander gesendet. Warte auf eine Antwort von einem anderen Teilnehmer, bevor du weitere Nachrichten sendest."
   },
   "common": {
     "back": "Zurück",

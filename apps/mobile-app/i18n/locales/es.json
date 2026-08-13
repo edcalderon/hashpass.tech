@@ -117,7 +117,12 @@
     "joinRoom": "Unirse a la sala",
     "zeroPeopleInRoom": "0 personas en la sala",
     "peopleInRoom": "{count} personas en la sala",
-    "live": "En vivo"
+    "live": "En vivo",
+    "reply": "Responder",
+    "replyToMessage": "Responder al mensaje",
+    "replyingTo": "Respondiendo a {name}",
+    "cancelReply": "Cancelar respuesta",
+    "replyBeforeSending": "Has enviado {count} mensajes seguidos. Espera a que otro asistente responda antes de enviar más."
   },
   "common": {
     "back": "Atrás",

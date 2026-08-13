@@ -12,12 +12,19 @@ export type EventChatMessage = {
   sender_avatar_url?: string | null;
   message: string;
   message_type: "text" | "emoji";
+  reply_to_message_id?: string | null;
   created_at: string;
 };
 
 export type EventChatPresence = {
   peopleCount: number;
   avatarUrls: Array<string | null>;
+};
+
+export type EventChatRoomRateLimit = {
+  limit: number;
+  consecutiveMessages: number;
+  waitingForReply: boolean;
 };
 
 export const getEventChatAvatarUrl = ({
@@ -86,6 +93,7 @@ type EventChatResponse = {
   permissions: EventChatPermissions;
   messages: EventChatMessage[];
   presence?: EventChatPresence;
+  roomRateLimit?: EventChatRoomRateLimit | null;
 };
 
 const endpoint = (eventId: string) =>
@@ -170,6 +178,7 @@ export async function sendEventChatMessage(input: {
   message: string;
   messageType?: "text" | "emoji";
   recipientId?: string;
+  replyToMessageId?: string;
   displayNameMode?: "profile" | "anonymous";
 }) {
   const response = await apiClient.post(
@@ -180,6 +189,7 @@ export async function sendEventChatMessage(input: {
       message: input.message,
       messageType: input.messageType || "text",
       recipientId: input.recipientId,
+      replyToMessageId: input.replyToMessageId,
       displayNameMode: input.displayNameMode || "profile",
     },
     requestOptions,

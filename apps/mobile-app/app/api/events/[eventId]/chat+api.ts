@@ -13,7 +13,8 @@ const SUPPORTED_EVENTS = new Set(["bsl2025", "peru2026", "chile2026", "colombia2
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_MESSAGE_LENGTH = 2_000;
 const MAX_MESSAGES = 100;
-const ROOM_MESSAGE_COLUMNS = "id,event_id,sender_id,sender_display_name,message,message_type,created_at";
+const ROOM_MESSAGE_LIMIT = 5;
+const ROOM_MESSAGE_COLUMNS = "id,event_id,sender_id,sender_display_name,message,message_type,reply_to_message_id,created_at";
 const DIRECT_MESSAGE_COLUMNS = `${ROOM_MESSAGE_COLUMNS},recipient_id`;
 const PRIVATE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, private",
@@ -30,6 +31,7 @@ type ChatMessageRow = {
   sender_avatar_url?: string | null;
   message: string;
   message_type: "text" | "emoji";
+  reply_to_message_id?: string | null;
   created_at: string;
 };
 
@@ -54,11 +56,35 @@ type ChatPresence = {
   avatarUrls: Array<string | null>;
 };
 
+type RoomRateLimit = {
+  limit: number;
+  consecutiveMessages: number;
+  waitingForReply: boolean;
+};
+
 const jsonError = (error: string, status: number) =>
   Response.json({ error }, { status, headers: PRIVATE_HEADERS });
 
 const validMessage = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0 && value.length <= MAX_MESSAGE_LENGTH;
+
+const getRoomRateLimit = (messages: Array<Pick<ChatMessageRow, "sender_id">>, userId: string): RoomRateLimit => {
+  let consecutiveMessages = 0;
+  for (const message of [...messages].reverse()) {
+    if (message.sender_id !== userId) break;
+    consecutiveMessages += 1;
+  }
+  return {
+    limit: ROOM_MESSAGE_LIMIT,
+    consecutiveMessages,
+    waitingForReply: consecutiveMessages >= ROOM_MESSAGE_LIMIT,
+  };
+};
+
+const isChatRateLimitError = (error: unknown): boolean =>
+  Boolean(error && typeof error === "object" &&
+    ((error as { code?: string }).code === "P0001" ||
+      (error as { details?: string }).details === "CHAT_RATE_LIMIT"));
 
 async function authenticatedUser(request: Request) {
   const identity = await resolveNotificationIdentity(request);
@@ -305,6 +331,9 @@ export async function GET(request: Request) {
         permissions: access.permissions,
         presence: await getRoomPresence(supabase, eventId),
         messages: await addSenderNames(supabase, (data || []) as ChatMessageRow[]),
+        roomRateLimit: channel === "room"
+          ? getRoomRateLimit((data || []) as ChatMessageRow[], auth.userId)
+          : null,
       },
     }, { headers: PRIVATE_HEADERS });
   } catch (error) {
@@ -347,6 +376,11 @@ export async function POST(request: Request) {
   }
   const messageType = body.messageType === "emoji" ? "emoji" : "text";
   if (channel !== "room" && channel !== "direct") return jsonError("Unsupported chat channel", 400);
+  const replyToMessageId = body.replyToMessageId == null ? null : body.replyToMessageId;
+  if (replyToMessageId !== null &&
+      (typeof replyToMessageId !== "string" || !UUID_PATTERN.test(replyToMessageId))) {
+    return jsonError("A valid message reply target is required", 400);
+  }
 
   const supabase = getSupabaseServerForRequest(request);
   try {
@@ -364,6 +398,7 @@ export async function POST(request: Request) {
       sender_id: auth.userId,
       message: body.message.trim(),
       message_type: messageType,
+      reply_to_message_id: replyToMessageId,
     };
     if (body.displayNameMode === "anonymous") {
       payload.sender_display_name = "Anonymous";
@@ -382,14 +417,30 @@ export async function POST(request: Request) {
       payload.recipient_id = recipientId;
     }
 
-    const { data, error } = await supabase
-      .from(table)
-      .insert(payload)
-      .select(channel === "room" ? ROOM_MESSAGE_COLUMNS : DIRECT_MESSAGE_COLUMNS)
-      .single();
+    const result = channel === "room"
+      ? await supabase.rpc("send_event_chat_room_message", {
+        p_event_id: eventId,
+        p_sender_id: auth.userId,
+        p_message: body.message.trim(),
+        p_message_type: messageType,
+        p_sender_display_name: body.displayNameMode === "anonymous" ? "Anonymous" : null,
+        p_reply_to_message_id: replyToMessageId,
+      }).single()
+      : await supabase
+        .from(table)
+        .insert(payload)
+        .select(DIRECT_MESSAGE_COLUMNS)
+        .single();
+    const { data, error } = result;
     if (error) throw error;
     return Response.json({ data }, { status: 201, headers: PRIVATE_HEADERS });
   } catch (error) {
+    if (isChatRateLimitError(error)) {
+      return Response.json({
+        error: "A reply from another attendee is required before you can send another message",
+        code: "CHAT_RATE_LIMIT",
+      }, { status: 429, headers: { ...PRIVATE_HEADERS, "Retry-After": "0" } });
+    }
     console.error("[event-chat] send error:", error);
     return jsonError("Failed to send event chat message", 500);
   }
