@@ -22,22 +22,37 @@ export interface VersionHistory {
 // Current Version Configuration - Auto-synced with package.json
 export const CURRENT_VERSION: VersionInfo = {
   version: packageJson.version, // Single source of truth: package.json
-  buildNumber: 202608130010, // Updated to current timestamp
+  buildNumber: 202608130036, // Updated to current timestamp
   releaseDate: '2026-08-13',
   releaseType: 'stable',
   environment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   features: [
-    'rework explorer and harden pass backend'
+    // No new features
   ],
   bugfixes: [
-    // No bugfixes
+    'secure pass provisioning and explorer filters'
   ],
   breakingChanges: [],
-  notes: 'rework explorer and harden pass backend'
+  notes: 'secure pass provisioning and explorer filters'
 };
 
 // Version History
 export const VERSION_HISTORY: VersionHistory = {
+  '1.8.339': {
+    version: '1.8.339',
+    buildNumber: 202608130036,
+    releaseDate: '2026-08-13',
+    releaseType: 'stable',
+    environment: 'development',
+    features: [
+      // No new features
+    ],
+    bugfixes: [
+      'secure pass provisioning and explorer filters'
+    ],
+    breakingChanges: [],
+    notes: 'secure pass provisioning and explorer filters'
+  },
   '1.8.338': {
     version: '1.8.338',
     buildNumber: 202608130010,
