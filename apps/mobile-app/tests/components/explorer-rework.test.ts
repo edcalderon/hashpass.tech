@@ -4,6 +4,7 @@ import {
   getExplorerHeroActionTarget,
   getExplorerLayout,
   getExplorerScopeLabel,
+  getEventRoomTarget,
   getActiveFilterCount,
   sortExplorerEvents,
   type ExplorerEvent,
@@ -139,5 +140,12 @@ describe("explorer rework behavior", () => {
       route: "/(shared)/dashboard/explore?tour=bsl-on-tour",
     });
     expect(getExplorerHeroActionTarget("Unknown action")).toBeNull();
+  });
+
+  it("opens the room screen before any protected chat request", () => {
+    expect(getEventRoomTarget("bsl2025")).toEqual({
+      pathname: "/dashboard/event-chat",
+      params: { eventId: "bsl2025" },
+    });
   });
 });

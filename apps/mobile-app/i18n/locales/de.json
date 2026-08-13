@@ -104,6 +104,21 @@
     "wallet": "Brieftasche",
     "profile": "Profil"
   },
+  "eventChat": {
+    "upcomingTitle": "Du kannst diesen Eventraum nicht betreten",
+    "upcomingBody": "Für dieses Event ist ein aktiver Pass erforderlich. Kaufe ein Ticket, um dem Raum beizutreten und auf Meeting-Chats zuzugreifen.",
+    "pastTitle": "Dieser Raum ist für Event-Teilnehmende",
+    "pastBody": "Dieses Event nur für Passinhaber ist beendet. Nur verifizierte Teilnehmende mit einem aktiven Eventpass können auf die Meeting-Chats zugreifen.",
+    "buyTicket": "Ticket kaufen",
+    "backToExplore": "Zurück zu Events entdecken",
+    "tryAgain": "Erneut versuchen",
+    "unableToLoad": "Dieser Eventraum konnte nicht geladen werden",
+    "chooseEvent": "Wähle ein Event, um seinen Raum zu öffnen.",
+    "joinRoom": "Raum betreten",
+    "zeroPeopleInRoom": "0 Personen im Raum",
+    "peopleInRoom": "{count} Personen im Raum",
+    "live": "Live"
+  },
   "common": {
     "back": "Zurück",
     "loading": {

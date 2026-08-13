@@ -18,6 +18,7 @@ export type ApiResponse<T = any> = {
 } | {
   data?: T | null;
   error: string;
+  status?: number;
   success: false;
 }
 
@@ -422,6 +423,7 @@ export class EventApiClient {
     return {
       data: null,
       error: lastError?.message || 'Request failed',
+      status: (lastError as (Error & { status?: number }) | null)?.status,
       success: false
     };
   }

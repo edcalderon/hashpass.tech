@@ -1,0 +1,396 @@
+import { getEventChatPermissions, type EventChatPassType } from "@/lib/event-chat-permissions";
+import { eventIdFromRequest } from "@/lib/server/event-api";
+import {
+  isResolveIdentityError,
+  resolveNotificationIdentity,
+} from "@/lib/server/resolve-notification-identity";
+import { getSupabaseServerForRequest } from "@/lib/supabase-server";
+
+// Chat URLs must use the canonical event identity. Aliases used by older
+// explorer routes are intentionally rejected here so one event can never be
+// reached through another event's link.
+const SUPPORTED_EVENTS = new Set(["bsl2025", "peru2026", "chile2026", "colombia2026"]);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_MESSAGE_LENGTH = 2_000;
+const MAX_MESSAGES = 100;
+const ROOM_MESSAGE_COLUMNS = "id,event_id,sender_id,sender_display_name,message,message_type,created_at";
+const DIRECT_MESSAGE_COLUMNS = `${ROOM_MESSAGE_COLUMNS},recipient_id`;
+const PRIVATE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, private",
+  Pragma: "no-cache",
+  Vary: "Authorization",
+};
+
+type ChatMessageRow = {
+  id: string;
+  event_id: string;
+  sender_id: string;
+  recipient_id?: string | null;
+  sender_display_name?: string | null;
+  sender_avatar_url?: string | null;
+  message: string;
+  message_type: "text" | "emoji";
+  created_at: string;
+};
+
+type AuthUserProfile = {
+  id: string;
+  email?: string | null;
+  user_metadata?: {
+    name?: string | null;
+    full_name?: string | null;
+    avatar_url?: string | null;
+    picture?: string | null;
+  } | null;
+};
+
+type SenderIdentity = {
+  name: string;
+  avatarUrl: string | null;
+};
+
+type ChatPresence = {
+  peopleCount: number;
+  avatarUrls: Array<string | null>;
+};
+
+const jsonError = (error: string, status: number) =>
+  Response.json({ error }, { status, headers: PRIVATE_HEADERS });
+
+const validMessage = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0 && value.length <= MAX_MESSAGE_LENGTH;
+
+async function authenticatedUser(request: Request) {
+  const identity = await resolveNotificationIdentity(request);
+  if (isResolveIdentityError(identity)) return { response: jsonError(identity.error, identity.status) };
+  if (!identity.supabaseUserId || !UUID_PATTERN.test(identity.supabaseUserId)) {
+    return { response: jsonError("A linked pass identity is required", 403) };
+  }
+  return { userId: identity.supabaseUserId };
+}
+
+const getEventId = (request: Request): string | null => {
+  const eventId = eventIdFromRequest(request);
+  return eventId && SUPPORTED_EVENTS.has(eventId) ? eventId : null;
+};
+
+async function requireEventRoom(supabase: any, eventId: string) {
+  const { data, error } = await supabase
+    .from("event_chat_rooms")
+    .select("event_id")
+    .eq("event_id", eventId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return { response: jsonError("This event room is unavailable", 404) };
+  return { eventId: data.event_id as string };
+}
+
+async function getPassType(supabase: any, userId: string, eventId: string): Promise<EventChatPassType | null> {
+  const { data, error } = await supabase
+    .from("passes")
+    .select("pass_type")
+    .eq("user_id", userId)
+    .eq("event_id", eventId)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+
+  const passType = Array.isArray(data) ? data[0]?.pass_type : data?.pass_type;
+  return passType === "general" || passType === "business" || passType === "vip"
+    ? passType
+    : null;
+}
+
+async function requirePass(supabase: any, userId: string, eventId: string) {
+  const passType = await getPassType(supabase, userId, eventId);
+  if (!passType) return { response: jsonError("An active pass is required for this event room", 403) };
+  return { passType, permissions: getEventChatPermissions(passType) };
+}
+
+async function getRoomPresence(supabase: any, eventId: string): Promise<ChatPresence> {
+  const activeSince = new Date(Date.now() - 90_000).toISOString();
+  const { data: rows, error } = await supabase
+    .from("event_chat_presence")
+    .select("user_id")
+    .eq("event_id", eventId)
+    .gt("last_seen_at", activeSince);
+  if (error) throw error;
+
+  const userIds: string[] = Array.from(new Set(
+    (rows || []).map((row: { user_id: string }) => row.user_id),
+  ));
+  if (!userIds.length) return { peopleCount: 0, avatarUrls: [] };
+
+  const { data: profiles, error: profileError } = await supabase
+    .from("user_profiles")
+    .select("user_id,avatar_url")
+    .in("user_id", userIds);
+  if (profileError) throw profileError;
+
+  const avatars = new Map<string, string | null>(
+    (profiles || []).map((profile: { user_id: string; avatar_url?: string | null }) => [
+      profile.user_id,
+      profile.avatar_url?.trim() || null,
+    ]),
+  );
+  return {
+    peopleCount: userIds.length,
+    avatarUrls: userIds.slice(0, 3).map((userId) => avatars.get(userId) || null),
+  };
+}
+
+async function addSenderNames(supabase: any, messages: ChatMessageRow[]) {
+  const senderIds: string[] = Array.from(new Set(messages.map((message) => message.sender_id)));
+  if (!senderIds.length) return messages;
+
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("user_id,full_name,avatar_url")
+    .in("user_id", senderIds);
+  if (error) throw error;
+  const names = new Map<string, SenderIdentity>(
+    (data || []).map((profile: { user_id: string; full_name?: string | null; avatar_url?: string | null }) => [
+      profile.user_id,
+      {
+        name: profile.full_name?.trim() || "HASHPASS member",
+        avatarUrl: profile.avatar_url?.trim() || null,
+      },
+    ]),
+  );
+  const missingProfileIds = senderIds.filter((senderId) => {
+    const profile = names.get(senderId);
+    return !profile?.name || profile.name === "HASHPASS member";
+  });
+  if (missingProfileIds.length && supabase.auth?.admin?.getUserById) {
+    const authProfiles = await Promise.all(
+      missingProfileIds.map(async (senderId: string) => {
+        const result = await supabase.auth.admin.getUserById(senderId);
+        const user = result?.data?.user as AuthUserProfile | undefined;
+        if (!user) return null;
+        const metadata = user.user_metadata || {};
+        const emailName = user.email?.split("@")[0]?.trim();
+        return [
+          senderId,
+          {
+            name: metadata.full_name?.trim() || metadata.name?.trim() || emailName || "HASHPASS member",
+            avatarUrl: metadata.avatar_url?.trim() || metadata.picture?.trim() || null,
+          },
+        ] as const;
+      }),
+    );
+    for (const profile of authProfiles) {
+      if (profile) names.set(profile[0], profile[1]);
+    }
+  }
+  return messages.map((message) => ({
+    ...message,
+    sender_name: message.sender_display_name?.trim() || names.get(message.sender_id)?.name || "HASHPASS member",
+    sender_avatar_url: message.sender_display_name?.trim() === "Anonymous"
+      ? null
+      : names.get(message.sender_id)?.avatarUrl || null,
+  }));
+}
+
+export async function GET(request: Request) {
+  const auth = await authenticatedUser(request);
+  if ("response" in auth) return auth.response;
+  const eventId = getEventId(request);
+  if (!eventId) return jsonError("A valid event id is required", 400);
+
+  const supabase = getSupabaseServerForRequest(request);
+  try {
+    const room = await requireEventRoom(supabase, eventId);
+    if ("response" in room) return room.response;
+    const access = await requirePass(supabase, auth.userId, eventId);
+    if ("response" in access) return access.response;
+
+    const channel = new URL(request.url).searchParams.get("channel") || "room";
+    if (channel !== "room" && channel !== "direct" && channel !== "members" && channel !== "presence") {
+      return jsonError("Unsupported chat channel", 400);
+    }
+    if ((channel === "direct" || channel === "members") && !access.permissions.canSendDirect) {
+      return jsonError("A VIP pass is required for direct messages", 403);
+    }
+
+    if (channel === "members") {
+      const { data: passes, error: passError } = await supabase
+        .from("passes")
+        .select("user_id,pass_type")
+        .eq("event_id", eventId)
+        .eq("status", "active");
+      if (passError) throw passError;
+      const memberIds: string[] = Array.from(
+        new Set((passes || []).map((pass: { user_id: string }) => pass.user_id)),
+      );
+      const { data: profiles, error: profileError } = memberIds.length
+        ? await supabase.from("user_profiles").select("user_id,full_name,avatar_url").in("user_id", memberIds)
+        : { data: [], error: null };
+      if (profileError) throw profileError;
+      const names = new Map<string, SenderIdentity>(
+        (profiles || []).map((profile: { user_id: string; full_name?: string | null; avatar_url?: string | null }) => [
+          profile.user_id,
+          {
+            name: profile.full_name?.trim() || "HASHPASS member",
+            avatarUrl: profile.avatar_url?.trim() || null,
+          },
+        ]),
+      );
+      const missingMemberIds = memberIds.filter((memberId) => !names.get(memberId)?.name || names.get(memberId)?.name === "HASHPASS member");
+      if (missingMemberIds.length && supabase.auth?.admin?.getUserById) {
+        const authProfiles = await Promise.all(
+          missingMemberIds.map(async (memberId: string) => {
+            const result = await supabase.auth.admin.getUserById(memberId);
+            const user = result?.data?.user as AuthUserProfile | undefined;
+            if (!user) return null;
+            const metadata = user.user_metadata || {};
+            return [
+              memberId,
+              {
+                name: metadata.full_name?.trim() || metadata.name?.trim() || user.email?.split("@")[0]?.trim() || "HASHPASS member",
+                avatarUrl: metadata.avatar_url?.trim() || metadata.picture?.trim() || null,
+              },
+            ] as const;
+          }),
+        );
+        for (const profile of authProfiles) {
+          if (profile) names.set(profile[0], profile[1]);
+        }
+      }
+      return Response.json({
+        data: {
+          eventId,
+          members: (passes || []).map((pass: { user_id: string; pass_type: EventChatPassType }) => ({
+            userId: pass.user_id,
+            name: names.get(pass.user_id)?.name || "HASHPASS member",
+            avatarUrl: names.get(pass.user_id)?.avatarUrl || null,
+            passType: pass.pass_type,
+          })),
+        },
+      }, { headers: PRIVATE_HEADERS });
+    }
+
+    if (channel === "presence") {
+      return Response.json({
+        data: { eventId, presence: await getRoomPresence(supabase, eventId) },
+      }, { headers: PRIVATE_HEADERS });
+    }
+
+    let query = supabase
+      .from(channel === "room" ? "event_chat_messages" : "event_chat_direct_messages")
+      .select(channel === "room" ? ROOM_MESSAGE_COLUMNS : DIRECT_MESSAGE_COLUMNS)
+      .eq("event_id", eventId)
+      .order("created_at", { ascending: true })
+      .limit(MAX_MESSAGES);
+    if (channel === "direct") {
+      const recipientId = new URL(request.url).searchParams.get("recipientId");
+      if (recipientId && !UUID_PATTERN.test(recipientId)) return jsonError("A valid recipient is required", 400);
+      if (recipientId) {
+        const recipientPassType = await getPassType(supabase, recipientId, eventId);
+        if (!recipientPassType) return jsonError("The recipient must hold an active pass for this event", 403);
+        query = query.or(
+          `and(sender_id.eq.${auth.userId},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${auth.userId})`,
+        );
+      } else {
+        query = query.or(`sender_id.eq.${auth.userId},recipient_id.eq.${auth.userId}`);
+      }
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return Response.json({
+      data: {
+        eventId,
+        viewerId: auth.userId,
+        passType: access.passType,
+        permissions: access.permissions,
+        presence: await getRoomPresence(supabase, eventId),
+        messages: await addSenderNames(supabase, (data || []) as ChatMessageRow[]),
+      },
+    }, { headers: PRIVATE_HEADERS });
+  } catch (error) {
+    console.error("[event-chat] fetch error:", error);
+    return jsonError("Failed to load event chat", 500);
+  }
+}
+
+export async function POST(request: Request) {
+  const auth = await authenticatedUser(request);
+  if ("response" in auth) return auth.response;
+  const eventId = getEventId(request);
+  if (!eventId) return jsonError("A valid event id is required", 400);
+
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+  const channel = body?.channel || "room";
+  if (body?.action === "presence") {
+    if (channel !== "presence") return jsonError("Unsupported presence channel", 400);
+    const supabase = getSupabaseServerForRequest(request);
+    try {
+      const room = await requireEventRoom(supabase, eventId);
+      if ("response" in room) return room.response;
+      const access = await requirePass(supabase, auth.userId, eventId);
+      if ("response" in access) return access.response;
+      const { error } = await supabase.from("event_chat_presence").upsert(
+        { event_id: eventId, user_id: auth.userId, last_seen_at: new Date().toISOString() },
+        { onConflict: "event_id,user_id" },
+      );
+      if (error) throw error;
+      return Response.json({
+        data: { eventId, presence: await getRoomPresence(supabase, eventId) },
+      }, { headers: PRIVATE_HEADERS });
+    } catch (error) {
+      console.error("[event-chat] presence error:", error);
+      return jsonError("Failed to update event room presence", 500);
+    }
+  }
+  if (body?.action !== "send" || !validMessage(body.message)) {
+    return jsonError("A non-empty message and supported send action are required", 400);
+  }
+  const messageType = body.messageType === "emoji" ? "emoji" : "text";
+  if (channel !== "room" && channel !== "direct") return jsonError("Unsupported chat channel", 400);
+
+  const supabase = getSupabaseServerForRequest(request);
+  try {
+    const room = await requireEventRoom(supabase, eventId);
+    if ("response" in room) return room.response;
+    const access = await requirePass(supabase, auth.userId, eventId);
+    if ("response" in access) return access.response;
+    if (channel === "room" && !access.permissions.canSendRoom) {
+      return jsonError("A business or VIP pass is required to send room messages", 403);
+    }
+
+    let table = "event_chat_messages";
+    const payload: Record<string, unknown> = {
+      event_id: eventId,
+      sender_id: auth.userId,
+      message: body.message.trim(),
+      message_type: messageType,
+    };
+    if (body.displayNameMode === "anonymous") {
+      payload.sender_display_name = "Anonymous";
+    }
+    if (channel === "direct") {
+      if (!access.permissions.canSendDirect) return jsonError("A VIP pass is required for direct messages", 403);
+      const recipientId = typeof body.recipientId === "string" ? body.recipientId : "";
+      if (!UUID_PATTERN.test(recipientId) || recipientId === auth.userId) {
+        return jsonError("A valid recipient is required", 400);
+      }
+      const recipientPassType = await getPassType(supabase, recipientId, eventId);
+      if (!recipientPassType) {
+        return jsonError("The recipient must hold an active pass for this event", 403);
+      }
+      table = "event_chat_direct_messages";
+      payload.recipient_id = recipientId;
+    }
+
+    const { data, error } = await supabase
+      .from(table)
+      .insert(payload)
+      .select(channel === "room" ? ROOM_MESSAGE_COLUMNS : DIRECT_MESSAGE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return Response.json({ data }, { status: 201, headers: PRIVATE_HEADERS });
+  } catch (error) {
+    console.error("[event-chat] send error:", error);
+    return jsonError("Failed to send event chat message", 500);
+  }
+}

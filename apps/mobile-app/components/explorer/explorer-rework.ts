@@ -7,6 +7,11 @@ export interface ExplorerHeroActionTarget {
   eventId?: string;
 }
 
+export const getEventRoomTarget = (eventId: string) => ({
+  pathname: "/dashboard/event-chat",
+  params: { eventId },
+});
+
 export const getExplorerHeroActionTarget = (
   action: string,
 ): ExplorerHeroActionTarget | null => {

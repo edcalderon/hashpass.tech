@@ -104,6 +104,21 @@
     "wallet": "Carteira",
     "profile": "Perfil"
   },
+  "eventChat": {
+    "upcomingTitle": "Você não pode entrar nesta sala do evento",
+    "upcomingBody": "Você precisa de um passe ativo para este evento. Compre um ingresso para entrar na sala e acessar os chats de reuniões.",
+    "pastTitle": "Esta sala é exclusiva para participantes do evento",
+    "pastBody": "Este evento exclusivo para portadores de passe terminou. Apenas participantes verificados com um passe ativo podem acessar os chats de reuniões.",
+    "buyTicket": "Comprar ingresso",
+    "backToExplore": "Voltar para Explorar eventos",
+    "tryAgain": "Tentar novamente",
+    "unableToLoad": "Não foi possível carregar esta sala",
+    "chooseEvent": "Escolha um evento para abrir sua sala.",
+    "joinRoom": "Entrar na sala",
+    "zeroPeopleInRoom": "0 pessoas na sala",
+    "peopleInRoom": "{count} pessoas na sala",
+    "live": "Ao vivo"
+  },
   "common": {
     "back": "Voltar",
     "loading": {

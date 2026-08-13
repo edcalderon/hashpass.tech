@@ -42,6 +42,9 @@ export interface WalletFilters {
 // layouts on screen for no gain.
 export const MAX_VISIBLE_STACK = 4;
 
+export const normalizePassNumber = (value: unknown): string =>
+  value === null || value === undefined ? "" : String(value);
+
 const PASS_TYPE_ACCENTS: Record<string, string> = {
   general: '#34A853',
   business: '#007AFF',

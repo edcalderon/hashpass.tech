@@ -22,6 +22,7 @@ import { useTranslation } from '../../i18n/i18n';
 import { useToastHelpers } from '../../contexts/ToastContext';
 import { passSystemService } from '../../lib/pass-system';
 import type { WalletPass } from '../../lib/pass-wallet';
+import { normalizePassNumber } from '../../lib/pass-wallet';
 import DynamicQRDisplay from '../DynamicQRDisplay';
 import PassTiltCard from './PassTiltCard';
 import NotchMaskedCard from './NotchMaskedCard';
@@ -45,6 +46,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   const router = useRouter();
   const [showQRModal, setShowQRModal] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
+  const passNumber = normalizePassNumber(pass.pass_number);
 
   // A card behind the front one is already non-interactive (disabled via
   // `interactive`), but an archived pass (cancelled/expired/used/suspended)
@@ -101,7 +103,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   const handleShare = async () => {
     try {
       const passTypeDisplay = passSystemService.getPassTypeDisplayName(pass.pass_type);
-      const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventShortName}!\n\nPass Number: ${pass.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
+      const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventShortName}!\n\nPass Number: ${passNumber}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
 
       if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
         await navigator.share({
@@ -127,7 +129,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
 
       try {
         const passTypeDisplay = passSystemService.getPassTypeDisplayName(pass.pass_type);
-        const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventShortName}!\n\nPass Number: ${pass.pass_number}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
+        const shareMessage = `Check out my ${passTypeDisplay} pass for ${passEventShortName}!\n\nPass Number: ${passNumber}\nPass Type: ${passTypeDisplay}\n\nPresent this QR code at the event entrance.`;
         await Clipboard.setStringAsync(shareMessage);
         showSuccess(
           t({ id: 'passes.copiedTitle', message: 'Pass Information Copied' }),
@@ -143,8 +145,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
   };
 
   const handleCopyPassNumber = async () => {
-    const passNumber = pass.pass_number?.trim();
-    if (!passNumber) return;
+    if (!passNumber.trim()) return;
 
     try {
       await Clipboard.setStringAsync(passNumber);
@@ -344,7 +345,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
               </Text>
               <TouchableOpacity
                 accessibilityLabel={t({ id: 'passes.copyPassNumber', message: 'Copy pass number' })}
-                disabled={!interactive || !pass.pass_number?.trim()}
+                disabled={!interactive || !passNumber.trim()}
                 onPress={handleCopyPassNumber}
                 style={{ alignItems: 'center', flexDirection: 'row', gap: 5, maxWidth: 166 }}
               >
@@ -362,9 +363,9 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
                   numberOfLines={1}
                   ellipsizeMode="head"
                 >
-                  {(pass.pass_number || '').length > 12
-                    ? `#${pass.pass_number.slice(0, 6)}...${pass.pass_number.slice(-4)}`
-                    : `#${pass.pass_number || ''}`}
+                  {passNumber.length > 12
+                    ? `#${passNumber.slice(0, 6)}...${passNumber.slice(-4)}`
+                    : `#${passNumber}`}
                 </Text>
                 <MaterialIcons name="content-copy" size={13} color={isDark ? '#FFFFFF' : colors.text.secondary} />
               </TouchableOpacity>
@@ -939,7 +940,7 @@ const PassWalletCard: React.FC<PassWalletCardProps> = ({ pass, interactive = tru
 
             <DynamicQRDisplay
               passId={pass.pass_id}
-              passNumber={pass.pass_number}
+              passNumber={passNumber}
               passType={pass.pass_type}
               size={250}
               showRefreshButton

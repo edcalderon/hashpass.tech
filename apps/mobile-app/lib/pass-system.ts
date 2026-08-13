@@ -51,6 +51,9 @@ export type PassStatus =
 export type SubpassType =
   "litter_smart" | "networking" | "workshop" | "exclusive";
 
+export const normalizePassNumber = (value: unknown): string =>
+  value === null || value === undefined ? "" : String(value);
+
 export interface Pass {
   id: string;
   user_id: string;
@@ -191,7 +194,12 @@ class PassSystemService {
     })) as PassApiResponse<EventPassInfo[]>;
     if (!response.success) throw new Error(response.error);
     const passes = unwrapApiData<EventPassInfo[]>(response.data);
-    return Array.isArray(passes) ? passes : [];
+    return Array.isArray(passes)
+      ? passes.map((pass) => ({
+          ...pass,
+          pass_number: normalizePassNumber(pass.pass_number),
+        }))
+      : [];
   }
 
   // Get user's pass information with real meeting request counts
