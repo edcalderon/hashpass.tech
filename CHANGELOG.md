@@ -1,3 +1,12 @@
+## [1.8.340](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.339...v1.8.340) (2026-08-13)
+
+
+### Features
+
+* secure event room chat and presence ([1ba0498](https://github.com/hashpass-tech/hashpass.tech/commit/1ba0498099083f9473e0712379ab8b2c474cc904))
+### Release Highlights
+- secure event room chat and presence
+
 ## [1.8.339](https://github.com/hashpass-tech/hashpass.tech/compare/v1.8.338...v1.8.339) (2026-08-13)
 
 

@@ -20,13 +20,13 @@
   HASHPASS is the active monorepo for the mobile product, the new <code>hashpass.club</code> web app, shared UI, docs, and deployment tooling.
 </p>
 
-## 📋 Latest Changes (v1.8.339)
+## 📋 Latest Changes (v1.8.340)
 
-### Bug Fixes
+### Features
 
-* secure pass provisioning and explorer filters ([997a04f](https://github.com/hashpass-tech/hashpass.tech/commit/997a04fb17f7040958c41fa4969e2dd82837e1c1))
+* secure event room chat and presence ([1ba0498](https://github.com/hashpass-tech/hashpass.tech/commit/1ba0498099083f9473e0712379ab8b2c474cc904))
 ### Release Highlights
-- secure pass provisioning and explorer filters
+- secure event room chat and presence
 
 For full version history, see [CHANGELOG.md](./CHANGELOG.md)
 
