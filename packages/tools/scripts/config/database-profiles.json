@@ -90,7 +90,8 @@
       "db/migrations/V062__seed_native_pass_redemption_test_codes.sql",
       "db/migrations/V067__harden_pass_backend_contract.sql",
       "db/migrations/V068__fix_uuid_pass_id_creation.sql",
-      "db/migrations/V069__fix_legacy_pass_number_type.sql"
+      "db/migrations/V069__fix_legacy_pass_number_type.sql",
+      "db/migrations/V070__harden_default_pass_provisioning.sql"
     ],
     "meeting-lifecycle": [
       "db/migrations/V017__harden_meeting_request_lifecycle.sql",

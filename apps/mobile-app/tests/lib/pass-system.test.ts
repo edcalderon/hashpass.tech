@@ -141,6 +141,32 @@ describe("passSystemService Supabase user id guard", () => {
     ).not.toMatch(/\b\w+\s+\d{1,2}(?:-\d{1,2})?\b/);
   });
 
+  it("unwraps the backend data envelope for pass lists and tier creation", async () => {
+    mockApiGet.mockResolvedValueOnce({
+      success: true,
+      data: { data: [activePass] },
+    });
+
+    await expect(
+      passSystemService.getAllUserPasses(supabaseUserId),
+    ).resolves.toEqual([
+      expect.objectContaining({ id: activePass.id }),
+    ]);
+
+    mockApiPost.mockResolvedValueOnce({
+      success: true,
+      data: { data: { passId: "pass-created" } },
+    });
+
+    await expect(
+      passSystemService.createDefaultPass(
+        supabaseUserId,
+        "general",
+        "colombia2026",
+      ),
+    ).resolves.toBe("pass-created");
+  });
+
   it("surfaces database errors while loading the wallet instead of treating them as no passes", async () => {
     const databaseError = { code: "PGRST000", message: "database unavailable" };
     mockApiGet.mockResolvedValueOnce({

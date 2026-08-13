@@ -5,7 +5,6 @@ import {
 } from "@/lib/server/resolve-notification-identity";
 
 const EVENT_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/i;
-const PASS_TYPES = new Set(["general", "business", "vip"]);
 const EVENT_IDS = new Set(["bsl2025", "peru2026", "chile2026", "colombia2026"]);
 
 type PassRow = Record<string, unknown> & {
@@ -176,11 +175,12 @@ export async function POST(request: Request) {
   }
 
   const eventId = validateEventId(body.eventId);
-  const passType =
-    typeof body.passType === "string" ? body.passType : "general";
-  if (!eventId || !PASS_TYPES.has(passType)) {
+  // This endpoint is self-service. Paid tiers must be issued through the
+  // administrator/purchase flows, never from a client-controlled request.
+  const passType = body.passType === undefined ? "general" : body.passType;
+  if (!eventId || passType !== "general") {
     return Response.json(
-      { error: "A valid eventId and passType are required" },
+      { error: "Self-service pass creation only supports general passes" },
       { status: 400 },
     );
   }
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
       "create_default_pass",
       {
         p_user_id: auth.userId,
-        p_pass_type: passType,
+        p_pass_type: "general",
         p_event_id: eventId,
       },
     );

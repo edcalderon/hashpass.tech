@@ -152,8 +152,7 @@ export default function ExplorerRework({
   const [filterSeries, setFilterSeries] = useState<string[]>([]);
   const [filterCity, setFilterCity] = useState("all");
   const [onlyPasses, setOnlyPasses] = useState(false);
-  const [onlyFree, setOnlyFree] = useState(false);
-  const [sortBy, setSortBy] = useState<"date" | "name" | "nearest">("date");
+  const [sortBy, setSortBy] = useState<"date" | "name">("date");
   const [mode, setMode] = useState<ExplorerLayoutMode>("list");
   const [visibleCount, setVisibleCount] = useState(8);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -165,7 +164,7 @@ export default function ExplorerRework({
 
   useEffect(() => {
     let mounted = true;
-    loadExplorerBookmarks().then((ids) => {
+    loadExplorerBookmarks().then((ids: string[]) => {
       if (mounted) setBookmarkedEventIds(ids);
     });
     return () => {
@@ -229,7 +228,6 @@ export default function ExplorerRework({
         series: filterSeries,
         cityKey: filterCity,
         onlyPasses,
-        onlyFree,
       }),
     [
       explorerEvents,
@@ -238,7 +236,6 @@ export default function ExplorerRework({
       filterSeries,
       filterStatus,
       filterToDate,
-      onlyFree,
       onlyPasses,
       query,
     ],
@@ -257,7 +254,6 @@ export default function ExplorerRework({
     series: filterSeries,
     cityKey: filterCity,
     onlyPasses,
-    onlyFree,
     sortBy,
   });
   const selectedExplorerEvent = activeEvent
@@ -322,7 +318,6 @@ export default function ExplorerRework({
     setFilterSeries([]);
     setFilterCity("all");
     setOnlyPasses(false);
-    setOnlyFree(false);
     setSortBy("date");
     setVisibleCount(8);
     setFilterSheetOpen(false);
@@ -339,6 +334,14 @@ export default function ExplorerRework({
   const selectEvent = (id: string) => {
     const event = events.find((item) => item.id === id);
     if (event) onSelectEvent(event);
+  };
+
+  const handleHeroAction = (action: string) => {
+    const nextEventId = "colombia2026";
+    router.push(`/(shared)/dashboard/explore?eventId=${nextEventId}` as any);
+    if (action === "Get your pass") {
+      selectEvent(nextEventId);
+    }
   };
 
   const renderHero = () => {
@@ -358,6 +361,7 @@ export default function ExplorerRework({
           {hero.action && (
             <TouchableOpacity
               style={styles.heroAction}
+              onPress={() => handleHeroAction(hero.action || "")}
               accessibilityRole="button"
             >
               <Text style={styles.heroActionText}>{hero.action}</Text>
@@ -519,13 +523,7 @@ export default function ExplorerRework({
           accessibilityLabel="Open event filters and sorting"
         >
           <Icon name="unfold-more" color={colors.text.secondary} size={18} />
-          <Text style={styles.sortMetaText}>{`Sorted by ${
-            sortBy === "nearest"
-              ? "nearest"
-              : sortBy === "name"
-                ? "name"
-                : "date"
-          }`}</Text>
+          <Text style={styles.sortMetaText}>{`Sorted by ${sortBy === "name" ? "name" : "date"}`}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -1036,35 +1034,14 @@ export default function ExplorerRework({
                     />
                   </View>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.accessRow, styles.accessRowBorder]}
-                  onPress={() => setOnlyFree((value) => !value)}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: onlyFree }}
-                >
-                  <Text style={styles.accessText}>Free entry only</Text>
-                  <View
-                    style={[styles.toggle, onlyFree && styles.toggleActive]}
-                  >
-                    <View
-                      style={[
-                        styles.toggleThumb,
-                        onlyFree && styles.toggleThumbActive,
-                      ]}
-                    />
-                  </View>
-                </TouchableOpacity>
               </View>
 
               <Text style={styles.sheetLabel}>Sort by</Text>
               <View style={styles.sortOptions}>
-                {(
-                  [
-                    ["date", "Date"],
-                    ["nearest", "Nearest to me"],
-                    ["name", "Name A–Z"],
-                  ] as const
-                ).map(([value, label]) => (
+                {([
+                  ["date", "Date"],
+                  ["name", "Name A–Z"],
+                ] as const).map(([value, label]) => (
                   <TouchableOpacity
                     key={value}
                     style={styles.sortOption}
