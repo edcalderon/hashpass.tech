@@ -143,4 +143,76 @@ describe("event chat client", () => {
       { skipEventSegment: true },
     );
   });
+
+  it("loads member and presence envelopes for VIP direct messaging", async () => {
+    mockGet
+      .mockResolvedValueOnce({
+        success: true,
+        data: { data: { members: [{ userId: "member-1", name: "Ada", passType: "business" }] } },
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        data: { data: { eventId: "colombia2026", presence: { peopleCount: 2, avatarUrls: [null, "avatar"] } } },
+      });
+
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { loadEventChatMembers, loadEventChatPresence } = require("../../lib/event-chat");
+    await expect(loadEventChatMembers("colombia2026")).resolves.toEqual([
+      { userId: "member-1", name: "Ada", passType: "business" },
+    ]);
+    await expect(loadEventChatPresence("colombia2026")).resolves.toEqual({
+      peopleCount: 2,
+      avatarUrls: [null, "avatar"],
+    });
+    expect(mockGet).toHaveBeenNthCalledWith(2, "/events/colombia2026/chat", expect.objectContaining({
+      params: { channel: "presence" },
+    }));
+  });
+
+  it("uses safe empty fallbacks for missing presence and member payloads", async () => {
+    mockGet
+      .mockResolvedValueOnce({ success: true, data: { data: null } })
+      .mockResolvedValueOnce({ success: true, data: { data: { presence: null } } });
+
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { loadEventChatMembers, loadEventChatPresence } = require("../../lib/event-chat");
+    await expect(loadEventChatMembers("colombia2026")).resolves.toEqual([]);
+    await expect(loadEventChatPresence("colombia2026")).resolves.toEqual({ peopleCount: 0, avatarUrls: [] });
+  });
+
+  it("maps backend failures to typed errors for all chat operations", async () => {
+    mockGet.mockResolvedValue({ success: false, error: "members unavailable", status: 500 });
+    mockPost.mockResolvedValue({ success: false, error: "presence unavailable", status: 503 });
+
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { loadEventChatMembers, heartbeatEventChatPresence, sendEventChatMessage } = require("../../lib/event-chat");
+    await expect(loadEventChatMembers("colombia2026")).rejects.toMatchObject({
+      message: "members unavailable",
+      status: 500,
+    });
+    await expect(heartbeatEventChatPresence("colombia2026")).rejects.toMatchObject({
+      message: "presence unavailable",
+      status: 503,
+    });
+    await expect(sendEventChatMessage({ eventId: "colombia2026", message: "hello" })).rejects.toMatchObject({
+      message: "presence unavailable",
+      status: 503,
+    });
+  });
+
+  it("rejects empty room responses and treats archive events as past", async () => {
+    mockGet.mockResolvedValue({ success: true, data: { data: null } });
+
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { loadEventChat, isEventChatPastEvent } = require("../../lib/event-chat");
+    await expect(loadEventChat("colombia2026")).rejects.toThrow("empty response");
+    expect(isEventChatPastEvent({ tourRole: "archive" })).toBe(true);
+    expect(isEventChatPastEvent({})).toBe(false);
+  });
+
+  it("falls back to a stable member avatar when the supplied URL is blank", () => {
+    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
+    const { getEventChatAvatarUrl } = require("../../lib/event-chat");
+    expect(getEventChatAvatarUrl({})).toContain("seed=hashpass-member");
+  });
 });
