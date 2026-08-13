@@ -67,6 +67,29 @@ variable "development_build_execution_mode" {
   }
 }
 
+variable "production_build_execution_mode" {
+  description = "Production build execution mode. CodeBuild is the primary on-demand path; ec2 is the explicit rollback path."
+  type        = string
+  default     = "codebuild"
+
+  validation {
+    condition     = contains(["codebuild", "ec2"], lower(trimspace(var.production_build_execution_mode)))
+    error_message = "production_build_execution_mode must be codebuild or ec2."
+  }
+}
+
+variable "production_codebuild_project_name" {
+  description = "Existing CodeBuild project used by the production BSL pipeline when execution mode is codebuild."
+  type        = string
+  default     = "bsl-hashpass-prod-build"
+}
+
+variable "production_codebuild_compute_type" {
+  description = "CodeBuild compute class used by the production BSL pipeline."
+  type        = string
+  default     = "BUILD_GENERAL1_LARGE"
+}
+
 variable "development_codebuild_project_name" {
   description = "Existing Ohio CodeBuild project used by the development pipeline when execution mode is codebuild."
   type        = string

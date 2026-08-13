@@ -11,6 +11,7 @@ PROVIDER_TAG="${WEB_PIPELINE_PROVIDER_TAGS:-hashpass-prod-ec2-build,hashpass-dev
 GRACE_SECONDS="${WEB_PIPELINE_GRACE_SECONDS:-30}"
 START_WAIT_SECONDS="${WEB_PIPELINE_START_WAIT_SECONDS:-180}"
 POLL_SECONDS="${WEB_PIPELINE_POLL_SECONDS:-20}"
+ORPHAN_GRACE_SECONDS="${WEB_PIPELINE_ORPHAN_GRACE_SECONDS:-600}"
 SUMMARY_FILE="${GITHUB_STEP_SUMMARY:-}"
 MODE="monitor"
 
@@ -46,7 +47,7 @@ parse_pipeline_names() {
 
 usage() {
   cat <<'EOF'
-Usage: manage-web-pipeline-worker.sh [--mode monitor|stop] [--pipelines name1,name2] [--region us-east-2]
+Usage: manage-web-pipeline-worker.sh [--mode monitor|stop|reconcile] [--pipelines name1,name2] [--region us-east-2]
 
 Environment variables:
   WEB_PIPELINE_NAMES
@@ -56,6 +57,7 @@ Environment variables:
   WEB_PIPELINE_GRACE_SECONDS
   WEB_PIPELINE_START_WAIT_SECONDS
   WEB_PIPELINE_POLL_SECONDS
+  WEB_PIPELINE_ORPHAN_GRACE_SECONDS
 EOF
 }
 
@@ -67,6 +69,18 @@ worker_instance_ids() {
       "Name=tag:Service,Values=${SERVICE_TAG}" \
       "Name=tag:Provider,Values=${PROVIDER_TAG}" \
       "Name=instance-state-name,Values=pending,running,stopping,stopped" \
+    --output json \
+    | jq -r '.Reservations[]?.Instances[]?.InstanceId'
+}
+
+running_worker_instance_ids() {
+  aws ec2 describe-instances \
+    --region "${REGION}" \
+    --filters \
+      "Name=tag:Project,Values=${PROJECT_TAG}" \
+      "Name=tag:Service,Values=${SERVICE_TAG}" \
+      "Name=tag:Provider,Values=${PROVIDER_TAG}" \
+      "Name=instance-state-name,Values=pending,running" \
     --output json \
     | jq -r '.Reservations[]?.Instances[]?.InstanceId'
 }
@@ -325,6 +339,89 @@ stop_worker_if_idle() {
   return 0
 }
 
+running_worker_count() {
+  running_worker_instance_ids | while IFS= read -r instance_id; do
+    [[ -n "${instance_id}" ]] && printf '%s\n' "${instance_id}"
+  done | wc -l
+}
+
+provider_is_configured() {
+  local provider="$1"
+  local configured
+
+  IFS=',' read -r -a configured_providers <<< "${PROVIDER_TAG}"
+  for configured in "${configured_providers[@]}"; do
+    [[ "$(trim_value "${configured}")" == "${provider}" ]] && return 0
+  done
+
+  return 1
+}
+
+reconcile_orphaned_pipeline() {
+  local pipeline_name="$1"
+  local pipeline_json state_json action_info owner provider status execution_id changed_at changed_epoch now age
+
+  pipeline_json="$(aws codepipeline get-pipeline \
+    --region "${REGION}" \
+    --name "${pipeline_name}" \
+    --output json)"
+  owner="$(jq -r '.pipeline.stages[]?.actions[]? | select(.name == "BuildSite" or .name == "DeployInfra") | .actionTypeId.owner' <<<"${pipeline_json}" | head -n 1)"
+  provider="$(jq -r '.pipeline.stages[]?.actions[]? | select(.name == "BuildSite" or .name == "DeployInfra") | .actionTypeId.provider' <<<"${pipeline_json}" | head -n 1)"
+
+  if [[ "${owner}" != "Custom" ]] || ! provider_is_configured "${provider}"; then
+    log "${pipeline_name} uses ${owner:-unknown}/${provider:-unknown}; no legacy EC2 action to reconcile."
+    return 0
+  fi
+
+  state_json="$(aws codepipeline get-pipeline-state \
+    --region "${REGION}" \
+    --name "${pipeline_name}" \
+    --output json)"
+  action_info="$(jq -r '
+    .stageStates[] as $stage
+    | $stage.actionStates[]?
+    | select((.actionName == "BuildSite" or .actionName == "DeployInfra") and
+             (.latestExecution.status == "InProgress" or .latestExecution.status == "Queued"))
+    | [($stage.latestExecution.pipelineExecutionId // ""), (.latestExecution.status // ""), (.latestExecution.lastStatusChange // "")]
+    | @tsv
+  ' <<<"${state_json}" | head -n 1)"
+
+  [[ -n "${action_info}" ]] || return 0
+  IFS=$'\t' read -r execution_id status changed_at <<< "${action_info}"
+  [[ -n "${execution_id}" && -n "${changed_at}" ]] || return 0
+
+  if [[ "$(running_worker_count)" -gt 0 ]]; then
+    log "${pipeline_name} has an active ${provider} action and a running worker; leaving it alone."
+    return 0
+  fi
+
+  changed_epoch="$(date -d "${changed_at}" +%s)"
+  now="$(date +%s)"
+  age=$((now - changed_epoch))
+  if (( age < ORPHAN_GRACE_SECONDS )); then
+    log "${pipeline_name} has no worker, but its ${status} action is only ${age}s old; waiting for the grace period."
+    return 0
+  fi
+
+  log "Stopping orphaned ${pipeline_name} execution ${execution_id}: custom action ${provider} has no running worker after ${age}s."
+  aws codepipeline stop-pipeline-execution \
+    --region "${REGION}" \
+    --pipeline-name "${pipeline_name}" \
+    --pipeline-execution-id "${execution_id}" \
+    --abandon \
+    --reason "orphaned legacy EC2 action ${provider}: no running worker after ${age}s; CodeBuild is the primary executor" \
+    >/dev/null
+  summary "- Stopped orphaned ${pipeline_name} execution ${execution_id} (${provider}); no EC2 worker was running."
+}
+
+reconcile_mode() {
+  local pipeline_name
+
+  for pipeline_name in "${PIPELINE_NAMES[@]}"; do
+    reconcile_orphaned_pipeline "${pipeline_name}"
+  done
+}
+
 monitor_mode() {
   local deadline active_pipelines=()
   local pipeline_name
@@ -462,6 +559,10 @@ main() {
         POLL_SECONDS="$2"
         shift 2
         ;;
+      --orphan-grace-seconds)
+        ORPHAN_GRACE_SECONDS="$2"
+        shift 2
+        ;;
       --summary-file)
         SUMMARY_FILE="$2"
         shift 2
@@ -479,7 +580,7 @@ main() {
   done
 
   MODE="${MODE,,}"
-  if [[ "${MODE}" != "monitor" && "${MODE}" != "stop" ]]; then
+  if [[ "${MODE}" != "monitor" && "${MODE}" != "stop" && "${MODE}" != "reconcile" ]]; then
     echo "Invalid mode: ${MODE}" >&2
     usage >&2
     exit 1
@@ -493,8 +594,10 @@ main() {
 
   if [[ "${MODE}" == "monitor" ]]; then
     monitor_mode
-  else
+  elif [[ "${MODE}" == "stop" ]]; then
     stop_mode
+  else
+    reconcile_mode
   fi
 }
 

@@ -3,6 +3,10 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '../../..');
 const migrationPath = path.join(root, 'db/migrations/V011__secure_upcoming_bsl_pass_provisioning.sql');
+const hardenedPassBackendMigrationPath = path.join(
+  root,
+  'db/migrations/V067__harden_pass_backend_contract.sql',
+);
 const meetingLifecycleMigrationPath = path.join(
   root,
   'db/migrations/V018__event_scoped_meeting_rpc_contract.sql',
@@ -457,5 +461,36 @@ describe('pass claim-code migration contract', () => {
     expect(config.groups['upcoming-bsl-passes']).toContain(
       'db/migrations/V030__add_secure_pass_claim_codes.sql',
     );
+  });
+});
+
+describe('backend-only pass contract migration', () => {
+  it('adds the event-aware pass schema and keeps default creation behind the API', () => {
+    const migration = fs.readFileSync(hardenedPassBackendMigrationPath, 'utf8');
+    const config = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+
+    expect(migration).toMatch(/ALTER TABLE public\.passes ADD COLUMN IF NOT EXISTS pass_type/i);
+    expect(migration).toMatch(/p_event_id text DEFAULT 'colombia2026'/i);
+    expect(migration).toMatch(/REVOKE ALL ON FUNCTION public\.create_default_pass\(text, text, text\)[\s\S]*authenticated/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.create_default_pass\(text, text, text\) TO service_role/i);
+    expect(config.groups['upcoming-bsl-passes']).toContain(
+      'db/migrations/V067__harden_pass_backend_contract.sql',
+    );
+    expect(config.groups['upcoming-bsl-passes']).toContain(
+      'db/migrations/V068__fix_uuid_pass_id_creation.sql',
+    );
+    expect(config.groups['upcoming-bsl-passes']).toContain(
+      'db/migrations/V069__fix_legacy_pass_number_type.sql',
+    );
+  });
+
+  it('keeps the generated pass id UUID-typed for the canonical passes table', () => {
+    const migration = fs.readFileSync(hardenedPassBackendMigrationPath, 'utf8');
+
+    expect(migration).toMatch(/v_pass_id\s+uuid;/i);
+    expect(migration).toMatch(/v_pass_id\s*:=\s*gen_random_uuid\(\);/i);
+    expect(migration).toMatch(/RETURNING id::text INTO v_return_id/i);
+    expect(migration).toMatch(/v_pass_number_type/i);
+    expect(migration).toMatch(/SET pass_number = \$1 WHERE id::text = \$2/i);
   });
 });

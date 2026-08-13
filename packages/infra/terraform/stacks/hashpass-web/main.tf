@@ -64,6 +64,14 @@ locals {
     for function_name in [var.lambda_function_name, var.dev_lambda_function_name] :
     trimspace(function_name) if trimspace(function_name) != ""
   ])
+  pipeline_execution_resource_arns = [
+    for pipeline_name in [
+      "hashpass-dev-site",
+      "hashpass-production-site",
+      "bsl-hashpass-dev",
+      "bsl-hashpass-prod",
+    ] : "arn:aws:codepipeline:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${pipeline_name}"
+  ]
   production_build_worker_lambda_function_names  = [trimspace(var.lambda_function_name)]
   development_build_worker_lambda_function_names = [trimspace(var.dev_lambda_function_name)]
   production_codebuild_lambda_function_arns = [
@@ -85,6 +93,8 @@ locals {
       EXPO_PUBLIC_SUPABASE_KEY_PROD      = var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY      = var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY_PROD = var.supabase_key
+      NODE_MAX_OLD_SPACE_SIZE            = "6144"
+      EXPO_EXPORT_MAX_WORKERS            = "1"
       SITE_LAMBDA_FUNCTION_NAME          = var.lambda_function_name
       SITE_LAMBDA_REGION                 = var.lambda_region
       SITE_API_VERSION_URL               = var.api_version_url
@@ -110,6 +120,8 @@ locals {
       EXPO_PUBLIC_SUPABASE_KEY_DEV      = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY     = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
       EXPO_PUBLIC_SUPABASE_ANON_KEY_DEV = trimspace(var.supabase_key_dev) != "" ? var.supabase_key_dev : var.supabase_key
+      NODE_MAX_OLD_SPACE_SIZE           = "6144"
+      EXPO_EXPORT_MAX_WORKERS           = "1"
       SITE_LAMBDA_FUNCTION_NAME         = var.dev_lambda_function_name
       SITE_LAMBDA_REGION                = var.lambda_region
       SITE_API_VERSION_URL              = var.dev_api_version_url
@@ -126,6 +138,16 @@ locals {
     } : {},
     var.build_environment_overrides
   )
+}
+
+check "custom_pipeline_requires_workers" {
+  assert {
+    condition = (
+      (local.production_build_is_codebuild || var.enable_pipeline_build_workers) &&
+      (local.development_build_is_codebuild || var.enable_pipeline_build_workers)
+    )
+    error_message = "An EC2 fallback pipeline requires enable_pipeline_build_workers=true; CodeBuild is the safe default."
+  }
 }
 
 check "required_inputs" {
@@ -719,6 +741,12 @@ resource "aws_iam_role_policy" "github_actions_worker_control" {
           "codepipeline:ListActionExecutions",
         ]
         Resource = "*"
+      },
+      {
+        Sid      = "StopOrphanedPipelines"
+        Effect   = "Allow"
+        Action   = ["codepipeline:StopPipelineExecution"]
+        Resource = local.pipeline_execution_resource_arns
       },
       {
         Sid    = "DeployApiLambda"

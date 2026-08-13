@@ -101,25 +101,29 @@ resource "aws_s3_bucket_policy" "bsl_prod_site" {
   depends_on = [aws_s3_bucket_public_access_block.bsl_prod_site]
 }
 
-# Reuses the same reusable EC2 build worker module hashpass-web already uses
-# (packages/infra/terraform/stacks/hashpass-web), matching the decision
-# (2026-07-28) to build BSL's target-account pipeline on a custom EC2 worker
-# instead of AWS CodeBuild -- more control over the build environment, and
-# the target account's CodeBuild concurrent-build quota was found to be 0
-# for every environment type (a pre-existing account-wide restriction
-# unrelated to BSL; AWS Support case 178525969200038 requests raising it,
-# but EC2 sidesteps the wait entirely and matches the established pattern).
-#
-# This worker is dedicated to BSL, not shared with hashpass-web's worker --
-# each pipeline family in this repo (mobile release, hashpass-web, now BSL)
-# gets its own worker, which is the existing convention, not a new one.
+# The EC2 worker remains only as an explicit, break-glass rollback path. The
+# normal BSL path is on-demand CodeBuild; the target account currently has
+# capacity for the configured Linux build classes. Keeping the fallback
+# declarative makes rollback possible without making a persistent worker part
+# of the normal production cost or availability path.
 locals {
   build_action_providers = {
     legacy      = var.build_action_provider_name
     production  = var.production_build_action_provider_name
     development = var.development_build_action_provider_name
   }
+  production_build_is_codebuild  = lower(trimspace(var.production_build_execution_mode)) == "codebuild"
   development_build_is_codebuild = lower(trimspace(var.development_build_execution_mode)) == "codebuild"
+}
+
+check "custom_pipeline_requires_workers" {
+  assert {
+    condition = (
+      (local.production_build_is_codebuild || var.enable_pipeline_build_workers) &&
+      (local.development_build_is_codebuild || var.enable_pipeline_build_workers)
+    )
+    error_message = "An EC2 fallback pipeline requires enable_pipeline_build_workers=true; CodeBuild is the safe default."
+  }
 }
 
 module "production_build_worker" {
@@ -129,8 +133,8 @@ module "production_build_worker" {
   aws_region                      = var.aws_region
   provider_name                   = var.production_build_action_provider_name
   provider_version                = var.build_action_version
-  instance_count                  = var.enable_pipeline_build_workers ? var.instance_count : 0
-  provisioning_enabled            = var.enable_pipeline_build_workers
+  instance_count                  = var.enable_pipeline_build_workers && !local.production_build_is_codebuild ? var.instance_count : 0
+  provisioning_enabled            = var.enable_pipeline_build_workers && !local.production_build_is_codebuild
   provisioning_approval_reference = var.pipeline_build_worker_approval_reference
   instance_type                   = var.instance_type
   subnet_ids                      = var.subnet_ids
@@ -162,8 +166,8 @@ module "development_build_worker" {
   aws_region                      = var.aws_region
   provider_name                   = var.development_build_action_provider_name
   provider_version                = var.build_action_version
-  instance_count                  = var.enable_pipeline_build_workers ? var.instance_count : 0
-  provisioning_enabled            = var.enable_pipeline_build_workers
+  instance_count                  = var.enable_pipeline_build_workers && !local.development_build_is_codebuild ? var.instance_count : 0
+  provisioning_enabled            = var.enable_pipeline_build_workers && !local.development_build_is_codebuild
   provisioning_approval_reference = var.pipeline_build_worker_approval_reference
   instance_type                   = var.instance_type
   subnet_ids                      = var.subnet_ids
@@ -339,6 +343,62 @@ locals {
   )
 }
 
+resource "aws_cloudwatch_log_group" "bsl_prod_codebuild" {
+  name              = "/aws/codebuild/${var.production_codebuild_project_name}"
+  retention_in_days = 30
+  tags              = merge(var.tags, { Environment = "production", Service = "bsl-codebuild" })
+}
+
+# This project was provisioned before the BSL target-account cutover and is
+# now managed here so its buildspec, sizing, environment, logs, and timeout
+# cannot silently drift back to the old SST/EC2 flow.
+resource "aws_codebuild_project" "bsl_prod" {
+  name          = var.production_codebuild_project_name
+  description   = "On-demand production BSL static site build"
+  service_role  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/BslHashpassCodeBuildRole"
+  build_timeout = var.build_action_timeout
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  cache {
+    type     = "S3"
+    location = "${var.artifact_bucket_name}/codebuild-cache"
+  }
+
+  environment {
+    compute_type                = var.production_codebuild_compute_type
+    image                       = "aws/codebuild/standard:7.0"
+    type                        = "LINUX_CONTAINER"
+    image_pull_credentials_type = "CODEBUILD"
+
+    dynamic "environment_variable" {
+      for_each = local.prod_build_environment
+
+      content {
+        name  = environment_variable.key
+        value = environment_variable.value
+        type  = "PLAINTEXT"
+      }
+    }
+  }
+
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = "packages/tools/buildspecs/bsl-static-site-codebuild.yml"
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      group_name  = aws_cloudwatch_log_group.bsl_prod_codebuild.name
+      stream_name = "build"
+    }
+  }
+
+  tags = merge(var.tags, { Environment = "production", Service = "bsl-codebuild" })
+}
+
 resource "aws_codepipeline" "bsl_prod" {
   name          = "bsl-hashpass-prod"
   role_arn      = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/BslHashpassPipelineRole"
@@ -375,33 +435,14 @@ resource "aws_codepipeline" "bsl_prod" {
     action {
       name             = "DeployInfra"
       category         = "Build"
-      owner            = "Custom"
-      provider         = var.production_build_action_provider_name
-      version          = var.build_action_version
+      owner            = local.production_build_is_codebuild ? "AWS" : "Custom"
+      provider         = local.production_build_is_codebuild ? "CodeBuild" : var.production_build_action_provider_name
+      version          = local.production_build_is_codebuild ? "1" : var.build_action_version
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact"]
-      # REVERTED 2026-08-06 (same day as added): CodePipeline rejects this
-      # outright for a Custom/Build-category action --
-      # `InvalidActionDeclarationException: Action DeployInfra cannot have
-      # timeout specified. Overridden timeout is only supported for Manual
-      # Approval action type`, confirmed via a real `update-pipeline` call.
-      # V2 pipeline type does not change this -- action-level timeout
-      # override is Manual-Approval-only regardless. This block would have
-      # made every future `terraform apply` against this stack fail
-      # outright; good that it was committed but never actually applied.
-      #
-      # The real problem this was meant to fix (worker dies/stops without
-      # ever calling put-job-failure-result, leaving the execution stuck
-      # InProgress indefinitely -- confirmed 2026-08-06/07, twice, on both
-      # this pipeline and hashpass-production-site) still needs a real fix:
-      # an external watcher (e.g. extending
-      # .github/workflows/hashpass-web-pipeline-monitor.yml's existing
-      # cron, or a CloudWatch Events rule + Lambda) that detects an
-      # InProgress execution whose worker instance is stopped/terminated
-      # and calls stop-pipeline-execution --abandon. Not yet built --
-      # see apps/docs/docs/infra/bsl-pipeline-orphaned-worker-incident.md.
-
-      configuration = {
+      configuration = local.production_build_is_codebuild ? {
+        ProjectName = aws_codebuild_project.bsl_prod.name
+        } : {
         BuildScript          = var.build_script_path_hybrid
         OutputDirectory      = var.build_output_directory
         BuildEnvironmentJson = jsonencode(local.prod_build_environment)
@@ -430,7 +471,7 @@ resource "aws_codepipeline" "bsl_prod" {
 
   tags = merge(var.tags, { Environment = "production" })
 
-  depends_on = [module.production_build_worker, aws_codepipeline_custom_action_type.ec2_build]
+  depends_on = [aws_codebuild_project.bsl_prod, module.production_build_worker, aws_codepipeline_custom_action_type.ec2_build]
 }
 
 resource "aws_codepipeline" "bsl_dev" {

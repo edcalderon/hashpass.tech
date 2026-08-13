@@ -17,7 +17,7 @@ export interface AgendaItem {
   title: string;
   description?: string;
   speakers?: string[];
-  type: 'keynote' | 'panel' | 'break' | 'meal' | 'registration';
+  type: "keynote" | "panel" | "break" | "meal" | "registration";
   location?: string;
   // Explicit day number ('1' | '2' | '3', see app/events/[eventSlug]/agenda.tsx)
   // for multi-day events. Without it, the agenda screen falls back to
@@ -36,7 +36,21 @@ export interface QuickAccessItem {
   route: string;
 }
 
-export type EventTourRole = 'hub' | 'stop' | 'archive';
+export type EventTourRole = "hub" | "stop" | "archive";
+
+export type EventContinent =
+  | "Africa"
+  | "Asia"
+  | "Europe"
+  | "North America"
+  | "South America"
+  | "Oceania"
+  | "Antarctica";
+
+export interface EventGeo {
+  country: string;
+  continent: EventContinent;
+}
 
 export interface EventTourMeta {
   hubEventId?: string;
@@ -62,6 +76,10 @@ export interface EventConfig {
   eventStartDate?: string; // ISO date string for countdown
   eventEndDate?: string; // ISO date string for event end
   eventDateString?: string; // Formatted date string for display
+  /** Canonical geographic metadata used by cross-event discovery surfaces. */
+  geo?: EventGeo;
+  /** Discovery series used by Explorer filters, e.g. Summit or Meetup. */
+  series?: string;
   branding: {
     primaryColor: string;
     secondaryColor?: string;
@@ -92,7 +110,7 @@ export interface EventConfig {
   // these are distinct per tour stop and should not be assumed shared.
   dayThemes?: Record<string, { es: string; en: string }>;
   quickAccessItems?: QuickAccessItem[];
-  eventType?: 'hashpass' | 'whitelabel';
+  eventType?: "hashpass" | "whitelabel";
   tour?: EventTourMeta;
   website?: string; // Event website URL for footer links
 }

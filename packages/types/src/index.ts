@@ -1,7 +1,13 @@
-export * from './agenda';
-export { Speaker, EventConfig, QuickAccessItem } from './events';
-export type { AgendaItem as EventAgendaItem } from './events';
-export * from './language';
+export * from "./agenda";
+export {
+  Speaker,
+  EventConfig,
+  EventGeo,
+  EventContinent,
+  QuickAccessItem,
+} from "./events";
+export type { AgendaItem as EventAgendaItem } from "./events";
+export * from "./language";
 export type {
   Meeting,
   MeetingRequest,
@@ -11,7 +17,7 @@ export type {
   NetworkingStats,
   StatsState,
   NetworkingTip,
-} from './networking';
-export { networkingTips } from './networking';
-export * from './theme';
-export * from './navigation';
+} from "./networking";
+export { networkingTips } from "./networking";
+export * from "./theme";
+export * from "./navigation";
