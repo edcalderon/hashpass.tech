@@ -653,6 +653,7 @@ export default function HomeScreen() {
             showDotIndicators={true}
             autoPlay={true}
             autoPlayInterval={5000}
+            showCtas={false}
             onEventPress={(
               event: { routes?: { home?: string } } | null | undefined,
             ) => {

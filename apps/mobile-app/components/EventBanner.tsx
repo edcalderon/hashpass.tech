@@ -45,6 +45,8 @@ interface EventBannerProps {
   ctaLabel?: string;
   ctaUrl?: string;
   ctaPosition?: EventBannerCtaPosition;
+  /** Lets hosts keep campaign media and copy while owning navigation elsewhere. */
+  showCta?: boolean;
 }
 
 interface TimeLeft {
@@ -98,6 +100,7 @@ export default function EventBanner({
   ctaLabel,
   ctaUrl,
   ctaPosition,
+  showCta = true,
 }: EventBannerProps) {
   const { isDark, colors } = useTheme();
   const router = useRouter();
@@ -416,7 +419,7 @@ export default function EventBanner({
           </>
         )}
       </View>
-      {ctaLabel ? (
+      {showCta && ctaLabel ? (
         <TouchableOpacity
           disabled={!ctaUrl}
           onPress={handleCtaPress}

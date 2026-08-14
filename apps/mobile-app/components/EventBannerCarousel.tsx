@@ -47,6 +47,8 @@ interface EventBannerCarouselProps {
   showDotIndicators?: boolean;
   autoPlay?: boolean;
   autoPlayInterval?: number;
+  /** Whether campaign CTA buttons are rendered on event slides. */
+  showCtas?: boolean;
   onEventPress?: (event: EventInfo) => void;
   /** Restricts the carousel to one selected event and its own campaign slides. */
   event?: EventInfo | null;
@@ -148,6 +150,7 @@ export default function EventBannerCarousel({
   showDotIndicators = true,
   autoPlay = true,
   autoPlayInterval = 5000,
+  showCtas = true,
   onEventPress,
   event: selectedEvent,
   lampBrandingOverrides,
@@ -240,7 +243,7 @@ export default function EventBannerCarousel({
         ]
       : []),
     ...availableEvents.flatMap((event) =>
-      getEventBannerSlides(event).map((banner) => ({
+      getEventBannerSlides(event).map((banner: ResolvedEventBannerSlide) => ({
         type: "event" as const,
         event,
         banner,
@@ -413,6 +416,7 @@ export default function EventBannerCarousel({
                 ctaLabel={localizedBanner.cta?.label}
                 ctaUrl={localizedBanner.cta?.url}
                 ctaPosition={localizedBanner.cta?.position}
+                showCta={showCtas}
               />
             );
 

@@ -439,6 +439,13 @@ describe("HomeScreen native tablet layout", () => {
     expect(topControls).toBeTruthy();
   });
 
+  it("keeps event banner calls to action inside the dashboard explorer", () => {
+    const { renderer } = loadHomeScreen({ platform: "web" });
+
+    const carousel = renderer.root.findByType("EventBannerCarousel");
+    expect(carousel.props.showCtas).toBe(false);
+  });
+
   it("renders the native landing first frame visibly without waiting for scroll", () => {
     const { renderer } = loadHomeScreen({
       width: 390,
